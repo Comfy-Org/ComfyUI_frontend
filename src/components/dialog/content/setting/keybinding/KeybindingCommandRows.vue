@@ -61,9 +61,9 @@
           command.source || '-'
         }}</span>
       </TableCell>
-      <TableCell class="p-1 whitespace-nowrap">
+      <TableCell class="p-1">
         <div
-          class="flex flex-row justify-end whitespace-nowrap"
+          class="flex justify-end whitespace-nowrap"
           @click.stop
           @dblclick.stop
         >
@@ -126,7 +126,7 @@
               :is-modified="command.isModified"
             />
           </div>
-          <div class="flex flex-row">
+          <div class="flex">
             <Button
               :tooltip="$t('g.edit')"
               variant="textonly"

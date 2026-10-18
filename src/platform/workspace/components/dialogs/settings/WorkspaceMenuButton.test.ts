@@ -1,5 +1,6 @@
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -11,26 +12,19 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import WorkspaceMenuButton from './WorkspaceMenuButton.vue'
 
-const ownerConfig = {
-  showEditWorkspaceMenuItem: true,
-  workspaceMenuAction: 'delete' as const,
-  workspaceMenuDisabledTooltip:
-    'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
-}
-const memberConfig = {
-  showEditWorkspaceMenuItem: false,
-  workspaceMenuAction: null,
-  workspaceMenuDisabledTooltip: null
-}
-const personalConfig = {
-  showEditWorkspaceMenuItem: true,
-  workspaceMenuAction: null,
-  workspaceMenuDisabledTooltip: null
-}
-
-const mockUiConfig = ref<Record<string, unknown>>(ownerConfig)
 const mockCanLeaveWorkspace = ref(false)
-const mockCanManageSubscription = ref(true)
+
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
+  useBillingContext: () => ({
+    subscription: computed(() => ({
+      endDate: '2026-08-01T00:00:00Z',
+      isCancelled: false,
+      tier: 'PRO'
+    }))
+  })
+}))
+
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
@@ -42,11 +36,23 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
+function grantDelete() {
+  useBillingCapabilities().canDeleteWorkspace = computed(() =>
+    receiveServerFact('can_delete_workspace', true)
+  )
+}
+
+function denyDelete(denial: string | undefined) {
+  useBillingCapabilities().canDeleteWorkspace = computed(() =>
+    receiveServerFact('can_delete_workspace', false)
+  )
+  useBillingCapabilities().deleteWorkspaceDenial = computed(() => denial)
+}
+
 async function renderComponent() {
   render(WorkspaceMenuButton, {
     global: {
-      plugins: [i18n],
-      directives: { tooltip: {} }
+      plugins: [i18n]
     }
   })
   await userEvent.click(screen.getByRole('button', { name: 'More Options' }))
@@ -58,36 +64,26 @@ describe('WorkspaceMenuButton', () => {
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
-      canLeaveWorkspace: mockCanLeaveWorkspace.value,
-      canManageSubscription: mockCanManageSubscription.value
+      canLeaveWorkspace: mockCanLeaveWorkspace.value
     }))
-    const defaultUiConfig = workspaceUI.uiConfig.value
-    workspaceUI.uiConfig = computed(() => ({
-      ...defaultUiConfig,
-      ...mockUiConfig.value,
-      workspaceMenuAction:
-        mockUiConfig.value.workspaceMenuAction === 'delete' ? 'delete' : null
-    }))
-    mockUiConfig.value = ownerConfig
     mockCanLeaveWorkspace.value = false
-    mockCanManageSubscription.value = true
-    Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
+    grantDelete()
   })
 
   it('lets a member leave and offers no destructive workspace actions', async () => {
-    mockUiConfig.value = memberConfig
     mockCanLeaveWorkspace.value = true
-    mockCanManageSubscription.value = false
+    denyDelete('not_workspace_owner')
     await renderComponent()
 
-    const leave = screen.getByRole('menuitem', { name: 'Leave Workspace' })
-    expect(leave).toBeEnabled()
+    expect(
+      screen.getByRole('menuitem', { name: 'Leave Workspace' })
+    ).toBeEnabled()
     expect(
       screen.queryByRole('menuitem', { name: 'Delete Workspace' })
     ).not.toBeInTheDocument()
   })
 
-  it('lets an additional workspace owner leave and delete', async () => {
+  it('lets a workspace owner leave and delete when the server grants Delete', async () => {
     const user = userEvent.setup()
     mockCanLeaveWorkspace.value = true
     await renderComponent()
@@ -105,22 +101,37 @@ describe('WorkspaceMenuButton', () => {
     ).toHaveBeenCalledOnce()
   })
 
-  it('does not expose Delete in a personal workspace', async () => {
-    mockUiConfig.value = personalConfig
+  it.for(['personal_workspace', 'workspace_sso_attached'])(
+    'does not expose Delete when the server names %s',
+    async (denial) => {
+      denyDelete(denial)
+      await renderComponent()
+
+      expect(
+        screen.queryByRole('menuitem', { name: 'Delete Workspace' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for(['plan_not_ended', 'billing_operation_parked', undefined])(
+    'disables Delete when the server refuses it with %s',
+    async (denial) => {
+      denyDelete(denial)
+      await renderComponent()
+
+      expect(
+        screen.getByRole('menuitem', { name: 'Delete Workspace' })
+      ).toHaveAttribute('aria-disabled', 'true')
+    }
+  )
+
+  it('hides Delete until capabilities resolve', async () => {
+    useBillingCapabilities().hasResolvedCapabilities = computed(() => false)
     await renderComponent()
 
     expect(
       screen.queryByRole('menuitem', { name: 'Delete Workspace' })
     ).not.toBeInTheDocument()
-  })
-
-  it('disables Delete while the additional workspace is subscribed', async () => {
-    Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
-    await renderComponent()
-
-    expect(
-      screen.getByRole('menuitem', { name: 'Delete Workspace' })
-    ).toHaveAttribute('aria-disabled', 'true')
   })
 
   it('hides Leave when workspace permission is withheld', async () => {
@@ -155,27 +166,17 @@ describe('WorkspaceMenuButton', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('rechecks owner permission before opening the delete dialog', async () => {
+  it('rechecks the capability before opening the delete dialog', async () => {
+    const granted = ref(true)
+    useBillingCapabilities().canDeleteWorkspace = computed(() =>
+      receiveServerFact('can_delete_workspace', granted.value)
+    )
     await renderComponent()
 
     const deleteWorkspace = screen.getByRole('menuitem', {
       name: 'Delete Workspace'
     })
-    mockCanManageSubscription.value = false
-    deleteWorkspace.click()
-
-    expect(
-      useWorkspaceDialogs().showDeleteWorkspaceDialog
-    ).not.toHaveBeenCalled()
-  })
-
-  it('rechecks the subscription lock before opening the delete dialog', async () => {
-    await renderComponent()
-
-    const deleteWorkspace = screen.getByRole('menuitem', {
-      name: 'Delete Workspace'
-    })
-    Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
+    granted.value = false
     deleteWorkspace.click()
 
     expect(

@@ -108,6 +108,7 @@ import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { toFiniteNumber } from '@/services/customerEventParams'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
@@ -131,9 +132,7 @@ const pagination = ref({
 })
 
 function eventAmount(event: AuditLog) {
-  const amount = event.params?.amount
-  const value = typeof amount === 'string' ? Number(amount) : amount
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+  return toFiniteNumber(event.params?.amount)
 }
 
 // A billing-route flip can overlap two loads against different backends; only
@@ -144,7 +143,7 @@ const readWorkspaceEvents = (params: { page: number; limit: number }) => {
   const rail = useBillingReadRail()
   return rail === null
     ? workspaceApi.getBillingEvents(params)
-    : readOnRail(() => rail.readEvents(params))
+    : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
 }
 
 const loadEvents = async () => {

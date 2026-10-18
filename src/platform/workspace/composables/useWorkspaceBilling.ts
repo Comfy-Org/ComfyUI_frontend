@@ -17,8 +17,6 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { SubscriptionDialogOptions } from '@/composables/billing/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
@@ -35,6 +33,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { openHostedBillingTabOutcome } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
@@ -241,7 +240,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
       agentHasFunds:
-        status.scoped_effective_has_funds?.agent ?? status.has_funds
+        status.scoped_effective_has_funds?.agent ?? status.has_funds,
+      agentScopedHasFunds: status.scoped_has_funds?.agent
     }
   })
 
@@ -254,6 +254,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       currency: data.currency,
       effectiveBalanceMicros:
         data.effective_balance_micros ?? data.amount_micros,
+      effectiveBalanceAuthoritative: data.effective_balance_authoritative,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
     }
@@ -373,7 +374,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const status = rail
-        ? await readOnRail(rail.readStatus)
+        ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       if (status === undefined || isStaleStatusRead(requestId, workspaceId))
         return
@@ -402,7 +403,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const balance = rail
-        ? await readOnRail(rail.readBalance)
+        ? await readOnRail(rail.readBalance, 'getBillingBalance')
         : await workspaceApi.getBillingBalance()
       if (balance !== undefined && requestId === latestBillingReadIds.balance) {
         balanceData.value = balance
@@ -628,9 +629,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     if (hosted === 'blocked') return reportBillingTabBlocked()
 
     const portal = createBillingPortalReporter(telemetry, 'manage_subscription')
-    // The handle arms the return refresh, so adding `noopener` here (which
-    // nulls it) silently stops billing state from re-reading on return.
-    const portalTab = window.open('', '_blank')
+    const portalTab = reserveBillingTab()
     if (!portalTab) {
       portal.blocked()
       return reportBillingTabBlocked()
@@ -641,7 +640,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         portal.failed(undefined, billingClient)
         return portalTab.close()
       }
-      portalTab.location.href = url
+      portalTab.navigate(url)
       portal.opened(billingClient)
       refreshOnPortalReturn()
     } catch (err) {
@@ -831,19 +830,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  const subscriptionDialog = useSubscriptionDialog()
-
-  async function requireActiveSubscription(): Promise<void> {
-    await fetchStatus()
-    if (!canAccessSubscriptionFeatures.value) {
-      subscriptionDialog.show({ reason: 'subscription_required' })
-    }
-  }
-
-  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
-    subscriptionDialog.show(options)
-  }
-
   return {
     // State
     isInitialized,
@@ -876,8 +862,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     cancelSubscription,
     resubscribe,
     topup,
-    fetchPlans,
-    requireActiveSubscription,
-    showSubscriptionDialog
+    fetchPlans
   }
 }

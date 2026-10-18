@@ -1,13 +1,15 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   desktopHostUser,
   isDesktopHostSignedIn,
   requestDesktopHostWorkspaceSwitch
 } from '@/platform/auth/desktopHost/desktopHostSession'
+import { trackSsoWorkspaceLanded } from '@/platform/auth/sso/ssoTelemetry'
+import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { isCloud } from '@/platform/distribution/types'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
@@ -17,6 +19,7 @@ import {
   clearWorkflowRestoreState,
   prepareWorkflowWorkspaceTransition
 } from '@/platform/workflow/persistence/base/storageIO'
+import { provideTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStoreAccess'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 import type {
@@ -190,6 +193,15 @@ type ListedWorkspaces = Omit<ListWorkspacesResponse, 'can_create_workspace'> &
     default_workspace_id?: string
   }
 
+function reportSsoLanding(
+  { default_workspace_id }: ListedWorkspaces,
+  workspaceId: string
+): void {
+  trackSsoWorkspaceLanded(
+    !!default_workspace_id && workspaceId === default_workspace_id
+  )
+}
+
 const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
@@ -295,7 +307,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   // self-row by email (the stable current-user join key; member.id is a cloud
   // user id, not the Firebase uid) and fails closed until members load.
   const isCurrentUserOriginalOwner = computed(() => {
-    const email = useCurrentUser().userEmail.value?.toLowerCase()
+    const email = useCurrentUserAccess().userEmail.value?.toLowerCase()
     if (!email) return false
     const selfRow = members.value.find((m) => m.email.toLowerCase() === email)
     return !!selfRow && selfRow.id === originalOwnerId.value
@@ -366,7 +378,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     error.value = null
 
     const workspaceAuthStore = useWorkspaceAuthStore()
-    const isApiKeySession = useCurrentUser().isApiKeyLogin.value
+    const isApiKeySession = useCurrentUserAccess().isApiKeyLogin.value
 
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
@@ -400,9 +412,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           return
         }
 
-        const { useSessionCookie } =
-          await import('@/platform/auth/session/useSessionCookie')
-        await useSessionCookie().ensureSessionCookie()
+        await ensureSessionCookie()
         if (isStaleIdentity(generation)) return
 
         // 1. Try to restore workspace context from session (page refresh case)
@@ -426,6 +436,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
           if (sessionWorkspaceExists) {
             mutableActiveWorkspaceId.value = sessionWorkspaceId
+            reportSsoLanding(response, sessionWorkspaceId)
             initState.value = 'ready'
             isFetchingWorkspaces.value = false
             return
@@ -444,6 +455,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
           mutableActiveWorkspaceId.value = fallbackWorkspaceId
           setLastWorkspaceId(fallbackWorkspaceId)
+          reportSsoLanding(response, fallbackWorkspaceId)
           initState.value = 'ready'
           isFetchingWorkspaces.value = false
           return
@@ -482,6 +494,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         // 5. Set active workspace
         mutableActiveWorkspaceId.value = targetWorkspaceId
         setLastWorkspaceId(targetWorkspaceId)
+        reportSsoLanding(response, targetWorkspaceId)
 
         initState.value = 'ready'
         isFetchingWorkspaces.value = false
@@ -1231,3 +1244,5 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     setWorkspaceBillingRail
   }
 })
+
+provideTeamWorkspaceStore(useTeamWorkspaceStore)

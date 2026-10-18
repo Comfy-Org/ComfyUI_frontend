@@ -131,4 +131,9 @@ jobs:
 
             **Billing Web Preview:** ${{ steps.urls.outputs.stable-url }}
 
+            <details>
+            <summary>Deployment details</summary>
+
             <sub>This commit: ${{ steps.deploy.outputs.url }}</sub>
+
+            </details>

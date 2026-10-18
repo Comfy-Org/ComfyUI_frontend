@@ -12,7 +12,11 @@ const TOOLTIP_PARAM_ALLOWLIST = [
   'endpoint',
   'subscription_id',
   'gpu_seconds',
-  'duration'
+  'duration',
+  'charge_micro_usd',
+  'input_tokens',
+  'output_tokens',
+  'cached_input_tokens'
 ] as const
 
 type TooltipParamKey = (typeof TOOLTIP_PARAM_ALLOWLIST)[number]
@@ -35,4 +39,9 @@ export function hasParamsBeyondDetailsColumn(event: AuditLog) {
   return presentTooltipParamKeys(event.params || {}).some(
     (key) => !shownInDetails.includes(key)
   )
+}
+
+export function toFiniteNumber(raw: unknown) {
+  const value = typeof raw === 'string' && raw.trim() ? Number(raw) : raw
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }

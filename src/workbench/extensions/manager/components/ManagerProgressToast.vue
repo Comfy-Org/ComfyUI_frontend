@@ -216,7 +216,7 @@ onBeforeUnmount(() => {
               >
                 <span class="flex flex-col text-sm/normal font-medium">
                   <span>{{ log.taskName }}</span>
-                  <span class="text-muted">
+                  <span class="text-muted-foreground">
                     {{
                       comfyManagerStore.isTaskFailed(log.taskId)
                         ? t('g.failed')
@@ -251,7 +251,7 @@ onBeforeUnmount(() => {
                   <div
                     v-for="(logLine, logIndex) in log.logs"
                     :key="logIndex"
-                    class="text-muted"
+                    class="text-muted-foreground"
                   >
                     <pre class="wrap-break-word whitespace-pre-wrap">{{
                       logLine
@@ -313,7 +313,7 @@ onBeforeUnmount(() => {
             <Button
               v-if="!isInProgress && !isRestartCompleted && hasSuccessfulTasks"
               variant="secondary"
-              class="mr-4 rounded-full border-2 border-base-foreground px-3 text-base-foreground hover:bg-secondary-background-hover"
+              class="mr-4 rounded-full border-2 border-base-foreground px-3"
               @click="handleRestart"
             >
               {{ t('manager.applyChanges') }}

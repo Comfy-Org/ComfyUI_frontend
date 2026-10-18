@@ -33,10 +33,14 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  d: mockI18n.d,
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'), async () => {
+  const { createI18n } = await import('vue-i18n')
+  return {
+    d: mockI18n.d,
+    t: (key: string) => key,
+    i18n: createI18n({ legacy: false, locale: 'en' })
+  }
+})
 
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isAbortError: vi.fn()
@@ -516,6 +520,24 @@ describe('useCustomerEventsService', () => {
 
       expect(result).toBe('Duration: 5,000')
     })
+
+    it.for([
+      { charge: 33_044, expected: 'credits.charge: 7 credits.credits' },
+      { charge: '36209', expected: 'credits.charge: 8 credits.credits' },
+      {
+        charge: 10_000_000_000,
+        expected: 'credits.charge: 2,110,000 credits.credits'
+      },
+      { charge: 0, expected: 'credits.charge: 0 credits.credits' },
+      { charge: 'n/a', expected: 'Charge Micro Usd: n/a' }
+    ])(
+      'should render charge_micro_usd $charge as $expected',
+      ({ charge, expected }) => {
+        expect(
+          service.getTooltipContent(makeEvent({ charge_micro_usd: charge }))
+        ).toBe(expected)
+      }
+    )
 
     const withNothingToRender: ParamsCase[] = [
       ['params carry only non-allowlisted keys', unrenderableParams],

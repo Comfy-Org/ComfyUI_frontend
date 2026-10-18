@@ -5,11 +5,13 @@ import { ref, watch } from 'vue'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import {
   hasParamsBeyondDetailsColumn,
-  presentTooltipParamKeys
+  presentTooltipParamKeys,
+  toFiniteNumber
 } from '@/services/customerEventParams'
-import { d, t } from '@/i18n'
+import { d, i18n, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -161,11 +163,29 @@ export const useCustomerEventsService = () => {
     }
   }
 
+  function formatChargeCredits(microUsd: number) {
+    const amount = formatCreditsFromUsd({
+      usd: microUsd / 1_000_000,
+      locale: i18n.global.locale.value,
+      numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+    })
+    return `${amount} ${t('credits.credits')}`
+  }
+
+  function formatTooltipParam(key: string, value: unknown) {
+    const microUsd =
+      key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
+    if (microUsd !== undefined) {
+      return `${t('credits.charge')}: ${formatChargeCredits(microUsd)}`
+    }
+    return `${formatJsonKey(key)}: ${formatJsonValue(value)}`
+  }
+
   function getTooltipContent(event: AuditLog) {
     const params = event.params || {}
 
     return presentTooltipParamKeys(params)
-      .map((key) => `${formatJsonKey(key)}: ${formatJsonValue(params[key])}`)
+      .map((key) => formatTooltipParam(key, params[key]))
       .join('\n')
   }
 

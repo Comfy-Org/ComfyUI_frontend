@@ -8,15 +8,20 @@ import type { SkillReference } from '../../types/skillReference'
 import { parseSkillReferenceText } from '../../utils/skillReferenceText'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
-import { createAssistantMessage } from './agentMessageParts'
+import {
+  createAssistantMessage,
+  isOpenAskPart,
+  toAskOrNoticePart
+} from './agentMessageParts'
 
 type AttachmentKind = 'image' | 'video' | 'audio'
 
 /**
- * A file attached to a user turn. `ref` is the uploaded input-namespace
- * filename that resolves the preview. `name` is the label shown to the user;
- * it falls back to `ref` for legacy/unresolved rows and otherwise comes from
- * the persisted asset `display_name`.
+ * A file attached to a user turn. `previewUrl` and `mediaUrl` are captured
+ * when the turn is sent and are not rehydrated; without them, `ref`, the
+ * uploaded input-namespace filename, resolves the file. `name` is the label
+ * shown to the user; it falls back to `ref` for legacy/unresolved rows and
+ * otherwise comes from the persisted asset `display_name`.
  *
  * `id` and `kind` are the server's own resolution of that name, replayed off
  * the row's `attachment_refs`. `kind` is what lets a rehydrated attachment be
@@ -27,6 +32,7 @@ type AttachmentKind = 'image' | 'video' | 'audio'
 export interface UserAttachment {
   name: string
   previewUrl?: string
+  mediaUrl?: string
   ref?: string
   id?: string
   kind?: AttachmentKind
@@ -173,12 +179,15 @@ function parseUserWorkflowReferences(
 }
 
 /**
- * `zPersistedToolCallSummary` only ever validates a terminal
- * (`success`/`error`) row — the backend drops a row a dead turn left in
- * `pending`/`running` before persisting it. `isLive` (the row is backed by a
- * live transport) is kept only for a call that arrives through the live WebSocket path with a
- * status this schema doesn't cover; a restored (non-live) row is always
- * `done`.
+ * A persisted tool-call status is `pending`/`running` while it was still in
+ * flight when a dead turn ended, and terminal (`success`/`error`, or the
+ * older `ok` success alias — see `toolCallOk`) otherwise.
+ *
+ * A restored (non-live) row has no transport left to ever settle its tool
+ * parts, so a `pending`/`running` status there is clamped straight to
+ * `done` (never rendered as a perpetual-progress chip) rather than left
+ * spinning forever; only `isLive` (the row is the one actively backed by a
+ * live transport — the run_approval mid-ask case) keeps it `streaming`.
  */
 function toolCallPartState(
   status: unknown,
@@ -191,56 +200,128 @@ function toolCallPartState(
 /**
  * `undefined` while the call is still genuinely in progress (matching the
  * live path, which omits `ok` until a terminal status arrives); once the
- * part is in a `done` state, only `success` counts as success — `error`
- * reads as failure, matching `ToolCallSummary.status`.
+ * part is in a `done` state, `success` and the older `ok` success alias
+ * both count as success. `'ok'` is a reload-only legacy alias, not something
+ * the live path ever produces or recognizes: `zAgentToolCallData.status` in
+ * `agentApiSchema.ts` is `z.enum(['running', 'success', 'error'])`, and the
+ * live resolver (`resolveToolCallState` in `agentEventTransport.ts`) only
+ * checks `status === 'success'` — it only ever appears on rows persisted
+ * before that alias was retired. Everything else, including a restored
+ * `pending`/`running` call that had no live transport to finish it, reads as
+ * failure rather than being rendered as if it succeeded.
  */
 function toolCallOk(
   status: unknown,
   state: ToolPart['state']
 ): boolean | undefined {
   if (state === 'streaming') return undefined
-  return status === 'success'
+  return status === 'success' || status === 'ok'
+}
+
+/** A parsed tool-call entry, carrying the raw persisted `status` alongside
+ * the `ToolPart` it produced so the turn-wide dedupe in
+ * `appendAssistantContent` can tell a clamped-but-still-non-terminal entry
+ * apart from a genuinely terminal one — information the `ToolPart` itself no
+ * longer carries once `pending`/`running` has been clamped to `done`. */
+interface ParsedToolCall {
+  part: ToolPart
+  status: unknown
+}
+
+/** `true` when a live row's entry has no real `tool_call_id` to key on
+ * (missing, null, or empty). A live row will still receive a live
+ * `agent_tool_call` frame for this call, keyed by its real `tool_call_id`;
+ * seeding a part here under the audit row's own `id` instead would leave a
+ * duplicate chip behind that the later live frame can never reach, stuck
+ * `streaming` forever — the caller drops the entry rather than seed it. */
+function isLiveEntryMissingToolCallId(
+  isLive: boolean,
+  toolCallId: string | null | undefined
+): boolean {
+  return isLive && !toolCallId
+}
+
+/** `rawDuration` restricted to a finite, non-negative number; `undefined`
+ * for anything else (negative, `NaN`, `Infinity`, `null`). */
+function parseDurationMs(
+  rawDuration: number | null | undefined
+): number | undefined {
+  return typeof rawDuration === 'number' &&
+    Number.isFinite(rawDuration) &&
+    rawDuration >= 0
+    ? rawDuration
+    : undefined
+}
+
+/** The optional `ToolPart` fields that only appear when they have a value:
+ * `ok` once the call is done, `skill` when non-empty, `durationMs` once
+ * resolved to a finite, non-negative number. */
+function toolPartOptionalFields(
+  ok: boolean | undefined,
+  skill: string | null | undefined,
+  durationMs: number | undefined
+): Pick<Partial<ToolPart>, 'ok' | 'skill' | 'durationMs'> {
+  return {
+    ...(ok !== undefined ? { ok } : {}),
+    ...(skill ? { skill } : {}),
+    ...(durationMs !== undefined ? { durationMs } : {})
+  }
 }
 
 /**
- * Validates one `content.tool_calls` entry against `zPersistedToolCallSummary`
- * and maps it onto the same `ToolPart` the live WebSocket path builds from
+ * Validates one `content.tool_calls` entry against `zPersistedToolCallSummary`,
+ * picking only the fields this function actually reads (`id`/`tool_call_id`,
+ * `tool_name`, `status`, `duration_ms`, `skill`) so an unrelated field a real
+ * historical row gets wrong or omits (e.g. `started_at`/`finished_at`,
+ * which are never read) can't sink an otherwise-usable entry. Maps a valid
+ * entry onto the same `ToolPart` the live WebSocket path builds from
  * `agent_tool_call` events, so a reloaded transcript renders through the
  * identical work-summary UI as a live turn. `undefined` for anything that
- * doesn't validate (missing `id`/`tool_call_id`/`tool_name`, wrong types, ...).
+ * doesn't validate (missing `id`/`tool_name`, wrong types, ...) or for a live
+ * row's id-only entry (see `isLiveEntryMissingToolCallId`).
  */
 function parseToolCallEntry(
   entry: unknown,
   isLive: boolean
-): ToolPart | undefined {
-  const parsed = zPersistedToolCallSummary.safeParse(entry)
+): ParsedToolCall | undefined {
+  const parsed = zPersistedToolCallSummary
+    .pick({
+      id: true,
+      tool_call_id: true,
+      tool_name: true,
+      status: true,
+      duration_ms: true,
+      skill: true
+    })
+    .safeParse(entry)
   if (!parsed.success) return undefined
   const {
+    id,
     tool_call_id: toolCallId,
     tool_name: toolName,
     status,
     skill,
     duration_ms: rawDuration
   } = parsed.data
+  if (isLiveEntryMissingToolCallId(isLive, toolCallId)) return undefined
   const state = toolCallPartState(status, isLive)
   const ok = toolCallOk(status, state)
-  const durationMs =
-    typeof rawDuration === 'number' &&
-    Number.isFinite(rawDuration) &&
-    rawDuration >= 0
-      ? rawDuration
-      : undefined
+  const durationMs = parseDurationMs(rawDuration)
   return {
-    type: 'tool',
-    // A live `agent_tool_call` frame keys its update on `tool_call_id`, so a
-    // restored part uses the same id to match a live frame that arrives for
-    // it later.
-    callId: toolCallId,
-    name: toolName,
-    state,
-    ...(ok !== undefined ? { ok } : {}),
-    ...(skill ? { skill } : {}),
-    ...(durationMs !== undefined ? { durationMs } : {})
+    status,
+    part: {
+      type: 'tool',
+      // A live `agent_tool_call` frame keys its update on `tool_call_id`, not
+      // this row's own `id` — prefer it so a restored part matches a live
+      // frame that arrives for it later. Falls back to `id` only for rows
+      // recorded before `tool_call_id` existed; `||`, not `??`, so an empty
+      // string (as genuinely id-less as a missing field) falls back too
+      // instead of colliding every empty-`tool_call_id` entry on `''`.
+      callId: toolCallId || id,
+      name: toolName,
+      state,
+      ...toolPartOptionalFields(ok, skill, durationMs)
+    }
   }
 }
 
@@ -253,16 +334,38 @@ function parseToolCallEntry(
 function parseToolCalls(
   content: Record<string, unknown> | undefined,
   isLive: boolean
-): ToolPart[] | undefined {
+): ParsedToolCall[] | undefined {
   const raw = content?.tool_calls
   if (!Array.isArray(raw)) return undefined
-  const parts = new Map<string, ToolPart>()
+  const parsedByCallId = new Map<string, ParsedToolCall>()
   for (const entry of raw as unknown[]) {
-    const part = parseToolCallEntry(entry, isLive)
-    if (part) parts.set(part.callId, part)
+    const parsed = parseToolCallEntry(entry, isLive)
+    if (parsed) parsedByCallId.set(parsed.part.callId, parsed)
   }
-  return parts.size > 0 ? [...parts.values()] : undefined
+  return parsedByCallId.size > 0 ? [...parsedByCallId.values()] : undefined
 }
+
+/** A persisted tool-call `status` of `pending`/`running` is still in flight;
+ * anything else (`success`/`error`/`ok`, or an unrecognized string) is
+ * terminal — settled for good, independent of `isLive` clamping. This
+ * includes `undefined`: a tool part that reached `message.parts` through a
+ * path this module doesn't track in `toolCallStatusByMessage` has no known
+ * status, and the conservative default is to treat it as already settled so
+ * `appendAssistantContent`'s dedupe never overwrites it. */
+function isTerminalStatus(status: unknown): boolean {
+  return status !== 'pending' && status !== 'running'
+}
+
+/** Per-message memory of each tool call's last-applied raw `status`, keyed by
+ * `callId`. `appendAssistantContent` consults and updates this across a
+ * turn's rows (a turn can span several assistant rows) so a later row's
+ * terminal status can overwrite an earlier row's still-non-terminal part for
+ * the same call, instead of the position-preserving dedupe below always
+ * keeping whichever row it saw first. */
+const toolCallStatusByMessage = new WeakMap<
+  AssistantMessage,
+  Map<string, unknown>
+>()
 
 /**
  * Appends a persisted assistant row's tool-call and text parts onto its
@@ -275,9 +378,14 @@ function parseToolCalls(
  * `assistants.get(turnId)` in `recordAssistantRow`), but `parseToolCalls`
  * only dedupes within one row's own list — two rows of the same turn that
  * each carry the same `callId` would otherwise still produce two separate
- * `ToolPart`s. Dedupe is hoisted here to the message level — a parsed part
- * whose `callId` already appears in `message.parts` is dropped — matching
- * the live path's turn-wide keying.
+ * `ToolPart`s. Dedupe is hoisted here to the message level: a parsed part
+ * whose `callId` already appears in `message.parts` normally keeps the
+ * earlier part's position and data (matching the live path's turn-wide
+ * keying), *unless* the earlier part's status was still non-terminal
+ * (`pending`/`running`) and this row's is terminal — e.g. a row recorded
+ * while a call was paused on a run-approval ask, followed by a later row
+ * that settled it — in which case the later, terminal entry replaces the
+ * earlier one in place rather than losing to it.
  */
 function appendAssistantContent(
   message: AssistantMessage,
@@ -287,50 +395,37 @@ function appendAssistantContent(
 ): void {
   const toolCalls = parseToolCalls(row.content, isLive)
   if (toolCalls) {
-    const existingCallIds = new Set(
-      message.parts.flatMap((part) =>
-        part.type === 'tool' ? [part.callId] : []
+    let statusByCallId = toolCallStatusByMessage.get(message)
+    if (!statusByCallId) {
+      statusByCallId = new Map()
+      toolCallStatusByMessage.set(message, statusByCallId)
+    }
+    let parts = message.parts
+    const appended: ToolPart[] = []
+    for (const { part, status } of toolCalls) {
+      const existingIndex = parts.findIndex(
+        (existing) =>
+          existing.type === 'tool' && existing.callId === part.callId
       )
-    )
-    const newToolCalls = toolCalls.filter(
-      (part) => !existingCallIds.has(part.callId)
-    )
-    message.parts = [...message.parts, ...newToolCalls]
+      if (existingIndex === -1) {
+        appended.push(part)
+        statusByCallId.set(part.callId, status)
+        continue
+      }
+      const existingStatus = statusByCallId.get(part.callId)
+      if (!isTerminalStatus(existingStatus) && isTerminalStatus(status)) {
+        parts = parts.map((existing, index) =>
+          index === existingIndex ? part : existing
+        )
+        statusByCallId.set(part.callId, status)
+      }
+    }
+    message.parts = appended.length > 0 ? [...parts, ...appended] : parts
   }
   if (text)
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
-/**
- * A row's `pending_ask` carries a `run_approval` context only while that row
- * is still mid-ask; this reads it into the flat shape the `runApproval` part
- * renders, or `undefined` once the ask is resolved or absent.
- */
-function pendingRunApproval(
-  row: AgentMessages[number]
-): { askId: string; workflowId?: string; workflowName?: string } | undefined {
-  const ask = row.pending_ask
-  if (ask?.kind !== 'run_approval') return undefined
-  return {
-    askId: ask.ask_id,
-    workflowId: ask.context?.workflow_id || undefined,
-    workflowName: ask.context?.workflow_name || undefined
-  }
-}
-
-/**
- * Applies one persisted assistant row onto its running message: appends any
- * parsed tool-call parts and text part, then, for a row the server still
- * reports as `streaming`, attaches a `runApproval` part when that row is also
- * mid-ask. Returns the `pending` entry for a live row, or `undefined` for a
- * terminal one; `normalizeAgentTranscript` owns `message.streaming` itself.
- *
- * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
- * still running. Reading a live row as finished unless it carried a
- * `pending_ask` left every client that hydrates mid-turn — a reopened panel,
- * a refreshed tab — showing a completed transcript and offering Send for a
- * thread the server answers with 409.
- */
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
@@ -342,8 +437,7 @@ function applyAssistantRow(
 
   if (!isLive) return undefined
 
-  const runApproval = pendingRunApproval(row)
-  if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
+  if (row.pending_ask) message.parts.push(toAskOrNoticePart(row.pending_ask))
   return { messageId: toTurnId(row.id), message }
 }
 
@@ -426,18 +520,9 @@ function recordAssistantRow(
   return rowPending
 }
 
-/**
- * Strips the liveness a row's `streaming` status granted a message that turns
- * out not to be getting a transport. The parts matter as much as the flag,
- * and both kinds this row could have been granted are settled here because a
- * transport is the only thing that could have settled either: a still-running
- * tool call is clamped, and a `runApproval` ask is dropped the way
- * `agent_ask_resolved` drops it -- left in place it renders an enabled card
- * whose answer would be posted against a turn that is no longer active.
- */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
-  message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+  message.parts = message.parts.filter((part) => !isOpenAskPart(part))
   for (const part of message.parts) {
     if (part.type !== 'tool' || part.state !== 'streaming') continue
     part.state = 'done'

@@ -154,6 +154,12 @@ const CAPABILITIES = {
     can_downgrade_to_personal: false,
     can_invite_members: false,
     can_manage_members: false,
+    can_delete_workspace: false,
+    can_leave_workspace: false,
+    can_manage_billing: false,
+    can_manage_partner_node_access: false,
+    can_view_pending_invites: false,
+    can_view_team_usage: false,
     can_reactivate: true,
     can_revert_scheduled_change: false,
     can_subscribe_self_serve: true,
@@ -341,6 +347,18 @@ async function driveDowngrade() {
     ...permissions.value,
     canDowngradeToPersonal: true
   }))
+  Object.assign(useTeamWorkspaceStore(), {
+    members: [
+      {
+        id: 'owner',
+        name: 'Owner',
+        email: 'owner@example.com',
+        joinDate: new Date('2026-01-01T00:00:00Z'),
+        role: 'owner',
+        isOriginalOwner: true
+      }
+    ]
+  })
   await useDowngradeToPersonal()
     .downgradeToPersonal('standard-yearly')
     .catch(() => undefined)

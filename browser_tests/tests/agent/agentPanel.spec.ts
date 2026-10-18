@@ -61,7 +61,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test('shows the greeting, inserts a suggested prompt, and completes a chat turn', async ({
     agentPanel,
     postedMessages,
-    getWebSocket
+    getAgentSocket
   }) => {
     test.setTimeout(30_000)
 
@@ -86,7 +86,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       'inserting a prompt must not POST a message'
     ).toHaveLength(0)
 
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
     await sendButton.click()
     await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
     expect(postedMessages[0]).toContain(firstPrompt)
@@ -225,31 +225,30 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     agentBilling,
     agentPanel,
     comfyPage,
-    getWebSocket,
+    getAgentSocket,
     postedMessages
   }) => {
     test.setTimeout(30_000)
     const page = comfyPage.page
     const paywall = page.getByTestId('agent-credits-exhausted-paywall')
-    const ws = await getWebSocket()
 
     await test.step('show the standing paywall after an accepted turn exhausts credits', async () => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
-      agentBilling.setAgentFunds(false)
+      agentBilling.setFundingState('exhausted')
       await agentPanel.sendMessage('Complete this workflow without a refusal')
       await expect.poll(() => postedMessages.length).toBe(1)
-      pushEvent(ws, THINKING_EVENT)
+      pushEvent(await getAgentSocket(), THINKING_EVENT)
       await expect(
         agentPanel.root.getByRole('button', { name: enMessages.agent.stop })
       ).toBeVisible()
       await expect(paywall).toHaveCount(0)
-      pushEvent(ws, MESSAGE_DONE_EVENT)
+      pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
       await expect(paywall).toBeVisible()
     })
 
     await test.step('finish the funded recovery while the panel is closed', async () => {
-      agentBilling.setAgentFunds(true)
+      agentBilling.setFundingState('funded')
       const recovery = agentBilling.holdNextFundedRefresh()
       await paywall
         .getByRole('button', { name: enMessages.agent.paywall.addCredits })
@@ -271,7 +270,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('show the standing paywall after a second exhaustion', async () => {
-      agentBilling.setAgentFunds(false)
+      agentBilling.setFundingState('exhausted')
       await agentPanel.sendMessage(
         'Complete another workflow without a refusal'
       )
@@ -280,7 +279,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       const secondTurn = acceptedTurns.at(-1)
       assert(secondTurn)
       pushEvent(
-        ws,
+        await getAgentSocket(),
         zAgentWsEvent.parse({
           ...THINKING_EVENT,
           data: { ...THINKING_EVENT.data, message_id: secondTurn.message_id }
@@ -290,7 +289,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         agentPanel.root.getByRole('button', { name: enMessages.agent.stop })
       ).toBeVisible()
       pushEvent(
-        ws,
+        await getAgentSocket(),
         zAgentWsEvent.parse({
           ...MESSAGE_DONE_EVENT,
           data: {
@@ -303,7 +302,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('remove the standing paywall after the final funded refresh', async () => {
-      agentBilling.setAgentFunds(true)
+      agentBilling.setFundingState('funded')
       await paywall
         .getByRole('button', { name: enMessages.agent.paywall.addCredits })
         .click()
@@ -385,7 +384,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     test('copies retained tool metadata with privacy sources turned off', async ({
       agentPanel,
       comfyPage,
-      getWebSocket
+      getAgentSocket
     }) => {
       await test.step('turn off every optional privacy source', async () => {
         await agentPanel.open()
@@ -406,7 +405,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
         ).toHaveText('private diagnostic prompt')
-        const ws = await getWebSocket()
+        const ws = await getAgentSocket()
         pushEvent(ws, THINKING_EVENT)
         await expect(
           agentPanel.root.getByText(THINKING_TEXT, { exact: true })
@@ -612,12 +611,17 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.open()
     const panel = page.locator('#agent-panel-root')
     const fileInput = panel.getByTestId('agent-file-input')
+    function mp4Buffer(size: number) {
+      const buffer = Buffer.alloc(size)
+      buffer.write('ftyp', 4, 'ascii')
+      return buffer
+    }
 
     const uploadResponse = page.waitForResponse('**/api/upload/image')
     await fileInput.setInputFiles({
       name: 'movie.mp4',
       mimeType: 'video/mp4',
-      buffer: Buffer.alloc(21 * 1024 * 1024)
+      buffer: mp4Buffer(21 * 1024 * 1024)
     })
     expect((await uploadResponse).ok()).toBe(true)
     await expect(
@@ -630,7 +634,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await fileInput.setInputFiles({
       name: 'too-large.mp4',
       mimeType: 'video/mp4',
-      buffer: Buffer.alloc(25 * 1024 * 1024)
+      buffer: mp4Buffer(25 * 1024 * 1024)
     })
     await expect(
       comfyPage.toast.withText('too-large.mp4 is larger than 24 MB')
@@ -665,7 +669,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test('edits and resubmits the last prompt after stopping its turn', async ({
     agentPanel,
     postedMessages,
-    getWebSocket
+    getAgentSocket
   }) => {
     await agentPanel.open()
     await agentPanel.selectWorkflow()
@@ -687,7 +691,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       panel.getByRole('button', { name: enMessages.g.edit })
     ).toHaveCount(0)
 
-    pushEvent(await getWebSocket(), MESSAGE_DONE_EVENT)
+    pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
     const editButton = panel.getByRole('button', { name: enMessages.g.edit })
     await expect(editButton).toHaveCount(1)
     await expect(editButton).toHaveCSS('pointer-events', 'none')

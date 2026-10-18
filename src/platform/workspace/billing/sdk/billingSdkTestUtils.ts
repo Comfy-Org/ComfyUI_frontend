@@ -153,7 +153,6 @@ export function fakeBillingSdk() {
       cancelOperation: vi.fn(),
       openPaymentPortal: vi.fn()
     },
-    driveChallenge: vi.fn(async () => 'completed' as const),
     dispose: vi.fn()
   }
 

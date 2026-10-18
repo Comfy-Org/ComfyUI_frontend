@@ -34,7 +34,8 @@ const sizeToggleLabel = computed(() =>
     <div class="flex items-center gap-1">
       <h1
         id="agent-panel-title"
-        class="my-0 text-sm font-normal whitespace-nowrap text-base-foreground"
+        data-testid="agent-panel-title"
+        class="my-0 text-sm font-normal whitespace-nowrap"
       >
         {{ t('agent.title') }}
       </h1>
@@ -65,7 +66,7 @@ const sizeToggleLabel = computed(() =>
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
-        <span class="icon-[lucide--message-circle-plus] size-4" />
+        <span class="icon-[lucide--plus] size-4" />
       </Button>
       <Button
         :tooltip="sizeToggleLabel"

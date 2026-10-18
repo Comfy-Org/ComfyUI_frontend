@@ -18,7 +18,10 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { createDevAgentConfig } from './build/devAgentConfig.ts'
+import {
+  createDevAgentConfig,
+  devServerAgentRoutes
+} from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 import {
   hasCompleteSentryUploadConfig,
@@ -341,7 +344,10 @@ export default defineConfig({
           }
         : {}),
 
-      ...(devAgentConfig.proxy ? { '/api/agent': devAgentConfig.proxy } : {}),
+      ...devServerAgentRoutes(devAgentConfig.proxy, {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig
+      }),
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
@@ -711,11 +717,6 @@ export default defineConfig({
 
             // UI component libraries
             {
-              name: 'vendor-primevue',
-              test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
-              priority: 15
-            },
-            {
               name: 'vendor-reka-ui',
               test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
               priority: 15
@@ -803,7 +804,10 @@ export default defineConfig({
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
-    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
+    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY),
+    'import.meta.env.VITE_DEV_AGENT_PROXY_CREDENTIAL': JSON.stringify(
+      devAgentConfig.proxySuppliesCredential ? 'true' : ''
+    )
   },
 
   resolve: {

@@ -120,7 +120,7 @@
           v-if="interactive"
           variant="secondary"
           size="lg"
-          class="relative shrink-0"
+          class="shrink-0"
           @click.stop="handleSelect"
         >
           {{ $t('g.use') }}

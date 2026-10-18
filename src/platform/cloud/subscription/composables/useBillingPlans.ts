@@ -140,7 +140,9 @@ export function useBillingPlans() {
     }
 
     const request: Promise<void> = (
-      rail ? readOnRail(rail.readPlans) : workspaceApi.getBillingPlans()
+      rail
+        ? readOnRail(rail.readPlans, 'getBillingPlans')
+        : workspaceApi.getBillingPlans()
     )
       .then((response) => {
         if (fetchPromise !== request) return fetchPromise ?? undefined

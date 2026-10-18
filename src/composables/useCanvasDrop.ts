@@ -12,17 +12,17 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { ComfyModelDef } from '@/stores/modelStore'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { isSelectOnly } from '@/utils/litegraphUtil'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 
-export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
+export const useCanvasDrop = (dropTargetRef: Ref<HTMLElement | null>) => {
   const modelToNodeStore = useModelToNodeStore()
   const litegraphService = useLitegraphService()
   const workflowService = useWorkflowService()
 
-  usePragmaticDroppable(() => canvasRef.value, {
+  usePragmaticDroppable(() => dropTargetRef.value, {
     getDropEffect: (args): Exclude<DataTransfer['dropEffect'], 'none'> =>
       args.source.data.type === 'tree-explorer-node' ? 'copy' : 'move',
     onDrop: async (event) => {

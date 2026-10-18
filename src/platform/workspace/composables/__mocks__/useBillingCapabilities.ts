@@ -1,6 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { useBillingCapabilities as realUseBillingCapabilities } from '../useBillingCapabilities'
 
 const defaults: ReturnType<typeof realUseBillingCapabilities> = {
@@ -8,9 +9,20 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canSubscribeSelfServe: computed(() => false),
   canCancel: computed(() => false),
   canReactivate: computed(() => false),
+  canRevertScheduledChange: computed(() =>
+    receiveServerFact('can_revert_scheduled_change', false)
+  ),
   canChangeSeats: computed(() => false),
-  canManageMembers: computed(() => false),
-  canInviteMembers: computed(() => false),
+  canManageMembers: computed(() =>
+    receiveServerFact('can_manage_members', false)
+  ),
+  canInviteMembers: computed(() =>
+    receiveServerFact('can_invite_members', false)
+  ),
+  canDeleteWorkspace: computed(() =>
+    receiveServerFact('can_delete_workspace', false)
+  ),
+  deleteWorkspaceDenial: computed(() => undefined),
   canDowngradeToPersonal: computed(() => false),
   isReady: computed(() => true),
   hasResolvedCapabilities: computed(() => true),
