@@ -24,7 +24,8 @@ const bodyKeys: Record<AgentPaywallPresentation['kind'], string> = {
   member: 'agent.paywall.body.member',
   salesManaged: 'agent.paywall.body.salesManaged',
   local: 'agent.paywall.body.local',
-  unavailable: 'agent.paywall.body.subscriptionRequired'
+  unavailable: 'agent.paywall.body.subscriptionRequired',
+  unresolved: 'agent.paywall.body.subscriptionRequired'
 }
 const bodyKey = computed(() => bodyKeys[presentation.kind])
 const showUpgrade = computed(
@@ -53,7 +54,11 @@ const showAddCredits = computed(
           {{ $t('agent.paywall.title') }}
         </p>
         <p class="m-0 text-muted-foreground">
-          {{ message || $t(bodyKey) }}
+          {{
+            presentation.kind === 'unavailable' && message
+              ? message
+              : $t(bodyKey)
+          }}
         </p>
       </div>
     </div>
