@@ -20,9 +20,10 @@
         <div class="flex w-full items-start gap-2 pr-8">
           <i
             aria-hidden="true"
+            data-testid="error-overlay-icon"
             :class="
               cn(
-                'mt-0.5 size-4 shrink-0',
+                'mt-0.5 size-5 shrink-0',
                 hasError
                   ? 'icon-[lucide--circle-x] text-destructive-background'
                   : 'icon-[lucide--triangle-alert] text-warning-foreground'
@@ -41,7 +42,11 @@
           class="flex w-full items-start gap-2 pr-8"
           data-testid="error-overlay-messages"
         >
-          <span class="size-4 shrink-0" aria-hidden="true" />
+          <span
+            data-testid="error-overlay-message-spacer"
+            class="size-5 shrink-0"
+            aria-hidden="true"
+          />
           <p
             class="m-0 line-clamp-3 min-w-0 flex-1 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
@@ -49,19 +54,27 @@
           </p>
         </div>
 
-        <div class="flex w-full items-center justify-end pt-2">
+        <div class="flex w-full items-center justify-end gap-2 pt-2">
           <Button
-            variant="secondary"
-            size="unset"
-            class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
+            variant="textonly"
+            size="sm"
             data-testid="error-overlay-see-errors"
-            @click="viewErrorsInGraph"
+            @click="viewDetails"
           >
             {{
               appMode
                 ? t('linearMode.error.goto')
                 : t('errorOverlay.viewDetails')
             }}
+          </Button>
+          <Button
+            v-if="canAskAgent && askAgentContext"
+            variant="secondary"
+            size="sm"
+            data-testid="error-overlay-ask-agent"
+            @click="askAgent"
+          >
+            {{ t('errorOverlay.askAgent') }}
           </Button>
         </div>
 
@@ -88,17 +101,36 @@ import Button from '@/components/ui/button/Button.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
+const { canAskAgent, askAgentAboutIssues } = useAskAgentAboutIssues()
 
-const { hasError, isVisible, overlayMessage, overlayTitle } =
-  useErrorOverlayState()
+const {
+  hasError,
+  isVisible,
+  overlayMessage,
+  overlayTitle,
+  overlayGroupKeys,
+  askAgentContext
+} = useErrorOverlayState()
 
 function dismiss() {
+  executionErrorStore.dismissErrorOverlay()
+}
+
+function viewDetails() {
+  viewErrorsInGraph(overlayGroupKeys.value)
+}
+
+function askAgent() {
+  const context = askAgentContext.value
+  if (!context) return
+  askAgentAboutIssues(context)
   executionErrorStore.dismissErrorOverlay()
 }
 </script>

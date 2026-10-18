@@ -9,6 +9,10 @@ import type {
   MissingPackGroup,
   SwapNodeGroup
 } from '@/components/rightSidePanel/errors/useErrorGroups'
+import {
+  buildAllErrorContext,
+  buildGroupErrorContext
+} from '@/components/rightSidePanel/errors/buildAgentErrorContext'
 import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
@@ -197,6 +201,28 @@ export function useErrorOverlayState() {
 
   const overlayTitle = computed(() => overlayCopy.value?.title ?? '')
 
+  const overlayGroupKeys = computed(() =>
+    allErrorGroups.value.map((group) => group.groupKey)
+  )
+
+  const askAgentContext = computed(() => {
+    const groups = allErrorGroups.value
+    if (groups.length === 0) return undefined
+    const context = {
+      missingPackGroups: missingPackGroups.value,
+      swapNodeGroups: swapNodeGroups.value,
+      missingModelGroups: missingModelGroups.value,
+      missingMediaGroups: missingMediaGroups.value
+    }
+    const base =
+      groups.length === 1
+        ? buildGroupErrorContext(groups[0], context)
+        : buildAllErrorContext(groups, context, {
+            label: t('agent.errorContext.allLabel')
+          })
+    return overlayTitle.value ? { ...base, label: overlayTitle.value } : base
+  })
+
   const isVisible = computed(
     () =>
       isErrorOverlayOpen.value &&
@@ -209,6 +235,8 @@ export function useErrorOverlayState() {
     hasError,
     isVisible,
     overlayMessage,
-    overlayTitle
+    overlayTitle,
+    overlayGroupKeys,
+    askAgentContext
   }
 }
