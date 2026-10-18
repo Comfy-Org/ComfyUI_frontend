@@ -774,14 +774,22 @@ function startAgentCrdtFollower(
   function notifyStaleClient(
     detail: { workflowId?: string; found?: unknown } | null
   ): void {
-    const found = newerDocSchema(detail?.found)
+    const found = detail?.found
+    const skew = docSchemaSkew(found)
     const workflowId = detail?.workflowId
-    if (found === null || workflowId === undefined) return
+    if (skew === null || workflowId === undefined) return
     if (staleClientNotified.has(workflowId)) return
     staleClientNotified.add(workflowId)
+    if (skew === 'newer') {
+      events.onSyncError?.(
+        `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
+        'stale_client_schema'
+      )
+      return
+    }
     events.onSyncError?.(
-      `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
-      'stale_client_schema'
+      `document schema v${found} is older than this page reads (v${SCHEMA_VERSION})`,
+      'stale_host_schema'
     )
   }
   const onGap: EventListener = (event) => {
@@ -1047,6 +1055,9 @@ function startAgentCrdtFollower(
   }
 }
 
-function newerDocSchema(found: unknown): number | null {
-  return typeof found === 'number' && found > SCHEMA_VERSION ? found : null
+function docSchemaSkew(found: unknown): 'newer' | 'older' | null {
+  if (typeof found !== 'number') return null
+  if (found > SCHEMA_VERSION) return 'newer'
+  if (found > 0 && found < SCHEMA_VERSION) return 'older'
+  return null
 }
