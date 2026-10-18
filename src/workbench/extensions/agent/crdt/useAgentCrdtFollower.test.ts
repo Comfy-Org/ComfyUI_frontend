@@ -857,6 +857,59 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('keeps an integrated reconnect stale while a failed projection cannot retry', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      bridge().isSubscribeBaselineIntegrated = true
+      projectionState.hasPendingFailure.mockReturnValue(true)
+
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      expect(projectionState.retryFailed).toHaveBeenLastCalledWith('wf-1')
+      expect(status().canvasMayBeStale).toBe(true)
+      unmount()
+    })
+
+    it('withholds the canvas after a live projection failure until a later frame retries it', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: false
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      projectionState.retryFailed.mockReturnValueOnce(projectionState.applied())
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: false
+      })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
     it('reports a terminal timeout once the silent-subscribe budget is spent', () => {
       const { unmount, status } = mountFollower('wf-1')
       dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
