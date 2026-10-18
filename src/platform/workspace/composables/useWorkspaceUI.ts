@@ -5,12 +5,18 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
-import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+
+type BillingCapabilities = ReturnType<typeof useBillingCapabilities>
+
+interface ServedPermissionFacts {
+  canLeaveWorkspace: BillingCapabilities['canLeaveWorkspace']['value']
+  canManageSubscription: BillingCapabilities['canManageSubscription']['value']
+  canDowngradeToPersonal: BillingCapabilities['canDowngradeToPersonal']['value']
+}
 
 /** Permission flags for workspace actions */
 interface WorkspacePermissions {
@@ -41,15 +47,15 @@ interface WorkspaceUIConfig {
 function getPermissions(
   type: WorkspaceType,
   role: WorkspaceRole,
-  hasActiveWorkspace: boolean,
-  canLeaveWorkspace: ServerFact<'can_leave_workspace'>,
-  canDowngradeToPersonal: boolean
+  {
+    canLeaveWorkspace,
+    canManageSubscription,
+    canDowngradeToPersonal
+  }: ServedPermissionFacts
 ): WorkspacePermissions {
-  const canManageBilling =
-    hasActiveWorkspace && pendingServerFact('BE-20308', role === 'owner')
   const billingPermissions = {
-    canManageSubscription: canManageBilling,
-    canManageSubscriptionLifecycle: canManageBilling,
+    canManageSubscription,
+    canManageSubscriptionLifecycle: canManageSubscription,
     canDowngradeToPersonal
   }
 
@@ -170,44 +176,24 @@ function useWorkspaceUIInternal() {
     canSubscribeSelfServe,
     snapshotAuthoritative,
     canLeaveWorkspace,
+    canManageSubscription,
     canDowngradeToPersonal
   } = useBillingCapabilities()
 
   const permissions = computed<WorkspacePermissions>(() =>
-    getPermissions(
-      workspaceType.value,
-      workspaceRole.value,
-      store.activeWorkspace !== null,
-      canLeaveWorkspace.value,
-      canDowngradeToPersonal.value
-    )
+    getPermissions(workspaceType.value, workspaceRole.value, {
+      canLeaveWorkspace: canLeaveWorkspace.value,
+      canManageSubscription: canManageSubscription.value,
+      canDowngradeToPersonal: canDowngradeToPersonal.value
+    })
   )
 
-  // legacy_stripe workspaces have no capability projection row, so the
-  // server-resolved can_reactivate is false for them and cannot gate the
-  // action; that rail stays on the membership check.
-  //
-  // Every reactivation surface reads this — the affordances and the handlers
-  // that execute them. They must not diverge: an affordance shown on a
-  // condition the handler does not share offers an action that silently fails,
-  // and the reverse hides a working one.
   const canReactivatePlan = computed(() =>
     isCloud && shouldUseWorkspaceBilling.value
       ? canReactivate.value
       : permissions.value.canManageSubscriptionLifecycle
   )
 
-  // Whether the self-serve pricing catalog applies to this workspace at all.
-  // The server resolves can_subscribe_self_serve false for sales-managed tiers
-  // (Enterprise, unrecognized), so every pricing-table entry point — menu
-  // items, settings links, and the ?pricing= deep link — reads this one value.
-  // Same rail split as canReactivatePlan: legacy_stripe has no capability
-  // projection row and stays on the membership check.
-  //
-  // Opening the catalog is navigation, not a billing write — every checkout
-  // endpoint enforces its own policy — so an absent snapshot falls back to
-  // membership rather than stranding a self-serve owner with no route to a
-  // plan. This mirrors canTopUp, which already fails open for owners.
   const canOpenPricingSurface = computed(() => {
     if (!isCloud || !shouldUseWorkspaceBilling.value)
       return permissions.value.canManageSubscription

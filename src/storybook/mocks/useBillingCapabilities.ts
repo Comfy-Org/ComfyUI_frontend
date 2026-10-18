@@ -10,6 +10,7 @@ interface BillingCapabilitiesMockState {
   canManageMembers: boolean
   canInviteMembers: boolean
   canLeaveWorkspace: boolean
+  canManageSubscription: boolean
   canDowngradeToPersonal: boolean
 }
 
@@ -22,6 +23,7 @@ const defaultCapabilityState: BillingCapabilitiesMockState = {
   canManageMembers: true,
   canInviteMembers: true,
   canLeaveWorkspace: true,
+  canManageSubscription: true,
   canDowngradeToPersonal: true
 }
 const capabilityState = reactive<BillingCapabilitiesMockState>({
@@ -61,6 +63,12 @@ export function useBillingCapabilities() {
       receiveServerFact(
         'can_leave_workspace',
         capabilityState.canLeaveWorkspace
+      )
+    ),
+    canManageSubscription: computed(() =>
+      receiveServerFact(
+        'can_manage_subscription',
+        capabilityState.canManageSubscription
       )
     ),
     canDowngradeToPersonal: computed(

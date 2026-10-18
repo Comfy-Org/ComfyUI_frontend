@@ -7,7 +7,6 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
@@ -18,6 +17,7 @@ const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockMemberCreditLimitsEnabled = vi.hoisted(() => ({ value: false }))
 const mockCanReactivate = ref(false)
 const mockCanLeaveWorkspace = ref(false)
+const mockCanManageSubscription = ref(false)
 const mockCanDowngradeToPersonal = ref(false)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -87,6 +87,7 @@ function resetStore() {
   mockMemberCreditLimitsEnabled.value = false
   mockCanReactivate.value = false
   mockCanLeaveWorkspace.value = false
+  mockCanManageSubscription.value = false
   mockCanDowngradeToPersonal.value = false
   mockIsCloud.value = true
   mockShouldUseWorkspaceBilling.value = true
@@ -125,9 +126,8 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
     )
     Object.assign(useBillingCapabilities(), {
       canReactivate: computed(() => mockCanReactivate.value),
-      canLeaveWorkspace: computed(() =>
-        receiveServerFact('can_leave_workspace', mockCanLeaveWorkspace.value)
-      ),
+      canLeaveWorkspace: computed(() => mockCanLeaveWorkspace.value),
+      canManageSubscription: computed(() => mockCanManageSubscription.value),
       canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
       canSubscribeSelfServe: computed(() => true),
       snapshotAuthoritative: computed(() => true)
@@ -140,16 +140,11 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
   })
 
   describe('when no active workspace', () => {
-    it('fails billing permissions closed', async () => {
-      mockIsTeamPlan.value = true
+    it('falls back to the personal owner layout', async () => {
       const ui = await loadComposable()
 
       expect(ui.workspaceType.value).toBe('personal')
       expect(ui.workspaceRole.value).toBe('owner')
-      expect(ui.permissions.value).toMatchObject({
-        canManageSubscription: false,
-        canManageSubscriptionLifecycle: false
-      })
       expect(ui.permissions.value.canViewOtherMembers).toBe(false)
       expect(ui.permissions.value.canLeaveWorkspace).toBe(false)
       expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(false)
@@ -164,13 +159,11 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       })
     })
 
-    it('grants billing access with personal workspace visibility', async () => {
+    it('hides other members from the personal owner', async () => {
       const ui = await loadComposable()
 
       expect(ui.workspaceType.value).toBe('personal')
       expect(ui.permissions.value).toMatchObject({
-        canManageSubscription: true,
-        canManageSubscriptionLifecycle: true,
         canViewOtherMembers: false,
         canViewPendingInvites: false,
         canLeaveWorkspace: false,
@@ -190,9 +183,7 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
         canViewOtherMembers: true,
         canViewPendingInvites: false,
         canLeaveWorkspace: true,
-        canAccessWorkspaceMenu: true,
-        canManageSubscription: false,
-        canManageSubscriptionLifecycle: false
+        canAccessWorkspaceMenu: true
       })
       expect(ui.uiConfig.value).toMatchObject({
         showEditWorkspaceMenuItem: false,
@@ -232,7 +223,7 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       })
     })
 
-    it('grants full management permissions', async () => {
+    it('shows members and pending invites to the team owner', async () => {
       mockCanLeaveWorkspace.value = true
       const ui = await loadComposable()
 
@@ -242,9 +233,7 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
         canViewOtherMembers: true,
         canViewPendingInvites: true,
         canLeaveWorkspace: true,
-        canAccessWorkspaceMenu: true,
-        canManageSubscription: true,
-        canManageSubscriptionLifecycle: true
+        canAccessWorkspaceMenu: true
       })
     })
 
@@ -294,7 +283,7 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       mockIsTeamPlan.value = true
     })
 
-    it('restricts management actions while allowing leave', async () => {
+    it('hides pending invites from a team member allowed to leave', async () => {
       mockCanLeaveWorkspace.value = true
       const ui = await loadComposable()
 
@@ -303,9 +292,7 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
         canViewOtherMembers: true,
         canViewPendingInvites: false,
         canLeaveWorkspace: true,
-        canAccessWorkspaceMenu: true,
-        canManageSubscription: false,
-        canManageSubscriptionLifecycle: false
+        canAccessWorkspaceMenu: true
       })
     })
 
@@ -325,92 +312,68 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
     })
   })
 
-  describe('subscription lifecycle', () => {
-    it('grants lifecycle to an owner', async () => {
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspace: teamOwnerWorkspace
-      })
-      mockIsTeamPlan.value = true
-      const ui = await loadComposable()
-      expect(ui.permissions.value.canManageSubscription).toBe(true)
-      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(true)
-    })
-
-    it('withholds lifecycle from members', async () => {
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspace: teamMemberWorkspace
-      })
-      const ui = await loadComposable()
-      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
-    })
-  })
-
   describe('server-fact gates', () => {
-    const workspaces = [
-      ['a personal owner', personalWorkspace],
-      ['a personal member', personalMemberWorkspace],
-      ['a team owner', teamOwnerWorkspace],
-      ['a team member', teamMemberWorkspace]
-    ] as const
+    const served = { leave: true, manage: true, downgrade: true }
+    const withheld = { leave: false, manage: false, downgrade: false }
+    const factRows = [
+      { facts: 'all served', ...served },
+      { facts: 'all withheld', ...withheld },
+      { facts: 'only can_leave_workspace', ...withheld, leave: true },
+      { facts: 'only can_manage_subscription', ...withheld, manage: true },
+      { facts: 'only can_downgrade_to_personal', ...withheld, downgrade: true }
+    ]
+    const actorRows = [
+      { actor: 'a personal owner', workspace: personalWorkspace, ...withheld },
+      { actor: 'a team owner', workspace: teamOwnerWorkspace, ...withheld },
+      {
+        actor: 'a personal member',
+        workspace: personalMemberWorkspace,
+        ...served
+      },
+      { actor: 'a team member', workspace: teamMemberWorkspace, ...served }
+    ]
 
-    it.for(
-      workspaces.flatMap(([actor, workspace]) =>
-        [true, false].flatMap((served) =>
-          [true, false].map((teamPlan) => ({
-            actor,
-            workspace,
-            served,
-            teamPlan
-          }))
-        )
-      )
-    )(
-      'renders can_leave_workspace $served as served for $actor (Team plan: $teamPlan)',
-      async ({ workspace, served, teamPlan }) => {
+    it.for([
+      ...factRows.map((row) => ({
+        actor: 'a team member',
+        workspace: teamMemberWorkspace,
+        ...row
+      })),
+      ...actorRows.map((row) => ({
+        facts: row.leave ? 'all served' : 'all withheld',
+        ...row
+      }))
+    ])(
+      'renders $facts as served for $actor',
+      async ({ workspace, leave, manage, downgrade }) => {
         Object.assign(useTeamWorkspaceStore(), { activeWorkspace: workspace })
-        mockIsTeamPlan.value = teamPlan
-        mockCanLeaveWorkspace.value = served
-        mockCanDowngradeToPersonal.value = !served
+        mockCanLeaveWorkspace.value = leave
+        mockCanManageSubscription.value = manage
+        mockCanDowngradeToPersonal.value = downgrade
         const ui = await loadComposable()
 
-        expect(ui.permissions.value.canLeaveWorkspace).toBe(served)
-      }
-    )
-
-    it.for(
-      workspaces.flatMap(([actor, workspace]) =>
-        [true, false].flatMap((served) =>
-          [true, false].map((teamPlan) => ({
-            actor,
-            workspace,
-            served,
-            teamPlan
-          }))
-        )
-      )
-    )(
-      'renders can_downgrade_to_personal $served as served for $actor (Team plan: $teamPlan)',
-      async ({ workspace, served, teamPlan }) => {
-        Object.assign(useTeamWorkspaceStore(), { activeWorkspace: workspace })
-        mockIsTeamPlan.value = teamPlan
-        mockCanDowngradeToPersonal.value = served
-        mockCanLeaveWorkspace.value = !served
-        const ui = await loadComposable()
-
-        expect(ui.permissions.value.canDowngradeToPersonal).toBe(served)
-      }
-    )
-
-    it.for([true, false])(
-      'opens the menu only through the served fact for a member (%s)',
-      async (served) => {
-        Object.assign(useTeamWorkspaceStore(), {
-          activeWorkspace: teamMemberWorkspace
+        expect(ui.permissions.value).toMatchObject({
+          canLeaveWorkspace: leave,
+          canManageSubscription: manage,
+          canManageSubscriptionLifecycle: manage,
+          canDowngradeToPersonal: downgrade
         })
-        mockCanLeaveWorkspace.value = served
+      }
+    )
+
+    it.for([
+      { actor: 'a team member', workspace: teamMemberWorkspace, leave: true },
+      { actor: 'a team member', workspace: teamMemberWorkspace, leave: false },
+      { actor: 'a personal owner', workspace: personalWorkspace, leave: true },
+      { actor: 'a personal owner', workspace: personalWorkspace, leave: false }
+    ])(
+      'opens the menu for $actor only through can_leave_workspace $leave',
+      async ({ workspace, leave }) => {
+        Object.assign(useTeamWorkspaceStore(), { activeWorkspace: workspace })
+        mockCanLeaveWorkspace.value = leave
         const ui = await loadComposable()
 
-        expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(served)
+        expect(ui.permissions.value.canAccessWorkspaceMenu).toBe(leave)
       }
     )
   })
@@ -497,17 +460,19 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       expect(allowed.canReactivatePlan.value).toBe(true)
     })
 
-    it('falls back to membership on the legacy rail, where no capability row exists', async () => {
+    it('falls back to can_manage_subscription on the legacy rail', async () => {
       mockShouldUseWorkspaceBilling.value = false
+      mockCanManageSubscription.value = true
 
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(true)
       expect(ui.canReactivatePlan.value).toBe(true)
     })
 
-    it('falls back to membership off Cloud, where the endpoint is never called', async () => {
+    it('falls back to can_manage_subscription off Cloud', async () => {
       mockIsCloud.value = false
       mockShouldUseWorkspaceBilling.value = true
+      mockCanManageSubscription.value = true
 
       const ui = await loadComposable()
       expect(ui.canReactivatePlan.value).toBe(true)
@@ -536,8 +501,9 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       expect(ui.canOpenPricingSurface.value).toBe(true)
     })
 
-    it('falls back to membership on the legacy rail, where no capability row exists', async () => {
+    it('falls back to can_manage_subscription on the legacy rail', async () => {
       mockShouldUseWorkspaceBilling.value = false
+      mockCanManageSubscription.value = true
       useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
@@ -545,16 +511,18 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       expect(ui.canOpenPricingSurface.value).toBe(true)
     })
 
-    it('falls back to membership off Cloud, where the endpoint is never called', async () => {
+    it('falls back to can_manage_subscription off Cloud', async () => {
       mockIsCloud.value = false
       mockShouldUseWorkspaceBilling.value = true
+      mockCanManageSubscription.value = true
       useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
       const ui = await loadComposable()
       expect(ui.canOpenPricingSurface.value).toBe(true)
     })
 
-    it('falls back to membership when the snapshot is not authoritative', async () => {
+    it('falls back to can_manage_subscription when the snapshot is not authoritative', async () => {
+      mockCanManageSubscription.value = true
       useBillingCapabilities().snapshotAuthoritative = computed(() => false)
       useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
 
@@ -562,7 +530,7 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
       expect(ui.canOpenPricingSurface.value).toBe(true)
     })
 
-    it('keeps the catalog closed for a non-owner with no readable snapshot', async () => {
+    it('keeps the catalog closed when can_manage_subscription is withheld and no snapshot is readable', async () => {
       Object.assign(useTeamWorkspaceStore(), {
         activeWorkspace: teamMemberWorkspace
       })

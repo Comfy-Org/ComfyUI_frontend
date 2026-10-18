@@ -26,6 +26,9 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canLeaveWorkspace: computed(() =>
     receiveServerFact('can_leave_workspace', false)
   ),
+  canManageSubscription: computed(() =>
+    receiveServerFact('can_manage_subscription', false)
+  ),
   canDowngradeToPersonal: computed(() => false),
   isReady: computed(() => true),
   hasResolvedCapabilities: computed(() => true),

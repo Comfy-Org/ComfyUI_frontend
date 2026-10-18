@@ -324,6 +324,26 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 
+  it.for([true, false])(
+    'renders can_manage_subscription %s as served',
+    async (served) => {
+      expect(billingCapabilities.canManageSubscription.value).toBe(false)
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        capabilitiesResponse(
+          true,
+          'workspace-1',
+          true,
+          {},
+          { can_manage_subscription: served }
+        )
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.canManageSubscription.value).toBe(served)
+    }
+  )
+
   it('exposes the delete capability and the reason the server named', async () => {
     const response = capabilitiesResponse(
       true,
