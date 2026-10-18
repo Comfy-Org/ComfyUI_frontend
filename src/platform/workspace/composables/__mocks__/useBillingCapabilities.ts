@@ -35,6 +35,10 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_manage_subscription', false)
   ),
   canDowngradeToPersonal: computed(() => false),
+  canManageAutoTopUp: computed(() =>
+    receiveServerFact('can_manage_auto_top_up', false)
+  ),
+  autoTopUpSetup: computed(() => null),
   isReady: computed(() => true),
   hasResolvedCapabilities: computed(() => true),
   snapshotAuthoritative: computed(() => true),

@@ -3558,6 +3558,31 @@
   },
   "workspacePanel": {
     "billingTab": {
+      "autoTopUp": {
+        "actions": {
+          "manage": "Manage",
+          "turnOn": "Turn on",
+          "updatePayment": "Update payment"
+        },
+        "failed": "Your charge didn't go through. Update your payment method or add credits manually.",
+        "limit": "Monthly limit: {spent} of {limit} used",
+        "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
+        "limitTooltipNoDate": "Counts only auto top-up charges.",
+        "off": "Refills credits when your balance runs low",
+        "onHold": "Your card expired or was removed. Update it to resume auto top-up.",
+        "paused": "Monthly limit reached. Resumes {date}.",
+        "pausedNoDate": "Monthly limit reached.",
+        "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
+        "status": {
+          "failed": "Failed",
+          "off": "Off",
+          "on": "On",
+          "onHold": "On hold",
+          "paused": "Paused"
+        },
+        "title": "Auto top-up",
+        "unavailable": "Couldn't load auto top-up."
+      },
       "credits": {
         "addCredits": "Add credits",
         "available": "Available",
