@@ -83,7 +83,7 @@ test.describe(
   () => {
     test.use({ connectWebSocketToServer: false })
 
-    test('second turn on a bound populated tab carries the binding and withholds the draft', async ({
+    test('second turn on a bound populated tab carries the binding and the populated draft', async ({
       agentPanel,
       comfyPage,
       postedMessages,
@@ -136,9 +136,9 @@ test.describe(
         'open_tabs must include the bound id'
       ).toContain(BOUND_WORKFLOW_ID)
       expect(
-        second.draft,
-        'a bound tab whose document the follower owns must not seed a draft over it'
-      ).toBeUndefined()
+        draftNodeCount(second),
+        'turn 2 must carry the populated graph or the agent reads an empty canvas'
+      ).toBe(nodeCount)
     })
 
     test('switching to a new tab and back keeps the next turn pointed at the bound tab', async ({
