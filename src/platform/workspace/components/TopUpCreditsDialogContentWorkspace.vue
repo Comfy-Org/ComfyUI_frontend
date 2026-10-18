@@ -279,7 +279,7 @@
           variant="primary"
           size="lg"
           :disabled="!isValidAmount || paymentLocked || !canTopUp"
-          :loading="paymentLocked"
+          :loading="paymentInFlight"
           @click="continueToCheckout"
         >
           {{ $t('credits.topUp.continueToCheckout') }}
@@ -288,7 +288,7 @@
         <Button
           v-else
           :disabled="!isValidAmount || paymentLocked || !canTopUp"
-          :loading="paymentLocked"
+          :loading="paymentInFlight"
           :variant="
             step === 'confirm' && topupActionUrl ? 'tertiary' : 'primary'
           "
@@ -302,6 +302,16 @@
               ? $t('credits.topUp.payAmount', { amount: displayTotal })
               : $t('subscription.addCredits')
           }}
+        </Button>
+        <Button
+          v-if="step === 'confirm' && checkoutRecovery"
+          variant="secondary"
+          size="lg"
+          :disabled="paymentLocked"
+          :loading="openingDefaultCardPortal"
+          @click="setDefaultCard"
+        >
+          {{ $t('credits.topUp.setDefaultCard') }}
         </Button>
       </div>
       <div
@@ -349,9 +359,13 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import type { BillingTab } from '@/platform/workspace/billing/billingTab'
 import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
+import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { topupCheckoutReturnUrl } from '@/platform/workspace/billing/topupCheckoutReturnUrl'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
@@ -388,7 +402,8 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
-const { canTopUp } = useBillingCapabilities()
+const billingCapabilities = useBillingCapabilities()
+const { canTopUp } = billingCapabilities
 
 const workspaceStore = useTeamWorkspaceStore()
 
@@ -508,12 +523,18 @@ const displayTotal = computed(() =>
   })
 )
 
-const paymentLocked = computed(
+const paymentInFlight = computed(
   () =>
     loading.value ||
     paymentSubmitted.value ||
     isAddingCredits.value ||
     !!topupOperation.value
+)
+
+const openingDefaultCardPortal = ref(false)
+
+const paymentLocked = computed(
+  () => paymentInFlight.value || openingDefaultCardPortal.value
 )
 
 watch(
@@ -739,8 +760,10 @@ function isNoPaymentMethodRefusal(error: unknown): boolean {
 }
 
 let unmounted = false
+let stopDefaultCardReturnRefresh: (() => void) | null = null
 onUnmounted(() => {
   unmounted = true
+  stopDefaultCardReturnRefresh?.()
 })
 
 function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
@@ -758,6 +781,64 @@ function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
     }
   })
   handleClose(false)
+}
+
+function refreshOnDefaultCardReturn() {
+  stopDefaultCardReturnRefresh?.()
+  stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
+    const [paymentMethods] = await Promise.allSettled([
+      workspaceApi.listSavedPaymentMethods(),
+      fetchStatus(),
+      fetchBalance(),
+      billingCapabilities.refresh()
+    ])
+    if (
+      paymentMethods.status !== 'fulfilled' ||
+      !paymentMethods.value.some((method) => method.is_default)
+    ) {
+      return
+    }
+    stopDefaultCardReturnRefresh?.()
+    stopDefaultCardReturnRefresh = null
+    checkoutRecovery.value = null
+  })
+}
+
+async function setDefaultCard() {
+  if (paymentLocked.value) return
+  const portalTab = reserveBillingTab()
+  if (!portalTab) {
+    toast.warning(t('g.warning'), {
+      description: t('subscription.billingTabBlocked')
+    })
+    return
+  }
+  openingDefaultCardPortal.value = true
+  try {
+    const { url } = await workspaceApi.getPaymentPortalUrl(
+      window.location.href,
+      'payment_method_update'
+    )
+    if (unmounted) {
+      portalTab.close()
+      return
+    }
+    if (!url) return reportDefaultCardPortalFailure(portalTab)
+    portalTab.navigate(url)
+    refreshOnDefaultCardReturn()
+  } catch {
+    reportDefaultCardPortalFailure(portalTab)
+  } finally {
+    openingDefaultCardPortal.value = false
+  }
+}
+
+function reportDefaultCardPortalFailure(portalTab: BillingTab) {
+  portalTab.close()
+  if (unmounted) return
+  toast.error(t('credits.topUp.setDefaultCardError'), {
+    description: t('credits.topUp.unknownError')
+  })
 }
 
 async function continueToCheckout() {

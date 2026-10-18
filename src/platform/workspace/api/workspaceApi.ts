@@ -110,7 +110,6 @@ export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
-
 export interface SubscribeOptions {
   confirmationToken?: string
   promotionCode?: string
@@ -890,13 +889,17 @@ export const workspaceApi = {
    * POST /api/billing/payment-portal
    */
   async getPaymentPortalUrl(
-    returnUrl?: string
+    returnUrl?: string,
+    flowType?: PaymentPortalRequest['flow_type']
   ): Promise<PaymentPortalResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
         workspaceApiUrl('/billing/payment-portal'),
-        { return_url: returnUrl } satisfies PaymentPortalRequest,
+        {
+          return_url: returnUrl,
+          flow_type: flowType
+        } satisfies PaymentPortalRequest,
         { ...auth, timeout: 30_000 }
       )
       return response.data

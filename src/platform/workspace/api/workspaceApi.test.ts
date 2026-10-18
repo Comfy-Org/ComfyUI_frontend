@@ -1023,6 +1023,26 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('getPaymentPortalUrl() asks for the payment-method update flow when named', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { url: 'https://stripe.com/portal' }
+      })
+
+      await workspaceApi.getPaymentPortalUrl(
+        'https://app.com/settings',
+        'payment_method_update'
+      )
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/payment-portal',
+        {
+          return_url: 'https://app.com/settings',
+          flow_type: 'payment_method_update'
+        },
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
+    })
+
     it('createTopup() sends POST with amount_cents and idempotency_key', async () => {
       const data = {
         billing_op_id: 'op-4',

@@ -647,7 +647,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       const { continueButton } = await payAndGetRefused()
       expect(
         screen.getByText(
-          'This workspace has no card saved for one-click top-ups. Pay on a checkout page instead.'
+          'This workspace has no card saved for one-click top-ups. Pay on a checkout page instead, or set a default card so future top-ups charge it directly.'
         )
       ).toBeInTheDocument()
 
@@ -836,6 +836,214 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(
         screen.getByRole('button', { name: 'Continue to checkout' })
       ).toBeEnabled()
+    })
+
+    describe('setting a default card', () => {
+      const portalUrl = 'https://billing.stripe.com/p/session/flow_test'
+
+      function portalOpensAt(url: string) {
+        return vi
+          .spyOn(workspaceApi, 'getPaymentPortalUrl')
+          .mockResolvedValue({ url })
+      }
+
+      async function clickSetDefaultCard() {
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Set a default card' })
+        )
+      }
+
+      function savedCards(...defaults: boolean[]) {
+        return defaults.map((isDefault, index) => ({
+          id: `pm_${index}`,
+          type: 'card',
+          is_default: isDefault
+        }))
+      }
+
+      it('opens the portal on the payment-method update flow and returns to Pay', async () => {
+        refuseForNoPaymentMethod()
+        vi.spyOn(workspaceApi, 'listSavedPaymentMethods').mockResolvedValue(
+          savedCards(true)
+        )
+        const getPortal = portalOpensAt(portalUrl)
+        const { tab, open } = stubCheckoutTab()
+        await payAndGetRefused()
+
+        await clickSetDefaultCard()
+
+        await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+        expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
+        expect(getPortal).toHaveBeenCalledExactlyOnceWith(
+          window.location.href,
+          'payment_method_update'
+        )
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+        const billing = mockBillingContext()
+        vi.mocked(billing.fetchStatus).mockClear()
+        window.dispatchEvent(new Event('focus'))
+
+        await waitFor(() => {
+          expect(billing.fetchStatus).toHaveBeenCalled()
+          expect(useBillingCapabilities().refresh).toHaveBeenCalled()
+        })
+        expect(
+          await screen.findByRole('button', { name: 'Pay $50.00' })
+        ).toBeEnabled()
+      })
+
+      it('keeps the refusal until a return finds a default card', async () => {
+        refuseForNoPaymentMethod()
+        const listCards = vi
+          .spyOn(workspaceApi, 'listSavedPaymentMethods')
+          .mockResolvedValueOnce(savedCards(false))
+          .mockResolvedValue(savedCards(false, true))
+        portalOpensAt(portalUrl)
+        const { tab } = stubCheckoutTab()
+        await payAndGetRefused()
+        await clickSetDefaultCard()
+        await waitFor(() => expect(tab.location.href).toBe(portalUrl))
+
+        window.dispatchEvent(new Event('focus'))
+        await waitFor(() => expect(listCards).toHaveBeenCalledOnce())
+        expect(
+          screen.getByRole('button', { name: 'Set a default card' })
+        ).toBeEnabled()
+
+        window.dispatchEvent(new Event('blur'))
+        window.dispatchEvent(new Event('focus'))
+        expect(
+          await screen.findByRole('button', { name: 'Pay $50.00' })
+        ).toBeEnabled()
+      })
+
+      it.for([
+        {
+          failure: 'a rejected request',
+          arrange: () =>
+            vi
+              .spyOn(workspaceApi, 'getPaymentPortalUrl')
+              .mockRejectedValue(new WorkspaceApiError('Portal down', 502))
+        },
+        {
+          failure: 'an empty portal URL',
+          arrange: () => portalOpensAt('')
+        }
+      ])(
+        'closes the reserved tab and explains $failure without the server message',
+        async ({ arrange }) => {
+          refuseForNoPaymentMethod()
+          arrange()
+          const { tab } = stubCheckoutTab()
+          await payAndGetRefused()
+
+          await clickSetDefaultCard()
+
+          await waitFor(() =>
+            expect(useToast().error).toHaveBeenCalledWith(
+              "Couldn't open card settings",
+              { description: 'An unknown error occurred' }
+            )
+          )
+          expect(tab.close).toHaveBeenCalledOnce()
+          expect(tab.location.href).toBe('')
+          expect(
+            screen.getByRole('button', { name: 'Set a default card' })
+          ).toBeEnabled()
+        }
+      )
+
+      function portalPending() {
+        const settle = {
+          resolve: (_value: { url: string }) => {},
+          reject: (_error: Error) => {}
+        }
+        vi.spyOn(workspaceApi, 'getPaymentPortalUrl').mockReturnValue(
+          new Promise((resolve, reject) => {
+            settle.resolve = resolve
+            settle.reject = reject
+          })
+        )
+        return settle
+      }
+
+      function competingTransitions() {
+        return ['Back', 'Continue to checkout', 'Set a default card'].map(
+          (name) => screen.getByRole('button', { name })
+        )
+      }
+
+      it.for([
+        {
+          outcome: 'opens',
+          settle: (portal: ReturnType<typeof portalPending>) =>
+            portal.resolve({ url: portalUrl }),
+          tabHref: portalUrl
+        },
+        {
+          outcome: 'fails',
+          settle: (portal: ReturnType<typeof portalPending>) =>
+            portal.reject(new WorkspaceApiError('Portal down', 502)),
+          tabHref: ''
+        }
+      ])(
+        'locks Back and checkout while the portal request is pending and unlocks them once it $outcome',
+        async ({ settle, tabHref }) => {
+          refuseForNoPaymentMethod()
+          vi.spyOn(workspaceApi, 'listSavedPaymentMethods').mockResolvedValue(
+            savedCards(false)
+          )
+          const portal = portalPending()
+          const { tab } = stubCheckoutTab()
+          await payAndGetRefused()
+
+          await clickSetDefaultCard()
+
+          for (const button of competingTransitions()) {
+            expect(button).toBeDisabled()
+          }
+
+          settle(portal)
+
+          await waitFor(() => {
+            for (const button of competingTransitions()) {
+              expect(button).toBeEnabled()
+            }
+          })
+          expect(tab.location.href).toBe(tabHref)
+        }
+      )
+
+      it('closes the reserved tab without opening the portal when the dialog unmounts mid-request', async () => {
+        refuseForNoPaymentMethod()
+        const portal = portalPending()
+        const { tab } = stubCheckoutTab()
+        const { unmount } = await payAndGetRefused()
+        await clickSetDefaultCard()
+
+        unmount()
+        portal.resolve({ url: portalUrl })
+
+        await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
+        expect(tab.location.href).toBe('')
+        expect(useToast().error).not.toHaveBeenCalled()
+      })
+
+      it('asks for pop-ups instead of minting a portal session when the tab is blocked', async () => {
+        refuseForNoPaymentMethod()
+        const getPortal = portalOpensAt(portalUrl)
+        vi.spyOn(window, 'open').mockReturnValue(null)
+        await payAndGetRefused()
+
+        await clickSetDefaultCard()
+
+        expect(useToast().warning).toHaveBeenCalledWith('Warning', {
+          description:
+            "Couldn't open the billing page. Allow pop-ups for this site and try again."
+        })
+        expect(getPortal).not.toHaveBeenCalled()
+      })
     })
 
     it('does not offer checkout for any other refusal', async () => {
