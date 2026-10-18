@@ -3539,18 +3539,20 @@ describe('ComfyApp', () => {
         new ComfyWorkflow({ path: 'workflows/b.json', modified: 0, size: 0 })
       )
       useWorkflowStore().activeWorkflow = workflowA
-      for (const [id, workflow] of [
-        ['job-a', workflowA],
-        ['job-b', workflowB]
-      ] as const) {
-        useExecutionStore().storeJob({
-          nodes: ['1'],
-          id,
-          promptOutput: {},
-          workflow,
-          mode: 'graph'
-        })
-      }
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-a',
+        promptOutput: {},
+        workflow: workflowA,
+        mode: 'graph'
+      })
+      useExecutionStore().storeJob({
+        nodes: ['1'],
+        id: 'job-b',
+        promptOutput: {},
+        workflow: workflowB,
+        mode: 'graph'
+      })
 
       vi.spyOn(URL, 'createObjectURL').mockImplementation(
         (blob) => `blob:${blob instanceof Blob ? blob.size : 0}`
@@ -3561,34 +3563,31 @@ describe('ComfyApp', () => {
         addEventListener.mock.calls.find(([name]) => name === event)?.[1] as
           | EventListener
           | undefined
+      const executedEvent = (jobId: string) =>
+        new CustomEvent('executed', {
+          detail: {
+            node: '1',
+            display_node: '1',
+            prompt_id: jobId,
+            output: { text: [jobId] }
+          }
+        })
+      const previewEvent = (jobId: string, blobText: string) =>
+        new CustomEvent('b_preview_with_metadata', {
+          detail: {
+            blob: new Blob([blobText]),
+            nodeId: '1',
+            parentNodeId: '1',
+            displayNodeId: '1',
+            realNodeId: '1',
+            jobId
+          }
+        })
 
-      for (const [jobId, blobText] of [
-        ['job-a', 'a'],
-        ['job-b', 'bb']
-      ]) {
-        handlerFor('executed')?.(
-          new CustomEvent('executed', {
-            detail: {
-              node: '1',
-              display_node: '1',
-              prompt_id: jobId,
-              output: { text: [jobId] }
-            }
-          })
-        )
-        handlerFor('b_preview_with_metadata')?.(
-          new CustomEvent('b_preview_with_metadata', {
-            detail: {
-              blob: new Blob([blobText]),
-              nodeId: '1',
-              parentNodeId: '1',
-              displayNodeId: '1',
-              realNodeId: '1',
-              jobId
-            }
-          })
-        )
-      }
+      handlerFor('executed')?.(executedEvent('job-a'))
+      handlerFor('b_preview_with_metadata')?.(previewEvent('job-a', 'a'))
+      handlerFor('executed')?.(executedEvent('job-b'))
+      handlerFor('b_preview_with_metadata')?.(previewEvent('job-b', 'bb'))
 
       const nodeOutputStore = useNodeOutputStore()
       const executionId = createNodeExecutionId([1])
