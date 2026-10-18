@@ -2079,12 +2079,12 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     const node = nodeWith('Described', (n) => {
       n.addWidget('number', 'steps', 20, () => {})
     })
-    const serialize = node.serialize.bind(node)
-    vi.spyOn(node, 'serialize').mockImplementation(() =>
-      Object.assign(serialize(), {
+    node.configure(
+      Object.assign(node.serialize(), {
         widgets_values_form: { order: ['steps', 'gone'] }
       })
     )
+    expect(node.serialize()).toHaveProperty('widgets_values_form')
 
     expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
   })
