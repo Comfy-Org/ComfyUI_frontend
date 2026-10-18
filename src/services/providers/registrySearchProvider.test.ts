@@ -90,19 +90,6 @@ describe('useComfyRegistrySearchProvider', () => {
       expect(result.querySuggestions).toEqual([])
     })
 
-    it('should handle null results', async () => {
-      mockSearchCall.mockResolvedValue(null)
-
-      const provider = useComfyRegistrySearchProvider()
-      const result = await provider.searchPacks('test', {
-        pageSize: 10,
-        pageNumber: 0
-      })
-
-      expect(result.nodePacks).toEqual([])
-      expect(result.querySuggestions).toEqual([])
-    })
-
     it('should handle results without nodes property', async () => {
       mockSearchCall.mockResolvedValue({})
 
@@ -173,18 +160,25 @@ describe('useComfyRegistrySearchProvider', () => {
       expect(result.querySuggestions).toEqual([])
     })
 
-    it('should handle null results from listAllPacks', async () => {
-      mockListAllPacksCall.mockResolvedValue(null)
+    it.for([
+      { request: 'search', query: 'test' },
+      { request: 'listAllPacks', query: '' }
+    ] as const)(
+      'rejects and drops the cached failure when the $request request fails',
+      async ({ request, query }) => {
+        const provider = useComfyRegistrySearchProvider()
 
-      const provider = useComfyRegistrySearchProvider()
-      const result = await provider.searchPacks('', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+        await expect(
+          provider.searchPacks(query, { pageSize: 10, pageNumber: 0 })
+        ).rejects.toThrow('Comfy Registry request failed')
 
-      expect(result.nodePacks).toEqual([])
-      expect(result.querySuggestions).toEqual([])
-    })
+        const clears = {
+          search: mockSearchClear,
+          listAllPacks: mockListAllPacksClear
+        }
+        expect(clears[request]).toHaveBeenCalledOnce()
+      }
+    )
   })
 
   describe('clearSearchCache', () => {

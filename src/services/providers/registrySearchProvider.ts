@@ -5,6 +5,17 @@ import type {
   SearchPacksResult
 } from '@/types/searchServiceTypes'
 
+class RegistrySearchRequestError extends Error {}
+
+function requireResponse<T>(
+  response: T | null,
+  cache: { clear: () => void }
+): T {
+  if (response) return response
+  cache.clear()
+  throw new RegistrySearchRequestError('Comfy Registry request failed')
+}
+
 /**
  * Search provider for the Comfy Registry.
  * Uses public Comfy Registry API.
@@ -29,8 +40,11 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
         // Note: omitting 'latest' parameter defaults to cached result
       }
 
-      const listResult = await registryStore.listAllPacks.call(listParams)
-      const nodePacks = listResult?.nodes ?? []
+      const listResult = requireResponse(
+        await registryStore.listAllPacks.call(listParams),
+        registryStore.listAllPacks
+      )
+      const nodePacks = listResult.nodes ?? []
 
       return {
         nodePacks,
@@ -48,8 +62,11 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
       page: pageNumber + 1
     }
 
-    const searchResult = await registryStore.search.call(searchParams)
-    const nodePacks = searchResult?.nodes ?? []
+    const searchResult = requireResponse(
+      await registryStore.search.call(searchParams),
+      registryStore.search
+    )
+    const nodePacks = searchResult.nodes ?? []
 
     return {
       nodePacks,
