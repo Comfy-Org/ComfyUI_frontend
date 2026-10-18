@@ -1302,6 +1302,29 @@ describe('SubgraphWidgetPromotion', () => {
 
         expect(host.serialize().widgets_values).toEqual(['second value', null])
       })
+
+      it('restores a numeric string saved for a promoted number widget as a number', () => {
+        const subgraph = createTestSubgraph({
+          inputs: [{ name: 'value', type: 'number' }]
+        })
+        const { node: interiorNode } = createNodeWithWidget(
+          'Interior',
+          'number',
+          7
+        )
+        subgraph.add(interiorNode)
+        subgraph.inputNode.slots[0].connect(
+          interiorNode.inputs[0],
+          interiorNode
+        )
+        const serialized = createTestSubgraphNode(subgraph).serialize()
+        serialized.widgets_values = ['42']
+
+        const reloaded = createTestSubgraphNode(subgraph)
+        reloaded.configure(serialized)
+
+        expect(promotedWidgetStateByName(reloaded, 'value').value).toBe(42)
+      })
     })
 
     describe('proxyWidgets is no longer re-emitted', () => {
