@@ -172,6 +172,12 @@ function useBillingCapabilitiesInternal() {
   const leaveWorkspaceDenial = computed<string | undefined>(
     () => resolvedResponse.value?.denied_reasons?.can_leave_workspace
   )
+  const canManageSubscription = computed(() =>
+    receiveServerFact(
+      'can_manage_subscription',
+      capabilities.value?.can_manage_subscription ?? false
+    )
+  )
   const canDowngradeToPersonal = computed(
     () => capabilities.value?.can_downgrade_to_personal ?? false
   )
@@ -513,6 +519,7 @@ function useBillingCapabilitiesInternal() {
     deleteWorkspaceDenial,
     canLeaveWorkspace,
     leaveWorkspaceDenial,
+    canManageSubscription,
     canDowngradeToPersonal,
     isReady,
     hasResolvedCapabilities,

@@ -44,6 +44,22 @@ export type CapabilityDenialReason =
   | 'personal_workspace_creator'
   | 'workspace_creator'
   | 'only_owner'
+  | 'billing_state_unknown'
+  | 'free_tier_exhausted'
+  | 'invite_capacity_reached'
+  | 'manual_block'
+  | 'no_funds'
+  | 'no_revertible_scheduled_change'
+  | 'no_upgrade_available'
+  | 'partner_governance_not_entitled'
+  | 'plan_ending'
+  | 'project_cap_exceeded'
+  | 'rollout_disabled'
+  | 'sales_managed'
+  | 'subscription_inactive'
+  | 'usage_attribution_unavailable'
+  | 'user_cap_exceeded'
+  | 'workspace_cap_exceeded'
   /**
    * A reason outside the set above. Kept as a reason rather than dropped so a
    * refusal the server explained still reads as explained; the copy it maps to
@@ -76,7 +92,23 @@ const KNOWN_REASONS: Readonly<
   membership_managed_by_directory: true,
   personal_workspace_creator: true,
   workspace_creator: true,
-  only_owner: true
+  only_owner: true,
+  billing_state_unknown: true,
+  free_tier_exhausted: true,
+  invite_capacity_reached: true,
+  manual_block: true,
+  no_funds: true,
+  no_revertible_scheduled_change: true,
+  no_upgrade_available: true,
+  partner_governance_not_entitled: true,
+  plan_ending: true,
+  project_cap_exceeded: true,
+  rollout_disabled: true,
+  sales_managed: true,
+  subscription_inactive: true,
+  usage_attribution_unavailable: true,
+  user_cap_exceeded: true,
+  workspace_cap_exceeded: true
 }
 
 /**

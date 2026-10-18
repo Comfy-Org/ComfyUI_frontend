@@ -53,8 +53,16 @@ const TEAM_CREDIT_STOPS = {
     {
       id: 'team_700',
       credits: 147700,
-      monthly: { list_price_cents: 70000, price_cents: 69000 },
-      yearly: { list_price_cents: 70000, price_cents: 63000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 70000,
+        price_cents: 69000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 70000,
+        price_cents: 63000
+      }
     }
   ]
 } satisfies TeamCreditStops
