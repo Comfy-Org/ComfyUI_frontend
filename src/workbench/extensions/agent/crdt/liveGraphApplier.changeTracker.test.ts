@@ -84,7 +84,7 @@ class DynamicGroupTest extends LGraphNode {
   }
 }
 
-/** A DynamicGroup on a node with a DynamicCombo, so its document entries can be positional aliases. */
+/** A DynamicGroup on a node that `beforeEach` gives a DynamicCombo input, so its document entries can be positional aliases. */
 class DynamicGroupOverflowTest extends LGraphNode {
   constructor() {
     super('DynamicGroupOverflowTest')
@@ -361,9 +361,12 @@ describe('LiveGraphApplier with the real change tracker', () => {
     )
   })
 
-  it.for([[{}], [{ _extra_9: 1 }]])(
-    'creates a restored DynamicGroup holding more rows than its max on a follower with extra entries %j',
-    ([extra]) => {
+  it.for([
+    { label: 'no other entries', extra: {}, failures: 0 },
+    { label: 'a stray positional key', extra: { _extra_9: 1 }, failures: 1 }
+  ])(
+    'creates a restored DynamicGroup holding more rows than its max on a follower with $label',
+    ({ extra, failures }) => {
       const local = new LGraph()
       const node = LiteGraph.createNode('DynamicGroupTest')
       assert.exists(node)
@@ -408,7 +411,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
       ).toEqual(['applied'])
       doc.transact(() => {
         const widgets = nodesMap(doc).get(String(node.id))?.get('widgets')
-        if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+        assert.instanceOf(widgets, Y.Map)
         for (const [name, value] of Object.entries(extra))
           widgets.set(name, value)
       })
@@ -417,8 +420,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
 
       const result = applier.applyChanges(doc, collector.take(), CONTEXT)
 
-      // A stray key on a node without overflow aliases is still reported as a missing widget.
-      expect(result.failureCount).toBe(Object.keys(extra).length)
+      expect(result.failureCount).toBe(failures)
       expect(follower.getNodeById(node.id)?.serialize().widgets_values).toEqual(
         ['head', 4, 0.1, 0.2, 0.3, 0.4, 'tail']
       )
@@ -452,7 +454,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
   })
 
   it.for([[['before']], [['before', 'rows']], [['before', 'rows', 'after']]])(
-    'keeps aliased row values off a widget after the DynamicGroup on create with widget order %j',
+    'restores aliased row values and the trailing widget on create with widget order %j',
     ([widgetOrder]) => {
       const { doc, collector } = followedDoc(
         {
@@ -484,6 +486,47 @@ describe('LiveGraphApplier with the real change tracker', () => {
       ).toEqual(['head', 2, 0.1, 0.2, 'tail'])
     }
   )
+
+  // #21297: a node with a DynamicCombo keeps the positional `configure` path on create.
+  it.fails('creates a restored above-max DynamicGroup on a node with a DynamicCombo', () => {
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'DynamicGroupOverflowTest',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: ['head', 4, 0.1, 0.2, 0.3, 0.4]
+          }
+        ],
+        links: []
+      },
+      {
+        types: {
+          DynamicGroupOverflowTest: {
+            widget_order: [
+              'before',
+              'rows',
+              'rows.0.strength',
+              'rows.1.strength',
+              'rows.2.strength',
+              'rows.3.strength'
+            ]
+          }
+        }
+      }
+    )
+    const follower = new LGraph()
+    const applier = new LiveGraphApplier({ getGraph: () => follower })
+
+    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(result.failureCount).toBe(0)
+    expect(
+      follower.getNodeById(toNodeId(1))?.serialize().widgets_values
+    ).toEqual(['head', 4, 0.1, 0.2, 0.3, 0.4])
+  })
 
   it('refuses a crafted DynamicGroup row count without row values on create', () => {
     const { doc, collector } = followedDoc(
