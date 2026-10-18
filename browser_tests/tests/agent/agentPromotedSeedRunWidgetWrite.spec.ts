@@ -123,40 +123,57 @@ async function attachAgent(
   return { host, hostSocket, submitted }
 }
 
+function projectedHostValues(host: HostDoc): unknown[] {
+  const node = host
+    .projection()
+    .nodes.find(({ id }) => String(id) === String(AGENT_SUBGRAPH_HOST_ID))
+  return Object.values(node?.widgets_values ?? {})
+}
+
+async function expectNoRejectionToast(toast: ToastHelper): Promise<void> {
+  const rejectionToast = toast.toastErrors.filter({
+    hasText: enMessages.agent.editRejected.widgetWrite
+  })
+  const quietWindowStartedAt = Date.now()
+  await expect
+    .soft(async () => {
+      await expect(rejectionToast).toHaveCount(0, { timeout: 0 })
+      expect(Date.now() - quietWindowStartedAt).toBeGreaterThanOrEqual(2_000)
+    })
+    .toPass({ timeout: 4_000, intervals: [100, 250, 500] })
+}
+
 async function expectRunSavesPromotedSeed(
   page: Page,
-  { hostSocket, submitted }: AttachedAgent,
+  { host, submitted }: AttachedAgent,
   toast: ToastHelper,
   catchUp: () => void = () => {}
 ): Promise<void> {
-  await test.step('the person presses Run and the promoted seed randomizes', async () => {
-    await page
-      .getByRole('button', { name: enMessages.menu.run, exact: true })
-      .click()
-    await expect.poll(() => submitted.length).toBe(1)
-    await expect
-      .poll(() => promotedSeed(page))
-      .not.toBe(AGENT_SUBGRAPH_INITIAL_SEED)
-  })
-
-  await test.step('no rejected-edit notice is shown', async () => {
-    const rejectionToast = toast.toastErrors.filter({
-      hasText: enMessages.agent.editRejected.widgetWrite
+  const randomizedSeed =
+    await test.step('the person presses Run and the promoted seed randomizes', async () => {
+      await page
+        .getByRole('button', { name: enMessages.menu.run, exact: true })
+        .click()
+      await expect.poll(() => submitted.length).toBe(1)
+      await expect
+        .poll(() => promotedSeed(page))
+        .not.toBe(AGENT_SUBGRAPH_INITIAL_SEED)
+      return promotedSeed(page)
     })
-    const quietWindowStartedAt = Date.now()
-    await expect(async () => {
-      await expect(rejectionToast).toHaveCount(0, { timeout: 0 })
-      expect(Date.now() - quietWindowStartedAt).toBeGreaterThanOrEqual(2_000)
-    }).toPass({ timeout: 4_000, intervals: [100, 250, 500] })
-  })
+
+  await test.step('no rejected-edit notice is shown', () =>
+    expectNoRejectionToast(toast))
 
   await test.step('the follower catches up', catchUp)
 
   await test.step('the randomized seed reaches the shared document', async () => {
     await expect
-      .poll(() => hostSocket.humanOpOutcomes())
-      .toContainEqual(expect.objectContaining({ outcome: 'applied' }))
+      .soft(() => expect(projectedHostValues(host)).toContain(randomizedSeed))
+      .toPass({ timeout: 5_000 })
   })
+
+  await test.step('no rejected-edit notice is shown after catch-up', () =>
+    expectNoRejectionToast(toast))
 }
 
 test.describe(
