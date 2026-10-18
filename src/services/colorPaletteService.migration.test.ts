@@ -154,3 +154,21 @@ it('keeps both palettes usable when migration persistence fails', async () => {
   })
   expect(console.error).toHaveBeenCalledWith(failure)
 })
+
+it('keeps unsaved palette edits separate from loaded settings', async () => {
+  const palette = { ...DEFAULT_COLOR_PALETTE, id: 'blue', name: 'Saved blue' }
+  vi.mocked(api.getSettings).mockResolvedValue(
+    fromPartial<Settings>({ 'Comfy.CustomColorPalettes': { blue: palette } })
+  )
+  const settings = useSettingStore()
+  await settings.load()
+  await useColorPaletteService().loadCustomColorPalettes()
+
+  useColorPaletteStore().customPalettes.blue.name = 'Unsaved edit'
+
+  expect(settings.settingValues['Comfy.CustomColorPalettes']).toEqual({
+    blue: palette
+  })
+  expect(palette.name).toBe('Saved blue')
+  expect(api.storeSettings).not.toHaveBeenCalled()
+})

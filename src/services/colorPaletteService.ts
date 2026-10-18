@@ -11,7 +11,11 @@ import {
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { paletteSchema, comfyBaseSchema } from '@/schemas/colorPaletteSchema'
-import type { Colors, Palette } from '@/schemas/colorPaletteSchema'
+import type {
+  ColorPalettes,
+  Colors,
+  Palette
+} from '@/schemas/colorPaletteSchema'
 import { useApp } from '@/scripts/appInstance'
 import { uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -26,6 +30,18 @@ const THEME_PROPERTY_MAP = {
   WIDGET_BGCOLOR: 'component-node-widget-background',
   WIDGET_TEXT_COLOR: 'component-node-foreground'
 } as const satisfies Partial<Record<keyof Colors['litegraph_base'], string>>
+
+function availableCustomPaletteId(id: string, palettes: ColorPalettes) {
+  let candidate = `${id}-custom`
+  let suffix = 2
+  while (
+    Object.hasOwn(palettes, candidate) ||
+    Object.hasOwn(CORE_COLOR_PALETTES, candidate)
+  ) {
+    candidate = `${id}-custom-${suffix++}`
+  }
+  return candidate
+}
 
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
@@ -58,25 +74,19 @@ export const useColorPaletteService = () => {
   }
 
   async function loadCustomColorPalettes() {
-    const palettes =
-      settingStore.settingValues['Comfy.CustomColorPalettes'] ?? {}
+    const palettes = settingStore.exists('Comfy.CustomColorPalettes')
+      ? settingStore.get('Comfy.CustomColorPalettes')
+      : {}
     const conflicts = Object.keys(palettes).filter((id) =>
       Object.hasOwn(CORE_COLOR_PALETTES, id)
     )
     const migrated = { ...palettes }
-    const previousId =
-      settingStore.settingValues['Comfy.ColorPalette'] ??
-      DEFAULT_COLOR_PALETTE.id
+    const previousId = settingStore.exists('Comfy.ColorPalette')
+      ? settingStore.get('Comfy.ColorPalette')
+      : DEFAULT_COLOR_PALETTE.id
     let activeId = previousId
     for (const id of conflicts) {
-      let newId = `${id}-custom`
-      let suffix = 2
-      while (
-        Object.hasOwn(migrated, newId) ||
-        Object.hasOwn(CORE_COLOR_PALETTES, newId)
-      ) {
-        newId = `${id}-custom-${suffix++}`
-      }
+      const newId = availableCustomPaletteId(id, migrated)
       migrated[newId] = { ...migrated[id], id: newId }
       delete migrated[id]
       if (activeId === id || activeId === `custom_${id}`) activeId = newId
