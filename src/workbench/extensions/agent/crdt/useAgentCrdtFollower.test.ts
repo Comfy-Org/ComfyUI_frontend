@@ -746,6 +746,26 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('clears a stale canvas when reconnect omits the empty document sequence', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1'
+      })
+
+      expect(status().connected).toBe(true)
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
     it('reports a terminal timeout once the silent-subscribe budget is spent', () => {
       const { unmount, status } = mountFollower('wf-1')
       dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
@@ -1308,6 +1328,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
 
     expect(status().connected).toBe(false)
+    expect(status().canvasMayBeStale).toBe(true)
     expect(status().workflowId).toBe('wf-1')
     expect(projectionState.discardPending).toHaveBeenCalledWith('wf-1')
     unmount()
@@ -3351,6 +3372,22 @@ describe('useAgentCrdtFollower', () => {
         code: 'stale_schema_reseed_refused'
       })
       expect(status().terminal).toBe('refused')
+      unmount()
+    })
+
+    it('keeps a stale canvas withheld while a reseed is in flight', () => {
+      const { unmount, status } = mountWithCanvas()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+
+      refuseAsStale()
+
+      expect(status().canvasMayBeStale).toBe(true)
       unmount()
     })
 

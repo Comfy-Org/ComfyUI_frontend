@@ -641,12 +641,15 @@ function startAgentCrdtFollower(
       code?: unknown
       message?: unknown
     } | null
-  ) {
+  ): void {
     const reseeding = tryReseed()
     const refusal = reseeding
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
-    if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
+    if (!reseeding && lifecycle.refusalIsFinal()) {
+      terminal.value = 'refused'
+      clearCanvasStaleness()
+    }
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
@@ -667,13 +670,12 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      if (detail.seq === 0) clearCanvasStaleness()
+      if ((detail.seq ?? 0) === 0) clearCanvasStaleness()
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
       handleRejectedSubscription(detail)
-      if (lifecycle.refusalIsFinal()) clearCanvasStaleness()
     }
   }
   const settleCatchUpProjection = (
@@ -784,11 +786,8 @@ function startAgentCrdtFollower(
   }
   const staleClientNotified = new Set<string>()
   const onSchemaError: EventListener = (event) => {
-    // KA-11 fail-closed: the bridge refused to propagate an unreadable doc, so
-    // nothing was projected. Surface it as its own status rather than as a
-    // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
-    canvasMayBeStale.value = false
+    markCanvasStale()
     terminal.value = 'schema_error'
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
