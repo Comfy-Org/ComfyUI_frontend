@@ -371,6 +371,7 @@ function startAgentCrdtFollower(
 ) {
   const connected = ref(false)
   const canvasMayBeStale = ref(false)
+  let catchUpAwaitingProjectionFor: string | null = null
   const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -412,6 +413,16 @@ function startAgentCrdtFollower(
   }
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const pendingRejected = new Map<string, Op[]>()
+
+  function markCanvasStale(): void {
+    canvasMayBeStale.value = true
+    catchUpAwaitingProjectionFor = null
+  }
+
+  function clearCanvasStaleness(): void {
+    canvasMayBeStale.value = false
+    catchUpAwaitingProjectionFor = null
+  }
 
   const applyRejectedOps = (
     workflowId: string,
@@ -559,6 +570,7 @@ function startAgentCrdtFollower(
   const applyCollected = (workflowId: string): void => {
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
+    if (catchUpAwaitingProjectionFor === workflowId) clearCanvasStaleness()
     reportMaterialized(workflowId, outcome.createdNodeIds)
     reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }
@@ -649,13 +661,13 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      if (detail.seq === 0) canvasMayBeStale.value = false
+      if (detail.seq === 0) clearCanvasStaleness()
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
       handleRejectedSubscription(detail)
-      if (lifecycle.refusalIsFinal()) canvasMayBeStale.value = false
+      if (lifecycle.refusalIsFinal()) clearCanvasStaleness()
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -670,7 +682,10 @@ function startAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const outcome = applyFrame(update)
-    if (update.catchUp) canvasMayBeStale.value = false
+    if (update.catchUp) {
+      if (outcome.applied) clearCanvasStaleness()
+      else catchUpAwaitingProjectionFor = update.workflowId
+    }
     const nodes = outcome.nodes
     const created = outcome.applied ? outcome.createdNodeIds : []
     reportFrameProjection(update, outcome)
@@ -724,7 +739,7 @@ function startAgentCrdtFollower(
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
-    canvasMayBeStale.value = true
+    markCanvasStale()
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -795,7 +810,7 @@ function startAgentCrdtFollower(
   }
   const onGap: EventListener = (event) => {
     connected.value = false
-    canvasMayBeStale.value = true
+    markCanvasStale()
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
     recordDevEvent(
       'doc_gap',
@@ -817,7 +832,7 @@ function startAgentCrdtFollower(
   }
   function onSocketStatus(live: boolean): void {
     if (!live) {
-      if (connected.value) canvasMayBeStale.value = true
+      if (connected.value) markCanvasStale()
       connected.value = false
       return
     }
@@ -860,6 +875,7 @@ function startAgentCrdtFollower(
   const rebindProjection = (next: string | null): void => {
     const current = subscribedWorkflowId.value
     if (current === next) return
+    clearCanvasStaleness()
     if (current !== null) {
       projection.unbind(current)
       reportPendingFrames(current, 'discarded', NOTHING_APPLIED)
@@ -919,9 +935,12 @@ function startAgentCrdtFollower(
   ): void => {
     if (next !== null) initialBind = false
     if (next !== null && next === previousWorkflowId) {
+      if (connected.value || canvasMayBeStale.value) markCanvasStale()
+      connected.value = false
       holdOpsForInactiveTab(next)
       return
     }
+    connected.value = false
     rebindProjection(null)
     retarget(null)
   }
@@ -967,20 +986,16 @@ function startAgentCrdtFollower(
   watch(
     [workflowId, isTargetActive],
     ([next, active], previous: TargetSnapshot | undefined) => {
-      // Only the inactive->active edge, and never the `immediate` first run
-      // (`previous` is undefined there): a plain mount or retarget has no
-      // collected changes to apply, the graph watcher covers readiness.
       const justActivated = isActivationEdge(active, previous)
       if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()
-      connected.value = false
-      canvasMayBeStale.value = false
       terminal.value = null
       pendingLiveNodeIds.clear()
       if (!active) {
         deactivateTarget(next, previous?.[0] ?? null)
         return
       }
+      connected.value = false
       if (next === null) {
         restorePersistedTarget(justActivated)
         return

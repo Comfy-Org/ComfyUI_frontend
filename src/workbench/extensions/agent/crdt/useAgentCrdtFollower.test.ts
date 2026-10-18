@@ -621,6 +621,89 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('keeps a stale canvas through deferred catch-up until projection applies', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, status } = mountFollower('wf-1', true, () => graph.value)
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 2
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      graph.value = fromPartial<LGraph>({})
+      await nextTick()
+
+      expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('keeps a subscribed canvas stale across a tab detour until catch-up applies', async () => {
+      const { unmount, status, isTargetActive } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      isTargetActive.value = false
+      await nextTick()
+      expect(status().canvasMayBeStale).toBe(true)
+
+      isTargetActive.value = true
+      await nextTick()
+      expect(status().canvasMayBeStale).toBe(true)
+
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 2
+      })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('clears a stale canvas when the workflow binding changes', async () => {
+      const { unmount, status, workflowId } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      expect(status().canvasMayBeStale).toBe(true)
+
+      workflowId.value = 'wf-2'
+      await nextTick()
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
     it('clears a stale canvas when reconnect confirms an empty document', () => {
       const { unmount, status } = mountFollower('wf-1')
       dispatchFrame('doc_subscribed', {
