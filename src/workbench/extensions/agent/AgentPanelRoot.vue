@@ -607,13 +607,20 @@ watch(
   { immediate: true }
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
+const sendHeldByCoach = ref(false)
+let panelTornDown = false
 
 async function waitForCoachCompletion(): Promise<void> {
   const key = onboardingKey.value
   if (!key || hasSeenCoach(key)) return
   await nextTick()
   if (coachDeferredBy.value !== null || !coachRef.value) return
-  await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+  sendHeldByCoach.value = true
+  try {
+    await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+  } finally {
+    sendHeldByCoach.value = false
+  }
 }
 
 function restartCoach(): void {
@@ -1385,11 +1392,15 @@ function runApprovalDecision(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
+    markPanelTornDown: () => {
+      panelTornDown = true
+    },
     releaseCoachCompletionWaiters: () => {
       releaseCoachCompletionWaiters()
     },
     invalidateConsentHeldSubmission: () => {
       if (
+        !sendHeldByCoach.value &&
         (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
         composerStore.submission?.id === consentHeldSubmissionId
       )
@@ -1624,7 +1635,11 @@ async function consentAllowsSubmission(
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
   }
-  return composerStore.submission?.id === submissionId && hasConsent
+  return (
+    composerStore.submission?.id === submissionId &&
+    hasConsent &&
+    !panelTornDown
+  )
 }
 
 const { submit: onSend } = useAgentDraftSubmission({
@@ -2129,7 +2144,9 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       ref="coachRef"
       :steps="coachSteps"
       :storage-key="onboardingKey"
+      :hold-notice="sendHeldByCoach ? t('agent.coachHoldNotice') : undefined"
       @finished="releaseCoachCompletionWaiters"
+      @stalled="releaseCoachCompletionWaiters"
     />
   </div>
 </template>

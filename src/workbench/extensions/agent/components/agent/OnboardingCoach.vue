@@ -31,11 +31,12 @@ import {
 const TARGET_MISSING_AFTER_MS = 8000
 const COACH_HOVER_ATTRIBUTE = 'data-coach-hover'
 
-const { steps, storageKey } = defineProps<{
+const { steps, storageKey, holdNotice } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
+  holdNotice?: string
 }>()
-const emit = defineEmits<{ finished: [] }>()
+const emit = defineEmits<{ finished: []; stalled: [] }>()
 
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
@@ -124,13 +125,18 @@ targetObserver.observe(document.body, {
   childList: true,
   subtree: true
 })
+let reportedStalled = false
 const missingTarget = computed(() =>
   active.value && !target.value ? step.value.target : null
 )
 const { start: startMissingTargetTimer, stop: stopMissingTargetTimer } =
   useTimeoutFn(
-    (selector: string, step: number) =>
-      reportMissingCoachTarget(selector, step),
+    (selector: string, step: number) => {
+      reportMissingCoachTarget(selector, step)
+      if (reportedStalled) return
+      reportedStalled = true
+      emit('stalled')
+    },
     TARGET_MISSING_AFTER_MS,
     { immediate: false }
   )
@@ -312,6 +318,13 @@ useEventListener(
                 class="m-0 text-sm/normal text-pretty text-muted-foreground"
               >
                 {{ step.body }}
+              </p>
+              <p
+                v-if="holdNotice"
+                class="m-0 text-xs/normal text-muted-foreground"
+                data-testid="agent-coach-hold-notice"
+              >
+                {{ holdNotice }}
               </p>
             </div>
             <div class="flex justify-end gap-3">
