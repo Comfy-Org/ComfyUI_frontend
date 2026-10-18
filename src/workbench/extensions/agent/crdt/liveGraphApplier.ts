@@ -1233,9 +1233,11 @@ export class LiveGraphApplier {
     value: WidgetValue
   ) {
     const { max } = widget.options
-    const aboveMax =
-      typeof value === 'number' && max !== undefined && Math.trunc(value) > max
-    if (!aboveMax) {
+    const growsAboveMax =
+      typeof value === 'number' &&
+      max !== undefined &&
+      Math.trunc(value) > Math.max(max, Number(widget.value))
+    if (!growsAboveMax) {
       applyRemoteDynamicGroupRowCount(node, () =>
         this.setWidgetValue(node, widget, value)
       )
