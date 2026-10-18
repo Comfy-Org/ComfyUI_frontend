@@ -40,11 +40,6 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-const HUMAN_LINKS = [
-  { linkId: 501, target: LOAD_VIDEO },
-  { linkId: 502, target: CSV_COLUMN }
-] as const
-
 function agentBuiltWorkflow(): WorkflowJSON {
   return {
     nodes: [
@@ -99,34 +94,28 @@ function liveNode(
   return node
 }
 
-const liveNodes = new Map<string, LGraphNode>([
-  [
-    String(LOAD_VIDEO),
-    liveNode(
-      'VHS_LoadVideo',
-      LOAD_VIDEO,
-      ['meta_batch', 'vae'],
-      LOAD_VIDEO_WIDGETS
-    )
-  ],
-  [
-    String(CSV_COLUMN),
-    liveNode('CSVCVColumn', CSV_COLUMN, [], CSV_COLUMN_WIDGETS)
-  ]
-])
-const rootGraph: LGraph = fromPartial<LGraph>({
-  id: ROOT_GRAPH_ID,
-  isRootGraph: true,
-  getNodeById: (id: unknown) => liveNodes.get(String(id)) ?? null
-})
-Object.assign(rootGraph, { rootGraph })
-
-function liveSlot(nodeId: number, name: string): number {
-  const index =
-    liveNodes.get(String(nodeId))?.inputs.findIndex((i) => i.name === name) ??
-    -1
-  if (index < 0) throw new Error(`live node ${nodeId} has no input ${name}`)
-  return index
+function liveGraph(): LGraph {
+  const liveNodes = new Map<string, LGraphNode>([
+    [
+      String(LOAD_VIDEO),
+      liveNode(
+        'VHS_LoadVideo',
+        LOAD_VIDEO,
+        ['meta_batch', 'vae'],
+        LOAD_VIDEO_WIDGETS
+      )
+    ],
+    [
+      String(CSV_COLUMN),
+      liveNode('CSVCVColumn', CSV_COLUMN, [], CSV_COLUMN_WIDGETS)
+    ]
+  ])
+  const graph = fromPartial<LGraph>({
+    id: ROOT_GRAPH_ID,
+    isRootGraph: true,
+    getNodeById: (id: unknown) => liveNodes.get(String(id)) ?? null
+  })
+  return Object.assign(graph, { rootGraph: graph })
 }
 
 interface ProjectedInput {
@@ -136,23 +125,29 @@ interface ProjectedInput {
 }
 
 describe('a human link into a widget input the agent-built document lacks', () => {
-  it('reaches the document the agent reads, so frame_load_cap shows as linked', async () => {
-    const doc = mint(agentBuiltWorkflow(), CATALOG)
-    const minted: GraphOperation[] = []
-    const port = attachDocOpMinter({
-      isEnabled: () => true,
-      isDocBound: () => true,
-      enqueue: (ops) => minted.push(...ops),
-      getGraph: () => rootGraph,
-      boundRootGraphId: () => ROOT_GRAPH_ID,
-      docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
-      docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
-      mayWritePromotedHost: () => true,
-      onWidgetWriteRefused: () => {}
-    })
-    onTestFinished(() => port.detach())
+  it.for([
+    { node: 'VHS_LoadVideo', linkId: 501, target: LOAD_VIDEO },
+    { node: 'CSVCVColumn', linkId: 502, target: CSV_COLUMN }
+  ])(
+    'reaches the document the agent reads, so $node frame_load_cap shows as linked',
+    async ({ linkId, target }) => {
+      const doc = mint(agentBuiltWorkflow(), CATALOG)
+      const rootGraph = liveGraph()
+      const minted: GraphOperation[] = []
+      const port = attachDocOpMinter({
+        isEnabled: () => true,
+        isDocBound: () => true,
+        enqueue: (ops) => minted.push(...ops),
+        getGraph: () => rootGraph,
+        boundRootGraphId: () => ROOT_GRAPH_ID,
+        docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
+        docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
+        mayWritePromotedHost: () => true,
+        onWidgetWriteRefused: () => {}
+      })
+      onTestFinished(() => port.detach())
 
-    for (const { linkId, target } of HUMAN_LINKS) {
+      const liveTarget = rootGraph.getNodeById(toNodeId(target))
       emitGraphIntent({
         type: 'connect',
         graph: rootGraph,
@@ -161,38 +156,42 @@ describe('a human link into a widget input the agent-built document lacks', () =
           origin_id: toNodeId(PRIMITIVE_INT),
           origin_slot: 0,
           target_id: toNodeId(target),
-          target_slot: liveSlot(target, 'frame_load_cap'),
+          target_slot: liveTarget?.findInputSlot('frame_load_cap'),
           type: 'INT'
         })
       })
-    }
-    await new Promise<void>((resolve) => queueMicrotask(resolve))
+      await new Promise<void>((resolve) => queueMicrotask(resolve))
 
-    expect(minted.map((op) => op.op)).toEqual(['connect', 'connect'])
+      expect(minted.map((op) => op.op)).toEqual(['connect'])
 
-    const wireOps = mintWireOps(minted, {
-      actor: 'human:u1:tab',
-      baseVersion: 1
-    })
-    expect(applyOps(doc, wireOps, CATALOG).outcomes).toEqual(
-      wireOps.map((op) => ({ op_id: op.op_id, outcome: 'applied' }))
-    )
+      const wireOps = mintWireOps(minted, {
+        actor: 'human:u1:tab',
+        baseVersion: 1
+      })
+      expect(applyOps(doc, wireOps, CATALOG).outcomes).toEqual(
+        wireOps.map((op) => ({ op_id: op.op_id, outcome: 'applied' }))
+      )
 
-    const agentView = project(doc, CATALOG)
-    for (const { linkId, target } of HUMAN_LINKS) {
-      const node = agentView.nodes.find((n) => String(n.id) === String(target))
-      const inputs = (node?.inputs ?? []) as ProjectedInput[]
-      expect(
-        inputs.find((input) => input.name === 'frame_load_cap')
-      ).toMatchObject({ link: linkId, widget: { name: 'frame_load_cap' } })
+      const agentView = project(doc, CATALOG)
+      const projected = agentView.nodes.find(
+        (n) => String(n.id) === String(target)
+      )
+      const inputs = (projected?.inputs ?? []) as ProjectedInput[]
+      const capIndex = inputs.findIndex(
+        (input) => input.name === 'frame_load_cap'
+      )
+      expect(inputs[capIndex]).toMatchObject({
+        link: linkId,
+        widget: { name: 'frame_load_cap' }
+      })
       expect(agentView.links).toContainEqual([
         linkId,
         String(PRIMITIVE_INT),
         0,
         String(target),
-        inputs.findIndex((input) => input.name === 'frame_load_cap'),
+        capIndex,
         'INT'
       ])
     }
-  })
+  )
 })
