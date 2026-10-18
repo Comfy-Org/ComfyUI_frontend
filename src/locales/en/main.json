@@ -3803,6 +3803,10 @@
       "deleteWorkspaceBillingParkedTooltip": "A recent payment needs a fix from our team. Contact support.",
       "deleteWorkspaceBillingInProgressTooltip": "A billing change is in progress. Try again in a moment.",
       "deleteWorkspaceUnavailableTooltip": "This workspace can't be deleted right now.",
+      "leaveWorkspaceCreatorTooltip": "You created this workspace, so you can't leave it.",
+      "leaveWorkspaceOnlyOwnerTooltip": "Make another member an owner before you leave this workspace.",
+      "leaveWorkspaceDirectoryTooltip": "Your organization manages this membership, so you can't leave this workspace.",
+      "leaveWorkspaceUnavailableTooltip": "You can't leave this workspace right now.",
       "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
