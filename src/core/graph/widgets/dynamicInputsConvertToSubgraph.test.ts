@@ -17,26 +17,6 @@ import {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 
-/**
- * FE-3463: Convert to Subgraph rewires links on nodes whose dynamic combo is
- * set to a non-default option.
- *
- * `convertToSubgraph` copies the selected nodes through `multiClone`, which
- * configures each copy on a detached node (no graph). Restoring the dynamic
- * combo's value there rebuilds the option's child inputs, and the copy is
- * serialized with every `inputs[].link` cleared and without the autogrow
- * group's spare slot. With no link ids left, neither
- * `realignGroupWidgetChildLinks` nor `LGraph.configure`'s
- * `realignInputLinkSlots` can re-point links by input name, so the interior
- * links attach by their raw `target_slot`. That index counts the original
- * node's live layout, but the subgraph's fresh node is laid out for the
- * default option, so links after the dynamic combo land on the wrong slot.
- *
- * The repro cases are `test.fails` until the bug is fixed: they pass only
- * while the links are still misrouted. Flip them to `test` with the fix.
- */
-
-/** Shaped after `OpenAIGPTImageNodeV2` (OpenAI GPT Image 2.5). */
 const GPT_IMAGE_TYPE = 'test/FE3463GPTImage'
 const gptImageOptionInputs = {
   required: {
@@ -82,7 +62,6 @@ const gptImageNodeDef: ComfyNodeDefV1 = {
   output_node: false
 }
 
-/** Shaped after `OpenRouterLLMNode` (Claude / Perplexity via OpenRouter). */
 const LLM_TYPE = 'test/FE3463OpenRouterLLM'
 const llmNodeDef: ComfyNodeDefV1 = {
   name: LLM_TYPE,
@@ -159,7 +138,6 @@ function selectOption(node: LGraphNode, value: string) {
   widget.callback?.(value)
 }
 
-/** `input name -> type of the link connected to it`, for connected inputs. */
 function connectedInputTypes(node: LGraphNode): Record<string, string> {
   return Object.fromEntries(
     node.inputs.flatMap((input, slot) => {
@@ -183,7 +161,31 @@ function convertNodeToSubgraph(graph: LGraph, node: LGraphNode): LGraphNode {
   return inner
 }
 
-describe('Convert to Subgraph with a non-default dynamic combo option (FE-3463)', () => {
+function connectGptImage(graph: LGraph, gptImage: LGraphNode) {
+  const source = createNode(graph, 'test/FE3463Source')
+  source.connect(0, gptImage, slotOf(gptImage, 'model.images.image_1'))
+  source.connect(1, gptImage, slotOf(gptImage, 'seed'))
+}
+
+function reloadGraph(graph: LGraph): LGraph {
+  const reloaded = createTestRootGraph()
+  onTestFinished(enableSubgraphNodeCreation(reloaded))
+  reloaded.configure(structuredClone(graph.serialize()))
+  return reloaded
+}
+
+function newGraph(): LGraph {
+  const graph = createTestRootGraph()
+  onTestFinished(enableSubgraphNodeCreation(graph))
+  return graph
+}
+
+const gptImageWiring = {
+  'model.images.image_1': 'IMAGE',
+  seed: 'INT'
+}
+
+describe('Convert to Subgraph with dynamic combo inputs (FE-3463)', () => {
   beforeEach(async () => {
     resetSubgraphFixtureState()
     LiteGraph.registerNodeType('test/FE3463Source', SourceNode)
@@ -192,61 +194,88 @@ describe('Convert to Subgraph with a non-default dynamic combo option (FE-3463)'
     await registerNodeDef(LLM_TYPE, llmNodeDef)
   })
 
-  test('control: keeps image_1 and seed on their inputs with the default option', () => {
-    const graph = createTestRootGraph()
-    onTestFinished(enableSubgraphNodeCreation(graph))
-    const source = createNode(graph, 'test/FE3463Source')
+  test('keeps image_1 and seed on a node never re-laid-out since construction', () => {
+    const graph = newGraph()
     const gptImage = createNode(graph, GPT_IMAGE_TYPE)
-    source.connect(0, gptImage, slotOf(gptImage, 'model.images.image_1'))
-    source.connect(1, gptImage, slotOf(gptImage, 'seed'))
+    connectGptImage(graph, gptImage)
 
-    const inner = convertNodeToSubgraph(graph, gptImage)
-
-    expect(connectedInputTypes(inner)).toEqual({
-      'model.images.image_1': 'IMAGE',
-      seed: 'INT'
-    })
+    expect(connectedInputTypes(convertNodeToSubgraph(graph, gptImage))).toEqual(
+      gptImageWiring
+    )
   })
 
-  // On main, image_1's link lands on model.mask and the seed link dangles.
-  test.fails('keeps image_1 off the mask input on a GPT Image 2.5 node', () => {
-    const graph = createTestRootGraph()
-    onTestFinished(enableSubgraphNodeCreation(graph))
-    const source = createNode(graph, 'test/FE3463Source')
-    const gptImage = createNode(graph, GPT_IMAGE_TYPE)
-    selectOption(gptImage, 'gpt-image-2.5-sunburst')
-    source.connect(0, gptImage, slotOf(gptImage, 'model.images.image_1'))
-    source.connect(1, gptImage, slotOf(gptImage, 'seed'))
-    expect(connectedInputTypes(gptImage)).toEqual({
-      'model.images.image_1': 'IMAGE',
-      seed: 'INT'
-    })
-
-    const inner = convertNodeToSubgraph(graph, gptImage)
-
-    expect(connectedInputTypes(inner)).toEqual({
-      'model.images.image_1': 'IMAGE',
-      seed: 'INT'
-    })
-  })
-
-  // On main, the system prompt string lands on seed.
-  test.fails('keeps a system prompt string off the numeric seed input on an OpenRouter LLM node', () => {
-    const graph = createTestRootGraph()
-    onTestFinished(enableSubgraphNodeCreation(graph))
-    const source = createNode(graph, 'test/FE3463Source')
+  test('wires every repro scenario as intended before conversion', () => {
+    const graph = newGraph()
+    const switched = createNode(graph, GPT_IMAGE_TYPE)
+    selectOption(switched, 'gpt-image-2.5-sunburst')
+    connectGptImage(graph, switched)
+    const reselected = createNode(graph, GPT_IMAGE_TYPE)
+    selectOption(reselected, 'gpt-image-2.5-flare')
+    connectGptImage(graph, reselected)
+    const saved = createNode(graph, GPT_IMAGE_TYPE)
+    connectGptImage(graph, saved)
     const llm = createNode(graph, LLM_TYPE)
     selectOption(llm, 'perplexity/sonar-pro')
+    const source = createNode(graph, 'test/FE3463Source')
     source.connect(2, llm, slotOf(llm, 'prompt'))
     source.connect(2, llm, slotOf(llm, 'system_prompt'))
+    const reloaded = reloadGraph(graph)
+    const reloadedSaved = reloaded.getNodeById(saved.id)
+    assert(reloadedSaved, 'reloaded GPT Image node')
+
+    expect(
+      [switched, reselected, reloadedSaved].map(connectedInputTypes)
+    ).toEqual([gptImageWiring, gptImageWiring, gptImageWiring])
     expect(connectedInputTypes(llm)).toEqual({
       prompt: 'STRING',
       system_prompt: 'STRING'
     })
+  })
 
-    const inner = convertNodeToSubgraph(graph, llm)
+  test.fails('keeps image_1 off model.mask after switching the model option', () => {
+    const graph = newGraph()
+    const gptImage = createNode(graph, GPT_IMAGE_TYPE)
+    selectOption(gptImage, 'gpt-image-2.5-sunburst')
+    connectGptImage(graph, gptImage)
 
-    expect(connectedInputTypes(inner)).toEqual({
+    expect(connectedInputTypes(convertNodeToSubgraph(graph, gptImage))).toEqual(
+      gptImageWiring
+    )
+  })
+
+  test.fails('keeps image_1 off model.mask after re-selecting the default model option', () => {
+    const graph = newGraph()
+    const gptImage = createNode(graph, GPT_IMAGE_TYPE)
+    selectOption(gptImage, 'gpt-image-2.5-flare')
+    connectGptImage(graph, gptImage)
+
+    expect(connectedInputTypes(convertNodeToSubgraph(graph, gptImage))).toEqual(
+      gptImageWiring
+    )
+  })
+
+  test.fails('keeps image_1 off model.mask on a node loaded from a saved workflow', () => {
+    const graph = newGraph()
+    const gptImage = createNode(graph, GPT_IMAGE_TYPE)
+    connectGptImage(graph, gptImage)
+    const reloaded = reloadGraph(graph)
+    const loaded = reloaded.getNodeById(gptImage.id)
+    assert(loaded, 'reloaded GPT Image node')
+
+    expect(
+      connectedInputTypes(convertNodeToSubgraph(reloaded, loaded))
+    ).toEqual(gptImageWiring)
+  })
+
+  test.fails('keeps a system prompt string off the numeric seed input', () => {
+    const graph = newGraph()
+    const llm = createNode(graph, LLM_TYPE)
+    selectOption(llm, 'perplexity/sonar-pro')
+    const source = createNode(graph, 'test/FE3463Source')
+    source.connect(2, llm, slotOf(llm, 'prompt'))
+    source.connect(2, llm, slotOf(llm, 'system_prompt'))
+
+    expect(connectedInputTypes(convertNodeToSubgraph(graph, llm))).toEqual({
       prompt: 'STRING',
       system_prompt: 'STRING'
     })
