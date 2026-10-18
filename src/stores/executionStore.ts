@@ -670,7 +670,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
-    if (!belongsToActiveWorkflow(detail.prompt_id)) return
+    if (activeJobId.value && detail.prompt_id !== activeJobId.value) return
     _executingNodeProgress.value = detail
   }, 'raf:progress')
 

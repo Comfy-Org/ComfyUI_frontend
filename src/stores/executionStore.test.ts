@@ -2728,16 +2728,19 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
   })
 
-  it('clears the canvas when switching to a workflow with no running job', async () => {
+  it('clears the canvas but keeps tracking the running job when switching to a workflow with no job', async () => {
     fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
     fireProgressState('job-visible', '1')
 
     useWorkflowStore().activeWorkflow = backgroundWorkflow
     await nextTick()
+    fire('progress', { value: 5, max: 10, prompt_id: 'job-visible', node: '1' })
+    vi.advanceTimersToNextFrame()
 
     expect(store.nodeProgressStates).toEqual({})
     expect(store.activeJobId).toBe('job-visible')
     expect(store.isActiveWorkflowRunning).toBe(false)
+    expect(store.executingNodeProgress).toBe(0.5)
   })
 
   it('admits frames whose workflow is unknown while no job is active', () => {
