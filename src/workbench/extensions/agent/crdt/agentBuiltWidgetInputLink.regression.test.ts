@@ -160,9 +160,7 @@ describe('a human link into a widget input the agent-built document lacks', () =
         getGraph: () => rootGraph,
         boundRootGraphId: () => ROOT_GRAPH_ID,
         docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
-        docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
-        mayWritePromotedHost: () => true,
-        onWidgetWriteRefused: () => {}
+        docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id))
       })
       onTestFinished(() => port.detach())
 
@@ -225,9 +223,7 @@ describe('a human link into a widget input the agent-built document lacks', () =
       getGraph: () => rootGraph,
       boundRootGraphId: () => ROOT_GRAPH_ID,
       docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
-      docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
-      mayWritePromotedHost: () => true,
-      onWidgetWriteRefused: () => {}
+      docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id))
     })
     onTestFinished(() => port.detach())
     const docCapIndex = readDocSlotNames(
