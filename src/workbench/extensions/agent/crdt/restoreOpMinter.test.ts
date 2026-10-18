@@ -3,7 +3,6 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
@@ -155,25 +154,11 @@ describe('attachRestoreOpMinter', () => {
         TestPreviewSource: { widget_order: ['image'] }
       }
     }
-    useNodeDefStore().addNodeDef({
-      name: 'TestPreviewSource',
-      display_name: 'Test Preview Source',
-      category: 'test',
-      python_module: 'test',
-      description: '',
-      output_node: false,
-      input: { required: { image: ['STRING', {}] } },
-      output: ['IMAGE'],
-      output_is_list: [false],
-      output_name: ['image']
-    })
     const preview = new TestPreviewSource()
-    preview.type = 'TestPreviewSource'
     graph.add(preview)
     graph.remove(preview)
     const doc = mint(graph.serialize() as unknown as WorkflowJSON, catalog)
     const restored = new TestPreviewSource()
-    restored.type = 'TestPreviewSource'
     restored.id = preview.id
 
     restoreThrough(() => {

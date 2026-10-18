@@ -24,8 +24,6 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
@@ -161,23 +159,6 @@ class TestEmptyComboGroup extends LGraphNode {
       template: { required: { lora_name: ['COMBO', { options: [] }] } }
     })
   }
-}
-
-function addVideoLoaderDef(
-  optional: NonNullable<ComfyNodeDefV1['input']>['optional'] = {}
-) {
-  useNodeDefStore().addNodeDef({
-    name: 'TestVideoLoader',
-    display_name: 'Test Video Loader',
-    category: 'test',
-    python_module: 'test',
-    description: '',
-    output_node: false,
-    input: { required: { video: [['clip.mp4'], {}] }, optional },
-    output: [],
-    output_is_list: [],
-    output_name: []
-  })
 }
 
 const CATALOG: WidgetCatalog = {
@@ -629,9 +610,7 @@ describe('attachDocOpMinter', () => {
   })
 
   it('leaves a display-only DOM widget out of a catalogued add_node, and the applier takes it', async () => {
-    addVideoLoaderDef()
     const loader = new TestVideoLoader()
-    loader.type = 'TestVideoLoader'
     graph.add(loader)
     await afterFlush()
 
@@ -654,10 +633,11 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  it('keeps a DOM widget out of the prompt as a value when its definition declares it', async () => {
-    addVideoLoaderDef({ videopreview: ['VIDEO_PREVIEW', {}] })
+  it('keeps a DOM widget out of the prompt as a value when it backs a declared input', async () => {
     const loader = new TestVideoLoader()
-    loader.type = 'TestVideoLoader'
+    loader.addInput('videopreview', 'VIDEO_PREVIEW', {
+      widget: { name: 'videopreview' }
+    })
     graph.add(loader)
     await afterFlush()
 
@@ -681,22 +661,6 @@ describe('attachDocOpMinter', () => {
     )
     expect(outcomes).toEqual([expect.objectContaining({ outcome: 'applied' })])
     doc.destroy()
-  })
-
-  it('keeps a display-only DOM widget when the node has no definition to judge it by', async () => {
-    const loader = new TestVideoLoader()
-    loader.type = 'TestVideoLoader'
-    graph.add(loader)
-    await afterFlush()
-
-    expect(minted[0]).toMatchObject({
-      node: {
-        widgets_values: {
-          video: 'clip.mp4',
-          videopreview: { hidden: false, params: {} }
-        }
-      }
-    })
   })
 
   describe("link ops address the document's own input order", () => {

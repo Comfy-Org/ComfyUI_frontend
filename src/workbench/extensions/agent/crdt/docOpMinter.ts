@@ -30,8 +30,6 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
-import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -152,14 +150,15 @@ function valueWidgetsOnly(
     const stored = rootGraphId
       ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
       : undefined
-    if (isValueWidget(widget, stored)) filtered[name] = value
+    if (isValueWidget(widget, stored, node)) filtered[name] = value
   }
   return filtered
 }
 
 function isValueWidget(
   widget: IBaseWidget | undefined,
-  stored?: WidgetState
+  stored: WidgetState | undefined,
+  node: LGraphNode | null
 ): boolean {
   if (!widget && !stored) return false
   // A destructuring default fires on absent AND present-but-undefined alike,
@@ -169,15 +168,18 @@ function isValueWidget(
   // drift apart again.
   const { type = stored?.type, serialize = stored?.serialize } = widget ?? {}
   if (type === 'button' || serialize === false) return false
-  return !(widget && isDisplayOnlyDomWidget(widget))
+  return !(widget && node && isDisplayOnlyDomWidget(node, widget))
 }
 
-function isDisplayOnlyDomWidget(widget: IBaseWidget): boolean {
-  if (!isDOMWidget(widget) && !isComponentWidget(widget)) return false
-  if (widget.options.serialize !== false) return false
-  const nodeDefStore = useNodeDefStore()
-  if (!nodeDefStore.fromLGraphNode(widget.node)) return false
-  return !nodeDefStore.getInputSpecForWidget(widget.node, widget.name)
+function isDisplayOnlyDomWidget(
+  node: LGraphNode,
+  widget: IBaseWidget
+): boolean {
+  const rendersOwnElement =
+    ('element' in widget && Boolean(widget.element)) ||
+    ('component' in widget && Boolean(widget.component))
+  if (!rendersOwnElement || widget.options.serialize !== false) return false
+  return !node.inputs.some((input) => input.widget?.name === widget.name)
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
@@ -211,7 +213,7 @@ function isValueWidgetWrite(
   const widget = owner?.widgets?.find(
     (candidate) => candidate.name === event.name
   )
-  return isValueWidget(widget, stored)
+  return isValueWidget(widget, stored, owner)
 }
 
 function promotedHostWrite(
