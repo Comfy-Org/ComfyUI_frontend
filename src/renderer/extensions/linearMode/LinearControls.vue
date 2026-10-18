@@ -7,6 +7,8 @@ import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import InputGroupAccordion from '@/components/builder/InputGroupAccordion.vue'
+import { resolveGroupItems } from '@/components/builder/useInputGroups'
+import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
@@ -46,6 +48,12 @@ const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
 const inputGroupStore = useInputGroupStore()
+const resolvedInputs = useResolvedSelectedInputs()
+const visibleInputGroups = computed(() =>
+  inputGroupStore.inputGroups.filter(
+    (group) => resolveGroupItems(group, resolvedInputs.value).length > 0
+  )
+)
 const { hasOutputs } = storeToRefs(appModeStore)
 const { hasAnyError, hasMissingError } = storeToRefs(useExecutionErrorStore())
 const missingMediaStore = useMissingMediaStore()
@@ -189,16 +197,16 @@ function replayAppModeTour() {
       >
         <AppModeWidgetList ref="widgetListRef" :mobile />
         <InputGroupAccordion
-          v-for="(group, index) in inputGroupStore.inputGroups"
+          v-for="(group, index) in visibleInputGroups"
           :key="group.id"
           :group
           :mobile
           :position="
-            inputGroupStore.inputGroups.length === 1
+            visibleInputGroups.length === 1
               ? 'only'
               : index === 0
                 ? 'first'
-                : index === inputGroupStore.inputGroups.length - 1
+                : index === visibleInputGroups.length - 1
                   ? 'last'
                   : 'middle'
           "

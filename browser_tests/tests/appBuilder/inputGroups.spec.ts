@@ -4,6 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { InputGroups } from '@e2e/fixtures/components/InputGroups'
 import {
+  builderSaveAs,
   saveCloseAndReopenInBuilder,
   setupBuilder
 } from '@e2e/fixtures/utils/builderTestUtils'
@@ -121,5 +122,25 @@ test.describe('App builder input groups', { tag: '@ui' }, () => {
       })
       .toBe(true)
     await expect(groups.labels('Sampling')).toHaveText(['seed', 'steps'])
+  })
+
+  test('hides a group in app mode after its last input is deselected', async ({
+    comfyPage
+  }) => {
+    const { appMode } = comfyPage
+    const groups = new InputGroups(comfyPage.page)
+    await groups.createFromWidget('seed', 'Sampling')
+    await appMode.steps.goToInputs()
+    await appMode.select.deleteInput('seed')
+    await appMode.steps.goToPreview()
+    await expect(groups.group('Sampling')).toBeVisible()
+    await expect(groups.labels('Sampling')).toHaveCount(0)
+    await builderSaveAs(appMode, `${Date.now()} empty-group`, 'App')
+    await appMode.saveAs.viewAppButton.click()
+    await expect(appMode.linearWidgets).toBeVisible()
+    await expect(groups.all).toHaveCount(0)
+    await expect(
+      appMode.linearWidgets.getByTestId('builder-widget-label')
+    ).toHaveText(['steps', 'cfg'])
   })
 })

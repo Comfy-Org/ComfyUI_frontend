@@ -4,6 +4,10 @@ import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
+import { useInputGroupStore } from '@/stores/inputGroupStore'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import * as distributionModule from '@/platform/distribution/types'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -26,6 +30,7 @@ const overlayMock = vi.hoisted(() => ({
 
 const distributionMock = vi.hoisted(() => ({ isCloud: true }))
 
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), { spy: true })
@@ -179,6 +184,34 @@ describe('LinearControls', () => {
     useTemplateInputDownloadStore().clear()
     overlayMock.overlayMessage = 'KSampler is missing a required input: model'
     overlayMock.overlayTitle = 'Required input missing'
+  })
+
+  it('hides groups without selected inputs and restores them when reselected', async () => {
+    const node = new LGraphNode('Source')
+    const widget = node.addWidget('number', 'seed', 1, () => {})
+    app.rootGraph.add(node)
+    if (!widget.widgetId) throw new Error('Missing widget identity')
+    const appMode = useAppModeStore()
+    const groups = useInputGroupStore()
+    appMode.selectedInputs = [[widget.widgetId, widget.name]]
+    groups.createGroup('Sampling', widget.widgetId)
+    groups.createGroup('Empty group')
+
+    renderControls()
+
+    expect(screen.getByRole('button', { name: 'Sampling' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Empty group' })
+    ).not.toBeInTheDocument()
+    appMode.removeSelectedInput(widget)
+    await nextTick()
+    expect(
+      screen.queryByRole('button', { name: 'Sampling' })
+    ).not.toBeInTheDocument()
+
+    appMode.selectedInputs = [[widget.widgetId, widget.name]]
+    await nextTick()
+    expect(screen.getByRole('button', { name: 'Sampling' })).toBeInTheDocument()
   })
 
   it('shows an indeterminate bar when a download reports no progress', () => {
