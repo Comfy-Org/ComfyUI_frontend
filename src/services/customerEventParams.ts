@@ -1,7 +1,5 @@
 import type { components } from '@/types/comfyRegistryTypes'
 
-import type { EventType } from './customerEventsService'
-
 type AuditLog = components['schemas']['AuditLog']
 
 const TOOLTIP_PARAM_ALLOWLIST = [
@@ -24,8 +22,8 @@ type TooltipParamKey = (typeof TOOLTIP_PARAM_ALLOWLIST)[number]
 const DETAILS_COLUMN_PARAM_KEYS: Partial<
   Record<string, readonly TooltipParamKey[]>
 > = {
-  ['credit_added' satisfies `${EventType}`]: ['amount'],
-  ['api_usage_completed' satisfies `${EventType}`]: ['api_name', 'model']
+  credit_added: ['amount'],
+  api_usage_completed: ['api_name', 'model']
 }
 
 export function presentTooltipParamKeys(params: Record<string, unknown>) {
