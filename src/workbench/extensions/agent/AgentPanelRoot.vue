@@ -329,8 +329,11 @@ const latestEntryHasPaywall = computed(() => {
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
+const threadHasUserMessage = computed(() =>
+  conversationEntries.value.some((entry) => entry.role === 'user')
+)
 const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+  if (!creditsExhausted.value || !threadHasUserMessage.value) return false
   return !latestEntryHasPaywall.value
 })
 
