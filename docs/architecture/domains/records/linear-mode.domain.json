@@ -20,6 +20,10 @@
       "role": "presentation"
     },
     {
+      "path": "src/renderer/extensions/linearMode/LinearControls.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/renderer/extensions/linearMode/flattenNodeOutput.test.ts",
       "role": "domain"
     },
@@ -84,9 +88,9 @@
       "role": "presentation"
     }
   ],
-  "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "publicEntryPoints": ["src/composables/useAppMode.ts"],
+  "allowedDependencies": ["app-builder", "extension-runtime", "litegraph-api"],
+  "allowedConsumers": ["app-builder"],
   "characterizationScenarios": [
     {
       "name": "Run controls, progress, and run errors preserve app-mode execution",
@@ -133,13 +137,23 @@
     {
       "name": "App-mode view lays out controls, preview, builder, and mobile display",
       "checks": ["src/views/LinearView.test.ts"]
+    },
+    {
+      "name": "Input groups persist, support undo and drag pairing, and hide empty groups in app mode",
+      "checks": [
+        "src/stores/inputGroupStore.test.ts",
+        "src/components/builder/useGroupDrop.test.ts",
+        "src/components/builder/useInputGroups.test.ts",
+        "src/renderer/extensions/linearMode/LinearControls.test.ts",
+        "browser_tests/tests/appBuilder/inputGroups.spec.ts"
+      ]
     }
   ],
   "adrs": [
     "docs/adr/SUBGRAPH-PROMOTION-0009-represent-promoted-widgets-as-linked-inputs.md"
   ],
   "compatibilityPromises": [
-    "Existing app-mode, builder, Vue node renderer, and workspace callers may continue importing linear mode internals during inventory; this record grants no new cross-domain permissions.",
+    "Existing app-mode, builder, Vue node renderer, and workspace callers may continue importing linear mode internals during inventory; input-group authoring and rendering use the declared dependencies.",
     "Saved app-mode input and output selections and workflow serialization remain unchanged."
   ],
   "deepImports": "inventory"

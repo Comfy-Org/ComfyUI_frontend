@@ -52,9 +52,11 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "publicEntryPoints": [
+    "src/platform/workflow/validation/schemas/workflowSchema.ts"
+  ],
+  "allowedDependencies": ["graph-model", "node-widgets"],
+  "allowedConsumers": ["app-builder"],
   "characterizationScenarios": [
     {
       "name": "Workflow schemas accept valid workflow and API documents and reject malformed ones",

@@ -2,6 +2,83 @@
   "boundaries": {
     "zones": [
       {
+        "name": "app-builder/application/public",
+        "patterns": [
+          "src/components/builder/useInputGroups.ts",
+          "src/components/builder/useResolvedSelectedInputs.ts",
+          "src/stores/inputGroupStore.ts"
+        ]
+      },
+      {
+        "name": "app-builder/presentation/public",
+        "patterns": ["src/components/builder/InputGroupAccordion.vue"]
+      },
+      {
+        "name": "app-host/application/public",
+        "patterns": ["src/i18n.ts"]
+      },
+      {
+        "name": "design-system/presentation/public",
+        "patterns": [
+          "src/components/common/DraggableList.vue",
+          "src/components/common/EditableText.vue",
+          "src/components/ui/button/Button.vue",
+          "src/components/ui/dialog/Dialog.vue",
+          "src/components/ui/dialog/DialogClose.vue",
+          "src/components/ui/dialog/DialogContent.vue",
+          "src/components/ui/dialog/DialogDescription.vue",
+          "src/components/ui/dialog/DialogFooter.vue",
+          "src/components/ui/dialog/DialogHeader.vue",
+          "src/components/ui/dialog/DialogOverlay.vue",
+          "src/components/ui/dialog/DialogPortal.vue",
+          "src/components/ui/dialog/DialogTitle.vue",
+          "src/components/ui/menu/Menu.vue",
+          "src/components/ui/menu/types.ts"
+        ]
+      },
+      {
+        "name": "extension-runtime/application/public",
+        "patterns": ["src/scripts/appInstance.ts"]
+      },
+      {
+        "name": "extension-runtime/integration/public",
+        "patterns": ["src/scripts/__mocks__/app.ts", "src/scripts/app.ts"]
+      },
+      {
+        "name": "graph-model/domain/public",
+        "patterns": ["src/types/nodeId.ts"]
+      },
+      {
+        "name": "linear-mode/application/public",
+        "patterns": ["src/composables/useAppMode.ts"]
+      },
+      {
+        "name": "litegraph-api/integration/public",
+        "patterns": ["src/lib/litegraph/src/litegraph.ts"]
+      },
+      {
+        "name": "node-widgets/domain/public",
+        "patterns": ["src/types/widgetId.ts"]
+      },
+      {
+        "name": "test-support/integration/public",
+        "patterns": ["src/utils/__tests__/litegraphTestUtils.ts"]
+      },
+      {
+        "name": "workflow-format/domain/public",
+        "patterns": [
+          "src/platform/workflow/validation/schemas/workflowSchema.ts"
+        ]
+      },
+      {
+        "name": "workflow-management/application/public",
+        "patterns": [
+          "src/platform/workflow/management/stores/comfyWorkflow.ts",
+          "src/platform/workflow/management/stores/workflowStore.ts",
+          "src/scripts/changeTracker.ts"
+        ]
+      },
+      {
         "name": "agent/domain",
         "patterns": [
           "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.test.ts",
@@ -237,10 +314,21 @@
           "src/components/builder/useBuilderSteps.ts",
           "src/components/builder/useEnterBuilder.test.ts",
           "src/components/builder/useEnterBuilder.ts",
+          "src/components/builder/useInputGroups.ts",
           "src/components/builder/useLoaderDropIndicator.test.ts",
           "src/components/builder/useLoaderDropIndicator.ts",
           "src/components/builder/useResolvedSelectedInputs.test.ts",
-          "src/components/builder/useResolvedSelectedInputs.ts"
+          "src/components/builder/useResolvedSelectedInputs.ts",
+          "src/stores/inputGroupStore.ts"
+        ]
+      },
+      {
+        "name": "app-builder/integration",
+        "patterns": [
+          "src/components/builder/InputGroupAccordion.test.ts",
+          "src/components/builder/useGroupDrop.test.ts",
+          "src/components/builder/useInputGroups.test.ts",
+          "src/stores/inputGroupStore.test.ts"
         ]
       },
       {
@@ -1936,6 +2024,12 @@
           "src/components/appMode/**",
           "src/views/LinearView.test.ts",
           "src/views/LinearView.vue"
+        ]
+      },
+      {
+        "name": "linear-mode/integration",
+        "patterns": [
+          "src/renderer/extensions/linearMode/LinearControls.test.ts"
         ]
       },
       {
@@ -4128,6 +4222,228 @@
     ],
     "rules": [
       {
+        "from": "app-builder/application/public",
+        "allow": [
+          "app-builder/application/public",
+          "app-host/application/public",
+          "extension-runtime/application/public",
+          "graph-model/domain/public",
+          "linear-mode/application/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "workflow-management/application/public",
+          "app-builder/domain",
+          "app-builder/application",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "linear-mode/domain",
+          "linear-mode/application",
+          "litegraph-api/infrastructure",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-format/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "app-host/domain/outer-1",
+          "design-system/domain/outer-1",
+          "extension-runtime/infrastructure/outer-1",
+          "graph-model/domain/outer-1",
+          "workflow-format/domain/outer-3",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "app-builder/presentation/public",
+        "allow": [
+          "app-builder/application/public",
+          "app-builder/presentation/public",
+          "app-host/application/public",
+          "design-system/presentation/public",
+          "extension-runtime/application/public",
+          "graph-model/domain/public",
+          "linear-mode/application/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "workflow-management/application/public",
+          "app-builder/domain",
+          "app-builder/application",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/presentation",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
+          "graph-model/domain",
+          "graph-model/application",
+          "linear-mode/domain",
+          "linear-mode/application",
+          "linear-mode/presentation",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/presentation",
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/presentation",
+          "app-builder/presentation/outer-1",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
+          "extension-runtime/presentation/outer-1",
+          "graph-model/domain/outer-1",
+          "linear-mode/presentation/outer-1",
+          "node-widgets/presentation/outer-1",
+          "workflow-management/presentation/outer-1",
+          "workflow-format/domain/outer-3",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "app-host/application/public",
+        "allow": [
+          "app-host/application/public",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "design-system/presentation/public",
+        "allow": [
+          "design-system/presentation/public",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-runtime/application/public",
+        "allow": [
+          "extension-runtime/application/public",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/infrastructure/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "extension-runtime/integration/public",
+        "allow": [
+          "extension-runtime/application/public",
+          "extension-runtime/integration/public",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
+          "extension-runtime/infrastructure/outer-1",
+          "extension-runtime/presentation/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "graph-model/domain/public",
+        "allow": [
+          "graph-model/domain/public",
+          "graph-model/domain",
+          "graph-model/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "linear-mode/application/public",
+        "allow": [
+          "app-builder/application/public",
+          "extension-runtime/application/public",
+          "linear-mode/application/public",
+          "app-builder/domain",
+          "app-builder/application",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "linear-mode/domain",
+          "linear-mode/application",
+          "litegraph-api/infrastructure",
+          "extension-runtime/infrastructure/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "litegraph-api/integration/public",
+        "allow": [
+          "litegraph-api/integration/public",
+          "litegraph-api/infrastructure",
+          "litegraph-api/integration",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-widgets/domain/public",
+        "allow": [
+          "node-widgets/domain/public",
+          "node-widgets/domain",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "test-support/integration/public",
+        "allow": [
+          "test-support/integration/public",
+          "test-support/integration",
+          "test-support/integration/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-format/domain/public",
+        "allow": [
+          "graph-model/domain/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "graph-model/domain",
+          "node-widgets/domain",
+          "workflow-format/domain",
+          "graph-model/domain/outer-1",
+          "workflow-format/domain/outer-3",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "workflow-management/application/public",
+        "allow": [
+          "workflow-management/application/public",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "unclassified"
+        ]
+      },
+      {
         "from": "agent/domain",
         "allow": [
           "agent/domain",
@@ -4174,6 +4490,7 @@
       {
         "from": "agent/presentation",
         "allow": [
+          "design-system/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/presentation",
@@ -4191,6 +4508,7 @@
       {
         "from": "agent/integration",
         "allow": [
+          "design-system/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -4214,13 +4532,142 @@
       },
       {
         "from": "app-builder/domain",
-        "allow": ["app-builder/domain", "unclassified"]
+        "allow": [
+          "graph-model/domain/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "app-builder/domain",
+          "app-host/domain",
+          "design-system/domain",
+          "extension-runtime/domain",
+          "graph-model/domain",
+          "linear-mode/domain",
+          "node-widgets/domain",
+          "workflow-format/domain",
+          "workflow-management/domain",
+          "app-host/domain/outer-1",
+          "design-system/domain/outer-1",
+          "graph-model/domain/outer-1",
+          "workflow-format/domain/outer-3",
+          "unclassified"
+        ]
       },
       {
         "from": "app-builder/application",
         "allow": [
+          "app-builder/application/public",
+          "app-host/application/public",
+          "extension-runtime/application/public",
+          "graph-model/domain/public",
+          "linear-mode/application/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "workflow-management/application/public",
           "app-builder/domain",
           "app-builder/application",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "linear-mode/domain",
+          "linear-mode/application",
+          "litegraph-api/infrastructure",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-format/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "app-host/domain/outer-1",
+          "design-system/domain/outer-1",
+          "extension-runtime/infrastructure/outer-1",
+          "graph-model/domain/outer-1",
+          "workflow-format/domain/outer-3",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "app-builder/integration",
+        "allow": [
+          "app-builder/application/public",
+          "app-builder/presentation/public",
+          "app-host/application/public",
+          "design-system/presentation/public",
+          "extension-runtime/application/public",
+          "extension-runtime/integration/public",
+          "graph-model/domain/public",
+          "linear-mode/application/public",
+          "litegraph-api/integration/public",
+          "node-widgets/domain/public",
+          "test-support/integration/public",
+          "workflow-format/domain/public",
+          "workflow-management/application/public",
+          "app-builder/domain",
+          "app-builder/application",
+          "app-builder/integration",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/infrastructure",
+          "app-host/presentation",
+          "app-host/integration",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/infrastructure",
+          "design-system/presentation",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
+          "linear-mode/domain",
+          "linear-mode/application",
+          "linear-mode/presentation",
+          "linear-mode/integration",
+          "litegraph-api/infrastructure",
+          "litegraph-api/integration",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
+          "node-widgets/presentation",
+          "node-widgets/integration",
+          "test-support/integration",
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-format/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/presentation",
+          "workflow-management/integration",
+          "app-builder/presentation/outer-1",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
+          "extension-runtime/infrastructure/outer-1",
+          "extension-runtime/presentation/outer-1",
+          "graph-model/domain/outer-1",
+          "graph-model/integration/outer-1",
+          "linear-mode/presentation/outer-1",
+          "node-widgets/presentation/outer-1",
+          "test-support/integration/outer-1",
+          "workflow-management/presentation/outer-1",
+          "workflow-format/domain/outer-3",
           "unclassified"
         ]
       },
@@ -4231,6 +4678,7 @@
       {
         "from": "app-host/application",
         "allow": [
+          "app-host/application/public",
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
@@ -4241,6 +4689,7 @@
       {
         "from": "app-host/infrastructure",
         "allow": [
+          "app-host/application/public",
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
@@ -4251,6 +4700,7 @@
       {
         "from": "app-host/presentation",
         "allow": [
+          "app-host/application/public",
           "app-host/domain",
           "app-host/application",
           "app-host/presentation",
@@ -4262,6 +4712,7 @@
       {
         "from": "app-host/integration",
         "allow": [
+          "app-host/application/public",
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
@@ -4774,6 +5225,7 @@
       {
         "from": "design-system/presentation",
         "allow": [
+          "design-system/presentation/public",
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
@@ -4916,6 +5368,7 @@
       {
         "from": "extension-runtime/application",
         "allow": [
+          "extension-runtime/application/public",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
@@ -4926,6 +5379,7 @@
       {
         "from": "extension-runtime/infrastructure",
         "allow": [
+          "extension-runtime/application/public",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
@@ -4936,6 +5390,7 @@
       {
         "from": "extension-runtime/presentation",
         "allow": [
+          "extension-runtime/application/public",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/presentation",
@@ -4946,6 +5401,8 @@
       {
         "from": "extension-runtime/integration",
         "allow": [
+          "extension-runtime/application/public",
+          "extension-runtime/integration/public",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
@@ -5117,6 +5574,7 @@
       {
         "from": "graph-model/domain",
         "allow": [
+          "graph-model/domain/public",
           "graph-model/domain",
           "graph-model/domain/outer-1",
           "unclassified"
@@ -5125,6 +5583,7 @@
       {
         "from": "graph-model/application",
         "allow": [
+          "graph-model/domain/public",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -5135,6 +5594,7 @@
       {
         "from": "graph-model/infrastructure",
         "allow": [
+          "graph-model/domain/public",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -5145,6 +5605,7 @@
       {
         "from": "graph-model/integration",
         "allow": [
+          "graph-model/domain/public",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -5431,22 +5892,78 @@
       },
       {
         "from": "linear-mode/domain",
-        "allow": ["linear-mode/domain", "unclassified"]
+        "allow": [
+          "app-builder/domain",
+          "extension-runtime/domain",
+          "linear-mode/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "linear-mode/application",
         "allow": [
+          "app-builder/application/public",
+          "extension-runtime/application/public",
+          "linear-mode/application/public",
+          "app-builder/domain",
+          "app-builder/application",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
           "linear-mode/domain",
           "linear-mode/application",
+          "litegraph-api/infrastructure",
+          "extension-runtime/infrastructure/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "linear-mode/presentation",
         "allow": [
+          "app-builder/application/public",
+          "app-builder/presentation/public",
+          "extension-runtime/application/public",
+          "linear-mode/application/public",
+          "app-builder/domain",
+          "app-builder/application",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
           "linear-mode/domain",
           "linear-mode/application",
           "linear-mode/presentation",
+          "app-builder/presentation/outer-1",
+          "extension-runtime/presentation/outer-1",
+          "linear-mode/presentation/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "linear-mode/integration",
+        "allow": [
+          "app-builder/application/public",
+          "app-builder/presentation/public",
+          "extension-runtime/application/public",
+          "extension-runtime/integration/public",
+          "linear-mode/application/public",
+          "litegraph-api/integration/public",
+          "app-builder/domain",
+          "app-builder/application",
+          "app-builder/integration",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
+          "linear-mode/domain",
+          "linear-mode/application",
+          "linear-mode/presentation",
+          "linear-mode/integration",
+          "litegraph-api/infrastructure",
+          "litegraph-api/integration",
+          "app-builder/presentation/outer-1",
+          "extension-runtime/infrastructure/outer-1",
+          "extension-runtime/presentation/outer-1",
           "linear-mode/presentation/outer-1",
           "unclassified"
         ]
@@ -5500,6 +6017,7 @@
       {
         "from": "litegraph-api/integration",
         "allow": [
+          "litegraph-api/integration/public",
           "litegraph-api/infrastructure",
           "litegraph-api/integration",
           "unclassified"
@@ -5849,11 +6367,16 @@
       },
       {
         "from": "node-widgets/domain",
-        "allow": ["node-widgets/domain", "unclassified"]
+        "allow": [
+          "node-widgets/domain/public",
+          "node-widgets/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "node-widgets/application",
         "allow": [
+          "node-widgets/domain/public",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/infrastructure",
@@ -5863,6 +6386,7 @@
       {
         "from": "node-widgets/infrastructure",
         "allow": [
+          "node-widgets/domain/public",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/infrastructure",
@@ -5872,6 +6396,7 @@
       {
         "from": "node-widgets/presentation",
         "allow": [
+          "node-widgets/domain/public",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/presentation",
@@ -5882,6 +6407,7 @@
       {
         "from": "node-widgets/integration",
         "allow": [
+          "node-widgets/domain/public",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/infrastructure",
@@ -6331,6 +6857,7 @@
       {
         "from": "test-support/integration",
         "allow": [
+          "test-support/integration/public",
           "test-support/integration",
           "test-support/integration/outer-1",
           "unclassified"
@@ -6600,7 +7127,13 @@
       {
         "from": "workflow-format/domain",
         "allow": [
+          "graph-model/domain/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "graph-model/domain",
+          "node-widgets/domain",
           "workflow-format/domain",
+          "graph-model/domain/outer-1",
           "workflow-format/domain/outer-3",
           "unclassified"
         ]
@@ -6608,9 +7141,19 @@
       {
         "from": "workflow-format/application",
         "allow": [
+          "graph-model/domain/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
           "workflow-format/domain",
           "workflow-format/application",
           "workflow-format/infrastructure",
+          "graph-model/domain/outer-1",
           "workflow-format/domain/outer-3",
           "unclassified"
         ]
@@ -6618,9 +7161,19 @@
       {
         "from": "workflow-format/infrastructure",
         "allow": [
+          "graph-model/domain/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/infrastructure",
           "workflow-format/domain",
           "workflow-format/application",
           "workflow-format/infrastructure",
+          "graph-model/domain/outer-1",
           "workflow-format/domain/outer-3",
           "unclassified"
         ]
@@ -6632,6 +7185,7 @@
       {
         "from": "workflow-management/application",
         "allow": [
+          "workflow-management/application/public",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
@@ -6641,6 +7195,7 @@
       {
         "from": "workflow-management/infrastructure",
         "allow": [
+          "workflow-management/application/public",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
@@ -6650,6 +7205,7 @@
       {
         "from": "workflow-management/presentation",
         "allow": [
+          "workflow-management/application/public",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
@@ -6660,6 +7216,7 @@
       {
         "from": "workflow-management/integration",
         "allow": [
+          "workflow-management/application/public",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
@@ -6811,6 +7368,7 @@
       {
         "from": "agent/integration/outer-1",
         "allow": [
+          "design-system/presentation/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -6835,9 +7393,51 @@
       {
         "from": "app-builder/presentation/outer-1",
         "allow": [
+          "app-builder/application/public",
+          "app-builder/presentation/public",
+          "app-host/application/public",
+          "design-system/presentation/public",
+          "extension-runtime/application/public",
+          "graph-model/domain/public",
+          "linear-mode/application/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "workflow-management/application/public",
           "app-builder/domain",
           "app-builder/application",
+          "app-host/domain",
+          "app-host/application",
+          "app-host/presentation",
+          "design-system/domain",
+          "design-system/application",
+          "design-system/presentation",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
+          "graph-model/domain",
+          "graph-model/application",
+          "linear-mode/domain",
+          "linear-mode/application",
+          "linear-mode/presentation",
+          "node-widgets/domain",
+          "node-widgets/application",
+          "node-widgets/presentation",
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/presentation",
           "app-builder/presentation/outer-1",
+          "app-host/domain/outer-1",
+          "app-host/presentation/outer-1",
+          "design-system/domain/outer-1",
+          "design-system/presentation/outer-1",
+          "extension-runtime/presentation/outer-1",
+          "graph-model/domain/outer-1",
+          "linear-mode/presentation/outer-1",
+          "node-widgets/presentation/outer-1",
+          "workflow-management/presentation/outer-1",
+          "workflow-format/domain/outer-3",
           "unclassified"
         ]
       },
@@ -6848,6 +7448,7 @@
       {
         "from": "app-host/presentation/outer-1",
         "allow": [
+          "app-host/application/public",
           "app-host/domain",
           "app-host/application",
           "app-host/presentation",
@@ -7065,6 +7666,7 @@
       {
         "from": "design-system/presentation/outer-1",
         "allow": [
+          "design-system/presentation/public",
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
@@ -7104,6 +7706,7 @@
       {
         "from": "extension-runtime/infrastructure/outer-1",
         "allow": [
+          "extension-runtime/application/public",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/infrastructure",
@@ -7114,6 +7717,7 @@
       {
         "from": "extension-runtime/presentation/outer-1",
         "allow": [
+          "extension-runtime/application/public",
           "extension-runtime/domain",
           "extension-runtime/application",
           "extension-runtime/presentation",
@@ -7175,6 +7779,7 @@
       {
         "from": "graph-model/domain/outer-1",
         "allow": [
+          "graph-model/domain/public",
           "graph-model/domain",
           "graph-model/domain/outer-1",
           "unclassified"
@@ -7183,6 +7788,7 @@
       {
         "from": "graph-model/integration/outer-1",
         "allow": [
+          "graph-model/domain/public",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -7269,9 +7875,20 @@
       {
         "from": "linear-mode/presentation/outer-1",
         "allow": [
+          "app-builder/application/public",
+          "app-builder/presentation/public",
+          "extension-runtime/application/public",
+          "linear-mode/application/public",
+          "app-builder/domain",
+          "app-builder/application",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
           "linear-mode/domain",
           "linear-mode/application",
           "linear-mode/presentation",
+          "app-builder/presentation/outer-1",
+          "extension-runtime/presentation/outer-1",
           "linear-mode/presentation/outer-1",
           "unclassified"
         ]
@@ -7347,6 +7964,7 @@
       {
         "from": "node-widgets/presentation/outer-1",
         "allow": [
+          "node-widgets/domain/public",
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/presentation",
@@ -7475,6 +8093,7 @@
       {
         "from": "test-support/integration/outer-1",
         "allow": [
+          "test-support/integration/public",
           "test-support/integration",
           "test-support/integration/outer-1",
           "unclassified"
@@ -7577,6 +8196,7 @@
       {
         "from": "workflow-management/presentation/outer-1",
         "allow": [
+          "workflow-management/application/public",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
@@ -7765,7 +8385,13 @@
       {
         "from": "workflow-format/domain/outer-3",
         "allow": [
+          "graph-model/domain/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "graph-model/domain",
+          "node-widgets/domain",
           "workflow-format/domain",
+          "graph-model/domain/outer-1",
           "workflow-format/domain/outer-3",
           "unclassified"
         ]
@@ -7773,6 +8399,19 @@
       {
         "from": "unclassified",
         "allow": [
+          "app-builder/application/public",
+          "app-builder/presentation/public",
+          "app-host/application/public",
+          "design-system/presentation/public",
+          "extension-runtime/application/public",
+          "extension-runtime/integration/public",
+          "graph-model/domain/public",
+          "linear-mode/application/public",
+          "litegraph-api/integration/public",
+          "node-widgets/domain/public",
+          "test-support/integration/public",
+          "workflow-format/domain/public",
+          "workflow-management/application/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -7780,6 +8419,7 @@
           "agent/integration",
           "app-builder/domain",
           "app-builder/application",
+          "app-builder/integration",
           "app-host/domain",
           "app-host/application",
           "app-host/infrastructure",
@@ -7909,6 +8549,7 @@
           "linear-mode/domain",
           "linear-mode/application",
           "linear-mode/presentation",
+          "linear-mode/integration",
           "link-connection/domain",
           "link-connection/application",
           "link-connection/integration",

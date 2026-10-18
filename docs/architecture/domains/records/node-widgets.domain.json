@@ -280,9 +280,9 @@
       "role": "application"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/types/widgetId.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["app-builder", "workflow-format"],
   "characterizationScenarios": [
     {
       "name": "Legacy canvas widgets render and respond to input for each generic kind",
@@ -360,7 +360,7 @@
   "compatibilityPromises": [
     "widget.value, widget.callback, node.widgets array access, and widgets_values serialisation keep their extension-facing behaviour.",
     "LegacyWidget keeps supporting extension-drawn custom widgets.",
-    "Inventory grants no new cross-domain permissions; widgetMap importing feature-owned widget stubs remains inherited debt."
+    "Input-group identity validation uses the declared entry points; widgetMap importing feature-owned widget stubs remains inherited debt."
   ],
   "deepImports": "inventory"
 }

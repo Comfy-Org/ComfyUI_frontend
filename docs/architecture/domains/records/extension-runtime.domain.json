@@ -184,9 +184,13 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/scripts/__mocks__/app.ts",
+    "src/scripts/app.ts",
+    "src/scripts/appInstance.ts"
+  ],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["app-builder", "linear-mode"],
   "characterizationScenarios": [
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",
@@ -243,13 +247,23 @@
         "src/scripts/ui.storageResilience.test.ts",
         "src/scripts/ui/toggleSwitch.test.ts"
       ]
+    },
+    {
+      "name": "Input groups persist, support undo and drag pairing, and hide empty groups in app mode",
+      "checks": [
+        "src/stores/inputGroupStore.test.ts",
+        "src/components/builder/useGroupDrop.test.ts",
+        "src/components/builder/useInputGroups.test.ts",
+        "src/renderer/extensions/linearMode/LinearControls.test.ts",
+        "browser_tests/tests/appBuilder/inputGroups.spec.ts"
+      ]
     }
   ],
   "adrs": [
     "docs/adr/EXTENSIONS-PUBLIC-API-0005-bundle-vue-dependencies-in-extensions.md"
   ],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior with tested entry points for input-group authoring and app-mode integration."
   ],
   "deepImports": "inventory"
 }

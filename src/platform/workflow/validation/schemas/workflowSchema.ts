@@ -11,6 +11,14 @@ import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import type { NodeProperty } from '@/types/nodeState'
 import { toRerouteId } from '@/types/rerouteId'
+import { isWidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
+
+export interface InputGroup {
+  id: string
+  name: string | null
+  items: { key: WidgetId; pairId?: string }[]
+}
 
 const zRendererType = z.enum([
   'LG',
@@ -399,7 +407,21 @@ const zExtra = z
             ])
           )
           .optional(),
-        outputs: z.array(zNodeId).optional()
+        outputs: z.array(zNodeId).optional(),
+        inputGroups: z
+          .array(
+            z.object({
+              id: z.string(),
+              name: z.string().nullable(),
+              items: z.array(
+                z.object({
+                  key: z.custom<WidgetId>(isWidgetId),
+                  pairId: z.string().optional()
+                })
+              )
+            }) satisfies z.ZodType<InputGroup>
+          )
+          .optional()
       })
       .optional()
   })

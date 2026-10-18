@@ -124,9 +124,9 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/i18n.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["app-builder"],
   "characterizationScenarios": [
     {
       "name": "Bootstrap loads i18n, waits for cloud auth with a bounded retry, and loads settings and workflows once",
@@ -151,7 +151,7 @@
   ],
   "adrs": ["docs/adr/TELEMETRY-STARTUP-0030-production-startup-telemetry.md"],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior with tested entry points for input-group authoring and app-mode integration."
   ],
   "deepImports": "inventory"
 }

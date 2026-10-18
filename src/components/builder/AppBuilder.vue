@@ -5,9 +5,12 @@ import type { MaybeRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import InputGroupAccordion from '@/components/builder/InputGroupAccordion.vue'
+import { vGroupUngroupTarget } from '@/components/builder/useGroupDrop'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
 import type { WidgetId } from '@/types/widgetId'
@@ -32,11 +35,15 @@ import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
+import { useInputGroupStore } from '@/stores/inputGroupStore'
 import { cn } from '@comfyorg/tailwind-utils'
+import { isWidgetId } from '@/types/widgetId'
+import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
 const appModeStore = useAppModeStore()
+const inputGroupStore = useInputGroupStore()
 const canvasInteractions = useCanvasInteractions()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
@@ -51,6 +58,26 @@ const hoveringSelectable = ref(false)
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
 const resolvedInputs = useResolvedSelectedInputs()
+const ungroupedSelectedInputs = computed<LinearInput[]>({
+  get: () =>
+    appModeStore.selectedInputs.filter(
+      ([id]) => !isWidgetId(id) || !inputGroupStore.isGrouped(id)
+    ),
+  set: (inputs) => {
+    const groupedInputs = appModeStore.selectedInputs.filter(
+      ([id]) => isWidgetId(id) && inputGroupStore.isGrouped(id)
+    )
+    appModeStore.selectedInputs = [...inputs, ...groupedInputs]
+  }
+})
+
+function groupPosition(index: number): 'first' | 'middle' | 'last' | 'only' {
+  const count = inputGroupStore.inputGroups.length
+  if (count === 1) return 'only'
+  if (index === 0) return 'first'
+  if (index === count - 1) return 'last'
+  return 'middle'
+}
 
 const outputsWithState = computed<[NodeId, string][]>(() =>
   appModeStore.selectedOutputs.map((nodeId) => [
@@ -191,14 +218,37 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
         isArrangeMode ? t('nodeHelpPage.inputs') : t('linearMode.builder.title')
       }}
     </div>
-    <div class="flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <DraggableList
-        v-if="isArrangeMode"
-        v-model="appModeStore.selectedInputs"
-        class="overflow-x-clip"
-      >
-        <AppModeWidgetList builder-mode />
-      </DraggableList>
+    <div
+      v-group-ungroup-target="isArrangeMode"
+      data-testid="builder-inputs"
+      class="flex min-h-0 flex-1 flex-col overflow-y-auto"
+    >
+      <template v-if="isArrangeMode">
+        <DraggableList
+          v-model="ungroupedSelectedInputs"
+          class="overflow-x-clip"
+        >
+          <AppModeWidgetList builder-mode />
+        </DraggableList>
+        <div v-if="inputGroupStore.inputGroups.length" class="px-2 pb-2">
+          <InputGroupAccordion
+            v-for="(group, index) in inputGroupStore.inputGroups"
+            :key="group.id"
+            :group
+            builder-mode
+            :position="groupPosition(index)"
+          />
+        </div>
+        <div class="flex-1" />
+        <Button
+          variant="textonly"
+          class="w-full shrink-0 justify-between rounded-none border-0 border-t border-border-subtle/40 p-4"
+          @click="inputGroupStore.createGroup()"
+        >
+          {{ t('linearMode.groups.createGroup') }}
+          <i class="icon-[lucide--plus] size-5 text-muted-foreground" />
+        </Button>
+      </template>
       <PropertiesAccordionItem
         v-if="isSelectInputsMode"
         :label="t('nodeHelpPage.inputs')"

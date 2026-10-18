@@ -360,9 +360,24 @@
       "role": "infrastructure"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/components/common/DraggableList.vue",
+    "src/components/common/EditableText.vue",
+    "src/components/ui/button/Button.vue",
+    "src/components/ui/dialog/Dialog.vue",
+    "src/components/ui/dialog/DialogClose.vue",
+    "src/components/ui/dialog/DialogContent.vue",
+    "src/components/ui/dialog/DialogDescription.vue",
+    "src/components/ui/dialog/DialogFooter.vue",
+    "src/components/ui/dialog/DialogHeader.vue",
+    "src/components/ui/dialog/DialogOverlay.vue",
+    "src/components/ui/dialog/DialogPortal.vue",
+    "src/components/ui/dialog/DialogTitle.vue",
+    "src/components/ui/menu/Menu.vue",
+    "src/components/ui/menu/types.ts"
+  ],
   "allowedDependencies": [],
-  "allowedConsumers": ["agent"],
+  "allowedConsumers": ["agent", "app-builder"],
   "characterizationScenarios": [
     {
       "name": "Form controls preserve value binding, validation state, and accessible semantics",
@@ -475,6 +490,16 @@
       "checks": [
         "src/utils/treeUtil.test.ts",
         "src/utils/textTickerUtils.test.ts"
+      ]
+    },
+    {
+      "name": "Input groups persist, support undo and drag pairing, and hide empty groups in app mode",
+      "checks": [
+        "src/stores/inputGroupStore.test.ts",
+        "src/components/builder/useGroupDrop.test.ts",
+        "src/components/builder/useInputGroups.test.ts",
+        "src/renderer/extensions/linearMode/LinearControls.test.ts",
+        "browser_tests/tests/appBuilder/inputGroups.spec.ts"
       ]
     }
   ],
