@@ -436,6 +436,12 @@ function startAgentCrdtFollower(
       syncCanvasMayBeStale || projectionFailureFor !== null
   }
 
+  function clearSyncStaleness(): void {
+    syncCanvasMayBeStale = false
+    canvasMayBeStale.value = projectionFailureFor !== null
+    catchUpAwaitingProjectionFor = null
+  }
+
   function clearCanvasStaleness(): void {
     syncCanvasMayBeStale = false
     projectionFailureFor = null
@@ -589,14 +595,11 @@ function startAgentCrdtFollower(
   const applyCollected = (workflowId: string): void => {
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
+    const settlesCatchUp = catchUpAwaitingProjectionFor === workflowId
     if (outcome.failureCount > 0) markProjectionStale(workflowId)
-    if (catchUpAwaitingProjectionFor === workflowId) {
-      if (
-        outcome.failureCount === 0 &&
-        !projection.hasPendingFailure(workflowId)
-      )
-        clearCanvasStaleness()
-    }
+    else if (!projection.hasPendingFailure(workflowId))
+      clearProjectionStaleness(workflowId)
+    if (settlesCatchUp) clearSyncStaleness()
     reportMaterialized(workflowId, outcome.createdNodeIds)
     reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }
@@ -726,15 +729,14 @@ function startAgentCrdtFollower(
   ): void => {
     if (outcome.applied && outcome.failureCount > 0) {
       markProjectionStale(update.workflowId)
-      return
-    }
-    if (!update.catchUp) return
-    if (
+    } else if (
       projectionAppliedCleanly(outcome) &&
       !projection.hasPendingFailure(update.workflowId)
-    )
-      clearCanvasStaleness()
-    else if (outcome.applied) markCanvasStale()
+    ) {
+      clearProjectionStaleness(update.workflowId)
+    }
+    if (!update.catchUp) return
+    if (outcome.applied) clearSyncStaleness()
     else catchUpAwaitingProjectionFor = update.workflowId
   }
   const onUpdate: EventListener = (event) => {

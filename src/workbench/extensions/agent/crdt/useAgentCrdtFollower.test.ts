@@ -660,6 +660,43 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('releases a failed catch-up after a live frame retries its projection', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 2
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      projectionState.retryFailed.mockReturnValueOnce(projectionState.applied())
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 3,
+        catchUp: false
+      })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
     it('keeps a stale canvas through deferred catch-up until projection applies', async () => {
       const graph = shallowRef<LGraph | null>(null)
       const { unmount, status } = mountFollower('wf-1', true, () => graph.value)
