@@ -3569,7 +3569,7 @@
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
         "off": "Refills credits when your balance runs low",
-        "onHold": "Your card expired or was removed. Update it to resume auto top-up.",
+        "onHold": "No default payment method. Add a card to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
         "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",

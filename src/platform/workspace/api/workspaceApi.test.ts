@@ -657,6 +657,19 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('getBillingAutoReload() sends GET /billing/auto-reload with a 10 second timeout', async () => {
+      const data = { status: 'off' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getBillingAutoReload()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/auto-reload',
+        { headers: AUTH_HEADER, timeout: 10_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
     it('getBillingPlans() sends GET /billing/plans', async () => {
       const data = { plans: [] }
       mockAxiosInstance.get.mockResolvedValue({ data })

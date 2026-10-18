@@ -49,6 +49,7 @@
           v-for="line in view.lines"
           :key="line.text"
           class="m-0 flex items-center gap-1 text-sm text-muted-foreground"
+          data-testid="billing-auto-top-up-line"
         >
           {{ line.text }}
           <Button

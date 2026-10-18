@@ -664,7 +664,7 @@ export const workspaceApi = {
     try {
       const response = await workspaceApiClient.get<AutoReloadSettings>(
         workspaceApiUrl('/billing/auto-reload'),
-        auth
+        { ...auth, timeout: 10_000 }
       )
       return response.data
     } catch (err) {

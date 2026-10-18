@@ -103,7 +103,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'On hold',
       lines: [
         RULE,
-        'Your card expired or was removed. Update it to resume auto top-up.'
+        'No default payment method. Add a card to resume auto top-up.'
       ],
       action: 'Update payment'
     },
@@ -127,9 +127,11 @@ describe('BillingAutoTopUpCard', () => {
       expect(
         await screen.findByTestId('billing-auto-top-up-status')
       ).toHaveTextContent(label)
-      for (const line of lines) {
-        expect(screen.getByText(line)).toBeInTheDocument()
-      }
+      expect(
+        screen
+          .getAllByTestId('billing-auto-top-up-line')
+          .map((line) => line.textContent.trim())
+      ).toEqual(lines)
       expect(screen.getByRole('link', { name: action })).toHaveAttribute(
         'href',
         'https://platform.test/profile/billing'
@@ -168,10 +170,14 @@ describe('BillingAutoTopUpCard', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers a retry when the settings read fails', async () => {
-    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
-      new WorkspaceApiError('boom', 500)
-    )
+  it.for([
+    { case: 'fails', error: new WorkspaceApiError('boom', 500) },
+    {
+      case: 'times out',
+      error: new WorkspaceApiError('timeout of 10000ms exceeded', undefined)
+    }
+  ])('offers a retry when the settings read $case', async ({ error }) => {
+    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(error)
     renderCard(configured)
 
     expect(
