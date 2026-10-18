@@ -724,13 +724,7 @@ export type AgentConsentOfferExit =
   | 'already_offered'
   /** The first-run startup probe rejected. */
   | 'startup_probe_failed'
-  /**
-   * The user pressed the consent card's explicit Reject action at some earlier
-   * point, so the agent no longer promotes itself automatically. Unlike every
-   * other exit here this one is durable and account-scoped rather than
-   * per-page-load, so its rate over a population is a measure of accumulated
-   * refusals, not of this session's conditions. `startup` stage only.
-   */
+  /** A prior explicit rejection suppressed this automatic offer. */
   | 'consent_declined'
   /**
    * The consent scope moved while it was being resolved - a different account,

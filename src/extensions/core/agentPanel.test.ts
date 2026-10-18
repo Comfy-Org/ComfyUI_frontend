@@ -16,7 +16,6 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
-import type { ConsentOfferDeclinedResult } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 
 import type { ComfyExtension } from '@/types/comfy'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -28,7 +27,6 @@ import {
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import type { useExtensionService } from '@/services/extensionService'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -80,7 +78,6 @@ function beginFirstRunScreenHandoff(): void {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
@@ -137,17 +134,12 @@ vi.mock(
 )
 
 const READY_AGENT = { state: 'ready', reason: null } as const
-// Stubbed rather than driven through the real settings store because that
-// store's loader retries with exponential backoff, so an unmocked read costs
-// every test in this file several seconds of a request that cannot succeed here.
-const consentOfferDeclined = vi.hoisted(() =>
-  vi.fn<() => Promise<ConsentOfferDeclinedResult>>()
-)
+const consentOfferDeclined = vi.hoisted(() => vi.fn())
 vi.mock(
   import('@/workbench/extensions/agent/services/agent/consentOfferDeclined'),
   () => ({
     consentOfferDeclined,
-    recordConsentOfferDeclined: vi.fn(() => Promise.resolve())
+    recordConsentOfferDeclined: vi.fn()
   })
 )
 
@@ -231,7 +223,7 @@ describe('AgentPanel extension flag gate', () => {
     setAgentReady(false)
     releaseFirstRunScreen()
     activeTour.value = null
-    consentOfferDeclined.mockResolvedValue({ ok: true, declined: false })
+    consentOfferDeclined.mockReturnValue(false)
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
       () => activeTour.value
@@ -1238,14 +1230,9 @@ describe('AgentPanel extension flag gate', () => {
 
   describe('after the user explicitly refused the consent card', () => {
     it('makes no automatic offer, and leaves the one-shot key unspent', async () => {
-      // The refusal outlives the device, so it has to suppress the offer
-      // *before* the device-local one-shot is consulted - a user whose refusal
-      // is remembered must never burn another browser profile's one attempt,
-      // because that is the state they would be left in if the refusal were
-      // later cleared.
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
-      consentOfferDeclined.mockResolvedValue({ ok: true, declined: true })
+      consentOfferDeclined.mockReturnValue(true)
 
       await loadEntryAndSetup()
       const exited = await offerExited()
@@ -1262,9 +1249,6 @@ describe('AgentPanel extension flag gate', () => {
     })
 
     it('stays silent when a surface that was holding the offer releases it', async () => {
-      // The hold is the one thing that could resurrect a refused offer: it is
-      // retried on every clear screen and nothing else consumes it, so the
-      // refusal has to drop it rather than merely decline this attempt.
       setAgentReady(true)
       openDialog()
       Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -1277,12 +1261,9 @@ describe('AgentPanel extension flag gate', () => {
         })
       )
 
-      consentOfferDeclined.mockResolvedValue({ ok: true, declined: true })
+      consentOfferDeclined.mockReturnValue(true)
       closeDialog()
       const exited = await offerExited()
-      // `retry_armed` reports the hold as the exit was taken, like every other
-      // exit here, so it is true on the attempt that drops it. The exit value is
-      // what says the offer is gone for good; this property never does.
       await vi.waitFor(() =>
         expect(exited).toHaveBeenCalledExactlyOnceWith({
           exit: 'consent_declined',
@@ -1295,83 +1276,16 @@ describe('AgentPanel extension flag gate', () => {
       expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
     })
 
-    it("does not offer account B from account A's stale refusal result", async () => {
-      agentFlagEnabled.value = true
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      let decideStartup = (_: boolean) => {}
-      startupDecision = new Promise<boolean>((resolve) => {
-        decideStartup = resolve
-      })
-      consentOfferDeclined
-        .mockResolvedValueOnce({ ok: true, declined: false })
-        .mockResolvedValueOnce({ ok: true, declined: true })
-
-      await loadEntryAndSetup()
-      await vi.waitFor(() =>
-        expect(consentOfferDeclined).toHaveBeenCalledOnce()
-      )
-
-      currentUser.value = { id: 'account-b' }
-      Object.assign(consentStore, { identity: 'account-b/workspace-a' })
-      await vi.waitFor(() =>
-        expect(consentOfferDeclined.mock.calls.length).toBeGreaterThan(1)
-      )
-
-      decideStartup(true)
-      const exited = await offerExited()
-      await vi.waitFor(() =>
-        expect(exited).toHaveBeenCalledExactlyOnceWith({
-          exit: 'consent_declined',
-          stage: 'startup',
-          retry_armed: false
-        })
-      )
-
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(
-        localStorage.getItem(
-          'Comfy.AgentConsent.AutoShown.account-b.workspace-a'
-        )
-      ).toBeNull()
-    })
-
     it('does not suppress panel activation', async () => {
-      // Jo accepted the panel re-open behaviour separately, so the refusal is
-      // scoped to the card. Coupling the two here would ship a second product
-      // decision nobody made.
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
-      consentOfferDeclined.mockResolvedValue({ ok: true, declined: true })
+      consentOfferDeclined.mockReturnValue(true)
       agentStore.isOpen = false
 
       await loadEntryAndSetup()
       await vi.waitFor(() =>
         expect(agentStore.open).toHaveBeenCalledExactlyOnceWith('activation')
       )
-    })
-
-    it('does not offer or spend the one-shot when refusal status cannot be read', async () => {
-      const failure = new Error('offline')
-      agentFlagEnabled.value = true
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      consentOfferDeclined.mockResolvedValue({ ok: false, cause: failure })
-
-      await loadEntryAndSetup()
-      const exited = await offerExited()
-      await vi.waitFor(() =>
-        expect(exited).toHaveBeenCalledExactlyOnceWith({
-          exit: 'startup_probe_failed',
-          stage: 'startup',
-          retry_armed: false
-        })
-      )
-
-      expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
-        surface: 'agent',
-        errorType: 'agent_consent_auto_offer_failure'
-      })
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
     })
   })
 

@@ -30,6 +30,10 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
+export const AGENT_AUTO_SHOWN_KEY =
+  'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
+export const AGENT_COACH_SEEN_KEY =
+  'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
 /** The cloud workflow id a turn ack binds the posting tab to. */
 export const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
@@ -327,11 +331,10 @@ async function mockAgentBoot(
       initiallyOpen,
       onboardingCompleted,
       debugEnabled,
-      autoShownReadProbe
+      autoShownReadProbe,
+      autoShownKey
     }) => {
       if (autoShownReadProbe) {
-        const autoShownKey =
-          'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
         const originalGetItem = Storage.prototype.getItem
         window.__autoShownReads = 0
         Storage.prototype.getItem = function (candidate: string) {
@@ -358,7 +361,8 @@ async function mockAgentBoot(
       initiallyOpen: agentPanelInitiallyOpen,
       onboardingCompleted: agentOnboardingCompleted,
       debugEnabled: crdtDebugEnabled,
-      autoShownReadProbe: agentAutoShownReadProbe
+      autoShownReadProbe: agentAutoShownReadProbe,
+      autoShownKey: AGENT_AUTO_SHOWN_KEY
     }
   )
 
@@ -405,22 +409,11 @@ async function mockAgentBoot(
     settings: storedSettings,
     objectInfo
   })
-  // `/api/settings` is where cloud keeps per-account UI state: ingest stores the
-  // map on the user row, so a write from one browser profile is what the next one
-  // reads. The boot mock serves a frozen snapshot and has no handler for a
-  // single-setting write at all, which leaves a POST falling through to whatever
-  // backend the dev server is pointed at - so nothing a spec persists this way
-  // can be observed, and a reload reads the snapshot back. Both routes are
-  // registered after the boot mock so this handler wins.
-  const settingsResponse = (body: unknown) => ({
-    ...jsonRoute(body),
-    status: 200
-  })
   await page.route('**/api/settings', (route) => {
     const request = route.request()
     if (request.method() === 'POST')
       Object.assign(storedSettings, request.postDataJSON())
-    return route.fulfill(settingsResponse(storedSettings))
+    return route.fulfill(jsonRoute(storedSettings))
   })
   await page.route('**/api/settings/*', (route) => {
     const request = route.request()
@@ -428,17 +421,15 @@ async function mockAgentBoot(
       new URL(request.url()).pathname.split('/settings/')[1] ?? ''
     )
     if (request.method() === 'POST') {
-      const value = request.postDataJSON()
+      const value: unknown = request.postDataJSON()
       if (value === null) delete storedSettings[id]
       else storedSettings[id] = value
-    } else if (request.method() === 'DELETE') {
-      delete storedSettings[id]
     } else if (!(id in storedSettings))
       return route.fulfill({
         ...jsonRoute({ code: 'NOT_FOUND', message: 'Setting is not set' }),
         status: 404
       })
-    return route.fulfill(settingsResponse(storedSettings[id]))
+    return route.fulfill(jsonRoute(storedSettings[id]))
   })
   let savedWorkflow: UserDataFullInfo | undefined
   let savedContent: string | undefined
