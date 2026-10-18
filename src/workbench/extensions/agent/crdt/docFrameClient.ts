@@ -1,3 +1,4 @@
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 import type { DocResetData } from '@comfyorg/ingest-types'
 
@@ -497,7 +498,8 @@ export class DocFrameClient extends EventTarget {
       v: DOC_PROTOCOL_VERSION,
       workflow_id: workflowId,
       state_vector_b64: encodeBase64(stateVector),
-      supports_reseed: true
+      supports_reseed: true,
+      schema_version: SCHEMA_VERSION
     })
   }
 
