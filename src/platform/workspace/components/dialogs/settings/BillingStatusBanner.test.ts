@@ -1,13 +1,17 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { canManageBillingFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type {
+  BillingPortalOutcome,
+  SubscriptionInfo
+} from '@/composables/billing/types'
 import type {
   BillingStatus,
   WorkspaceType
@@ -39,7 +43,9 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  manageSubscription: vi.fn(),
+  manageSubscription: vi.fn(
+    async (): Promise<BillingPortalOutcome> => ({ ok: true })
+  ),
   handleResubscribe: vi.fn(),
   showSubscriptionDialog: vi.fn()
 }))
@@ -126,6 +132,8 @@ const i18n = createI18n({
               "You've used all your credits. Add more credits or wait until credits refill on {date}.",
             personalBodyNoDate:
               "You've used all your credits. Add more credits.",
+            pastDueBody:
+              "You've used all your credits. Update your payment method to add credits.",
             memberBody:
               'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.',
             memberBodyNoDate:
@@ -177,6 +185,10 @@ const i18n = createI18n({
           founder: { name: "Founder's Edition" },
           pro: { name: 'Pro' },
           enterprise: { name: 'Enterprise' }
+        },
+        paymentRecovery: {
+          paymentFailedMemberDescription:
+            "Ask your workspace owner to update the workspace's payment method."
         }
       }
     }
@@ -300,6 +312,103 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      denial: 'payment_past_due',
+      canTopUp: false,
+      canManageBilling: true,
+      body: "You've used all your credits. Update your payment method to add credits.",
+      actions: ['Update payment']
+    },
+    {
+      denial: 'payment_past_due',
+      canTopUp: false,
+      canManageBilling: false,
+      body: "Ask your workspace owner to update the workspace's payment method.",
+      actions: []
+    },
+    {
+      denial: undefined,
+      canTopUp: true,
+      canManageBilling: true,
+      body: 'Your team has used all its credits. Add more credits.',
+      actions: ['Add credits']
+    }
+  ] as const)(
+    'shows the out-of-credits copy for a top-up denied as $denial with billing management $canManageBilling',
+    ({ denial, canTopUp, canManageBilling, body, actions }) => {
+      exhausted()
+      useBillingCapabilities().canTopUp = computed(() => canTopUp)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+      useBillingCapabilities().canManageBilling =
+        canManageBillingFact(canManageBilling)
+
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(body)
+      const actionNames = screen
+        .getAllByRole('button')
+        .map((button) => button.textContent.trim())
+        .filter((name) => name !== 'Dismiss')
+      expect(actionNames).toEqual(actions)
+    }
+  )
+
+  it('opens the billing portal from the past-due out-of-credits banner', async () => {
+    exhausted()
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
+    useBillingCapabilities().canManageBilling = canManageBillingFact(true)
+
+    renderBanner()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+
+    expect(state.manageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+  })
+
+  describe('past-due Update payment', () => {
+    beforeEach(() => {
+      exhausted()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
+    })
+
+    it('opens the portal once while a request is in flight', async () => {
+      let resolvePortal: (outcome: BillingPortalOutcome) => void = () => {}
+      state.manageSubscription.mockReturnValueOnce(
+        new Promise<BillingPortalOutcome>((resolve) => {
+          resolvePortal = resolve
+        })
+      )
+      renderBanner()
+      const button = screen.getByRole('button', { name: 'Update payment' })
+
+      await userEvent.click(button)
+
+      expect(button).toHaveAttribute('aria-busy', 'true')
+      await userEvent.click(button)
+      expect(state.manageSubscription).toHaveBeenCalledOnce()
+
+      resolvePortal({ ok: true })
+      await vi.waitFor(() => expect(button).toBeEnabled())
+    })
+
+    it('recovers from a failed portal request so the owner can retry', async () => {
+      state.manageSubscription.mockRejectedValueOnce(new Error('portal down'))
+      renderBanner()
+      const button = screen.getByRole('button', { name: 'Update payment' })
+
+      await userEvent.click(button)
+      await vi.waitFor(() => expect(button).toBeEnabled())
+      await userEvent.click(button)
+
+      expect(state.manageSubscription).toHaveBeenCalledTimes(2)
+    })
   })
 
   it('points members to the owner without an Add credits action', () => {

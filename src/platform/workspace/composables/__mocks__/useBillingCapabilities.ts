@@ -6,6 +6,10 @@ import type { useBillingCapabilities as realUseBillingCapabilities } from '../us
 
 const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canTopUp: computed(() => true),
+  topUpDenial: computed(() => undefined),
+  canManageBilling: computed(() =>
+    receiveServerFact('can_manage_billing', true)
+  ),
   canSubscribeSelfServe: computed(() => false),
   canCancel: computed(() => false),
   canReactivate: computed(() => false),
@@ -36,6 +40,10 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
 }
 
 const capabilities = { ...defaults }
+
+export function canManageBillingFact(granted: boolean) {
+  return computed(() => receiveServerFact('can_manage_billing', granted))
+}
 
 export const useBillingCapabilities = vi.fn(() => {
   onTestFinished(() => {

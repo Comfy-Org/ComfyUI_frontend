@@ -70,7 +70,8 @@
           v-else-if="banner.action === 'updatePayment'"
           variant="inverted"
           size="lg"
-          @click="handleUpdatePayment"
+          :loading="isUpdatingPayment"
+          @click="updatePayment"
         >
           {{ $t('workspacePanel.billingStatus.updatePayment') }}
         </Button>
@@ -95,6 +96,10 @@ import type {
   BillingBannerKind
 } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import {
+  isTopUpDeniedPastDue,
+  usePaymentRecoveryDialog
+} from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
@@ -114,9 +119,9 @@ const { section } = defineProps<{
 }>()
 
 const { t, d } = useI18n()
-const { renewalDate, subscription, manageSubscription } = useBillingContext()
+const { renewalDate, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
-const { canTopUp } = useBillingCapabilities()
+const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { kind, audience, dismiss } = useBillingBanner()
 const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
@@ -126,6 +131,7 @@ const {
   isDisplayable: canShowScheduledChange
 } = useScheduledPlanChange()
 const { showTopUpCreditsDialog } = useBillingDialogs()
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const subscriptionDialog = useSubscriptionDialog()
 const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
@@ -248,9 +254,18 @@ const planEndedView = (): BannerView => {
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
   cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
 
-// An owner who cannot top up only reaches this once the plan has ended, which
-// the plan ended notice covers, so that case shows nothing.
 const outOfCreditsView = (): BannerView | null => {
+  if (isTopUpDeniedPastDue(topUpDenial.value)) {
+    return {
+      muted: false,
+      title: t(`${bs}.outOfCredits.title`),
+      body: canManageBilling.value
+        ? t(`${bs}.outOfCredits.pastDueBody`)
+        : t('subscription.paymentRecovery.paymentFailedMemberDescription'),
+      action: canManageBilling.value ? 'updatePayment' : null,
+      dismissible: true
+    }
+  }
   if (!canManage.value) {
     return {
       muted: false,
@@ -341,8 +356,5 @@ function handleResubscribePlan() {
 }
 function handleContactSales() {
   window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
-}
-function handleUpdatePayment() {
-  void manageSubscription()
 }
 </script>
