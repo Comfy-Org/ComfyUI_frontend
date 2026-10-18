@@ -57,103 +57,120 @@ describe('getDragItemKey', () => {
   })
 })
 
+function renderDropBridge(active = true) {
+  useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
+    activeMode: 'builder:arrange'
+  })
+  const store = useInputGroupStore()
+  const groupId = store.createGroup()
+  const key = widgetId('root', toNodeId(1), 'steps')
+  render(
+    defineComponent({
+      setup() {
+        return () =>
+          h('div', [
+            h(
+              DraggableList,
+              { modelValue: [key] },
+              {
+                default: () =>
+                  h('div', {
+                    role: 'button',
+                    'aria-label': 'Source',
+                    class: active
+                      ? 'draggable-item drag-handle'
+                      : 'draggable-item',
+                    'data-widget-key': key
+                  })
+              }
+            ),
+            withDirectives(
+              h('div', { role: 'region', 'aria-label': 'Group target' }),
+              [[vGroupDropTarget, { groupId }]]
+            )
+          ])
+      }
+    })
+  )
+  const target = screen.getByRole('region', { name: 'Group target' })
+  Object.defineProperty(document, 'elementsFromPoint', {
+    configurable: true,
+    value: () => [target]
+  })
+  onTestFinished(() => {
+    Reflect.deleteProperty(document, 'elementsFromPoint')
+  })
+  return { store, groupId, target, user: userEvent.setup() }
+}
+
 describe('list-to-group drop bridge', () => {
+  const key = widgetId('root', toNodeId(1), 'steps')
+
   it.for([
     {
       gesture: 'drag',
       active: true,
-      button: 0,
+      press: '[MouseLeft>]',
+      release: '[/MouseLeft]',
       endX: 100,
-      cancel: false,
-      expected: true
+      expected: [{ key }]
     },
     {
       gesture: 'click',
       active: true,
-      button: 0,
+      press: '[MouseLeft>]',
+      release: '[/MouseLeft]',
       endX: 0,
-      cancel: false,
-      expected: false
+      expected: []
     },
     {
       gesture: 'inactive item',
       active: false,
-      button: 0,
+      press: '[MouseLeft>]',
+      release: '[/MouseLeft]',
       endX: 100,
-      cancel: false,
-      expected: false
+      expected: []
     },
     {
       gesture: 'right click',
       active: true,
-      button: 2,
+      press: '[MouseRight>]',
+      release: '[/MouseRight]',
       endX: 100,
-      cancel: false,
-      expected: false
-    },
-    {
-      gesture: 'cancelled drag',
-      active: true,
-      button: 0,
-      endX: 100,
-      cancel: true,
-      expected: false
+      expected: []
     }
-  ])('handles $gesture', async ({ active, button, endX, cancel, expected }) => {
-    useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
-      activeMode: 'builder:arrange'
-    })
-    const store = useInputGroupStore()
-    const groupId = store.createGroup()
-    const key = widgetId('root', toNodeId(1), 'steps')
-    render(
-      defineComponent({
-        setup() {
-          return () =>
-            h('div', [
-              h(
-                DraggableList,
-                { modelValue: [key] },
-                {
-                  default: () =>
-                    h('div', {
-                      role: 'button',
-                      'aria-label': 'Source',
-                      class: active
-                        ? 'draggable-item drag-handle'
-                        : 'draggable-item',
-                      'data-widget-key': key
-                    })
-                }
-              ),
-              withDirectives(
-                h('div', { role: 'region', 'aria-label': 'Group target' }),
-                [[vGroupDropTarget, { groupId }]]
-              )
-            ])
-        }
-      })
-    )
-    const target = screen.getByRole('region', { name: 'Group target' })
-    Object.defineProperty(document, 'elementsFromPoint', {
-      configurable: true,
-      value: () => [target]
-    })
-    onTestFinished(() => {
-      Reflect.deleteProperty(document, 'elementsFromPoint')
-    })
-    const user = userEvent.setup()
+  ])('handles $gesture', async ({ active, press, release, endX, expected }) => {
+    const { store, groupId, target, user } = renderDropBridge(active)
+
     await user.pointer({
-      keys: button === 0 ? '[MouseLeft>]' : '[MouseRight>]',
+      keys: press,
       target: screen.getByRole('button', { name: 'Source' }),
       coords: { clientX: 0, clientY: 0 }
     })
-    if (cancel) await user.keyboard('{Escape}')
     await user.pointer({
-      keys: button === 0 ? '[/MouseLeft]' : '[/MouseRight]',
+      keys: release,
       target,
       coords: { clientX: endX, clientY: 0 }
     })
-    expect(store.findGroup(groupId)?.items).toEqual(expected ? [{ key }] : [])
+
+    expect(store.findGroup(groupId)?.items).toEqual(expected)
+  })
+
+  it('leaves membership unchanged when a drag is cancelled', async () => {
+    const { store, groupId, target, user } = renderDropBridge()
+
+    await user.pointer({
+      keys: '[MouseLeft>]',
+      target: screen.getByRole('button', { name: 'Source' }),
+      coords: { clientX: 0, clientY: 0 }
+    })
+    await user.keyboard('{Escape}')
+    await user.pointer({
+      keys: '[/MouseLeft]',
+      target,
+      coords: { clientX: 100, clientY: 0 }
+    })
+
+    expect(store.findGroup(groupId)?.items).toEqual([])
   })
 })

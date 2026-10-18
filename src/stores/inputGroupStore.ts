@@ -3,10 +3,8 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import type {
-  InputGroup,
-  LinearData
-} from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { LinearData } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { InputGroup } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useApp } from '@/scripts/appInstance'
 import { ChangeTracker } from '@/scripts/changeTracker'

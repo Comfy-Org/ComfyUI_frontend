@@ -197,19 +197,14 @@ function buildMenuEntries(action: WidgetEntry['action']): MenuItem[] {
 
   if (!builderMode) return entries
 
-  const groups = inputGroupStore.inputGroups
-  if (groups.length > 0) {
-    entries.push({ separator: true })
-    for (const group of groups) {
-      const name = group.name ?? autoGroupName(group, resolvedInputs.value)
-      entries.push({
-        label: `${t('linearMode.groups.addToGroup')}: ${name}`,
-        icon: 'icon-[lucide--group]',
-        command: () => inputGroupStore.addItemToGroup(group.id, action.widgetId)
-      })
-    }
-  } else {
-    entries.push({ separator: true })
+  entries.push({ separator: true })
+  for (const group of inputGroupStore.inputGroups) {
+    const name = group.name ?? autoGroupName(group, resolvedInputs.value)
+    entries.push({
+      label: `${t('linearMode.groups.addToGroup')}: ${name}`,
+      icon: 'icon-[lucide--group]',
+      command: () => inputGroupStore.addItemToGroup(group.id, action.widgetId)
+    })
   }
 
   entries.push({

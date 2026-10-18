@@ -8,6 +8,10 @@
       "role": "presentation"
     },
     {
+      "path": "src/components/builder/InputGroupAccordion.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/components/builder/builderViewOptions.test.ts",
       "role": "application"
     },
@@ -99,6 +103,7 @@
     "litegraph-api",
     "node-widgets",
     "test-support",
+    "workflow-format",
     "workflow-management"
   ],
   "allowedConsumers": ["linear-mode"],
@@ -135,7 +140,8 @@
         "src/components/builder/useGroupDrop.test.ts",
         "src/components/builder/useInputGroups.test.ts",
         "src/renderer/extensions/linearMode/LinearControls.test.ts",
-        "browser_tests/tests/appBuilder/inputGroups.spec.ts"
+        "browser_tests/tests/appBuilder/inputGroups.spec.ts",
+        "src/components/builder/InputGroupAccordion.test.ts"
       ]
     }
   ],

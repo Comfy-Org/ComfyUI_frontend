@@ -65,6 +65,12 @@
         "patterns": ["src/utils/__tests__/litegraphTestUtils.ts"]
       },
       {
+        "name": "workflow-format/domain/public",
+        "patterns": [
+          "src/platform/workflow/validation/schemas/workflowSchema.ts"
+        ]
+      },
+      {
         "name": "workflow-management/application/public",
         "patterns": [
           "src/platform/workflow/management/stores/comfyWorkflow.ts",
@@ -319,6 +325,7 @@
       {
         "name": "app-builder/integration",
         "patterns": [
+          "src/components/builder/InputGroupAccordion.test.ts",
           "src/components/builder/useGroupDrop.test.ts",
           "src/components/builder/useInputGroups.test.ts",
           "src/stores/inputGroupStore.test.ts"
@@ -4223,6 +4230,7 @@
           "graph-model/domain/public",
           "linear-mode/application/public",
           "node-widgets/domain/public",
+          "workflow-format/domain/public",
           "workflow-management/application/public",
           "app-builder/domain",
           "app-builder/application",
@@ -4244,6 +4252,9 @@
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/infrastructure",
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-format/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
@@ -4251,6 +4262,7 @@
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "graph-model/domain/outer-1",
+          "workflow-format/domain/outer-3",
           "unclassified"
         ]
       },
@@ -4265,6 +4277,7 @@
           "graph-model/domain/public",
           "linear-mode/application/public",
           "node-widgets/domain/public",
+          "workflow-format/domain/public",
           "workflow-management/application/public",
           "app-builder/domain",
           "app-builder/application",
@@ -4285,6 +4298,8 @@
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/presentation",
+          "workflow-format/domain",
+          "workflow-format/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
@@ -4298,6 +4313,7 @@
           "linear-mode/presentation/outer-1",
           "node-widgets/presentation/outer-1",
           "workflow-management/presentation/outer-1",
+          "workflow-format/domain/outer-3",
           "unclassified"
         ]
       },
@@ -4404,6 +4420,20 @@
         ]
       },
       {
+        "from": "workflow-format/domain/public",
+        "allow": [
+          "graph-model/domain/public",
+          "node-widgets/domain/public",
+          "workflow-format/domain/public",
+          "graph-model/domain",
+          "node-widgets/domain",
+          "workflow-format/domain",
+          "graph-model/domain/outer-1",
+          "workflow-format/domain/outer-3",
+          "unclassified"
+        ]
+      },
+      {
         "from": "workflow-management/application/public",
         "allow": [
           "workflow-management/application/public",
@@ -4505,6 +4535,7 @@
         "allow": [
           "graph-model/domain/public",
           "node-widgets/domain/public",
+          "workflow-format/domain/public",
           "app-builder/domain",
           "app-host/domain",
           "design-system/domain",
@@ -4512,10 +4543,12 @@
           "graph-model/domain",
           "linear-mode/domain",
           "node-widgets/domain",
+          "workflow-format/domain",
           "workflow-management/domain",
           "app-host/domain/outer-1",
           "design-system/domain/outer-1",
           "graph-model/domain/outer-1",
+          "workflow-format/domain/outer-3",
           "unclassified"
         ]
       },
@@ -4528,6 +4561,7 @@
           "graph-model/domain/public",
           "linear-mode/application/public",
           "node-widgets/domain/public",
+          "workflow-format/domain/public",
           "workflow-management/application/public",
           "app-builder/domain",
           "app-builder/application",
@@ -4549,6 +4583,9 @@
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/infrastructure",
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-format/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
@@ -4556,6 +4593,7 @@
           "design-system/domain/outer-1",
           "extension-runtime/infrastructure/outer-1",
           "graph-model/domain/outer-1",
+          "workflow-format/domain/outer-3",
           "unclassified"
         ]
       },
@@ -4573,6 +4611,7 @@
           "litegraph-api/integration/public",
           "node-widgets/domain/public",
           "test-support/integration/public",
+          "workflow-format/domain/public",
           "workflow-management/application/public",
           "app-builder/domain",
           "app-builder/application",
@@ -4607,6 +4646,9 @@
           "node-widgets/presentation",
           "node-widgets/integration",
           "test-support/integration",
+          "workflow-format/domain",
+          "workflow-format/application",
+          "workflow-format/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
@@ -4625,6 +4667,7 @@
           "node-widgets/presentation/outer-1",
           "test-support/integration/outer-1",
           "workflow-management/presentation/outer-1",
+          "workflow-format/domain/outer-3",
           "unclassified"
         ]
       },
@@ -7086,6 +7129,7 @@
         "allow": [
           "graph-model/domain/public",
           "node-widgets/domain/public",
+          "workflow-format/domain/public",
           "graph-model/domain",
           "node-widgets/domain",
           "workflow-format/domain",
@@ -7099,6 +7143,7 @@
         "allow": [
           "graph-model/domain/public",
           "node-widgets/domain/public",
+          "workflow-format/domain/public",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -7118,6 +7163,7 @@
         "allow": [
           "graph-model/domain/public",
           "node-widgets/domain/public",
+          "workflow-format/domain/public",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
@@ -7355,6 +7401,7 @@
           "graph-model/domain/public",
           "linear-mode/application/public",
           "node-widgets/domain/public",
+          "workflow-format/domain/public",
           "workflow-management/application/public",
           "app-builder/domain",
           "app-builder/application",
@@ -7375,6 +7422,8 @@
           "node-widgets/domain",
           "node-widgets/application",
           "node-widgets/presentation",
+          "workflow-format/domain",
+          "workflow-format/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
@@ -7388,6 +7437,7 @@
           "linear-mode/presentation/outer-1",
           "node-widgets/presentation/outer-1",
           "workflow-management/presentation/outer-1",
+          "workflow-format/domain/outer-3",
           "unclassified"
         ]
       },
@@ -8337,6 +8387,7 @@
         "allow": [
           "graph-model/domain/public",
           "node-widgets/domain/public",
+          "workflow-format/domain/public",
           "graph-model/domain",
           "node-widgets/domain",
           "workflow-format/domain",
@@ -8359,6 +8410,7 @@
           "litegraph-api/integration/public",
           "node-widgets/domain/public",
           "test-support/integration/public",
+          "workflow-format/domain/public",
           "workflow-management/application/public",
           "agent/domain",
           "agent/application",

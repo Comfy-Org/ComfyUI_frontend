@@ -2,7 +2,7 @@ import { getActivePinia } from 'pinia'
 import { render, screen, within } from '@testing-library/vue'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
@@ -190,7 +190,7 @@ describe('LinearControls', () => {
     const node = new LGraphNode('Source')
     const widget = node.addWidget('number', 'seed', 1, () => {})
     app.rootGraph.add(node)
-    if (!widget.widgetId) throw new Error('Missing widget identity')
+    assert.exists(widget.widgetId)
     const appMode = useAppModeStore()
     const groups = useInputGroupStore()
     appMode.selectedInputs = [[widget.widgetId, widget.name]]

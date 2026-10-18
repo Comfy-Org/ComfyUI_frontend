@@ -18,7 +18,7 @@ import {
 import Menu from '@/components/ui/menu/Menu.vue'
 import EditableText from '@/components/common/EditableText.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { InputGroup } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { InputGroup } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useInputGroupStore } from '@/stores/inputGroupStore'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -64,7 +64,11 @@ const groupMenuEntries = computed<MenuItem[]>(() => [
 ])
 
 function confirmRename(value: string) {
-  inputGroupStore.renameGroup(group.id, value.trim() || null)
+  const trimmed = value.trim()
+  const isUnchangedAutoName =
+    group.name === null && trimmed === displayName.value
+  if (!isUnchangedAutoName)
+    inputGroupStore.renameGroup(group.id, trimmed || null)
   isRenaming.value = false
 }
 

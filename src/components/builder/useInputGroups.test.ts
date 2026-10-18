@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { InputGroup } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { InputGroup } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'

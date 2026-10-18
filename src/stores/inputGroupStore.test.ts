@@ -295,7 +295,10 @@ describe('inputGroupStore', () => {
 
   it('clears both old pairs when pairing inputs that already have partners', () => {
     const id = store.createGroup()
-    for (const key of Object.values(inputIds)) store.addItemToGroup(id, key)
+    store.addItemToGroup(id, inputIds.a)
+    store.addItemToGroup(id, inputIds.b)
+    store.addItemToGroup(id, inputIds.c)
+    store.addItemToGroup(id, inputIds.steps)
     store.pairItemsInGroup(id, inputIds.a, inputIds.b)
     store.pairItemsInGroup(id, inputIds.c, inputIds.steps)
 

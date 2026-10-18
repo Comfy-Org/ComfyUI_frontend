@@ -14,6 +14,12 @@ import { toRerouteId } from '@/types/rerouteId'
 import { isWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 
+export interface InputGroup {
+  id: string
+  name: string | null
+  items: { key: WidgetId; pairId?: string }[]
+}
+
 const zRendererType = z.enum([
   'LG',
   'Vue',
@@ -413,7 +419,7 @@ const zExtra = z
                   pairId: z.string().optional()
                 })
               )
-            })
+            }) satisfies z.ZodType<InputGroup>
           )
           .optional()
       })

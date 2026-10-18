@@ -1,6 +1,6 @@
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
 import { t } from '@/i18n'
-import type { InputGroup } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { InputGroup } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { WidgetId } from '@/types/widgetId'
 
 interface ResolvedGroupItem {
