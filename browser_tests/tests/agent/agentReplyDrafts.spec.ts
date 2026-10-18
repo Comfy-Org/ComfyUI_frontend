@@ -247,12 +247,17 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       test.setTimeout(60_000)
       const askId = `${MESSAGE_ID}:call-${selection}`
       const answeredRequests: Array<{ url: string; selected: string[] }> = []
+      let releaseAnswer = () => {}
+      const answerReleased = new Promise<void>((resolve) => {
+        releaseAnswer = resolve
+      })
       await page.route(
         '**/api/agent/threads/*/asks/*/answer',
         async (route) => {
           const request = route.request()
           const body = zAgentAnswerRequest.parse(request.postDataJSON())
           answeredRequests.push({ url: request.url(), selected: body.selected })
+          await answerReleased
           await route.fulfill({
             ...jsonRoute({ status: 'answered' }),
             status: 202
@@ -294,10 +299,6 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       await expect(action).toBeVisible()
       await action.click()
 
-      test.fail(
-        true,
-        'The approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint.'
-      )
       await expect
         .poll(() => answeredRequests)
         .toEqual([
@@ -309,6 +310,7 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
           }
         ])
       await expect(action).toHaveAttribute('aria-busy', 'true')
+      releaseAnswer()
       send({
         type: 'agent_ask_resolved',
         data: {
