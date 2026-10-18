@@ -8,7 +8,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type {
+  BillingPortalOutcome,
+  SubscriptionInfo
+} from '@/composables/billing/types'
 import type {
   BillingStatus,
   RenewalInvoice,
@@ -42,7 +45,9 @@ const state = vi.hoisted(() => ({
   canManageSubscriptionLifecycle: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  manageSubscription: vi.fn(),
+  manageSubscription: vi.fn(
+    async (): Promise<BillingPortalOutcome> => ({ ok: true })
+  ),
   handleResubscribe: vi.fn(),
   showSubscriptionDialog: vi.fn()
 }))
@@ -190,6 +195,10 @@ const i18n = createI18n({
           founder: { name: "Founder's Edition" },
           pro: { name: 'Pro' },
           enterprise: { name: 'Enterprise' }
+        },
+        paymentRecovery: {
+          paymentFailedMemberDescription:
+            "Ask your workspace owner to update the workspace's payment method."
         }
       }
     }
@@ -318,7 +327,7 @@ describe('BillingStatusBanner', () => {
       denial: 'payment_past_due',
       canTopUp: false,
       canManageBilling: false,
-      body: "You've used all your credits. Update your payment method to add credits.",
+      body: "Ask your workspace owner to update the workspace's payment method.",
       actions: []
     },
     {
@@ -382,9 +391,9 @@ describe('BillingStatusBanner', () => {
       'opens the portal once while a $name request is in flight',
       async ({ enter }) => {
         enter()
-        let resolvePortal = () => {}
+        let resolvePortal: (outcome: BillingPortalOutcome) => void = () => {}
         state.manageSubscription.mockReturnValueOnce(
-          new Promise<void>((resolve) => {
+          new Promise<BillingPortalOutcome>((resolve) => {
             resolvePortal = resolve
           })
         )
@@ -397,7 +406,7 @@ describe('BillingStatusBanner', () => {
         await userEvent.click(button)
         expect(state.manageSubscription).toHaveBeenCalledOnce()
 
-        resolvePortal()
+        resolvePortal({ ok: true })
         await vi.waitFor(() => expect(button).toBeEnabled())
       }
     )

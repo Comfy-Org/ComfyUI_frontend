@@ -1001,7 +1001,7 @@ describe('useWorkspaceBilling', () => {
       })
 
       const billing = setupBilling()
-      await billing.manageSubscription()
+      await expect(billing.manageSubscription()).resolves.toEqual({ ok: true })
 
       expect(mockWorkspaceApi.getPaymentPortalUrl).toHaveBeenCalledWith(
         'https://app.example/settings'
@@ -1037,7 +1037,10 @@ describe('useWorkspaceBilling', () => {
       })
 
       const billing = setupBilling()
-      await billing.manageSubscription()
+      await expect(billing.manageSubscription()).resolves.toEqual({
+        ok: false,
+        reason: 'missing_url'
+      })
 
       expect(tab.close).toHaveBeenCalledOnce()
       expect(tab.location.href).toBe('')
@@ -1080,7 +1083,9 @@ describe('useWorkspaceBilling', () => {
         mockRail.enabled = railEnabled
 
         const billing = setupBilling()
-        await billing.manageSubscription()
+        await expect(billing.manageSubscription()).resolves.toEqual({
+          ok: true
+        })
 
         // The disowned-tab technique opens a blank tab before navigating it,
         // so the hosted URL lands on the tab handle, not on the open() call.
@@ -1140,7 +1145,10 @@ describe('useWorkspaceBilling', () => {
           url: 'https://billing.example/portal'
         })
 
-        await setupBilling().manageSubscription()
+        await expect(setupBilling().manageSubscription()).resolves.toEqual({
+          ok: false,
+          reason: 'blocked'
+        })
 
         expect(mockRail.openPaymentPortal).not.toHaveBeenCalled()
         expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()

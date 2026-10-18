@@ -1,5 +1,6 @@
 import { computed, shallowRef } from 'vue'
 
+import type { BillingPortalOutcome } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -10,7 +11,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'subscription-paused'
 
-const paymentPortalRequest = shallowRef<Promise<void> | null>(null)
+const paymentPortalRequest = shallowRef<Promise<BillingPortalOutcome> | null>(
+  null
+)
 
 /** Whether the server refused top-up because a subscription payment is past due. */
 export function isTopUpDeniedPastDue(denial: string | undefined): boolean {
@@ -38,24 +41,29 @@ export function usePaymentRecoveryDialog() {
     })
   }
 
-  async function openPaymentPortal() {
-    showUpdatingPayment(true)
+  async function requestPaymentPortal(): Promise<BillingPortalOutcome> {
     try {
-      await manageSubscription()
-      closePaymentRecoveryDialog()
+      return await manageSubscription()
     } catch (error) {
       reportError(error, {
         surface: 'billing',
         errorType: 'payment_recovery_portal_failure'
       })
       toastErrorHandler(error)
-    } finally {
-      showUpdatingPayment(false)
+      return { ok: false, reason: 'failed' }
     }
   }
 
-  /** Opens the billing portal once at a time, reporting and toasting a failure instead of rejecting. */
-  function updatePayment(): Promise<void> {
+  async function openPaymentPortal(): Promise<BillingPortalOutcome> {
+    showUpdatingPayment(true)
+    const outcome = await requestPaymentPortal()
+    showUpdatingPayment(false)
+    if (outcome.ok) closePaymentRecoveryDialog()
+    return outcome
+  }
+
+  /** Opens the billing portal once at a time; the dialog closes only when the portal opened. */
+  function updatePayment(): Promise<BillingPortalOutcome> {
     paymentPortalRequest.value ??= openPaymentPortal().finally(() => {
       paymentPortalRequest.value = null
     })

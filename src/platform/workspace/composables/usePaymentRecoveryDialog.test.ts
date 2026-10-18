@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { BillingPortalOutcome } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -42,7 +43,9 @@ describe('usePaymentRecoveryDialog', () => {
   )
 
   it('closes the recovery dialog once the billing portal opens', async () => {
-    await usePaymentRecoveryDialog().updatePayment()
+    await expect(usePaymentRecoveryDialog().updatePayment()).resolves.toEqual({
+      ok: true
+    })
 
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
     expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
@@ -51,15 +54,34 @@ describe('usePaymentRecoveryDialog', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('reports a failed portal request once and shows it as a toast', async () => {
+  it.for(['routing_unavailable', 'blocked', 'missing_url', 'failed'] as const)(
+    'keeps the recovery dialog open when the portal did not open (%s)',
+    async (reason) => {
+      vi.mocked(useBillingContext().manageSubscription).mockResolvedValueOnce({
+        ok: false,
+        reason
+      })
+
+      await expect(usePaymentRecoveryDialog().updatePayment()).resolves.toEqual(
+        { ok: false, reason }
+      )
+
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
+  it('reports a failed portal request once, shows it as a toast, and frees the retry', async () => {
     const failure = new Error('portal down')
     vi.mocked(useBillingContext().manageSubscription).mockRejectedValueOnce(
       failure
     )
+    const recovery = usePaymentRecoveryDialog()
 
-    await expect(
-      usePaymentRecoveryDialog().updatePayment()
-    ).resolves.toBeUndefined()
+    await expect(recovery.updatePayment()).resolves.toEqual({
+      ok: false,
+      reason: 'failed'
+    })
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
       surface: 'billing',
@@ -69,13 +91,17 @@ describe('usePaymentRecoveryDialog', () => {
       useErrorHandling().toastErrorHandler
     ).toHaveBeenCalledExactlyOnceWith(failure)
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    expect(recovery.isUpdatingPayment.value).toBe(false)
+
+    await recovery.updatePayment()
+    expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(2)
   })
 
   it('shares one in-flight portal request across callers', async () => {
-    let resolvePortal = () => {}
+    let resolvePortal: (outcome: BillingPortalOutcome) => void = () => {}
     const billing = useBillingContext()
     vi.mocked(billing.manageSubscription).mockReturnValueOnce(
-      new Promise<void>((resolve) => {
+      new Promise<BillingPortalOutcome>((resolve) => {
         resolvePortal = resolve
       })
     )
@@ -87,7 +113,7 @@ describe('usePaymentRecoveryDialog', () => {
     expect(recovery.isUpdatingPayment.value).toBe(true)
     expect(billing.manageSubscription).toHaveBeenCalledOnce()
 
-    resolvePortal()
+    resolvePortal({ ok: true })
     await Promise.all([first, second])
 
     expect(recovery.isUpdatingPayment.value).toBe(false)

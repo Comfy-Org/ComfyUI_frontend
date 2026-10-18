@@ -288,7 +288,9 @@ const outOfCreditsView = (): BannerView | null => {
     return {
       muted: false,
       title: t(`${bs}.outOfCredits.title`),
-      body: t(`${bs}.outOfCredits.pastDueBody`),
+      body: canManageBilling.value
+        ? t(`${bs}.outOfCredits.pastDueBody`)
+        : t('subscription.paymentRecovery.paymentFailedMemberDescription'),
       action: canManageBilling.value ? 'updatePayment' : null,
       dismissible: true
     }
