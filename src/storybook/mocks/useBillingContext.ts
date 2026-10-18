@@ -83,7 +83,7 @@ export function useBillingContext(): BillingContext {
     reconcileSubscriptionSuccess: async () => {},
     subscribe: async () => {},
     previewSubscribe: async () => null,
-    manageSubscription: async () => {},
+    manageSubscription: async () => ({ ok: true }),
     cancelSubscription: async () => 'legacy' as const,
     resubscribe: async () => {},
     topup: async () => {},

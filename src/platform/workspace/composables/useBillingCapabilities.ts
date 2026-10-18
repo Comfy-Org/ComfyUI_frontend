@@ -5,7 +5,6 @@ import {
 } from '@vueuse/core'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -19,6 +18,7 @@ import { readOnRail } from '@/platform/workspace/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { reportWorkspaceScopeMismatch } from '@/platform/workspace/telemetry/workspaceTelemetryContext'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 type CapabilityReadState =
@@ -82,7 +82,11 @@ function readCapabilitiesResponse(
 
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
+  const apiKeyAuthStore = useApiKeyAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const actorId = computed(
+    () => authStore.userId ?? apiKeyAuthStore.currentUser?.id
+  )
   const readState = shallowRef<CapabilityReadState>({ status: 'idle' })
   let initialized = false
   let latestRequestId = 0
@@ -92,7 +96,7 @@ function useBillingCapabilitiesInternal() {
   let invalidatedRequestId = 0
 
   const resolvedResponse = computed(() => {
-    const userId = authStore.userId
+    const userId = actorId.value
     const workspaceId = workspaceStore.activeWorkspaceId
     const state = readState.value
     if (
@@ -112,16 +116,28 @@ function useBillingCapabilitiesInternal() {
     () => resolvedResponse.value?.capabilities ?? null
   )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
-  const canTopUp = computed(() => {
-    if (!isCloud) return workspaceStore.activeWorkspace?.role !== 'member'
-    return capabilities.value?.can_top_up ?? false
-  })
+  const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
+  const topUpDenial = computed<string | undefined>(
+    () => resolvedResponse.value?.denied_reasons?.can_top_up
+  )
+  const canManageBilling = computed(() =>
+    receiveServerFact(
+      'can_manage_billing',
+      capabilities.value?.can_manage_billing ?? false
+    )
+  )
   const canSubscribeSelfServe = computed(
     () => capabilities.value?.can_subscribe_self_serve ?? false
   )
   const canCancel = computed(() => capabilities.value?.can_cancel ?? false)
   const canReactivate = computed(
     () => capabilities.value?.can_reactivate ?? false
+  )
+  const canRevertScheduledChange = computed(() =>
+    receiveServerFact(
+      'can_revert_scheduled_change',
+      capabilities.value?.can_revert_scheduled_change ?? false
+    )
   )
   const canChangeSeats = computed(
     () => capabilities.value?.can_change_seats ?? false
@@ -147,25 +163,38 @@ function useBillingCapabilitiesInternal() {
   const deleteWorkspaceDenial = computed<string | undefined>(
     () => resolvedResponse.value?.denied_reasons?.can_delete_workspace
   )
+  const canLeaveWorkspace = computed(() =>
+    receiveServerFact(
+      'can_leave_workspace',
+      capabilities.value?.can_leave_workspace ?? false
+    )
+  )
+  const leaveWorkspaceDenial = computed<string | undefined>(
+    () => resolvedResponse.value?.denied_reasons?.can_leave_workspace
+  )
+  const canManageSubscription = computed(() =>
+    receiveServerFact(
+      'can_manage_subscription',
+      capabilities.value?.can_manage_subscription ?? false
+    )
+  )
   const canDowngradeToPersonal = computed(
     () => capabilities.value?.can_downgrade_to_personal ?? false
   )
   const isReady = computed(() => {
-    if (!isCloud) return true
     const state = readState.value
     if (state.status === 'idle' || state.status === 'pending') return false
     return (
-      state.authUid === authStore.userId &&
+      state.authUid === actorId.value &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
 
   const snapshotAuthoritative = computed(() => {
-    if (!isCloud) return true
     const state = readState.value
     if (state.status !== 'resolved' && state.status !== 'denied') return false
     return (
-      state.authUid === authStore.userId &&
+      state.authUid === actorId.value &&
       state.workspaceId === workspaceStore.activeWorkspaceId
     )
   })
@@ -279,7 +308,7 @@ function useBillingCapabilitiesInternal() {
   }
 
   async function fetchCapabilities(signal?: AbortSignal): Promise<void> {
-    const userId = authStore.userId
+    const userId = actorId.value
     const workspaceId = workspaceStore.activeWorkspaceId
     if (!userId || !workspaceId) {
       resetRead()
@@ -332,7 +361,7 @@ function useBillingCapabilitiesInternal() {
         )
         if (
           requestId !== latestRequestId ||
-          userId !== authStore.userId ||
+          userId !== actorId.value ||
           workspaceId !== workspaceStore.activeWorkspaceId
         ) {
           return
@@ -378,7 +407,7 @@ function useBillingCapabilitiesInternal() {
       } catch (error) {
         if (
           requestId !== latestRequestId ||
-          userId !== authStore.userId ||
+          userId !== actorId.value ||
           workspaceId !== workspaceStore.activeWorkspaceId
         ) {
           return
@@ -448,12 +477,11 @@ function useBillingCapabilitiesInternal() {
 
   async function initialize(signal?: AbortSignal): Promise<void> {
     initialized = true
-    if (!isCloud) return
     do {
       await fetchCapabilities(signal)
     } while (
       !signal?.aborted &&
-      !!authStore.userId &&
+      !!actorId.value &&
       !!workspaceStore.activeWorkspaceId &&
       !isReady.value
     )
@@ -465,27 +493,33 @@ function useBillingCapabilitiesInternal() {
 
   watch(
     [
-      () => authStore.userId,
+      () => actorId.value,
       () => workspaceStore.activeWorkspaceId,
       () => workspaceStore.activeWorkspace?.role
     ],
     () => {
       readFailures = 0
       resetRead()
-      if (initialized && isCloud) void fetchCapabilities()
+      if (initialized) void fetchCapabilities()
     }
   )
 
   return {
     canTopUp,
+    topUpDenial,
+    canManageBilling,
     canSubscribeSelfServe,
     canCancel,
     canReactivate,
+    canRevertScheduledChange,
     canChangeSeats,
     canInviteMembers,
     canManageMembers,
     canDeleteWorkspace,
     deleteWorkspaceDenial,
+    canLeaveWorkspace,
+    leaveWorkspaceDenial,
+    canManageSubscription,
     canDowngradeToPersonal,
     isReady,
     hasResolvedCapabilities,

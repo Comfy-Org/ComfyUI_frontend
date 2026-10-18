@@ -1018,7 +1018,7 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/payment-portal',
         { return_url: 'https://app.com/settings' },
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 30_000 }
       )
       expect(result).toEqual(data)
     })
@@ -1039,7 +1039,7 @@ describe('workspaceApi', () => {
           return_url: 'https://app.com/settings',
           flow_type: 'payment_method_update'
         },
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 30_000 }
       )
     })
 

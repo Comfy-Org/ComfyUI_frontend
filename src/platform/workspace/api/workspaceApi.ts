@@ -34,6 +34,8 @@ import type {
   RetentionAcceptRequest,
   RetentionFlowEventRequest,
   RetentionFlowResponse,
+  RevertScheduledChangeRequest,
+  RevertScheduledChangeResponse,
   SavedPaymentMethod,
   ScheduledPlanChange,
   SubscribeRequest,
@@ -108,10 +110,6 @@ export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
-
-/** Not in the generated `PaymentPortalRequest` until the ingest-types sync picks up cloud#13970. */
-type PaymentPortalFlowType = 'payment_method_update'
-
 export interface SubscribeOptions {
   confirmationToken?: string
   promotionCode?: string
@@ -864,12 +862,35 @@ export const workspaceApi = {
   },
 
   /**
+   * Undo the pending scheduled plan change
+   * POST /api/billing/subscription/revert-scheduled-change
+   */
+  async revertScheduledChange(
+    idempotencyKey?: string
+  ): Promise<RevertScheduledChangeResponse> {
+    const auth = await requestAuth()
+    try {
+      const response =
+        await workspaceApiClient.post<RevertScheduledChangeResponse>(
+          workspaceApiUrl('/billing/subscription/revert-scheduled-change'),
+          {
+            idempotency_key: idempotencyKey
+          } satisfies RevertScheduledChangeRequest,
+          auth
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'revertScheduledChange')
+    }
+  },
+
+  /**
    * Get Stripe payment portal URL for managing payment methods
    * POST /api/billing/payment-portal
    */
   async getPaymentPortalUrl(
     returnUrl?: string,
-    flowType?: PaymentPortalFlowType
+    flowType?: PaymentPortalRequest['flow_type']
   ): Promise<PaymentPortalResponse> {
     const auth = await requestAuth()
     try {
@@ -878,10 +899,8 @@ export const workspaceApi = {
         {
           return_url: returnUrl,
           flow_type: flowType
-        } satisfies PaymentPortalRequest & {
-          flow_type?: PaymentPortalFlowType
-        },
-        auth
+        } satisfies PaymentPortalRequest,
+        { ...auth, timeout: 30_000 }
       )
       return response.data
     } catch (err) {
