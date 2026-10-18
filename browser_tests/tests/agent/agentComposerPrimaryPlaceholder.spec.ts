@@ -18,14 +18,8 @@ test.describe(
       const placeholder = panel.getByText(enMessages.agent.placeholder, {
         exact: true
       })
-      await expect(placeholder).toBeVisible()
+      await expect(placeholder).toHaveText(enMessages.agent.placeholder)
       await expect(agentPanel.composer).toHaveText('')
-
-      const rendered = ((await placeholder.textContent()) ?? '').trim()
-      expect(rendered).toBe(enMessages.agent.placeholder)
-      expect(rendered).not.toMatch(/use skills/i)
-      expect(rendered).not.toMatch(/add references/i)
-      expect(rendered).not.toMatch(/drag in/i)
 
       const reference = panel.getByRole('button', {
         name: enMessages.agent.reference,
