@@ -484,28 +484,31 @@ function supersededOverflowAlias(
 }
 
 /**
- * Whether the constructed DynamicGroup controller at `index` takes its count
- * after `configure`: the document stores it by name and no live overflow alias
- * addresses its slot or a later one, since the rows built later would shift
- * those slots.
+ * DynamicGroup controllers whose row count applies after `configure`, once the
+ * document's row values can back it: counts stored by name on a node without
+ * overflow aliases. On a node with a dynamic combo, aliases can address slots
+ * the rows would shift, so the count keeps the positional `configure` path.
+ * TODO: route those counts through the remote row-count guard too.
  */
-function defersRowCount(
+function deferredRowCounts(
   node: LGraphNode,
   constructed: readonly IBaseWidget[],
-  index: number,
-  widgets: Record<string, unknown>
-): boolean {
-  if (index < 0) return false
-  const widget = constructed[index]
-  return (
-    isDynamicGroupController(widget) &&
-    Object.hasOwn(widgets, widget.name) &&
-    !Object.keys(widgets).some(
-      (name) =>
-        (overflowWidgetIndex(name) ?? -1) >= index &&
-        overflowWidget(node, name) !== undefined &&
-        !supersededOverflowAlias(node, name, widgets)
-    )
+  widgets: DocNode['widgets']
+): ReadonlySet<string> {
+  if (
+    widgets === undefined ||
+    Array.isArray(widgets) ||
+    supportsDynamicWidgetOverflow(node)
+  )
+    return new Set()
+  return new Set(
+    constructed
+      .filter(
+        (widget) =>
+          isDynamicGroupController(widget) &&
+          Object.hasOwn(widgets, widget.name)
+      )
+      .map((widget) => widget.name)
   )
 }
 
@@ -522,27 +525,23 @@ function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
 
 /**
  * Document entries for widgets that only exist after `configure`: aliases past
- * the constructed list, and names the constructor did not build but the node
- * now serializes. `constructed` is the serializable list from before
- * `configure`; a name that still matches nothing is dropped without a report.
+ * the constructed list, names the constructor did not build but the node now
+ * serializes, and deferred row counts. `constructed` is the serializable list
+ * from before `configure`; a name that still matches nothing is dropped without
+ * a report.
  */
 function mountedWidgetValues(
   node: LGraphNode,
   widgets: DocNode['widgets'],
   constructed: readonly IBaseWidget[],
-  constructedNames: ReadonlySet<string>
+  constructedNames: ReadonlySet<string>,
+  deferred: ReadonlySet<string>
 ): Record<string, unknown> | undefined {
   if (widgets === undefined || Array.isArray(widgets)) return undefined
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
     return index === null
-      ? !constructedNames.has(name) ||
-          defersRowCount(
-            node,
-            constructed,
-            constructed.findIndex((widget) => widget.name === name),
-            widgets
-          )
+      ? !constructedNames.has(name) || deferred.has(name)
       : overflowWidget(node, name) === undefined || index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
@@ -556,7 +555,8 @@ function mountedWidgetValues(
  */
 function positionalWidgetValues(
   node: LGraphNode,
-  widgets: DocNode['widgets']
+  widgets: DocNode['widgets'],
+  deferred: ReadonlySet<string>
 ): WidgetValue[] | undefined {
   if (widgets === undefined) return undefined
   if (Array.isArray(widgets)) {
@@ -564,10 +564,8 @@ function positionalWidgetValues(
       (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
     )
   }
-  const constructed = serializableWidgets(node)
-  return constructed.map((widget, index) => {
-    // The row count applies after configure, once the document's row values can back it.
-    if (defersRowCount(node, constructed, index, widgets)) return widget.value
+  return serializableWidgets(node).map((widget, index) => {
+    if (deferred.has(widget.name)) return widget.value
     const alias = `_extra_${index}`
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
@@ -876,15 +874,21 @@ export class LiveGraphApplier {
         const constructedNames = new Set(
           node.widgets?.map((widget) => widget.name)
         )
+        const deferred = deferredRowCounts(node, constructed, docNode.widgets)
         node.configure({
           ...info,
-          widgets_values: positionalWidgetValues(node, docNode.widgets)
+          widgets_values: positionalWidgetValues(
+            node,
+            docNode.widgets,
+            deferred
+          )
         })
         const mounted = mountedWidgetValues(
           node,
           docNode.widgets,
           constructed,
-          constructedNames
+          constructedNames,
+          deferred
         )
         if (mounted)
           this.applyWidgets(node, mounted, mode, {
