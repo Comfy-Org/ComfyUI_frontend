@@ -96,7 +96,7 @@ function select(event: Event) {
       :class="
         cn(
           menuItemClass,
-          item.variant === 'destructive' && 'text-destructive-background',
+          item.variant === 'destructive' && 'text-destructive',
           focusableDisabled && 'opacity-50',
           toValue(item.class)
         )

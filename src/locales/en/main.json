@@ -1473,6 +1473,8 @@
     "clickToResetZoom": "Click to reset zoom",
     "brushSettings": "Brush Settings",
     "brushShape": "Brush Shape",
+    "brushShapeCircle": "Circle brush",
+    "brushShapeSquare": "Square brush",
     "colorSelector": "Color Selector",
     "thickness": "Thickness",
     "opacity": "Opacity",

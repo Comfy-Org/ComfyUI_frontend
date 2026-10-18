@@ -1,5 +1,5 @@
 <template>
-  <div class="text-sm text-base-foreground">
+  <div class="text-sm text-foreground">
     <slot></slot>
   </div>
 </template>
