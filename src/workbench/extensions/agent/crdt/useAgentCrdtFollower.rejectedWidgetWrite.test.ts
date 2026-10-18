@@ -5,6 +5,7 @@ import { defineComponent, ref } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
@@ -311,7 +312,7 @@ describe('a human edit the doc host rejects', () => {
       label: 'widget write',
       operation: WIDGET_EDIT,
       code: 'unknown_widget',
-      reason: 'Rejected: seed (unknown_widget)'
+      reason: 'Rejected: node 3 seed (unknown_widget)'
     },
     {
       label: 'node add',
@@ -323,7 +324,7 @@ describe('a human edit the doc host rejects', () => {
       label: 'widget write whose name carries punctuation',
       operation: PUNCTUATED_WIDGET_EDIT,
       code: 'unknown_widget',
-      reason: "Rejected: Width/Height & 'x' (unknown_widget)"
+      reason: "Rejected: node 3 Width/Height & 'x' (unknown_widget)"
     },
     {
       label: 'workflow clear',
@@ -367,7 +368,7 @@ describe('a human edit the doc host rejects', () => {
 
     expect(toastDescriptions()).toEqual([
       expect.stringMatching(
-        new RegExp(`${GENERIC_REJECTION_TEXT}.*Rejected: seed$`)
+        new RegExp(`${GENERIC_REJECTION_TEXT}.*Rejected: node 3 seed$`)
       )
     ])
   })
@@ -375,14 +376,18 @@ describe('a human edit the doc host rejects', () => {
   it('shares one notice between a refusal the minter raised and a host rejection', async () => {
     const { submit, follower } = mountFollower()
 
-    follower.notifyWidgetWriteRefused()
+    follower.notifyWidgetWriteRefused(toNodeId(3), 'seed')
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT)
+      expect.stringMatching(
+        new RegExp(`${WIDGET_REJECTION_TEXT}.*Rejected: node 3 seed$`)
+      )
     ])
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT)
+      expect.stringMatching(
+        new RegExp(`${WIDGET_REJECTION_TEXT}.*Rejected: node 3 seed$`)
+      )
     ])
   })
 

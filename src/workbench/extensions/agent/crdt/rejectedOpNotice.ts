@@ -40,20 +40,26 @@ function isRejectedWidgetWrite(
   )
 }
 
+function nodeFieldTarget(nodeId: string | number, field: string): string {
+  const t = i18n.global.t
+  const plain = { escapeParameter: false }
+  return t(
+    'agent.editRejected.targets.nodeField',
+    { id: String(nodeId), field },
+    plain
+  )
+}
+
 function rejectedTarget(op: Op | undefined): string | undefined {
   const t = i18n.global.t
   const plain = { escapeParameter: false }
   switch (op?.op) {
     case 'set_widget':
-      return op.widget
+      return nodeFieldTarget(op.node_id, op.widget)
     case 'add_node':
       return op.class_type
     case 'set_node_field':
-      return t(
-        'agent.editRejected.targets.nodeField',
-        { id: String(op.node_id), field: op.field },
-        { escapeParameter: false }
-      )
+      return nodeFieldTarget(op.node_id, op.field)
     case 'delete_node':
       return t(
         'agent.editRejected.targets.node',
@@ -173,10 +179,11 @@ export function createRejectedOpNotifier() {
       const target = failed && rejectedTarget(rejectedOp(ops, failed))
       showThrottled(kind, withReason(notice, target, code))
     },
-    notifyWidgetWriteRefused() {
+    notifyWidgetWriteRefused(nodeId: string | number, widgetName: string) {
+      const notice = i18n.global.t('agent.editRejected.widgetWrite')
       showThrottled(
         'agent.editRejected.widgetWrite',
-        i18n.global.t('agent.editRejected.widgetWrite')
+        withReason(notice, nodeFieldTarget(nodeId, widgetName), 'unspecified')
       )
     },
     cancel() {

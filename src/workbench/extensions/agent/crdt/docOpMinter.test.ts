@@ -212,7 +212,7 @@ describe('attachDocOpMinter', () => {
   let docInputNames: DocOpMinterDeps['docInputNames']
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
-  let refusals: number
+  let refusals: Array<[string, string]>
 
   beforeEach(() => {
     graph = new LGraph()
@@ -223,7 +223,7 @@ describe('attachDocOpMinter', () => {
     docInputNames = () => null
     docPromotedWidgets = () => null
     mayWrite = true
-    refusals = 0
+    refusals = []
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
@@ -233,9 +233,8 @@ describe('attachDocOpMinter', () => {
       docInputNames: (nodeId) => docInputNames(nodeId),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
-      onWidgetWriteRefused: () => {
-        refusals += 1
-      }
+      onWidgetWriteRefused: (nodeId, widgetName) =>
+        refusals.push([nodeId, widgetName])
     })
   })
 
@@ -1016,6 +1015,7 @@ describe('attachDocOpMinter', () => {
     {
       name: 'an unpromoted host widget',
       errorType: 'agent_crdt_promoted_widget_not_promoted',
+      widgetName: 'extra',
       act: (host: ReturnType<typeof createTestSubgraphNode>) => {
         host.addWidget('text', 'extra', 'before', () => {}).value = 'after'
       }
@@ -1023,6 +1023,7 @@ describe('attachDocOpMinter', () => {
     {
       name: 'a drifted host layout',
       errorType: 'agent_crdt_promoted_widget_order_drift',
+      widgetName: 'text',
       act: (host: ReturnType<typeof createTestSubgraphNode>) => {
         docPromotedWidgets = () => ({
           valueCount: 2,
@@ -1035,6 +1036,7 @@ describe('attachDocOpMinter', () => {
     {
       name: 'a host the document cannot vouch for yet',
       errorType: 'agent_crdt_promoted_widget_doc_not_synced',
+      widgetName: 'text',
       act: (host: ReturnType<typeof createTestSubgraphNode>) => {
         mayWrite = false
         host.widgets[1].value = 'too early'
@@ -1042,14 +1044,14 @@ describe('attachDocOpMinter', () => {
     }
   ])(
     'reports and notifies a refused write to $name',
-    async ({ errorType, act }) => {
+    async ({ errorType, widgetName, act }) => {
       const { host, doc } = seedPromotedHost()
 
       act(host)
       await afterFlush()
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(1)
+      expect(refusals).toEqual([[host.id, widgetName]])
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({ errorType })
@@ -1068,7 +1070,7 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([
       expect.objectContaining({ node_id: host.id, widget: 'text' })
     ])
-    expect(refusals).toBe(0)
+    expect(refusals).toEqual([])
     doc.destroy()
   })
 
