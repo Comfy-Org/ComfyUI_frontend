@@ -1,4 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import {
@@ -14,6 +15,7 @@ import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 
 function addMultilineWidget(
   node: LGraphNode,
@@ -26,15 +28,20 @@ function addMultilineWidget(
     opts.placeholder || name
   )
 
-  let listedName: string | undefined
+  let owner: IBaseWidget | undefined
+  let ownState: WidgetState | undefined
   function storeId(): WidgetId | undefined {
-    const current = node.widgets?.find(
+    owner ??= node.widgets?.find(
       (widget) => isDOMWidget(widget) && widget.element === inputEl
     )
-    if (current) listedName = current.name
-    else if (listedName !== undefined) return undefined
     const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
-    return widgetId(graphId, node.id, listedName ?? name)
+    const id = widgetId(graphId, node.id, owner?.name ?? name)
+    const state = widgetStore.getWidget(id)
+    const listed = owner !== undefined && node.widgets?.includes(owner)
+    if (!listed && ownState !== undefined && state !== ownState)
+      return undefined
+    ownState = state
+    return id
   }
 
   const widgetOptions: DOMWidgetOptions<string> = {
@@ -56,7 +63,7 @@ function addMultilineWidget(
         widgetState.value = v
         return
       }
-      widgetStore.registerWidget(id, {
+      ownState = widgetStore.registerWidget(id, {
         type: 'customtext',
         value: v,
         options: widgetOptions
