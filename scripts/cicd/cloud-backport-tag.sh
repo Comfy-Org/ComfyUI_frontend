@@ -18,6 +18,7 @@ MINOR="${BASH_REMATCH[2]}"
 
 GH_API_MAX_ATTEMPTS="${GH_API_MAX_ATTEMPTS:-4}"
 GH_API_RETRY_BUDGET_SECONDS="${GH_API_RETRY_BUDGET_SECONDS:-300}"
+GH_API_SECONDARY_RATE_LIMIT_WAIT_SECONDS=60
 GH_API_WAITED_FILE=$(mktemp)
 trap 'rm -f "$GH_API_WAITED_FILE"' EXIT
 
@@ -33,7 +34,7 @@ rate_limit_wait_seconds() {
 # Retries rate-limit and 5xx responses within one retry budget shared by every
 # call in the run; every other failure returns at once.
 gh_api() {
-  local attempt=1 backoff=5 waited endpoint="$1" arg error_file output status wait
+  local attempt=1 backoff=5 elapsed endpoint="$1" arg error_file output reset_note status wait
   for arg in "$@"; do
     [[ "$arg" == repos/* ]] && endpoint="$arg"
   done
@@ -47,19 +48,24 @@ gh_api() {
       return 0
     fi
     cat "$error_file" >&2
-    waited=$(cat "$GH_API_WAITED_FILE")
-    waited="${waited:-0}"
+    elapsed=$(cat "$GH_API_WAITED_FILE")
+    elapsed=$((SECONDS > ${elapsed:-0} ? SECONDS : ${elapsed:-0}))
     if grep -Eqi 'rate limit|HTTP 429' "$error_file"; then
-      wait=$(rate_limit_wait_seconds) || wait="$backoff"
+      if wait=$(rate_limit_wait_seconds); then
+        reset_note=" (next reset in ${wait}s)"
+      else
+        wait="$GH_API_SECONDARY_RATE_LIMIT_WAIT_SECONDS"
+        reset_note=""
+      fi
       if [[ "$attempt" -ge "$GH_API_MAX_ATTEMPTS" ]] \
-        || ((waited + wait > GH_API_RETRY_BUDGET_SECONDS)); then
-        echo "::error::GitHub API rate limited on ${endpoint}; gave up after ${attempt} attempt(s) and ${waited}s of waiting (next reset in ${wait}s)" >&2
+        || ((elapsed + wait > GH_API_RETRY_BUDGET_SECONDS)); then
+        echo "::error::GitHub API rate limited on ${endpoint}; gave up after ${attempt} attempt(s) and ${elapsed}s${reset_note}" >&2
         rm -f "$error_file"
         return "$status"
       fi
     elif grep -Eq 'HTTP 5[0-9]{2}' "$error_file" \
       && [[ "$attempt" -lt "$GH_API_MAX_ATTEMPTS" ]] \
-      && ((waited + backoff <= GH_API_RETRY_BUDGET_SECONDS)); then
+      && ((elapsed + backoff <= GH_API_RETRY_BUDGET_SECONDS)); then
       wait="$backoff"
     else
       rm -f "$error_file"
@@ -67,7 +73,7 @@ gh_api() {
     fi
     echo "::warning::GitHub API request ${endpoint} failed (attempt ${attempt}/${GH_API_MAX_ATTEMPTS}); retrying in ${wait}s" >&2
     sleep "$wait"
-    printf '%s' $((waited + wait)) > "$GH_API_WAITED_FILE"
+    printf '%s' $((elapsed + wait)) > "$GH_API_WAITED_FILE"
     attempt=$((attempt + 1))
     backoff=$((backoff * 2))
   done

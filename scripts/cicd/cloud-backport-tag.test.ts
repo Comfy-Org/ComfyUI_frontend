@@ -253,12 +253,12 @@ describe('cloud backport tag workflow', () => {
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('already exists at')
-    expect(result.sleeps).toEqual([5, 10])
+    expect(result.sleeps).toEqual([60, 60])
   })
 
   it.for([
     { name: 'a reset beyond the retry budget', resetIn: 3600, sleeps: [] },
-    { name: 'a secondary rate limit', resetIn: undefined, sleeps: [5, 10, 20] }
+    { name: 'a secondary rate limit', resetIn: undefined, sleeps: [60, 60, 60] }
   ])(
     'reports a persistent rate limit within the job timeout for $name',
     ({ resetIn, sleeps }) => {
@@ -266,6 +266,9 @@ describe('cloud backport tag workflow', () => {
 
       expect(result.status).not.toBe(0)
       expect(result.stderr).toContain('::error::GitHub API rate limited on')
+      expect(result.stderr.includes('next reset in')).toBe(
+        resetIn !== undefined
+      )
       expect(result.sleeps).toEqual(sleeps)
       expect(
         result.sleeps.reduce((total, wait) => total + wait, 0)
@@ -282,20 +285,26 @@ describe('cloud backport tag workflow', () => {
   it('shares one retry budget across every API call in the run', () => {
     const result = runTagScript('same', {
       rateLimitedCalls: [1, 3, 5],
-      retryBudget: 12
+      retryBudget: 150
     })
 
     expect(result.status).not.toBe(0)
     expect(result.stderr).toContain('::error::GitHub API rate limited on')
-    expect(result.sleeps).toEqual([5, 5])
+    expect(result.sleeps).toEqual([60, 60])
   })
 
-  it('fails closed when the tag lookup has a real API error', () => {
-    const result = runTagScript('api-error')
-    expect(result.status).not.toBe(0)
-    expect(result.stderr).toContain('HTTP 503')
-    expect(result.sleeps).toEqual([5, 10, 20])
-  })
+  it.for([
+    { name: 'within the retry budget', retryBudget: 300, sleeps: [5, 10, 20] },
+    { name: 'at the retry budget boundary', retryBudget: 5, sleeps: [5] }
+  ])(
+    'fails closed when the tag lookup has a real API error $name',
+    ({ retryBudget, sleeps }) => {
+      const result = runTagScript('api-error', { retryBudget })
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('HTTP 503')
+      expect(result.sleeps).toEqual(sleeps)
+    }
+  )
 
   it('rejects a commit outside the selected release branch', () => {
     const result = runTagScript('missing', { containment: 'diverged' })
