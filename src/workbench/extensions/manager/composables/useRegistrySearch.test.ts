@@ -63,7 +63,6 @@ describe('useRegistrySearch', () => {
 
       expect(search.firstPage.value).toEqual({
         query: 'test',
-        searchMode: 'packs',
         rawResultsEmpty: expected
       })
     }
@@ -87,7 +86,6 @@ describe('useRegistrySearch', () => {
 
     expect(search.firstPage.value).toEqual({
       query: 'kijai/comfyui-kjnodes',
-      searchMode: 'packs',
       rawResultsEmpty: true
     })
 
@@ -105,7 +103,6 @@ describe('useRegistrySearch', () => {
 
     expect(search.firstPage.value).toEqual({
       query: 'comfyui-manager',
-      searchMode: 'packs',
       rawResultsEmpty: true
     })
   })
@@ -164,7 +161,7 @@ describe('useRegistrySearch', () => {
 
       expect(toValue(search.items)).toEqual([{ id: 'current-pack' }])
       expect(search.firstPage.value).toEqual({
-        ...changed,
+        query: changed.query,
         rawResultsEmpty: false
       })
 
@@ -215,7 +212,30 @@ describe('useRegistrySearch', () => {
 
     expect(reportError).not.toHaveBeenCalled()
     expect(toValue(search.items)).toEqual([{ id: 'current-pack' }])
-    expect(search.firstPage.value?.searchMode).toBe('packs')
+    expect(search.firstPage.value).toEqual({
+      query: 'comfyui-manager',
+      rawResultsEmpty: false
+    })
+  })
+
+  it('reports no first page as soon as the mode changes while a later page loads', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockResolvedValueOnce({
+        nodePacks: [{ id: 'nodes-pack' }],
+        querySuggestions: [],
+        hasMore: true,
+        rawResultsEmpty: true
+      })
+      .mockReturnValueOnce(new Promise(() => {}))
+    const searchMode = ref<SearchMode>('nodes')
+    const search = useRegistrySearch({ query: 'comfyui-manager', searchMode })
+    await until(search.isLoading).toBe(false)
+    void search.loadMore()
+
+    searchMode.value = 'packs'
+    await nextTick()
+
+    expect(search.firstPage.value).toBeNull()
   })
 
   it('reports no first page when the search for it fails', async () => {
@@ -320,7 +340,6 @@ describe('useRegistrySearch', () => {
     expect(search.searchFailed.value).toBe(false)
     expect(search.firstPage.value).toEqual({
       query: 'gguf',
-      searchMode: 'packs',
       rawResultsEmpty: false
     })
   })

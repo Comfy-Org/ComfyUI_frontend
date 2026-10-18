@@ -21,7 +21,6 @@ type RegistryNodePack = components['schemas']['Node']
 
 interface SearchedFirstPage {
   query: string
-  searchMode: SearchMode
   rawResultsEmpty: boolean
 }
 
@@ -41,8 +40,8 @@ export function useRegistrySearch(inputs: {
 }): PagedList<RegistryNodePack> & {
   suggestions: Readonly<Ref<QuerySuggestion[]>>
   /**
-   * The query and mode behind the shown first page and its outcome; null
-   * while that page loads or after it failed.
+   * The query behind the shown first page and its outcome; null from an
+   * input change until that page loads, and after it failed.
    */
   firstPage: Readonly<Ref<SearchedFirstPage | null>>
   /** Whether the search for the first page failed; false while it loads. */
@@ -91,7 +90,6 @@ export function useRegistrySearch(inputs: {
       if (pageNumber === 0) {
         firstPage.value = {
           query,
-          searchMode,
           rawResultsEmpty: result.rawResultsEmpty ?? nodePacks.length === 0
         }
       }
@@ -136,7 +134,10 @@ export function useRegistrySearch(inputs: {
 
   watch(
     [searchedQuery, () => toValue(inputs.searchMode)],
-    () => void reload(),
+    () => {
+      firstPage.value = null
+      void reload()
+    },
     { immediate: true }
   )
 
