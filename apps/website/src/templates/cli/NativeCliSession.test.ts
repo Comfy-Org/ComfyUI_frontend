@@ -27,6 +27,32 @@ beforeEach(() => {
   vi.useFakeTimers()
 })
 describe('native CLI recorded session', () => {
+  it('can pause by tapping the session and resume with the keyboard when the footer is hidden', async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(NativeCliSession, { props: { showFooter: false } })
+    const pause = screen.getByRole('button', {
+      name: 'Pause CLI session animation'
+    })
+    const session = screen.getByRole('group', { name: /CLI session animation/ })
+    await user.click(pause)
+    const elapsed = session.getAttribute('data-elapsed')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(session).toHaveAttribute('data-elapsed', elapsed)
+    expect(
+      screen.getByRole('button', {
+        name: 'Resume CLI session animation'
+      })
+    ).toBeVisible()
+    await user.keyboard('{Enter}')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(Number(session.getAttribute('data-elapsed'))).toBeGreaterThan(
+      Number(elapsed)
+    )
+    await user.keyboard(' ')
+    expect(
+      screen.getByRole('button', { name: 'Resume CLI session animation' })
+    ).toBeVisible()
+  })
   it('types, pauses with Space, reveals both saved outputs, and replays', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const { unmount } = render(NativeCliSession)

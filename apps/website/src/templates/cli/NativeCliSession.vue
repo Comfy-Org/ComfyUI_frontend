@@ -109,7 +109,7 @@ onUnmounted(() => cancelAnimationFrame(frame))
   <div ref="root" data-testid="native-cli-session">
     <div
       class="relative h-88 overflow-hidden rounded-3xl bg-[#2a2230] focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none sm:h-144 lg:h-160"
-      tabindex="0"
+      :tabindex="showFooter ? 0 : undefined"
       role="group"
       :aria-label="
         zh
@@ -119,7 +119,7 @@ onUnmounted(() => cancelAnimationFrame(frame))
       :data-phase="resultsVisible ? 'results' : 'terminal'"
       :data-paused="paused"
       :data-elapsed="Math.floor(elapsed)"
-      @keydown.space.prevent="toggle"
+      @keydown.space.self.prevent="toggle"
     >
       <div
         v-show="!resultsVisible"
@@ -141,6 +141,21 @@ onUnmounted(() => cancelAnimationFrame(frame))
         />
       </div>
       <CliSessionResults v-show="resultsVisible" :zh="zh" />
+      <button
+        v-if="!showFooter && !reduced"
+        type="button"
+        class="absolute inset-0 cursor-pointer rounded-3xl focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
+        :aria-label="
+          zh
+            ? paused
+              ? '继续 CLI 会话动画'
+              : '暂停 CLI 会话动画'
+            : paused
+              ? 'Resume CLI session animation'
+              : 'Pause CLI session animation'
+        "
+        @click="toggle"
+      />
     </div>
     <CliSessionControls
       v-if="showFooter"
