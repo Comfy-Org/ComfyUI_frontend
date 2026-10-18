@@ -30,16 +30,16 @@ export async function resolveWidgetValueAsset(
     })
     const json = await resp.json().catch(() => {})
     const parseResult = assetResponseSchema.safeParse(json)
-    return parseResult.success ? parseResult.data.assets : undefined
+    return parseResult.success ? parseResult.data : undefined
   }
   const byHash = await lookup({ limit: 1, hash: name })
-  const hashMatch = byHash?.find(assetMatches)
+  const hashMatch = byHash?.assets.find(assetMatches)
   if (hashMatch) return hashMatch
   const byName = await lookup({
     limit: 500,
     name_contains: name.slice(name.lastIndexOf('/') + 1)
   })
-  const nameMatch = byName?.find(assetMatches)
+  const nameMatch = byName?.assets.find(assetMatches)
   if (nameMatch) return nameMatch
-  return byHash && byName ? null : undefined
+  return byHash && byName && !byName.has_more ? null : undefined
 }
