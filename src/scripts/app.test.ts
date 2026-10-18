@@ -3559,12 +3559,13 @@ describe('ComfyApp', () => {
       )
       const addEventListener = vi.spyOn(api, 'addEventListener')
       Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
-      const handlerFor = (event: string) =>
-        addEventListener.mock.calls.find(([name]) => name === event)?.[1] as
-          | EventListener
-          | undefined
-      const executedEvent = (jobId: string) =>
-        new CustomEvent('executed', {
+      function handlerFor(event: string) {
+        return addEventListener.mock.calls.find(
+          ([name]) => name === event
+        )?.[1] as EventListener | undefined
+      }
+      function executedEvent(jobId: string) {
+        return new CustomEvent('executed', {
           detail: {
             node: '1',
             display_node: '1',
@@ -3572,8 +3573,9 @@ describe('ComfyApp', () => {
             output: { text: [jobId] }
           }
         })
-      const previewEvent = (jobId: string, blobText: string) =>
-        new CustomEvent('b_preview_with_metadata', {
+      }
+      function previewEvent(jobId: string, blobText: string) {
+        return new CustomEvent('b_preview_with_metadata', {
           detail: {
             blob: new Blob([blobText]),
             nodeId: '1',
@@ -3583,6 +3585,7 @@ describe('ComfyApp', () => {
             jobId
           }
         })
+      }
 
       handlerFor('executed')?.(executedEvent('job-a'))
       handlerFor('b_preview_with_metadata')?.(previewEvent('job-a', 'a'))
