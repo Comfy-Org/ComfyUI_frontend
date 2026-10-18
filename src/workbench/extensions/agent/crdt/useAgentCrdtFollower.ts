@@ -350,7 +350,7 @@ export function useAgentCrdtFollower(
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
       follower.value?.mayWritePromotedHost(nodeId) ?? false,
-    notifyWidgetWriteRefused: (nodeId: NodeId, widgetName: string) =>
+    notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       follower.value?.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () => follower.value?.subscriptionSent() ?? false
   }
@@ -1040,7 +1040,7 @@ function startAgentCrdtFollower(
       bridge.isSubscribeBaselineIntegrated ||
       (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
-    notifyWidgetWriteRefused: (nodeId: NodeId, widgetName: string) =>
+    notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       rejectedOpNotifier.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () =>
       bridge.subscribedWorkflowId !== null &&

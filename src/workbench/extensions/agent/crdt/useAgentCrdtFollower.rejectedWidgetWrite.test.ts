@@ -5,7 +5,6 @@ import { defineComponent, ref } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
@@ -376,7 +375,7 @@ describe('a human edit the doc host rejects', () => {
   it('shares one notice between a refusal the minter raised and a host rejection', async () => {
     const { submit, follower } = mountFollower()
 
-    follower.notifyWidgetWriteRefused(toNodeId(3), 'seed')
+    follower.notifyWidgetWriteRefused(3, 'seed')
     expect(toastDescriptions()).toEqual([
       expect.stringMatching(
         new RegExp(`${WIDGET_REJECTION_TEXT}.*Rejected: node 3 seed$`)
