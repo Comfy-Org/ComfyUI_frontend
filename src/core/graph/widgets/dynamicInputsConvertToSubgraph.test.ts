@@ -205,6 +205,7 @@ interface Scenario {
   graph: LGraph
   node: LGraphNode
   innerWiring: Record<string, string>
+  misroutedWiring: Record<string, string>
   parentSources: string[]
 }
 
@@ -222,6 +223,7 @@ function gptImageWithOption(option: string): Scenario {
     graph,
     node,
     innerWiring: gptImageWiring,
+    misroutedWiring: { 'model.mask': 'IMAGE' },
     parentSources: gptImageParentSources
   }
 }
@@ -237,6 +239,7 @@ function loadedGptImage(): Scenario {
     graph: reloaded,
     node,
     innerWiring: gptImageWiring,
+    misroutedWiring: { 'model.mask': 'IMAGE' },
     parentSources: gptImageParentSources
   }
 }
@@ -252,6 +255,7 @@ function perplexityLlm(): Scenario {
     graph,
     node,
     innerWiring: { prompt: 'STRING', system_prompt: 'STRING' },
+    misroutedWiring: { prompt: 'STRING', seed: 'STRING' },
     parentSources: ['test/FE3463Source:STRING']
   }
 }
@@ -289,34 +293,6 @@ describe('Convert to Subgraph with dynamic combo inputs (FE-3463)', () => {
     expect(parentInputSources(parent)).toEqual(gptImageParentSources)
   })
 
-  test('wires every repro scenario as intended before conversion', () => {
-    const graph = newGraph()
-    const switched = createNode(graph, GPT_IMAGE_TYPE)
-    selectOption(switched, 'gpt-image-2.5-sunburst')
-    connectGptImage(graph, switched)
-    const reselected = createNode(graph, GPT_IMAGE_TYPE)
-    selectOption(reselected, 'gpt-image-2.5-flare')
-    connectGptImage(graph, reselected)
-    const saved = createNode(graph, GPT_IMAGE_TYPE)
-    connectGptImage(graph, saved)
-    const llm = createNode(graph, LLM_TYPE)
-    selectOption(llm, 'perplexity/sonar-pro')
-    const source = createNode(graph, 'test/FE3463Source')
-    source.connect(2, llm, slotOf(llm, 'prompt'))
-    source.connect(2, llm, slotOf(llm, 'system_prompt'))
-    const reloaded = reloadGraph(graph)
-    const reloadedSaved = reloaded.getNodeById(saved.id)
-    assert(reloadedSaved, 'reloaded GPT Image node')
-
-    expect(
-      [switched, reselected, reloadedSaved].map(connectedInputTypes)
-    ).toEqual([gptImageWiring, gptImageWiring, gptImageWiring])
-    expect(connectedInputTypes(llm)).toEqual({
-      prompt: 'STRING',
-      system_prompt: 'STRING'
-    })
-  })
-
   test.for(scenarios)(
     'converts the %s node and keeps its sources on the subgraph node',
     ([, build]) => {
@@ -325,6 +301,28 @@ describe('Convert to Subgraph with dynamic combo inputs (FE-3463)', () => {
       const { parent } = convertNodeToSubgraph(graph, node)
 
       expect(parentInputSources(parent)).toEqual(parentSources)
+    }
+  )
+
+  test.for(scenarios)(
+    'wires the %s node as intended before conversion',
+    ([, build]) => {
+      const { node, innerWiring } = build()
+
+      expect(connectedInputTypes(node)).toEqual(innerWiring)
+    }
+  )
+
+  test.for(scenarios)(
+    'leaves the %s node either correctly wired or misrouted by FE-3463 only',
+    ([, build]) => {
+      const { graph, node, innerWiring, misroutedWiring } = build()
+
+      const { inner } = convertNodeToSubgraph(graph, node)
+
+      expect([innerWiring, misroutedWiring]).toContainEqual(
+        connectedInputTypes(inner)
+      )
     }
   )
 
