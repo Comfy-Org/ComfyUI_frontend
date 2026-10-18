@@ -508,7 +508,10 @@ describe('AgentPanel', () => {
     await user.click(screen.getByRole('textbox'))
     expect(screen.queryByRole('note')).toBeNull()
 
-    await vi.advanceTimersByTimeAsync(500)
+    await vi.advanceTimersByTimeAsync(300)
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await vi.advanceTimersByTimeAsync(200)
 
     expect(screen.getByRole('note')).toHaveTextContent(
       i18n.global.t('agent.runNotice')
