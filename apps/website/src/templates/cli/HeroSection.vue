@@ -15,6 +15,7 @@ const ctas = cliCtas(locale)
   <div>
     <HeroSplit01
       :locale="locale"
+      class="lg:pt-14"
       badge-text="CLI"
       :title="t('cli.hero.heading')"
       :subtitle="t('cli.hero.subtitle')"
