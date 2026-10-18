@@ -104,6 +104,7 @@ import type {
   BillingBannerKind
 } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { isTopUpDeniedPastDue } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
@@ -126,7 +127,7 @@ const { t, d } = useI18n()
 const { renewalDate, renewalInvoice, subscription, manageSubscription } =
   useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
-const { canTopUp } = useBillingCapabilities()
+const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { kind, audience, dismiss } = useBillingBanner()
 const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
@@ -278,9 +279,16 @@ const planEndedView = (): BannerView => {
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
   cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
 
-// An owner who cannot top up only reaches this once the plan has ended, which
-// the plan ended notice covers, so that case shows nothing.
 const outOfCreditsView = (): BannerView | null => {
+  if (isTopUpDeniedPastDue(topUpDenial.value)) {
+    return {
+      muted: false,
+      title: t(`${bs}.outOfCredits.title`),
+      body: t(`${bs}.outOfCredits.pastDueBody`),
+      action: canManageBilling.value ? 'updatePayment' : null,
+      dismissible: true
+    }
+  }
   if (!canManage.value) {
     return {
       muted: false,

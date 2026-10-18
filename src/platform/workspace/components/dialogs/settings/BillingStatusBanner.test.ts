@@ -1,6 +1,7 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -135,6 +136,8 @@ const i18n = createI18n({
               "You've used all your credits. Add more credits or wait until credits refill on {date}.",
             personalBodyNoDate:
               "You've used all your credits. Add more credits.",
+            pastDueBody:
+              "You've used all your credits. Update your payment method to add credits.",
             memberBody:
               'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.',
             memberBodyNoDate:
@@ -301,6 +304,63 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      denial: 'payment_past_due',
+      canTopUp: false,
+      canManageBilling: true,
+      body: "You've used all your credits. Update your payment method to add credits.",
+      actions: ['Update payment']
+    },
+    {
+      denial: 'payment_past_due',
+      canTopUp: false,
+      canManageBilling: false,
+      body: "You've used all your credits. Update your payment method to add credits.",
+      actions: []
+    },
+    {
+      denial: undefined,
+      canTopUp: true,
+      canManageBilling: true,
+      body: 'Your team has used all its credits. Add more credits.',
+      actions: ['Add credits']
+    }
+  ] as const)(
+    'shows the out-of-credits copy for a top-up denied as $denial with billing management $canManageBilling',
+    ({ denial, canTopUp, canManageBilling, body, actions }) => {
+      exhausted()
+      useBillingCapabilities().canTopUp = computed(() => canTopUp)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+      useBillingCapabilities().canManageBilling = computed(() =>
+        receiveServerFact('can_manage_billing', canManageBilling)
+      )
+
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(body)
+      const actionNames = screen
+        .getAllByRole('button')
+        .map((button) => button.textContent.trim())
+        .filter((name) => name !== 'Dismiss')
+      expect(actionNames).toEqual(actions)
+    }
+  )
+
+  it('opens the billing portal from the past-due out-of-credits banner', async () => {
+    exhausted()
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
+
+    renderBanner()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+
+    expect(state.manageSubscription).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
   })
 
   it('points members to the owner without an Add credits action', () => {
