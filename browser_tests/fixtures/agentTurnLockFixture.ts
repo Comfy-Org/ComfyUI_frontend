@@ -72,14 +72,15 @@ const TURN_TOOL_EVENT: AgentWsEvent = {
   }
 }
 
-export const POST_RECONNECT_EVENT: AgentWsEvent = {
-  type: 'agent_message_delta',
-  data: {
-    delta: POST_RECONNECT_TEXT,
-    message_id: TURN_ID,
-    thread_id: THREAD_ID
+/** Assistant text streamed into the fixture's turn. */
+export function turnTextEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_message_delta',
+    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
   }
 }
+
+export const POST_RECONNECT_EVENT = turnTextEvent(POST_RECONNECT_TEXT)
 
 export const TURN_DONE_EVENT: AgentWsEvent = {
   type: 'agent_message_done',
