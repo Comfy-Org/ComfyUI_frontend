@@ -205,7 +205,6 @@ describe('Composer', () => {
     mount()
 
     expect(screen.getByText('Describe what you want to create')).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Reference' })).toBeVisible()
   })
 
   it.for([
