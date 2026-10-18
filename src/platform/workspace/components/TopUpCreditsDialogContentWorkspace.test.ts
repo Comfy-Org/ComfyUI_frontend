@@ -736,6 +736,45 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       }
     })
 
+    it('keeps watching until the status is re-read after the balance rises', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      const { tab } = stubCheckoutTab()
+      const billing = mockBillingContext()
+      const balanceMicros = ref(1_000_000)
+      Object.assign(billing, {
+        balance: computed(() => ({
+          amountMicros: balanceMicros.value,
+          currency: 'usd'
+        }))
+      })
+      const { unmount, continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
+      await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
+      unmount()
+      vi.mocked(billing.fetchBalance)
+        .mockReset()
+        .mockImplementation(async () => {
+          balanceMicros.value = 2_000_000
+        })
+      vi.mocked(billing.fetchStatus)
+        .mockReset()
+        .mockRejectedValueOnce(new Error('status unavailable'))
+        .mockResolvedValue(undefined)
+      vi.useFakeTimers()
+
+      try {
+        window.dispatchEvent(new Event('focus'))
+        await vi.advanceTimersByTimeAsync(2_000)
+        expect(billing.fetchStatus).toHaveBeenCalledTimes(2)
+
+        await vi.advanceTimersByTimeAsync(5_000)
+        expect(billing.fetchStatus).toHaveBeenCalledTimes(2)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('hands checkout to the Desktop host and returns it to the billing-web return page', async () => {
       refuseForNoPaymentMethod()
       const createCheckout = vi
