@@ -273,22 +273,23 @@ function onClose(): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
-const runNoticeEngaged = ref(false)
 const runNoticeReady = ref(false)
-const { start: startRunNoticeTimer } = useTimeoutFn(
-  () => {
-    runNoticeReady.value = true
-  },
-  500,
-  {
-    immediate: false
-  }
-)
+const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
+  useTimeoutFn(
+    () => {
+      runNoticeReady.value = true
+    },
+    500,
+    {
+      immediate: false
+    }
+  )
 const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
 
+// Pending-or-ready is what "already engaged" means: nothing stops the timer, so
+// the first focus owns the deadline and later focus events must not restart it.
 function onComposerFocus(): void {
-  if (runNoticeEngaged.value) return
-  runNoticeEngaged.value = true
+  if (runNoticeTimerPending.value || runNoticeReady.value) return
   startRunNoticeTimer()
 }
 
