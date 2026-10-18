@@ -95,8 +95,8 @@ export function useRegistrySearch(inputs: {
         restrictSearchableAttributes: searchableAttributes(searchMode),
         ...analyticsParams(query)
       })
-      if (!isCurrent()) return 'stale'
       failureReportedSinceSuccess = false
+      if (!isCurrent()) return 'stale'
       const { nodePacks } = result
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
       if (pageNumber === 0) {

@@ -423,6 +423,37 @@ describe('useRegistrySearch', () => {
     ])
   })
 
+  it('reports a search failure again after a search succeeds for a query that has since changed', async () => {
+    let resolveStaleSearch: (result: SearchPacksResult) => void = () => {}
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockRejectedValueOnce(new Error('search unavailable'))
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStaleSearch = resolve
+        })
+      )
+      .mockRejectedValueOnce(new Error('search unavailable again'))
+    const query = ref('comfyui-manager')
+    const search = useRegistrySearch({ query, searchMode: 'packs' })
+    await until(search.isLoading).toBe(false)
+
+    query.value = 'a'
+    await until(search.isLoading).toBe(true)
+    query.value = 'ab'
+    await nextTick()
+    resolveStaleSearch({
+      nodePacks: packs(1),
+      querySuggestions: [],
+      rawResultsEmpty: false
+    })
+    await until(search.isLoading).toBe(false)
+
+    expect(vi.mocked(reportError).mock.calls.map(([error]) => error)).toEqual([
+      new Error('search unavailable'),
+      new Error('search unavailable again')
+    ])
+  })
+
   it('reports a failed first-page search and clears the earlier suggestions until the next search', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
       .mockResolvedValueOnce({
