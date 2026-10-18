@@ -455,7 +455,6 @@ const isManagerErrorRelevant = computed(() => {
   )
 })
 
-// Empty state messages based on current tab and search state
 const emptyStateTitle = computed(() => {
   if (isManagerErrorRelevant.value || isSearchFailed.value)
     return t('manager.errorConnecting')
