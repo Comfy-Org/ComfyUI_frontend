@@ -19,6 +19,13 @@ const dispatchKeyUp = (key: string): void => {
 describe('useKeyboard', () => {
   let keyboard: ReturnType<typeof useKeyboard>
   let container: HTMLDivElement
+  let externalTarget: HTMLElement | undefined
+
+  const mountOutsideEditor = <T extends HTMLElement>(element: T): T => {
+    document.body.appendChild(element)
+    externalTarget = element
+    return element
+  }
 
   beforeEach(() => {
     vi.spyOn(useMaskEditorStore().canvasHistory, 'undo').mockImplementation(
@@ -34,6 +41,8 @@ describe('useKeyboard', () => {
   })
 
   afterEach(() => {
+    externalTarget?.remove()
+    externalTarget = undefined
     container.remove()
   })
 
@@ -103,8 +112,7 @@ describe('useKeyboard', () => {
     })
 
     it('should not prevent default or blur a text entry target outside the editor (PM-2081)', () => {
-      const input = document.createElement('input')
-      document.body.appendChild(input)
+      const input = mountOutsideEditor(document.createElement('input'))
       input.focus()
       const blurSpy = vi.spyOn(input, 'blur')
 
@@ -112,15 +120,13 @@ describe('useKeyboard', () => {
 
       expect(event.defaultPrevented).toBe(false)
       expect(blurSpy).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(input)
       expect(keyboard.isKeyDown(' ')).toBe(true)
-
-      input.remove()
     })
 
     it('should not prevent default or blur a contenteditable target outside the editor (PM-2081)', () => {
-      const editable = document.createElement('div')
+      const editable = mountOutsideEditor(document.createElement('div'))
       editable.contentEditable = 'true'
-      document.body.appendChild(editable)
       editable.focus()
       const blurSpy = vi.spyOn(editable, 'blur')
 
@@ -128,8 +134,7 @@ describe('useKeyboard', () => {
 
       expect(event.defaultPrevented).toBe(false)
       expect(blurSpy).not.toHaveBeenCalled()
-
-      editable.remove()
+      expect(document.activeElement).toBe(editable)
     })
 
     it('should not throw when activeElement is null', () => {

@@ -23,12 +23,6 @@ export function useKeyboard(containerRef?: Ref<HTMLElement | undefined>) {
     keysDown.value = []
   }
 
-  // This listener runs on document capture (see addListeners below) so
-  // space-pan still works despite the editor's own focus trap. That means
-  // it also sees every space keypress elsewhere on the page - e.g. the
-  // agent composer - so only blur a text entry target when it's stuck
-  // inside this editor's own container; leave an unrelated field outside
-  // it alone (PM-2081).
   const handleSpaceKey = (event: KeyboardEvent): void => {
     const activeElement = document.activeElement
     const isStuckInsideEditor =
