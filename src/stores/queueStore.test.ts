@@ -544,6 +544,43 @@ describe('useQueueStore', () => {
     })
   })
 
+  describe('updateFresh()', () => {
+    it('waits for the trailing re-fetch when a fetch is already in flight', async () => {
+      const resolvers: QueueResolver[] = []
+      vi.mocked(api.getQueue).mockImplementation(
+        () =>
+          new Promise<QueueResponse>((resolve) => {
+            resolvers.push(resolve)
+          })
+      )
+      vi.mocked(api.getHistory).mockResolvedValue([])
+      const stale = store.update()
+      let fresh = false
+      const freshUpdate = store.updateFresh().then(() => {
+        fresh = true
+      })
+
+      resolvers[0]({ Running: [createRunningJob(1, 'stale')], Pending: [] })
+      await stale
+      await new Promise((r) => setTimeout(r, 0))
+      expect(fresh).toBe(false)
+
+      resolvers[1]({ Running: [], Pending: [] })
+      await freshUpdate
+      expect(store.runningTasks).toEqual([])
+      expect(api.getQueue).toHaveBeenCalledTimes(2)
+    })
+
+    it('fetches once when nothing is in flight', async () => {
+      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getHistory).mockResolvedValue([])
+
+      await store.updateFresh()
+
+      expect(api.getQueue).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('update() - sorting', () => {
     it('should sort tasks by job.priority descending', async () => {
       const job1 = createHistoryJob(1, 'hist-1')

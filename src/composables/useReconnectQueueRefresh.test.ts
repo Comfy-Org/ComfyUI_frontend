@@ -6,6 +6,7 @@ import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useQueueStore } from '@/stores/queueStore'
 
 function makeJob(id: string, status: JobListItem['status']): JobListItem {
   return {
@@ -384,6 +385,138 @@ describe('useReconnectQueueRefresh', () => {
 
       expect(replayedExecutedFrames()).toEqual([])
       expect(executionStore.activeJobId).toBe('job-2')
+    })
+
+    it('does not replay onto the open graph while another followed run is still live', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-0'] = { nodes: {} }
+      followRun('job-1')
+      vi.mocked(api.getQueue).mockResolvedValue({
+        Running: [makeJob('job-1', 'in_progress')],
+        Pending: []
+      })
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...finishedJob,
+        id: 'job-0'
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([])
+      expect(executionStore.activeJobId).toBe('job-1')
+      expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-1'])
+    })
+
+    it('does not replay over a run that started and finished during the refresh', async () => {
+      followRun('job-1')
+      const executionStore = useExecutionStore()
+      vi.mocked(api.getJobDetail).mockImplementation(async () => {
+        executionStore.activeJobId = 'job-quick'
+        executionStore.activeJobId = null
+        return finishedJob
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([])
+    })
+
+    it('does not replay a run the restored socket already finished during the refresh', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-0'] = { nodes: {} }
+      vi.mocked(api.getJobDetail).mockImplementation(async () => {
+        delete executionStore.queuedJobs['job-0']
+        return { ...finishedJob, id: 'job-0' }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([])
+    })
+
+    it('reads a fresh queue when a queue fetch was already in flight at reconnect', async () => {
+      const queueStore = useQueueStore()
+      vi.mocked(api.getQueue).mockResolvedValueOnce({
+        Running: [makeJob('job-1', 'in_progress')],
+        Pending: []
+      })
+      await queueStore.update()
+      followRun('job-1')
+      let answerStaleFetch!: () => void
+      vi.mocked(api.getQueue)
+        .mockImplementationOnce(
+          () =>
+            new Promise((resolve) => {
+              answerStaleFetch = () =>
+                resolve({
+                  Running: [makeJob('job-1', 'in_progress')],
+                  Pending: []
+                })
+            })
+        )
+        .mockResolvedValue({ Running: [], Pending: [] })
+      vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
+      const staleFetch = queueStore.update()
+
+      const refreshed = useReconnectQueueRefresh()()
+      answerStaleFetch()
+      await Promise.all([staleFetch, refreshed])
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+      ])
+      expect(useExecutionStore().activeJobId).toBeNull()
+    })
+
+    describe('when the server cannot say what became of a run', () => {
+      beforeEach(() => {
+        vi.useFakeTimers()
+      })
+
+      it('gives up on a job detail request that never answers', async () => {
+        const executionStore = useExecutionStore()
+        executionStore.queuedJobs['job-0'] = { nodes: {} }
+        vi.mocked(api.getJobDetail).mockReturnValue(new Promise(() => {}))
+        let settled = false
+
+        const refreshed = useReconnectQueueRefresh()().then(() => {
+          settled = true
+        })
+        await vi.runAllTimersAsync()
+        await refreshed
+
+        expect(settled).toBe(true)
+        expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-0'])
+      })
+
+      it('retries once, so a transient failure does not lose the active run outputs', async () => {
+        followRun('job-1')
+        vi.mocked(api.getJobDetail)
+          .mockResolvedValueOnce(undefined)
+          .mockResolvedValue(finishedJob)
+
+        const refreshed = useReconnectQueueRefresh()()
+        await vi.runAllTimersAsync()
+        await refreshed
+
+        expect(replayedExecutedFrames()).toEqual([
+          ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+        ])
+      })
+
+      it('stops following a run that stays unreadable across reconnects', async () => {
+        const executionStore = useExecutionStore()
+        executionStore.queuedJobs['job-0'] = { nodes: {} }
+        const refresh = useReconnectQueueRefresh()
+
+        for (let reconnect = 0; reconnect < 3; reconnect++) {
+          const refreshed = refresh()
+          await vi.runAllTimersAsync()
+          await refreshed
+        }
+
+        expect(executionStore.queuedJobs).toEqual({})
+      })
     })
   })
 })
