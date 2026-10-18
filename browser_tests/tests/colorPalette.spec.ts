@@ -168,6 +168,61 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('default-color-palette.png')
   })
 
+  test.describe('Canvas backdrop', () => {
+    const invalidClearColour = {
+      ...customColorPalettes.obsidian,
+      id: 'invalid_clear',
+      name: 'Invalid Clear',
+      colors: {
+        ...customColorPalettes.obsidian.colors,
+        litegraph_base: {
+          ...customColorPalettes.obsidian.colors.litegraph_base,
+          CLEAR_BACKGROUND_COLOR: '#12345'
+        }
+      }
+    }
+
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.CustomColorPalettes': {
+          ...customColorPalettes,
+          invalid_clear: invalidClearColour
+        }
+      }
+    })
+
+    test('follows each palette clear colour', async ({ comfyPage }) => {
+      const backdrop = () =>
+        comfyPage.page.evaluate(
+          () => getComputedStyle(document.body).backgroundColor
+        )
+
+      // Same menu colour, different clear colours.
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian')
+      await expect.poll(backdrop).toBe('rgb(34, 34, 34)')
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
+      await expect.poll(backdrop).toBe('rgb(0, 0, 0)')
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
+      await expect.poll(backdrop).toBe('rgb(9, 9, 10)')
+    })
+
+    test('keeps an opaque backdrop when the clear colour is invalid', async ({
+      comfyPage
+    }) => {
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'invalid_clear')
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(
+            () => getComputedStyle(document.body).backgroundColor
+          )
+        )
+        .toMatch(/^(?:rgb|oklch)\(/)
+    })
+  })
+
   test('Can add custom color palette', async ({ comfyPage }) => {
     await comfyPage.page.evaluate(async (p) => {
       await (
