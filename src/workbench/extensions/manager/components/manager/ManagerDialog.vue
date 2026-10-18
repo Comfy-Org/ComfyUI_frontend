@@ -402,9 +402,14 @@ const loadMorePacks = () => packs.loadMore()
 const canLoadMorePacks = computed(
   () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
 )
-const isSearchFailed = computed(
-  () => isSearchBacked.value && packs.firstPage.value.status === 'failed'
-)
+const isSearchFailed = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    isSearchBacked.value &&
+    firstPage.status === 'failed' &&
+    firstPage.query === searchQuery.value.trim()
+  )
+})
 const isFirstPageLoading = computed(
   () => isSearchBacked.value && packs.firstPage.value.status === 'loading'
 )

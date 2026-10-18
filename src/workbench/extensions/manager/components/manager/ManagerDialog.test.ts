@@ -477,6 +477,20 @@ describe('ManagerDialog failed search', () => {
 
     expectRegistryErrorState()
   })
+
+  it('hides a failed listing from another tab while a typed query waits to be searched', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockRejectedValue(
+      new Error('search unavailable')
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
+    await settleSearch()
+
+    await user.type(searchBox, 'g')
+
+    expect(
+      screen.queryByText(enMessages.manager.errorConnecting)
+    ).not.toBeInTheDocument()
+  })
 })
 
 describe('ManagerDialog search analytics tags', () => {
