@@ -48,7 +48,7 @@ export class ComfyTemplates {
   /**
    * Waits until the template load has fully settled (the store releases it
    * only after the graph load and its error reporting finish), then checks
-   * the active graph holds exactly the template's root nodes.
+   * the active graph holds the template's root nodes (same ids and types).
    */
   async expectTemplateOpened(id: string) {
     await expect(this.content).toBeHidden()
@@ -66,15 +66,25 @@ export class ComfyTemplates {
         })
       )
       .toBeNull()
-    const counts = await this.page.evaluate(async (templateId) => {
-      const app = window.app!
+    const expectedNodes = await this.page.evaluate(async (templateId) => {
       const response = await fetch(
-        app.api.fileURL(`/templates/${templateId}.json`)
+        window.app!.api.fileURL(`/templates/${templateId}.json`)
       )
-      const json = (await response.json()) as { nodes: unknown[] }
-      return { expected: json.nodes.length, actual: app.graph.nodes.length }
+      if (!response.ok)
+        throw new Error(`template ${templateId} returned ${response.status}`)
+      const json = (await response.json()) as {
+        nodes: { id: number | string; type: string }[]
+      }
+      return json.nodes.map(({ id, type }) => `${id}:${type}`).sort()
     }, id)
-    expect(counts.actual).toBe(counts.expected)
+    expect(expectedNodes.length).toBeGreaterThan(0)
+    await expect
+      .poll(() =>
+        this.page.evaluate(() =>
+          window.app!.graph.nodes.map(({ id, type }) => `${id}:${type}`).sort()
+        )
+      )
+      .toEqual(expectedNodes)
   }
 
   async getAllTemplates(): Promise<TemplateInfo[]> {
