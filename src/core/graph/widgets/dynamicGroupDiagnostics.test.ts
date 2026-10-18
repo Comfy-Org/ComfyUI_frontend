@@ -206,6 +206,8 @@ describe('remote DynamicGroup row count reports', () => {
     LiteGraph.registerNodeType('RemoteDynamicGroup', remoteNodeType(0))
     LiteGraph.registerNodeType('MinOneDynamicGroup', remoteNodeType(1))
     LiteGraph.registerNodeType('ConsentDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('AboveMaxDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('HugeDynamicGroup', remoteNodeType(0))
   })
 
   function remoteGroup(type = 'RemoteDynamicGroup') {
@@ -234,10 +236,9 @@ describe('remote DynamicGroup row count reports', () => {
     const applier = new LiveGraphApplier({ getGraph: () => graph })
     const context = { actor: 'agent:test', opIds: ['op-1'] }
     applier.applyChanges(doc, collector.take(), context)
-    const rows = graph
-      .getNodeById(toNodeId(1))
-      ?.widgets?.find((widget) => widget.name === 'rows')
-    if (!rows) throw new Error('DynamicGroup node 1 was not created')
+    const node = graph.getNodeById(toNodeId(1))
+    const rows = node?.widgets?.find((widget) => widget.name === 'rows')
+    if (!node || !rows) throw new Error('DynamicGroup node 1 was not created')
     function setRows(count: unknown) {
       doc.transact(() => {
         const widgets = nodesMap(doc).get('1')?.get('widgets')
@@ -246,7 +247,7 @@ describe('remote DynamicGroup row count reports', () => {
       })
       return applier.applyChanges(doc, collector.take(), context).failureCount
     }
-    return { rows, setRows }
+    return { node, rows, setRows }
   }
 
   it('applies a remote row count without reporting', () => {
@@ -269,6 +270,42 @@ describe('remote DynamicGroup row count reports', () => {
       expect(setRows(value)).toBe(0)
       expect(rows.value).toBe(expected)
       expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
+  it('applies a remote row count at max', () => {
+    const { rows, setRows } = remoteGroup()
+
+    expect(setRows(3)).toBe(0)
+    expect(rows.value).toBe(3)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { type: 'AboveMaxDynamicGroup', value: 4 },
+    { type: 'HugeDynamicGroup', value: 1e9 }
+  ])(
+    'refuses a remote row count of $value above max without adding rows',
+    ({ type, value }) => {
+      const { node, rows, setRows } = remoteGroup(type)
+      const add = vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
+        throw new Error('Unexpected row allocation')
+      })
+
+      expect(setRows(value)).toBe(1)
+      expect(add).not.toHaveBeenCalled()
+      expect(rows.value).toBe(1)
+      expect(vi.mocked(reportError).mock.calls).toEqual([
+        [
+          expect.objectContaining({
+            message: 'Remote DynamicGroup row count did not apply'
+          }),
+          expect.objectContaining({
+            errorType: 'agent_graph_dynamic_group_rows_mismatch',
+            context: { requested: value, actual: 1 }
+          })
+        ]
+      ])
     }
   )
 
