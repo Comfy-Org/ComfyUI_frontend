@@ -24,7 +24,6 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * Regression: the follower's widget write used to skip the
@@ -218,9 +217,7 @@ test.describe(
       })
 
       await test.step('send a turn so the session binds the workflow', async () => {
-        const composer = panel.getByRole('textbox', {
-          name: AGENT_COMPOSER_LABEL
-        })
+        const composer = agentPanel.composer
         await composer.fill('hello')
         await panel.getByRole('button', { name: enMessages.agent.send }).click()
         await expect(panel.getByText('hello').first()).toBeVisible()

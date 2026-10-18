@@ -20,7 +20,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * A node with an "autogrow" (dynamic/variadic) input group — e.g. the GPT
@@ -237,9 +236,7 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   })
 
   await test.step('send a turn so the session binds the workflow', async () => {
-    const composer = panel.getByRole('textbox', {
-      name: AGENT_COMPOSER_LABEL
-    })
+    const composer = agentPanel.composer
     await composer.fill('hello')
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
     await expect(panel.getByText('hello').first()).toBeVisible()
