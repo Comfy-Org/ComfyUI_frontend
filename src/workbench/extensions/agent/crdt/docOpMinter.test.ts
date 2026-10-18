@@ -24,6 +24,7 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
@@ -643,6 +644,39 @@ describe('attachDocOpMinter', () => {
     )
     expect(outcomes).toEqual([expect.objectContaining({ outcome: 'applied' })])
     doc.destroy()
+  })
+
+  it('keeps a DOM widget out of the prompt as a value when its definition declares it', async () => {
+    useNodeDefStore().addNodeDef({
+      name: 'TestVideoLoader',
+      display_name: 'Test Video Loader',
+      category: 'test',
+      python_module: 'test',
+      description: '',
+      output_node: false,
+      input: {
+        required: { video: [['clip.mp4'], {}] },
+        optional: { videopreview: ['VIDEO_PREVIEW', {}] }
+      },
+      output: [],
+      output_is_list: [],
+      output_name: []
+    })
+    const loader = new TestVideoLoader()
+    // A directly constructed test node carries no type; a created one does.
+    loader.type = 'TestVideoLoader'
+    graph.add(loader)
+    await afterFlush()
+
+    expect(minted[0]).toMatchObject({
+      op: 'add_node',
+      node: {
+        widgets_values: {
+          video: 'clip.mp4',
+          videopreview: { hidden: false, params: {} }
+        }
+      }
+    })
   })
 
   describe("link ops address the document's own input order", () => {
