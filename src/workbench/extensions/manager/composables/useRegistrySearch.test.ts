@@ -237,7 +237,9 @@ describe('useRegistrySearch', () => {
     expect(search.firstPage.value).toBeNull()
     expect(reportError).toHaveBeenCalledWith(new Error('search unavailable'), {
       errorType: 'error_searching_registry_packs',
-      surface: 'platform'
+      surface: 'platform',
+      level: 'warning',
+      tags: { outcome: 'degraded' }
     })
   })
 

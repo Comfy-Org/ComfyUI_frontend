@@ -99,7 +99,9 @@ export function useRegistrySearch(inputs: {
       if (!isCurrent()) return 'inputsChanged'
       reportError(error, {
         errorType: 'error_searching_registry_packs',
-        surface: 'platform'
+        surface: 'platform',
+        level: 'warning',
+        tags: { outcome: 'degraded' }
       })
       morePages.value = false
     }
