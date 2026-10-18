@@ -56,6 +56,7 @@ defineExpose({
 
 const titleId = useId()
 const bodyId = useId()
+const holdNoticeId = useId()
 const target = ref<HTMLElement | null>(null)
 const visible = computed(() => active.value && target.value !== null)
 // Let surfaces like the What's New popup defer while a coach card is on
@@ -282,7 +283,7 @@ useEventListener(
           role="dialog"
           aria-modal="true"
           :aria-labelledby="titleId"
-          :aria-describedby="bodyId"
+          :aria-describedby="holdNotice ? `${bodyId} ${holdNoticeId}` : bodyId"
           tabindex="-1"
           :style="{
             ...floatingStyles,
@@ -321,6 +322,7 @@ useEventListener(
               </p>
               <p
                 v-if="holdNotice"
+                :id="holdNoticeId"
                 class="m-0 text-xs/normal text-muted-foreground"
                 data-testid="agent-coach-hold-notice"
               >

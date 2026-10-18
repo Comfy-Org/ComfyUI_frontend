@@ -593,9 +593,9 @@ const coachDeferredBy = computed(() =>
       ? 'tour_active'
       : null
 )
-const coachCompletionWaiters = new Set<() => void>()
-function releaseCoachCompletionWaiters(): void {
-  for (const resolve of coachCompletionWaiters) resolve()
+const coachCompletionWaiters = new Set<(proceed: boolean) => void>()
+function releaseCoachCompletionWaiters(proceed = true): void {
+  for (const resolve of coachCompletionWaiters) resolve(proceed)
   coachCompletionWaiters.clear()
 }
 watch(
@@ -608,16 +608,17 @@ watch(
 )
 const coachRef = ref<InstanceType<typeof OnboardingCoach>>()
 const sendHeldByCoach = ref(false)
-let panelTornDown = false
 
-async function waitForCoachCompletion(): Promise<void> {
+async function waitForCoachCompletion(): Promise<boolean> {
   const key = onboardingKey.value
-  if (!key || hasSeenCoach(key)) return
+  if (!key || hasSeenCoach(key)) return true
   await nextTick()
-  if (coachDeferredBy.value !== null || !coachRef.value) return
+  if (coachDeferredBy.value !== null || !coachRef.value) return true
   sendHeldByCoach.value = true
   try {
-    await new Promise<void>((resolve) => coachCompletionWaiters.add(resolve))
+    return await new Promise<boolean>((resolve) =>
+      coachCompletionWaiters.add(resolve)
+    )
   } finally {
     sendHeldByCoach.value = false
   }
@@ -1392,11 +1393,8 @@ function runApprovalDecision(
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   runPanelTeardown({
-    markPanelTornDown: () => {
-      panelTornDown = true
-    },
     releaseCoachCompletionWaiters: () => {
-      releaseCoachCompletionWaiters()
+      releaseCoachCompletionWaiters(false)
     },
     invalidateConsentHeldSubmission: () => {
       if (
@@ -1625,20 +1623,19 @@ async function consentAllowsSubmission(
   submissionId: number | undefined
 ): Promise<boolean> {
   let hasConsent = false
+  let coachReleased = false
   consentHeldSubmissionId = submissionId
   try {
     await withConsent('first_message', () => {
       hasConsent = true
     })
-    if (hasConsent) await waitForCoachCompletion()
+    if (hasConsent) coachReleased = await waitForCoachCompletion()
   } finally {
     if (consentHeldSubmissionId === submissionId)
       consentHeldSubmissionId = undefined
   }
   return (
-    composerStore.submission?.id === submissionId &&
-    hasConsent &&
-    !panelTornDown
+    composerStore.submission?.id === submissionId && hasConsent && coachReleased
   )
 }
 

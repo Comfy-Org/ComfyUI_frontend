@@ -20,7 +20,8 @@ import {
   h,
   nextTick,
   reactive,
-  ref
+  ref,
+  watch
 } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -6398,16 +6399,18 @@ describe('AgentPanelRoot workflow binding', () => {
       renderWithSelectedTarget()
 
       await sendHeldByCoach('build me a workflow')
-      for (const title of [
-        'Meet your Comfy Agent',
-        "Your agent edits the workflow you're viewing"
-      ])
-        await user.click(
-          within(await screen.findByRole('dialog', { name: title })).getByRole(
-            'button',
-            { name: 'Next' }
-          )
-        )
+      await user.click(
+        within(
+          await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+        ).getByRole('button', { name: 'Next' })
+      )
+      await user.click(
+        within(
+          await screen.findByRole('dialog', {
+            name: "Your agent edits the workflow you're viewing"
+          })
+        ).getByRole('button', { name: 'Next' })
+      )
       expect(bodies).toHaveLength(0)
 
       await vi.advanceTimersByTimeAsync(8_000)
@@ -6420,6 +6423,23 @@ describe('AgentPanelRoot workflow binding', () => {
           'Comfy.AgentPanel.onboarded.account-a.workspace-hold'
         )
       ).not.toBe('true')
+    })
+
+    it('sends once when App Mode releases the hold as it tears the panel down', async () => {
+      makeTab('wf-42')
+      const bodies = mockMessagesEndpoint('wf-42')
+      const { unmount } = renderWithSelectedTarget()
+      await sendHeldByCoach('build me a workflow')
+      const stopUnmountOnAppMode = watch(
+        () => canvasStore.linearMode,
+        () => unmount(),
+        { flush: 'post' }
+      )
+
+      canvasStore.linearMode = true
+
+      await waitFor(() => expect(bodies).toHaveLength(1))
+      stopUnmountOnAppMode()
     })
 
     it('puts the draft back instead of sending when the panel closes', async () => {

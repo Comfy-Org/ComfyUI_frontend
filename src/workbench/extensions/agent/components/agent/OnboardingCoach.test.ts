@@ -288,9 +288,17 @@ describe('OnboardingCoach', () => {
   })
 
   it.for([
-    { label: 'shows the hold notice when one is set', holdNotice: 'Held' },
-    { label: 'shows no hold notice by default', holdNotice: undefined }
-  ])('$label', async ({ holdNotice }) => {
+    {
+      label: 'shows and announces the hold notice when one is set',
+      holdNotice: 'Held',
+      description: 'Build and run workflows. Held'
+    },
+    {
+      label: 'shows no hold notice by default',
+      holdNotice: undefined,
+      description: 'Build and run workflows.'
+    }
+  ])('$label', async ({ holdNotice, description }) => {
     render(
       {
         components: { OnboardingCoach },
@@ -300,11 +308,12 @@ describe('OnboardingCoach', () => {
       },
       { global: { plugins: [i18n] } }
     )
-    await screen.findByRole('dialog', { name: STEPS[0].title })
+    const dialog = await screen.findByRole('dialog', { name: STEPS[0].title })
 
     expect(
       screen.queryByTestId('agent-coach-hold-notice')?.textContent.trim()
     ).toBe(holdNotice)
+    expect(dialog).toHaveAccessibleDescription(description)
   })
 
   it('neither completes the tour nor signals the overlay while its target is absent', async () => {
