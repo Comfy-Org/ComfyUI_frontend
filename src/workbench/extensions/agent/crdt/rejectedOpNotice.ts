@@ -42,6 +42,7 @@ function isRejectedWidgetWrite(
 
 function rejectedTarget(op: Op | undefined): string | undefined {
   const t = i18n.global.t
+  const plain = { escapeParameter: false }
   switch (op?.op) {
     case 'set_widget':
       return op.widget
@@ -54,12 +55,20 @@ function rejectedTarget(op: Op | undefined): string | undefined {
         { escapeParameter: false }
       )
     case 'delete_node':
-      return t('agent.editRejected.targets.node', { id: String(op.node_id) })
+      return t(
+        'agent.editRejected.targets.node',
+        { id: String(op.node_id) },
+        plain
+      )
     case 'clear':
       return t('agent.editRejected.targets.clear')
     case 'connect':
     case 'disconnect':
-      return t('agent.editRejected.targets.link', { id: String(op.link_id) })
+      return t(
+        'agent.editRejected.targets.link',
+        { id: String(op.link_id) },
+        plain
+      )
     default:
       return undefined
   }
@@ -71,9 +80,11 @@ function withReason(
   code: string
 ): string {
   const plain = { escapeParameter: false }
-  if (target)
+  if (target && code && code !== 'unspecified')
     return `${notice} ${i18n.global.t('agent.editRejected.reason', { target, code }, plain)}`
-  if (code === 'unspecified') return notice
+  if (target)
+    return `${notice} ${i18n.global.t('agent.editRejected.reasonTarget', { target }, plain)}`
+  if (!code || code === 'unspecified') return notice
   return `${notice} ${i18n.global.t('agent.editRejected.reasonCode', { code }, plain)}`
 }
 

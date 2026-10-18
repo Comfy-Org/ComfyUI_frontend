@@ -60,6 +60,21 @@ const NODE_DELETE: GraphOperation = {
   removed_links: []
 }
 
+const PUNCTUATED_NODE_DELETE: GraphOperation = {
+  ...NODE_DELETE,
+  node_id: 'node & <nine>'
+}
+
+const PUNCTUATED_LINK_CONNECT: GraphOperation = {
+  op: 'connect',
+  link_id: 'link & <nine>',
+  from_node: 1,
+  from_slot: 0,
+  to_node: 2,
+  to_slot: 0,
+  link_type: '*'
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
@@ -321,6 +336,18 @@ describe('a human edit the doc host rejects', () => {
       operation: NODE_DELETE,
       code: 'malformed_op',
       reason: 'Rejected: node 9 (malformed_op)'
+    },
+    {
+      label: 'node delete whose ID carries punctuation',
+      operation: PUNCTUATED_NODE_DELETE,
+      code: 'malformed_op',
+      reason: 'Rejected: node node & <nine> (malformed_op)'
+    },
+    {
+      label: 'link connect whose ID carries punctuation',
+      operation: PUNCTUATED_LINK_CONNECT,
+      code: 'malformed_op',
+      reason: 'Rejected: link link & <nine> (malformed_op)'
     }
   ])(
     'names what the host rejected and why for a $label',
@@ -332,6 +359,18 @@ describe('a human edit the doc host rejects', () => {
       expect(toastDescriptions()).toEqual([expect.stringContaining(reason)])
     }
   )
+
+  it('keeps the target but omits a blank rejection code', async () => {
+    const { submit } = mountFollower()
+
+    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), ''))
+
+    expect(toastDescriptions()).toEqual([
+      expect.stringMatching(
+        new RegExp(`${GENERIC_REJECTION_TEXT}.*Rejected: seed$`)
+      )
+    ])
+  })
 
   it('shares one notice between a refusal the minter raised and a host rejection', async () => {
     const { submit, follower } = mountFollower()
