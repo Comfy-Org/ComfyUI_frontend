@@ -5,6 +5,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 import type { DocOpFailure } from './docFrameClient'
 import type { OpsResultView } from './opSender'
@@ -40,7 +41,7 @@ function isRejectedWidgetWrite(
   )
 }
 
-function nodeFieldTarget(nodeId: string | number, field: string): string {
+function nodeFieldTarget(nodeId: SerializedNodeId, field: string): string {
   const t = i18n.global.t
   const plain = { escapeParameter: false }
   return t(
@@ -179,7 +180,7 @@ export function createRejectedOpNotifier() {
       const target = failed && rejectedTarget(rejectedOp(ops, failed))
       showThrottled(kind, withReason(notice, target, code))
     },
-    notifyWidgetWriteRefused(nodeId: string | number, widgetName: string) {
+    notifyWidgetWriteRefused(nodeId: SerializedNodeId, widgetName: string) {
       const notice = i18n.global.t('agent.editRejected.widgetWrite')
       showThrottled(
         'agent.editRejected.widgetWrite',

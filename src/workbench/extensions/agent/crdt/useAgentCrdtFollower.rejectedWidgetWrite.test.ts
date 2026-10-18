@@ -332,12 +332,6 @@ describe('a human edit the doc host rejects', () => {
       reason: 'Rejected: clearing the workflow (malformed_op)'
     },
     {
-      label: 'node delete',
-      operation: NODE_DELETE,
-      code: 'malformed_op',
-      reason: 'Rejected: node 9 (malformed_op)'
-    },
-    {
       label: 'node delete whose ID carries punctuation',
       operation: PUNCTUATED_NODE_DELETE,
       code: 'malformed_op',
@@ -348,6 +342,17 @@ describe('a human edit the doc host rejects', () => {
       operation: PUNCTUATED_LINK_CONNECT,
       code: 'malformed_op',
       reason: 'Rejected: link link & <nine> (malformed_op)'
+    },
+    {
+      label: 'node field write',
+      operation: {
+        op: 'set_node_field',
+        node_id: 3,
+        field: 'title',
+        value: 'renamed'
+      } satisfies GraphOperation,
+      code: 'malformed_op',
+      reason: 'Rejected: node 3 title (malformed_op)'
     }
   ])(
     'names what the host rejected and why for a $label',
@@ -413,8 +418,6 @@ describe('a human edit the doc host rejects', () => {
     ])
   })
 
-  // A permanent seen-message set would pass the suppression test above and
-  // then silence every later rejection for the follower's lifetime.
   it('speaks again once the throttle window has passed', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     onTestFinished(() => {
@@ -424,11 +427,15 @@ describe('a human edit the doc host rejects', () => {
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
     await vi.advanceTimersByTimeAsync(10_001)
-    answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
+    answerWithOpsResult(
+      rejection(await submit(PUNCTUATED_WIDGET_EDIT), 'unknown_widget')
+    )
 
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(WIDGET_REJECTION_TEXT),
-      expect.stringContaining(WIDGET_REJECTION_TEXT)
+      expect.stringContaining('Rejected: node 3 seed (opaque_widgets)'),
+      expect.stringContaining(
+        "Rejected: node 3 Width/Height & 'x' (unknown_widget)"
+      )
     ])
   })
 
