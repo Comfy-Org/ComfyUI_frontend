@@ -25,7 +25,8 @@ import { useLitegraphService } from '@/services/litegraphService'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
-import { attachDocOpMinter } from './docOpMinter'
+import { attachDocOpMinter, wireNodeSnapshot } from './docOpMinter'
+import { mintWireOps } from './opEnvelope'
 
 const appState = vi.hoisted(() => ({
   rootGraph: undefined as LGraph | undefined
@@ -310,5 +311,92 @@ describe('LiveGraphApplier with the real change tracker', () => {
         }
       ])
     )
+  })
+
+  it('creates a restored DynamicGroup holding more rows than its max on a follower', () => {
+    const local = new LGraph()
+    const node = LiteGraph.createNode('DynamicGroupTest')
+    assert.exists(node)
+    local.add(node)
+    node.configure({
+      ...node.serialize(),
+      widgets_values: ['head', 4, 0.1, 0.2, 0.3, 0.4, 'tail']
+    })
+    const snapshot = wireNodeSnapshot(node)
+    assert.exists(snapshot)
+    const catalog: WidgetCatalog = {
+      types: {
+        DynamicGroupTest: {
+          widget_order: [
+            'before',
+            'rows',
+            'rows.0.strength',
+            'rows.1.strength',
+            'rows.2.strength',
+            'rows.3.strength',
+            'after'
+          ]
+        }
+      }
+    }
+    const { doc, collector } = followedDoc({ nodes: [], links: [] }, catalog)
+    collector.take()
+    const add = mintWireOps(
+      [
+        {
+          op: 'add_node',
+          node_id: node.id,
+          class_type: snapshot.type,
+          pos: [0, 0],
+          node: snapshot
+        }
+      ],
+      { actor: 'human:user:tab', baseVersion: 1 }
+    )
+    expect(
+      applyOps(doc, add, catalog).outcomes.map(({ outcome }) => outcome)
+    ).toEqual(['applied'])
+    const follower = new LGraph()
+    const applier = new LiveGraphApplier({ getGraph: () => follower })
+
+    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(result.failureCount).toBe(0)
+    expect(follower.getNodeById(node.id)?.serialize().widgets_values).toEqual([
+      'head',
+      4,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      'tail'
+    ])
+  })
+
+  it('refuses a crafted DynamicGroup row count without row values on create', () => {
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'DynamicGroupTest',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: ['head', 1e9, 'tail']
+          }
+        ],
+        links: []
+      },
+      CATALOG
+    )
+    const follower = new LGraph()
+    const applier = new LiveGraphApplier({ getGraph: () => follower })
+
+    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(result.failureCount).toBe(1)
+    expect(
+      follower.getNodeById(toNodeId(1))?.serialize().widgets_values
+    ).toEqual(['head', 0, 'tail'])
   })
 })
