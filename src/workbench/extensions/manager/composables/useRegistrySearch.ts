@@ -25,7 +25,7 @@ interface SearchedFirstPage {
   rawResultsEmpty: boolean
 }
 
-type PageLoadOutcome = 'loaded' | 'inputsChanged'
+type PageFreshness = 'current' | 'stale'
 
 /**
  * Offset-paged registry search as a {@link PagedList}. Query inputs are reactive
@@ -72,8 +72,8 @@ export function useRegistrySearch(inputs: {
     return isTypedSearch ? { analyticsTags: [USER_SEARCH_ANALYTICS_TAG] } : {}
   }
 
-  async function doLoadMore(): Promise<PageLoadOutcome> {
-    if (!morePages.value) return 'loaded'
+  async function doLoadMore(): Promise<PageFreshness> {
+    if (!morePages.value) return 'current'
     const query = searchedQuery()
     const searchMode = toValue(inputs.searchMode)
     const isCurrent = () =>
@@ -85,7 +85,7 @@ export function useRegistrySearch(inputs: {
         restrictSearchableAttributes: searchableAttributes(searchMode),
         ...analyticsParams(query)
       })
-      if (!isCurrent()) return 'inputsChanged'
+      if (!isCurrent()) return 'stale'
       const { nodePacks } = result
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
       if (pageNumber === 0) {
@@ -99,7 +99,7 @@ export function useRegistrySearch(inputs: {
       suggestions.value = result.querySuggestions
       pageNumber++
     } catch (error) {
-      if (!isCurrent()) return 'inputsChanged'
+      if (!isCurrent()) return 'stale'
       reportError(error, {
         errorType: 'error_searching_registry_packs',
         surface: 'platform',
@@ -112,7 +112,7 @@ export function useRegistrySearch(inputs: {
         suggestions.value = []
       }
     }
-    return 'loaded'
+    return 'current'
   }
 
   const reload = () =>
@@ -123,7 +123,7 @@ export function useRegistrySearch(inputs: {
         firstPage.value = null
         searchFailed.value = false
         items.value = []
-      } while ((await doLoadMore()) === 'inputsChanged')
+      } while ((await doLoadMore()) === 'stale')
     })
 
   async function loadMore() {
