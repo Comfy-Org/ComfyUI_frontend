@@ -447,36 +447,39 @@ describe('LiveGraphApplier with the real change tracker', () => {
     ).toEqual(['head', 2, 0.1, 0.2])
   })
 
-  it('keeps aliased row values off a widget after the DynamicGroup on create', () => {
-    const { doc, collector } = followedDoc(
-      {
-        nodes: [
-          {
-            id: 1,
-            type: 'DynamicGroupOverflowTrailingTest',
-            pos: [0, 0],
-            size: [210, 100],
-            widgets_values: ['head', 2, 0.1, 0.2, 'tail']
+  it.for([[['before']], [['before', 'rows']]])(
+    'keeps aliased row values off a widget after the DynamicGroup on create with widget order %j',
+    ([widgetOrder]) => {
+      const { doc, collector } = followedDoc(
+        {
+          nodes: [
+            {
+              id: 1,
+              type: 'DynamicGroupOverflowTrailingTest',
+              pos: [0, 0],
+              size: [210, 100],
+              widgets_values: ['head', 2, 0.1, 0.2, 'tail']
+            }
+          ],
+          links: []
+        },
+        {
+          types: {
+            DynamicGroupOverflowTrailingTest: { widget_order: widgetOrder }
           }
-        ],
-        links: []
-      },
-      {
-        types: {
-          DynamicGroupOverflowTrailingTest: { widget_order: ['before'] }
         }
-      }
-    )
-    const follower = new LGraph()
-    const applier = new LiveGraphApplier({ getGraph: () => follower })
+      )
+      const follower = new LGraph()
+      const applier = new LiveGraphApplier({ getGraph: () => follower })
 
-    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+      const result = applier.applyChanges(doc, collector.take(), CONTEXT)
 
-    expect(result.failureCount).toBe(0)
-    expect(
-      follower.getNodeById(toNodeId(1))?.serialize().widgets_values
-    ).toEqual(['head', 2, 0.1, 0.2, 'tail'])
-  })
+      expect(result.failureCount).toBe(0)
+      expect(
+        follower.getNodeById(toNodeId(1))?.serialize().widgets_values
+      ).toEqual(['head', 2, 0.1, 0.2, 'tail'])
+    }
+  )
 
   it('refuses a crafted DynamicGroup row count without row values on create', () => {
     const { doc, collector } = followedDoc(
