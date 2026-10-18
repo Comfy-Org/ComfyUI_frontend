@@ -13,6 +13,7 @@ import type { DOMWidgetOptions } from '@/types/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
 
 function addMultilineWidget(
   node: LGraphNode,
@@ -25,19 +26,22 @@ function addMultilineWidget(
     opts.placeholder || name
   )
 
-  let currentName = name
-  function storeId() {
-    const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
+  let listedName: string | undefined
+  function storeId(): WidgetId | undefined {
     const current = node.widgets?.find(
       (widget) => isDOMWidget(widget) && widget.element === inputEl
     )
-    if (current) currentName = current.name
-    return widgetId(graphId, node.id, currentName)
+    if (current) listedName = current.name
+    else if (listedName !== undefined) return undefined
+    const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
+    return widgetId(graphId, node.id, listedName ?? name)
   }
 
   const widgetOptions: DOMWidgetOptions<string> = {
     getValue(): string {
-      const widgetState = widgetStore.getWidget(storeId())
+      const id = storeId()
+      const widgetState =
+        id === undefined ? undefined : widgetStore.getWidget(id)
 
       return typeof widgetState?.value === 'string'
         ? widgetState.value
@@ -46,6 +50,7 @@ function addMultilineWidget(
     setValue(v: string) {
       inputEl.value = v
       const id = storeId()
+      if (id === undefined) return
       const widgetState = widgetStore.getWidget(id)
       if (widgetState) {
         widgetState.value = v
