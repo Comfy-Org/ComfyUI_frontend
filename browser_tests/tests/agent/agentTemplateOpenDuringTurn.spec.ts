@@ -26,8 +26,8 @@ test.describe(
       })
 
       await test.step('template opens fully while the turn keeps running', async () => {
-        const id = await templates.openFirstTemplate()
-        await templates.expectTemplateOpened(id)
+        const opened = await templates.openFirstTemplate()
+        await templates.expectTemplateOpened(opened)
         await expect(toast.toastErrors).toHaveCount(0)
         await expect(
           toast.withText(enMessages.templateWorkflows.error.loading)

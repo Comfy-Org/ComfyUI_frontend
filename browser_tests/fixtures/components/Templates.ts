@@ -17,6 +17,12 @@ const zTemplateRootNodes = z.object({
     .min(1)
 })
 
+export interface OpenedTemplate {
+  id: string
+  /** Root nodes of the fetched template JSON as sorted `id:type` pairs. */
+  rootNodes: string[]
+}
+
 export class ComfyTemplates {
   readonly content: Locator
   readonly allTemplateCards: Locator
@@ -40,18 +46,35 @@ export class ComfyTemplates {
     await templateCard.getByRole('img').click()
   }
 
-  async openFirstTemplate(): Promise<string> {
+  /**
+   * Opens Browse Templates, clicks the first card and returns its id with
+   * the root nodes (`id:type`, sorted) of the template JSON the app actually
+   * fetched, so module-served templates are compared against their own file.
+   */
+  async openFirstTemplate(): Promise<OpenedTemplate> {
     await this.page.evaluate(() =>
       window.app!.extensionManager.command.execute('Comfy.BrowseTemplates')
     )
     await expect(this.content).toBeVisible()
-    const card = this.allTemplateCards.first()
-    await expect(card).toBeVisible()
-    const testId = await card.getAttribute('data-testid')
+    const first = this.allTemplateCards.first()
+    await expect(first).toBeVisible()
+    const testId = await first.getAttribute('data-testid')
     const id = testId?.slice(TestIds.templates.workflowCard('').length)
-    if (!id) throw new Error(`template card has no id: ${testId}`)
-    await card.click()
-    return id
+    if (!testId || !id) throw new Error(`template card has no id: ${testId}`)
+    const fetched = this.page.waitForResponse((response) => {
+      const { pathname } = new URL(response.url())
+      return pathname.includes('templates/') && pathname.endsWith(`/${id}.json`)
+    })
+    await this.content.getByTestId(testId).click()
+    const response = await fetched
+    if (!response.ok())
+      throw new Error(`template ${id} returned ${response.status()}`)
+    const template: unknown = await response.json()
+    const rootNodes = zTemplateRootNodes
+      .parse(template)
+      .nodes.map(({ id, type }) => `${id}:${type}`)
+      .sort()
+    return { id, rootNodes }
   }
 
   /**
@@ -59,7 +82,7 @@ export class ComfyTemplates {
    * only after the graph load and its error reporting finish), then checks
    * the active graph holds the template's root nodes (same ids and types).
    */
-  async expectTemplateOpened(id: string) {
+  async expectTemplateOpened({ rootNodes }: OpenedTemplate) {
     await expect(this.content).toBeHidden()
     await expect
       .poll(() =>
@@ -75,25 +98,13 @@ export class ComfyTemplates {
         })
       )
       .toBeNull()
-    const template: unknown = await this.page.evaluate(async (templateId) => {
-      const response = await fetch(
-        window.app!.api.fileURL(`/templates/${templateId}.json`)
-      )
-      if (!response.ok)
-        throw new Error(`template ${templateId} returned ${response.status}`)
-      return response.json()
-    }, id)
-    const expectedNodes = zTemplateRootNodes
-      .parse(template)
-      .nodes.map(({ id, type }) => `${id}:${type}`)
-      .sort()
     await expect
       .poll(() =>
         this.page.evaluate(() =>
           window.app!.graph.nodes.map(({ id, type }) => `${id}:${type}`).sort()
         )
       )
-      .toEqual(expectedNodes)
+      .toEqual(rootNodes)
   }
 
   async getAllTemplates(): Promise<TemplateInfo[]> {
