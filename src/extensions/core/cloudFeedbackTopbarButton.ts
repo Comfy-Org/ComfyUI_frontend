@@ -6,7 +6,7 @@ import type { ActionBarButton } from '@/types/comfy'
 
 const buttons: ActionBarButton[] = [
   {
-    icon: 'icon-[lucide--message-square-text]',
+    icon: 'icon-[lucide--megaphone] size-4',
     label: t('actionbar.feedback'),
     tooltip: t('actionbar.feedbackTooltip'),
     onClick: () => openFeedbackDialog('action-bar')

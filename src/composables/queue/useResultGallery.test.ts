@@ -1,26 +1,26 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+vi.mock(import('@/platform/assets/composables/media/assetMappers'))
+vi.mock(import('@/services/hdrViewerService'))
 
 import { useResultGallery } from '@/composables/queue/useResultGallery'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
+import { TaskItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const createResultItem = (
   url: string,
   supportsPreview = true
-): ResultItemImpl => {
-  const item = new ResultItemImpl({
-    filename: url,
-    subfolder: '',
-    type: 'output',
-    nodeId: 'node-1',
-    mediaType: supportsPreview ? 'images' : 'unknown'
-  })
-  // Override url getter for test matching
-  Object.defineProperty(item, 'url', { get: () => url })
-  Object.defineProperty(item, 'supportsPreview', { get: () => supportsPreview })
-  return item
-}
+): AugmentedResultItem => ({
+  filename: url,
+  mediaType: supportsPreview ? 'images' : 'unknown',
+  nodeId: 'node-1',
+  subfolder: '',
+  type: 'output',
+  url
+})
 
 const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
   id,
@@ -32,8 +32,8 @@ const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
 })
 
 const createTask = (
-  preview?: ResultItemImpl,
-  allOutputs?: ResultItemImpl[],
+  preview?: AugmentedResultItem,
+  allOutputs?: AugmentedResultItem[],
   outputsCount = 1
 ): TaskItemImpl => {
   const job = createMockJob(
@@ -47,15 +47,14 @@ const createTask = (
 const createJobViewItem = (
   id: string,
   taskRef?: TaskItemImpl
-): JobListViewItem =>
-  ({
-    id,
-    title: `Job ${id}`,
-    meta: '',
-    state: 'completed',
-    showClear: false,
-    taskRef
-  }) as JobListViewItem
+): JobListViewItem => ({
+  id,
+  title: `Job ${id}`,
+  meta: '',
+  state: 'completed',
+  showClear: false,
+  taskRef
+})
 
 describe('useResultGallery', () => {
   it('collects only previewable outputs and preserves their order', async () => {
@@ -163,4 +162,77 @@ describe('useResultGallery', () => {
     expect(galleryItems.value).toEqual(fullOutputs)
     expect(galleryActiveIndex.value).toBe(0)
   })
+
+  it('opens the HDR viewer for a job whose cover is HDR, even with image outputs', async () => {
+    const image = createResultItem('image.png')
+    const exr = {
+      ...createResultItem('/api/view?filename=out.exr'),
+      filename: 'out.exr'
+    }
+    const task = createTask(exr, [image, exr])
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [task]
+    )
+
+    await onViewItem(createJobViewItem('job-mixed', task))
+
+    expect(openHdrViewer).toHaveBeenCalledWith('/api/view?filename=out.exr')
+    expect(galleryItems.value).toEqual([])
+    expect(galleryActiveIndex.value).toBe(-1)
+  })
+
+  it('opens a job with an image cover in the gallery without its HDR outputs', async () => {
+    const image = createResultItem('image.png')
+    const exr = {
+      ...createResultItem('/api/view?filename=out.exr'),
+      filename: 'out.exr'
+    }
+    const task = createTask(image, [exr, image])
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [task]
+    )
+
+    await onViewItem(createJobViewItem('job-mixed', task))
+
+    expect(galleryItems.value).toEqual([image])
+    expect(galleryActiveIndex.value).toBe(0)
+    expect(openHdrViewer).not.toHaveBeenCalled()
+  })
+
+  it.for(['resolves', 'rejects'])(
+    'does not open a slower gallery request that %s over a later HDR selection',
+    async (outcome) => {
+      const image = createResultItem('image.png')
+      const exr = {
+        ...createResultItem('/api/view?filename=out.exr'),
+        filename: 'out.exr'
+      }
+      const imageJob = createMockJob('slow-image-job', 2)
+      const imageTask = new TaskItemImpl(imageJob, {}, [image])
+      let settle!: () => void
+      imageTask.loadFullOutputs = () =>
+        new Promise((resolve, reject) => {
+          settle = () =>
+            outcome === 'resolves'
+              ? resolve(new TaskItemImpl(imageJob, {}, [image, image]))
+              : reject(new Error('load failed'))
+        })
+      const hdrTask = createTask(exr)
+
+      const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+        () => [imageTask, hdrTask]
+      )
+
+      const imageView = onViewItem(createJobViewItem('job-image', imageTask))
+      await onViewItem(createJobViewItem('job-hdr', hdrTask))
+      settle()
+      await imageView
+
+      expect(openHdrViewer).toHaveBeenCalledOnce()
+      expect(galleryItems.value).toEqual([])
+      expect(galleryActiveIndex.value).toBe(-1)
+    }
+  )
 })

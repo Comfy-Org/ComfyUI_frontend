@@ -8,7 +8,8 @@ const tierKeyMap: Record<string, string> = {
   CREATOR: 'creator',
   PRO: 'pro',
   FOUNDER: 'founder',
-  FOUNDERS_EDITION: 'founder'
+  FOUNDERS_EDITION: 'founder',
+  ENTERPRISE: 'enterprise'
 }
 
 interface WorkspaceSubscriptionInfo {
@@ -25,6 +26,9 @@ export function useWorkspaceTierLabel() {
     isYearly: boolean
   ): string {
     if (!tier) return ''
+    // TEAM has no `tiers.*` catalog entry (it isn't a self-serve personal
+    // plan); reuse the existing team-plan copy instead of adding one.
+    if (tier === 'TEAM') return t('subscription.teamPlanName')
     const key = tierKeyMap[tier]
     if (!key) return ''
     const baseName = t(`subscription.tiers.${key}.name`)
@@ -42,7 +46,9 @@ export function useWorkspaceTierLabel() {
 
     if (!workspace.subscriptionPlan) return null
 
-    const planSlug = workspace.subscriptionPlan
+    // Plan identifiers arrive in both cases: comfy-api sends uppercase slugs,
+    // cloud sends lowercase ones (e.g. enterprise plan rows).
+    const planSlug = workspace.subscriptionPlan.toUpperCase()
     const tierMatch = Object.keys(tierKeyMap)
       .sort((a, b) => b.length - a.length)
       .find((tier) => planSlug === tier || planSlug.startsWith(`${tier}_`))

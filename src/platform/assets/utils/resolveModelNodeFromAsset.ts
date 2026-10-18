@@ -39,7 +39,7 @@ export function resolveModelNodeFromAsset(
   const validatedAsset = assetItemSchema.safeParse(asset)
 
   if (!validatedAsset.success) {
-    const errorMessage = validatedAsset.error.errors
+    const errorMessage = validatedAsset.error.issues
       .map((e) => `${e.path.join('.')}: ${e.message}`)
       .join(', ')
     console.error('Invalid asset item:', errorMessage)
@@ -48,7 +48,7 @@ export function resolveModelNodeFromAsset(
       error: {
         code: 'INVALID_ASSET',
         message: 'Asset schema validation failed',
-        assetId: typeof asset?.id === 'string' ? asset.id : 'unknown',
+        assetId: typeof asset.id === 'string' ? asset.id : 'unknown',
         details: { validationErrors: errorMessage }
       }
     }

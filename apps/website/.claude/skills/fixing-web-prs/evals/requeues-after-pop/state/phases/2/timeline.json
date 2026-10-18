@@ -1,0 +1,12 @@
+[
+  {
+    "id": 7001,
+    "event": "removed_from_merge_queue",
+    "actor": {
+      "login": "github-merge-queue[bot]"
+    },
+    "created_at": "2026-09-17T20:41:00Z",
+    "merge_queue_removal_reason": "CI_FAILURE",
+    "reason": "the merge group run of `website-e2e` timed out on shard 3 of 4"
+  }
+]

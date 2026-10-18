@@ -1,20 +1,18 @@
+import { CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE } from '@comfyorg/account-core/billing'
 import type { OverridedMixpanel } from 'mixpanel-browser'
 import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import {
-  checkForCompletedTopup as checkTopupUtil,
-  clearTopupTracking as clearTopupUtil,
-  startTopupTracking as startTopupUtil
-} from '@/platform/telemetry/topupTracker'
-import type { AuditLog } from '@/services/customerEventsService'
+import { reportError } from '@/platform/telemetry/reportError'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 
 import type {
   AuthMetadata,
   CreditTopupMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
+  FetchTimeoutMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -61,9 +59,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
-const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
-  Object.values(TelemetryEvents) as TelemetryEventName[]
-)
+const TELEMETRY_EVENT_SET = new Set<string>([
+  ...Object.values(TelemetryEvents),
+  ...Object.values(CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE)
+])
 
 interface QueuedEvent {
   eventName: TelemetryEventName
@@ -90,9 +89,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
 
   constructor() {
-    this.configureDisabledEvents(
-      (window.__CONFIG__ as Partial<RemoteConfig> | undefined) ?? null
-    )
     watch(
       remoteConfig,
       (config) => {
@@ -117,11 +113,20 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
               loaded: () => {
                 this.isInitialized = true
                 this.flushEventQueue() // flush events that were queued while initializing
-                useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
-                  }
-                })
+                void whenStoresReady()
+                  .then(() => {
+                    useCurrentUser().onUserResolved((user) => {
+                      if (this.mixpanel && user.id) {
+                        this.mixpanel.identify(user.id)
+                      }
+                    })
+                  })
+                  .catch((error) => {
+                    reportError(error, {
+                      surface: 'platform',
+                      errorType: 'mixpanel_user_identification_failure'
+                    })
+                  })
               }
             })
           })
@@ -181,14 +186,18 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     }
   }
 
-  private configureDisabledEvents(config: Partial<RemoteConfig> | null): void {
+  private configureDisabledEvents(
+    config: Pick<RemoteConfig, 'telemetry_disabled_events'> | null | undefined
+  ): void {
     const disabledSource =
       config?.telemetry_disabled_events ?? DEFAULT_DISABLED_EVENTS
 
     this.disabledEvents = this.buildEventSet(disabledSource)
   }
 
-  private buildEventSet(values: TelemetryEventName[]): Set<TelemetryEventName> {
+  private buildEventSet(
+    values: readonly TelemetryEventName[]
+  ): Set<TelemetryEventName> {
     return new Set(
       values.filter((value) => {
         const isValid = TELEMETRY_EVENT_SET.has(value)
@@ -263,19 +272,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
     this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
-  }
-
-  // Credit top-up tracking methods (composition with utility functions)
-  startTopupTracking(): void {
-    startTopupUtil()
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return checkTopupUtil(events)
-  }
-
-  clearTopupTracking(): void {
-    clearTopupUtil()
   }
 
   trackRunButton(properties: RunButtonProperties): void {
@@ -421,5 +417,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.trackEvent(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
+    this.trackEvent(TelemetryEvents.FETCH_TIMEOUT, metadata)
   }
 }

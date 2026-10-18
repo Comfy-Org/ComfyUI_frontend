@@ -2,45 +2,40 @@
   <div
     :class="
       cn(
-        'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
+        'relative flex h-full max-h-[90vh] max-w-[min(1280px,95vw)] flex-col gap-4 overflow-y-auto rounded-2xl border bg-secondary p-4 pt-6 shadow-2xl',
         checkoutStep === 'pricing' &&
           'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]'
       )
     "
   >
     <Button
-      v-if="checkoutStep === 'preview'"
       size="icon"
       variant="muted-textonly"
-      class="absolute top-2.5 left-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
-      :aria-label="$t('g.back')"
-      :disabled="isPolling"
-      @click="handleBackToPricing"
-    >
-      <i class="pi pi-arrow-left text-xl" />
-    </Button>
-
-    <Button
-      size="icon"
-      variant="muted-textonly"
-      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
+      class="absolute top-6 right-4 shrink-0 rounded-full hover:bg-white/10"
       :aria-label="$t('g.close')"
       @click="onClose"
     >
       <i class="pi pi-times text-xl" />
     </Button>
 
-    <div class="flex flex-col items-center gap-3">
-      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
+    <!-- The confirm and success steps title themselves. -->
+    <div
+      v-if="checkoutStep === 'pricing'"
+      class="flex flex-col items-center gap-3"
+    >
+      <DialogTitle class="m-0 text-2xl">
         {{ $t('subscription.descriptionWorkspace') }}
-      </h2>
+      </DialogTitle>
     </div>
 
-    <div v-if="reason === 'out_of_credits'" class="text-center">
-      <h2 class="m-0 text-xl text-muted-foreground lg:text-2xl">
+    <div
+      v-if="reason === 'out_of_credits'"
+      class="text-center text-muted-foreground"
+    >
+      <h2 class="m-0 text-xl lg:text-2xl">
         {{ $t('credits.topUp.insufficientTitle') }}
       </h2>
-      <p class="m-0 mt-2 text-sm text-text-secondary">
+      <p class="m-0 mt-2 text-sm">
         {{ $t('credits.topUp.insufficientMessage') }}
       </p>
     </div>
@@ -61,22 +56,30 @@
 
     <template v-if="checkoutStep === 'preview'">
       <SubscriptionTransitionPreviewWorkspace
-        v-if="previewVariant === 'team-change'"
-        :preview-data="previewData!"
+        v-if="previewVariant === 'team-change' && previewData"
+        :preview-data="previewData"
         :team-plan="selectedTeamStop!"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
+        :authentication-state
+        :payment-cancelable
+        :canceling-payment="isCancelingPayment"
+        :cancel-payment-error
+        @cancel-payment="cancelPayment"
         @confirm="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
 
       <SubscriptionAddPaymentPreviewWorkspace
         v-else-if="previewVariant === 'team-new'"
+        :preview-data="previewData"
         :team-plan="selectedTeamStop!"
         :billing-cycle="selectedBillingCycle"
         :is-loading="isLoadingPreview || isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :authentication-state
+        :parked-checkout-recovery
         @add-credit-card="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
@@ -88,16 +91,23 @@
         :billing-cycle="selectedBillingCycle"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
+        :authentication-state
+        :parked-checkout-recovery
         @add-credit-card="handleAddCreditCard"
         @back="handleBackToPricing"
       />
 
       <SubscriptionTransitionPreviewWorkspace
-        v-else-if="previewVariant === 'personal-change'"
-        :preview-data="previewData!"
+        v-else-if="previewVariant === 'personal-change' && previewData"
+        :preview-data="previewData"
         :is-loading="isSubscribing || isPolling"
         :action-url="activeCheckoutActionUrl"
         :force-reactivation="reactivationRequired"
+        :authentication-state
+        :payment-cancelable
+        :canceling-payment="isCancelingPayment"
+        :cancel-payment-error
+        @cancel-payment="cancelPayment"
         @confirm="handleConfirmTransition"
         @back="handleBackToPricing"
       />
@@ -121,8 +131,9 @@ import { useEventListener } from '@vueuse/core'
 import { onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
@@ -130,9 +141,16 @@ import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
-const { onClose, reason, initialPlanMode, initialCheckout } = defineProps<{
+const {
+  onClose,
+  reason,
+  paymentIntentSource,
+  initialPlanMode,
+  initialCheckout
+} = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   initialPlanMode?: 'personal' | 'team'
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
@@ -153,7 +171,13 @@ const {
   selectedTeamStop,
   selectedBillingCycle,
   activeCheckoutActionUrl,
+  authenticationState,
+  parkedCheckoutRecovery,
   isPolling,
+  paymentCancelable,
+  isCancelingPayment,
+  cancelPaymentError,
+  cancelPayment,
   isTeamCheckout,
   previewVariant,
   handleSubscribeClick,
@@ -164,7 +188,7 @@ const {
   handleConfirmTransition,
   handleTeamSubscribe,
   handleResubscribe
-} = useSubscriptionCheckout(emit, reason)
+} = useSubscriptionCheckout(emit, paymentIntentSource)
 
 onMounted(() => {
   if (!initialCheckout) return
@@ -175,8 +199,6 @@ onMounted(() => {
   void handleSubscribeClick(initialCheckout)
 })
 
-// Backspace mirrors the back arrow on the confirm step, but never while an
-// editable element is focused (let it delete text there).
 useEventListener(window, 'keydown', (event: KeyboardEvent) => {
   if (
     event.key !== 'Backspace' ||

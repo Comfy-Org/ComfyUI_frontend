@@ -4,8 +4,6 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
-
 const WidgetButton = defineAsyncComponent(
   () => import('../components/WidgetButton.vue')
 )
@@ -57,6 +55,15 @@ const Load3D = defineAsyncComponent(
 const Load3DAdvanced = defineAsyncComponent(
   () => import('@/components/load3d/Load3DAdvanced.vue')
 )
+const CameraInfo = defineAsyncComponent(
+  () => import('@/components/cameraInfo/CameraInfo.vue')
+)
+const CameraAngle = defineAsyncComponent(
+  () => import('@/components/cameraAngle/CameraAngle.vue')
+)
+const LightInfo = defineAsyncComponent(
+  () => import('@/components/lightInfo/LightInfo.vue')
+)
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
 )
@@ -85,6 +92,9 @@ const WidgetVideoEdit = defineAsyncComponent(
 const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
 )
+const WidgetResolutionPreview = defineAsyncComponent(
+  () => import('../components/WidgetResolutionPreview.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -104,6 +114,16 @@ interface WidgetDefinition {
 }
 
 const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
+  [
+    'dynamic_group_row',
+    {
+      component: defineAsyncComponent(
+        () => import('../components/WidgetDynamicGroupRow.vue')
+      ),
+      aliases: [],
+      essential: false
+    }
+  ],
   [
     'button',
     { component: WidgetButton, aliases: ['BUTTON'], essential: false }
@@ -205,6 +225,30 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     }
   ],
   [
+    'cameraInfo',
+    {
+      component: CameraInfo,
+      aliases: ['CAMERA_INFO_STATE'],
+      essential: false
+    }
+  ],
+  [
+    'cameraAngle',
+    {
+      component: CameraAngle,
+      aliases: ['CAMERA_ANGLE_VIEW'],
+      essential: false
+    }
+  ],
+  [
+    'lightinfo',
+    {
+      component: LightInfo,
+      aliases: ['LIGHT_INFO_PREVIEW', 'lightInfo'],
+      essential: false
+    }
+  ],
+  [
     'imagecrop',
     {
       component: WidgetImageCrop,
@@ -275,6 +319,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['COLORS'],
       essential: false
     }
+  ],
+  [
+    'resolutionpreview',
+    {
+      component: WidgetResolutionPreview,
+      aliases: ['RESOLUTION_PREVIEW'],
+      essential: false
+    }
   ]
 ]
 
@@ -302,16 +354,15 @@ export const isEssential = (type: string): boolean => {
   return widgets.get(canonicalType)?.essential || false
 }
 
-export const shouldRenderAsVue = (widget: Partial<SafeWidgetData>): boolean => {
-  return !widget.options?.canvasOnly && !!widget.type
-}
-
 const EXPANDING_TYPES = [
   'textarea',
   'markdown',
   'textPreview',
   'load3D',
   'load3DAdvanced',
+  'cameraInfo',
+  'cameraAngle',
+  'lightinfo',
   'curve',
   'painter',
   'compositor',

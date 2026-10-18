@@ -19,8 +19,7 @@ export function useGraphHierarchy() {
    * @returns The parent group if found, otherwise null
    */
   function findParentGroup(node: LGraphNode): LGraphGroup | null {
-    const graphGroups = (canvasStore.canvas?.graph?.groups ??
-      []) as LGraphGroup[]
+    const graphGroups = canvasStore.canvas?.graph?.groups ?? []
 
     let parent: LGraphGroup | null = null
 

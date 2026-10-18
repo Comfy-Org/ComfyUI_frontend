@@ -6,14 +6,14 @@
       :subtitle="latestRelease?.version"
       :position
     >
-      <div
+      <SanitizedHtml
         class="pl-14 text-sm leading-[1.21] font-normal text-muted-foreground"
-        v-html="formattedContent"
-      ></div>
+        :html="formattedContent"
+      />
 
       <template #footer-start>
         <a
-          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-base-foreground"
+          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-foreground"
           :href="changelogUrl"
           target="_blank"
           rel="noopener noreferrer"
@@ -28,7 +28,7 @@
         <Button
           variant="link"
           size="unset"
-          class="h-6 px-0 text-sm font-normal"
+          class="h-6 px-0 font-normal"
           @click="handleSkip"
         >
           {{ $t('releaseToast.skip') }}
@@ -52,6 +52,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NotificationPopup from '@/components/common/NotificationPopup.vue'
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -63,8 +64,9 @@ import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import type { ReleaseNote } from '../common/releaseService'
 import { useReleaseStore } from '../common/releaseStore'
 
-const { position = 'bottom-left' } = defineProps<{
+const { position = 'bottom-left', isVisible = true } = defineProps<{
   position?: 'bottom-left' | 'bottom-right'
+  isVisible?: boolean
 }>()
 
 const { buildDocsUrl } = useExternalLink()
@@ -82,7 +84,7 @@ const latestRelease = computed<ReleaseNote | null>(() => {
 
 // Show toast when new version available and not dismissed
 const shouldShow = computed(
-  () => releaseStore.shouldShowToast && !isDismissed.value
+  () => releaseStore.shouldShowToast && !isDismissed.value && isVisible
 )
 
 // Generate changelog URL with version anchor (language-aware)

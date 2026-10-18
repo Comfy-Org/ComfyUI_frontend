@@ -59,7 +59,7 @@ function slotType(slot: { type?: unknown }): string {
 /** Multiline is what separates a prompt box from a seed or a filename. */
 function promptWidgets(node: LGraphNode) {
   return (node.widgets ?? []).filter(
-    (widget) => widget.type === 'customtext' || widget.options?.multiline
+    (widget) => widget.type === 'customtext' || widget.options.multiline
   )
 }
 
@@ -67,7 +67,8 @@ function consumerInputNames(nodes: LGraphNode[]): Map<LGraphNode, string[]> {
   const names = new Map<LGraphNode, string[]>()
 
   for (const consumer of nodes) {
-    const inputs = consumer.inputs ?? []
+    if (consumer.isVirtualNode) continue
+    const inputs = consumer.inputs
     inputs.forEach((input, slot) => {
       const producer = consumer.getInputNode(slot)
       if (producer)
@@ -83,9 +84,9 @@ function exposedInputNames(nodes: LGraphNode[]): Map<LGraphNode, string[]> {
   const names = new Map<LGraphNode, string[]>()
 
   for (const host of nodes) {
-    if (!host.isSubgraphNode?.() || !host.subgraph) continue
+    if (!host.isSubgraphNode()) continue
 
-    for (const input of host.inputs ?? []) {
+    for (const input of host.inputs) {
       const target = resolveSubgraphInputTarget(host, input.name)
       const inner = target && host.subgraph.getNodeById(target.nodeId)
       if (inner) names.set(inner, [...(names.get(inner) ?? []), input.name])
@@ -135,7 +136,8 @@ function findPrompt(nodes: LGraphNode[]): LGraphNode | null {
     })
     .sort((a, b) => b.score - a.score)
 
-  const [best, runnerUp] = ranked
+  const best = ranked.at(0)
+  const runnerUp = ranked.at(1)
   if (!best || best.score < 0) return null
   return !runnerUp || best.score > runnerUp.score ? best.node : null
 }
@@ -145,8 +147,8 @@ function findSource(nodes: LGraphNode[]): LGraphNode | null {
   const sources = nodes.filter(
     (node) =>
       !node.isVirtualNode &&
-      !(node.inputs ?? []).some((input) => input.link != null) &&
-      (node.outputs ?? []).some((output) => slotType(output) === 'IMAGE')
+      !node.inputs.some((input) => input.link != null) &&
+      node.outputs.some((output) => slotType(output) === 'IMAGE')
   )
 
   return sources.length === 1 ? sources[0] : null
@@ -157,7 +159,7 @@ function findSink(
   nodes: LGraphNode[]
 ): { node: LGraphNode; mediaKind: TourMediaKind } | null {
   const sinks = filterOutputNodes(nodes).flatMap((node) => {
-    for (const input of node.inputs ?? []) {
+    for (const input of node.inputs) {
       const slotKind = MEDIA_KIND_BY_SLOT_TYPE[slotType(input)]
       if (input.link == null || !slotKind) continue
       const mediaKind = MEDIA_KIND_BY_SINK_TYPE[node.type] ?? slotKind
@@ -166,7 +168,7 @@ function findSink(
     return []
   })
 
-  const [first] = sinks
+  const first = sinks.at(0)
   if (!first) return null
   // Sinks must agree on the data they are fed; a video combine and a still
   // preview of the same frames do not disagree, they rank — the video is the

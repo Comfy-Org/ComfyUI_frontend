@@ -216,7 +216,7 @@ export function useGPUResources() {
       /* c8 ignore start — requires functional WebGPU hardware */
       const root = await tgpu.init()
       store.tgpuRoot = root
-      device = root.device as GPUDevice
+      device = root.device
       console.warn('✅ TypeGPU initialized! Root:', root)
       console.warn('Device info:', root.device.limits)
       /* c8 ignore stop */
@@ -527,7 +527,7 @@ export function useGPUResources() {
           brushShape,
           isErasing
         },
-        targetTex ?? undefined
+        targetTex
       )
     }
     /* c8 ignore stop */
@@ -597,7 +597,7 @@ export function useGPUResources() {
       const c = parseToRgb(store.rgbColor)
       return [c.r / 255, c.g / 255, c.b / 255]
     }
-    const c = store.maskColor as { r: number; g: number; b: number }
+    const c = store.maskColor
     return [c.r / 255, c.g / 255, c.b / 255]
   }
   /* c8 ignore stop */

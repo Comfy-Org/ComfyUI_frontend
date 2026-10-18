@@ -4,23 +4,19 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 export function useTeamPlan() {
   const {
-    isActiveSubscription,
+    canAccessSubscriptionFeatures,
     isInitialized,
     isTeamPlan,
     maxSeats,
-    subscription,
-    subscriptionStatus
+    subscription
   } = useBillingContext()
 
   const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
   const isOnTeamPlan = computed(
-    () => isTeamPlan.value && isActiveSubscription.value && !isCancelled.value
-  )
-  const hasLapsedTeamPlan = computed(
     () =>
       isTeamPlan.value &&
-      (subscriptionStatus.value === 'canceled' ||
-        subscriptionStatus.value === 'ended')
+      canAccessSubscriptionFeatures.value &&
+      !isCancelled.value
   )
   const hasMemberSeats = computed(
     () => maxSeats.value === 0 || (maxSeats.value ?? 0) > 1
@@ -32,7 +28,6 @@ export function useTeamPlan() {
     hasTeamPlan: isTeamPlan,
     isOnTeamPlan,
     isCancelled,
-    hasLapsedTeamPlan,
     hasMemberSeats,
     isPlanLoading
   }

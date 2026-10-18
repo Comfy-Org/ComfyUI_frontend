@@ -230,6 +230,9 @@
   "Comfy_NewBlankWorkflow": {
     "label": "سير عمل جديد فارغ"
   },
+  "Comfy_Onboarding_Replay": {
+    "label": "إعادة تشغيل الإعداد الأولي"
+  },
   "Comfy_OpenClipspace": {
     "label": "Clipspace"
   },
@@ -277,9 +280,6 @@
   },
   "Comfy_Subgraph_SetSearchAliases": {
     "label": "تعيين الأسماء المستعارة للبحث في الرسم البياني الفرعي"
-  },
-  "Comfy_ToggleAssetAPI": {
-    "label": "تجريبي: تمكين AssetAPI"
   },
   "Comfy_ToggleCanvasInfo": {
     "label": "أداء اللوحة"

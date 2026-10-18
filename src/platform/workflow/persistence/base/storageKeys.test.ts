@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
+
 describe('storageKeys', () => {
   beforeEach(() => {
+    mockDistributionTypes.isCloud = true
     vi.resetModules()
   })
 
@@ -27,6 +32,17 @@ describe('storageKeys', () => {
       )
       const { getWorkspaceId } = await import('./storageKeys')
       expect(getWorkspaceId()).toBe('ws-abc-123')
+    })
+
+    it('keeps local workflow storage in the personal namespace', async () => {
+      mockDistributionTypes.isCloud = false
+      sessionStorage.setItem(
+        'Comfy.Workspace.Current',
+        JSON.stringify({ type: 'team', id: 'ws-abc-123' })
+      )
+      const { getWorkspaceId } = await import('./storageKeys')
+
+      expect(getWorkspaceId()).toBe('personal')
     })
 
     it('returns personal when JSON parsing fails', async () => {
@@ -105,6 +121,23 @@ describe('storageKeys', () => {
       const { StorageKeys } = await import('./storageKeys')
       expect(StorageKeys.openPaths('client-abc')).toBe(
         'Comfy.Workflow.OpenPaths:client-abc'
+      )
+    })
+
+    it('scopes Agent persistence keys to the workspace', async () => {
+      const { StorageKeys } = await import('./storageKeys')
+
+      expect(StorageKeys.agentThread('ws-123')).toBe(
+        'Comfy.Agent.ThreadId:ws-123'
+      )
+      expect(StorageKeys.agentWorkflowTabBindings('ws-123')).toBe(
+        'Comfy.Agent.WorkflowTabBindings:ws-123'
+      )
+      expect(StorageKeys.agentChatTitles('ws-123')).toBe(
+        'Comfy.Agent.ChatTitles:ws-123'
+      )
+      expect(StorageKeys.agentDeletedThreads('ws-123')).toBe(
+        'Comfy.Agent.DeletedThreads:ws-123'
       )
     })
 

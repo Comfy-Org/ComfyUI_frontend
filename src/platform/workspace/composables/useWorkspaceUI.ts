@@ -2,24 +2,31 @@ import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+
+type BillingCapabilities = ReturnType<typeof useBillingCapabilities>
+
+interface ServedPermissionFacts {
+  canLeaveWorkspace: BillingCapabilities['canLeaveWorkspace']['value']
+  canManageSubscription: BillingCapabilities['canManageSubscription']['value']
+  canDowngradeToPersonal: BillingCapabilities['canDowngradeToPersonal']['value']
+}
 
 /** Permission flags for workspace actions */
 interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
-  canInviteMembers: boolean
-  canManageInvites: boolean
-  canManageMembers: boolean
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
   canDowngradeToPersonal: boolean
-  canTopUp: boolean
 }
 
 /** UI configuration for workspace role */
@@ -40,33 +47,22 @@ interface WorkspaceUIConfig {
 function getPermissions(
   type: WorkspaceType,
   role: WorkspaceRole,
-  isOriginalOwner: boolean,
-  isOriginalOwnerResolved: boolean,
-  hasActiveWorkspace: boolean,
-  isTeamPlan: boolean
+  {
+    canLeaveWorkspace,
+    canManageSubscription,
+    canDowngradeToPersonal
+  }: ServedPermissionFacts
 ): WorkspacePermissions {
-  const canManageBilling = hasActiveWorkspace && role === 'owner'
-  const canLeaveWorkspace =
-    hasActiveWorkspace &&
-    (type === 'personal'
-      ? isTeamPlan &&
-        !isOriginalOwner &&
-        (role === 'member' || isOriginalOwnerResolved)
-      : true)
   const billingPermissions = {
-    canManageSubscription: canManageBilling,
-    canManageSubscriptionLifecycle: canManageBilling,
-    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner,
-    canTopUp: canManageBilling
+    canManageSubscription,
+    canManageSubscriptionLifecycle: canManageSubscription,
+    canDowngradeToPersonal
   }
 
   if (role === 'member') {
     return {
       canViewOtherMembers: true,
       canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canManageMembers: false,
       canLeaveWorkspace,
       canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
@@ -77,9 +73,6 @@ function getPermissions(
     return {
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canInviteMembers: false,
-      canManageInvites: false,
-      canManageMembers: false,
       canLeaveWorkspace,
       canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
@@ -89,9 +82,6 @@ function getPermissions(
   return {
     canViewOtherMembers: true,
     canViewPendingInvites: true,
-    canInviteMembers: true,
-    canManageInvites: true,
-    canManageMembers: true,
     canLeaveWorkspace,
     canAccessWorkspaceMenu: true,
     ...billingPermissions
@@ -155,7 +145,8 @@ function getUIConfig(
  */
 function useWorkspaceUIInternal() {
   const store = useTeamWorkspaceStore()
-  const { isActiveSubscription, isTeamPlan, subscription } = useBillingContext()
+  const { canAccessSubscriptionFeatures, isTeamPlan, subscription } =
+    useBillingContext()
   const { flags } = useFeatureFlags()
 
   const isInPersonalWorkspace = computed(() => store.isInPersonalWorkspace)
@@ -179,21 +170,42 @@ function useWorkspaceUIInternal() {
     { immediate: true }
   )
 
+  const { shouldUseWorkspaceBilling } = useBillingRouting()
+  const {
+    canReactivate,
+    canSubscribeSelfServe,
+    snapshotAuthoritative,
+    canLeaveWorkspace,
+    canManageSubscription,
+    canDowngradeToPersonal
+  } = useBillingCapabilities()
+
   const permissions = computed<WorkspacePermissions>(() =>
-    getPermissions(
-      workspaceType.value,
-      workspaceRole.value,
-      store.isCurrentUserOriginalOwner,
-      store.originalOwnerId !== null,
-      store.activeWorkspace !== null,
-      isTeamPlan.value
-    )
+    getPermissions(workspaceType.value, workspaceRole.value, {
+      canLeaveWorkspace: canLeaveWorkspace.value,
+      canManageSubscription: canManageSubscription.value,
+      canDowngradeToPersonal: canDowngradeToPersonal.value
+    })
   )
+
+  const canReactivatePlan = computed(() =>
+    isCloud && shouldUseWorkspaceBilling.value
+      ? canReactivate.value
+      : permissions.value.canManageSubscriptionLifecycle
+  )
+
+  const canOpenPricingSurface = computed(() => {
+    if (!isCloud || !shouldUseWorkspaceBilling.value)
+      return permissions.value.canManageSubscription
+    return snapshotAuthoritative.value
+      ? canSubscribeSelfServe.value
+      : permissions.value.canManageSubscription
+  })
 
   const uiConfig = computed<WorkspaceUIConfig>(() => {
     const base = getUIConfig(workspaceType.value, workspaceRole.value)
     const showCreditsColumn =
-      flags.billingControlEnabled &&
+      flags.memberCreditLimitsEnabled &&
       workspaceType.value === 'team' &&
       workspaceRole.value === 'owner'
     if (!showCreditsColumn) return base
@@ -206,8 +218,6 @@ function useWorkspaceUIInternal() {
     }
   })
 
-  const isOriginalOwner = computed(() => store.isCurrentUserOriginalOwner)
-
   const isSubscriptionCancelled = computed(
     () => subscription.value?.isCancelled ?? false
   )
@@ -216,32 +226,23 @@ function useWorkspaceUIInternal() {
     () => isTeamPlan.value && isSubscriptionCancelled.value
   )
 
-  // A workspace can't be deleted while its subscription is active and not yet
-  // cancelled — the owner must cancel first. Both settings panels read this so
-  // their menus can't desync on a billing-flag change.
-  const isDeleteDisabled = computed(
-    () =>
-      isActiveSubscription.value && !(subscription.value?.isCancelled ?? false)
-  )
-
-  const deleteDisabledTooltipKey = computed(() =>
-    isDeleteDisabled.value ? uiConfig.value.workspaceMenuDisabledTooltip : null
+  const isWorkspaceMenuInHeader = computed(
+    () => flags.unifiedBillingSettingsEnabled
   )
 
   return {
-    // Permissions and config
     permissions,
+    canReactivatePlan,
+    canOpenPricingSurface,
     uiConfig,
     workspaceType,
     workspaceRole,
     isInPersonalWorkspace,
     isWorkspaceSubscribed,
-    isActiveSubscription,
-    isOriginalOwner,
+    canAccessSubscriptionFeatures,
     isSubscriptionCancelled,
     isTeamPlanCancelled,
-    isDeleteDisabled,
-    deleteDisabledTooltipKey
+    isWorkspaceMenuInHeader
   }
 }
 

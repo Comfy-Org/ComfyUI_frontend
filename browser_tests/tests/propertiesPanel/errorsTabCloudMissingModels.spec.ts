@@ -138,12 +138,12 @@ test.describe(
   'Errors tab - Cloud missing models',
   { tag: ['@cloud', '@vue-nodes'] },
   () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     test.beforeEach(async ({ comfyPage }) => {
       await enableMissingModelImportFeatures(comfyPage.page)
-      await comfyPage.settings.setSetting(
-        'Comfy.RightSidePanel.ShowErrorsTab',
-        true
-      )
     })
 
     test('keeps installed models resolved after returning from a nested subgraph', async ({
@@ -175,23 +175,17 @@ test.describe(
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
       await expect(errorOverlay).toBeHidden()
 
-      const requestCountBeforeRootReturn = countAssetRequestsByTag(
-        cloudAssetRequests,
-        'diffusion_models'
-      )
-
+      // Returning to the root must not resurface the installed model as
+      // missing. No re-scan runs on graph switch, and none is needed — the
+      // contract is the absence of the error, not the presence of a re-scan.
       await comfyPage.subgraph.exitViaBreadcrumb()
+      await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(false)
+      await expect(
+        comfyPage.vueNodes.getNodeLocator(OUTER_SUBGRAPH_NODE_ID)
+      ).toBeVisible()
+
       await panel.open(comfyPage.actionbar.propertiesButton)
-
-      await expect
-        .poll(
-          () =>
-            countAssetRequestsByTag(cloudAssetRequests, 'diffusion_models') >
-            requestCountBeforeRootReturn,
-          { timeout: 10_000 }
-        )
-        .toBe(true)
-
+      await expect(errorOverlay).toBeHidden()
       await expect(errorsTab).toBeHidden()
     })
 
@@ -470,13 +464,12 @@ promotedModelTest.describe(
   'Errors tab - Cloud promoted subgraph missing models',
   { tag: '@cloud' },
   () => {
+    promotedModelTest.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
     promotedModelTest.beforeEach(async ({ comfyPage }) => {
       await cleanupFakeModel(comfyPage)
-      await comfyPage.settings.setSetting('Comfy.Assets.UseAssetAPI', true)
-      await comfyPage.settings.setSetting(
-        'Comfy.RightSidePanel.ShowErrorsTab',
-        true
-      )
     })
 
     promotedModelTest.afterEach(async ({ comfyPage }) => {

@@ -1,0 +1,213 @@
+import {
+  comfyExpect as expect,
+  comfyPageFixture as baseTest
+} from '@e2e/fixtures/ComfyPage'
+import {
+  BYTEDANCE_REFERENCE_NODE_TYPE,
+  REFERENCE_IMAGES_PREFIX,
+  byteDanceReferenceNodeDef
+} from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
+import {
+  getConnectedInputs,
+  getInputNames
+} from '@e2e/fixtures/utils/nodeInputLinks'
+import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
+import { toNodeId } from '@/types/nodeId'
+
+const REFERENCE_NODE_ID = '26'
+const IMAGE_1 = `${REFERENCE_IMAGES_PREFIX}image_1`
+const IMAGE_2 = `${REFERENCE_IMAGES_PREFIX}image_2`
+const IMAGE_3 = `${REFERENCE_IMAGES_PREFIX}image_3`
+const IMAGE_1_SOURCE = 'Image 1 source'
+const IMAGE_2_SOURCE = 'Image 2 source'
+const IMAGE_3_SOURCE = 'Image 3 source'
+// Autogrow keeps one empty slot past the last connected one.
+const REFERENCE_IMAGE_SLOTS = [
+  IMAGE_1,
+  IMAGE_2,
+  IMAGE_3,
+  `${REFERENCE_IMAGES_PREFIX}image_4`
+]
+
+const BLEND_NODE_ID = '3'
+const BLEND_INPUT_PREFIX = 'image'
+
+const test = baseTest.extend({
+  page: async ({ page }, use) => {
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+      page,
+      (objectInfo) => {
+        objectInfo[BYTEDANCE_REFERENCE_NODE_TYPE] = byteDanceReferenceNodeDef
+      }
+    )
+    try {
+      await use(page)
+    } finally {
+      await unrouteObjectInfo()
+    }
+  }
+})
+
+test.describe(
+  'Convert to Subgraph boundary links',
+  { tag: ['@subgraph', '@node'] },
+  () => {
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
+
+    test.describe('plain multi-input node', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/plain-multi-image-inputs'
+        )
+      })
+
+      test('keeps every link when its sources become a subgraph', async ({
+        comfyPage
+      }) => {
+        await comfyPage.nodeOps.selectNodes(['Load Image'])
+        const subgraphNodeId =
+          await comfyPage.subgraph.convertSelectionToSubgraph()
+
+        await expect
+          .poll(() =>
+            getConnectedInputs(comfyPage, BLEND_NODE_ID, BLEND_INPUT_PREFIX)
+          )
+          .toEqual([
+            { name: 'image1', originNodeId: subgraphNodeId },
+            { name: 'image2', originNodeId: subgraphNodeId }
+          ])
+      })
+    })
+
+    test.describe('autogrow input group', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/autogrow-reference-images'
+        )
+      })
+
+      test('loads with both reference images connected', async ({
+        comfyPage
+      }) => {
+        await expect
+          .poll(() =>
+            getConnectedInputs(
+              comfyPage,
+              REFERENCE_NODE_ID,
+              REFERENCE_IMAGES_PREFIX
+            )
+          )
+          .toEqual([
+            { name: IMAGE_1, originNodeId: '18' },
+            { name: IMAGE_2, originNodeId: '19' },
+            { name: IMAGE_3, originNodeId: '20' }
+          ])
+
+        await expect
+          .poll(() =>
+            getInputNames(comfyPage, REFERENCE_NODE_ID, REFERENCE_IMAGES_PREFIX)
+          )
+          .toEqual(REFERENCE_IMAGE_SLOTS)
+      })
+
+      // Was reported in #bug-dump: converting the upstream Load Image nodes
+      // into a subgraph left only the first reference-image connection
+      // attached to the downstream node, with the rest silently dropped.
+      // `LGraph.convertToSubgraph` reconnects each grouped output link with
+      // a synchronous `connectSlots` call per slot, and `withComfyAutogrow`'s
+      // swap guard (PM-1496) used to be node-wide instead of per-slot, so
+      // slot 1's disconnect/reconnect swap suppressed the genuine connect
+      // events for slots 2 and 3 on the same node. Fixed by PM-1496.
+      test('keeps every link when its sources become a subgraph', async ({
+        comfyPage
+      }) => {
+        await comfyPage.nodeOps.selectNodes([
+          IMAGE_1_SOURCE,
+          IMAGE_2_SOURCE,
+          IMAGE_3_SOURCE
+        ])
+        expect(await comfyPage.nodeOps.getSelectedNodeIds()).toEqual([
+          '18',
+          '19',
+          '20'
+        ])
+        const subgraphNodeId =
+          await comfyPage.subgraph.convertSelectionToSubgraph()
+
+        await expect
+          .poll(() =>
+            getConnectedInputs(
+              comfyPage,
+              REFERENCE_NODE_ID,
+              REFERENCE_IMAGES_PREFIX
+            )
+          )
+          .toEqual([
+            { name: IMAGE_1, originNodeId: subgraphNodeId },
+            { name: IMAGE_2, originNodeId: subgraphNodeId },
+            { name: IMAGE_3, originNodeId: subgraphNodeId }
+          ])
+
+        await expect
+          .poll(() =>
+            getInputNames(comfyPage, REFERENCE_NODE_ID, REFERENCE_IMAGES_PREFIX)
+          )
+          .toEqual(REFERENCE_IMAGE_SLOTS)
+      })
+
+      test(
+        'keeps every autogrow link when the subgraph is unpacked',
+        { tag: ['@custom-nodes'] },
+        async ({ comfyPage }) => {
+          const unpackedReferenceNodeId =
+            await test.step('Convert and unpack the selected nodes', async () => {
+              await comfyPage.keyboard.selectAll()
+              const subgraphNodeId =
+                await comfyPage.subgraph.convertSelectionToSubgraph()
+              return await comfyPage.page.evaluate((nodeId) => {
+                const graph = window.app!.graph
+                const subgraphNode = graph.getNodeById(nodeId)
+                if (!subgraphNode?.isSubgraphNode()) {
+                  throw new Error(`Expected subgraph node ${nodeId}`)
+                }
+                graph.unpackSubgraph(subgraphNode)
+                const referenceNode = graph.nodes.find(
+                  (node) => node.type === 'ByteDance2ReferenceNode'
+                )
+                if (!referenceNode)
+                  throw new Error('Reference node was not unpacked')
+                return String(referenceNode.id)
+              }, toNodeId(subgraphNodeId))
+            })
+
+          await test.step('Verify every source remains connected', async () => {
+            const image1Source =
+              await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_1_SOURCE)
+            const image2Source =
+              await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_2_SOURCE)
+            const image3Source =
+              await comfyPage.nodeOps.getNodeRefByTitle(IMAGE_3_SOURCE)
+
+            const connectedInputs = () =>
+              getConnectedInputs(
+                comfyPage,
+                unpackedReferenceNodeId,
+                REFERENCE_IMAGES_PREFIX
+              )
+
+            await expect
+              .poll(async () => (await connectedInputs()).length)
+              .toBe(3)
+            await expect.poll(connectedInputs).toEqual(
+              expect.arrayContaining([
+                { name: IMAGE_1, originNodeId: String(image1Source.id) },
+                { name: IMAGE_2, originNodeId: String(image2Source.id) },
+                { name: IMAGE_3, originNodeId: String(image3Source.id) }
+              ])
+            )
+          })
+        }
+      )
+    })
+  }
+)

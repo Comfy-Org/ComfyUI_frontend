@@ -1,3 +1,7 @@
+import { useAssetsStore } from '@/stores/assetsStore'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import type { App } from 'vue'
@@ -10,57 +14,37 @@ const mockGetNodeByExecutionId = vi.fn()
 const mockResolveNodeDisplayName = vi.fn()
 const mockTrackDownload = vi.fn()
 const mockInvalidateModelsForCategory = vi.fn()
-const mockUpdateModelsForNodeType = vi.fn()
-const mockGetAllNodeProviders = vi.fn()
+const mockUpdateModelsForNodeType = vi.fn<
+  ReturnType<typeof useAssetsStore>['updateModelsForNodeType']
+>(async () => undefined)
+const mockGetAllNodeProviders = vi.fn<
+  ReturnType<typeof useModelToNodeStore>['getAllNodeProviders']
+>(() => [])
 const mockDownloadList = vi.fn(
-  (): Array<{ taskId: string; status: string }> => []
+  (): Pick<
+    ReturnType<typeof useAssetDownloadStore>['downloadList'][number],
+    'taskId' | 'status'
+  >[] => []
 )
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    rootGraph: null
+    rootGraphOrUndefined: undefined
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByExecutionId: (...args: unknown[]) =>
     mockGetNodeByExecutionId(...args)
 }))
 
-vi.mock('@/utils/nodeTitleUtil', () => ({
+vi.mock(import('@/utils/nodeTitleUtil'), () => ({
   resolveNodeDisplayName: (...args: unknown[]) =>
     mockResolveNodeDisplayName(...args)
-}))
-
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    updateModelsForNodeType: mockUpdateModelsForNodeType,
-    invalidateModelsForCategory: mockInvalidateModelsForCategory,
-    updateModelsForTag: vi.fn()
-  })
-}))
-
-vi.mock('@/stores/assetDownloadStore', () => ({
-  useAssetDownloadStore: () => ({
-    get downloadList() {
-      return mockDownloadList()
-    },
-    trackDownload: mockTrackDownload
-  })
-}))
-
-vi.mock('@/stores/modelToNodeStore', () => ({
-  useModelToNodeStore: () => ({
-    getAllNodeProviders: mockGetAllNodeProviders
-  })
 }))
 
 import { app } from '@/scripts/app'
@@ -84,6 +68,31 @@ function makeCandidate(
     ...overrides
   }
 }
+
+beforeEach(() => {
+  vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
+    mockUpdateModelsForNodeType
+  )
+  vi.mocked(useAssetsStore().invalidateModelsForCategory).mockImplementation(
+    mockInvalidateModelsForCategory
+  )
+  vi.mocked(useAssetsStore().updateModelsForTag).mockResolvedValue(undefined)
+  vi.spyOn(useAssetDownloadStore(), 'downloadList', 'get').mockImplementation(
+    () => {
+      return mockDownloadList().map((download) =>
+        fromPartial<
+          ReturnType<typeof useAssetDownloadStore>['downloadList'][number]
+        >(download)
+      )
+    }
+  )
+  vi.mocked(useAssetDownloadStore().trackDownload).mockImplementation(
+    mockTrackDownload
+  )
+  vi.mocked(useModelToNodeStore().getAllNodeProviders).mockImplementation(
+    mockGetAllNodeProviders
+  )
+})
 
 describe('useMissingModelInteractions', () => {
   const mountedApps: App<Element>[] = []
@@ -120,10 +129,8 @@ describe('useMissingModelInteractions', () => {
   }
 
   beforeEach(() => {
-    mockDownloadList.mockImplementation(
-      (): Array<{ taskId: string; status: string }> => []
-    )
-    ;(app as { rootGraph: unknown }).rootGraph = null
+    mockDownloadList.mockReturnValue([])
+    ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined = undefined
   })
 
   afterEach(() => {
@@ -153,15 +160,17 @@ describe('useMissingModelInteractions', () => {
   })
 
   describe('getNodeDisplayLabel', () => {
-    it('returns fallback when graph is null', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = null
+    it('returns fallback when graph is not ready', () => {
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined =
+        undefined
       expect(getNodeDisplayLabel('1', 'Node #1')).toBe('Node #1')
     })
 
     it('calls resolveNodeDisplayName when graph is available', () => {
       const mockGraph = {}
       const mockNode = { id: 1 }
-      ;(app as { rootGraph: unknown }).rootGraph = mockGraph
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined =
+        mockGraph
       mockGetNodeByExecutionId.mockReturnValue(mockNode)
       mockResolveNodeDisplayName.mockReturnValue('My Checkpoint')
 
@@ -197,7 +206,8 @@ describe('useMissingModelInteractions', () => {
   describe('confirmLibrarySelect', () => {
     it('updates widget values on referencing nodes and removes missing model', () => {
       const mockGraph = {}
-      ;(app as { rootGraph: unknown }).rootGraph = mockGraph
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined =
+        mockGraph
 
       const widget1 = { name: 'ckpt_name', value: 'old_model.safetensors' }
       const widget2 = { name: 'ckpt_name', value: 'old_model.safetensors' }
@@ -244,7 +254,7 @@ describe('useMissingModelInteractions', () => {
     })
 
     it('does nothing when no selection exists', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = {}
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined = {}
       const store = useMissingModelStore()
       const removeSpy = vi.spyOn(store, 'removeMissingModelByNameOnNodes')
 
@@ -255,7 +265,8 @@ describe('useMissingModelInteractions', () => {
     })
 
     it('does nothing when graph is null', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = null
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined =
+        undefined
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'new.safetensors'
       const removeSpy = vi.spyOn(store, 'removeMissingModelByNameOnNodes')
@@ -267,10 +278,10 @@ describe('useMissingModelInteractions', () => {
     })
 
     it('refreshes model cache when directory is provided', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = {}
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined = {}
       mockGetNodeByExecutionId.mockReturnValue(null)
       mockGetAllNodeProviders.mockReturnValue([
-        { nodeDef: { name: 'CheckpointLoaderSimple' } }
+        fromPartial({ nodeDef: { name: 'CheckpointLoaderSimple' } })
       ])
 
       const store = useMissingModelStore()

@@ -1,11 +1,6 @@
 <template>
   <div class="flex w-full justify-end gap-2 px-4 py-2">
-    <Button
-      variant="textonly"
-      size="md"
-      class="text-muted-foreground"
-      @click="handleCancel"
-    >
+    <Button variant="muted-textonly" size="md" @click="handleCancel">
       {{ $t('g.cancel') }}
     </Button>
     <Button
@@ -41,8 +36,8 @@ import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
-import { DIALOG_KEY } from '@/composables/useEditKeybindingDialog'
+import type { EditKeybindingDialogState } from '@/components/dialog/content/setting/keybinding/editKeybindingDialogState'
+import { EDIT_KEYBINDING_DIALOG_KEY } from '@/components/dialog/content/setting/keybinding/editKeybindingDialogState'
 
 const { dialogState, existingKeybindingOnCombo } = defineProps<{
   dialogState: Reactive<EditKeybindingDialogState>
@@ -54,7 +49,7 @@ const keybindingService = useKeybindingService()
 const dialogStore = useDialogStore()
 
 function handleCancel() {
-  dialogStore.closeDialog({ key: DIALOG_KEY })
+  dialogStore.closeDialog({ key: EDIT_KEYBINDING_DIALOG_KEY })
 }
 
 async function handleSave() {
@@ -62,7 +57,7 @@ async function handleSave() {
   const commandId = dialogState.commandId
   if (!combo || !commandId) return
 
-  dialogStore.closeDialog({ key: DIALOG_KEY })
+  dialogStore.closeDialog({ key: EDIT_KEYBINDING_DIALOG_KEY })
 
   if (dialogState.mode === 'add') {
     keybindingStore.addUserKeybinding(new KeybindingImpl({ commandId, combo }))

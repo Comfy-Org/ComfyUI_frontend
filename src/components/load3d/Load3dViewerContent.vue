@@ -1,8 +1,7 @@
 <template>
   <div
     ref="viewerContentRef"
-    class="flex w-full"
-    :class="[maximized ? 'h-full' : 'h-[70vh]']"
+    class="flex size-full"
     @mouseenter="viewer.handleMouseEnter"
     @mouseleave="viewer.handleMouseLeave"
   >
@@ -128,7 +127,6 @@ const props = defineProps<{
 
 const viewerContentRef = ref<HTMLDivElement>()
 const containerRef = ref<HTMLDivElement>()
-const maximized = ref(false)
 const mutationObserver = ref<MutationObserver | null>(null)
 
 const isStandaloneMode = !props.node && props.modelUrl
@@ -165,10 +163,6 @@ onMounted(async () => {
           mutation.type === 'attributes' &&
           mutation.attributeName === 'maximized'
         ) {
-          maximized.value =
-            (mutation.target as HTMLElement).getAttribute('maximized') ===
-            'true'
-
           setTimeout(() => {
             viewer.refreshViewport()
           }, 0)
@@ -203,20 +197,3 @@ onBeforeUnmount(() => {
   // we will manually cleanup the viewer in dialog close handler
 })
 </script>
-
-<style scoped>
-:deep(.p-panel-content) {
-  padding: 0;
-}
-
-:deep(.p-slider) {
-  height: 6px;
-}
-
-:deep(.p-slider-handle) {
-  width: 14px;
-  height: 14px;
-  margin-top: -4px;
-  margin-left: -7px;
-}
-</style>

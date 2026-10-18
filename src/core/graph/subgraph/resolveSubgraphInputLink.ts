@@ -1,5 +1,5 @@
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 
 type SubgraphInputLinkContext = {
   inputNode: LGraphNode
@@ -25,12 +25,8 @@ export function resolveSubgraphInputLink<TResult>(
     const link = node.subgraph.getLink(linkId)
     if (!link) continue
 
-    const { inputNode } = link.resolve(node.subgraph)
-    if (!inputNode) continue
-    if (!Array.isArray(inputNode.inputs)) continue
-
-    const targetInput = inputNode.inputs.find((entry) => entry.link === linkId)
-    if (!targetInput) continue
+    const { inputNode, input: targetInput } = link.resolve(node.subgraph)
+    if (!inputNode || !targetInput) continue
 
     let cachedTargetWidget:
       | ReturnType<LGraphNode['getWidgetFromSlot']>

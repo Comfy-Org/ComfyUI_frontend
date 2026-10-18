@@ -1,22 +1,33 @@
+import type {
+  LinkConnector,
+  Subgraph,
+  SubgraphInput,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
+import { toSelectableKey } from '@/core/selection/selectionState'
+import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
   DefaultConnectionColors,
-  Hoverable,
-  INodeInputSlot,
-  INodeOutputSlot,
   Point,
-  Positionable
+  Positionable,
+  CanvasColour
 } from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
-  CanvasColour,
-  CanvasPointer,
-  CanvasPointerEvent,
-  IContextMenuValue
-} from '@/lib/litegraph/src/litegraph'
+  Hoverable,
+  CanvasPointerEvent
+} from '@/lib/litegraph/src/types/events'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@/lib/litegraph/src/types/globalEnums'
 import type {
@@ -26,9 +37,6 @@ import type {
 
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'
-import type { Subgraph } from './Subgraph'
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutput } from './SubgraphOutput'
 
 export abstract class SubgraphIONodeBase<
   TSlot extends SubgraphInput | SubgraphOutput
@@ -47,7 +55,21 @@ export abstract class SubgraphIONodeBase<
     return this._boundingRect
   }
 
-  selected: boolean = false
+  get selected(): boolean {
+    return isSelectedIn(
+      graphScopeOf(this.subgraph),
+      toSelectableKey('io', this.id)
+    )
+  }
+
+  set selected(value: boolean) {
+    setSelectedIn(
+      graphScopeOf(this.subgraph),
+      toSelectableKey('io', this.id),
+      value
+    )
+  }
+
   pinned: boolean = false
   readonly removable = false
 
@@ -88,13 +110,19 @@ export abstract class SubgraphIONodeBase<
   ) {}
 
   move(deltaX: number, deltaY: number): void {
-    this.pos[0] += deltaX
-    this.pos[1] += deltaY
+    this.pos = [this.pos[0] + deltaX, this.pos[1] + deltaY]
   }
 
   /** @inheritdoc */
   snapToGrid(snapTo: number): boolean {
-    return this.pinned ? false : snapPoint(this.pos, snapTo)
+    if (this.pinned || !snapTo) return false
+
+    const snapped: Point = [this.pos[0], this.pos[1]]
+    snapPoint(snapped, snapTo)
+    if (snapped[0] === this.pos[0] && snapped[1] === this.pos[1]) return false
+
+    this.pos = snapped
+    return true
   }
 
   abstract onPointerDown(
@@ -292,7 +320,6 @@ export abstract class SubgraphIONodeBase<
     const { minWidth, roundedRadius } = SubgraphIONodeBase
     const [, y] = this.boundingRect
     const x = this.slotAnchorX
-    const { size } = this
 
     let maxWidth = minWidth
     let currentY = y + roundedRadius
@@ -305,8 +332,7 @@ export abstract class SubgraphIONodeBase<
       if (slotWidth > maxWidth) maxWidth = slotWidth
     }
 
-    size[0] = maxWidth + 2 * roundedRadius
-    size[1] = currentY - y + roundedRadius
+    this.size = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
   }
 
   draw(
@@ -374,4 +400,12 @@ export abstract class SubgraphIONodeBase<
       pinned: this.pinned ? true : undefined
     }
   }
+}
+
+type RegisteredSubgraphIONode = SubgraphIONodeBase<
+  SubgraphInput | SubgraphOutput
+>
+
+declare module '../types/entityRegistry' {
+  interface SubgraphIONode extends RegisteredSubgraphIONode {}
 }

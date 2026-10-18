@@ -45,7 +45,7 @@
       <div
         class="flex h-4 flex-col items-center justify-between self-stretch p-2"
       >
-        <div class="w-full border-b border-interface-menu-stroke" />
+        <div class="w-full border-b" />
       </div>
     </div>
 
@@ -103,7 +103,7 @@
         <article
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
-          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
+          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-accent"
           :data-testid="`help-release-item-${release.version}`"
           role="button"
           tabindex="0"
@@ -154,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -168,9 +168,11 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { getErrorMessage } from '@/utils/errorUtil'
 import { electronAPI } from '@/utils/envUtil'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerService } from '@/workbench/extensions/manager/services/comfyManagerService'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -232,6 +234,7 @@ const hasReleases = computed(() => releaseStore.releases.length > 0)
 const showVersionUpdates = computed(() =>
   settingStore.get('Comfy.Notification.ShowVersionUpdates')
 )
+const isDevMode = computed(() => settingStore.get('Comfy.DevMode'))
 
 // Use conflict acknowledgment state from composable
 const { shouldShowRedDot: shouldShowManagerRedDot } =
@@ -280,6 +283,16 @@ const moreItems = computed<MenuItem[]>(() => {
         onReinstall()
         emit('close')
       }
+    },
+    {
+      key: 'replay-onboarding',
+      type: 'item',
+      label: t('commands.Comfy_Onboarding_Replay.label'),
+      visible: isDevMode.value,
+      action: () => {
+        void commandStore.execute('Comfy.Onboarding.Replay')
+        emit('close')
+      }
     }
   ]
 
@@ -300,7 +313,7 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       key: 'feedback',
       type: 'item',
-      icon: 'icon-[lucide--clipboard-pen]',
+      icon: 'icon-[lucide--megaphone] size-4',
       label: t('helpCenter.feedback'),
       showExternalIcon: isCloud || isNightly,
       action: () => {
@@ -393,7 +406,7 @@ const menuItems = computed<MenuItem[]>(() => {
       showRedDot: shouldShowManagerRedDot.value,
       action: async () => {
         trackResourceClick('manager', false)
-        await useManagerState().openManager({
+        await useManagerDialog().openManager({
           initialTab: ManagerTab.All,
           showToastOnLegacyError: false
         })
@@ -592,40 +605,34 @@ const onReinstall = (): void => {
 }
 
 const onUpdateComfyUI = async (): Promise<void> => {
-  const { updateComfyUI, rebootComfyUI, error } = useComfyManagerService()
+  const { updateComfyUI, startQueue, rebootComfyUI, error } =
+    useComfyManagerService()
 
-  toast.add({
-    severity: 'info',
-    summary: t('helpCenter.updateComfyUIStarted'),
-    detail: t('helpCenter.updateComfyUIStartedDetail'),
-    life: 3000
+  toast.info(t('helpCenter.updateComfyUIStarted'), {
+    description: t('helpCenter.updateComfyUIStartedDetail'),
+    duration: 3000
   })
 
   try {
     const result = await updateComfyUI({ is_stable: true })
+    if (result !== null) await startQueue()
 
     if (result === null || error.value) {
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: error.value || t('helpCenter.updateComfyUIFailed')
+      toast.error(t('g.error'), {
+        description: error.value || t('helpCenter.updateComfyUIFailed')
       })
       return
     }
 
-    toast.add({
-      severity: 'success',
-      summary: t('helpCenter.updateComfyUISuccess'),
-      detail: t('helpCenter.updateComfyUISuccessDetail'),
-      life: 3000
+    toast.success(t('helpCenter.updateComfyUISuccess'), {
+      description: t('helpCenter.updateComfyUISuccessDetail'),
+      duration: 3000
     })
 
     await rebootComfyUI()
   } catch (err) {
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: err instanceof Error ? err.message : t('g.unknownError')
+    toast.error(t('g.error'), {
+      description: getErrorMessage(err) ?? t('g.unknownError')
     })
   }
 }
@@ -658,10 +665,10 @@ onBeforeUnmount(() => {
   width: 256px;
   max-height: 500px;
   overflow-y: auto;
-  background: var(--interface-menu-surface);
+  background: var(--popover);
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
-  border: 1px solid var(--interface-menu-stroke);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
   padding: 12px 8px;
   position: relative;
 }
@@ -680,12 +687,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: background-color 0.2s;
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: var(--foreground);
   text-align: left;
 }
 
 .help-menu-item:hover {
-  background-color: var(--interface-menu-component-surface-hovered);
+  background-color: var(--accent);
 }
 
 .help-menu-item:focus,
@@ -705,7 +712,7 @@ onBeforeUnmount(() => {
   width: 16px;
   height: 16px;
   font-size: 16px;
-  color: var(--text-primary);
+  color: var(--foreground);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -715,7 +722,7 @@ onBeforeUnmount(() => {
 .help-menu-icon svg {
   width: 16px;
   height: 16px;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .menu-red-dot {
@@ -724,9 +731,9 @@ onBeforeUnmount(() => {
   right: -2px;
   width: 8px;
   height: 8px;
-  background: #ff3b30;
+  background: var(--destructive);
   border-radius: 50%;
-  border: 1.5px solid var(--p-content-background);
+  border: 1.5px solid var(--background);
   z-index: 1;
 }
 
@@ -739,7 +746,7 @@ onBeforeUnmount(() => {
 }
 
 .section-description {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
@@ -766,12 +773,12 @@ onBeforeUnmount(() => {
   font-size: 0.9rem;
   line-height: 1.2;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .release-date {
   height: 16px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
@@ -802,10 +809,10 @@ onBeforeUnmount(() => {
 .more-submenu {
   width: 210px;
   padding: 12px 8px;
-  background: var(--interface-menu-surface);
+  background: var(--popover);
   border-radius: 8px;
-  border: 1px solid var(--interface-menu-stroke);
-  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: opacity 0.15s ease-out;
 }
@@ -815,14 +822,14 @@ onBeforeUnmount(() => {
   height: 32px;
   min-height: 24px;
   border-radius: 4px;
-  color: var(--text-primary);
+  color: var(--foreground);
   font-size: 0.9rem;
   font-weight: inherit;
   line-height: inherit;
 }
 
 .submenu-item:hover {
-  background-color: var(--interface-menu-component-surface-hovered);
+  background-color: var(--accent);
 }
 
 .submenu-item:focus,
@@ -833,7 +840,7 @@ onBeforeUnmount(() => {
 
 .submenu-divider {
   height: 1px;
-  background: var(--interface-menu-stroke);
+  background: var(--border);
   margin: 4px 0;
 }
 
@@ -847,12 +854,12 @@ onBeforeUnmount(() => {
 }
 
 .help-center-menu::-webkit-scrollbar-thumb {
-  background: var(--interface-menu-stroke);
+  background: var(--border);
   border-radius: 3px;
 }
 
 .help-center-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--muted-foreground);
 }
 
 /* Reduced Motion */

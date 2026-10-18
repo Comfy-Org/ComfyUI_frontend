@@ -123,7 +123,7 @@ export function formatNumberWithSuffix(
   return `${formattedNum}${suffixes[exp]}`
 }
 
-export function formatSize(value?: number) {
+export function formatSize(value?: number | null) {
   if (value === null || value === undefined) {
     return '-'
   }
@@ -342,7 +342,7 @@ export function parseFilePath(filepath: string): {
   filename: string
   subfolder: string
 } {
-  if (!filepath?.trim()) return { filename: '', subfolder: '' }
+  if (!filepath.trim()) return { filename: '', subfolder: '' }
 
   const normalizedPath = normalizeFilePathSeparators(filepath)
     .replace(/^\//, '') // Remove leading slash
@@ -402,6 +402,13 @@ export const paramsToCacheKey = (params: unknown): string => {
 
   return String(params)
 }
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Accepts canonical UUIDs of any version or variant for legacy compatibility. */
+export const isValidUuid = (value: unknown): value is string =>
+  typeof value === 'string' && UUID_PATTERN.test(value)
 
 /**
  * Generates a RFC4122 compliant UUID v4 using the native crypto API when available
@@ -531,7 +538,7 @@ export function usdToMicros(usd: number): number {
  * @param text - The string to convert
  * @returns The string with URLs converted to HTML links
  * @example
- * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">https://example.com</a> for more info'
+ * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">https://example.com</a> for more info'
  */
 export function linkifyHtml(text: string): string {
   if (!text) return ''
@@ -540,7 +547,7 @@ export function linkifyHtml(text: string): string {
   return text.replace(urlRegex, (_match, p1, _p2, p3) => {
     const url = p1 || p3
     const href = p3 ? `http://${url}` : url
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">${url}</a>`
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">${url}</a>`
   })
 }
 
@@ -635,7 +642,7 @@ const IMAGE_EXTENSIONS = [
   'svg'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
-const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus'] as const
+const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus', 'm4a'] as const
 const THREE_D_EXTENSIONS = [
   'obj',
   'fbx',
@@ -665,7 +672,7 @@ export type MediaType = (typeof MEDIA_TYPES)[number]
 
 // Type guard helper for checking array membership
 type ImageExtension = (typeof IMAGE_EXTENSIONS)[number]
-type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
+export type VideoExtension = (typeof VIDEO_EXTENSIONS)[number]
 type AudioExtension = (typeof AUDIO_EXTENSIONS)[number]
 type ThreeDExtension = (typeof THREE_D_EXTENSIONS)[number]
 type TextExtension = (typeof TEXT_EXTENSIONS)[number]

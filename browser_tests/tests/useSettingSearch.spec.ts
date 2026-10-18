@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**
@@ -10,9 +10,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
  */
 type TestSettingId = keyof Settings
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Settings Search functionality', { tag: '@settings' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -93,9 +91,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     if (categoryCount > 1) {
       await dialog.categories.nth(1).click()
 
-      await expect(dialog.categories.nth(1)).toHaveClass(
-        /bg-interface-menu-component-surface-selected/
-      )
+      await expect(dialog.categories.nth(1)).toHaveClass(/bg-muted/)
     }
   })
 

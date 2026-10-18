@@ -1,16 +1,21 @@
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
-} from '../templates/model-launch/types'
+} from '@/templates/model-launch/types'
 
-import { externalLinks } from '../config/routes'
+import { externalLinks } from '@/config/routes'
 
 // Reference-to-video is the workflow people reach for first (Zhixiong), so every
 // "run Seedance" CTA opens that one on Cloud. The free-draft CTA in the steps
 // section points at Wan 2.2 instead, which is open source and costs nothing.
 const seedanceLinks = {
   cloudRun: 'https://cloud.comfy.org/?template=api_seedance2_5_r2v',
-  freeDraft: 'https://cloud.comfy.org/?template=video_wan2_2_14B_t2v'
+  freeDraft: 'https://cloud.comfy.org/?template=video_wan2_2_14B_t2v',
+  // The hub's Seedance family page, which lists the shipped 2.5 workflows
+  // (text to video, reference to video, first-last frame and the rest). The
+  // "try workflows" CTA pointed at the hub root, which makes the reader find
+  // them, the same fix /ltx-2.5 already carries.
+  hubModel: new URL('model/seedance/', externalLinks.workflows).href
 } as const
 
 // Seedance 2.5 renders, encoded to the site's web video profile (VP9 webm,
@@ -196,7 +201,7 @@ export const seedancePage: ModelLaunchPage = {
     },
     secondaryCta: {
       labelKey: 'seedance.hero.secondaryCta',
-      href: externalLinks.workflows,
+      href: seedanceLinks.hubModel,
       target: '_blank'
     }
   },

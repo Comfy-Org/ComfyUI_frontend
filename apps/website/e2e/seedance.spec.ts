@@ -1,28 +1,31 @@
 import { expect } from '@playwright/test'
 
-import { externalLinks, getRoutes } from '../src/config/routes'
-import { creatorReviews } from '../src/data/creatorReviews'
-import { seedancePage } from '../src/data/seedance'
-import { t } from '../src/i18n/translations'
-import type { ModelLaunchCta } from '../src/templates/model-launch/types'
+import { getRoutes } from '@/config/routes'
+import { creatorReviews } from '@/data/creatorReviews'
+import { seedancePage } from '@/data/seedance'
+import { t } from '@/i18n/translations'
+import type { ModelLaunchCta } from '@/templates/model-launch/types'
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 
 const PATH = '/seedance-2.5'
-const HERO_TITLE = t('seedance.hero.title', 'en')
-const MODELS_HEADING = t('seedance.models.heading', 'en')
-const MODELS_ROUTE = getRoutes('en').models
-const STEPS_HEADING = t('seedance.steps.heading', 'en')
-const STEPS_SECONDARY = t('seedance.steps.secondaryCta', 'en')
-const STEPS_PRIMARY = t('seedance.steps.primaryCta', 'en')
+const HERO_TITLE = t('seedance.hero.title', {}, { locale: 'en' })
+const MODELS_HEADING = t('seedance.models.heading', {}, { locale: 'en' })
+const MODELS_ROUTE = getRoutes('en').workshop
+const STEPS_HEADING = t('seedance.steps.heading', {}, { locale: 'en' })
+const STEPS_SECONDARY = t('seedance.steps.secondaryCta', {}, { locale: 'en' })
+const STEPS_PRIMARY = t('seedance.steps.primaryCta', {}, { locale: 'en' })
 const HERO_PRIMARY_CTA: ModelLaunchCta | undefined =
   seedancePage.hero.primaryCta
 if (!HERO_PRIMARY_CTA)
   throw new Error('seedancePage must configure a hero primary CTA')
 const SEEDANCE_RUN: string = HERO_PRIMARY_CTA.href
-const CLOUD_WORKFLOWS_HUB = externalLinks.workflows
-const PROMPT_CTA = t('seedance.hero.promptCta', 'en')
-const COPY_PROMPT = t('modelLaunch.copyPrompt', 'en')
+// The hub's Seedance family page, which lists the shipped 2.5 workflows. The
+// CTA used to open the hub root, leaving the reader to find the model they had
+// just read about.
+const SEEDANCE_HUB_PAGE: string = seedancePage.hero.secondaryCta?.href ?? ''
+const PROMPT_CTA = t('seedance.hero.promptCta', {}, { locale: 'en' })
+const COPY_PROMPT = t('modelLaunch.copyPrompt', {}, { locale: 'en' })
 // `faq` is optional on the template (Wan Animate 2 ships without one), but
 // this page must have it, so fail loudly rather than silently testing nothing.
 const FAQ_SECTION = seedancePage.faq
@@ -30,8 +33,8 @@ if (!FAQ_SECTION) throw new Error('seedancePage must configure a FAQ section')
 const FAQS = FAQ_SECTION.items
 const FAQ_COUNT = FAQS.length
 const FIRST_FAQ = FAQS[0]
-const REVIEWS_HEADING = t('seedance.reviews.heading', 'en')
-const HIGHLIGHT_CTA = t('seedance.reviews.highlightCta', 'en')
+const REVIEWS_HEADING = t('seedance.reviews.heading', {}, { locale: 'en' })
+const HIGHLIGHT_CTA = t('seedance.reviews.highlightCta', {}, { locale: 'en' })
 const MCP_ROUTE = getRoutes('en').mcp
 const FIRST_REVIEW = creatorReviews[0]
 
@@ -77,8 +80,12 @@ test.describe('Seedance 2.5 page — link targets', () => {
 
   test('breadcrumb trail links to the models catalog', async ({ page }) => {
     const modelsCrumb = page
-      .getByRole('navigation', { name: t('ui.breadcrumb', 'en') })
-      .getByRole('link', { name: t('models.breadcrumb.models', 'en') })
+      .getByRole('navigation', {
+        name: t('ui.breadcrumb', {}, { locale: 'en' })
+      })
+      .getByRole('link', {
+        name: t('workshop.model.breadcrumb', {}, { locale: 'en' })
+      })
     await expect(modelsCrumb).toHaveAttribute('href', MODELS_ROUTE)
   })
 
@@ -106,17 +113,28 @@ test.describe('Seedance 2.5 page — link targets', () => {
     await expect(primary).toHaveAttribute('href', /video_wan2_2/)
   })
 
-  test('the hero run CTA opens the same Cloud workflow', async ({ page }) => {
+  test('the hero CTAs open Cloud to run and the hub to browse', async ({
+    page
+  }) => {
     const hero = page.locator('section').filter({
       has: page.getByRole('heading', { level: 1, name: HERO_TITLE })
     })
     await expect(
-      hero.getByRole('link', { name: t('seedance.hero.primaryCta', 'en') })
+      hero.getByRole('link', {
+        name: t('seedance.hero.primaryCta', {}, { locale: 'en' })
+      })
     ).toHaveAttribute('href', SEEDANCE_RUN)
 
     await expect(
-      hero.getByRole('link', { name: t('seedance.hero.secondaryCta', 'en') })
-    ).toHaveAttribute('href', CLOUD_WORKFLOWS_HUB)
+      hero.getByRole('link', {
+        name: t('seedance.hero.secondaryCta', {}, { locale: 'en' })
+      })
+    ).toHaveAttribute('href', SEEDANCE_HUB_PAGE)
+    await expect(
+      hero.getByRole('link', {
+        name: t('seedance.hero.secondaryCta', {}, { locale: 'en' })
+      })
+    ).toHaveAttribute('href', /\/workflows\/model\/seedance\/$/)
   })
 
   test('renders one step card per configured step', async ({ page }) => {
@@ -191,10 +209,8 @@ test.describe('Seedance 2.5 page — interactions', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) =>
-        (s.textContent ?? '').includes('FAQPage')
-      )
-      return match?.textContent ?? null
+      const match = scripts.find((s) => s.text.includes('FAQPage'))
+      return match?.text ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {

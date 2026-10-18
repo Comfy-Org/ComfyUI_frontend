@@ -37,7 +37,7 @@ export async function hasCanvasContent(canvas: Locator): Promise<boolean> {
 export async function triggerSerialization(page: Page): Promise<void> {
   await page.waitForFunction(() => {
     const graph = window.graph as TestGraphAccess | undefined
-    const node = graph?._nodes_by_id?.['1']
+    const node = graph?._nodes_by_id['1']
     const widget = node?.widgets?.find((w) => w.name === 'mask')
     return typeof widget?.serializeValue === 'function'
   })
@@ -50,7 +50,7 @@ export async function triggerSerialization(page: Page): Promise<void> {
       )
     }
 
-    const node = graph._nodes_by_id?.['1']
+    const node = graph._nodes_by_id['1']
     if (!node) {
       throw new Error(
         'Target node with ID "1" not found in graph._nodes_by_id.'

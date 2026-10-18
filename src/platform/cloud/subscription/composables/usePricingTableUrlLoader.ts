@@ -9,7 +9,8 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.PRICING
@@ -51,7 +52,7 @@ function getTeamCheckoutRequest(
   return { stop, billingCycle: cycle }
 }
 
-function getCheckoutSelection(
+export function getPricingCheckoutSelection(
   pricing: string,
   stop: unknown,
   cycle: unknown,
@@ -103,7 +104,8 @@ export function usePricingTableUrlLoader() {
   const router = useRouter()
   const subscriptionDialog = useSubscriptionDialog()
   const { teamCreditStops, fetchPlans } = useBillingContext()
-  const { permissions } = useWorkspaceUI()
+  const { permissions, canOpenPricingSurface } = useWorkspaceUI()
+  const { initialize: initializeCapabilities } = useBillingCapabilities()
 
   /** Reads `?pricing=`, strips it, and opens the table when the gate allows. */
   async function loadPricingTableFromUrl() {
@@ -119,9 +121,6 @@ export function usePricingTableUrlLoader() {
       return
     }
 
-    // Strip any present pricing param (even ineligible or malformed values) and
-    // write the clean URL in a single replace before any await, so a clean URL
-    // is guaranteed even if the replace rejects or the gate later denies.
     const cleanQuery = { ...query }
     delete cleanQuery.pricing
     delete cleanQuery.stop
@@ -134,11 +133,11 @@ export function usePricingTableUrlLoader() {
     })
     clearPreservedQuery(NAMESPACE)
 
-    // Only a non-empty string value opens the table; an empty/array param just
-    // gets stripped above.
     if (typeof param !== 'string' || !param) return
 
+    await initializeCapabilities()
     if (!permissions.value.canManageSubscription) return
+    if (!canOpenPricingSurface.value) return
 
     const teamCheckoutRequest = getTeamCheckoutRequest(
       param,
@@ -154,8 +153,12 @@ export function usePricingTableUrlLoader() {
           error
         )
       }
-      if (!permissions.value.canManageSubscription) return
-      if (!teamCreditStops.value) {
+
+      const canManageSubscription: unknown =
+        permissions.value.canManageSubscription
+      if (canManageSubscription !== true) return
+      const availableTeamCreditStops: unknown = teamCreditStops.value
+      if (!availableTeamCreditStops) {
         subscriptionDialog.showPricingTable({
           reason: 'deep_link',
           planMode: 'team'
@@ -164,7 +167,7 @@ export function usePricingTableUrlLoader() {
       }
     }
 
-    const initialCheckout = getCheckoutSelection(
+    const initialCheckout = getPricingCheckoutSelection(
       param,
       query.stop,
       query.cycle,
@@ -192,7 +195,9 @@ export function usePricingTableUrlLoader() {
         : undefined
 
     if (!initialCheckout && !['1', 'team', 'personal'].includes(param)) return
-    if (!permissions.value.canManageSubscription) return
+    const canManageSubscription: unknown =
+      permissions.value.canManageSubscription
+    if (canManageSubscription !== true) return
 
     subscriptionDialog.showPricingTable({
       reason: 'deep_link',

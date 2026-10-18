@@ -9,8 +9,8 @@
         'flex cursor-pointer flex-col overflow-hidden rounded-lg p-2 transition-colors duration-200',
         'group gap-2 select-none',
         selected
-          ? 'ring-3 ring-modal-card-border-highlighted ring-inset'
-          : 'hover:bg-modal-card-background-hovered/20'
+          ? 'ring-3 ring-muted-foreground ring-inset'
+          : 'hover:bg-accent/20'
       )
     "
     :data-selected="selected"
@@ -22,15 +22,12 @@
   >
     <!-- Top Area: Media Preview -->
     <div
-      class="relative aspect-square overflow-hidden p-0"
+      class="relative aspect-square overflow-hidden"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="fileKind === 'image' && handleZoomClick()"
+      @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
     >
       <!-- Loading State -->
-      <div
-        v-if="loading"
-        class="size-full animate-pulse rounded-lg bg-modal-card-placeholder-background"
-      />
+      <div v-if="loading" class="size-full animate-pulse rounded-lg bg-muted" />
 
       <!-- Content based on asset type -->
       <component
@@ -43,8 +40,6 @@
         "
         class="absolute inset-0"
         @download="handleDownload"
-        @video-playing-state-changed="isVideoPlaying = $event"
-        @video-controls-changed="showVideoControls = $event"
         @image-loaded="handleImageLoaded"
       />
 
@@ -121,16 +116,10 @@
       <!-- Loading State -->
       <div v-if="loading" class="flex items-start justify-between">
         <div class="flex flex-col gap-1">
-          <div
-            class="h-4 w-24 animate-pulse rounded-sm bg-modal-card-background"
-          />
-          <div
-            class="h-3 w-20 animate-pulse rounded-sm bg-modal-card-background"
-          />
+          <div class="h-4 w-24 animate-pulse rounded-sm bg-secondary" />
+          <div class="h-3 w-20 animate-pulse rounded-sm bg-secondary" />
         </div>
-        <div
-          class="h-6 w-12 animate-pulse rounded-sm bg-modal-card-background"
-        />
+        <div class="h-6 w-12 animate-pulse rounded-sm bg-secondary" />
       </div>
 
       <!-- Content -->
@@ -148,9 +137,7 @@
         </div>
         <div v-if="showOutputCount" class="shrink-0">
           <Button
-            v-tooltip.top.pt:pointer-events-none="
-              $t('mediaAsset.actions.seeMoreOutputs')
-            "
+            :tooltip="$t('mediaAsset.actions.seeMoreOutputs')"
             :aria-label="$t('mediaAsset.actions.seeMoreOutputs')"
             variant="secondary"
             @click.stop="handleOutputCountClick"
@@ -171,7 +158,6 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -180,9 +166,11 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
-import { getAssetUrl } from '../utils/assetUrlUtil'
+import { startAssetDrag } from '../utils/assetDragUtil'
+import { getAssetFileUrl, getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
@@ -190,7 +178,7 @@ import {
   resolveDisplayImageDimensions
 } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
+import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -243,9 +231,6 @@ const emit = defineEmits<{
   'context-menu': [event: MouseEvent, asset: AssetItem]
 }>()
 
-const isVideoPlaying = ref(false)
-const showVideoControls = ref(false)
-
 // Store actual image dimensions
 const imageDimensions = ref<{ width: number; height: number } | undefined>()
 
@@ -261,11 +246,16 @@ const fileKind = computed((): MediaKind => {
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
+const isHdr = computed(() => isHdrImageFilename(asset?.name))
+
 const previewKind = computed((): PreviewKind => {
+  if (asset?.preview_url && isHdr.value) return 'image'
   return getMediaTypeFromFilename(asset?.name || '')
 })
 
-const canInspect = computed(() => isPreviewableMediaType(fileKind.value))
+const canInspect = computed(
+  () => isPreviewableMediaType(fileKind.value) || isHdr.value
+)
 
 // Get filename without extension
 const fileName = computed(() => {
@@ -283,7 +273,11 @@ const adaptedAsset = computed(() => {
     src:
       fileKind.value === '3D'
         ? getAssetUrl(asset)
-        : asset.thumbnail_url || asset.preview_url || '',
+        : asset.thumbnail_url ||
+          asset.preview_url ||
+          (fileKind.value === 'video' || fileKind.value === 'audio'
+            ? getAssetFileUrl(asset, { disposition: 'inline' })
+            : ''),
     preview_url: asset.preview_url,
     preview_id: asset.preview_id,
     size: asset.size,
@@ -299,9 +293,7 @@ const adaptedAsset = computed(() => {
 
 provide(MediaAssetKey, {
   asset: toRef(() => adaptedAsset.value),
-  context: toRef(() => ({ type: assetType.value })),
-  isVideoPlaying,
-  showVideoControls
+  context: toRef(() => ({ type: assetType.value }))
 })
 
 const formattedDuration = computed(() => {
@@ -373,31 +365,6 @@ function handleDownload() {
 }
 
 function dragStart(e: DragEvent) {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault()
-    return
-  }
-
-  if (!asset?.preview_url) return
-
-  const { dataTransfer } = e
-  if (!dataTransfer) return
-
-  const { filename, subfolder, type, display_name } =
-    getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0] ?? {}
-  if (filename) {
-    const outputString = JSON.stringify({
-      filename,
-      subfolder,
-      type,
-      display_name
-    })
-    dataTransfer.items.add(outputString, MIME_ASSET_INFO)
-  }
-
-  const url = URL.parse(asset.preview_url, location.href)
-  if (!url) return
-
-  dataTransfer.items.add(url.toString(), 'text/uri-list')
+  startAssetDrag(e, asset)
 }
 </script>

@@ -49,6 +49,19 @@ test.describe('Onboarding coachmarks', { tag: '@ui' }, () => {
       await expect(coach.landing).toBeHidden()
       await expect.poll(() => coach.seen('appMode')).toBe(true)
     })
+
+    test('ends the tour when the viewport narrows below desktop size', async ({
+      comfyPage,
+      onboarding
+    }) => {
+      await comfyPage.appMode.enterAppModeWithInputs([])
+      await expect(onboarding.landing).toBeVisible()
+
+      await comfyPage.page.setViewportSize({ width: 500, height: 800 })
+
+      await expect(onboarding.landing).toBeHidden()
+      await expect.poll(() => onboarding.seen('appMode')).toBe(false)
+    })
   })
 
   test.describe('coach anchors', () => {

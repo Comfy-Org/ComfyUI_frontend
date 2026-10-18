@@ -1,8 +1,26 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import type { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-import { usePreviewExposureStore } from './previewExposureStore'
+import {
+  getPreviewExposureHostLocator,
+  usePreviewExposureStore
+} from './previewExposureStore'
+
+describe(getPreviewExposureHostLocator, () => {
+  it('encodes a delimiter-bearing host ID', () => {
+    const host = fromAny<SubgraphNode, unknown>({
+      graph: null,
+      id: toNodeId('invalid:id')
+    })
+
+    expect(getPreviewExposureHostLocator(host)).toBe('~root:invalid%3Aid')
+    expect(console.error).not.toHaveBeenCalled()
+  })
+})
 
 describe(usePreviewExposureStore, () => {
   let store: ReturnType<typeof usePreviewExposureStore>
@@ -164,6 +182,24 @@ describe(usePreviewExposureStore, () => {
       expect(store.getExposures(rootGraphA, hostA)).toEqual([])
       expect(store.getExposures(rootGraphA, hostB)).toEqual([])
       expect(store.getExposures(rootGraphB, hostInB)).toHaveLength(1)
+    })
+  })
+
+  describe('clearHost', () => {
+    it('removes only the target host', () => {
+      store.addExposure(rootGraphA, hostA, {
+        sourceNodeId: '1',
+        sourcePreviewName: 'p'
+      })
+      store.addExposure(rootGraphA, hostB, {
+        sourceNodeId: '2',
+        sourcePreviewName: 'p'
+      })
+
+      store.clearHost(rootGraphA, hostA)
+
+      expect(store.getExposures(rootGraphA, hostA)).toEqual([])
+      expect(store.getExposures(rootGraphA, hostB)).toHaveLength(1)
     })
   })
 

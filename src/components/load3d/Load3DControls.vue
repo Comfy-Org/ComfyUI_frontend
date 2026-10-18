@@ -1,6 +1,6 @@
 <template>
   <div
-    class="pointer-events-auto absolute top-12 left-2 z-20 flex flex-col rounded-lg bg-backdrop/30"
+    class="pointer-events-auto absolute top-12 left-2 z-20 flex flex-col rounded-lg bg-background/30"
     @pointerdown.stop
     @pointermove.stop
     @pointerup.stop
@@ -15,13 +15,13 @@
         class="rounded-full"
         @click="toggleMenu"
       >
-        <i class="icon-[lucide--menu] text-lg text-base-foreground" />
+        <i class="icon-[lucide--menu] text-lg text-foreground" />
       </Button>
 
       <div
         v-show="isMenuOpen"
         ref="menuPanelRef"
-        class="absolute top-0 left-12 rounded-lg bg-interface-menu-surface shadow-lg"
+        class="absolute top-0 left-12 rounded-lg bg-popover shadow-lg"
       >
         <div class="flex flex-col">
           <Button
@@ -31,13 +31,13 @@
             :class="
               cn(
                 'flex w-full items-center justify-start',
-                activeCategory === category && 'bg-button-active-surface'
+                activeCategory === category && 'bg-muted'
               )
             "
             @click="selectCategory(category)"
           >
             <i :class="getCategoryIcon(category)" />
-            <span class="whitespace-nowrap text-base-foreground">{{
+            <span class="whitespace-nowrap text-foreground">{{
               $t(categoryLabels[category])
             }}</span>
           </Button>
@@ -72,6 +72,8 @@
         v-if="showCameraControls"
         v-model:camera-type="cameraConfig!.cameraType"
         v-model:fov="cameraConfig!.fov"
+        v-model:use-custom-up="useCustomUp"
+        :has-custom-up="cameraConfig!.hasCustomUp"
       />
 
       <div v-if="showLightControls" class="flex flex-col">
@@ -152,6 +154,17 @@ const sceneConfig = defineModel<SceneConfig>('sceneConfig')
 const modelConfig = defineModel<ModelConfig>('modelConfig')
 const cameraConfig = defineModel<CameraConfig>('cameraConfig')
 const lightConfig = defineModel<LightConfig>('lightConfig')
+
+const useCustomUp = computed({
+  get: () =>
+    cameraConfig.value?.hasCustomUp === true && cameraConfig.value.useCustomUp,
+  set: (value: boolean) => {
+    const config = cameraConfig.value
+    if (config?.hasCustomUp) {
+      cameraConfig.value = { ...config, useCustomUp: value }
+    }
+  }
+})
 
 const isMenuOpen = ref(false)
 const menuPanelRef = ref<HTMLElement | null>(null)
@@ -239,7 +252,7 @@ const getCategoryIcon = (category: string) => {
     category in categoryIcons
       ? categoryIcons[category as keyof typeof categoryIcons]
       : 'icon-[lucide--circle]'
-  return cn(icon, 'text-lg text-base-foreground')
+  return cn(icon, 'text-lg text-foreground')
 }
 
 const emit = defineEmits<{

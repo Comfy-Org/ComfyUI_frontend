@@ -4,7 +4,7 @@ import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
 import MaskEditorContent from '@/components/maskeditor/MaskEditorContent.vue'
 
 export function useMaskEditor() {
-  const openMaskEditor = (node: LGraphNode) => {
+  const openMaskEditor = (node: LGraphNode | null) => {
     if (!node) {
       console.error('[MaskEditor] No node provided')
       return
@@ -23,14 +23,8 @@ export function useMaskEditor() {
         node
       },
       dialogComponentProps: {
-        renderer: 'reka',
+        flush: true,
         size: 'full',
-        // `mask-editor-dialog` is a styling-free hook class consumed by
-        // browser_tests (MaskEditorHelper, maskEditor.spec).
-        contentClass: 'mask-editor-dialog w-[90vw] h-[90vh] max-h-[90vh]',
-        headerClass: 'p-2',
-        bodyClass: 'flex min-h-0 flex-col p-0',
-        modal: true,
         maximizable: true,
         closable: true
       }

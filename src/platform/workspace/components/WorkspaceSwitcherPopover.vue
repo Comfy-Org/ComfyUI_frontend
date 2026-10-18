@@ -11,10 +11,10 @@
           :key="i"
           class="flex h-[54px] animate-pulse items-center gap-2 rounded-sm px-2 py-4"
         >
-          <div class="size-8 rounded-full bg-secondary-background" />
+          <div class="size-8 rounded-full bg-secondary" />
           <div class="flex flex-1 flex-col gap-1">
-            <div class="h-4 w-24 rounded-sm bg-secondary-background" />
-            <div class="h-3 w-16 rounded-sm bg-secondary-background" />
+            <div class="h-4 w-24 rounded-sm bg-secondary" />
+            <div class="h-3 w-16 rounded-sm bg-secondary" />
           </div>
         </div>
       </div>
@@ -22,35 +22,37 @@
       <!-- Workspace list -->
       <template v-else>
         <template v-for="workspace in availableWorkspaces" :key="workspace.id">
-          <div class="border-b border-border-default p-2">
+          <div class="border-b p-2">
             <div
               :class="
                 cn(
                   'group flex h-[54px] w-full items-center gap-2 rounded-sm px-2 py-4',
-                  'hover:bg-secondary-background-hover',
-                  isCurrentWorkspace(workspace) && 'bg-secondary-background'
+                  'hover:bg-accent',
+                  isCurrentWorkspace(workspace) && 'bg-secondary'
                 )
               "
             >
               <button
                 class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                :disabled="!isCloud && isSwitching"
                 @click="handleSelectWorkspace(workspace)"
               >
                 <WorkspaceProfilePic
                   class="size-8 shrink-0 text-sm"
                   :workspace-name="workspace.name"
+                  :subscription-tier="workspace.subscriptionTier"
                 />
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
                   <div class="flex max-w-full min-w-0 items-center gap-1.5">
                     <span
                       :title="workspace.name"
-                      class="min-w-0 truncate text-sm text-base-foreground"
+                      class="min-w-0 truncate text-sm text-foreground"
                     >
                       {{ workspace.name }}
                     </span>
                     <span
                       v-if="resolveTierLabel(workspace)"
-                      class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
+                      class="shrink-0 rounded-full bg-foreground px-1 py-0.5 text-2xs font-bold text-background uppercase"
                     >
                       {{ resolveTierLabel(workspace) }}
                     </span>
@@ -61,7 +63,7 @@
                 </div>
                 <i
                   v-if="isCurrentWorkspace(workspace)"
-                  class="pi pi-check shrink-0 text-sm text-base-foreground"
+                  class="pi pi-check shrink-0 text-sm text-foreground"
                 />
               </button>
             </div>
@@ -70,14 +72,29 @@
       </template>
     </div>
 
+    <div
+      v-if="!isCloud"
+      class="flex shrink-0 items-center gap-2 px-4 py-2 text-xs text-muted-foreground"
+    >
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <i class="pi pi-info-circle text-xs" />
+        </TooltipTrigger>
+        <TooltipContent side="left">{{
+          $t('workspaceSwitcher.scopeTooltip')
+        }}</TooltipContent>
+      </Tooltip>
+      <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
+    </div>
+
     <!-- Create workspace button -->
-    <div class="shrink-0 border-t border-border-default p-2">
+    <div v-if="isCloud" class="shrink-0 border-t p-2">
       <div
         :class="
           cn(
             'flex h-12 w-full items-center gap-2 rounded-sm p-2',
             canCreateWorkspace
-              ? 'cursor-pointer hover:bg-secondary-background-hover'
+              ? 'cursor-pointer hover:bg-accent'
               : 'cursor-default'
           )
         "
@@ -86,19 +103,23 @@
         <div
           :class="
             cn(
-              'flex size-8 items-center justify-center rounded-full bg-secondary-background',
+              'flex size-8 items-center justify-center rounded-full bg-secondary',
               !canCreateWorkspace && 'opacity-50'
             )
           "
         >
           <i class="pi pi-plus text-sm text-muted-foreground" />
         </div>
-        <div class="flex min-w-0 flex-1 flex-col">
-          <span v-if="canCreateWorkspace" class="text-sm text-muted-foreground">
+        <div class="flex min-w-0 flex-1 flex-col text-sm text-muted-foreground">
+          <span v-if="canCreateWorkspace">
             {{ $t('workspaceSwitcher.createWorkspace') }}
           </span>
-          <span v-else class="text-sm text-muted-foreground">
-            {{ $t('workspaceSwitcher.maxWorkspacesReached') }}
+          <span v-else>
+            {{
+              workspacesManagedByOrganization
+                ? $t('workspaceSwitcher.managedByOrganization')
+                : $t('workspaceSwitcher.maxWorkspacesReached')
+            }}
           </span>
         </div>
       </div>
@@ -111,8 +132,12 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isCloud } from '@/platform/distribution/types'
 import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import type {
@@ -151,8 +176,14 @@ const currentSubscriptionTierName = computed(() => {
 })
 
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceId, workspaces, canCreateWorkspace, isFetchingWorkspaces } =
-  storeToRefs(workspaceStore)
+const {
+  workspaceId,
+  workspaces,
+  canCreateWorkspace,
+  workspacesManagedByOrganization,
+  isFetchingWorkspaces,
+  isSwitching
+} = storeToRefs(workspaceStore)
 
 const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
   workspaces.value.map((w) => ({

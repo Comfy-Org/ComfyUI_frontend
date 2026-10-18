@@ -5,7 +5,6 @@
 
 type GlobalWithDefines = typeof globalThis & {
   __COMFYUI_FRONTEND_VERSION__: string
-  __SENTRY_ENABLED__: boolean
   __SENTRY_DSN__: string
   __ALGOLIA_APP_ID__: string
   __ALGOLIA_API_KEY__: string
@@ -20,7 +19,6 @@ const globalWithDefines = globalThis as GlobalWithDefines
 // Set default values for Playwright test environment
 globalWithDefines.__COMFYUI_FRONTEND_VERSION__ =
   process.env.npm_package_version || '1.0.0'
-globalWithDefines.__SENTRY_ENABLED__ = false
 globalWithDefines.__SENTRY_DSN__ = ''
 globalWithDefines.__ALGOLIA_APP_ID__ = ''
 globalWithDefines.__ALGOLIA_API_KEY__ = ''

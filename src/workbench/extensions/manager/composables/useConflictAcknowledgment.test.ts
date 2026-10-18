@@ -1,167 +1,150 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { beforeEach, describe, expect, it } from 'vitest'
+
+import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
+
+const STORAGE_CASES = [
+  ['Comfy.ConflictModalDismissed', 'modal_dismissed'],
+  ['Comfy.ConflictRedDotDismissed', 'red_dot_dismissed'],
+  ['Comfy.ConflictWarningBannerDismissed', 'warning_banner_dismissed']
+] as const
+
+function setHasConflicts() {
+  useConflictDetectionStore().setConflictedPackages([
+    {
+      package_id: 'conflicted-package',
+      package_name: 'Conflicted package',
+      has_conflict: true,
+      conflicts: [],
+      is_compatible: false
+    }
+  ])
+}
 
 describe('useConflictAcknowledgment', () => {
-  beforeEach(() => {
-    // Reset modules to ensure fresh state
-    vi.resetModules()
+  beforeEach(async () => {
+    localStorage.clear()
+    window.dispatchEvent(
+      new StorageEvent('storage', { key: null, storageArea: localStorage })
+    )
+    await nextTick()
   })
 
-  describe('initial state loading', () => {
-    it('should load empty state when localStorage is empty', async () => {
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { acknowledgmentState } = useConflictAcknowledgment()
+  it('loads default state', () => {
+    const { acknowledgmentState } = useConflictAcknowledgment()
+
+    expect(acknowledgmentState.value).toEqual({
+      modal_dismissed: false,
+      red_dot_dismissed: false,
+      warning_banner_dismissed: false
+    })
+  })
+
+  it('loads persisted state', () => {
+    const { acknowledgmentState } = useConflictAcknowledgment()
+
+    for (const [key, field] of STORAGE_CASES) {
+      localStorage.setItem(key, 'true')
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key,
+          newValue: 'true',
+          storageArea: localStorage
+        })
+      )
 
       expect(acknowledgmentState.value).toEqual({
-        modal_dismissed: false,
-        red_dot_dismissed: false,
-        warning_banner_dismissed: false
+        modal_dismissed: field === 'modal_dismissed',
+        red_dot_dismissed: field === 'red_dot_dismissed',
+        warning_banner_dismissed: field === 'warning_banner_dismissed'
       })
-    })
 
-    it('should load existing state from localStorage', async () => {
-      // Pre-populate localStorage with JSON values (as useStorage expects)
-      localStorage.setItem('Comfy.ConflictModalDismissed', JSON.stringify(true))
-      localStorage.setItem(
-        'Comfy.ConflictRedDotDismissed',
-        JSON.stringify(true)
+      localStorage.removeItem(key)
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key,
+          newValue: null,
+          storageArea: localStorage
+        })
       )
-      localStorage.setItem(
-        'Comfy.ConflictWarningBannerDismissed',
-        JSON.stringify(true)
-      )
-
-      // Need to import the module after localStorage is set
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { acknowledgmentState } = useConflictAcknowledgment()
-
-      expect(acknowledgmentState.value).toEqual({
-        modal_dismissed: true,
-        red_dot_dismissed: true,
-        warning_banner_dismissed: true
-      })
-    })
+    }
   })
 
-  describe('dismissal functions', () => {
-    it('should mark conflicts as seen with unified function', async () => {
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { markConflictsAsSeen, acknowledgmentState } =
-        useConflictAcknowledgment()
+  it('marks conflicts as seen across every surface and persists them', async () => {
+    setHasConflicts()
+    const {
+      acknowledgmentState,
+      markConflictsAsSeen,
+      shouldShowConflictModal,
+      shouldShowManagerBanner,
+      shouldShowRedDot
+    } = useConflictAcknowledgment()
 
-      markConflictsAsSeen()
+    expect(shouldShowConflictModal.value).toBe(true)
+    expect(shouldShowManagerBanner.value).toBe(true)
+    expect(shouldShowRedDot.value).toBe(true)
 
-      expect(acknowledgmentState.value.modal_dismissed).toBe(true)
+    markConflictsAsSeen()
+    await nextTick()
+
+    expect(acknowledgmentState.value).toEqual({
+      modal_dismissed: true,
+      red_dot_dismissed: true,
+      warning_banner_dismissed: true
     })
-
-    it('should dismiss red dot notification', async () => {
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { dismissRedDotNotification, acknowledgmentState } =
-        useConflictAcknowledgment()
-
-      dismissRedDotNotification()
-
-      expect(acknowledgmentState.value.red_dot_dismissed).toBe(true)
-    })
-
-    it('should dismiss warning banner', async () => {
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { dismissWarningBanner, acknowledgmentState } =
-        useConflictAcknowledgment()
-
-      dismissWarningBanner()
-
-      expect(acknowledgmentState.value.warning_banner_dismissed).toBe(true)
-    })
-
-    it('should mark all conflicts as seen', async () => {
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { markConflictsAsSeen, acknowledgmentState } =
-        useConflictAcknowledgment()
-
-      markConflictsAsSeen()
-
-      expect(acknowledgmentState.value.modal_dismissed).toBe(true)
-      expect(acknowledgmentState.value.red_dot_dismissed).toBe(true)
-      expect(acknowledgmentState.value.warning_banner_dismissed).toBe(true)
-    })
+    expect(shouldShowConflictModal.value).toBe(false)
+    expect(shouldShowManagerBanner.value).toBe(false)
+    expect(shouldShowRedDot.value).toBe(false)
+    expect(localStorage.getItem('Comfy.ConflictModalDismissed')).toBe('true')
+    expect(localStorage.getItem('Comfy.ConflictRedDotDismissed')).toBe('true')
+    expect(localStorage.getItem('Comfy.ConflictWarningBannerDismissed')).toBe(
+      'true'
+    )
   })
 
-  describe('computed properties', () => {
-    it('should calculate shouldShowConflictModal correctly', async () => {
-      // Need fresh module import to ensure clean state
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { shouldShowConflictModal, markConflictsAsSeen } =
-        useConflictAcknowledgment()
+  it('hides conflict indicators when there are no conflicts', () => {
+    const { shouldShowManagerBanner, shouldShowRedDot } =
+      useConflictAcknowledgment()
 
-      expect(shouldShowConflictModal.value).toBe(true)
-
-      markConflictsAsSeen()
-      expect(shouldShowConflictModal.value).toBe(false)
-    })
-
-    it('should calculate shouldShowRedDot correctly based on conflicts', async () => {
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { shouldShowRedDot, dismissRedDotNotification } =
-        useConflictAcknowledgment()
-
-      // Initially false because no conflicts exist
-      expect(shouldShowRedDot.value).toBe(false)
-
-      dismissRedDotNotification()
-      expect(shouldShowRedDot.value).toBe(false)
-    })
-
-    it('should calculate shouldShowManagerBanner correctly', async () => {
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { shouldShowManagerBanner, dismissWarningBanner } =
-        useConflictAcknowledgment()
-
-      // Initially false because no conflicts exist
-      expect(shouldShowManagerBanner.value).toBe(false)
-
-      dismissWarningBanner()
-      expect(shouldShowManagerBanner.value).toBe(false)
-    })
+    expect(shouldShowManagerBanner.value).toBe(false)
+    expect(shouldShowRedDot.value).toBe(false)
   })
 
-  describe('localStorage persistence', () => {
-    it('should persist to localStorage automatically', async () => {
-      // Need fresh module import to ensure clean state
-      vi.resetModules()
-      const { useConflictAcknowledgment } =
-        await import('@/workbench/extensions/manager/composables/useConflictAcknowledgment')
-      const { markConflictsAsSeen, dismissWarningBanner } =
-        useConflictAcknowledgment()
+  it('dismisses only the red dot when conflicts exist', () => {
+    setHasConflicts()
+    const {
+      dismissRedDotNotification,
+      shouldShowConflictModal,
+      shouldShowManagerBanner,
+      shouldShowRedDot
+    } = useConflictAcknowledgment()
 
-      markConflictsAsSeen()
-      dismissWarningBanner()
+    expect(shouldShowRedDot.value).toBe(true)
 
-      // Wait a tick for useStorage to sync
-      await new Promise((resolve) => setTimeout(resolve, 10))
+    dismissRedDotNotification()
 
-      // VueUse useStorage should automatically persist to localStorage as JSON
-      expect(localStorage.getItem('Comfy.ConflictModalDismissed')).toBe('true')
-      expect(localStorage.getItem('Comfy.ConflictWarningBannerDismissed')).toBe(
-        'true'
-      )
-    })
+    expect(shouldShowConflictModal.value).toBe(true)
+    expect(shouldShowManagerBanner.value).toBe(true)
+    expect(shouldShowRedDot.value).toBe(false)
+  })
+
+  it('dismisses the banner and red dot but leaves the modal visible', () => {
+    setHasConflicts()
+    const {
+      dismissWarningBanner,
+      shouldShowConflictModal,
+      shouldShowManagerBanner,
+      shouldShowRedDot
+    } = useConflictAcknowledgment()
+
+    expect(shouldShowManagerBanner.value).toBe(true)
+    expect(shouldShowRedDot.value).toBe(true)
+
+    dismissWarningBanner()
+
+    expect(shouldShowConflictModal.value).toBe(true)
+    expect(shouldShowManagerBanner.value).toBe(false)
+    expect(shouldShowRedDot.value).toBe(false)
   })
 })

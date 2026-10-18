@@ -1,42 +1,36 @@
 import { render, screen } from '@testing-library/vue'
-import { createTestingPinia } from '@pinia/testing'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { IsInstallingKey } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 import PackCardFooter from './PackCardFooter.vue'
 
 // Mock the child components
-vi.mock(
-  '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'),
+
   () => ({
     default: { template: '<div data-testid="pack-install-button"></div>' }
   })
 )
 
-vi.mock(
-  '@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue',
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue'),
+
   () => ({
     default: { template: '<div data-testid="pack-enable-toggle"></div>' }
   })
 )
 
-// Mock composables
-const mockIsPackInstalled = vi.fn()
 const mockCheckNodeCompatibility = vi.fn()
 
-vi.mock('@/workbench/extensions/manager/stores/comfyManagerStore', () => ({
-  useComfyManagerStore: vi.fn(() => ({
-    isPackInstalled: mockIsPackInstalled
-  }))
-}))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useConflictDetection'),
 
-vi.mock(
-  '@/workbench/extensions/manager/composables/useConflictDetection',
   () => ({
     useConflictDetection: vi.fn(() => ({
       checkNodeCompatibility: mockCheckNodeCompatibility
@@ -64,7 +58,7 @@ describe('PackCardFooter', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, createTestingPinia({ stubActions: false }), i18n],
+        plugins: [i18n],
         provide: {
           [IsInstallingKey]: ref(false)
         }
@@ -74,7 +68,7 @@ describe('PackCardFooter', () => {
 
   describe('component rendering', () => {
     it('shows download count when available', () => {
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: false,
         conflicts: []
@@ -85,7 +79,7 @@ describe('PackCardFooter', () => {
     })
 
     it('shows install button for uninstalled packages', () => {
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: false,
         conflicts: []
@@ -98,7 +92,7 @@ describe('PackCardFooter', () => {
     })
 
     it('shows enable toggle for installed packages', () => {
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       renderComponent()
 
@@ -109,7 +103,7 @@ describe('PackCardFooter', () => {
 
   describe('conflict detection for uninstalled packages', () => {
     it('passes conflict info to install button when conflicts exist', () => {
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: true,
         conflicts: [
@@ -129,7 +123,7 @@ describe('PackCardFooter', () => {
     })
 
     it('does not pass conflict info when no conflicts exist', () => {
-      mockIsPackInstalled.mockReturnValue(false)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
       mockCheckNodeCompatibility.mockReturnValue({
         hasConflict: false,
         conflicts: []
@@ -145,7 +139,7 @@ describe('PackCardFooter', () => {
 
   describe('installed packages', () => {
     it('does not pass has-conflict prop to enable toggle', () => {
-      mockIsPackInstalled.mockReturnValue(true)
+      vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
 
       renderComponent()
 

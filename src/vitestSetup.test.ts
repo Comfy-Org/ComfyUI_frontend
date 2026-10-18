@@ -1,4 +1,25 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+describe('registered LiteGraph type cleanup', { concurrent: false }, () => {
+  it('clears registrations from a singleton created after a module reset', async ({
+    onTestFinished
+  }) => {
+    vi.resetModules()
+    const { LGraphNode, LiteGraph } =
+      await import('@/lib/litegraph/src/litegraph')
+    LiteGraph.registerNodeType(
+      'test/reset-module',
+      class ResetModuleNode extends LGraphNode {}
+    )
+    expect(LiteGraph.registered_node_types['test/reset-module']).toBeDefined()
+
+    onTestFinished(() => {
+      expect(
+        LiteGraph.registered_node_types['test/reset-module']
+      ).toBeUndefined()
+    })
+  })
+})
 
 /**
  * Guards the network block installed by `vitest.setup.ts`.
@@ -9,10 +30,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
  * explains. Keep this covered so the guard cannot be dropped silently.
  */
 describe('unit test network guard', () => {
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
   it('rejects absolute http requests instead of dialling out', async () => {
     await expect(fetch('https://example.com/thing')).rejects.toThrow(
       /Blocked a real network request/
@@ -45,9 +62,8 @@ describe('unit test network guard', () => {
     expect(await response.text()).toBe('delegated')
   })
 
-  it('lets a test stub its own fetch', async () => {
-    const stub = vi.fn().mockResolvedValue(new Response('ok'))
-    vi.stubGlobal('fetch', stub)
+  it('restores the guard when the automatic reset clears a configured fetch', async () => {
+    vi.mocked(fetch).mockImplementation(async () => new Response('ok'))
 
     await expect(fetch('https://example.com/thing')).resolves.toBeInstanceOf(
       Response
@@ -56,11 +72,25 @@ describe('unit test network guard', () => {
       window.fetch('https://example.com/thing')
     ).resolves.toBeInstanceOf(Response)
 
-    // A test that stubs fetch owns restoring it. Unstubbing here proves the
-    // guard is what sits underneath, rather than having been overwritten.
-    vi.unstubAllGlobals()
+    vi.mocked(fetch).mockReset()
     await expect(fetch('https://example.com/thing')).rejects.toThrow(
       /Blocked a real network request/
     )
+  })
+
+  it('errors a <script src> synchronously instead of fetching it', () => {
+    // Subresource loads bypass the fetch guard: happy-dom fetches them
+    // through its own pipeline. Disabled loading errors the element
+    // synchronously; anything async means scripts reach the network again.
+    const script = document.createElement('script')
+    const events: string[] = []
+    script.addEventListener('error', () => events.push('error'))
+    script.addEventListener('load', () => events.push('load'))
+    script.async = true
+    script.src = 'https://example.com/external.js'
+    document.head.appendChild(script)
+    script.remove()
+
+    expect(events).toEqual(['error'])
   })
 })

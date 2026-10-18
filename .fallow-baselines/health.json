@@ -5,55 +5,6 @@
         "count": 2
       }
     },
-    "apps/desktop-ui/.storybook/main.ts": {
-      "crap_moderate": {
-        "count": 2
-      }
-    },
-    "apps/desktop-ui/src/components/bottomPanel/tabs/terminal/BaseTerminal.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/desktop-ui/src/components/install/InstallLocationPicker.vue": {
-      "complexity_critical": {
-        "count": 1
-      },
-      "crap_critical": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
-      },
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/desktop-ui/src/components/maintenance/TaskListPanel.vue": {
-      "crap_moderate": {
-        "count": 3
-      }
-    },
-    "apps/desktop-ui/src/views/InstallView.stories.ts": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/desktop-ui/src/views/InstallView.vue": {
-      "crap_moderate": {
-        "count": 3
-      }
-    },
-    "apps/desktop-ui/src/views/MaintenanceView.vue": {
-      "crap_moderate": {
-        "count": 1
-      }
-    },
-    "apps/desktop-ui/src/views/ServerStartView.vue": {
-      "crap_high": {
-        "count": 1
-      }
-    },
     "apps/website/scripts/generate-models.ts": {
       "complexity_critical": {
         "count": 4
@@ -1318,6 +1269,11 @@
         "count": 1
       }
     },
+    "src/composables/billing/useBillingDialogs.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
     "src/composables/bottomPanelTabs/useLogsTerminal.ts": {
       "crap_moderate": {
         "count": 1
@@ -1624,6 +1580,11 @@
     "src/composables/video/useVideoSourceUrl.ts": {
       "crap_moderate": {
         "count": 1
+      }
+    },
+    "src/core/graph/nodeDef/ComfyNodeDefImpl.ts": {
+      "crap_moderate": {
+        "count": 2
       }
     },
     "src/core/graph/subgraph/migration/proxyWidgetMigration.ts": {
@@ -3222,6 +3183,17 @@
         "count": 4
       }
     },
+    "src/scripts/clipspace.ts": {
+      "complexity_critical": {
+        "count": 1
+      },
+      "crap_critical": {
+        "count": 1
+      },
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "src/scripts/domWidget.ts": {
       "crap_high": {
         "count": 1
@@ -3270,12 +3242,12 @@
         "count": 1
       }
     },
-    "src/scripts/ui.ts": {
+    "src/scripts/ui/utils.ts": {
       "complexity_high": {
         "count": 1
       }
     },
-    "src/scripts/valueControl.ts": {
+    "src/core/graph/widgets/valueControl.ts": {
       "crap_moderate": {
         "count": 1
       }
@@ -3299,14 +3271,6 @@
       },
       "crap_moderate": {
         "count": 4
-      }
-    },
-    "src/services/load3dService.ts": {
-      "complexity_high": {
-        "count": 1
-      },
-      "crap_high": {
-        "count": 1
       }
     },
     "src/services/mediaCacheService.ts": {
@@ -3393,11 +3357,6 @@
     },
     "src/stores/modelStore.ts": {
       "crap_high": {
-        "count": 1
-      }
-    },
-    "src/stores/nodeDefStore.ts": {
-      "crap_moderate": {
         "count": 1
       }
     },
@@ -3570,15 +3529,17 @@
         "count": 1
       }
     },
+    "src/workbench/extensions/manager/composables/useManagerDialog.ts": {
+      "crap_high": {
+        "count": 1
+      }
+    },
     "src/workbench/extensions/manager/composables/useManagerDisplayPacks.ts": {
       "crap_high": {
         "count": 1
       }
     },
     "src/workbench/extensions/manager/composables/useManagerState.ts": {
-      "crap_high": {
-        "count": 1
-      },
       "crap_moderate": {
         "count": 1
       }
@@ -3596,6 +3557,11 @@
     "vite.config.mts": {
       "crap_moderate": {
         "count": 2
+      }
+    },
+    "src/extensions/core/load3d/load3dInstances.ts": {
+      "complexity_high": {
+        "count": 1
       }
     }
   },
@@ -3648,7 +3614,7 @@
     "src/platform/cloud/subscription/composables/useFreeTierQuota.ts:high impact",
     "src/platform/assets/utils/assetFilterUtils.ts:high impact",
     "src/services/dialogService.ts:circular dependency",
-    "src/scripts/ui.ts:complexity",
+    "src/scripts/ui/utils.ts:complexity",
     "src/composables/usePaste.ts:circular dependency",
     "src/workbench/extensions/manager/composables/useConflictDetection.ts:circular dependency",
     "src/renderer/core/canvas/canvasStore.ts:circular dependency",
@@ -3667,7 +3633,6 @@
     "src/renderer/extensions/vueNodes/utils/nodeDataUtils.ts:high impact",
     "src/composables/auth/useCurrentUser.ts:high impact",
     "src/extensions/core/widgetInputs.ts:high impact",
-    "apps/desktop-ui/src/utils/envUtil.ts:high impact",
     "src/extensions/core/groupNode.ts:complexity",
     "src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts:circular dependency",
     "src/workbench/extensions/manager/components/manager/button/PackInstallButton.vue:circular dependency",

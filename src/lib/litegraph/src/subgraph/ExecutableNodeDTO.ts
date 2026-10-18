@@ -1,18 +1,21 @@
-import { toLinkId } from '@/types/linkId'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+
 import type { SerializedNodeId } from '@/types/nodeId'
-import type { LinkId } from '@/lib/litegraph/src/LLink'
+import type { LinkId } from '@/types/linkId'
 import { InvalidLinkError } from '@/lib/litegraph/src/infrastructure/InvalidLinkError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
 import { SlotIndexError } from '@/lib/litegraph/src/infrastructure/SlotIndexError'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-
-import type { Subgraph } from './Subgraph'
-import type { SubgraphNode } from './SubgraphNode'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 
 export type ExecutionId = string
 
@@ -85,6 +88,11 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     return this.node.comfyClass
   }
 
+  // fallow-ignore-next-line unused-class-member
+  get properties() {
+    return this.node.properties
+  }
+
   get isVirtualNode() {
     return this.node.isVirtualNode
   }
@@ -112,8 +120,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Set the internal ID of the DTO
     this._id = [...this.subgraphNodePath, this.node.id].join(':')
     this.graph = node.graph
-    this.inputs = this.node.inputs.map((x) => ({
-      linkId: x.link == null ? null : toLinkId(x.link),
+    this.inputs = this.node.inputs.map((x, index) => ({
+      linkId: inputLinkId(node.graph!, node.id, index) ?? null,
       name: x.name,
       type: x.type
     }))
@@ -183,9 +191,15 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
           `No input found for slot [${link.origin_slot}] ${input.name}`
         )
 
+      if (!subgraphNode.graph)
+        throw new NullGraphError(
+          `SubgraphNode ${subgraphNode.id} has no graph during input resolution`
+        )
       // Nothing connected
-      const linkId = subgraphNodeInput.link
-      if (linkId == null) {
+      const linkId =
+        inputLinkId(subgraphNode.graph, subgraphNode.id, link.origin_slot) ??
+        null
+      if (linkId === null) {
         const id = subgraphNodeInput.widgetId
         if (!id) return
 
@@ -197,10 +211,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
         }
       }
 
-      if (!subgraphNode.graph)
-        throw new NullGraphError(
-          `SubgraphNode ${subgraphNode.id} has no graph during input resolution`
-        )
       const outerLink = subgraphNode.graph.getLink(linkId)
       if (!outerLink)
         throw new InvalidLinkError(
@@ -348,7 +358,7 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
    */
   private _getBypassSlotIndex(slot: number, type: ISlotType) {
     const { inputs } = this
-    const oppositeInput = inputs[slot]
+    const oppositeInput = inputs.at(slot)
     const outputType = this.node.outputs[slot].type
 
     // Any type short circuit - match slot ID, fallback to first slot
@@ -359,8 +369,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Prefer input with the same slot ID
     if (
       oppositeInput &&
-      LiteGraph.isValidConnection(oppositeInput.type, outputType) &&
-      LiteGraph.isValidConnection(oppositeInput.type, type)
+      litegraph().isValidConnection(oppositeInput.type, outputType) &&
+      litegraph().isValidConnection(oppositeInput.type, type)
     ) {
       return slot
     }
@@ -372,8 +382,8 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     // Find first matching slot - prefer exact type
     return inputs.findIndex(
       (input) =>
-        LiteGraph.isValidConnection(input.type, outputType) &&
-        LiteGraph.isValidConnection(input.type, type)
+        litegraph().isValidConnection(input.type, outputType) &&
+        litegraph().isValidConnection(input.type, type)
     )
   }
 

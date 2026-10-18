@@ -4,11 +4,13 @@ import {
   SelectContent,
   SelectPortal,
   SelectViewport,
+  injectSelectRootContext,
   useForwardPropsEmits
 } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
-import { computed } from 'vue'
+import type { HTMLAttributes, StyleValue } from 'vue'
+import { computed, useAttrs } from 'vue'
 
+import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SelectScrollDownButton from './SelectScrollDownButton.vue'
@@ -40,18 +42,27 @@ const delegatedProps = computed(() => ({
 }))
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
+
+const attrs = useAttrs()
+const rootContext = injectSelectRootContext()
+const liftedStyle = useModalLiftedZIndex(rootContext.open)
+const mergedStyle = computed<StyleValue>(() => [
+  attrs.style as StyleValue,
+  liftedStyle.value
+])
 </script>
 
 <template>
   <SelectPortal :disabled="disablePortal">
     <SelectContent
       v-bind="{ ...forwarded, ...$attrs }"
+      :style="mergedStyle"
       :class="
         cn(
           'relative z-3000 max-h-96 min-w-32 overflow-hidden',
           'mt-2 rounded-lg p-2',
-          'bg-base-background text-base-foreground',
-          'border border-solid border-border-default',
+          'bg-background text-foreground',
+          'border border-solid',
           'shadow-md',
           'data-[state=closed]:animate-out data-[state=open]:animate-in',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',

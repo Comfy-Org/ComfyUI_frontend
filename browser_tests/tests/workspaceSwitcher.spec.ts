@@ -42,6 +42,9 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
     const panel = page.getByTestId('workspace-switcher-panel')
     await expect(panel).toBeVisible()
+    await expect(
+      panel.getByText('Workspaces only affect which credits you use.')
+    ).toHaveCount(0)
 
     const profileMenu = page.locator('.current-user-popover')
     const panelBox = await panel.boundingBox()
@@ -106,6 +109,32 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       )
     ).toBeVisible()
     await expect(page.getByPlaceholder('Ex: Comfy Org')).toBeVisible()
+  })
+
+  test('refreshes billing capabilities after switching workspaces', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await expect(page.getByTestId('add-credits-button')).toBeVisible()
+    const longWorkspaceCapabilities = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/billing/capabilities') &&
+        response.request().headers()['authorization'] ===
+          'Bearer mock-workspace-token-ws-team-long'
+    )
+    await page.getByTestId('workspace-switcher-trigger').click()
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText(LONG_WORKSPACE_NAME, { exact: true })
+      .click()
+    await longWorkspaceCapabilities
+    await comfyPage.waitForAppReady()
+
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await expect(page.getByTestId('add-credits-button')).toHaveCount(0)
   })
 
   test('isolates all open workflow tabs between workspaces', async ({
