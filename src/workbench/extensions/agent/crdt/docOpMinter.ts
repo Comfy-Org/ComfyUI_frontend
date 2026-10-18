@@ -14,6 +14,7 @@
 import type {
   NodeId as WireNodeId,
   PromotedHostWrite,
+  WidgetValuesForm,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
 
@@ -30,6 +31,7 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -133,9 +135,49 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
-  return named && !node.isVirtualNode
-    ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
-    : snapshot
+  if (!named || node.isVirtualNode) return snapshot
+  const values = valueWidgetsOnly(node, named)
+  const form = undescribedWidgetForm(node, values)
+  return form
+    ? { ...snapshot, widgets_values: values, widgets_values_form: form }
+    : { ...snapshot, widgets_values: values }
+}
+
+/**
+ * The node's own widget layout (schema Amendment A24), declared only when its
+ * value widgets include one the node definition does not describe.
+ *
+ * The pinned catalog is built from `object_info`, so it lists exactly the
+ * definition's widget inputs plus the companions the frontend is known to add.
+ * A widget a frontend extension adds on its own (rgthree's `output` text on
+ * Display Int, whose only input is a `forceInput` link) is in neither, and an
+ * undeclared name-keyed record carrying it is refused `unknown_widget` on
+ * every attempt (PM-2003). A declared node is laid out from this order and
+ * never consults the catalog, so the add is accepted with the value kept.
+ *
+ * Nodes whose widgets the definition explains keep the catalog path, so the
+ * projection the agent reads for them is unchanged. A widget is explained when
+ * its name is a definition input, a dynamic child of one (`group.child`), or a
+ * companion linked to another widget (`control_after_generate`).
+ */
+function undescribedWidgetForm(
+  node: LGraphNode,
+  values: Record<string, unknown>
+): WidgetValuesForm | undefined {
+  const order = Object.keys(values)
+  if (order.length === 0) return undefined
+  const definition = useNodeDefStore().fromLGraphNode(node)
+  if (!definition) return undefined
+  const linked = new Set(
+    (node.widgets ?? []).flatMap((widget) =>
+      (widget.linkedWidgets ?? []).map((companion) => companion.name)
+    )
+  )
+  const described = (name: string) =>
+    Object.hasOwn(definition.inputs, name) ||
+    Object.hasOwn(definition.inputs, name.split('.', 1)[0]) ||
+    linked.has(name)
+  return order.every(described) ? undefined : { order }
 }
 
 function valueWidgetsOnly(

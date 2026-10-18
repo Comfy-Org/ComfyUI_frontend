@@ -6,6 +6,8 @@ import { defineComponent, ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -23,8 +25,24 @@ vi.mock(import('@/platform/telemetry/reportError'))
 const DISPLAY_INT = 'Display Int (rgthree)'
 const WORKFLOW_ID = 'wf-pm-2003'
 
+// What `comfy nodes widget-catalog` pins for this class: its only input is a
+// `forceInput` link, so it has no widgets at all.
 const CATALOG: WidgetCatalog = {
   types: { [DISPLAY_INT]: { widget_order: [] } }
+}
+
+// rgthree's `object_info` entry for the class, which is all the catalog sees.
+const DISPLAY_INT_DEF: ComfyNodeDefV1 = {
+  name: DISPLAY_INT,
+  display_name: DISPLAY_INT,
+  category: 'rgthree',
+  python_module: 'custom_nodes.rgthree-comfy',
+  description: '',
+  input: { required: { input: ['INT', { forceInput: true }] } },
+  output: [],
+  output_name: [],
+  output_is_list: [],
+  output_node: true
 }
 
 class DisplayIntWithClientOnlyOutputWidget extends LGraphNode {
@@ -93,56 +111,77 @@ function connectAgentHeldWorkflow() {
   onTestFinished(() => minter.detach())
 
   async function humanAdds(node: LGraphNode) {
+    const sent = await humanSends(node)
+    const { result, update } = host.applyWire(sent)
+    deliver(result)
+    if (update) deliver(update)
+    return { sent, verdict: result.data }
+  }
+
+  async function humanSends(node: LGraphNode) {
     const framesBefore = agentSocket.send.mock.calls.length
     graph.add(node)
     await vi.waitFor(() =>
       expect(agentSocket.send.mock.calls.length).toBeGreaterThan(framesBefore)
     )
-    const sent = agentSocket.send.mock.calls
+    return agentSocket.send.mock.calls
       .slice(framesBefore)
       .flatMap(([frame]) => sentWireOps(frame))
-    const { result, update } = host.applyWire(sent)
-    deliver(result)
-    if (update) deliver(update)
-    return result.data
   }
 
-  return { graph, host, humanAdds }
+  return { graph, host, deliver, humanAdds }
+}
+
+/** A second tab that opens the same document after the add landed. */
+function openInAnotherTab(host: HostDoc) {
+  const graph = new LGraph()
+  const agentSocket = createFakeAgentSocket()
+  const view = render(
+    defineComponent({
+      setup() {
+        useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID), {
+          transport: agentSocket.transport,
+          getGraph: () => graph
+        })
+        return () => null
+      }
+    }),
+    { global: { plugins: [getActivePinia()!] } }
+  )
+  onTestFinished(() => view.unmount())
+  host
+    .initialSync()
+    .forEach((frame) => agentSocket.receive(frame.type, frame.data))
+  return graph
 }
 
 describe('PM-2003: a human adds Display Int (rgthree) while the agent holds the workflow', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
+    useNodeDefStore().addNodeDef(DISPLAY_INT_DEF)
   })
 
-  it('reproduces PM-2003: the host rejects the client-only output widget, the toast fires, and the node is removed', async () => {
+  it('sends the node with its own widget form, because the catalog cannot describe the client-only output widget', async () => {
     LiteGraph.registerNodeType(
       DISPLAY_INT,
       DisplayIntWithClientOnlyOutputWidget
     )
-    const { graph, host, humanAdds } = connectAgentHeldWorkflow()
-    const node = new DisplayIntWithClientOnlyOutputWidget()
+    const { humanAdds } = connectAgentHeldWorkflow()
 
-    const verdict = await humanAdds(node)
+    const { sent } = await humanAdds(new DisplayIntWithClientOnlyOutputWidget())
 
-    expect(verdict).toMatchObject({
-      ok: false,
-      applied: [],
-      failed: {
-        code: 'unknown_widget',
-        message: expect.stringContaining(
-          "widget 'output' is not in widget_order"
-        )
-      }
-    })
-    expect(toastDescriptions()).toEqual([
-      expect.stringContaining('Your edit was rejected and was not saved')
+    expect(sent).toEqual([
+      expect.objectContaining({
+        op: 'add_node',
+        node: expect.objectContaining({
+          widgets_values: { output: '' },
+          widgets_values_form: { order: ['output'] }
+        })
+      })
     ])
-    expect(graph.getNodeById(node.id)).toBeNull()
-    expect(host.projection().nodes).toEqual([])
   })
 
-  it.fails('keeps a node whose class carries a client-only output widget on the canvas and in the document, with no rejection toast', async () => {
+  it('keeps a node whose class carries a client-only output widget on the canvas and in the document, with no rejection toast', async () => {
     LiteGraph.registerNodeType(
       DISPLAY_INT,
       DisplayIntWithClientOnlyOutputWidget
@@ -150,26 +189,80 @@ describe('PM-2003: a human adds Display Int (rgthree) while the agent holds the 
     const { graph, host, humanAdds } = connectAgentHeldWorkflow()
     const node = new DisplayIntWithClientOnlyOutputWidget()
 
-    await humanAdds(node)
+    const { verdict } = await humanAdds(node)
 
+    expect(verdict).toMatchObject({ ok: true })
     expect({
       toasts: toastDescriptions(),
       onCanvas: graph.getNodeById(node.id)?.type,
-      inDocument: host.projection().nodes.map((n) => n.type)
+      inDocument: host.projection().nodes.map((n) => ({
+        type: n.type,
+        widgets_values: n.widgets_values
+      }))
     }).toEqual({
       toasts: [],
       onCanvas: DISPLAY_INT,
-      inDocument: [DISPLAY_INT]
+      inDocument: [{ type: DISPLAY_INT, widgets_values: { output: '' } }]
     })
   })
 
-  it('keeps the node when its class carries no client-only widget', async () => {
+  it('lands an agent write to the declared widget on the canvas', async () => {
+    LiteGraph.registerNodeType(
+      DISPLAY_INT,
+      DisplayIntWithClientOnlyOutputWidget
+    )
+    const { graph, host, deliver, humanAdds } = connectAgentHeldWorkflow()
+    const node = new DisplayIntWithClientOnlyOutputWidget()
+    await humanAdds(node)
+
+    deliver(
+      host.apply([
+        { op: 'set_widget', node_id: node.id, widget: 'output', value: '42' }
+      ])
+    )
+
+    await vi.waitFor(() =>
+      expect(
+        graph.getNodeById(node.id)?.widgets?.find((w) => w.name === 'output')
+          ?.value
+      ).toBe('42')
+    )
+  })
+
+  it('opens the declared node in another tab without leaking the document-internal form onto it', async () => {
+    LiteGraph.registerNodeType(
+      DISPLAY_INT,
+      DisplayIntWithClientOnlyOutputWidget
+    )
+    const { host, humanAdds } = connectAgentHeldWorkflow()
+    const node = new DisplayIntWithClientOnlyOutputWidget()
+    await humanAdds(node)
+
+    const otherTab = openInAnotherTab(host)
+
+    await vi.waitFor(() =>
+      expect(otherTab.getNodeById(node.id)?.type).toBe(DISPLAY_INT)
+    )
+    const reopened = otherTab.getNodeById(node.id)!
+    expect(reopened).not.toHaveProperty('__widgets_form')
+    expect(reopened.serialize()).not.toHaveProperty('__widgets_form')
+  })
+
+  it('keeps the catalog path, with no form, when the definition describes every widget', async () => {
     LiteGraph.registerNodeType(DISPLAY_INT, DisplayIntWithoutClientWidget)
     const { graph, host, humanAdds } = connectAgentHeldWorkflow()
     const node = new DisplayIntWithoutClientWidget()
 
-    await humanAdds(node)
+    const { sent } = await humanAdds(node)
 
+    expect(sent).toEqual([
+      expect.objectContaining({
+        op: 'add_node',
+        node: expect.not.objectContaining({
+          widgets_values_form: expect.anything()
+        })
+      })
+    ])
     expect({
       toasts: toastDescriptions(),
       onCanvas: graph.getNodeById(node.id)?.type,

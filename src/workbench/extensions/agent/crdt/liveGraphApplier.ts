@@ -2,7 +2,8 @@ import {
   linksMap,
   nodesMap,
   OPAQUE_WIDGETS_KEY,
-  readStamps
+  readStamps,
+  WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
 import { isEqual } from 'es-toolkit'
 import * as Y from 'yjs'
@@ -287,7 +288,10 @@ function readDocNode(
     } else if (key === OPAQUE_WIDGETS_KEY) {
       const opaque = plain(value)
       if (Array.isArray(opaque)) widgets = opaque
-    } else if (key !== 'id') {
+    } else if (key !== 'id' && key !== WIDGET_FORM_KEY) {
+      // `__widgets_form` is the document's own layout for a node that declared
+      // `widgets_values_form` (A24). Its values are in `widgets`; the layout is
+      // not a node field, and `configure` would copy it onto the live node.
       fields[key] = plain(value)
     }
   })
