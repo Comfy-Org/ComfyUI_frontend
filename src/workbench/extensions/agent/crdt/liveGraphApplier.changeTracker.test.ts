@@ -1,4 +1,4 @@
-import { applyOps } from '@comfyorg/comfy-multi-player'
+import { applyOps, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import {
@@ -11,6 +11,7 @@ import {
   vi
 } from 'vitest'
 import { markRaw, ref } from 'vue'
+import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -360,66 +361,68 @@ describe('LiveGraphApplier with the real change tracker', () => {
     )
   })
 
-  it('creates a restored DynamicGroup holding more rows than its max on a follower', () => {
-    const local = new LGraph()
-    const node = LiteGraph.createNode('DynamicGroupTest')
-    assert.exists(node)
-    local.add(node)
-    node.configure({
-      ...node.serialize(),
-      widgets_values: ['head', 4, 0.1, 0.2, 0.3, 0.4, 'tail']
-    })
-    const snapshot = wireNodeSnapshot(node)
-    assert.exists(snapshot)
-    const catalog: WidgetCatalog = {
-      types: {
-        DynamicGroupTest: {
-          widget_order: [
-            'before',
-            'rows',
-            'rows.0.strength',
-            'rows.1.strength',
-            'rows.2.strength',
-            'rows.3.strength',
-            'after'
-          ]
+  it.for([[{}], [{ _extra_9: 1 }]])(
+    'creates a restored DynamicGroup holding more rows than its max on a follower with extra entries %j',
+    ([extra]) => {
+      const local = new LGraph()
+      const node = LiteGraph.createNode('DynamicGroupTest')
+      assert.exists(node)
+      local.add(node)
+      node.configure({
+        ...node.serialize(),
+        widgets_values: ['head', 4, 0.1, 0.2, 0.3, 0.4, 'tail']
+      })
+      const snapshot = wireNodeSnapshot(node)
+      assert.exists(snapshot)
+      const catalog: WidgetCatalog = {
+        types: {
+          DynamicGroupTest: {
+            widget_order: [
+              'before',
+              'rows',
+              'rows.0.strength',
+              'rows.1.strength',
+              'rows.2.strength',
+              'rows.3.strength',
+              'after'
+            ]
+          }
         }
       }
+      const { doc, collector } = followedDoc({ nodes: [], links: [] }, catalog)
+      collector.take()
+      const add = mintWireOps(
+        [
+          {
+            op: 'add_node',
+            node_id: node.id,
+            class_type: snapshot.type,
+            pos: [0, 0],
+            node: snapshot
+          }
+        ],
+        { actor: 'human:user:tab', baseVersion: 1 }
+      )
+      expect(
+        applyOps(doc, add, catalog).outcomes.map(({ outcome }) => outcome)
+      ).toEqual(['applied'])
+      doc.transact(() => {
+        const widgets = nodesMap(doc).get(String(node.id))?.get('widgets')
+        if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+        for (const [name, value] of Object.entries(extra))
+          widgets.set(name, value)
+      })
+      const follower = new LGraph()
+      const applier = new LiveGraphApplier({ getGraph: () => follower })
+
+      const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+
+      expect(result.failureCount).toBe(0)
+      expect(follower.getNodeById(node.id)?.serialize().widgets_values).toEqual(
+        ['head', 4, 0.1, 0.2, 0.3, 0.4, 'tail']
+      )
     }
-    const { doc, collector } = followedDoc({ nodes: [], links: [] }, catalog)
-    collector.take()
-    const add = mintWireOps(
-      [
-        {
-          op: 'add_node',
-          node_id: node.id,
-          class_type: snapshot.type,
-          pos: [0, 0],
-          node: snapshot
-        }
-      ],
-      { actor: 'human:user:tab', baseVersion: 1 }
-    )
-    expect(
-      applyOps(doc, add, catalog).outcomes.map(({ outcome }) => outcome)
-    ).toEqual(['applied'])
-    const follower = new LGraph()
-    const applier = new LiveGraphApplier({ getGraph: () => follower })
-
-    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
-
-    expect(result.failureCount).toBe(0)
-    expect(follower.getNodeById(node.id)?.serialize().widgets_values).toEqual([
-      'head',
-      4,
-      0.1,
-      0.2,
-      0.3,
-      0.4,
-      'tail'
-    ])
-  })
-
+  )
   it('creates a DynamicGroup whose row count the document stores under a positional alias', () => {
     const { doc, collector } = followedDoc(
       {
