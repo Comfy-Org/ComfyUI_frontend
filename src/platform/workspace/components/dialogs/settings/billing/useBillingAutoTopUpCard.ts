@@ -13,16 +13,15 @@ type AutoTopUpCardState =
 export function useBillingAutoTopUpCard() {
   const read = useAsyncState(() => workspaceApi.getBillingAutoReload(), null, {
     resetOnExecute: false,
-    onError: (error) => {
-      read.state.value = null
+    onError: (error) =>
       reportError(error, {
         errorType: 'auto_top_up_read_failed',
         surface: 'billing'
       })
-    }
   })
 
   const state = computed<AutoTopUpCardState>(() => {
+    if (read.error.value !== undefined) return { kind: 'unavailable' }
     const settings = read.state.value
     if (settings !== null) return { kind: 'loaded', settings }
     return read.isLoading.value ? { kind: 'loading' } : { kind: 'unavailable' }

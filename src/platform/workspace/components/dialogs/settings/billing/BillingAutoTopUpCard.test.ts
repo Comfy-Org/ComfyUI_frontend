@@ -3,10 +3,11 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
 import {
   WorkspaceApiError,
@@ -75,6 +76,17 @@ function renderCard(
       ]
     }
   })
+}
+
+async function setVisibility(state: DocumentVisibilityState) {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state)
+  document.dispatchEvent(new Event('visibilitychange'))
+  await nextTick()
+}
+
+async function returnToTab() {
+  await setVisibility('hidden')
+  await setVisibility('visible')
 }
 
 describe('BillingAutoTopUpCard', () => {
@@ -192,28 +204,22 @@ describe('BillingAutoTopUpCard', () => {
   })
 
   it('rereads the settings when the owner returns from the billing site', async () => {
-    const visibility = vi.spyOn(document, 'visibilityState', 'get')
     renderCard(notConfigured)
     expect(
       await screen.findByTestId('billing-auto-top-up-status')
     ).toHaveTextContent('Off')
 
-    visibility.mockReturnValue('hidden')
-    document.dispatchEvent(new Event('visibilitychange'))
     vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(configured)
-    visibility.mockReturnValue('visible')
-    document.dispatchEvent(new Event('visibilitychange'))
+    await returnToTab()
 
     await vi.waitFor(() =>
       expect(
         screen.getByTestId('billing-auto-top-up-status')
       ).toHaveTextContent('On')
     )
-    visibility.mockRestore()
   })
 
   it('offers a retry instead of the old status when a reread fails', async () => {
-    const visibility = vi.spyOn(document, 'visibilityState', 'get')
     renderCard(configured)
     expect(
       await screen.findByTestId('billing-auto-top-up-status')
@@ -222,10 +228,7 @@ describe('BillingAutoTopUpCard', () => {
     vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
       new WorkspaceApiError('boom', 500)
     )
-    visibility.mockReturnValue('hidden')
-    document.dispatchEvent(new Event('visibilitychange'))
-    visibility.mockReturnValue('visible')
-    document.dispatchEvent(new Event('visibilitychange'))
+    await returnToTab()
 
     expect(
       await screen.findByText("Couldn't load auto top-up.")
@@ -233,6 +236,34 @@ describe('BillingAutoTopUpCard', () => {
     expect(
       screen.queryByTestId('billing-auto-top-up-status')
     ).not.toBeInTheDocument()
-    visibility.mockRestore()
+  })
+
+  it('keeps the newest settings when an older reread fails after it', async () => {
+    renderCard(notConfigured)
+    expect(
+      await screen.findByTestId('billing-auto-top-up-status')
+    ).toHaveTextContent('Off')
+
+    let rejectOlderRead: (error: unknown) => void = () => {}
+    const olderRead = new Promise<AutoReloadSettings>((_, reject) => {
+      rejectOlderRead = reject
+    })
+    vi.mocked(workspaceApi.getBillingAutoReload)
+      .mockReturnValueOnce(olderRead)
+      .mockResolvedValueOnce(configured)
+    await returnToTab()
+    await returnToTab()
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent('On')
+    )
+
+    rejectOlderRead(new WorkspaceApiError('boom', 500))
+    await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
+
+    expect(screen.getByTestId('billing-auto-top-up-status')).toHaveTextContent(
+      'On'
+    )
   })
 })
