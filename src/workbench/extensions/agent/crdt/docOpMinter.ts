@@ -599,7 +599,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       schedule({ kind: 'op', operation: { ...connect, to_slot: toSlot } })
       return
     }
-    if (target && input && liveAutogrowGroupOf(target, input.name)) {
+    if (
+      target &&
+      input &&
+      (input.widget || liveAutogrowGroupOf(target, input.name))
+    ) {
       schedule({
         kind: 'op',
         operation: {
