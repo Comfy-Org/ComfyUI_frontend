@@ -4,12 +4,13 @@ import {
   existsSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 
 interface WorkflowStep {
@@ -33,46 +34,88 @@ if (!commentStep?.run || !commentStep.env) {
 }
 const { run: commentRun, env: commentEnv } = commentStep
 
+const botLogin = 'comfy-backport-bot'
 const firstMergeCommit = 'a'.repeat(40)
 const secondMergeCommit = 'b'.repeat(40)
-const separator = '\n---END-OF-COMMENT---\n'
+const firstTargetHead = 'c'.repeat(40)
+const secondTargetHead = 'd'.repeat(40)
+const coreConflict = 'core/1.56:conflicts:src/a.ts,src/b.ts'
+const cloudConflict = 'cloud/1.56:conflicts:src/a.ts'
 
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
+record() {
+  jq -cn --arg login "\${FAKE_LOGIN}" --arg title "$1" --arg body "$2" \\
+    '{user: {login: $login}, title: (if $title == "" then null else $title end), body: $body}'
+}
 case "$1 $2" in
+  "api user")
+    [[ -n "\${FAKE_LOGIN}" ]] || { echo 'gh: HTTP 403' >&2; exit 1; }
+    echo "\${FAKE_LOGIN}"
+    ;;
   "api --paginate")
-    [[ "\${FAKE_COMMENTS_READ:-ok}" == ok ]] || { echo 'gh: HTTP 503' >&2; exit 1; }
-    cat "\${FAKE_COMMENTS_FILE:?}" 2>/dev/null || true
+    [[ "\${FAKE_READ}" == ok ]] || { echo 'gh: HTTP 503' >&2; exit 1; }
+    case "$3" in
+      */comments) file=comments.jsonl ;;
+      *) file=issues.jsonl ;;
+    esac
+    { cat "\${FAKE_DIR}/\${file}" 2>/dev/null || true; } | jq -s .
     ;;
   "pr comment")
-    printf '%s%s' "$5" "\${FAKE_SEPARATOR:?}" >> "\${FAKE_COMMENTS_FILE:?}"
+    [[ "\${FAKE_PR_LOCKED}" != true ]] || { echo 'gh: issue is locked' >&2; exit 1; }
+    record "" "$5" >> "\${FAKE_DIR}/comments.jsonl"
+    ;;
+  "issue create")
+    record "$4" "$6" >> "\${FAKE_DIR}/issues.jsonl"
     ;;
   "pr list") ;;
   *) echo "unexpected gh invocation: $*" >&2; exit 64 ;;
 esac
 `
 
+const fakeGit = `#!/usr/bin/env bash
+[[ "$1" == rev-parse ]] || { echo "unexpected git invocation: $*" >&2; exit 64; }
+echo "\${FAKE_TARGET_HEAD}"
+`
+
 function createSandbox() {
   const directory = mkdtempSync(join(tmpdir(), 'backport-conflict-comment-'))
-  writeFileSync(join(directory, 'gh'), fakeGh)
-  chmodSync(join(directory, 'gh'), 0o755)
-  return {
-    directory,
-    comments: join(directory, 'comments'),
-    event: join(directory, 'event.json')
+  onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
+  for (const [name, script] of [
+    ['gh', fakeGh],
+    ['git', fakeGit]
+  ]) {
+    writeFileSync(join(directory, name), script)
+    chmodSync(join(directory, name), 0o755)
   }
+  return directory
+}
+
+interface Run {
+  mergeCommit?: string
+  targetHead?: string
+  failed?: string
+  forceRerun?: boolean
+  commentsRead?: 'ok' | 'error'
+  login?: string
+  prLocked?: boolean
 }
 
 function reportConflict(
-  sandbox: ReturnType<typeof createSandbox>,
+  sandbox: string,
   {
-    mergeCommit,
+    mergeCommit = firstMergeCommit,
+    targetHead = firstTargetHead,
+    failed = coreConflict,
     forceRerun = false,
-    commentsRead = 'ok'
-  }: { mergeCommit: string; forceRerun?: boolean; commentsRead?: string }
+    commentsRead = 'ok',
+    login = botLogin,
+    prLocked = false
+  }: Run = {}
 ) {
+  const event = join(sandbox, 'event.json')
   writeFileSync(
-    sandbox.event,
+    event,
     JSON.stringify({
       pull_request: {
         number: 21078,
@@ -84,10 +127,7 @@ function reportConflict(
   const script = commentRun
     .replaceAll('${{ github.event_name }}', 'pull_request_target')
     .replaceAll('${{ inputs.pr_number }}', '21078')
-    .replaceAll(
-      '${{ steps.backport.outputs.failed }}',
-      'core/1.56:conflicts:src/a.ts,src/b.ts'
-    )
+    .replaceAll('${{ steps.backport.outputs.failed }}', failed)
 
   const result = spawnSync('bash', ['-e', '-c', script], {
     encoding: 'utf8',
@@ -95,42 +135,61 @@ function reportConflict(
       ...process.env,
       BACKPORT_AGENT_PROMPT_TEMPLATE: commentEnv.BACKPORT_AGENT_PROMPT_TEMPLATE,
       COMMENT_BODY_TEMPLATE: commentEnv.COMMENT_BODY_TEMPLATE,
-      FAKE_COMMENTS_FILE: sandbox.comments,
-      FAKE_COMMENTS_READ: commentsRead,
-      FAKE_SEPARATOR: separator,
+      FAKE_DIR: sandbox,
+      FAKE_LOGIN: login,
+      FAKE_PR_LOCKED: String(prLocked),
+      FAKE_READ: commentsRead,
+      FAKE_TARGET_HEAD: targetHead,
       FORCE_RERUN: String(forceRerun),
-      GITHUB_EVENT_PATH: sandbox.event,
+      GITHUB_EVENT_PATH: event,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
       GITHUB_SERVER_URL: 'https://github.com',
-      PATH: `${sandbox.directory}:${process.env.PATH}`
+      PATH: `${sandbox}:${process.env.PATH}`
     }
   })
   expect(result.status).toBe(0)
 }
 
-const postedComments = (sandbox: ReturnType<typeof createSandbox>) =>
-  existsSync(sandbox.comments)
-    ? readFileSync(sandbox.comments, 'utf8').split(separator).filter(Boolean)
+const readRecords = (sandbox: string, file: string) =>
+  existsSync(join(sandbox, file))
+    ? readFileSync(join(sandbox, file), 'utf8')
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line) as { body: string })
     : []
 
+const postedReports = (sandbox: string) =>
+  [
+    ...readRecords(sandbox, 'comments.jsonl'),
+    ...readRecords(sandbox, 'issues.jsonl')
+  ]
+    .map(({ body }) => body)
+    .filter((body) => body.includes('Backport to `'))
+
 describe('backport conflict comment', () => {
-  it('marks the conflict comment with its target and merge commit', () => {
+  it('marks the conflict comment with its target, merge commit and target head', () => {
     const sandbox = createSandbox()
 
-    reportConflict(sandbox, { mergeCommit: firstMergeCommit })
+    reportConflict(sandbox)
 
-    const comments = postedComments(sandbox)
-    expect(comments).toHaveLength(1)
-    expect(comments[0]).toContain('Backport to `core/1.56` failed')
-    expect(comments[0]).toContain(
-      `<!-- backport-conflict:core/1.56:${firstMergeCommit} -->`
+    const reports = postedReports(sandbox)
+    expect(reports).toHaveLength(1)
+    expect(reports[0]).toContain('Backport to `core/1.56` failed')
+    expect(reports[0]).toContain(
+      `<!-- backport-conflict:core/1.56:${firstMergeCommit}:${firstTargetHead} -->`
     )
   })
 
-  it.for([
+  it.for<{ scenario: string; first?: Run; second: Run; expected: number }>([
     {
       scenario: 'a later labeled event for the same merge commit',
-      second: { mergeCommit: firstMergeCommit },
+      second: {},
+      expected: 1
+    },
+    {
+      scenario: 'a later labeled event on a locked PR',
+      first: { prLocked: true },
+      second: { prLocked: true },
       expected: 1
     },
     {
@@ -139,24 +198,53 @@ describe('backport conflict comment', () => {
       expected: 2
     },
     {
+      scenario: 'a moved target branch',
+      second: { targetHead: secondTargetHead },
+      expected: 2
+    },
+    {
       scenario: 'a manual force rerun',
-      second: { mergeCommit: firstMergeCommit, forceRerun: true },
+      second: { forceRerun: true },
       expected: 2
     },
     {
       scenario: 'a failed read of the existing comments',
-      second: { mergeCommit: firstMergeCommit, commentsRead: 'error' },
+      second: { commentsRead: 'error' },
+      expected: 2
+    },
+    {
+      scenario: 'an unresolvable posting identity',
+      second: { login: '' },
+      expected: 2
+    },
+    {
+      scenario: 'the marker posted by someone else',
+      first: { login: 'someone-else' },
+      second: {},
       expected: 2
     }
   ])(
-    'posts $expected conflict comment(s) after $scenario',
-    ({ second, expected }) => {
+    'posts $expected conflict report(s) after $scenario',
+    ({ first, second, expected }) => {
       const sandbox = createSandbox()
 
-      reportConflict(sandbox, { mergeCommit: firstMergeCommit })
+      reportConflict(sandbox, first)
       reportConflict(sandbox, second)
 
-      expect(postedComments(sandbox)).toHaveLength(expected)
+      expect(postedReports(sandbox)).toHaveLength(expected)
     }
   )
+
+  it('reports the same merge commit once per target', () => {
+    const sandbox = createSandbox()
+
+    reportConflict(sandbox, { failed: `${coreConflict} ${cloudConflict}` })
+    reportConflict(sandbox, { failed: coreConflict })
+    reportConflict(sandbox, { failed: cloudConflict })
+
+    const reports = postedReports(sandbox)
+    expect(reports).toHaveLength(2)
+    expect(reports[0]).toContain('Backport to `core/1.56` failed')
+    expect(reports[1]).toContain('Backport to `cloud/1.56` failed')
+  })
 })

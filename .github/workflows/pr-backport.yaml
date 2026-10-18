@@ -493,12 +493,27 @@ jobs:
               || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
           }
 
+          # Count only reports posted by this workflow's own identity, so a
+          # marker quoted or planted by anyone else cannot suppress a notice.
+          # A locked PR gets its report as a tracking issue, so search those too.
+          POSTING_LOGIN=$(gh api user --jq '.login') || POSTING_LOGIN=""
+
           conflict_already_reported() {
-            local bodies
-            bodies=$(gh api --paginate \
-              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-              --jq '.[].body') || return 1
-            grep -Fq -- "$1" <<<"${bodies}"
+            local marker="$1" comments issues
+            [ -n "${POSTING_LOGIN}" ] || return 1
+            comments=$(gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments") || return 1
+            issues=$(gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/issues?state=open&creator=${POSTING_LOGIN}") || return 1
+            jq -en \
+              --arg login "${POSTING_LOGIN}" \
+              --arg marker "${marker}" \
+              --arg title "Backport of #${PR_NUMBER} to ${target} failed" \
+              '[inputs[]] | any(
+                .user.login == $login and
+                (.title == null or .title == $title) and
+                (.body // "" | contains($marker))
+              )' <<<"${comments}${issues}" >/dev/null
           }
 
           for failure in ${{ steps.backport.outputs.failed }}; do
@@ -520,10 +535,11 @@ jobs:
               notify "@${PR_AUTHOR} Backport to \`${target}\` cherry-picked cleanly but the push failed. Please retry or push the backport branch manually." "push-failed ${target}"
 
             elif [ "${reason}" = "conflicts" ]; then
-              CONFLICT_MARKER="<!-- backport-conflict:${target}:${MERGE_COMMIT} -->"
+              TARGET_HEAD=$(git rev-parse --verify -q "origin/${target}") || TARGET_HEAD=""
+              CONFLICT_MARKER="<!-- backport-conflict:${target}:${MERGE_COMMIT}:${TARGET_HEAD} -->"
               if [ "${FORCE_RERUN}" != "true" ] &&
                 conflict_already_reported "${CONFLICT_MARKER}"; then
-                echo "::notice::Conflict on ${target} for ${MERGE_COMMIT} is already reported on PR #${PR_NUMBER}; not posting it again."
+                echo "::notice::Conflict on ${target} (head ${TARGET_HEAD:-unknown}) for ${MERGE_COMMIT} is already reported on PR #${PR_NUMBER}; not posting it again."
                 continue
               fi
 
