@@ -727,7 +727,9 @@ function startAgentCrdtFollower(
     update: ClassifiedDocUpdate,
     outcome: FrameOutcome
   ): void => {
-    if (outcome.applied && outcome.failureCount > 0) {
+    if (!outcome.applied && getGraph() === null) {
+      markProjectionStale(update.workflowId)
+    } else if (outcome.applied && outcome.failureCount > 0) {
       markProjectionStale(update.workflowId)
     } else if (
       projectionAppliedCleanly(outcome) &&

@@ -742,6 +742,34 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('keeps a stale canvas through a deferred live frame until projection applies', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, status } = mountFollower('wf-1', true, () => graph.value)
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: false
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      graph.value = fromPartial<LGraph>({})
+      await nextTick()
+
+      expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
     it('keeps a subscribed canvas stale across a tab detour until catch-up applies', async () => {
       const { unmount, status, isTargetActive } = mountFollower('wf-1')
       dispatchFrame('doc_subscribed', {

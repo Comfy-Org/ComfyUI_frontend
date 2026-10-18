@@ -66,7 +66,7 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test(
-      'keeps two missed Load Image edits after a question-only turn',
+      'keeps deferred live edits after a question-only turn',
       {
         annotation: [
           {
@@ -76,6 +76,11 @@ test.describe(
           {
             type: 'issue',
             description: 'https://linear.app/comfy/issue/PM-2118'
+          },
+          {
+            type: 'review',
+            description:
+              'https://github.com/Comfy-Org/ComfyUI_frontend/pull/21268#discussion_r4308978765'
           }
         ]
       },
@@ -86,13 +91,7 @@ test.describe(
         const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
         const panel = new AgentPanel(page)
         const posts: AgentPostMessageRequest[] = []
-        let mayAnswerSubscribe = true
 
-        hostSocket.answerSubscribesWith((stateVector) =>
-          mayAnswerSubscribe
-            ? [host.subscribed(), host.catchUp(stateVector)]
-            : []
-        )
         await page.route('**/api/object_info', (route) =>
           route.fulfill(jsonRoute(agentReplayNodeDefs))
         )
@@ -164,23 +163,56 @@ test.describe(
         )
         await expect(panel.sendButton).toBeVisible()
 
-        mayAnswerSubscribe = false
-        const firstConnectionCount = hostSocket.connectionCount()
-        await hostSocket.disconnect()
-        host.apply([
-          widgetWrite(FIRST_NODE_ID, FIRST_FRESH_VALUE),
-          widgetWrite(SECOND_NODE_ID, SECOND_FRESH_VALUE),
-          titleWrite(FIRST_NODE_ID, freshTitle(FIRST_FRESH_VALUE)),
-          titleWrite(SECOND_NODE_ID, freshTitle(SECOND_FRESH_VALUE))
-        ])
+        const canvas = await page.evaluateHandle(() => {
+          const root = document.getElementById('vue-app') as unknown as {
+            __vue_app__: {
+              config: {
+                globalProperties: { $pinia: { _s: Map<string, unknown> } }
+              }
+            }
+          }
+          const canvasStore =
+            root.__vue_app__.config.globalProperties.$pinia._s.get(
+              'canvas'
+            ) as { canvas: unknown }
+          const canvas = canvasStore.canvas
+          canvasStore.canvas = null
+          return canvas
+        })
+        hostSocket.send(
+          host.apply([
+            widgetWrite(FIRST_NODE_ID, FIRST_FRESH_VALUE),
+            widgetWrite(SECOND_NODE_ID, SECOND_FRESH_VALUE),
+            titleWrite(FIRST_NODE_ID, freshTitle(FIRST_FRESH_VALUE)),
+            titleWrite(SECOND_NODE_ID, freshTitle(SECOND_FRESH_VALUE))
+          ])
+        )
 
         await panel.sendMessage('What is on the canvas now?')
         await expect.poll(() => posts.length).toBe(2)
-        await expect
-          .poll(() => hostSocket.connectionCount())
-          .toBeGreaterThan(firstConnectionCount)
 
-        mayAnswerSubscribe = true
+        await page.evaluate((canvas) => {
+          const root = document.getElementById('vue-app') as unknown as {
+            __vue_app__: {
+              config: {
+                globalProperties: { $pinia: { _s: Map<string, unknown> } }
+              }
+            }
+          }
+          const canvasStore =
+            root.__vue_app__.config.globalProperties.$pinia._s.get(
+              'canvas'
+            ) as { canvas: unknown }
+          canvasStore.canvas = canvas
+        }, canvas)
+        await canvas.dispose()
+        await expect(firstNode.getByTestId('node-title')).toHaveText(
+          freshTitle(FIRST_FRESH_VALUE)
+        )
+        await expect(secondNode.getByTestId('node-title')).toHaveText(
+          freshTitle(SECOND_FRESH_VALUE)
+        )
+
         const recoveryConnectionCount = hostSocket.connectionCount()
         await hostSocket.disconnect()
         await expect
