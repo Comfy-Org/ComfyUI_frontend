@@ -40,6 +40,7 @@ function standaloneEnv(
 ): NodeJS.ProcessEnv {
   const env = { ...process.env }
   for (const key of [
+    'AGENT_CRDT_MODE',
     'AGENT_M2M_SECRET',
     'AGENT_RUNNER_ENDPOINT',
     'DB_CONNECTION_STRING',
