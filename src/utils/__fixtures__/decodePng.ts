@@ -19,6 +19,32 @@ export function readU32be(bytes: Uint8Array, offset: number): number {
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
 
+function decodePixels(raw: Uint8Array, width: number, height: number) {
+  const bytesPerRow = width * 4
+  const pixels = new Uint8Array(width * height * 4)
+  for (let y = 0; y < height; y++) {
+    const rowStart = y * (bytesPerRow + 1)
+    if (raw[rowStart] !== 0) {
+      throw new Error(`unsupported scanline filter ${raw[rowStart]}`)
+    }
+    pixels.set(
+      raw.subarray(rowStart + 1, rowStart + 1 + bytesPerRow),
+      y * bytesPerRow
+    )
+  }
+  return pixels
+}
+
+function decodeText(data: Uint8Array): DecodedPng['textChunks'][number] {
+  const separator = data.indexOf(0)
+  if (separator < 1) throw new Error('missing text keyword')
+  return {
+    type: 'tEXt',
+    keyword: new TextDecoder().decode(data.subarray(0, separator)),
+    text: new TextDecoder().decode(data.subarray(separator + 1))
+  }
+}
+
 /**
  * Minimal test-only PNG reader for 8-bit RGBA images written with scanline
  * filter None (the shape `encodeRgbaAsPng` produces). Throws on anything else.
@@ -53,13 +79,7 @@ export function decodePng(bytes: Uint8Array): DecodedPng {
     } else if (type === 'IDAT') {
       idatParts.push(data)
     } else if (type === 'tEXt') {
-      const separator = data.indexOf(0)
-      if (separator < 1) throw new Error('missing text keyword')
-      textChunks.push({
-        type,
-        keyword: new TextDecoder().decode(data.subarray(0, separator)),
-        text: new TextDecoder().decode(data.subarray(separator + 1))
-      })
+      textChunks.push(decodeText(data))
     }
 
     offset += 8 + length + 4
@@ -67,18 +87,7 @@ export function decodePng(bytes: Uint8Array): DecodedPng {
 
   const raw = inflateSync(Buffer.concat(idatParts))
 
-  const bytesPerRow = width * 4
-  const pixels = new Uint8Array(width * height * 4)
-  for (let y = 0; y < height; y++) {
-    const rowStart = y * (bytesPerRow + 1)
-    if (raw[rowStart] !== 0) {
-      throw new Error(`unsupported scanline filter ${raw[rowStart]}`)
-    }
-    pixels.set(
-      raw.subarray(rowStart + 1, rowStart + 1 + bytesPerRow),
-      y * bytesPerRow
-    )
-  }
+  const pixels = decodePixels(raw, width, height)
 
   return { width, height, pixels, textChunks }
 }
