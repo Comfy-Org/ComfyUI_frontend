@@ -86,7 +86,7 @@
               $t('workspacePanel.inviteMember')
             }}</TooltipContent>
           </Tooltip>
-          <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
+          <WorkspaceMenuButton v-if="showWorkspaceMenu" />
         </div>
       </div>
     </Teleport>
@@ -310,6 +310,7 @@ const {
   showSearch,
   showViewTabs,
   showInviteButton,
+  showWorkspaceMenu,
   handleInviteMember,
   personalWorkspaceMember,
   filteredMembers,

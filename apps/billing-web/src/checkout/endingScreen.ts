@@ -57,6 +57,22 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   personal_workspace_creator: 'unknown',
   workspace_creator: 'unknown',
   only_owner: 'unknown',
+  billing_state_unknown: 'unknown',
+  free_tier_exhausted: 'unknown',
+  invite_capacity_reached: 'unknown',
+  manual_block: 'unknown',
+  no_funds: 'unknown',
+  no_revertible_scheduled_change: 'unknown',
+  no_upgrade_available: 'unknown',
+  partner_governance_not_entitled: 'unknown',
+  plan_ending: 'unknown',
+  project_cap_exceeded: 'unknown',
+  rollout_disabled: 'unknown',
+  sales_managed: 'sales_managed',
+  subscription_inactive: 'unknown',
+  usage_attribution_unavailable: 'unknown',
+  user_cap_exceeded: 'unknown',
+  workspace_cap_exceeded: 'unknown',
   unspecified: 'unknown'
 }
 
