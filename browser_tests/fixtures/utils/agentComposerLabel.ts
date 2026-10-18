@@ -13,8 +13,3 @@ const EITHER_PLACEHOLDER = `(?:${escapeRegExp(t('agent.placeholder'))}|${escapeR
 
 /** The agent composer's exact accessible name, with or without skills. */
 export const AGENT_COMPOSER_LABEL = new RegExp(`^${EITHER_PLACEHOLDER}$`)
-
-/** The agent composer's rendered placeholder hint prefix, with or without skills. */
-export const AGENT_COMPOSER_PLACEHOLDER_TEXT = new RegExp(
-  `^${EITHER_PLACEHOLDER}`
-)

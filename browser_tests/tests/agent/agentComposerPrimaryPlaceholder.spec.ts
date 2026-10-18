@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { AGENT_COMPOSER_PLACEHOLDER_TEXT } from '@e2e/fixtures/utils/agentComposerLabel'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 test.describe(
@@ -16,7 +15,9 @@ test.describe(
       await agentPanel.selectWorkflow()
       const panel = agentPanel.root
 
-      const placeholder = panel.getByText(AGENT_COMPOSER_PLACEHOLDER_TEXT)
+      const placeholder = panel.getByText(enMessages.agent.placeholder, {
+        exact: true
+      })
       await expect(placeholder).toBeVisible()
       await expect(agentPanel.composer).toHaveText('')
 
