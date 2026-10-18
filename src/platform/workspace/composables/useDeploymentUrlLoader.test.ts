@@ -148,6 +148,22 @@ describe('useDeploymentUrlLoader', () => {
     expect(useToastStore().add).not.toHaveBeenCalled()
   })
 
+  it("keeps the link's workflows folder in the URL for the boot after the pick's reload", async () => {
+    mockRouteQuery.value = {
+      workspace: 'ws-1',
+      deployment: 'dep-1',
+      workflows: 'build'
+    }
+
+    const { loadDeploymentFromUrl } = useDeploymentUrlLoader()
+    await expect(loadDeploymentFromUrl()).resolves.toBe(true)
+
+    expect(mockRouterReplace).toHaveBeenCalledWith({
+      query: { workflows: 'build' }
+    })
+    expect(useDeploymentPickStore().pickFromLink).toHaveBeenCalledWith('dep-1')
+  })
+
   it('waits for URL cleanup to complete before starting the pick', async () => {
     mockRouteQuery.value = { workspace: 'ws-1', deployment: 'dep-1' }
     let finishCleanup!: () => void

@@ -22,6 +22,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useFolderWorkflowsUrlLoader } from '@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
@@ -51,6 +52,8 @@ export function useWorkflowPersistenceV2() {
   const router = useRouter()
   const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
+  const folderWorkflowsUrlLoader = useFolderWorkflowsUrlLoader()
+  let openedFolderWorkflows = false
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const draftStore = useWorkflowDraftStoreV2()
@@ -258,6 +261,10 @@ export function useWorkflowPersistenceV2() {
   }
 
   const initializeWorkflow = async (): Promise<StartupOutcome> => {
+    openedFolderWorkflows =
+      await folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl()
+    if (openedFolderWorkflows) return 'restored'
+
     if (!workflowPersistenceEnabled.value) {
       return await resolveStartupOutcome()
     }
@@ -400,6 +407,7 @@ export function useWorkflowPersistenceV2() {
     })
 
     tabStateRestored = true
+    if (openedFolderWorkflows) return
 
     // Activate the correct workflow at storedActiveIndex
     const activePath = storedWorkflows[storedActiveIndex]
