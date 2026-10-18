@@ -31,6 +31,15 @@ const visible = useElementVisibility(root)
 const FIRST_ENTRY_START = RESULTS_START * 0.75
 const elapsed = ref(FIRST_ENTRY_START)
 const paused = ref(false)
+const playbackLabel = computed(() =>
+  zh
+    ? paused.value
+      ? '继续 CLI 会话动画'
+      : '暂停 CLI 会话动画'
+    : paused.value
+      ? 'Resume CLI session animation'
+      : 'Pause CLI session animation'
+)
 const reduced = computed(() => prefersReducedMotion())
 const resultsVisible = computed(
   () => reduced.value || elapsed.value >= RESULTS_START
@@ -145,15 +154,7 @@ onUnmounted(() => cancelAnimationFrame(frame))
         v-if="!showFooter && !reduced"
         type="button"
         class="absolute inset-0 cursor-pointer rounded-3xl focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
-        :aria-label="
-          zh
-            ? paused
-              ? '继续 CLI 会话动画'
-              : '暂停 CLI 会话动画'
-            : paused
-              ? 'Resume CLI session animation'
-              : 'Pause CLI session animation'
-        "
+        :aria-label="playbackLabel"
         @click="toggle"
       />
     </div>
