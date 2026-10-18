@@ -41,10 +41,20 @@ function isRejectedWidgetWrite(
 }
 
 function rejectedTarget(op: Op | undefined): string | undefined {
-  if (!op) return undefined
-  if (op.op === 'set_widget') return op.widget
-  if (op.op === 'add_node') return op.class_type
-  return op.op
+  if (op?.op === 'set_widget') return op.widget
+  if (op?.op === 'add_node') return op.class_type
+  return undefined
+}
+
+function withReason(
+  notice: string,
+  target: string | undefined,
+  code: string
+): string {
+  if (target)
+    return `${notice} ${i18n.global.t('agent.editRejected.reason', { target, code })}`
+  if (code === 'unspecified') return notice
+  return `${notice} ${i18n.global.t('agent.editRejected.reasonCode', { code })}`
 }
 
 /**
@@ -118,12 +128,7 @@ export function createRejectedOpNotifier() {
       const kind = noticeKey(widgetWrite, partial)
       const notice = i18n.global.t(kind)
       const target = failed && rejectedTarget(rejectedOp(ops, failed))
-      showThrottled(
-        kind,
-        target
-          ? `${notice} ${i18n.global.t('agent.editRejected.reason', { target, code })}`
-          : notice
-      )
+      showThrottled(kind, withReason(notice, target, code))
     },
     notifyWidgetWriteRefused() {
       showThrottled(

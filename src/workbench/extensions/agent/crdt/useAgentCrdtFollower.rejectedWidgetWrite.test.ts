@@ -404,7 +404,9 @@ describe('a human edit the doc host rejects', () => {
     answerWithOpsResult(batchRefusal('catalog_mismatch'))
 
     expect(toastDescriptions()).toEqual([
-      expect.stringContaining(GENERIC_REJECTION_TEXT)
+      expect.stringMatching(
+        new RegExp(`^${GENERIC_REJECTION_TEXT}.*Reason: catalog_mismatch$`)
+      )
     ])
     expect(reportedCodes()).toEqual(['catalog_mismatch'])
   })
