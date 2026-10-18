@@ -296,6 +296,12 @@ describe('a human edit the doc host rejects', () => {
       operation: NODE_ADD,
       code: 'unknown_widget',
       reason: 'Rejected: Note (unknown_widget)'
+    },
+    {
+      label: 'node delete',
+      operation: NODE_DELETE,
+      code: 'malformed_op',
+      reason: 'Rejected: node 9 (malformed_op)'
     }
   ])(
     'names what the host rejected and why for a $label',

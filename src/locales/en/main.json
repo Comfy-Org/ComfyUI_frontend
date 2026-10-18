@@ -5997,7 +5997,12 @@
       "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
       "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. Reload the workflow if the canvas still shows the rejected part.",
       "reason": "Rejected: {target} ({code})",
-      "reasonCode": "Reason: {code}"
+      "reasonCode": "Reason: {code}",
+      "targets": {
+        "node": "node {id}",
+        "nodeField": "node {id} {field}",
+        "link": "link {id}"
+      }
     },
     "consent": {
       "title": "Meet Comfy Agent",

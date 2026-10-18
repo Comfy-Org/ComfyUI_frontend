@@ -41,9 +41,25 @@ function isRejectedWidgetWrite(
 }
 
 function rejectedTarget(op: Op | undefined): string | undefined {
-  if (op?.op === 'set_widget') return op.widget
-  if (op?.op === 'add_node') return op.class_type
-  return undefined
+  const t = i18n.global.t
+  switch (op?.op) {
+    case 'set_widget':
+      return op.widget
+    case 'add_node':
+      return op.class_type
+    case 'set_node_field':
+      return t('agent.editRejected.targets.nodeField', {
+        id: String(op.node_id),
+        field: op.field
+      })
+    case 'delete_node':
+      return t('agent.editRejected.targets.node', { id: String(op.node_id) })
+    case 'connect':
+    case 'disconnect':
+      return t('agent.editRejected.targets.link', { id: String(op.link_id) })
+    default:
+      return undefined
+  }
 }
 
 function withReason(
