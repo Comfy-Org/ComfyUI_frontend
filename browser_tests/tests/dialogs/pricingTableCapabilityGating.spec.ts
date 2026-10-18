@@ -21,7 +21,7 @@ const BOOT_FEATURES = { billing_control_enabled: true }
 
 const CHANGE_CREATOR = { action: 'change' } as const
 
-async function openPricingTable(
+async function gotoPricingDeepLink(
   page: Page,
   options: {
     creator: Pick<Plan, 'action'> & { deniedReason?: Plan['denied_reason'] }
@@ -56,6 +56,13 @@ async function openPricingTable(
   )
 
   await page.goto(`${APP_URL}/?pricing=1`)
+}
+
+async function openPricingTable(
+  page: Page,
+  options: Parameters<typeof gotoPricingDeepLink>[1]
+) {
+  await gotoPricingDeepLink(page, options)
   await cloudAppExpect(
     page.getByRole('heading', { name: 'Choose a Plan' })
   ).toBeVisible()
@@ -113,23 +120,34 @@ test.describe('Pricing table plan action', { tag: '@cloud' }, () => {
     ).toBeHidden()
   })
 
-  test('renders the plan action while the capability read has not resolved', async ({
+  test('holds the catalog while the capability read has not resolved', async ({
     page
   }) => {
-    await openPricingTable(page, { creator: CHANGE_CREATOR, unresolved: true })
+    const capabilityRequest = page.waitForRequest('**/api/billing/capabilities')
+    await gotoPricingDeepLink(page, {
+      creator: CHANGE_CREATOR,
+      unresolved: true
+    })
+    await capabilityRequest
+    await page.waitForURL((url) => !url.searchParams.has('pricing'))
 
     await cloudAppExpect(
-      page.getByRole('button', { name: 'Change to Creator Yearly' })
-    ).toBeEnabled()
+      page.getByRole('heading', { name: 'Choose a Plan' })
+    ).toBeHidden()
   })
 
-  test('renders the plan action when the capability read fails', async ({
+  test('withholds the catalog when the capability read fails', async ({
     page
   }) => {
-    await openPricingTable(page, { creator: CHANGE_CREATOR, status: 500 })
+    const capabilityResponse = page.waitForResponse(
+      '**/api/billing/capabilities'
+    )
+    await gotoPricingDeepLink(page, { creator: CHANGE_CREATOR, status: 500 })
+    await capabilityResponse
+    await page.waitForURL((url) => !url.searchParams.has('pricing'))
 
     await cloudAppExpect(
-      page.getByRole('button', { name: 'Change to Creator Yearly' })
-    ).toBeEnabled()
+      page.getByRole('heading', { name: 'Choose a Plan' })
+    ).toBeHidden()
   })
 })
