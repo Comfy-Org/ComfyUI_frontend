@@ -451,7 +451,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
     ).toEqual(['head', 2, 0.1, 0.2])
   })
 
-  it.for([[['before']], [['before', 'rows']]])(
+  it.for([[['before']], [['before', 'rows']], [['before', 'rows', 'after']]])(
     'keeps aliased row values off a widget after the DynamicGroup on create with widget order %j',
     ([widgetOrder]) => {
       const { doc, collector } = followedDoc(
