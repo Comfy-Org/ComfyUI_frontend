@@ -48,6 +48,7 @@ fi
 
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
+BROWSERS="chromium chromium-2x chromium-0.5x cloud desktop mobile-chrome mobile-safari"
 
 # Install wrangler if not available (output to stderr for debugging)
 if ! command -v wrangler > /dev/null 2>&1; then
@@ -196,9 +197,6 @@ else
     echo "Available reports:"
     ls -la reports/ 2>/dev/null || echo "Reports directory not found"
 
-    BROWSERS=$(find reports -mindepth 1 -maxdepth 1 -type d -name 'playwright-report-*' 2>/dev/null |
-        sed 's|^reports/playwright-report-||' | sort | tr '\n' ' ')
-
     # Deploy all reports in parallel and collect URLs + test counts
     temp_dir=$(mktemp -d)
     pids=""
@@ -209,26 +207,32 @@ else
     BASE_DIR="$(pwd)"
     
     for browser in $BROWSERS; do
-        echo "Found report for $browser, deploying in parallel..."
-        (
-            url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$cloudflare_branch")
-            echo "$url" > "$temp_dir/$i.url"
-            echo "Deployment result for $browser: $url"
+        if [ -d "reports/playwright-report-$browser" ]; then
+            echo "Found report for $browser, deploying in parallel..."
+            (
+                url=$(deploy_report "reports/playwright-report-$browser" "$browser" "$cloudflare_branch")
+                echo "$url" > "$temp_dir/$i.url"
+                echo "Deployment result for $browser: $url"
 
-            EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
-            REPORT_DIR="$BASE_DIR/reports/playwright-report-$browser"
+                EXTRACT_SCRIPT="$SCRIPT_DIR/extract-playwright-counts.ts"
+                REPORT_DIR="$BASE_DIR/reports/playwright-report-$browser"
 
-            if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
-                echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
-                counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" 2>&1 || echo '{}')
-                echo "Extracted counts for $browser: $counts" >&2
-                echo "$counts" > "$temp_dir/$i.counts"
-            else
-                echo "Script not found or tsx not available: $EXTRACT_SCRIPT" >&2
-                echo '{}' > "$temp_dir/$i.counts"
-            fi
-        ) &
-        pids="$pids $!"
+                if command -v tsx > /dev/null 2>&1 && [ -f "$EXTRACT_SCRIPT" ]; then
+                    echo "Extracting counts from $REPORT_DIR using $EXTRACT_SCRIPT" >&2
+                    counts=$(tsx "$EXTRACT_SCRIPT" "$REPORT_DIR" "$url" 2>&1 || echo '{}')
+                    echo "Extracted counts for $browser: $counts" >&2
+                    echo "$counts" > "$temp_dir/$i.counts"
+                else
+                    echo "Script not found or tsx not available: $EXTRACT_SCRIPT" >&2
+                    echo '{}' > "$temp_dir/$i.counts"
+                fi
+            ) &
+            pids="$pids $!"
+        else
+            echo "Report not found for $browser at reports/playwright-report-$browser"
+            echo "missing" > "$temp_dir/$i.url"
+            echo '{}' > "$temp_dir/$i.counts"
+        fi
         i=$((i + 1))
     done
     
@@ -240,6 +244,7 @@ else
     # Collect URLs and counts in order
     urls=""
     all_counts=""
+    missing_reports=0
     i=0
     for browser in $BROWSERS; do
         if [ -f "$temp_dir/$i.url" ]; then
@@ -247,6 +252,7 @@ else
         else
             url="failed"
         fi
+        [ "$url" = "missing" ] && missing_reports=$((missing_reports + 1))
         if [ -z "$urls" ]; then
             urls="$url"
         else
@@ -292,7 +298,7 @@ else
     unset IFS
     
     # Determine overall status (flaky tests are treated as passing)
-    if [ $total_failed -gt 0 ]; then
+    if [ $total_failed -gt 0 ] || [ $missing_reports -gt 0 ]; then
         status_icon="❌"
     elif [ $total_tests -gt 0 ]; then
         status_icon="✅"
@@ -305,14 +311,19 @@ else
     if [ $total_flaky -gt 0 ]; then
         flaky_note=" · $total_flaky flaky"
     fi
+
+    missing_note=""
+    if [ $missing_reports -gt 0 ]; then
+        missing_note=", $missing_reports missing"
+    fi
     
     # Generate compact single-line comment (omit standalone marker when writing
     # to SUMMARY_FILE — the upsert action adds its own section delimiters).
     if [ -n "${SUMMARY_FILE:-}" ]; then
-        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+        comment="## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$missing_note$flaky_note"
     else
         comment="$COMMENT_MARKER
-## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$flaky_note"
+## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$missing_note$flaky_note"
     fi
 
     # Extract and display failed tests from all browsers (flaky tests are treated as passing)
@@ -376,7 +387,10 @@ $test_line"
         browser="${browser_array[$i]:-}"
         url="${url_array[$i]:-}"
         
-        if [ "$url" != "failed" ] && [ -n "$url" ]; then
+        if [ "$url" = "missing" ]; then
+            comment="$comment
+- **${browser}**: ❌ Report missing"
+        elif [ "$url" != "failed" ] && [ -n "$url" ]; then
             comment="$comment
 - **${browser}**: [View Report](${url})$(counts_suffix "$counts_json")"
         else
