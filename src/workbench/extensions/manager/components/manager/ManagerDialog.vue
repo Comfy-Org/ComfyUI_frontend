@@ -402,9 +402,13 @@ const loadMorePacks = () => packs.loadMore()
 const canLoadMorePacks = computed(
   () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
 )
+const isSearchFailed = computed(
+  () => isSearchBacked.value && packs.searchFailed.value
+)
 const isInitialLoad = computed(
   () =>
     isSearchBacked.value &&
+    !isSearchFailed.value &&
     searchResults.value.length === 0 &&
     searchQuery.value === ''
 )
@@ -453,7 +457,8 @@ const isManagerErrorRelevant = computed(() => {
 
 // Empty state messages based on current tab and search state
 const emptyStateTitle = computed(() => {
-  if (isManagerErrorRelevant.value) return t('manager.errorConnecting')
+  if (isManagerErrorRelevant.value || isSearchFailed.value)
+    return t('manager.errorConnecting')
   if (searchQuery.value) return t('manager.noResultsFound')
 
   const tabId = selectedTab.value?.id
@@ -465,7 +470,8 @@ const emptyStateTitle = computed(() => {
 })
 
 const emptyStateMessage = computed(() => {
-  if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
+  if (isManagerErrorRelevant.value || isSearchFailed.value)
+    return t('manager.tryAgainLater')
   if (searchQuery.value) return t('manager.tryDifferentSearch')
 
   const tabId = selectedTab.value?.id

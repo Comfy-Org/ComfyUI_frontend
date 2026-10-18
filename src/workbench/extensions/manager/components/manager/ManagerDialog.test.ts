@@ -428,6 +428,43 @@ describe('ManagerDialog legacy-manager tip', () => {
   })
 })
 
+describe('ManagerDialog failed search', () => {
+  function expectRegistryErrorState() {
+    expect(
+      screen.getByText(enMessages.manager.errorConnecting)
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(enMessages.manager.tryAgainLater)
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText(enMessages.manager.noResultsFound)
+    ).not.toBeInTheDocument()
+  }
+
+  it('says the registry could not be reached when a typed search fails', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockResolvedValueOnce(result([], false))
+      .mockRejectedValue(new Error('search unavailable'))
+    const { user, searchBox } = renderDialog()
+    await settleSearch()
+
+    await user.type(searchBox, 'gguf')
+    await settleSearch()
+
+    expectRegistryErrorState()
+  })
+
+  it('says the registry could not be reached when the opening listing fails', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockRejectedValue(
+      new Error('search unavailable')
+    )
+    renderDialog()
+    await settleSearch()
+
+    expectRegistryErrorState()
+  })
+})
+
 describe('ManagerDialog search analytics tags', () => {
   const searchedTags = () =>
     vi

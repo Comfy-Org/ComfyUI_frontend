@@ -45,6 +45,8 @@ export function useRegistrySearch(inputs: {
    * while that page loads or after it failed.
    */
   firstPage: Readonly<Ref<SearchedFirstPage | null>>
+  /** Whether the search for the first page failed; false while it loads. */
+  searchFailed: Readonly<Ref<boolean>>
 } {
   const { searchPacks } = useRegistrySearchGateway()
 
@@ -53,6 +55,7 @@ export function useRegistrySearch(inputs: {
   const morePages = ref(true)
   const suggestions = ref<QuerySuggestion[]>([])
   const firstPage = ref<SearchedFirstPage | null>(null)
+  const searchFailed = ref(false)
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   const searchedQuery = () => toValue(inputs.query).trim()
 
@@ -104,6 +107,10 @@ export function useRegistrySearch(inputs: {
         tags: { outcome: 'degraded' }
       })
       morePages.value = false
+      if (pageNumber === 0) {
+        searchFailed.value = true
+        suggestions.value = []
+      }
     }
     return 'loaded'
   }
@@ -114,6 +121,7 @@ export function useRegistrySearch(inputs: {
         pageNumber = 0
         morePages.value = true
         firstPage.value = null
+        searchFailed.value = false
         items.value = []
       } while ((await doLoadMore()) === 'inputsChanged')
     })
@@ -140,6 +148,7 @@ export function useRegistrySearch(inputs: {
     loadNew: reload,
     invalidate: reload,
     suggestions,
-    firstPage
+    firstPage,
+    searchFailed
   }
 }

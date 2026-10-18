@@ -243,6 +243,44 @@ describe('useRegistrySearch', () => {
     })
   })
 
+  it('reports a failed first-page search and clears the earlier suggestions until the next search', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockResolvedValueOnce({
+        nodePacks: packs(1),
+        querySuggestions: [{ query: 'comfyui-manager', popularity: 1 }],
+        rawResultsEmpty: false
+      })
+      .mockRejectedValueOnce(new Error('search unavailable'))
+      .mockResolvedValueOnce({
+        nodePacks: packs(1),
+        querySuggestions: [],
+        rawResultsEmpty: false
+      })
+    const query = ref('comfyui-manager')
+    const search = useRegistrySearch({ query, searchMode: 'packs' })
+    await until(search.isLoading).toBe(false)
+
+    expect(search.searchFailed.value).toBe(false)
+
+    query.value = 'comfyui-kjnodes'
+    await until(search.isLoading).toBe(true)
+    await until(search.isLoading).toBe(false)
+
+    expect(search.searchFailed.value).toBe(true)
+    expect(toValue(search.items)).toEqual([])
+    expect(search.suggestions.value).toEqual([])
+
+    query.value = 'gguf'
+    await nextTick()
+
+    expect(search.searchFailed.value).toBe(false)
+
+    await until(search.isLoading).toBe(false)
+
+    expect(search.searchFailed.value).toBe(false)
+    expect(toValue(search.items)).toEqual(packs(1))
+  })
+
   it('searches the trimmed query and ignores edits that only change surrounding whitespace', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue({
       nodePacks: packs(1),
@@ -279,6 +317,7 @@ describe('useRegistrySearch', () => {
 
     await search.loadMore()
 
+    expect(search.searchFailed.value).toBe(false)
     expect(search.firstPage.value).toEqual({
       query: 'gguf',
       searchMode: 'packs',
