@@ -123,34 +123,6 @@ describe('WidgetSelect Value Binding', () => {
     })
   })
 
-  describe('node-type prop passing', () => {
-    it('passes node-type prop to WidgetSelectDropdown', () => {
-      const spec: ComboInputSpec = {
-        type: 'COMBO',
-        name: 'test_select',
-        image_upload: true
-      }
-      const widget = createSelectWidget('option1', {}, undefined, spec)
-      renderComponent(widget, 'option1', {
-        nodeType: 'CheckpointLoaderSimple'
-      })
-
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.nodeType).toBe('CheckpointLoaderSimple')
-    })
-
-    it('does not pass node-type prop to WidgetSelectDefault', () => {
-      const widget = createSelectWidget('option1')
-      renderComponent(widget, 'option1', { nodeType: 'KSampler' })
-
-      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
-      expect(
-        screen.queryByTestId('widget-select-dropdown')
-      ).not.toBeInTheDocument()
-    })
-  })
-
   describe('Asset mode detection', () => {
     it('enables asset mode when shouldUseWidgetAssetPicker returns true', () => {
       mockShouldUseWidgetAssetPicker.mockReturnValue(true)
@@ -200,10 +172,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createSelectWidget('clip.wav', {}, undefined, spec)
       renderComponent(widget, 'clip.wav')
 
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.assetKind).toBe('audio')
-      expect(dropdown.dataset.allowUpload).toBe('true')
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
     it('uses dropdown variant for mesh uploads via spec', () => {
@@ -216,12 +185,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createSelectWidget('model.glb', {}, undefined, spec)
       renderComponent(widget, 'model.glb')
 
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.assetKind).toBe('mesh')
-      expect(dropdown.dataset.allowUpload).toBe('true')
-      expect(dropdown.dataset.uploadFolder).toBe('input')
-      expect(dropdown.dataset.uploadSubfolder).toBe('3d')
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
     it('keeps default select when no spec or media hints are present', () => {

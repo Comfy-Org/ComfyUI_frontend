@@ -338,11 +338,11 @@ function normalizeFilePathSeparators(filepath: string): string {
  * @param filepath The filepath to parse
  * @returns Object containing filename and subfolder
  */
-export function parseFilePath(filepath: string): {
+export function parseFilePath(filepath?: string): {
   filename: string
   subfolder: string
 } {
-  if (!filepath.trim()) return { filename: '', subfolder: '' }
+  if (!filepath?.trim()) return { filename: '', subfolder: '' }
 
   const normalizedPath = normalizeFilePathSeparators(filepath)
     .replace(/^\//, '') // Remove leading slash
@@ -630,16 +630,19 @@ export function formatDuration(milliseconds: number): string {
 }
 
 const IMAGE_EXTENSIONS = [
-  'png',
-  'jpg',
-  'jpeg',
-  'gif',
-  'webp',
-  'bmp',
   'avif',
+  'bmp',
+  'exr',
+  'hdr',
+  'ico',
+  'gif',
+  'jpeg',
+  'jpg',
+  'png',
+  'svg',
   'tif',
   'tiff',
-  'svg'
+  'webp'
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac', 'opus', 'm4a'] as const

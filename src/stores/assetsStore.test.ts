@@ -116,20 +116,22 @@ describe('assetsStore - OSS history pagination', () => {
       resolveFirstPage = resolve
     })
     vi.mocked(api.getHistory)
+      .mockResolvedValueOnce(createHistoryPage(0))
       .mockImplementationOnce(() => firstPage)
       .mockResolvedValueOnce([])
     const store = useAssetsStore()
+    await store.outputAssets.loadMore()
 
     const refresh = store.outputAssets.invalidate()
     const pagination = store.outputAssets.loadMore()
-    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(api.getHistory).toHaveBeenCalledTimes(2))
 
     resolveFirstPage(createHistoryPage(0))
     await Promise.all([refresh, pagination])
 
     expect(
       vi.mocked(api.getHistory).mock.calls.map(([, options]) => options)
-    ).toEqual([{ offset: 0 }, { offset: 200 }])
+    ).toEqual([{ offset: 0 }, { offset: 0 }, { offset: 200 }])
   })
 
   it('loads history pages until it finds the requested output asset', async () => {

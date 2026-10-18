@@ -77,7 +77,7 @@ function mapOutputsToAssetItems({
       size: 0,
       created_at: createdAtValue,
       updated_at: createdAtValue,
-      tags: ['output'],
+      tags: output.type ? [output.type] : ['output'],
       thumbnail_url: resultItemPreviewUrl(output),
       preview_url: resultItemUrl(output),
       user_metadata: {

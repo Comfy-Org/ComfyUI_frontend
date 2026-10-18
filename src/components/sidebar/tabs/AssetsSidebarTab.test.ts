@@ -10,15 +10,20 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { pagedItems } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
+let mockOutputAssets: PagedList<AssetItem>
+
 beforeEach(() => {
   const store = useAssetsStore()
-  store.outputAssets = {
+  mockOutputAssets = {
     items: [],
     hasMore: false,
     isLoading: false,
@@ -26,6 +31,7 @@ beforeEach(() => {
     loadNew: vi.fn(async () => {}),
     invalidate: vi.fn(async () => {})
   }
+  Object.assign(store, { outputAssets: mockOutputAssets })
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
   vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
 })
@@ -117,12 +123,13 @@ const sidebarTabTemplateStub = {
 const assetsGridStub = {
   props: ['assets'],
   emits: ['output-count-click', 'context-menu'],
+  methods: { pagedItems },
   template: `
     <div data-testid="assets-grid">
       <button
         aria-label="Enter output folder"
-        @click="$emit('output-count-click', assets[0])"
-        @contextmenu.prevent="$emit('context-menu', $event, assets[0])"
+        @click="$emit('output-count-click', pagedItems(assets)[0])"
+        @contextmenu.prevent="$emit('context-menu', $event, pagedItems(assets)[0])"
       />
     </div>
   `
@@ -145,13 +152,13 @@ function renderTab({ realTemplate = false } = {}) {
 }
 
 beforeEach(() => {
-  useAssetsStore().outputAssets.items = [folderAsset]
-  useAssetsStore().outputAssets.hasMore = false
+  mockOutputAssets.items = [folderAsset]
+  mockOutputAssets.hasMore = false
 })
 
 it('keeps pagination mounted when more assets can be loaded', () => {
-  useAssetsStore().outputAssets.items = []
-  useAssetsStore().outputAssets.hasMore = true
+  mockOutputAssets.items = []
+  mockOutputAssets.hasMore = true
 
   renderTab()
 
@@ -198,7 +205,7 @@ it('shows the sidebar close button when mounted as a sidebar tab', () => {
 
 describe('AssetsSidebarTab context menu', () => {
   it('inspects an HDR output in the HDR viewer', async () => {
-    useAssetsStore().outputAssets.items = [
+    mockOutputAssets.items = [
       {
         ...folderAsset,
         name: 'sky.exr',
@@ -226,7 +233,7 @@ describe('AssetsSidebarTab context menu', () => {
 
   it('inserts a loadable image as a node', async () => {
     const asset = { ...folderAsset, name: 'image.png' }
-    useAssetsStore().outputAssets.items = [asset]
+    mockOutputAssets.items = [asset]
     renderTab()
 
     await fireEvent.contextMenu(
@@ -242,9 +249,7 @@ describe('AssetsSidebarTab context menu', () => {
   })
 
   it('does not offer insertion for an unloadable file', async () => {
-    useAssetsStore().outputAssets.items = [
-      { ...folderAsset, name: 'result.txt' }
-    ]
+    mockOutputAssets.items = [{ ...folderAsset, name: 'result.txt' }]
     renderTab()
 
     await fireEvent.contextMenu(

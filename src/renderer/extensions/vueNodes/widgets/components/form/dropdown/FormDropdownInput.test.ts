@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import FormDropdownInput from './FormDropdownInput.vue'
 import type { FormDropdownInputProps, FormDropdownItem } from './types'
 
-const items: FormDropdownItem[] = [
+const selectedItems: FormDropdownItem[] = [
   { id: 'a', name: 'alpha' },
   { id: 'b', name: 'beta', label: 'Beta Label' },
   { id: 'c', name: 'gamma' }
@@ -30,8 +30,7 @@ function renderInput(
       plugins: [i18n]
     },
     props: {
-      items,
-      selected: new Set<string>(),
+      selectedItems,
       maxSelectable: 1,
       uploadable: false,
       disabled: false,
@@ -44,36 +43,31 @@ function renderInput(
 describe('FormDropdownInput', () => {
   describe('Display text', () => {
     it('shows placeholder when no items are selected', () => {
-      renderInput({ placeholder: 'Pick one' })
+      renderInput({ placeholder: 'Pick one', selectedItems: [] })
       expect(screen.getByText('Pick one')).toBeInTheDocument()
     })
 
     it('shows default placeholder when none is provided', () => {
-      renderInput()
+      renderInput({ selectedItems: [] })
       expect(screen.getByText('Select...')).toBeInTheDocument()
     })
 
     it('shows a single selected item name', () => {
-      renderInput({ selected: new Set(['a']) })
+      renderInput({ selectedItems: selectedItems.slice(0, 1) })
       expect(screen.getByText('alpha')).toBeInTheDocument()
     })
 
     it('prefers label over name when selected item has a label', () => {
-      renderInput({ selected: new Set(['b']) })
+      renderInput({ selectedItems: selectedItems.slice(1, 2) })
       expect(screen.getByText('Beta Label')).toBeInTheDocument()
     })
 
     it('joins multiple selected item labels with ", "', () => {
-      renderInput({ selected: new Set(['a', 'c']), maxSelectable: 2 })
-      expect(screen.getByText('alpha, gamma')).toBeInTheDocument()
-    })
-
-    it('reads display items from displayItems prop when provided', () => {
-      const displayItems: FormDropdownItem[] = [
-        { id: 'a', name: 'ALPHA_DISPLAY' }
-      ]
-      renderInput({ selected: new Set(['a']), displayItems })
-      expect(screen.getByText('ALPHA_DISPLAY')).toBeInTheDocument()
+      renderInput({
+        selectedItems: selectedItems.slice(0, 2),
+        maxSelectable: 2
+      })
+      expect(screen.getByText('alpha, Beta Label')).toBeInTheDocument()
     })
   })
 
@@ -163,8 +157,7 @@ describe('FormDropdownInput', () => {
         setup: () => ({
           inputRef,
           bindings: {
-            items,
-            selected: new Set<string>(),
+            selectedItems,
             maxSelectable: 1,
             uploadable: true,
             disabled: false,

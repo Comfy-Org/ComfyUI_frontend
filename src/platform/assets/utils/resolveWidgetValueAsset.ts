@@ -3,6 +3,7 @@ import { toValue } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetResponseSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
@@ -13,7 +14,7 @@ export async function resolveWidgetValueAsset(
   widgetValue: string,
   { signal }: { signal?: AbortSignal } = {}
 ): Promise<AssetItem | null | undefined> {
-  const { filepath: name } = parseAnnotatedPath(widgetValue)
+  const { filepath: name, rootFolder: type } = parseAnnotatedPath(widgetValue)
   const assetMatches = (asset: AssetItem) => name === (asset.hash || asset.name)
   const assetsStore = useAssetsStore()
   const storedAsset =
@@ -21,9 +22,14 @@ export async function resolveWidgetValueAsset(
     toValue(assetsStore.outputAssets.items).find(assetMatches)
   if (storedAsset) return storedAsset
 
-  if (!useFeatureFlags().flags.assetsEnabled) return undefined
+  if (!useFeatureFlags().flags.assetsEnabled)
+    return type === 'input' ? null : undefined
 
-  const query = encodeParams({ limit: 1, hash: name })
+  const query = encodeParams(
+    isCloud
+      ? { limit: 1, hash: name }
+      : { limit: 1, name_contains: name, tags_all: type }
+  )
   const resp = await api.fetchApi(`/assets?${query}`, { signal })
   const json = await resp.json().catch(() => {})
   const parseResult = assetResponseSchema.safeParse(json)

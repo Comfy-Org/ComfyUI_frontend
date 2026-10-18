@@ -14,7 +14,7 @@ export const DROPDOWN_PANEL_CLASS = 'comfy-form-dropdown-panel'
 
 export async function defaultSearcher(
   query: string,
-  items: FormDropdownItem[]
+  items: readonly FormDropdownItem[]
 ) {
   if (query.trim() === '') return items
   const words = query.trim().toLowerCase().split(' ')

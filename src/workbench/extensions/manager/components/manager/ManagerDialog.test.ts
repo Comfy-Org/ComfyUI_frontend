@@ -1,13 +1,15 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { computed, defineComponent, h, ref } from 'vue'
+import { computed, defineComponent, h, ref, toValue } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import type { SearchPacksResult } from '@/types/searchServiceTypes'
+import { isPaged, pagedItems } from '@/utils/pagedList'
+import type { MaybePaged } from '@/utils/pagedList'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -83,13 +85,22 @@ const BaseModalLayoutStub = defineComponent({
 })
 
 const VirtualGridStub = defineComponent({
-  props: { items: { type: Array as PropType<NodePack[]>, required: true } },
-  setup(props) {
-    return () =>
-      h(
+  props: {
+    items: {
+      type: [Array, Object] as PropType<MaybePaged<NodePack>>,
+      required: true
+    }
+  },
+  setup(props, { slots }) {
+    return () => {
+      const packs = pagedItems(props.items)
+      const canLoadMore = isPaged(props.items) && toValue(props.items.hasMore)
+      if (!packs.length && !canLoadMore) return slots.placeholder?.()
+      return h(
         'ul',
-        props.items.map((pack) => h('li', pack.name))
+        packs.map((pack) => h('li', pack.name))
       )
+    }
   }
 })
 
