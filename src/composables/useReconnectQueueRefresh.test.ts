@@ -350,14 +350,23 @@ describe('useReconnectQueueRefresh', () => {
       })
     })
 
-    it('replays once and refreshes again when reconnects overlap', async () => {
+    it('restores a run that finished during an interrupted refresh on the rerun, once', async () => {
       followRun('job-1')
+      vi.mocked(api.getQueue)
+        .mockResolvedValueOnce({
+          Running: [makeJob('job-1', 'in_progress')],
+          Pending: []
+        })
+        .mockResolvedValue({ Running: [], Pending: [] })
       vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
       const refresh = useReconnectQueueRefresh()
 
       await Promise.all([refresh(), refresh()])
 
-      expect(replayedExecutedFrames()).toHaveLength(1)
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+      ])
+      expect(useExecutionStore().activeJobId).toBeNull()
       expect(api.getQueue).toHaveBeenCalledTimes(2)
     })
 
