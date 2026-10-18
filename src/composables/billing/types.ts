@@ -98,6 +98,7 @@ export interface BalanceInfo {
   amountMicros: number
   currency: string
   effectiveBalanceMicros?: number
+  effectiveBalanceAuthoritative?: boolean
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
 }
