@@ -60,7 +60,7 @@ test.describe(
         agentBilling.failSubsequentRefreshes()
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText(['Make the lighting warmer'])
+        ).toHaveText(['Build a red fox workflow', 'Make the lighting warmer'])
         await agentPanel.close()
         heldRefresh.release()
         await heldRefresh.completed
@@ -78,7 +78,11 @@ test.describe(
         await expect(paywall).toBeVisible()
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText(['Add shallow depth of field'])
+        ).toHaveText([
+          'Build a red fox workflow',
+          'Make the lighting warmer',
+          'Add shallow depth of field'
+        ])
       })
 
       await test.step('recover again and preserve the conversation', async () => {
@@ -89,7 +93,12 @@ test.describe(
         await expect(paywall).toHaveCount(0)
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
-        ).toHaveText(['Add shallow depth of field', 'Finish the workflow'])
+        ).toHaveText([
+          'Build a red fox workflow',
+          'Make the lighting warmer',
+          'Add shallow depth of field',
+          'Finish the workflow'
+        ])
       })
 
       await test.step('warn once the Agent grant alone runs out', async () => {
