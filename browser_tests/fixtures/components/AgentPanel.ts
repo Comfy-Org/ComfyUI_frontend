@@ -10,8 +10,8 @@ import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 type AgentAttachmentOutcome =
   | 'attached'
