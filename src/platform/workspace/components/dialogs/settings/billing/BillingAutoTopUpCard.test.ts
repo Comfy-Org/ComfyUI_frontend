@@ -211,4 +211,28 @@ describe('BillingAutoTopUpCard', () => {
     )
     visibility.mockRestore()
   })
+
+  it('offers a retry instead of the old status when a reread fails', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get')
+    renderCard(configured)
+    expect(
+      await screen.findByTestId('billing-auto-top-up-status')
+    ).toHaveTextContent('On')
+
+    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+      new WorkspaceApiError('boom', 500)
+    )
+    visibility.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(
+      await screen.findByText("Couldn't load auto top-up.")
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('billing-auto-top-up-status')
+    ).not.toBeInTheDocument()
+    visibility.mockRestore()
+  })
 })
