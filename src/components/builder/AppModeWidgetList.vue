@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, provide, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
+import type { MenuItem } from '@/components/ui/menu/types'
 
 import WidgetDescription from '@/components/builder/WidgetDescription.vue'
 import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
 import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
+import { autoGroupName } from '@/components/builder/useInputGroups'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -23,6 +25,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useTemplateInputDownloadStore } from '@/stores/templateInputDownloadStore'
+import { useInputGroupStore } from '@/stores/inputGroupStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
@@ -33,19 +36,29 @@ interface WidgetEntry {
   persistedHeight: number | undefined
   nodeData: ReturnType<typeof nodeToNodeData>
   widgetIds: readonly WidgetId[]
-  action: { widget: IBaseWidget; node: LGraphNode }
+  action: { widgetId: WidgetId; widget: IBaseWidget; node: LGraphNode }
   description?: string
 }
 
-const { mobile = false, builderMode = false } = defineProps<{
+const {
+  mobile = false,
+  builderMode = false,
+  widgetIds,
+  hideActions = false,
+  draggable = true
+} = defineProps<{
   mobile?: boolean
   builderMode?: boolean
+  widgetIds?: readonly WidgetId[]
+  hideActions?: boolean
+  draggable?: boolean
 }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const appModeStore = useAppModeStore()
 const templateInputDownloadStore = useTemplateInputDownloadStore()
+const inputGroupStore = useInputGroupStore()
 const widgetValueStore = useWidgetValueStore()
 const linkStore = useLinkStore()
 const maskEditor = useMaskEditor()
@@ -58,6 +71,17 @@ provide(HideLayoutFieldKey, true)
 provide(WidgetHeightKey, mobile ? 'h-10' : 'h-7')
 
 const resolvedInputs = useResolvedSelectedInputs()
+const isDraggable = computed(() => builderMode && draggable)
+const widgetIdFilter = computed(() =>
+  widgetIds ? new Set(widgetIds) : undefined
+)
+
+function shouldRender(widgetId: WidgetId): boolean {
+  const includedIds = widgetIdFilter.value
+  return includedIds
+    ? includedIds.has(widgetId)
+    : !inputGroupStore.isGrouped(widgetId)
+}
 
 function ensureSelectedWidgetState(
   widgetId: WidgetId,
@@ -89,6 +113,7 @@ function isWidgetInputLinked(node: LGraphNode, widgetName: string): boolean {
 watchEffect(() => {
   for (const entry of resolvedInputs.value) {
     if (entry.status !== 'resolved') continue
+    if (!shouldRender(entry.widgetId)) continue
     if (entry.node.mode !== LGraphEventMode.ALWAYS) continue
     ensureSelectedWidgetState(entry.widgetId, entry.widget)
   }
@@ -98,6 +123,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
   return resolvedInputs.value.flatMap((entry) => {
     if (entry.status !== 'resolved') return []
     const { widgetId, node, widget, config } = entry
+    if (!shouldRender(widgetId)) return []
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
     if (isWidgetInputLinked(node, widget.name)) return []
@@ -110,7 +136,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
         description: config?.description,
         nodeData: fullNodeData,
         widgetIds: [widgetId],
-        action: { widget, node }
+        action: { widgetId, widget, node }
       }
     ]
   })
@@ -140,13 +166,59 @@ function nodeToNodeData(node: LGraphNode, id: WidgetId) {
 
 async function handleDragDrop() {
   const onDragDrop = async (e: DragEvent) => {
-    for (const { nodeData } of mappedSelections.value)
+    for (const entry of resolvedInputs.value) {
+      if (entry.status !== 'resolved') continue
+      const { node, widget, widgetId } = entry
+      if (node.mode !== LGraphEventMode.ALWAYS) continue
+      if (isWidgetInputLinked(node, widget.name)) continue
+      const nodeData = nodeToNodeData(node, widgetId)
       if (nodeData?.onDragOver?.(e) && (await nodeData.onDragDrop?.(e)))
         return true
+    }
     return false
   }
 
   app.dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
+}
+
+function buildMenuEntries(action: WidgetEntry['action']): MenuItem[] {
+  const entries: MenuItem[] = [
+    {
+      label: t('g.rename'),
+      icon: 'icon-[lucide--pencil]',
+      command: () => promptRenameWidget(action.widget, action.node, t)
+    },
+    {
+      label: t('g.remove'),
+      icon: 'icon-[lucide--x]',
+      command: () => appModeStore.removeSelectedInput(action.widget)
+    }
+  ]
+
+  if (!builderMode) return entries
+
+  const groups = inputGroupStore.inputGroups
+  if (groups.length > 0) {
+    entries.push({ separator: true })
+    for (const group of groups) {
+      const name = group.name ?? autoGroupName(group, resolvedInputs.value)
+      entries.push({
+        label: `${t('linearMode.groups.addToGroup')}: ${name}`,
+        icon: 'icon-[lucide--group]',
+        command: () => inputGroupStore.addItemToGroup(group.id, action.widgetId)
+      })
+    }
+  } else {
+    entries.push({ separator: true })
+  }
+
+  entries.push({
+    label: t('linearMode.groups.newGroup'),
+    icon: 'icon-[lucide--plus]',
+    command: () => inputGroupStore.createGroup(undefined, action.widgetId)
+  })
+
+  return entries
 }
 
 defineExpose({ handleDragDrop })
@@ -164,7 +236,7 @@ defineExpose({ handleDragDrop })
     :key
     :class="
       cn(
-        builderMode &&
+        isDraggable &&
           'draggable-item drag-handle pointer-events-auto relative cursor-grab [&.is-draggable]:cursor-grabbing'
       )
     "
@@ -198,20 +270,9 @@ defineExpose({ handleDragDrop })
       </span>
       <div v-else class="flex-1" />
       <Menu
+        v-if="!hideActions"
         :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
-        :items="[
-          {
-            label: t('g.rename'),
-            // fallow-ignore-next-line css-token-drift
-            icon: 'icon-[lucide--pencil]',
-            command: () => promptRenameWidget(action.widget, action.node, t)
-          },
-          {
-            label: t('g.remove'),
-            icon: 'icon-[lucide--x]',
-            command: () => appModeStore.removeSelectedInput(action.widget)
-          }
-        ]"
+        :items="buildMenuEntries(action)"
       >
         <template #trigger>
           <Button

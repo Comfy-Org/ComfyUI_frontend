@@ -6,6 +6,8 @@ import {
   zClipboardItems
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { defaultGraph } from '@/scripts/defaultGraph'
+import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@/types/nodeId'
 
 const WORKFLOW_DIR = 'src/platform/workflow/validation/schemas/__fixtures__'
 
@@ -472,5 +474,34 @@ describe('zClipboardItems', () => {
     if (!result.success) throw result.error
     expect(result.data.groups?.[0].id).toBe(-1)
     expect(result.data.reroutes?.[0].linkIds).toEqual([])
+  })
+})
+
+describe('linearData.inputGroups schema', () => {
+  const key = widgetId('root', toNodeId(1), 'steps')
+
+  it('preserves groups and pair identifiers across workflow validation', async () => {
+    const inputGroups = [
+      { id: 'group', name: 'Generation', items: [{ key, pairId: 'pair' }] }
+    ]
+    const result = await validateComfyWorkflow({
+      ...defaultGraph,
+      extra: {
+        linearData: { inputs: [[key, 'steps']], outputs: [], inputGroups }
+      }
+    })
+    expect(result?.extra?.linearData?.inputGroups).toEqual(inputGroups)
+  })
+
+  it.for([
+    { id: 'group', name: null, items: [{ key: 'invalid' }] },
+    { id: 'group', name: null, items: null },
+    { id: 'group', name: null, items: [{ key, pairId: 123 }] }
+  ])('rejects malformed input group metadata: %j', async (group) => {
+    const result = await validateComfyWorkflow({
+      ...defaultGraph,
+      extra: { linearData: { inputs: [], outputs: [], inputGroups: [group] } }
+    })
+    expect(result).toBeNull()
   })
 })

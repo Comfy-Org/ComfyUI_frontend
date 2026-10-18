@@ -22,9 +22,21 @@ type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
 type LinearOutputNodeId = SerializedNodeId
 export type LinearInput = [LinearInputId, string, InputWidgetConfig?]
 
+export interface InputGroupItem {
+  key: WidgetId
+  pairId?: string
+}
+
+export interface InputGroup {
+  id: string
+  name: string | null
+  items: InputGroupItem[]
+}
+
 export interface LinearData {
   inputs: LinearInput[]
   outputs: LinearOutputNodeId[]
+  inputGroups?: InputGroup[]
 }
 
 export interface PendingWarnings {

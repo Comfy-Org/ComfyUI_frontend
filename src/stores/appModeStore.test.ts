@@ -668,6 +668,34 @@ describe('appModeStore', () => {
       })
     })
 
+    it('preserves input groups when selected inputs or outputs change', async () => {
+      workflowStore.activeWorkflow = createBuilderWorkflow()
+      await nextTick()
+
+      const groupedWidgetId = widgetId('root', toNodeId(1), 'prompt')
+      const inputGroups = [
+        {
+          id: 'group-1',
+          name: 'Prompt',
+          items: [{ key: groupedWidgetId }]
+        }
+      ]
+      app.rootGraph.extra.linearData = {
+        inputs: [],
+        outputs: [],
+        inputGroups
+      }
+
+      store.selectedOutputs.push(toNodeId(1))
+      await nextTick()
+
+      expect(app.rootGraph.extra.linearData).toEqual({
+        inputs: [],
+        outputs: [toNodeId(1)],
+        inputGroups
+      })
+    })
+
     it('does not write linearData when not in builder mode', async () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
       await nextTick()
