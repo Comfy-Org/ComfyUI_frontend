@@ -6,7 +6,7 @@
     v-else
     :class="
       cn(
-        'lg-node-header w-full min-w-0 p-1 text-xs',
+        'lg-node-header w-full min-w-0 px-1 py-[5px] text-xs',
         'text-node-component-slot-text',
         headerShapeClass
       )
