@@ -75,7 +75,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = agentPanel.composer
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
     await expect(composer).toHaveText('')
@@ -185,7 +185,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
     const panel = agentPanel.root
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = agentPanel.composer
     const prompt = 'Build a product photo workflow'
 
     await test.step('reject the next turn with a no-funds admission error', async () => {
@@ -394,9 +394,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
       await test.step('retain tool metadata without conversation content', async () => {
         await agentPanel.selectWorkflow()
-        const composer = agentPanel.root.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
+        const composer = agentPanel.composer
         await composer.fill('private diagnostic prompt')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
         await expect(
@@ -457,7 +455,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await agentPanel.open()
 
       const panel = agentPanel.root
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = agentPanel.composer
       const input = panel.getByTestId('composer-inline-input')
 
       await comfyPage.clipboard.writeText('A growing prompt line\n'.repeat(14))
@@ -675,7 +673,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.selectWorkflow()
 
     const panel = agentPanel.root
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = agentPanel.composer
     const originalPrompt = 'Build a rainy city at night'
     const revisedPrompt = 'Build a rainy city at sunrise'
 

@@ -659,6 +659,11 @@ function selection() {
   }
 }
 
+function insertText(text: string): void {
+  if (!view) return
+  view.dispatch(view.state.tr.insertText(text))
+}
+
 function replaceText(from: number, to: number, text: string): void {
   if (!view) return
   view.dispatch(
@@ -751,6 +756,7 @@ defineExpose({
       : { textOffset: 0, referenceIndex: 0 },
   focus: () => view?.focus(),
   selection,
+  insertText,
   replaceText,
   selectSkill,
   captureInsertion

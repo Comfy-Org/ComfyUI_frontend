@@ -74,9 +74,7 @@ test.describe(
       await test.step('select the workflow and send an agent turn', async () => {
         const agentPanel = new AgentPanel(page)
         await agentPanel.selectWorkflow()
-        const composer = agentPanel.root.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
+        const composer = agentPanel.composer
         await composer.fill('Build the subgraph')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
       })
@@ -298,9 +296,7 @@ test.describe(
       await test.step('select the workflow and send an agent turn', async () => {
         const agentPanel = new AgentPanel(page)
         await agentPanel.selectWorkflow()
-        const composer = agentPanel.root.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
+        const composer = agentPanel.composer
         await composer.fill('Edit inside the subgraph')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
       })
@@ -422,9 +418,7 @@ test.describe(
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))
       await agentPanel.selectWorkflow()
-      const composer = agentPanel.root.getByRole('textbox', {
-        name: /^Describe ideas/
-      })
+      const composer = agentPanel.composer
       await composer.fill('Inspect the subgraph')
       await agentPanel.root.getByRole('button', { name: 'Send' }).click()
 
