@@ -592,7 +592,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('clears a stale canvas only after reconnect catch-up arrives', () => {
+    it('clears a stale canvas only after reconnect catch-up projects without failures', () => {
       const { unmount, status } = mountFollower('wf-1')
       dispatchFrame('doc_subscribed', {
         ok: true,
@@ -611,9 +611,20 @@ describe('useAgentCrdtFollower', () => {
       expect(status().connected).toBe(true)
       expect(status().canvasMayBeStale).toBe(true)
 
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 2,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 3,
         catchUp: true
       })
 
@@ -648,10 +659,20 @@ describe('useAgentCrdtFollower', () => {
 
       expect(status().canvasMayBeStale).toBe(true)
 
+      projectionState.applyCollected.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
       graph.value = fromPartial<LGraph>({})
       await nextTick()
 
       expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
+      expect(status().canvasMayBeStale).toBe(true)
+
+      graph.value = null
+      await nextTick()
+      graph.value = fromPartial<LGraph>({})
+      await nextTick()
+
       expect(status().canvasMayBeStale).toBe(false)
       unmount()
     })

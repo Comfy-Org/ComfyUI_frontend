@@ -67,6 +67,10 @@ function isAgentFrame(actor: string | undefined): boolean {
   return actor === undefined || actor.startsWith('agent:')
 }
 
+function projectionAppliedCleanly(outcome: FrameOutcome): boolean {
+  return outcome.applied && outcome.failureCount === 0
+}
+
 function reportAgentProjection(
   frame: ProjectionFrameId,
   stage: AgentGraphProjectionStage,
@@ -570,7 +574,10 @@ function startAgentCrdtFollower(
   const applyCollected = (workflowId: string): void => {
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
-    if (catchUpAwaitingProjectionFor === workflowId) clearCanvasStaleness()
+    if (catchUpAwaitingProjectionFor === workflowId) {
+      if (outcome.failureCount === 0) clearCanvasStaleness()
+      else canvasMayBeStale.value = true
+    }
     reportMaterialized(workflowId, outcome.createdNodeIds)
     reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }
@@ -670,6 +677,15 @@ function startAgentCrdtFollower(
       if (lifecycle.refusalIsFinal()) clearCanvasStaleness()
     }
   }
+  const settleCatchUpProjection = (
+    update: ClassifiedDocUpdate,
+    outcome: FrameOutcome
+  ): void => {
+    if (!update.catchUp) return
+    if (projectionAppliedCleanly(outcome)) clearCanvasStaleness()
+    else if (outcome.applied) markCanvasStale()
+    else catchUpAwaitingProjectionFor = update.workflowId
+  }
   const onUpdate: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     const update = event.detail as ClassifiedDocUpdate
@@ -682,10 +698,7 @@ function startAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const outcome = applyFrame(update)
-    if (update.catchUp) {
-      if (outcome.applied) clearCanvasStaleness()
-      else catchUpAwaitingProjectionFor = update.workflowId
-    }
+    settleCatchUpProjection(update, outcome)
     const nodes = outcome.nodes
     const created = outcome.applied ? outcome.createdNodeIds : []
     reportFrameProjection(update, outcome)
