@@ -53,6 +53,10 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import {
+  bindCanvasTracker,
+  canCaptureCanvas
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -536,18 +540,16 @@ describe('ComfyApp', () => {
         })
       )
       useWorkflowStore().activeWorkflow = outgoing
-      ChangeTracker.bindCanvasTracker(outgoing.changeTracker)
+      bindCanvasTracker(outgoing.changeTracker)
       let couldCaptureDuringDeactivate = false
       vi.mocked(outgoing.changeTracker.deactivate).mockImplementation(() => {
-        couldCaptureDuringDeactivate = ChangeTracker.canCaptureCanvas(
-          outgoing.changeTracker
-        )
+        couldCaptureDuringDeactivate = canCaptureCanvas(outgoing.changeTracker)
       })
 
       await app.loadGraphData(createWorkflowGraphData())
 
       expect(couldCaptureDuringDeactivate).toBe(true)
-      expect(ChangeTracker.canCaptureCanvas(outgoing.changeTracker)).toBe(false)
+      expect(canCaptureCanvas(outgoing.changeTracker)).toBe(false)
     })
 
     it('keeps the outgoing workflow able to capture across an awaiting beforeLoadGraph hook', async () => {
@@ -563,22 +565,14 @@ describe('ComfyApp', () => {
         })
       )
       useWorkflowStore().activeWorkflow = outgoing
-      ChangeTracker.bindCanvasTracker(outgoing.changeTracker)
-
-      // An extension hook that awaits real work crosses a task boundary, so a
-      // queued capture (the keydown rAF capture) can run here. The outgoing
-      // graph is still the one on the canvas, so that capture is legitimate:
-      // dropping it would let a failed target load repaint the retained
-      // workflow from an activeState missing its last change.
+      bindCanvasTracker(outgoing.changeTracker)
       let hookName: unknown
       let couldCaptureInsideHook: boolean | undefined
       mockExtensionService.invokeExtensionsAsync.mockImplementationOnce(
         async (hook: unknown) => {
           hookName = hook
           await Promise.resolve()
-          couldCaptureInsideHook = ChangeTracker.canCaptureCanvas(
-            outgoing.changeTracker
-          )
+          couldCaptureInsideHook = canCaptureCanvas(outgoing.changeTracker)
         }
       )
 
@@ -586,7 +580,7 @@ describe('ComfyApp', () => {
 
       expect(hookName).toBe('beforeLoadGraph')
       expect(couldCaptureInsideHook).toBe(true)
-      expect(ChangeTracker.canCaptureCanvas(outgoing.changeTracker)).toBe(false)
+      expect(canCaptureCanvas(outgoing.changeTracker)).toBe(false)
     })
 
     it('forwards clean and navigation intent to workflow navigation', async () => {

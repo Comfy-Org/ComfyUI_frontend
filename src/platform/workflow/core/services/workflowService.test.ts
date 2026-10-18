@@ -29,6 +29,12 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import {
+  bindCanvasTracker,
+  canCaptureCanvas,
+  invalidateCanvasTracker,
+  isCanvasOwner
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -672,7 +678,7 @@ describe('useWorkflowService', () => {
       const activeTracker = active.changeTracker
       if (!activeTracker) throw new Error('Expected loaded workflow')
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
-      ChangeTracker.bindCanvasTracker(activeTracker)
+      bindCanvasTracker(activeTracker)
       const service = useWorkflowService()
 
       await service.openWorkflow(active)
@@ -702,7 +708,7 @@ describe('useWorkflowService', () => {
       await service.openWorkflow(active)
 
       expect(app.loadGraphData).toHaveBeenCalledOnce()
-      expect(ChangeTracker.isCanvasOwner(activeTracker)).toBe(true)
+      expect(isCanvasOwner(activeTracker)).toBe(true)
     })
 
     it('re-opens a workflow normally once its close has settled', async () => {
@@ -911,9 +917,9 @@ describe('useWorkflowService', () => {
       const retainedTracker = retained.changeTracker
       if (!retainedTracker) throw new Error('Expected loaded workflow')
       workflowStore.activeWorkflow = retained as LoadedComfyWorkflow
-      ChangeTracker.bindCanvasTracker(retainedTracker)
+      bindCanvasTracker(retainedTracker)
       vi.mocked(app.loadGraphData).mockImplementation(async () => {
-        ChangeTracker.invalidateCanvasTracker()
+        invalidateCanvasTracker()
         return false
       })
 
@@ -922,7 +928,7 @@ describe('useWorkflowService', () => {
       )
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
-      expect(ChangeTracker.canCaptureCanvas(retainedTracker)).toBe(false)
+      expect(canCaptureCanvas(retainedTracker)).toBe(false)
     })
 
     it('serializes rapid workflow opens so the final selection stays active', async () => {
@@ -2199,9 +2205,7 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().afterLoadNewGraph('repeat', makeWorkflowData())
 
-      expect(ChangeTracker.isCanvasOwner(existingWorkflow.changeTracker)).toBe(
-        true
-      )
+      expect(isCanvasOwner(existingWorkflow.changeTracker)).toBe(true)
       expect(
         useNodeOutputStore().restorePreviewsForWorkflow
       ).toHaveBeenCalledWith(existingWorkflow.path)

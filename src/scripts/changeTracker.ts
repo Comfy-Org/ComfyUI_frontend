@@ -16,6 +16,11 @@ import {
   parseFlattenableSubgraphDefinitions
 } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import {
+  canCaptureCanvas,
+  isCanvasCaptureBlocked,
+  resetCanvasTrackerForTest
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -27,14 +32,6 @@ import { isSelectOnly } from '@/utils/litegraphUtil'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { api } from './api'
-import {
-  bindCanvasTracker,
-  canCaptureCanvas,
-  invalidateCanvasTracker,
-  isCanvasCaptureBlocked,
-  isCanvasOwner,
-  resetCanvasTrackerForTest
-} from './canvasTrackerOwnership'
 import {
   collectNodeHistoryWidgets,
   nodeHistoryValuesChanged,
@@ -354,29 +351,6 @@ function reportCanvasMismatchCall(method: string, workflowPath: string) {
 export class ChangeTracker implements WorkflowChangeTracker {
   static MAX_HISTORY = 50
 
-  // Ownership is identity only — these never call into the tracker — so they
-  // take the `WorkflowChangeTracker` contract a `ComfyWorkflow` exposes rather
-  // than the concrete class.
-  static bindCanvasTracker(tracker: WorkflowChangeTracker) {
-    bindCanvasTracker(tracker)
-  }
-
-  static invalidateCanvasTracker() {
-    invalidateCanvasTracker()
-  }
-
-  static isCanvasOwner(tracker: WorkflowChangeTracker): boolean {
-    return isCanvasOwner(tracker)
-  }
-
-  static canCaptureCanvas(tracker: WorkflowChangeTracker): boolean {
-    return canCaptureCanvas(tracker)
-  }
-
-  private static isCanvasCaptureBlocked(): boolean {
-    return isCanvasCaptureBlocked()
-  }
-
   static resetCanvasTrackerForTest() {
     resetCanvasTrackerForTest()
     reportedCanvasMismatchCalls.clear()
@@ -549,8 +523,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
       reportInactiveTrackerCall('captureCanvasState', this.workflow.path)
       return
     }
-    if (ChangeTracker.isCanvasCaptureBlocked()) return
-    if (!ChangeTracker.canCaptureCanvas(this)) {
+    if (isCanvasCaptureBlocked()) return
+    if (!canCaptureCanvas(this)) {
       reportCanvasMismatchCall('captureCanvasState', this.workflow.path)
       return
     }
@@ -585,7 +559,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
       ChangeTracker.isLoadingGraph ||
-      !ChangeTracker.canCaptureCanvas(this)
+      !canCaptureCanvas(this)
     )
       return
 

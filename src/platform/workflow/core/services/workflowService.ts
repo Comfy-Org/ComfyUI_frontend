@@ -28,7 +28,7 @@ import { useApp } from '@/scripts/appInstance'
 import {
   bindCanvasTracker,
   isCanvasOwner
-} from '@/scripts/canvasTrackerOwnership'
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
@@ -737,17 +737,6 @@ export const useWorkflowService = () => {
       useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
     }
 
-    /**
-     * Activate `workflow` in the store and record its tracker as the one
-     * whose graph is on the canvas. This is the only place the two are
-     * bound together: loadGraphData() has just configured the root graph
-     * with this workflow's data.
-     *
-     * Returns null when the canvas graph was replaced while the store
-     * activation was in flight. Binding ownership then would name a tracker
-     * whose graph is no longer on the canvas, which is the corruption this
-     * binding exists to prevent.
-     */
     async function bindToCanvas(workflow: ComfyWorkflow) {
       const loadedWorkflow = await workflowStore.openWorkflow(workflow)
       if (graphState !== useApp().rootGraphOrUndefined?.state) return null
