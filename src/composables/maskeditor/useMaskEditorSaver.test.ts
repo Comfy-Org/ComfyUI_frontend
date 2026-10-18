@@ -11,7 +11,6 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { getFromPngBuffer } from '@/scripts/metadata/png'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { decodePng } from '@/utils/__fixtures__/decodePng'
@@ -227,11 +226,21 @@ describe('useMaskEditorSaver', () => {
       mockDataStore.outputData.paintedMaskedImage.ref.filename
     )
     assert.exists(edited)
-    expect(await getFromPngBuffer(await edited.arrayBuffer())).toEqual({
-      prompt: '{"1":{"class_type":"KSampler","inputs":{}}}',
-      workflow:
-        '{"nodes":[{"id":1,"type":"KSampler","pos":[100,100],"size":[200,200]}]}'
-    })
+    const png = decodePng(new Uint8Array(await edited.arrayBuffer()))
+    expect(
+      png.textChunks.toSorted((a, b) => a.keyword.localeCompare(b.keyword))
+    ).toEqual([
+      {
+        type: 'tEXt',
+        keyword: 'prompt',
+        text: '{"1":{"class_type":"KSampler","inputs":{}}}'
+      },
+      {
+        type: 'tEXt',
+        keyword: 'workflow',
+        text: '{"nodes":[{"id":1,"type":"KSampler","pos":[100,100],"size":[200,200]}]}'
+      }
+    ])
   })
 
   it.for([

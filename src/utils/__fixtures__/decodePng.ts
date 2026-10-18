@@ -1,9 +1,10 @@
-import { inflateSync } from 'node:zlib'
+import { crc32, inflateSync } from 'node:zlib'
 
 export interface DecodedPng {
   width: number
   height: number
   pixels: Uint8Array
+  textChunks: { type: 'tEXt'; keyword: string; text: string }[]
 }
 
 export function readU32be(bytes: Uint8Array, offset: number): number {
@@ -31,12 +32,19 @@ export function decodePng(bytes: Uint8Array): DecodedPng {
   let width = 0
   let height = 0
   const idatParts: Uint8Array[] = []
+  const textChunks: DecodedPng['textChunks'] = []
 
   while (offset < bytes.length) {
     const length = readU32be(bytes, offset)
     const type = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8))
     const data = bytes.subarray(offset + 8, offset + 8 + length)
+    if (
+      crc32(bytes.subarray(offset + 4, offset + 8 + length)) !==
+      readU32be(bytes, offset + 8 + length)
+    )
+      throw new Error(`invalid ${type} checksum`)
 
+    if (type === 'IEND') break
     if (type === 'IHDR') {
       width = readU32be(data, 0)
       height = readU32be(data, 4)
@@ -44,6 +52,14 @@ export function decodePng(bytes: Uint8Array): DecodedPng {
       if (data[9] !== 6) throw new Error(`unsupported color type ${data[9]}`)
     } else if (type === 'IDAT') {
       idatParts.push(data)
+    } else if (type === 'tEXt') {
+      const separator = data.indexOf(0)
+      if (separator < 1) throw new Error('missing text keyword')
+      textChunks.push({
+        type,
+        keyword: new TextDecoder().decode(data.subarray(0, separator)),
+        text: new TextDecoder().decode(data.subarray(separator + 1))
+      })
     }
 
     offset += 8 + length + 4
@@ -64,5 +80,5 @@ export function decodePng(bytes: Uint8Array): DecodedPng {
     )
   }
 
-  return { width, height, pixels }
+  return { width, height, pixels, textChunks }
 }
