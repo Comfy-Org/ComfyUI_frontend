@@ -272,11 +272,8 @@ function onPaywallAction(
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
-const {
-  messages: conversationMessages,
-  entries: conversationEntries,
-  threadId: conversationThreadId
-} = storeToRefs(conversationStore)
+const { messages: conversationMessages, entries: conversationEntries } =
+  storeToRefs(conversationStore)
 watch(
   () =>
     // Gated on the read having *settled*, which includes settling as
@@ -372,9 +369,11 @@ const latestEntryHasPaywall = computed(() => {
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
+const threadHasUserMessage = computed(() =>
+  conversationEntries.value.some((entry) => entry.role === 'user')
+)
 const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value || conversationThreadId.value === null)
-    return false
+  if (!creditsExhausted.value || !threadHasUserMessage.value) return false
   return !latestEntryHasPaywall.value
 })
 
