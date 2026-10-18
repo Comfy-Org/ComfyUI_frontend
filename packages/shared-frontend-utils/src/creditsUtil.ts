@@ -45,10 +45,6 @@ export const usdToCredits = (usd: number): number =>
 export const creditsToUsd = (credits: number): number =>
   Math.round((credits / CREDITS_PER_USD) * 100) / 100
 
-/** Unrounded, so callers can show fractional credits for small charges. */
-export const microUsdToCredits = (microUsd: number): number =>
-  (microUsd / 1_000_000) * CREDITS_PER_USD
-
 export type FormatOptions = {
   value: number
   locale?: string

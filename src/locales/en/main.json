@@ -2995,8 +2995,6 @@
     "time": "Time",
     "additionalInfo": "Additional Info",
     "charge": "Charge",
-    "chargeCredits": "{amount} credits",
-    "chargeCreditsBelow": "<{amount} credits",
     "model": "Model",
     "api": "API",
     "added": "Added",

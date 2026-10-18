@@ -101,7 +101,7 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
-import { formatCredits, microUsdToCredits } from '@/base/credits/comfyCredits'
+import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -141,17 +141,12 @@ function eventAmount(event: AuditLog) {
 }
 
 function formatChargeCredits(microUsd: number) {
-  const credits = microUsdToCredits(microUsd)
-  const format = (value: number) =>
-    formatCredits({
-      value,
-      locale: locale.value,
-      numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 2 }
-    })
-  if (credits !== 0 && Math.abs(credits) < 0.005) {
-    return t('credits.chargeCreditsBelow', { amount: format(0.01) })
-  }
-  return t('credits.chargeCredits', { amount: format(credits) })
+  const amount = formatCreditsFromUsd({
+    usd: microUsd / 1_000_000,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+  })
+  return `${amount} ${t('credits.credits')}`
 }
 
 function formatParam(key: string, value: unknown) {

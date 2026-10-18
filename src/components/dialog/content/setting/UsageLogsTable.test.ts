@@ -309,11 +309,10 @@ describe('UsageLogsTable', () => {
     })
 
     it.for([
-      { charge: 33_044, expected: 'Charge: 6.97 credits' },
-      { charge: '36209', expected: 'Charge: 7.64 credits' },
-      { charge: 10_000_000_000, expected: 'Charge: 2,110,000 credits' },
-      { charge: 0, expected: 'Charge: 0 credits' },
-      { charge: 10, expected: 'Charge: <0.01 credits' },
+      { charge: 33_044, expected: 'Charge: 7 Credits' },
+      { charge: '36209', expected: 'Charge: 8 Credits' },
+      { charge: 10_000_000_000, expected: 'Charge: 2,110,000 Credits' },
+      { charge: 0, expected: 'Charge: 0 Credits' },
       { charge: 'n/a', expected: 'charge_micro_usd: n/a' }
     ])(
       'shows charge_micro_usd $charge as $expected',
