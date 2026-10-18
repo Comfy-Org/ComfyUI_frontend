@@ -1029,22 +1029,32 @@ describe('useWorkspaceBilling', () => {
     it.for([
       ['empty string', ''],
       ['null', null]
-    ])('closes the reserved tab when API returns %s url', async ([, url]) => {
-      const { tab } = stubPortalTab()
+    ])(
+      'closes the reserved tab and tells the customer when API returns %s url',
+      async ([, url]) => {
+        const { tab } = stubPortalTab()
 
-      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
-        url: url as string
-      })
+        mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
+          url: url as string
+        })
 
-      const billing = setupBilling()
-      await expect(billing.manageSubscription()).resolves.toEqual({
-        ok: false,
-        reason: 'missing_url'
-      })
+        const billing = setupBilling()
+        await expect(billing.manageSubscription()).resolves.toEqual({
+          ok: false,
+          reason: 'missing_url'
+        })
 
-      expect(tab.close).toHaveBeenCalledOnce()
-      expect(tab.location.href).toBe('')
-    })
+        expect(tab.close).toHaveBeenCalledOnce()
+        expect(tab.location.href).toBe('')
+        expect(useToast().toasts).toEqual([
+          expect.objectContaining({
+            kind: 'error',
+            description:
+              "Couldn't open the billing page. Try again in a moment."
+          })
+        ])
+      }
+    )
 
     it.for([
       { name: 'the legacy client', railEnabled: false },

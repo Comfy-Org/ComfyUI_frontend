@@ -591,6 +591,12 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     })
   }
 
+  function reportBillingPortalUnavailable(): void {
+    useToast().error(t('g.error'), {
+      description: t('subscription.billingPortalUnavailable')
+    })
+  }
+
   /** The rail's portal URL, or the legacy client's when the rail declines. */
   async function requestPortalUrl(): Promise<{
     url: string | undefined
@@ -640,6 +646,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       if (!url) {
         portal.failed(undefined, billingClient)
         portalTab.close()
+        reportBillingPortalUnavailable()
         return { ok: false, reason: 'missing_url' }
       }
       portalTab.navigate(url)
