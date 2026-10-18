@@ -150,15 +150,15 @@ function valueWidgetsOnly(
     const stored = rootGraphId
       ? widgetValueStore.getWidget(widgetId(rootGraphId, node.id, name))
       : undefined
-    if (isValueWidget(widget, stored, node)) filtered[name] = value
+    if (isValueWidget(widget, stored) && !isDisplayOnlyDomWidget(node, widget))
+      filtered[name] = value
   }
   return filtered
 }
 
 function isValueWidget(
   widget: IBaseWidget | undefined,
-  stored: WidgetState | undefined,
-  node: LGraphNode | null
+  stored?: WidgetState
 ): boolean {
   if (!widget && !stored) return false
   // A destructuring default fires on absent AND present-but-undefined alike,
@@ -167,14 +167,14 @@ function isValueWidget(
   // One construct for both fields, so the two halves of the guard cannot
   // drift apart again.
   const { type = stored?.type, serialize = stored?.serialize } = widget ?? {}
-  if (type === 'button' || serialize === false) return false
-  return !(widget && node && isDisplayOnlyDomWidget(node, widget))
+  return type !== 'button' && serialize !== false
 }
 
 function isDisplayOnlyDomWidget(
   node: LGraphNode,
-  widget: IBaseWidget
+  widget: IBaseWidget | undefined
 ): boolean {
+  if (!widget) return false
   const rendersOwnElement =
     ('element' in widget && Boolean(widget.element)) ||
     ('component' in widget && Boolean(widget.component))
@@ -213,7 +213,10 @@ function isValueWidgetWrite(
   const widget = owner?.widgets?.find(
     (candidate) => candidate.name === event.name
   )
-  return isValueWidget(widget, stored, owner)
+  return (
+    isValueWidget(widget, stored) &&
+    !(owner && isDisplayOnlyDomWidget(owner, widget))
+  )
 }
 
 function promotedHostWrite(
