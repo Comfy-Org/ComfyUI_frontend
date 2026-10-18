@@ -131,9 +131,13 @@ function projectedHostValues(host: HostDoc): unknown[] {
 }
 
 async function expectNoRejectionToast(toast: ToastHelper): Promise<void> {
-  const rejectionToast = toast.toastErrors.filter({
-    hasText: enMessages.agent.editRejected.widgetWrite
-  })
+  const rejectionToast = toast.toastErrors
+    .filter({ hasText: enMessages.agent.editRejected.widgetWrite })
+    .or(
+      toast.toastErrors.filter({
+        hasText: enMessages.agent.editRejected.widgetWritePartial
+      })
+    )
   const quietWindowStartedAt = Date.now()
   await expect
     .soft(async () => {
@@ -143,24 +147,30 @@ async function expectNoRejectionToast(toast: ToastHelper): Promise<void> {
     .toPass({ timeout: 4_000, intervals: [100, 250, 500] })
 }
 
-async function expectRunSavesPromotedSeed(
+async function pressRunAndRandomizeSeed(
   page: Page,
-  { host, submitted }: AttachedAgent,
+  { submitted }: AttachedAgent
+): Promise<number> {
+  return test.step('the person presses Run and the promoted seed randomizes', async () => {
+    await page
+      .getByRole('button', { name: enMessages.menu.run, exact: true })
+      .click()
+    await expect.poll(() => submitted.length).toBe(1)
+    await expect
+      .poll(() => promotedSeed(page))
+      .not.toBe(AGENT_SUBGRAPH_INITIAL_SEED)
+    const seed = await promotedSeed(page)
+    expect(seed).toEqual(expect.any(Number))
+    return Number(seed)
+  })
+}
+
+async function expectRandomizedSeedSaved(
+  { host }: AttachedAgent,
+  randomizedSeed: number,
   toast: ToastHelper,
   catchUp: () => void = () => {}
 ): Promise<void> {
-  const randomizedSeed =
-    await test.step('the person presses Run and the promoted seed randomizes', async () => {
-      await page
-        .getByRole('button', { name: enMessages.menu.run, exact: true })
-        .click()
-      await expect.poll(() => submitted.length).toBe(1)
-      await expect
-        .poll(() => promotedSeed(page))
-        .not.toBe(AGENT_SUBGRAPH_INITIAL_SEED)
-      return promotedSeed(page)
-    })
-
   await test.step('no rejected-edit notice is shown', () =>
     expectNoRejectionToast(toast))
 
@@ -188,7 +198,8 @@ test.describe(
       toast
     }) => {
       const rig = await attachAgent(page, agentFlagEnabled)
-      await expectRunSavesPromotedSeed(page, rig, toast)
+      const randomizedSeed = await pressRunAndRandomizeSeed(page, rig)
+      await expectRandomizedSeedSaved(rig, randomizedSeed, toast)
     })
 
     test('saves the new seed while the agent connection is re-subscribing', async ({
@@ -211,12 +222,14 @@ test.describe(
           .not.toBeNull()
       })
 
+      const randomizedSeed = await pressRunAndRandomizeSeed(page, rig)
+
       test.fail(
         true,
         'PM-2003: a promoted write made between a resubscribe and its ack is refused with the widget-write toast (docOpMinter doc_not_synced) instead of being deferred'
       )
 
-      await expectRunSavesPromotedSeed(page, rig, toast, () => {
+      await expectRandomizedSeedSaved(rig, randomizedSeed, toast, () => {
         if (withheldStateVector === null)
           throw new Error('no re-subscribe was withheld')
         rig.hostSocket.send(rig.host.subscribed())
