@@ -106,12 +106,16 @@ describe('toRepoName', () => {
     expect(toRepoName(`a${spaces}b /`)).toBe(`a${spaces}b`)
   })
 
-  it('strips the owner from a long pasted compound slug in linear time', () => {
-    const slug = 'a-a'.repeat(50_000)
+  it(
+    'strips the owner from a long pasted compound slug in linear time',
+    { timeout: 250 },
+    () => {
+      const slug = 'a-a'.repeat(50_000)
 
-    expect(toRepoName(`a/${slug}`)).toBe(slug)
-    expect(toRepoName(`a/${slug}!`)).toBe(`a/${slug}!`)
-  })
+      expect(toRepoName(`a/${slug}`)).toBe(slug)
+      expect(toRepoName(`a/${slug}!`)).toBe(`a/${slug}!`)
+    }
+  )
 
   it.for([
     { query: 'ComfyUI-KJNodes.git', expected: 'ComfyUI-KJNodes' },

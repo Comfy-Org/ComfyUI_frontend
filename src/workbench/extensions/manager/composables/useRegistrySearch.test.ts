@@ -1,6 +1,6 @@
 import { until } from '@vueuse/core'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, toValue } from 'vue'
+import { effectScope, nextTick, ref, toValue } from 'vue'
 
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -515,6 +515,30 @@ describe('useRegistrySearch', () => {
         .mocked(useRegistrySearchGateway().searchPacks)
         .mock.calls.map(([searched]) => searched)
     ).toEqual(['comfyui-manager'])
+  })
+
+  it('neither searches again nor reports when a search settles for an older query after its scope is disposed', async () => {
+    const { searchPacks } = useRegistrySearchGateway()
+    let rejectSearch: (error: Error) => void = () => {}
+    vi.mocked(searchPacks).mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectSearch = reject
+      })
+    )
+    const query = ref('gguf')
+    const scope = effectScope()
+    const search = scope.run(() =>
+      useRegistrySearch({ query, searchMode: 'packs' })
+    )!
+    await until(search.isLoading).toBe(true)
+
+    scope.stop()
+    query.value = 'gguf loader'
+    rejectSearch(new Error('search unavailable'))
+    await until(search.isLoading).toBe(false)
+
+    expect(searchPacks).toHaveBeenCalledOnce()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('keeps the first page when a later page fails', async () => {

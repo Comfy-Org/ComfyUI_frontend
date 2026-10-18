@@ -1,4 +1,4 @@
-import { computed, ref, toValue, watch } from 'vue'
+import { computed, onScopeDispose, ref, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import {
@@ -51,6 +51,7 @@ export function useRegistrySearch(inputs: {
 
   let pageNumber = 0
   let failureReportedSinceSuccess = false
+  let isDisposed = false
   const items = ref<RegistryNodePack[]>([])
   const morePages = ref(true)
   const suggestions = ref<QuerySuggestion[]>([])
@@ -87,7 +88,9 @@ export function useRegistrySearch(inputs: {
     const query = searchedQuery()
     const searchMode = toValue(inputs.searchMode)
     const isCurrent = () =>
-      query === searchedQuery() && searchMode === toValue(inputs.searchMode)
+      !isDisposed &&
+      query === searchedQuery() &&
+      searchMode === toValue(inputs.searchMode)
     try {
       const result = await searchPacks(query, {
         pageSize: DEFAULT_PAGE_SIZE,
@@ -128,7 +131,7 @@ export function useRegistrySearch(inputs: {
         morePages.value = true
         firstPage.value = LOADING_FIRST_PAGE
         items.value = []
-      } while ((await doLoadMore()) === 'stale')
+      } while (!isDisposed && (await doLoadMore()) === 'stale')
     })
 
   async function loadMore() {
@@ -138,6 +141,10 @@ export function useRegistrySearch(inputs: {
     })
     return pageNumber > startingPage
   }
+
+  onScopeDispose(() => {
+    isDisposed = true
+  }, true)
 
   watch(
     [searchedQuery, () => toValue(inputs.searchMode)],

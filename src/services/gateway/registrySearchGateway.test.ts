@@ -169,6 +169,60 @@ describe('useRegistrySearchGateway', () => {
     })
   })
 
+  describe('circuit breaker', () => {
+    const params = { pageSize: 10, pageNumber: 0 }
+
+    function failingProvider() {
+      return {
+        searchPacks: vi.fn().mockRejectedValue(new Error('unreachable')),
+        clearSearchCache: vi.fn()
+      }
+    }
+
+    it('asks each provider at most once per search', async () => {
+      const algolia = failingProvider()
+      const registry = failingProvider()
+      vi.mocked(useAlgoliaSearchProvider).mockReturnValue(algolia)
+      vi.mocked(useComfyRegistrySearchProvider).mockReturnValue(registry)
+      const gateway = useRegistrySearchGateway()
+
+      await expect(gateway.searchPacks('test', params)).rejects.toThrow()
+      await expect(gateway.searchPacks('test', params)).rejects.toThrow()
+
+      expect(algolia.searchPacks).toHaveBeenCalledTimes(2)
+      expect(registry.searchPacks).toHaveBeenCalledTimes(2)
+    })
+
+    it('retries an open circuit a minute after its last real attempt, however often the user searches meanwhile', async () => {
+      vi.useFakeTimers()
+      vi.mocked(useAlgoliaSearchProvider).mockImplementation(() => {
+        throw new Error('Algolia init failed')
+      })
+      const registry = failingProvider()
+      vi.mocked(useComfyRegistrySearchProvider).mockReturnValue(registry)
+      const gateway = useRegistrySearchGateway()
+      for (let i = 0; i < 3; i++) {
+        await expect(gateway.searchPacks('test', params)).rejects.toThrow()
+      }
+
+      vi.advanceTimersByTime(30_000)
+      await expect(gateway.searchPacks('test', params)).rejects.toThrow(
+        'No available search providers'
+      )
+      registry.searchPacks.mockResolvedValue({
+        nodePacks: [],
+        querySuggestions: []
+      })
+      vi.advanceTimersByTime(30_001)
+
+      await expect(gateway.searchPacks('test', params)).resolves.toEqual({
+        nodePacks: [],
+        querySuggestions: []
+      })
+      expect(registry.searchPacks).toHaveBeenCalledTimes(4)
+    })
+  })
+
   describe('Cache management', () => {
     it('should clear cache for all providers', () => {
       const mockAlgoliaProvider = {

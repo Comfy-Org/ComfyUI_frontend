@@ -164,21 +164,35 @@ describe('useComfyRegistrySearchProvider', () => {
       { request: 'search', query: 'test' },
       { request: 'listAllPacks', query: '' }
     ] as const)(
-      'rejects and drops the cached failure when the $request request fails',
+      'rejects and evicts only the failed $request page from the cache',
       async ({ request, query }) => {
+        const store = useComfyRegistryStore()
+        const evict = vi.spyOn(store[request], 'evict')
         const provider = useComfyRegistrySearchProvider()
 
         await expect(
           provider.searchPacks(query, { pageSize: 10, pageNumber: 0 })
         ).rejects.toThrow('Comfy Registry request failed')
 
-        const clears = {
-          search: mockSearchClear,
-          listAllPacks: mockListAllPacksClear
-        }
-        expect(clears[request]).toHaveBeenCalledOnce()
+        expect(evict).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({ limit: 10, page: 1 })
+        )
+        expect(mockSearchClear).not.toHaveBeenCalled()
+        expect(mockListAllPacksClear).not.toHaveBeenCalled()
       }
     )
+
+    it('names the registry error in the rejection', async () => {
+      const store = useComfyRegistryStore()
+      store.error = 'Failed to perform search: Network Error'
+      const provider = useComfyRegistrySearchProvider()
+
+      await expect(
+        provider.searchPacks('test', { pageSize: 10, pageNumber: 0 })
+      ).rejects.toThrow(
+        'Comfy Registry request failed: Failed to perform search: Network Error'
+      )
+    })
   })
 
   describe('clearSearchCache', () => {

@@ -512,6 +512,38 @@ describe('ManagerDialog failed search', () => {
       screen.queryByText(enMessages.manager.errorConnecting)
     ).not.toBeInTheDocument()
   })
+
+  it('hides a failed listing from the installed tab when the query is only spaces', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockRejectedValue(
+      new Error('search unavailable')
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
+    await settleSearch()
+
+    await user.type(searchBox, ' ')
+    await settleSearch()
+
+    expect(
+      screen.queryByText(enMessages.manager.errorConnecting)
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows loading rather than no results while an edit after a failed search waits to be searched', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockRejectedValue(
+      new Error('search unavailable')
+    )
+    const { user, searchBox } = renderDialog()
+    await settleSearch()
+
+    await user.type(searchBox, 'g')
+
+    expect(
+      screen.queryByText(enMessages.manager.noResultsFound)
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(enMessages.manager.errorConnecting)
+    ).not.toBeInTheDocument()
+  })
 })
 
 describe('ManagerDialog search analytics tags', () => {

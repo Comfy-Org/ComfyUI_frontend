@@ -99,26 +99,18 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     }
   }
 
-  /**
-   * Get the currently active provider based on circuit breaker states
-   */
-  const getActiveProvider = (): NodePackSearchProvider => {
-    // First, try to use the current active provider if it's healthy
-    const currentProvider = providers[activeProviderIndex]
-    if (isCircuitClosed(currentProvider)) {
-      return currentProvider.provider
+  const findUntriedProvider = (
+    attempted: ReadonlySet<ProviderState>
+  ): ProviderState | undefined => {
+    const isAvailable = (providerState: ProviderState) =>
+      !attempted.has(providerState) && isCircuitClosed(providerState)
+    if (isAvailable(providers[activeProviderIndex])) {
+      return providers[activeProviderIndex]
     }
-
-    // Otherwise, find the first healthy provider
-    for (let i = 0; i < providers.length; i++) {
-      const providerState = providers[i]
-      if (isCircuitClosed(providerState)) {
-        activeProviderIndex = i
-        return providerState.provider
-      }
-    }
-
-    throw new Error('No available search providers')
+    const index = providers.findIndex(isAvailable)
+    if (index === -1) return undefined
+    activeProviderIndex = index
+    return providers[index]
   }
 
   /**
@@ -131,41 +123,36 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     }
   }
 
-  /**
-   * Search for node packs.
-   */
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
   ): Promise<SearchPacksResult> => {
     let lastError: Error | null = null
+    const attempted = new Set<ProviderState>()
 
-    // Start with the current active provider
-    for (let attempts = 0; attempts < providers.length; attempts++) {
+    for (
+      let providerState = findUntriedProvider(attempted);
+      providerState;
+      providerState = findUntriedProvider(attempted)
+    ) {
+      attempted.add(providerState)
       try {
-        const provider = getActiveProvider()
-        const providerState = providers[activeProviderIndex]
-
-        const result = await provider.searchPacks(query, params)
+        const result = await providerState.provider.searchPacks(query, params)
         recordSuccess(providerState)
         return result
       } catch (error) {
         lastError = toError(error)
-        const providerState = providers[activeProviderIndex]
         recordFailure(providerState, lastError)
         console.warn(
           `${providerState.name} search provider failed (${providerState.consecutiveFailures} failures):`,
           error
         )
-
-        // Try the next provider
         updateActiveProviderOnFailure()
       }
     }
 
-    // If we get here, all providers failed
     throw new Error(
-      `All search providers failed. Last error: ${lastError?.message || 'Unknown error'}`
+      `All search providers failed. Last error: ${lastError?.message || 'No available search providers'}`
     )
   }
 

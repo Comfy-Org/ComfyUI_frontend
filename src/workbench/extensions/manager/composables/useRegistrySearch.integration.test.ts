@@ -1,19 +1,18 @@
 import { until } from '@vueuse/core'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
+import type { AxiosAdapter } from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { toValue } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 
-const registryApiClient = vi.hoisted(() => ({ get: vi.fn() }))
-
-vi.mock<unknown>(import('axios'), () => ({
-  default: {
-    create: () => registryApiClient,
-    isAxiosError: () => false
-  }
-}))
+const registryAdapter = await vi.hoisted(async () => {
+  const { default: axios } = await import('axios')
+  const adapter = vi.fn<AxiosAdapter>()
+  axios.defaults.adapter = adapter
+  return adapter
+})
 
 vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
   liteClient: vi.fn()
@@ -25,7 +24,7 @@ function goOffline() {
   vi.mocked(algoliasearch, { partial: true }).mockReturnValue({
     search: vi.fn().mockRejectedValue(new Error('Algolia unreachable'))
   })
-  registryApiClient.get.mockRejectedValue(new Error('Network Error'))
+  registryAdapter.mockRejectedValue(new Error('Network Error'))
 }
 
 async function searchFor(query: string) {
@@ -36,7 +35,7 @@ async function searchFor(query: string) {
 
 describe('useRegistrySearch through the real search gateway', () => {
   it.for(['gguf', ''])(
-    'fails the search for %j when Algolia and the registry are unreachable',
+    'fails the search for %j and reports the registry error when Algolia and the registry are unreachable',
     async (query) => {
       goOffline()
 
@@ -44,7 +43,9 @@ describe('useRegistrySearch through the real search gateway', () => {
 
       expect(search.firstPage.value).toEqual({ status: 'failed', query })
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
-        expect.any(Error),
+        expect.objectContaining({
+          message: expect.stringContaining('Network Error')
+        }),
         expect.objectContaining({ errorType: 'error_searching_registry_packs' })
       )
     }
@@ -53,9 +54,13 @@ describe('useRegistrySearch through the real search gateway', () => {
   it('asks the registry again after a failed search instead of reusing the failure', async () => {
     goOffline()
     await searchFor('gguf')
-    registryApiClient.get.mockResolvedValue({
-      data: { nodes: [{ id: 'gguf-pack' }] }
-    })
+    registryAdapter.mockImplementation(async (config) => ({
+      data: { nodes: [{ id: 'gguf-pack' }] },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config
+    }))
 
     const search = await searchFor('gguf')
 

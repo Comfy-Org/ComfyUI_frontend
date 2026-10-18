@@ -7,13 +7,9 @@ import type {
 
 class RegistrySearchRequestError extends Error {}
 
-function requireResponse<T>(
-  response: T | null,
-  cache: { clear: () => void }
-): T {
-  if (response) return response
-  cache.clear()
-  throw new RegistrySearchRequestError('Comfy Registry request failed')
+interface CachedRegistryRequest<TParams, TResult> {
+  call: (params: TParams) => Promise<TResult | null>
+  evict: (params: TParams) => void
 }
 
 /**
@@ -23,54 +19,52 @@ function requireResponse<T>(
 export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
   const registryStore = useComfyRegistryStore()
 
-  /**
-   * Search for node packs using the Comfy Registry API.
-   */
+  const requestRegistry = async <TParams, TResult>(
+    request: CachedRegistryRequest<TParams, TResult>,
+    params: TParams
+  ): Promise<TResult> => {
+    const response = await request.call(params)
+    if (response) return response
+    request.evict(params)
+    const cause = registryStore.error
+    throw new RegistrySearchRequestError(
+      cause
+        ? `Comfy Registry request failed: ${cause}`
+        : 'Comfy Registry request failed'
+    )
+  }
+
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
   ): Promise<SearchPacksResult> => {
     const { pageSize, pageNumber, restrictSearchableAttributes } = params
+    const registryPage = pageNumber + 1
 
-    // For empty queries, use the cached listAllPacks endpoint instead of search
     if (!query || query.trim() === '') {
-      const listParams = {
+      const listResult = await requestRegistry(registryStore.listAllPacks, {
         limit: pageSize,
-        page: pageNumber + 1 // Registry API uses 1-based pagination
-        // Note: omitting 'latest' parameter defaults to cached result
-      }
-
-      const listResult = requireResponse(
-        await registryStore.listAllPacks.call(listParams),
-        registryStore.listAllPacks
-      )
-      const nodePacks = listResult.nodes ?? []
+        page: registryPage
+      })
 
       return {
-        nodePacks,
+        nodePacks: listResult.nodes ?? [],
         querySuggestions: []
       }
     }
 
-    // For non-empty queries, use the search endpoint
     const isNodeSearch = restrictSearchableAttributes?.includes('comfy_nodes')
 
-    const searchParams = {
+    const searchResult = await requestRegistry(registryStore.search, {
       search: isNodeSearch ? undefined : query,
       comfy_node_search: isNodeSearch ? query : undefined,
       limit: pageSize,
-      page: pageNumber + 1
-    }
-
-    const searchResult = requireResponse(
-      await registryStore.search.call(searchParams),
-      registryStore.search
-    )
-    const nodePacks = searchResult.nodes ?? []
+      page: registryPage
+    })
 
     return {
-      nodePacks,
-      querySuggestions: [] // Registry doesn't support query suggestions
+      nodePacks: searchResult.nodes ?? [],
+      querySuggestions: []
     }
   }
 

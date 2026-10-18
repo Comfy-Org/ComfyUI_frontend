@@ -101,6 +101,9 @@ export function useCachedRequest<TParams, TResult>(
   return {
     call,
     cancel,
-    clear: () => cache.clear()
+    clear: () => cache.clear(),
+    evict: (params: TParams) => {
+      cache.delete(cacheKeyFn(params))
+    }
   }
 }

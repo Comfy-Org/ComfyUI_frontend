@@ -364,13 +364,14 @@ const searchMode = ref<SearchMode>(
     : initialState.searchMode
 )
 const sortField = ref<string>(initialState.sortField)
+const trimmedSearchQuery = computed(() => searchQuery.value.trim())
 
 const isSearchBacked = computed(() => {
   const tab = selectedTab.value?.id
   return (
     tab === ManagerTab.All ||
     tab === ManagerTab.NotInstalled ||
-    (searchQuery.value !== '' && tab !== ManagerTab.Unresolved)
+    (trimmedSearchQuery.value !== '' && tab !== ManagerTab.Unresolved)
   )
 })
 const openingSearchQuery = searchQuery.value.trim()
@@ -404,16 +405,24 @@ const loadMorePacks = () => packs.loadMore()
 const canLoadMorePacks = computed(
   () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
 )
-const isSearchFailed = computed(() => {
+const isFirstPageForInput = computed(() => {
   const firstPage = packs.firstPage.value
   return (
-    isSearchBacked.value &&
-    firstPage.status === 'failed' &&
-    firstPage.query === searchQuery.value.trim()
+    firstPage.status !== 'loading' &&
+    firstPage.query === trimmedSearchQuery.value
   )
 })
-const isFirstPageLoading = computed(
-  () => isSearchBacked.value && packs.firstPage.value.status === 'loading'
+const isSearchFailed = computed(
+  () =>
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    packs.firstPage.value.status === 'failed'
+)
+const isFirstPagePending = computed(
+  () =>
+    isSearchBacked.value &&
+    searchResults.value.length === 0 &&
+    !isFirstPageForInput.value
 )
 // Use the new composable for tab-based display packs
 const {
@@ -502,7 +511,7 @@ const onClickWarningLink = () => {
 const isLoading = computed(() => {
   if (isSearchLoading.value) return searchResults.value.length === 0
   if (isTabLoading.value) return true
-  return isFirstPageLoading.value
+  return isFirstPagePending.value
 })
 
 const isSettledWithNoPacks = computed(
@@ -519,7 +528,7 @@ const isUnmatchedLegacyManagerSearch = computed(() => {
     isNewManagerUI.value &&
     isSearchBacked.value &&
     firstPage.status === 'loaded' &&
-    firstPage.query === searchQuery.value.trim() &&
+    firstPage.query === trimmedSearchQuery.value &&
     isLegacyManagerQuery(firstPage.query) &&
     !displayPacks.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
     (firstPage.rawResultsEmpty || isSettledWithNoPacks.value)
