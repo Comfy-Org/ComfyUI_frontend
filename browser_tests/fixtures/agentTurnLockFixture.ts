@@ -73,10 +73,13 @@ const TURN_TOOL_EVENT: AgentWsEvent = {
 }
 
 /** Assistant text streamed into the fixture's turn. */
-export function turnTextEvent(delta: string): AgentWsEvent {
+export function turnTextEvent(
+  delta: string,
+  turnId: string = TURN_ID
+): AgentWsEvent {
   return {
     type: 'agent_message_delta',
-    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
+    data: { delta, message_id: turnId, thread_id: THREAD_ID }
   }
 }
 
@@ -107,30 +110,34 @@ const RUN_APPROVAL_OPTION_IDS = ['run', 'cancel'] as const
  * the turn does not proceed until an answer posts back, so a client that drops
  * this frame strands the user with no way to answer and no error.
  */
-export const RUN_APPROVAL_EVENT: AgentWsEvent = {
-  type: 'agent_ask',
-  data: {
-    message_id: TURN_ID,
-    thread_id: THREAD_ID,
-    ask_id: RUN_APPROVAL_ASK_ID,
-    kind: 'run_approval',
-    prompt: 'Run workflow “Unsaved Workflow”?',
-    context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
-    options: [
-      {
-        id: RUN_APPROVAL_OPTION_IDS[0],
-        label: enMessages.agent.runApproval.run
-      },
-      {
-        id: RUN_APPROVAL_OPTION_IDS[1],
-        label: enMessages.agent.runApproval.cancel
-      }
-    ],
-    min_selections: 1,
-    max_selections: 1,
-    allow_other: false
+export function runApprovalEventFor(turnId: string): AgentWsEvent {
+  return {
+    type: 'agent_ask',
+    data: {
+      message_id: turnId,
+      thread_id: THREAD_ID,
+      ask_id: `${turnId}:call-run-workflow`,
+      kind: 'run_approval',
+      prompt: 'Run workflow “Unsaved Workflow”?',
+      context: { workflow_id: WORKFLOW_ID, workflow_name: 'Unsaved Workflow' },
+      options: [
+        {
+          id: RUN_APPROVAL_OPTION_IDS[0],
+          label: enMessages.agent.runApproval.run
+        },
+        {
+          id: RUN_APPROVAL_OPTION_IDS[1],
+          label: enMessages.agent.runApproval.cancel
+        }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
   }
 }
+
+export const RUN_APPROVAL_EVENT = runApprovalEventFor(TURN_ID)
 
 export const RUN_APPROVAL_RESOLVED_EVENT: AgentWsEvent = {
   type: 'agent_ask_resolved',
@@ -180,6 +187,7 @@ class TurnLockServer {
   private posts = 0
   private readonly answered: string[][] = []
   private pendingAsk: AgentPendingAsk | undefined
+  private nextTurnId: string | undefined
   private heldTranscript:
     | {
         threadId?: string
@@ -375,10 +383,16 @@ class TurnLockServer {
     return rows
   }
 
+  acceptNextTurnAs(turnId: string): void {
+    this.nextTurnId = turnId
+  }
+
   startTurn(prompt: string): AgentTurnAccepted {
     this.prompt = prompt
     this.streaming = true
-    return { message_id: TURN_ID, thread_id: THREAD_ID }
+    const turnId = this.nextTurnId ?? TURN_ID
+    this.nextTurnId = undefined
+    return { message_id: turnId, thread_id: THREAD_ID }
   }
 
   lockThreadElsewhere(prompt: string): void {
@@ -578,6 +592,11 @@ export class AgentTurnLockHarness {
 
   postAttempts(): number {
     return this.server.postAttempts
+  }
+
+  /** Accepts the next posted turn under `turnId` instead of the shared id. */
+  acceptNextTurnAs(turnId: string): void {
+    this.server.acceptNextTurnAs(turnId)
   }
 
   /** Opens the panel on a blank workflow and points the composer at that tab. */

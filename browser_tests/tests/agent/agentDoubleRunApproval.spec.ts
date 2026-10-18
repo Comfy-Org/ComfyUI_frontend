@@ -1,16 +1,18 @@
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { AgentRunModePreference } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
-  RUN_APPROVAL_EVENT,
   agentTurnLockTest as test,
+  runApprovalEventFor,
   turnTextEvent
 } from '@e2e/fixtures/agentTurnLockFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const BUILD_PROMPT = 'make me a Flux Krea text to image workflow'
 const AGENT_RUN_OFFER =
   'The workflow is built and validated. Want me to run it?'
 const USER_RUN_CONSENT = 'yes, run it'
+const CONSENT_TURN_ID = '7c1e2a40-2122-4d6f-9b11-0c7a5e2f4318'
 
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
@@ -20,11 +22,15 @@ test.describe(
   { tag: ['@cloud', '@agent', '@ui'] },
   () => {
     test('a run the person already agreed to in chat is not gated by a second approval card', async ({
+      page,
       turnLock
     }) => {
-      test.fail(
-        true,
-        'PM-2122: on an Ask run mode turn the agent offers the run in prose, and after the person says yes its run call is still parked on a run_approval card. This spec replays that server frame sequence; it passes once the agent stops sending the second ask (cloud agent run gate / prompt), and the replayed sequence is updated to match.'
+      const askApproval: AgentRunModePreference = {
+        mode: 'ask_approval',
+        credit_limit: null
+      }
+      await page.route('**/api/agent/run-mode', (route) =>
+        route.fulfill(jsonRoute(askApproval))
       )
       await turnLock.openOnBlankWorkflow()
 
@@ -38,23 +44,37 @@ test.describe(
       })
 
       await test.step('the person says yes in chat', async () => {
+        turnLock.acceptNextTurnAs(CONSENT_TURN_ID)
         await turnLock.composer.fill(USER_RUN_CONSENT)
         await turnLock.sendButton.click()
-        await expect(turnLock.userBubbles.last()).toHaveText(USER_RUN_CONSENT)
+        await expect(turnLock.userBubbles).toHaveText([
+          BUILD_PROMPT,
+          USER_RUN_CONSENT
+        ])
       })
 
-      await test.step('the agent runs without asking again', async () => {
-        turnLock.push(await turnLock.liveSocket(), RUN_APPROVAL_EVENT)
-        const secondAsk = turnLock.panel
-          .getByText(enMessages.agent.runApproval.question)
-          .or(turnLock.runApprovalButton)
-        const quietWindowStartedAt = Date.now()
-        await expect(async () => {
-          await expect(secondAsk).toHaveCount(0, { timeout: 0 })
-          expect(Date.now() - quietWindowStartedAt).toBeGreaterThanOrEqual(
-            2_000
-          )
-        }).toPass({ timeout: 4_000, intervals: [100, 250, 500] })
+      await test.step('the agent replays the observed second ask', async () => {
+        turnLock.push(
+          await turnLock.liveSocket(),
+          runApprovalEventFor(CONSENT_TURN_ID)
+        )
+        await expect(turnLock.runApprovalButton).toBeVisible()
+        await expect(turnLock.panel.getByText(AGENT_RUN_OFFER)).toBeVisible()
+      })
+
+      test.fail(
+        true,
+        'PM-2122 repro: this replays the server frames the person saw (a prose run offer, then a run_approval card after they said yes). The fix belongs in the cloud agent run gate or prompt; it cannot turn this green, and the frontend must not hide a parked run_approval ask to do so. Update the replay when the agent stops sending the second ask.'
+      )
+
+      await test.step('the person is asked to approve the run only once', async () => {
+        const runConsentPrompts =
+          (await turnLock.panel.getByText(AGENT_RUN_OFFER).count()) +
+          (await turnLock.runApprovalButton.count())
+        expect(
+          runConsentPrompts,
+          'PM-2122: a prose run offer and a run approval card are both on screen'
+        ).toBe(1)
       })
     })
   }
