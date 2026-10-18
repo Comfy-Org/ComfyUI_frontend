@@ -137,6 +137,23 @@ describe('usePricingTableUrlLoader', () => {
     expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
+  it('reads can_manage_subscription only after the capability snapshot resolves', async () => {
+    setRouteQuery({ pricing: '1' })
+    mockPermissions.value = { canManageSubscription: false }
+    vi.mocked(useBillingCapabilities().initialize).mockImplementation(
+      async () => {
+        mockPermissions.value = { canManageSubscription: true }
+      }
+    )
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
+      expect.objectContaining({ reason: 'deep_link' })
+    )
+  })
+
   it('opens on the team tab for ?pricing=team', async () => {
     setRouteQuery({ pricing: 'team' })
 
