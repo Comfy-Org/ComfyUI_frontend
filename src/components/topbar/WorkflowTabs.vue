@@ -58,7 +58,7 @@
     >
       <i class="pi pi-plus" />
     </Button>
-    <WorkflowTabBarActions />
+    <TopbarActions />
     <div
       v-if="isDesktop"
       class="window-actions-spacer app-drag min-w-[min(75px,env(titlebar-area-width,0)*9999)] flex-auto shrink-0"
@@ -71,8 +71,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 
+import TopbarActions from '@/components/TopbarActions.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
-import WorkflowTabBarActions from '@/components/topbar/WorkflowTabBarActions.vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Tabs from '@comfyorg/design-system/tabs/Tabs'
