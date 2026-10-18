@@ -33,8 +33,13 @@ const FIRST_STALE_VALUE = 'agent-1.png'
 const SECOND_STALE_VALUE = 'agent-2.png'
 const FIRST_FRESH_VALUE = 'caught-up-1.png'
 const SECOND_FRESH_VALUE = 'caught-up-2.png'
-const staleTitle = (value: string): string => `Load Image · ${value}`
-const freshTitle = (value: string): string => `Updated Load Image · ${value}`
+function staleTitle(value: string): string {
+  return `Load Image · ${value}`
+}
+
+function freshTitle(value: string): string {
+  return `Updated Load Image · ${value}`
+}
 
 function widgetWrite(nodeId: number, value: string): RecordedGraphOperation {
   return { op: 'set_widget', node_id: nodeId, widget: 'image', value }
