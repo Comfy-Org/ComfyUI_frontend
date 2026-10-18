@@ -22,7 +22,7 @@ type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
 type LinearOutputNodeId = SerializedNodeId
 export type LinearInput = [LinearInputId, string, InputWidgetConfig?]
 
-export interface InputGroupItem {
+interface InputGroupItem {
   key: WidgetId
   pairId?: string
 }
