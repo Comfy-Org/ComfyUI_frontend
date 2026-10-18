@@ -43,7 +43,8 @@ export function formatNumericWidgetValue(
 }
 
 function coerceNumericString(value: string): number | string {
-  if (value.trim() === '') return value
+  if (!/^\s*[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?\s*$/i.test(value))
+    return value
   const parsed = Number(value)
   const representable = Number.isInteger(parsed)
     ? Number.isSafeInteger(parsed)
@@ -79,6 +80,10 @@ export function coerceRestoredWidgetValue(
     case 'knob':
     case 'gradientslider':
       return coerceNumericString(value)
+    case 'color':
+      return 'format' in widget.options && widget.options.format === 'int'
+        ? coerceNumericString(value)
+        : value
     default:
       return value
   }

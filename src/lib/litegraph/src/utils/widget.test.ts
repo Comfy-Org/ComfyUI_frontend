@@ -5,6 +5,7 @@ import type {
   IWidgetOptions,
   TWidgetValue
 } from '@/lib/litegraph/src/litegraph'
+import type { IColorWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   evaluateInput,
   getWidgetStep,
@@ -65,6 +66,14 @@ describe('formatNumericWidgetValue', () => {
 })
 
 describe('coerceRestoredWidgetValue', () => {
+  test('restores a numeric string for an INT color widget as a number', () => {
+    const widget: Pick<IColorWidget, 'type' | 'options'> = {
+      type: 'color',
+      options: { format: 'int' }
+    }
+    expect(coerceRestoredWidgetValue(widget, '16777215')).toBe(16777215)
+  })
+
   test.for<{
     name: string
     type: string
@@ -85,6 +94,13 @@ describe('coerceRestoredWidgetValue', () => {
       precision: 2,
       value: '0.5',
       expected: 0.5
+    },
+    {
+      name: 'a decimal string in scientific notation',
+      type: 'number',
+      precision: 2,
+      value: '1e3',
+      expected: 1000
     },
     {
       name: 'a fractional string for a FLOAT displayed at precision 0',
@@ -112,6 +128,27 @@ describe('coerceRestoredWidgetValue', () => {
       precision: 0,
       value: 'auto',
       expected: 'auto'
+    },
+    {
+      name: 'a hexadecimal string',
+      type: 'number',
+      precision: 0,
+      value: '0x10',
+      expected: '0x10'
+    },
+    {
+      name: 'a binary string',
+      type: 'number',
+      precision: 0,
+      value: '0b11',
+      expected: '0b11'
+    },
+    {
+      name: 'an octal string',
+      type: 'number',
+      precision: 0,
+      value: '0o17',
+      expected: '0o17'
     },
     {
       name: 'a whitespace-only string',
