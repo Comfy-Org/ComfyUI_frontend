@@ -301,6 +301,34 @@ describe('Composer', () => {
     expect(useAgentComposerStore().draft).toBe('@')
   })
 
+  it('inserts a Reference trigger before an adjacent reference chip', async () => {
+    const store = useAgentComposerStore()
+    store.replaceDraft({
+      text: 'hello world',
+      workflowReferences: [
+        { id: 'workflow', name: 'Reference', textOffset: 5 }
+      ],
+      attachments: []
+    })
+    mount()
+    const textbox = screen.getByRole('textbox')
+    const chip = await screen.findByTestId('workflow-reference-chip')
+    await userEvent.click(textbox)
+    const caret = document.createRange()
+    caret.setStartBefore(chip)
+    caret.collapse(true)
+    document.getSelection()?.removeAllRanges()
+    document.getSelection()?.addRange(caret)
+    document.dispatchEvent(new Event('selectionchange'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+    expect(store.draft).toBe('hello @ world')
+    expect(store.workflowReferences).toEqual([
+      { id: 'workflow', name: 'Reference', textOffset: 7 }
+    ])
+  })
+
   it('retains the draft on Enter while a workflow selection is saving', async () => {
     useAgentComposerStore().setText('keep this draft')
     const { emitted, rerender } = mount({ workflowSelecting: true })

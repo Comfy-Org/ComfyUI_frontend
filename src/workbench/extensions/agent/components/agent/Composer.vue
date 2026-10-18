@@ -355,10 +355,10 @@ const emptyMentionLabel = computed(() =>
 function openReferenceMenu(): void {
   const editor = editorRef.value
   if (!editor) return
-  const { start, end } = editor.selection()
+  const { start } = editor.selection()
   const needsSeparator =
     start > 0 && !/\s/.test(composer.draft.value[start - 1] ?? '')
-  editor.replaceText(start, end, needsSeparator ? ' @' : '@')
+  editor.insertText(needsSeparator ? ' @' : '@')
   editor.focus()
   syncMention()
 }
