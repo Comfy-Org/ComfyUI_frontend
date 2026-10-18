@@ -3,7 +3,8 @@ import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import '@/scripts/domWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { DOMWidget } from '@/types/domWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
@@ -66,33 +67,39 @@ describe('useStringWidget (multiline)', () => {
     expect(entries.every((s) => s.type === 'customtext')).toBe(true)
   })
 
-  it('reads and writes the store entry under its current name after a rename', () => {
-    const { node, widget } = setup()
-    const addDOMWidget = node.addDOMWidget as unknown as {
-      mock: { calls: unknown[][] }
-    }
-    const options = addDOMWidget.mock.calls[0][3] as {
-      getValue: () => string
-      setValue: (v: string) => void
-    }
-    const store = useWidgetValueStore()
-    // A DynamicGroup row shift renames the widget, and the widget's name
-    // setter moves its store entry to the new id.
-    widget.name = 'loras.1.text'
-    store.registerWidget(widgetId('root', toNodeId(1), 'loras.1.text'), {
-      type: 'customtext',
-      value: 'moved',
-      options: {}
-    })
+  it('follows its store entry when a DynamicGroup row shift renames it', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Test')
+    graph.add(node)
+    const widget = createStringWidget(node)
+    widget.value = 'before'
 
-    expect(options.getValue()).toBe('moved')
-    options.setValue('edited')
+    widget.name = 'loras.1.text'
+    widget.value = 'edited'
+
+    const store = useWidgetValueStore()
     expect(
-      store.getWidget(widgetId('root', toNodeId(1), 'loras.1.text'))?.value
+      store.getWidget(widgetId(graph.id, node.id, 'loras.1.text'))?.value
     ).toBe('edited')
-    expect(store.getWidget(widgetId('root', toNodeId(1), 'prompt'))).toBe(
+    expect(store.getWidget(widgetId(graph.id, node.id, 'prompt'))).toBe(
       undefined
     )
+  })
+
+  it('keeps a sibling widget value when its own name is made unique while it is added', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Test')
+    graph.add(node)
+    node.addWidget('text', 'prompt', 'sibling', () => {})
+
+    const widget = createStringWidget(node)
+
+    expect(widget.name).toBe('prompt#1')
+    expect(widget.value).toBe('')
+    expect(
+      useWidgetValueStore().getWidget(widgetId(graph.id, node.id, 'prompt'))
+        ?.value
+    ).toBe('sibling')
   })
 
   it('does not throw when a saved value is restored synchronously during construction', () => {
