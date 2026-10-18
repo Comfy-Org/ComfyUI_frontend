@@ -115,6 +115,7 @@ export class AgentFollowerHostSocket {
 
   private socket: WebSocketRoute | null = null
   private comfySocket: WebSocketRoute | null = null
+  private comfyConnections = 0
   private connections = 0
   private subscribes = 0
   private subscribeAnswer = (stateVector: string): HostFrame[] => [
@@ -140,6 +141,7 @@ export class AgentFollowerHostSocket {
 
   async install(): Promise<void> {
     await this.page.routeWebSocket(/\/ws/, (socket) => {
+      this.comfyConnections += 1
       this.comfySocket = socket
       socket.send(
         JSON.stringify({
@@ -173,6 +175,17 @@ export class AgentFollowerHostSocket {
   sendExecution(frame: ExecutionHostFrame): void {
     if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
     this.comfySocket.send(JSON.stringify(frame))
+  }
+
+  /** Drops the app's `/ws` socket; the app reconnects on its own. */
+  async dropExecutionSocket(): Promise<void> {
+    if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
+    await this.comfySocket.close()
+  }
+
+  /** Every `/ws` connection the app has opened, including reconnects. */
+  executionConnectionCount(): number {
+    return this.comfyConnections
   }
 
   sendExecutionBinary(frame: Buffer): void {

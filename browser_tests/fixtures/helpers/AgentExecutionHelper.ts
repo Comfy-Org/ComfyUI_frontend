@@ -111,19 +111,7 @@ export class AgentExecutionHelper {
     jobId: string,
     { nodeId, filename }: { nodeId: string; filename: string }
   ): Promise<void> {
-    this.viewFiles[filename] = {}
-    await this.upsertJob(
-      createMockJob({
-        id: jobId,
-        preview_output: {
-          filename,
-          subfolder: '',
-          type: 'output',
-          nodeId,
-          mediaType: 'images'
-        }
-      })
-    )
+    await this.recordCompletedJob(jobId, { nodeId, filename })
     this.hostSocket.sendExecution({
       type: 'executed',
       data: {
@@ -138,6 +126,29 @@ export class AgentExecutionHelper {
       data: { prompt_id: jobId, timestamp: Date.now() }
     })
     this.status(0)
+  }
+
+  /**
+   * The server-side half of a completion: the output is fetchable and the
+   * job's history row carries it, but no execution frame is sent.
+   */
+  async recordCompletedJob(
+    jobId: string,
+    { nodeId, filename }: { nodeId: string; filename: string }
+  ): Promise<void> {
+    this.viewFiles[filename] = {}
+    await this.upsertJob(
+      createMockJob({
+        id: jobId,
+        preview_output: {
+          filename,
+          subfolder: '',
+          type: 'output',
+          nodeId,
+          mediaType: 'images'
+        }
+      })
+    )
   }
 
   async failJob(
