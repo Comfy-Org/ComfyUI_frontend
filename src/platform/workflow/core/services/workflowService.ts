@@ -1118,6 +1118,10 @@ export const useWorkflowService = () => {
   const beforeLoadNewGraph = (suppressWorkflowReset = true) => {
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
+    // A node still following the cursor holds the outgoing tracker inside a
+    // change transaction; cancel it while that tracker is still active.
+    const canvas = useApp().canvasOrUndefined
+    if (canvas?.state.ghostNodeId != null) canvas.finalizeGhostPlacement(true)
     if (activeWorkflow) {
       if (!isCanvasCaptureBlocked()) {
         const tracker = (activeWorkflow as ComfyWorkflow).changeTracker
