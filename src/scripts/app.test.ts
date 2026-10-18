@@ -270,10 +270,8 @@ function markLoaded(workflow: ComfyWorkflow): LoadedComfyWorkflow {
 function publishActiveBinding(rootGraphId: RootGraphId): void {
   const lifecycle = useDocumentLifecycleStore()
   const active = useWorkflowStore().activeWorkflow
-  lifecycle.activate(
-    rootGraphId,
-    lifecycle.beginTransition(active ? toDocumentUid(active.instanceId) : null)
-  )
+  lifecycle.beginTransition(active ? toDocumentUid(active.instanceId) : null)
+  lifecycle.activate(rootGraphId)
 }
 
 function createWorkflowGraphData(): ComfyWorkflowJSON {
@@ -594,13 +592,15 @@ describe('ComfyApp', () => {
       const lifecycle = useDocumentLifecycleStore()
       publishActiveBinding(toRootGraphId('outgoing-root'))
       const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
-        lifecycle.isActive(toDocumentUid(outgoing.instanceId))
+        lifecycle.activeRootGraphId(toDocumentUid(outgoing.instanceId))
       )
 
       await app.loadGraphData(createWorkflowGraphData(), true, false, incoming)
 
-      expect(midLoad.value).toBe(false)
-      expect(lifecycle.isActive(toDocumentUid(outgoing.instanceId))).toBe(false)
+      expect(midLoad.value).toBeNull()
+      expect(
+        lifecycle.activeRootGraphId(toDocumentUid(outgoing.instanceId))
+      ).toBeNull()
       expect(
         lifecycle.activeRootGraphId(toDocumentUid(incoming.instanceId))
       ).toBe(toRootGraphId(graph.id))
@@ -623,8 +623,9 @@ describe('ComfyApp', () => {
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
       publishActiveBinding(toRootGraphId('active-root'))
-      const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
-        lifecycle.isActive(uid)
+      const midLoad = sampleLifecycleAt(
+        'beforeConfigureGraph',
+        () => lifecycle.activeRootGraphId(uid) === toRootGraphId(graph.id)
       )
 
       await app.loadGraphData(createWorkflowGraphData(), true, false, workflow)
@@ -651,7 +652,7 @@ describe('ComfyApp', () => {
       const lifecycle = useDocumentLifecycleStore()
       publishActiveBinding(toRootGraphId('same-root'))
       const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
-        lifecycle.isActive(uid)
+        lifecycle.activeRootGraphId(uid)
       )
 
       await app.loadGraphData(
@@ -664,7 +665,7 @@ describe('ComfyApp', () => {
         'same'
       )
 
-      expect(midLoad.value).toBe(false)
+      expect(midLoad.value).toBeNull()
     })
 
     it('keeps the binding for a same-document reload named by path', async () => {
@@ -692,8 +693,9 @@ describe('ComfyApp', () => {
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
       publishActiveBinding(toRootGraphId('reloaded-root'))
-      const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
-        lifecycle.isActive(uid)
+      const midLoad = sampleLifecycleAt(
+        'beforeConfigureGraph',
+        () => lifecycle.activeRootGraphId(uid) === toRootGraphId(graph.id)
       )
 
       await app.loadGraphData(
@@ -704,40 +706,59 @@ describe('ComfyApp', () => {
       )
 
       expect(midLoad.value).toBe(true)
-      expect(lifecycle.isActive(uid)).toBe(true)
+      expect(lifecycle.activeRootGraphId(uid)).toBe(toRootGraphId(graph.id))
     })
 
-    it('fails closed when a load clears the graph and then fails', async () => {
-      await useRealWorkflowService()
-      app.canvasElRef.value = document.createElement('canvas')
-      const graph = new LGraph()
-      Reflect.set(app, 'rootGraphInternal', graph)
-      Reflect.set(singletonApp, 'rootGraphInternal', graph)
-      const workflow = markLoaded(
-        new ComfyWorkflow({
-          path: 'workflows/doomed.json',
-          modified: 0,
-          size: 0
-        })
-      )
-      useWorkflowStore().activeWorkflow = workflow
-      const uid = toDocumentUid(workflow.instanceId)
-      const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId('doomed-root'))
-      vi.spyOn(graph, 'configure').mockImplementation(() => {
-        throw new Error('corrupt workflow')
-      })
+    it.for([
+      {
+        failure: 'fails in configure',
+        failLoad: (graph: LGraph) =>
+          vi.spyOn(graph, 'configure').mockImplementation(() => {
+            throw new Error('corrupt workflow')
+          })
+      },
+      {
+        failure: 'fails before configure',
+        failLoad: () =>
+          mockExtensionService.invokeExtensionsAsync.mockImplementation(
+            async (name: string) => {
+              if (name === 'beforeConfigureGraph')
+                throw new Error('extension refused the load')
+            }
+          )
+      }
+    ])(
+      'fails closed when a load clears the graph and then $failure',
+      async ({ failLoad }) => {
+        await useRealWorkflowService()
+        app.canvasElRef.value = document.createElement('canvas')
+        const graph = new LGraph()
+        Reflect.set(app, 'rootGraphInternal', graph)
+        Reflect.set(singletonApp, 'rootGraphInternal', graph)
+        const workflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/doomed.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        useWorkflowStore().activeWorkflow = workflow
+        const uid = toDocumentUid(workflow.instanceId)
+        const lifecycle = useDocumentLifecycleStore()
+        publishActiveBinding(toRootGraphId('doomed-root'))
+        failLoad(graph)
 
-      const result = await app.loadGraphData(
-        createWorkflowGraphData(),
-        true,
-        false,
-        workflow
-      )
+        const result = await app.loadGraphData(
+          createWorkflowGraphData(),
+          true,
+          false,
+          workflow
+        )
 
-      expect(result).toBe(false)
-      expect(lifecycle.isActive(uid)).toBe(false)
-    })
+        expect(result).toBe(false)
+        expect(lifecycle.activeRootGraphId(uid)).toBeNull()
+      }
+    )
 
     it('keeps the binding when a no-clean load fails before touching the graph', async () => {
       await useRealWorkflowService()
@@ -795,7 +816,6 @@ describe('ComfyApp', () => {
       app.clean()
 
       expect(graph.id).not.toBe(idBeforeClear)
-      expect(lifecycle.isActive(uid)).toBe(true)
       expect(lifecycle.activeRootGraphId(uid)).toBe(toRootGraphId(graph.id))
     })
     it('suppresses the workflow reset for a default clean load', async () => {
@@ -3578,7 +3598,7 @@ describe('ComfyApp', () => {
 
       await app.handleFile(createTestFile('a1111.png', 'image/png'))
 
-      expect(lifecycle.isActive(previousUid)).toBe(false)
+      expect(lifecycle.activeRootGraphId(previousUid)).toBeNull()
       const imported = useWorkflowStore().activeWorkflow
       expect(imported).not.toBe(previous)
       assert.exists(imported)
@@ -3615,7 +3635,7 @@ describe('ComfyApp', () => {
 
       await app.handleFile(createTestFile('a1111.png', 'image/png'))
 
-      expect(lifecycle.isActive(previousUid)).toBe(false)
+      expect(lifecycle.activeRootGraphId(previousUid)).toBeNull()
     })
   })
 
@@ -3979,7 +3999,7 @@ describe('ComfyApp', () => {
 
       await app.loadApiJson({}, 'api-import')
 
-      expect(lifecycle.isActive(previousUid)).toBe(false)
+      expect(lifecycle.activeRootGraphId(previousUid)).toBeNull()
       const imported = useWorkflowStore().activeWorkflow
       expect(imported).not.toBe(previous)
       assert.exists(imported)

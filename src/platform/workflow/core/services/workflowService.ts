@@ -16,7 +16,6 @@ import {
   getLegacyWorkflowId
 } from '@/platform/workflow/core/utils/workflowId'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
-import type { DocumentTransition } from '@/platform/workflow/core/stores/documentLifecycleStore'
 import {
   toDocumentUid,
   useDocumentLifecycleStore
@@ -682,16 +681,12 @@ export const useWorkflowService = () => {
     return toDocumentUid(activeWorkflow.instanceId)
   }
 
-  /**
-   * Saves the outgoing workflow's state before a graph load and opens the
-   * lifecycle transition whose token the caller passes to `afterLoadNewGraph`.
-   */
   const beforeLoadNewGraph = (
     suppressWorkflowReset = true,
     requestedDocument: string | ComfyWorkflow | null = null,
     incomingId?: string
-  ): DocumentTransition => {
-    const transition = useDocumentLifecycleStore().beginTransition(
+  ) => {
+    useDocumentLifecycleStore().beginTransition(
       resolveRequestedDocumentUid(requestedDocument, incomingId)
     )
     const workflowStore = useWorkspaceStore().workflow
@@ -718,28 +713,19 @@ export const useWorkflowService = () => {
 
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
-    return transition
   }
 
-  /**
-   * Activates the workflow a graph load selected and publishes its root graph
-   * id under the load's `beforeLoadNewGraph` token.
-   */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareId?: string,
-    transition?: DocumentTransition
+    shareId?: string
   ) => {
     const graphState = useApp().rootGraphOrUndefined?.state
     await activateLoadedWorkflow(value, workflowData, shareId)
     if (graphState !== useApp().rootGraphOrUndefined?.state) return
     const activated = useWorkspaceStore().workflow.activeWorkflow
-    if (activated && useApp().isGraphReady && transition !== undefined) {
-      useDocumentLifecycleStore().activate(
-        toRootGraphId(useApp().rootGraph.id),
-        transition
-      )
+    if (activated && useApp().isGraphReady) {
+      useDocumentLifecycleStore().activate(toRootGraphId(useApp().rootGraph.id))
     }
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path

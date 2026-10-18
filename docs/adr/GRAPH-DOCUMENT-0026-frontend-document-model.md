@@ -593,16 +593,12 @@ What it provides:
   binding. An in-place root-graph id rotation — `LGraph.clear()` from
   `app.clean()`, which Clear Workflow reaches with no graph load — updates the
   binding's `rootGraphId` without being a transition.
-- A per-load token (`DocumentTransition`) preventing an older load's `activate`
-  from publishing after a newer load started. `ChangeTracker.undo` and paste call
-  `loadGraphData` outside the workflow-load queue, so loads can still interleave
-  and mutate the shared graph; the token neither serializes nor cancels those
-  mutations, so it is not D3's serialized-transition guarantee. Because a
-  superseded load has by then rewritten the canvas, a stale token retracts the
-  binding rather than leaving the newer load's published id in place: once two
-  loads have interleaved, no stored id is known to name what is on screen, and
-  fail-closed costs the agent a silent window while fail-open would apply one
-  document's remote frames to another's graph.
+- No per-load token. Since #19976, `loadGraphData`, `loadApiJson` and the
+  Automatic1111 import run in one app-owned FIFO (`enqueueGraphLoad`), and undo
+  and paste reload through `loadGraphData`, so one load's `beforeLoadNewGraph`
+  and `afterLoadNewGraph` cannot interleave with another's. That queue is still
+  not D3's serialized-transition guarantee: Clear Workflow and a pointer-only
+  activation change what the canvas presents without entering it.
 
 Deviations and deferred requirements:
 
@@ -618,6 +614,14 @@ Deviations and deferred requirements:
   query and wrong as a general answer: a sidecar that must _act_ when the
   presented document changes still has no event to subscribe to. That is D3's
   `Activate`/`Deactivate`, and it stays deferred.
+- **Changes that bypass the load queue are not fenced.** Clear Workflow while an
+  unnamed load (an import) waits in `afterConfigureGraph` leaves the surviving
+  tab unbound until its next load, because the load already retracted and then
+  cancels: this fails closed. An extension that calls `rootGraph.configure`
+  during a same-document reload leaves the old root id bound while a different
+  graph is on the canvas: this fails open, and no known extension does it. Both
+  belong with the pointer-only activation above: canvas changes that do not pass
+  through a graph load.
 - No lifecycle bus: no `Open`/`PostOpen`/`PreClose`/`Close`/`PostClose`, no
   forced close from the death paths, no event payload carrying the document type,
   no synthetic catch-up for late registration, no `registerDocumentSidecar`.

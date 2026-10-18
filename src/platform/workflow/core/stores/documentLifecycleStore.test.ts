@@ -31,10 +31,8 @@ describe('useDocumentLifecycleStore', () => {
   function publish(rootGraphId: RootGraphId): void {
     const store = useDocumentLifecycleStore()
     const active = useWorkflowStore().activeWorkflow
-    store.activate(
-      rootGraphId,
-      store.beginTransition(active ? toDocumentUid(active.instanceId) : null)
-    )
+    store.beginTransition(active ? toDocumentUid(active.instanceId) : null)
+    store.activate(rootGraphId)
   }
 
   let a: TestDocument
@@ -52,9 +50,9 @@ describe('useDocumentLifecycleStore', () => {
     a.present()
     publish(toRootGraphId('graph-a'))
 
-    const transition = store.beginTransition(b.uid)
+    store.beginTransition(b.uid)
     b.present()
-    store.activate(toRootGraphId('graph-b'), transition)
+    store.activate(toRootGraphId('graph-b'))
 
     expect(store.activeRootGraphId(b.uid)).toBe(toRootGraphId('graph-b'))
     expect(store.activeRootGraphId(a.uid)).toBeNull()
@@ -76,9 +74,9 @@ describe('useDocumentLifecycleStore', () => {
     a.present()
     publish(toRootGraphId('graph-a'))
 
-    const transition = store.beginTransition(a.uid)
-    expect(store.isActive(a.uid)).toBe(true)
-    store.activate(toRootGraphId('graph-a-reloaded'), transition)
+    store.beginTransition(a.uid)
+    expect(store.activeRootGraphId(a.uid)).toBe(toRootGraphId('graph-a'))
+    store.activate(toRootGraphId('graph-a-reloaded'))
 
     expect(store.activeRootGraphId(a.uid)).toBe(
       toRootGraphId('graph-a-reloaded')
@@ -92,9 +90,9 @@ describe('useDocumentLifecycleStore', () => {
 
     store.beginTransition(b.uid)
 
-    expect(store.isActive(a.uid)).toBe(false)
+    expect(store.activeRootGraphId(a.uid)).toBeNull()
     b.present()
-    expect(store.isActive(b.uid)).toBe(false)
+    expect(store.activeRootGraphId(b.uid)).toBeNull()
   })
 
   it('fails closed when a same-document reload fails after clearing the graph', () => {
@@ -105,14 +103,13 @@ describe('useDocumentLifecycleStore', () => {
     store.beginTransition(a.uid)
     store.invalidate()
 
-    expect(store.isActive(a.uid)).toBe(false)
+    expect(store.activeRootGraphId(a.uid)).toBeNull()
   })
 
   it('reports nothing active for a workflow carrying no session uid', () => {
     const store = useDocumentLifecycleStore()
     publish(toRootGraphId('graph-a'))
 
-    expect(store.isActive(undefined)).toBe(false)
     expect(store.activeRootGraphId(undefined)).toBeNull()
   })
 
@@ -123,7 +120,6 @@ describe('useDocumentLifecycleStore', () => {
 
     store.rebindActiveRootGraph(toRootGraphId('graph-a-rotated'))
 
-    expect(store.isActive(a.uid)).toBe(true)
     expect(store.activeRootGraphId(a.uid)).toBe(
       toRootGraphId('graph-a-rotated')
     )
@@ -137,38 +133,8 @@ describe('useDocumentLifecycleStore', () => {
 
     store.rebindActiveRootGraph(toRootGraphId('graph-orphan'))
 
-    expect(store.isActive(a.uid)).toBe(false)
-    b.present()
-    expect(store.activeRootGraphId(b.uid)).toBeNull()
-  })
-
-  it('retracts when a superseded load publishes after rewriting the canvas', () => {
-    const store = useDocumentLifecycleStore()
-    a.present()
-    publish(toRootGraphId('graph-a'))
-
-    const undoOfA = store.beginTransition(a.uid)
-    const switchToB = store.beginTransition(b.uid)
-    b.present()
-    store.activate(toRootGraphId('graph-b'), switchToB)
-    store.activate(toRootGraphId('graph-a-stale'), undoOfA)
-
-    expect(store.activeRootGraphId(b.uid)).toBeNull()
     expect(store.activeRootGraphId(a.uid)).toBeNull()
-  })
-
-  it('retracts when a superseded load fails after clearing the graph', () => {
-    const store = useDocumentLifecycleStore()
-    a.present()
-    publish(toRootGraphId('graph-a'))
-
-    store.beginTransition(null)
-    const switchToB = store.beginTransition(b.uid)
     b.present()
-    store.activate(toRootGraphId('graph-b'), switchToB)
-
-    store.invalidate()
-
-    expect(store.isActive(b.uid)).toBe(false)
+    expect(store.activeRootGraphId(b.uid)).toBeNull()
   })
 })

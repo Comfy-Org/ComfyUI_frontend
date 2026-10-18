@@ -1113,7 +1113,6 @@ export class AgentConversationHarness {
     }
   }
 
-  /** Runs Clear Workflow and returns the root graph id before and after. */
   async clearWorkflowFromCommand(): Promise<{ before: string; after: string }> {
     const before = await this.rootGraphId()
     await this.comfyPage.nodeOps.clearGraph()
