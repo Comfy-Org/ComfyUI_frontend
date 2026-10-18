@@ -4,6 +4,7 @@ import { widgetId } from '@/types/widgetId'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+// Installs `addDOMWidget` on the LGraphNode prototype for the real-graph cases.
 import '@/scripts/domWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { DOMWidget } from '@/types/domWidget'
@@ -49,6 +50,13 @@ describe('useStringWidget (multiline)', () => {
     return { node, widget, inputEl, callback }
   }
 
+  function setupInGraph() {
+    const graph = new LGraph()
+    const node = new LGraphNode('Test')
+    graph.add(node)
+    return { graph, node }
+  }
+
   it('writes the value into the store when no entry exists yet', () => {
     const { node } = setup()
 
@@ -67,10 +75,8 @@ describe('useStringWidget (multiline)', () => {
     expect(entries.every((s) => s.type === 'customtext')).toBe(true)
   })
 
-  it('follows its store entry when a DynamicGroup row shift renames it', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('Test')
-    graph.add(node)
+  it('writes and reads under its new name after a rename', () => {
+    const { graph, node } = setupInGraph()
     const widget = createStringWidget(node)
     widget.value = 'before'
 
@@ -89,15 +95,17 @@ describe('useStringWidget (multiline)', () => {
   })
 
   it('keeps a sibling widget value when its own name is made unique while it is added', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('Test')
-    graph.add(node)
+    const { graph, node } = setupInGraph()
     node.addWidget('text', 'prompt', 'sibling', () => {})
 
     const widget = createStringWidget(node)
 
     expect(widget.name).toBe('prompt#1')
-    expect(widget.value).toBe('')
+    widget.value = 'mine'
+    expect(
+      useWidgetValueStore().getWidget(widgetId(graph.id, node.id, 'prompt#1'))
+        ?.value
+    ).toBe('mine')
     expect(
       useWidgetValueStore().getWidget(widgetId(graph.id, node.id, 'prompt'))
         ?.value
@@ -105,15 +113,13 @@ describe('useStringWidget (multiline)', () => {
   })
 
   it('keeps writing its own entry while an extension splices it out of the widget list', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('Test')
-    graph.add(node)
+    const { graph, node } = setupInGraph()
     node.addWidget('text', 'prompt', 'sibling', () => {})
     const widget = createStringWidget(node)
     widget.value = 'mine'
     const store = useWidgetValueStore()
 
-    node.widgets?.splice(node.widgets.indexOf(widget), 1)
+    node.widgets!.splice(node.widgets!.indexOf(widget), 1)
     widget.value = 'hidden edit'
 
     expect(
@@ -122,30 +128,30 @@ describe('useStringWidget (multiline)', () => {
     expect(store.getWidget(widgetId(graph.id, node.id, 'prompt'))?.value).toBe(
       'sibling'
     )
-    node.widgets?.push(widget)
+    node.widgets!.push(widget)
     expect(widget.value).toBe('hidden edit')
   })
 
-  it('keeps writing its own entry after its element is replaced', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('Test')
-    graph.add(node)
+  it('follows a rename after its element is replaced', () => {
+    const { graph, node } = setupInGraph()
     const widget = createStringWidget(node)
     widget.value = 'before'
 
     widget.element = document.createElement('textarea')
+    widget.name = 'renamed'
     widget.value = 'after'
 
-    expect(
-      useWidgetValueStore().getWidget(widgetId(graph.id, node.id, 'prompt'))
-        ?.value
-    ).toBe('after')
+    const store = useWidgetValueStore()
+    expect(store.getWidget(widgetId(graph.id, node.id, 'renamed'))?.value).toBe(
+      'after'
+    )
+    expect(store.getWidget(widgetId(graph.id, node.id, 'prompt'))).toBe(
+      undefined
+    )
   })
 
   it('leaves the store alone once it is removed and another widget takes its name', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('Test')
-    graph.add(node)
+    const { graph, node } = setupInGraph()
     const widget = createStringWidget(node)
     widget.value = 'mine'
 
