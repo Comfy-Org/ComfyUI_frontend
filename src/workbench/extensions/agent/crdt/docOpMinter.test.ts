@@ -721,6 +721,24 @@ describe('attachDocOpMinter', () => {
     return { host, doc }
   }
 
+  it('does not grow a promoted input the subgraph host doc lacks, reporting it instead', async () => {
+    const { host, doc } = seedPromotedHost()
+    expect(host.inputs[1].widget).toEqual({ name: 'text' })
+    const source = new LGraphNode('Text Source')
+    source.addOutput('STRING', 'STRING')
+    withGraphIntentSource('load', () => graph.add(source))
+    docInputNames = (nodeId) => (nodeId === host.id ? [] : null)
+
+    source.connect(0, host, 1)
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_link_slot_not_in_doc'])
+    doc.destroy()
+  })
+
   it('PM-1995: mints a promoted host write the doc host accepts', async () => {
     const { host, doc } = seedPromotedHost()
     expect(host.inputs.map((input) => input.name)).toEqual(['prefix', 'text'])
