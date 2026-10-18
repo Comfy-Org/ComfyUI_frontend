@@ -97,6 +97,7 @@
   "devDependencies": {
     "@comfyorg/tailwind-utils": "workspace:^",
     "@storybook/vue3-vite": "catalog:",
+    "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "reka-ui": "catalog:",
