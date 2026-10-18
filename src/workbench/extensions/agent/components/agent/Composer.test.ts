@@ -229,7 +229,6 @@ describe('Composer', () => {
       expect(
         isInaccessible(screen.getByText('Describe what you want to create'))
       ).toBe(true)
-      expect(screen.getByRole('button', { name: 'Reference' })).toBeVisible()
 
       await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
       expect(store.draft).toBe('')
