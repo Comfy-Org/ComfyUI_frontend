@@ -99,6 +99,25 @@ function mount(isMaximized = false) {
   })
 }
 
+// The deadline cases need a real Composer (they drive focus through it) and a
+// detached target, so neither `mount` nor `mountHistory` fits -- both stub it.
+function mountTargetlessPanel() {
+  const pinia = getActivePinia()
+  assert.exists(pinia)
+  return render(AgentPanel, {
+    props: {
+      entries: [],
+      historyGroups: createHistoryGroups(),
+      workflowDetached: true
+    },
+    global: {
+      plugins: [pinia, i18n],
+      directives: { tooltip: {} },
+      stubs: { WorkflowSelectorChip: true }
+    }
+  })
+}
+
 const chatHistoryStub = defineComponent({
   emits: ['back', 'select', 'delete', 'copyMarkdown', 'rename'],
   template: `
@@ -484,34 +503,27 @@ describe('AgentPanel', () => {
   })
 
   it('shows the targetless run notice shortly after composer focus', async () => {
-    vi.useFakeTimers()
+    // `shouldAdvanceTime` is true project-wide (vite.config.mts), which leaks
+    // 20-60ms of real time per click into the fake clock and makes the 499/500
+    // boundary below flap. Pin the clock so only explicit advances move it.
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    const pinia = getActivePinia()
-    assert.exists(pinia)
-    render(AgentPanel, {
-      props: {
-        entries: [],
-        historyGroups: createHistoryGroups(),
-        workflowDetached: true
-      },
-      global: {
-        plugins: [pinia, i18n],
-        directives: { tooltip: {} },
-        stubs: { WorkflowSelectorChip: true }
-      }
-    })
+    mountTargetlessPanel()
 
     expect(screen.queryByRole('note')).toBeNull()
     await vi.advanceTimersByTimeAsync(500)
     expect(screen.queryByRole('note')).toBeNull()
 
     await user.click(screen.getByRole('textbox'))
-    expect(screen.queryByRole('note')).toBeNull()
-
     await vi.advanceTimersByTimeAsync(300)
+    // Refocusing must not restart the deadline, so the notice is still due at
+    // 500ms after the *first* focus rather than 500ms after this one.
+    await user.click(document.body)
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(199)
     expect(screen.queryByRole('note')).toBeNull()
 
-    await vi.advanceTimersByTimeAsync(200)
+    await vi.advanceTimersByTimeAsync(1)
 
     expect(screen.getByRole('note')).toHaveTextContent(
       i18n.global.t('agent.runNotice')
@@ -521,20 +533,7 @@ describe('AgentPanel', () => {
   it('keeps the first-focus deadline through a chat-history round trip', async () => {
     vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    const pinia = getActivePinia()
-    assert.exists(pinia)
-    render(AgentPanel, {
-      props: {
-        entries: [],
-        historyGroups: createHistoryGroups(),
-        workflowDetached: true
-      },
-      global: {
-        plugins: [pinia, i18n],
-        directives: { tooltip: {} },
-        stubs: { WorkflowSelectorChip: true }
-      }
-    })
+    mountTargetlessPanel()
 
     await user.click(screen.getByRole('textbox'))
     await vi.advanceTimersByTimeAsync(300)
