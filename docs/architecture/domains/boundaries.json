@@ -3476,6 +3476,7 @@
           "src/composables/useWorkflowActionsMenu.test.ts",
           "src/composables/useWorkflowActionsMenu.ts",
           "src/platform/workflow/core/services/**",
+          "src/platform/workflow/core/canvasTrackerOwnership.ts",
           "src/platform/workflow/core/utils/pendingWarnings.test.ts",
           "src/platform/workflow/core/utils/pendingWarnings.ts",
           "src/platform/workflow/core/utils/restoreDynamicGroupInputs.ts",
