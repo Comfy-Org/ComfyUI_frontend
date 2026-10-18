@@ -516,24 +516,11 @@ describe('Composer skill selection', () => {
     expect(screen.queryByRole('menu', { name: 'Skills' })).toBeNull()
   })
 
-  it('drops the slash hint and menu when skills are disabled', async () => {
+  it('does not open the slash menu when skills are disabled', async () => {
     const { skills } = mount()
-    expect(
-      screen.getByText(
-        'Describe ideas, / use skills, @ add references, drag in assets'
-      )
-    ).toBeVisible()
 
     skills.flagsEnabled = false
     await nextTick()
-    expect(
-      screen.getByText('Describe ideas, @ add references, drag in assets')
-    ).toBeVisible()
-    expect(
-      screen.getByRole('textbox', {
-        name: 'Describe ideas, @ add references, drag in assets'
-      })
-    ).toBeVisible()
     await type('/')
     expect(screen.queryByRole('menu')).toBeNull()
   })

@@ -78,4 +78,40 @@ describe('createCreditsReader', () => {
     expect(result.value.balance.amount_micros).toBe(0)
     expect(result.value.balance.prepaid_balance_micros).toBeUndefined()
   })
+
+  it.for([
+    { suggested: 2_500, expected: 2_500 },
+    { suggested: null, expected: null }
+  ])(
+    'reads the suggested top-up amount $suggested as a number',
+    async ({ suggested, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk({ ...BALANCE, suggested_topup_amount_cents: suggested })
+      ])
+
+      const result = await createCreditsReader({
+        transport,
+        scopeSource
+      }).read()
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.balance.suggested_topup_amount_cents).toBe(expected)
+    }
+  )
+
+  it('rejects a suggested top-up amount outside the safe integer range', async () => {
+    const { scopeSource } = fakeSession()
+    const { transport } = fakeTransport([
+      httpOk({
+        ...BALANCE,
+        suggested_topup_amount_cents: Number.MAX_SAFE_INTEGER + 1
+      })
+    ])
+
+    const result = await createCreditsReader({ transport, scopeSource }).read()
+
+    expect(result.status).toBe('error')
+  })
 })

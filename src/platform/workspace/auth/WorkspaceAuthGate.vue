@@ -330,6 +330,8 @@ function initializeWorkspacesInBackground(): Promise<void> {
       return
     }
     await initializeWorkspaceMode()
+    if (generation !== initializationGeneration) return
+    void billingCapabilities.initialize()
   })().catch((error: unknown) => {
     if (generation === initializationGeneration) {
       console.warn(

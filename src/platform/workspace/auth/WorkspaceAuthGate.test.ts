@@ -140,7 +140,7 @@ describe('WorkspaceAuthGate', () => {
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
 
-    it('initializes workspace context in the background for a signed-in user', async () => {
+    it('initializes workspace context and billing capabilities in the background for a signed-in user', async () => {
       mockIsCloud.value = false
       Object.assign(useAuthStore(), { isInitialized: true })
       Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
@@ -150,8 +150,21 @@ describe('WorkspaceAuthGate', () => {
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
-      expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
+    })
+
+    it('does not read billing capabilities when the local workspace context fails', async () => {
+      mockIsCloud.value = false
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+
+      mountComponent()
+      await flushPromises()
+
+      expect(screen.getByTestId('slot-content')).toBeInTheDocument()
+      expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
     })
 
     it('initializes workspace context after a mid-session sign-in', async () => {
