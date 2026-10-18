@@ -2450,13 +2450,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    *
    */
   startRendering(): void {
-    // already rendering
     if (this.is_rendering) return
 
     this.is_rendering = true
-    renderFrame.call(this)
+    try {
+      renderFrame.call(this)
+    } catch (cause) {
+      this.is_rendering = false
+      reportError(cause, {
+        errorType: 'error_rendering_canvas_initial_frame',
+        surface: 'graph',
+        tags: { feature_area: 'litegraph', operation: 'start_rendering' }
+      })
+    }
 
-    /** Render loop */
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
         this.draw()
@@ -2465,12 +2472,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const window = this.getCanvasWindow()
       if (this.is_rendering) {
         if (this._maximumFrameGap > 0) {
-          // Manual FPS limit
           const gap =
             this._maximumFrameGap - (LiteGraph.getTime() - this.last_draw_time)
           setTimeout(renderFrame.bind(this), Math.max(1, gap))
         } else {
-          // FPS limited by refresh rate
           window.requestAnimationFrame(renderFrame.bind(this))
         }
       }

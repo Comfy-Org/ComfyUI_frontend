@@ -104,6 +104,7 @@ export class BootstrapTracer {
   private _spans = new Map<BootstrapPhase, PerfSpan>()
   private _timings: BootstrapPhaseTiming[] = []
   private _completed = false
+  private _outcome: 'completed' | 'failed' | undefined
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
 
@@ -176,6 +177,10 @@ export class BootstrapTracer {
     return [...this._timings].sort((a, b) => a.startMs - b.startMs)
   }
 
+  get outcome(): 'completed' | 'failed' | 'pending' {
+    return this._outcome ?? 'pending'
+  }
+
   /**
    * Close out startup: stop any phase still open, emit one aggregate event
    * carrying total wall-clock and the per-phase breakdown, and log the trace
@@ -184,6 +189,7 @@ export class BootstrapTracer {
   complete(outcome: 'completed' | 'failed' = 'completed'): void {
     if (this._completed) return
     this._completed = true
+    this._outcome = outcome
     clearTimeout(this._watchdog)
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
     this._report(outcome)
