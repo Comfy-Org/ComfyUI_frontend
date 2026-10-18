@@ -102,22 +102,42 @@ describe('useStringWidget (multiline)', () => {
     ).toBe('sibling')
   })
 
-  it('keeps its own store entry after it leaves the node widget list', () => {
+  it('keeps writing its own entry while an extension splices it out of the widget list', () => {
     const graph = new LGraph()
     const node = new LGraphNode('Test')
     graph.add(node)
     node.addWidget('text', 'prompt', 'sibling', () => {})
     const widget = createStringWidget(node)
     widget.value = 'mine'
+    const store = useWidgetValueStore()
 
     node.widgets?.splice(node.widgets.indexOf(widget), 1)
+    widget.value = 'hidden edit'
 
-    expect(widget.value).toBe('mine')
-    widget.value = 'late'
+    expect(
+      store.getWidget(widgetId(graph.id, node.id, 'prompt#1'))?.value
+    ).toBe('hidden edit')
+    expect(store.getWidget(widgetId(graph.id, node.id, 'prompt'))?.value).toBe(
+      'sibling'
+    )
+    node.widgets?.push(widget)
+    expect(widget.value).toBe('hidden edit')
+  })
+
+  it('keeps writing its own entry after its element is replaced', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Test')
+    graph.add(node)
+    const widget = createStringWidget(node)
+    widget.value = 'before'
+
+    widget.element = document.createElement('textarea')
+    widget.value = 'after'
+
     expect(
       useWidgetValueStore().getWidget(widgetId(graph.id, node.id, 'prompt'))
         ?.value
-    ).toBe('sibling')
+    ).toBe('after')
   })
 
   it('leaves the store alone once it is removed and another widget takes its name', () => {
