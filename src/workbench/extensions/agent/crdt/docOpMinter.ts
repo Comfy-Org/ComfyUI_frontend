@@ -355,6 +355,7 @@ export function docInputIndex(
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
+  const pendingGrows = new Map<NodeId, Map<string, number>>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
   let flushScheduled = false
@@ -551,6 +552,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
     if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
+    pendingGrows.delete(event.node.id)
     const key = nodeKey(event.graph.id, event.node.id)
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
@@ -580,13 +582,62 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     )
   }
 
+  /**
+   * The document slot a grow this minter sent will occupy once the server
+   * echoes it, while the bound document still lacks that slot. The applier
+   * appends a grown slot at the tail, so a prediction the document has since
+   * filled is stale and dropped.
+   */
+  function pendingGrowSlot(
+    nodeId: NodeId,
+    name: string,
+    docNames: readonly (string | undefined)[] | null
+  ): number | undefined {
+    const grows = pendingGrows.get(nodeId)
+    const slot = grows?.get(name)
+    if (slot === undefined) return undefined
+    if (docNames !== null && slot >= docNames.length) return slot
+    grows?.delete(name)
+    return undefined
+  }
+
+  function recordGrow(
+    nodeId: NodeId,
+    name: string,
+    docNames: readonly (string | undefined)[]
+  ): void {
+    const grows = pendingGrows.get(nodeId) ?? new Map<string, number>()
+    const pendingSlots = [...grows.values()].filter(
+      (slot) => slot >= docNames.length
+    )
+    grows.set(
+      name,
+      Math.max(docNames.length, ...pendingSlots.map((s) => s + 1))
+    )
+    pendingGrows.set(nodeId, grows)
+  }
+
+  function resolveDocSlot(
+    link: LLink,
+    input: INodeInputSlot | undefined,
+    docNames: readonly (string | undefined)[] | null
+  ): number | undefined {
+    const toSlot = docInputIndex(docNames, input, link.target_slot)
+    if (input === undefined) return toSlot
+    if (toSlot !== undefined) {
+      pendingGrows.get(link.target_id)?.delete(input.name)
+      return toSlot
+    }
+    return pendingGrowSlot(link.target_id, input.name, docNames)
+  }
+
   function mintConnect(event: IntentOf<'connect'>): void {
     if (!isMintableRootScope(event.graph, 'connect', event.link.id)) return
     const { link } = event
     const target = event.graph.getNodeById(link.target_id)
     const input = target?.inputs[link.target_slot]
     const docNames = deps.docInputNames(link.target_id)
-    const toSlot = docInputIndex(docNames, input, link.target_slot)
+    const toSlot = resolveDocSlot(link, input, docNames)
     const connect = {
       op: 'connect',
       link_id: link.id,
@@ -599,7 +650,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       schedule({ kind: 'op', operation: { ...connect, to_slot: toSlot } })
       return
     }
-    if (target && input && liveAutogrowGroupOf(target, input.name)) {
+    if (
+      target &&
+      input &&
+      docNames &&
+      liveAutogrowGroupOf(target, input.name)
+    ) {
+      recordGrow(link.target_id, input.name, docNames)
       schedule({
         kind: 'op',
         operation: {
@@ -623,10 +680,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const input = event.graph.getNodeById(link.target_id)?.inputs[
       link.target_slot
     ]
-    const toSlot = docInputIndex(
-      deps.docInputNames(link.target_id),
+    const toSlot = resolveDocSlot(
+      link,
       input,
-      link.target_slot
+      deps.docInputNames(link.target_id)
     )
     if (toSlot === undefined) {
       if (input) reportSlotNotInDoc('disconnect', link, input)
@@ -716,6 +773,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       detached = true
       pending = []
       pendingAdds.clear()
+      pendingGrows.clear()
       detachIntents()
       unregisterDocBoundProbe()
     }

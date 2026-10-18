@@ -710,6 +710,114 @@ describe('attachDocOpMinter', () => {
       ])
       doc.destroy()
     })
+
+    describe('before the server echoes a grown slot', () => {
+      async function mintUnechoedGrow() {
+        const sources = [new TestSource(), new TestSource(), new TestSource()]
+        const sink = new TestAutogrowSink()
+        withGraphIntentSource('load', () => {
+          for (const source of sources) graph.add(source)
+          graph.add(sink)
+          sources[0].connect(0, sink, 0)
+        })
+        const doc = mintDocFrom(graph)
+        docInputNames = (nodeId) =>
+          readDocSlotNames(doc, String(nodeId), 'inputs')
+        sources[1].connect(0, sink, 1)
+        await afterFlush()
+        applyMinted(doc, minted)
+        minted.length = 0
+        sources[2].connect(0, sink, 2)
+        await afterFlush()
+        expect(minted).toEqual([
+          expect.objectContaining({ op: 'connect', grow: expect.anything() })
+        ])
+        return { sources, sink, doc }
+      }
+
+      it('targets the pending slot with a disconnect', async () => {
+        const { sink, doc } = await mintUnechoedGrow()
+        const grownLink = sink.inputs[2].link
+
+        sink.disconnectInput(2)
+        await afterFlush()
+
+        expect(minted.slice(1)).toEqual([
+          {
+            op: 'disconnect',
+            link_id: grownLink,
+            to_node: sink.id,
+            to_slot: 2
+          }
+        ])
+        expect(applyMinted(doc, minted)).toEqual(['applied', 'applied'])
+        expect(docInputs(doc, sink.id)).toEqual([
+          { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+          { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[1].link },
+          { name: `${IMAGES_GROUP}.image_3`, link: null }
+        ])
+        expect(reportError).not.toHaveBeenCalled()
+        doc.destroy()
+      })
+
+      it('wires a replacing link into the pending slot instead of growing another', async () => {
+        const { sources, sink, doc } = await mintUnechoedGrow()
+
+        sources[0].connect(0, sink, 2)
+        await afterFlush()
+
+        const replacement = sink.inputs[2].link
+        expect(minted.at(-1)).toEqual(
+          expect.objectContaining({
+            op: 'connect',
+            link_id: replacement,
+            to_slot: 2
+          })
+        )
+        expect(
+          minted.filter((op) => op.op === 'connect' && op.grow)
+        ).toHaveLength(1)
+        applyMinted(doc, minted)
+        expect(docInputs(doc, sink.id)).toEqual([
+          { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+          { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[1].link },
+          { name: `${IMAGES_GROUP}.image_3`, link: replacement }
+        ])
+        expect(reportError).not.toHaveBeenCalled()
+        doc.destroy()
+      })
+
+      it('resolves by name again once the echo lands', async () => {
+        const { sources, sink, doc } = await mintUnechoedGrow()
+        applyMinted(doc, minted)
+        minted.length = 0
+
+        sources[0].connect(0, sink, 2)
+        await afterFlush()
+
+        expect(minted.at(-1)).toEqual(
+          expect.objectContaining({ op: 'connect', to_slot: 2 })
+        )
+        doc.destroy()
+      })
+
+      it('drops a prediction the document has filled with another slot', async () => {
+        const { sink, doc } = await mintUnechoedGrow()
+        const occupied = ['image_1', 'image_2', 'other'].map(
+          (name) => `${IMAGES_GROUP}.${name}`
+        )
+        docInputNames = (nodeId) => (nodeId === sink.id ? occupied : null)
+
+        sink.disconnectInput(2)
+        await afterFlush()
+
+        expect(minted).toHaveLength(1)
+        expect(
+          vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+        ).toEqual(['agent_crdt_link_slot_not_in_doc'])
+        doc.destroy()
+      })
+    })
   })
 
   it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {
