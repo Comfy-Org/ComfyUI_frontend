@@ -143,23 +143,6 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     : { ...snapshot, widgets_values: values }
 }
 
-/**
- * The node's own widget layout (schema Amendment A24), declared only when its
- * value widgets include one the node definition does not describe.
- *
- * The pinned catalog is built from `object_info`, so it lists exactly the
- * definition's widget inputs plus the companions the frontend is known to add.
- * A widget a frontend extension adds on its own (rgthree's `output` text on
- * Display Int, whose only input is a `forceInput` link) is in neither, and an
- * undeclared name-keyed record carrying it is refused `unknown_widget` on
- * every attempt (PM-2003). A declared node is laid out from this order and
- * never consults the catalog, so the add is accepted with the value kept.
- *
- * Nodes whose widgets the definition explains keep the catalog path, so the
- * projection the agent reads for them is unchanged. A widget is explained when
- * its name is a definition input, a dynamic child of one (`group.child`), or a
- * companion linked to another widget (`control_after_generate`).
- */
 function undescribedWidgetForm(
   node: LGraphNode,
   values: Record<string, unknown>

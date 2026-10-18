@@ -25,13 +25,10 @@ vi.mock(import('@/platform/telemetry/reportError'))
 const DISPLAY_INT = 'Display Int (rgthree)'
 const WORKFLOW_ID = 'wf-pm-2003'
 
-// What `comfy nodes widget-catalog` pins for this class: its only input is a
-// `forceInput` link, so it has no widgets at all.
 const CATALOG: WidgetCatalog = {
   types: { [DISPLAY_INT]: { widget_order: [] } }
 }
 
-// rgthree's `object_info` entry for the class, which is all the catalog sees.
 const DISPLAY_INT_DEF: ComfyNodeDefV1 = {
   name: DISPLAY_INT,
   display_name: DISPLAY_INT,
@@ -132,7 +129,6 @@ function connectAgentHeldWorkflow() {
   return { graph, host, deliver, humanAdds }
 }
 
-/** A second tab that opens the same document after the add landed. */
 function openInAnotherTab(host: HostDoc) {
   const graph = new LGraph()
   const agentSocket = createFakeAgentSocket()
@@ -237,6 +233,9 @@ describe('PM-2003: a human adds Display Int (rgthree) while the agent holds the 
     const { host, humanAdds } = connectAgentHeldWorkflow()
     const node = new DisplayIntWithClientOnlyOutputWidget()
     await humanAdds(node)
+    host.apply([
+      { op: 'set_widget', node_id: node.id, widget: 'output', value: '42' }
+    ])
 
     const otherTab = openInAnotherTab(host)
 
@@ -244,6 +243,7 @@ describe('PM-2003: a human adds Display Int (rgthree) while the agent holds the 
       expect(otherTab.getNodeById(node.id)?.type).toBe(DISPLAY_INT)
     )
     const reopened = otherTab.getNodeById(node.id)!
+    expect(reopened.widgets?.find((w) => w.name === 'output')?.value).toBe('42')
     expect(reopened).not.toHaveProperty('__widgets_form')
     expect(reopened.serialize()).not.toHaveProperty('__widgets_form')
   })
