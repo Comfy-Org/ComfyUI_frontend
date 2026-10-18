@@ -283,5 +283,81 @@ describe('useReconnectQueueRefresh', () => {
         '9': { images: [image] }
       })
     })
+
+    it('keeps a submitted job that becomes active during the refresh', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-2'] = { nodes: {} }
+      vi.mocked(api.getJobDetail).mockImplementation(async () => {
+        executionStore.activeJobId = 'job-2'
+        return makeJob('job-2', 'in_progress')
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(executionStore.activeJobId).toBe('job-2')
+      expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-2'])
+    })
+
+    it('falls back to the history preview when the detail carries no outputs', async () => {
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue(
+        makeJob('job-1', 'completed')
+      )
+      vi.mocked(api.getHistory).mockResolvedValue([
+        {
+          ...makeJob('job-1', 'completed'),
+          outputs_count: 1,
+          preview_output: { ...image, nodeId: '9', mediaType: 'images' }
+        }
+      ])
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ node: '9' })]
+      ])
+    })
+
+    it('keeps following a queued run whose outputs could not be fetched', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-0'] = { nodes: {} }
+      vi.mocked(api.getHistory).mockResolvedValue([
+        { ...makeJob('job-0', 'completed'), outputs_count: 3 }
+      ])
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([])
+      expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-0'])
+    })
+
+    it('still files a background workflow run outputs when a new run took the open graph', async () => {
+      const background = fromPartial<ComfyWorkflow>({
+        path: 'workflows/other.json',
+        changeTracker: { nodeOutputs: undefined }
+      })
+      followRun('job-1', background)
+      const executionStore = useExecutionStore()
+      vi.mocked(api.getJobDetail).mockImplementation(async () => {
+        executionStore.activeJobId = 'job-new'
+        return finishedJob
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(background.changeTracker?.nodeOutputs).toEqual({
+        '9': { images: [image] }
+      })
+    })
+
+    it('replays once when reconnects overlap', async () => {
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
+      const refresh = useReconnectQueueRefresh()
+
+      await Promise.all([refresh(), refresh()])
+
+      expect(replayedExecutedFrames()).toHaveLength(1)
+    })
   })
 })

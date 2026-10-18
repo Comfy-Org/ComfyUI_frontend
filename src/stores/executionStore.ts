@@ -893,11 +893,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (id && !activeJobIds.has(id)) resetExecutionState(id)
   }
 
-  /**
-   * Drops queued jobs that ended while the socket was down, so their missed
-   * terminal frame does not leave them followed forever. The active job is
-   * left to {@link clearActiveJobIfStale}.
-   */
+  /** Stops following queued jobs that ended without a terminal frame. */
   function forgetFinishedJobs(jobIds: Iterable<JobId>) {
     for (const jobId of jobIds) {
       if (jobId === activeJobId.value || !(jobId in queuedJobs.value)) continue
