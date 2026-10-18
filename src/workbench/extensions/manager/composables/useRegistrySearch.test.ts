@@ -62,6 +62,7 @@ describe('useRegistrySearch', () => {
       })
 
       expect(search.firstPage.value).toEqual({
+        status: 'loaded',
         query: 'test',
         rawResultsEmpty: expected
       })
@@ -85,6 +86,7 @@ describe('useRegistrySearch', () => {
     await until(search.isLoading).toBe(false)
 
     expect(search.firstPage.value).toEqual({
+      status: 'loaded',
       query: 'kijai/comfyui-kjnodes',
       rawResultsEmpty: true
     })
@@ -92,7 +94,7 @@ describe('useRegistrySearch', () => {
     query.value = 'comfyui-manager'
     await until(search.isLoading).toBe(true)
 
-    expect(search.firstPage.value).toBeNull()
+    expect(search.firstPage.value).toEqual({ status: 'loading' })
 
     resolveNextSearch({
       nodePacks: [],
@@ -102,6 +104,7 @@ describe('useRegistrySearch', () => {
     await until(search.isLoading).toBe(false)
 
     expect(search.firstPage.value).toEqual({
+      status: 'loaded',
       query: 'comfyui-manager',
       rawResultsEmpty: true
     })
@@ -161,6 +164,7 @@ describe('useRegistrySearch', () => {
 
       expect(toValue(search.items)).toEqual([{ id: 'current-pack' }])
       expect(search.firstPage.value).toEqual({
+        status: 'loaded',
         query: changed.query,
         rawResultsEmpty: false
       })
@@ -213,6 +217,7 @@ describe('useRegistrySearch', () => {
     expect(reportError).not.toHaveBeenCalled()
     expect(toValue(search.items)).toEqual([{ id: 'current-pack' }])
     expect(search.firstPage.value).toEqual({
+      status: 'loaded',
       query: 'comfyui-manager',
       rawResultsEmpty: false
     })
@@ -235,7 +240,7 @@ describe('useRegistrySearch', () => {
     searchMode.value = 'packs'
     await nextTick()
 
-    expect(search.firstPage.value).toBeNull()
+    expect(search.firstPage.value).toEqual({ status: 'loading' })
   })
 
   it('drops a later page that lands after the mode changed and loads the first page for the new mode', async () => {
@@ -332,6 +337,7 @@ describe('useRegistrySearch', () => {
 
     expect(toValue(search.items)).toEqual([{ id: 'latest-pack' }])
     expect(search.firstPage.value).toEqual({
+      status: 'loaded',
       query: 'gguf',
       rawResultsEmpty: false
     })
@@ -356,7 +362,10 @@ describe('useRegistrySearch', () => {
     await until(search.isLoading).toBe(true)
     await until(search.isLoading).toBe(false)
 
-    expect(search.firstPage.value).toBeNull()
+    expect(search.firstPage.value).toEqual({
+      status: 'failed',
+      query: 'comfyui-kjnodes'
+    })
     expect(reportError).toHaveBeenCalledWith(new Error('search unavailable'), {
       errorType: 'error_searching_registry_packs',
       surface: 'platform',
@@ -377,7 +386,10 @@ describe('useRegistrySearch', () => {
     await until(search.isLoading).toBe(true)
     await until(search.isLoading).toBe(false)
 
-    expect(search.searchFailed.value).toBe(true)
+    expect(search.firstPage.value).toEqual({
+      status: 'failed',
+      query: 'comfyui-kjnodes'
+    })
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       new Error('search unavailable'),
       expect.objectContaining({ errorType: 'error_searching_registry_packs' })
@@ -427,24 +439,27 @@ describe('useRegistrySearch', () => {
     const search = useRegistrySearch({ query, searchMode: 'packs' })
     await until(search.isLoading).toBe(false)
 
-    expect(search.searchFailed.value).toBe(false)
+    expect(search.firstPage.value).toMatchObject({ status: 'loaded' })
 
     query.value = 'comfyui-kjnodes'
     await until(search.isLoading).toBe(true)
     await until(search.isLoading).toBe(false)
 
-    expect(search.searchFailed.value).toBe(true)
+    expect(search.firstPage.value).toEqual({
+      status: 'failed',
+      query: 'comfyui-kjnodes'
+    })
     expect(toValue(search.items)).toEqual([])
     expect(search.suggestions.value).toEqual([])
 
     query.value = 'gguf'
     await nextTick()
 
-    expect(search.searchFailed.value).toBe(false)
+    expect(search.firstPage.value.status).not.toBe('failed')
 
     await until(search.isLoading).toBe(false)
 
-    expect(search.searchFailed.value).toBe(false)
+    expect(search.firstPage.value).toMatchObject({ status: 'loaded' })
     expect(toValue(search.items)).toEqual(packs(1))
   })
 
@@ -462,7 +477,7 @@ describe('useRegistrySearch', () => {
     await nextTick()
 
     expect(toValue(search.isLoading)).toBe(false)
-    expect(search.firstPage.value?.query).toBe('comfyui-manager')
+    expect(search.firstPage.value).toMatchObject({ query: 'comfyui-manager' })
     expect(
       vi
         .mocked(useRegistrySearchGateway().searchPacks)
@@ -484,8 +499,8 @@ describe('useRegistrySearch', () => {
 
     await search.loadMore()
 
-    expect(search.searchFailed.value).toBe(false)
     expect(search.firstPage.value).toEqual({
+      status: 'loaded',
       query: 'gguf',
       rawResultsEmpty: false
     })

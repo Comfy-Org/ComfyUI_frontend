@@ -42,8 +42,7 @@ describe('useRegistrySearch through the real search gateway', () => {
 
       const search = await searchFor(query)
 
-      expect(search.searchFailed.value).toBe(true)
-      expect(search.firstPage.value).toBeNull()
+      expect(search.firstPage.value).toEqual({ status: 'failed', query })
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         expect.any(Error),
         expect.objectContaining({ errorType: 'error_searching_registry_packs' })
@@ -60,7 +59,7 @@ describe('useRegistrySearch through the real search gateway', () => {
 
     const search = await searchFor('gguf')
 
-    expect(search.searchFailed.value).toBe(false)
+    expect(search.firstPage.value).toMatchObject({ status: 'loaded' })
     expect(toValue(search.items)).toEqual([{ id: 'gguf-pack' }])
   })
 })

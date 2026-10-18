@@ -403,7 +403,7 @@ const canLoadMorePacks = computed(
   () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
 )
 const isSearchFailed = computed(
-  () => isSearchBacked.value && packs.searchFailed.value
+  () => isSearchBacked.value && packs.firstPage.value.status === 'failed'
 )
 const isInitialLoad = computed(
   () =>
@@ -509,7 +509,8 @@ const isUnmatchedLegacyManagerSearch = computed(() => {
   return (
     isNewManagerUI.value &&
     isSearchBacked.value &&
-    firstPage?.query === searchQuery.value.trim() &&
+    firstPage.status === 'loaded' &&
+    firstPage.query === searchQuery.value.trim() &&
     isLegacyManagerQuery(firstPage.query) &&
     !displayPacks.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
     (firstPage.rawResultsEmpty || isSettledWithNoPacks.value)

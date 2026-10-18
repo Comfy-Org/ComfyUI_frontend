@@ -19,10 +19,12 @@ import type { PagedList } from '@/utils/pagedList'
 
 type RegistryNodePack = components['schemas']['Node']
 
-interface SearchedFirstPage {
-  query: string
-  rawResultsEmpty: boolean
-}
+type FirstPage =
+  | { status: 'loading' }
+  | { status: 'failed'; query: string }
+  | { status: 'loaded'; query: string; rawResultsEmpty: boolean }
+
+const LOADING_FIRST_PAGE: FirstPage = { status: 'loading' }
 
 type PageFreshness = 'current' | 'stale'
 
@@ -40,12 +42,10 @@ export function useRegistrySearch(inputs: {
 }): PagedList<RegistryNodePack> & {
   suggestions: Readonly<Ref<QuerySuggestion[]>>
   /**
-   * The query behind the shown first page and its outcome; null from an
-   * input change until that page loads, and after it failed.
+   * The first page for the current inputs: loading from an input change
+   * until its search settles, then the query it searched and its outcome.
    */
-  firstPage: Readonly<Ref<SearchedFirstPage | null>>
-  /** Whether the search for the first page failed; false while it loads. */
-  searchFailed: Readonly<Ref<boolean>>
+  firstPage: Readonly<Ref<FirstPage>>
 } {
   const { searchPacks } = useRegistrySearchGateway()
 
@@ -54,8 +54,7 @@ export function useRegistrySearch(inputs: {
   const items = ref<RegistryNodePack[]>([])
   const morePages = ref(true)
   const suggestions = ref<QuerySuggestion[]>([])
-  const firstPage = ref<SearchedFirstPage | null>(null)
-  const searchFailed = ref(false)
+  const firstPage = ref<FirstPage>(LOADING_FIRST_PAGE)
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
   const searchedQuery = () => toValue(inputs.query).trim()
 
@@ -102,6 +101,7 @@ export function useRegistrySearch(inputs: {
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
       if (pageNumber === 0) {
         firstPage.value = {
+          status: 'loaded',
           query,
           rawResultsEmpty: result.rawResultsEmpty ?? nodePacks.length === 0
         }
@@ -114,7 +114,7 @@ export function useRegistrySearch(inputs: {
       reportFirstFailureSinceSuccess(error)
       morePages.value = false
       if (pageNumber === 0) {
-        searchFailed.value = true
+        firstPage.value = { status: 'failed', query }
         suggestions.value = []
       }
     }
@@ -126,8 +126,7 @@ export function useRegistrySearch(inputs: {
       do {
         pageNumber = 0
         morePages.value = true
-        firstPage.value = null
-        searchFailed.value = false
+        firstPage.value = LOADING_FIRST_PAGE
         items.value = []
       } while ((await doLoadMore()) === 'stale')
     })
@@ -143,7 +142,7 @@ export function useRegistrySearch(inputs: {
   watch(
     [searchedQuery, () => toValue(inputs.searchMode)],
     () => {
-      firstPage.value = null
+      firstPage.value = LOADING_FIRST_PAGE
       void reload()
     },
     { immediate: true }
@@ -157,7 +156,6 @@ export function useRegistrySearch(inputs: {
     loadNew: reload,
     invalidate: reload,
     suggestions,
-    firstPage,
-    searchFailed
+    firstPage
   }
 }
