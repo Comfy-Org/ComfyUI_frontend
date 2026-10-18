@@ -52,6 +52,7 @@ function makeStandardYearly(): Plan {
     price_cents: 1600,
     credits_cents: 4200,
     max_seats: 1,
+    action: 'subscribe',
     availability: { available: true },
     seat_summary: {
       seat_count: 1,
@@ -69,6 +70,7 @@ function makeCreatorMonthly(): Plan {
     price_cents: 3500,
     credits_cents: 7400,
     max_seats: 5,
+    action: 'subscribe',
     availability: { available: true },
     seat_summary: {
       seat_count: 1,

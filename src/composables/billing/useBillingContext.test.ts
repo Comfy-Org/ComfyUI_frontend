@@ -428,6 +428,7 @@ describe('useBillingContext', () => {
         price_cents: 33600,
         credits_cents: 42086,
         max_seats: 1,
+        action: 'subscribe',
         availability: { available: true },
         seat_summary: {
           seat_count: 1,
@@ -945,6 +946,7 @@ describe('useBillingContext', () => {
           price_cents: 10000,
           credits_cents: 2110000,
           max_seats: 50,
+          action: 'subscribe',
           availability: { available: true },
           seat_summary: {
             seat_count: 1,
