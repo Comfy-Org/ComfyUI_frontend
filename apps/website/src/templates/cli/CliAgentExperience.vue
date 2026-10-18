@@ -10,14 +10,12 @@ import CodeTabsPicker from '@/templates/platform/CodeTabsPicker.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
+import CliSetupInstall from './CliSetupInstall.vue'
+import CliSetupRun from './CliSetupRun.vue'
 import NativeCliSession from '@/templates/cli/NativeCliSession.vue'
 import AgentSetupClientTabs from '@/components/common/AgentSetupClientTabs.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import BrandButton from '@/components/common/BrandButton.vue'
-import Card from '@/components/ui/card/Card.vue'
-import CardHeader from '@/components/ui/card/CardHeader.vue'
-import CardTitle from '@/components/ui/card/CardTitle.vue'
-import CardContent from '@/components/ui/card/CardContent.vue'
 import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
@@ -336,97 +334,21 @@ function openSetup(event: MouseEvent, manualMode = false) {
                 :is="client.kind === 'agent' ? TabsContent : 'div'"
                 :value="client.kind === 'agent' ? setupMode : undefined"
               >
-                <Card class="mt-6 gap-3 rounded-3xl p-4 shadow-none sm:p-6">
-                  <CardHeader class="gap-3"
-                    ><CardTitle class="text-xl font-light md:text-xl">{{
-                      usesManualSetup
-                        ? '1. Install and connect'
-                        : `1. Copy and send this to ${client.name}`
-                    }}</CardTitle></CardHeader
-                  >
-                  <CardContent class="space-y-3 px-0">
-                    <template v-if="usesManualSetup">
-                      <CopyableField
-                        :class="codeFieldClass"
-                        :value="INSTALL_COMMAND"
-                        :copy-label="copyLabel"
-                        :copied-label="copiedLabel"
-                      />
-                      <p class="text-sm text-smoke-700">
-                        {{
-                          isHeadless
-                            ? 'Configure your runner without interactive prompts. Replace the API key placeholder when using Cloud.'
-                            : activeConnectionId === 'cloud'
-                              ? 'Setup opens your browser for sign-in, then installs the agent skills.'
-                              : 'Configure the local connection and install agent skills.'
-                        }}
-                      </p>
-                      <Button
-                        v-if="isHeadless && activeConnectionId === 'cloud'"
-                        variant="underlineLink"
-                        size="sm"
-                        :href="externalLinks.apiKeys"
-                        >Get your API key<template #append
-                          ><ArrowUpRight
-                            class="ml-1 size-4"
-                            aria-hidden="true" /></template
-                      ></Button>
-                      <CopyableField
-                        :class="codeFieldClass"
-                        :value="connectCommand"
-                        :copy-label="copyLabel"
-                        :copied-label="copiedLabel"
-                      />
-                    </template>
-                    <template v-else
-                      ><CopyableField
-                        :class="codeFieldClass"
-                        :value="agentPrompt"
-                        :copy-label="copyLabel"
-                        :copied-label="copiedLabel"
-                    /></template>
-                  </CardContent>
-                </Card>
-                <Card
-                  v-if="client.kind === 'agent' || runCommands.length"
-                  class="mt-4 gap-3 rounded-3xl p-4 shadow-none sm:p-6"
-                >
-                  <CardHeader class="gap-3"
-                    ><CardTitle class="text-xl font-light md:text-xl"
-                      >2.
-                      {{
-                        usesManualSetup
-                          ? 'Run a command'
-                          : 'Connect and start creating'
-                      }}</CardTitle
-                    ></CardHeader
-                  >
-                  <CardContent class="space-y-3 px-0">
-                    <p class="text-sm text-smoke-700">
-                      {{
-                        usesManualSetup && client.kind === 'agent'
-                          ? activeConnectionId === 'cloud'
-                            ? 'Complete browser sign-in if prompted, then run Comfy CLI commands in your terminal.'
-                            : 'Run Comfy CLI commands against your local ComfyUI installation.'
-                          : client.kind === 'agent'
-                            ? activeConnectionId === 'cloud'
-                              ? `Complete browser sign-in when prompted, then ask ${client.name} to generate an image or video.`
-                              : `Ask ${client.name} to run a workflow on your local ComfyUI installation.`
-                            : isHeadless
-                              ? 'Run your workflow in your configured runner.'
-                              : 'Your terminal is ready for Comfy CLI commands.'
-                      }}
-                    </p>
-                    <CopyableField
-                      v-for="command in runCommands"
-                      :key="command"
-                      :class="codeFieldClass"
-                      :value="command"
-                      :copy-label="copyLabel"
-                      :copied-label="copiedLabel"
-                    />
-                  </CardContent>
-                </Card>
+                <CliSetupInstall
+                  :client="client"
+                  :uses-manual-setup="usesManualSetup"
+                  :is-headless="isHeadless"
+                  :active-connection-id="activeConnectionId"
+                  :agent-prompt="agentPrompt"
+                  :connect-command="connectCommand"
+                />
+                <CliSetupRun
+                  :client="client"
+                  :uses-manual-setup="usesManualSetup"
+                  :is-headless="isHeadless"
+                  :active-connection-id="activeConnectionId"
+                  :run-commands="runCommands"
+                />
                 <p class="mt-5 text-xs text-primary-warm-gray">
                   {{
                     activeConnectionId === 'local'
