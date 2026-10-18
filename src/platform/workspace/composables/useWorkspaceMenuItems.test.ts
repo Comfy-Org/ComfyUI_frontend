@@ -1,7 +1,6 @@
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
-import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -13,7 +12,6 @@ import { useWorkspaceMenuItems as createWorkspaceMenuItems } from './useWorkspac
 
 const state = vi.hoisted(() => ({
   billingStatus: 'paid',
-  canLeaveWorkspace: false,
   canManageSubscriptionLifecycle: false,
   canAccessSubscriptionFeatures: true,
   isFreeTier: false,
@@ -53,7 +51,6 @@ vi.mock<unknown>(
       permissions: {
         get value() {
           return {
-            canLeaveWorkspace: state.canLeaveWorkspace,
             canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
           }
         }
@@ -108,6 +105,12 @@ function denyDelete(denial: string) {
   useBillingCapabilities().deleteWorkspaceDenial = computed(() => denial)
 }
 
+function grantLeave() {
+  useBillingCapabilities().canLeaveWorkspace = computed(() =>
+    receiveServerFact('can_leave_workspace', true)
+  )
+}
+
 afterEach(() => {
   for (const app of apps.splice(0)) app.unmount()
 })
@@ -116,7 +119,6 @@ describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
     state.billingStatus = 'paid'
 
-    state.canLeaveWorkspace = false
     state.canManageSubscriptionLifecycle = false
     state.canAccessSubscriptionFeatures = true
     state.isFreeTier = false
@@ -204,7 +206,7 @@ describe('useWorkspaceMenuItems', () => {
   })
 
   it('keeps Leave available for an Enterprise workspace member', () => {
-    state.canLeaveWorkspace = true
+    grantLeave()
     state.planSlug = 'enterprise_monthly'
     state.tier = 'ENTERPRISE'
 
@@ -312,74 +314,34 @@ describe('useWorkspaceMenuItems', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('shows Leave only when workspace permission grants it', () => {
-    const hiddenItems = useWorkspaceMenuItems().menuItems
-
-    expect(hiddenItems.value.map((item) => item.label)).not.toContain(
-      'workspacePanel.menu.leaveWorkspace'
-    )
-
-    state.canLeaveWorkspace = true
-    const visibleItems = useWorkspaceMenuItems().menuItems
-
-    expect(visibleItems.value.map((item) => item.label)).toContain(
-      'workspacePanel.menu.leaveWorkspace'
-    )
-  })
-
-  it('rechecks permission before opening the Leave dialog', () => {
-    state.canLeaveWorkspace = true
-    const { menuItems } = useWorkspaceMenuItems()
-    const leaveItem = menuItems.value.find(
-      (item) => item.label === 'workspacePanel.menu.leaveWorkspace'
-    )
-
-    state.canLeaveWorkspace = false
-    leaveItem?.command?.({
-      originalEvent: new Event('click'),
-      item: leaveItem
-    })
-
-    expect(
-      useWorkspaceDialogs().showLeaveWorkspaceDialog
-    ).not.toHaveBeenCalled()
-  })
-
-  it('shows Leave and Delete when the server grants Delete', () => {
-    state.canLeaveWorkspace = true
+  it('puts Cancel plan ahead of the shared workspace actions', () => {
+    useBillingCapabilities().canCancel = computed(() => true)
+    grantLeave()
     grantDelete()
 
     const { menuItems } = useWorkspaceMenuItems()
 
     expect(menuItems.value.map((item) => item.label)).toEqual([
-      'workspacePanel.menu.deleteWorkspace',
-      'workspacePanel.menu.leaveWorkspace'
+      'subscription.cancelPlan',
+      'workspacePanel.menu.leaveWorkspace',
+      'workspacePanel.menu.deleteWorkspace'
     ])
   })
 
-  it.for(['not_workspace_owner', 'personal_workspace'])(
-    'withholds Delete when the server names %s',
-    (denial) => {
-      state.canLeaveWorkspace = true
-      denyDelete(denial)
+  it('separates every menu entry with a divider', () => {
+    useBillingCapabilities().canCancel = computed(() => true)
+    grantLeave()
+    denyDelete('not_workspace_owner')
 
-      const { menuItems } = useWorkspaceMenuItems()
+    const { menuEntries } = useWorkspaceMenuItems()
 
-      expect(menuItems.value.map((item) => item.label)).toEqual([
-        'workspacePanel.menu.leaveWorkspace'
-      ])
-    }
-  )
-
-  it('disables Delete while the server refuses it', () => {
-    denyDelete('plan_not_ended')
-
-    const { menuItems } = useWorkspaceMenuItems()
-    const deleteItem = menuItems.value.find(
-      (item) => item.label === 'workspacePanel.menu.deleteWorkspace'
-    )
-
-    expect(deleteItem).toMatchObject({ disabled: true, command: undefined })
+    expect(
+      menuEntries.value.map((item) => (item.separator ? '|' : item.label))
+    ).toEqual([
+      'subscription.cancelPlan',
+      '|',
+      'workspacePanel.menu.leaveWorkspace'
+    ])
   })
 
   it('tells the owner of a cancelled plan when Delete becomes available', () => {
@@ -394,43 +356,5 @@ describe('useWorkspaceMenuItems', () => {
     expect(deleteItem?.tooltip).toBe(
       'You can delete this workspace after your plan ends on Aug 1, 2026.'
     )
-  })
-
-  it('opens the Delete dialog when the server grants it', () => {
-    grantDelete()
-    const { menuItems } = useWorkspaceMenuItems()
-    const deleteItem = menuItems.value.find(
-      (item) => item.label === 'workspacePanel.menu.deleteWorkspace'
-    )
-
-    deleteItem?.command?.({
-      originalEvent: new Event('click'),
-      item: deleteItem
-    })
-
-    expect(
-      useWorkspaceDialogs().showDeleteWorkspaceDialog
-    ).toHaveBeenCalledOnce()
-  })
-
-  it('rechecks the capability before opening the Delete dialog', () => {
-    const granted = ref(true)
-    useBillingCapabilities().canDeleteWorkspace = computed(() =>
-      receiveServerFact('can_delete_workspace', granted.value)
-    )
-    const { menuItems } = useWorkspaceMenuItems()
-    const deleteItem = menuItems.value.find(
-      (item) => item.label === 'workspacePanel.menu.deleteWorkspace'
-    )
-
-    granted.value = false
-    deleteItem?.command?.({
-      originalEvent: new Event('click'),
-      item: deleteItem
-    })
-
-    expect(
-      useWorkspaceDialogs().showDeleteWorkspaceDialog
-    ).not.toHaveBeenCalled()
   })
 })

@@ -35,8 +35,7 @@ const REJECTED = [
   'env.hdr',
   'track.aac',
   'track.aiff',
-  'track.wma',
-  'plate.exr'
+  'track.wma'
 ] as const
 
 const VIDEO_HEADERS: Partial<Record<string, Buffer>> = {
