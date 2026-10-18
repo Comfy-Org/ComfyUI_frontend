@@ -145,7 +145,6 @@ export function useReconnectQueueRefresh() {
     }
   }
 
-  /** Counts an unreadable outcome; true once the run should be dropped. */
   function giveUpOnUnreadable(jobId: JobId): boolean {
     const refreshes = (unreadableRefreshes.get(jobId) ?? 0) + 1
     if (refreshes < MAX_UNREADABLE_REFRESHES) {

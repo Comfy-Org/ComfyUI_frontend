@@ -549,12 +549,17 @@ describe('useReconnectQueueRefresh', () => {
         executionStore.queuedJobs['job-0'] = { nodes: {} }
         const refresh = useReconnectQueueRefresh()
 
-        for (let reconnect = 0; reconnect < 3; reconnect++) {
-          const refreshed = refresh()
-          await vi.runAllTimersAsync()
-          await refreshed
-        }
+        const first = refresh()
+        await vi.runAllTimersAsync()
+        await first
+        const second = refresh()
+        await vi.runAllTimersAsync()
+        await second
+        expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-0'])
 
+        const third = refresh()
+        await vi.runAllTimersAsync()
+        await third
         expect(executionStore.queuedJobs).toEqual({})
       })
     })
