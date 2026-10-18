@@ -30,6 +30,7 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
+import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -166,7 +167,24 @@ function isValueWidget(
   // One construct for both fields, so the two halves of the guard cannot
   // drift apart again.
   const { type = stored?.type, serialize = stored?.serialize } = widget ?? {}
-  return type !== 'button' && serialize !== false
+  if (type === 'button' || serialize === false) return false
+  return !(widget && isDisplayOnlyDomWidget(widget))
+}
+
+/**
+ * A DOM or component widget kept out of the prompt (`options.serialize: false`)
+ * is display state, not a node input: the catalog's `widget_order` comes from
+ * the node's prompt inputs, so it never names one. Litegraph still persists it
+ * in the workflow because its widget-level `serialize` is unset — a custom
+ * pack's video preview (VHS `videopreview`) is the case seen in prod. Sent as a
+ * named value it makes the applier refuse the whole `add_node` as
+ * `unknown_widget`, which aborted an undo's restore batch (PM-2165).
+ */
+function isDisplayOnlyDomWidget(widget: IBaseWidget): boolean {
+  return (
+    (isDOMWidget(widget) || isComponentWidget(widget)) &&
+    widget.options.serialize === false
+  )
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
