@@ -5992,9 +5992,9 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "editRejected": {
-      "widgetWrite": "Widget edit was rejected and was not saved. The agent's copy of this workflow keeps the earlier value — reload the workflow to see it.",
+      "widgetWrite": "Widget edit was rejected and was not saved. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
       "generic": "Your edit was rejected and was not saved, so it was undone on the canvas. Reload the workflow if the canvas looks out of date.",
-      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The agent's copy of this workflow keeps the earlier value — reload the workflow to see it.",
+      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
       "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. The rejected part was undone on the canvas; reload the workflow if the canvas looks out of date.",
       "reason": "Rejected: {target} ({code})",
       "reasonCode": "Reason: {code}"
