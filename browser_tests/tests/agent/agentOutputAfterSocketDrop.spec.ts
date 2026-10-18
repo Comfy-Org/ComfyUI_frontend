@@ -11,7 +11,8 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test('shows the output on its node once the socket reconnects', async ({
-      rig: { harness, execution }
+      rig: { harness, execution },
+      page
     }) => {
       const jobId = 'agent-exec-server-run-pm-2123'
 
@@ -28,14 +29,26 @@ test.describe(
           nodeId: String(SOURCE_NODE_ID),
           filename: OUTPUT_FILENAME
         })
+        const jobsSeenAfterReconnect: string[] = []
+        page.on('response', async (response) => {
+          if (
+            harness.hostSocket.executionConnectionCount() >
+              connectionsBeforeDrop &&
+            new URL(response.url()).pathname.startsWith('/api/jobs')
+          )
+            jobsSeenAfterReconnect.push(await response.text())
+        })
         await expect
           .poll(() => harness.hostSocket.executionConnectionCount())
           .toBeGreaterThan(connectionsBeforeDrop)
+        await expect
+          .poll(() => jobsSeenAfterReconnect.join('\n'))
+          .toContain(OUTPUT_FILENAME)
       })
 
       test.fail(
         true,
-        'PM-2123: a reconnect refreshes the queue but never restores the outputs whose executed frame was lost, so the image only appears after a page reload'
+        'PM-2123: a reconnect refreshes the queue but never restores the outputs whose executed frame was lost, so the finished image never reaches its node (the report says it appeared after a reload)'
       )
 
       await test.step('the finished output is on its node without a reload', async () => {
