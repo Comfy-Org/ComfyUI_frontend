@@ -1,4 +1,5 @@
 import type { JobId } from '@/platform/remote/comfyui/execution/types'
+import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -31,6 +32,17 @@ export function useReconnectQueueRefresh() {
     return [...ids]
   }
 
+  function completedOutcome(
+    detail: JobDetail | undefined,
+    historyTask: TaskItemImpl | undefined
+  ): JobOutcome {
+    if (detail?.outputs) return { state: 'ended', outputs: detail.outputs }
+    if (historyTask?.outputsCount === 1) {
+      return { state: 'ended', outputs: historyTask.outputs }
+    }
+    return { state: detail ? 'ended' : 'unknown' }
+  }
+
   async function jobOutcome(
     jobId: JobId,
     historyTask: TaskItemImpl | undefined
@@ -40,11 +52,7 @@ export function useReconnectQueueRefresh() {
     if (status === undefined) return { state: 'unknown' }
     if (LIVE_STATUSES.has(status)) return { state: 'live' }
     if (status !== 'completed') return { state: 'ended' }
-    if (detail?.outputs) return { state: 'ended', outputs: detail.outputs }
-    if (historyTask?.outputsCount === 1) {
-      return { state: 'ended', outputs: historyTask.outputs }
-    }
-    return { state: detail ? 'ended' : 'unknown' }
+    return completedOutcome(detail, historyTask)
   }
 
   function jobWorkflowPath(jobId: JobId): string | undefined {
