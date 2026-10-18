@@ -207,9 +207,20 @@ const MAX_OWNED_WORKSPACES = 10
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
-function initRetryLimit(error: unknown): number {
-  if (!(error instanceof SessionRevokedError)) return MAX_INIT_RETRIES
-  return error.code === 'TOKEN_REVOKED' ? 0 : 1
+const MAX_SESSION_REVOKED_RETRIES = 1
+
+function initRetryDelay(
+  error: unknown,
+  attempt: number,
+  sessionRevokedRetries: number
+): number | null {
+  if (attempt >= MAX_INIT_RETRIES) return null
+  if (!(error instanceof SessionRevokedError)) {
+    return BASE_RETRY_DELAY_MS * Math.pow(2, attempt)
+  }
+  if (error.code === 'TOKEN_REVOKED') return null
+  if (sessionRevokedRetries >= MAX_SESSION_REVOKED_RETRIES) return null
+  return BASE_RETRY_DELAY_MS
 }
 
 export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
@@ -375,6 +386,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const workspaceAuthStore = useWorkspaceAuthStore()
     const isApiKeySession = useCurrentUserAccess().isApiKeyLogin.value
 
+    let sessionRevokedRetries = 0
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
       try {
         if (isDesktopHostSignedIn()) {
@@ -493,10 +505,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           e.status !== 408 &&
           e.status !== 429
 
+        const delay = initRetryDelay(e, attempt, sessionRevokedRetries)
         if (
           isNoWorkspacesError ||
           isPermanentCredentialError ||
-          attempt >= initRetryLimit(e)
+          delay === null
         ) {
           error.value = e instanceof Error ? e : new Error('Unknown error')
           initState.value = 'error'
@@ -504,7 +517,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           throw e
         }
 
-        const delay = BASE_RETRY_DELAY_MS * Math.pow(2, attempt)
+        if (e instanceof SessionRevokedError) sessionRevokedRetries++
         const errorMessage = e instanceof Error ? e.message : String(e)
         console.warn(
           `[teamWorkspaceStore] Init failed (attempt ${attempt + 1}/${MAX_INIT_RETRIES + 1}), retrying in ${delay}ms: ${errorMessage}`

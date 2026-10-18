@@ -478,6 +478,23 @@ describe('useTeamWorkspaceStore', () => {
       }
     )
 
+    it('still retries a SESSION_REVOKED refusal after one second when an ordinary failure came first', async () => {
+      mockEnsureSessionCookie
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockRejectedValueOnce(
+          new SessionRevokedError('revoked', 'SESSION_REVOKED')
+        )
+
+      const store = useTeamWorkspaceStore()
+      const initialization = store.initialize()
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(1000)
+      await initialization
+
+      expect(mockEnsureSessionCookie).toHaveBeenCalledTimes(3)
+      expect(store.initState).toBe('ready')
+    })
+
     it('does not reinitialize if already initialized', async () => {
       const store = useTeamWorkspaceStore()
 
