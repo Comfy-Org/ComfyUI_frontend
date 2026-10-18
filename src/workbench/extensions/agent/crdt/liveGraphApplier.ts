@@ -483,11 +483,24 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
-function dynamicGroupController(node: LGraphNode, name: string): boolean {
+/**
+ * Whether the constructed DynamicGroup controller at `index` takes its count
+ * after `configure`: the document stores it by name and addresses nothing past
+ * it by position, since the rows built later would shift those slots.
+ */
+function defersRowCount(
+  constructed: readonly IBaseWidget[],
+  index: number,
+  widgets: Record<string, unknown>
+): boolean {
+  if (index < 0) return false
+  const widget = constructed[index]
   return (
-    node.widgets?.some(
-      (widget) => widget.name === name && isDynamicGroupController(widget)
-    ) ?? false
+    isDynamicGroupController(widget) &&
+    Object.hasOwn(widgets, widget.name) &&
+    !Object.keys(widgets).some(
+      (name) => (overflowWidgetIndex(name) ?? -1) > index
+    )
   )
 }
 
@@ -518,7 +531,12 @@ function mountedWidgetValues(
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
     return index === null
-      ? !constructedNames.has(name) || dynamicGroupController(node, name)
+      ? !constructedNames.has(name) ||
+          defersRowCount(
+            constructed,
+            constructed.findIndex((widget) => widget.name === name),
+            widgets
+          )
       : overflowWidget(node, name) === undefined || index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
@@ -540,10 +558,10 @@ function positionalWidgetValues(
       (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
     )
   }
-  return serializableWidgets(node).map((widget, index) => {
-    // A named row count applies after configure, once the document's row values can back it.
-    if (isDynamicGroupController(widget) && Object.hasOwn(widgets, widget.name))
-      return widget.value
+  const constructed = serializableWidgets(node)
+  return constructed.map((widget, index) => {
+    // The row count applies after configure, once the document's row values can back it.
+    if (defersRowCount(constructed, index, widgets)) return widget.value
     const alias = `_extra_${index}`
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
