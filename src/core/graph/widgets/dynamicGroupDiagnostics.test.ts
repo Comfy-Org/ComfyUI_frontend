@@ -209,6 +209,8 @@ describe('remote DynamicGroup row count reports', () => {
     LiteGraph.registerNodeType('AboveMaxDynamicGroup', remoteNodeType(0))
     LiteGraph.registerNodeType('HugeDynamicGroup', remoteNodeType(0))
     LiteGraph.registerNodeType('RestoredDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('RestoredEqualDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('RestoredShrinkDynamicGroup', remoteNodeType(0))
   })
 
   function remoteGroup(type = 'RemoteDynamicGroup') {
@@ -310,12 +312,34 @@ describe('remote DynamicGroup row count reports', () => {
     }
   )
 
-  it('refuses a remote row count above max that a restored group already holds', () => {
-    const { node, rows, setRows } = remoteGroup('RestoredDynamicGroup')
-    node.configure({ ...node.serialize(), widgets_values: [4, 1, 1, 1, 1] })
-    expect(rows.value).toBe(4)
+  function restoredGroup(type: string, count: number) {
+    const group = remoteGroup(type)
+    group.node.configure({
+      ...group.node.serialize(),
+      widgets_values: [count, ...Array(count).fill(1)]
+    })
+    expect(group.rows.value).toBe(count)
+    return group
+  }
 
-    expect(setRows(4)).toBe(1)
+  it.for([
+    { type: 'RestoredEqualDynamicGroup', saved: 4, value: 4 },
+    { type: 'RestoredShrinkDynamicGroup', saved: 5, value: 4 }
+  ])(
+    'applies a remote row count of $value to a group restored with $saved rows above max',
+    ({ type, saved, value }) => {
+      const { rows, setRows } = restoredGroup(type, saved)
+
+      expect(setRows(value)).toBe(0)
+      expect(rows.value).toBe(value)
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
+  it('refuses a remote row count that grows a restored group further above max', () => {
+    const { rows, setRows } = restoredGroup('RestoredDynamicGroup', 4)
+
+    expect(setRows(5)).toBe(1)
     expect(rows.value).toBe(4)
     expect(vi.mocked(reportError).mock.calls).toEqual([
       [
@@ -324,7 +348,7 @@ describe('remote DynamicGroup row count reports', () => {
         }),
         expect.objectContaining({
           errorType: 'agent_graph_dynamic_group_rows_mismatch',
-          context: { requested: 4, actual: 4 }
+          context: { requested: 5, actual: 4 }
         })
       ]
     ])
