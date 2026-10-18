@@ -37,8 +37,7 @@ function defaults(): ReturnType<typeof realUseWorkspaceUI> {
     isOriginalOwner: computed(() => true),
     isSubscriptionCancelled: computed(() => false),
     isTeamPlanCancelled: computed(() => false),
-    isDeleteDisabled: computed(() => false),
-    deleteDisabledTooltipKey: computed(() => null)
+    isWorkspaceMenuInHeader: computed(() => false)
   }
 }
 

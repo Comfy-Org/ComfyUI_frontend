@@ -26,9 +26,11 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyApi } from '@/scripts/api'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -38,13 +40,7 @@ vi.mock(import('@/base/assert'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({
-    dispatchCustomEvent: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  })
-}))
+vi.mock(import('@/scripts/api'))
 
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
@@ -1976,7 +1972,7 @@ describe('ChangeTracker', () => {
     }
 
     it('reopens the deepest subgraph the undone state still contains', () => {
-      const survivor = fromPartial<Subgraph>({ id: 'outer' })
+      const survivor = fromPartial<Subgraph>({ id: 'outer', nodes: [] })
       app.rootGraph.subgraphs.set('outer', survivor)
       const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
       let restoredNavigation: string[] | undefined
@@ -1993,8 +1989,8 @@ describe('ChangeTracker', () => {
     })
 
     it('reopens the deepest of multiple surviving ancestors', () => {
-      const outer = fromPartial<Subgraph>({ id: 'outer' })
-      const inner = fromPartial<Subgraph>({ id: 'inner' })
+      const outer = fromPartial<Subgraph>({ id: 'outer', nodes: [] })
+      const inner = fromPartial<Subgraph>({ id: 'inner', nodes: [] })
       app.rootGraph.subgraphs.set('outer', outer)
       app.rootGraph.subgraphs.set('inner', inner)
       const tracker = deactivateWithNavigation(['outer', 'inner', 'innermost'])
@@ -2076,6 +2072,156 @@ describe('ChangeTracker', () => {
               'checkState() is deprecated — use captureCanvasState() instead.'
           )
       ).toHaveLength(1)
+    })
+  })
+
+  describe('node-history widgets', () => {
+    const regionA = { x: 0, y: 0, width: 64, height: 64 }
+    const regionB = { x: 32, y: 32, width: 128, height: 128 }
+
+    function addBoundingBoxesNode() {
+      const node = new LGraphNode('CreateBoundingBoxes')
+      node.id = toNodeId(7)
+      node.addWidget('number', 'width', 512, null)
+      node.addWidget('boundingboxes', 'bboxes', [], null)
+      const nodes = vi.spyOn(app.rootGraph, 'nodes', 'get')
+      nodes.mockReturnValue([node])
+      onTestFinished(() => nodes.mockRestore())
+      return { id: node.id, removeFromGraph: () => nodes.mockReturnValue([]) }
+    }
+
+    function recordNodeHistory(nodeId: LGraphNode['id']) {
+      const scope = {
+        rootGraphId: app.rootGraph.id,
+        widgetId: widgetId(app.rootGraph.id, nodeId, 'bboxes')
+      }
+      useWidgetHistoryStore().record(scope, [])
+      return () => useWidgetHistoryStore().canUndo(scope)
+    }
+
+    function stateWith(
+      nodeId: LGraphNode['id'],
+      values: { width: number; bboxes: unknown[] },
+      pos: [number, number] = [0, 0]
+    ): ComfyWorkflowJSON {
+      const state = createState()
+      state.nodes = [
+        {
+          id: nodeId,
+          type: 'CreateBoundingBoxes',
+          pos,
+          size: [100, 50],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [],
+          outputs: [],
+          properties: {},
+          widgets_values: [values.width, values.bboxes],
+          widgets_values_named: { ...values }
+        }
+      ]
+      return state
+    }
+
+    function loadedState(): unknown {
+      return vi.mocked(app.loadGraphData).mock.calls.at(-1)?.[0]
+    }
+
+    it('records no graph undo step for a node-history value edit', () => {
+      const { id } = addBoundingBoxesNode()
+      const initial = stateWith(id, { width: 512, bboxes: [] })
+      const edited = stateWith(id, { width: 512, bboxes: [regionA] })
+      const tracker = createTracker(initial)
+      mockCanvasState(edited)
+
+      tracker.captureCanvasState()
+
+      expect(tracker.undoQueue).toEqual([])
+      expect(tracker.activeState).toEqual(edited)
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'graphChanged',
+        edited
+      )
+    })
+
+    it('keeps the live node-history value when undoing another change', async () => {
+      const { id } = addBoundingBoxesNode()
+      const initial = stateWith(id, { width: 512, bboxes: [] })
+      const moved = stateWith(id, { width: 512, bboxes: [] }, [50, 50])
+      const movedAndEdited = stateWith(
+        id,
+        { width: 512, bboxes: [regionA] },
+        [50, 50]
+      )
+      const tracker = createTracker(initial)
+      mockCanvasState(moved)
+      tracker.captureCanvasState()
+      mockCanvasState(movedAndEdited)
+      tracker.captureCanvasState()
+
+      await tracker.undo()
+
+      expect(loadedState()).toEqual(
+        stateWith(id, { width: 512, bboxes: [regionA] })
+      )
+      expect(tracker.redoQueue).toEqual([movedAndEdited])
+    })
+
+    it('forgets the node history of a deleted node', () => {
+      const { id, removeFromGraph } = addBoundingBoxesNode()
+      const hasHistory = recordNodeHistory(id)
+      const tracker = createTracker(stateWith(id, { width: 512, bboxes: [] }))
+      removeFromGraph()
+      mockCanvasState(createState())
+
+      tracker.captureCanvasState()
+
+      expect(hasHistory()).toBe(false)
+    })
+
+    it('keeps the node history when graph undo reloads the node', async () => {
+      const { id } = addBoundingBoxesNode()
+      const hasHistory = recordNodeHistory(id)
+      const tracker = createTracker(stateWith(id, { width: 512, bboxes: [] }))
+      mockCanvasState(stateWith(id, { width: 512, bboxes: [] }, [50, 50]))
+      tracker.captureCanvasState()
+
+      await tracker.undo()
+
+      expect(tracker.redoQueue).toHaveLength(1)
+      expect(hasHistory()).toBe(true)
+    })
+
+    it('keeps graph redo through a node-history edit and redoes with the live value', async () => {
+      const { id } = addBoundingBoxesNode()
+      const initial = stateWith(id, { width: 512, bboxes: [] })
+      const moved = stateWith(id, { width: 512, bboxes: [] }, [50, 50])
+      const tracker = createTracker(initial)
+      mockCanvasState(moved)
+      tracker.captureCanvasState()
+      await tracker.undo()
+      mockCanvasState(stateWith(id, { width: 512, bboxes: [regionA] }))
+
+      tracker.captureCanvasState()
+      await tracker.redo()
+
+      expect(loadedState()).toEqual(
+        stateWith(id, { width: 512, bboxes: [regionA] }, [50, 50])
+      )
+    })
+
+    it('restores the node-history value together with its node widgets', async () => {
+      const { id } = addBoundingBoxesNode()
+      const initial = stateWith(id, { width: 512, bboxes: [regionA] })
+      const resized = stateWith(id, { width: 1024, bboxes: [regionB] })
+      const tracker = createTracker(initial)
+      mockCanvasState(resized)
+      tracker.captureCanvasState()
+
+      await tracker.undo()
+
+      expect(loadedState()).toEqual(initial)
     })
   })
 

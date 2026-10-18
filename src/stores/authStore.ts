@@ -57,6 +57,8 @@ import type { operations } from '@/types/comfyRegistryTypes'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
+const BILLING_PORTAL_REQUEST_TIMEOUT_MS = 30_000
+
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']
 type CreditPurchasePayload =
@@ -1109,6 +1111,7 @@ export const useAuthStore = defineStore('auth', () => {
       buildApiUrl('/customers/billing'),
       {
         method: 'POST',
+        signal: AbortSignal.timeout(BILLING_PORTAL_REQUEST_TIMEOUT_MS),
         headers: {
           ...authHeader,
           'Content-Type': 'application/json'

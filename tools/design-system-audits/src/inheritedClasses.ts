@@ -3,6 +3,14 @@ import path from 'node:path'
 import { babelParse, parse } from 'vue/compiler-sfc'
 import type { SFCDescriptor } from 'vue/compiler-sfc'
 
+import type { Category } from './textCategories'
+import {
+  CATEGORIES,
+  ELEMENT_DEFAULTS,
+  RELATIVE_SIZE,
+  classifyToken
+} from './textCategories'
+
 type RootNode = NonNullable<NonNullable<SFCDescriptor['template']>['ast']>
 type ElementNode = Extract<RootNode['children'][number], { tag: string }>
 type Prop = ElementNode['props'][number]
@@ -24,9 +32,6 @@ type ImportDeclaration = Extract<
   { type: 'ImportDeclaration' }
 >
 type ImportSpecifier = ImportDeclaration['specifiers'][number]
-
-type Category = 'color' | 'size' | 'weight' | 'family'
-const CATEGORIES: readonly Category[] = ['color', 'size', 'weight', 'family']
 
 const UNKNOWN = '<unknown>'
 const BODY = '<body>'
@@ -93,36 +98,6 @@ export interface Finding {
   edit: { start: number; end: number; remove: string[] } | null
 }
 
-const TEXT_SIZE = /^([2-9]?xl|[23]?xs|sm|base|lg)(\/|$)/
-const NON_COLOR_TEXT =
-  /^(left|center|right|justify|start|end|wrap|nowrap|balance|pretty|ellipsis|clip|shadow.*)$/
-const FONT_WEIGHTS =
-  /^(thin|extralight|light|normal|medium|semibold|bold|extrabold|black|\[\d+\])$/
-const RELATIVE_SIZE = /\d(?:(?:em|ex|ch|lh|cap|ic)\b|%)|\b(?:smaller|larger)\b/
-const NON_FAMILY_FONT = /^(stretch|features|variant|numeric)/
-
-function sizeLike(value: string) {
-  return TEXT_SIZE.test(value) || /^[[(](length:|\d|calc|clamp)/.test(value)
-}
-
-function textCategory(value: string): Category | null {
-  if (sizeLike(value)) return 'size'
-  return NON_COLOR_TEXT.test(value) ? null : 'color'
-}
-
-function fontCategory(value: string): Category | null {
-  if (FONT_WEIGHTS.test(value)) return 'weight'
-  return NON_FAMILY_FONT.test(value) ? null : 'family'
-}
-
-function classifyToken(token: string): Category | null {
-  const utility = token.split(':').at(-1)!.replace(/^!|!$/g, '')
-  if (utility.startsWith('leading-')) return 'size'
-  const [, prefix, value] = utility.match(/^(text|font)-(.+)$/) ?? []
-  if (prefix === 'text') return textCategory(value)
-  return prefix === 'font' ? fontCategory(value) : null
-}
-
 const CSS_PROPERTY_CATEGORIES: Partial<Record<string, readonly Category[]>> = {
   color: ['color'],
   'font-size': ['size'],
@@ -131,31 +106,6 @@ const CSS_PROPERTY_CATEGORIES: Partial<Record<string, readonly Category[]>> = {
   'font-family': ['family'],
   font: ['size', 'weight', 'family'],
   all: CATEGORIES
-}
-
-const ELEMENT_DEFAULTS: Partial<Record<string, readonly Category[]>> = {
-  button: CATEGORIES,
-  input: CATEGORIES,
-  select: CATEGORIES,
-  textarea: CATEGORIES,
-  a: ['color'],
-  mark: ['color'],
-  h1: ['size', 'weight'],
-  h2: ['size', 'weight'],
-  h3: ['size', 'weight'],
-  h4: ['size', 'weight'],
-  h5: ['size', 'weight'],
-  h6: ['size', 'weight'],
-  b: ['weight'],
-  strong: ['weight'],
-  th: ['weight'],
-  small: ['size'],
-  sub: ['size'],
-  sup: ['size'],
-  code: ['size', 'family'],
-  kbd: ['size', 'family'],
-  pre: ['size', 'family'],
-  samp: ['size', 'family']
 }
 
 const BUILTIN_KINDS: Partial<Record<string, NodeKind>> = {

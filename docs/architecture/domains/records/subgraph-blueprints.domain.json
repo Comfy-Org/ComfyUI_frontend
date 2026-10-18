@@ -4,11 +4,11 @@
   "description": "Published subgraph blueprints: fetching user and global blueprints, exposing them as node definitions in the node library, publishing, editing, and deleting blueprints, and blueprint distribution filtering. Subgraph definitions and conversion belong to subgraphs.",
   "modules": [
     {
-      "path": "src/stores/subgraphStore.ts",
+      "path": "src/stores/subgraphStore.test.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/subgraphStore.test.ts",
+      "path": "src/stores/subgraphStore.ts",
       "role": "application"
     }
   ],

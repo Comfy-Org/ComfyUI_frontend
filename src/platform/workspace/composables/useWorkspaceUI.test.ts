@@ -519,26 +519,15 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
     })
   })
 
-  describe('delete lock', () => {
-    beforeEach(() => {
-      Object.assign(useTeamWorkspaceStore(), {
-        activeWorkspace: teamOwnerWorkspace
-      })
-    })
-
-    it.for([
-      { isActive: true, isCancelled: false, disabled: true },
-      { isActive: true, isCancelled: true, disabled: true },
-      { isActive: false, isCancelled: true, disabled: false },
-      { isActive: false, isCancelled: false, disabled: false }
-    ])(
-      'active=$isActive cancelled=$isCancelled → disabled=$disabled',
-      async ({ isActive, isCancelled, disabled }) => {
-        mockIsActiveSubscription.value = isActive
-        mockIsCancelled.value = isCancelled
+  describe('workspace menu placement', () => {
+    it.for([true, false])(
+      'puts the workspace menu in the settings header when unified billing settings is %s',
+      async (unified) => {
+        vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled =
+          unified
         const ui = await loadComposable()
 
-        expect(ui.isDeleteDisabled.value).toBe(disabled)
+        expect(ui.isWorkspaceMenuInHeader.value).toBe(unified)
       }
     )
   })

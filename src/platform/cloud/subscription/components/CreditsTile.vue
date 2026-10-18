@@ -125,7 +125,6 @@
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="text-muted-foreground"
             >
               <i class="icon-[lucide--info] size-4" />
             </Button>
@@ -165,7 +164,6 @@
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('subscription.additionalCreditsInfo')"
-              class="text-muted-foreground"
             >
               <i class="icon-[lucide--info] size-4" />
             </Button>
