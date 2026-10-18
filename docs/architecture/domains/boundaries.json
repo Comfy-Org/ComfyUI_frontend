@@ -5511,43 +5511,62 @@
       },
       {
         "from": "mask-editor/domain",
-        "allow": ["mask-editor/domain", "unclassified"]
+        "allow": [
+          "error-reporting/domain",
+          "mask-editor/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "mask-editor/application",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/infrastructure",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/presentation",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/presentation",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "mask-editor/integration",
         "allow": [
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "mask-editor/domain",
           "mask-editor/application",
           "mask-editor/infrastructure",
           "mask-editor/presentation",
           "mask-editor/integration",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },

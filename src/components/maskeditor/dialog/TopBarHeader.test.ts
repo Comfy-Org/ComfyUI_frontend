@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import en from '@/locales/en/main.json'
+
 import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
@@ -49,8 +51,7 @@ const i18n = createI18n({
       },
       maskEditor: {
         title: 'Mask Editor',
-        sourceImageReadFailed:
-          'The original image could not be read. Reopen the mask editor and try again.',
+        sourceImageReadFailed: en.maskEditor.sourceImageReadFailed,
         invert: 'Invert',
         clear: 'Clear',
         undo: 'Undo',
@@ -206,8 +207,13 @@ describe('TopBarHeader', () => {
       expect(mockStore.brushVisible).toBe(true)
       expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
       expect(screen.getByRole('alert')).toHaveTextContent(
-        'The original image could not be read'
+        'Try saving again without closing the editor to keep your edits.'
       )
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
 
     it('should restore brush + button state and log on save failure', async () => {
@@ -223,7 +229,6 @@ describe('TopBarHeader', () => {
         expect.any(Error)
       )
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
-      // After failure, the Save button reads "Save" again (not "Saving")
       expect(
         screen.getByRole('button', { name: /save/i }).textContent.trim()
       ).toBe('Save')

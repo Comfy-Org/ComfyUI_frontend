@@ -12,6 +12,7 @@ import type {
 } from '@/stores/maskEditorDataStore'
 import { copyPngTextMetadata } from './pngTextMetadata'
 import { api } from '@/scripts/api'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useApp } from '@/scripts/appInstance'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
@@ -48,12 +49,17 @@ export function useMaskEditorSaver() {
       const source = await readSourceImage(dataStore.inputData.sourceRef)
       if (!source) return false
       const outputData = await prepareOutputData()
-      const image = copyPngTextMetadata(
-        source,
-        outputData.paintedMaskedImage.blob
-      )
-      if (!image) return false
-      outputData.paintedMaskedImage.blob = image
+      for (const layer of [
+        outputData.maskedImage,
+        outputData.paintedMaskedImage
+      ]) {
+        const image = copyPngTextMetadata(source, layer.blob)
+        if (!image) {
+          reportSourceImageFailure(new Error('Invalid mask editor source PNG'))
+          return false
+        }
+        layer.blob = image
+      }
       dataStore.outputData = outputData
 
       await updateNodePreview(sourceNode, outputData)
@@ -76,10 +82,24 @@ export function useMaskEditorSaver() {
     if (ref.subfolder) params.set('subfolder', ref.subfolder)
     try {
       const response = await api.fetchApi(`/view?${params}`)
-      return response.ok ? await response.arrayBuffer() : null
-    } catch {
-      return null
+      if (!response.ok)
+        return reportSourceImageFailure(
+          new Error(
+            `Failed to read mask editor source image (${response.status})`
+          )
+        )
+      return await response.arrayBuffer()
+    } catch (cause) {
+      return reportSourceImageFailure(cause)
     }
+  }
+
+  function reportSourceImageFailure(cause: unknown): null {
+    reportError(cause, {
+      errorType: 'error_loading_mask_editor_source_image',
+      surface: 'graph'
+    })
+    return null
   }
 
   async function prepareOutputData(): Promise<EditorOutputData> {
