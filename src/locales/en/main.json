@@ -6001,7 +6001,8 @@
       "targets": {
         "node": "node {id}",
         "nodeField": "node {id} {field}",
-        "link": "link {id}"
+        "link": "link {id}",
+        "clear": "clearing the workflow"
       }
     },
     "consent": {

@@ -31,6 +31,11 @@ const WIDGET_EDIT: GraphOperation = {
   value: 222_222
 }
 
+const PUNCTUATED_WIDGET_EDIT: GraphOperation = {
+  ...WIDGET_EDIT,
+  widget: "Width/Height & 'x'"
+}
+
 const NODE_ADD: GraphOperation = {
   op: 'add_node',
   node_id: 7,
@@ -46,6 +51,8 @@ const NODE_ADD: GraphOperation = {
     widgets_values: { text: 'keep me' }
   }
 }
+
+const WORKFLOW_CLEAR: GraphOperation = { op: 'clear', removed_nodes: [9] }
 
 const NODE_DELETE: GraphOperation = {
   op: 'delete_node',
@@ -296,6 +303,18 @@ describe('a human edit the doc host rejects', () => {
       operation: NODE_ADD,
       code: 'unknown_widget',
       reason: 'Rejected: Note (unknown_widget)'
+    },
+    {
+      label: 'widget write whose name carries punctuation',
+      operation: PUNCTUATED_WIDGET_EDIT,
+      code: 'unknown_widget',
+      reason: "Rejected: Width/Height & 'x' (unknown_widget)"
+    },
+    {
+      label: 'workflow clear',
+      operation: WORKFLOW_CLEAR,
+      code: 'malformed_op',
+      reason: 'Rejected: clearing the workflow (malformed_op)'
     },
     {
       label: 'node delete',

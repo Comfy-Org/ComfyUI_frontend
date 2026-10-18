@@ -48,12 +48,15 @@ function rejectedTarget(op: Op | undefined): string | undefined {
     case 'add_node':
       return op.class_type
     case 'set_node_field':
-      return t('agent.editRejected.targets.nodeField', {
-        id: String(op.node_id),
-        field: op.field
-      })
+      return t(
+        'agent.editRejected.targets.nodeField',
+        { id: String(op.node_id), field: op.field },
+        { escapeParameter: false }
+      )
     case 'delete_node':
       return t('agent.editRejected.targets.node', { id: String(op.node_id) })
+    case 'clear':
+      return t('agent.editRejected.targets.clear')
     case 'connect':
     case 'disconnect':
       return t('agent.editRejected.targets.link', { id: String(op.link_id) })
@@ -67,10 +70,11 @@ function withReason(
   target: string | undefined,
   code: string
 ): string {
+  const plain = { escapeParameter: false }
   if (target)
-    return `${notice} ${i18n.global.t('agent.editRejected.reason', { target, code })}`
+    return `${notice} ${i18n.global.t('agent.editRejected.reason', { target, code }, plain)}`
   if (code === 'unspecified') return notice
-  return `${notice} ${i18n.global.t('agent.editRejected.reasonCode', { code })}`
+  return `${notice} ${i18n.global.t('agent.editRejected.reasonCode', { code }, plain)}`
 }
 
 /**
