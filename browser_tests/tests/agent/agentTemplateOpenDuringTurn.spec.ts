@@ -1,12 +1,9 @@
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { agentTurnLockTest as test } from '@e2e/fixtures/agentTurnLockFixture'
 import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 
 test.use({ connectWebSocketToServer: false })
-test.describe.configure({ timeout: 120_000 })
 
 test.describe(
   'PM-2126: opening a template while an agent turn is running',
@@ -29,9 +26,6 @@ test.describe(
         const opened = await templates.openFirstTemplate()
         await templates.expectTemplateOpened(opened)
         await expect(toast.toastErrors).toHaveCount(0)
-        await expect(
-          toast.withText(enMessages.templateWorkflows.error.loading)
-        ).toHaveCount(0)
         await expect(turnLock.stopButton).toBeVisible()
       })
     })

@@ -7,20 +7,22 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
+import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const zTemplateRootNodes = z.object({
-  nodes: z
-    .array(
-      z.object({ id: z.union([z.number(), z.string()]), type: z.string() })
-    )
-    .min(1)
+  nodes: z.array(zComfyNode.pick({ id: true, type: true })).min(1)
 })
 
 export interface OpenedTemplate {
   id: string
-  /** Root nodes of the fetched template JSON as sorted `id:type` pairs. */
   rootNodes: string[]
+}
+
+export interface ClickedTemplate {
+  id: string
+  requested: Promise<void>
+  opened: Promise<OpenedTemplate>
 }
 
 export class ComfyTemplates {
@@ -46,12 +48,12 @@ export class ComfyTemplates {
     await templateCard.getByRole('img').click()
   }
 
-  /**
-   * Opens Browse Templates, clicks the first card and returns its id with
-   * the root nodes (`id:type`, sorted) of the template JSON the app actually
-   * fetched, so module-served templates are compared against their own file.
-   */
   async openFirstTemplate(): Promise<OpenedTemplate> {
+    return (await this.clickFirstTemplate()).opened
+  }
+
+  /** Clicks the first Browse Templates card; `hold` delays its template JSON response until it resolves. */
+  async clickFirstTemplate(hold?: Promise<void>): Promise<ClickedTemplate> {
     await this.page.evaluate(() =>
       window.app!.extensionManager.command.execute('Comfy.BrowseTemplates')
     )
@@ -61,43 +63,53 @@ export class ComfyTemplates {
     const testId = await first.getAttribute('data-testid')
     const id = testId?.slice(TestIds.templates.workflowCard('').length)
     if (!testId || !id) throw new Error(`template card has no id: ${testId}`)
-    const fetched = this.page.waitForResponse((response) => {
-      const { pathname } = new URL(response.url())
+    const isTemplateFile = (url: string) => {
+      const { pathname } = new URL(url)
       return pathname.includes('templates/') && pathname.endsWith(`/${id}.json`)
-    })
+    }
+    if (hold)
+      await this.page.route(
+        (url) => isTemplateFile(url.href),
+        async (route) => {
+          await hold
+          await route.fallback()
+        }
+      )
+    const requested = this.page
+      .waitForRequest((request) => isTemplateFile(request.url()))
+      .then(() => undefined)
+    const fetched = this.page.waitForResponse((response) =>
+      isTemplateFile(response.url())
+    )
     await this.content.getByTestId(testId).click()
-    const response = await fetched
-    if (!response.ok())
-      throw new Error(`template ${id} returned ${response.status()}`)
-    const template: unknown = await response.json()
-    const rootNodes = zTemplateRootNodes
-      .parse(template)
-      .nodes.map(({ id, type }) => `${id}:${type}`)
-      .sort()
-    return { id, rootNodes }
+    const opened = fetched.then(async (response) => {
+      if (!response.ok())
+        throw new Error(`template ${id} returned ${response.status()}`)
+      const template: unknown = await response.json()
+      const rootNodes = zTemplateRootNodes
+        .parse(template)
+        .nodes.map(({ id, type }) => `${id}:${type}`)
+        .sort()
+      return { id, rootNodes }
+    })
+    return { id, requested, opened }
   }
 
-  /**
-   * Waits until the template load has fully settled (the store releases it
-   * only after the graph load and its error reporting finish), then checks
-   * the active graph holds the template's root nodes (same ids and types).
-   */
+  async loadingTemplateId(): Promise<string | null | undefined> {
+    return this.page.evaluate(() => {
+      const pinia =
+        document.getElementById('vue-app')?.__vue_app__?.config.globalProperties
+          .$pinia
+      const store = pinia?._s.get('workflowTemplates')
+      return store && 'loadingTemplateId' in store
+        ? store.loadingTemplateId
+        : undefined
+    })
+  }
+
   async expectTemplateOpened({ rootNodes }: OpenedTemplate) {
     await expect(this.content).toBeHidden()
-    await expect
-      .poll(() =>
-        this.page.evaluate(() => {
-          const pinia =
-            document.getElementById('vue-app')?.__vue_app__?.config
-              .globalProperties.$pinia
-          const store = pinia?._s.get('workflowTemplates') as
-            | { loadingTemplateId: string | null }
-            | undefined
-          if (!store) throw new Error('workflowTemplates store is not mounted')
-          return store.loadingTemplateId
-        })
-      )
-      .toBeNull()
+    await expect.poll(() => this.loadingTemplateId()).toBeNull()
     await expect
       .poll(() =>
         this.page.evaluate(() =>
