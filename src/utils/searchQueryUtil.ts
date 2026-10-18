@@ -3,8 +3,9 @@ import { uniq } from 'es-toolkit'
 const GITHUB_REPO_URL =
   /^(?:git@github\.com:|(?:https?:\/\/)?(?:www\.)?github\.com\/)[a-z0-9-]+\/([\w.-]+?)(?:\.git)?(?:[/?#].*)?$/i
 
-const BARE_COMPOUND_REPO_SLUG =
-  /^[A-Za-z0-9-]+\/([\w.-]*[A-Za-z0-9][-_][A-Za-z0-9][\w.-]*)$/
+const BARE_REPO_SLUG = /^[A-Za-z0-9-]+\/([\w.-]+)$/
+
+const COMPOUND_WORD_JOIN = /[A-Za-z0-9][-_][A-Za-z0-9]/
 
 const SLASH_OR_SPACE = /[\s/]/
 
@@ -36,11 +37,14 @@ function stripTrailingRun(
   return input.slice(0, end)
 }
 
+function bareCompoundRepoName(query: string): string | undefined {
+  const repoName = BARE_REPO_SLUG.exec(query)?.[1]
+  return repoName && COMPOUND_WORD_JOIN.test(repoName) ? repoName : undefined
+}
+
 function stripRepoOwner(query: string): string {
   return (
-    GITHUB_REPO_URL.exec(query)?.[1] ??
-    BARE_COMPOUND_REPO_SLUG.exec(query)?.[1] ??
-    query
+    GITHUB_REPO_URL.exec(query)?.[1] ?? bareCompoundRepoName(query) ?? query
   )
 }
 
