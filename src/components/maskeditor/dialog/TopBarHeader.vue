@@ -113,7 +113,14 @@
       </div>
     </div>
 
-    <div class="flex gap-3">
+    <div class="flex items-center gap-3">
+      <span
+        v-if="sourceImageReadFailed"
+        role="alert"
+        class="text-destructive-background"
+      >
+        {{ t('maskEditor.sourceImageReadFailed') }}
+      </span>
       <Button variant="primary" :disabled="!saveEnabled" @click="handleSave">
         <i class="pi pi-check" />
         {{ saveButtonText }}
@@ -146,6 +153,7 @@ const saver = useMaskEditorSaver()
 
 const saveButtonText = ref(t('g.save'))
 const saveEnabled = ref(true)
+const sourceImageReadFailed = ref(false)
 
 const iconButtonClass =
   'flex h-7.5 w-12.5 items-center justify-center rounded-[10px] border border-border-default pointer-events-auto transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
@@ -203,19 +211,23 @@ const onClear = () => {
 }
 
 const handleSave = async () => {
+  sourceImageReadFailed.value = false
   saveButtonText.value = t('g.saving')
   saveEnabled.value = false
 
   try {
     store.brushVisible = false
-    await saver.save()
-    dialogStore.closeDialog()
+    if (await saver.save()) {
+      dialogStore.closeDialog()
+      return
+    }
+    sourceImageReadFailed.value = true
   } catch (error) {
     console.error('[TopBarHeader] Save failed:', error)
-    store.brushVisible = true
-    saveButtonText.value = t('g.save')
-    saveEnabled.value = true
   }
+  store.brushVisible = true
+  saveButtonText.value = t('g.save')
+  saveEnabled.value = true
 }
 
 const handleCancel = () => {

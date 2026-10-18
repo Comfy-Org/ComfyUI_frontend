@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import en from '@/locales/en/main.json'
+
 import TopBarHeader from '@/components/maskeditor/dialog/TopBarHeader.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
@@ -22,7 +24,7 @@ const mockCanvasTransform = vi.hoisted(() => ({
 }))
 
 const mockSaver = vi.hoisted(() => ({
-  save: vi.fn().mockResolvedValue(undefined)
+  save: vi.fn(async () => true)
 }))
 
 vi.mock<unknown>(import('@/composables/maskeditor/useCanvasTools'), () => ({
@@ -49,6 +51,7 @@ const i18n = createI18n({
       },
       maskEditor: {
         title: 'Mask Editor',
+        sourceImageReadFailed: en.maskEditor.sourceImageReadFailed,
         invert: 'Invert',
         clear: 'Clear',
         undo: 'Undo',
@@ -174,9 +177,9 @@ describe('TopBarHeader', () => {
     })
 
     it('should switch the button text to "Saving" and disable the button while saving', async () => {
-      let resolve!: () => void
+      let resolve!: (saved: boolean) => void
       mockSaver.save.mockReturnValueOnce(
-        new Promise<void>((r) => {
+        new Promise<boolean>((r) => {
           resolve = r
         })
       )
@@ -189,8 +192,28 @@ describe('TopBarHeader', () => {
       const savingBtn = await screen.findByRole('button', { name: 'Saving' })
       expect(savingBtn).toBeDisabled()
 
-      resolve()
+      resolve(true)
       await clickPromise
+    })
+
+    it('keeps the editor open and allows retry when source metadata cannot be read', async () => {
+      mockSaver.save.mockResolvedValueOnce(false)
+      const user = userEvent.setup()
+      renderHeader()
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      expect(mockStore.brushVisible).toBe(true)
+      expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Try saving again without closing the editor to keep your edits.'
+      )
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      expect(useDialogStore().closeDialog).toHaveBeenCalledTimes(1)
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     })
 
     it('should restore brush + button state and log on save failure', async () => {
@@ -206,7 +229,6 @@ describe('TopBarHeader', () => {
         expect.any(Error)
       )
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
-      // After failure, the Save button reads "Save" again (not "Saving")
       expect(
         screen.getByRole('button', { name: /save/i }).textContent.trim()
       ).toBe('Save')
