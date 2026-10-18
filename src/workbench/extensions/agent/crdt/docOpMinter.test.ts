@@ -666,6 +666,31 @@ describe('attachDocOpMinter', () => {
     ])
   })
 
+  it('does not grow a promoted input the subgraph host doc lacks, reporting it instead', async () => {
+    const subgraph = createTestSubgraph({
+      rootGraph: graph,
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+    graph.subgraphs.set(subgraph.id, subgraph)
+    const host = createTestSubgraphNode(subgraph)
+    const source = new LGraphNode('Text Source')
+    source.addOutput('STRING', 'STRING')
+    withGraphIntentSource('load', () => {
+      graph.add(host)
+      graph.add(source)
+    })
+    host.inputs[0].widget ??= { name: 'text' }
+    docInputNames = (nodeId) => (nodeId === host.id ? [] : null)
+
+    source.connect(0, host, 0)
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_link_slot_not_in_doc'])
+  })
+
   it('does not let an ephemeral widget write roll a hand edit back with it', async () => {
     const { source } = seedGraph(graph)
     // Built the way useNodeProgressText builds it: `serialize: false` and
