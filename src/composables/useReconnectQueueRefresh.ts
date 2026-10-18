@@ -25,6 +25,7 @@ export function useReconnectQueueRefresh() {
   const executionStore = useExecutionStore()
   const workflowStore = useWorkflowStore()
   let inFlight: Promise<void> | null = null
+  let reconnects = 0
 
   function followedJobIds(): JobId[] {
     const ids = new Set<JobId>(Object.keys(executionStore.queuedJobs))
@@ -99,6 +100,7 @@ export function useReconnectQueueRefresh() {
   }
 
   async function refresh() {
+    const activeAtStart = executionStore.activeJobId
     const followed = followedJobIds()
     await queueStore.update()
     const activeJobIds = new Set([
@@ -114,7 +116,7 @@ export function useReconnectQueueRefresh() {
     )
 
     const startedRun = executionStore.activeJobId
-    const newRunStarted = !!startedRun && !followed.includes(startedRun)
+    const newRunStarted = !!startedRun && startedRun !== activeAtStart
     if (startedRun && newRunStarted) activeJobIds.add(startedRun)
 
     const ended: JobId[] = []
@@ -130,9 +132,18 @@ export function useReconnectQueueRefresh() {
     executionStore.forgetFinishedJobs(ended)
   }
 
+  async function refreshUntilSettled() {
+    let handled: number
+    do {
+      handled = reconnects
+      await refresh()
+    } while (handled !== reconnects)
+  }
+
   return async function refreshOnReconnect() {
+    reconnects += 1
     if (inFlight) return inFlight
-    inFlight = refresh().finally(() => {
+    inFlight = refreshUntilSettled().finally(() => {
       inFlight = null
     })
     return inFlight

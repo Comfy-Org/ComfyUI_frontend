@@ -350,7 +350,7 @@ describe('useReconnectQueueRefresh', () => {
       })
     })
 
-    it('replays once when reconnects overlap', async () => {
+    it('replays once and refreshes again when reconnects overlap', async () => {
       followRun('job-1')
       vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
       const refresh = useReconnectQueueRefresh()
@@ -358,6 +358,23 @@ describe('useReconnectQueueRefresh', () => {
       await Promise.all([refresh(), refresh()])
 
       expect(replayedExecutedFrames()).toHaveLength(1)
+      expect(api.getQueue).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not replay onto a queued run that started during the refresh', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-2'] = { nodes: {} }
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockImplementation(async (jobId) => {
+        if (jobId === 'job-2') return makeJob('job-2', 'in_progress')
+        executionStore.activeJobId = 'job-2'
+        return finishedJob
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([])
+      expect(executionStore.activeJobId).toBe('job-2')
     })
   })
 })
