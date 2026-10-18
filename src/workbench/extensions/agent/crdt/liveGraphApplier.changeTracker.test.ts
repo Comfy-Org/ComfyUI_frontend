@@ -417,7 +417,8 @@ describe('LiveGraphApplier with the real change tracker', () => {
 
       const result = applier.applyChanges(doc, collector.take(), CONTEXT)
 
-      expect(result.failureCount).toBe(0)
+      // A stray key on a node without overflow aliases is still reported as a missing widget.
+      expect(result.failureCount).toBe(Object.keys(extra).length)
       expect(follower.getNodeById(node.id)?.serialize().widgets_values).toEqual(
         ['head', 4, 0.1, 0.2, 0.3, 0.4, 'tail']
       )

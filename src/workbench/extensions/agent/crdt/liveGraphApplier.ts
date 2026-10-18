@@ -485,10 +485,12 @@ function supersededOverflowAlias(
 
 /**
  * Whether the constructed DynamicGroup controller at `index` takes its count
- * after `configure`: the document stores it by name and addresses nothing past
- * it by position, since the rows built later would shift those slots.
+ * after `configure`: the document stores it by name and no live overflow alias
+ * addresses its slot or a later one, since the rows built later would shift
+ * those slots.
  */
 function defersRowCount(
+  node: LGraphNode,
   constructed: readonly IBaseWidget[],
   index: number,
   widgets: Record<string, unknown>
@@ -499,7 +501,10 @@ function defersRowCount(
     isDynamicGroupController(widget) &&
     Object.hasOwn(widgets, widget.name) &&
     !Object.keys(widgets).some(
-      (name) => (overflowWidgetIndex(name) ?? -1) > index
+      (name) =>
+        (overflowWidgetIndex(name) ?? -1) >= index &&
+        overflowWidget(node, name) !== undefined &&
+        !supersededOverflowAlias(node, name, widgets)
     )
   )
 }
@@ -533,6 +538,7 @@ function mountedWidgetValues(
     return index === null
       ? !constructedNames.has(name) ||
           defersRowCount(
+            node,
             constructed,
             constructed.findIndex((widget) => widget.name === name),
             widgets
@@ -561,7 +567,7 @@ function positionalWidgetValues(
   const constructed = serializableWidgets(node)
   return constructed.map((widget, index) => {
     // The row count applies after configure, once the document's row values can back it.
-    if (defersRowCount(constructed, index, widgets)) return widget.value
+    if (defersRowCount(node, constructed, index, widgets)) return widget.value
     const alias = `_extra_${index}`
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
