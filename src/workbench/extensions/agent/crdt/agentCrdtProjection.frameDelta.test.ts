@@ -2,13 +2,13 @@ import { nodesMap } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 
 const WORKFLOW_ID = 'wf-a'
+type GraphGetter = ConstructorParameters<typeof AgentCrdtProjection>[0]
+type ProjectionGraph = ReturnType<GraphGetter>
 
 function frame(seq: number, source: Y.Doc, since?: Uint8Array) {
   return {
@@ -20,7 +20,7 @@ function frame(seq: number, source: Y.Doc, since?: Uint8Array) {
   }
 }
 
-function setup(graph: LGraph | null = null) {
+function setup(graph: ProjectionGraph = null) {
   const host = new Y.Doc()
   const follower = new FollowerDoc()
   const projection = new AgentCrdtProjection(() => graph)
@@ -93,7 +93,7 @@ describe('AgentCrdtProjection frame node delta', () => {
   })
 
   it('retains a failed projection until a clean retry applies it', () => {
-    const graph = {} as LGraph
+    const graph = {} as NonNullable<ProjectionGraph>
     const applyChanges = vi
       .spyOn(LiveGraphApplier.prototype, 'applyChanges')
       .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
