@@ -818,6 +818,42 @@ describe('attachDocOpMinter', () => {
         doc.destroy()
       })
 
+      it('grows again once a grow is cancelled with its unsent source', async () => {
+        const sources = [new TestSource(), new TestSource(), new TestSource()]
+        const sink = new TestAutogrowSink()
+        withGraphIntentSource('load', () => {
+          for (const source of sources) graph.add(source)
+          graph.add(sink)
+          sources[0].connect(0, sink, 0)
+        })
+        const doc = mintDocFrom(graph)
+        docInputNames = (nodeId) =>
+          readDocSlotNames(doc, String(nodeId), 'inputs')
+        sources[1].connect(0, sink, 1)
+        await afterFlush()
+        applyMinted(doc, minted)
+        minted.length = 0
+        const unsent = new TestSource()
+        graph.add(unsent)
+        unsent.connect(0, sink, 2)
+        graph.remove(unsent)
+        await afterFlush()
+        expect(minted).toEqual([])
+
+        sources[2].connect(0, sink, 2)
+        await afterFlush()
+
+        expect(minted).toEqual([
+          expect.objectContaining({
+            op: 'connect',
+            link_id: sink.inputs[2].link,
+            to_slot: null,
+            grow: expect.objectContaining({ name: sink.inputs[2].name })
+          })
+        ])
+        doc.destroy()
+      })
+
       describe('with two grows on one node awaiting their echo', () => {
         async function mintTwoUnechoedGrows() {
           const sources = [new TestSource(), new TestSource(), new TestSource()]

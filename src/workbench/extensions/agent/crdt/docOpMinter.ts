@@ -33,6 +33,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
@@ -357,7 +358,7 @@ export function docInputIndex(
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
-  const pendingGrows = new Map<NodeId, PendingGrows>()
+  const pendingGrows = new Map<string, PendingGrows>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
   let flushScheduled = false
@@ -554,10 +555,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
     if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
-    pendingGrows.delete(event.node.id)
     const key = nodeKey(event.graph.id, event.node.id)
+    pendingGrows.delete(key)
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
+      forgetCancelledGrows(event.graph.id, event.node.id)
       pending = withoutCancelledAdd(pending, event.node.id)
       return
     }
@@ -585,10 +587,10 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function unechoedGrows(
-    nodeId: NodeId,
+    key: string,
     docNames: readonly (string | undefined)[]
   ): PendingGrows | undefined {
-    const grows = pendingGrows.get(nodeId)
+    const grows = pendingGrows.get(key)
     if (grows === undefined) return undefined
     const echoed = docNames.slice(grows.base)
     const onlyOurEchoes =
@@ -596,25 +598,40 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       echoed.length < grows.names.length &&
       echoed.every((name, index) => name === grows.names[index])
     if (onlyOurEchoes) return grows
-    pendingGrows.delete(nodeId)
+    pendingGrows.delete(key)
     return undefined
   }
 
   function recordGrow(
-    nodeId: NodeId,
+    key: string,
     name: string,
     docNames: readonly (string | undefined)[]
   ): void {
-    const grows = unechoedGrows(nodeId, docNames)
+    const grows = unechoedGrows(key, docNames)
     pendingGrows.set(
-      nodeId,
+      key,
       grows
         ? { base: grows.base, names: [...grows.names, name] }
         : { base: docNames.length, names: [name] }
     )
   }
 
+  function forgetCancelledGrows(graphId: string, nodeId: NodeId): void {
+    for (const entry of pending) {
+      if (entry.kind !== 'op' || entry.operation.op !== 'connect') continue
+      const { from_node, to_node, grow } = entry.operation
+      if (!grow || (from_node !== nodeId && to_node !== nodeId)) continue
+      const key = nodeKey(graphId, toNodeId(to_node))
+      const grows = pendingGrows.get(key)
+      if (grows === undefined) continue
+      const names = grows.names.filter((name) => name !== grow.name)
+      if (names.length === 0) pendingGrows.delete(key)
+      else pendingGrows.set(key, { base: grows.base, names })
+    }
+  }
+
   function resolveDocSlot(
+    graph: LGraph,
     link: LLink,
     input: INodeInputSlot | undefined,
     docNames: readonly (string | undefined)[] | null
@@ -622,7 +639,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const toSlot = docInputIndex(docNames, input, link.target_slot)
     if (toSlot !== undefined || input === undefined || docNames === null)
       return toSlot
-    const grows = unechoedGrows(link.target_id, docNames)
+    const grows = unechoedGrows(nodeKey(graph.id, link.target_id), docNames)
     const index = grows?.names.indexOf(input.name) ?? -1
     return grows && index >= 0 ? grows.base + index : undefined
   }
@@ -633,7 +650,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const target = event.graph.getNodeById(link.target_id)
     const input = target?.inputs[link.target_slot]
     const docNames = deps.docInputNames(link.target_id)
-    const toSlot = resolveDocSlot(link, input, docNames)
+    const toSlot = resolveDocSlot(event.graph, link, input, docNames)
     const connect = {
       op: 'connect',
       link_id: link.id,
@@ -652,7 +669,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       docNames &&
       liveAutogrowGroupOf(target, input.name)
     ) {
-      recordGrow(link.target_id, input.name, docNames)
+      recordGrow(nodeKey(event.graph.id, link.target_id), input.name, docNames)
       schedule({
         kind: 'op',
         operation: {
@@ -677,6 +694,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       link.target_slot
     ]
     const toSlot = resolveDocSlot(
+      event.graph,
       link,
       input,
       deps.docInputNames(link.target_id)
@@ -708,6 +726,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       )
       return
     }
+    for (const nodeId of event.nodeIds)
+      pendingGrows.delete(nodeKey(event.graphId, nodeId))
     schedule({
       kind: 'op',
       operation: { op: 'clear', removed_nodes: [...event.nodeIds] }
