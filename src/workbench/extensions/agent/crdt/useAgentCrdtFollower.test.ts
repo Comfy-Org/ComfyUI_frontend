@@ -113,6 +113,11 @@ const projectionState = vi.hoisted(() => {
     unbind: vi.fn(),
     applyFrame: vi.fn((_update: unknown): FrameOutcome => applied()),
     applyCollected: vi.fn((_workflowId: string): FrameOutcome => applied()),
+    retryFailed: vi.fn(
+      (_workflowId: string): Extract<FrameOutcome, { applied: true }> | null =>
+        null
+    ),
+    hasPendingFailure: vi.fn((_workflowId: string) => false),
     revertRejected: vi.fn(
       (_workflowId: string, _ops: readonly Op[]): FrameOutcome => applied()
     ),
@@ -154,6 +159,8 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     unbind = projectionState.unbind
     applyFrame = projectionState.applyFrame
     applyCollected = projectionState.applyCollected
+    retryFailed = projectionState.retryFailed
+    hasPendingFailure = projectionState.hasPendingFailure
     revertRejected = projectionState.revertRejected
     replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending
@@ -281,6 +288,8 @@ describe('useAgentCrdtFollower', () => {
     projectionState.applyCollected
       .mockReset()
       .mockReturnValue(projectionState.applied())
+    projectionState.retryFailed.mockReset().mockReturnValue(null)
+    projectionState.hasPendingFailure.mockReset().mockReturnValue(false)
     projectionState.revertRejected
       .mockReset()
       .mockReturnValue(projectionState.applied())
@@ -593,6 +602,24 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('keeps a stale canvas when a reconnect is permanently refused', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+
+      refuseForGood()
+
+      expect(status().terminal).toBe('refused')
+      expect(status().canvasMayBeStale).toBe(true)
+      unmount()
+    })
+
     it('clears a stale canvas only after reconnect catch-up projects without failures', () => {
       const { unmount, status } = mountFollower('wf-1')
       dispatchFrame('doc_subscribed', {
@@ -790,6 +817,42 @@ describe('useAgentCrdtFollower', () => {
       })
 
       expect(status().connected).toBe(true)
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('retries a failed projection before an integrated reconnect clears staleness', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      bridge().isSubscribeBaselineIntegrated = true
+      projectionState.retryFailed.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
+
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      expect(projectionState.retryFailed).toHaveBeenLastCalledWith('wf-1')
+      expect(status().canvasMayBeStale).toBe(true)
+
+      agentSocket.drop()
+      agentSocket.open()
+      projectionState.retryFailed.mockReturnValueOnce(projectionState.applied())
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
       expect(status().canvasMayBeStale).toBe(false)
       unmount()
     })
