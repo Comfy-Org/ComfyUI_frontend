@@ -41,6 +41,11 @@ const playbackLabel = computed(() =>
       : 'Pause CLI session animation'
 )
 const reduced = computed(() => prefersReducedMotion())
+const inlinePlaybackControl = computed(() => !showFooter && !reduced.value)
+const sessionTabIndex = computed(() => (showFooter ? 0 : undefined))
+const sessionLabel = zh
+  ? 'CLI 会话动画；按空格键暂停或继续'
+  : 'CLI session animation. Press Space to pause or resume.'
 const resultsVisible = computed(
   () => reduced.value || elapsed.value >= RESULTS_START
 )
@@ -118,13 +123,9 @@ onUnmounted(() => cancelAnimationFrame(frame))
   <div ref="root" data-testid="native-cli-session">
     <div
       class="relative h-88 overflow-hidden rounded-3xl bg-[#2a2230] focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none sm:h-144 lg:h-160"
-      :tabindex="showFooter ? 0 : undefined"
+      :tabindex="sessionTabIndex"
       role="group"
-      :aria-label="
-        zh
-          ? 'CLI 会话动画；按空格键暂停或继续'
-          : 'CLI session animation. Press Space to pause or resume.'
-      "
+      :aria-label="sessionLabel"
       :data-phase="resultsVisible ? 'results' : 'terminal'"
       :data-paused="paused"
       :data-elapsed="Math.floor(elapsed)"
@@ -151,7 +152,7 @@ onUnmounted(() => cancelAnimationFrame(frame))
       </div>
       <CliSessionResults v-show="resultsVisible" :zh="zh" />
       <button
-        v-if="!showFooter && !reduced"
+        v-if="inlinePlaybackControl"
         type="button"
         class="absolute inset-0 cursor-pointer rounded-3xl focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
         :aria-label="playbackLabel"
