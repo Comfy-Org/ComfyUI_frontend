@@ -302,17 +302,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     ).id
   })
 
-  // True when the current user is that original owner. Single-sourced from
-  // `originalOwnerId` so the two creator signals can never disagree. Matches the
-  // self-row by email (the stable current-user join key; member.id is a cloud
-  // user id, not the Firebase uid) and fails closed until members load.
-  const isCurrentUserOriginalOwner = computed(() => {
-    const email = useCurrentUserAccess().userEmail.value?.toLowerCase()
-    if (!email) return false
-    const selfRow = members.value.find((m) => m.email.toLowerCase() === email)
-    return !!selfRow && selfRow.id === originalOwnerId.value
-  })
-
   const pendingInvites = computed<WorkspacePendingInvite[]>(
     () => activeWorkspace.value?.pendingInvites ?? []
   )
@@ -1199,7 +1188,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     workspacesManagedByOrganization,
     members,
     membersLoaded,
-    isCurrentUserOriginalOwner,
     pendingInvites,
     pendingInvitesLoaded,
     originalOwnerId,
