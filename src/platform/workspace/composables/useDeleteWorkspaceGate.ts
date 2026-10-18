@@ -2,7 +2,6 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -16,13 +15,13 @@ interface DeleteWorkspaceGateInput {
   resolved: boolean
   canDelete: ServerFact<'can_delete_workspace'>
   denial: string | undefined
-  enterpriseHidden: ServerFact<'enterprise_delete_workspace_hidden'>
 }
 
 const HIDDEN_DENIALS: ReadonlySet<string> = new Set([
   'not_a_member',
   'not_workspace_owner',
   'personal_workspace',
+  'sales_managed_plan',
   'workspace_sso_attached'
 ])
 
@@ -40,10 +39,9 @@ const GENERIC_TOOLTIP_KEY =
 function resolveDeleteWorkspaceGate({
   resolved,
   canDelete,
-  denial,
-  enterpriseHidden
+  denial
 }: DeleteWorkspaceGateInput): DeleteWorkspaceGate {
-  if (!resolved || enterpriseHidden) return { status: 'hidden' }
+  if (!resolved) return { status: 'hidden' }
   if (canDelete) return { status: 'enabled' }
   if (denial !== undefined && HIDDEN_DENIALS.has(denial)) {
     return { status: 'hidden' }
@@ -61,11 +59,7 @@ export function useDeleteWorkspaceGate() {
     resolveDeleteWorkspaceGate({
       resolved: hasResolvedCapabilities.value,
       canDelete: canDeleteWorkspace.value,
-      denial: deleteWorkspaceDenial.value,
-      enterpriseHidden: pendingServerFact(
-        'BE-21375',
-        subscription.value?.tier === 'ENTERPRISE'
-      )
+      denial: deleteWorkspaceDenial.value
     })
   )
 

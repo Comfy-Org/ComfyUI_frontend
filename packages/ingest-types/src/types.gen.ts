@@ -5407,6 +5407,12 @@ export type BillingCapabilityDenials = {
    * - not_a_member: the caller is not a member of the workspace. Unreachable
    * through this endpoint: a non-member is answered 403 before capabilities
    * resolve.
+   * - sales_managed_plan: a live subscription row is on a sales-managed tier
+   * (plan_kind sales_managed), so sales ends the plan, not the customer, and
+   * there is no customer step to point at. Reported to every member, owner
+   * or not, before any role or workspace refusal; it reveals only what
+   * plan_kind already does. An ended or reserved sales-managed row does not
+   * report it. Not plan_not_ended, which the customer can end by cancelling.
    * - not_workspace_owner: the caller is a member whose role is not owner. A
    * non-owner is told nothing below this branch, so it never learns whether
    * an SSO organization holds the workspace.
@@ -5442,6 +5448,7 @@ export type BillingCapabilityDenials = {
    */
   can_delete_workspace?:
     | 'not_a_member'
+    | 'sales_managed_plan'
     | 'not_workspace_owner'
     | 'not_original_owner'
     | 'workspace_sso_attached'
@@ -5938,14 +5945,12 @@ export type BillingCapabilities = {
    */
   can_change_seats: boolean
   /**
-   * Live sales-managed plans hide this action: false with no denial reason for
-   * any workspace member. This intentional absence is not a grant.
    * - Answers: should the client offer deleting this workspace?
    * - True: the user is an owner of a team workspace and, when the answer was
    * read, the user is also its creator when the rollout mode is not owner,
    * the workspace is not attached to an SSO organization, has no
    * subscription-changing billing operation running or parked, and has no
-   * live subscription.
+   * live subscription, sales-managed or not.
    * - False: denied_reasons.can_delete_workspace names the branch that
    * decided. False without that key means no recognised explanation, not a
    * refusal: a fact it depends on could not be read, or the team-workspaces
@@ -5956,8 +5961,9 @@ export type BillingCapabilities = {
    * enforces that restriction. The handler stays authoritative and re-checks
    * under the workspace lock, so this answer can be stale. Not a billing
    * capability: use can_cancel to ask about cancelling a subscription.
-   * - False when: the user is not an owner; the user is a non-creator owner
-   * and the rollout mode is not owner; the workspace is personal; the
+   * - False when: a live subscription is on a sales-managed plan; the user is
+   * not an owner; the user is a non-creator owner and the rollout mode is
+   * not owner; the workspace is personal; the
    * workspace is attached to an SSO organization; a billing operation is
    * running or parked; a subscription is still live; a dependent fact could
    * not be read; the team-workspaces feature is off.
@@ -6299,6 +6305,10 @@ export type BillingBalanceResponse = {
    * @deprecated
    */
   prepaid_balance_micros?: number
+  /**
+   * Amount in cents to prefill for a top-up when the effective balance is negative: covers the shortfall plus the minimum top-up, rounded up to a whole dollar, and never below the default amount. Null when the balance is zero or positive, or not authoritative.
+   */
+  suggested_topup_amount_cents?: number | null
 }
 
 /**
@@ -6374,6 +6384,26 @@ export type AutoReloadSettings = {
    * Automatic reload spend counted in the current budget cycle.
    */
   spent_this_cycle_cents: number
+  /**
+   * The one automatic reload state the card renders, decided by
+   * billing-api so clients never order the separate facts themselves.
+   * Render it as received. Values are listed in precedence order; the
+   * first that holds wins:
+   * - failed: paused_by_decline is true, or the system turned automatic
+   * reload off after consecutive declines (disabled_reason is
+   * consecutive_declines). The card asks for a new payment method.
+   * - off: not configured, or an owner turned it off.
+   * - on_hold: enabled, but the workspace has no default payment method
+   * recorded, so no automatic reload can be attempted.
+   * - paused_by_budget: enabled, and paused_by_budget is true; it
+   * resumes at cycle_resets_at.
+   * - on: enabled and able to reload.
+   * Read guidance, not charging enforcement or the workspace billing
+   * status. An expired card that is still the default reads as on
+   * until a reload declines, then failed. Treat an unknown value as off.
+   *
+   */
+  status: 'failed' | 'off' | 'on_hold' | 'paused_by_budget' | 'on'
   /**
    * Reload when the balance falls below this many credits.
    */

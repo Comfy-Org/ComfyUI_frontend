@@ -3240,6 +3240,7 @@ export const zBillingCapabilityDenials = z.object({
   can_delete_workspace: z
     .enum([
       'not_a_member',
+      'sales_managed_plan',
       'not_workspace_owner',
       'not_original_owner',
       'workspace_sso_attached',
@@ -3518,7 +3519,16 @@ export const zBillingBalanceResponse = z.object({
   pending_charges_cents: z.number().optional(),
   pending_charges_micros: z.number().optional(),
   prepaid_balance_cents: z.number().optional(),
-  prepaid_balance_micros: z.number().optional()
+  prepaid_balance_micros: z.number().optional(),
+  suggested_topup_amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullish()
 })
 
 /**
@@ -3628,6 +3638,7 @@ export const zAutoReloadSettings = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  status: z.enum(['failed', 'off', 'on_hold', 'paused_by_budget', 'on']),
   threshold_credits: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
