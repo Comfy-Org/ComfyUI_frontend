@@ -5,6 +5,8 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
@@ -39,23 +41,16 @@ interface WorkspaceUIConfig {
 function getPermissions(
   type: WorkspaceType,
   role: WorkspaceRole,
-  isOriginalOwner: boolean,
-  isOriginalOwnerResolved: boolean,
   hasActiveWorkspace: boolean,
-  isTeamPlan: boolean
+  canLeaveWorkspace: ServerFact<'can_leave_workspace'>,
+  canDowngradeToPersonal: boolean
 ): WorkspacePermissions {
-  const canManageBilling = hasActiveWorkspace && role === 'owner'
-  const canLeaveWorkspace =
-    hasActiveWorkspace &&
-    (type === 'personal'
-      ? isTeamPlan &&
-        !isOriginalOwner &&
-        (role === 'member' || isOriginalOwnerResolved)
-      : true)
+  const canManageBilling =
+    hasActiveWorkspace && pendingServerFact('BE-20308', role === 'owner')
   const billingPermissions = {
     canManageSubscription: canManageBilling,
     canManageSubscriptionLifecycle: canManageBilling,
-    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner
+    canDowngradeToPersonal
   }
 
   if (role === 'member') {
@@ -170,17 +165,21 @@ function useWorkspaceUIInternal() {
   )
 
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { canReactivate, canSubscribeSelfServe, snapshotAuthoritative } =
-    useBillingCapabilities()
+  const {
+    canReactivate,
+    canSubscribeSelfServe,
+    snapshotAuthoritative,
+    canLeaveWorkspace,
+    canDowngradeToPersonal
+  } = useBillingCapabilities()
 
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(
       workspaceType.value,
       workspaceRole.value,
-      store.isCurrentUserOriginalOwner,
-      store.originalOwnerId !== null,
       store.activeWorkspace !== null,
-      isTeamPlan.value
+      canLeaveWorkspace.value,
+      canDowngradeToPersonal.value
     )
   )
 
@@ -233,8 +232,6 @@ function useWorkspaceUIInternal() {
     }
   })
 
-  const isOriginalOwner = computed(() => store.isCurrentUserOriginalOwner)
-
   const isSubscriptionCancelled = computed(
     () => subscription.value?.isCancelled ?? false
   )
@@ -253,7 +250,6 @@ function useWorkspaceUIInternal() {
     isInPersonalWorkspace,
     isWorkspaceSubscribed,
     canAccessSubscriptionFeatures,
-    isOriginalOwner,
     isSubscriptionCancelled,
     isTeamPlanCancelled
   }
