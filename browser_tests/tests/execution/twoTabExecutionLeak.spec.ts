@@ -21,11 +21,6 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
     await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_A)
   })
 
-  // The devtools endpoint behind setupWorkflowsDirectory only creates and
-  // overwrites, and the user id is `playwright-test-${parallelIndex}`, so these
-  // files would otherwise accumulate in the worker's user directory and outlive
-  // the suite. browser_tests/README.md asks the owning fixture to clean up
-  // saved workflows.
   test.afterEach(async ({ comfyPage }) => {
     const userData = new UserDataHelper(
       comfyPage.request,
@@ -85,7 +80,7 @@ test.describe('cross-tab execution leak', { tag: '@ui' }, () => {
       .poll(() => comfyPage.nodeOps.getExecutionRender(KSAMPLER_NODE))
       .toEqual({ progress: 0.25, outlined: true })
 
-    await test.step('B shows nothing of A run', async () => {
+    await test.step("B shows nothing of A's run", async () => {
       await comfyPage.workflow.openPersistedWorkflow(WORKFLOW_B)
       expect(await comfyPage.nodeOps.getExecutionRender(KSAMPLER_NODE)).toEqual(
         { progress: null, outlined: false }

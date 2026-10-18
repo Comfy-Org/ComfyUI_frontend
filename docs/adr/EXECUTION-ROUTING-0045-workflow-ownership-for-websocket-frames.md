@@ -12,17 +12,17 @@ One `LGraph` and one `LGraphCanvas` serve every open workflow tab, so execution 
 
 [ADR-GRAPH-DOCUMENT-0026](GRAPH-DOCUMENT-0026-frontend-document-model.md) D2 already states the rule: a frame arriving on a push channel resolves its target document at ingress via the job map, never via the active pointer. It also states what to do at the boundary — "events with no job→uid resolution (page reloaded mid-run, jobs queued by another client) go to an explicit _unattributed_ bucket rather than being applied to the active document by default … misdelivery is not the fallback."
 
-This change implements D2's addressing rule and **departs from its boundary rule**. That departure is the reason this ADR exists; the reviewer on #20045 was right that nothing recorded it.
+This change implements D2's addressing rule and **departs from its boundary rule**.
 
 ## Decision
 
-**Resolution order, strongest first.** A frame's owner is resolved by the open tab's `instanceId`, then the session path, then the workflow's graph id, then permissive.
+**Resolution order, strongest first.** A frame's owner is resolved by the open tab's `instanceId`, then the session path, then the workflow's graph id. When none of these resolves, the `activeJobId` guard decides.
 
 The graph id is deliberately the weakest signal, not the strongest. `ensureWorkflowId` keeps the id already present in a pasted graph, so copy a workflow, open a tab and paste gives two tabs carrying one id; loading a single workflow has also been measured leaving two open entries holding it. Keying on the graph id first is the bug QA found, where every tab sharing an id matched every job. `instanceId` is the only identifier unique per open tab, and it already existed.
 
 **The all-zero UUID is not an id.** `LGraph._id` defaults to it and the codebase reads it as "no id yet", replacing it on configure and on clear. It is not sent as a routing key, and an incoming one is discarded rather than compared. It still reaches the wire, because core falls back to the id inside `extra_data.extra_pnginfo.workflow`, and comparing it as a real id rejected a fresh graph's own frames.
 
-**Unresolvable frames are applied to the active tab.** This is the documented exception to D2's boundary rule. When no mapping and no usable id exist, the frame is delivered rather than quarantined.
+**Unresolvable frames fall back to the active job.** This is the documented exception to D2's boundary rule. When no mapping and no usable id exist, the frame is delivered to the tab in front if no job is active or the frame belongs to `activeJobId`, rather than quarantined. A frame with no `prompt_id` is always delivered.
 
 **Keys decide gating, not foreignness.** A frame being from another tab is not sufficient reason to drop work. What matters is the key the consumer reads:
 
@@ -44,7 +44,7 @@ The graph id is deliberately the weakest signal, not the strongest. `ensureWorkf
 
 ## Consequences
 
-**The permissive fallback is load-bearing and is also the weakest point.** Single-tab behaviour after a reload is preserved, and a job from another browser session is delivered to whatever is in front. If two tabs are open and a frame is unresolvable, it can still land on the wrong one. The blast radius is bounded by how rarely both conditions hold at once, not by the design.
+**The `activeJobId` fallback is load-bearing and is also the weakest point.** Single-tab behaviour after a reload is preserved. A job from another browser session reaches the tab in front only when nothing else is running or it is itself the active job, so it is narrower than a blanket permissive rule. What remains is that with two tabs open and a frame unresolvable, it can still land on the wrong one. The blast radius is bounded by how rarely those conditions coincide, not by the design.
 
 **`status` and `progress_text` frames stay unattributable.** `status` carries no `prompt_id` because one server-wide socket serves every workflow. `progress_text` is a packed binary frame that `send_sync` cannot stamp; the frontend already reads a `supports_progress_text_metadata` server flag that no core version sets. Tracked as Comfy-Org/ComfyUI#16887. Until it lands, the text-preview widget gate goes permissive.
 
