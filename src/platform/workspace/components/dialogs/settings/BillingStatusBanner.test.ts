@@ -1,7 +1,7 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { canManageBillingFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -334,9 +334,8 @@ describe('BillingStatusBanner', () => {
       exhausted()
       useBillingCapabilities().canTopUp = computed(() => canTopUp)
       useBillingCapabilities().topUpDenial = computed(() => denial)
-      useBillingCapabilities().canManageBilling = computed(() =>
-        receiveServerFact('can_manage_billing', canManageBilling)
-      )
+      useBillingCapabilities().canManageBilling =
+        canManageBillingFact(canManageBilling)
 
       renderBanner()
 
@@ -353,6 +352,7 @@ describe('BillingStatusBanner', () => {
     exhausted()
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
+    useBillingCapabilities().canManageBilling = canManageBillingFact(true)
 
     renderBanner()
     await userEvent.click(
@@ -361,6 +361,62 @@ describe('BillingStatusBanner', () => {
 
     expect(state.manageSubscription).toHaveBeenCalledOnce()
     expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+  })
+
+  describe('Update payment', () => {
+    const entryPoints = [
+      { name: 'paused', enter: pausedState },
+      {
+        name: 'past-due out of credits',
+        enter: () => {
+          exhausted()
+          useBillingCapabilities().canTopUp = computed(() => false)
+          useBillingCapabilities().topUpDenial = computed(
+            () => 'payment_past_due'
+          )
+        }
+      }
+    ]
+
+    it.for(entryPoints)(
+      'opens the portal once while a $name request is in flight',
+      async ({ enter }) => {
+        enter()
+        let resolvePortal = () => {}
+        state.manageSubscription.mockReturnValueOnce(
+          new Promise<void>((resolve) => {
+            resolvePortal = resolve
+          })
+        )
+        renderBanner()
+        const button = screen.getByRole('button', { name: 'Update payment' })
+
+        await userEvent.click(button)
+
+        expect(button).toHaveAttribute('aria-busy', 'true')
+        await userEvent.click(button)
+        expect(state.manageSubscription).toHaveBeenCalledOnce()
+
+        resolvePortal()
+        await vi.waitFor(() => expect(button).toBeEnabled())
+      }
+    )
+
+    it.for(entryPoints)(
+      'recovers from a failed $name portal request so the owner can retry',
+      async ({ enter }) => {
+        enter()
+        state.manageSubscription.mockRejectedValueOnce(new Error('portal down'))
+        renderBanner()
+        const button = screen.getByRole('button', { name: 'Update payment' })
+
+        await userEvent.click(button)
+        await vi.waitFor(() => expect(button).toBeEnabled())
+        await userEvent.click(button)
+
+        expect(state.manageSubscription).toHaveBeenCalledTimes(2)
+      }
+    )
   })
 
   it('points members to the owner without an Add credits action', () => {

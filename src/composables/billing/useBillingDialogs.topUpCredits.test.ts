@@ -1,8 +1,6 @@
 import { computed, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import { useDialogService } from '@/services/dialogService'
 import { useTelemetry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import { DatadogRumTelemetryProvider } from '@/platform/telemetry/providers/cloud/DatadogRumTelemetryProvider'
@@ -15,6 +13,7 @@ import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 
 vi.mock(import('@/i18n'))
 
@@ -38,9 +37,9 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock(import('@/services/dialogService'))
-
-vi.mock(import('@/composables/useErrorHandling'))
+vi.mock(import('@/platform/workspace/composables/usePaymentRecoveryDialog'), {
+  spy: true
+})
 
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
@@ -48,11 +47,18 @@ vi.mock(
 
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
+const mockShowPaymentRecoveryDialog = vi.fn()
+
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     const billing = useBillingContext()
     billing.type = computed(() => 'workspace')
     vi.mocked(useBillingContext).mockReturnValue(billing)
+    vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
+      showPaymentRecoveryDialog: mockShowPaymentRecoveryDialog,
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false)
+    })
 
     mockIsCloud.value = true
   })
@@ -99,15 +105,6 @@ describe('showTopUpCreditsDialog', () => {
       type: 'workspace',
       canTopUp: false,
       denial: 'payment_past_due',
-      canManageBilling: true,
-      opensRecovery: true,
-      storeDialogs: []
-    },
-    {
-      type: 'workspace',
-      canTopUp: false,
-      denial: 'payment_past_due',
-      canManageBilling: false,
       opensRecovery: true,
       storeDialogs: []
     },
@@ -115,7 +112,6 @@ describe('showTopUpCreditsDialog', () => {
       type: 'legacy',
       canTopUp: false,
       denial: 'payment_past_due',
-      canManageBilling: true,
       opensRecovery: true,
       storeDialogs: []
     },
@@ -123,7 +119,6 @@ describe('showTopUpCreditsDialog', () => {
       type: 'workspace',
       canTopUp: false,
       denial: 'not_workspace_owner',
-      canManageBilling: false,
       opensRecovery: false,
       storeDialogs: ['insufficient-credits-member']
     },
@@ -131,7 +126,6 @@ describe('showTopUpCreditsDialog', () => {
       type: 'workspace',
       canTopUp: false,
       denial: 'free_plan',
-      canManageBilling: true,
       opensRecovery: false,
       storeDialogs: ['insufficient-credits-member']
     },
@@ -139,7 +133,6 @@ describe('showTopUpCreditsDialog', () => {
       type: 'workspace',
       canTopUp: false,
       denial: undefined,
-      canManageBilling: true,
       opensRecovery: false,
       storeDialogs: ['insufficient-credits-member']
     },
@@ -147,7 +140,6 @@ describe('showTopUpCreditsDialog', () => {
       type: 'legacy',
       canTopUp: false,
       denial: 'subscription_ended',
-      canManageBilling: true,
       opensRecovery: false,
       storeDialogs: []
     },
@@ -155,80 +147,30 @@ describe('showTopUpCreditsDialog', () => {
       type: 'workspace',
       canTopUp: true,
       denial: undefined,
-      canManageBilling: true,
       opensRecovery: false,
       storeDialogs: ['top-up-credits']
     }
   ] as const)(
     'routes a $type top-up denied as $denial (recovery: $opensRecovery, dialogs: $storeDialogs)',
-    async ({
-      type,
-      canTopUp,
-      denial,
-      canManageBilling,
-      opensRecovery,
-      storeDialogs
-    }) => {
+    async ({ type, canTopUp, denial, opensRecovery, storeDialogs }) => {
       useBillingContext().type = computed(() => type)
       useBillingCapabilities().canTopUp = computed(() => canTopUp)
       useBillingCapabilities().topUpDenial = computed(() => denial)
-      useBillingCapabilities().canManageBilling = computed(() =>
-        receiveServerFact('can_manage_billing', canManageBilling)
-      )
 
       await useBillingDialogs().showTopUpCreditsDialog({
         isInsufficientCredits: true
       })
 
-      const recoveryDialogs = vi
-        .mocked(useDialogService().showLayoutDialog)
-        .mock.calls.map(([args]) => ({
-          key: args.key,
-          props: args.props,
-          headless: args.dialogComponentProps?.headless
-        }))
       const storeDialogKeys = vi
         .mocked(useDialogStore().showDialog)
         .mock.calls.map(([args]) => args.key)
-      expect(recoveryDialogs).toEqual(
-        opensRecovery
-          ? [
-              {
-                key: 'subscription-paused',
-                props: expect.objectContaining({
-                  canManage: canManageBilling,
-                  status: 'payment_failed'
-                }),
-                headless: true
-              }
-            ]
-          : []
+      expect(mockShowPaymentRecoveryDialog).toHaveBeenCalledTimes(
+        opensRecovery ? 1 : 0
       )
       expect(storeDialogKeys).toEqual(storeDialogs)
       expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
     }
   )
-
-  it('opens the billing portal from payment recovery and closes once it returns', async () => {
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
-
-    await useBillingDialogs().showTopUpCreditsDialog({
-      isInsufficientCredits: true
-    })
-
-    const [args] = vi.mocked(useDialogService().showLayoutDialog).mock.calls[0]
-    const props = args.props
-    assert(
-      'onUpdatePayment' in props && typeof props.onUpdatePayment === 'function'
-    )
-    await props.onUpdatePayment()
-
-    expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
-    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-      key: 'subscription-paused'
-    })
-  })
 
   it('uses the server capability on legacy billing', async () => {
     useBillingContext().type = computed(() => 'legacy')

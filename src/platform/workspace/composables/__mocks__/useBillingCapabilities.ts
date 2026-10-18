@@ -37,6 +37,10 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
 
 const capabilities = { ...defaults }
 
+export function canManageBillingFact(granted: boolean) {
+  return computed(() => receiveServerFact('can_manage_billing', granted))
+}
+
 export const useBillingCapabilities = vi.fn(() => {
   onTestFinished(() => {
     Object.assign(capabilities, defaults)

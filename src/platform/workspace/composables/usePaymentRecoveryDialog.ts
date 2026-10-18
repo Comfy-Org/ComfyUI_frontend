@@ -1,3 +1,5 @@
+import { computed, shallowRef } from 'vue'
+
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -8,7 +10,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'subscription-paused'
 
-let paymentPortalRequest: Promise<void> | null = null
+const paymentPortalRequest = shallowRef<Promise<void> | null>(null)
 
 /** Whether the server refused top-up because a subscription payment is past due. */
 export function isTopUpDeniedPastDue(denial: string | undefined): boolean {
@@ -22,6 +24,8 @@ export function usePaymentRecoveryDialog() {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const { toastErrorHandler } = useErrorHandling()
+
+  const isUpdatingPayment = computed(() => paymentPortalRequest.value !== null)
 
   function closePaymentRecoveryDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -47,13 +51,15 @@ export function usePaymentRecoveryDialog() {
       toastErrorHandler(error)
     } finally {
       showUpdatingPayment(false)
-      paymentPortalRequest = null
     }
   }
 
+  /** Opens the billing portal once at a time, reporting and toasting a failure instead of rejecting. */
   function updatePayment(): Promise<void> {
-    paymentPortalRequest ??= openPaymentPortal()
-    return paymentPortalRequest
+    paymentPortalRequest.value ??= openPaymentPortal().finally(() => {
+      paymentPortalRequest.value = null
+    })
+    return paymentPortalRequest.value
   }
 
   function showPaymentRecoveryDialog() {
@@ -63,7 +69,7 @@ export function usePaymentRecoveryDialog() {
       props: {
         canManage: canManageBilling.value,
         status: 'payment_failed',
-        isUpdatingPayment: paymentPortalRequest !== null,
+        isUpdatingPayment: isUpdatingPayment.value,
         onClose: closePaymentRecoveryDialog,
         onUpdatePayment: updatePayment
       },
@@ -73,5 +79,5 @@ export function usePaymentRecoveryDialog() {
     })
   }
 
-  return { showPaymentRecoveryDialog }
+  return { showPaymentRecoveryDialog, updatePayment, isUpdatingPayment }
 }

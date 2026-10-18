@@ -78,7 +78,8 @@
           <Button
             :variant="banner.payInvoiceUrl ? 'secondary' : 'inverted'"
             size="lg"
-            @click="handleUpdatePayment"
+            :loading="isUpdatingPayment"
+            @click="updatePayment"
           >
             {{ $t('workspacePanel.billingStatus.updatePayment') }}
           </Button>
@@ -104,7 +105,10 @@ import type {
   BillingBannerKind
 } from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { isTopUpDeniedPastDue } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import {
+  isTopUpDeniedPastDue,
+  usePaymentRecoveryDialog
+} from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
@@ -124,8 +128,7 @@ const { section } = defineProps<{
 }>()
 
 const { t, d } = useI18n()
-const { renewalDate, renewalInvoice, subscription, manageSubscription } =
-  useBillingContext()
+const { renewalDate, renewalInvoice, subscription } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
 const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { kind, audience, dismiss } = useBillingBanner()
@@ -137,6 +140,7 @@ const {
   isDisplayable: canShowScheduledChange
 } = useScheduledPlanChange()
 const { showTopUpCreditsDialog } = useBillingDialogs()
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const subscriptionDialog = useSubscriptionDialog()
 const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
@@ -385,8 +389,5 @@ function handleContactSales() {
 }
 function handlePayInvoice(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
-}
-function handleUpdatePayment() {
-  void manageSubscription()
 }
 </script>
