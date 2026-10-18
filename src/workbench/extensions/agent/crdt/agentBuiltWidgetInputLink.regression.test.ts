@@ -261,4 +261,57 @@ describe('a human link into a widget input the agent-built document lacks', () =
     ])
     expect(minted[0]).not.toHaveProperty('grow')
   })
+
+  it('targets the unechoed grown widget socket with a disconnect instead of dropping it', async () => {
+    const doc = mint(agentBuiltWorkflow(), CATALOG)
+    const rootGraph = liveGraph()
+    const minted: GraphOperation[] = []
+    const port = attachDocOpMinter({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      enqueue: (ops) => minted.push(...ops),
+      getGraph: () => rootGraph,
+      boundRootGraphId: () => ROOT_GRAPH_ID,
+      docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
+      docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
+      mayWritePromotedHost: () => true,
+      onWidgetWriteRefused: () => {}
+    })
+    onTestFinished(() => port.detach())
+    const link = fromPartial<LLink>({
+      id: 504,
+      origin_id: toNodeId(PRIMITIVE_INT),
+      origin_slot: 0,
+      target_id: toNodeId(LOAD_VIDEO),
+      target_slot: rootGraph
+        .getNodeById(toNodeId(LOAD_VIDEO))
+        ?.findInputSlot('frame_load_cap'),
+      type: 'INT'
+    })
+
+    emitGraphIntent({ type: 'connect', graph: rootGraph, link })
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+    emitGraphIntent({ type: 'disconnect', graph: rootGraph, link })
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+
+    expect(minted).toEqual([
+      expect.objectContaining({ op: 'connect', grow: expect.anything() }),
+      expect.objectContaining({ op: 'disconnect', link_id: 504, to_slot: 2 })
+    ])
+    const wireOps = mintWireOps(minted, {
+      actor: 'human:u1:tab',
+      baseVersion: 1
+    })
+    expect(applyOps(doc, wireOps, CATALOG).outcomes).toEqual(
+      wireOps.map((op) => ({ op_id: op.op_id, outcome: 'applied' }))
+    )
+    const projected = project(doc, CATALOG).nodes.find(
+      (n) => String(n.id) === String(LOAD_VIDEO)
+    )
+    expect(projected?.inputs).toEqual([
+      expect.objectContaining({ name: 'meta_batch' }),
+      expect.objectContaining({ name: 'vae' }),
+      expect.objectContaining({ name: 'frame_load_cap', link: null })
+    ])
+  })
 })
