@@ -102,6 +102,37 @@ class TestPrompt extends LGraphNode {
   }
 }
 
+/**
+ * Mirrors a custom node pack's video loader (VHS_LoadVideo): a catalog value
+ * widget plus a display-only DOM preview the pack registers with
+ * `serialize: false` in its OPTIONS. Litegraph still persists that preview
+ * into the workflow (widget-level `serialize` is unset), but it is not a
+ * prompt input, so the catalog's `widget_order` never names it.
+ */
+class TestVideoLoader extends LGraphNode {
+  constructor() {
+    super('Test Video Loader')
+    this.addWidget('combo', 'video', 'clip.mp4', () => {}, {
+      values: ['clip.mp4']
+    })
+    this.addWidget('button', 'choose video to upload', 'image', () => {})
+    let preview: Record<string, unknown> = { hidden: false, params: {} }
+    this.addDOMWidget(
+      'videopreview',
+      'preview',
+      document.createElement('div'),
+      {
+        serialize: false,
+        getValue: () => preview,
+        setValue: (value: Record<string, unknown>) => {
+          preview = value
+        }
+      }
+    )
+    this.serialize_widgets = true
+  }
+}
+
 class TestDynamicGroup extends LGraphNode {
   constructor() {
     super('Test Dynamic Group')
@@ -142,7 +173,8 @@ const CATALOG: WidgetCatalog = {
     TestSource: { widget_order: ['steps'] },
     TestSink: { widget_order: [] },
     TestAutogrowSink: { widget_order: [] },
-    TestPrompt: { widget_order: ['text'] }
+    TestPrompt: { widget_order: ['text'] },
+    TestVideoLoader: { widget_order: ['video'] }
   }
 }
 
@@ -198,6 +230,7 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
   LiteGraph.registerNodeType('TestNote', TestNote)
   LiteGraph.registerNodeType('TestPrompt', TestPrompt)
+  LiteGraph.registerNodeType('TestVideoLoader', TestVideoLoader)
   LiteGraph.registerNodeType('TestDynamicGroup', TestDynamicGroup)
   LiteGraph.registerNodeType('TestEmptyComboGroup', TestEmptyComboGroup)
 })
@@ -571,6 +604,35 @@ describe('attachDocOpMinter', () => {
         op: 'add_node',
         class_type: 'TestNote',
         node: expect.objectContaining({ widgets_values: ['a note'] })
+      })
+    ])
+    const doc = mint({ nodes: [], links: [] }, CATALOG)
+    const { outcomes } = applyOps(
+      doc,
+      mintWireOps(minted, { actor: 'human:user:tab', baseVersion: 1 }),
+      CATALOG
+    )
+    expect(outcomes).toEqual([expect.objectContaining({ outcome: 'applied' })])
+    doc.destroy()
+  })
+
+  // PM-2165: undoing an agent's deletion re-adds each node as a human
+  // add_node. A pack's display-only DOM preview (VHS `videopreview`) rode
+  // along as a named value, the applier refused it as `unknown_widget`, and
+  // the rest of the restore batch was aborted, so Ctrl+Z could not bring the
+  // workflow back.
+  it('leaves a display-only DOM widget out of a catalogued add_node, and the applier takes it', async () => {
+    const loader = new TestVideoLoader()
+    graph.add(loader)
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'add_node',
+        class_type: 'TestVideoLoader',
+        node: expect.objectContaining({
+          widgets_values: { video: 'clip.mp4' }
+        })
       })
     ])
     const doc = mint({ nodes: [], links: [] }, CATALOG)

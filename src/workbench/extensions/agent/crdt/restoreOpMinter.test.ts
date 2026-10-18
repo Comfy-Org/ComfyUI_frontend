@@ -1,8 +1,11 @@
+import { applyOps, mint } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { GraphOperation } from './graphOperations'
+import { mintWireOps } from './opEnvelope'
 import {
   attachRestoreOpMinter,
   notifyRestoreMintersAfterGraphConfigure,
@@ -20,6 +23,29 @@ class TestSource extends LGraphNode {
   }
 }
 
+/** A pack node whose display-only DOM preview is persisted but not a catalog widget (VHS). */
+class TestPreviewSource extends LGraphNode {
+  constructor() {
+    super('Test Preview Source')
+    this.addWidget('text', 'image', 'a.png', () => {})
+    let preview: Record<string, unknown> = { hidden: false }
+    this.addDOMWidget(
+      'videopreview',
+      'preview',
+      document.createElement('div'),
+      {
+        serialize: false,
+        getValue: () => preview,
+        setValue: (value: Record<string, unknown>) => {
+          preview = value
+        }
+      }
+    )
+    this.addOutput('image', 'IMAGE')
+    this.serialize_widgets = true
+  }
+}
+
 class TestSink extends LGraphNode {
   constructor() {
     super('Test Sink')
@@ -30,6 +56,7 @@ class TestSink extends LGraphNode {
 beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestSink', TestSink)
+  LiteGraph.registerNodeType('TestPreviewSource', TestPreviewSource)
 })
 
 /**
@@ -118,6 +145,48 @@ describe('attachRestoreOpMinter', () => {
         link_type: 'IMAGE'
       }
     ])
+  })
+
+  // PM-2165: undoing an agent's deletion of a custom-pack node minted its
+  // display-only preview as a named widget value; the doc host refused the
+  // add_node as unknown_widget and aborted the rest of the restore batch.
+  it('restores a deleted node with a display-only DOM widget in a batch the applier takes whole', () => {
+    const catalog: WidgetCatalog = {
+      types: {
+        TestSource: { widget_order: ['image'] },
+        TestSink: { widget_order: [] },
+        TestPreviewSource: { widget_order: ['image'] }
+      }
+    }
+    const preview = new TestPreviewSource()
+    graph.add(preview)
+    graph.remove(preview)
+    // The document as the host holds it after the agent's deletion.
+    const doc = mint(graph.serialize() as unknown as WorkflowJSON, catalog)
+    const restored = new TestPreviewSource()
+    restored.id = preview.id
+
+    restoreThrough(() => {
+      graph.add(restored)
+      restored.connect(0, sink, 0)
+    })
+
+    expect(minted[0]).toMatchObject({
+      op: 'add_node',
+      node: { widgets_values: { image: 'a.png' } }
+    })
+    expect(
+      (minted[0] as { node: { widgets_values: object } }).node.widgets_values
+    ).not.toHaveProperty('videopreview')
+    const { outcomes } = applyOps(
+      doc,
+      mintWireOps(minted, { actor: 'human:user:tab', baseVersion: 1 }),
+      catalog
+    )
+    expect(outcomes.map((outcome) => outcome.outcome)).toEqual(
+      minted.map(() => 'applied')
+    )
+    doc.destroy()
   })
 
   it('maps a restored link target from live slot order to document order', () => {
