@@ -375,6 +375,8 @@ function startAgentCrdtFollower(
   const connected = ref(false)
   const canvasMayBeStale = ref(false)
   let catchUpAwaitingProjectionFor: string | null = null
+  let syncCanvasMayBeStale = false
+  let projectionFailureFor: string | null = null
   const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -418,11 +420,25 @@ function startAgentCrdtFollower(
   const pendingRejected = new Map<string, Op[]>()
 
   function markCanvasStale(): void {
+    syncCanvasMayBeStale = true
     canvasMayBeStale.value = true
     catchUpAwaitingProjectionFor = null
   }
 
+  function markProjectionStale(workflowId: string): void {
+    projectionFailureFor = workflowId
+    canvasMayBeStale.value = true
+  }
+
+  function clearProjectionStaleness(workflowId: string): void {
+    if (projectionFailureFor === workflowId) projectionFailureFor = null
+    canvasMayBeStale.value =
+      syncCanvasMayBeStale || projectionFailureFor !== null
+  }
+
   function clearCanvasStaleness(): void {
+    syncCanvasMayBeStale = false
+    projectionFailureFor = null
     canvasMayBeStale.value = false
     catchUpAwaitingProjectionFor = null
   }
@@ -573,13 +589,13 @@ function startAgentCrdtFollower(
   const applyCollected = (workflowId: string): void => {
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
+    if (outcome.failureCount > 0) markProjectionStale(workflowId)
     if (catchUpAwaitingProjectionFor === workflowId) {
       if (
         outcome.failureCount === 0 &&
         !projection.hasPendingFailure(workflowId)
       )
         clearCanvasStaleness()
-      else canvasMayBeStale.value = true
     }
     reportMaterialized(workflowId, outcome.createdNodeIds)
     reportPendingFrames(workflowId, 'applied_deferred', outcome)
@@ -664,10 +680,17 @@ function startAgentCrdtFollower(
 
   const retryFailedProjection = (workflowId: string): boolean => {
     const outcome = projection.retryFailed(workflowId)
-    if (outcome === null) return true
+    if (outcome === null) {
+      const pending = projection.hasPendingFailure(workflowId)
+      if (!pending) clearProjectionStaleness(workflowId)
+      return !pending
+    }
     reportMaterialized(workflowId, outcome.createdNodeIds)
-    if (outcome.failureCount === 0) return true
-    markCanvasStale()
+    if (outcome.failureCount === 0) {
+      clearProjectionStaleness(workflowId)
+      return true
+    }
+    markProjectionStale(workflowId)
     return false
   }
 
@@ -701,6 +724,10 @@ function startAgentCrdtFollower(
     update: ClassifiedDocUpdate,
     outcome: FrameOutcome
   ): void => {
+    if (outcome.applied && outcome.failureCount > 0) {
+      markProjectionStale(update.workflowId)
+      return
+    }
     if (!update.catchUp) return
     if (
       projectionAppliedCleanly(outcome) &&
@@ -721,6 +748,7 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
+    retryFailedProjection(update.workflowId)
     const outcome = applyFrame(update)
     settleCatchUpProjection(update, outcome)
     const nodes = outcome.nodes
