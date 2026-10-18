@@ -193,22 +193,9 @@ describe('useWorkspaceMenuItems', () => {
     }
   )
 
-  it('hides Delete for an Enterprise workspace the server would otherwise grant', () => {
-    grantDelete()
-    state.planSlug = 'enterprise_monthly'
-    state.tier = 'ENTERPRISE'
-
-    const { menuItems } = useWorkspaceMenuItems()
-
-    expect(menuItems.value.map((item) => item.label)).not.toContain(
-      'workspacePanel.menu.deleteWorkspace'
-    )
-  })
-
-  it('keeps Leave available for an Enterprise workspace member', () => {
+  it('keeps Leave when the server refuses Delete for a sales-managed plan', () => {
     grantLeave()
-    state.planSlug = 'enterprise_monthly'
-    state.tier = 'ENTERPRISE'
+    denyDelete('sales_managed_plan')
 
     const { menuItems } = useWorkspaceMenuItems()
 
