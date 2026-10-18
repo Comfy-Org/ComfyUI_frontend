@@ -783,6 +783,7 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
+      if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
       const nodeOutputStore = useNodeOutputStore()
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node
@@ -817,7 +818,6 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
-      // Enhanced preview with explicit node context
       const { blob, displayNodeId, jobId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
@@ -825,9 +825,11 @@ export class ComfyApp implements IComfyApp {
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
-      // Ensure clean up if `executing` event is missed.
+      if (!useExecutionStore().belongsToActiveWorkflow(jobId)) {
+        releaseSharedObjectUrl(blobUrl)
+        return
+      }
       revokePreviewsByExecutionId(displayNodeExecutionId)
-      // Preview cleanup is handled in progress_state event to support multiple concurrent previews
       for (const executionId of getAncestorExecutionIds(
         displayNodeExecutionId
       )) {
