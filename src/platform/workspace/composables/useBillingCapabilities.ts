@@ -117,6 +117,15 @@ function useBillingCapabilitiesInternal() {
   )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
+  const topUpDenial = computed<string | undefined>(
+    () => resolvedResponse.value?.denied_reasons?.can_top_up
+  )
+  const canManageBilling = computed(() =>
+    receiveServerFact(
+      'can_manage_billing',
+      capabilities.value?.can_manage_billing ?? false
+    )
+  )
   const canSubscribeSelfServe = computed(
     () => capabilities.value?.can_subscribe_self_serve ?? false
   )
@@ -159,6 +168,9 @@ function useBillingCapabilitiesInternal() {
       'can_leave_workspace',
       capabilities.value?.can_leave_workspace ?? false
     )
+  )
+  const leaveWorkspaceDenial = computed<string | undefined>(
+    () => resolvedResponse.value?.denied_reasons?.can_leave_workspace
   )
   const canManageSubscription = computed(() =>
     receiveServerFact(
@@ -494,6 +506,8 @@ function useBillingCapabilitiesInternal() {
 
   return {
     canTopUp,
+    topUpDenial,
+    canManageBilling,
     canSubscribeSelfServe,
     canCancel,
     canReactivate,
@@ -504,6 +518,7 @@ function useBillingCapabilitiesInternal() {
     canDeleteWorkspace,
     deleteWorkspaceDenial,
     canLeaveWorkspace,
+    leaveWorkspaceDenial,
     canManageSubscription,
     canDowngradeToPersonal,
     isReady,

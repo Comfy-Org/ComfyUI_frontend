@@ -1018,7 +1018,7 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/payment-portal',
         { return_url: 'https://app.com/settings' },
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 30_000 }
       )
       expect(result).toEqual(data)
     })

@@ -39,7 +39,12 @@
         :model-value="tags"
         @update:model-value="$emit('update:tags', $event as string[])"
       >
-        <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
+        <TagsInputItem
+          v-for="tag in tags"
+          :key="tag"
+          :value="tag"
+          class="backdrop-blur-none"
+        >
           <TagsInputItemText />
           <TagsInputItemDelete />
         </TagsInputItem>
@@ -56,7 +61,7 @@
           :key="tag"
           v-auto-animate
           :value="tag"
-          class="cursor-pointer bg-secondary-background px-2 text-muted-foreground transition-colors select-none hover:bg-secondary-background-selected"
+          class="cursor-pointer bg-secondary-background px-2 text-muted-foreground backdrop-blur-none transition-colors select-none hover:bg-secondary-background-selected"
           @click="addTag(tag)"
         >
           <TagsInputItemText />

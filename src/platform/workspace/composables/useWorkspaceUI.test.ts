@@ -430,6 +430,19 @@ describe('useWorkspaceUI', { tags: ['shared-state'] }, () => {
     })
   })
 
+  describe('workspace menu placement', () => {
+    it.for([true, false])(
+      'puts the workspace menu in the settings header when unified billing settings is %s',
+      async (unified) => {
+        vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled =
+          unified
+        const ui = await loadComposable()
+
+        expect(ui.isWorkspaceMenuInHeader.value).toBe(unified)
+      }
+    )
+  })
+
   describe('shared instance', () => {
     it('returns the same composable state for multiple callers within a test', async () => {
       Object.assign(useTeamWorkspaceStore(), {

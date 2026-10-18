@@ -1,5 +1,6 @@
 <template>
   <div class="flex flex-col gap-6" data-testid="billing-tab">
+    <WorkspaceHeaderMenu />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -68,6 +69,7 @@ import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
+import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
 import {

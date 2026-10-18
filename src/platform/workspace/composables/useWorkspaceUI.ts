@@ -226,6 +226,10 @@ function useWorkspaceUIInternal() {
     () => isTeamPlan.value && isSubscriptionCancelled.value
   )
 
+  const isWorkspaceMenuInHeader = computed(
+    () => flags.unifiedBillingSettingsEnabled
+  )
+
   return {
     permissions,
     canReactivatePlan,
@@ -237,7 +241,8 @@ function useWorkspaceUIInternal() {
     isWorkspaceSubscribed,
     canAccessSubscriptionFeatures,
     isSubscriptionCancelled,
-    isTeamPlanCancelled
+    isTeamPlanCancelled,
+    isWorkspaceMenuInHeader
   }
 }
 

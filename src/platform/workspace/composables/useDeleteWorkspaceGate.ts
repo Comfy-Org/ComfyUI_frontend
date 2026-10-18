@@ -63,7 +63,7 @@ export function useDeleteWorkspaceGate() {
       canDelete: canDeleteWorkspace.value,
       denial: deleteWorkspaceDenial.value,
       enterpriseHidden: pendingServerFact(
-        'BE-20592',
+        'BE-21375',
         subscription.value?.tier === 'ENTERPRISE'
       )
     })

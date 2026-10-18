@@ -404,10 +404,10 @@ describe('useBillingContext', () => {
     })
   })
 
-  it('exposes manageSubscription action', async () => {
+  it('reports the legacy billing portal as opened', async () => {
     mockBillingRail.value = 'legacy_stripe'
     const { manageSubscription } = useBillingContext()
-    await expect(manageSubscription()).resolves.toBeUndefined()
+    await expect(manageSubscription()).resolves.toEqual({ ok: true })
   })
 
   it('converts topup cents to whole dollars for the legacy credit endpoint', async () => {
@@ -714,6 +714,25 @@ describe('useBillingContext', () => {
         })
       )
       expect(workspaceApi.createTopup).not.toHaveBeenCalled()
+    })
+
+    it('reports the billing portal as not opened if the workspace never loads', async () => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      holdWorkspaceUnloaded('team')
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      const outcome = context.manageSubscription()
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(outcome).resolves.toEqual({
+        ok: false,
+        reason: 'routing_unavailable'
+      })
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledOnce()
     })
 
     it.for([
