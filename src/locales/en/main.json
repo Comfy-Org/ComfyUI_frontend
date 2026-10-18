@@ -5996,9 +5996,9 @@
       "generic": "Your edit was rejected and was not saved. Reload the workflow if the canvas still shows it.",
       "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
       "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. Reload the workflow if the canvas still shows the rejected part.",
-      "reason": "Rejected: {target} ({code})",
-      "reasonTarget": "Rejected: {target}",
-      "reasonCode": "Reason: {code}",
+      "withReason": "{notice} Rejected: {target} ({code})",
+      "withReasonTarget": "{notice} Rejected: {target}",
+      "withReasonCode": "{notice} Reason: {code}",
       "targets": {
         "node": "node {id}",
         "nodeField": "node {id} {field}",

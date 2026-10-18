@@ -81,11 +81,23 @@ function withReason(
 ): string {
   const plain = { escapeParameter: false }
   if (target && code && code !== 'unspecified')
-    return `${notice} ${i18n.global.t('agent.editRejected.reason', { target, code }, plain)}`
+    return i18n.global.t(
+      'agent.editRejected.withReason',
+      { notice, target, code },
+      plain
+    )
   if (target)
-    return `${notice} ${i18n.global.t('agent.editRejected.reasonTarget', { target }, plain)}`
+    return i18n.global.t(
+      'agent.editRejected.withReasonTarget',
+      { notice, target },
+      plain
+    )
   if (!code || code === 'unspecified') return notice
-  return `${notice} ${i18n.global.t('agent.editRejected.reasonCode', { code }, plain)}`
+  return i18n.global.t(
+    'agent.editRejected.withReasonCode',
+    { notice, code },
+    plain
+  )
 }
 
 /**
