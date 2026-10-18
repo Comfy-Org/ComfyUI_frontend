@@ -190,4 +190,25 @@ describe('BillingAutoTopUpCard', () => {
       await screen.findByTestId('billing-auto-top-up-status')
     ).toHaveTextContent('On')
   })
+
+  it('rereads the settings when the owner returns from the billing site', async () => {
+    const visibility = vi.spyOn(document, 'visibilityState', 'get')
+    renderCard(notConfigured)
+    expect(
+      await screen.findByTestId('billing-auto-top-up-status')
+    ).toHaveTextContent('Off')
+
+    visibility.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(configured)
+    visibility.mockReturnValue('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent('On')
+    )
+    visibility.mockRestore()
+  })
 })

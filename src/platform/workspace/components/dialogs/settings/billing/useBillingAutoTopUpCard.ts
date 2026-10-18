@@ -1,5 +1,5 @@
-import { useAsyncState } from '@vueuse/core'
-import { computed } from 'vue'
+import { useAsyncState, useDocumentVisibility } from '@vueuse/core'
+import { computed, watch } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -12,6 +12,7 @@ type AutoTopUpCardState =
 
 export function useBillingAutoTopUpCard() {
   const read = useAsyncState(() => workspaceApi.getBillingAutoReload(), null, {
+    resetOnExecute: false,
     onError: (error) =>
       reportError(error, {
         errorType: 'auto_top_up_read_failed',
@@ -20,15 +21,18 @@ export function useBillingAutoTopUpCard() {
   })
 
   const state = computed<AutoTopUpCardState>(() => {
-    if (read.isLoading.value) return { kind: 'loading' }
     const settings = read.state.value
-    if (settings === null) return { kind: 'unavailable' }
-    return { kind: 'loaded', settings }
+    if (settings !== null) return { kind: 'loaded', settings }
+    return read.isLoading.value ? { kind: 'loading' } : { kind: 'unavailable' }
   })
 
   async function retry() {
     await read.execute()
   }
+
+  watch(useDocumentVisibility(), (visibility) => {
+    if (visibility === 'visible') void read.execute()
+  })
 
   return { state, retry }
 }

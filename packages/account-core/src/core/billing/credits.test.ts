@@ -95,9 +95,10 @@ describe('createCreditsReader', () => {
         scopeSource
       }).read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
-      expect(result.value.balance.suggested_topup_amount_cents).toBe(expected)
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { balance: { suggested_topup_amount_cents: expected } }
+      })
     }
   )
 
