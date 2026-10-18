@@ -483,6 +483,25 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
+function dynamicGroupController(node: LGraphNode, name: string): boolean {
+  return (
+    node.widgets?.some(
+      (widget) => widget.name === name && isDynamicGroupController(widget)
+    ) ?? false
+  )
+}
+
+/** Rows the document carries values for under the DynamicGroup `name`. */
+function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
+  if (widgets === undefined || Array.isArray(widgets)) return 0
+  const prefix = `${name}.`
+  const rows = new Set<string>()
+  for (const key of Object.keys(widgets)) {
+    if (key.startsWith(prefix)) rows.add(key.slice(prefix.length).split('.')[0])
+  }
+  return rows.size
+}
+
 /**
  * Document entries for widgets that only exist after `configure`: aliases past
  * the constructed list, and names the constructor did not build but the node
@@ -499,7 +518,7 @@ function mountedWidgetValues(
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
     return index === null
-      ? !constructedNames.has(name)
+      ? !constructedNames.has(name) || dynamicGroupController(node, name)
       : overflowWidget(node, name) === undefined || index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
@@ -522,6 +541,8 @@ function positionalWidgetValues(
     )
   }
   return serializableWidgets(node).map((widget, index) => {
+    // Row counts apply after configure, once the document's row values can back them.
+    if (isDynamicGroupController(widget)) return widget.value
     const alias = `_extra_${index}`
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
@@ -1098,7 +1119,7 @@ export class LiveGraphApplier {
       )
         continue
       if (isDynamicGroupController(widget))
-        this.applyDynamicGroupRowCount(node, widget, value)
+        this.applyDynamicGroupRowCount(node, widget, value, documentWidgets)
       else this.setWidgetValue(node, widget, value)
       resolved = true
     }
@@ -1230,13 +1251,19 @@ export class LiveGraphApplier {
   private applyDynamicGroupRowCount(
     node: LGraphNode,
     widget: IBaseWidget,
-    value: WidgetValue
+    value: WidgetValue,
+    documentWidgets: DocNode['widgets']
   ) {
     const { max } = widget.options
     const growsAboveMax =
       typeof value === 'number' &&
       max !== undefined &&
-      Math.trunc(value) > Math.max(max, Number(widget.value))
+      Math.trunc(value) >
+        Math.max(
+          max,
+          Number(widget.value),
+          documentedRowCount(widget.name, documentWidgets)
+        )
     if (!growsAboveMax) {
       applyRemoteDynamicGroupRowCount(node, () =>
         this.setWidgetValue(node, widget, value)
