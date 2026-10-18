@@ -517,9 +517,14 @@ function mountedWidgetValues(
   if (widgets === undefined || Array.isArray(widgets)) return undefined
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
-    return index === null
-      ? !constructedNames.has(name) || dynamicGroupController(node, name)
-      : overflowWidget(node, name) === undefined || index >= constructed.length
+    if (index === null)
+      return !constructedNames.has(name) || dynamicGroupController(node, name)
+    const widget = overflowWidget(node, name)
+    return (
+      widget === undefined ||
+      index >= constructed.length ||
+      isDynamicGroupController(widget)
+    )
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
 }
