@@ -100,6 +100,12 @@ describe('toRepoName', () => {
     expect(toRepoName(query)).toBe(expected)
   })
 
+  it('strips the tail after a long run of inner spaces', () => {
+    const spaces = ' '.repeat(50_000)
+
+    expect(toRepoName(`a${spaces}b /`)).toBe(`a${spaces}b`)
+  })
+
   it.for([
     { query: 'ComfyUI-KJNodes.git', expected: 'ComfyUI-KJNodes' },
     { query: 'ComfyUI-KJNodes.GIT', expected: 'ComfyUI-KJNodes' },
@@ -200,5 +206,9 @@ describe('buildPackSearchFallbacks', () => {
     ' euler \t discrete '
   ])('yields nothing for %j', (query) => {
     expect(buildPackSearchFallbacks(query)).toEqual([])
+  })
+
+  it('yields nothing for a long run of inner spaces', () => {
+    expect(buildPackSearchFallbacks(`a${' '.repeat(50_000)}b /`)).toEqual([])
   })
 })
