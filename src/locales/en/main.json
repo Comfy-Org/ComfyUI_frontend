@@ -3625,11 +3625,6 @@
       }
     },
     "billingStatus": {
-      "paused": {
-        "title": "Subscription paused",
-        "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "Ask your workspace owner to restore the workspace's subscription."
-      },
       "outOfCredits": {
         "title": "Out of credits",
         "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
@@ -3669,8 +3664,7 @@
         "title": "Your plan changes to {plan} on {date}.",
         "body": "Your current plan stays active until then."
       },
-      "updatePayment": "Update payment",
-      "payInvoice": "Pay invoice"
+      "updatePayment": "Update payment"
     },
     "invite": "Invite",
     "inviteMember": "Invite member",
