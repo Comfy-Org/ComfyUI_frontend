@@ -321,6 +321,7 @@ describe('useAgentCrdtFollower', () => {
     expect(status()).toMatchObject({
       enabled: false,
       connected: false,
+      canvasMayBeStale: false,
       workflowId: null,
       updatesApplied: 0
     })
@@ -350,6 +351,7 @@ describe('useAgentCrdtFollower', () => {
     expect(status()).toMatchObject({
       enabled: false,
       connected: false,
+      canvasMayBeStale: false,
       workflowId: null
     })
 
@@ -582,10 +584,61 @@ describe('useAgentCrdtFollower', () => {
       dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
       expect(status().connected).toBe(true)
 
-      agentSocket.open()
+      agentSocket.drop()
 
       expect(status().connected).toBe(false)
+      expect(status().canvasMayBeStale).toBe(true)
       expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('clears a stale canvas only after reconnect catch-up arrives', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 2
+      })
+
+      expect(status().connected).toBe(true)
+      expect(status().canvasMayBeStale).toBe(true)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('clears a stale canvas when reconnect confirms an empty document', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+
+      expect(status().connected).toBe(true)
+      expect(status().canvasMayBeStale).toBe(false)
       unmount()
     })
 
@@ -1239,8 +1292,12 @@ describe('useAgentCrdtFollower', () => {
     it('counts gap on the bridge doc_gap signal, which never becomes a doc_update', () => {
       const { unmount, status } = mountFollower('wf-1')
 
+      dispatchFrame('doc_subscribed', { ok: true })
+
       dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 3, received: 5 })
 
+      expect(status().connected).toBe(false)
+      expect(status().canvasMayBeStale).toBe(true)
       expect(status().outcomes.gap).toBe(1)
       expect(status().outcomes.received).toBe(0)
       expect(status().outcomes.applied).toBe(0)
@@ -2982,7 +3039,7 @@ describe('useAgentCrdtFollower', () => {
   ): AgentCrdtFollowerOptions['transport'] {
     return {
       ...agentSocket.transport,
-      onSocketOpen: () => () => {
+      onSocketStatus: () => () => {
         throw failure
       }
     }
