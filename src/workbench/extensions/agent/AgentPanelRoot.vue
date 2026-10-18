@@ -743,9 +743,18 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
+  if (canvasMissedDocumentFrames(cloudIdFor(target))) return undefined
   const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
+}
+
+function canvasMissedDocumentFrames(documentId: string | undefined): boolean {
+  return (
+    documentId !== undefined &&
+    boundWorkflowId.value === documentId &&
+    crdtStatus.value.canvasMayBeStale
+  )
 }
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {

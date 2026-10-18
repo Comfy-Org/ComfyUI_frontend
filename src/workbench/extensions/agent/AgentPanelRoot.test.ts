@@ -10980,6 +10980,22 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies[1]).toHaveProperty('draft')
     })
 
+    it('withholds a bound canvas after its subscribed socket drops', async () => {
+      const bodies = await bindAndSettle()
+      ws.emit('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: true,
+        seq: 1
+      })
+
+      agentSocket.drop()
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+      expect(bodies[1]).not.toHaveProperty('draft')
+    })
+
     it('seeds the draft for a bound document while the agent identity is still pending', async () => {
       vi.mocked(resolveAgentIdentity).mockReturnValue({
         state: ref<AgentIdentityState>({ status: 'pending' }),

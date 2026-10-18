@@ -291,6 +291,7 @@ export function useAgentCrdtFollower(
   const disabledStatus: AgentCrdtStatus = {
     enabled: false,
     connected: false,
+    canvasMayBeStale: false,
     workflowId: null,
     updatesApplied: 0,
     lastFrameType: null,
@@ -369,6 +370,7 @@ function startAgentCrdtFollower(
   }: Required<AgentCrdtFollowerOptions>
 ) {
   const connected = ref(false)
+  const canvasMayBeStale = ref(false)
   const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -640,17 +642,20 @@ function startAgentCrdtFollower(
       ok?: unknown
       code?: unknown
       message?: unknown
+      seq?: unknown
     } | null
     const ok = detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      if (detail.seq === 0) canvasMayBeStale.value = false
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
       handleRejectedSubscription(detail)
+      if (lifecycle.refusalIsFinal()) canvasMayBeStale.value = false
     }
   }
   const onUpdate: EventListener = (event) => {
@@ -665,6 +670,7 @@ function startAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const outcome = applyFrame(update)
+    if (update.catchUp) canvasMayBeStale.value = false
     const nodes = outcome.nodes
     const created = outcome.applied ? outcome.createdNodeIds : []
     reportFrameProjection(update, outcome)
@@ -718,6 +724,7 @@ function startAgentCrdtFollower(
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
+    canvasMayBeStale.value = true
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -754,6 +761,7 @@ function startAgentCrdtFollower(
     // nothing was projected. Surface it as its own status rather than as a
     // generic "disconnected", which is indistinguishable from "never connected".
     connected.value = false
+    canvasMayBeStale.value = false
     terminal.value = 'schema_error'
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -786,6 +794,8 @@ function startAgentCrdtFollower(
     )
   }
   const onGap: EventListener = (event) => {
+    connected.value = false
+    canvasMayBeStale.value = true
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
     recordDevEvent(
       'doc_gap',
@@ -805,7 +815,12 @@ function startAgentCrdtFollower(
     if (typeof detail?.workflowId !== 'string') return
     lifecycle.onSubscribeSent(detail.workflowId)
   }
-  function onSocketOpen(): void {
+  function onSocketStatus(live: boolean): void {
+    if (!live) {
+      if (connected.value) canvasMayBeStale.value = true
+      connected.value = false
+      return
+    }
     connected.value = false
     terminal.value = null
     lifecycle.onReconnected()
@@ -823,7 +838,7 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
   bridge.addEventListener('doc_reseed_result', onReseedResult)
-  const stopTransportConnected = transport.onSocketOpen(onSocketOpen)
+  const stopTransportStatus = transport.onSocketStatus(onSocketStatus)
 
   // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
   // with the previous mount — rebind from sessionStorage) from a later null
@@ -959,6 +974,7 @@ function startAgentCrdtFollower(
       if (acknowledgesFollowedDoc(next, active, justActivated)) return
       lifecycle.clearForRetarget()
       connected.value = false
+      canvasMayBeStale.value = false
       terminal.value = null
       pendingLiveNodeIds.clear()
       if (!active) {
@@ -979,7 +995,7 @@ function startAgentCrdtFollower(
     // update twice after a remount.
     runFollowerTeardown([
       () => lifecycle.destroy(),
-      () => stopTransportConnected(),
+      () => stopTransportStatus(),
       () => bridge.removeEventListener('doc_subscribed', onSubscribed),
       () => bridge.removeEventListener('doc_update', onUpdate),
       () => bridge.removeEventListener('doc_ops_result', onOpsResult),
@@ -1007,6 +1023,7 @@ function startAgentCrdtFollower(
   const status = computed<AgentCrdtStatus>(() => ({
     enabled: true,
     connected: connected.value,
+    canvasMayBeStale: canvasMayBeStale.value,
     workflowId: subscribedWorkflowId.value,
     terminal: terminal.value,
     updatesApplied: updatesApplied.value,
