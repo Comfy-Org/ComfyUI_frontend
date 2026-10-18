@@ -10,7 +10,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 import { z } from 'zod'
 
@@ -46,6 +46,7 @@ function runWithReports(projects: string[]) {
   const root = mkdtempSync(join(tmpdir(), 'playwright-pr-report-'))
   const bin = join(root, 'bin')
   const wranglerLog = join(root, 'wrangler.log')
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }))
   mkdirSync(bin)
   writeFileSync(
     join(bin, 'wrangler'),
@@ -81,10 +82,11 @@ echo '{"passed":2,"failed":0,"flaky":0,"skipped":0,"total":2}'
       SUMMARY_FILE: join(root, 'summary.md')
     }
   })
-  const summary = readFileSync(join(root, 'summary.md'), 'utf8')
-  const wranglerCalls = readFileSync(wranglerLog, 'utf8')
-  rmSync(root, { recursive: true, force: true })
-  return { status: result.status, summary, wranglerCalls }
+  return {
+    status: result.status,
+    summary: readFileSync(join(root, 'summary.md'), 'utf8'),
+    wranglerCalls: readFileSync(wranglerLog, 'utf8')
+  }
 }
 
 describe('PR Playwright report section', () => {
@@ -96,8 +98,12 @@ describe('PR Playwright report section', () => {
 
     expect(status).toBe(0)
     expect(summary).toMatch(/^## 🎭 Playwright: ✅ /)
-    for (const project of uploadedProjects)
-      expect(summary).toContain(`- **${project}**: [View Report]`)
+    const reportedProjects = Array.from(
+      summary.matchAll(/^- \*\*(.+)\*\*: \[View Report\]/gm),
+      ([, project]) => project
+    )
+    expect(reportedProjects).toEqual(expect.arrayContaining(uploadedProjects))
+    expect(reportedProjects).toHaveLength(uploadedProjects.length)
     expect(summary).not.toContain('untrusted')
     expect(wranglerCalls).not.toContain('untrusted')
   })
