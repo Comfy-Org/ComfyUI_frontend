@@ -1,5 +1,6 @@
 import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
@@ -520,27 +521,76 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
   })
 
-  it('keeps local top-up available without calling the Cloud endpoint', async () => {
+  it.for([
+    { role: 'owner', served: false },
+    { role: 'member', served: true }
+  ] as const)(
+    'applies the served top-up capability on local for a $role',
+    async ({ role, served }) => {
+      mockIsCloud.value = false
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspace: { id: 'workspace-1', role }
+      })
+      await nextTick()
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        capabilitiesResponse(served)
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+      expect(billingCapabilities.canTopUp.value).toBe(served)
+      expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+    }
+  )
+
+  it('withholds every capability on local when the read fails', async () => {
     mockIsCloud.value = false
+    vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+      new Error('unavailable')
+    )
 
     await billingCapabilities.initialize()
 
-    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
+    expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
-    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
+    expect(billingCapabilities.canCancel.value).toBe(false)
+    expect(billingCapabilities.canReactivate.value).toBe(false)
+    expect(billingCapabilities.canChangeSeats.value).toBe(false)
+    expect(billingCapabilities.canInviteMembers.value).toBe(false)
+    expect(billingCapabilities.canManageMembers.value).toBe(false)
+    expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
+    expect(billingCapabilities.isReady.value).toBe(true)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
+    expect(mockReportError).toHaveBeenCalledOnce()
   })
 
-  it('preserves the local role gate for workspace members', async () => {
+  it('applies the served capabilities for a legacy-rail workspace on local', async () => {
     mockIsCloud.value = false
-    Object.assign(useTeamWorkspaceStore(), {
-      activeWorkspace: { id: 'workspace-1', role: 'member' }
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce({
+      ...capabilitiesResponse(
+        true,
+        'workspace-1',
+        true,
+        {},
+        {
+          can_cancel: false,
+          can_reactivate: false,
+          can_change_seats: false
+        }
+      ),
+      subscription_state_authoritative: false
     })
 
     await billingCapabilities.initialize()
 
-    expect(billingCapabilities.canTopUp.value).toBe(false)
-    expect(billingCapabilities.isReady.value).toBe(true)
-    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
+    expect(billingCapabilities.canCancel.value).toBe(false)
+    expect(billingCapabilities.canReactivate.value).toBe(false)
+    expect(billingCapabilities.canChangeSeats.value).toBe(false)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
 
   it('does not enter pending state without an authenticated scope', async () => {
@@ -551,6 +601,91 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(false)
     expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
+  })
+
+  describe('for an API-key-only local session', () => {
+    function signInWithApiKey(ownerId: string | null) {
+      Object.assign(useApiKeyAuthStore(), {
+        currentUser: ownerId === null ? null : { id: ownerId }
+      })
+    }
+
+    beforeEach(async () => {
+      mockIsCloud.value = false
+      Object.assign(useAuthStore(), { userId: undefined, currentUser: null })
+      signInWithApiKey('key-owner-1')
+      await nextTick()
+    })
+
+    it.for([true, false])(
+      'reaches the ready state with the served top-up capability (%s)',
+      async (served) => {
+        vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+          capabilitiesResponse(served, 'workspace-1', false)
+        )
+
+        await billingCapabilities.initialize()
+
+        expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
+        expect(billingCapabilities.isReady.value).toBe(true)
+        expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+        expect(billingCapabilities.canTopUp.value).toBe(served)
+        expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
+      }
+    )
+
+    it('reaches the ready state with every capability withheld when the server denies the key', async () => {
+      vi.mocked(workspaceApi.getBillingCapabilities).mockRejectedValueOnce(
+        new WorkspaceApiError('Workspace context required', 401)
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.isReady.value).toBe(true)
+      expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+      expect(billingCapabilities.canManageMembers.value).toBe(false)
+    })
+
+    it.for([
+      { name: 'a different owner', nextOwner: 'key-owner-2' },
+      { name: 'the same owner', nextOwner: 'key-owner-1' }
+    ])('rereads for a replacement key held by $name', async ({ nextOwner }) => {
+      vi.mocked(workspaceApi.getBillingCapabilities)
+        .mockResolvedValueOnce(capabilitiesResponse(true))
+        .mockResolvedValueOnce(capabilitiesResponse(false))
+      await billingCapabilities.initialize()
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+
+      signInWithApiKey(null)
+      await nextTick()
+      expect(billingCapabilities.isReady.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+
+      signInWithApiKey(nextOwner)
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.isReady.value).toBe(true)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+    })
+
+    it('hides the key owner snapshot from a Firebase user who signs in over it', async () => {
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        capabilitiesResponse(true)
+      )
+      await billingCapabilities.initialize()
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+
+      Object.assign(useAuthStore(), {
+        userId: 'firebase-user-1',
+        currentUser: { uid: 'firebase-user-1' }
+      })
+
+      expect(billingCapabilities.isReady.value).toBe(false)
+      expect(billingCapabilities.canTopUp.value).toBe(false)
+    })
   })
 
   it('accepts a canonical server user ID distinct from the Firebase UID', async () => {
@@ -1328,6 +1463,7 @@ describe('useBillingCapabilities capability gates', () => {
   }
 
   describe.for([
+    ['can_top_up', 'canTopUp'],
     ['can_subscribe_self_serve', 'canSubscribeSelfServe'],
     ['can_cancel', 'canCancel'],
     ['can_reactivate', 'canReactivate'],
@@ -1351,6 +1487,12 @@ describe('useBillingCapabilities capability gates', () => {
             Object.assign(useTeamWorkspaceStore(), {
               activeWorkspace: { id: 'workspace-1', role: 'member' }
             })
+          }
+        },
+        {
+          name: 'the local distribution',
+          apply: () => {
+            mockIsCloud.value = false
           }
         },
         ...otherCapabilityFlips(fact),
