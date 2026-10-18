@@ -439,6 +439,9 @@ describe('ManagerDialog opening listing', () => {
     expect(
       screen.getByText(enMessages.manager.noResultsFound)
     ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: enMessages.g.retry })
+    ).not.toBeInTheDocument()
   })
 })
 
@@ -476,6 +479,24 @@ describe('ManagerDialog failed search', () => {
     await settleSearch()
 
     expectRegistryErrorState()
+  })
+
+  it('searches again when the user retries a failed search', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockRejectedValueOnce(new Error('search unavailable'))
+      .mockResolvedValue(
+        result([{ id: 'gguf-pack', name: 'GGUF Pack' }], false)
+      )
+    const { user } = renderDialog()
+    await settleSearch()
+
+    await user.click(screen.getByRole('button', { name: enMessages.g.retry }))
+    await settleSearch()
+
+    expect(screen.getByText('GGUF Pack')).toBeInTheDocument()
+    expect(
+      screen.queryByText(enMessages.manager.errorConnecting)
+    ).not.toBeInTheDocument()
   })
 
   it('hides a failed listing from another tab while a typed query waits to be searched', async () => {

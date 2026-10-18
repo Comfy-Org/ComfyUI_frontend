@@ -122,6 +122,8 @@
         v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
+        :button-label="retryLabel"
+        @action="retrySearch"
       />
       <div v-else class="size-full" @click="handleGridContainerClick">
         <VirtualGrid
@@ -481,6 +483,12 @@ const emptyStateMessage = computed(() => {
     ? t(`manager.emptyState.${emptyStateKey}.message`)
     : t('manager.tryDifferentSearch')
 })
+
+const retryLabel = computed(() =>
+  isSearchFailed.value ? t('g.retry') : undefined
+)
+
+const retrySearch = () => void packs.loadNew()
 
 const onClickWarningLink = () => {
   window.open(
