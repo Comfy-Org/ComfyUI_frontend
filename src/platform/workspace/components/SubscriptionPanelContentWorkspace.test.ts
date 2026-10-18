@@ -75,14 +75,30 @@ const teamCreditStops: TeamCreditStops = {
     {
       id: 'team_700',
       credits: 147700,
-      monthly: { list_price_cents: 70000, price_cents: 66500 },
-      yearly: { list_price_cents: 70000, price_cents: 63000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 70000,
+        price_cents: 66500
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 70000,
+        price_cents: 63000
+      }
     },
     {
       id: 'team_2500',
       credits: 527500,
-      monthly: { list_price_cents: 250000, price_cents: 225000 },
-      yearly: { list_price_cents: 250000, price_cents: 200000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 250000,
+        price_cents: 225000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 250000,
+        price_cents: 200000
+      }
     }
   ]
 }
@@ -158,6 +174,7 @@ const mockPlans = ref<Plan[]>([
     price_cents: 96000,
     credits_cents: 253200,
     max_seats: 1,
+    action: 'subscribe',
     availability: { available: true },
     seat_summary: {
       seat_count: 1,
@@ -280,9 +297,14 @@ describe('SubscriptionPanelContentWorkspace', () => {
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
       canManageSubscription: mockCanManageSubscription.value,
-      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
-      canLeaveWorkspace: mockCanLeaveWorkspace.value
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value
     }))
+    useBillingCapabilities().canLeaveWorkspace = computed(() =>
+      receiveServerFact('can_leave_workspace', mockCanLeaveWorkspace.value)
+    )
+    useBillingCapabilities().leaveWorkspaceDenial = computed(() =>
+      mockCanLeaveWorkspace.value ? undefined : 'personal_workspace_creator'
+    )
     workspaceUI.canReactivatePlan = computed(() => mockCanReactivatePlan.value)
     workspaceUI.canOpenPricingSurface = computed(
       () => mockCanOpenPricingSurface.value
@@ -796,8 +818,16 @@ describe('SubscriptionPanelContentWorkspace', () => {
         {
           id: 'team_700',
           credits: 147700,
-          monthly: { list_price_cents: 70000, price_cents: 66550 },
-          yearly: { list_price_cents: 70000, price_cents: 63000 }
+          monthly: {
+            action: 'subscribe',
+            list_price_cents: 70000,
+            price_cents: 66550
+          },
+          yearly: {
+            action: 'subscribe',
+            list_price_cents: 70000,
+            price_cents: 63000
+          }
         }
       ]
     }

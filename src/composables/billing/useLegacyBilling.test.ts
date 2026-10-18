@@ -283,21 +283,23 @@ describe('useLegacyBilling', () => {
         name: 'subscribe',
         rejecting: () => vi.mocked(useSubscription().subscribeDirect),
         run: (billing: ReturnType<typeof useLegacyBilling>) =>
-          billing.subscribe('plan-slug')
+          billing.subscribe('plan-slug'),
+        resolved: undefined
       },
       {
         name: 'manageSubscription',
         rejecting: () => vi.mocked(useSubscription().manageSubscription),
         run: (billing: ReturnType<typeof useLegacyBilling>) =>
-          billing.manageSubscription()
+          billing.manageSubscription(),
+        resolved: { ok: false, reason: 'failed' }
       }
     ])(
       'reports a failed $name once and resolves',
-      async ({ rejecting, run }) => {
+      async ({ rejecting, run, resolved }) => {
         const failure = new Error('request rejected')
         rejecting().mockRejectedValue(failure)
 
-        await expect(run(useLegacyBilling())).resolves.toBeUndefined()
+        await expect(run(useLegacyBilling())).resolves.toEqual(resolved)
         expect(useAuthActions().reportError).toHaveBeenCalledExactlyOnceWith(
           failure
         )
@@ -345,6 +347,7 @@ describe('useLegacyBilling', () => {
       name: string
       rejecting: () => Mock
       run: (billing: Billing) => Promise<unknown>
+      resolved?: unknown
     }
     const retryMessage =
       "We couldn't update your subscription. Please try again."
@@ -363,14 +366,15 @@ describe('useLegacyBilling', () => {
       {
         name: 'manageSubscription',
         rejecting: () => vi.mocked(useSubscription().manageSubscription),
-        run: (billing) => billing.manageSubscription()
+        run: (billing) => billing.manageSubscription(),
+        resolved: { ok: false, reason: 'failed' }
       }
     ])(
       'refreshes the status and reports once without retrying $name',
-      async ({ rejecting, run }) => {
+      async ({ rejecting, run, resolved }) => {
         rejecting().mockRejectedValue(refusal())
 
-        await expect(run(useLegacyBilling())).resolves.toBeUndefined()
+        await expect(run(useLegacyBilling())).resolves.toEqual(resolved)
 
         expect(rejecting()).toHaveBeenCalledOnce()
         expect(useSubscription().fetchStatusDirect).toHaveBeenCalledOnce()

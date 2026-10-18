@@ -18,6 +18,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type {
   BalanceInfo,
   BillingActions,
+  BillingPortalOutcome,
   BillingState,
   SubscriptionInfo
 } from './types'
@@ -80,11 +81,15 @@ export function useLegacyBilling(): BillingState & BillingActions {
     })
   }
 
-  async function reportFailures(action: () => Promise<unknown>): Promise<void> {
+  async function reportFailures(
+    action: () => Promise<unknown>
+  ): Promise<boolean> {
     try {
       await action()
+      return true
     } catch (err) {
       authActions.reportError(await toPresentableFailure(err))
+      return false
     }
   }
 
@@ -231,8 +236,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     return null
   }
 
-  async function manageSubscription(): Promise<void> {
-    await reportFailures(() => legacyManageSubscription())
+  async function manageSubscription(): Promise<BillingPortalOutcome> {
+    const opened = await reportFailures(() => legacyManageSubscription())
+    return opened ? { ok: true } : { ok: false, reason: 'failed' }
   }
 
   async function cancelSubscription(): Promise<void> {

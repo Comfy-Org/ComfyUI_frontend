@@ -37,6 +37,8 @@ const defaultFlags: FeatureFlags = {
   billingSdkTopupEnabled: false,
   billingSdkTopupRailEnabled: false,
   billingSdkSubscriptionEnabled: false,
+  unifiedBillingSettingsEnabled: false,
+  autoTopUpEnabled: false,
   billingSdkSubscriptionRailEnabled: false,
   v1PaymentRecovery: false,
   freeTierJobAllowanceEnabled: false,

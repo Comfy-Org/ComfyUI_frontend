@@ -143,6 +143,7 @@ import {
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
 import {
   deriveSessionTitle,
@@ -369,8 +370,11 @@ const latestEntryHasPaywall = computed(() => {
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
+const threadHasUserMessage = computed(() =>
+  conversationEntries.value.some((entry) => entry.role === 'user')
+)
 const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+  if (!creditsExhausted.value || !threadHasUserMessage.value) return false
   return !latestEntryHasPaywall.value
 })
 
@@ -888,6 +892,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
+  onAgentEvent: useAgentNodeDefinitionRefreshStore().observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   refreshCredentialDuringTurns: !isCloud,
