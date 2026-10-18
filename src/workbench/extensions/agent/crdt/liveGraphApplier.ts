@@ -1235,11 +1235,12 @@ export class LiveGraphApplier {
     const { max } = widget.options
     const aboveMax =
       typeof value === 'number' && max !== undefined && Math.trunc(value) > max
-    if (!aboveMax)
+    if (!aboveMax) {
       applyRemoteDynamicGroupRowCount(node, () =>
         this.setWidgetValue(node, widget, value)
       )
-    if (reachesDynamicGroupRowCount(widget, value)) return
+      if (reachesDynamicGroupRowCount(widget, value)) return
+    }
     this.incrementFailureCount()
     reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
       ...AGENT_APPLY_TAGS,
