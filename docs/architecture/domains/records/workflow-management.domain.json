@@ -144,9 +144,13 @@
       "role": "application"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/platform/workflow/management/stores/comfyWorkflow.ts",
+    "src/platform/workflow/management/stores/workflowStore.ts",
+    "src/scripts/changeTracker.ts"
+  ],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["app-builder"],
   "characterizationScenarios": [
     {
       "name": "Workflow store opens, renames, closes, and tracks modified workflows",

@@ -412,9 +412,9 @@
       "role": "infrastructure"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/types/nodeId.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["app-builder", "workflow-format"],
   "characterizationScenarios": [
     {
       "name": "Graph configure and serialise round-trips preserve nodes, links, groups, and reroutes",
@@ -489,7 +489,7 @@
   "compatibilityPromises": [
     "Serialised workflow graph shapes (nodes, links, groups, reroutes, extra) stay compatible with existing workflows.",
     "Extension-facing LGraph, LGraphNode, LLink, Reroute, LGraphGroup, and slot callbacks and fields keep their current behaviour; changes need ecosystem migration guidance.",
-    "Inventory grants no new cross-domain permissions; existing imports of drawing, widget, promotion, selection, and layout code from entity classes remain inherited debt."
+    "Input-group identity validation uses the declared entry points; existing imports of drawing, widget, promotion, selection, and layout code from entity classes remain inherited debt."
   ],
   "deepImports": "inventory"
 }

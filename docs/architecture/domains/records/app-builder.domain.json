@@ -48,6 +48,18 @@
       "role": "application"
     },
     {
+      "path": "src/components/builder/useGroupDrop.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/builder/useInputGroups.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/builder/useInputGroups.ts",
+      "role": "application"
+    },
+    {
       "path": "src/components/builder/useLoaderDropIndicator.test.ts",
       "role": "application"
     },
@@ -62,11 +74,34 @@
     {
       "path": "src/components/builder/useResolvedSelectedInputs.ts",
       "role": "application"
+    },
+    {
+      "path": "src/stores/inputGroupStore.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/stores/inputGroupStore.ts",
+      "role": "application"
     }
   ],
-  "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": [],
+  "publicEntryPoints": [
+    "src/components/builder/InputGroupAccordion.vue",
+    "src/components/builder/useInputGroups.ts",
+    "src/components/builder/useResolvedSelectedInputs.ts",
+    "src/stores/inputGroupStore.ts"
+  ],
+  "allowedDependencies": [
+    "app-host",
+    "design-system",
+    "extension-runtime",
+    "graph-model",
+    "linear-mode",
+    "litegraph-api",
+    "node-widgets",
+    "test-support",
+    "workflow-management"
+  ],
+  "allowedConsumers": ["linear-mode"],
   "characterizationScenarios": [
     {
       "name": "Entering the builder guards empty workflows and walks the builder steps",
@@ -92,11 +127,21 @@
         "src/components/builder/useBuilderSave.test.ts",
         "src/components/builder/builderViewOptions.test.ts"
       ]
+    },
+    {
+      "name": "Input groups persist, support undo and drag pairing, and hide empty groups in app mode",
+      "checks": [
+        "src/stores/inputGroupStore.test.ts",
+        "src/components/builder/useGroupDrop.test.ts",
+        "src/components/builder/useInputGroups.test.ts",
+        "src/renderer/extensions/linearMode/LinearControls.test.ts",
+        "browser_tests/tests/appBuilder/inputGroups.spec.ts"
+      ]
     }
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior with tested entry points for input-group authoring and app-mode integration."
   ],
   "deepImports": "inventory"
 }

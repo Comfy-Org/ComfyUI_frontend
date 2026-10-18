@@ -20,9 +20,9 @@
       "role": "integration"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/utils/__tests__/litegraphTestUtils.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["app-builder"],
   "characterizationScenarios": [
     {
       "name": "Shared test infrastructure preserves its existing behavior",
@@ -31,11 +31,21 @@
         "src/vitestSetup.test.ts",
         "src/utils/__tests__/extensionTestUtils.test.ts"
       ]
+    },
+    {
+      "name": "Input groups persist, support undo and drag pairing, and hide empty groups in app mode",
+      "checks": [
+        "src/stores/inputGroupStore.test.ts",
+        "src/components/builder/useGroupDrop.test.ts",
+        "src/components/builder/useInputGroups.test.ts",
+        "src/renderer/extensions/linearMode/LinearControls.test.ts",
+        "browser_tests/tests/appBuilder/inputGroups.spec.ts"
+      ]
     }
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+    "Inventory preserves existing exports and behavior with tested entry points for input-group integration tests. This record describes current responsibilities, not a proposed extraction interface."
   ],
   "deepImports": "inventory"
 }

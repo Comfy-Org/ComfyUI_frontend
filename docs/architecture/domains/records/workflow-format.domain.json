@@ -53,7 +53,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["graph-model", "node-widgets"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

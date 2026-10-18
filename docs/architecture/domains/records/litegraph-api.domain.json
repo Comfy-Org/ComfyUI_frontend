@@ -36,9 +36,9 @@
       "role": "infrastructure"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/lib/litegraph/src/litegraph.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["app-builder", "linear-mode"],
   "characterizationScenarios": [
     {
       "name": "The LiteGraph barrel exposes the supported extension API",
