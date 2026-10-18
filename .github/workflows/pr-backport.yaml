@@ -413,6 +413,9 @@ jobs:
           steps.filter-targets.outputs.skip != 'true' &&
           steps.backport.outputs.failed != ''
         env:
+          FORCE_RERUN: >-
+            ${{ github.event_name == 'workflow_dispatch' && inputs.force_rerun
+            || 'false' }}
           BACKPORT_AGENT_PROMPT_TEMPLATE: |
             Backport PR #${PR_NUMBER} (${PR_URL}) to ${target}.
             Cherry-pick merge commit ${MERGE_COMMIT} onto new branch
@@ -458,6 +461,8 @@ jobs:
 
             ---
             cc @${PR_AUTHOR}
+
+            ${CONFLICT_MARKER}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             PR_DATA=$(gh pr view ${{ inputs.pr_number }} --json author,mergeCommit)
@@ -488,6 +493,14 @@ jobs:
               || echo "::warning::Also failed to open a tracking issue for #${PR_NUMBER} (${context})."
           }
 
+          conflict_already_reported() {
+            local bodies
+            bodies=$(gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --jq '.[].body') || return 1
+            grep -Fq -- "$1" <<<"${bodies}"
+          }
+
           for failure in ${{ steps.backport.outputs.failed }}; do
             IFS=':' read -r target reason conflicts <<< "${failure}"
 
@@ -507,6 +520,13 @@ jobs:
               notify "@${PR_AUTHOR} Backport to \`${target}\` cherry-picked cleanly but the push failed. Please retry or push the backport branch manually." "push-failed ${target}"
 
             elif [ "${reason}" = "conflicts" ]; then
+              CONFLICT_MARKER="<!-- backport-conflict:${target}:${MERGE_COMMIT} -->"
+              if [ "${FORCE_RERUN}" != "true" ] &&
+                conflict_already_reported "${CONFLICT_MARKER}"; then
+                echo "::notice::Conflict on ${target} for ${MERGE_COMMIT} is already reported on PR #${PR_NUMBER}; not posting it again."
+                continue
+              fi
+
               CONFLICTS_INLINE=$(echo "${conflicts}" | tr ',' ' ')
               PR_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/pull/${PR_NUMBER}"
 
@@ -534,8 +554,8 @@ jobs:
               CONFLICTS_BLOCK=$(echo "${conflicts}" | tr ',' '\n')
               MERGE_COMMIT_SHORT="${MERGE_COMMIT:0:7}"
 
-              export target MERGE_COMMIT_SHORT BACKPORT_BRANCH CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR STACK_HINT
-              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${BACKPORT_BRANCH} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR} ${STACK_HINT}' <<<"$COMMENT_BODY_TEMPLATE")
+              export target MERGE_COMMIT_SHORT BACKPORT_BRANCH CONFLICTS_BLOCK AGENT_PROMPT PR_AUTHOR STACK_HINT CONFLICT_MARKER
+              COMMENT_BODY=$(envsubst '${target} ${MERGE_COMMIT_SHORT} ${BACKPORT_BRANCH} ${CONFLICTS_BLOCK} ${AGENT_PROMPT} ${PR_AUTHOR} ${STACK_HINT} ${CONFLICT_MARKER}' <<<"$COMMENT_BODY_TEMPLATE")
 
               notify "${COMMENT_BODY}" "cherry-pick conflict on ${target} (backport manually onto ${BACKPORT_BRANCH})"
             fi
