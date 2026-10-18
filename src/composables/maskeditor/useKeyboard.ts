@@ -1,7 +1,16 @@
+import type { Ref } from 'vue'
 import { ref } from 'vue'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-export function useKeyboard() {
+function isTextEntryTarget(element: Element | null): boolean {
+  return (
+    element instanceof HTMLInputElement ||
+    element instanceof HTMLTextAreaElement ||
+    (element instanceof HTMLElement && element.isContentEditable)
+  )
+}
+
+export function useKeyboard(containerRef?: Ref<HTMLElement | undefined>) {
   const store = useMaskEditorStore()
 
   const keysDown = ref<string[]>([])
@@ -20,10 +29,20 @@ export function useKeyboard() {
     }
 
     if (event.key === ' ') {
-      event.preventDefault()
       const activeElement = document.activeElement
-      if (activeElement instanceof HTMLElement) {
-        activeElement.blur()
+      // This listener runs on document capture (see addListeners below) so
+      // space-pan still works despite the editor's own focus trap. That
+      // means it also sees every space keypress elsewhere on the page - e.g.
+      // the agent composer - so only blur a text entry target when it's
+      // stuck inside this editor's own container; leave an unrelated field
+      // outside it alone (PM-2081).
+      const isStuckInsideEditor =
+        activeElement !== null && !!containerRef?.value?.contains(activeElement)
+      if (!isTextEntryTarget(activeElement) || isStuckInsideEditor) {
+        event.preventDefault()
+        if (activeElement instanceof HTMLElement) {
+          activeElement.blur()
+        }
       }
     }
 
