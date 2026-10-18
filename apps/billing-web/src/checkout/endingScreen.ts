@@ -69,6 +69,7 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   project_cap_exceeded: 'unknown',
   rollout_disabled: 'unknown',
   sales_managed: 'sales_managed',
+  sales_managed_plan: 'unknown',
   subscription_inactive: 'unknown',
   usage_attribution_unavailable: 'unknown',
   user_cap_exceeded: 'unknown',
