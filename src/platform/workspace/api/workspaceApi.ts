@@ -34,6 +34,8 @@ import type {
   RetentionAcceptRequest,
   RetentionFlowEventRequest,
   RetentionFlowResponse,
+  RevertScheduledChangeRequest,
+  RevertScheduledChangeResponse,
   SavedPaymentMethod,
   ScheduledPlanChange,
   SubscribeRequest,
@@ -857,6 +859,29 @@ export const workspaceApi = {
       return response.data
     } catch (err) {
       handleAxiosError(err, 'resubscribe')
+    }
+  },
+
+  /**
+   * Undo the pending scheduled plan change
+   * POST /api/billing/subscription/revert-scheduled-change
+   */
+  async revertScheduledChange(
+    idempotencyKey?: string
+  ): Promise<RevertScheduledChangeResponse> {
+    const auth = await requestAuth()
+    try {
+      const response =
+        await workspaceApiClient.post<RevertScheduledChangeResponse>(
+          workspaceApiUrl('/billing/subscription/revert-scheduled-change'),
+          {
+            idempotency_key: idempotencyKey
+          } satisfies RevertScheduledChangeRequest,
+          auth
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'revertScheduledChange')
     }
   },
 

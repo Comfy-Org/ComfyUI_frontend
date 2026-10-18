@@ -1740,6 +1740,7 @@
     "3DViewer": "3DViewer",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
+    "Billing": "Billing",
     "Members": "Members",
     "Allowlist": "Partner Models",
     "Vue Nodes": "Nodes 2.0",
@@ -3538,6 +3539,72 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "billingTab": {
+      "credits": {
+        "addCredits": "Add credits",
+        "available": "Available",
+        "inUse": "In use now",
+        "overdrawn": "Your runs used {count} more credit than you had. | Your runs used {count} more credits than you had.",
+        "plan": "Plan",
+        "planOfPool": "{remaining} of {total}",
+        "planTooltip": "Credits included with your plan. They refill each billing period.",
+        "rateInfo": "About credits",
+        "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
+        "resubscribe": "Resubscribe to use credits on Cloud.",
+        "subscribe": "Subscribe to use credits on Cloud.",
+        "title": "Credits",
+        "topUp": "Top-up",
+        "topUpTooltip": "Credits you added. They're used once plan credits run out.",
+        "unavailable": "Couldn't load your balance."
+      },
+      "handoff": {
+        "member": {
+          "action": "View usage",
+          "label": "Usage"
+        },
+        "owner": {
+          "action": "Open billing",
+          "label": "Payment methods, invoices, and usage"
+        }
+      },
+      "loadError": "We couldn't load your plan.",
+      "plan": {
+        "actions": {
+          "choosePlan": "Choose a plan",
+          "manage": "Manage",
+          "resume": "Resume plan",
+          "stay": "Stay on {plan}",
+          "subscribe": "Subscribe"
+        },
+        "active": {
+          "monthly": "Billed monthly. Next invoice {date}.",
+          "yearly": "Billed yearly. Next invoice {date}."
+        },
+        "ended": "Ended {date}.",
+        "ending": "Ends {date}. You won't be charged again.",
+        "lifecycleRefused": "We couldn't make this change. Try again.",
+        "managedByOwner": "Managed by the workspace owner.",
+        "noPlan": {
+          "freeRunsLeft": "You have {remaining} of {total} free runs left. Subscribe to keep running workflows after that.",
+          "freeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows.",
+          "line": "Subscribe to run workflows on Cloud.",
+          "title": "This workspace has no active plan"
+        },
+        "resumeConfirm": {
+          "body": "Your plan will renew on {date}. You can cancel again anytime.",
+          "title": "Resume your {plan} plan?"
+        },
+        "scheduledChange": "Changes to {plan} on {date}.",
+        "stayConfirm": {
+          "body": "Your plan won't change to {plan} on {date}. You can schedule a change again anytime.",
+          "title": "Cancel your change to {plan}?"
+        },
+        "unknown": {
+          "title": "Your plan"
+        }
+      },
+      "tryAgain": "Try again"
+    },
     "activity": {
       "columns": {
         "creditsUsed": "Credits",
@@ -5659,6 +5726,10 @@
     },
     "loadFailed": "The agent panel failed to load.",
     "entryButton": "Agent",
+    "entryStarting": "Agent starting…",
+    "entryFailed": "Agent unavailable",
+    "entryFailedReason": "ComfyUI could not start the agent: {reason}",
+    "entryStartingReason": "ComfyUI is starting the agent: {reason}",
     "feedbackCaption": "Share feedback",
     "freeUseNoticeLabel": "Free use notice",
     "freeUseNotice": "Try your first chat for free!",

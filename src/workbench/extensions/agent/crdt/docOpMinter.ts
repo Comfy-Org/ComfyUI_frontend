@@ -355,6 +355,21 @@ export function docInputIndex(
   return index === -1 ? undefined : index
 }
 
+function growForMissingSlot(
+  target: LGraphNode | null | undefined,
+  input: INodeInputSlot | undefined
+): { name: string; type: string; widget?: string } | undefined {
+  if (!target || !input) return undefined
+  const widgetBacked = !!input.widget && !target.isSubgraphNode()
+  if (!widgetBacked && !liveAutogrowGroupOf(target, input.name))
+    return undefined
+  return {
+    name: input.name,
+    type: String(input.type),
+    ...(input.widget ? { widget: input.widget.name } : {})
+  }
+}
+
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
@@ -663,24 +678,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       schedule({ kind: 'op', operation: { ...connect, to_slot: toSlot } })
       return
     }
-    if (
-      target &&
-      input &&
-      docNames &&
-      liveAutogrowGroupOf(target, input.name)
-    ) {
-      recordGrow(nodeKey(event.graph.id, link.target_id), input.name, docNames)
+    const grow = growForMissingSlot(target, input)
+    if (grow) {
+      if (docNames)
+        recordGrow(nodeKey(event.graph.id, link.target_id), grow.name, docNames)
       schedule({
         kind: 'op',
-        operation: {
-          ...connect,
-          to_slot: null,
-          grow: {
-            name: input.name,
-            type: String(input.type),
-            ...(input.widget ? { widget: input.widget.name } : {})
-          }
-        }
+        operation: { ...connect, to_slot: null, grow }
       })
       return
     }
