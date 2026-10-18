@@ -182,9 +182,9 @@ test.describe(
         BOUND_WORKFLOW_ID
       )
       expect(
-        second.draft,
-        'a tab detour must not make the turn seed a draft over the bound document'
-      ).toBeUndefined()
+        draftNodeCount(second),
+        'the bound tab is still the read target after a detour, so the turn must carry its populated graph'
+      ).toBe(nodeCount)
     })
 
     test('second turn still carries the populated graph when the follower is refused the bound document', async ({
