@@ -2698,13 +2698,14 @@ describe('useExecutionStore - frames from a background workflow', () => {
     ['executed', { node: '1', display_node: '1', output: {} }],
     ['execution_cached', { nodes: ['1'], timestamp: 0 }]
   ] as const)(
-    'does not mark the active job done from a background %s frame',
+    'records a background %s frame on its own job, not the active one',
     ([event, detail]) => {
       fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
 
       fire(event, { ...detail, prompt_id: 'job-background' })
 
       expect(store.activeJob?.nodes['1']).toBe(false)
+      expect(store.queuedJobs['job-background'].nodes['1']).toBe(true)
     }
   )
 
