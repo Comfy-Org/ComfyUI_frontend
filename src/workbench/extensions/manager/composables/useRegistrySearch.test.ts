@@ -238,6 +238,108 @@ describe('useRegistrySearch', () => {
     expect(search.firstPage.value).toBeNull()
   })
 
+  it('drops a later page that lands after the mode changed and loads the first page for the new mode', async () => {
+    const { searchPacks } = useRegistrySearchGateway()
+    let resolveStalePage: (result: SearchPacksResult) => void = () => {}
+    let resolveFirstPage: (result: SearchPacksResult) => void = () => {}
+    vi.mocked(searchPacks)
+      .mockResolvedValueOnce({
+        nodePacks: [{ id: 'nodes-pack' }],
+        querySuggestions: [],
+        hasMore: true,
+        rawResultsEmpty: false
+      })
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStalePage = resolve
+        })
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirstPage = resolve
+        })
+      )
+    const searchMode = ref<SearchMode>('nodes')
+    const search = useRegistrySearch({ query: 'comfyui-manager', searchMode })
+    await until(search.isLoading).toBe(false)
+    const loadingMore = search.loadMore()
+
+    searchMode.value = 'packs'
+    await nextTick()
+    resolveStalePage({
+      nodePacks: [{ id: 'stale-pack' }],
+      querySuggestions: [{ query: 'stale-suggestion', popularity: 1 }],
+      hasMore: true,
+      rawResultsEmpty: false
+    })
+
+    expect(await loadingMore).toBe(false)
+    expect(toValue(search.items)).not.toContainEqual({ id: 'stale-pack' })
+    expect(search.suggestions.value).toEqual([])
+
+    resolveFirstPage({
+      nodePacks: [{ id: 'packs-pack' }],
+      querySuggestions: [],
+      hasMore: false,
+      rawResultsEmpty: false
+    })
+    await until(search.isLoading).toBe(false)
+
+    expect(toValue(search.items)).toEqual([{ id: 'packs-pack' }])
+    expect(toValue(search.hasMore)).toBe(false)
+    expect(
+      vi
+        .mocked(searchPacks)
+        .mock.calls.map(([, params]) => [
+          params.pageNumber,
+          params.restrictSearchableAttributes
+        ])
+    ).toEqual([
+      [0, ['comfy_nodes']],
+      [1, ['comfy_nodes']],
+      [0, ['name', 'description']]
+    ])
+  })
+
+  it('searches only the latest query when it changes twice while the first page loads', async () => {
+    const { searchPacks } = useRegistrySearchGateway()
+    const staleResolvers: ((result: SearchPacksResult) => void)[] = []
+    const onePackPage = (id: string): SearchPacksResult => ({
+      nodePacks: [{ id }],
+      querySuggestions: [],
+      rawResultsEmpty: false
+    })
+    vi.mocked(searchPacks)
+      .mockReturnValueOnce(
+        new Promise((resolve) => staleResolvers.push(resolve))
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => staleResolvers.push(resolve))
+      )
+      .mockResolvedValueOnce(onePackPage('latest-pack'))
+    const query = ref('comfyui-kjnodes')
+    const search = useRegistrySearch({ query, searchMode: 'packs' })
+    await until(search.isLoading).toBe(true)
+
+    query.value = 'comfyui-manager'
+    await nextTick()
+    staleResolvers[0](onePackPage('first-stale-pack'))
+    await vi.waitFor(() => expect(searchPacks).toHaveBeenCalledTimes(2))
+    query.value = 'gguf'
+    await nextTick()
+    staleResolvers[1](onePackPage('second-stale-pack'))
+    await until(search.isLoading).toBe(false)
+
+    expect(toValue(search.items)).toEqual([{ id: 'latest-pack' }])
+    expect(search.firstPage.value).toEqual({
+      query: 'gguf',
+      rawResultsEmpty: false
+    })
+    expect(
+      vi.mocked(searchPacks).mock.calls.map(([searched]) => searched)
+    ).toEqual(['comfyui-kjnodes', 'comfyui-manager', 'gguf'])
+  })
+
   it('reports no first page when the search for it fails', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
       .mockResolvedValueOnce({
