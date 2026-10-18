@@ -1742,6 +1742,7 @@
     "3DViewer": "3DViewer",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
+    "Billing": "Billing",
     "Members": "Members",
     "Allowlist": "Partner Models",
     "Vue Nodes": "Nodes 2.0",
@@ -2952,7 +2953,12 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.",
+      "noPaymentMethodCheckoutHint": "This workspace has no card saved for one-click top-ups. Pay on a checkout page instead.",
+      "continueToCheckout": "Continue to checkout",
+      "checkoutBlockedTitle": "Checkout didn't open",
+      "checkoutBlockedBody": "Your browser blocked the new tab. Open checkout to finish paying.",
+      "openCheckout": "Open checkout",
+      "checkoutOpenFailed": "The payment page couldn't open. Nothing was charged. Try again.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2991,6 +2997,7 @@
     "details": "Details",
     "time": "Time",
     "additionalInfo": "Additional Info",
+    "charge": "Charge",
     "model": "Model",
     "api": "API",
     "added": "Added",
@@ -3535,6 +3542,72 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "billingTab": {
+      "credits": {
+        "addCredits": "Add credits",
+        "available": "Available",
+        "inUse": "In use now",
+        "overdrawn": "Your runs used {count} more credit than you had. | Your runs used {count} more credits than you had.",
+        "plan": "Plan",
+        "planOfPool": "{remaining} of {total}",
+        "planTooltip": "Credits included with your plan. They refill each billing period.",
+        "rateInfo": "About credits",
+        "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
+        "resubscribe": "Resubscribe to use credits on Cloud.",
+        "subscribe": "Subscribe to use credits on Cloud.",
+        "title": "Credits",
+        "topUp": "Top-up",
+        "topUpTooltip": "Credits you added. They're used once plan credits run out.",
+        "unavailable": "Couldn't load your balance."
+      },
+      "handoff": {
+        "member": {
+          "action": "View usage",
+          "label": "Usage"
+        },
+        "owner": {
+          "action": "Open billing",
+          "label": "Payment methods, invoices, and usage"
+        }
+      },
+      "loadError": "We couldn't load your plan.",
+      "plan": {
+        "actions": {
+          "choosePlan": "Choose a plan",
+          "manage": "Manage",
+          "resume": "Resume plan",
+          "stay": "Stay on {plan}",
+          "subscribe": "Subscribe"
+        },
+        "active": {
+          "monthly": "Billed monthly. Next invoice {date}.",
+          "yearly": "Billed yearly. Next invoice {date}."
+        },
+        "ended": "Ended {date}.",
+        "ending": "Ends {date}. You won't be charged again.",
+        "lifecycleRefused": "We couldn't make this change. Try again.",
+        "managedByOwner": "Managed by the workspace owner.",
+        "noPlan": {
+          "freeRunsLeft": "You have {remaining} of {total} free runs left. Subscribe to keep running workflows after that.",
+          "freeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows.",
+          "line": "Subscribe to run workflows on Cloud.",
+          "title": "This workspace has no active plan"
+        },
+        "resumeConfirm": {
+          "body": "Your plan will renew on {date}. You can cancel again anytime.",
+          "title": "Resume your {plan} plan?"
+        },
+        "scheduledChange": "Changes to {plan} on {date}.",
+        "stayConfirm": {
+          "body": "Your plan won't change to {plan} on {date}. You can schedule a change again anytime.",
+          "title": "Cancel your change to {plan}?"
+        },
+        "unknown": {
+          "title": "Your plan"
+        }
+      },
+      "tryAgain": "Try again"
+    },
     "activity": {
       "columns": {
         "creditsUsed": "Credits",
@@ -3731,7 +3804,11 @@
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
-      "deleteWorkspaceAfterPlanEndsTooltip": "You can delete this workspace after your plan ends on {date}",
+      "deleteWorkspaceAfterPlanEndsTooltip": "You can delete this workspace after your plan ends on {date}.",
+      "deleteWorkspacePlanNotEndedTooltip": "You can delete this workspace after its plan ends. Cancel it from Manage plan.",
+      "deleteWorkspaceBillingParkedTooltip": "A recent payment needs a fix from our team. Contact support.",
+      "deleteWorkspaceBillingInProgressTooltip": "A billing change is in progress. Try again in a moment.",
+      "deleteWorkspaceUnavailableTooltip": "This workspace can't be deleted right now.",
       "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
@@ -5652,6 +5729,10 @@
     },
     "loadFailed": "The agent panel failed to load.",
     "entryButton": "Agent",
+    "entryStarting": "Agent starting…",
+    "entryFailed": "Agent unavailable",
+    "entryFailedReason": "ComfyUI could not start the agent: {reason}",
+    "entryStartingReason": "ComfyUI is starting the agent: {reason}",
     "feedbackCaption": "Share feedback",
     "freeUseNoticeLabel": "Free use notice",
     "freeUseNotice": "Try your first chat for free!",

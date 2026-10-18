@@ -52,7 +52,10 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true,
+  isDesktop: false
+}))
 
 vi.mock(import('firebase/auth'))
 

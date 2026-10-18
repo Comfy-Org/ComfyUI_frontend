@@ -32,7 +32,7 @@ const {
   errorMessage,
   sessionFailureCode,
   ssoOrganizationId,
-  available,
+  identityStatus,
   signInWith,
   submitEmail,
   retryMint,
@@ -64,7 +64,9 @@ const sessionFailed = computed(
   () => state.value.step === 'signedIn' && state.value.mintFailed === true
 )
 /** Signed in on the shared session, but refused this workspace: no sign-in to offer. */
-const sessionOnly = computed(() => sessionFailed.value && !available.value)
+const sessionOnly = computed(
+  () => sessionFailed.value && identityStatus.value !== 'ready'
+)
 
 const form = computed(() => {
   if (sessionOnly.value) return undefined
@@ -73,7 +75,7 @@ const form = computed(() => {
 
 const noticeKey = computed(() => {
   if (sessionOnly.value) return undefined
-  if (!available.value) return 'auth.signIn.unavailable'
+  if (identityStatus.value === 'unavailable') return 'auth.signIn.unavailable'
   return secureContext ? undefined : 'auth.signIn.insecureContextWarning'
 })
 const progressKey = computed(() =>
@@ -81,7 +83,7 @@ const progressKey = computed(() =>
     ? 'auth.signIn.pending'
     : 'auth.signIn.signingIn'
 )
-const blocked = computed(() => busy.value || !available.value)
+const blocked = computed(() => busy.value || identityStatus.value !== 'ready')
 /**
  * Only a workspace the server named as inaccessible gets its own copy: a
  * malformed or expired Firebase token is not about the workspace at all, and

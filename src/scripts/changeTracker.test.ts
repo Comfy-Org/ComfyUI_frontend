@@ -26,7 +26,6 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyApi } from '@/scripts/api'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
@@ -38,13 +37,7 @@ vi.mock(import('@/base/assert'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({
-    dispatchCustomEvent: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  })
-}))
+vi.mock(import('@/scripts/api'))
 
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
