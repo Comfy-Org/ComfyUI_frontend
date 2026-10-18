@@ -954,6 +954,82 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         }
       )
 
+      function portalPending() {
+        const settle = {
+          resolve: (_value: { url: string }) => {},
+          reject: (_error: Error) => {}
+        }
+        vi.spyOn(workspaceApi, 'getPaymentPortalUrl').mockReturnValue(
+          new Promise((resolve, reject) => {
+            settle.resolve = resolve
+            settle.reject = reject
+          })
+        )
+        return settle
+      }
+
+      function competingTransitions() {
+        return ['Back', 'Continue to checkout', 'Set a default card'].map(
+          (name) => screen.getByRole('button', { name })
+        )
+      }
+
+      it.for([
+        {
+          outcome: 'opens',
+          settle: (portal: ReturnType<typeof portalPending>) =>
+            portal.resolve({ url: portalUrl }),
+          tabHref: portalUrl
+        },
+        {
+          outcome: 'fails',
+          settle: (portal: ReturnType<typeof portalPending>) =>
+            portal.reject(new WorkspaceApiError('Portal down', 502)),
+          tabHref: ''
+        }
+      ])(
+        'locks Back and checkout while the portal request is pending and unlocks them once it $outcome',
+        async ({ settle, tabHref }) => {
+          refuseForNoPaymentMethod()
+          vi.spyOn(workspaceApi, 'listSavedPaymentMethods').mockResolvedValue(
+            savedCards(false)
+          )
+          const portal = portalPending()
+          const { tab } = stubCheckoutTab()
+          await payAndGetRefused()
+
+          await clickSetDefaultCard()
+
+          for (const button of competingTransitions()) {
+            expect(button).toBeDisabled()
+          }
+
+          settle(portal)
+
+          await waitFor(() => {
+            for (const button of competingTransitions()) {
+              expect(button).toBeEnabled()
+            }
+          })
+          expect(tab.location.href).toBe(tabHref)
+        }
+      )
+
+      it('closes the reserved tab without opening the portal when the dialog unmounts mid-request', async () => {
+        refuseForNoPaymentMethod()
+        const portal = portalPending()
+        const { tab } = stubCheckoutTab()
+        const { unmount } = await payAndGetRefused()
+        await clickSetDefaultCard()
+
+        unmount()
+        portal.resolve({ url: portalUrl })
+
+        await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
+        expect(tab.location.href).toBe('')
+        expect(useToast().error).not.toHaveBeenCalled()
+      })
+
       it('asks for pop-ups instead of minting a portal session when the tab is blocked', async () => {
         refuseForNoPaymentMethod()
         const getPortal = portalOpensAt(portalUrl)

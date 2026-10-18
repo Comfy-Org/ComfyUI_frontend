@@ -279,7 +279,7 @@
           variant="primary"
           size="lg"
           :disabled="!isValidAmount || paymentLocked || !canTopUp"
-          :loading="paymentLocked"
+          :loading="paymentInFlight"
           @click="continueToCheckout"
         >
           {{ $t('credits.topUp.continueToCheckout') }}
@@ -288,7 +288,7 @@
         <Button
           v-else
           :disabled="!isValidAmount || paymentLocked || !canTopUp"
-          :loading="paymentLocked"
+          :loading="paymentInFlight"
           :variant="
             step === 'confirm' && topupActionUrl ? 'tertiary' : 'primary'
           "
@@ -523,12 +523,18 @@ const displayTotal = computed(() =>
   })
 )
 
-const paymentLocked = computed(
+const paymentInFlight = computed(
   () =>
     loading.value ||
     paymentSubmitted.value ||
     isAddingCredits.value ||
     !!topupOperation.value
+)
+
+const openingDefaultCardPortal = ref(false)
+
+const paymentLocked = computed(
+  () => paymentInFlight.value || openingDefaultCardPortal.value
 )
 
 watch(
@@ -777,8 +783,6 @@ function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
   handleClose(false)
 }
 
-const openingDefaultCardPortal = ref(false)
-
 function refreshOnDefaultCardReturn() {
   stopDefaultCardReturnRefresh?.()
   stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
@@ -801,7 +805,7 @@ function refreshOnDefaultCardReturn() {
 }
 
 async function setDefaultCard() {
-  if (openingDefaultCardPortal.value || paymentLocked.value) return
+  if (paymentLocked.value) return
   const portalTab = reserveBillingTab()
   if (!portalTab) {
     toast.warning(t('g.warning'), {
@@ -815,9 +819,13 @@ async function setDefaultCard() {
       window.location.href,
       'payment_method_update'
     )
+    if (unmounted) {
+      portalTab.close()
+      return
+    }
     if (!url) return reportDefaultCardPortalFailure(portalTab)
     portalTab.navigate(url)
-    if (!unmounted) refreshOnDefaultCardReturn()
+    refreshOnDefaultCardReturn()
   } catch {
     reportDefaultCardPortalFailure(portalTab)
   } finally {
