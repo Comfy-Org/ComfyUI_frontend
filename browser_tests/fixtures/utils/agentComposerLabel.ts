@@ -11,5 +11,4 @@ const { t } = createI18n({
 
 const EITHER_PLACEHOLDER = `(?:${escapeRegExp(t('agent.placeholder'))}|${escapeRegExp(t('agent.placeholderWithoutSkills'))})`
 
-/** The agent composer's exact accessible name, with or without skills. */
 export const AGENT_COMPOSER_LABEL = new RegExp(`^${EITHER_PLACEHOLDER}$`)
