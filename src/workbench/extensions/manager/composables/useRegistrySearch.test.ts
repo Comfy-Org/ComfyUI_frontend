@@ -365,6 +365,51 @@ describe('useRegistrySearch', () => {
     })
   })
 
+  it('reports only the first of consecutive search failures', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockRejectedValueOnce(new Error('search unavailable'))
+      .mockRejectedValueOnce(new Error('search still unavailable'))
+    const query = ref('comfyui-manager')
+    const search = useRegistrySearch({ query, searchMode: 'packs' })
+    await until(search.isLoading).toBe(false)
+
+    query.value = 'comfyui-kjnodes'
+    await until(search.isLoading).toBe(true)
+    await until(search.isLoading).toBe(false)
+
+    expect(search.searchFailed.value).toBe(true)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      new Error('search unavailable'),
+      expect.objectContaining({ errorType: 'error_searching_registry_packs' })
+    )
+  })
+
+  it('reports a search failure again after a search succeeds', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks)
+      .mockRejectedValueOnce(new Error('search unavailable'))
+      .mockResolvedValueOnce({
+        nodePacks: packs(1),
+        querySuggestions: [],
+        rawResultsEmpty: false
+      })
+      .mockRejectedValueOnce(new Error('search unavailable again'))
+    const query = ref('comfyui-manager')
+    const search = useRegistrySearch({ query, searchMode: 'packs' })
+    await until(search.isLoading).toBe(false)
+
+    query.value = 'comfyui-kjnodes'
+    await until(search.isLoading).toBe(true)
+    await until(search.isLoading).toBe(false)
+    query.value = 'gguf'
+    await until(search.isLoading).toBe(true)
+    await until(search.isLoading).toBe(false)
+
+    expect(vi.mocked(reportError).mock.calls.map(([error]) => error)).toEqual([
+      new Error('search unavailable'),
+      new Error('search unavailable again')
+    ])
+  })
+
   it('reports a failed first-page search and clears the earlier suggestions until the next search', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
       .mockResolvedValueOnce({

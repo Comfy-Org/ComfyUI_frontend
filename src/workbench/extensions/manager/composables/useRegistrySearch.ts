@@ -50,6 +50,7 @@ export function useRegistrySearch(inputs: {
   const { searchPacks } = useRegistrySearchGateway()
 
   let pageNumber = 0
+  let failureReportedSinceSuccess = false
   const items = ref<RegistryNodePack[]>([])
   const morePages = ref(true)
   const suggestions = ref<QuerySuggestion[]>([])
@@ -71,6 +72,17 @@ export function useRegistrySearch(inputs: {
     return isTypedSearch ? { analyticsTags: [USER_SEARCH_ANALYTICS_TAG] } : {}
   }
 
+  function reportFirstFailureSinceSuccess(error: unknown) {
+    if (failureReportedSinceSuccess) return
+    failureReportedSinceSuccess = true
+    reportError(error, {
+      errorType: 'error_searching_registry_packs',
+      surface: 'platform',
+      level: 'warning',
+      tags: { outcome: 'degraded' }
+    })
+  }
+
   async function doLoadMore(): Promise<PageFreshness> {
     if (!morePages.value) return 'current'
     const query = searchedQuery()
@@ -85,6 +97,7 @@ export function useRegistrySearch(inputs: {
         ...analyticsParams(query)
       })
       if (!isCurrent()) return 'stale'
+      failureReportedSinceSuccess = false
       const { nodePacks } = result
       morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
       if (pageNumber === 0) {
@@ -98,12 +111,7 @@ export function useRegistrySearch(inputs: {
       pageNumber++
     } catch (error) {
       if (!isCurrent()) return 'stale'
-      reportError(error, {
-        errorType: 'error_searching_registry_packs',
-        surface: 'platform',
-        level: 'warning',
-        tags: { outcome: 'degraded' }
-      })
+      reportFirstFailureSinceSuccess(error)
       morePages.value = false
       if (pageNumber === 0) {
         searchFailed.value = true
