@@ -1146,10 +1146,38 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('still asks for a reload when an older document is later replaced by a newer one', () => {
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+    dispatchFrame('doc_subscribed', { ok: true })
+
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      found: SCHEMA_VERSION - 1
+    })
+    dispatchFrame('schema_error', {
+      workflowId: 'wf-1',
+      found: SCHEMA_VERSION + 1
+    })
+
+    expect(onSyncError).toHaveBeenNthCalledWith(
+      2,
+      `document schema v${SCHEMA_VERSION + 1} is newer than this page reads (v${SCHEMA_VERSION})`,
+      'stale_client_schema'
+    )
+    unmount()
+  })
+
   it.for([
     { label: 'the current version', found: SCHEMA_VERSION },
     { label: 'zero', found: 0 },
-    { label: 'a non-number', found: '1' }
+    { label: 'a non-number', found: '1' },
+    { label: 'negative', found: -1 },
+    { label: 'fractional', found: SCHEMA_VERSION + 0.5 },
+    { label: 'infinite', found: Number.POSITIVE_INFINITY },
+    { label: 'NaN', found: Number.NaN }
   ])('stays silent when the document schema is $label', ({ found }) => {
     const onSyncError = vi.fn()
     const { unmount } = mountFollower('wf-1', true, () => null, {

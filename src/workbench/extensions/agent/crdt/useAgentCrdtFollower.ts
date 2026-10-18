@@ -778,8 +778,9 @@ function startAgentCrdtFollower(
     const skew = docSchemaSkew(found)
     const workflowId = detail?.workflowId
     if (skew === null || workflowId === undefined) return
-    if (staleClientNotified.has(workflowId)) return
-    staleClientNotified.add(workflowId)
+    const notificationKey = `${workflowId}:${skew}`
+    if (staleClientNotified.has(notificationKey)) return
+    staleClientNotified.add(notificationKey)
     if (skew === 'newer') {
       events.onSyncError?.(
         `document schema v${found} is newer than this page reads (v${SCHEMA_VERSION})`,
@@ -1056,8 +1057,9 @@ function startAgentCrdtFollower(
 }
 
 function docSchemaSkew(found: unknown): 'newer' | 'older' | null {
-  if (typeof found !== 'number') return null
+  if (typeof found !== 'number' || !Number.isInteger(found) || found <= 0)
+    return null
   if (found > SCHEMA_VERSION) return 'newer'
-  if (found > 0 && found < SCHEMA_VERSION) return 'older'
+  if (found < SCHEMA_VERSION) return 'older'
   return null
 }
