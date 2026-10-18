@@ -120,6 +120,24 @@ describe('useStringWidget (multiline)', () => {
     ).toBe('sibling')
   })
 
+  it('leaves the store alone once it is removed and another widget takes its name', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Test')
+    graph.add(node)
+    const widget = createStringWidget(node)
+    widget.value = 'mine'
+
+    node.removeWidget(widget)
+    node.addWidget('text', 'prompt', 'other', () => {})
+
+    expect(widget.value).toBe('mine')
+    widget.value = 'late'
+    expect(
+      useWidgetValueStore().getWidget(widgetId(graph.id, node.id, 'prompt'))
+        ?.value
+    ).toBe('other')
+  })
+
   it('does not throw when a saved value is restored synchronously during construction', () => {
     // Mirrors LGraphNode.addCustomWidget, which restores a saved widget
     // value (from a loaded workflow) by invoking `options.setValue`
