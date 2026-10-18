@@ -226,6 +226,18 @@ function paymentFailedState() {
   state.canAccessSubscriptionFeatures = false
 }
 
+function personalProWorkspace() {
+  state.isTeamPlan = false
+  state.workspaceType = 'personal'
+  state.subscription = {
+    hasFunds: true,
+    isCancelled: false,
+    endDate: null,
+    scheduledChange: null,
+    tier: 'PRO'
+  }
+}
+
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
@@ -334,24 +346,28 @@ describe('BillingStatusBanner', () => {
   })
 
   it.for([
-    { name: 'paused', enter: pausedState, personal: false },
-    { name: 'payment failed', enter: paymentFailedState, personal: false },
-    { name: 'paused', enter: pausedState, personal: true },
-    { name: 'payment failed', enter: paymentFailedState, personal: true }
-  ])(
-    'shows no Paused banner when $name, personal $personal',
-    ({ enter, personal }) => {
-      enter()
-      if (personal) {
-        state.isTeamPlan = false
-        state.workspaceType = 'personal'
-        state.subscription = { ...state.subscription!, tier: 'PRO' }
+    { name: 'paused in a team workspace', enter: pausedState },
+    { name: 'payment failed in a team workspace', enter: paymentFailedState },
+    {
+      name: 'paused in a personal workspace',
+      enter: () => {
+        personalProWorkspace()
+        pausedState()
       }
-      renderBanner()
-
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    },
+    {
+      name: 'payment failed in a personal workspace',
+      enter: () => {
+        personalProWorkspace()
+        paymentFailedState()
+      }
     }
-  )
+  ])('shows no Paused banner when $name', ({ enter }) => {
+    enter()
+    renderBanner()
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
 
   it('lets a promoted owner reactivate an ending plan', async () => {
     state.subscription = {
