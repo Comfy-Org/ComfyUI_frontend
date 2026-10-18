@@ -83,11 +83,10 @@ Paste the recorder command it prints, one `--prompt` per turn.
 
 4. Build the agent's doc host once, in the cloud checkout. The standalone agent
    launches it on loopback and refuses to start without it, because the shared
-   document write path is the only one it supports:
-
-   ```bash
-   cd services/agent/dochost && npm ci && npm run build
-   ```
+   document write path is the only one it supports. It is a separate Node package
+   with its own lockfile; `services/agent/dochost/start.sh` in the cloud repo shows
+   the install and build it expects, and the agent looks for the built
+   `services/agent/dochost/dist/server.js`.
 
 5. Put `comfy-cli` on `PATH` (`pip install comfy-cli`). The agent reads its widget
    catalog through it and refuses to start if it is missing.
