@@ -80,6 +80,30 @@ function agentBuiltWorkflow(): WorkflowJSON {
   }
 }
 
+/**
+ * The same workflow as comfy-cli now builds it: an agent-built node carries a
+ * `{name, type, widget, link: null}` entry for each scalar widget input,
+ * appended after its link inputs, exactly as a frontend-built node does.
+ */
+function socketedAgentBuiltWorkflow(): WorkflowJSON {
+  const workflow = agentBuiltWorkflow()
+  const sockets = (names: string[]) =>
+    names
+      .filter((name) => name !== 'video' && name !== 'csv_path')
+      .map((name) => ({
+        name,
+        type: 'INT',
+        widget: { name },
+        link: null
+      }))
+  workflow.nodes[1].inputs = [
+    ...(workflow.nodes[1].inputs ?? []),
+    ...sockets(LOAD_VIDEO_WIDGETS)
+  ]
+  workflow.nodes[2].inputs = sockets(CSV_COLUMN_WIDGETS)
+  return workflow
+}
+
 function liveNode(
   type: string,
   id: number,
@@ -194,4 +218,52 @@ describe('a human link into a widget input the agent-built document lacks', () =
       ])
     }
   )
+
+  it('mints an ordinary connect, not a grow, once the document carries the widget socket', async () => {
+    const doc = mint(socketedAgentBuiltWorkflow(), CATALOG)
+    const rootGraph = liveGraph()
+    const minted: GraphOperation[] = []
+    const port = attachDocOpMinter({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      enqueue: (ops) => minted.push(...ops),
+      getGraph: () => rootGraph,
+      boundRootGraphId: () => ROOT_GRAPH_ID,
+      docInputNames: (id) => readDocSlotNames(doc, String(id), 'inputs'),
+      docPromotedWidgets: (id) => readDocPromotedWidgets(doc, String(id)),
+      mayWritePromotedHost: () => true,
+      onWidgetWriteRefused: () => {}
+    })
+    onTestFinished(() => port.detach())
+    const docCapIndex = readDocSlotNames(
+      doc,
+      String(LOAD_VIDEO),
+      'inputs'
+    )?.indexOf('frame_load_cap')
+
+    emitGraphIntent({
+      type: 'connect',
+      graph: rootGraph,
+      link: fromPartial<LLink>({
+        id: 503,
+        origin_id: toNodeId(PRIMITIVE_INT),
+        origin_slot: 0,
+        target_id: toNodeId(LOAD_VIDEO),
+        target_slot: rootGraph
+          .getNodeById(toNodeId(LOAD_VIDEO))
+          ?.findInputSlot('frame_load_cap'),
+        type: 'INT'
+      })
+    })
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'connect',
+        link_id: 503,
+        to_slot: docCapIndex
+      })
+    ])
+    expect(minted[0]).not.toHaveProperty('grow')
+  })
 })
