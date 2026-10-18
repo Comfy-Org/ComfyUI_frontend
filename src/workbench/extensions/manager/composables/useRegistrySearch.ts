@@ -13,7 +13,11 @@ import type {
   SearchNodePacksParams
 } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { QuerySuggestion, SearchMode } from '@/types/searchServiceTypes'
+import type {
+  QuerySuggestion,
+  SearchMode,
+  SearchPacksResult
+} from '@/types/searchServiceTypes'
 import { usePreemptableQueue } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
@@ -29,16 +33,16 @@ const LOADING_FIRST_PAGE: FirstPage = { status: 'loading' }
 type PageFreshness = 'current' | 'stale'
 
 /**
- * Offset-paged registry search as a {@link PagedList}. Query inputs are reactive
- * so a change resets and reloads from the first page. A relevance-ranked index
- * has no head cursor and no per-item staleness, so `loadNew`/`invalidate` both
- * reduce to reloading from the first page.
+ * Offset-paged registry search as a {@link PagedList} that reloads from the
+ * first page whenever its inputs change.
  */
 export function useRegistrySearch(inputs: {
   query: MaybeRefOrGetter<string>
   searchMode: MaybeRefOrGetter<SearchMode>
   /** Whether the query came from the user typing, for analytics tagging. */
   isTypedQuery?: MaybeRefOrGetter<boolean>
+  /** Whether the results are on screen; only on-screen failures are reported. */
+  isVisible?: MaybeRefOrGetter<boolean>
 }): PagedList<RegistryNodePack> & {
   suggestions: Readonly<Ref<QuerySuggestion[]>>
   /**
@@ -47,9 +51,10 @@ export function useRegistrySearch(inputs: {
    */
   firstPage: Readonly<Ref<FirstPage>>
 } {
-  const { searchPacks } = useRegistrySearchGateway()
+  const { searchPacks, resetCircuits } = useRegistrySearchGateway()
 
   let pageNumber = 0
+  let generation = 0
   let failureReportedSinceSuccess = false
   let isDisposed = false
   const items = ref<RegistryNodePack[]>([])
@@ -72,10 +77,12 @@ export function useRegistrySearch(inputs: {
     return isTypedSearch ? { analyticsTags: [USER_SEARCH_ANALYTICS_TAG] } : {}
   }
 
-  function reportFirstFailureSinceSuccess(error: unknown) {
-    if (failureReportedSinceSuccess) return
+  function reportFirstFailureSinceSuccess(cause: unknown) {
+    if (failureReportedSinceSuccess || !(toValue(inputs.isVisible) ?? true)) {
+      return
+    }
     failureReportedSinceSuccess = true
-    reportError(error, {
+    reportError(cause, {
       errorType: 'error_searching_registry_packs',
       surface: 'platform',
       level: 'warning',
@@ -83,56 +90,63 @@ export function useRegistrySearch(inputs: {
     })
   }
 
-  async function doLoadMore(): Promise<PageFreshness> {
-    if (!morePages.value) return 'current'
-    const query = searchedQuery()
-    const searchMode = toValue(inputs.searchMode)
-    const isCurrent = () =>
-      !isDisposed &&
-      query === searchedQuery() &&
-      searchMode === toValue(inputs.searchMode)
-    try {
-      const result = await searchPacks(query, {
-        pageSize: DEFAULT_PAGE_SIZE,
-        pageNumber,
-        restrictSearchableAttributes: searchableAttributes(searchMode),
-        ...analyticsParams(query)
-      })
-      failureReportedSinceSuccess = false
-      if (!isCurrent()) return 'stale'
-      const { nodePacks } = result
-      morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
-      if (pageNumber === 0) {
-        firstPage.value = {
-          status: 'loaded',
-          query,
-          rawResultsEmpty: result.rawResultsEmpty ?? nodePacks.length === 0
-        }
-      }
-      items.value.push(...nodePacks)
-      suggestions.value = result.querySuggestions
-      pageNumber++
-    } catch (error) {
-      if (!isCurrent()) return 'stale'
-      reportFirstFailureSinceSuccess(error)
-      morePages.value = false
-      if (pageNumber === 0) {
-        firstPage.value = { status: 'failed', query }
-        suggestions.value = []
+  function applyPage(query: string, result: SearchPacksResult) {
+    const { nodePacks } = result
+    morePages.value = result.hasMore ?? nodePacks.length >= DEFAULT_PAGE_SIZE
+    if (pageNumber === 0) {
+      firstPage.value = {
+        status: 'loaded',
+        query,
+        rawResultsEmpty: result.rawResultsEmpty ?? nodePacks.length === 0
       }
     }
+    items.value.push(...nodePacks)
+    suggestions.value = result.querySuggestions
+    pageNumber++
+  }
+
+  function applyFailure(query: string, cause: unknown) {
+    reportFirstFailureSinceSuccess(cause)
+    morePages.value = false
+    if (pageNumber === 0) {
+      firstPage.value = { status: 'failed', query }
+      suggestions.value = []
+    }
+  }
+
+  async function doLoadMore(): Promise<PageFreshness> {
+    if (!morePages.value) return 'current'
+    const requestGeneration = generation
+    const query = searchedQuery()
+    const outcome = await searchPacks(query, {
+      pageSize: DEFAULT_PAGE_SIZE,
+      pageNumber,
+      restrictSearchableAttributes: searchableAttributes(
+        toValue(inputs.searchMode)
+      ),
+      ...analyticsParams(query)
+    })
+    if (outcome.ok) failureReportedSinceSuccess = false
+    if (isDisposed || requestGeneration !== generation) return 'stale'
+    if (outcome.ok) applyPage(query, outcome.result)
+    else applyFailure(query, outcome.cause)
     return 'current'
   }
 
-  const reload = () =>
-    preempt(async () => {
-      do {
-        pageNumber = 0
-        morePages.value = true
-        firstPage.value = LOADING_FIRST_PAGE
-        items.value = []
-      } while (!isDisposed && (await doLoadMore()) === 'stale')
-    })
+  async function loadCurrentFirstPage(): Promise<void> {
+    if ((await doLoadMore()) === 'stale' && !isDisposed) {
+      return loadCurrentFirstPage()
+    }
+  }
+
+  function reload() {
+    generation++
+    pageNumber = 0
+    morePages.value = true
+    firstPage.value = LOADING_FIRST_PAGE
+    items.value = []
+    return preempt(loadCurrentFirstPage)
+  }
 
   async function loadMore() {
     const startingPage = pageNumber
@@ -142,18 +156,21 @@ export function useRegistrySearch(inputs: {
     return pageNumber > startingPage
   }
 
+  function retry() {
+    resetCircuits()
+    return reload()
+  }
+
   onScopeDispose(() => {
     isDisposed = true
   }, true)
 
   watch(
     [searchedQuery, () => toValue(inputs.searchMode)],
-    () => {
-      firstPage.value = LOADING_FIRST_PAGE
-      items.value = []
-      void reload()
-    },
-    { immediate: true }
+    () => void reload(),
+    {
+      immediate: true
+    }
   )
 
   return {
@@ -161,7 +178,7 @@ export function useRegistrySearch(inputs: {
     hasMore: computed(() => morePages.value),
     isLoading,
     loadMore,
-    loadNew: reload,
+    loadNew: retry,
     invalidate: reload,
     suggestions,
     firstPage

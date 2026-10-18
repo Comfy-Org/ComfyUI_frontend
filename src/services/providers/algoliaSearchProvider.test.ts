@@ -1,11 +1,15 @@
 import type { Mock } from 'vitest'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
+import type {
+  SearchPacksOutcome,
+  SearchPacksResult
+} from '@/types/searchServiceTypes'
 
 type GlobalWithAlgolia = typeof globalThis & {
   __ALGOLIA_APP_ID__: string
@@ -25,6 +29,14 @@ vi.mock(import('algoliasearch/dist/lite/builds/browser'), () => ({
 vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/providers/registrySearchProvider'))
+
+async function searchResult(
+  search: Promise<SearchPacksOutcome>
+): Promise<SearchPacksResult> {
+  const outcome = await search
+  assert(outcome.ok, 'expected the search to succeed')
+  return outcome.result
+}
 
 interface MockSearchClient {
   search: Mock
@@ -107,10 +119,12 @@ describe('useAlgoliaSearchProvider', () => {
       mockSearchClient.search.mockResolvedValue(mockAlgoliaResults)
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('test', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        provider.searchPacks('test', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
 
       expect(mockSearchClient.search).toHaveBeenCalledWith({
         requests: [
@@ -179,12 +193,13 @@ describe('useAlgoliaSearchProvider', () => {
       mockSearchClient.search.mockResolvedValue(mockAlgoliaResults)
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('test', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        provider.searchPacks('test', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
 
-      // Should make 2 requests (main + suggestions)
       expect(mockSearchClient.search).toHaveBeenCalledWith({
         requests: [
           expect.objectContaining({ indexName: 'nodes_index' }),
@@ -274,16 +289,18 @@ describe('useAlgoliaSearchProvider', () => {
         })
 
         const provider = useAlgoliaSearchProvider()
-        const result = await provider.searchPacks('test', {
-          pageSize: 10,
-          pageNumber: 0
-        })
+        const result = await searchResult(
+          provider.searchPacks('test', {
+            pageSize: 10,
+            pageNumber: 0
+          })
+        )
 
         expect(result.nodePacks[0].id).toBe(`only-${idField}`)
       }
     )
 
-    it('rejects when the Algolia request fails so the gateway can fail over', async () => {
+    it('fails the search when the Algolia request fails so the gateway can fail over', async () => {
       const algoliaError = new Error('Algolia request failed')
       mockSearchClient.search.mockRejectedValue(algoliaError)
 
@@ -294,7 +311,7 @@ describe('useAlgoliaSearchProvider', () => {
           pageSize: 10,
           pageNumber: 0
         })
-      ).rejects.toThrow('Algolia request failed')
+      ).resolves.toEqual({ ok: false, cause: algoliaError })
     })
 
     it('preserves raw results and suggestions when the rewrite request fails', async () => {
@@ -309,10 +326,12 @@ describe('useAlgoliaSearchProvider', () => {
         .mockRejectedValueOnce(fallbackError)
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('euler-discrete-scheduler', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        provider.searchPacks('euler-discrete-scheduler', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
 
       expect(result.nodePacks).toEqual([])
       expect(result.querySuggestions).toEqual([
@@ -339,13 +358,11 @@ describe('useAlgoliaSearchProvider', () => {
 
       const provider = useAlgoliaSearchProvider()
       const params = { pageSize: 10, pageNumber: 0 }
-      const degraded = await provider.searchPacks(
-        'kijai/comfyui-kjnodes',
-        params
+      const degraded = await searchResult(
+        provider.searchPacks('kijai/comfyui-kjnodes', params)
       )
-      const retried = await provider.searchPacks(
-        'kijai/comfyui-kjnodes',
-        params
+      const retried = await searchResult(
+        provider.searchPacks('kijai/comfyui-kjnodes', params)
       )
 
       expect(degraded.nodePacks).toEqual([])
@@ -364,10 +381,12 @@ describe('useAlgoliaSearchProvider', () => {
       })
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('euler-discrete-scheduler', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        provider.searchPacks('euler-discrete-scheduler', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
 
       expect(packQueriesPerRequest()).toEqual([['euler-discrete-scheduler']])
       expect(result.nodePacks).toHaveLength(10)
@@ -379,10 +398,12 @@ describe('useAlgoliaSearchProvider', () => {
       })
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('comfyui-kjnodes', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        provider.searchPacks('comfyui-kjnodes', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
 
       expect(packQueriesPerRequest()).toEqual([['comfyui-kjnodes']])
       expect(result.nodePacks.map((pack) => pack.id)).toEqual(['raw-0'])
@@ -455,10 +476,12 @@ describe('useAlgoliaSearchProvider', () => {
         })
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('euler-discrete-scheduler', {
-        pageSize: 3,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        provider.searchPacks('euler-discrete-scheduler', {
+          pageSize: 3,
+          pageNumber: 0
+        })
+      )
 
       expect(result.nodePacks.map((pack) => pack.id)).toEqual([
         'fb-0',
@@ -483,10 +506,12 @@ describe('useAlgoliaSearchProvider', () => {
         })
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('kijai/comfyui-KJNodes', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        provider.searchPacks('kijai/comfyui-KJNodes', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
 
       expect(result.nodePacks.map((pack) => pack.id)).toEqual([
         'owner-stripped',
@@ -516,10 +541,12 @@ describe('useAlgoliaSearchProvider', () => {
         })
 
         const provider = useAlgoliaSearchProvider()
-        const result = await provider.searchPacks('test', {
-          pageSize: 10,
-          pageNumber
-        })
+        const result = await searchResult(
+          provider.searchPacks('test', {
+            pageSize: 10,
+            pageNumber
+          })
+        )
 
         expect(result.hasMore).toBe(expected)
       }
@@ -536,10 +563,12 @@ describe('useAlgoliaSearchProvider', () => {
         .mockRejectedValueOnce(new Error('Algolia rewrite request failed'))
 
       const gateway = useRegistrySearchGateway()
-      const result = await gateway.searchPacks('kijai/comfyui-KJNodes', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        gateway.searchPacks('kijai/comfyui-KJNodes', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
 
       expect(packQueriesPerRequest()).toEqual([
         ['kijai/comfyui-KJNodes'],
@@ -606,10 +635,12 @@ describe('useAlgoliaSearchProvider', () => {
       })
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('test', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        provider.searchPacks('test', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
 
       // All 3 results should be the same object reference due to memoization
       expect(result.nodePacks[0]).toBe(result.nodePacks[1])
@@ -632,10 +663,12 @@ describe('useAlgoliaSearchProvider', () => {
       })
 
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('test', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const result = await searchResult(
+        provider.searchPacks('test', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
 
       expect(result.nodePacks.map((pack) => pack.name)).toEqual([
         'no-id-a',

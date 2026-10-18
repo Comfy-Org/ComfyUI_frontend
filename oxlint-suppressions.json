@@ -1341,11 +1341,6 @@
       "count": 1
     }
   },
-  "src/services/gateway/registrySearchGateway.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/services/jobOutputCache.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1

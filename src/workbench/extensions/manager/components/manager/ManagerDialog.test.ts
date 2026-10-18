@@ -6,8 +6,12 @@ import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type { SearchPacksResult } from '@/types/searchServiceTypes'
+import type {
+  SearchPacksOutcome,
+  SearchPacksResult
+} from '@/types/searchServiceTypes'
 import { useInstalledPacks } from '@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -20,12 +24,15 @@ vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
   const gateway = {
     searchPacks:
       vi.fn<ReturnType<typeof useRegistrySearchGateway>['searchPacks']>(),
-    clearSearchCache: vi.fn()
+    clearSearchCache: vi.fn(),
+    resetCircuits: vi.fn()
   }
   return { useRegistrySearchGateway: () => gateway }
 })
 
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/services/comfyManagerService'),
@@ -42,14 +49,16 @@ vi.mock<unknown>(
 vi.mock(
   import('@/workbench/extensions/manager/composables/nodePack/useInstalledPacks'),
   () => {
+    const installed = ref<NodePack[]>([])
     const installedPacks: ReturnType<typeof useInstalledPacks> = {
       error: ref(null),
       isLoading: ref(false),
       isReady: ref(true),
-      installedPacks: ref<NodePack[]>([]),
+      installedPacks: installed,
       installedPacksWithVersions: computed(() => []),
       startFetchInstalled: vi.fn(async () => {}),
-      filterInstalledPack: (): NodePack[] => []
+      filterInstalledPack: (packs: NodePack[]) =>
+        packs.filter((pack) => installed.value.some(({ id }) => id === pack.id))
     }
     return { useInstalledPacks: () => installedPacks }
   }
@@ -116,15 +125,18 @@ const SingleSelectStub = defineComponent({
   }
 })
 
-const result = (
+const succeeded = (
   nodePacks: NodePack[],
   rawResultsEmpty: boolean,
   hasMore = false
-): SearchPacksResult => ({
-  nodePacks,
-  querySuggestions: [],
-  hasMore,
-  rawResultsEmpty
+): SearchPacksOutcome => ({
+  ok: true,
+  result: { nodePacks, querySuggestions: [], hasMore, rawResultsEmpty }
+})
+
+const failed = (message: string): SearchPacksOutcome => ({
+  ok: false,
+  cause: new Error(message)
 })
 
 const LORA_MANAGER: NodePack = {
@@ -175,7 +187,7 @@ describe('ManagerDialog legacy-manager tip', () => {
   it('shows the tip once, above the results, when a ComfyUI-Manager search finds nothing', async () => {
     useNewManagerUI()
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([], true)
+      succeeded([], true)
     )
     const { user, searchBox } = renderDialog()
 
@@ -191,7 +203,7 @@ describe('ManagerDialog legacy-manager tip', () => {
 
   it('hides the tip in the legacy manager UI', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([], true)
+      succeeded([], true)
     )
     const { user, searchBox } = renderDialog()
 
@@ -203,15 +215,15 @@ describe('ManagerDialog legacy-manager tip', () => {
 
   it('hides the tip when the search box was cleared before the ComfyUI-Manager search returned', async () => {
     useNewManagerUI()
-    let resolveSearch: (value: SearchPacksResult) => void = () => {}
+    let resolveSearch: (value: SearchPacksOutcome) => void = () => {}
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockResolvedValueOnce(result([], false))
+      .mockResolvedValueOnce(succeeded([], false))
       .mockReturnValueOnce(
         new Promise((resolve) => {
           resolveSearch = resolve
         })
       )
-      .mockResolvedValue(result([], false))
+      .mockResolvedValue(succeeded([], false))
     const { user, searchBox } = renderDialog()
     await settleSearch()
 
@@ -219,7 +231,7 @@ describe('ManagerDialog legacy-manager tip', () => {
     await settleSearch()
     await user.clear(searchBox)
     await settleSearch()
-    resolveSearch(result([], true))
+    resolveSearch(succeeded([], true))
     await settleSearch()
 
     expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
@@ -228,7 +240,7 @@ describe('ManagerDialog legacy-manager tip', () => {
   it('hides the tip while a ComfyUI-Manager search waits behind results for an earlier query', async () => {
     useNewManagerUI()
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([{ id: 'comfyui-kjnodes', name: 'ComfyUI-KJNodes' }], true)
+      succeeded([{ id: 'comfyui-kjnodes', name: 'ComfyUI-KJNodes' }], true)
     )
     const { user, searchBox } = renderDialog()
     await user.type(searchBox, 'kijai/comfyui-kjnodes')
@@ -244,11 +256,11 @@ describe('ManagerDialog legacy-manager tip', () => {
   it('drops a nodes-mode ComfyUI-Manager search that lands after the switch to packs and searches packs', async () => {
     useNewManagerUI()
     const { searchPacks } = useRegistrySearchGateway()
-    let resolveNodesSearch: (value: SearchPacksResult) => void = () => {}
-    let resolvePacksSearch: (value: SearchPacksResult) => void = () => {}
+    let resolveNodesSearch: (value: SearchPacksOutcome) => void = () => {}
+    let resolvePacksSearch: (value: SearchPacksOutcome) => void = () => {}
     vi.mocked(searchPacks)
-      .mockResolvedValueOnce(result([], false))
-      .mockResolvedValueOnce(result([], false))
+      .mockResolvedValueOnce(succeeded([], false))
+      .mockResolvedValueOnce(succeeded([], false))
       .mockReturnValueOnce(
         new Promise((resolve) => {
           resolveNodesSearch = resolve
@@ -259,7 +271,7 @@ describe('ManagerDialog legacy-manager tip', () => {
           resolvePacksSearch = resolve
         })
       )
-      .mockResolvedValue(result([], false))
+      .mockResolvedValue(succeeded([], false))
     const { user, searchBox } = renderDialog()
     await settleSearch()
     await user.click(screen.getByRole('button', { name: enMessages.g.nodes }))
@@ -271,7 +283,7 @@ describe('ManagerDialog legacy-manager tip', () => {
       screen.getByRole('button', { name: enMessages.manager.filter.nodePack })
     )
     resolveNodesSearch(
-      result([{ id: 'nodes-mode-pack', name: 'Nodes Mode Pack' }], true)
+      succeeded([{ id: 'nodes-mode-pack', name: 'Nodes Mode Pack' }], true)
     )
     await settleSearch()
 
@@ -286,7 +298,7 @@ describe('ManagerDialog legacy-manager tip', () => {
     ])
 
     resolvePacksSearch(
-      result([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], false)
+      succeeded([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], false)
     )
     await settleSearch()
 
@@ -302,7 +314,7 @@ describe('ManagerDialog legacy-manager tip', () => {
       useWorkflowPacks().unresolvedNodeNames.value = []
     })
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([], true)
+      succeeded([], true)
     )
     const { user, searchBox } = renderDialog(ManagerTab.Unresolved)
 
@@ -320,7 +332,7 @@ describe('ManagerDialog legacy-manager tip', () => {
     async ({ tab, tipCount }) => {
       useNewManagerUI()
       vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-        result([LORA_MANAGER], false)
+        succeeded([LORA_MANAGER], false)
       )
       const { user, searchBox } = renderDialog(tab)
 
@@ -341,7 +353,7 @@ describe('ManagerDialog legacy-manager tip', () => {
     async (query) => {
       useNewManagerUI()
       vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-        result([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], true)
+        succeeded([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], true)
       )
       const { user, searchBox } = renderDialog()
 
@@ -354,14 +366,37 @@ describe('ManagerDialog legacy-manager tip', () => {
   )
 
   it.for([
-    { tab: ManagerTab.AllInstalled, shownPacks: 0, tipCount: 1 },
-    { tab: ManagerTab.All, shownPacks: 1, tipCount: 0 }
+    {
+      tab: ManagerTab.AllInstalled,
+      installedInCustomNodes: false,
+      shownPacks: 0,
+      tipCount: 1
+    },
+    {
+      tab: ManagerTab.AllInstalled,
+      installedInCustomNodes: true,
+      shownPacks: 1,
+      tipCount: 0
+    },
+    {
+      tab: ManagerTab.All,
+      installedInCustomNodes: false,
+      shownPacks: 1,
+      tipCount: 0
+    }
   ])(
-    'shows the tip $tipCount time(s) on the $tab tab when the search found the ComfyUI-Manager pack',
-    async ({ tab, shownPacks, tipCount }) => {
+    'shows the tip $tipCount time(s) on the $tab tab when the search found the ComfyUI-Manager pack and it is installed in custom_nodes: $installedInCustomNodes',
+    async ({ tab, installedInCustomNodes, shownPacks, tipCount }) => {
       useNewManagerUI()
+      const { installedPacks } = useInstalledPacks()
+      installedPacks.value = installedInCustomNodes
+        ? [{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }]
+        : []
+      onTestFinished(() => {
+        installedPacks.value = []
+      })
       vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-        result([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], false)
+        succeeded([{ id: 'comfyui-manager', name: 'ComfyUI-Manager' }], false)
       )
       const { user, searchBox } = renderDialog(tab)
 
@@ -383,7 +418,7 @@ describe('ManagerDialog legacy-manager tip', () => {
       isLoading.value = false
     })
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([LORA_MANAGER], false)
+      succeeded([LORA_MANAGER], false)
     )
     const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
 
@@ -401,7 +436,7 @@ describe('ManagerDialog legacy-manager tip', () => {
       error.value = null
     })
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([LORA_MANAGER], false)
+      succeeded([LORA_MANAGER], false)
     )
     const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
 
@@ -417,7 +452,7 @@ describe('ManagerDialog legacy-manager tip', () => {
   it('hides the tip on the installed tab while more result pages can still load', async () => {
     useNewManagerUI()
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([LORA_MANAGER], false, true)
+      succeeded([LORA_MANAGER], false, true)
     )
     const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
 
@@ -431,7 +466,7 @@ describe('ManagerDialog legacy-manager tip', () => {
 describe('ManagerDialog opening listing', () => {
   it('settles on the empty state when the opening listing finds no packs', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([], true)
+      succeeded([], true)
     )
     renderDialog()
     await settleSearch()
@@ -460,8 +495,8 @@ describe('ManagerDialog failed search', () => {
 
   it('says the registry could not be reached when a typed search fails', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockResolvedValueOnce(result([], false))
-      .mockRejectedValue(new Error('search unavailable'))
+      .mockResolvedValueOnce(succeeded([], false))
+      .mockResolvedValue(failed('search unavailable'))
     const { user, searchBox } = renderDialog()
     await settleSearch()
 
@@ -472,8 +507,8 @@ describe('ManagerDialog failed search', () => {
   })
 
   it('says the registry could not be reached when the opening listing fails', async () => {
-    vi.mocked(useRegistrySearchGateway().searchPacks).mockRejectedValue(
-      new Error('search unavailable')
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      failed('search unavailable')
     )
     renderDialog()
     await settleSearch()
@@ -483,9 +518,9 @@ describe('ManagerDialog failed search', () => {
 
   it('searches again when the user retries a failed search', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockRejectedValueOnce(new Error('search unavailable'))
+      .mockResolvedValueOnce(failed('search unavailable'))
       .mockResolvedValue(
-        result([{ id: 'gguf-pack', name: 'GGUF Pack' }], false)
+        succeeded([{ id: 'gguf-pack', name: 'GGUF Pack' }], false)
       )
     const { user } = renderDialog()
     await settleSearch()
@@ -493,6 +528,7 @@ describe('ManagerDialog failed search', () => {
     await user.click(screen.getByRole('button', { name: enMessages.g.retry }))
     await settleSearch()
 
+    expect(useRegistrySearchGateway().resetCircuits).toHaveBeenCalledOnce()
     expect(screen.getByText('GGUF Pack')).toBeInTheDocument()
     expect(
       screen.queryByText(enMessages.manager.errorConnecting)
@@ -500,8 +536,8 @@ describe('ManagerDialog failed search', () => {
   })
 
   it('hides a failed listing from another tab while a typed query waits to be searched', async () => {
-    vi.mocked(useRegistrySearchGateway().searchPacks).mockRejectedValue(
-      new Error('search unavailable')
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      failed('search unavailable')
     )
     const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
     await settleSearch()
@@ -513,9 +549,14 @@ describe('ManagerDialog failed search', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('hides a failed listing from the installed tab when the query is only spaces', async () => {
-    vi.mocked(useRegistrySearchGateway().searchPacks).mockRejectedValue(
-      new Error('search unavailable')
+  it('keeps showing the installed packs instead of a failed listing when the query is only spaces', async () => {
+    const { installedPacks } = useInstalledPacks()
+    installedPacks.value = [{ id: 'installed-pack', name: 'Installed Pack' }]
+    onTestFinished(() => {
+      installedPacks.value = []
+    })
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      failed('search unavailable')
     )
     const { user, searchBox } = renderDialog(ManagerTab.AllInstalled)
     await settleSearch()
@@ -523,14 +564,34 @@ describe('ManagerDialog failed search', () => {
     await user.type(searchBox, ' ')
     await settleSearch()
 
+    expect(screen.getByText('Installed Pack')).toBeInTheDocument()
     expect(
       screen.queryByText(enMessages.manager.errorConnecting)
     ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText(enMessages.manager.noResultsFound)
+    ).not.toBeInTheDocument()
   })
 
+  it.for([
+    { tab: ManagerTab.AllInstalled, reports: 0 },
+    { tab: ManagerTab.All, reports: 1 }
+  ])(
+    'reports a failed opening listing $reports time(s) on the $tab tab',
+    async ({ tab, reports }) => {
+      vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+        failed('search unavailable')
+      )
+      renderDialog(tab)
+      await settleSearch()
+
+      expect(reportError).toHaveBeenCalledTimes(reports)
+    }
+  )
+
   it('shows loading rather than no results while an edit after a failed search waits to be searched', async () => {
-    vi.mocked(useRegistrySearchGateway().searchPacks).mockRejectedValue(
-      new Error('search unavailable')
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      failed('search unavailable')
     )
     const { user, searchBox } = renderDialog()
     await settleSearch()
@@ -554,7 +615,7 @@ describe('ManagerDialog search analytics tags', () => {
 
   it('tags only the search the user typed, not the listing shown on open', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([], false)
+      succeeded([], false)
     )
     const { user, searchBox } = renderDialog()
     await settleSearch()
@@ -570,7 +631,7 @@ describe('ManagerDialog search analytics tags', () => {
 
   it('leaves the deep-link pack search untagged until the user edits it', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([], false)
+      succeeded([], false)
     )
     const { user, searchBox } = renderDialog(ManagerTab.All, 'comfyui-kjnodes')
     await settleSearch()
@@ -586,7 +647,7 @@ describe('ManagerDialog search analytics tags', () => {
 
   it('leaves the deep-link pack search untagged after an edit that was undone before it searched', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
-      result([], false)
+      succeeded([], false)
     )
     const { user, searchBox } = renderDialog(ManagerTab.All, 'comfyui-kjnodes')
     await settleSearch()

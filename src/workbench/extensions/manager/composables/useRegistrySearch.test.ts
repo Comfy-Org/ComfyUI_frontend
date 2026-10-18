@@ -5,7 +5,11 @@ import { effectScope, nextTick, ref, toValue } from 'vue'
 import { DEFAULT_PAGE_SIZE } from '@/constants/searchConstants'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
-import type { SearchMode, SearchPacksResult } from '@/types/searchServiceTypes'
+import type {
+  SearchMode,
+  SearchPacksOutcome,
+  SearchPacksResult
+} from '@/types/searchServiceTypes'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 
 vi.mock(import('@/platform/telemetry/reportError'))
@@ -13,16 +17,29 @@ vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/services/gateway/registrySearchGateway'), () => {
   const gateway = {
     searchPacks: vi.fn(),
-    clearSearchCache: vi.fn()
+    clearSearchCache: vi.fn(),
+    resetCircuits: vi.fn()
   }
   return { useRegistrySearchGateway: () => gateway }
+})
+
+const succeeded = (result: SearchPacksResult): SearchPacksOutcome => ({
+  ok: true,
+  result
+})
+
+const failed = (message: string): SearchPacksOutcome => ({
+  ok: false,
+  cause: new Error(message)
 })
 
 const packs = (count: number): SearchPacksResult['nodePacks'] =>
   Array.from({ length: count }, (_, i) => ({ id: `pack-${i}` }))
 
 async function searchWith(result: SearchPacksResult) {
-  vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(result)
+  vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+    succeeded(result)
+  )
   const search = useRegistrySearch({ query: 'test', searchMode: 'packs' })
   await until(search.isLoading).toBe(false)
   return search
@@ -71,15 +88,17 @@ describe('useRegistrySearch', () => {
 
   it('keeps no first page while the next search loads, then reports its query', async () => {
     let resolveNextSearch: (result: SearchPacksResult) => void = () => {}
-    const nextSearch = new Promise<SearchPacksResult>((resolve) => {
-      resolveNextSearch = resolve
+    const nextSearch = new Promise<SearchPacksOutcome>((resolve) => {
+      resolveNextSearch = (result) => resolve(succeeded(result))
     })
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockResolvedValueOnce({
-        nodePacks: packs(1),
-        querySuggestions: [],
-        rawResultsEmpty: true
-      })
+      .mockResolvedValueOnce(
+        succeeded({
+          nodePacks: packs(1),
+          querySuggestions: [],
+          rawResultsEmpty: true
+        })
+      )
       .mockReturnValueOnce(nextSearch)
     const query = ref('kijai/comfyui-kjnodes')
     const search = useRegistrySearch({ query, searchMode: 'packs' })
@@ -131,21 +150,25 @@ describe('useRegistrySearch', () => {
       vi.mocked(searchPacks)
         .mockReturnValueOnce(
           new Promise((resolve) => {
-            resolveStaleSearch = resolve
+            resolveStaleSearch = (result) => resolve(succeeded(result))
           })
         )
-        .mockResolvedValueOnce({
-          nodePacks: [{ id: 'current-pack' }],
-          querySuggestions: [],
-          hasMore: true,
-          rawResultsEmpty: false
-        })
-        .mockResolvedValueOnce({
-          nodePacks: [{ id: 'current-pack-2' }],
-          querySuggestions: [],
-          hasMore: false,
-          rawResultsEmpty: false
-        })
+        .mockResolvedValueOnce(
+          succeeded({
+            nodePacks: [{ id: 'current-pack' }],
+            querySuggestions: [],
+            hasMore: true,
+            rawResultsEmpty: false
+          })
+        )
+        .mockResolvedValueOnce(
+          succeeded({
+            nodePacks: [{ id: 'current-pack-2' }],
+            querySuggestions: [],
+            hasMore: false,
+            rawResultsEmpty: false
+          })
+        )
       const query = ref(initial.query)
       const searchMode = ref<SearchMode>(initial.searchMode)
       const search = useRegistrySearch({ query, searchMode })
@@ -196,15 +219,17 @@ describe('useRegistrySearch', () => {
     let rejectStaleSearch: (error: Error) => void = () => {}
     vi.mocked(searchPacks)
       .mockReturnValueOnce(
-        new Promise((_, reject) => {
-          rejectStaleSearch = reject
+        new Promise((resolve) => {
+          rejectStaleSearch = (cause) => resolve({ ok: false, cause })
         })
       )
-      .mockResolvedValueOnce({
-        nodePacks: [{ id: 'current-pack' }],
-        querySuggestions: [],
-        rawResultsEmpty: false
-      })
+      .mockResolvedValueOnce(
+        succeeded({
+          nodePacks: [{ id: 'current-pack' }],
+          querySuggestions: [],
+          rawResultsEmpty: false
+        })
+      )
     const searchMode = ref<SearchMode>('nodes')
     const search = useRegistrySearch({ query: 'comfyui-manager', searchMode })
     await until(search.isLoading).toBe(true)
@@ -225,12 +250,14 @@ describe('useRegistrySearch', () => {
 
   it('drops the first page and its packs as soon as the mode changes while a later page loads', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockResolvedValueOnce({
-        nodePacks: [{ id: 'nodes-pack' }],
-        querySuggestions: [],
-        hasMore: true,
-        rawResultsEmpty: true
-      })
+      .mockResolvedValueOnce(
+        succeeded({
+          nodePacks: [{ id: 'nodes-pack' }],
+          querySuggestions: [],
+          hasMore: true,
+          rawResultsEmpty: true
+        })
+      )
       .mockReturnValueOnce(new Promise(() => {}))
     const searchMode = ref<SearchMode>('nodes')
     const search = useRegistrySearch({ query: 'comfyui-manager', searchMode })
@@ -249,20 +276,22 @@ describe('useRegistrySearch', () => {
     let resolveStalePage: (result: SearchPacksResult) => void = () => {}
     let resolveFirstPage: (result: SearchPacksResult) => void = () => {}
     vi.mocked(searchPacks)
-      .mockResolvedValueOnce({
-        nodePacks: [{ id: 'nodes-pack' }],
-        querySuggestions: [],
-        hasMore: true,
-        rawResultsEmpty: false
-      })
-      .mockReturnValueOnce(
-        new Promise((resolve) => {
-          resolveStalePage = resolve
+      .mockResolvedValueOnce(
+        succeeded({
+          nodePacks: [{ id: 'nodes-pack' }],
+          querySuggestions: [],
+          hasMore: true,
+          rawResultsEmpty: false
         })
       )
       .mockReturnValueOnce(
         new Promise((resolve) => {
-          resolveFirstPage = resolve
+          resolveStalePage = (result) => resolve(succeeded(result))
+        })
+      )
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFirstPage = (result) => resolve(succeeded(result))
         })
       )
     const searchMode = ref<SearchMode>('nodes')
@@ -317,12 +346,16 @@ describe('useRegistrySearch', () => {
     })
     vi.mocked(searchPacks)
       .mockReturnValueOnce(
-        new Promise((resolve) => staleResolvers.push(resolve))
+        new Promise((resolve) =>
+          staleResolvers.push((result) => resolve(succeeded(result)))
+        )
       )
       .mockReturnValueOnce(
-        new Promise((resolve) => staleResolvers.push(resolve))
+        new Promise((resolve) =>
+          staleResolvers.push((result) => resolve(succeeded(result)))
+        )
       )
-      .mockResolvedValueOnce(onePackPage('latest-pack'))
+      .mockResolvedValueOnce(succeeded(onePackPage('latest-pack')))
     const query = ref('comfyui-kjnodes')
     const search = useRegistrySearch({ query, searchMode: 'packs' })
     await until(search.isLoading).toBe(true)
@@ -347,14 +380,108 @@ describe('useRegistrySearch', () => {
     ).toEqual(['comfyui-kjnodes', 'comfyui-manager', 'gguf'])
   })
 
+  describe('a later page that lands after the query changed and changed back', () => {
+    async function searchWhileQueryChangesBack(stalePage: SearchPacksOutcome) {
+      const { searchPacks } = useRegistrySearchGateway()
+      let settleStalePage: (outcome: SearchPacksOutcome) => void = () => {}
+      vi.mocked(searchPacks)
+        .mockResolvedValueOnce(
+          succeeded({
+            nodePacks: [{ id: 'gguf-1' }],
+            querySuggestions: [{ query: 'gguf', popularity: 1 }],
+            hasMore: true,
+            rawResultsEmpty: false
+          })
+        )
+        .mockReturnValueOnce(
+          new Promise((resolve) => {
+            settleStalePage = resolve
+          })
+        )
+        .mockReturnValueOnce(new Promise(() => {}))
+      const query = ref('gguf')
+      const search = useRegistrySearch({ query, searchMode: 'packs' })
+      await until(search.isLoading).toBe(false)
+      void search.loadMore()
+
+      query.value = 'ggufx'
+      await nextTick()
+      query.value = 'gguf'
+      await nextTick()
+      settleStalePage(stalePage)
+      await vi.waitFor(() => expect(searchPacks).toHaveBeenCalledTimes(3))
+      return search
+    }
+
+    it('drops the page instead of showing it while the first page reloads', async () => {
+      const search = await searchWhileQueryChangesBack(
+        succeeded({
+          nodePacks: [{ id: 'stale-gguf-2' }],
+          querySuggestions: [{ query: 'stale-suggestion', popularity: 1 }],
+          hasMore: true,
+          rawResultsEmpty: false
+        })
+      )
+
+      expect(toValue(search.items)).toEqual([])
+      expect(search.firstPage.value).toEqual({ status: 'loading' })
+      expect(search.suggestions.value).not.toContainEqual({
+        query: 'stale-suggestion',
+        popularity: 1
+      })
+    })
+
+    it('neither reports nor ends pagination when the page fails', async () => {
+      const search = await searchWhileQueryChangesBack(
+        failed('search unavailable')
+      )
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(toValue(search.hasMore)).toBe(true)
+    })
+  })
+
+  it('reports no failure while the results are off screen', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      failed('search unavailable')
+    )
+    const search = useRegistrySearch({
+      query: '',
+      searchMode: 'packs',
+      isVisible: false
+    })
+    await until(search.isLoading).toBe(false)
+
+    expect(search.firstPage.value).toEqual({ status: 'failed', query: '' })
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('resets the gateway circuits and searches again when asked for new results', async () => {
+    const { searchPacks, resetCircuits } = useRegistrySearchGateway()
+    vi.mocked(searchPacks)
+      .mockResolvedValueOnce(failed('search unavailable'))
+      .mockResolvedValueOnce(
+        succeeded({ nodePacks: packs(1), querySuggestions: [] })
+      )
+    const search = useRegistrySearch({ query: 'gguf', searchMode: 'packs' })
+    await until(search.isLoading).toBe(false)
+
+    await search.loadNew()
+
+    expect(resetCircuits).toHaveBeenCalledOnce()
+    expect(toValue(search.items)).toEqual(packs(1))
+  })
+
   it('reports no first page when the search for it fails', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockResolvedValueOnce({
-        nodePacks: [],
-        querySuggestions: [],
-        rawResultsEmpty: true
-      })
-      .mockRejectedValueOnce(new Error('search unavailable'))
+      .mockResolvedValueOnce(
+        succeeded({
+          nodePacks: [],
+          querySuggestions: [],
+          rawResultsEmpty: true
+        })
+      )
+      .mockResolvedValueOnce(failed('search unavailable'))
     const query = ref('comfyui-manager')
     const search = useRegistrySearch({ query, searchMode: 'packs' })
     await until(search.isLoading).toBe(false)
@@ -377,8 +504,8 @@ describe('useRegistrySearch', () => {
 
   it('reports only the first of consecutive search failures', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockRejectedValueOnce(new Error('search unavailable'))
-      .mockRejectedValueOnce(new Error('search still unavailable'))
+      .mockResolvedValueOnce(failed('search unavailable'))
+      .mockResolvedValueOnce(failed('search still unavailable'))
     const query = ref('comfyui-manager')
     const search = useRegistrySearch({ query, searchMode: 'packs' })
     await until(search.isLoading).toBe(false)
@@ -399,13 +526,15 @@ describe('useRegistrySearch', () => {
 
   it('reports a search failure again after a search succeeds', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockRejectedValueOnce(new Error('search unavailable'))
-      .mockResolvedValueOnce({
-        nodePacks: packs(1),
-        querySuggestions: [],
-        rawResultsEmpty: false
-      })
-      .mockRejectedValueOnce(new Error('search unavailable again'))
+      .mockResolvedValueOnce(failed('search unavailable'))
+      .mockResolvedValueOnce(
+        succeeded({
+          nodePacks: packs(1),
+          querySuggestions: [],
+          rawResultsEmpty: false
+        })
+      )
+      .mockResolvedValueOnce(failed('search unavailable again'))
     const query = ref('comfyui-manager')
     const search = useRegistrySearch({ query, searchMode: 'packs' })
     await until(search.isLoading).toBe(false)
@@ -426,13 +555,13 @@ describe('useRegistrySearch', () => {
   it('reports a search failure again after a search succeeds for a query that has since changed', async () => {
     let resolveStaleSearch: (result: SearchPacksResult) => void = () => {}
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockRejectedValueOnce(new Error('search unavailable'))
+      .mockResolvedValueOnce(failed('search unavailable'))
       .mockReturnValueOnce(
         new Promise((resolve) => {
-          resolveStaleSearch = resolve
+          resolveStaleSearch = (result) => resolve(succeeded(result))
         })
       )
-      .mockRejectedValueOnce(new Error('search unavailable again'))
+      .mockResolvedValueOnce(failed('search unavailable again'))
     const query = ref('comfyui-manager')
     const search = useRegistrySearch({ query, searchMode: 'packs' })
     await until(search.isLoading).toBe(false)
@@ -456,17 +585,21 @@ describe('useRegistrySearch', () => {
 
   it('reports a failed first-page search and clears the earlier suggestions until the next search', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockResolvedValueOnce({
-        nodePacks: packs(1),
-        querySuggestions: [{ query: 'comfyui-manager', popularity: 1 }],
-        rawResultsEmpty: false
-      })
-      .mockRejectedValueOnce(new Error('search unavailable'))
-      .mockResolvedValueOnce({
-        nodePacks: packs(1),
-        querySuggestions: [],
-        rawResultsEmpty: false
-      })
+      .mockResolvedValueOnce(
+        succeeded({
+          nodePacks: packs(1),
+          querySuggestions: [{ query: 'comfyui-manager', popularity: 1 }],
+          rawResultsEmpty: false
+        })
+      )
+      .mockResolvedValueOnce(failed('search unavailable'))
+      .mockResolvedValueOnce(
+        succeeded({
+          nodePacks: packs(1),
+          querySuggestions: [],
+          rawResultsEmpty: false
+        })
+      )
     const query = ref('comfyui-manager')
     const search = useRegistrySearch({ query, searchMode: 'packs' })
     await until(search.isLoading).toBe(false)
@@ -496,11 +629,13 @@ describe('useRegistrySearch', () => {
   })
 
   it('searches the trimmed query and ignores edits that only change surrounding whitespace', async () => {
-    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue({
-      nodePacks: packs(1),
-      querySuggestions: [],
-      rawResultsEmpty: false
-    })
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      succeeded({
+        nodePacks: packs(1),
+        querySuggestions: [],
+        rawResultsEmpty: false
+      })
+    )
     const query = ref(' comfyui-manager')
     const search = useRegistrySearch({ query, searchMode: 'packs' })
     await until(search.isLoading).toBe(false)
@@ -521,8 +656,8 @@ describe('useRegistrySearch', () => {
     const { searchPacks } = useRegistrySearchGateway()
     let rejectSearch: (error: Error) => void = () => {}
     vi.mocked(searchPacks).mockReturnValueOnce(
-      new Promise((_, reject) => {
-        rejectSearch = reject
+      new Promise((resolve) => {
+        rejectSearch = (cause) => resolve({ ok: false, cause })
       })
     )
     const query = ref('gguf')
@@ -543,13 +678,15 @@ describe('useRegistrySearch', () => {
 
   it('keeps the first page when a later page fails', async () => {
     vi.mocked(useRegistrySearchGateway().searchPacks)
-      .mockResolvedValueOnce({
-        nodePacks: packs(DEFAULT_PAGE_SIZE),
-        querySuggestions: [],
-        hasMore: true,
-        rawResultsEmpty: false
-      })
-      .mockRejectedValueOnce(new Error('search unavailable'))
+      .mockResolvedValueOnce(
+        succeeded({
+          nodePacks: packs(DEFAULT_PAGE_SIZE),
+          querySuggestions: [],
+          hasMore: true,
+          rawResultsEmpty: false
+        })
+      )
+      .mockResolvedValueOnce(failed('search unavailable'))
     const search = useRegistrySearch({ query: 'gguf', searchMode: 'packs' })
     await until(search.isLoading).toBe(false)
 
@@ -570,11 +707,13 @@ describe('useRegistrySearch analytics tags', () => {
       .mock.calls.map(([, params]) => params.analyticsTags)
 
   function searchFor(query: string, isTypedQuery: boolean) {
-    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue({
-      nodePacks: packs(DEFAULT_PAGE_SIZE),
-      querySuggestions: [],
-      hasMore: true
-    })
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      succeeded({
+        nodePacks: packs(DEFAULT_PAGE_SIZE),
+        querySuggestions: [],
+        hasMore: true
+      })
+    )
     return useRegistrySearch({ query, searchMode: 'packs', isTypedQuery })
   }
 

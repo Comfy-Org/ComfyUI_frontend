@@ -3,8 +3,9 @@ import { useComfyRegistrySearchProvider } from '@/services/providers/registrySea
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
 import type {
   NodePackSearchProvider,
-  SearchPacksResult
+  SearchPacksOutcome
 } from '@/types/searchServiceTypes'
+import { paramsToCacheKey } from '@/utils/formatUtil'
 import { toError } from '@/utils/errorUtil'
 
 interface ProviderState {
@@ -16,24 +17,33 @@ interface ProviderState {
   consecutiveFailures: number
 }
 
-const CIRCUIT_BREAKER_THRESHOLD = 3 // Number of failures before circuit opens
-const CIRCUIT_BREAKER_TIMEOUT = 60000 // 1 minute before retry
+interface ListProvider {
+  listKey: string
+  providerState: ProviderState
+}
+
+export interface RegistrySearchGateway extends NodePackSearchProvider {
+  /** Closes every provider's circuit so the next search tries them all again. */
+  resetCircuits(): void
+}
+
+const CIRCUIT_BREAKER_THRESHOLD = 3
+const CIRCUIT_BREAKER_TIMEOUT_MS = 60_000
+
+const toListKey = (
+  query: string,
+  { pageSize, restrictSearchableAttributes }: SearchNodePacksParams
+) => paramsToCacheKey({ query, pageSize, restrictSearchableAttributes })
 
 /**
- * API Gateway for registry search providers with circuit breaker pattern.
- * Acts as a single entry point that routes search requests to appropriate providers
- * and handles failures gracefully by falling back to alternative providers.
- *
- * Implements:
- * - Gateway pattern: Single entry point for all search requests
- * - Circuit breaker: Prevents repeated calls to failed services
- * - Automatic failover: Cascades through providers on failure
+ * Searches node packs through the first available provider, failing over on
+ * errors, with a circuit breaker per provider.
  */
-export const useRegistrySearchGateway = (): NodePackSearchProvider => {
+export const useRegistrySearchGateway = (): RegistrySearchGateway => {
   const providers: ProviderState[] = []
   let activeProviderIndex = 0
+  let firstPageProvider: ListProvider | undefined
 
-  // Initialize providers in priority order
   try {
     providers.push({
       provider: useAlgoliaSearchProvider(),
@@ -52,21 +62,15 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     consecutiveFailures: 0
   })
 
-  // TODO: Add an "offline" provider that operates on a local cache of the registry.
-
-  /**
-   * Check if a provider's circuit breaker should be closed (available to try)
-   */
   const isCircuitClosed = (providerState: ProviderState): boolean => {
     if (providerState.consecutiveFailures < CIRCUIT_BREAKER_THRESHOLD) {
       return true
     }
 
-    // Check if enough time has passed to retry
     if (providerState.lastAttempt) {
       const timeSinceLastAttempt =
         Date.now() - providerState.lastAttempt.getTime()
-      if (timeSinceLastAttempt > CIRCUIT_BREAKER_TIMEOUT) {
+      if (timeSinceLastAttempt > CIRCUIT_BREAKER_TIMEOUT_MS) {
         return true
       }
     }
@@ -74,18 +78,12 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     return false
   }
 
-  /**
-   * Record a successful call to a provider
-   */
   const recordSuccess = (providerState: ProviderState) => {
     providerState.isHealthy = true
     providerState.consecutiveFailures = 0
     providerState.lastError = undefined
   }
 
-  /**
-   * Record a failed call to a provider
-   */
   const recordFailure = (providerState: ProviderState, error: Error) => {
     providerState.consecutiveFailures++
     providerState.lastError = error
@@ -100,10 +98,10 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   }
 
   const findUntriedProvider = (
-    attempted: ReadonlySet<ProviderState>
+    skipped: ReadonlySet<ProviderState>
   ): ProviderState | undefined => {
     const isAvailable = (providerState: ProviderState) =>
-      !attempted.has(providerState) && isCircuitClosed(providerState)
+      !skipped.has(providerState) && isCircuitClosed(providerState)
     if (isAvailable(providers[activeProviderIndex])) {
       return providers[activeProviderIndex]
     }
@@ -113,52 +111,69 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
     return providers[index]
   }
 
-  /**
-   * Update the active provider index after a failure.
-   * Move to the next provider if available.
-   */
   const updateActiveProviderOnFailure = () => {
     if (activeProviderIndex < providers.length - 1) {
       activeProviderIndex++
     }
   }
 
-  const searchPacks = async (
-    query: string,
-    params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
-    let lastError: Error | null = null
-    const attempted = new Set<ProviderState>()
-
-    for (
-      let providerState = findUntriedProvider(attempted);
-      providerState;
-      providerState = findUntriedProvider(attempted)
-    ) {
-      attempted.add(providerState)
-      try {
-        const result = await providerState.provider.searchPacks(query, params)
-        recordSuccess(providerState)
-        return result
-      } catch (error) {
-        lastError = toError(error)
-        recordFailure(providerState, lastError)
-        console.warn(
-          `${providerState.name} search provider failed (${providerState.consecutiveFailures} failures):`,
-          error
-        )
-        updateActiveProviderOnFailure()
-      }
-    }
-
-    throw new Error(
-      `All search providers failed. Last error: ${lastError?.message || 'No available search providers'}`
+  const providersOtherThanListProvider = (
+    listKey: string,
+    pageNumber: number
+  ): Set<ProviderState> => {
+    const listProvider =
+      pageNumber > 0 && firstPageProvider?.listKey === listKey
+        ? firstPageProvider.providerState
+        : undefined
+    return new Set(
+      listProvider ? providers.filter((p) => p !== listProvider) : []
     )
   }
 
-  /**
-   * Clear the search cache for all providers that implement it.
-   */
+  const searchPacks = async (
+    query: string,
+    params: SearchNodePacksParams
+  ): Promise<SearchPacksOutcome> => {
+    let lastError: Error | null = null
+    const listKey = toListKey(query, params)
+    const skipped = providersOtherThanListProvider(listKey, params.pageNumber)
+
+    for (
+      let providerState = findUntriedProvider(skipped);
+      providerState;
+      providerState = findUntriedProvider(skipped)
+    ) {
+      skipped.add(providerState)
+      const outcome = await providerState.provider.searchPacks(query, params)
+      if (outcome.ok) {
+        recordSuccess(providerState)
+        if (params.pageNumber === 0) {
+          firstPageProvider = { listKey, providerState }
+        }
+        return outcome
+      }
+      lastError = toError(outcome.cause)
+      recordFailure(providerState, lastError)
+      console.warn(
+        `${providerState.name} search provider failed (${providerState.consecutiveFailures} failures):`,
+        outcome.cause
+      )
+      updateActiveProviderOnFailure()
+    }
+
+    return {
+      ok: false,
+      cause: new Error(
+        `All search providers failed. Last error: ${lastError?.message || 'No available search providers'}`
+      )
+    }
+  }
+
+  const resetCircuits = () => {
+    for (const providerState of providers) recordSuccess(providerState)
+    activeProviderIndex = 0
+  }
+
   const clearSearchCache = () => {
     for (const providerState of providers) {
       try {
@@ -174,6 +189,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
 
   return {
     searchPacks,
-    clearSearchCache
+    clearSearchCache,
+    resetCircuits
   }
 }

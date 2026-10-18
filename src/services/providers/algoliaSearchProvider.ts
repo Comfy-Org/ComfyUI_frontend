@@ -22,6 +22,7 @@ import type {
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
+  SearchPacksOutcome,
   SearchPacksResult
 } from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
@@ -193,15 +194,22 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<SearchPacksOutcome> => {
     const { analyticsTags: _analyticsTags, ...resultParams } = params
     const cacheKey = paramsToCacheKey({ query, ...resultParams })
     const cachedResult = searchPacksCache.get(cacheKey)
-    if (cachedResult !== undefined) return cachedResult
+    if (cachedResult !== undefined) return { ok: true, result: cachedResult }
 
-    const { result, fallbacksFailed } = await searchPacksInternal(query, params)
-    if (!fallbacksFailed) searchPacksCache.set(cacheKey, result)
-    return result
+    try {
+      const { result, fallbacksFailed } = await searchPacksInternal(
+        query,
+        params
+      )
+      if (!fallbacksFailed) searchPacksCache.set(cacheKey, result)
+      return { ok: true, result }
+    } catch (cause) {
+      return { ok: false, cause }
+    }
   }
 
   const clearSearchCache = () => {

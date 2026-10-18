@@ -3,6 +3,17 @@ import type { MockInstance } from 'vitest'
 
 import { useComfyRegistrySearchProvider } from '@/services/providers/registrySearchProvider'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import type { SearchPacksResult } from '@/types/searchServiceTypes'
+
+const succeeded = (nodePacks: SearchPacksResult['nodePacks']) => ({
+  ok: true,
+  result: { nodePacks, querySuggestions: [] }
+})
+
+const failedWith = (message: string) => ({
+  ok: false,
+  cause: new Error(message)
+})
 
 describe('useComfyRegistrySearchProvider', () => {
   let mockSearchCall: MockInstance<
@@ -39,7 +50,7 @@ describe('useComfyRegistrySearchProvider', () => {
       mockSearchCall.mockResolvedValue(mockResults)
 
       const provider = useComfyRegistrySearchProvider()
-      const result = await provider.searchPacks('test', {
+      const outcome = await provider.searchPacks('test', {
         pageSize: 10,
         pageNumber: 0,
         restrictSearchableAttributes: ['name', 'description']
@@ -51,8 +62,7 @@ describe('useComfyRegistrySearchProvider', () => {
         limit: 10,
         page: 1
       })
-      expect(result.nodePacks).toEqual(mockResults.nodes)
-      expect(result.querySuggestions).toEqual([])
+      expect(outcome).toEqual(succeeded(mockResults.nodes))
     })
 
     it('should search for packs by node names', async () => {
@@ -62,7 +72,7 @@ describe('useComfyRegistrySearchProvider', () => {
       mockSearchCall.mockResolvedValue(mockResults)
 
       const provider = useComfyRegistrySearchProvider()
-      const result = await provider.searchPacks('LoadImage', {
+      const outcome = await provider.searchPacks('LoadImage', {
         pageSize: 20,
         pageNumber: 1,
         restrictSearchableAttributes: ['comfy_nodes']
@@ -74,33 +84,31 @@ describe('useComfyRegistrySearchProvider', () => {
         limit: 20,
         page: 2
       })
-      expect(result.nodePacks).toEqual(mockResults.nodes)
+      expect(outcome).toEqual(succeeded(mockResults.nodes))
     })
 
     it('should handle empty results', async () => {
       mockSearchCall.mockResolvedValue({ nodes: [] })
 
       const provider = useComfyRegistrySearchProvider()
-      const result = await provider.searchPacks('nonexistent', {
+      const outcome = await provider.searchPacks('nonexistent', {
         pageSize: 10,
         pageNumber: 0
       })
 
-      expect(result.nodePacks).toEqual([])
-      expect(result.querySuggestions).toEqual([])
+      expect(outcome).toEqual(succeeded([]))
     })
 
     it('should handle results without nodes property', async () => {
       mockSearchCall.mockResolvedValue({})
 
       const provider = useComfyRegistrySearchProvider()
-      const result = await provider.searchPacks('test', {
+      const outcome = await provider.searchPacks('test', {
         pageSize: 10,
         pageNumber: 0
       })
 
-      expect(result.nodePacks).toEqual([])
-      expect(result.querySuggestions).toEqual([])
+      expect(outcome).toEqual(succeeded([]))
     })
 
     it('should use listAllPacks for empty query', async () => {
@@ -113,7 +121,7 @@ describe('useComfyRegistrySearchProvider', () => {
       mockListAllPacksCall.mockResolvedValue(mockResults)
 
       const provider = useComfyRegistrySearchProvider()
-      const result = await provider.searchPacks('', {
+      const outcome = await provider.searchPacks('', {
         pageSize: 20,
         pageNumber: 0
       })
@@ -123,8 +131,7 @@ describe('useComfyRegistrySearchProvider', () => {
         page: 1
       })
       expect(mockSearchCall).not.toHaveBeenCalled()
-      expect(result.nodePacks).toEqual(mockResults.nodes)
-      expect(result.querySuggestions).toEqual([])
+      expect(outcome).toEqual(succeeded(mockResults.nodes))
     })
 
     it('should use listAllPacks for whitespace-only query', async () => {
@@ -134,7 +141,7 @@ describe('useComfyRegistrySearchProvider', () => {
       mockListAllPacksCall.mockResolvedValue(mockResults)
 
       const provider = useComfyRegistrySearchProvider()
-      const result = await provider.searchPacks('   ', {
+      const outcome = await provider.searchPacks('   ', {
         pageSize: 10,
         pageNumber: 0
       })
@@ -144,27 +151,26 @@ describe('useComfyRegistrySearchProvider', () => {
         page: 1
       })
       expect(mockSearchCall).not.toHaveBeenCalled()
-      expect(result.nodePacks).toEqual(mockResults.nodes)
+      expect(outcome).toEqual(succeeded(mockResults.nodes))
     })
 
     it('should handle empty results from listAllPacks', async () => {
       mockListAllPacksCall.mockResolvedValue({ nodes: [] })
 
       const provider = useComfyRegistrySearchProvider()
-      const result = await provider.searchPacks('', {
+      const outcome = await provider.searchPacks('', {
         pageSize: 10,
         pageNumber: 0
       })
 
-      expect(result.nodePacks).toEqual([])
-      expect(result.querySuggestions).toEqual([])
+      expect(outcome).toEqual(succeeded([]))
     })
 
     it.for([
       { request: 'search', query: 'test' },
       { request: 'listAllPacks', query: '' }
     ] as const)(
-      'rejects and evicts only the failed $request page from the cache',
+      'fails and evicts only the failed $request page from the cache',
       async ({ request, query }) => {
         const store = useComfyRegistryStore()
         const evict = vi.spyOn(store[request], 'evict')
@@ -172,7 +178,7 @@ describe('useComfyRegistrySearchProvider', () => {
 
         await expect(
           provider.searchPacks(query, { pageSize: 10, pageNumber: 0 })
-        ).rejects.toThrow('Comfy Registry request failed')
+        ).resolves.toEqual(failedWith('Comfy Registry request failed'))
 
         expect(evict).toHaveBeenCalledExactlyOnceWith(
           expect.objectContaining({ limit: 10, page: 1 })
@@ -182,15 +188,17 @@ describe('useComfyRegistrySearchProvider', () => {
       }
     )
 
-    it('names the registry error in the rejection', async () => {
+    it('names the registry error in the failure', async () => {
       const store = useComfyRegistryStore()
       store.error = 'Failed to perform search: Network Error'
       const provider = useComfyRegistrySearchProvider()
 
       await expect(
         provider.searchPacks('test', { pageSize: 10, pageNumber: 0 })
-      ).rejects.toThrow(
-        'Comfy Registry request failed: Failed to perform search: Network Error'
+      ).resolves.toEqual(
+        failedWith(
+          'Comfy Registry request failed: Failed to perform search: Network Error'
+        )
       )
     })
   })

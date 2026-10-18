@@ -1,11 +1,12 @@
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
+import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
-  SearchPacksResult
+  SearchPacksOutcome
 } from '@/types/searchServiceTypes'
 
-class RegistrySearchRequestError extends Error {}
+type RegistryNodePack = components['schemas']['Node']
 
 interface CachedRegistryRequest<TParams, TResult> {
   call: (params: TParams) => Promise<TResult | null>
@@ -19,53 +20,55 @@ interface CachedRegistryRequest<TParams, TResult> {
 export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
   const registryStore = useComfyRegistryStore()
 
-  const requestRegistry = async <TParams, TResult>(
-    request: CachedRegistryRequest<TParams, TResult>,
-    params: TParams
-  ): Promise<TResult> => {
-    const response = await request.call(params)
-    if (response) return response
-    request.evict(params)
+  const requestFailure = (): Error => {
     const cause = registryStore.error
-    throw new RegistrySearchRequestError(
+    return new Error(
       cause
         ? `Comfy Registry request failed: ${cause}`
         : 'Comfy Registry request failed'
     )
   }
 
+  const requestPage = async <
+    TParams,
+    TResult extends { nodes?: RegistryNodePack[] }
+  >(
+    request: CachedRegistryRequest<TParams, TResult>,
+    params: TParams
+  ): Promise<SearchPacksOutcome> => {
+    const response = await request.call(params)
+    if (!response) {
+      request.evict(params)
+      return { ok: false, cause: requestFailure() }
+    }
+    return {
+      ok: true,
+      result: { nodePacks: response.nodes ?? [], querySuggestions: [] }
+    }
+  }
+
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<SearchPacksOutcome> => {
     const { pageSize, pageNumber, restrictSearchableAttributes } = params
     const registryPage = pageNumber + 1
 
     if (!query || query.trim() === '') {
-      const listResult = await requestRegistry(registryStore.listAllPacks, {
+      return requestPage(registryStore.listAllPacks, {
         limit: pageSize,
         page: registryPage
       })
-
-      return {
-        nodePacks: listResult.nodes ?? [],
-        querySuggestions: []
-      }
     }
 
     const isNodeSearch = restrictSearchableAttributes?.includes('comfy_nodes')
 
-    const searchResult = await requestRegistry(registryStore.search, {
+    return requestPage(registryStore.search, {
       search: isNodeSearch ? undefined : query,
       comfy_node_search: isNodeSearch ? query : undefined,
       limit: pageSize,
       page: registryPage
     })
-
-    return {
-      nodePacks: searchResult.nodes ?? [],
-      querySuggestions: []
-    }
   }
 
   const clearSearchCache = () => {
