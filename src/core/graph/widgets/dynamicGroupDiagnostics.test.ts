@@ -208,6 +208,7 @@ describe('remote DynamicGroup row count reports', () => {
     LiteGraph.registerNodeType('ConsentDynamicGroup', remoteNodeType(0))
     LiteGraph.registerNodeType('AboveMaxDynamicGroup', remoteNodeType(0))
     LiteGraph.registerNodeType('HugeDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('RestoredDynamicGroup', remoteNodeType(0))
   })
 
   function remoteGroup(type = 'RemoteDynamicGroup') {
@@ -308,6 +309,26 @@ describe('remote DynamicGroup row count reports', () => {
       ])
     }
   )
+
+  it('refuses a remote row count above max that a restored group already holds', () => {
+    const { node, rows, setRows } = remoteGroup('RestoredDynamicGroup')
+    node.configure({ ...node.serialize(), widgets_values: [4, 1, 1, 1, 1] })
+    expect(rows.value).toBe(4)
+
+    expect(setRows(4)).toBe(1)
+    expect(rows.value).toBe(4)
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      [
+        expect.objectContaining({
+          message: 'Remote DynamicGroup row count did not apply'
+        }),
+        expect.objectContaining({
+          errorType: 'agent_graph_dynamic_group_rows_mismatch',
+          context: { requested: 4, actual: 4 }
+        })
+      ]
+    ])
+  })
 
   it('reports a remote row count the live group did not reach, once per node type', () => {
     const { rows, setRows } = remoteGroup()
