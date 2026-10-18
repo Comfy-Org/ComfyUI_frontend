@@ -14,8 +14,6 @@ test.describe(
   { tag: ['@screenshot', '@ui'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      // The usage log reads its events only once the Activity tab mounts it,
-      // so registering the route after boot still serves the first read.
       await comfyPage.page.route('**/customers/events**', (route) =>
         route.fulfill({ json: AGENT_USAGE_CUSTOMER_EVENTS })
       )

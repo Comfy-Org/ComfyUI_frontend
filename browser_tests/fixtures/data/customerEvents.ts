@@ -3,17 +3,11 @@ import type { operations } from '@comfyorg/registry-types'
 type CustomerEventsResponse =
   operations['GetCustomerEvents']['responses']['200']['content']['application/json']
 
-/** Badge text of each row: unmapped event types render their raw type. */
+/** Badge text the Activity table renders for each mocked event. */
 export const AGENT_USAGE_EVENT_TYPE = 'agent_usage'
 export const PARTNER_NODE_USAGE_EVENT_TYPE = 'Partner Node Usage'
 
-/**
- * `/customers/events` page for the Activity tab's charge tooltip.
- *
- * 33,044 micro-USD is $0.033044, which is 6.97 credits at 211 credits per
- * dollar, so the tooltip reads "Charge: 7 Credits". The second row carries a
- * non-numeric charge, which the tooltip passes through under its raw key.
- */
+/** `/customers/events` page with a numeric and a non-numeric `charge_micro_usd`. */
 export const AGENT_USAGE_CUSTOMER_EVENTS = {
   events: [
     {

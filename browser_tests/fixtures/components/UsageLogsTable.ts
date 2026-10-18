@@ -9,7 +9,6 @@ export class UsageLogsTable {
 
   constructor(private readonly settingDialog: SettingDialog) {
     this.root = settingDialog.contentArea.getByRole('table')
-    // `exact`, or this also matches the panel's "Full usage activity" button.
     this.activityTab = settingDialog.contentArea.getByRole('button', {
       name: 'Activity',
       exact: true
