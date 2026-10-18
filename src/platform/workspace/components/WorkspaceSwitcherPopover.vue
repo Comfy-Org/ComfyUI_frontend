@@ -4,7 +4,6 @@
       class="flex scrollbar-custom min-h-0 flex-1 flex-col"
       data-testid="workspace-switcher-list"
     >
-      <!-- Loading state -->
       <div v-if="isFetchingWorkspaces" class="flex flex-col gap-2 p-2">
         <div
           v-for="i in 2"
@@ -19,57 +18,51 @@
         </div>
       </div>
 
-      <!-- Workspace list -->
-      <template v-else>
-        <template v-for="workspace in availableWorkspaces" :key="workspace.id">
-          <div class="border-b p-2">
-            <div
-              :class="
-                cn(
-                  'group flex h-[54px] w-full items-center gap-2 rounded-sm px-2 py-4',
-                  'hover:bg-accent',
-                  isCurrentWorkspace(workspace) && 'bg-secondary'
-                )
-              "
-            >
-              <button
-                class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
-                :disabled="!isCloud && isSwitching"
-                @click="handleSelectWorkspace(workspace)"
-              >
-                <WorkspaceProfilePic
-                  class="size-8 shrink-0 text-sm"
-                  :workspace-name="workspace.name"
-                  :subscription-tier="workspace.subscriptionTier"
-                />
-                <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
-                  <div class="flex max-w-full min-w-0 items-center gap-1.5">
-                    <span
-                      :title="workspace.name"
-                      class="min-w-0 truncate text-sm text-foreground"
-                    >
-                      {{ workspace.name }}
-                    </span>
-                    <span
-                      v-if="resolveTierLabel(workspace)"
-                      class="shrink-0 rounded-full bg-foreground px-1 py-0.5 text-2xs font-bold text-background uppercase"
-                    >
-                      {{ resolveTierLabel(workspace) }}
-                    </span>
-                  </div>
-                  <span class="text-xs text-muted-foreground">
-                    {{ getRoleLabel(workspace.role) }}
-                  </span>
-                </div>
-                <i
-                  v-if="isCurrentWorkspace(workspace)"
-                  class="pi pi-check shrink-0 text-sm text-foreground"
-                />
-              </button>
+      <div
+        v-for="workspace in visibleWorkspaces"
+        :key="workspace.id"
+        class="border-b p-2"
+      >
+        <div
+          :data-current="isCurrentWorkspace(workspace)"
+          class="group flex h-[54px] w-full items-center gap-2 rounded-sm px-2 py-4 hover:bg-accent data-[current=true]:bg-secondary data-[current=true]:hover:bg-accent"
+        >
+          <button
+            class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+            :disabled="isSelectionDisabled"
+            @click="handleSelectWorkspace(workspace)"
+          >
+            <WorkspaceProfilePic
+              class="size-8 shrink-0 text-sm"
+              :workspace-name="workspace.name"
+              :subscription-tier="workspace.subscriptionTier"
+            />
+            <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
+              <div class="flex max-w-full min-w-0 items-center gap-1.5">
+                <span
+                  :title="workspace.name"
+                  class="min-w-0 truncate text-sm text-foreground"
+                >
+                  {{ workspace.name }}
+                </span>
+                <span
+                  v-if="resolveTierLabel(workspace)"
+                  class="shrink-0 rounded-full bg-foreground px-1 py-0.5 text-2xs font-bold text-background uppercase"
+                >
+                  {{ resolveTierLabel(workspace) }}
+                </span>
+              </div>
+              <span class="text-xs text-muted-foreground">
+                {{ getRoleLabel(workspace.role) }}
+              </span>
             </div>
-          </div>
-        </template>
-      </template>
+            <i
+              v-if="isCurrentWorkspace(workspace)"
+              class="pi pi-check shrink-0 text-sm text-foreground"
+            />
+          </button>
+        </div>
+      </div>
     </div>
 
     <div
@@ -87,7 +80,6 @@
       <span>{{ $t('workspaceSwitcher.scopeCaption') }}</span>
     </div>
 
-    <!-- Create workspace button -->
     <div v-if="isCloud" class="shrink-0 border-t p-2">
       <div
         :class="
@@ -98,7 +90,7 @@
               : 'cursor-default'
           )
         "
-        @click="canCreateWorkspace && handleCreateWorkspace()"
+        @click="handleCreateWorkspace"
       >
         <div
           :class="
@@ -111,16 +103,7 @@
           <i class="pi pi-plus text-sm text-muted-foreground" />
         </div>
         <div class="flex min-w-0 flex-1 flex-col text-sm text-muted-foreground">
-          <span v-if="canCreateWorkspace">
-            {{ $t('workspaceSwitcher.createWorkspace') }}
-          </span>
-          <span v-else>
-            {{
-              workspacesManagedByOrganization
-                ? $t('workspaceSwitcher.managedByOrganization')
-                : $t('workspaceSwitcher.maxWorkspacesReached')
-            }}
-          </span>
+          <span>{{ createWorkspaceLabel }}</span>
         </div>
       </div>
     </div>
@@ -185,16 +168,26 @@ const {
   isSwitching
 } = storeToRefs(workspaceStore)
 
-const availableWorkspaces = computed<AvailableWorkspace[]>(() =>
-  workspaces.value.map((w) => ({
-    id: w.id,
-    name: w.name,
-    type: w.type,
-    role: w.role,
-    isSubscribed: w.isSubscribed,
-    subscriptionPlan: w.subscriptionPlan,
-    subscriptionTier: w.subscriptionTier
-  }))
+const isSelectionDisabled = computed(() => !isCloud && isSwitching.value)
+const createWorkspaceLabel = computed(() => {
+  if (canCreateWorkspace.value) return t('workspaceSwitcher.createWorkspace')
+  return workspacesManagedByOrganization.value
+    ? t('workspaceSwitcher.managedByOrganization')
+    : t('workspaceSwitcher.maxWorkspacesReached')
+})
+
+const visibleWorkspaces = computed<AvailableWorkspace[]>(() =>
+  isFetchingWorkspaces.value
+    ? []
+    : workspaces.value.map((w) => ({
+        id: w.id,
+        name: w.name,
+        type: w.type,
+        role: w.role,
+        isSubscribed: w.isSubscribed,
+        subscriptionPlan: w.subscriptionPlan,
+        subscriptionTier: w.subscriptionTier
+      }))
 )
 
 function isCurrentWorkspace(workspace: AvailableWorkspace): boolean {
@@ -225,6 +218,6 @@ async function handleSelectWorkspace(workspace: AvailableWorkspace) {
 }
 
 function handleCreateWorkspace() {
-  emit('create')
+  if (canCreateWorkspace.value) emit('create')
 }
 </script>

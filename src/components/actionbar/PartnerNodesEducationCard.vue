@@ -30,48 +30,20 @@
               class="relative z-2 -mb-5 flex-1 rounded-t-xl"
             >
               <Button
+                v-for="control in audioControls"
+                :key="control.side"
                 variant="textonly"
                 size="icon"
-                class="absolute bottom-2 left-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                :aria-label="
-                  audibleSide === 'open'
-                    ? t('partnerNodesEducation.muteOpen')
-                    : t('partnerNodesEducation.unmuteOpen')
+                :class="
+                  cn(
+                    'absolute bottom-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white',
+                    control.position
+                  )
                 "
-                @click="toggleAudio('open')"
+                :aria-label="control.label"
+                @click="toggleAudio(control.side)"
               >
-                <i
-                  :class="
-                    cn(
-                      'size-4',
-                      audibleSide === 'open'
-                        ? 'icon-[lucide--volume-2]'
-                        : 'icon-[lucide--volume-x]'
-                    )
-                  "
-                />
-              </Button>
-              <Button
-                variant="textonly"
-                size="icon"
-                class="absolute right-2 bottom-2 size-7 rounded-full bg-black/40 text-white backdrop-blur-sm hover:bg-black/60 hover:text-white"
-                :aria-label="
-                  audibleSide === 'partner'
-                    ? t('partnerNodesEducation.mutePartner')
-                    : t('partnerNodesEducation.unmutePartner')
-                "
-                @click="toggleAudio('partner')"
-              >
-                <i
-                  :class="
-                    cn(
-                      'size-4',
-                      audibleSide === 'partner'
-                        ? 'icon-[lucide--volume-2]'
-                        : 'icon-[lucide--volume-x]'
-                    )
-                  "
-                />
+                <i :class="cn('size-4', control.icon)" />
               </Button>
 
               <Button
@@ -155,11 +127,11 @@
                   v-for="column in [
                     {
                       label: t('partnerNodesEducation.openHeader'),
-                      included: row.open
+                      status: row.open
                     },
                     {
                       label: t('partnerNodesEducation.partnerHeader'),
-                      included: row.partner
+                      status: row.partner
                     }
                   ]"
                   :key="column.label"
@@ -167,22 +139,13 @@
                 >
                   <i
                     :class="
-                      cn(
-                        'size-4',
-                        column.included
-                          ? 'icon-[lucide--check] text-brand-yellow'
-                          : 'icon-[lucide--minus] text-muted-foreground'
-                      )
+                      cn('size-4', comparisonStatusClasses[column.status])
                     "
                     aria-hidden="true"
                   />
                   <span class="sr-only">
                     {{ column.label }}:
-                    {{
-                      column.included
-                        ? t('partnerNodesEducation.included')
-                        : t('partnerNodesEducation.notIncluded')
-                    }}
+                    {{ t(`partnerNodesEducation.${column.status}`) }}
                   </span>
                 </span>
               </div>
@@ -224,8 +187,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 interface ComparisonRow {
   key: string
-  open: boolean
-  partner: boolean
+  open: 'included' | 'notIncluded'
+  partner: 'included' | 'notIncluded'
 }
 
 const OPEN_SOURCE_MODEL_VIDEO =
@@ -234,17 +197,50 @@ const PARTNER_MODEL_VIDEO =
   'https://media.comfy.org/website/partner-nodes/ltx-partner-1280.webm'
 
 const comparisonRows: ComparisonRow[] = [
-  { key: 'noDownload', open: false, partner: true },
-  { key: 'noVram', open: false, partner: true },
-  { key: 'offline', open: true, partner: false },
-  { key: 'free', open: true, partner: false }
+  { key: 'noDownload', open: 'notIncluded', partner: 'included' },
+  { key: 'noVram', open: 'notIncluded', partner: 'included' },
+  { key: 'offline', open: 'included', partner: 'notIncluded' },
+  { key: 'free', open: 'included', partner: 'notIncluded' }
 ]
+
+const comparisonStatusClasses = {
+  included: 'icon-[lucide--check] text-brand-yellow',
+  notIncluded: 'icon-[lucide--minus] text-muted-foreground'
+}
 
 const { t } = useI18n()
 const pitchId = useId()
 
 const slider = useTemplateRef<InstanceType<typeof VideoCompareSlider>>('slider')
 const audibleSide = ref<'open' | 'partner' | null>(null)
+
+const audioControls = computed(() =>
+  [
+    {
+      side: 'open' as const,
+      position: 'left-2',
+      muteLabel: 'partnerNodesEducation.muteOpen',
+      unmuteLabel: 'partnerNodesEducation.unmuteOpen'
+    },
+    {
+      side: 'partner' as const,
+      position: 'right-2',
+      muteLabel: 'partnerNodesEducation.mutePartner',
+      unmuteLabel: 'partnerNodesEducation.unmutePartner'
+    }
+  ].map((control) => ({
+    ...control,
+    label: t(
+      audibleSide.value === control.side
+        ? control.muteLabel
+        : control.unmuteLabel
+    ),
+    icon:
+      audibleSide.value === control.side
+        ? 'icon-[lucide--volume-2]'
+        : 'icon-[lucide--volume-x]'
+  }))
+)
 
 function toggleAudio(side: 'open' | 'partner') {
   audibleSide.value = audibleSide.value === side ? null : side
