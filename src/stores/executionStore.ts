@@ -893,6 +893,24 @@ export const useExecutionStore = defineStore('execution', () => {
     if (id && !activeJobIds.has(id)) resetExecutionState(id)
   }
 
+  /**
+   * Drops queued jobs that ended while the socket was down, so their missed
+   * terminal frame does not leave them followed forever. The active job is
+   * left to {@link clearActiveJobIfStale}.
+   */
+  function forgetFinishedJobs(jobIds: Iterable<JobId>) {
+    for (const jobId of jobIds) {
+      if (jobId === activeJobId.value || !(jobId in queuedJobs.value)) continue
+      const progress = { ...nodeProgressStatesByJob.value }
+      delete progress[jobId]
+      nodeProgressStatesByJob.value = progress
+      useJobPreviewStore().clearPreview(jobId)
+      jobIdToWorkflow.delete(jobId)
+      void jobReset.trigger(queuedJobs.value[jobId])
+      delete queuedJobs.value[jobId]
+    }
+  }
+
   function isJobInitializing(jobId: JobId | number | undefined): boolean {
     if (!jobId) return false
     return initializingJobIds.value.has(String(jobId))
@@ -1114,6 +1132,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobIds,
     reconcileInitializingJobs,
     clearActiveJobIfStale,
+    forgetFinishedJobs,
     bindExecutionEvents,
     unbindExecutionEvents,
     onJobReset: jobReset.on,

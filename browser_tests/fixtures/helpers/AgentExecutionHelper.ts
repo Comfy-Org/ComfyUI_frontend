@@ -129,26 +129,25 @@ export class AgentExecutionHelper {
   }
 
   /**
-   * The server-side half of a completion: the output is fetchable and the
-   * job's history row carries it, but no execution frame is sent.
+   * The server-side half of a completion: the output is fetchable, the job's
+   * history row carries it and `/api/jobs/{id}` returns it in full, but no
+   * execution frame is sent.
    */
   async recordCompletedJob(
     jobId: string,
     { nodeId, filename }: { nodeId: string; filename: string }
   ): Promise<void> {
     this.viewFiles[filename] = {}
-    await this.upsertJob(
-      createMockJob({
-        id: jobId,
-        preview_output: {
-          filename,
-          subfolder: '',
-          type: 'output',
-          nodeId,
-          mediaType: 'images'
-        }
-      })
-    )
+    const output = { filename, subfolder: '', type: 'output' as const }
+    const job = createMockJob({
+      id: jobId,
+      preview_output: { ...output, nodeId, mediaType: 'images' }
+    })
+    await this.upsertJob(job)
+    await this.assets.mockJobDetail(jobId, {
+      ...job,
+      outputs: { [nodeId]: { images: [output] } }
+    })
   }
 
   async failJob(
