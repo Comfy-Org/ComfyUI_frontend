@@ -5,7 +5,9 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   EXPECTED_PROMPT,
   EXPECTED_PROMPT_NAN_COERCED,
-  EXPECTED_WORKFLOW
+  EXPECTED_WORKFLOW,
+  mockFileReaderAbort,
+  mockFileReaderError
 } from './__fixtures__/helpers'
 import { getOggMetadata } from './ogg'
 
@@ -171,6 +173,19 @@ function createOggWithOpusTags(comments: {
   return combined.buffer
 }
 
+/** Minimal single Ogg page helper for parser edge cases. */
+function createSinglePageOgg(
+  payload: Uint8Array,
+  segmentLength = payload.length
+): ArrayBuffer {
+  const page = new Uint8Array(OGG_HEADER_SIZE + 1 + payload.length)
+  page.set(new TextEncoder().encode('OggS'), 0)
+  page[26] = 1
+  page[27] = segmentLength
+  page.set(payload, OGG_HEADER_SIZE + 1)
+  return page.buffer
+}
+
 describe('OGG/Opus metadata', () => {
   it('extracts workflow and prompt from an Opus file', async () => {
     const bytes = fs.readFileSync(fixturePath)
@@ -241,73 +256,238 @@ describe('OGG/Opus metadata', () => {
     )
   })
 
-  describe('File reading failure modes', () => {
-    it('resolves undefined fields when the file reading fails', async () => {
-      const file = new File([new Uint8Array(16)], 'test.ogg', {
-        type: 'audio/ogg'
+  describe('FileReader failure modes', () => {
+    const file = new File([new Uint8Array(16)], 'test.ogg')
+
+    it.for([
+      { mode: 'error', mock: mockFileReaderError },
+      { mode: 'abort', mock: mockFileReaderAbort }
+    ])(
+      'resolves undefined fields when the FileReader fires $mode',
+      async ({ mock }) => {
+        mock('readAsArrayBuffer')
+        const result = await getOggMetadata(file)
+        expect(result).toEqual({ prompt: undefined, workflow: undefined })
+      }
+    )
+  })
+
+  describe('progressive read window', () => {
+    const INITIAL_READ_BYTES = 64 * 1024
+    const MAX_READ_BYTES = 16 * 1024 * 1024
+
+    it('reads only the initial window when the metadata fits in it', async () => {
+      const prompt = { '1': { class_type: 'KSampler' } }
+      const buffer = createOggWithOpusTags({ prompt: JSON.stringify(prompt) })
+      const file = new File([buffer], 'small_tags.ogg', { type: 'audio/ogg' })
+      const sliceSpy = vi.spyOn(file, 'slice')
+
+      const result = await getOggMetadata(file)
+
+      expect(result.prompt).toEqual(prompt)
+      expect(sliceSpy).toHaveBeenCalledTimes(1)
+      expect(sliceSpy).toHaveBeenCalledWith(0, INITIAL_READ_BYTES)
+    })
+
+    it('expands the read window based on page boundaries while OpusTags packet is incomplete', async () => {
+      // ~200 KB packet: expands across multiple pages until the full packet is enclosed
+      const prompt = { data: 'c'.repeat(200_000) }
+      const buffer = createOggWithOpusTags({ prompt: JSON.stringify(prompt) })
+      const file = new File([buffer], 'medium_tags.ogg', { type: 'audio/ogg' })
+      const sliceSpy = vi.spyOn(file, 'slice')
+
+      const result = await getOggMetadata(file)
+
+      expect(result.prompt).toEqual(prompt)
+      const callLimits = sliceSpy.mock.calls
+        .map(([, end]) => end)
+        .filter((end): end is number => typeof end === 'number')
+      expect(callLimits.length).toBeGreaterThan(1)
+      expect(callLimits[0]).toBe(INITIAL_READ_BYTES)
+      // Every subsequent limit should strictly grow
+      for (let i = 1; i < callLimits.length; i++) {
+        expect(callLimits[i]).toBeGreaterThan(callLimits[i - 1])
+      }
+    })
+
+    it('stops growing at end of file when the OpusTags packet is cut off', async () => {
+      const full = createOggWithOpusTags({
+        prompt: JSON.stringify({ data: 'd'.repeat(200_000) })
       })
-      vi.spyOn(file, 'slice').mockImplementation(() => {
-        return {
-          arrayBuffer: () => Promise.reject(new Error('File read aborted'))
-        } as unknown as Blob
-      })
+      // The file ends in the middle of the OpusTags packet (not at the read cap).
+      const cutOff = full.slice(0, INITIAL_READ_BYTES + 36 * 1024)
+      const file = new File([cutOff], 'cut_off.ogg', { type: 'audio/ogg' })
+      const sliceSpy = vi.spyOn(file, 'slice')
 
       const result = await getOggMetadata(file)
 
       expect(result).toEqual({ prompt: undefined, workflow: undefined })
+      const callLimits = sliceSpy.mock.calls.map(([, end]) => end)
+      expect(callLimits[0]).toBe(INITIAL_READ_BYTES)
+      expect(callLimits.length).toBeGreaterThanOrEqual(2)
       expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('Ogg metadata file read failed:'),
-        expect.any(Error)
+        'Ogg metadata parsing failed: OpusTags packet is truncated or corrupted'
       )
     })
-  })
 
-  it('resolves undefined when a very large OpusTags packet is truncated at the 2 MB read cap', async () => {
-    // Build a minimal valid Ogg file whose OpusTags packet data extends well past 2 MB.
-    // We fake this by making file.slice() return a buffer whose OpusTags segment is cut off
-    // mid-packet (i.e. the last segment has length 255, signalling an open / incomplete packet).
-    const headPageSize = OGG_HEADER_SIZE + 1 + 19
-    const headPage = new Uint8Array(headPageSize)
-    headPage.set(new TextEncoder().encode('OggS'), 0)
-    headPage[5] = 0x02
-    headPage[26] = 1
-    headPage[OGG_HEADER_SIZE] = 19
-    headPage.set(new TextEncoder().encode('OpusHead'), OGG_HEADER_SIZE + 1)
-
-    // Tags page: one segment of exactly OGG_MAX_SEGMENT_SIZE bytes (open packet — never terminates within the cap)
-    const truncatedTagsPage = new Uint8Array(
-      OGG_HEADER_SIZE + 1 + OGG_MAX_SEGMENT_SIZE
-    )
-    truncatedTagsPage.set(new TextEncoder().encode('OggS'), 0)
-    truncatedTagsPage[26] = 1 // 1 segment
-    truncatedTagsPage[OGG_HEADER_SIZE] = OGG_MAX_SEGMENT_SIZE // segment length == OGG_MAX_SEGMENT_SIZE → packet continues
-    // Write 'OpusTags' magic at the start of the segment data so the parser recognises the packet
-    truncatedTagsPage.set(
-      new TextEncoder().encode('OpusTags'),
-      OGG_HEADER_SIZE + 1
-    )
-
-    const truncated = new Uint8Array(headPage.length + truncatedTagsPage.length)
-    truncated.set(headPage, 0)
-    truncated.set(truncatedTagsPage, headPage.length)
-
-    // Simulate file.slice() returning only the truncated 2 MB view
-    const file = new File([new Uint8Array(1)], 'huge.opus', {
-      type: 'audio/ogg'
-    })
-    vi.spyOn(file, 'slice').mockReturnValue(new Blob([truncated]))
-
-    const result = await getOggMetadata(file)
-
-    // The packet was never closed, so no complete metadata could be extracted
-    expect(result.prompt).toBeUndefined()
-    expect(result.workflow).toBeUndefined()
-    // A descriptive warning must be emitted so the truncation is not silent
-    expect(console.warn).toHaveBeenCalledWith(
-      expect.stringContaining(
-        'OpusTags packet extends beyond the 2 MB read cap'
+    it('does not grow the window for data that is not an Ogg stream', async () => {
+      const file = new File(
+        [new Uint8Array(INITIAL_READ_BYTES * 4)],
+        'junk.ogg',
+        {
+          type: 'audio/ogg'
+        }
       )
-    )
+      const sliceSpy = vi.spyOn(file, 'slice')
+
+      const result = await getOggMetadata(file)
+
+      expect(result).toEqual({ prompt: undefined, workflow: undefined })
+      expect(sliceSpy).toHaveBeenCalledTimes(1)
+      expect(console.warn).toHaveBeenCalledWith(
+        'Ogg metadata parsing failed: No OpusTags found or invalid Ogg file'
+      )
+    })
+
+    it('aborts scanning immediately when audio data begins without OpusTags', async () => {
+      // Stream with OpusHead followed immediately by dummy audio pages (no OpusTags)
+      const headPage = createOpusHeadPage()
+      const audioPage1 = createDummyAudioPage()
+      const audioPage2 = createDummyAudioPage()
+      const combined = new Uint8Array(
+        headPage.length + audioPage1.length + audioPage2.length
+      )
+      combined.set(headPage, 0)
+      combined.set(audioPage1, headPage.length)
+      combined.set(audioPage2, headPage.length + audioPage1.length)
+
+      const file = new File([combined.buffer], 'no_tags_with_audio.opus', {
+        type: 'audio/ogg'
+      })
+      const sliceSpy = vi.spyOn(file, 'slice')
+
+      const result = await getOggMetadata(file)
+
+      expect(result).toEqual({ prompt: undefined, workflow: undefined })
+      // Since OpusTags must precede audio frames, scanning should stop on the first window
+      expect(sliceSpy).toHaveBeenCalledTimes(1)
+      expect(console.warn).toHaveBeenCalledWith(
+        'Ogg metadata parsing failed: No OpusTags found or invalid Ogg file'
+      )
+    })
+
+    it('resolves undefined when a very large OpusTags packet is truncated at the 16 MB read cap', async () => {
+      // A file whose OpusTags packet runs beyond the 16 MB cap.
+      const buffer = createOggWithOpusTags({
+        prompt: 'x'.repeat(MAX_READ_BYTES + 1024 * 1024)
+      })
+      const file = new File([buffer], 'huge.opus', { type: 'audio/ogg' })
+      const sliceSpy = vi.spyOn(file, 'slice')
+
+      const result = await getOggMetadata(file)
+
+      // The packet was never closed, so no complete metadata could be extracted
+      expect(result.prompt).toBeUndefined()
+      expect(result.workflow).toBeUndefined()
+      // The window grew up to, but never beyond, the cap
+      expect(sliceSpy.mock.calls.at(-1)?.[1]).toBe(MAX_READ_BYTES)
+      // A descriptive warning must be emitted so the truncation is not silent
+      expect(console.warn).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'OpusTags packet extends beyond the 16 MB read cap'
+        )
+      )
+    })
+
+    describe('exact 64KB boundary cases (+-1 byte)', () => {
+      it.for([
+        { name: 'exactly 64KB (65,536 bytes)', delta: 0 },
+        { name: '64KB - 1 byte (65,535 bytes)', delta: -1 },
+        { name: '64KB + 1 byte (65,537 bytes)', delta: 1 }
+      ])('correctly handles a file sized $name', async ({ delta }) => {
+        const prompt = { test: `boundary-${delta}` }
+        const buffer = createOggWithOpusTags({ prompt: JSON.stringify(prompt) })
+        const size = INITIAL_READ_BYTES + delta
+        const sliced = new Uint8Array(buffer).subarray(0, size)
+        const file = new File([sliced.buffer], 'boundary.ogg', {
+          type: 'audio/ogg'
+        })
+        const result = await getOggMetadata(file)
+        expect(result.prompt).toEqual(prompt)
+      })
+    })
+
+    it('handles buffer boundary where page completes exactly at window end with continued packet', async () => {
+      // Page 0 (OpusHead): 229 bytes (27 header + 1 segment + 201 payload)
+      const headPage = new Uint8Array(229)
+      headPage.set(new TextEncoder().encode('OggS'), 0)
+      headPage[5] = 0x02 // BOS
+      headPage[26] = 1
+      headPage[27] = 201
+      headPage.set(new TextEncoder().encode('OpusHead'), 28)
+
+      // OpusTags packet larger than 65,025 bytes so page 1 is exactly 65,307 bytes.
+      // Total: 229 (head) + 65,307 (tags page 1) = 65,536 bytes (INITIAL_READ_BYTES).
+      const prompt = { test: 'exact-window-boundary' }
+      const tagsPacket = buildOpusTagsPacket({
+        prompt: JSON.stringify(prompt),
+        pad: 'x'.repeat(65000)
+      })
+      const tagPages = packetToOggPages(tagsPacket)
+
+      const fullFile = new Uint8Array(
+        headPage.length + tagPages[0].length + tagPages[1].length
+      )
+      fullFile.set(headPage, 0)
+      fullFile.set(tagPages[0], headPage.length)
+      fullFile.set(tagPages[1], headPage.length + tagPages[0].length)
+
+      const file = new File([fullFile.buffer], 'exact_window_boundary.ogg', {
+        type: 'audio/ogg'
+      })
+      const result = await getOggMetadata(file)
+      expect(result.prompt).toEqual(prompt)
+    })
+
+    it('handles multi-segment OpusHead packet (segmentLength === 255)', async () => {
+      // Construct an OpusHead page with 2 segments: [255, 10]
+      const headPage = new Uint8Array(27 + 2 + 265)
+      headPage.set(new TextEncoder().encode('OggS'), 0)
+      headPage[5] = 0x02 // BOS
+      headPage[26] = 2 // 2 segments
+      headPage[27] = 255
+      headPage[28] = 10
+      headPage.set(new TextEncoder().encode('OpusHead'), 29)
+
+      // Next page has OpusTags
+      const tagsPacket = buildOpusTagsPacket({ prompt: '{"head":"multi"}' })
+      const tagPages = packetToOggPages(tagsPacket)
+
+      const combined = new Uint8Array(headPage.length + tagPages[0].length)
+      combined.set(headPage, 0)
+      combined.set(tagPages[0], headPage.length)
+
+      const file = new File([combined.buffer], 'multi_head.opus', {
+        type: 'audio/ogg'
+      })
+      const result = await getOggMetadata(file)
+      expect(result.prompt).toEqual({ head: 'multi' })
+    })
+
+    it('breaks comment loop early when both prompt and workflow are already found', async () => {
+      // Put prompt, workflow, and an extra trailing comment
+      const buffer = createOggWithOpusTags({
+        prompt: '{"a":1}',
+        workflow: '{"b":2}',
+        extra_comment_that_should_be_skipped: 'ignore_me'
+      })
+      const file = new File([buffer], 'extra_comment.opus', {
+        type: 'audio/ogg'
+      })
+      const result = await getOggMetadata(file)
+      expect(result.prompt).toEqual({ a: 1 })
+      expect(result.workflow).toEqual({ b: 2 })
+    })
   })
 
   it('should extract prompt and workflow from a valid Ogg file', async () => {
@@ -364,56 +544,42 @@ describe('OGG/Opus metadata', () => {
   })
 
   describe('structural corruptions and truncations', () => {
-    // Generate truncated/invalid buffer scenarios
-    const scenarios: { name: string; createBuffer: () => ArrayBuffer }[] = [
+    it.for([
+      {
+        name: 'empty file (0 bytes)',
+        buffer: () => new ArrayBuffer(0)
+      },
+      {
+        name: 'file smaller than the Ogg magic number',
+        buffer: () => new Uint8Array([1, 2]).buffer
+      },
       {
         name: 'abruptly truncated segment table',
-        createBuffer: () => {
+        buffer: () => {
           const buffer = new Uint8Array(28)
           buffer.set(new TextEncoder().encode('OggS'), 0)
-          buffer[26] = 50 // Declaring 50 segments while only 28 bytes exist
+          buffer[26] = 50
           return buffer.buffer
         }
       },
       {
         name: 'segment data exceeds buffer boundary',
-        createBuffer: () => {
-          // Page header declares 1 segment of length 200, but only 10 bytes of data follow
-          const buffer = new Uint8Array(27 + 1 + 10)
-          buffer.set(new TextEncoder().encode('OggS'), 0)
-          buffer[26] = 1 // 1 segment
-          buffer[27] = 200 // segment length = 200 (exceeds remaining 10 bytes)
-          // Only 10 bytes of data follow; segment exceeds boundary
-          return buffer.buffer
-        }
+        buffer: () => createSinglePageOgg(new Uint8Array(10), 200)
       },
       {
         name: 'truncated user comment in OpusTags',
-        createBuffer: () => {
+        buffer: () => {
           const packet = new Uint8Array(20)
           packet.set(new TextEncoder().encode('OpusTags'), 0)
-          new DataView(packet.buffer).setUint32(8, 0, true)
           new DataView(packet.buffer).setUint32(12, 1, true)
-          new DataView(packet.buffer).setUint32(16, 500, true) // Declared length 500
-          const buffer = new Uint8Array(27 + 1 + packet.length)
-          buffer.set(new TextEncoder().encode('OggS'), 0)
-          buffer[26] = 1
-          buffer[27] = packet.length
-          buffer.set(packet, 28)
-          return buffer.buffer
+          new DataView(packet.buffer).setUint32(16, 500, true)
+          return createSinglePageOgg(packet)
         }
       },
       {
-        name: 'file smaller than the Ogg magic number',
-        createBuffer: () => new Uint8Array([1, 2]).buffer
-      },
-      {
         name: 'page has an invalid magic number (stop parsing)',
-        createBuffer: () => {
-          const page1 = new Uint8Array(29)
-          page1.set(new TextEncoder().encode('OggS'), 0)
-          page1[26] = 1
-          page1[27] = 1
+        buffer: () => {
+          const page1 = new Uint8Array(createSinglePageOgg(new Uint8Array(1)))
           const page2 = new Uint8Array(30)
           page2.set(new TextEncoder().encode('FAIL'), 0)
           const combined = new Uint8Array(page1.length + page2.length)
@@ -424,129 +590,90 @@ describe('OGG/Opus metadata', () => {
       },
       {
         name: 'OpusTags packet truncated before vendorLength field',
-        createBuffer: () => {
-          // Packet is only 10 bytes: 'OpusTags'(8) + 2 extra bytes (not enough for 4-byte vendorLength)
-          const packet = new Uint8Array(10)
-          packet.set(new TextEncoder().encode('OpusTags'), 0)
-          const buffer = new Uint8Array(27 + 1 + packet.length)
-          buffer.set(new TextEncoder().encode('OggS'), 0)
-          buffer[26] = 1
-          buffer[27] = packet.length
-          buffer.set(packet, 28)
-          return buffer.buffer
-        }
+        buffer: () =>
+          createSinglePageOgg(new TextEncoder().encode('OpusTags\0\0'))
       },
       {
         name: 'OpusTags packet with oversized vendorLength',
-        createBuffer: () => {
-          // Packet: 'OpusTags'(8) + vendorLength=9999(4) + no actual vendor bytes
+        buffer: () => {
           const packet = new Uint8Array(12)
           packet.set(new TextEncoder().encode('OpusTags'), 0)
-          new DataView(packet.buffer).setUint32(8, 9999, true) // vendor string claims 9999 bytes
-          const buffer = new Uint8Array(27 + 1 + packet.length)
-          buffer.set(new TextEncoder().encode('OggS'), 0)
-          buffer[26] = 1
-          buffer[27] = packet.length
-          buffer.set(packet, 28)
-          return buffer.buffer
+          new DataView(packet.buffer).setUint32(8, 9999, true)
+          return createSinglePageOgg(packet)
         }
       },
       {
         name: 'OpusTags packet truncated before userCommentListLength',
-        createBuffer: () => {
-          // Packet: 'OpusTags'(8) + vendorLength=0(4) + no userCommentListLength
-          const packet = new Uint8Array(12) // exactly 8 + 4, no bytes for userCommentListLength
+        buffer: () => {
+          const packet = new Uint8Array(12)
           packet.set(new TextEncoder().encode('OpusTags'), 0)
-          new DataView(packet.buffer).setUint32(8, 0, true) // vendorLength=0
-          // packet ends here — no room for userCommentListLength (needs 4 more bytes)
-          const buffer = new Uint8Array(27 + 1 + packet.length)
-          buffer.set(new TextEncoder().encode('OggS'), 0)
-          buffer[26] = 1
-          buffer[27] = packet.length
-          buffer.set(packet, 28)
-          return buffer.buffer
+          return createSinglePageOgg(packet)
         }
       },
       {
         name: 'OpusTags packet truncated mid-comment-list (missing comment length field)',
-        createBuffer: () => {
+        buffer: () => {
           const commentBytes = new TextEncoder().encode('key=value')
-          // Packet: 'OpusTags'(8) + vendorLength=0(4) + userCommentListLength=2(4) +
-          //         commentLength=9(4) + commentData(9) — second comment length field is missing
           const packet = new Uint8Array(8 + 4 + 4 + 4 + commentBytes.length)
           const view = new DataView(packet.buffer)
           packet.set(new TextEncoder().encode('OpusTags'), 0)
-          view.setUint32(8, 0, true) // vendorLength = 0
-          view.setUint32(12, 2, true) // userCommentListLength = 2 (but only 1 follows)
-          view.setUint32(16, commentBytes.length, true) // first comment length
-          packet.set(commentBytes, 20) // first comment data
-          // second comment's length field is absent — packet ends here
-          const buffer = new Uint8Array(27 + 1 + packet.length)
-          buffer.set(new TextEncoder().encode('OggS'), 0)
-          buffer[26] = 1
-          buffer[27] = packet.length
-          buffer.set(packet, 28)
-          return buffer.buffer
+          view.setUint32(12, 2, true)
+          view.setUint32(16, commentBytes.length, true)
+          packet.set(commentBytes, 20)
+          return createSinglePageOgg(packet)
+        }
+      },
+      {
+        name: 'page starting with 0-length segment before audio/tags',
+        buffer: () => {
+          const page = new Uint8Array(27 + 2 + 10)
+          page.set(new TextEncoder().encode('OggS'), 0)
+          page[26] = 2
+          page[27] = 0
+          page[28] = 10
+          return page.buffer
         }
       }
-    ]
-
-    for (const { name, createBuffer } of scenarios) {
-      it(`should safely handle: ${name}`, async () => {
-        const file = new File(
-          [createBuffer()],
-          `test_${name.replace(/\s+/g, '_')}.ogg`
-        )
-        const result = await getOggMetadata(file)
-        expect(result.prompt).toBeUndefined()
-        expect(result.workflow).toBeUndefined()
-      })
-    }
+    ])('should safely handle: $name', async ({ name, buffer }) => {
+      const file = new File([buffer()], `test_${name.replace(/\s+/g, '_')}.ogg`)
+      const result = await getOggMetadata(file)
+      expect(result.prompt).toBeUndefined()
+      expect(result.workflow).toBeUndefined()
+    })
   })
 
   describe('invalid or unrelated comment contents', () => {
-    const scenarios: {
-      name: string
-      createBuffer: () => ArrayBuffer
-      expectedPrompt?: Record<string, unknown>
-    }[] = [
+    it.for([
       {
         name: 'unrelated Vorbis comments',
-        createBuffer: () =>
+        buffer: () =>
           createOggWithOpusTags({
             unrelated_key: 'unrelated_value',
             prompt: '{"valid": true}'
           }),
-        expectedPrompt: { valid: true } // Workflow is undefined, Prompt is valid
+        expectedPrompt: { valid: true }
       },
-
       {
         name: 'user comments without an equal sign',
-        createBuffer: () => {
+        buffer: () => {
           const commentBytes = new TextEncoder().encode(
             'invalid_comment_no_equal_sign'
           )
           const packet = new Uint8Array(16 + 4 + commentBytes.length)
           packet.set(new TextEncoder().encode('OpusTags'), 0)
-          new DataView(packet.buffer).setUint32(8, 0, true)
-          new DataView(packet.buffer).setUint32(12, 1, true)
-          new DataView(packet.buffer).setUint32(16, commentBytes.length, true)
+          const view = new DataView(packet.buffer)
+          view.setUint32(12, 1, true)
+          view.setUint32(16, commentBytes.length, true)
           packet.set(commentBytes, 20)
-
-          const buffer = new Uint8Array(27 + 1 + packet.length)
-          buffer.set(new TextEncoder().encode('OggS'), 0)
-          buffer[26] = 1
-          buffer[27] = packet.length
-          buffer.set(packet, 28)
-          return buffer.buffer
-        }
+          return createSinglePageOgg(packet)
+        },
+        expectedPrompt: undefined
       }
-    ]
-
-    for (const { name, createBuffer, expectedPrompt } of scenarios) {
-      it(`should appropriately handle: ${name}`, async () => {
+    ])(
+      'should appropriately handle: $name',
+      async ({ name, buffer, expectedPrompt }) => {
         const file = new File(
-          [createBuffer()],
+          [buffer()],
           `test_${name.replace(/\s+/g, '_')}.ogg`
         )
         const result = await getOggMetadata(file)
@@ -556,7 +683,7 @@ describe('OGG/Opus metadata', () => {
           expect(result.prompt).toBeUndefined()
         }
         expect(result.workflow).toBeUndefined()
-      })
-    }
+      }
+    )
   })
 })

@@ -3,22 +3,54 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { readFileAsArrayBuffer } from '@/utils/fileUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const OGG_HEADER_SIZE = 27 // Base size of the Ogg page header (from magic number to just before segment count)
 const OGG_PAGE_SEGMENTS_OFFSET = 26 // Offset position where the number of segments in the page is stored
 const OGG_MAX_SEGMENT_SIZE = 255 // Ogg spec: the maximum size of a single segment is 255 bytes
+const OGG_MAX_PAGE_SIZE = 65307 // Max size of a single Ogg page: 27 + 255 + 255 * 255
 
 // Magic numbers as byte arrays to avoid per-page TextDecoder allocations
 const OGG_S_MAGIC = new TextEncoder().encode('OggS')
+const OPUS_HEAD_MAGIC = new TextEncoder().encode('OpusHead')
 const OPUS_TAGS_MAGIC = new TextEncoder().encode('OpusTags')
+
+// Metadata (OpusTags) in Ogg Opus is strictly located before any audio data (RFC 7845).
+// We start with a 64 KB window (enough for typical single-page headers) and expand
+// based on page-boundary requirements up to a generous 16 MB cap, aborting early as
+// soon as audio data is reached or the packet completes.
+const INITIAL_READ_BYTES = 64 * 1024
+const MAX_READ_BYTES = 16 * 1024 * 1024
+
+/**
+ * Outcome of scanning a buffer for the OpusTags packet.
+ * - `complete`: the whole packet was collected.
+ * - `needMoreData`: the buffer ended before the packet or page finished; a larger read may complete it.
+ * - `invalid`: the data is not a well-formed Ogg stream; reading more cannot help.
+ * - `noOpusTags`: audio data or stream end reached without an OpusTags packet; no further scan needed.
+ */
+type OpusTagsScan =
+  | {
+      status: 'complete' | 'invalid' | 'noOpusTags'
+      segments: Uint8Array[]
+      neededBytes?: never
+    }
+  | {
+      status: 'needMoreData'
+      segments: Uint8Array[]
+      neededBytes: number
+    }
 
 /**
  * Extracts ComfyUI metadata (prompt and workflow) from an Ogg/Opus audio file.
  *
- * Reads the file as a binary ArrayBuffer, locates the OpusTags packet by
+ * Reads the head of the file as a binary ArrayBuffer through the shared
+ * {@link readFileAsArrayBuffer} helper, locates the OpusTags packet by
  * tracing Ogg pages, and parses the embedded Vorbis Comments to retrieve
- * JSON-encoded prompt and workflow data.
+ * JSON-encoded prompt and workflow data. The read window starts at 64 KB and
+ * grows strictly based on Ogg page boundaries until OpusTags completes or
+ * audio data is reached (see {@link readOpusTagsPacket}).
  *
  * @param file - The Ogg/Opus file to extract metadata from.
  * @returns A promise resolving to a {@link ComfyMetadata} object containing
@@ -26,40 +58,73 @@ const OPUS_TAGS_MAGIC = new TextEncoder().encode('OpusTags')
  *   not found or if parsing fails.
  */
 export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
-  // Metadata is usually in the first couple of pages. A 2 MB cap covers all realistic sizes.
-  // If the packet exceeds this, parsing will abort and warn instead of reading the whole file.
-  const MAX_READ_BYTES = 2 * 1024 * 1024
-  let arrayBuffer: ArrayBuffer
-  try {
-    arrayBuffer = await file.slice(0, MAX_READ_BYTES).arrayBuffer()
-  } catch (err) {
-    console.warn('Ogg metadata file read failed:', err)
-    return { prompt: undefined, workflow: undefined }
+  const packetData = await readOpusTagsPacket(file)
+  if (!packetData) return { prompt: undefined, workflow: undefined }
+
+  // Parse the reconstructed packet according to the Vorbis Comments specification to extract JSON
+  return parseVorbisComments(packetData, new TextDecoder('utf-8'))
+}
+
+async function readOpusTagsPacket(file: File): Promise<Uint8Array | undefined> {
+  let readLimit = INITIAL_READ_BYTES
+  const fileSize = file.size > 0 ? file.size : undefined
+
+  for (;;) {
+    const currentLimit = fileSize ? Math.min(readLimit, fileSize) : readLimit
+    const buffer = await readFileAsArrayBuffer(file, currentLimit)
+    if (!buffer) return undefined
+
+    const scan = extractOpusTags(new Uint8Array(buffer))
+    if (scan.status === 'complete') return concatSegments(scan.segments)
+
+    const reachedEof =
+      buffer.byteLength < currentLimit ||
+      (fileSize !== undefined && buffer.byteLength >= fileSize)
+
+    if (
+      scan.status !== 'needMoreData' ||
+      reachedEof ||
+      readLimit >= MAX_READ_BYTES
+    ) {
+      warnIncompleteScan(scan, !reachedEof)
+      return undefined
+    }
+
+    readLimit = Math.min(
+      Math.max(readLimit + OGG_MAX_PAGE_SIZE, scan.neededBytes),
+      MAX_READ_BYTES
+    )
   }
+}
 
-  const data = new Uint8Array(arrayBuffer)
-  const decoder = new TextDecoder('utf-8')
-
-  // Sequentially trace Ogg pages to extract segments of the 'OpusTags' packet containing metadata
-  const segments = extractOpusTags(data)
-  if (segments.length === 0) {
+/**
+ * Logs why no complete OpusTags packet could be collected.
+ */
+function warnIncompleteScan(scan: OpusTagsScan, hitReadCap: boolean): void {
+  if (
+    scan.status === 'needMoreData' &&
+    hitReadCap &&
+    scan.segments.length > 0
+  ) {
+    console.warn(
+      'Ogg metadata parsing: OpusTags packet extends beyond the 16 MB read cap ' +
+        'and was truncated; prompt/workflow metadata will be unavailable.'
+    )
+  } else if (scan.segments.length > 0) {
+    console.warn(
+      'Ogg metadata parsing failed: OpusTags packet is truncated or corrupted'
+    )
+  } else {
     console.warn(
       'Ogg metadata parsing failed: No OpusTags found or invalid Ogg file'
     )
-    return { prompt: undefined, workflow: undefined }
   }
+}
 
-  // If the last segment is 255 bytes, the packet continues beyond our MAX_READ_BYTES cap.
-  // We avoid reading further to prevent full-file scans on audio without embedded metadata.
-  if (segments[segments.length - 1].length === OGG_MAX_SEGMENT_SIZE) {
-    console.warn(
-      'Ogg metadata parsing: OpusTags packet extends beyond the 2 MB read cap ' +
-        'and was truncated; prompt/workflow metadata will be unavailable.'
-    )
-    return { prompt: undefined, workflow: undefined }
-  }
-
-  // Concatenate the extracted segments to reconstruct the complete OpusTags packet (binary data)
+/**
+ * Concatenates the extracted segments to reconstruct the complete OpusTags packet (binary data).
+ */
+function concatSegments(segments: Uint8Array[]): Uint8Array {
   const packetData = new Uint8Array(
     segments.reduce((sum, seg) => sum + seg.length, 0)
   )
@@ -68,16 +133,62 @@ export async function getOggMetadata(file: File): Promise<ComfyMetadata> {
     packetData.set(seg, currentOffset)
     currentOffset += seg.length
   }
-
-  // Parse the reconstructed packet according to the Vorbis Comments specification to extract JSON
-  return parseVorbisComments(packetData, decoder)
+  return packetData
 }
 
 /** Outcome of scanning the segments of one Ogg page. */
 interface PageSegmentsResult {
   nextOffset: number
   inOpusTags: boolean
-  packetEnded: boolean
+  inOpusHead: boolean
+  state: 'continue' | 'complete' | 'noOpusTags'
+}
+
+/**
+ * Identifies the type of packet starting at the given segment based on header magic numbers.
+ */
+function identifyPacketType(
+  segment: Uint8Array,
+  segmentLength: number
+): 'tags' | 'head' | 'audio' | 'none' {
+  if (segmentLength >= 8) {
+    if (compareMagic(segment, 0, OPUS_TAGS_MAGIC)) return 'tags'
+    if (compareMagic(segment, 0, OPUS_HEAD_MAGIC)) return 'head'
+  }
+  return segmentLength > 0 ? 'audio' : 'none'
+}
+
+/**
+ * Advances packet scanning state for one segment.
+ * Returns 'complete' or 'noOpusTags' if parsing must terminate, otherwise undefined.
+ */
+function stepSegment(
+  segment: Uint8Array,
+  segmentLength: number,
+  state: { inTags: boolean; inHead: boolean },
+  segments: Uint8Array[]
+): 'complete' | 'noOpusTags' | undefined {
+  if (!state.inTags && !state.inHead) {
+    const packetType = identifyPacketType(segment, segmentLength)
+    if (packetType === 'tags') {
+      state.inTags = true
+    } else if (packetType === 'head') {
+      state.inHead = segmentLength === OGG_MAX_SEGMENT_SIZE
+    } else if (packetType === 'audio') {
+      return 'noOpusTags'
+    }
+  } else if (state.inHead && segmentLength < OGG_MAX_SEGMENT_SIZE) {
+    state.inHead = false
+  }
+
+  if (state.inTags) {
+    segments.push(segment)
+    if (segmentLength < OGG_MAX_SEGMENT_SIZE) {
+      return 'complete'
+    }
+  }
+
+  return undefined
 }
 
 /**
@@ -89,97 +200,112 @@ function processPageSegments(
   startDataOffset: number,
   pageSegmentsCount: number,
   inOpusTags: boolean,
+  inOpusHead: boolean,
   segments: Uint8Array[]
 ): PageSegmentsResult {
   let dataOffset = startDataOffset
-  let currentInOpusTags = inOpusTags
+  const state = { inTags: inOpusTags, inHead: inOpusHead }
 
   for (let i = 0; i < pageSegmentsCount; i++) {
     const segmentLength = data[lengthsOffset + i]
-
-    // Stop processing if the segment exceeds our available data buffer
-    if (dataOffset + segmentLength > data.length) {
-      return {
-        nextOffset: dataOffset,
-        inOpusTags: currentInOpusTags,
-        packetEnded: true
-      }
-    }
-
     const segment = data.subarray(dataOffset, dataOffset + segmentLength)
     dataOffset += segmentLength
 
-    if (
-      !currentInOpusTags &&
-      segmentLength >= 8 &&
-      compareMagic(segment, 0, OPUS_TAGS_MAGIC)
-    ) {
-      currentInOpusTags = true
-    }
-
-    if (currentInOpusTags) {
-      segments.push(segment)
-      // Ogg lacing spec: If a segment length is less than 255 (OGG_MAX_SEGMENT_SIZE),
-      // it marks the end of the current packet (data chunk)
-      if (segmentLength < OGG_MAX_SEGMENT_SIZE) {
-        return {
-          nextOffset: dataOffset,
-          inOpusTags: currentInOpusTags,
-          packetEnded: true
-        }
+    const terminal = stepSegment(segment, segmentLength, state, segments)
+    if (terminal) {
+      return {
+        nextOffset: dataOffset,
+        inOpusTags: false,
+        inOpusHead: false,
+        state: terminal
       }
     }
   }
 
   return {
     nextOffset: dataOffset,
-    inOpusTags: currentInOpusTags,
-    packetEnded: false
+    inOpusTags: state.inTags,
+    inOpusHead: state.inHead,
+    state: 'continue'
   }
+}
+
+/**
+ * Calculates page offsets and verifies whether the entire page is available in the buffer.
+ * Returns the parsed bounds, or a number representing `neededBytes` if the page is truncated.
+ */
+function parsePageBounds(
+  data: Uint8Array,
+  offset: number
+):
+  | { fullPageSize: number; pageSegmentsCount: number; dataOffset: number }
+  | number {
+  const pageSegmentsCount = data[offset + OGG_PAGE_SEGMENTS_OFFSET]
+  const lengthsOffset = offset + OGG_HEADER_SIZE
+  const dataOffset = lengthsOffset + pageSegmentsCount
+
+  if (dataOffset > data.length) return dataOffset
+
+  let pagePayloadLength = 0
+  for (let i = 0; i < pageSegmentsCount; i++) {
+    pagePayloadLength += data[lengthsOffset + i]
+  }
+  const fullPageSize = OGG_HEADER_SIZE + pageSegmentsCount + pagePayloadLength
+  return offset + fullPageSize > data.length
+    ? offset + fullPageSize
+    : { fullPageSize, pageSegmentsCount, dataOffset }
 }
 
 /**
  * Traverses the Ogg page structure to extract all segments belonging to the
  * OpusTags packet.
- *
- * Scans pages sequentially by verifying the `OggS` capture pattern, reads
- * the segment table from each page header, and collects contiguous segments
- * that form the OpusTags packet. Relies on Ogg lacing rules: a segment
- * shorter than 255 bytes signals the end of the current packet.
- *
- * @param data - Raw binary content of the Ogg file.
- * @returns An array of `Uint8Array` segments that together constitute the
- *   OpusTags packet, or an empty array if the packet is not found.
  */
-function extractOpusTags(data: Uint8Array): Uint8Array[] {
+function extractOpusTags(data: Uint8Array): OpusTagsScan {
   const segments: Uint8Array[] = []
   let offset = 0
   let inOpusTags = false
+  let inOpusHead = false
 
   while (offset + OGG_HEADER_SIZE <= data.length) {
-    if (!compareMagic(data, offset, OGG_S_MAGIC)) break
+    if (!compareMagic(data, offset, OGG_S_MAGIC)) {
+      return { status: 'invalid', segments }
+    }
 
-    const pageSegmentsCount = data[offset + OGG_PAGE_SEGMENTS_OFFSET]
-    const lengthsOffset = offset + OGG_HEADER_SIZE
-    const dataOffset = lengthsOffset + pageSegmentsCount
-
-    if (dataOffset > data.length) break
+    const bounds = parsePageBounds(data, offset)
+    if (typeof bounds === 'number') {
+      return {
+        status: 'needMoreData',
+        segments,
+        neededBytes: bounds
+      }
+    }
 
     const result = processPageSegments(
       data,
-      lengthsOffset,
-      dataOffset,
-      pageSegmentsCount,
+      offset + OGG_HEADER_SIZE,
+      bounds.dataOffset,
+      bounds.pageSegmentsCount,
       inOpusTags,
+      inOpusHead,
       segments
     )
 
     inOpusTags = result.inOpusTags
-    offset = result.nextOffset
-    if (result.packetEnded) break
+    inOpusHead = result.inOpusHead
+    offset += bounds.fullPageSize
+
+    if (result.state === 'complete' || result.state === 'noOpusTags') {
+      return { status: result.state, segments }
+    }
   }
 
-  return segments
+  return {
+    status: 'needMoreData',
+    segments,
+    neededBytes: inOpusTags
+      ? offset + OGG_MAX_PAGE_SIZE
+      : offset + OGG_HEADER_SIZE
+  }
 }
 
 /**
