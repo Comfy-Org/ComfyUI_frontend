@@ -62,6 +62,7 @@ const bridgeState = vi.hoisted(() => {
     canReseed = vi.fn(() => false)
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    isSubscribeBaselineIntegrated = false
     follower = {
       updatesApplied: 0,
       doc: {
@@ -759,6 +760,33 @@ describe('useAgentCrdtFollower', () => {
       dispatchFrame('doc_subscribed', {
         ok: true,
         workflow_id: 'wf-1'
+      })
+
+      expect(status().connected).toBe(true)
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('clears a stale canvas when reconnect confirms the integrated sequence', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: true
+      })
+
+      agentSocket.drop()
+      agentSocket.open()
+      bridge().isSubscribeBaselineIntegrated = true
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
       })
 
       expect(status().connected).toBe(true)

@@ -657,6 +657,9 @@ function startAgentCrdtFollower(
       events.onSyncError?.(refusal.message, refusal.code)
   }
 
+  const subscribeBaselineIsIntegrated = (seq: unknown): boolean =>
+    (seq ?? 0) === 0 || bridge.isSubscribeBaselineIntegrated
+
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
@@ -671,7 +674,7 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      if ((detail.seq ?? 0) === 0) clearCanvasStaleness()
+      if (subscribeBaselineIsIntegrated(detail.seq)) clearCanvasStaleness()
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
