@@ -38,6 +38,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { components as ManagerComponents } from '@/workbench/extensions/manager/types/generatedManagerTypes'
 import type {
+  AgentStatusWsMessage,
   AssetDownloadWsMessage,
   AssetExportWsMessage,
   AssetSeedCompletedWsMessage,
@@ -268,6 +269,7 @@ interface BackendApiCalls {
   progress_text: ProgressTextWsMessage
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
+  agent_status: AgentStatusWsMessage
   asset_download: AssetDownloadWsMessage
   asset_export: AssetExportWsMessage
   'assets.seed.completed': AssetSeedCompletedWsMessage
@@ -1117,6 +1119,13 @@ export class ComfyApi extends EventTarget {
               this.serverFeatureFlagsSettled.value = true
               this.dispatchCustomEvent('feature_flags', msg.data)
               break
+            case 'agent_status':
+              this.serverFeatureFlags.value = {
+                ...this.serverFeatureFlags.value,
+                agent: msg.data
+              }
+              this.dispatchCustomEvent('agent_status', msg.data)
+              break
             default:
               if (this._registered.has(msg.type)) {
                 // Fallback for custom types - calls super direct.
@@ -1155,6 +1164,8 @@ export class ComfyApi extends EventTarget {
     this.clientId = undefined
     window.name = ''
     sessionStorage.removeItem('clientId')
+    const { agent: _previousAgent, ...features } = this.serverFeatureFlags.value
+    this.serverFeatureFlags.value = features
     await this.replaceSocket()
   }
 
@@ -1169,8 +1180,9 @@ export class ComfyApi extends EventTarget {
 
   private async replaceSocket(): Promise<void> {
     const previous = this.socket
-    // serverFeatureFlags deliberately keeps the previous map: clearing it would
-    // downgrade every serverSupportsFeature() caller until the next delivery.
+    // serverFeatureFlags deliberately keeps the previous map (resetSocket drops
+    // only `agent`): clearing it would downgrade every serverSupportsFeature()
+    // caller until the next delivery.
     this.serverFeatureFlagsSettled.value = false
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
