@@ -6,10 +6,20 @@ import { DEFAULT_COLOR_PALETTE } from '@/constants/coreColorPalettes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
 import { api } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
+import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/scripts/app'), async () => {
+  const { fromPartial } = await import('@total-typescript/shoehorn')
+  return {
+    app: fromPartial<ComfyApp>({
+      canvas: { default_connection_color_byType: {}, setDirty: vi.fn() }
+    })
+  }
+})
 
 it.for(['custom_dark', 'dark', undefined])(
   'keeps built-in and legacy custom palettes available with selection %s',
@@ -31,11 +41,11 @@ it.for(['custom_dark', 'dark', undefined])(
     const settings = useSettingStore()
 
     await settings.load()
+    await useColorPaletteService().loadCustomColorPalettes()
 
     const palettes = settings.settingValues['Comfy.CustomColorPalettes']
     assert.exists(palettes)
     const store = useColorPaletteStore()
-    store.customPalettes = palettes
     expect(store.palettesLookup.dark).toEqual(DEFAULT_COLOR_PALETTE)
     expect(store.palettesLookup['dark-custom']).toEqual({
       ...customPalette,
@@ -71,6 +81,7 @@ it('preserves existing custom ids and does not migrate them again after reload',
   const settings = useSettingStore()
 
   await settings.load()
+  await useColorPaletteService().loadCustomColorPalettes()
 
   expect(settings.settingValues['Comfy.CustomColorPalettes']).toEqual({
     'dark-custom': otherPalette,
@@ -91,6 +102,7 @@ it('preserves existing custom ids and does not migrate them again after reload',
   const reloadedSettings = useSettingStore()
 
   await reloadedSettings.load()
+  await useColorPaletteService().loadCustomColorPalettes()
 
   expect(reloadedSettings.settingValues).toEqual(persisted)
   expect(api.storeSettings).toHaveBeenCalledTimes(1)
@@ -107,6 +119,7 @@ it.for([undefined, { blue: { ...DEFAULT_COLOR_PALETTE, id: 'blue' } }])(
     const settings = useSettingStore()
 
     await settings.load()
+    await useColorPaletteService().loadCustomColorPalettes()
 
     expect(settings.settingValues).toEqual(stored)
     expect(api.storeSettings).not.toHaveBeenCalled()
@@ -127,6 +140,7 @@ it('keeps both palettes usable when migration persistence fails', async () => {
   const settings = useSettingStore()
 
   await settings.load()
+  await useColorPaletteService().loadCustomColorPalettes()
 
   expect(settings.isReady).toBe(true)
   expect(settings.error).toBeUndefined()
@@ -138,8 +152,5 @@ it('keeps both palettes usable when migration persistence fails', async () => {
       name: 'Legacy dark'
     }
   })
-  expect(console.warn).toHaveBeenCalledWith(
-    '[settings] Failed to persist migration; retrying on next load',
-    failure
-  )
+  expect(console.error).toHaveBeenCalledWith(failure)
 })

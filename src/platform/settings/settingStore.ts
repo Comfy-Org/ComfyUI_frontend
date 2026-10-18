@@ -6,10 +6,6 @@ import { compare, valid } from 'semver'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
-import {
-  CORE_COLOR_PALETTES,
-  DEFAULT_COLOR_PALETTE
-} from '@/constants/coreColorPalettes'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
 import type { SettingParams, Settings } from '@/platform/settings/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -149,7 +145,6 @@ export const useSettingStore = defineStore('setting', () => {
       })
       await migrateZoomThresholdToFontSize()
       await migrateCanvasNavigationOverrides()
-      await migrateCustomColorPalettes()
     },
     undefined,
     { immediate: false }
@@ -359,43 +354,6 @@ export const useSettingStore = defineStore('setting', () => {
       })
     }
     void onChange(setting, get(setting.id), undefined, settingChanged.trigger)
-  }
-
-  async function migrateCustomColorPalettes() {
-    const palettes = settingValues.value['Comfy.CustomColorPalettes']
-    if (!palettes) return
-
-    const conflicts = Object.keys(palettes).filter((id) =>
-      Object.hasOwn(CORE_COLOR_PALETTES, id)
-    )
-    if (!conflicts.length) return
-
-    const migrated = { ...palettes }
-    const previousId =
-      settingValues.value['Comfy.ColorPalette'] ?? DEFAULT_COLOR_PALETTE.id
-    let activeId = previousId
-    for (const id of conflicts) {
-      let newId = `${id}-custom`
-      let suffix = 2
-      while (
-        Object.hasOwn(migrated, newId) ||
-        Object.hasOwn(CORE_COLOR_PALETTES, newId)
-      ) {
-        newId = `${id}-custom-${suffix++}`
-      }
-      migrated[newId] = { ...migrated[id], id: newId }
-      delete migrated[id]
-      if (activeId === id || activeId === `custom_${id}`) activeId = newId
-    }
-
-    const changes: Partial<Settings> = {
-      'Comfy.CustomColorPalettes': migrated
-    }
-    if (activeId !== previousId) {
-      changes['Comfy.ColorPalette'] = activeId
-    }
-    Object.assign(settingValues.value, changes)
-    await persistMigration(() => api.storeSettings(changes))
   }
 
   /**

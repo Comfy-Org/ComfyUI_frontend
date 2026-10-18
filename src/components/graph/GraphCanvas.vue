@@ -613,6 +613,8 @@ onMounted(async () => {
       })
     }
     await comfyApp.setup(canvas)
+    await colorPaletteService.loadCustomColorPalettes()
+    if (disposed) return
     canvasStore.canvas = comfyApp.canvas
     canvasStore.canvas.render_canvas_border = false
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
@@ -626,11 +628,6 @@ onMounted(async () => {
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
     }
-
-    // Load color palette
-    colorPaletteStore.customPalettes = settingStore.get(
-      'Comfy.CustomColorPalettes'
-    )
 
     // Restore saved workflow and workflow tabs state
     startupOutcome = await workflowPersistence.initializeWorkflow()

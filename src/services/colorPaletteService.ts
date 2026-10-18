@@ -4,6 +4,10 @@ import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import {
+  CORE_COLOR_PALETTES,
+  DEFAULT_COLOR_PALETTE
+} from '@/constants/coreColorPalettes'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { paletteSchema, comfyBaseSchema } from '@/schemas/colorPaletteSchema'
@@ -51,6 +55,39 @@ export const useColorPaletteService = () => {
       'Comfy.CustomColorPalettes',
       colorPaletteStore.customPalettes
     )
+  }
+
+  async function loadCustomColorPalettes() {
+    const palettes =
+      settingStore.settingValues['Comfy.CustomColorPalettes'] ?? {}
+    const conflicts = Object.keys(palettes).filter((id) =>
+      Object.hasOwn(CORE_COLOR_PALETTES, id)
+    )
+    const migrated = { ...palettes }
+    const previousId =
+      settingStore.settingValues['Comfy.ColorPalette'] ??
+      DEFAULT_COLOR_PALETTE.id
+    let activeId = previousId
+    for (const id of conflicts) {
+      let newId = `${id}-custom`
+      let suffix = 2
+      while (
+        Object.hasOwn(migrated, newId) ||
+        Object.hasOwn(CORE_COLOR_PALETTES, newId)
+      ) {
+        newId = `${id}-custom-${suffix++}`
+      }
+      migrated[newId] = { ...migrated[id], id: newId }
+      delete migrated[id]
+      if (activeId === id || activeId === `custom_${id}`) activeId = newId
+    }
+    colorPaletteStore.customPalettes = migrated
+    if (!conflicts.length) return
+
+    await settingStore.setMany({
+      'Comfy.CustomColorPalettes': migrated,
+      ...(activeId !== previousId ? { 'Comfy.ColorPalette': activeId } : {})
+    })
   }
 
   /**
@@ -300,6 +337,9 @@ export const useColorPaletteService = () => {
   }
 
   return {
+    loadCustomColorPalettes: wrapWithErrorHandlingAsync(
+      loadCustomColorPalettes
+    ),
     getActiveColorPalette: () => colorPaletteStore.completedActivePalette,
     addCustomColorPalette: wrapWithErrorHandlingAsync(addCustomColorPalette),
     deleteCustomColorPalette: wrapWithErrorHandlingAsync(
