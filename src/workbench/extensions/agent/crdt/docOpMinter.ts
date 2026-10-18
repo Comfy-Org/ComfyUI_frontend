@@ -32,6 +32,7 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -106,10 +107,10 @@ type PendingOp =
 
 /**
  * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
- * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
- * sidecar projection accepts only the pinned catalog's `widget_order` names;
- * control widgets like a `button` serialize a named entry but are not in
- * `widget_order`, and any extra key is an opaque server-side 500).
+ * own `widgets_values_named` minus non-value widgets. A node whose value
+ * widgets the definition fully describes is checked against the pinned
+ * catalog's `widget_order`; any other node also declares its own
+ * `widgets_values_form` so the host accepts names the catalog lacks.
  *
  * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
  * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
@@ -157,12 +158,18 @@ function undescribedWidgetForm(
       (widget.linkedWidgets ?? []).map((companion) => companion.name)
     )
   )
-  const isWidgetInput = (name: string) =>
+  const widgetStore = useWidgetStore()
+  const isInput = (name: string) =>
     Object.hasOwn(definition.inputs, name) &&
     definition.inputs[name].forceInput !== true
+  const isWidgetInput = (name: string) => {
+    if (!isInput(name)) return false
+    const spec = definition.inputs[name]
+    return widgetStore.widgets.has(spec.widgetType ?? spec.type)
+  }
   const described = (name: string) =>
     isWidgetInput(name) ||
-    isWidgetInput(name.split('.', 1)[0]) ||
+    (name.includes('.') && isInput(name.split('.', 1)[0])) ||
     linked.has(name)
   return order.every(described) ? undefined : { order }
 }

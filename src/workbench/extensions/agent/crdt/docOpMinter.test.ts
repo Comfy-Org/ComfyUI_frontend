@@ -2074,6 +2074,41 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     })
   })
 
+  it('declares nothing for a node built by the real widget constructors', () => {
+    const required = {
+      seed: ['INT', { default: 1, control_after_generate: true }],
+      sampler_name: [['euler', 'dpmpp_2m'], {}],
+      model: ['MODEL', {}]
+    } satisfies NonNullable<ComfyNodeDefV1['input']>['required']
+    useNodeDefStore().addNodeDef(nodeDef('Real Sampler', required))
+    const node = nodeWith('Real Sampler', (n) => {
+      for (const [name, spec] of Object.entries(required))
+        useLitegraphService().addNodeInput(
+          n,
+          transformInputSpecV1ToV2(spec, { name })
+        )
+    })
+
+    expect(Object.keys(wireNodeSnapshot(node)?.widgets_values ?? {})).toEqual(
+      expect.arrayContaining(['seed', 'sampler_name'])
+    )
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('declares the order when an extension widget shares a socket-only input name', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Display Image', { source: ['IMAGE', {}] })
+    )
+    const node = nodeWith('Display Image', (n) => {
+      n.addInput('source', 'IMAGE')
+      n.addWidget('text', 'source', '', () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values_form: { order: ['source'] }
+    })
+  })
+
   it('drops a form the node carried in from a loaded projection when none applies', () => {
     useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
     const node = nodeWith('Described', (n) => {
