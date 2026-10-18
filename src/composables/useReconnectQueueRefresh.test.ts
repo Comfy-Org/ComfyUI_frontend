@@ -407,6 +407,46 @@ describe('useReconnectQueueRefresh', () => {
       expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-1'])
     })
 
+    it('still replays onto the open graph when the live run belongs to a background workflow', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-0'] = { nodes: {} }
+      followRun(
+        'job-1',
+        fromPartial<ComfyWorkflow>({ path: 'workflows/other.json' })
+      )
+      vi.mocked(api.getQueue).mockResolvedValue({
+        Running: [makeJob('job-1', 'in_progress')],
+        Pending: []
+      })
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...finishedJob,
+        id: 'job-0'
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-0' })]
+      ])
+    })
+
+    it('still replays when the only change during the refresh was a run ending', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-0'] = { nodes: {} }
+      followRun('job-1')
+      vi.mocked(api.getJobDetail).mockImplementation(async (jobId) => {
+        executionStore.activeJobId = null
+        return { ...finishedJob, id: jobId }
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-0' })],
+        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+      ])
+    })
+
     it('does not replay over a run that started and finished during the refresh', async () => {
       followRun('job-1')
       const executionStore = useExecutionStore()

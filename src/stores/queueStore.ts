@@ -326,14 +326,12 @@ export const useQueueStore = defineStore('queue', () => {
     await currentUpdate
   }
 
-  /**
-   * Like `update()`, but resolves only once a fetch started after this call
-   * has landed: a coalesced call waits for the trailing re-fetch instead of
-   * returning with the snapshot of the fetch already in flight.
-   */
+  /** Like `update()`, but a coalesced call also waits for the trailing re-fetch. */
   const updateFresh = async () => {
-    await update()
-    while (updateState.inFlight) await currentUpdate
+    if (!updateState.inFlight) return update()
+    updateState.dirty = true
+    await currentUpdate
+    await currentUpdate
   }
 
   const fetchQueueAndHistory = async () => {

@@ -19,12 +19,9 @@ interface JobOutcome {
 const LIVE_STATUSES = new Set(['pending', 'in_progress'])
 const ENDED_STATUSES = new Set(['completed', 'failed', 'cancelled'])
 
-/** A detail request that has not answered by then counts as unreadable. */
-const DETAIL_TIMEOUT_MS = 10_000
-/** One retry after this delay rides out a transient detail failure. */
+const DETAIL_TIMEOUT_MS = 5_000
 const DETAIL_RETRY_DELAY_MS = 1_000
 const DETAIL_CONCURRENCY = 4
-/** Reconnects a run may stay unreadable before it is no longer followed. */
 const MAX_UNREADABLE_REFRESHES = 3
 
 /**
@@ -107,6 +104,10 @@ export function useReconnectQueueRefresh() {
     return path === undefined || path === workflowStore.activeWorkflow?.path
   }
 
+  function runsOnOpenGraph(runIds: Iterable<JobId>): boolean {
+    return [...runIds].some(ranOnOpenWorkflow)
+  }
+
   function stillFollowed(jobId: JobId): boolean {
     return (
       jobId in executionStore.queuedJobs || executionStore.activeJobId === jobId
@@ -157,11 +158,11 @@ export function useReconnectQueueRefresh() {
 
   async function refresh() {
     const followed = followedJobIds()
-    let activeRunChanged = false
+    const runsStartedDuringRefresh = new Set<JobId>()
     const stopWatchingActiveRun = watch(
       () => executionStore.activeJobId,
-      () => {
-        activeRunChanged = true
+      (startedRun) => {
+        if (startedRun) runsStartedDuringRefresh.add(startedRun)
       },
       { flush: 'sync' }
     )
@@ -186,15 +187,18 @@ export function useReconnectQueueRefresh() {
     }
 
     const currentRun = executionStore.activeJobId
-    if (currentRun && activeRunChanged) activeJobIds.add(currentRun)
+    if (currentRun && runsStartedDuringRefresh.has(currentRun)) {
+      activeJobIds.add(currentRun)
+    }
     leftQueue.forEach((jobId, i) => {
       if (outcomes[i].state === 'live') activeJobIds.add(jobId)
     })
-    // A run that started (or started and finished) during the refresh, or a
-    // followed run that is still going, owns the open graph: replaying an
-    // older run onto it would overwrite newer outputs and its progress.
-    const openGraphTakenByOtherRun =
-      activeRunChanged || (!!currentRun && activeJobIds.has(currentRun))
+    const liveCurrentRun =
+      currentRun && activeJobIds.has(currentRun) ? [currentRun] : []
+    const openGraphTakenByOtherRun = runsOnOpenGraph([
+      ...runsStartedDuringRefresh,
+      ...liveCurrentRun
+    ])
 
     const ended: JobId[] = []
     leftQueue.forEach((jobId, i) => {
