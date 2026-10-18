@@ -405,12 +405,8 @@ const canLoadMorePacks = computed(
 const isSearchFailed = computed(
   () => isSearchBacked.value && packs.firstPage.value.status === 'failed'
 )
-const isInitialLoad = computed(
-  () =>
-    isSearchBacked.value &&
-    !isSearchFailed.value &&
-    searchResults.value.length === 0 &&
-    searchQuery.value === ''
+const isFirstPageLoading = computed(
+  () => isSearchBacked.value && packs.firstPage.value.status === 'loading'
 )
 // Use the new composable for tab-based display packs
 const {
@@ -493,7 +489,7 @@ const onClickWarningLink = () => {
 const isLoading = computed(() => {
   if (isSearchLoading.value) return searchResults.value.length === 0
   if (isTabLoading.value) return true
-  return isInitialLoad.value
+  return isFirstPageLoading.value
 })
 
 const isSettledWithNoPacks = computed(

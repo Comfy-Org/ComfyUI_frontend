@@ -428,6 +428,20 @@ describe('ManagerDialog legacy-manager tip', () => {
   })
 })
 
+describe('ManagerDialog opening listing', () => {
+  it('settles on the empty state when the opening listing finds no packs', async () => {
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValue(
+      result([], true)
+    )
+    renderDialog()
+    await settleSearch()
+
+    expect(
+      screen.getByText(enMessages.manager.noResultsFound)
+    ).toBeInTheDocument()
+  })
+})
+
 describe('ManagerDialog failed search', () => {
   function expectRegistryErrorState() {
     expect(
