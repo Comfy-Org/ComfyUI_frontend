@@ -185,12 +185,7 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
     const itemA = group.items.find((i) => i.key === keyA)
     const itemB = group.items.find((i) => i.key === keyB)
     if (!itemA || !itemB || itemA === itemB) return
-    if (itemA.pairId) clearPair(group, itemA.pairId)
-    if (itemB.pairId) clearPair(group, itemB.pairId)
-    const pairId = crypto.randomUUID()
-    for (const item of group.items) {
-      if (item.key === keyA || item.key === keyB) item.pairId = pairId
-    }
+    pairItems(group, itemA, itemB)
     persistGroups()
   }
 
@@ -227,34 +222,29 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
     position: 'before' | 'center' | 'after'
   ) {
     const group = findGroup(groupId)
-    if (
-      !group ||
-      itemKey === targetKey ||
-      !group.items.some((item) => item.key === targetKey)
-    )
-      return
+    if (!group || itemKey === targetKey) return
+    const targetItem = group.items.find((item) => item.key === targetKey)
+    if (!targetItem) return
     removeItemFromAllGroups(itemKey)
-    if (!group.items.some((i) => i.key === itemKey)) {
-      group.items.push({ key: itemKey })
-    }
-    const dragIdx = group.items.findIndex((i) => i.key === itemKey)
-    const targetIdx = group.items.findIndex((i) => i.key === targetKey)
-    if (dragIdx !== -1 && targetIdx !== -1 && dragIdx !== targetIdx) {
-      const [moved] = group.items.splice(dragIdx, 1)
-      const newTargetIdx = group.items.findIndex((i) => i.key === targetKey)
-      const insertIdx = position === 'after' ? newTargetIdx + 1 : newTargetIdx
-      group.items.splice(insertIdx, 0, moved)
-    }
-    if (position === 'center') {
-      const itemA = group.items.find((i) => i.key === itemKey)
-      const itemB = group.items.find((i) => i.key === targetKey)
-      if (itemA?.pairId) clearPair(group, itemA.pairId)
-      if (itemB?.pairId) clearPair(group, itemB.pairId)
-      const pairId = crypto.randomUUID()
-      if (itemA) itemA.pairId = pairId
-      if (itemB) itemB.pairId = pairId
-    }
+    const moved = { key: itemKey }
+    const insertIndex =
+      group.items.indexOf(targetItem) + (position === 'after' ? 1 : 0)
+    group.items.splice(insertIndex, 0, moved)
+    if (position === 'center')
+      pairItems(group, group.items[insertIndex], targetItem)
     persistGroups()
+  }
+
+  function pairItems(
+    group: InputGroup,
+    itemA: InputGroup['items'][number],
+    itemB: InputGroup['items'][number]
+  ) {
+    clearPair(group, itemA.pairId)
+    clearPair(group, itemB.pairId)
+    const pairId = crypto.randomUUID()
+    itemA.pairId = pairId
+    itemB.pairId = pairId
   }
 
   function unpairItem(groupId: string, itemKey: WidgetId) {
@@ -266,7 +256,8 @@ export const useInputGroupStore = defineStore('inputGroup', () => {
     persistGroups()
   }
 
-  function clearPair(group: InputGroup, pairId: string) {
+  function clearPair(group: InputGroup, pairId: string | undefined) {
+    if (!pairId) return
     for (const item of group.items) {
       if (item.pairId === pairId) item.pairId = undefined
     }

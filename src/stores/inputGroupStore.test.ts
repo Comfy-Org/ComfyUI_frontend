@@ -264,4 +264,50 @@ describe('inputGroupStore', () => {
       captures + 1
     )
   })
+  it.for([
+    { position: 'before', keys: ['c', 'a', 'b'], paired: false },
+    { position: 'center', keys: ['c', 'a', 'b'], paired: true },
+    { position: 'after', keys: ['a', 'c', 'b'], paired: false }
+  ] as const)(
+    'moves an input $position a target in one history update',
+    ({ position, keys, paired }) => {
+      const source = store.createGroup('Source', inputIds.c)
+      const target = store.createGroup('Target', inputIds.a)
+      store.addItemToGroup(target, inputIds.b)
+      const captures = vi.mocked(workflow.changeTracker.captureCanvasState).mock
+        .calls.length
+
+      store.moveItemToGroupAt(target, inputIds.c, inputIds.a, position)
+
+      expect(store.findGroup(source)).toBeUndefined()
+      expect(store.findGroup(target)?.items.map(({ key }) => key)).toEqual(
+        keys.map((key) => inputIds[key])
+      )
+      const items = store.findGroup(target)?.items ?? []
+      expect(
+        items.filter(({ pairId }) => pairId).map(({ key }) => key)
+      ).toEqual(paired ? [inputIds.c, inputIds.a] : [])
+      expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledTimes(
+        captures + 1
+      )
+    }
+  )
+
+  it('clears both old pairs when pairing inputs that already have partners', () => {
+    const id = store.createGroup()
+    for (const key of Object.values(inputIds)) store.addItemToGroup(id, key)
+    store.pairItemsInGroup(id, inputIds.a, inputIds.b)
+    store.pairItemsInGroup(id, inputIds.c, inputIds.steps)
+
+    store.pairItemsInGroup(id, inputIds.a, inputIds.c)
+
+    const items = store.findGroup(id)?.items ?? []
+    const pairId = items.find(({ key }) => key === inputIds.a)?.pairId
+    expect(pairId).toBeDefined()
+    expect(items.find(({ key }) => key === inputIds.c)?.pairId).toBe(pairId)
+    expect(items.find(({ key }) => key === inputIds.b)?.pairId).toBeUndefined()
+    expect(
+      items.find(({ key }) => key === inputIds.steps)?.pairId
+    ).toBeUndefined()
+  })
 })

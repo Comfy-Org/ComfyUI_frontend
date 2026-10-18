@@ -8,13 +8,8 @@ import type { MenuItem } from '@/components/ui/menu/types'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
+import InputGroupContent from '@/components/builder/InputGroupContent.vue'
 import UngroupConfirmDialog from '@/components/builder/UngroupConfirmDialog.vue'
-import {
-  vGroupDropTarget,
-  vGroupItemDrag,
-  vGroupItemReorder
-} from '@/components/builder/useGroupDrop'
 import {
   autoGroupName,
   groupedByPair,
@@ -161,91 +156,7 @@ function handleDissolve() {
     </div>
 
     <CollapsibleContent>
-      <div
-        v-if="builderMode"
-        v-group-drop-target="{ groupId: group.id }"
-        :class="
-          cn(
-            'flex min-h-10 flex-col gap-3 px-2 pb-2',
-            '[&.group-drag-over]:bg-primary-background/5'
-          )
-        "
-      >
-        <template
-          v-for="row in rows"
-          :key="row.type === 'single' ? row.item.key : row.items[0].key"
-        >
-          <div
-            v-if="row.type === 'single'"
-            v-group-item-drag="{ itemKey: row.item.key, groupId: group.id }"
-            v-group-item-reorder="{
-              itemKey: row.item.key,
-              groupId: group.id
-            }"
-            class="overflow-hidden rounded-lg p-1.5 [&_.drag-handle]:cursor-grab [&.pair-indicator]:ring-2 [&.pair-indicator]:ring-primary-background [&.reorder-after]:border-b-2 [&.reorder-after]:border-b-primary-background [&.reorder-before]:border-t-2 [&.reorder-before]:border-t-primary-background"
-          >
-            <AppModeWidgetList
-              :widget-ids="[row.item.key]"
-              builder-mode
-              :draggable="false"
-              hide-actions
-            />
-          </div>
-          <div v-else class="flex gap-2">
-            <div
-              v-for="item in row.items"
-              :key="item.key"
-              v-group-item-drag="{ itemKey: item.key, groupId: group.id }"
-              v-group-item-reorder="{
-                itemKey: item.key,
-                groupId: group.id
-              }"
-              class="min-w-0 flex-1 overflow-hidden rounded-lg p-0.5 [&_.drag-handle]:cursor-grab [&.pair-indicator]:ring-2 [&.pair-indicator]:ring-primary-background [&.reorder-after]:border-b-2 [&.reorder-after]:border-b-primary-background [&.reorder-before]:border-t-2 [&.reorder-before]:border-t-primary-background"
-            >
-              <AppModeWidgetList
-                :widget-ids="[item.key]"
-                builder-mode
-                :draggable="false"
-                hide-actions
-              />
-            </div>
-          </div>
-        </template>
-        <div
-          v-if="rows.length === 0"
-          class="flex items-center justify-center py-3 text-xs text-muted-foreground"
-        >
-          {{ t('linearMode.groups.emptyGroup') }}
-        </div>
-      </div>
-      <div v-else class="flex flex-col gap-4 px-4 pt-2 pb-4">
-        <template
-          v-for="row in rows"
-          :key="row.type === 'single' ? row.item.key : row.items[0].key"
-        >
-          <div v-if="row.type === 'single'">
-            <AppModeWidgetList
-              :widget-ids="[row.item.key]"
-              :mobile
-              hide-actions
-            />
-          </div>
-          <div v-else class="flex gap-2">
-            <div
-              v-for="item in row.items"
-              :key="item.key"
-              class="min-w-0 flex-1 overflow-hidden"
-            >
-              <AppModeWidgetList
-                :widget-ids="[item.key]"
-                :mobile
-                hide-actions
-                class="w-full"
-              />
-            </div>
-          </div>
-        </template>
-      </div>
+      <InputGroupContent :group-id="group.id" :rows :builder-mode :mobile />
     </CollapsibleContent>
   </CollapsibleRoot>
 </template>
