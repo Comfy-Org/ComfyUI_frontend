@@ -84,6 +84,8 @@ describe('useStringWidget (multiline)', () => {
     expect(store.getWidget(widgetId(graph.id, node.id, 'prompt'))).toBe(
       undefined
     )
+    widget.element.value = 'textarea only'
+    expect(widget.value).toBe('edited')
   })
 
   it('keeps a sibling widget value when its own name is made unique while it is added', () => {
