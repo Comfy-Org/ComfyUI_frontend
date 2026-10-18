@@ -68,23 +68,25 @@
             size="lg"
             class="w-64"
           />
-          <Button
-            v-if="showInviteButton"
-            v-tooltip="
-              inviteTooltip
-                ? { value: inviteTooltip, showDelay: 0 }
-                : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
-            "
-            variant="secondary"
-            size="lg"
-            :disabled="isInviteDisabled"
-            :aria-label="$t('workspacePanel.inviteMember')"
-            @click="handleInviteMember"
-          >
-            {{ $t('workspacePanel.invite') }}
-            <i class="pi pi-plus text-sm" />
-          </Button>
-          <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
+          <Tooltip v-if="showInviteButton">
+            <TooltipTrigger as-child>
+              <span class="inline-flex">
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  :aria-label="$t('workspacePanel.inviteMember')"
+                  @click="handleInviteMember"
+                >
+                  {{ $t('workspacePanel.invite') }}
+                  <i class="pi pi-plus text-sm" />
+                </Button>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>{{
+              $t('workspacePanel.inviteMember')
+            }}</TooltipContent>
+          </Tooltip>
+          <WorkspaceMenuButton v-if="showWorkspaceMenu" />
         </div>
       </div>
     </Teleport>
@@ -97,8 +99,7 @@
           <!-- Table Header with Tab Buttons and Column Headers -->
           <div
             v-if="
-              uiConfig.showMembersList &&
-              (showViewTabs || (isCloud && hasMultipleMembers))
+              uiConfig.showMembersList && (showViewTabs || hasMultipleMembers)
             "
             :class="
               cn(
@@ -278,13 +279,15 @@ import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSe
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
-import { isCloud } from '@/platform/distribution/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
@@ -307,8 +310,7 @@ const {
   showSearch,
   showViewTabs,
   showInviteButton,
-  isInviteDisabled,
-  inviteTooltip,
+  showWorkspaceMenu,
   handleInviteMember,
   personalWorkspaceMember,
   filteredMembers,

@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
 import type {
@@ -28,7 +27,7 @@ const zNodeInputName = z.string()
 /**
  * UUID identifier for a saved workflow.
  *
- * Workflow files persist their identity as `id: z.string().uuid()` on the
+ * Workflow files persist their identity as `id: z.guid()` on the
  * graph schema. This alias names that primitive at use sites (services,
  * stores, share types) without changing structural typing.
  */
@@ -236,7 +235,7 @@ const zNodeProperty = z.union([
   z.number(),
   z.boolean(),
   z.null(),
-  z.record(z.unknown()),
+  z.record(z.string(), z.unknown()),
   z.array(z.unknown())
 ]) satisfies z.ZodType<NodeProperty>
 
@@ -250,9 +249,9 @@ const zProperties = z
   })
   .catchall(zNodeProperty.optional())
 
-const zWidgetValue: z.ZodType<TWidgetValue> = z.custom(isWidgetValue)
+const zWidgetValue = z.custom<TWidgetValue>(isWidgetValue)
 const zWidgetValues: z.ZodType<TWidgetValue[] | Record<string, TWidgetValue>> =
-  z.union([z.array(zWidgetValue), z.record(zWidgetValue)])
+  z.union([z.array(zWidgetValue), z.record(z.string(), zWidgetValue)])
 const MAX_CLIPBOARD_WIDGET_VALUES = 10_000
 
 function hasSupportedClipboardWidgetValuesLength(
@@ -319,7 +318,7 @@ export const zComfyNode = z
 
 const zSubgraphIO = zNodeInput.extend({
   /** Slot ID (internal; never changes once instantiated). */
-  id: z.string().uuid(),
+  id: z.guid(),
   /** The data type this slot uses. Unlike nodes, this does not support legacy numeric types. */
   type: z.string(),
   /** Links connected to this slot, or `undefined` if not connected. An output slot should only ever have one link. */
@@ -329,7 +328,7 @@ const zSubgraphIO = zNodeInput.extend({
 const zSubgraphInstance = z
   .object({
     id: zNodeId,
-    type: z.string().uuid(),
+    type: z.guid(),
     pos: zVector2,
     size: zVector2,
     flags: zFlags,
@@ -412,7 +411,7 @@ const zGraphDefinitions = z.object({
 
 const zBaseExportableGraph = z.object({
   /** Unique graph ID.  Automatically generated if not provided. */
-  id: z.string().uuid().optional(),
+  id: z.guid().optional(),
   revision: z.number().optional(),
   config: zConfig.optional().nullable(),
   /** Details of the appearance and location of subgraphs shown in this graph. Similar to */
@@ -422,7 +421,7 @@ const zBaseExportableGraph = z.object({
 /** Schema version 0.4 */
 export const zComfyWorkflow = zBaseExportableGraph
   .extend({
-    id: z.string().uuid().optional(),
+    id: z.guid().optional(),
     revision: z.number().optional(),
     last_node_id: zNodeId,
     last_link_id: z.number(),
@@ -474,7 +473,7 @@ interface ComfyWorkflow1BaseOutput extends ComfyWorkflow1BaseType {
 /** Schema version 1 */
 export const zComfyWorkflow1 = zBaseExportableGraph
   .extend({
-    id: z.string().uuid().optional(),
+    id: z.guid().optional(),
     revision: z.number().optional(),
     version: z.literal(1),
     config: zConfig.optional().nullable(),
@@ -492,7 +491,6 @@ export const zComfyWorkflow1 = zBaseExportableGraph
           (): z.ZodArray<
             z.ZodType<
               SubgraphDefinitionBase<ComfyWorkflow1BaseOutput>,
-              z.ZodTypeDef,
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
             >
           > => z.array(zSubgraphDefinition)
@@ -556,7 +554,7 @@ interface SubgraphDefinitionBase<
 const zSubgraphDefinition = zComfyWorkflow1
   .extend({
     /** Unique graph ID.  Automatically generated if not provided. */
-    id: z.string().uuid(),
+    id: z.guid(),
     revision: z.number(),
     name: z.string(),
     /** Optional description shown as tooltip when hovering over the subgraph node. */
@@ -578,7 +576,6 @@ const zSubgraphDefinition = zComfyWorkflow1
           (): z.ZodArray<
             z.ZodType<
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>,
-              z.ZodTypeDef,
               SubgraphDefinitionBase<ComfyWorkflow1BaseInput>
             >
           > => zSubgraphDefinition.array()
@@ -630,7 +627,6 @@ interface ClipboardSubgraphInput extends Omit<
 
 const zClipboardSubgraphDefinition: z.ZodType<
   ExportedSubgraph,
-  z.ZodTypeDef,
   ClipboardSubgraphInput
 > = zSubgraphDefinition
   .extend({
@@ -685,7 +681,6 @@ const zClipboardItemsSchema = z
 
 export const zClipboardItems: z.ZodType<
   ClipboardItems,
-  z.ZodTypeDef,
   z.input<typeof zClipboardItemsSchema>
 > = zClipboardItemsSchema
 
@@ -731,7 +726,7 @@ export async function validateComfyWorkflow(
 ): Promise<ComfyWorkflowJSON | null> {
   const versionResult = zWorkflowVersion.safeParse(data)
 
-  let result: SafeParseReturnType<unknown, ComfyWorkflowJSON>
+  let result: z.ZodSafeParseResult<ComfyWorkflowJSON>
   if (!versionResult.success) {
     // Invalid workflow
     const error = fromZodError(versionResult.error)

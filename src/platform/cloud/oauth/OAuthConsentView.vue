@@ -13,7 +13,7 @@
             />
           </div>
           <i
-            class="icon-[lucide--arrow-left-right] size-6 text-muted"
+            class="icon-[lucide--arrow-left-right] size-6 text-muted-foreground"
             aria-hidden="true"
           />
           <div
@@ -33,7 +33,7 @@
               })
             }}
           </h1>
-          <p class="m-0 text-sm text-muted">
+          <p class="m-0 text-sm text-muted-foreground">
             {{ t('oauth.consent.subtitle', { resource: resourceName }) }}
           </p>
         </div>
@@ -45,7 +45,7 @@
         </p>
         <div
           v-if="challenge.workspaces.length === 0"
-          class="rounded-lg bg-ink-400 p-3 text-sm text-muted"
+          class="rounded-lg bg-ink-400 p-3 text-sm text-muted-foreground"
         >
           {{ t('oauth.consent.noWorkspaces') }}
         </div>
@@ -94,7 +94,7 @@
           {{ t('oauth.consent.detailsHeader') }}
         </p>
         <div class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3">
-          <span class="text-xs text-muted">
+          <span class="text-xs text-muted-foreground">
             {{ t('oauth.consent.permissionsHeader') }}
           </span>
           <ul
@@ -119,11 +119,11 @@
           v-if="challenge.redirect_uri"
           class="flex flex-col gap-1.5 rounded-lg bg-ink-400 p-3"
         >
-          <span class="text-xs text-muted">
+          <span class="text-xs text-muted-foreground">
             {{ t('oauth.consent.redirectNotice') }}
           </span>
           <code
-            class="m-0 block truncate rounded-md bg-ink-200 px-3 py-2 font-mono text-xs text-base-foreground"
+            class="block truncate rounded-md bg-ink-200 px-3 py-2 font-mono text-xs text-base-foreground"
             :title="challenge.redirect_uri"
           >
             {{ challenge.redirect_uri }}
@@ -134,7 +134,7 @@
       <p
         v-show="errorMessage"
         role="alert"
-        class="m-0 rounded-md border border-solid border-destructive-background bg-destructive-background/10 p-3 text-sm text-destructive-background"
+        class="m-0 rounded-md border border-destructive-background bg-destructive-background/10 p-3 text-sm text-destructive-background"
       >
         {{ errorMessage }}
       </p>
@@ -166,11 +166,11 @@
     <p
       v-else-if="errorMessage"
       role="alert"
-      class="m-0 rounded-md border border-solid border-destructive-background bg-destructive-background/10 p-3 text-center text-sm text-destructive-background"
+      class="m-0 rounded-md border border-destructive-background bg-destructive-background/10 p-3 text-center text-sm text-destructive-background"
     >
       {{ errorMessage }}
     </p>
-    <p v-else class="m-0 text-center text-sm text-muted">
+    <p v-else class="m-0 text-center text-sm text-muted-foreground">
       {{ t('oauth.consent.loading') }}
     </p>
   </main>

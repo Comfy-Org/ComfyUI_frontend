@@ -3,7 +3,7 @@ import type { Mock } from 'vitest'
 import { computed } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { AuthStoreError } from '@/stores/authStore'
+import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type {
   BillingStatusResponse,
@@ -47,6 +47,25 @@ describe('useLegacyBilling', () => {
       })
 
       expect(useLegacyBilling().renewalInvoice.value).toEqual(invoice)
+    })
+
+    it('maps the legacy Agent-scoped balance when the server reports it', () => {
+      useSubscription().subscriptionStatus.value = statusWith({
+        scoped_has_funds: { agent: false }
+      })
+
+      expect(useLegacyBilling().subscription.value?.agentScopedHasFunds).toBe(
+        false
+      )
+    })
+
+    it('uses the Agent-effective funds verdict for legacy admission', () => {
+      useAuthStore().balance = { currency: 'usd', amount_micros: 1 }
+      useSubscription().subscriptionStatus.value = statusWith({
+        scoped_effective_has_funds: { agent: false }
+      })
+
+      expect(useLegacyBilling().subscription.value?.agentHasFunds).toBe(false)
     })
 
     it('keeps a tierless past-due status as a subscription', () => {
@@ -114,27 +133,49 @@ describe('useLegacyBilling', () => {
     })
   })
 
+  describe('topup', () => {
+    it.for([
+      { canAccess: true, purchases: [[5]] },
+      { canAccess: false, purchases: [] }
+    ])(
+      'buys credits in dollars only when subscription features are available ($canAccess)',
+      async ({ canAccess, purchases }) => {
+        Object.assign(useSubscription(), {
+          canAccessSubscriptionFeatures: computed(() => canAccess)
+        })
+
+        await useLegacyBilling().topup(500)
+
+        expect(
+          vi.mocked(useAuthActions().purchaseCreditsDirect).mock.calls
+        ).toEqual(purchases)
+      }
+    )
+  })
+
   describe('actions whose caller does not show a result', () => {
     it.for([
       {
         name: 'subscribe',
         rejecting: () => vi.mocked(useSubscription().subscribeDirect),
         run: (billing: ReturnType<typeof useLegacyBilling>) =>
-          billing.subscribe('plan-slug')
+          billing.subscribe('plan-slug'),
+        resolved: undefined
       },
       {
         name: 'manageSubscription',
         rejecting: () => vi.mocked(useSubscription().manageSubscription),
         run: (billing: ReturnType<typeof useLegacyBilling>) =>
-          billing.manageSubscription()
+          billing.manageSubscription(),
+        resolved: { ok: false, reason: 'failed' }
       }
     ])(
       'reports a failed $name once and resolves',
-      async ({ rejecting, run }) => {
+      async ({ rejecting, run, resolved }) => {
         const failure = new Error('request rejected')
         rejecting().mockRejectedValue(failure)
 
-        await expect(run(useLegacyBilling())).resolves.toBeUndefined()
+        await expect(run(useLegacyBilling())).resolves.toEqual(resolved)
         expect(useAuthActions().reportError).toHaveBeenCalledExactlyOnceWith(
           failure
         )
@@ -182,6 +223,7 @@ describe('useLegacyBilling', () => {
       name: string
       rejecting: () => Mock
       run: (billing: Billing) => Promise<unknown>
+      resolved?: unknown
     }
     const retryMessage =
       "We couldn't update your subscription. Please try again."
@@ -200,14 +242,15 @@ describe('useLegacyBilling', () => {
       {
         name: 'manageSubscription',
         rejecting: () => vi.mocked(useSubscription().manageSubscription),
-        run: (billing) => billing.manageSubscription()
+        run: (billing) => billing.manageSubscription(),
+        resolved: { ok: false, reason: 'failed' }
       }
     ])(
       'refreshes the status and reports once without retrying $name',
-      async ({ rejecting, run }) => {
+      async ({ rejecting, run, resolved }) => {
         rejecting().mockRejectedValue(refusal())
 
-        await expect(run(useLegacyBilling())).resolves.toBeUndefined()
+        await expect(run(useLegacyBilling())).resolves.toEqual(resolved)
 
         expect(rejecting()).toHaveBeenCalledOnce()
         expect(useSubscription().fetchStatusDirect).toHaveBeenCalledOnce()

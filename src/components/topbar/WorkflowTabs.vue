@@ -49,11 +49,8 @@
       :active-workflow="workflowStore.activeWorkflow"
     />
     <Button
-      v-tooltip="{
-        value: $t('sideToolbar.newBlankWorkflow'),
-        showDelay: 300
-      }"
-      class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
+      :tooltip="$t('sideToolbar.newBlankWorkflow')"
+      class="new-blank-workflow-button no-drag shrink-0 self-center"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
@@ -77,7 +74,7 @@
       />
       <Button
         v-if="isCloud || isNightly"
-        v-tooltip="{ value: $t('actionbar.feedbackTooltip'), showDelay: 300 }"
+        :tooltip="$t('actionbar.feedbackTooltip')"
         variant="muted-textonly"
         size="icon"
         class="size-6 shrink-0 rounded-sm p-0"
@@ -96,6 +93,7 @@
         <AgentEntryButton
           :active="agentPanelStore.isVisible"
           :inviting="!agentPanelStore.hasEverOpened"
+          :comfy-agent="comfyAgentNotReady"
           @click="onAgentEntryClick"
         />
       </template>
@@ -164,12 +162,19 @@ const { withConsent, isChecking } = useAgentConsent()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
 
+const comfyAgentNotReady = computed(() =>
+  agentPanelStore.enabled || agentPanelStore.comfyAgent?.state === 'ready'
+    ? undefined
+    : agentPanelStore.comfyAgent
+)
 const showAgentEntry = computed(
-  () => agentPanelStore.enabled && !(agentPanelStore.isOpen && isChecking.value)
+  () =>
+    (agentPanelStore.enabled || comfyAgentNotReady.value !== undefined) &&
+    !(agentPanelStore.isOpen && isChecking.value)
 )
 
 async function onAgentEntryClick(): Promise<void> {
-  if (isOpeningAgent.value) return
+  if (isOpeningAgent.value || comfyAgentNotReady.value) return
   isOpeningAgent.value = true
 
   try {

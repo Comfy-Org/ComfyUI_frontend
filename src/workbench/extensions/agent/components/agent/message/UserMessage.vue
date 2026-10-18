@@ -6,7 +6,9 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -122,13 +124,6 @@ function attachmentIconClass(name: string): string {
   return kind === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind)
 }
 
-/**
- * Sent uploads reuse the reply asset grid (Uy, FE-1323): media attachments
- * render as the DES-530 per-count grid with the same hover-play, inspect, and
- * audio-card behavior as agent replies. A ref resolves to the uploaded input
- * file; an image without one still has its local preview. Text and other
- * kinds have no grid treatment and keep the compact tiles.
- */
 const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
@@ -143,11 +138,7 @@ const splitAttachments = computed(() => {
 function gridAsset(item: UserAttachment): ReplyAsset | undefined {
   const kind = item.kind ?? getMediaTypeFromFilename(item.name)
   if (!isReplyAssetKind(kind)) return undefined
-  const url =
-    item.previewUrl ??
-    (item.ref
-      ? api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
-      : undefined)
+  const url = attachmentUrl(item, kind)
   if (!url) return undefined
   const filename = item.ref ?? item.name
   return {
@@ -156,6 +147,17 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
     kind,
     label: filename === item.name ? undefined : item.name
   }
+}
+
+function attachmentUrl(
+  item: UserAttachment,
+  kind: ReplyAsset['kind']
+): string | undefined {
+  const capturedUrl =
+    kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
+  if (capturedUrl) return capturedUrl
+  if (!item.ref) return
+  return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
 }
 </script>
 
@@ -253,39 +255,26 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
       v-if="readableText"
       class="pointer-events-none flex text-muted-foreground opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 touch:pointer-events-auto touch:opacity-100"
     >
-      <AccessibleTooltip
+      <Button
         v-if="editable && (text || workflowReferences.length || skillReference)"
-        :label="t('g.edit')"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :collision-padding="8"
+        :tooltip="t('g.edit')"
+        type="button"
+        variant="muted-textonly"
+        size="icon-sm"
+        :aria-label="t('g.edit')"
+        class="size-6 rounded-lg"
+        @click="
+          emit('edit', {
+            text,
+            workflowReferences,
+            ...(skillReference ? { skillReference } : {})
+          })
+        "
       >
-        <template #trigger>
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('g.edit')"
-            class="size-6 rounded-lg"
-            @click="
-              emit('edit', {
-                text,
-                workflowReferences,
-                ...(skillReference ? { skillReference } : {})
-              })
-            "
-          >
-            <span class="icon-[lucide--pencil] size-3" />
-          </Button>
-        </template>
-      </AccessibleTooltip>
-      <AccessibleTooltip
-        :label="copied ? t('agent.copied') : t('agent.copy')"
-        :skip-delay-duration="0"
-        disable-hoverable-content
-        :collision-padding="8"
-      >
-        <template #trigger>
+        <span class="icon-[lucide--pencil] size-3" />
+      </Button>
+      <Tooltip disable-closing-trigger>
+        <TooltipTrigger as-child>
           <Button
             type="button"
             variant="muted-textonly"
@@ -303,8 +292,11 @@ function gridAsset(item: UserAttachment): ReplyAsset | undefined {
               "
             />
           </Button>
-        </template>
-      </AccessibleTooltip>
+        </TooltipTrigger>
+        <TooltipContent>{{
+          copied ? t('agent.copied') : t('agent.copy')
+        }}</TooltipContent>
+      </Tooltip>
     </div>
   </div>
 </template>

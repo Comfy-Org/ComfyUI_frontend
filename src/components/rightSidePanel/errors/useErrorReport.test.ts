@@ -9,6 +9,7 @@ import { createNodeExecutionId } from '@/types/nodeIdentification'
 import type { ErrorCardData } from './types'
 import { useErrorReport } from './useErrorReport'
 import { app } from '@/scripts/app'
+import { api } from '@/scripts/api'
 
 async function flushPromises() {
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -16,20 +17,17 @@ async function flushPromises() {
 }
 
 const mocks = vi.hoisted(() => {
-  // Helpers only — imports happen inside factories below.
   return {
-    getLogs: vi.fn(),
     serialize: vi.fn(),
     generateErrorReport: vi.fn()
   }
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getLogs: mocks.getLogs,
-    getSystemStats: vi.fn(async () => sampleSystemStats)
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.getSystemStats).mockResolvedValue(sampleSystemStats)
+})
 
 vi.mock(import('@/scripts/app'))
 
@@ -78,7 +76,7 @@ describe('useErrorReport', () => {
     const { displayedDetailsMap } = useErrorReport(card)
     await flushPromises()
 
-    expect(mocks.getLogs).not.toHaveBeenCalled()
+    expect(api.getLogs).not.toHaveBeenCalled()
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'details' })
   })
@@ -86,7 +84,7 @@ describe('useErrorReport', () => {
   it('enriches each runtime error with a generated report when systemStats is present', async () => {
     const store = useSystemStatsStore()
     store.systemStats = sampleSystemStats
-    mocks.getLogs.mockResolvedValue('server logs')
+    vi.mocked(api.getLogs).mockResolvedValue('server logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockImplementation(
       ({ exceptionType }: { exceptionType: string }) =>
@@ -116,7 +114,7 @@ describe('useErrorReport', () => {
     const { displayedDetailsMap } = useErrorReport(card)
     await flushPromises()
 
-    expect(mocks.getLogs).toHaveBeenCalledTimes(1)
+    expect(api.getLogs).toHaveBeenCalledTimes(1)
     expect(mocks.generateErrorReport).toHaveBeenCalledTimes(2)
     expect(mocks.generateErrorReport).toHaveBeenNthCalledWith(1, {
       exceptionType: 'RuntimeError',
@@ -147,7 +145,7 @@ describe('useErrorReport', () => {
   it('awaits the systemStats loading flag before proceeding', async () => {
     const store = useSystemStatsStore()
     store.isLoading = true
-    mocks.getLogs.mockResolvedValue('logs')
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockReturnValue('report')
 
@@ -158,14 +156,14 @@ describe('useErrorReport', () => {
     const { displayedDetailsMap } = useErrorReport(card)
     await flushPromises()
 
-    expect(mocks.getLogs).not.toHaveBeenCalled()
+    expect(api.getLogs).not.toHaveBeenCalled()
     expect(displayedDetailsMap.value).toEqual({ 0: 'trace' })
 
     store.systemStats = sampleSystemStats
     store.isLoading = false
     await flushPromises()
 
-    expect(mocks.getLogs).toHaveBeenCalledTimes(1)
+    expect(api.getLogs).toHaveBeenCalledTimes(1)
     expect(displayedDetailsMap.value).toEqual({ 0: 'report' })
   })
 
@@ -177,7 +175,7 @@ describe('useErrorReport', () => {
         return sampleSystemStats
       }
     )
-    mocks.getLogs.mockResolvedValue('logs')
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockReturnValue('report')
 
@@ -196,7 +194,7 @@ describe('useErrorReport', () => {
     vi.mocked(useSystemStatsStore().refetchSystemStats).mockRejectedValue(
       new Error('boom')
     )
-    mocks.getLogs.mockResolvedValue('logs')
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
 
     const card = makeCard({
       errors: [{ message: 'runtime', details: 'trace', isRuntimeError: true }]
@@ -206,7 +204,7 @@ describe('useErrorReport', () => {
     await flushPromises()
 
     expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
-    expect(mocks.getLogs).not.toHaveBeenCalled()
+    expect(api.getLogs).not.toHaveBeenCalled()
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
     expect(console.warn).toHaveBeenCalled()
   })
@@ -214,7 +212,7 @@ describe('useErrorReport', () => {
   it('returns early and warns when workflow serialization throws', async () => {
     const store = useSystemStatsStore()
     store.systemStats = sampleSystemStats
-    mocks.getLogs.mockResolvedValue('logs')
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockImplementation(() => {
       throw new Error('serialize failed')
     })
@@ -234,7 +232,7 @@ describe('useErrorReport', () => {
   it('falls back to original error.details when generateErrorReport throws', async () => {
     const store = useSystemStatsStore()
     store.systemStats = sampleSystemStats
-    mocks.getLogs.mockResolvedValue('logs')
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockImplementation(() => {
       throw new Error('generate failed')
@@ -256,7 +254,7 @@ describe('useErrorReport', () => {
   it('re-enriches and clears stale enriched details when the card ref changes', async () => {
     const store = useSystemStatsStore()
     store.systemStats = sampleSystemStats
-    mocks.getLogs.mockResolvedValue('logs')
+    vi.mocked(api.getLogs).mockResolvedValue('logs')
     mocks.serialize.mockReturnValue({ nodes: [] })
     mocks.generateErrorReport.mockImplementation(
       ({ exceptionMessage }: { exceptionMessage: string }) =>
@@ -306,8 +304,10 @@ describe('useErrorReport', () => {
       })
       return { resolve, promise }
     })()
-    mocks.getLogs.mockImplementationOnce(() => firstLogsDeferred.promise)
-    mocks.getLogs.mockImplementationOnce(async () => 'second-logs')
+    vi.mocked(api.getLogs).mockImplementationOnce(
+      () => firstLogsDeferred.promise
+    )
+    vi.mocked(api.getLogs).mockImplementationOnce(async () => 'second-logs')
 
     const cardRef = ref<ErrorCardData>(
       makeCard({

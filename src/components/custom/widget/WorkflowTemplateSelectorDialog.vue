@@ -52,7 +52,7 @@
           :searcher="applySearchQuery"
           :debounce-ms="400"
           :debounce-max-wait-ms="4000"
-          class="h-9 w-full min-w-0 flex-1 border border-border-subtle bg-transparent min-[880px]:ml-auto min-[880px]:max-w-96"
+          class="h-9 w-full min-w-0 border border-border-subtle bg-transparent min-[880px]:ml-auto min-[880px]:max-w-96"
           autofocus
         />
       </div>
@@ -70,7 +70,7 @@
         data-testid="template-filter-bar"
       >
         <div class="flex items-center gap-3">
-          <div class="flex min-w-0 shrink items-center gap-2">
+          <div class="flex min-w-0 items-center gap-2">
             <Button
               v-for="tab in typeTabs"
               :key="tab.value"
@@ -89,7 +89,7 @@
           </div>
 
           <div
-            class="ml-auto hidden min-w-0 shrink items-center justify-end gap-2 @[58rem]/filters:flex"
+            class="ml-auto hidden min-w-0 items-center justify-end gap-2 @[58rem]/filters:flex"
           >
             <TemplateFilterControls
               v-bind="filterControlBindings"
@@ -281,7 +281,8 @@
                 >
                   <Button
                     v-if="template.tutorialUrl"
-                    v-tooltip.bottom="$t('g.seeTutorial')"
+                    :tooltip="$t('g.seeTutorial')"
+                    tooltip-side="bottom"
                     :aria-label="$t('g.seeTutorial')"
                     variant="inverted"
                     size="icon"
@@ -324,17 +325,25 @@
                       shape="square"
                       class="bg-charcoal-500/50 opacity-80"
                     />
-                    <AccessibleTooltip
-                      v-if="tags.hidden.length"
-                      :label="tags.hidden"
-                      trigger-class="rounded-sm"
-                    >
-                      <Tag
-                        :label="`+${tags.hidden.length}`"
-                        shape="square"
-                        class="bg-charcoal-500/50 opacity-80"
-                      />
-                    </AccessibleTooltip>
+                    <Tooltip v-if="tags.hidden.length" open-on-click>
+                      <TooltipTrigger as-child>
+                        <button
+                          type="button"
+                          :aria-label="tags.hidden.join(', ')"
+                          class="cursor-pointer rounded-sm border-none bg-transparent p-0 focus-visible:ring-1 focus-visible:ring-base-foreground focus-visible:outline-none"
+                          @click.stop
+                        >
+                          <Tag
+                            :label="`+${tags.hidden.length}`"
+                            shape="square"
+                            class="bg-charcoal-500/50 opacity-80"
+                          />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{{
+                        tags.hidden.join(', ')
+                      }}</TooltipContent>
+                    </Tooltip>
                   </div>
                 </div>
               </CardBottom>
@@ -380,7 +389,7 @@
         ref="loadTrigger"
         class="mt-4 flex h-4 w-full items-center justify-center px-6"
       >
-        <div v-if="isLoadingMore" class="text-sm text-muted">
+        <div v-if="isLoadingMore" class="text-sm text-muted-foreground">
           {{ $t('templateWorkflows.loadingMore', 'Loading more...') }}
         </div>
       </div>
@@ -389,7 +398,7 @@
       <div
         v-if="!isLoading"
         v-show="!activeDetail"
-        class="mt-6 px-6 pb-10 text-sm text-muted"
+        class="mt-6 px-6 pb-10 text-sm text-muted-foreground"
       >
         {{
           $t('templateWorkflows.resultsCount', {
@@ -457,7 +466,9 @@ import WorkflowTemplateDetail from '@/components/custom/widget/WorkflowTemplateD
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import TemplatePreview from '@/components/templates/thumbnails/TemplatePreview.vue'
 import Button from '@/components/ui/button/Button.vue'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import Spinner from '@/components/ui/spinner/Spinner.vue'

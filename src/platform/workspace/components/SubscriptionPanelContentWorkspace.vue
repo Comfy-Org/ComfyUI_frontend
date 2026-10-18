@@ -16,7 +16,7 @@
         v-if="subscriptionActionUrl && permissions.canManageSubscription"
         variant="primary"
         size="lg"
-        class="rounded-lg px-4 text-sm font-normal"
+        class="font-normal"
         @click="openSubscriptionVerification"
       >
         {{ $t('subscription.preview.completeVerification') }}
@@ -46,7 +46,7 @@
       <Button
         variant="secondary"
         size="lg"
-        class="rounded-lg px-4 text-sm font-normal"
+        class="font-normal"
         :loading="isLoading"
         @click="handleRetry"
       >
@@ -118,7 +118,7 @@
                   "
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  class="bg-interface-menu-component-surface-selected font-normal text-text-primary"
                   @click="manageSubscription"
                 >
                   {{ $t('subscription.billingAndInvoices') }}
@@ -126,7 +126,7 @@
                 <Button
                   variant="primary"
                   size="lg"
-                  class="rounded-lg px-4 py-2 text-sm font-normal"
+                  class="font-normal"
                   @click="handleSubscribeWorkspace"
                 >
                   {{
@@ -143,7 +143,7 @@
                 >
                   <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -185,7 +185,7 @@
                   v-if="isCloud && permissions.canManageSubscription"
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  class="bg-interface-menu-component-surface-selected font-normal text-text-primary"
                   @click="manageSubscription"
                 >
                   {{ $t('subscription.billingAndInvoices') }}
@@ -193,7 +193,7 @@
                 <Button
                   variant="primary"
                   size="lg"
-                  class="rounded-lg px-4 text-sm font-normal"
+                  class="font-normal"
                   @click="handleSubscribeWorkspace"
                 >
                   {{ $t('subscription.subscribe') }}
@@ -201,7 +201,7 @@
                 <Menu v-if="menuEntries.length > 0" :items="menuEntries">
                   <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -258,7 +258,7 @@
                   "
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  class="bg-interface-menu-component-surface-selected font-normal text-text-primary"
                   @click="manageSubscription"
                 >
                   {{
@@ -276,7 +276,7 @@
                   v-if="isSubscriptionCancelled && canReactivatePlan"
                   size="lg"
                   variant="primary"
-                  class="rounded-lg px-4 text-sm font-normal"
+                  class="font-normal"
                   :loading="isResubscribing"
                   @click="handleResubscribe"
                 >
@@ -290,7 +290,8 @@
                   "
                   size="lg"
                   variant="secondary"
-                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  class="bg-interface-menu-component-surface-selected font-normal text-text-primary"
+                  :data-dd-action-name="BILLING_ACTION_NAME.upgradePlanPanel"
                   @click="handleUpgrade"
                 >
                   {{
@@ -302,7 +303,7 @@
                 <Menu v-if="menuEntries.length > 0" :items="menuEntries">
                   <template #trigger>
                     <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      :tooltip="$t('g.moreOptions')"
                       variant="secondary"
                       size="icon-lg"
                       icon="icon-[lucide--ellipsis]"
@@ -340,7 +341,7 @@
                   : 'subscription.teamPlanIncludes'
               "
               tag="div"
-              class="text-sm text-muted"
+              class="text-sm text-muted-foreground"
             >
               <template #plan>
                 <span class="text-text-primary">
@@ -348,7 +349,10 @@
                 </span>
               </template>
             </i18n-t>
-            <div v-else-if="isPersonalFree" class="text-sm text-muted">
+            <div
+              v-else-if="isPersonalFree"
+              class="text-sm text-muted-foreground"
+            >
               {{ $t('subscription.whatsIncluded') }}
             </div>
             <div v-else class="text-sm text-text-primary">
@@ -367,7 +371,7 @@
                     cn(
                       'pi pi-check text-xs',
                       showInactiveTeamSubscription
-                        ? 'text-muted'
+                        ? 'text-muted-foreground'
                         : 'text-text-primary'
                     )
                   "
@@ -378,7 +382,7 @@
                 >
                   {{ benefit.value }}
                 </span>
-                <span class="text-sm text-muted">
+                <span class="text-sm text-muted-foreground">
                   {{ benefit.label }}
                 </span>
               </div>
@@ -399,6 +403,7 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useTimestamp } from '@vueuse/core'
@@ -412,6 +417,7 @@ import Menu from '@/components/ui/menu/Menu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import {
@@ -468,12 +474,12 @@ const {
   subscriptionStatus,
   isLoading,
   error,
-  showSubscriptionDialog,
   manageSubscription,
   initialize
 } = useBillingContext()
 
 const { showPricingTable } = useSubscriptionDialog()
+const { showSubscriptionDialog } = useSubscriptionPaywall()
 
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const { displayPrice, priceUnitLabel, isPriceCycleUnknown } =
@@ -747,9 +753,3 @@ const tierBenefits = computed((): TierBenefit[] => {
   return getCommonTierBenefits(tierKey.value, t, n)
 })
 </script>
-
-<style scoped>
-:deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-</style>

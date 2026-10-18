@@ -143,6 +143,8 @@ const hubModelRedirects: readonly SiteRedirect[] = [
  * two drift, so edit this list and never `vercel.json` by hand.
  */
 export const siteRedirects: readonly SiteRedirect[] = [
+  { source: '/vfx', destination: '/solutions/vfx/' },
+  { source: '/zh-CN/vfx', destination: '/zh-CN/solutions/vfx/' },
   { source: '/career', destination: '/careers/' },
   { source: '/privacy', destination: '/privacy-policy/' },
   { source: '/press', destination: '/about/' },
@@ -156,6 +158,8 @@ export const siteRedirects: readonly SiteRedirect[] = [
     destination: '/zh-CN/about/',
     slashFormIsPageBecause: '/zh-CN/about/ is the About page'
   },
+  { source: '/nvidia-rtx', destination: '/nvidia-vfx/' },
+  { source: '/zh-CN/nvidia-rtx', destination: '/zh-CN/nvidia-vfx/' },
   { source: '/blog', destination: 'https://blog.comfy.org/' },
   { source: '/discord', destination: 'https://discord.com/invite/comfyorg' },
   {

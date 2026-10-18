@@ -94,7 +94,7 @@
          falling back to TIER_PRICING). -->
       <div
         v-if="planMode === 'personal'"
-        class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
+        class="flex flex-col gap-6 xl:flex-1 xl:flex-row xl:justify-center"
       >
         <div
           v-for="tier in tiers"
@@ -102,21 +102,12 @@
           class="flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:w-80"
         >
           <div class="flex flex-1 flex-col gap-4 p-6 pb-0">
-            <div class="flex flex-row items-center justify-between gap-2">
-              <span
-                class="font-inter text-base/normal font-bold text-base-foreground"
-              >
-                {{ tier.name }}
-              </span>
-              <div
-                v-if="tier.isPopular"
-                class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
-              >
-                {{ t('subscription.mostPopular') }}
-              </div>
-            </div>
+            <PricingTierHeading
+              :name="tier.name"
+              :is-popular="tier.isPopular"
+            />
             <div class="flex flex-col gap-2">
-              <div class="flex flex-row items-baseline gap-2">
+              <div class="flex items-baseline gap-2">
                 <span
                   class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
                 >
@@ -154,7 +145,7 @@
               <div
                 v-for="feature in tier.features"
                 :key="feature"
-                class="flex flex-row items-start gap-2"
+                class="flex items-start gap-2"
               >
                 <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
                 <span class="text-sm font-normal text-muted-foreground">
@@ -166,7 +157,7 @@
             <!-- Credit grant + template-based video estimate, pinned to the
                  card bottom so the figures align across tiers. -->
             <div class="mt-auto flex flex-col gap-1">
-              <div class="flex flex-row items-center gap-2">
+              <div class="flex items-center gap-2">
                 <i
                   class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
@@ -189,7 +180,7 @@
               </span>
             </div>
           </div>
-          <div class="flex flex-col p-6">
+          <div class="flex flex-col gap-2 p-6">
             <Button
               :variant="getButtonSeverity(tier)"
               :disabled="isButtonDisabled(tier)"
@@ -203,10 +194,17 @@
                     : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
                 )
               "
+              :data-dd-action-name="planCtaActionName(tier.key)"
               @click="() => handleSubscribe(tier.key)"
             >
               {{ getButtonLabel(tier) }}
             </Button>
+            <p
+              v-if="getDeniedReasonCopy(tier.key)"
+              class="m-0 text-center text-sm text-muted-foreground"
+            >
+              {{ getDeniedReasonCopy(tier.key) }}
+            </p>
           </div>
         </div>
       </div>
@@ -214,7 +212,7 @@
       <!-- TEAM PLAN: [Team Plan | Details] card + Enterprise card -->
       <div v-else class="flex min-h-0 flex-col gap-6 xl:flex-1">
         <div
-          class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
+          class="flex flex-col gap-6 xl:flex-1 xl:flex-row xl:justify-center"
         >
           <!-- Team Plan + Details share one card, split by a divider. -->
           <div
@@ -244,7 +242,7 @@
 
               <!-- Selected credit grant + template-based video estimate -->
               <div class="flex flex-col gap-1">
-                <div class="flex flex-row items-center gap-2">
+                <div class="flex items-center gap-2">
                   <i
                     class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                     aria-hidden="true"
@@ -271,7 +269,8 @@
               <Button
                 variant="inverted"
                 :disabled="isTeamButtonDisabled"
-                class="mt-auto h-10 w-full font-inter text-sm/normal font-bold"
+                class="mt-auto h-10 w-full text-sm/normal font-bold"
+                :data-dd-action-name="BILLING_ACTION_NAME.subscribeTeamPlan"
                 @click="handleSubscribeTeam"
               >
                 {{ teamButtonLabel }}
@@ -302,7 +301,7 @@
                 <div
                   v-for="perk in teamDetailPerks"
                   :key="perk"
-                  class="flex flex-row items-start gap-2"
+                  class="flex items-start gap-2"
                 >
                   <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
                   <span class="text-sm font-normal text-muted-foreground">
@@ -315,7 +314,7 @@
                 <span class="text-sm text-muted-foreground">
                   {{ t('subscription.teamPlan.comingSoonLabel') }}
                 </span>
-                <div class="flex flex-row items-start gap-2">
+                <div class="flex items-start gap-2">
                   <i class="pi pi-clock mt-0.5 text-xs text-muted-foreground" />
                   <span class="text-sm font-normal text-muted-foreground">
                     {{ t('subscription.teamPlan.perkProjectAssets') }}
@@ -348,7 +347,7 @@
             </span>
             <Button
               variant="secondary"
-              class="mt-auto h-10 w-full border-transparent bg-secondary-background font-bold hover:bg-secondary-background-hover"
+              class="mt-auto h-10 w-full border-transparent font-bold"
               @click="handleViewEnterprise"
             >
               {{ t('subscription.enterprise.cta') }}
@@ -429,6 +428,12 @@
 </template>
 
 <script setup lang="ts">
+import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
+import {
+  BILLING_ACTION_NAME,
+  planCtaActionName
+} from '@/platform/telemetry/billingActionNames'
+import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
@@ -440,9 +445,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   ENTERPRISE_URL,
   TIER_PRICING,
-  amountForBillingCycle,
-  hasActivePaidPlan,
-  toTierKey
+  amountForBillingCycle
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
@@ -461,6 +464,7 @@ import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -493,7 +497,7 @@ const emit = defineEmits<{
   ]
 }>()
 
-const { t, n } = useI18n()
+const { t, n, locale } = useI18n()
 const capabilities = useBillingCapabilities()
 const { permissions } = useWorkspaceUI()
 
@@ -523,12 +527,6 @@ const canDowngradeToPersonal = computed(() => {
   if (!capabilities.snapshotAuthoritative.value) return true
   return capabilities.canDowngradeToPersonal.value
 })
-
-// A personal card is reachable by one further write the team catalog has no
-// counterpart for: leaving a team plan.
-const personalPlanActionPermitted = computed(
-  () => lifecycleActionPermitted.value || canDowngradeToPersonal.value
-)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -623,7 +621,6 @@ const tiers: PricingTierConfig[] = [
 
 const {
   plans: apiPlans,
-  currentPlanSlug,
   fetchPlans,
   isTeamPlan,
   subscription,
@@ -780,9 +777,6 @@ const teamButtonLabel = computed(() => {
   return t('subscription.teamPlan.changePlan')
 })
 
-// `isTeamCurrentPlanSelected` compares the slider against a stop an ended
-// subscription still reports, so it only means "current plan" while the team
-// plan is live — the same exclusion `isCurrentPlan` makes via `isEnded`.
 const isTeamButtonDisabled = computed(
   () =>
     isLoading ||
@@ -830,36 +824,37 @@ const videoEstimateForTier = (tier: PricingTierConfig): number =>
     creditsForTier(tier) * (tier.pricing.videoEstimate / tier.pricing.credits)
   )
 
-const currentAccountTier = computed(() =>
-  subscription.value?.tier && !isEnded.value ? subscription.value.tier : null
-)
+const getPlanAction = (tierKey: CheckoutTierKey): PlanAction =>
+  getApiPlanForTier(tierKey, currentBillingCycle.value)?.action ?? 'none'
 
-const currentTierKey = computed<TierKey | null>(() =>
-  currentAccountTier.value ? toTierKey(currentAccountTier.value) : null
-)
+const isSamePlan = (tierKey: CheckoutTierKey): boolean =>
+  getApiPlanForTier(tierKey, currentBillingCycle.value)?.denied_reason ===
+  'same_plan'
 
-const isYearlySubscription = computed(
-  () => subscription.value?.duration === 'ANNUAL'
-)
-
-const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
-  if (isEnded.value) return false
-  if (currentPlanSlug.value) {
-    const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
-    return plan?.slug === currentPlanSlug.value
-  }
-  if (!currentTierKey.value) return false
-  const selectedIsYearly = currentBillingCycle.value === 'yearly'
-  return (
-    currentTierKey.value === tierKey &&
-    isYearlySubscription.value === selectedIsYearly
-  )
+const PLAN_ACTION_LABEL_KEYS: Readonly<
+  Record<Exclude<PlanAction, 'none'>, string>
+> = {
+  subscribe: 'subscription.subscribeTo',
+  change: 'subscription.changeTo',
+  downgrade: 'subscription.changeTo',
+  reactivate: 'subscription.resubscribeTo'
 }
 
-function isScheduledDestination(tierKey: CheckoutTierKey): boolean {
-  const slug = scheduledPlanChange.scheduledChange.value?.plan_slug
-  if (!slug) return false
-  return getApiPlanForTier(tierKey, currentBillingCycle.value)?.slug === slug
+const DENIED_REASON_COPY_KEYS: Readonly<Record<string, string>> = {
+  not_a_member: 'subscription.planUnavailable.notAMember',
+  not_workspace_owner: 'subscription.planUnavailable.notWorkspaceOwner',
+  not_original_owner: 'subscription.planUnavailable.notOriginalOwner',
+  sales_managed: 'subscription.planUnavailable.salesManaged',
+  billing_operation_parked:
+    'subscription.planUnavailable.billingOperationParked',
+  billing_operation_in_progress:
+    'subscription.planUnavailable.billingOperationInProgress',
+  annual_to_monthly_unsupported:
+    'subscription.planUnavailable.annualToMonthlyUnsupported',
+  incompatible_transition:
+    'subscription.planUnavailable.incompatibleTransition',
+  exceeds_max_seats: 'subscription.planUnavailable.exceedsMaxSeats',
+  billing_state_unknown: 'subscription.planUnavailable.billingStateUnknown'
 }
 
 const getButtonLabel = (tier: PricingTierConfig): string => {
@@ -867,41 +862,41 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     currentBillingCycle.value === 'yearly'
       ? t('subscription.tierNameYearly', { name: tier.name })
       : tier.name
+  if (isSamePlan(tier.key)) return t('subscription.currentPlan')
+  const action = getPlanAction(tier.key)
+  if (action === 'none') return planName
+  return t(PLAN_ACTION_LABEL_KEYS[action], { plan: planName })
+}
 
-  if (isCurrentPlan(tier.key)) {
-    return isCancelled.value
-      ? t('subscription.resubscribeTo', { plan: planName })
-      : t('subscription.currentPlan')
+const getDeniedReasonCopy = (tierKey: CheckoutTierKey): string | undefined => {
+  const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
+  if (plan?.action !== 'none' || plan.denied_reason === 'same_plan') {
+    return undefined
   }
-
-  if (showScheduledPlanChange.value && isScheduledDestination(tier.key)) {
-    return t('subscription.scheduledForDate', {
-      date: scheduledPlanChange.formattedDate.value
-    })
+  if (plan.denied_reason === 'subscription_change_in_progress') {
+    const date = formatSubscriptionDate(
+      plan.denied_reason_params?.effective_at,
+      locale.value
+    )
+    return date
+      ? t('subscription.planUnavailable.subscriptionChangeScheduled', { date })
+      : t('subscription.planUnavailable.subscriptionChangeInProgress')
   }
-
-  return hasActivePaidPlan(currentAccountTier.value)
-    ? t('subscription.changeTo', { plan: planName })
-    : t('subscription.subscribeTo', { plan: planName })
+  const key = plan.denied_reason && DENIED_REASON_COPY_KEYS[plan.denied_reason]
+  return t(key || 'subscription.planUnavailable.generic')
 }
 
 const getButtonSeverity = (
   tier: PricingTierConfig
 ): 'primary' | 'secondary' => {
-  if (isCurrentPlan(tier.key)) {
-    return isCancelled.value ? 'primary' : 'secondary'
-  }
+  if (getPlanAction(tier.key) === 'reactivate') return 'primary'
+  if (isSamePlan(tier.key)) return 'secondary'
   if (tier.key === 'creator') return 'primary'
   return 'secondary'
 }
 
-const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean =>
-  canSelectPersonalPlan.value &&
-  offersTransition(isCurrentPlan(tierKey)) &&
-  personalPlanActionPermitted.value
-
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>
-  isLoading || !canUsePersonalPlanAction(tier.key)
+  isLoading || getPlanAction(tier.key) === 'none'
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
@@ -922,11 +917,11 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
 }
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (isLoading || !canUsePersonalPlanAction(tierKey)) return
-  if (isCurrentPlan(tierKey)) {
-    if (isCancelled.value) {
-      emit('resubscribe')
-    }
+  if (isLoading) return
+  const action = getPlanAction(tierKey)
+  if (action === 'none') return
+  if (action === 'reactivate') {
+    emit('resubscribe')
     return
   }
   emit('subscribe', { tierKey, billingCycle: currentBillingCycle.value })

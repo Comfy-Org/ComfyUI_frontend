@@ -1,0 +1,55 @@
+{
+  "id": "graph-selection",
+  "capability": "Graph selection",
+  "description": "The single graph-scoped selection store, its serialisable selection keys, and the legacy canvas.selectedItems view that adapts it for LiteGraph callers. Canvas gestures that change selection stay in the graph canvas domain.",
+  "modules": [
+    {
+      "path": "src/core/selection/selectionState.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/selection/selectionState.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/selection/selectionStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/core/selection/selectionStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/canvas/SelectedItemsView.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Selection keys and the ordered selection store stay the single source of selected items",
+      "checks": [
+        "src/core/selection/selectionState.test.ts",
+        "src/core/selection/selectionStore.test.ts"
+      ]
+    },
+    {
+      "name": "Canvas selection gestures and group selection keep selected items in sync",
+      "checks": [
+        "browser_tests/tests/selectionRectangle.spec.ts",
+        "browser_tests/tests/groupSelectChildren.spec.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/CANVAS-SELECTION-0028-single-selection-store.md",
+    "docs/adr/CANVAS-SELECTION-0031-ordered-set-storage.md"
+  ],
+  "compatibilityPromises": [
+    "canvas.selectedItems and entity selected flags keep reading from the selection store for existing extensions.",
+    "Inventory grants no new cross-domain permissions; graph-model and canvas imports of the selection store remain inherited debt."
+  ],
+  "deepImports": "inventory"
+}

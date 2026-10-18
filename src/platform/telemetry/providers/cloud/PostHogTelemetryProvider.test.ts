@@ -2,6 +2,7 @@ import type {
   BillingTelemetryEvent,
   CheckoutJourneyTelemetryEvent
 } from '@comfyorg/account-core/billing'
+import type { SsoTelemetryEvent } from '@comfyorg/account-core/telemetry'
 import type { CaptureResult, PostHog } from 'posthog-js'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
@@ -649,6 +650,7 @@ describe('PostHogTelemetryProvider', () => {
         prompt_id: 'slot_3',
         prompt_index: 2,
         prompt_count: 5,
+        visible_prompt_count: 5,
         prompt_text_hash: 'deadbeef',
         locale: 'en',
         click_id: 'click-1',
@@ -661,6 +663,7 @@ describe('PostHogTelemetryProvider', () => {
           prompt_id: 'slot_3',
           prompt_index: 2,
           prompt_count: 5,
+          visible_prompt_count: 5,
           prompt_text_hash: 'deadbeef',
           locale: 'en',
           click_id: 'click-1',
@@ -792,6 +795,35 @@ describe('PostHogTelemetryProvider', () => {
       await vi.dynamicImportSettled()
 
       provider.trackWebSessionEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        event.name,
+        event.properties
+      )
+    })
+
+    it.for<SsoTelemetryEvent>([
+      {
+        name: 'app:sso_continue_clicked',
+        properties: { surface: 'cloud_signup', flow_id: 'flow-1' }
+      },
+      {
+        name: 'app:sso_sign_in_completed',
+        properties: { surface: 'cloud_login', flow_id: 'flow-1' }
+      },
+      {
+        name: 'app:sso_workspace_landed',
+        properties: {
+          surface: 'cloud_login',
+          flow_id: 'flow-1',
+          landed_in_default_workspace: true
+        }
+      }
+    ])('captures the SSO event $name as is', async (event) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSsoEvent(event)
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         event.name,
@@ -1124,6 +1156,12 @@ describe('PostHogTelemetryProvider', () => {
             surface: 'refused_send'
           }),
         properties: { cta: 'add_credits', surface: 'refused_send' }
+      },
+      {
+        event: TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentCreditTransitionNotice({ action: 'shown' }),
+        properties: { action: 'shown' }
       }
     ])('captures $event', async ({ event, track, properties }) => {
       const provider = createProvider()

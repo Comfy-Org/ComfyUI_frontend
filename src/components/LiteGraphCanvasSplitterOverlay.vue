@@ -4,7 +4,7 @@
   >
     <slot name="workflow-tabs" />
 
-    <div class="pointer-events-none flex min-h-0 flex-1 flex-row">
+    <div class="pointer-events-none flex min-h-0 flex-1">
       <div
         :class="
           cn(

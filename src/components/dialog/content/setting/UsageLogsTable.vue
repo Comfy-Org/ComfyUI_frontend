@@ -63,10 +63,7 @@
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
-                v-tooltip.top="{
-                  escape: false,
-                  value: tooltipContentMap.get(event.event_id ?? '') || ''
-                }"
+                :tooltip="additionalInfoTooltip(event)"
                 variant="textonly"
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
@@ -90,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -104,6 +101,7 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -117,7 +115,7 @@ import {
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const events = ref<AuditLog[]>([])
 const loading = ref(true)
@@ -133,21 +131,38 @@ const pagination = ref({
   total: 0
 })
 
-function eventAmount(event: AuditLog) {
-  const amount = event.params?.amount
-  const value = typeof amount === 'string' ? Number(amount) : amount
+function toFiniteNumber(raw: unknown) {
+  const value = typeof raw === 'string' && raw.trim() ? Number(raw) : raw
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined
 }
 
-const tooltipContentMap = computed(() => {
-  const map = new Map<string, string>()
-  events.value.forEach((event) => {
-    if (customerEventService.hasAdditionalInfo(event) && event.event_id) {
-      map.set(event.event_id, customerEventService.getTooltipContent(event))
-    }
+function eventAmount(event: AuditLog) {
+  return toFiniteNumber(event.params?.amount)
+}
+
+function formatChargeCredits(microUsd: number) {
+  const amount = formatCreditsFromUsd({
+    usd: microUsd / 1_000_000,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
   })
-  return map
-})
+  return `${amount} ${t('credits.credits')}`
+}
+
+function formatParam(key: string, value: unknown) {
+  const microUsd =
+    key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
+  if (microUsd !== undefined) {
+    return `${t('credits.charge')}: ${formatChargeCredits(microUsd)}`
+  }
+  return `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
+}
+
+function additionalInfoTooltip(event: AuditLog) {
+  return Object.entries(event.params ?? {})
+    .map(([key, value]) => formatParam(key, value))
+    .join('\n')
+}
 
 // A billing-route flip can overlap two loads against different backends; only
 // the latest may mutate state, so a superseded response is discarded.
@@ -157,7 +172,7 @@ const readWorkspaceEvents = (params: { page: number; limit: number }) => {
   const rail = useBillingReadRail()
   return rail === null
     ? workspaceApi.getBillingEvents(params)
-    : readOnRail(() => rail.readEvents(params))
+    : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
 }
 
 const loadEvents = async () => {

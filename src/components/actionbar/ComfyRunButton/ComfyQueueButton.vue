@@ -4,10 +4,8 @@
   >
     <BatchCountEdit />
     <Button
-      v-tooltip.bottom="{
-        value: queueButtonTooltip,
-        showDelay: 600
-      }"
+      :tooltip="queueButtonTooltip"
+      tooltip-side="bottom"
       :variant="queueButtonVariant"
       size="unset"
       :class="
@@ -176,7 +174,7 @@ const queueButtonLabel = computed(() =>
 )
 
 const queueButtonVariant = computed<
-  'destructive' | 'inverted' | 'secondary' | 'subscribe'
+  'destructive' | 'primary' | 'secondary' | 'subscribe'
 >(() =>
   paymentRecoveryLock === 'owner'
     ? 'subscribe'
@@ -184,7 +182,7 @@ const queueButtonVariant = computed<
       ? 'secondary'
       : isStopInstantAction.value
         ? 'destructive'
-        : 'inverted'
+        : 'primary'
 )
 const queueMenuTriggerVariant = computed(() =>
   queueButtonVariant.value === 'subscribe'
@@ -194,7 +192,7 @@ const queueMenuTriggerVariant = computed(() =>
 const queueMenuTriggerVariantClass = {
   destructive:
     'border-black/20 data-[state=open]:bg-destructive-background-hover',
-  inverted: 'data-[state=open]:bg-base-foreground/80',
+  primary: 'data-[state=open]:bg-primary-background-hover',
   secondary: 'text-muted-foreground'
 } satisfies Record<typeof queueMenuTriggerVariant.value, string>
 const queueMenuTriggerClass =

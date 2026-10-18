@@ -13,6 +13,7 @@ const config: KnipConfig = {
         'src/types/index.ts',
         'src/storybook/mocks/**/*.ts',
         'tools/oxlint-plugins/comfyIngestTypes.ts',
+        'tools/oxlint-plugins/serverFacts.ts',
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
@@ -58,6 +59,9 @@ const config: KnipConfig = {
       ignoreDependencies: ['mime-types']
     },
     'tools/architecture': {
+      project: ['src/**/*.ts']
+    },
+    'tools/design-system-audits': {
       project: ['src/**/*.ts']
     },
     'tools/test-recorder': {

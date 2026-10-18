@@ -1,7 +1,9 @@
 <template>
-  <router-view />
-  <GlobalDialog />
-  <SessionReconnecting v-if="isCloud" />
+  <TooltipProvider>
+    <router-view />
+    <GlobalDialog />
+    <SessionReconnecting v-if="isCloud" />
+  </TooltipProvider>
   <div
     v-show="isLoading"
     ref="loadingOverlay"
@@ -12,7 +14,6 @@
 </template>
 
 <script setup lang="ts">
-import { ZIndex } from '@primeuix/utils/zindex'
 import {
   computed,
   onMounted,
@@ -22,8 +23,8 @@ import {
 } from 'vue'
 
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import config from '@/config'
+import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
@@ -35,6 +36,7 @@ import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
@@ -49,8 +51,8 @@ watchPostEffect((onCleanup) => {
   const overlay = loadingOverlay.value
   if (!isLoading.value || !overlay) return
 
-  ZIndex.set(MODAL_Z_KEY, overlay, MODAL_Z_BASE)
-  onCleanup(() => ZIndex.clear(overlay))
+  raiseModalLayer(overlay)
+  onCleanup(() => releaseModalLayer(overlay))
 })
 
 watch(

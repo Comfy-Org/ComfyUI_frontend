@@ -1,8 +1,7 @@
 {
   "files": {
-    "main.json": "c5bce8b08a39d0d51682ab1f97cda25f43832aca"
+    "main.json": "e5316457f5c9ef40fff299135153ba7765712bb5"
   },
-  "version": 1,
   "knownViolations": {
     "main.json": [
       "[\"cloud\",\"reason\",\"1\",\"title\"]",
@@ -10,8 +9,8 @@
       "[\"contact\",\"faq\",\"a1\"]",
       "[\"contact\",\"faq\",\"a2\"]",
       "[\"contact\",\"faq\",\"a3\"]",
-      "[\"models\",\"list\",\"heroTitleAfter\"]",
-      "[\"workshop\",\"model\",\"meta\",\"price\"]"
+      "[\"models\",\"list\",\"heroTitleAfter\"]"
     ]
-  }
+  },
+  "version": 1
 }

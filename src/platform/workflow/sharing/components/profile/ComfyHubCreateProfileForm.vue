@@ -105,7 +105,7 @@
             id="profile-description"
             v-model="description"
             :placeholder="$t('comfyHubProfile.descriptionPlaceholder')"
-            class="h-24 resize-none rounded-lg border-none bg-secondary-background p-4 text-sm shadow-none"
+            class="h-24 resize-none p-4 shadow-none"
           />
         </div>
       </div>

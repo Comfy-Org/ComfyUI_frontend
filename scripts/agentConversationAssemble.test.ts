@@ -675,7 +675,7 @@ describe('assembleConversation', () => {
           })
         })
       )
-    ).toThrow("received 'reset_doc'")
+    ).toThrow(/turns\.0\.response\.2\.ops\.1\.op /)
   })
 
   it('refuses a non-object echoed op entry', () => {

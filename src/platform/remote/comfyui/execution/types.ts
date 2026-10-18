@@ -1,7 +1,7 @@
 import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { TaskStatus } from '@/platform/tasks/services/taskService'
+import type { TaskStatus } from '@/platform/tasks/services/taskSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 import type { WorkflowId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
@@ -12,7 +12,8 @@ export const zResultItem = z.object({
   subfolder: z.string().optional(),
   type: resultItemType.optional(),
   display_name: z.string().optional(),
-  id: z.string().optional()
+  id: z.string().optional(),
+  preview_id: z.string().optional()
 })
 export type ResultItem = z.infer<typeof zResultItem>
 // Uses .passthrough() because custom nodes can output arbitrary keys.
@@ -134,6 +135,11 @@ export interface LogsRawResponse {
   entries: LogEntry[]
 }
 export type FeatureFlagsWsMessage = Record<string, unknown>
+/** ComfyUI's `agent` server feature, pushed again on every change. */
+export interface AgentStatusWsMessage {
+  state: 'starting' | 'ready' | 'failed'
+  reason?: string | null
+}
 export interface AssetDownloadWsMessage {
   task_id: string
   asset_name: string
@@ -155,6 +161,14 @@ export interface AssetExportWsMessage {
   progress: number
   status: TaskStatus
   error?: string
+}
+export interface AssetSeedCompletedWsMessage {
+  created: number
+  elapsed: number
+  enriched: number
+  phase: 'fast' | 'enrich' | 'full'
+  skipped: number
+  total: number
 }
 
 export const zTaskOutput = z.record(zNodeId, zOutputs)

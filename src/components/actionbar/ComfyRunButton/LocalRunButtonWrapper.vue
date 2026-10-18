@@ -3,10 +3,8 @@
     <ComfyQueueButton v-if="gate === 'none'" />
     <Button
       v-else
-      v-tooltip.bottom="{
-        value: t('actionbar.partnerRunGate.signInCaption'),
-        showDelay: 600
-      }"
+      :tooltip="t('actionbar.partnerRunGate.signInCaption')"
+      tooltip-side="bottom"
       variant="secondary"
       size="unset"
       class="h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"

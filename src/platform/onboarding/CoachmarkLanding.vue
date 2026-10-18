@@ -1,7 +1,5 @@
 <template>
-  <!-- The Dialog wrapper boolean-casts an absent `modal` to false, which
-       suppresses the DialogOverlay backdrop; it must be passed explicitly. -->
-  <Dialog :open="true" modal @update:open="(value) => !value && emit('skip')">
+  <Dialog :open="true" @update:open="(value) => !value && emit('skip')">
     <DialogPortal>
       <DialogOverlay
         v-reka-z-index
@@ -39,13 +37,11 @@
           class="flex flex-col items-start justify-between self-stretch px-15 pt-15 pb-10 md:w-1/2"
         >
           <div class="flex flex-col gap-2.5">
-            <DialogTitle
-              class="m-0 text-[28px] leading-normal font-medium text-base-foreground"
-            >
+            <DialogTitle class="m-0 text-[28px] leading-normal font-medium">
               {{ title }}
             </DialogTitle>
             <DialogDescription
-              class="flex flex-col items-start gap-2 self-stretch text-base/5 text-muted-foreground"
+              class="flex flex-col items-start gap-2 self-stretch text-base/5"
             >
               {{ message }}
             </DialogDescription>

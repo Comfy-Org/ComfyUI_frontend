@@ -19,6 +19,11 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
+import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
+
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
+import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
+import { useTelemetry } from '@/platform/telemetry'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
@@ -40,13 +45,8 @@ vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   prepareWorkflowWorkspaceTransition: mockPrepareWorkflowWorkspaceTransition
 }))
 
-const mockEnsureSessionCookie = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
-  useSessionCookie: () => ({
-    ensureSessionCookie: mockEnsureSessionCookie
-  })
-}))
+const mockEnsureSessionCookie = vi.fn<() => Promise<void>>()
+provideEnsureSessionCookie(mockEnsureSessionCookie)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -70,6 +70,7 @@ const mockWorkspaceApi = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
+vi.mock(import('@/platform/telemetry'))
 
 const mockWorkspaceApiError = vi.hoisted(
   () =>
@@ -349,6 +350,77 @@ describe('useTeamWorkspaceStore', () => {
       await store.initialize()
 
       expect(store.activeWorkspaceId).toBe(expected)
+    })
+
+    it.for([
+      {
+        name: 'lands in the default workspace the server names',
+        defaultId: mockTeamWorkspace.id,
+        landed: true
+      },
+      {
+        name: 'lands elsewhere without a default',
+        defaultId: undefined,
+        landed: false
+      }
+    ])(
+      'after an SSO sign-in, reports it $name',
+      async ({ defaultId, landed }) => {
+        const attempt = ssoFlowStore.markContinued('cloud_login')
+        trackSsoSignInCompleted()
+        mockWorkspaceApi.list.mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+          ...(defaultId && { default_workspace_id: defaultId })
+        })
+
+        await useTeamWorkspaceStore().initialize()
+
+        expect(useTelemetry()?.trackSsoEvent).toHaveBeenLastCalledWith({
+          name: 'app:sso_workspace_landed',
+          properties: {
+            surface: 'cloud_login',
+            flow_id: attempt.flowId,
+            landed_in_default_workspace: landed
+          }
+        })
+      }
+    )
+
+    it('after an SSO sign-in into a restored workspace session, reports its landing', async () => {
+      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
+        true
+      )
+      Object.assign(useWorkspaceAuthStore(), {
+        currentWorkspace: mockTeamWorkspace
+      })
+      const attempt = ssoFlowStore.markContinued('cloud_app')
+      trackSsoSignInCompleted()
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+        default_workspace_id: mockTeamWorkspace.id
+      })
+
+      await useTeamWorkspaceStore().initialize()
+
+      expect(useTelemetry()?.trackSsoEvent).toHaveBeenLastCalledWith({
+        name: 'app:sso_workspace_landed',
+        properties: {
+          surface: 'cloud_app',
+          flow_id: attempt.flowId,
+          landed_in_default_workspace: true
+        }
+      })
+    })
+
+    it('reports no landing for a sign-in that was not SSO', async () => {
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+        default_workspace_id: mockTeamWorkspace.id
+      })
+
+      await useTeamWorkspaceStore().initialize()
+
+      expect(useTelemetry()?.trackSsoEvent).not.toHaveBeenCalled()
     })
 
     it('falls back to personal if stored workspace not in list', async () => {
@@ -2013,140 +2085,6 @@ describe('useTeamWorkspaceStore', () => {
 
       expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(2)
       expect(store.members).toHaveLength(1)
-    })
-  })
-
-  describe('isCurrentUserOriginalOwner', () => {
-    async function loadTeamWithMembers(
-      members: Array<{
-        id: string
-        name: string
-        email: string
-        joined_at: string
-        is_original_owner?: boolean
-      }>
-    ) {
-      mockWorkspaceApi.listMembers.mockResolvedValue({
-        members,
-        pagination: { offset: 0, limit: 50, total: members.length }
-      })
-      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
-        true
-      )
-      Object.assign(useWorkspaceAuthStore(), {
-        currentWorkspace: mockTeamWorkspace
-      })
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      await store.fetchMembers()
-      return store
-    }
-
-    const ownerSelf = {
-      id: 'user-1',
-      name: 'Owner',
-      email: 'owner@test.com',
-      joined_at: '2024-01-01T00:00:00Z',
-      role: 'owner' as const,
-      is_original_owner: true
-    }
-    const promotedSelf = { ...ownerSelf, is_original_owner: false }
-
-    it('is true when the self-row is the original owner', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      const store = await loadTeamWithMembers([ownerSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(true)
-    })
-
-    it('matches the self-row by email case-insensitively', async () => {
-      useCurrentUser().userEmail = computed(() => 'OWNER@TEST.COM')
-      const store = await loadTeamWithMembers([ownerSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(true)
-    })
-
-    it('is false when the self-row is a promoted (non-creator) owner', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      const creator = {
-        id: 'creator',
-        name: 'Creator',
-        email: 'creator@test.com',
-        joined_at: '2023-01-01T00:00:00Z',
-        role: 'owner' as const,
-        is_original_owner: true
-      }
-      const store = await loadTeamWithMembers([creator, promotedSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('infers the earliest owner as the original owner when no member is flagged', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      const { is_original_owner: _omitted, ...ownerWithoutFlag } = ownerSelf
-      const store = await loadTeamWithMembers([ownerWithoutFlag])
-      expect(store.isCurrentUserOriginalOwner).toBe(true)
-    })
-
-    it('is false when the self-row is a plain member', async () => {
-      useCurrentUser().userEmail = computed(() => 'member@test.com')
-      const plainMember = {
-        id: 'plain-member',
-        name: 'Plain Member',
-        email: 'member@test.com',
-        joined_at: '2023-01-01T00:00:00Z',
-        role: 'member' as const
-      }
-      const store = await loadTeamWithMembers([ownerSelf, plainMember])
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('is false when no member row matches the current user', async () => {
-      useCurrentUser().userEmail = computed(() => 'someone-else@test.com')
-      const store = await loadTeamWithMembers([ownerSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('fails closed when members are not loaded', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
-        true
-      )
-      Object.assign(useWorkspaceAuthStore(), {
-        currentWorkspace: mockTeamWorkspace
-      })
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('fails closed when the current user email is unknown', async () => {
-      useCurrentUser().userEmail = computed(() => null)
-      const store = await loadTeamWithMembers([ownerSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('recomputes reactively when the self-row arrives after an empty read', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      mockWorkspaceApi.listMembers.mockResolvedValue({
-        members: [ownerSelf],
-        pagination: { offset: 0, limit: 50, total: 1 }
-      })
-      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
-        true
-      )
-      Object.assign(useWorkspaceAuthStore(), {
-        currentWorkspace: mockTeamWorkspace
-      })
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-
-      await store.fetchMembers()
-
-      expect(store.isCurrentUserOriginalOwner).toBe(true)
     })
   })
 
