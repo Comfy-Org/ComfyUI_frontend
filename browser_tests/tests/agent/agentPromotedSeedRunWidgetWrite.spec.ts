@@ -125,8 +125,9 @@ async function attachAgent(
 
 async function expectRunSavesPromotedSeed(
   page: Page,
-  { host, hostSocket, submitted }: AttachedAgent,
-  toast: ToastHelper
+  { hostSocket, submitted }: AttachedAgent,
+  toast: ToastHelper,
+  catchUp: () => void = () => {}
 ): Promise<void> {
   await test.step('the person presses Run and the promoted seed randomizes', async () => {
     await page
@@ -149,17 +150,7 @@ async function expectRunSavesPromotedSeed(
     }).toPass({ timeout: 4_000, intervals: [100, 250, 500] })
   })
 
-  await test.step('the follower catches up', async () => {
-    const lastSubscribe = hostSocket
-      .clientDocFrames()
-      .findLast(({ type }) => type === 'doc_subscribe')
-    if (!lastSubscribe?.stateVector)
-      throw new Error('the follower never sent a doc_subscribe')
-    if (hostSocket.subscribeCount() < hostSocket.connectionCount()) {
-      hostSocket.send(host.subscribed())
-      hostSocket.send(host.catchUp(lastSubscribe.stateVector))
-    }
-  })
+  await test.step('the follower catches up', catchUp)
 
   await test.step('the randomized seed reaches the shared document', async () => {
     await expect
@@ -188,30 +179,32 @@ test.describe(
       agentFlagEnabled,
       toast
     }) => {
+      const rig = await attachAgent(page, agentFlagEnabled)
+
+      let withheldStateVector: string | null = null
+
+      await test.step('the agent connection drops and its re-subscribe is not answered yet', async () => {
+        rig.hostSocket.answerSubscribesWith((stateVector) => {
+          withheldStateVector = stateVector
+          return []
+        })
+        await rig.hostSocket.disconnect()
+        await expect
+          .poll(() => withheldStateVector, { timeout: 15_000 })
+          .not.toBeNull()
+      })
+
       test.fail(
         true,
         'PM-2003: a promoted write made between a resubscribe and its ack is refused with the widget-write toast (docOpMinter doc_not_synced) instead of being deferred'
       )
-      const rig = await attachAgent(page, agentFlagEnabled)
 
-      await test.step('the agent connection drops and its re-subscribe is not answered yet', async () => {
-        rig.hostSocket.answerSubscribesWith(() => [])
-        const subscribesBefore = rig.hostSocket
-          .clientDocFrames()
-          .filter(({ type }) => type === 'doc_subscribe').length
-        await rig.hostSocket.disconnect()
-        await expect
-          .poll(
-            () =>
-              rig.hostSocket
-                .clientDocFrames()
-                .filter(({ type }) => type === 'doc_subscribe').length,
-            { timeout: 15_000 }
-          )
-          .toBeGreaterThan(subscribesBefore)
+      await expectRunSavesPromotedSeed(page, rig, toast, () => {
+        if (withheldStateVector === null)
+          throw new Error('no re-subscribe was withheld')
+        rig.hostSocket.send(rig.host.subscribed())
+        rig.hostSocket.send(rig.host.catchUp(withheldStateVector))
       })
-
-      await expectRunSavesPromotedSeed(page, rig, toast)
     })
   }
 )
