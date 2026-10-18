@@ -488,7 +488,7 @@ function supersededOverflowAlias(
  * document's row values can back it: counts stored by name on a node without
  * overflow aliases. On a node with a dynamic combo, aliases can address slots
  * the rows would shift, so the count keeps the positional `configure` path.
- * TODO: route those counts through the remote row-count guard too.
+ * TODO(#21297): route those counts through the remote row-count guard too.
  */
 function deferredRowCounts(
   node: LGraphNode,

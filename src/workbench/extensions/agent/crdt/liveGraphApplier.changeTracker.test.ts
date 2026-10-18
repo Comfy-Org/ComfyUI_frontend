@@ -426,6 +426,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
       )
     }
   )
+
   it('creates a DynamicGroup whose row count the document stores under a positional alias', () => {
     const { doc, collector } = followedDoc(
       {
@@ -453,9 +454,13 @@ describe('LiveGraphApplier with the real change tracker', () => {
     ).toEqual(['head', 2, 0.1, 0.2])
   })
 
-  it.for([[['before']], [['before', 'rows']], [['before', 'rows', 'after']]])(
-    'restores aliased row values and the trailing widget on create with widget order %j',
-    ([widgetOrder]) => {
+  it.for([
+    { label: 'only the leading widget', widgetOrder: ['before'] },
+    { label: 'the controller', widgetOrder: ['before', 'rows'] },
+    { label: 'the trailing widget', widgetOrder: ['before', 'rows', 'after'] }
+  ])(
+    'restores aliased row values and the trailing widget on create when the catalog names $label',
+    ({ widgetOrder }) => {
       const { doc, collector } = followedDoc(
         {
           nodes: [
@@ -488,7 +493,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
   )
 
   // #21297: a node with a DynamicCombo keeps the positional `configure` path on create.
-  it.fails('creates a restored above-max DynamicGroup on a node with a DynamicCombo', () => {
+  it('still fails to create a restored above-max DynamicGroup on a node with a DynamicCombo', () => {
     const { doc, collector } = followedDoc(
       {
         nodes: [
@@ -522,10 +527,10 @@ describe('LiveGraphApplier with the real change tracker', () => {
 
     const result = applier.applyChanges(doc, collector.take(), CONTEXT)
 
-    expect(result.failureCount).toBe(0)
+    expect(result.failureCount).toBe(1)
     expect(
       follower.getNodeById(toNodeId(1))?.serialize().widgets_values
-    ).toEqual(['head', 4, 0.1, 0.2, 0.3, 0.4])
+    ).toEqual(['head', 0])
   })
 
   it('refuses a crafted DynamicGroup row count without row values on create', () => {
