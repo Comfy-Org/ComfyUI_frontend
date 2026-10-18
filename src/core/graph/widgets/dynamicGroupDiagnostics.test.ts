@@ -211,6 +211,7 @@ describe('remote DynamicGroup row count reports', () => {
     LiteGraph.registerNodeType('RestoredDynamicGroup', remoteNodeType(0))
     LiteGraph.registerNodeType('RestoredEqualDynamicGroup', remoteNodeType(0))
     LiteGraph.registerNodeType('RestoredShrinkDynamicGroup', remoteNodeType(0))
+    LiteGraph.registerNodeType('RestoredRegrowDynamicGroup', remoteNodeType(0))
   })
 
   function remoteGroup(type = 'RemoteDynamicGroup') {
@@ -242,11 +243,13 @@ describe('remote DynamicGroup row count reports', () => {
     const node = graph.getNodeById(toNodeId(1))
     const rows = node?.widgets?.find((widget) => widget.name === 'rows')
     if (!node || !rows) throw new Error('DynamicGroup node 1 was not created')
-    function setRows(count: unknown) {
+    function setRows(count: unknown, rowValues: Record<string, number> = {}) {
       doc.transact(() => {
         const widgets = nodesMap(doc).get('1')?.get('widgets')
         if (!(widgets instanceof Y.Map)) throw new Error('named storage')
         widgets.set('rows', count)
+        for (const [name, value] of Object.entries(rowValues))
+          widgets.set(name, value)
       })
       return applier.applyChanges(doc, collector.take(), context).failureCount
     }
@@ -335,6 +338,18 @@ describe('remote DynamicGroup row count reports', () => {
       expect(reportError).not.toHaveBeenCalled()
     }
   )
+
+  it('applies a remote row count that restores rows the document still holds', () => {
+    const { rows, setRows } = restoredGroup('RestoredRegrowDynamicGroup', 5)
+    rows.value = 4
+    const rowValues = Object.fromEntries(
+      Array.from({ length: 5 }, (_, index) => [`rows.${index}.strength`, 1])
+    )
+
+    expect(setRows(5, rowValues)).toBe(0)
+    expect(rows.value).toBe(5)
+    expect(reportError).not.toHaveBeenCalled()
+  })
 
   it('refuses a remote row count that grows a restored group further above max', () => {
     const { rows, setRows } = restoredGroup('RestoredDynamicGroup', 4)
