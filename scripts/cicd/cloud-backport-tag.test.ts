@@ -1,5 +1,11 @@
 import { spawnSync } from 'node:child_process'
-import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -43,8 +49,20 @@ set -euo pipefail
 args="$*"
 count_file="\${FAKE_GH_COUNT_FILE:?}"
 count=$(cat "$count_file" 2>/dev/null || echo 0)
+limited_file="\${FAKE_GH_LIMITED_FILE:?}"
+limited=$(cat "$limited_file" 2>/dev/null || echo 0)
 
-if [[ "$args" == *"compare/"* ]]; then
+if [[ "$args" == "api rate_limit"* ]]; then
+  if [[ -n "\${FAKE_RESET_IN:-}" ]]; then
+    printf '0\t%s\n' "$(( $(date +%s) + FAKE_RESET_IN ))"
+  else
+    printf '4999\t0\n'
+  fi
+elif (( limited < \${FAKE_RATE_LIMITED_CALLS:-0} )); then
+  printf '%s' "$((limited + 1))" > "$limited_file"
+  echo 'gh: API rate limit exceeded for user ID 1. (HTTP 403)' >&2
+  exit 1
+elif [[ "$args" == *"compare/"* ]]; then
   printf '%s\\n' "\${FAKE_CONTAINMENT:-behind}"
 elif [[ "$args" == *"contents/package.json"* ]]; then
   printf '{"version":"1.54.16"}\\n'
@@ -77,11 +95,17 @@ else
 fi
 `
 
+const fakeSleep = `#!/usr/bin/env bash
+printf '%s\\n' "$1" >> "\${FAKE_SLEEP_LOG:?}"
+`
+
 function runTagScript(
   scenario: string,
   options: {
     containment?: string
     event?: string
+    rateLimitedCalls?: number
+    resetIn?: number
     sha?: string
     token?: string
   } = {}
@@ -91,10 +115,13 @@ function runTagScript(
   const output = join(directory, 'output')
   const summary = join(directory, 'summary')
   const count = join(directory, 'count')
+  const sleepLog = join(directory, 'sleeps')
   writeFileSync(binary, fakeGh)
   chmodSync(binary, 0o755)
+  writeFileSync(join(directory, 'sleep'), fakeSleep)
+  chmodSync(join(directory, 'sleep'), 0o755)
 
-  return spawnSync('bash', ['scripts/cicd/cloud-backport-tag.sh'], {
+  const result = spawnSync('bash', ['scripts/cicd/cloud-backport-tag.sh'], {
     cwd: process.cwd(),
     encoding: 'utf8',
     env: {
@@ -104,6 +131,11 @@ function runTagScript(
       GH_TOKEN: options.token ?? 'test-token',
       FAKE_CONTAINMENT: options.containment ?? 'behind',
       FAKE_GH_COUNT_FILE: count,
+      FAKE_GH_LIMITED_FILE: join(directory, 'limited'),
+      FAKE_RATE_LIMITED_CALLS: String(options.rateLimitedCalls ?? 0),
+      FAKE_RESET_IN:
+        options.resetIn === undefined ? '' : String(options.resetIn),
+      FAKE_SLEEP_LOG: sleepLog,
       FAKE_SCENARIO: scenario,
       GITHUB_OUTPUT: output,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
@@ -115,6 +147,10 @@ function runTagScript(
       OTHER_SHA: otherSha
     }
   })
+  const sleeps = existsSync(sleepLog)
+    ? readFileSync(sleepLog, 'utf8').trim().split('\n').map(Number)
+    : []
+  return { ...result, sleeps }
 }
 
 describe('cloud backport tag workflow', () => {
@@ -194,7 +230,43 @@ describe('cloud backport tag workflow', () => {
     const result = runTagScript('missing')
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('refs/tags/cloud/v1.54.16')
+    expect(result.sleeps).toEqual([])
   })
+
+  it('waits for the rate limit reset and then creates the tag', () => {
+    const result = runTagScript('missing', { rateLimitedCalls: 1, resetIn: 30 })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('refs/tags/cloud/v1.54.16')
+    expect(result.sleeps).toHaveLength(1)
+    expect(result.sleeps[0]).toBeGreaterThanOrEqual(30)
+    expect(result.sleeps[0]).toBeLessThanOrEqual(31)
+  })
+
+  it('keeps an existing tag after a rate-limited lookup', () => {
+    const result = runTagScript('same', { rateLimitedCalls: 2 })
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('already exists at')
+    expect(result.sleeps).toEqual([5, 10])
+  })
+
+  it.for([
+    { name: 'a reset beyond the retry budget', resetIn: 3600, sleeps: [] },
+    { name: 'a secondary rate limit', resetIn: undefined, sleeps: [5, 10, 20] }
+  ])(
+    'reports a persistent rate limit within the job timeout for $name',
+    ({ resetIn, sleeps }) => {
+      const result = runTagScript('same', { rateLimitedCalls: 99, resetIn })
+
+      expect(result.status).not.toBe(0)
+      expect(result.stderr).toContain('::error::GitHub API rate limited on')
+      expect(result.sleeps).toEqual(sleeps)
+      expect(
+        result.sleeps.reduce((total, wait) => total + wait, 0)
+      ).toBeLessThan(300)
+    }
+  )
 
   it('accepts the winner of a concurrent create race', () => {
     const result = runTagScript('race')
@@ -206,6 +278,7 @@ describe('cloud backport tag workflow', () => {
     const result = runTagScript('api-error')
     expect(result.status).not.toBe(0)
     expect(result.stderr).toContain('HTTP 503')
+    expect(result.sleeps).toEqual([5, 10, 20])
   })
 
   it('rejects a commit outside the selected release branch', () => {
