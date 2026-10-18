@@ -315,12 +315,28 @@ export const useQueueStore = defineStore('queue', () => {
     () => pendingTasks.value.length + runningTasks.value.length
   )
 
+  let currentUpdate: Promise<void> = Promise.resolve()
+
   const update = async () => {
     if (updateState.inFlight) {
       updateState.dirty = true
       return
     }
+    currentUpdate = fetchQueueAndHistory()
+    await currentUpdate
+  }
 
+  /**
+   * Like `update()`, but resolves only once a fetch started after this call
+   * has landed: a coalesced call waits for the trailing re-fetch instead of
+   * returning with the snapshot of the fetch already in flight.
+   */
+  const updateFresh = async () => {
+    await update()
+    while (updateState.inFlight) await currentUpdate
+  }
+
+  const fetchQueueAndHistory = async () => {
     updateState.inFlight = true
     updateState.dirty = false
     isLoading.value = true
@@ -436,6 +452,7 @@ export const useQueueStore = defineStore('queue', () => {
     activeJobsCount,
 
     update,
+    updateFresh,
     clear,
     delete: deleteTask
   }

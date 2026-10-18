@@ -1,3 +1,6 @@
+import { Semaphore, delay, withTimeout } from 'es-toolkit'
+import { watch } from 'vue'
+
 import type { JobId } from '@/platform/remote/comfyui/execution/types'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -14,6 +17,15 @@ interface JobOutcome {
 }
 
 const LIVE_STATUSES = new Set(['pending', 'in_progress'])
+const ENDED_STATUSES = new Set(['completed', 'failed', 'cancelled'])
+
+/** A detail request that has not answered by then counts as unreadable. */
+const DETAIL_TIMEOUT_MS = 10_000
+/** One retry after this delay rides out a transient detail failure. */
+const DETAIL_RETRY_DELAY_MS = 1_000
+const DETAIL_CONCURRENCY = 4
+/** Reconnects a run may stay unreadable before it is no longer followed. */
+const MAX_UNREADABLE_REFRESHES = 3
 
 /**
  * After a WebSocket reconnect, refresh the queue, replay the outputs of
@@ -24,6 +36,8 @@ export function useReconnectQueueRefresh() {
   const queueStore = useQueueStore()
   const executionStore = useExecutionStore()
   const workflowStore = useWorkflowStore()
+  const detailRequests = new Semaphore(DETAIL_CONCURRENCY)
+  const unreadableRefreshes = new Map<JobId, number>()
   let inFlight: Promise<void> | null = null
   let reconnects = 0
 
@@ -31,6 +45,17 @@ export function useReconnectQueueRefresh() {
     const ids = new Set<JobId>(Object.keys(executionStore.queuedJobs))
     if (executionStore.activeJobId) ids.add(executionStore.activeJobId)
     return [...ids]
+  }
+
+  async function fetchDetail(jobId: JobId): Promise<JobDetail | undefined> {
+    await detailRequests.acquire()
+    try {
+      return await withTimeout(() => api.getJobDetail(jobId), DETAIL_TIMEOUT_MS)
+    } catch {
+      return undefined
+    } finally {
+      detailRequests.release()
+    }
   }
 
   function completedOutcome(
@@ -44,16 +69,30 @@ export function useReconnectQueueRefresh() {
     return { state: detail ? 'ended' : 'unknown' }
   }
 
+  async function readOutcome(
+    jobId: JobId,
+    historyTask: TaskItemImpl | undefined
+  ): Promise<JobOutcome> {
+    const detail = await fetchDetail(jobId)
+    const status = detail?.status ?? historyTask?.status
+    if (status !== undefined && LIVE_STATUSES.has(status)) {
+      return { state: 'live' }
+    }
+    if (status === undefined || !ENDED_STATUSES.has(status)) {
+      return { state: 'unknown' }
+    }
+    if (status !== 'completed') return { state: 'ended' }
+    return completedOutcome(detail, historyTask)
+  }
+
   async function jobOutcome(
     jobId: JobId,
     historyTask: TaskItemImpl | undefined
   ): Promise<JobOutcome> {
-    const detail = await api.getJobDetail(jobId)
-    const status = detail?.status ?? historyTask?.status
-    if (status === undefined) return { state: 'unknown' }
-    if (LIVE_STATUSES.has(status)) return { state: 'live' }
-    if (status !== 'completed') return { state: 'ended' }
-    return completedOutcome(detail, historyTask)
+    const outcome = await readOutcome(jobId, historyTask)
+    if (outcome.state !== 'unknown') return outcome
+    await delay(DETAIL_RETRY_DELAY_MS)
+    return readOutcome(jobId, historyTask)
   }
 
   function jobWorkflowPath(jobId: JobId): string | undefined {
@@ -66,6 +105,12 @@ export function useReconnectQueueRefresh() {
   function ranOnOpenWorkflow(jobId: JobId): boolean {
     const path = jobWorkflowPath(jobId)
     return path === undefined || path === workflowStore.activeWorkflow?.path
+  }
+
+  function stillFollowed(jobId: JobId): boolean {
+    return (
+      jobId in executionStore.queuedJobs || executionStore.activeJobId === jobId
+    )
   }
 
   function replayOnOpenGraph(jobId: JobId, outputs: TaskOutput) {
@@ -89,47 +134,91 @@ export function useReconnectQueueRefresh() {
   function restoreOutputs(
     jobId: JobId,
     outputs: TaskOutput,
-    openGraphTakenByNewRun: boolean
+    openGraphTakenByOtherRun: boolean
   ) {
     try {
       if (!ranOnOpenWorkflow(jobId)) keepWithBackgroundWorkflow(jobId, outputs)
-      else if (!openGraphTakenByNewRun) replayOnOpenGraph(jobId, outputs)
+      else if (!openGraphTakenByOtherRun) replayOnOpenGraph(jobId, outputs)
     } catch (error) {
       console.error(`Failed to restore outputs of job ${jobId}`, error)
     }
   }
 
-  async function refresh() {
-    const activeAtStart = executionStore.activeJobId
-    const followed = followedJobIds()
-    await queueStore.update()
-    const activeJobIds = new Set([
-      ...queueStore.runningTasks.map((t) => t.jobId),
-      ...queueStore.pendingTasks.map((t) => t.jobId)
-    ])
-    const leftQueue = followed.filter((jobId) => !activeJobIds.has(jobId))
-    const historyByJobId = new Map(
-      queueStore.historyTasks.map((task) => [task.jobId, task])
-    )
-    const outcomes = await Promise.all(
-      leftQueue.map((jobId) => jobOutcome(jobId, historyByJobId.get(jobId)))
-    )
+  /** Counts an unreadable outcome; true once the run should be dropped. */
+  function giveUpOnUnreadable(jobId: JobId): boolean {
+    const refreshes = (unreadableRefreshes.get(jobId) ?? 0) + 1
+    if (refreshes < MAX_UNREADABLE_REFRESHES) {
+      unreadableRefreshes.set(jobId, refreshes)
+      return false
+    }
+    unreadableRefreshes.delete(jobId)
+    return true
+  }
 
-    const startedRun = executionStore.activeJobId
-    const newRunStarted = !!startedRun && startedRun !== activeAtStart
-    if (startedRun && newRunStarted) activeJobIds.add(startedRun)
+  async function refresh() {
+    const followed = followedJobIds()
+    let activeRunChanged = false
+    const stopWatchingActiveRun = watch(
+      () => executionStore.activeJobId,
+      () => {
+        activeRunChanged = true
+      },
+      { flush: 'sync' }
+    )
+    let outcomes: JobOutcome[]
+    let leftQueue: JobId[]
+    let activeJobIds: Set<JobId>
+    try {
+      await queueStore.updateFresh()
+      activeJobIds = new Set([
+        ...queueStore.runningTasks.map((t) => t.jobId),
+        ...queueStore.pendingTasks.map((t) => t.jobId)
+      ])
+      leftQueue = followed.filter((jobId) => !activeJobIds.has(jobId))
+      const historyByJobId = new Map(
+        queueStore.historyTasks.map((task) => [task.jobId, task])
+      )
+      outcomes = await Promise.all(
+        leftQueue.map((jobId) => jobOutcome(jobId, historyByJobId.get(jobId)))
+      )
+    } finally {
+      stopWatchingActiveRun()
+    }
+
+    const currentRun = executionStore.activeJobId
+    if (currentRun && activeRunChanged) activeJobIds.add(currentRun)
+    leftQueue.forEach((jobId, i) => {
+      if (outcomes[i].state === 'live') activeJobIds.add(jobId)
+    })
+    // A run that started (or started and finished) during the refresh, or a
+    // followed run that is still going, owns the open graph: replaying an
+    // older run onto it would overwrite newer outputs and its progress.
+    const openGraphTakenByOtherRun =
+      activeRunChanged || (!!currentRun && activeJobIds.has(currentRun))
 
     const ended: JobId[] = []
     leftQueue.forEach((jobId, i) => {
       const { state, outputs } = outcomes[i]
-      if (state === 'live') activeJobIds.add(jobId)
-      if (state !== 'ended') return
+      if (state === 'live') {
+        unreadableRefreshes.delete(jobId)
+        return
+      }
+      if (state === 'unknown') {
+        if (giveUpOnUnreadable(jobId)) ended.push(jobId)
+        return
+      }
+      unreadableRefreshes.delete(jobId)
       ended.push(jobId)
-      if (outputs) restoreOutputs(jobId, outputs, newRunStarted)
+      if (outputs && stillFollowed(jobId)) {
+        restoreOutputs(jobId, outputs, openGraphTakenByOtherRun)
+      }
     })
 
     executionStore.clearActiveJobIfStale(activeJobIds)
     executionStore.forgetFinishedJobs(ended)
+    for (const jobId of unreadableRefreshes.keys()) {
+      if (!stillFollowed(jobId)) unreadableRefreshes.delete(jobId)
+    }
   }
 
   async function refreshUntilSettled() {
