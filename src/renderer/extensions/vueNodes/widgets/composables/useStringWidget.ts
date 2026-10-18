@@ -8,7 +8,7 @@ import {
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
-import type { DOMWidgetOptions } from '@/types/domWidget'
+import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
@@ -24,16 +24,21 @@ function addMultilineWidget(
     opts.placeholder || name
   )
 
+  let widget: DOMWidget<HTMLTextAreaElement, string> | undefined = undefined
+  // A DynamicGroup row shift renames the widget, so resolve the store id
+  // from its current name rather than the name it was created with.
+  function storeId() {
+    const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
+    return widgetId(graphId, node.id, widget?.name ?? name)
+  }
+
   // Declared separately (rather than reading `widget.options` from the
   // outer closure below) because `addDOMWidget` can invoke `setValue`
   // synchronously, while restoring a saved value, before the `widget`
   // binding it returns is initialized.
   const widgetOptions: DOMWidgetOptions<string> = {
     getValue(): string {
-      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
-      const widgetState = widgetStore.getWidget(
-        widgetId(graphId, node.id, name)
-      )
+      const widgetState = widgetStore.getWidget(storeId())
 
       return typeof widgetState?.value === 'string'
         ? widgetState.value
@@ -41,8 +46,7 @@ function addMultilineWidget(
     },
     setValue(v: string) {
       inputEl.value = v
-      const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
-      const id = widgetId(graphId, node.id, name)
+      const id = storeId()
       const widgetState = widgetStore.getWidget(id)
       if (widgetState) {
         widgetState.value = v
@@ -56,7 +60,7 @@ function addMultilineWidget(
     }
   }
 
-  const widget = node.addDOMWidget(name, 'customtext', inputEl, widgetOptions)
+  widget = node.addDOMWidget(name, 'customtext', inputEl, widgetOptions)
 
   widget.element = inputEl
 
