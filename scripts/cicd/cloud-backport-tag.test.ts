@@ -58,8 +58,8 @@ if [[ "$args" == "api rate_limit"* ]]; then
   else
     printf '4999\t0\n'
   fi
-elif (( limited < \${FAKE_RATE_LIMITED_CALLS:-0} )); then
-  printf '%s' "$((limited + 1))" > "$limited_file"
+elif limited=$((limited + 1)) && printf '%s' "$limited" > "$limited_file" &&
+  [[ ",\${FAKE_RATE_LIMITED_CALLS:-}," == *",$limited,"* || "\${FAKE_RATE_LIMITED_CALLS:-}" == all ]]; then
   echo 'gh: API rate limit exceeded for user ID 1. (HTTP 403)' >&2
   exit 1
 elif [[ "$args" == *"compare/"* ]]; then
@@ -104,8 +104,9 @@ function runTagScript(
   options: {
     containment?: string
     event?: string
-    rateLimitedCalls?: number
+    rateLimitedCalls?: number[] | 'all'
     resetIn?: number
+    retryBudget?: number
     sha?: string
     token?: string
   } = {}
@@ -132,11 +133,12 @@ function runTagScript(
       FAKE_CONTAINMENT: options.containment ?? 'behind',
       FAKE_GH_COUNT_FILE: count,
       FAKE_GH_LIMITED_FILE: join(directory, 'limited'),
-      FAKE_RATE_LIMITED_CALLS: String(options.rateLimitedCalls ?? 0),
+      FAKE_RATE_LIMITED_CALLS: String(options.rateLimitedCalls ?? ''),
       FAKE_RESET_IN:
         options.resetIn === undefined ? '' : String(options.resetIn),
       FAKE_SLEEP_LOG: sleepLog,
       FAKE_SCENARIO: scenario,
+      GH_API_RETRY_BUDGET_SECONDS: String(options.retryBudget ?? 300),
       GITHUB_OUTPUT: output,
       GITHUB_REPOSITORY: 'Comfy-Org/ComfyUI_frontend',
       GITHUB_STEP_SUMMARY: summary,
@@ -234,7 +236,10 @@ describe('cloud backport tag workflow', () => {
   })
 
   it('waits for the rate limit reset and then creates the tag', () => {
-    const result = runTagScript('missing', { rateLimitedCalls: 1, resetIn: 30 })
+    const result = runTagScript('missing', {
+      rateLimitedCalls: [1],
+      resetIn: 30
+    })
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('refs/tags/cloud/v1.54.16')
@@ -244,7 +249,7 @@ describe('cloud backport tag workflow', () => {
   })
 
   it('keeps an existing tag after a rate-limited lookup', () => {
-    const result = runTagScript('same', { rateLimitedCalls: 2 })
+    const result = runTagScript('same', { rateLimitedCalls: [1, 2] })
 
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('already exists at')
@@ -257,7 +262,7 @@ describe('cloud backport tag workflow', () => {
   ])(
     'reports a persistent rate limit within the job timeout for $name',
     ({ resetIn, sleeps }) => {
-      const result = runTagScript('same', { rateLimitedCalls: 99, resetIn })
+      const result = runTagScript('same', { rateLimitedCalls: 'all', resetIn })
 
       expect(result.status).not.toBe(0)
       expect(result.stderr).toContain('::error::GitHub API rate limited on')
@@ -272,6 +277,17 @@ describe('cloud backport tag workflow', () => {
     const result = runTagScript('race')
     expect(result.status).toBe(0)
     expect(result.stdout).toContain('already exists')
+  })
+
+  it('shares one retry budget across every API call in the run', () => {
+    const result = runTagScript('same', {
+      rateLimitedCalls: [1, 3, 5],
+      retryBudget: 12
+    })
+
+    expect(result.status).not.toBe(0)
+    expect(result.stderr).toContain('::error::GitHub API rate limited on')
+    expect(result.sleeps).toEqual([5, 5])
   })
 
   it('fails closed when the tag lookup has a real API error', () => {
