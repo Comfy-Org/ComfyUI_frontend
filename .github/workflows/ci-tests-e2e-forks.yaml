@@ -79,6 +79,7 @@ jobs:
           GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SUMMARY_FILE: playwright-section.md
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
           BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
         run: |
           # Rename merged report if exists
