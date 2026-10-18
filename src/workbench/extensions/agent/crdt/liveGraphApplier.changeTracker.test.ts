@@ -21,6 +21,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { toNodeId } from '@/types/nodeId'
 import { toRootGraphId } from '@/types/graphScopeId'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
 
 import { followedDoc } from './__fixtures__/followedDoc'
@@ -82,6 +83,24 @@ class DynamicGroupTest extends LGraphNode {
   }
 }
 
+/** A DynamicGroup on a node with a DynamicCombo, so its document entries can be positional aliases. */
+class DynamicGroupOverflowTest extends LGraphNode {
+  constructor() {
+    super('DynamicGroupOverflowTest')
+    this.comfyClass = 'DynamicGroupOverflowTest'
+    this.serialize_widgets = true
+    this.addWidget('text', 'before', 'head', () => {})
+    useLitegraphService().addNodeInput(this, {
+      name: 'rows',
+      type: 'COMFY_DYNAMICGROUP_V3',
+      isOptional: false,
+      min: 0,
+      max: 3,
+      template: { required: { strength: ['FLOAT', { default: 1 }] } }
+    })
+  }
+}
+
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
@@ -127,6 +146,22 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestSink', TestSink)
   LiteGraph.registerNodeType('DynamicGroupTest', DynamicGroupTest)
+  LiteGraph.registerNodeType(
+    'DynamicGroupOverflowTest',
+    DynamicGroupOverflowTest
+  )
+  DynamicGroupOverflowTest.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({
+    inputs: {
+      mode: transformInputSpecV1ToV2(
+        ['COMFY_DYNAMICCOMBO_V3', { options: [] }],
+        {
+          name: 'mode'
+        }
+      )
+    }
+  })
   ChangeTracker.isLoadingGraph = false
 })
 
@@ -371,6 +406,33 @@ describe('LiveGraphApplier with the real change tracker', () => {
       0.4,
       'tail'
     ])
+  })
+
+  it('creates a DynamicGroup whose row count the document stores under a positional alias', () => {
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'DynamicGroupOverflowTest',
+            pos: [0, 0],
+            size: [210, 100],
+            widgets_values: ['head', 2, 0.1, 0.2]
+          }
+        ],
+        links: []
+      },
+      { types: { DynamicGroupOverflowTest: { widget_order: ['before'] } } }
+    )
+    const follower = new LGraph()
+    const applier = new LiveGraphApplier({ getGraph: () => follower })
+
+    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(result.failureCount).toBe(0)
+    expect(
+      follower.getNodeById(toNodeId(1))?.serialize().widgets_values
+    ).toEqual(['head', 2, 0.1, 0.2])
   })
 
   it('refuses a crafted DynamicGroup row count without row values on create', () => {
