@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { storeToRefs } from 'pinia'
-import { useEventListener } from '@vueuse/core'
+import { useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -273,18 +273,24 @@ function onClose(): void {
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
-const panelRef = ref<HTMLElement>()
 const runNoticeEngaged = ref(false)
+const runNoticeReady = ref(false)
+const { start: startRunNoticeTimer } = useTimeoutFn(
+  () => {
+    runNoticeReady.value = true
+  },
+  500,
+  {
+    immediate: false
+  }
+)
 const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
 
-useEventListener(panelRef, 'focusin', (event) => {
-  if (
-    event.target instanceof Element &&
-    event.target.closest('#agent-composer')
-  ) {
-    runNoticeEngaged.value = true
-  }
-})
+function onComposerFocus(): void {
+  if (runNoticeEngaged.value) return
+  runNoticeEngaged.value = true
+  startRunNoticeTimer()
+}
 
 function onWorkflowTargetRequired(): void {
   workflowSelectorRef.value?.openPicker()
@@ -366,7 +372,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
 <template>
   <section
-    ref="panelRef"
     class="@container flex h-full flex-col overflow-hidden bg-background text-foreground"
   >
     <PanelHeader
@@ -525,7 +530,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
-            :engaged="runNoticeEngaged"
+            :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"
           />
           <FreeUseNotice
@@ -547,6 +552,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :has-workflow-target="!workflowDetached"
             :workflow-selecting="selectingTabPath !== null || savingReference"
             :get-mention-nodes
+            @focusin="onComposerFocus"
             @send="onComposerSend"
             @stop="emit('stop', $event)"
             @attach="emit('attach')"

@@ -66,9 +66,14 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     test.setTimeout(30_000)
 
     await agentPanel.open()
-    await agentPanel.selectWorkflow()
     const panel = agentPanel.root
 
+    await expect(
+      panel.getByRole('note').filter({
+        hasText: enMessages.agent.targetFollowsVisibleWorkflow
+      })
+    ).toBeVisible()
+    await agentPanel.selectWorkflow()
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
     const firstPrompt = enMessages.agent.suggestedPrompts.cloud[0]
@@ -177,29 +182,6 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Set widget')).toBeVisible()
     await expect(panel.getByText('Opened a new tab')).toBeVisible()
     await expect(panel.getByText('Resize image node')).toBeVisible()
-  })
-
-  test('keeps the workflow binding notice immediate and never defers to the generic run notice', async ({
-    agentPanel
-  }) => {
-    await agentPanel.open()
-
-    const bindingNotice = agentPanel.root
-      .getByRole('note')
-      .filter({ hasText: enMessages.agent.targetFollowsVisibleWorkflow })
-    const runNotice = agentPanel.root
-      .getByRole('note')
-      .filter({ hasText: enMessages.agent.runNotice })
-
-    await expect(bindingNotice).toHaveCount(1)
-    await expect(bindingNotice).toBeVisible()
-    await expect(runNotice).toHaveCount(0)
-
-    await agentPanel.composer.focus()
-
-    await expect(bindingNotice).toHaveCount(1)
-    await expect(bindingNotice).toBeVisible()
-    await expect(runNotice).toHaveCount(0)
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({

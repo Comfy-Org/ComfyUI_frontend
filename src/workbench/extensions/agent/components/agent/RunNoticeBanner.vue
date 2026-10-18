@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import { useStorage, useTimeout } from '@vueuse/core'
-import { computed, watch } from 'vue'
+import { useStorage } from '@vueuse/core'
+import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-
-import { RUN_NOTICE_DEFERRAL_MS } from './runNoticeDeferral'
 
 const {
   expanded = false,
   workflowName,
-  engaged = false,
+  genericNoticeReady = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  engaged?: boolean
+  genericNoticeReady?: boolean
   context?: 'following' | 'mismatch' | 'unavailable'
 }>()
 
@@ -28,21 +26,10 @@ const contextMessages = {
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
-const { ready, start } = useTimeout(RUN_NOTICE_DEFERRAL_MS, {
-  controls: true,
-  immediate: false
-})
-watch(
-  () => engaged,
-  (value) => {
-    if (value) start()
-  },
-  { immediate: true }
-)
 const visible = computed(
   () =>
     Boolean(context) ||
-    (!dismissed.value && Boolean(workflowName || (engaged && ready.value)))
+    (!dismissed.value && Boolean(workflowName || genericNoticeReady))
 )
 </script>
 

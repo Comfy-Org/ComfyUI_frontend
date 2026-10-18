@@ -1,15 +1,9 @@
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within
-} from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent, nextTick, ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // The node preview constructs its observer at import time; jsdom omits this API.
 vi.hoisted(() => {
@@ -36,7 +30,6 @@ import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
 
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
-import { RUN_NOTICE_DEFERRAL_MS } from './runNoticeDeferral'
 
 setupInlinePromptEditorDom()
 
@@ -492,8 +485,9 @@ describe('AgentPanel', () => {
 
   it('shows the targetless run notice shortly after composer focus', async () => {
     vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const pinia = getActivePinia()
-    if (pinia === undefined) throw new Error('Expected an active testing Pinia')
+    assert.exists(pinia)
     render(AgentPanel, {
       props: {
         entries: [],
@@ -508,12 +502,51 @@ describe('AgentPanel', () => {
     })
 
     expect(screen.queryByRole('note')).toBeNull()
-    await nextTick()
-    await fireEvent.focusIn(screen.getByRole('textbox'))
-    await vi.advanceTimersByTimeAsync(RUN_NOTICE_DEFERRAL_MS)
+    await vi.advanceTimersByTimeAsync(500)
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await user.click(screen.getByRole('textbox'))
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await vi.advanceTimersByTimeAsync(500)
 
     expect(screen.getByRole('note')).toHaveTextContent(
-      'Use Run permissions in the composer toolbar'
+      i18n.global.t('agent.runNotice')
+    )
+  })
+
+  it('keeps the first-focus deadline through a chat-history round trip', async () => {
+    vi.useFakeTimers()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const pinia = getActivePinia()
+    assert.exists(pinia)
+    render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        workflowDetached: true
+      },
+      global: {
+        plugins: [pinia, i18n],
+        directives: { tooltip: {} },
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+
+    await user.click(screen.getByRole('textbox'))
+    await vi.advanceTimersByTimeAsync(300)
+    await user.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await vi.advanceTimersByTimeAsync(200)
+    await user.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.runNotice')
     )
   })
 
