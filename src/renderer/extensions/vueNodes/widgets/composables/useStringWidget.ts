@@ -25,21 +25,16 @@ function addMultilineWidget(
     opts.placeholder || name
   )
 
-  // The node can rename the widget (unique-name suffixes while it is added,
-  // DynamicGroup row shifts later), so resolve the store id from its current
-  // name. The widget is in `node.widgets` before `addDOMWidget` returns.
+  let currentName = name
   function storeId() {
     const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
     const current = node.widgets?.find(
       (widget) => isDOMWidget(widget) && widget.element === inputEl
     )
-    return widgetId(graphId, node.id, current?.name ?? name)
+    if (current) currentName = current.name
+    return widgetId(graphId, node.id, currentName)
   }
 
-  // Declared separately (rather than reading `widget.options` from the
-  // outer closure below) because `addDOMWidget` can invoke `setValue`
-  // synchronously, while restoring a saved value, before the `widget`
-  // binding it returns is initialized.
   const widgetOptions: DOMWidgetOptions<string> = {
     getValue(): string {
       const widgetState = widgetStore.getWidget(storeId())
