@@ -2060,6 +2060,35 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
   })
 
+  it('declares the order when an extension widget shares a forceInput name', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Display Any', { source: ['*', { forceInput: true }] })
+    )
+    const node = nodeWith('Display Any', (n) => {
+      n.addInput('source', '*')
+      n.addWidget('text', 'source', '', () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values_form: { order: ['source'] }
+    })
+  })
+
+  it('drops a form the node carried in from a loaded projection when none applies', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
+    const node = nodeWith('Described', (n) => {
+      n.addWidget('number', 'steps', 20, () => {})
+    })
+    const serialize = node.serialize.bind(node)
+    vi.spyOn(node, 'serialize').mockImplementation(() =>
+      Object.assign(serialize(), {
+        widgets_values_form: { order: ['steps', 'gone'] }
+      })
+    )
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
   it('declares nothing for a class with no definition', () => {
     const node = nodeWith('Undefined Class', (n) => {
       n.addWidget('text', 'output', '', () => {})

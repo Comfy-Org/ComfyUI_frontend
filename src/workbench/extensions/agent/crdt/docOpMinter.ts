@@ -129,6 +129,7 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   }
   const wireSerialized = { ...serialized }
   Reflect.deleteProperty(wireSerialized, '__incarnation')
+  Reflect.deleteProperty(wireSerialized, 'widgets_values_form')
   const {
     widgets_values_named: named,
     flags: { ghost: _ghost, ...flags },
@@ -156,9 +157,12 @@ function undescribedWidgetForm(
       (widget.linkedWidgets ?? []).map((companion) => companion.name)
     )
   )
+  const isWidgetInput = (name: string) =>
+    Object.hasOwn(definition.inputs, name) &&
+    definition.inputs[name].forceInput !== true
   const described = (name: string) =>
-    Object.hasOwn(definition.inputs, name) ||
-    Object.hasOwn(definition.inputs, name.split('.', 1)[0]) ||
+    isWidgetInput(name) ||
+    isWidgetInput(name.split('.', 1)[0]) ||
     linked.has(name)
   return order.every(described) ? undefined : { order }
 }
