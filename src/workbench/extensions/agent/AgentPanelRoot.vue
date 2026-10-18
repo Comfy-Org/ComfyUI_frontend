@@ -739,22 +739,9 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (followerOwnsDocument(cloudIdFor(target))) return undefined
   const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
-}
-
-// A pending identity still withholds the draft: the seed replaces the server
-// document, and a canvas the follower has not caught up would undo agent edits.
-// Pending is bounded; the lookup settles as `rejected` after its retry budget.
-function followerOwnsDocument(documentId: string | undefined): boolean {
-  return (
-    documentId !== undefined &&
-    boundWorkflowId.value === documentId &&
-    crdtStatus.value.terminal === null &&
-    agentIdentity.state.value.status !== 'rejected'
-  )
 }
 
 function canvasForWorkflow(workflowId: string): Record<string, unknown> | null {
