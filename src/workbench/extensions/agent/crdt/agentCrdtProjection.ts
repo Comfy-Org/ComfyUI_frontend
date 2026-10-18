@@ -23,6 +23,13 @@ interface BoundTarget {
   follower: FollowerDoc
   collector: DocChangeCollector
   reportedPendingNodes: Map<string, NodeChange>
+  failedProjections: FailedProjection[]
+}
+
+interface FailedProjection {
+  changes: FrameChanges
+  context: RemoteApplyContext
+  mode: ApplyMode
 }
 
 /**
@@ -119,7 +126,8 @@ export class AgentCrdtProjection {
     this.targets.set(workflowId, {
       follower,
       collector: new DocChangeCollector(follower.doc),
-      reportedPendingNodes: new Map()
+      reportedPendingNodes: new Map(),
+      failedProjections: []
     })
   }
 
@@ -174,6 +182,36 @@ export class AgentCrdtProjection {
     )
   }
 
+  retryFailed(
+    workflowId: string
+  ): Extract<FrameOutcome, { applied: true }> | null {
+    const target = this.targets.get(workflowId)
+    if (!target || target.failedProjections.length === 0 || !this.getGraph())
+      return null
+    const createdNodeIds: NodeId[] = []
+    const nodes = { added: [] as string[], removed: [] as string[] }
+    while (target.failedProjections.length > 0) {
+      const failed = target.failedProjections[0]
+      const outcome = this.project(
+        workflowId,
+        target,
+        failed.changes,
+        failed.context,
+        failed.mode
+      )
+      createdNodeIds.push(...outcome.createdNodeIds)
+      nodes.added.push(...outcome.nodes.added)
+      nodes.removed.push(...outcome.nodes.removed)
+      if (outcome.failureCount > 0) return { ...outcome, nodes, createdNodeIds }
+      target.failedProjections.shift()
+    }
+    return { applied: true, nodes, createdNodeIds, failureCount: 0 }
+  }
+
+  hasPendingFailure(workflowId: string): boolean {
+    return (this.targets.get(workflowId)?.failedProjections.length ?? 0) > 0
+  }
+
   /**
    * Puts the registers a rejected human batch claimed back the way the
    * document has them. Only those registers are touched: the rejection says
@@ -203,8 +241,10 @@ export class AgentCrdtProjection {
    * nothing visible.
    */
   replaceOnNextFrame(workflowId: string): void {
-    this.targets.get(workflowId)?.collector.discard()
-    this.targets.get(workflowId)?.reportedPendingNodes.clear()
+    const target = this.targets.get(workflowId)
+    target?.collector.discard()
+    target?.reportedPendingNodes.clear()
+    if (target) target.failedProjections.length = 0
     this.replacedLineages.add(workflowId)
     this.localWrites.clear()
   }
@@ -242,6 +282,19 @@ export class AgentCrdtProjection {
     changes: FrameChanges,
     context: RemoteApplyContext,
     mode: ApplyMode = 'merge'
+  ): Extract<FrameOutcome, { applied: true }> {
+    const outcome = this.project(workflowId, target, changes, context, mode)
+    if (outcome.failureCount > 0)
+      target.failedProjections.push({ changes, context, mode })
+    return outcome
+  }
+
+  private project(
+    workflowId: string,
+    target: BoundTarget,
+    changes: FrameChanges,
+    context: RemoteApplyContext,
+    mode: ApplyMode
   ): Extract<FrameOutcome, { applied: true }> {
     const { createdNodeIds, failureCount } = this.applier.applyChanges(
       target.follower.doc,

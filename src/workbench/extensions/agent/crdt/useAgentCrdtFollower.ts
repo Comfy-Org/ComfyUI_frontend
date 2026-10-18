@@ -575,7 +575,11 @@ function startAgentCrdtFollower(
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
     if (catchUpAwaitingProjectionFor === workflowId) {
-      if (outcome.failureCount === 0) clearCanvasStaleness()
+      if (
+        outcome.failureCount === 0 &&
+        !projection.hasPendingFailure(workflowId)
+      )
+        clearCanvasStaleness()
       else canvasMayBeStale.value = true
     }
     reportMaterialized(workflowId, outcome.createdNodeIds)
@@ -649,7 +653,6 @@ function startAgentCrdtFollower(
       : handleSubscribeRefusal(detail, lifecycle)
     if (!reseeding && lifecycle.refusalIsFinal()) {
       terminal.value = 'refused'
-      clearCanvasStaleness()
     }
     releaseHeldOps()
     sender.abortIfUnbound()
@@ -659,6 +662,15 @@ function startAgentCrdtFollower(
 
   const subscribeBaselineIsIntegrated = (seq: unknown): boolean =>
     (seq ?? 0) === 0 || bridge.isSubscribeBaselineIntegrated
+
+  const retryFailedProjection = (workflowId: string): boolean => {
+    const outcome = projection.retryFailed(workflowId)
+    if (outcome === null) return true
+    reportMaterialized(workflowId, outcome.createdNodeIds)
+    if (outcome.failureCount === 0) return true
+    markCanvasStale()
+    return false
+  }
 
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -674,7 +686,11 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
-      if (subscribeBaselineIsIntegrated(detail.seq)) clearCanvasStaleness()
+      const workflowId = subscribedWorkflowId.value
+      const projectionIsClean =
+        workflowId === null || retryFailedProjection(workflowId)
+      if (projectionIsClean && subscribeBaselineIsIntegrated(detail.seq))
+        clearCanvasStaleness()
       terminal.value = null
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
@@ -687,7 +703,11 @@ function startAgentCrdtFollower(
     outcome: FrameOutcome
   ): void => {
     if (!update.catchUp) return
-    if (projectionAppliedCleanly(outcome)) clearCanvasStaleness()
+    if (
+      projectionAppliedCleanly(outcome) &&
+      !projection.hasPendingFailure(update.workflowId)
+    )
+      clearCanvasStaleness()
     else if (outcome.applied) markCanvasStale()
     else catchUpAwaitingProjectionFor = update.workflowId
   }

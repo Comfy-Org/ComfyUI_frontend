@@ -1,9 +1,12 @@
 import { nodesMap } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
+
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
+import { LiveGraphApplier } from './liveGraphApplier'
 
 const WORKFLOW_ID = 'wf-a'
 
@@ -17,10 +20,10 @@ function frame(seq: number, source: Y.Doc, since?: Uint8Array) {
   }
 }
 
-function setup() {
+function setup(graph: LGraph | null = null) {
   const host = new Y.Doc()
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(() => null)
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(WORKFLOW_ID, follower)
   onTestFinished(() => {
     projection.destroy()
@@ -87,5 +90,32 @@ describe('AgentCrdtProjection frame node delta', () => {
       added: [],
       removed: []
     })
+  })
+
+  it('retains a failed projection until a clean retry applies it', () => {
+    const graph = {} as LGraph
+    const applyChanges = vi
+      .spyOn(LiveGraphApplier.prototype, 'applyChanges')
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 0 })
+    const { host, follower, projection } = setup(graph)
+    nodesMap(host).set('3', new Y.Map([['type', 'KSampler']]))
+    const update = frame(1, host)
+    follower.applyRemoteUpdate(update.update)
+
+    expect(projection.applyFrame(update)).toMatchObject({
+      applied: true,
+      failureCount: 1
+    })
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(true)
+
+    expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
+      applied: true,
+      failureCount: 0
+    })
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(false)
+    expect(projection.retryFailed(WORKFLOW_ID)).toBeNull()
+    expect(applyChanges).toHaveBeenCalledTimes(2)
+    expect(applyChanges.mock.calls[1][1]).toBe(applyChanges.mock.calls[0][1])
   })
 })
