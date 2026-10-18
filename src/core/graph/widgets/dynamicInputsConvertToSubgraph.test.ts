@@ -169,12 +169,14 @@ function convertNodeToSubgraph(
 function parentInputSources(parent: LGraphNode): string[] {
   const graph = parent.graph
   assert(graph, 'parent graph')
-  return parent.inputs.flatMap((input) => {
-    const link = input.link == null ? undefined : graph.links.get(input.link)
-    if (!link) return []
-    const origin = graph.getNodeById(link.origin_id)
-    return [`${origin?.type}:${origin?.outputs[link.origin_slot]?.name}`]
-  })
+  return parent.inputs
+    .flatMap((input) => {
+      const link = input.link == null ? undefined : graph.links.get(input.link)
+      if (!link) return []
+      const origin = graph.getNodeById(link.origin_id)
+      return [`${origin?.type}:${origin?.outputs[link.origin_slot]?.name}`]
+    })
+    .sort()
 }
 
 function connectGptImage(graph: LGraph, gptImage: LGraphNode) {
@@ -205,7 +207,6 @@ interface Scenario {
   graph: LGraph
   node: LGraphNode
   innerWiring: Record<string, string>
-  misroutedWiring: Record<string, string>
   parentSources: string[]
 }
 
@@ -223,7 +224,6 @@ function gptImageWithOption(option: string): Scenario {
     graph,
     node,
     innerWiring: gptImageWiring,
-    misroutedWiring: { 'model.mask': 'IMAGE' },
     parentSources: gptImageParentSources
   }
 }
@@ -239,7 +239,6 @@ function loadedGptImage(): Scenario {
     graph: reloaded,
     node,
     innerWiring: gptImageWiring,
-    misroutedWiring: { 'model.mask': 'IMAGE' },
     parentSources: gptImageParentSources
   }
 }
@@ -255,8 +254,51 @@ function perplexityLlm(): Scenario {
     graph,
     node,
     innerWiring: { prompt: 'STRING', system_prompt: 'STRING' },
-    misroutedWiring: { prompt: 'STRING', seed: 'STRING' },
     parentSources: ['test/FE3463Source:STRING']
+  }
+}
+
+function gptImageWithTwoImages(): Scenario {
+  const graph = newGraph()
+  const node = createNode(graph, GPT_IMAGE_TYPE)
+  selectOption(node, 'gpt-image-2.5-sunburst')
+  connectGptImage(graph, node)
+  const second = createNode(graph, 'test/FE3463Source')
+  second.connect(0, node, slotOf(node, 'model.images.image_2'))
+  return {
+    graph,
+    node,
+    innerWiring: { ...gptImageWiring, 'model.images.image_2': 'IMAGE' },
+    parentSources: ['test/FE3463Source:IMAGE', ...gptImageParentSources]
+  }
+}
+
+function claudeLlmWithImage(): Scenario {
+  const graph = newGraph()
+  const node = createNode(graph, LLM_TYPE)
+  selectOption(node, 'perplexity/sonar-pro')
+  selectOption(node, 'anthropic/claude-opus-5')
+  const source = createNode(graph, 'test/FE3463Source')
+  source.connect(2, node, slotOf(node, 'prompt'))
+  source.connect(0, node, slotOf(node, 'model.images.image_1'))
+  source.connect(1, node, slotOf(node, 'seed'))
+  const systemPrompt = createNode(graph, 'test/FE3463Source')
+  systemPrompt.connect(2, node, slotOf(node, 'system_prompt'))
+  return {
+    graph,
+    node,
+    innerWiring: {
+      prompt: 'STRING',
+      'model.images.image_1': 'IMAGE',
+      seed: 'INT',
+      system_prompt: 'STRING'
+    },
+    parentSources: [
+      'test/FE3463Source:IMAGE',
+      'test/FE3463Source:INT',
+      'test/FE3463Source:STRING',
+      'test/FE3463Source:STRING'
+    ]
   }
 }
 
@@ -270,7 +312,9 @@ const scenarios: [string, () => Scenario][] = [
     () => gptImageWithOption('gpt-image-2.5-flare')
   ],
   ['GPT Image (loaded from a saved workflow)', loadedGptImage],
-  ['OpenRouter LLM (Perplexity, system prompt wired)', perplexityLlm]
+  ['GPT Image (two autogrow images connected)', gptImageWithTwoImages],
+  ['OpenRouter LLM (Perplexity, system prompt wired)', perplexityLlm],
+  ['OpenRouter LLM (Claude, image and system prompt wired)', claudeLlmWithImage]
 ]
 
 describe('Convert to Subgraph with dynamic combo inputs (FE-3463)', () => {
@@ -313,27 +357,11 @@ describe('Convert to Subgraph with dynamic combo inputs (FE-3463)', () => {
     }
   )
 
-  test.for(scenarios)(
-    'leaves the %s node either correctly wired or misrouted by FE-3463 only',
-    ([, build]) => {
-      const { graph, node, innerWiring, misroutedWiring } = build()
+  test.for(scenarios)('keeps the inner wiring of the %s node', ([, build]) => {
+    const { graph, node, innerWiring } = build()
 
-      const { inner } = convertNodeToSubgraph(graph, node)
+    const { inner } = convertNodeToSubgraph(graph, node)
 
-      expect([innerWiring, misroutedWiring]).toContainEqual(
-        connectedInputTypes(inner)
-      )
-    }
-  )
-
-  test.fails.for(scenarios)(
-    'keeps the inner wiring of the %s node',
-    ([, build]) => {
-      const { graph, node, innerWiring } = build()
-
-      const { inner } = convertNodeToSubgraph(graph, node)
-
-      expect(connectedInputTypes(inner)).toEqual(innerWiring)
-    }
-  )
+    expect(connectedInputTypes(inner)).toEqual(innerWiring)
+  })
 })

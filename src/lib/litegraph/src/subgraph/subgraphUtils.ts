@@ -33,6 +33,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type {
+  ISerialisableNodeInput,
   ISerialisedNode,
   SerialisableLLink,
   SubgraphIO
@@ -240,10 +241,33 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
 
     // Must be cloned; litegraph "serialize" is mostly shallow clone
     newNode.configure(data)
-    clonedNodes.push(newNode.serialize())
+    clonedNodes.push(withInputLinksByName(newNode.serialize(), data))
   }
 
   return clonedNodes
+}
+
+function withInputLinksByName(
+  clone: ISerialisedNode,
+  source: ISerialisedNode
+): ISerialisedNode {
+  const inputs: ISerialisableNodeInput[] = (clone.inputs ?? []).map(
+    (input) => ({ ...input, link: null })
+  )
+  const claimed = new Set<number>()
+  for (const sourceInput of source.inputs ?? []) {
+    if (sourceInput.link == null) continue
+    const index = inputs.findIndex(
+      (input, slot) => !claimed.has(slot) && input.name === sourceInput.name
+    )
+    if (index === -1) {
+      claimed.add(inputs.push({ ...sourceInput }) - 1)
+      continue
+    }
+    claimed.add(index)
+    inputs[index] = { ...inputs[index], link: sourceInput.link }
+  }
+  return { ...clone, inputs }
 }
 
 export function findUnresolvableSubgraphLink(
