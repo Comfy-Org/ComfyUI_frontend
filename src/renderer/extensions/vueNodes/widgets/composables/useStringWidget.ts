@@ -8,7 +8,8 @@ import {
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useApp } from '@/scripts/appInstance'
-import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
+import { isDOMWidget } from '@/scripts/domWidget'
+import type { DOMWidgetOptions } from '@/types/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
@@ -24,12 +25,15 @@ function addMultilineWidget(
     opts.placeholder || name
   )
 
-  let widget: DOMWidget<HTMLTextAreaElement, string> | undefined = undefined
-  // A DynamicGroup row shift renames the widget, so resolve the store id
-  // from its current name rather than the name it was created with.
+  // The node can rename the widget (unique-name suffixes while it is added,
+  // DynamicGroup row shifts later), so resolve the store id from its current
+  // name. The widget is in `node.widgets` before `addDOMWidget` returns.
   function storeId() {
     const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
-    return widgetId(graphId, node.id, widget?.name ?? name)
+    const current = node.widgets?.find(
+      (widget) => isDOMWidget(widget) && widget.element === inputEl
+    )
+    return widgetId(graphId, node.id, current?.name ?? name)
   }
 
   // Declared separately (rather than reading `widget.options` from the
@@ -60,7 +64,7 @@ function addMultilineWidget(
     }
   }
 
-  widget = node.addDOMWidget(name, 'customtext', inputEl, widgetOptions)
+  const widget = node.addDOMWidget(name, 'customtext', inputEl, widgetOptions)
 
   widget.element = inputEl
 
