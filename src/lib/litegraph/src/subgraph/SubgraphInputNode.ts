@@ -1,10 +1,16 @@
+import type {
+  LGraphNode,
+  LinkConnector,
+  SubgraphInput,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import type { NodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 import { linkIdReservations, mintLinkId } from '../idAllocation'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
-import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import type { RerouteId } from '@/types/rerouteId'
+
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type {
   DefaultConnectionColors,
@@ -23,8 +29,8 @@ import { nextUniqueName } from '@/lib/litegraph/src/strings'
 
 import { EmptySubgraphInput } from './EmptySubgraphInput'
 import { SubgraphIONodeBase } from './SubgraphIONodeBase'
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutput } from './SubgraphOutput'
+
+import { provideSubgraphInputGuard } from './subgraphTypeGuards'
 
 export class SubgraphInputNode
   extends SubgraphIONodeBase<SubgraphInput>
@@ -287,4 +293,21 @@ export class SubgraphInputNode
 
     this.drawSlots(ctx, colorContext, fromSlot, editorAlpha)
   }
+}
+
+function isSubgraphInput(slot: unknown): slot is SubgraphInput {
+  return (
+    slot != null &&
+    typeof slot === 'object' &&
+    'parent' in slot &&
+    slot.parent instanceof SubgraphInputNode
+  )
+}
+
+provideSubgraphInputGuard(isSubgraphInput)
+
+type RegisteredSubgraphInputNode = SubgraphInputNode
+
+declare module '../types/entityRegistry' {
+  interface SubgraphInputNode extends RegisteredSubgraphInputNode {}
 }

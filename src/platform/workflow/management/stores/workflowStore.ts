@@ -22,9 +22,10 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { ChangeTracker } from '@/scripts/changeTracker'
+import { ChangeTrackerAccess } from '@/scripts/changeTrackerAccess'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
@@ -46,12 +47,14 @@ export { ComfyWorkflow, type LoadedComfyWorkflow }
 
 registerWorkflowRuntime({
   createChangeTracker: (workflow, initialState) =>
-    new ChangeTracker(workflow, initialState),
+    new ChangeTrackerAccess(workflow, initialState),
   getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
   removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
   markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
   isDraftPersistenceEnabled: () =>
     useSettingStore().get('Comfy.Workflow.Persist'),
+  forgetNodeHistories: (rootGraphId) =>
+    useWidgetHistoryStore().clearWorkflow(rootGraphId),
   async promptSave(workflow) {
     try {
       return await useDialogService().prompt({
@@ -313,12 +316,18 @@ export const useWorkflowStore = defineStore('workflow', () => {
     return createNewWorkflow(fullPath, workflowData)
   }
 
+  function forgetNodeHistories(workflow: ComfyWorkflow) {
+    const rootGraphId = workflow.activeState?.id
+    if (rootGraphId) useWidgetHistoryStore().clearWorkflow(rootGraphId)
+  }
+
   const closeWorkflow = async (workflow: ComfyWorkflow) => {
     openWorkflowPaths.value = openWorkflowPaths.value.filter(
       (path) => path !== workflow.path
     )
     useWorkflowDraftStoreV2().removeDraft(workflow.path)
     if (workflow.isTemporary) {
+      forgetNodeHistories(workflow)
       clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
     } else {
@@ -436,6 +445,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           openWorkflowPaths.value = openWorkflowPaths.value.filter(
             (openPath) => openPath !== path
           )
+          forgetNodeHistories(workflow)
           return true
         }
       )

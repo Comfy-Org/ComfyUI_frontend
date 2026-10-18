@@ -19,10 +19,7 @@
       </div>
     </div>
     <div class="flex shrink-0 flex-wrap justify-end gap-4">
-      <div
-        v-if="type === 'overwriteBlueprint'"
-        class="flex flex-col justify-start gap-1"
-      >
+      <div v-if="type === 'overwriteBlueprint'" class="flex flex-col gap-1">
         <div class="flex gap-4">
           <input
             id="doNotAskAgain"
@@ -43,7 +40,7 @@
           <template #link>
             <Button
               variant="textonly"
-              class="cursor-pointer p-0 text-sm text-muted-foreground underline hover:bg-transparent"
+              class="p-0 text-sm text-muted-foreground underline hover:bg-transparent"
               @click="openBlueprintOverwriteSetting"
             >
               {{ t('missingModelsDialog.reEnableInSettingsLink') }}

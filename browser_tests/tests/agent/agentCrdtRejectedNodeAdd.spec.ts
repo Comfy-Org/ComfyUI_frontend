@@ -48,7 +48,6 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
  */
 
 const WORKFLOW_ID = 'f18210000-0000-4000-8000-000000000001'
-const SOCKET_SID = 'f18210000-0000-4000-8000-000000000002'
 const MESSAGE_ID = 'f18210000-0000-4000-8000-000000000003'
 const THREAD_ID = 'f18210000-0000-4000-8000-000000000004'
 
@@ -284,7 +283,6 @@ test.describe(
         page,
         WORKFLOW_ID,
         host,
-        SOCKET_SID,
         'hold'
       )
       await hostSocket.install()

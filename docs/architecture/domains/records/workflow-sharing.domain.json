@@ -4,83 +4,15 @@
   "description": "Sharing workflows by link and publishing them to ComfyHub: share and ComfyHub API schemas and services, the share dialog and copyable share URL, opening a shared workflow from a URL (including logged-out share attribution), and the ComfyHub profile gate and multi-step publish wizard. The workflow store, workflowService, assets store, auth, telemetry, and dialog infrastructure remain external.",
   "modules": [
     {
-      "path": "src/platform/workflow/sharing/types/**",
+      "path": "src/platform/workflow/sharing/**",
       "role": "domain"
     },
     {
-      "path": "src/platform/workflow/sharing/schemas/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/sharing/constants/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/sharing/utils/normalizeTags.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/sharing/utils/normalizeTags.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/sharing/utils/shareAuthAttribution.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/utils/shareAuthAttribution.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/utils/validateFileSize.ts",
+      "path": "src/platform/workflow/sharing/components/**",
       "role": "presentation"
     },
     {
-      "path": "src/platform/workflow/sharing/composables/lazyShareDialog.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useShareDialog.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useShareFlowContext.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishDialog.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useComfyHubProfileGate.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useComfyHubProfileGate.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishWizard.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishWizard.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workflow/sharing/composables/useComfyHubPublishSubmission.test.ts",
+      "path": "src/platform/workflow/sharing/composables/**",
       "role": "application"
     },
     {
@@ -96,7 +28,15 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/workflow/sharing/components/**",
+      "path": "src/platform/workflow/sharing/utils/shareAuthAttribution.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/utils/shareAuthAttribution.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/sharing/utils/validateFileSize.ts",
       "role": "presentation"
     }
   ],

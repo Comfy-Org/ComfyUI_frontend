@@ -1,6 +1,6 @@
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
-import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { computed, createApp, defineComponent, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -12,13 +12,9 @@ import { useWorkspaceMenuItems as createWorkspaceMenuItems } from './useWorkspac
 
 const state = vi.hoisted(() => ({
   billingStatus: 'paid',
-  canLeaveWorkspace: false,
-  canManageSubscription: false,
   canManageSubscriptionLifecycle: false,
   canAccessSubscriptionFeatures: true,
-  isDeleteDisabled: false,
   isFreeTier: false,
-  isInPersonalWorkspace: false,
   planSlug: 'pro-monthly' as string | null,
   tier: null as string | null,
   shouldUseWorkspaceBilling: true,
@@ -30,6 +26,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
     billingStatus: computed(() => state.billingStatus),
     isFreeTier: computed(() => state.isFreeTier),
     subscription: computed(() => ({
+      isCancelled: state.isSubscriptionCancelled,
       endDate: '2026-08-01T00:00:00Z',
       planSlug: state.planSlug,
       tier: state.tier
@@ -54,8 +51,6 @@ vi.mock<unknown>(
       permissions: {
         get value() {
           return {
-            canLeaveWorkspace: state.canLeaveWorkspace,
-            canManageSubscription: state.canManageSubscription,
             canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
           }
         }
@@ -65,17 +60,10 @@ vi.mock<unknown>(
         workspaceMenuAction: null,
         workspaceMenuDisabledTooltip: null
       })),
-      isInPersonalWorkspace: computed(() => state.isInPersonalWorkspace),
       canAccessSubscriptionFeatures: computed(
         () => state.canAccessSubscriptionFeatures
       ),
-      isSubscriptionCancelled: computed(() => state.isSubscriptionCancelled),
-      isDeleteDisabled: {
-        get value() {
-          return state.isDeleteDisabled
-        }
-      },
-      deleteDisabledTooltipKey: computed(() => null)
+      isSubscriptionCancelled: computed(() => state.isSubscriptionCancelled)
     })
   })
 )
@@ -107,6 +95,22 @@ function useWorkspaceMenuItems(
   return result
 }
 
+function grantDelete() {
+  useBillingCapabilities().canDeleteWorkspace = computed(() =>
+    receiveServerFact('can_delete_workspace', true)
+  )
+}
+
+function denyDelete(denial: string) {
+  useBillingCapabilities().deleteWorkspaceDenial = computed(() => denial)
+}
+
+function grantLeave() {
+  useBillingCapabilities().canLeaveWorkspace = computed(() =>
+    receiveServerFact('can_leave_workspace', true)
+  )
+}
+
 afterEach(() => {
   for (const app of apps.splice(0)) app.unmount()
 })
@@ -115,13 +119,9 @@ describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
     state.billingStatus = 'paid'
 
-    state.canLeaveWorkspace = false
-    state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
     state.canAccessSubscriptionFeatures = true
-    state.isDeleteDisabled = false
     state.isFreeTier = false
-    state.isInPersonalWorkspace = false
     state.planSlug = 'pro-monthly'
     state.tier = null
     state.shouldUseWorkspaceBilling = true
@@ -193,22 +193,9 @@ describe('useWorkspaceMenuItems', () => {
     }
   )
 
-  it('hides Delete for an Enterprise workspace owner', () => {
-    state.canManageSubscription = true
-    state.planSlug = 'enterprise_monthly'
-    state.tier = 'ENTERPRISE'
-
-    const { menuItems } = useWorkspaceMenuItems()
-
-    expect(menuItems.value.map((item) => item.label)).not.toContain(
-      'workspacePanel.menu.deleteWorkspace'
-    )
-  })
-
-  it('keeps Leave available for an Enterprise workspace member', () => {
-    state.canLeaveWorkspace = true
-    state.planSlug = 'enterprise_monthly'
-    state.tier = 'ENTERPRISE'
+  it('keeps Leave when the server refuses Delete for a sales-managed plan', () => {
+    grantLeave()
+    denyDelete('sales_managed_plan')
 
     const { menuItems } = useWorkspaceMenuItems()
 
@@ -314,87 +301,38 @@ describe('useWorkspaceMenuItems', () => {
     ).not.toHaveBeenCalled()
   })
 
-  it('shows Leave only when workspace permission grants it', () => {
-    const hiddenItems = useWorkspaceMenuItems().menuItems
+  it('puts Cancel plan ahead of the shared workspace actions', () => {
+    useBillingCapabilities().canCancel = computed(() => true)
+    grantLeave()
+    grantDelete()
 
-    expect(hiddenItems.value.map((item) => item.label)).not.toContain(
-      'workspacePanel.menu.leaveWorkspace'
-    )
+    const { menuItems } = useWorkspaceMenuItems()
 
-    state.canLeaveWorkspace = true
-    const visibleItems = useWorkspaceMenuItems().menuItems
-
-    expect(visibleItems.value.map((item) => item.label)).toContain(
-      'workspacePanel.menu.leaveWorkspace'
-    )
+    expect(menuItems.value.map((item) => item.label)).toEqual([
+      'subscription.cancelPlan',
+      'workspacePanel.menu.leaveWorkspace',
+      'workspacePanel.menu.deleteWorkspace'
+    ])
   })
 
-  it('rechecks permission before opening the Leave dialog', () => {
-    state.canLeaveWorkspace = true
-    const { menuItems } = useWorkspaceMenuItems()
-    const leaveItem = menuItems.value.find(
-      (item) => item.label === 'workspacePanel.menu.leaveWorkspace'
-    )
+  it('separates every menu entry with a divider', () => {
+    useBillingCapabilities().canCancel = computed(() => true)
+    grantLeave()
+    denyDelete('not_workspace_owner')
 
-    state.canLeaveWorkspace = false
-    leaveItem?.command?.({
-      originalEvent: new Event('click'),
-      item: leaveItem
-    })
+    const { menuEntries } = useWorkspaceMenuItems()
 
     expect(
-      useWorkspaceDialogs().showLeaveWorkspaceDialog
-    ).not.toHaveBeenCalled()
-  })
-
-  it('shows Leave and Delete when owner permissions grant both', () => {
-    state.canLeaveWorkspace = true
-    state.canManageSubscription = true
-
-    const { menuItems } = useWorkspaceMenuItems()
-
-    expect(menuItems.value.map((item) => item.label)).toEqual([
-      'workspacePanel.menu.deleteWorkspace',
+      menuEntries.value.map((item) => (item.separator ? '|' : item.label))
+    ).toEqual([
+      'subscription.cancelPlan',
+      '|',
       'workspacePanel.menu.leaveWorkspace'
     ])
-  })
-
-  it('withholds Delete from members', () => {
-    state.canLeaveWorkspace = true
-
-    const { menuItems } = useWorkspaceMenuItems()
-
-    expect(menuItems.value.map((item) => item.label)).toEqual([
-      'workspacePanel.menu.leaveWorkspace'
-    ])
-  })
-
-  it('withholds Delete from personal workspace owners', () => {
-    state.canManageSubscription = true
-    state.isInPersonalWorkspace = true
-
-    const { menuItems } = useWorkspaceMenuItems()
-
-    expect(menuItems.value.map((item) => item.label)).not.toContain(
-      'workspacePanel.menu.deleteWorkspace'
-    )
-  })
-
-  it('disables Delete while the additional workspace is subscribed', () => {
-    state.canManageSubscription = true
-    state.isDeleteDisabled = true
-
-    const { menuItems } = useWorkspaceMenuItems()
-    const deleteItem = menuItems.value.find(
-      (item) => item.label === 'workspacePanel.menu.deleteWorkspace'
-    )
-
-    expect(deleteItem).toMatchObject({ disabled: true, command: undefined })
   })
 
   it('tells the owner of a cancelled plan when Delete becomes available', () => {
-    state.canManageSubscription = true
-    state.isDeleteDisabled = true
+    denyDelete('plan_not_ended')
     state.isSubscriptionCancelled = true
 
     const { menuItems } = useWorkspaceMenuItems(enMessages)
@@ -403,43 +341,7 @@ describe('useWorkspaceMenuItems', () => {
     )
 
     expect(deleteItem?.tooltip).toBe(
-      'You can delete this workspace after your plan ends on Aug 1, 2026'
+      'You can delete this workspace after your plan ends on Aug 1, 2026.'
     )
-  })
-
-  it('rechecks owner permission before opening the Delete dialog', () => {
-    state.canManageSubscription = true
-    const { menuItems } = useWorkspaceMenuItems()
-    const deleteItem = menuItems.value.find(
-      (item) => item.label === 'workspacePanel.menu.deleteWorkspace'
-    )
-
-    state.canManageSubscription = false
-    deleteItem?.command?.({
-      originalEvent: new Event('click'),
-      item: deleteItem
-    })
-
-    expect(
-      useWorkspaceDialogs().showDeleteWorkspaceDialog
-    ).not.toHaveBeenCalled()
-  })
-
-  it('rechecks the subscription lock before opening the Delete dialog', () => {
-    state.canManageSubscription = true
-    const { menuItems } = useWorkspaceMenuItems()
-    const deleteItem = menuItems.value.find(
-      (item) => item.label === 'workspacePanel.menu.deleteWorkspace'
-    )
-
-    state.isDeleteDisabled = true
-    deleteItem?.command?.({
-      originalEvent: new Event('click'),
-      item: deleteItem
-    })
-
-    expect(
-      useWorkspaceDialogs().showDeleteWorkspaceDialog
-    ).not.toHaveBeenCalled()
   })
 })

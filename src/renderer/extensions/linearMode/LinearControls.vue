@@ -170,7 +170,7 @@ function replayAppModeTour() {
         variant="textonly"
         size="icon"
         :aria-label="t('onboardingCoachmarks.appMode.replay')"
-        class="rounded-lg border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
+        class="border border-solid border-border-default text-muted-foreground hover:border-interface-stroke hover:text-base-foreground"
         @click="replayAppModeTour"
       >
         <i class="icon-[lucide--circle-question-mark] size-4" />
@@ -338,7 +338,7 @@ function replayAppModeTour() {
           <Button
             v-else
             variant="inverted"
-            class="mt-4 w-full text-sm"
+            class="mt-4 w-full"
             size="lg"
             :aria-describedby="
               isPreparingInputDownloads

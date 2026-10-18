@@ -3,6 +3,10 @@ import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
 import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import {
+  SessionRevokedError,
+  revokedCodeOf
+} from '@/platform/auth/session/sessionRevokedError'
 import { isCloud } from '@/platform/distribution/types'
 import {
   UNKNOWN_ERROR_CODE,
@@ -30,9 +34,6 @@ interface InFlightCreateSession {
 class SsoRequiredSessionError extends Error {
   readonly code = 'SSO_REQUIRED'
 }
-
-/** Ingest refused the session because the sign-in predates a sign-out. */
-export class SessionRevokedError extends Error {}
 
 let inFlightCreateSession: InFlightCreateSession | null = null
 let confirmedSessionOwnerUid: string | null = null
@@ -63,8 +64,9 @@ export const useSessionCookie = () => {
     if (isSsoRequiredRefusal(response.status, errorResponse)) {
       return new SsoRequiredSessionError(message)
     }
-    return response.status === 401 && code === 'SESSION_REVOKED'
-      ? new SessionRevokedError(message)
+    const revokedCode = response.status === 401 ? revokedCodeOf(code) : null
+    return revokedCode
+      ? new SessionRevokedError(message, revokedCode)
       : new SessionCookieError(
           message,
           code === UNKNOWN_ERROR_CODE ? undefined : code
@@ -173,8 +175,7 @@ export const useSessionCookie = () => {
     try {
       await establishSession(currentOwnerUidOrThrow(), true)
     } catch (error) {
-      // The session cookie is the only credential <img>/media loads carry, so
-      // a swallowed creation failure means images break with no other signal.
+      if (error instanceof SessionRevokedError) return
       reportError(error, {
         surface: 'auth',
         errorType: 'session_cookie_creation_failure',

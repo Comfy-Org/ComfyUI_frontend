@@ -1,6 +1,6 @@
 <template>
   <BaseModalLayout
-    content-title=""
+    :content-title="$t('g.settings')"
     data-testid="settings-dialog"
     size="md"
     :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
