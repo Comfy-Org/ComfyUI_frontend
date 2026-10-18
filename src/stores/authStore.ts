@@ -705,14 +705,16 @@ export const useAuthStore = defineStore('auth', () => {
           // Customer not found is expected for new users
           return null
         }
-        const { message } = await parseErrorResponse(response)
+        const { message, code } = await parseErrorResponse(response)
         if (!requestIsCurrent()) {
           return null
         }
         throw new AuthStoreError(
           t('toastMessages.failedToFetchBalance', {
             error: message
-          })
+          }),
+          response.status,
+          code
         )
       }
 
