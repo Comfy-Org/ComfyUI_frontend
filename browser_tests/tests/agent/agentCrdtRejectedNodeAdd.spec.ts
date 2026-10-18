@@ -372,15 +372,9 @@ test.describe(
       // assertions in front of it lets a slow run watch PrimeVue remove the
       // toast and then fail on a message that really was shown.
       await test.step('the person is told the edit was refused', async () => {
-        // `toastErrors` is not filtered on `:visible` and `toContainText`
-        // passes on any node in the collection, so either alone would accept
-        // a message nobody saw. Filter to the copy and require it on screen.
-        // The graph-edit copy, not the widget-write copy: the op the host
-        // named is an `add_node`, and `rejectedOpNotice` reserves the
-        // widget-write wording for a refused `set_widget`.
-        const rejectionToast = toast.toastErrors.filter({
-          hasText: enMessages.agent.editRejected.generic
-        })
+        const rejectionToast = toast.withText(
+          `${enMessages.agent.editRejected.generic} Rejected: ${ADDED_CLASS} (uncatalogued_widget_write)`
+        )
         await expect(rejectionToast).toBeVisible({ timeout: 10_000 })
       })
 
