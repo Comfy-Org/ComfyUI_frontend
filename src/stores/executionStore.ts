@@ -515,10 +515,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
-    if (!activeJob.value) return
-    if (!belongsToActiveWorkflow(e.detail.prompt_id)) return
+    const jobId = e.detail.prompt_id
+    if (!(jobId in queuedJobs.value)) return
     for (const n of e.detail.nodes) {
-      activeJob.value.nodes[n] = true
+      queuedJobs.value[jobId].nodes[n] = true
     }
   }
 
@@ -540,9 +540,9 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
-    if (!activeJob.value) return
-    if (!belongsToActiveWorkflow(e.detail.prompt_id)) return
-    activeJob.value.nodes[e.detail.node] = true
+    const jobId = e.detail.prompt_id
+    if (!(jobId in queuedJobs.value)) return
+    queuedJobs.value[jobId].nodes[e.detail.node] = true
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
