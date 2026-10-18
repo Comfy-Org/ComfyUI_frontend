@@ -364,4 +364,22 @@ describe('Convert to Subgraph with dynamic combo inputs (FE-3463)', () => {
 
     expect(connectedInputTypes(inner)).toEqual(innerWiring)
   })
+
+  test.for(scenarios)(
+    'keeps the inner wiring of the %s node when its sources are converted with it',
+    ([, build]) => {
+      const { graph, node, innerWiring } = build()
+      const sources = graph.nodes.filter(
+        (candidate) => candidate.type === 'test/FE3463Source'
+      )
+
+      const { subgraph } = graph.convertToSubgraph(
+        new Set<Positionable>([node, ...sources])
+      )
+      const inner = subgraph.nodes.find((n) => n.type === node.type)
+      assert(inner, 'node inside the new subgraph')
+
+      expect(connectedInputTypes(inner)).toEqual(innerWiring)
+    }
+  )
 })
