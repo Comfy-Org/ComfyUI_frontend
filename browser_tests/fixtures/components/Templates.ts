@@ -1,12 +1,21 @@
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 import path from 'path'
+import { z } from 'zod'
 
 import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+const zTemplateRootNodes = z.object({
+  nodes: z
+    .array(
+      z.object({ id: z.union([z.number(), z.string()]), type: z.string() })
+    )
+    .min(1)
+})
 
 export class ComfyTemplates {
   readonly content: Locator
@@ -66,18 +75,18 @@ export class ComfyTemplates {
         })
       )
       .toBeNull()
-    const expectedNodes = await this.page.evaluate(async (templateId) => {
+    const template: unknown = await this.page.evaluate(async (templateId) => {
       const response = await fetch(
         window.app!.api.fileURL(`/templates/${templateId}.json`)
       )
       if (!response.ok)
         throw new Error(`template ${templateId} returned ${response.status}`)
-      const json = (await response.json()) as {
-        nodes: { id: number | string; type: string }[]
-      }
-      return json.nodes.map(({ id, type }) => `${id}:${type}`).sort()
+      return response.json()
     }, id)
-    expect(expectedNodes.length).toBeGreaterThan(0)
+    const expectedNodes = zTemplateRootNodes
+      .parse(template)
+      .nodes.map(({ id, type }) => `${id}:${type}`)
+      .sort()
     await expect
       .poll(() =>
         this.page.evaluate(() =>
