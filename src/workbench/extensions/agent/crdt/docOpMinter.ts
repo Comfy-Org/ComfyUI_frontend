@@ -102,6 +102,8 @@ type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
+type PendingGrows = { base: number; names: readonly string[] }
+
 /**
  * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
  * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
@@ -355,7 +357,7 @@ export function docInputIndex(
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
-  const pendingGrows = new Map<NodeId, Map<string, number>>()
+  const pendingGrows = new Map<NodeId, PendingGrows>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
   let flushScheduled = false
@@ -582,22 +584,19 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     )
   }
 
-  /**
-   * The document slot a grow this minter sent will occupy once the server
-   * echoes it, while the bound document still lacks that slot. The applier
-   * appends a grown slot at the tail, so a prediction the document has since
-   * filled is stale and dropped.
-   */
-  function pendingGrowSlot(
+  function unechoedGrows(
     nodeId: NodeId,
-    name: string,
-    docNames: readonly (string | undefined)[] | null
-  ): number | undefined {
+    docNames: readonly (string | undefined)[]
+  ): PendingGrows | undefined {
     const grows = pendingGrows.get(nodeId)
-    const slot = grows?.get(name)
-    if (slot === undefined) return undefined
-    if (docNames !== null && slot >= docNames.length) return slot
-    grows?.delete(name)
+    if (grows === undefined) return undefined
+    const echoed = docNames.slice(grows.base)
+    const onlyOurEchoes =
+      docNames.length >= grows.base &&
+      echoed.length < grows.names.length &&
+      echoed.every((name, index) => name === grows.names[index])
+    if (onlyOurEchoes) return grows
+    pendingGrows.delete(nodeId)
     return undefined
   }
 
@@ -606,15 +605,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     name: string,
     docNames: readonly (string | undefined)[]
   ): void {
-    const grows = pendingGrows.get(nodeId) ?? new Map<string, number>()
-    const pendingSlots = [...grows.values()].filter(
-      (slot) => slot >= docNames.length
+    const grows = unechoedGrows(nodeId, docNames)
+    pendingGrows.set(
+      nodeId,
+      grows
+        ? { base: grows.base, names: [...grows.names, name] }
+        : { base: docNames.length, names: [name] }
     )
-    grows.set(
-      name,
-      Math.max(docNames.length, ...pendingSlots.map((s) => s + 1))
-    )
-    pendingGrows.set(nodeId, grows)
   }
 
   function resolveDocSlot(
@@ -623,12 +620,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     docNames: readonly (string | undefined)[] | null
   ): number | undefined {
     const toSlot = docInputIndex(docNames, input, link.target_slot)
-    if (input === undefined) return toSlot
-    if (toSlot !== undefined) {
-      pendingGrows.get(link.target_id)?.delete(input.name)
+    if (toSlot !== undefined || input === undefined || docNames === null)
       return toSlot
-    }
-    return pendingGrowSlot(link.target_id, input.name, docNames)
+    const grows = unechoedGrows(link.target_id, docNames)
+    const index = grows?.names.indexOf(input.name) ?? -1
+    return grows && index >= 0 ? grows.base + index : undefined
   }
 
   function mintConnect(event: IntentOf<'connect'>): void {

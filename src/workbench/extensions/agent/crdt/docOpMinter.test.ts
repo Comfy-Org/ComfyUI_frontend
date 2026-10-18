@@ -817,6 +817,62 @@ describe('attachDocOpMinter', () => {
         ).toEqual(['agent_crdt_link_slot_not_in_doc'])
         doc.destroy()
       })
+
+      describe('with two grows on one node awaiting their echo', () => {
+        async function mintTwoUnechoedGrows() {
+          const sources = [new TestSource(), new TestSource(), new TestSource()]
+          const sink = new TestAutogrowSink()
+          withGraphIntentSource('load', () => {
+            for (const source of sources) graph.add(source)
+            graph.add(sink)
+          })
+          const doc = mintDocFrom(graph)
+          docInputNames = (nodeId) =>
+            readDocSlotNames(doc, String(nodeId), 'inputs')
+          sources.forEach((source, slot) => source.connect(0, sink, slot))
+          await afterFlush()
+          expect(
+            minted.filter((op) => op.op === 'connect' && op.grow)
+          ).toHaveLength(2)
+          minted.length = 0
+          return { sink, doc }
+        }
+
+        it('targets the later grow at the slot after the earlier one', async () => {
+          const { sink, doc } = await mintTwoUnechoedGrows()
+          const grownLink = sink.inputs[2].link
+
+          sink.disconnectInput(2)
+          await afterFlush()
+
+          expect(minted).toEqual([
+            {
+              op: 'disconnect',
+              link_id: grownLink,
+              to_node: sink.id,
+              to_slot: 2
+            }
+          ])
+          doc.destroy()
+        })
+
+        it('drops the predictions once another actor appends a slot first', async () => {
+          const { sink, doc } = await mintTwoUnechoedGrows()
+          const foreign = ['image_1', 'other'].map(
+            (name) => `${IMAGES_GROUP}.${name}`
+          )
+          docInputNames = (nodeId) => (nodeId === sink.id ? foreign : null)
+
+          sink.disconnectInput(2)
+          await afterFlush()
+
+          expect(minted).toEqual([])
+          expect(
+            vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+          ).toEqual(['agent_crdt_link_slot_not_in_doc'])
+          doc.destroy()
+        })
+      })
     })
   })
 
