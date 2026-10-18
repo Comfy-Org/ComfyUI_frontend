@@ -13,9 +13,6 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@/platform/telemetry/reportError'
-import { getFromPngBuffer } from '@/scripts/metadata/png'
 import { decodePng } from '@/utils/__fixtures__/decodePng'
 import { useMaskEditorSaver } from './useMaskEditorSaver'
 
@@ -72,7 +69,6 @@ function createMockCanvas(seed?: Uint8ClampedArray): HTMLCanvasElement {
 let mockEditorStore: ReturnType<typeof useMaskEditorStore>
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/scripts/app'))
 
@@ -170,9 +166,7 @@ describe('useMaskEditorSaver', () => {
       'src/scripts/metadata/__fixtures__/with_metadata.png'
     )
     const originalBlob = new Blob([original], { type: 'image/png' })
-    const expected = await getFromPngBuffer(await originalBlob.arrayBuffer())
-    expect(expected).toHaveProperty('prompt')
-    expect(expected).toHaveProperty('workflow')
+
     mockDataStore.inputData!.sourceRef = {
       filename: 'with metadata #1.png',
       subfolder: 'my inputs',
@@ -201,8 +195,12 @@ describe('useMaskEditorSaver', () => {
     )
     const edited = uploaded.at(-1)
     expect(edited).toBeDefined()
-    expect(await getFromPngBuffer(await edited!.arrayBuffer())).toEqual(
-      expected
+    const text = new TextDecoder().decode(await edited!.arrayBuffer())
+    expect(text).toContain(
+      'prompt\0{"1":{"class_type":"KSampler","inputs":{}}}'
+    )
+    expect(text).toContain(
+      'workflow\0{"nodes":[{"id":1,"type":"KSampler","pos":[100,100],"size":[200,200]}]}'
     )
   })
 
@@ -230,16 +228,6 @@ describe('useMaskEditorSaver', () => {
         '/upload/image',
         expect.anything()
       )
-      expect(useToast().toasts).toEqual([
-        expect.objectContaining({
-          kind: 'error',
-          description: expect.stringContaining('original image')
-        })
-      ])
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'error_reading_mask_editor_source_image',
-        surface: 'graph'
-      })
     }
   )
 

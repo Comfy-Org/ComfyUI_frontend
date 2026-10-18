@@ -10,9 +10,6 @@ import type {
   EditorOutputLayer,
   ImageRef
 } from '@/stores/maskEditorDataStore'
-import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@/platform/telemetry/reportError'
 import { copyPngTextMetadata } from './pngTextMetadata'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
@@ -49,14 +46,13 @@ export function useMaskEditorSaver() {
 
     try {
       const source = await readSourceImage(dataStore.inputData.sourceRef)
-      if (!source.ok) return refuseMetadataLoss(source.cause)
+      if (!source) return false
       const outputData = await prepareOutputData()
       const image = copyPngTextMetadata(
-        source.data,
+        source,
         outputData.paintedMaskedImage.blob
       )
-      if (!image)
-        return refuseMetadataLoss(new Error('Invalid source PNG metadata'))
+      if (!image) return false
       outputData.paintedMaskedImage.blob = image
       dataStore.outputData = outputData
 
@@ -74,34 +70,15 @@ export function useMaskEditorSaver() {
     }
   }
 
-  function refuseMetadataLoss(cause: unknown): false {
-    reportError(cause, {
-      errorType: 'error_reading_mask_editor_source_image',
-      surface: 'graph'
-    })
-    useToast().error(t('g.error'), {
-      description: t('maskEditor.sourceImageReadFailed')
-    })
-    return false
-  }
-
-  async function readSourceImage(
-    ref: ImageRef
-  ): Promise<{ ok: true; data: ArrayBuffer } | { ok: false; cause: unknown }> {
+  async function readSourceImage(ref: ImageRef): Promise<ArrayBuffer | null> {
     const params = new URLSearchParams({ filename: ref.filename })
     if (ref.type) params.set('type', ref.type)
     if (ref.subfolder) params.set('subfolder', ref.subfolder)
     try {
       const response = await api.fetchApi(`/view?${params}`)
-      if (!response.ok) {
-        return {
-          ok: false,
-          cause: new Error(`Source image request failed (${response.status})`)
-        }
-      }
-      return { ok: true, data: await response.arrayBuffer() }
-    } catch (cause) {
-      return { ok: false, cause }
+      return response.ok ? await response.arrayBuffer() : null
+    } catch {
+      return null
     }
   }
 

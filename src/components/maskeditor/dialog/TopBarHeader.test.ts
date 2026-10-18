@@ -49,6 +49,8 @@ const i18n = createI18n({
       },
       maskEditor: {
         title: 'Mask Editor',
+        sourceImageReadFailed:
+          'The original image could not be read. Reopen the mask editor and try again.',
         invert: 'Invert',
         clear: 'Clear',
         undo: 'Undo',
@@ -203,6 +205,9 @@ describe('TopBarHeader', () => {
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       expect(mockStore.brushVisible).toBe(true)
       expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'The original image could not be read'
+      )
     })
 
     it('should restore brush + button state and log on save failure', async () => {
