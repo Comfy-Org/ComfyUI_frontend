@@ -1576,12 +1576,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
     if (submitted === undefined || !isSupersededAnswer(submitted, committed))
       return
-    reportError(
-      new Error(
-        `agent ask resolved as ${committed.selected.join(',')}, not ${submitted.selected.join(',')}`
-      ),
-      { surface: 'agent', errorType: 'agent_ask_answer_superseded' }
-    )
+    reportError(new Error('agent ask resolved with a different answer'), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_superseded',
+      tags: {
+        committed_selected_count: committed.selected.length,
+        submitted_selected_count: submitted.selected.length
+      }
+    })
     pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
   }
 

@@ -2226,8 +2226,13 @@ describe('useAgentSession (v1 composition root)', () => {
         resolution: { status: 'answered', selected: ['flux'] }
       })
       expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        expect.objectContaining({
+          message: expect.not.stringMatching(/flux|sdxl/)
+        }),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded',
+          tags: { committed_selected_count: 1, submitted_selected_count: 1 }
+        })
       )
     })
 
@@ -2762,7 +2767,8 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',
-        errorType: 'agent_ask_answer_superseded'
+        errorType: 'agent_ask_answer_superseded',
+        tags: { committed_selected_count: 1, submitted_selected_count: 1 }
       })
       expect(session.notices.value).toHaveLength(1)
       expect(cardOnScreen()).toBe(false)
