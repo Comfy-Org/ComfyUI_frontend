@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
@@ -11,6 +12,10 @@ import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { getFromPngBuffer } from '@/scripts/metadata/png'
 import { decodePng } from '@/utils/__fixtures__/decodePng'
 import { useMaskEditorSaver } from './useMaskEditorSaver'
 
@@ -18,11 +23,6 @@ let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
 
 const CANVAS_SIZE = 4
 const CANVAS_BYTES = CANVAS_SIZE * CANVAS_SIZE * 4
-
-// Pixel model: each mock canvas owns an RGBA buffer, and drawImage /
-// getImageData / putImageData move real data so the saver's compositing and
-// encoding can be asserted on pixel values. drawImage implements source-over
-// for the binary-alpha (0 or 255) fixtures these tests use.
 const canvasPixels = new WeakMap<HTMLCanvasElement, Uint8ClampedArray>()
 
 function createMockCtx(
@@ -72,6 +72,7 @@ function createMockCanvas(seed?: Uint8ClampedArray): HTMLCanvasElement {
 let mockEditorStore: ReturnType<typeof useMaskEditorStore>
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/scripts/app'))
 
@@ -85,7 +86,7 @@ describe('useMaskEditorSaver', () => {
   let mockNode: LGraphNode
   const originalCreateElement = document.createElement.bind(document)
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.mocked(api.apiURL).mockImplementation(
       (route) => `http://localhost:8188${route}`
     )
@@ -125,15 +126,19 @@ describe('useMaskEditorSaver', () => {
     mockEditorStore.rgbCanvas = createMockCanvas()
     mockEditorStore.imgCanvas = createMockCanvas()
 
-    vi.mocked(api.fetchApi).mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          name: 'clipspace-painted-masked-123.png',
-          subfolder: 'clipspace',
-          type: 'input'
-        })
-    } as Response)
+    const original = await encodeRgbaAsPng({
+      data: new Uint8ClampedArray([20, 30, 40, 255]),
+      width: 1,
+      height: 1
+    })
+    vi.mocked(api.fetchApi).mockImplementation(async (route) => {
+      if (route.startsWith('/view?')) return new Response(original)
+      return Response.json({
+        name: 'clipspace-painted-masked-123.png',
+        subfolder: 'clipspace',
+        type: 'input'
+      })
+    })
 
     vi.spyOn(document, 'createElement').mockImplementation(
       (tagName: string, options?: ElementCreationOptions) => {
@@ -142,8 +147,6 @@ describe('useMaskEditorSaver', () => {
         return originalCreateElement(tagName, options)
       }
     )
-
-    // Mock Image constructor so loadImageFromUrl resolves
     vi.stubGlobal(
       'Image',
       class MockImage {
@@ -162,20 +165,91 @@ describe('useMaskEditorSaver', () => {
     )
   })
 
+  it('preserves source PNG prompt and workflow metadata in the edited image', async () => {
+    const original = await readFile(
+      'src/scripts/metadata/__fixtures__/with_metadata.png'
+    )
+    const originalBlob = new Blob([original], { type: 'image/png' })
+    const expected = await getFromPngBuffer(await originalBlob.arrayBuffer())
+    expect(expected).toHaveProperty('prompt')
+    expect(expected).toHaveProperty('workflow')
+    mockDataStore.inputData!.sourceRef = {
+      filename: 'with metadata #1.png',
+      subfolder: 'my inputs',
+      type: 'input'
+    }
+    const uploaded: File[] = []
+    vi.mocked(api.fetchApi).mockImplementation(async (route, options) => {
+      if (route.startsWith('/view?')) return new Response(originalBlob)
+      const data = options?.body
+      if (!(data instanceof FormData))
+        return new Response(null, { status: 400 })
+      const file = data.get('image')
+      if (!(file instanceof File)) return new Response(null, { status: 400 })
+      uploaded.push(file)
+      return Response.json({
+        name: file.name,
+        subfolder: 'clipspace',
+        type: 'input'
+      })
+    })
+
+    await useMaskEditorSaver().save()
+
+    expect(api.fetchApi).toHaveBeenCalledWith(
+      '/view?filename=with+metadata+%231.png&type=input&subfolder=my+inputs'
+    )
+    const edited = uploaded.at(-1)
+    expect(edited).toBeDefined()
+    expect(await getFromPngBuffer(await edited!.arrayBuffer())).toEqual(
+      expected
+    )
+  })
+
+  it.for(['http', 'network', 'invalid-png'] as const)(
+    'refuses to discard metadata after a %s source failure',
+    async (failure) => {
+      const request = vi.mocked(api.fetchApi).getMockImplementation()!
+      const invalidPng = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10])
+      vi.mocked(api.fetchApi).mockImplementation((route, options) => {
+        if (!route.startsWith('/view?')) return request(route, options)
+        if (failure === 'network')
+          return Promise.reject(new TypeError('offline'))
+        return Promise.resolve(
+          failure === 'http'
+            ? new Response(null, { status: 404 })
+            : new Response(invalidPng)
+        )
+      })
+
+      expect(await useMaskEditorSaver().save()).toBe(false)
+
+      expect(mockDataStore.outputData).toBeNull()
+      expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
+      expect(api.fetchApi).not.toHaveBeenCalledWith(
+        '/upload/image',
+        expect.anything()
+      )
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          description: expect.stringContaining('original image')
+        })
+      ])
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'error_reading_mask_editor_source_image',
+        surface: 'graph'
+      })
+    }
+  )
+
   it('registers node outputs in store after save for node without prior execution outputs', async () => {
     const store = useNodeOutputStore()
     const locatorId = String(mockNode.id)
-
-    // Precondition: node has never been executed, no outputs exist
     expect(app.nodeOutputs[locatorId]).toBeUndefined()
 
     const { save } = useMaskEditorSaver()
     await save()
-
-    // After mask editor save, the node must have outputs in the store
-    // so the image preview displays correctly (not blank).
-    // Bug: the old code used updateNodeImages which silently no-ops
-    // when there are no pre-existing outputs for the node.
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
     expect(
@@ -209,17 +283,10 @@ describe('useMaskEditorSaver', () => {
   })
 
   it('does not write server references after the source node is detached', async () => {
-    vi.mocked(api.fetchApi).mockImplementation(async () => {
-      mockNode.graph = null
-      return {
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            name: 'clipspace-painted-masked-123.png',
-            subfolder: 'clipspace',
-            type: 'input'
-          })
-      } as Response
+    const request = vi.mocked(api.fetchApi).getMockImplementation()!
+    vi.mocked(api.fetchApi).mockImplementation(async (route, options) => {
+      if (options?.method === 'POST') mockNode.graph = null
+      return request(route, options)
     })
 
     await useMaskEditorSaver().save()
@@ -231,15 +298,13 @@ describe('useMaskEditorSaver', () => {
   it('omits subfolder from the upload FormData under the unified contract', async () => {
     const { save } = useMaskEditorSaver()
     await save()
-
-    // The unified contract uploads to /upload/image with only image + type;
-    // subfolder is intentionally omitted (the server assigns it). Assert it
-    // here so the next reader knows the omission is deliberate, not accidental.
     expect(api.fetchApi).toHaveBeenCalledWith(
       '/upload/image',
       expect.objectContaining({ method: 'POST' })
     )
-    const [, init] = vi.mocked(api.fetchApi).mock.calls[0]
+    const [, init] = vi
+      .mocked(api.fetchApi)
+      .mock.calls.find(([, options]) => options?.method === 'POST')!
     const body = init?.body as FormData
     expect(body).toBeInstanceOf(FormData)
     expect(body.get('type')).toBe('input')
@@ -247,10 +312,6 @@ describe('useMaskEditorSaver', () => {
   })
 
   it('uploads masked layers with inverted mask alpha and preserved RGB', async () => {
-    // Seed a distinct opaque color per pixel, mask the first half of the
-    // canvas, then decode the uploaded blobs and verify both the applied
-    // alpha and that the RGB survives where the alpha is 0 (the pixels a
-    // canvas-derived blob would serialize as black).
     const imgPixels = new Uint8ClampedArray(CANVAS_BYTES)
     for (let p = 0; p < CANVAS_BYTES / 4; p++) {
       imgPixels[p * 4] = (p * 7) % 256
@@ -269,15 +330,17 @@ describe('useMaskEditorSaver', () => {
     const { save } = useMaskEditorSaver()
     await save()
 
-    expect(api.fetchApi).toHaveBeenCalledTimes(4)
+    expect(api.fetchApi).toHaveBeenCalledTimes(5)
     const decodedUploads = []
-    for (const [, init] of vi.mocked(api.fetchApi).mock.calls) {
+    for (const [, init] of vi
+      .mocked(api.fetchApi)
+      .mock.calls.filter(([, options]) => options?.method === 'POST')) {
       const body = init?.body as FormData
       const file = body.get('image') as Blob
       try {
         decodedUploads.push(decodePng(new Uint8Array(await file.arrayBuffer())))
       } catch {
-        // not an encoder-produced PNG (canvas-derived layer)
+        continue
       }
     }
 

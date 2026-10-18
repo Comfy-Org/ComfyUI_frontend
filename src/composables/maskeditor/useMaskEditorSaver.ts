@@ -10,12 +10,14 @@ import type {
   EditorOutputLayer,
   ImageRef
 } from '@/stores/maskEditorDataStore'
+import { t } from '@/i18n'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { copyPngTextMetadata } from './pngTextMetadata'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
-
-// Private layer filename functions
 interface ImageLayerFilenames {
   maskedImage: string
   paint: string
@@ -39,14 +41,23 @@ export function useMaskEditorSaver() {
   const editorStore = useMaskEditorStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  const save = async (): Promise<void> => {
+  const save = async (): Promise<boolean> => {
     const sourceNode = dataStore.sourceNode
     if (!sourceNode || !dataStore.inputData) {
       throw new Error('No source node or input data')
     }
 
     try {
+      const source = await readSourceImage(dataStore.inputData.sourceRef)
+      if (!source.ok) return refuseMetadataLoss(source.cause)
       const outputData = await prepareOutputData()
+      const image = copyPngTextMetadata(
+        source.data,
+        outputData.paintedMaskedImage.blob
+      )
+      if (!image)
+        return refuseMetadataLoss(new Error('Invalid source PNG metadata'))
+      outputData.paintedMaskedImage.blob = image
       dataStore.outputData = outputData
 
       await updateNodePreview(sourceNode, outputData)
@@ -56,9 +67,41 @@ export function useMaskEditorSaver() {
       updateNodeWithServerReferences(sourceNode, outputData)
 
       useApp().canvas.setDirty(true)
+      return true
     } catch (error) {
       console.error('[MaskEditorSaver] Save failed:', error)
       throw error
+    }
+  }
+
+  function refuseMetadataLoss(cause: unknown): false {
+    reportError(cause, {
+      errorType: 'error_reading_mask_editor_source_image',
+      surface: 'graph'
+    })
+    useToast().error(t('g.error'), {
+      description: t('maskEditor.sourceImageReadFailed')
+    })
+    return false
+  }
+
+  async function readSourceImage(
+    ref: ImageRef
+  ): Promise<{ ok: true; data: ArrayBuffer } | { ok: false; cause: unknown }> {
+    const params = new URLSearchParams({ filename: ref.filename })
+    if (ref.type) params.set('type', ref.type)
+    if (ref.subfolder) params.set('subfolder', ref.subfolder)
+    try {
+      const response = await api.fetchApi(`/view?${params}`)
+      if (!response.ok) {
+        return {
+          ok: false,
+          cause: new Error(`Source image request failed (${response.status})`)
+        }
+      }
+      return { ok: true, data: await response.arrayBuffer() }
+    } catch (cause) {
+      return { ok: false, cause }
     }
   }
 
@@ -94,14 +137,6 @@ export function useMaskEditorSaver() {
       paintedMaskedImage
     }
   }
-
-  /**
-   * Writes the inverted mask into the alpha channel and returns the pixel
-   * buffer whose RGB was captured while the canvas was still fully opaque.
-   * Encode that buffer (not the canvas): once transparent pixels are written
-   * to the premultiplied canvas bitmap their RGB is lost, so blobs derived
-   * from the canvas serialize black under the mask.
-   */
   function applyMaskAsAlpha(
     ctx: CanvasRenderingContext2D,
     maskCanvas: HTMLCanvasElement

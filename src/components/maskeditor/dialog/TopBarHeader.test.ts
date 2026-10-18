@@ -22,7 +22,7 @@ const mockCanvasTransform = vi.hoisted(() => ({
 }))
 
 const mockSaver = vi.hoisted(() => ({
-  save: vi.fn().mockResolvedValue(undefined)
+  save: vi.fn(async () => true)
 }))
 
 vi.mock<unknown>(import('@/composables/maskeditor/useCanvasTools'), () => ({
@@ -174,9 +174,9 @@ describe('TopBarHeader', () => {
     })
 
     it('should switch the button text to "Saving" and disable the button while saving', async () => {
-      let resolve!: () => void
+      let resolve!: (saved: boolean) => void
       mockSaver.save.mockReturnValueOnce(
-        new Promise<void>((r) => {
+        new Promise<boolean>((r) => {
           resolve = r
         })
       )
@@ -189,8 +189,20 @@ describe('TopBarHeader', () => {
       const savingBtn = await screen.findByRole('button', { name: 'Saving' })
       expect(savingBtn).toBeDisabled()
 
-      resolve()
+      resolve(true)
       await clickPromise
+    })
+
+    it('keeps the editor open and allows retry when source metadata cannot be read', async () => {
+      mockSaver.save.mockResolvedValueOnce(false)
+      const user = userEvent.setup()
+      renderHeader()
+
+      await user.click(screen.getByRole('button', { name: 'Save' }))
+
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+      expect(mockStore.brushVisible).toBe(true)
+      expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled()
     })
 
     it('should restore brush + button state and log on save failure', async () => {

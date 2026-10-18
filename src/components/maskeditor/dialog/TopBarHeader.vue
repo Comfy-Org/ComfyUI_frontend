@@ -208,14 +208,16 @@ const handleSave = async () => {
 
   try {
     store.brushVisible = false
-    await saver.save()
-    dialogStore.closeDialog()
+    if (await saver.save()) {
+      dialogStore.closeDialog()
+      return
+    }
   } catch (error) {
     console.error('[TopBarHeader] Save failed:', error)
-    store.brushVisible = true
-    saveButtonText.value = t('g.save')
-    saveEnabled.value = true
   }
+  store.brushVisible = true
+  saveButtonText.value = t('g.save')
+  saveEnabled.value = true
 }
 
 const handleCancel = () => {

@@ -1462,6 +1462,7 @@
   "maskEditor": {
     "title": "Mask Editor",
     "openMaskEditor": "Open in Mask Editor",
+    "sourceImageReadFailed": "The original image could not be read. Reopen the mask editor and try again.",
     "invert": "Invert",
     "clear": "Clear",
     "undo": "Undo",
