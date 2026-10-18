@@ -172,22 +172,12 @@ function isValueWidget(
   return !(widget && isDisplayOnlyDomWidget(widget))
 }
 
-/**
- * A DOM or component widget kept out of the prompt (`options.serialize: false`)
- * that the node's definition does not declare is display state, not a node
- * input: the catalog's `widget_order` comes from the definition's inputs, so it
- * never names one. Litegraph still persists it in the workflow because its
- * widget-level `serialize` is unset — a custom pack's video preview (VHS
- * `videopreview`) is the case seen in prod. Sent as a named value it makes the
- * applier refuse the whole `add_node` as `unknown_widget`, which aborted an
- * undo's restore batch (PM-2165). A declared one (a custom widget type
- * registered for one of the definition's inputs) stays a value.
- */
 function isDisplayOnlyDomWidget(widget: IBaseWidget): boolean {
   if (!isDOMWidget(widget) && !isComponentWidget(widget)) return false
   if (widget.options.serialize !== false) return false
-  const definition = useNodeDefStore().fromLGraphNode(widget.node)
-  return !definition || !Object.hasOwn(definition.inputs, widget.name)
+  const nodeDefStore = useNodeDefStore()
+  if (!nodeDefStore.fromLGraphNode(widget.node)) return false
+  return !nodeDefStore.getInputSpecForWidget(widget.node, widget.name)
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {

@@ -3,6 +3,7 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
@@ -23,7 +24,6 @@ class TestSource extends LGraphNode {
   }
 }
 
-/** A pack node whose display-only DOM preview is persisted but not a catalog widget (VHS). */
 class TestPreviewSource extends LGraphNode {
   constructor() {
     super('Test Preview Source')
@@ -147,9 +147,6 @@ describe('attachRestoreOpMinter', () => {
     ])
   })
 
-  // PM-2165: undoing an agent's deletion of a custom-pack node minted its
-  // display-only preview as a named widget value; the doc host refused the
-  // add_node as unknown_widget and aborted the rest of the restore batch.
   it('restores a deleted node with a display-only DOM widget in a batch the applier takes whole', () => {
     const catalog: WidgetCatalog = {
       types: {
@@ -158,12 +155,25 @@ describe('attachRestoreOpMinter', () => {
         TestPreviewSource: { widget_order: ['image'] }
       }
     }
+    useNodeDefStore().addNodeDef({
+      name: 'TestPreviewSource',
+      display_name: 'Test Preview Source',
+      category: 'test',
+      python_module: 'test',
+      description: '',
+      output_node: false,
+      input: { required: { image: ['STRING', {}] } },
+      output: ['IMAGE'],
+      output_is_list: [false],
+      output_name: ['image']
+    })
     const preview = new TestPreviewSource()
+    preview.type = 'TestPreviewSource'
     graph.add(preview)
     graph.remove(preview)
-    // The document as the host holds it after the agent's deletion.
     const doc = mint(graph.serialize() as unknown as WorkflowJSON, catalog)
     const restored = new TestPreviewSource()
+    restored.type = 'TestPreviewSource'
     restored.id = preview.id
 
     restoreThrough(() => {
@@ -171,13 +181,8 @@ describe('attachRestoreOpMinter', () => {
       restored.connect(0, sink, 0)
     })
 
-    expect(minted[0]).toMatchObject({
-      op: 'add_node',
-      node: { widgets_values: { image: 'a.png' } }
-    })
-    expect(
-      (minted[0] as { node: { widgets_values: object } }).node.widgets_values
-    ).not.toHaveProperty('videopreview')
+    expect(minted[0]).toMatchObject({ op: 'add_node' })
+    expect(minted[0]).toHaveProperty('node.widgets_values', { image: 'a.png' })
     const { outcomes } = applyOps(
       doc,
       mintWireOps(minted, { actor: 'human:user:tab', baseVersion: 1 }),
