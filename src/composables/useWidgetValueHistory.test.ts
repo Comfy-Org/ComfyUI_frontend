@@ -31,6 +31,22 @@ function setup(
   return { value, history, edit }
 }
 
+function setupWithDelayedApply(initial: unknown) {
+  const value = ref(initial)
+  const pending: unknown[] = []
+  const history = useWidgetValueHistory({
+    scope: () => defaultScope,
+    read: () => value.value,
+    apply: (next) => {
+      pending.push(next)
+    }
+  })
+  const propagate = () => {
+    value.value = pending.at(-1)
+  }
+  return { value, history, propagate }
+}
+
 describe(useWidgetValueHistory, () => {
   it('undoes an edit to the committed value and redoes it', () => {
     const { value, history, edit } = setup(['a'])
@@ -70,6 +86,46 @@ describe(useWidgetValueHistory, () => {
     history.undo()
 
     expect(history.canUndo.value).toBe(true)
+    expect(history.canRedo.value).toBe(true)
+  })
+
+  it('keeps earlier steps when syncing the baseline to a loaded value', () => {
+    const { value, history, edit } = setup(1)
+    edit(2)
+    value.value = 10
+    history.syncBaseline()
+    edit(11)
+
+    history.undo()
+    expect(value.value).toBe(10)
+    expect(history.canUndo.value).toBe(true)
+  })
+
+  it('discards steps recorded against a value replaced from outside', () => {
+    const { value, history, edit } = setup('a')
+    edit('b')
+    value.value = 'c'
+
+    history.discardHistory()
+
+    expect(history.canUndo.value).toBe(false)
+    expect(history.canRedo.value).toBe(false)
+    edit('d')
+    history.undo()
+    expect(value.value).toBe('c')
+  })
+
+  it('keeps the restored value as the baseline when it propagates later', () => {
+    const { value, history, propagate } = setupWithDelayedApply(1)
+    value.value = 2
+    history.commit()
+
+    history.undo()
+    propagate()
+    history.commit()
+
+    expect(value.value).toBe(1)
+    expect(history.canUndo.value).toBe(false)
     expect(history.canRedo.value).toBe(true)
   })
 

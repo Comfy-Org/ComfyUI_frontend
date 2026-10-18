@@ -18,6 +18,16 @@ export function useWidgetValueHistory({
   const store = useWidgetHistoryStore()
   let committed = cloneDeep(read())
 
+  function syncBaseline() {
+    committed = cloneDeep(read())
+  }
+
+  function discardHistory() {
+    syncBaseline()
+    const target = scope()
+    if (target) store.forget(target)
+  }
+
   function commit(mergeKey?: string) {
     const current = read()
     if (isEqual(current, committed)) return
@@ -31,7 +41,7 @@ export function useWidgetValueHistory({
     const step = target ? take(target, read()) : undefined
     if (!step) return
     apply(step.value)
-    committed = cloneDeep(read())
+    committed = cloneDeep(step.value)
   }
 
   function undo() {
@@ -55,6 +65,8 @@ export function useWidgetValueHistory({
     canUndo,
     canRedo,
     commit,
+    syncBaseline,
+    discardHistory,
     undo,
     redo
   }

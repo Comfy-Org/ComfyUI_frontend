@@ -44,6 +44,9 @@ function undoAll(store: Store): unknown[] {
 describe(ownsNodeHistory, () => {
   it.for([
     { type: 'boundingboxes', owns: true },
+    { type: 'curve', owns: true },
+    { type: 'lightinfo', owns: true },
+    { type: 'range', owns: true },
     { type: 'number', owns: false },
     { type: undefined, owns: false }
   ])('returns $owns for widget type $type', ({ type, owns }) => {
@@ -178,6 +181,29 @@ describe(useWidgetHistoryStore, () => {
     store.record(scopeOf('root-a', 3), 'b')
 
     expect(store.canUndo(scope)).toBe(false)
+    expect(store.canUndo(scopeOf('root-a', 3))).toBe(true)
+  })
+
+  it('forgets the history of one widget only', () => {
+    const store = useWidgetHistoryStore()
+    const sibling = scopeOf('root-a', 2)
+    store.record(scope, 'a')
+    store.record(sibling, 'a')
+
+    store.forget(scope)
+
+    expect(store.canUndo(scope)).toBe(false)
+    expect(store.canUndo(sibling)).toBe(true)
+  })
+
+  it('forgets a workflow once its last widget history is forgotten', () => {
+    const store = useWidgetHistoryStore()
+    store.record(scope, 'a')
+
+    store.forget(scope)
+    store.forget(scope)
+    store.record(scopeOf('root-a', 3), 'b')
+
     expect(store.canUndo(scopeOf('root-a', 3))).toBe(true)
   })
 

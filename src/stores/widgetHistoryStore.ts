@@ -7,7 +7,10 @@ import type { WidgetId } from '@/types/widgetId'
 export const WIDGET_HISTORY_LIMIT = 10
 
 const NODE_HISTORY_WIDGET_TYPES: ReadonlySet<string> = new Set([
-  'boundingboxes'
+  'boundingboxes',
+  'curve',
+  'lightinfo',
+  'range'
 ])
 
 export function ownsNodeHistory(widget: { type?: string }): boolean {
@@ -126,6 +129,15 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     else workflows.delete(rootGraphId)
   }
 
+  function forget({ rootGraphId, widgetId }: WidgetHistoryScope): void {
+    const histories = workflows.get(rootGraphId)
+    if (!histories?.has(widgetId)) return
+    const kept = new Map(histories)
+    kept.delete(widgetId)
+    if (kept.size) workflows.set(rootGraphId, kept)
+    else workflows.delete(rootGraphId)
+  }
+
   function clearWorkflow(rootGraphId: string): void {
     workflows.delete(rootGraphId)
   }
@@ -137,6 +149,7 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     canUndo,
     canRedo,
     retainLive,
+    forget,
     clearWorkflow
   }
 })
