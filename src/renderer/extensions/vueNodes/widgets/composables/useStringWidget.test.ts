@@ -1,5 +1,6 @@
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
+import { widgetId } from '@/types/widgetId'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -63,6 +64,35 @@ describe('useStringWidget (multiline)', () => {
     const entries = useWidgetValueStore().getNodeWidgets('root', toNodeId(1))
     expect(entries.some((s) => s.value === 'from-execution')).toBe(true)
     expect(entries.every((s) => s.type === 'customtext')).toBe(true)
+  })
+
+  it('reads and writes the store entry under its current name after a rename', () => {
+    const { node, widget } = setup()
+    const addDOMWidget = node.addDOMWidget as unknown as {
+      mock: { calls: unknown[][] }
+    }
+    const options = addDOMWidget.mock.calls[0][3] as {
+      getValue: () => string
+      setValue: (v: string) => void
+    }
+    const store = useWidgetValueStore()
+    // A DynamicGroup row shift renames the widget, and the widget's name
+    // setter moves its store entry to the new id.
+    widget.name = 'loras.1.text'
+    store.registerWidget(widgetId('root', toNodeId(1), 'loras.1.text'), {
+      type: 'customtext',
+      value: 'moved',
+      options: {}
+    })
+
+    expect(options.getValue()).toBe('moved')
+    options.setValue('edited')
+    expect(
+      store.getWidget(widgetId('root', toNodeId(1), 'loras.1.text'))?.value
+    ).toBe('edited')
+    expect(store.getWidget(widgetId('root', toNodeId(1), 'prompt'))).toBe(
+      undefined
+    )
   })
 
   it('does not throw when a saved value is restored synchronously during construction', () => {
