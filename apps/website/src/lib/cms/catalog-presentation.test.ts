@@ -300,6 +300,36 @@ describe('native CONTENT presentation', () => {
       ])
     }
   )
+  it.for([
+    {
+      source: 'linked model labels on a native card',
+      data: {
+        website_model_labels: [
+          { uid: 'a', title: 'Flux', href: '/hub/models/flux/' },
+          { uid: 'b', title: 'Wan', href: '/hub/models/wan/' }
+        ]
+      },
+      expected: ['Flux', 'Wan']
+    },
+    {
+      source: 'descriptive model labels on a native detail',
+      data: { model_labels: [{ name: 'wan', display_name: 'Wan' }] },
+      expected: ['Wan']
+    },
+    {
+      source: 'legacy website models over native labels',
+      data: {
+        compatibility: { website: { models: ['Legacy'] } },
+        model_labels: [{ name: 'wan', display_name: 'Wan' }]
+      },
+      expected: ['Legacy']
+    }
+  ])('names what a workflow runs on from $source', ({ data, expected }) => {
+    const view = modelSchema.parse(
+      catalogPresentation({ ...record, data: { ...record.data, ...data } })
+    )
+    expect(view).toMatchObject({ models: expected })
+  })
   it('classifies audio heroes and examples as audio', () => {
     const view = catalogPresentation({
       ...record,

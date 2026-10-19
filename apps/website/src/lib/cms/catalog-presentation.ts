@@ -476,6 +476,23 @@ function catalogUseCases(d: Document) {
     : {}
 }
 
+function labelNames(value: unknown, key: string) {
+  if (!Array.isArray(value)) return []
+  return value.flatMap((raw) => {
+    const name = trimmedText(objectPresentation(raw)[key])
+    return name ? [name] : []
+  })
+}
+
+function workflowRunsOn(d: Document, preserved: Document) {
+  if (d.type !== 'workflow' || Array.isArray(preserved.models)) return {}
+  const linked = labelNames(d.website_model_labels, 'title')
+  const names = linked.length
+    ? linked
+    : labelNames(d.model_labels, 'display_name')
+  return names.length ? { models: [...new Set(names)] } : {}
+}
+
 export function catalogPresentation(
   record: ContentCatalogRecord,
   locale = 'en',
@@ -517,6 +534,7 @@ export function catalogPresentation(
         ? d.tags
         : [],
     ...catalogUseCases(d),
+    ...workflowRunsOn(d, preserved),
     ...(typeof d.provider === 'string' ? { provider: d.provider } : {}),
     ...contentPresentation(record, d, preserved, details)
   }
