@@ -41,6 +41,10 @@ jobs:
                     and . != "src/button.variants.ts"
                     and . != "src/select.variants.ts"
                     and . != "src/tag.variants.ts"
+                    and . != "dist-types/workspaceAvatar.d.ts"
+                    and . != "dist-types/button.variants.d.ts"
+                    and . != "dist-types/select.variants.d.ts"
+                    and . != "dist-types/tag.variants.d.ts"
                     and (startswith("src/css/") | not)
                     and (startswith("src/icons/") | not)
                   )

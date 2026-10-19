@@ -20,7 +20,7 @@
     "src/select.variants.ts",
     "src/tag.variants.ts",
     "src/workspaceAvatar.ts",
-    "dist-types"
+    "dist-types/**/*.d.ts"
   ],
   "type": "module",
   "exports": {

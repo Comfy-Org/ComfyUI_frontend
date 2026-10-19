@@ -4,7 +4,7 @@
   "description": "Shared Tailwind CSS utilities for ComfyUI Frontend",
   "files": [
     "src",
-    "dist-types"
+    "dist-types/**/*.d.ts"
   ],
   "type": "module",
   "main": "./src/index.ts",

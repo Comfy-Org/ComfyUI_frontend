@@ -1,20 +1,4 @@
 {
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "composite": true,
-    "noEmit": false,
-    "emitDeclarationOnly": true,
-    "declaration": true,
-    "noEmitOnError": true,
-    "outDir": "dist-types",
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo/declarations.tsbuildinfo",
-    "types": [],
-    "paths": {}
-  },
-  "include": ["src/*.ts"],
-  "exclude": [
-    "src/**/*.test.ts",
-    "src/**/*.stories.ts",
-    "src/**/__fixtures__/**"
-  ]
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
+  "include": ["src/*.ts"]
 }

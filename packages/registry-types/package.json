@@ -4,7 +4,7 @@
   "description": "Comfy Registry API TypeScript types",
   "files": [
     "src",
-    "dist-types"
+    "dist-types/**/*.d.ts"
   ],
   "type": "module",
   "exports": {

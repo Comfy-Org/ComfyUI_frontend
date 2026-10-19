@@ -1,22 +1,6 @@
 {
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "composite": true,
-    "noEmit": false,
-    "emitDeclarationOnly": true,
-    "declaration": true,
-    "noEmitOnError": true,
-    "outDir": "dist-types",
-    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo/declarations.tsbuildinfo",
-    "types": [],
-    "paths": {}
-  },
+  "extends": ["./tsconfig.json", "../../tsconfig.declarations.json"],
   "include": ["src/**/*.ts", "src/**/*.vue"],
-  "exclude": [
-    "src/**/*.test.ts",
-    "src/**/*.stories.ts",
-    "src/**/__fixtures__/**"
-  ],
   "references": [
     {
       "path": "../account-core/tsconfig.declarations.json"
