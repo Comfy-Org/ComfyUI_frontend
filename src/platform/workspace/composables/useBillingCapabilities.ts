@@ -164,6 +164,12 @@ function useBillingCapabilitiesInternal() {
   const deleteWorkspaceDenial = computed<string | undefined>(
     () => resolvedResponse.value?.denied_reasons?.can_delete_workspace
   )
+  const canEditWorkspace = computed(() =>
+    receiveServerFact(
+      'can_edit_workspace',
+      capabilities.value?.can_edit_workspace ?? false
+    )
+  )
   const canLeaveWorkspace = computed(() =>
     receiveServerFact(
       'can_leave_workspace',
@@ -540,6 +546,7 @@ function useBillingCapabilitiesInternal() {
     canManageMembers,
     canDeleteWorkspace,
     deleteWorkspaceDenial,
+    canEditWorkspace,
     canLeaveWorkspace,
     leaveWorkspaceDenial,
     canManageSubscription,

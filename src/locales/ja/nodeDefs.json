@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "テキストを音声に変換します。テキスト内の感情キュー（s2.1-proでは[happy]、[whispering]、s1では(happy)）と、複数の接続された音声で{'@'}Voice1/{'@'}Voice2タグを使用した複数話者の対話をサポートします。",
+    "description": "テキストを音声に変換します。テキスト内の感情キュー（s2.1-pro では [happy]、[whispering]、s1 では (happy)）、drama-3 の自然言語による [directions] と `<whisper>...</whisper>` 単語タグ、および複数の接続された音声で {'@'}Voice1/{'@'}Voice2 タグを使った複数話者の会話に対応します。",
     "display_name": "Fish Audio テキスト読み上げ",
     "inputs": {
       "control_after_generate": {
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "参照画像の新しいキャラクター、ロケーション、スタイルを使って動画を再構成しつつ、動き、カメラワーク、タイミングを維持します。",
+    "display_name": "Higgsfield Genjutsu モーション転送",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "低解像度画像を超解像度にアップスケールし、アーティファクトやノイズを除去します。最大出力：32メガピクセル。",
     "display_name": "HitPaw 一般画像強化",
@@ -9263,6 +9290,28 @@
       },
       "rotation": {
         "name": "回転"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "sRGB の明るさを Rec.2020 HLG HDR に拡張します。HDR カラースペースを選択して結果を保存してください。アルファは保持されます。",
+    "display_name": "SDR を HDR に変換",
+    "inputs": {
+      "algorithm": {
+        "name": "アルゴリズム",
+        "tooltip": "キャリブレーション済みの単調な対数ゲイン曲線とブレンドした、Lottes スタイルの有理拡張。"
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "sRGB の SDR 画像。"
       }
     },
     "outputs": {

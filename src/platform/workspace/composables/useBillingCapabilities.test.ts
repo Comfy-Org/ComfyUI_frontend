@@ -413,6 +413,26 @@ describe('useBillingCapabilities', () => {
     }
   )
 
+  it('offers workspace editing only when the server does', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      capabilitiesResponse(
+        true,
+        'workspace-1',
+        true,
+        {},
+        {
+          can_edit_workspace: true
+        }
+      )
+    )
+
+    expect(billingCapabilities.canEditWorkspace.value).toBe(false)
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canEditWorkspace.value).toBe(true)
+  })
+
   it('grants delete only when the server does', async () => {
     vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(

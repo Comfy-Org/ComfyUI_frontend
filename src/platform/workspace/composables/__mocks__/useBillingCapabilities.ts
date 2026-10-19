@@ -28,6 +28,9 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_delete_workspace', false)
   ),
   deleteWorkspaceDenial: computed(() => undefined),
+  canEditWorkspace: computed(() =>
+    receiveServerFact('can_edit_workspace', true)
+  ),
   canLeaveWorkspace: computed(() =>
     receiveServerFact('can_leave_workspace', false)
   ),
