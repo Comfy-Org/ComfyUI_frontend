@@ -15,9 +15,7 @@ export function couldBootOnDeployment(): boolean {
   const { bootDeployment } = useDeploymentPickStore()
   if (bootDeployment !== undefined) return bootDeployment !== null
   const { workspaceId } = useTeamWorkspaceStore()
-  return (
-    hasDeploymentLink() || (!!workspaceId && hasDeploymentHint(workspaceId))
-  )
+  return hasDeploymentLink() || hasDeploymentHint(workspaceId)
 }
 
 /**

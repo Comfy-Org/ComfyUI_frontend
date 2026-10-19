@@ -7,7 +7,8 @@ function hintKey(workspaceId: string): string {
 }
 
 /** True when this browser last ran on a deployment in the workspace. */
-export function hasDeploymentHint(workspaceId: string): boolean {
+export function hasDeploymentHint(workspaceId: string | null): boolean {
+  if (workspaceId === null) return false
   try {
     return localStorage.getItem(hintKey(workspaceId)) !== null
   } catch {

@@ -207,6 +207,10 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     if (event.type === 'loadRefused' && bootDeployment.value === undefined) {
       bootDeployment.value = null
     }
+    rememberBootTarget(workspaceId)
+  }
+
+  function rememberBootTarget(workspaceId: string) {
     setDeploymentHint(
       workspaceId,
       pickedDeployment.value?.deployment_id ?? null

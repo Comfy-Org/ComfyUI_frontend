@@ -23,8 +23,10 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  hasDeploymentHint,
+  hasDeploymentLink
+} from '@/platform/workspace/deploymentHint'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -63,6 +65,12 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('firebase/auth'))
+
+vi.mock(import('@/platform/workspace/deploymentHint'), () => ({
+  hasDeploymentHint: vi.fn(() => true),
+  hasDeploymentLink: vi.fn(() => false),
+  setDeploymentHint: vi.fn()
+}))
 
 /**
  * GraphCanvas is the only place the first-run tour is wired into startup: it
@@ -666,9 +674,8 @@ describe('deployment model options at startup', () => {
     onTestFinished(() => {
       distribution.isCloud = false
     })
-    localStorage.clear()
-    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
-    setDeploymentHint('ws-1', 'dep-1')
+    vi.mocked(hasDeploymentHint).mockReturnValue(true)
+    vi.mocked(hasDeploymentLink).mockReturnValue(false)
   })
 
   it.for([
@@ -677,7 +684,7 @@ describe('deployment model options at startup', () => {
   ])(
     'mounts the canvas at once, with no lookup toast, when the listing $listing and this browser has no deployment hint',
     async ({ answer }) => {
-      setDeploymentHint('ws-1', null)
+      vi.mocked(hasDeploymentHint).mockReturnValue(false)
       const store = useDeploymentPickStore()
       vi.spyOn(store, 'loadOnce').mockReturnValue(answer())
 
@@ -691,9 +698,8 @@ describe('deployment model options at startup', () => {
   )
 
   it('waits for the listing when the page opened from a deployment link, with no hint', async () => {
-    setDeploymentHint('ws-1', null)
-    window.history.replaceState(null, '', '/?workspace=ws-1&deployment=dep-1')
-    onTestFinished(() => window.history.replaceState(null, '', '/'))
+    vi.mocked(hasDeploymentHint).mockReturnValue(false)
+    vi.mocked(hasDeploymentLink).mockReturnValue(true)
     vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
       new Promise(() => {})
     )
