@@ -1,18 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FetchOutcome } from './cloudNodes'
-import type { NodesSnapshot } from '../data/cloudNodes'
+import type { NodesSnapshot } from '@/data/cloudNodes'
 
 const fetchCloudNodesMock = vi.hoisted(() =>
   vi.fn<() => Promise<FetchOutcome>>()
 )
 const reportCloudNodesOutcomeMock = vi.hoisted(() => vi.fn())
 
-vi.mock('./cloudNodes', () => ({
+vi.mock(import('./cloudNodes'), () => ({
   fetchCloudNodesForBuild: fetchCloudNodesMock
 }))
 
-vi.mock('./cloudNodes.ci', () => ({
+vi.mock(import('./cloudNodes.ci'), () => ({
   reportCloudNodesOutcome: reportCloudNodesOutcomeMock
 }))
 

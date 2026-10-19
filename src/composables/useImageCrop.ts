@@ -1,11 +1,12 @@
 import { useResizeObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
+import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 type ResizeDirection =
@@ -30,10 +31,14 @@ interface ResizeHandle {
 }
 
 const HANDLE_SIZE = 8
-const CORNER_SIZE = 10
+const CORNER_HIT_SIZE = 16
+const CORNER_DOT_CLASS =
+  "after:pointer-events-none after:absolute after:left-1/2 after:top-1/2 after:size-[9px] after:-translate-x-1/2 after:-translate-y-1/2 after:rounded-full after:bg-white/80 after:content-['']"
 /** Minimum crop width/height in source image pixel space. */
 const MIN_CROP_SIZE = 16
-const CROP_BOX_BORDER = 2
+const CROP_BOX_BORDER = 1
+/** Slot the cropped image arrives on. */
+const IMAGE_INPUT_SLOT = 0
 
 /**
  * Next `isLoading` when `imageUrl` transitions. `null` means do not change
@@ -67,7 +72,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   const { imageEl, containerEl, modelValue } = options
   const nodeOutputStore = useNodeOutputStore()
 
-  const node = ref<LGraphNode | null>(null)
+  const node = shallowRef<LGraphNode | null>(null)
 
   const imageUrl = ref<string | null>(null)
   const isLoading = ref(false)
@@ -178,32 +183,28 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     }
   })
 
-  const getInputImageUrl = (): string | null => {
-    if (!node.value) return null
+  /**
+   * Reads the link store (via `getInputNode`) and the node output store, so the
+   * preview follows the image input being connected, swapped, or disconnected —
+   * not just the upstream node producing new outputs.
+   */
+  const inputImageUrl = computed<string | null>(() => {
+    const cropNode = node.value
+    if (!cropNode) return null
 
-    let sourceNode = node.value.getInputNode(0)
+    const sourceNode = resolveInputSourceNode(cropNode, IMAGE_INPUT_SLOT)
     if (!sourceNode) return null
 
-    if (sourceNode.isSubgraphNode()) {
-      const link = node.value.getInputLink(0)
-      if (!link) return null
-      const resolved = sourceNode.resolveSubgraphOutputLink(link.origin_slot)
-      sourceNode = resolved?.outputNode ?? null
-      if (!sourceNode) return null
-    }
+    return nodeOutputStore.getNodeImageUrls(sourceNode)?.[0] ?? null
+  })
 
-    const urls = nodeOutputStore.getNodeImageUrls(sourceNode)
-
-    if (urls?.length) {
-      return urls[0]
-    }
-
-    return null
-  }
-
-  const updateImageUrl = () => {
-    imageUrl.value = getInputImageUrl()
-  }
+  watch(
+    inputImageUrl,
+    (url) => {
+      imageUrl.value = url
+    },
+    { immediate: true }
+  )
 
   watch(imageUrl, (url, previous) => {
     const next = imageCropLoadingAfterUrlChange(url, previous)
@@ -283,6 +284,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     const y = imageOffsetY.value + cropY.value * scaleFactor.value
     const w = cropWidth.value * scaleFactor.value
     const h = cropHeight.value * scaleFactor.value
+    const borderMid = CROP_BOX_BORDER / 2
 
     return [
       {
@@ -323,42 +325,42 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
       },
       {
         direction: 'nw',
-        class: 'cursor-nwse-resize rounded-sm bg-white/80',
+        class: `cursor-nwse-resize ${CORNER_DOT_CLASS}`,
         style: {
-          left: `${x - CORNER_SIZE / 2}px`,
-          top: `${y - CORNER_SIZE / 2}px`,
-          width: `${CORNER_SIZE}px`,
-          height: `${CORNER_SIZE}px`
+          left: `${x - borderMid - CORNER_HIT_SIZE / 2}px`,
+          top: `${y - borderMid - CORNER_HIT_SIZE / 2}px`,
+          width: `${CORNER_HIT_SIZE}px`,
+          height: `${CORNER_HIT_SIZE}px`
         }
       },
       {
         direction: 'ne',
-        class: 'cursor-nesw-resize rounded-sm bg-white/80',
+        class: `cursor-nesw-resize ${CORNER_DOT_CLASS}`,
         style: {
-          left: `${x + w - CORNER_SIZE / 2}px`,
-          top: `${y - CORNER_SIZE / 2}px`,
-          width: `${CORNER_SIZE}px`,
-          height: `${CORNER_SIZE}px`
+          left: `${x + w + borderMid - CORNER_HIT_SIZE / 2}px`,
+          top: `${y - borderMid - CORNER_HIT_SIZE / 2}px`,
+          width: `${CORNER_HIT_SIZE}px`,
+          height: `${CORNER_HIT_SIZE}px`
         }
       },
       {
         direction: 'sw',
-        class: 'cursor-nesw-resize rounded-sm bg-white/80',
+        class: `cursor-nesw-resize ${CORNER_DOT_CLASS}`,
         style: {
-          left: `${x - CORNER_SIZE / 2}px`,
-          top: `${y + h - CORNER_SIZE / 2}px`,
-          width: `${CORNER_SIZE}px`,
-          height: `${CORNER_SIZE}px`
+          left: `${x - borderMid - CORNER_HIT_SIZE / 2}px`,
+          top: `${y + h + borderMid - CORNER_HIT_SIZE / 2}px`,
+          width: `${CORNER_HIT_SIZE}px`,
+          height: `${CORNER_HIT_SIZE}px`
         }
       },
       {
         direction: 'se',
-        class: 'cursor-nwse-resize rounded-sm bg-white/80',
+        class: `cursor-nwse-resize ${CORNER_DOT_CLASS}`,
         style: {
-          left: `${x + w - CORNER_SIZE / 2}px`,
-          top: `${y + h - CORNER_SIZE / 2}px`,
-          width: `${CORNER_SIZE}px`,
-          height: `${CORNER_SIZE}px`
+          left: `${x + w + borderMid - CORNER_HIT_SIZE / 2}px`,
+          top: `${y + h + borderMid - CORNER_HIT_SIZE / 2}px`,
+          width: `${CORNER_HIT_SIZE}px`,
+          height: `${CORNER_HIT_SIZE}px`
         }
       }
     ]
@@ -581,27 +583,9 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     releasePointer(e)
   }
 
-  const initialize = () => {
-    if (nodeId != null) {
-      node.value = resolveNode(nodeId) ?? null
-    }
-
-    updateImageUrl()
-  }
-
-  watch(
-    () => nodeOutputStore.nodeOutputs,
-    () => updateImageUrl(),
-    { deep: true }
-  )
-
-  watch(
-    () => nodeOutputStore.nodePreviewImages,
-    () => updateImageUrl(),
-    { deep: true }
-  )
-
-  onMounted(initialize)
+  onMounted(() => {
+    node.value = resolveNode(nodeId) ?? null
+  })
 
   return {
     imageUrl,

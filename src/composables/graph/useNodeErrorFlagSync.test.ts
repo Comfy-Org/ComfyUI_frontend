@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -9,15 +7,12 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   function setupGraphWithStore() {
     const graph = new LGraph()
     const nodeA = new LGraphNode('KSampler')
@@ -29,8 +24,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     nodeB.addInput('ckpt_name', 'STRING')
     graph.add(nodeB)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
@@ -38,6 +32,29 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const store = useExecutionErrorStore()
     return { graph, nodeA, nodeB, store }
   }
+
+  it('follows the missing nodes warning for legacy has_errors flags', async () => {
+    const { nodeA, nodeB } = setupGraphWithStore()
+    const settingStore = useSettingStore()
+    useMissingNodesErrorStore().setMissingNodeTypes([
+      { type: 'GoneNode', nodeId: String(nodeA.id), isReplaceable: false }
+    ])
+    await nextTick()
+    expect(nodeA.has_errors).toBe(true)
+    expect(nodeB.has_errors).toBeFalsy()
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingNodesWarning'] = false
+    await nextTick()
+    expect(nodeA.has_errors).toBe(false)
+
+    settingStore.settingValues['Comfy.Workflow.ShowMissingNodesWarning'] = true
+    await nextTick()
+    expect(nodeA.has_errors).toBe(true)
+
+    settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = false
+    await nextTick()
+    expect(nodeA.has_errors).toBe(true)
+  })
 
   it('sets has_errors on nodes referenced in lastNodeErrors', async () => {
     const { nodeA, nodeB, store } = setupGraphWithStore()
@@ -123,8 +140,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const store = useExecutionErrorStore()
 
@@ -201,8 +217,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)
 
     const settingStore = useSettingStore()
     settingStore.settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
@@ -224,5 +239,32 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     expect(interiorNode.has_errors).toBe(true)
     expect(subgraphNode.has_errors).toBe(true)
+  })
+
+  it('reads the root graph once, so a stale isGraphReady cannot reach app.rootGraph', async () => {
+    vi.spyOn(app, 'isGraphReady', 'get').mockReturnValue(true)
+    vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(undefined)
+    const rootGraphAccess = vi
+      .spyOn(app, 'rootGraph', 'get')
+      .mockReturnValue(new LGraph())
+    const store = useExecutionErrorStore()
+
+    store.recordNodeErrors({
+      '7': {
+        errors: [
+          {
+            type: 'value_bigger_than_max',
+            message: 'Too big',
+            details: '',
+            extra_info: { input_name: 'steps' }
+          }
+        ],
+        dependent_outputs: [],
+        class_type: 'KSampler'
+      }
+    })
+    await nextTick()
+
+    expect(rootGraphAccess).not.toHaveBeenCalled()
   })
 })

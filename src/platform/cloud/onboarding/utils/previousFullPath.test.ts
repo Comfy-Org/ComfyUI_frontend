@@ -15,9 +15,27 @@ describe('getSafePreviousFullPath', () => {
     expect(getSafePreviousFullPath(query)).toBe('/some/path?x=1')
   })
 
+  // A deployment link (BE-20294) opened signed out comes back with both
+  // params, so the editor opens on the deployment after sign-in.
+  test('keeps the query of a link to the editor root', () => {
+    const query: LocationQuery = {
+      previousFullPath: encodeURIComponent('/?workspace=ws-1&deployment=dep-1')
+    }
+    expect(getSafePreviousFullPath(query)).toBe(
+      '/?workspace=ws-1&deployment=dep-1'
+    )
+  })
+
   test('rejects protocol-relative urls', () => {
     const query: LocationQuery = {
       previousFullPath: encodeURIComponent('//evil.com')
+    }
+    expect(getSafePreviousFullPath(query)).toBeNull()
+  })
+
+  test('rejects a backslash-prefixed url the browser would treat as protocol-relative', () => {
+    const query: LocationQuery = {
+      previousFullPath: encodeURIComponent('/\\evil.com')
     }
     expect(getSafePreviousFullPath(query)).toBeNull()
   })

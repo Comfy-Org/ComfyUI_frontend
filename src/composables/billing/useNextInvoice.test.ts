@@ -17,10 +17,12 @@ function makeSubscription(
     tier: 'STANDARD',
     duration: 'MONTHLY',
     planSlug: 'standard-monthly',
+    scheduledChange: null,
     renewalDate: '2026-08-01T00:00:00Z',
     endDate: null,
     isCancelled: false,
     hasFunds: true,
+    agentHasFunds: true,
     ...overrides
   }
 }
@@ -33,6 +35,7 @@ function makePlan(overrides: Partial<Plan> = {}): Plan {
     price_cents: 2000,
     credits_cents: 2000,
     max_seats: 1,
+    action: 'subscribe',
     availability: { available: true },
     seat_summary: {
       seat_count: 1,
@@ -52,14 +55,30 @@ const teamCreditStops: TeamCreditStops = {
     {
       id: 'stop-320',
       credits: 67520,
-      monthly: { list_price_cents: 32000, price_cents: 30400 },
-      yearly: { list_price_cents: 32000, price_cents: 28800 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 32000,
+        price_cents: 30400
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 32000,
+        price_cents: 28800
+      }
     },
     {
       id: 'stop-640',
       credits: 135040,
-      monthly: { list_price_cents: 64000, price_cents: 60800 },
-      yearly: { list_price_cents: 64000, price_cents: 57600 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 64000,
+        price_cents: 60800
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 64000,
+        price_cents: 57600
+      }
     }
   ]
 }

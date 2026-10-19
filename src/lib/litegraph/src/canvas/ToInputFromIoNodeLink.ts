@@ -1,16 +1,21 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInput,
+  SubgraphInputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+import { transferLinkPresentation } from '@/core/graph/transferLinkPresentation'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import type { LinkPresentation } from '@/types/linkPresentation'
+
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
-import type {
-  INodeInputSlot,
-  LinkNetwork,
-  Point,
-  SlotIndex
-} from '@/lib/litegraph/src/interfaces'
-import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
+import type { Point, SlotIndex } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { LinkNetwork } from '@/lib/litegraph/src/types/linkNetwork'
+
 import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
@@ -27,6 +32,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
   disconnectOnDrop: boolean
   readonly disconnectOrigin?: Point
   readonly isIoNodeLink = true
+  private readonly presentation: Readonly<LinkPresentation> | undefined
 
   constructor(
     readonly network: LinkNetwork,
@@ -47,6 +53,12 @@ export class ToInputFromIoNodeLink implements RenderLink {
     this.fromPos = fromReroute ? fromReroute.pos : fromSlot.pos
     this.existingLink = existingLink
     this.disconnectOnDrop = true
+    this.presentation = existingLink
+      ? useLinkPresentationStore().getPresentation(
+          graphScopeOf(node.subgraph),
+          existingLink.id
+        )
+      : undefined
 
     if (!existingLink) return
     const toNode = network.getNodeById(existingLink.target_id)
@@ -74,10 +86,12 @@ export class ToInputFromIoNodeLink implements RenderLink {
     )
       return
 
+    const scope = graphScopeOf(this.node.subgraph)
     const newLink = fromSlot.connect(input, node, fromReroute?.id)
 
     if (existingLink) {
       // Moving an existing link
+      transferLinkPresentation(scope, this.presentation, newLink?.id)
       const { input, inputNode } = existingLink.resolve(this.network)
       if (inputNode && input)
         this.node._disconnectNodeInput(inputNode, input, existingLink)
@@ -105,6 +119,8 @@ export class ToInputFromIoNodeLink implements RenderLink {
   ) {
     const { fromSlot, fromReroute } = this
 
+    const scope = graphScopeOf(this.node.subgraph)
+
     // Check before creating new link overwrites the value
     const floatingTerminus = fromReroute?.floating?.slotType === 'output'
 
@@ -112,6 +128,7 @@ export class ToInputFromIoNodeLink implements RenderLink {
     reroute.parentId = fromReroute?.id
 
     const newLink = fromSlot.connect(input, inputNode, link.parentId)
+    transferLinkPresentation(scope, this.presentation, newLink?.id)
 
     // Connecting from the final reroute of a floating reroute chain
     if (floatingTerminus) fromReroute.removeAllFloatingLinks()
@@ -168,4 +185,10 @@ export class ToInputFromIoNodeLink implements RenderLink {
 
     return true
   }
+}
+
+type RegisteredToInputFromIoNodeLink = ToInputFromIoNodeLink
+
+declare module '../types/entityRegistry' {
+  interface ToInputFromIoNodeLink extends RegisteredToInputFromIoNodeLink {}
 }

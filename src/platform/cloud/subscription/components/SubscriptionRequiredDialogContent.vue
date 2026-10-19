@@ -1,12 +1,12 @@
 <template>
   <div
     v-if="showCustomPricingTable"
-    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
+    class="relative flex h-full max-h-[90vh] w-[calc(100vw-1rem)] flex-col gap-6 overflow-y-auto rounded-2xl border bg-secondary p-4 pt-8 shadow-2xl sm:max-w-7xl md:px-16 md:py-8"
   >
     <Button
       size="icon"
       variant="muted-textonly"
-      class="absolute top-2.5 right-2.5 shrink-0 rounded-full text-text-secondary hover:bg-white/10"
+      class="absolute top-2.5 right-2.5 shrink-0 rounded-full hover:bg-white/10"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
@@ -20,43 +20,41 @@
         <!-- Decorative initial for "Personal" workspace icon; not user-facing text -->
         P
       </div>
-      <i18n-t
-        keypath="subscription.plansForWorkspace"
-        tag="h2"
-        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
-      >
-        <template #workspace>
-          <span class="text-muted-foreground">
-            {{ $t('subscription.personalWorkspace') }}
-          </span>
-        </template>
-      </i18n-t>
+      <DialogTitle class="m-0 font-inter text-2xl">
+        <i18n-t keypath="subscription.plansForWorkspace">
+          <template #workspace>
+            <span class="text-muted-foreground">
+              {{ $t('subscription.personalWorkspace') }}
+            </span>
+          </template>
+        </i18n-t>
+      </DialogTitle>
     </div>
 
     <PricingTable
-      :reason
+      :reason="paymentIntentSource"
       class="flex-1"
       @choose-team-workspace="handleChooseTeam"
     />
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
-      <p class="m-0 text-sm text-text-secondary">
+      <p class="m-0 text-sm text-muted-foreground">
         {{ $t('subscription.haveQuestions') }}
       </p>
       <div class="flex items-center gap-1.5">
         <Button
           variant="muted-textonly"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
+          class="h-6 p-1 text-sm hover:text-foreground"
           @click="handleContactUs"
         >
           {{ $t('subscription.contactUs') }}
           <i class="pi pi-comments" />
         </Button>
-        <span class="text-sm text-text-secondary">{{ $t('g.or') }}</span>
+        <span class="text-sm text-muted-foreground">{{ $t('g.or') }}</span>
         <Button
           variant="muted-textonly"
-          class="h-6 p-1 text-sm text-text-secondary hover:text-base-foreground"
+          class="h-6 p-1 text-sm hover:text-foreground"
           @click="handleViewEnterprise"
         >
           {{ $t('subscription.viewEnterprise') }}
@@ -65,12 +63,15 @@
       </div>
     </div>
   </div>
-  <div v-else class="legacy-dialog relative grid h-full grid-cols-5">
+  <div
+    v-else
+    class="relative grid h-full max-h-[90vh] w-[calc(100vw-1rem)] grid-cols-5 rounded-2xl border bg-secondary shadow-2xl sm:max-w-7xl"
+  >
     <!-- Custom close button -->
     <Button
       size="icon"
       variant="muted-textonly"
-      class="absolute top-2.5 right-2.5 z-10 size-8 rounded-full p-0 text-white hover:bg-white/20"
+      class="absolute top-2.5 right-2.5 z-10 rounded-full p-0 text-white hover:bg-white/20"
       :aria-label="$t('g.close')"
       @click="handleClose"
     >
@@ -85,7 +86,7 @@
         loop
         muted
         playsinline
-        class="h-full min-w-[125%] object-cover p-0"
+        class="h-full min-w-[125%] object-cover"
         style="margin-left: -20%"
       >
         <source
@@ -99,24 +100,24 @@
       <div>
         <div class="flex flex-col gap-6">
           <div class="inline-flex items-center gap-2">
-            <div class="text-sm text-text-primary">
+            <DialogTitle class="m-0 text-sm font-normal">
               {{
                 reason === 'out_of_credits'
                   ? $t('credits.topUp.insufficientTitle')
                   : $t('subscription.required.title')
               }}
-            </div>
+            </DialogTitle>
             <CloudBadge
               reverse-order
               no-padding
-              background-color="var(--p-dialog-background)"
+              background-color="var(--color-secondary)"
               use-subscription
             />
           </div>
 
           <p
             v-if="reason === 'out_of_credits'"
-            class="m-0 text-sm text-text-secondary"
+            class="m-0 text-sm text-muted-foreground"
           >
             {{ $t('credits.topUp.insufficientMessage') }}
           </p>
@@ -127,7 +128,7 @@
           </div>
         </div>
 
-        <SubscriptionBenefits class="mt-6 text-muted" />
+        <SubscriptionBenefits class="mt-6 text-muted-foreground" />
       </div>
 
       <div class="flex flex-col pt-8">
@@ -153,6 +154,7 @@ import { computed, watch } from 'vue'
 
 import CloudBadge from '@/components/topbar/CloudBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { MONTHLY_SUBSCRIPTION_PRICE } from '@/config/subscriptionPricesConfig'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
@@ -163,9 +165,10 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
-const { onClose, reason, onChooseTeam } = defineProps<{
+const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
+  paymentIntentSource: PaymentIntentSource | undefined
   onChooseTeam?: () => void
 }>()
 
@@ -237,13 +240,3 @@ const handleViewEnterprise = () => {
   window.open('https://comfy.org/cloud/enterprise/', '_blank')
 }
 </script>
-
-<style scoped>
-.legacy-dialog :deep(.bg-comfy-menu-secondary) {
-  background-color: transparent;
-}
-
-.legacy-dialog :deep(.p-button) {
-  color: white;
-}
-</style>

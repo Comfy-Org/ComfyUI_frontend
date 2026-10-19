@@ -1,17 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    clientId: 'test-client-id',
-    initialClientId: 'test-client-id'
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 describe('useWorkflowTabState', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules()
+    const { api } = await import('@/scripts/api')
+    api.clientId = 'test-client-id'
+    api.initialClientId = 'test-client-id'
   })
 
   describe('activePath', () => {

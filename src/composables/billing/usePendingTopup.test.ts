@@ -10,7 +10,7 @@ function creditAddedEvent(atMs: number): AuditLog {
   return {
     event_type: 'credit_added',
     createdAt: new Date(atMs).toISOString()
-  } as AuditLog
+  }
 }
 
 describe('usePendingTopup', () => {
@@ -53,36 +53,35 @@ describe('usePendingTopup', () => {
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
-  describe('isPendingTopupCompleted', () => {
-    it('is false when no marker is set', () => {
-      const { isPendingTopupCompleted } = usePendingTopup()
-      expect(isPendingTopupCompleted([creditAddedEvent(Date.now())])).toBe(
-        false
-      )
+  describe('consumeCompletedTopup', () => {
+    it('finds nothing when no marker is set', () => {
+      const { consumeCompletedTopup } = usePendingTopup()
+      expect(consumeCompletedTopup([creditAddedEvent(Date.now())])).toBeNull()
     })
 
-    it('is false when there are no events', () => {
-      const { startPendingTopup, isPendingTopupCompleted } = usePendingTopup()
+    it('finds nothing when there are no events', () => {
+      const { startPendingTopup, consumeCompletedTopup } = usePendingTopup()
       startPendingTopup()
-      expect(isPendingTopupCompleted([])).toBe(false)
-      expect(isPendingTopupCompleted(null)).toBe(false)
+      expect(consumeCompletedTopup([])).toBeNull()
+      expect(consumeCompletedTopup(null)).toBeNull()
     })
 
-    it('is true and clears the marker when a credit_added event lands after tracking', () => {
-      const { startPendingTopup, isPendingTopupCompleted } = usePendingTopup()
-      startPendingTopup()
+    it('returns the tracked start and clears the marker when a credit_added event lands after tracking', () => {
+      const startedAtMs = Date.now() - 30_000
+      localStorage.setItem(STORAGE_KEY, String(startedAtMs))
+      const { consumeCompletedTopup } = usePendingTopup()
       expect(
-        isPendingTopupCompleted([creditAddedEvent(Date.now() + 1000)])
-      ).toBe(true)
+        consumeCompletedTopup([creditAddedEvent(Date.now() + 1000)])
+      ).toEqual({ startedAtMs })
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     })
 
     it('ignores credit events that predate tracking', () => {
-      const { startPendingTopup, isPendingTopupCompleted } = usePendingTopup()
+      const { startPendingTopup, consumeCompletedTopup } = usePendingTopup()
       startPendingTopup()
       expect(
-        isPendingTopupCompleted([creditAddedEvent(Date.now() - 60_000)])
-      ).toBe(false)
+        consumeCompletedTopup([creditAddedEvent(Date.now() - 60_000)])
+      ).toBeNull()
       expect(localStorage.getItem(STORAGE_KEY)).not.toBeNull()
     })
   })

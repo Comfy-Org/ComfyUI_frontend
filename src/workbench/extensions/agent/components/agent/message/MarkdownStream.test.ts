@@ -1,16 +1,6 @@
-// @vitest-environment jsdom
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
-
-// jsdom lacks ResizeObserver, which the asset-preview import chain references.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe(): void {}
-    unobserve(): void {}
-    disconnect(): void {}
-  }
-})
+import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
 
@@ -127,6 +117,48 @@ describe('MarkdownStream', () => {
       'src',
       assetUrl.replace('https://cloud.comfy.org', window.location.origin)
     )
+  })
+
+  describe('a panel opened away from the machine running the agent', () => {
+    const loopback =
+      'http://127.0.0.1:8188/view?filename=ComfyUI_00005_.png&subfolder=&type=output'
+    const onPageApi = `${window.location.origin}/api/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
+
+    it('renders a loopback asset image on the page API route', () => {
+      render(MarkdownStream, {
+        props: { text: `![a duck](${loopback})` },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByRole('img', { name: 'a duck' })).toHaveAttribute(
+        'src',
+        onPageApi
+      )
+    })
+
+    it('renders a loopback image inside prose on the page API route', () => {
+      render(MarkdownStream, {
+        props: { text: `Here it is ![a duck](${loopback}) — enjoy.` },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByRole('img', { name: 'a duck' })).toHaveAttribute(
+        'src',
+        onPageApi
+      )
+    })
+
+    it('leaves a remote ComfyUI host alone beside a re-homed one', () => {
+      const remote = 'http://gpu-box.lan:8188/view?filename=a.png'
+      render(MarkdownStream, {
+        props: {
+          text: `Rendered ![gen](${remote}) remotely and ![a duck](${loopback}) here.`
+        },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByRole('img', { name: 'gen' })).toHaveAttribute(
+        'src',
+        remote
+      )
+    })
   })
 
   it('strips a script tag (XSS guard)', () => {

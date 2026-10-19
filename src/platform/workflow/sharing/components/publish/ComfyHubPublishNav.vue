@@ -10,7 +10,7 @@
           cn(
             isProfileCreationFlow &&
               step.name === 'finish' &&
-              'rounded-lg bg-secondary-background-hover'
+              'rounded-lg bg-accent'
           )
         "
       >
@@ -22,28 +22,29 @@
               'h-10 w-full justify-start rounded-lg px-4 py-3 text-left',
               isCurrentStep(step.name) &&
                 !(isProfileCreationFlow && step.name === 'finish')
-                ? 'bg-secondary-background-selected'
-                : 'hover:bg-interface-menu-component-surface-hovered'
+                ? 'bg-muted'
+                : 'hover:bg-accent'
             )
           "
           @click="$emit('stepClick', step.name)"
         >
-          <StatusBadge
-            :label="step.number"
+          <Badge
             variant="circle"
             severity="contrast"
             :class="
               cn(
-                'size-5 shrink-0 border bg-transparent font-inter text-xs font-bold',
+                'size-5 border bg-transparent text-xs font-bold',
                 isCurrentStep(step.name)
-                  ? 'border-base-foreground bg-base-foreground text-base-background'
+                  ? 'border-foreground bg-foreground text-background'
                   : isCompletedStep(step.name)
-                    ? 'border-base-foreground text-base-foreground'
+                    ? 'border-foreground text-foreground'
                     : 'border-muted-foreground text-muted-foreground'
               )
             "
-          />
-          <span class="truncate text-sm text-base-foreground">
+          >
+            {{ step.number }}
+          </Badge>
+          <span class="truncate text-sm text-foreground">
             {{ step.label }}
           </span>
         </Button>
@@ -51,9 +52,9 @@
         <div
           v-if="isProfileCreationFlow && step.name === 'finish'"
           v-auto-animate
-          class="flex h-10 w-full items-center rounded-lg bg-secondary-background-selected pl-11 select-none"
+          class="flex h-10 w-full items-center rounded-lg bg-muted pl-11 select-none"
         >
-          <span class="truncate text-sm text-base-foreground">
+          <span class="truncate text-sm text-foreground">
             {{ $t('comfyHubProfile.profileCreationNav') }}
           </span>
         </div>
@@ -67,7 +68,7 @@ import { computed } from 'vue'
 
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
 import { cn } from '@comfyorg/tailwind-utils'

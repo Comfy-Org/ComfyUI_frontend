@@ -22,8 +22,6 @@ jobs:
       github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs:
-      has-coverage: ${{ steps.coverage.outputs.has-coverage }}
 
     steps:
       - name: Checkout trusted workflow actions
@@ -97,32 +95,3 @@ jobs:
           path: coverage/html/
           retention-days: 30
           if-no-files-found: warn
-
-  deploy:
-    needs: publish
-    if: >
-      github.event.workflow_run.head_branch == 'main' &&
-      needs.publish.outputs.has-coverage == 'true' &&
-      github.event.workflow_run.event == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Download HTML report
-        uses: actions/download-artifact@v8
-        with:
-          name: e2e-coverage-html
-          path: coverage/html
-
-      - name: Upload to GitHub Pages
-        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
-        with:
-          path: coverage/html
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

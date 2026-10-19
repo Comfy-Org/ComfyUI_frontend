@@ -1,0 +1,80 @@
+{
+  "id": "comfy-registry",
+  "capability": "Comfy Registry client",
+  "description": "Access to the Comfy Registry of custom-node packs: the registry REST client, the cached registry store, and the node-pack search gateway that falls back between the Algolia and registry search providers. The extension manager and missing-node flows consume this record.",
+  "modules": [
+    {
+      "path": "src/services/comfyRegistryService.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/comfyRegistryService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/gateway/**",
+      "role": "application"
+    },
+    {
+      "path": "src/services/providers/algoliaSearchProvider.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/providers/algoliaSearchProvider.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/providers/registrySearchProvider.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/providers/registrySearchProvider.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/stores/comfyRegistryStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/comfyRegistryStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/types/algoliaTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/algoliasearch-lite.d.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/comfyRegistryTypes.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Registry client and store fetch, cache, and abort pack and node requests",
+      "checks": [
+        "src/services/comfyRegistryService.test.ts",
+        "src/stores/comfyRegistryStore.test.ts"
+      ]
+    },
+    {
+      "name": "Pack search gateway falls back across the Algolia and registry providers",
+      "checks": [
+        "src/services/gateway/registrySearchGateway.test.ts",
+        "src/services/providers/algoliaSearchProvider.test.ts",
+        "src/services/providers/registrySearchProvider.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

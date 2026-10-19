@@ -6,13 +6,11 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
+import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { isImageNode } from '@/utils/litegraphUtil'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
 function openMaskEditor(node: LGraphNode): void {
-  if (!node) {
-    console.error('[MaskEditor] No node provided')
-    return
-  }
-
   if (!node.imgs?.length && node.previewMediaType !== 'image') {
     console.error('[MaskEditor] Node has no images')
     return
@@ -24,7 +22,7 @@ function openMaskEditor(node: LGraphNode): void {
 // Open mask editor from clipspace (for plugin compatibility)
 // This is called when ComfyApp.open_maskeditor() is invoked without arguments
 function openMaskEditorFromClipspace(): void {
-  const node = ComfyApp.clipspace_return_node as LGraphNode | null
+  const node = ComfyApp.clipspace_return_node
   if (!node) {
     console.error('[MaskEditor] No clipspace_return_node found')
     return
@@ -81,10 +79,10 @@ app.registerExtension({
       icon: 'pi pi-pencil',
       label: 'Open Mask Editor for Selected Node',
       function: () => {
-        const selectedNodes = app.canvas.selected_nodes
-        if (!selectedNodes || Object.keys(selectedNodes).length !== 1) return
+        const selectedNodes = selectedCanvasNodes(app.canvas)
+        if (selectedNodes.length !== 1) return
 
-        const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
+        const [selectedNode] = selectedNodes
         openMaskEditor(selectedNode)
       }
     },
@@ -148,6 +146,21 @@ app.registerExtension({
       }
     }
   ],
+  beforeRegisterNodeDef(nodeType: typeof LGraphNode) {
+    const original = nodeType.prototype.getExtraMenuOptions
+    nodeType.prototype.getExtraMenuOptions = function (canvas, options) {
+      const extra = original?.call(this, canvas, options) ?? []
+      if (ComfyApp.clipspace_return_node || !isImageNode(this)) return extra
+
+      options.push({
+        content: 'Open in MaskEditor | Image Canvas',
+        callback: markCoreMediaMenuCallback(() => {
+          useMaskEditor().openMaskEditor(this)
+        }, 'preview')
+      })
+      return extra
+    }
+  },
   init() {
     // Set up ComfyApp static methods for plugin compatibility (deprecated)
     ComfyApp.open_maskeditor = openMaskEditorFromClipspace

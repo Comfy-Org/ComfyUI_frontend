@@ -2,7 +2,7 @@
   <div v-if="banner" class="@container">
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-interface-stroke/60 bg-base-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <div class="flex items-center gap-2">
@@ -12,11 +12,11 @@
                 'size-4 shrink-0',
                 banner.muted
                   ? 'icon-[lucide--circle-alert] text-muted-foreground'
-                  : 'icon-[lucide--triangle-alert] text-warning-background'
+                  : 'icon-[lucide--triangle-alert] text-warning'
               )
             "
           />
-          <span class="text-sm text-base-foreground">{{ banner.title }}</span>
+          <span class="text-sm text-foreground">{{ banner.title }}</span>
         </div>
         <p class="m-0 pl-6 text-sm text-muted-foreground">{{ banner.body }}</p>
       </div>
@@ -36,13 +36,10 @@
           v-if="banner.action === 'addCredits'"
           variant="secondary"
           size="lg"
+          :data-dd-action-name="BILLING_ACTION_NAME.addCreditsStatusBanner"
           @click="handleAddCredits"
         >
-          {{
-            canTopUp
-              ? $t('workspacePanel.billingStatus.outOfCredits.addCredits')
-              : $t('subscription.upgradeToAddCredits')
-          }}
+          {{ $t('workspacePanel.billingStatus.outOfCredits.addCredits') }}
         </Button>
         <Button
           v-else-if="banner.action === 'reactivate'"
@@ -54,10 +51,27 @@
           {{ $t('workspacePanel.billingStatus.ending.reactivate') }}
         </Button>
         <Button
+          v-else-if="banner.action === 'resubscribe'"
+          variant="secondary"
+          size="lg"
+          @click="handleResubscribePlan"
+        >
+          {{ $t('workspacePanel.members.resubscribe') }}
+        </Button>
+        <Button
+          v-else-if="banner.action === 'contactSales'"
+          variant="secondary"
+          size="lg"
+          @click="handleContactSales"
+        >
+          {{ $t('workspacePanel.billingStatus.ending.contactSales') }}
+        </Button>
+        <Button
           v-else-if="banner.action === 'updatePayment'"
           variant="inverted"
           size="lg"
-          @click="handleUpdatePayment"
+          :loading="isUpdatingPayment"
+          @click="updatePayment"
         >
           {{ $t('workspacePanel.billingStatus.updatePayment') }}
         </Button>
@@ -67,39 +81,75 @@
 </template>
 
 <script setup lang="ts">
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import type {
+  BillingBannerAudience,
+  BillingBannerKind
+} from '@/platform/workspace/composables/useBillingBanner'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import {
+  isTopUpDeniedPastDue,
+  usePaymentRecoveryDialog
+} from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
+import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
-type BannerAction = 'addCredits' | 'reactivate' | 'updatePayment'
+type BannerAction =
+  | 'addCredits'
+  | 'reactivate'
+  | 'resubscribe'
+  | 'contactSales'
+  | 'updatePayment'
+
+const { section } = defineProps<{
+  section?: 'planCredits' | 'members' | 'allowlist'
+}>()
 
 const { t, d } = useI18n()
-const { renewalDate, subscription, manageSubscription } = useBillingContext()
-const { permissions, canReactivatePlan } = useWorkspaceUI()
-const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
-const { kind, dismiss } = useBillingBanner()
+const { renewalDate, subscription } = useBillingContext()
+const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
+const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
+const { kind, audience, dismiss } = useBillingBanner()
+const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
-const dialogService = useDialogService()
+const {
+  scheduledChange,
+  planName: scheduledPlanName,
+  isDisplayable: canShowScheduledChange
+} = useScheduledPlanChange()
+const { showTopUpCreditsDialog } = useBillingDialogs()
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
+const subscriptionDialog = useSubscriptionDialog()
+const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
+  usePlanEnded()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
-const cycleResetDate = computed(() => {
-  const raw = renewalDate.value
-  return raw ? d(new Date(raw), { month: 'short', day: 'numeric' }) : ''
-})
-const planEndDate = computed(() => {
-  const raw = subscription.value?.endDate
-  return raw
-    ? d(new Date(raw), { year: 'numeric', month: 'long', day: 'numeric' })
-    : ''
-})
+// Strictly ENTERPRISE: an unrecognized tier must not borrow Enterprise copy
+// (isUnknownTier's contract) nor lose its Reactivate path.
+const isEnterprisePlan = computed(
+  () => subscription.value?.tier === 'ENTERPRISE'
+)
+function longDate(raw: string | null | undefined): string {
+  const date = raw ? new Date(raw) : null
+  if (!date || Number.isNaN(date.getTime())) return ''
+  return d(date, { year: 'numeric', month: 'long', day: 'numeric' })
+}
+const cycleResetDate = computed(() => longDate(renewalDate.value))
+const planEndDate = computed(() => longDate(subscription.value?.endDate))
+const planName = computed(() => formatTierName(subscription.value?.tier, false))
 
 interface BannerView {
   muted: boolean
@@ -109,59 +159,202 @@ interface BannerView {
   dismissible: boolean
 }
 
-const banner = computed<BannerView | null>(() => {
-  const bs = 'workspacePanel.billingStatus'
-  switch (kind.value) {
-    case 'paused':
-      return {
-        muted: false,
-        title: t(`${bs}.paused.title`),
-        body: canManage.value
-          ? t(`${bs}.paused.body`)
-          : t(`${bs}.paused.memberBody`),
-        action: canManage.value ? 'updatePayment' : null,
-        dismissible: false
-      }
-    case 'paymentFailed':
-      return {
-        muted: false,
-        title: t(`${bs}.warning.title`),
-        body: t(`${bs}.warning.bodyNoDate`),
-        action: 'updatePayment',
-        dismissible: false
-      }
-    case 'outOfCredits':
-      return {
-        muted: false,
-        title: t(`${bs}.outOfCredits.title`),
-        body: canTopUp.value
-          ? cycleResetDate.value
-            ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
-            : t(`${bs}.outOfCredits.bodyNoDate`)
-          : canSubscribeSelfServe.value
-            ? t(`${bs}.outOfCredits.upgradeBody`)
-            : t(`${bs}.outOfCredits.memberBody`),
-        action:
-          canTopUp.value || canSubscribeSelfServe.value ? 'addCredits' : null,
-        dismissible: true
-      }
-    case 'ending':
-      return {
-        muted: true,
-        title: t(`${bs}.ending.title`, { date: planEndDate.value }),
-        body: t(`${bs}.ending.body`),
-        action: canReactivatePlan.value ? 'reactivate' : null,
-        dismissible: false
-      }
-    default:
-      return null
+const bs = 'workspacePanel.billingStatus'
+
+const audienceCopy = {
+  team: {
+    outOfCreditsBody: `${bs}.outOfCredits.body`,
+    outOfCreditsBodyNoDate: `${bs}.outOfCredits.bodyNoDate`,
+    endingTitle: `${bs}.ending.title`,
+    endingBody: `${bs}.ending.body`
+  },
+  personal: {
+    outOfCreditsBody: `${bs}.outOfCredits.personalBody`,
+    outOfCreditsBodyNoDate: `${bs}.outOfCredits.personalBodyNoDate`,
+    endingTitle: `${bs}.ending.personalTitle`,
+    endingBody: `${bs}.ending.personalBody`
   }
+} satisfies Record<BillingBannerAudience, Record<string, string>>
+
+const copy = computed(() => audienceCopy[audience.value ?? 'team'])
+
+const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingBannerKind> = new Set([
+  'planEnded',
+  'ending',
+  'planChange'
+])
+
+// A personal workspace's Members tab carries its own upgrade pitch, so the
+// plan lifecycle notices stay on the Plan & Credits tab.
+const isHiddenOnSection = computed(
+  () =>
+    section === 'members' &&
+    workspaceType.value === 'personal' &&
+    kind.value !== null &&
+    PLAN_LIFECYCLE_KINDS.has(kind.value)
+)
+
+// Sales-managed plans (Enterprise, and unrecognized tiers, which fail closed
+// to sales) return through sales; only a strict ENTERPRISE tier is named.
+function planEndedCopy(): {
+  title: string
+  ownerBody: string
+  memberBody: string
+} {
+  const date = planEndDate.value
+  if (audience.value === 'personal') {
+    const plan = planName.value
+    const body = t(`${bs}.planEnded.personalBody`)
+    return {
+      title: date
+        ? t(`${bs}.planEnded.personalTitle`, { plan, date })
+        : t(`${bs}.planEnded.personalTitleNoDate`, { plan }),
+      ownerBody: body,
+      memberBody: body
+    }
+  }
+  if (!isSalesManagedPlan.value) {
+    return {
+      title: date
+        ? t(`${bs}.planEnded.teamTitle`, { date })
+        : t('workspacePanel.members.endedTeamTitle'),
+      ownerBody: t(`${bs}.planEnded.teamBody`),
+      memberBody: t(`${bs}.planEnded.teamMemberBody`)
+    }
+  }
+  const named = isEndedEnterprisePlan.value
+  return {
+    title: date
+      ? t(`${bs}.planEnded.${named ? 'enterpriseTitle' : 'planTitle'}`, {
+          date
+        })
+      : t(
+          `workspacePanel.members.${named ? 'endedEnterpriseTitle' : 'endedPlanTitle'}`
+        ),
+    ownerBody: t(`${bs}.planEnded.${named ? 'enterpriseBody' : 'salesBody'}`),
+    memberBody: t(`${bs}.planEnded.salesMemberBody`)
+  }
+}
+
+const planEndedView = (): BannerView => {
+  const copy = planEndedCopy()
+  const ownerAction =
+    audience.value !== 'personal' && isSalesManagedPlan.value
+      ? 'contactSales'
+      : 'resubscribe'
+  return {
+    muted: true,
+    title: copy.title,
+    body: canManage.value ? copy.ownerBody : copy.memberBody,
+    action: canManage.value ? ownerAction : null,
+    dismissible: true
+  }
+}
+
+const outOfCreditsBody = (key: string, noDateKey: string): string =>
+  cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
+
+const outOfCreditsView = (): BannerView | null => {
+  if (isTopUpDeniedPastDue(topUpDenial.value)) {
+    return {
+      muted: false,
+      title: t(`${bs}.outOfCredits.title`),
+      body: canManageBilling.value
+        ? t(`${bs}.outOfCredits.pastDueBody`)
+        : t('subscription.paymentRecovery.paymentFailedMemberDescription'),
+      action: canManageBilling.value ? 'updatePayment' : null,
+      dismissible: true
+    }
+  }
+  if (!canManage.value) {
+    return {
+      muted: false,
+      title: t(`${bs}.outOfCredits.title`),
+      body: outOfCreditsBody(
+        `${bs}.outOfCredits.memberBody`,
+        `${bs}.outOfCredits.memberBodyNoDate`
+      ),
+      action: null,
+      dismissible: true
+    }
+  }
+  if (!canTopUp.value) return null
+  return {
+    muted: false,
+    title: t(`${bs}.outOfCredits.title`),
+    body: outOfCreditsBody(
+      copy.value.outOfCreditsBody,
+      copy.value.outOfCreditsBodyNoDate
+    ),
+    action: 'addCredits',
+    dismissible: true
+  }
+}
+
+// An Enterprise contract renews through sales, not self-serve reactivation,
+// so it gets its own copy and never a Reactivate action — even where the
+// legacy rail would resolve canReactivatePlan true.
+const enterpriseEndingView = (): BannerView => ({
+  muted: true,
+  title: t(`${bs}.ending.enterpriseTitle`, { date: planEndDate.value }),
+  body: canManage.value
+    ? t(`${bs}.ending.enterpriseBody`)
+    : t(`${bs}.ending.memberBody`),
+  action: canManage.value ? 'contactSales' : null,
+  dismissible: false
 })
 
-function handleAddCredits() {
-  void dialogService.showTopUpCreditsDialog()
+const selfServeEndingView = (): BannerView => ({
+  muted: true,
+  title: t(copy.value.endingTitle, {
+    plan: planName.value,
+    date: planEndDate.value
+  }),
+  body: canManage.value
+    ? t(copy.value.endingBody)
+    : t(`${bs}.ending.memberBody`),
+  action: canManage.value && canReactivatePlan.value ? 'reactivate' : null,
+  dismissible: false
+})
+
+const endingView = (): BannerView =>
+  isEnterprisePlan.value ? enterpriseEndingView() : selfServeEndingView()
+
+const planChangeView = (): BannerView | null =>
+  canShowScheduledChange.value
+    ? {
+        muted: true,
+        title: t(`${bs}.planChange.title`, {
+          plan: scheduledPlanName.value,
+          date: longDate(scheduledChange.value?.effective_at)
+        }),
+        body: t(`${bs}.planChange.body`),
+        action: null,
+        dismissible: true
+      }
+    : null
+
+const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
+  planEnded: planEndedView,
+  outOfCredits: outOfCreditsView,
+  ending: endingView,
+  planChange: planChangeView
 }
-function handleUpdatePayment() {
-  void manageSubscription()
+
+const banner = computed<BannerView | null>(() =>
+  kind.value && !isHiddenOnSection.value ? bannerViews[kind.value]() : null
+)
+
+function handleAddCredits() {
+  void showTopUpCreditsDialog()
+}
+function handleResubscribePlan() {
+  subscriptionDialog.show({
+    planMode: audience.value === 'personal' ? 'personal' : 'team',
+    reason: 'settings_billing_panel'
+  })
+}
+function handleContactSales() {
+  window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')
 }
 </script>

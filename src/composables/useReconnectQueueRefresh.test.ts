@@ -16,15 +16,7 @@ function makeJob(id: string, status: JobListItem['status']): JobListItem {
   }
 }
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getQueue: vi.fn(),
-    getHistory: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    apiURL: vi.fn((p: string) => `/api${p}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useReconnectQueueRefresh', () => {
   beforeEach(() => {

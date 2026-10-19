@@ -43,12 +43,9 @@ describe('CreditTopUpOption', () => {
 
   it('applies unselected styling when not selected', () => {
     const { container } = renderOption({ selected: false })
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const rootDiv = container.firstElementChild as HTMLElement
-    expect(rootDiv).toHaveClass(
-      'bg-component-node-disabled',
-      'border-transparent'
-    )
+    expect(rootDiv).toHaveClass('bg-muted/30', 'border-transparent')
   })
 
   it('emits select event when clicked', async () => {

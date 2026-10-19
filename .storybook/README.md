@@ -50,11 +50,11 @@ pnpm build-storybook
 
 ### Creating Stories
 
-Stories are located alongside components in `src/` directories with the pattern `*.stories.ts`:
+Conventions live in `docs/guidance/storybook.md`: a story is a named scenario, and enum or boolean props are controls. Stories are located alongside components in `src/` directories with the pattern `*.stories.ts`:
 
 ```typescript
 // MyComponent.stories.ts
-import type { Meta, StoryObj } from '@storybook/vue3'
+import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import MyComponent from './MyComponent.vue'
 
 const meta: Meta<typeof MyComponent> = {
@@ -85,8 +85,7 @@ export const WithVariant: Story = {
 ### Available Features
 
 - **Vue 3 Support**: Full Vue 3 composition API and reactivity
-- **PrimeVue Integration**: All PrimeVue components and theming
-- **ComfyUI Theming**: Custom ComfyUI theme preset applied
+- **ComfyUI Theming**: Design-system tokens and dark/light themes applied
 - **Pinia Stores**: Access to application stores for components that need state
 - **TypeScript**: Full TypeScript support with proper type checking
 - **CSS/SCSS**: Component styling support
@@ -99,9 +98,7 @@ export const WithVariant: Story = {
 
 ### Scope – When to Create Stories
 
-- **PrimeVue components**:  
-  No need to create stories. Just refer to the official PrimeVue documentation.
-- **Custom shared components (design system components)**:  
+- **Design system components** (`src/components/ui`):  
   Always create stories. These components are built in collaboration with designers, and Storybook serves as both documentation and a communication tool.
 - **Container components (logic-heavy)**:  
   Do not create stories. Only the underlying pure UI components should be included in Storybook.
@@ -128,15 +125,14 @@ export const WithVariant: Story = {
   - What cases are covered
   - How variants (e.g. size, colors) look in isolation
 - **Example**:  
-  `PackActionButton.vue` wraps a PrimeVue button with additional logic.  
+  `PackActionButton.vue` wraps the design-system `Button` with additional logic.  
   → Only create a story for the base UI button, not for the wrapper.
 
 ### Suggested Workflow
 
-1. Use PrimeVue docs for standard components
-2. Use Storybook for **shared/custom components** that define our design system
-3. Keep story files alongside components
-4. When in doubt, focus on components reused across the app or those that need to be showcased to designers
+1. Use Storybook for **shared components** that define our design system
+2. Keep story files alongside components
+3. When in doubt, focus on components reused across the app or those that need to be showcased to designers
 
 ### Best Practices
 
@@ -188,10 +184,9 @@ This project uses [Chromatic](https://chromatic.com) for automated visual regres
 
 ### How It Works
 
-- **Automated Testing**: Every push to `main` and `sno-storybook` branches triggers Chromatic builds
-- **Pull Request Reviews**: PRs against `main` branch include visual diffs for component changes
+- **When it runs**: `version-bump-*` release branches and manual `workflow_dispatch` (`.github/workflows/ci-tests-storybook.yaml`). Ordinary PRs build Storybook and deploy a Cloudflare preview; they do not snapshot.
+- **What it snapshots**: every story export (`onlyChanged: true` limits a build to stories affected by the diff). Each export is a recurring snapshot.
 - **Baseline Management**: Changes on `main` branch are automatically accepted as new baselines
-- **Cross-browser Testing**: Tests across multiple browsers and viewports
 
 ### Viewing Results
 
@@ -213,7 +208,6 @@ This Storybook setup includes:
 - ComfyUI-specific theming and styling
 - Pre-configured Pinia stores for state management
 - Internationalization (i18n) support
-- PrimeVue component library integration
 - Proper alias resolution for `@/` imports
 
 ## Icon Usage in Storybook

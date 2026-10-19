@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { BRAND_ASSETS_ZIP, BRAND_GUIDELINES_PDF } from '../src/data/brandAssets'
+import { BRAND_ASSETS_ZIP, BRAND_GUIDELINES_PDF } from '@/data/brandAssets'
 import { test } from './fixtures/blockExternalMedia'
 
 test.describe('Brand portal @smoke', () => {

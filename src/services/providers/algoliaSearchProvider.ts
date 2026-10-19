@@ -4,52 +4,44 @@ import type {
   SearchResponse
 } from 'algoliasearch/dist/lite/browser'
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
-import { memoize, omit } from 'es-toolkit/compat'
+import { uniqBy } from 'es-toolkit'
+import { memoize } from 'es-toolkit/compat'
 
 import {
   MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
-  SEARCH_CACHE_MAX_SIZE
+  SEARCH_CACHE_MAX_SIZE,
+  USER_SEARCH_ANALYTICS_TAG
 } from '@/constants/searchConstants'
+import { reportError } from '@/platform/telemetry/reportError'
+import { buildPackSearchRequest } from '@/services/providers/algoliaPackSearchRequest'
 import type {
   AlgoliaNodePack,
   NodesIndexSuggestion,
-  SearchAttribute,
   SearchNodePacksParams
 } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
 import type {
   NodePackSearchProvider,
-  SearchPacksResult,
-  SortableField
+  SearchPacksResult
 } from '@/types/searchServiceTypes'
 import { paramsToCacheKey } from '@/utils/formatUtil'
-import { SortableAlgoliaField } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { buildPackSearchFallbacks } from '@/utils/searchQueryUtil'
 
 type RegistryNodePack = components['schemas']['Node']
 
-const RETRIEVE_ATTRIBUTES: SearchAttribute[] = [
-  'comfy_nodes',
-  'name',
-  'description',
-  'latest_version',
-  'status',
-  'publisher_id',
-  'total_install',
-  'create_time',
-  'update_time',
-  'license',
-  'repository_url',
-  'latest_version_status',
-  'comfy_node_extract_status',
-  'id',
-  'icon_url',
-  'github_stars',
-  'supported_os',
-  'supported_comfyui_version',
-  'supported_comfyui_frontend_version',
-  'supported_accelerators',
-  'banner_url'
-]
+const REWRITE_ANALYTICS_TAG = 'rewrite'
+
+const toRewriteParams = (
+  params: SearchNodePacksParams
+): SearchNodePacksParams => ({
+  ...params,
+  analyticsTags: [
+    ...(params.analyticsTags ?? []).filter(
+      (tag) => tag !== USER_SEARCH_ANALYTICS_TAG
+    ),
+    REWRITE_ANALYTICS_TAG
+  ]
+})
 
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
   maxSize: SEARCH_CACHE_MAX_SIZE
@@ -108,37 +100,47 @@ const toRegistryPack = memoize(
       comfy_nodes: algoliaNode.comfy_nodes
     }
   },
-  (algoliaNode: AlgoliaNodePack) => algoliaNode.id
+  (algoliaNode: AlgoliaNodePack) => algoliaNode.id ?? algoliaNode.objectID
 )
 
 export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchClient = algoliasearch(__ALGOLIA_APP_ID__, __ALGOLIA_API_KEY__)
 
-  /**
-   * Search for node packs in Algolia (internal method)
-   */
   const searchPacksInternal = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<SearchPacksResult> => {
+  ): Promise<{ result: SearchPacksResult; fallbacksFailed: boolean }> => {
     const { pageSize, pageNumber } = params
-    const rest = omit(params, ['pageSize', 'pageNumber'])
 
-    const requests: SearchQuery[] = [
-      {
-        query,
-        indexName: 'nodes_index',
-        attributesToRetrieve: RETRIEVE_ATTRIBUTES,
-        ...rest,
-        hitsPerPage: pageSize,
-        page: pageNumber
+    async function searchFallbacks(
+      fallbackQueries: string[]
+    ): Promise<AlgoliaNodePack[] | undefined> {
+      if (fallbackQueries.length === 0) return []
+      try {
+        const { results } = await searchClient.search<AlgoliaNodePack>({
+          requests: fallbackQueries.map((fallbackQuery) =>
+            buildPackSearchRequest(fallbackQuery, toRewriteParams(params))
+          ),
+          strategy: 'none'
+        })
+        const hits = (results as SearchResponse<AlgoliaNodePack>[]).flatMap(
+          (result) => result.hits
+        )
+        return uniqBy(hits, (hit) => hit.objectID).slice(0, pageSize)
+      } catch (error) {
+        reportError(error, {
+          errorType: 'error_searching_algolia_fallbacks',
+          surface: 'platform',
+          level: 'warning',
+          tags: { outcome: 'degraded' }
+        })
+        return undefined
       }
-    ]
+    }
 
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
-
-    // If the query is long enough, also query the suggestions index
+    const requests: SearchQuery[] = [buildPackSearchRequest(query, params)]
     if (shouldQuerySuggestions) {
       requests.push({
         indexName: 'nodes_index_query_suggestions',
@@ -153,39 +155,52 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       strategy: 'none'
     })
 
-    const [nodePacks, querySuggestions = { hits: [] }] = results as [
-      SearchResponse<AlgoliaNodePack>,
-      SearchResponse<NodesIndexSuggestion>
-    ]
+    const nodePacks = results[0] as SearchResponse<AlgoliaNodePack>
+    const querySuggestions = results[1] as
+      | SearchResponse<NodesIndexSuggestion>
+      | undefined
 
-    // Convert Algolia hits to RegistryNodePack format
-    const registryPacks = nodePacks.hits.map(toRegistryPack)
+    const isNodeSearch =
+      params.restrictSearchableAttributes?.includes('comfy_nodes')
+    const needsFallbacks =
+      pageNumber === 0 && !isNodeSearch && nodePacks.hits.length === 0
+    const hits = needsFallbacks
+      ? await searchFallbacks(buildPackSearchFallbacks(query))
+      : nodePacks.hits
 
-    // Extract query suggestions from search results
-    const suggestions = querySuggestions.hits.map((suggestion) => ({
-      query: suggestion.query,
-      popularity: suggestion.popularity
-    }))
+    const registryPacks = (hits ?? []).map(toRegistryPack)
+
+    const suggestions =
+      querySuggestions?.hits.map((suggestion) => ({
+        query: suggestion.query,
+        popularity: suggestion.popularity
+      })) ?? []
 
     return {
-      nodePacks: registryPacks,
-      querySuggestions: suggestions
+      result: {
+        nodePacks: registryPacks,
+        querySuggestions: suggestions,
+        hasMore:
+          nodePacks.nbPages === undefined
+            ? undefined
+            : pageNumber + 1 < nodePacks.nbPages,
+        rawResultsEmpty: nodePacks.hits.length === 0
+      },
+      fallbacksFailed: hits === undefined
     }
   }
 
-  /**
-   * Search for node packs in Algolia with caching.
-   */
   const searchPacks = async (
     query: string,
     params: SearchNodePacksParams
   ): Promise<SearchPacksResult> => {
-    const cacheKey = paramsToCacheKey({ query, ...params })
+    const { analyticsTags: _analyticsTags, ...resultParams } = params
+    const cacheKey = paramsToCacheKey({ query, ...resultParams })
     const cachedResult = searchPacksCache.get(cacheKey)
     if (cachedResult !== undefined) return cachedResult
 
-    const result = await searchPacksInternal(query, params)
-    searchPacksCache.set(cacheKey, result)
+    const { result, fallbacksFailed } = await searchPacksInternal(query, params)
+    if (!fallbacksFailed) searchPacksCache.set(cacheKey, result)
     return result
   }
 
@@ -193,55 +208,8 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     searchPacksCache.clear()
   }
 
-  const getSortValue = (
-    pack: RegistryNodePack,
-    sortField: string
-  ): string | number => {
-    // For Algolia, we rely on the default sorting behavior
-    // The results are already sorted by the index configuration
-    // This is mainly used for re-sorting after results are fetched
-    switch (sortField) {
-      case SortableAlgoliaField.Downloads:
-        return pack.downloads ?? 0
-      case SortableAlgoliaField.Created: {
-        const createTime = pack.created_at
-        return createTime ? new Date(createTime).getTime() : 0
-      }
-      case SortableAlgoliaField.Updated:
-        return pack.latest_version?.createdAt
-          ? new Date(pack.latest_version.createdAt).getTime()
-          : 0
-      case SortableAlgoliaField.Publisher:
-        return pack.publisher?.name ?? ''
-      case SortableAlgoliaField.Name:
-        return pack.name ?? ''
-      default:
-        return 0
-    }
-  }
-
-  const getSortableFields = (): SortableField[] => {
-    return [
-      {
-        id: SortableAlgoliaField.Downloads,
-        label: 'Downloads',
-        direction: 'desc'
-      },
-      { id: SortableAlgoliaField.Created, label: 'Created', direction: 'desc' },
-      { id: SortableAlgoliaField.Updated, label: 'Updated', direction: 'desc' },
-      {
-        id: SortableAlgoliaField.Publisher,
-        label: 'Publisher',
-        direction: 'asc'
-      },
-      { id: SortableAlgoliaField.Name, label: 'Name', direction: 'asc' }
-    ]
-  }
-
   return {
     searchPacks,
-    clearSearchCache,
-    getSortValue,
-    getSortableFields
+    clearSearchCache
   }
 }

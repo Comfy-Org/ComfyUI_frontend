@@ -2,6 +2,7 @@ import type {
   MissingErrorMessageSource,
   ResolvedMissingErrorMessage
 } from './types'
+import type { CatalogParams } from './catalogI18n'
 import { normalizeNodeName, translateCatalogMessage } from './catalogI18n'
 import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import { countMissingModels } from '@/platform/missingModel/missingModelGrouping'
@@ -44,7 +45,31 @@ function isMissingNodeType(nodeType: NodeTypeErrorItem): boolean {
   return typeof nodeType === 'string' || !nodeType.isReplaceable
 }
 
+/**
+ * On a developer-platform deployment (FE-2434) the editor's nodes and models
+ * are its Release's, so a message names the deployment instead of Cloud.
+ * Null on Comfy Cloud and outside Cloud.
+ */
+function deploymentMessage(
+  source: { deploymentLabel?: string },
+  key: string,
+  fallback: string,
+  params: CatalogParams = {}
+): string | null {
+  if (!source.deploymentLabel) return null
+  return translateCatalogMessage(key, fallback, {
+    ...params,
+    deployment: source.deploymentLabel
+  })
+}
+
 function resolveMissingNodeDisplayMessage(source: MissingNodeSource): string {
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_node.displayMessageDeployment',
+    "These nodes aren't on {deployment}. Replace them, or pick a deployment that has them."
+  )
+  if (onDeployment) return onDeployment
   const key = source.isCloud
     ? 'errorCatalog.missingErrors.missing_node.displayMessageCloud'
     : 'errorCatalog.missingErrors.missing_node.displayMessageOss'
@@ -60,6 +85,13 @@ function resolveMissingNodeToastTitle(source: MissingNodeSource): string {
   )
   const [firstLabel] = labels
   if (labels.length === 1 && firstLabel) {
+    const onDeployment = deploymentMessage(
+      source,
+      'errorCatalog.missingErrors.missing_node.toastTitleOneDeployment',
+      "{nodeType} isn't on {deployment}",
+      { nodeType: firstLabel }
+    )
+    if (onDeployment) return onDeployment
     const key = source.isCloud
       ? 'errorCatalog.missingErrors.missing_node.toastTitleOneCloud'
       : 'errorCatalog.missingErrors.missing_node.toastTitleOneOss'
@@ -69,6 +101,12 @@ function resolveMissingNodeToastTitle(source: MissingNodeSource): string {
     return translateCatalogMessage(key, fallback, { nodeType: firstLabel })
   }
 
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_node.toastTitleManyDeployment',
+    "Nodes aren't on {deployment}"
+  )
+  if (onDeployment) return onDeployment
   const key = source.isCloud
     ? 'errorCatalog.missingErrors.missing_node.toastTitleManyCloud'
     : 'errorCatalog.missingErrors.missing_node.toastTitleManyOss'
@@ -85,6 +123,12 @@ function resolveMissingNodeToastMessage(source: MissingNodeSource): string {
   const count = labels.length || source.count
 
   if (count === 1) {
+    const onDeployment = deploymentMessage(
+      source,
+      'errorCatalog.missingErrors.missing_node.toastMessageOneDeployment',
+      'Replace this node, or pick a deployment that has it.'
+    )
+    if (onDeployment) return onDeployment
     const key = source.isCloud
       ? 'errorCatalog.missingErrors.missing_node.toastMessageOneCloud'
       : 'errorCatalog.missingErrors.missing_node.toastMessageOneOss'
@@ -94,6 +138,12 @@ function resolveMissingNodeToastMessage(source: MissingNodeSource): string {
     return translateCatalogMessage(key, fallback)
   }
 
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_node.toastMessageManyDeployment',
+    'Replace these nodes, or pick a deployment that has them.'
+  )
+  if (onDeployment) return onDeployment
   const key = source.isCloud
     ? 'errorCatalog.missingErrors.missing_node.toastMessageManyCloud'
     : 'errorCatalog.missingErrors.missing_node.toastMessageManyOss'
@@ -140,7 +190,7 @@ function resolveSwapNodeToastMessage(source: SwapNodeSource): string {
   const nodeTypes = getSwapNodeTypes(source)
   const labels = getDistinctNodeTypeLabels(nodeTypes)
   const [firstNodeType] = nodeTypes
-  if (labels.length === 1 && firstNodeType?.replacement?.new_node_id) {
+  if (labels.length === 1 && firstNodeType.replacement?.new_node_id) {
     return translateCatalogMessage(
       'errorCatalog.missingErrors.swap_nodes.toastMessageOne',
       'Replace it with {replacementNodeType} from the error panel.',
@@ -172,6 +222,12 @@ function getMissingModelCount(source: MissingModelSource): number {
 }
 
 function resolveMissingModelDisplayMessage(source: MissingModelSource): string {
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_model.displayMessageDeployment',
+    "These models aren't on {deployment}. Open the node to choose one it has."
+  )
+  if (onDeployment) return onDeployment
   const key = source.isCloud
     ? 'errorCatalog.missingErrors.missing_model.displayMessageCloud'
     : 'errorCatalog.missingErrors.missing_model.displayMessageOss'
@@ -182,21 +238,47 @@ function resolveMissingModelDisplayMessage(source: MissingModelSource): string {
 }
 
 function resolveMissingModelToastTitle(source: MissingModelSource): string {
-  const [firstModel] = source.groups.flatMap((group) => group.models)
+  const firstModel = source.groups.flatMap((group) => group.models).at(0)
   const count = getMissingModelCount(source)
 
   if (count === 1 && firstModel) {
-    const key = source.isCloud
-      ? 'errorCatalog.missingErrors.missing_model.toastTitleOneCloud'
-      : 'errorCatalog.missingErrors.missing_model.toastTitleOneOss'
-    const fallback = source.isCloud
-      ? "{modelName} isn't available on Cloud"
-      : '{modelName} is missing'
-    return translateCatalogMessage(key, fallback, {
-      modelName: firstModel.name
-    })
+    return resolveOneMissingModelToastTitle(source, firstModel.name)
   }
+  return resolveManyMissingModelsToastTitle(source, count)
+}
 
+function resolveOneMissingModelToastTitle(
+  source: MissingModelSource,
+  modelName: string
+): string {
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_model.toastTitleOneDeployment',
+    "{modelName} isn't on {deployment}",
+    { modelName }
+  )
+  if (onDeployment) return onDeployment
+  const key = source.isCloud
+    ? 'errorCatalog.missingErrors.missing_model.toastTitleOneCloud'
+    : 'errorCatalog.missingErrors.missing_model.toastTitleOneOss'
+  const fallback = source.isCloud
+    ? "{modelName} isn't available on Cloud"
+    : '{modelName} is missing'
+  return translateCatalogMessage(key, fallback, { modelName })
+}
+
+function resolveManyMissingModelsToastTitle(
+  source: MissingModelSource,
+  count: number
+): string {
+  if (count > 1) {
+    const onDeployment = deploymentMessage(
+      source,
+      'errorCatalog.missingErrors.missing_model.toastTitleManyDeployment',
+      "Models aren't on {deployment}"
+    )
+    if (onDeployment) return onDeployment
+  }
   const useCloudPluralTitle = source.isCloud && count > 1
   const key = useCloudPluralTitle
     ? 'errorCatalog.missingErrors.missing_model.toastTitleManyCloud'
@@ -217,10 +299,16 @@ function getMissingModelNodeName(
 }
 
 function resolveMissingModelToastMessage(source: MissingModelSource): string {
-  const [firstModel] = source.groups.flatMap((group) => group.models)
+  const firstModel = source.groups.flatMap((group) => group.models).at(0)
   const count = getMissingModelCount(source)
 
   if (!firstModel || count !== 1) {
+    const onDeployment = deploymentMessage(
+      source,
+      'errorCatalog.missingErrors.missing_model.toastMessageManyDeployment',
+      'Choose different models, or pick a deployment that has them.'
+    )
+    if (onDeployment) return onDeployment
     const key = source.isCloud
       ? 'errorCatalog.missingErrors.missing_model.toastMessageManyCloud'
       : 'errorCatalog.missingErrors.missing_model.toastMessageManyOss'
@@ -230,6 +318,12 @@ function resolveMissingModelToastMessage(source: MissingModelSource): string {
     return translateCatalogMessage(key, fallback, { count })
   }
 
+  const onDeployment = deploymentMessage(
+    source,
+    'errorCatalog.missingErrors.missing_model.toastMessageOneDeployment',
+    'Choose a different model, or pick a deployment that has it.'
+  )
+  if (onDeployment) return onDeployment
   if (source.isCloud) {
     return translateCatalogMessage(
       'errorCatalog.missingErrors.missing_model.toastMessageOneCloud',
@@ -309,7 +403,7 @@ function resolveMissingMediaToastTitle(source: MissingMediaSource): string {
 
 function resolveMissingMediaToastMessage(source: MissingMediaSource): string {
   const items = getMissingMediaItems(source)
-  const [firstItem] = items
+  const firstItem = items.at(0)
   if (!firstItem || countMissingMediaReferences(source.groups) !== 1) {
     return translateCatalogMessage(
       'errorCatalog.missingErrors.missing_media.toastMessageMany',
@@ -337,12 +431,13 @@ export function resolveMissingErrorMessage(
     case 'missing_node':
       return {
         catalogId: 'missing_node',
-        displayTitle: source.isCloud
-          ? st(
-              'rightSidePanel.missingNodePacks.unsupportedTitle',
-              'Unsupported Node Packs'
-            )
-          : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
+        displayTitle:
+          source.isCloud && !source.deploymentLabel
+            ? st(
+                'rightSidePanel.missingNodePacks.unsupportedTitle',
+                'Unsupported Node Packs'
+              )
+            : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
         displayMessage: resolveMissingNodeDisplayMessage(source),
         toastTitle: resolveMissingNodeToastTitle(source),
         toastMessage: resolveMissingNodeToastMessage(source)

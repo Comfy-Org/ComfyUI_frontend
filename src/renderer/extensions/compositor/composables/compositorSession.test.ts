@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 
 import { loadCompositorSession } from './compositorSession'
@@ -18,16 +20,16 @@ const {
   resolveInitialLayerState: vi.fn<() => unknown>(() => null)
 }))
 
-vi.mock(
-  '@/renderer/extensions/compositor/composables/compositorLayerState',
+vi.mock<unknown>(
+  import('@/renderer/extensions/compositor/composables/compositorLayerState'),
   () => ({
     applyLayerState,
     parseLayerState: () => null,
     resolveInitialLayerState
   })
 )
-vi.mock(
-  '@/renderer/extensions/compositor/composables/useCompositorLayers',
+vi.mock<unknown>(
+  import('@/renderer/extensions/compositor/composables/useCompositorLayers'),
   () => ({
     getCompositorBBoxes: () => undefined,
     getCompositorCanvas,
@@ -36,17 +38,13 @@ vi.mock(
   })
 )
 vi.mock(
-  '@/renderer/extensions/compositor/composables/compositorWidgets',
+  import('@/renderer/extensions/compositor/composables/compositorWidgets'),
   () => ({
     getCompositorWidgetValue: () => ({})
   })
 )
-vi.mock('@/scripts/api', () => ({
-  api: { apiURL: (path: string) => `http://host/api${path}` }
-}))
-vi.mock('@/scripts/app', () => ({
-  app: { getRandParam: () => '&rand=0.5' }
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
 function makeSession() {
   return {
@@ -63,6 +61,8 @@ const fallbackName = (i: number) => `Layer ${i + 1}`
 
 describe('loadCompositorSession', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((path) => `http://host/api${path}`)
+    vi.mocked(app.getRandParam).mockReturnValue('&rand=0.5')
     getCompositorLayers.mockReturnValue([])
     getCompositorCanvas.mockReturnValue(undefined)
     resolveInitialLayerState.mockReturnValue(null)

@@ -15,7 +15,7 @@ const mockHistory = vi.hoisted(() => ({
   canRedo: { value: false }
 }))
 
-vi.mock('@/composables/maskeditor/useCanvasHistory', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/useCanvasHistory'), () => ({
   useCanvasHistory: vi.fn(() => mockHistory)
 }))
 

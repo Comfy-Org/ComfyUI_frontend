@@ -1,13 +1,13 @@
+import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
-import type { LLink } from './LLink'
 import type { ISerialisedNode } from './types/serialisation'
 import type { EndpointPatch } from '@/stores/linkStore'
 import type { NodeId } from '@/types/nodeId'
 
 /**
  * Follows serialized link endpoints through node-id remints during
- * `LGraph.configure` (ADR-0008, "Collision recovery lives at the remint
+ * `LGraph.configure` (ADR-ECS-0008, "Collision recovery lives at the remint
  * site").
  *
  * A payload's links name its nodes by their serialized (requested) ids. When

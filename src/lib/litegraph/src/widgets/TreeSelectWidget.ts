@@ -10,8 +10,6 @@ export class TreeSelectWidget
   extends BaseWidget<ITreeSelectWidget>
   implements ITreeSelectWidget
 {
-  override type = 'treeselect' as const
-
   drawWidget(ctx: CanvasRenderingContext2D, options: DrawWidgetOptions): void {
     this.drawVueOnlyWarning(ctx, options, 'TreeSelect')
   }

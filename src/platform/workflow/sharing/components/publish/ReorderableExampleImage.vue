@@ -3,7 +3,7 @@
     ref="tileRef"
     :class="
       cn(
-        'group focus-visible:outline-ring relative aspect-square overflow-hidden rounded-sm outline-offset-2 focus-visible:outline-2',
+        'group relative aspect-square overflow-hidden rounded-sm outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring',
         state === 'dragging' && 'opacity-40',
         state === 'over' && 'ring-2 ring-primary'
       )
@@ -35,7 +35,7 @@
       size="icon"
       :aria-label="$t('comfyHubPublish.removeExampleImage')"
       tabindex="-1"
-      class="absolute top-1 right-1 flex size-6 items-center justify-center bg-black/60 text-white opacity-0 transition-opacity not-group-has-focus-visible/grid:group-hover:opacity-100 group-focus-visible:opacity-100 hover:bg-black/80"
+      class="absolute top-1 right-1 flex size-6 bg-black/60 text-white opacity-0 transition-opacity not-group-has-focus-visible/grid:group-hover:opacity-100 group-focus-visible:opacity-100 hover:bg-black/80"
       @click="$emit('remove', image.id)"
     >
       <i class="icon-[lucide--x] size-4" aria-hidden="true" />

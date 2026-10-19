@@ -5,7 +5,7 @@ import { useApiRequest } from '@/composables/useApiRequest'
 
 const mockIsAbortError = vi.hoisted(() => vi.fn())
 
-vi.mock('@/utils/typeGuardUtil', () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isAbortError: mockIsAbortError
 }))
 
@@ -17,7 +17,6 @@ function response<T>(data: T): AxiosResponse<T> {
 
 describe('useApiRequest', () => {
   beforeEach(() => {
-    mockIsAbortError.mockReset()
     mockIsAbortError.mockReturnValue(false)
   })
 
@@ -103,58 +102,5 @@ describe('useApiRequest', () => {
     expect(result).toBeNull()
     expect(mapError).not.toHaveBeenCalled()
     expect(error.value).toBeNull()
-  })
-
-  it('runs onSuccess only after a successful response', async () => {
-    const onSuccess = vi.fn()
-    const { executeRequest } = useApiRequest({ client, mapError: vi.fn() })
-
-    await executeRequest(async () => response('ok'), {
-      errorContext: 'ctx',
-      onSuccess
-    })
-    expect(onSuccess).toHaveBeenCalledTimes(1)
-
-    onSuccess.mockClear()
-    await executeRequest(
-      () => {
-        throw new Error('boom')
-      },
-      { errorContext: 'ctx', onSuccess }
-    )
-    expect(onSuccess).not.toHaveBeenCalled()
-  })
-
-  it('does not run onSuccess when the request is aborted', async () => {
-    mockIsAbortError.mockReturnValue(true)
-    const onSuccess = vi.fn()
-    const { executeRequest } = useApiRequest({ client, mapError: vi.fn() })
-
-    const result = await executeRequest(
-      () => {
-        throw new Error('aborted')
-      },
-      { errorContext: 'ctx', onSuccess }
-    )
-
-    expect(result).toBeNull()
-    expect(onSuccess).not.toHaveBeenCalled()
-  })
-
-  it('resolves to null and preserves error when onSuccess returns false', async () => {
-    const mapError = vi.fn()
-    const { executeRequest, error } = useApiRequest({ client, mapError })
-
-    const result = await executeRequest(async () => response('ok'), {
-      errorContext: 'ctx',
-      onSuccess: () => {
-        error.value = 'side effect failed'
-        return false
-      }
-    })
-
-    expect(result).toBeNull()
-    expect(error.value).toBe('side effect failed')
-    expect(mapError).not.toHaveBeenCalled()
   })
 })

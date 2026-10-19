@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.slots', 'Node Slots Error') }}
   </div>
   <div
@@ -48,6 +48,7 @@ import { st } from '@/i18n'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   linkedWidgetedInputs,
   nonWidgetedInputs
@@ -124,7 +125,12 @@ const layoutKey = computed(() =>
 )
 
 watch(
-  [layoutKey, slots, () => canvasStore.rootGraphId],
+  [
+    layoutKey,
+    slots,
+    () => canvasStore.rootGraphId,
+    () => layoutStore.slotOffsetVersion
+  ],
   () => {
     const rootGraphId = canvasStore.rootGraphId
     if (syncLayout && slots.value && rootGraphId) {

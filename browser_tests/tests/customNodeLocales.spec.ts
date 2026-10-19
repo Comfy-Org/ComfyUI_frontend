@@ -1,6 +1,6 @@
+import type { GetI18nResponse } from '@comfyorg/ingest-types'
 import type { Page } from '@playwright/test'
 
-import type { CustomNodesI18n } from '@/schemas/apiSchema'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -11,7 +11,7 @@ const LOCALIZED_ZH = '本地化字符串输入 (ZH)'
 const LOCALIZED_ZH_TW = '本地化字串輸入 (ZH-TW)'
 const LOCALIZED_EN = 'Localized String Input (EN)'
 
-async function routeCustomNodesI18n(page: Page, body: CustomNodesI18n) {
+async function routeCustomNodesI18n(page: Page, body: GetI18nResponse) {
   await page.route('**/api/i18n', async (route) => {
     await route.fulfill({
       status: 200,

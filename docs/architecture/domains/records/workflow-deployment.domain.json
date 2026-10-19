@@ -1,0 +1,45 @@
+{
+  "id": "workflow-deployment",
+  "capability": "Workflow deployment",
+  "description": "Deploy-as-API for workflows: deriving API inputs from a flattened workflow, building the coding-agent handoff prompt and bundle, and the Deploy to Comfy API dialog. The workflow store, workflow flattening, missing-model scanning, and the Comfy API configuration remain external.",
+  "modules": [
+    {
+      "path": "src/platform/workflow/deploy/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workflow/deploy/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/workflow/deploy/composables/**",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "API inputs and agent handoff content are derived deterministically from the workflow",
+      "checks": [
+        "src/platform/workflow/deploy/utils/buildInputs.test.ts",
+        "src/platform/workflow/deploy/utils/agentHandoff.test.ts"
+      ]
+    },
+    {
+      "name": "Deploy dialog copies or downloads the agent handoff for the active workflow",
+      "checks": [
+        "src/platform/workflow/deploy/composables/useAgentHandoff.test.ts",
+        "src/platform/workflow/deploy/components/DeployToComfyApiCard.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The deploy-as-api action id stays stable for the workflow actions menu.",
+    "Unclassified callers may import deployment internals during inventory; imports from classified domains remain subject to cross-domain rules.",
+    "The dialog launcher that loads presentation remains visible as role-boundary debt; classification does not grant dependency exceptions."
+  ],
+  "deepImports": "inventory"
+}

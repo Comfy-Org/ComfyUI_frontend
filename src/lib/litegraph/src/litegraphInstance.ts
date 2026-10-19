@@ -1,4 +1,8 @@
-import type { LiteGraphGlobal } from './LiteGraphGlobal'
+import type { LiteGraphGlobal } from '@/lib/litegraph/src/types/entityRegistry'
+
+declare global {
+  var __COMFY_LITEGRAPH_INSTANCE__: LiteGraphGlobal | undefined
+}
 
 /**
  * Late-bound holder for the {@link LiteGraphGlobal} singleton.
@@ -13,9 +17,16 @@ import type { LiteGraphGlobal } from './LiteGraphGlobal'
  * The barrel constructs the singleton and calls {@link registerLiteGraphInstance}.
  */
 let instance: LiteGraphGlobal | null = null
+export let LiteGraph: LiteGraphGlobal
 
 export function registerLiteGraphInstance(value: LiteGraphGlobal): void {
   instance = value
+  LiteGraph = value
+  globalThis.__COMFY_LITEGRAPH_INSTANCE__ = value
+}
+
+export function clearRegisteredLiteGraphTypes(): void {
+  globalThis.__COMFY_LITEGRAPH_INSTANCE__?.clearRegisteredTypes()
 }
 
 export function litegraph(): LiteGraphGlobal {

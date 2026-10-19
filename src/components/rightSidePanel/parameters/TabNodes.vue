@@ -1,13 +1,10 @@
 <script setup lang="ts">
-import { storeToRefs } from 'pinia'
-import { computed, reactive, ref, shallowRef, watch } from 'vue'
+import { computed, reactive, ref, shallowRef } from 'vue'
 
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { NodeId } from '@/types/nodeId'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
@@ -16,16 +13,12 @@ import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 
 const canvasStore = useCanvasStore()
-const workflowStore = useWorkflowStore()
 
-const nodes = computed((): LGraphNode[] => {
-  // Depend on activeWorkflow to trigger recomputation when workflow changes
-  void workflowStore.activeWorkflow?.path
-  return (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
-})
+const nodes = computed(
+  (): LGraphNode[] => (canvasStore.canvas?.graph?.nodes ?? []) as LGraphNode[]
+)
 
-const rightSidePanelStore = useRightSidePanelStore()
-const { searchQuery } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 
 const { widgetsSectionDataList } = computedSectionDataList(nodes)
 
@@ -35,15 +28,6 @@ const searchedWidgetsSectionDataList = shallowRef<NodeWidgetsListList>(
 const isSearching = ref(false)
 
 const collapseMap = reactive<Record<string, boolean>>({})
-
-watch(
-  () => workflowStore.activeWorkflow?.path,
-  () => {
-    for (const key of Object.keys(collapseMap)) {
-      delete collapseMap[key]
-    }
-  }
-)
 
 function isSectionCollapsed(nodeId: NodeId): boolean {
   // Defaults to collapsed when not explicitly set by the user
@@ -105,7 +89,7 @@ async function searcher(query: string) {
           : $t('rightSidePanel.inputsNoneTooltip')
       "
       show-locate-button
-      class="border-b border-interface-stroke"
+      class="border-b"
       @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>

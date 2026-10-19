@@ -27,7 +27,7 @@ const meta: Meta<typeof SubscriptionTransitionPreviewWorkspace> = {
     (story) => ({
       components: { story },
       template:
-        '<div class="mx-auto flex h-[680px] w-[460px] flex-col rounded-2xl border border-border-default bg-secondary-background p-12"><story /></div>'
+        '<div class="mx-auto flex h-[680px] w-[460px] flex-col rounded-2xl border border-border bg-secondary p-12"><story /></div>'
     })
   ]
 }
@@ -73,10 +73,12 @@ function cancelledSubscription(
     tier,
     duration,
     planSlug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
+    scheduledChange: null,
     renewalDate: null,
     endDate: CANCEL_DATE,
     isCancelled: true,
-    hasFunds: true
+    hasFunds: true,
+    agentHasFunds: true
   }
 }
 
@@ -85,10 +87,12 @@ const notCancelledSubscription: SubscriptionInfo = {
   tier: 'STANDARD',
   duration: 'MONTHLY',
   planSlug: 'standard-monthly',
+  scheduledChange: null,
   renewalDate: NEXT_MONTHLY_RENEWAL,
   endDate: null,
   isCancelled: false,
-  hasFunds: true
+  hasFunds: true,
+  agentHasFunds: true
 }
 
 function story(
