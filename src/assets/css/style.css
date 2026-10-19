@@ -4,6 +4,87 @@
   --comfy-canvas-gutter: calc(var(--spacing) * 2);
 }
 
+.node-blood-drips::before,
+.node-blood-drips::after {
+  content: '';
+  position: absolute;
+  top: calc(100% - 2px);
+  left: 8%;
+  width: 84%;
+  pointer-events: none;
+  --blood: #990c20;
+}
+
+.node-blood-drips::before {
+  height: 28px;
+  background:
+    radial-gradient(ellipse at 50% 0, var(--blood) 68%, transparent 72%) 0 0 /
+      12px 16px,
+    radial-gradient(ellipse at 50% 0, var(--blood) 68%, transparent 72%) 23% 0 /
+      9px 27px,
+    radial-gradient(ellipse at 50% 0, var(--blood) 68%, transparent 72%) 58% 0 /
+      14px 19px,
+    radial-gradient(ellipse at 50% 0, var(--blood) 68%, transparent 72%) 83% 0 /
+      10px 28px,
+    radial-gradient(ellipse at 50% 0, var(--blood) 68%, transparent 72%) 100% 0
+      / 8px 12px;
+  background-repeat: no-repeat;
+  transform-origin: top;
+}
+
+.node-blood-drips::after {
+  height: 8px;
+  top: calc(100% + 18px);
+  background:
+    radial-gradient(ellipse, var(--blood) 60%, transparent 70%) 23% 0 / 7px 8px,
+    radial-gradient(ellipse, var(--blood) 60%, transparent 70%) 83% 0 / 8px 8px;
+  background-repeat: no-repeat;
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body:not(.disable-animations) .node-blood-drips::before {
+    animation: blood-ooze 3.7s ease-in-out var(--blood-delay, 0s) infinite
+      alternate;
+  }
+
+  body:not(.disable-animations) .node-blood-drips::after {
+    animation: blood-fall 3.7s ease-in var(--blood-delay, 0s) infinite;
+  }
+
+  .node-blood-drips:nth-child(3n + 1) {
+    --blood-delay: -1.3s;
+  }
+
+  .node-blood-drips:nth-child(3n + 2) {
+    --blood-delay: -2.6s;
+  }
+}
+
+@keyframes blood-ooze {
+  from {
+    transform: scaleY(0.65);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes blood-fall {
+  0%,
+  55% {
+    transform: translateY(0) scaleY(0.6);
+    opacity: 0;
+  }
+  65% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(40px) scaleY(1.4);
+    opacity: 0;
+  }
+}
+
 @layer base {
   .pi {
     font-size: 1rem;

@@ -216,6 +216,48 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     }
   )
 
+  test(
+    'Blood drips follow palette and motion preferences',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      const { page } = comfyPage
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const dripStyle = () =>
+        node.root.evaluate((el) => {
+          const style = getComputedStyle(el, '::after')
+          return [style.content, style.animationName, style.pointerEvents]
+        })
+
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'spooky')
+      await comfyPage.settings.setSetting(
+        'Comfy.Appearance.DisableAnimations',
+        false
+      )
+      await expect.poll(dripStyle).toEqual(['""', 'blood-fall', 'none'])
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'zombie')
+      await expect.poll(dripStyle).toEqual(['""', 'blood-fall', 'none'])
+
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await expect.poll(dripStyle).toEqual(['""', 'none', 'none'])
+
+      await page.emulateMedia({ reducedMotion: 'no-preference' })
+      await comfyPage.settings.setSetting(
+        'Comfy.Appearance.DisableAnimations',
+        true
+      )
+      await expect.poll(dripStyle).toEqual(['""', 'none', 'none'])
+
+      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
+      await expect
+        .poll(() =>
+          node.root.evaluate((el) => getComputedStyle(el, '::after').content)
+        )
+        .toBe('none')
+    }
+  )
+
   test.describe('Custom light palette', () => {
     test.use({
       initialSettings: {

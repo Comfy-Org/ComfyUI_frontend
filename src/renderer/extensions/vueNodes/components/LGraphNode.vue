@@ -19,6 +19,11 @@
         cursorClass,
         isSelected && 'outline-foreground',
         executing && 'outline-primary',
+        !isRerouteNode &&
+          !isCollapsed &&
+          !nodeData.flags?.ghost &&
+          ['spooky', 'zombie'].includes(activePaletteId) &&
+          'node-blood-drips',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
           !isGhostPlacing
@@ -298,6 +303,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
@@ -330,6 +336,7 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
+const { activePaletteId } = storeToRefs(useColorPaletteStore())
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
