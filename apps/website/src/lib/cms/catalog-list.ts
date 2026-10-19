@@ -164,17 +164,15 @@ export async function loadSiteCatalogList(
     const value = await readCatalogCards(response)
     if (!value || !validCards(value, section, Boolean(session)))
       return unavailable
-    const models = modelSchema
-      .array()
-      .safeParse(
-        value.items.map((item) =>
-          catalogPresentation(item, locale, session?.preview?.view === 'DRAFT')
-        )
+    const models = value.items.flatMap((item) => {
+      const model = modelSchema.safeParse(
+        catalogPresentation(item, locale, session?.preview?.view === 'DRAFT')
       )
-    if (!models.success) return unavailable
+      return model.success ? [model.data] : []
+    })
     return {
       ok: true,
-      models: models.data,
+      models,
       pages: listPages(value, section, page, reset),
       facets: listFacets(value, locale)
     } as const

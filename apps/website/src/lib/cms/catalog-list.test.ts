@@ -256,6 +256,30 @@ describe('bounded website catalog transport', () => {
     }
   )
 
+  it('drops a card the website cannot present and keeps the rest of the tab', async () => {
+    function appCard(name: string, uidSuffix: string): ContentCatalogRecord {
+      return {
+        ...card(),
+        uid: `00000000-0000-4000-8000-0000000000${uidSuffix}`,
+        kind: 'APP',
+        slug: `/hub/apps/${name}`,
+        data: {
+          type: 'app',
+          title: `App ${name}`,
+          slug: name,
+          implementation_ref: name
+        }
+      }
+    }
+    setup({
+      ...page(),
+      items: [appCard('studio', '20'), appCard('new-app', '21')]
+    })
+    const result = await loadSiteCatalogList(undefined, 'en', 'apps')
+    assert.isTrue(result.ok)
+    expect(result.models.map((item) => item.name)).toEqual(['App studio'])
+  })
+
   it('fails closed for an unavailable service without another endpoint', async () => {
     const upstream = setup()
     upstream.mockRejectedValueOnce(new Error('offline'))
