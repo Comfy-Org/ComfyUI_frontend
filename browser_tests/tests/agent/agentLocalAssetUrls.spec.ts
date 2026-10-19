@@ -22,7 +22,7 @@ test.describe('Agent reply image URLs', { tag: ['@cloud', '@ui'] }, () => {
 
   test('re-homes a loopback reply image onto the page API route', async ({
     agentPanel,
-    getWebSocket,
+    getAgentSocket,
     page,
     postedMessages
   }) => {
@@ -39,7 +39,7 @@ test.describe('Agent reply image URLs', { tag: ['@cloud', '@ui'] }, () => {
     await agentPanel.open()
     await agentPanel.selectWorkflow()
 
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
     await agentPanel.sendMessage('Draw me a duck')
     await expect.poll(() => postedMessages).toHaveLength(1)
 

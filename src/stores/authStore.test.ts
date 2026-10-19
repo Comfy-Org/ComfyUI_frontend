@@ -7,7 +7,15 @@ import { FirebaseError } from 'firebase/app'
 import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -500,6 +508,42 @@ describe('useAuthStore', () => {
           headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
         })
       )
+    })
+
+    it('accessBillingPortal gives up on a billing request that hangs for 30 seconds', async () => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+        const controller = new AbortController()
+        setTimeout(
+          () =>
+            controller.abort(
+              new DOMException('The operation timed out.', 'TimeoutError')
+            ),
+          ms
+        )
+        return controller.signal
+      })
+      respondToFetch(
+        BILLING_URL,
+        (_input, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(init.signal?.reason)
+            )
+          })
+      )
+
+      const request = store.accessBillingPortal()
+      const settled = vi.fn()
+      request.then(settled, settled)
+      await vi.advanceTimersByTimeAsync(29_999)
+      expect(settled).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(request).rejects.toMatchObject({ name: 'TimeoutError' })
     })
 
     it('accessBillingPortal throws userNotAuthenticated when neither credential exists', async () => {

@@ -264,10 +264,6 @@
       "role": "integration"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/apiTransport.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/workbench/extensions/agent/crdt/applierConformance.test.ts",
       "role": "domain"
     },
@@ -628,14 +624,6 @@
       "role": "domain"
     },
     {
-      "path": "src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/workbench/extensions/agent/services/agent/targetAwareAgentNavigation.test.ts",
       "role": "domain"
     },
@@ -762,10 +750,53 @@
     {
       "path": "src/workbench/extensions/agent/utils/workflowReferenceText.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/workbench/extensions/agent/services/agent/agentAuth.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/services/agent/agentAuth.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/services/agent/__mocks__/agentAuth.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/services/agent/agentIdentity.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/agent/services/agent/agentIdentity.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/agentDocFrameTransport.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/agentDocFrameTransport.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/__fixtures__/agentSocket.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/workbench/extensions/agent/crdt/agentCrdtTransport.test.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["design-system"],
+  "allowedDependencies": [
+    "authentication",
+    "design-system",
+    "error-reporting",
+    "extension-runtime",
+    "workbench-shell",
+    "workflow-management"
+  ],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

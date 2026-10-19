@@ -104,8 +104,8 @@ function updatePayment(): Promise<void> {
       contentProps: { isUpdatingPayment: true }
     })
     try {
-      await manageSubscription()
-      if (!isUnmounted) {
+      const outcome = await manageSubscription()
+      if (outcome.ok && !isUnmounted) {
         refreshBillingOnFocus = true
         closePaymentRecoveryDialog()
       }

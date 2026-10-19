@@ -23,10 +23,32 @@
         <Button
           variant="textonly"
           size="unset"
-          class="ml-auto shrink-0 gap-1.5 px-2 py-1 hover:bg-muted"
-          @click="clearAll"
+          :class="cn(actionBtnClass, 'ml-auto')"
+          :disabled="!canUndo"
+          :aria-label="$t('boundingBoxes.undo')"
+          :tooltip="$t('boundingBoxes.undo')"
+          @click="undo"
         >
           <i class="icon-[lucide--undo-2] size-4" />
+        </Button>
+        <Button
+          variant="textonly"
+          size="unset"
+          :class="actionBtnClass"
+          :disabled="!canRedo"
+          :aria-label="$t('boundingBoxes.redo')"
+          :tooltip="$t('boundingBoxes.redo')"
+          @click="redo"
+        >
+          <i class="icon-[lucide--redo-2] size-4" />
+        </Button>
+        <Button
+          variant="textonly"
+          size="unset"
+          :class="actionBtnClass"
+          @click="clearAll"
+        >
+          <i class="icon-[lucide--trash-2] size-4" />
           <span>{{ $t('boundingBoxes.clearAll') }}</span>
         </Button>
       </div>
@@ -111,7 +133,7 @@
           :placeholder="$t('boundingBoxes.textPlaceholder')"
           class="min-h-14 resize-none overflow-hidden pt-5 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-foreground hover:overflow-auto focus:overflow-auto"
           data-capture-wheel="true"
-          @update:model-value="syncState"
+          @update:model-value="onActiveTextInput"
         />
       </div>
       <div
@@ -127,7 +149,7 @@
           :placeholder="$t('boundingBoxes.descPlaceholder')"
           class="min-h-20 resize-none overflow-hidden pt-5 font-mono text-(length:--comfy-textarea-font-size) leading-normal not-disabled:bg-input not-disabled:text-foreground hover:overflow-auto focus:overflow-auto"
           data-capture-wheel="true"
-          @update:model-value="syncState"
+          @update:model-value="onActiveDescInput"
         />
       </div>
       <div class="flex items-center gap-2">
@@ -137,7 +159,7 @@
         <PaletteSwatchRow
           v-model="activeRegion.palette"
           :max="maxColors"
-          @update:model-value="syncState"
+          @update:model-value="onActivePaletteChange"
         />
       </div>
     </div>
@@ -158,8 +180,15 @@ import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const { nodeId } = defineProps<{ nodeId: NodeId }>()
+const actionBtnClass =
+  'flex shrink-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-2 py-1 text-sm text-foreground outline-none transition-colors hover:bg-muted'
+
+const { nodeId, widget } = defineProps<{
+  nodeId: NodeId
+  widget: SimplifiedWidget
+}>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })
 
 const canvasEl = useTemplateRef<HTMLCanvasElement>('canvasEl')
@@ -184,12 +213,19 @@ const {
   commitInlineEditor,
   setActiveType,
   clearAll,
-  syncState,
+  onActiveTextInput,
+  onActiveDescInput,
+  onActivePaletteChange,
+  canUndo,
+  canRedo,
+  undo,
+  redo,
   grid
 } = useBoundingBoxes(nodeId, {
   canvasEl,
   canvasContainer,
   inlineEditorEl,
-  modelValue
+  modelValue,
+  widget
 })
 </script>

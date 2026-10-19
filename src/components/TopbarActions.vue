@@ -34,6 +34,7 @@
       <AgentEntryButton
         :active="agentPanelStore.isVisible"
         :inviting="!agentPanelStore.hasEverOpened"
+        :comfy-agent="comfyAgentNotReady"
         @click="onAgentEntryClick"
       />
     </template>
@@ -73,8 +74,15 @@ const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
 const showCurrentUser = computed(() => isCloud || isLoggedIn.value)
+const comfyAgentNotReady = computed(() =>
+  agentPanelStore.enabled || agentPanelStore.comfyAgent?.state === 'ready'
+    ? undefined
+    : agentPanelStore.comfyAgent
+)
 const showAgentEntry = computed(
-  () => agentPanelStore.enabled && !(agentPanelStore.isOpen && isChecking.value)
+  () =>
+    (agentPanelStore.enabled || comfyAgentNotReady.value !== undefined) &&
+    !(agentPanelStore.isOpen && isChecking.value)
 )
 
 function openFeedback() {
@@ -82,7 +90,7 @@ function openFeedback() {
 }
 
 async function onAgentEntryClick(): Promise<void> {
-  if (isOpeningAgent.value) return
+  if (isOpeningAgent.value || comfyAgentNotReady.value) return
   isOpeningAgent.value = true
 
   try {

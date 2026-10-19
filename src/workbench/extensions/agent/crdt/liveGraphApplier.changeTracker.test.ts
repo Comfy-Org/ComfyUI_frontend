@@ -17,7 +17,6 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { toNodeId } from '@/types/nodeId'
@@ -45,13 +44,7 @@ vi.mock(import('@/scripts/app'), () => ({
     ui: { autoQueueEnabled: false, autoQueueMode: 'instant' }
   })
 }))
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({
-    dispatchCustomEvent: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  })
-}))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {

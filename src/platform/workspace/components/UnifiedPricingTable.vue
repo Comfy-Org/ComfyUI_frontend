@@ -180,7 +180,7 @@
               </span>
             </div>
           </div>
-          <div class="flex flex-col p-6">
+          <div class="flex flex-col gap-2 p-6">
             <Button
               :variant="getButtonSeverity(tier)"
               :disabled="isButtonDisabled(tier)"
@@ -199,6 +199,12 @@
             >
               {{ getButtonLabel(tier) }}
             </Button>
+            <p
+              v-if="getDeniedReasonCopy(tier.key)"
+              class="m-0 text-center text-sm text-muted-foreground"
+            >
+              {{ getDeniedReasonCopy(tier.key) }}
+            </p>
           </div>
         </Card>
       </div>
@@ -421,6 +427,7 @@ import {
   BILLING_ACTION_NAME,
   planCtaActionName
 } from '@/platform/telemetry/billingActionNames'
+import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
@@ -433,9 +440,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
   ENTERPRISE_URL,
   TIER_PRICING,
-  amountForBillingCycle,
-  hasActivePaidPlan,
-  toTierKey
+  amountForBillingCycle
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
@@ -454,6 +459,7 @@ import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -486,7 +492,7 @@ const emit = defineEmits<{
   ]
 }>()
 
-const { t, n } = useI18n()
+const { t, n, locale } = useI18n()
 const capabilities = useBillingCapabilities()
 const { permissions } = useWorkspaceUI()
 
@@ -516,12 +522,6 @@ const canDowngradeToPersonal = computed(() => {
   if (!capabilities.snapshotAuthoritative.value) return true
   return capabilities.canDowngradeToPersonal.value
 })
-
-// A personal card is reachable by one further write the team catalog has no
-// counterpart for: leaving a team plan.
-const personalPlanActionPermitted = computed(
-  () => lifecycleActionPermitted.value || canDowngradeToPersonal.value
-)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -616,7 +616,6 @@ const tiers: PricingTierConfig[] = [
 
 const {
   plans: apiPlans,
-  currentPlanSlug,
   fetchPlans,
   isTeamPlan,
   subscription,
@@ -773,9 +772,6 @@ const teamButtonLabel = computed(() => {
   return t('subscription.teamPlan.changePlan')
 })
 
-// `isTeamCurrentPlanSelected` compares the slider against a stop an ended
-// subscription still reports, so it only means "current plan" while the team
-// plan is live — the same exclusion `isCurrentPlan` makes via `isEnded`.
 const isTeamButtonDisabled = computed(
   () =>
     isLoading ||
@@ -823,36 +819,37 @@ const videoEstimateForTier = (tier: PricingTierConfig): number =>
     creditsForTier(tier) * (tier.pricing.videoEstimate / tier.pricing.credits)
   )
 
-const currentAccountTier = computed(() =>
-  subscription.value?.tier && !isEnded.value ? subscription.value.tier : null
-)
+const getPlanAction = (tierKey: CheckoutTierKey): PlanAction =>
+  getApiPlanForTier(tierKey, currentBillingCycle.value)?.action ?? 'none'
 
-const currentTierKey = computed<TierKey | null>(() =>
-  currentAccountTier.value ? toTierKey(currentAccountTier.value) : null
-)
+const isSamePlan = (tierKey: CheckoutTierKey): boolean =>
+  getApiPlanForTier(tierKey, currentBillingCycle.value)?.denied_reason ===
+  'same_plan'
 
-const isYearlySubscription = computed(
-  () => subscription.value?.duration === 'ANNUAL'
-)
-
-const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
-  if (isEnded.value) return false
-  if (currentPlanSlug.value) {
-    const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
-    return plan?.slug === currentPlanSlug.value
-  }
-  if (!currentTierKey.value) return false
-  const selectedIsYearly = currentBillingCycle.value === 'yearly'
-  return (
-    currentTierKey.value === tierKey &&
-    isYearlySubscription.value === selectedIsYearly
-  )
+const PLAN_ACTION_LABEL_KEYS: Readonly<
+  Record<Exclude<PlanAction, 'none'>, string>
+> = {
+  subscribe: 'subscription.subscribeTo',
+  change: 'subscription.changeTo',
+  downgrade: 'subscription.changeTo',
+  reactivate: 'subscription.resubscribeTo'
 }
 
-function isScheduledDestination(tierKey: CheckoutTierKey): boolean {
-  const slug = scheduledPlanChange.scheduledChange.value?.plan_slug
-  if (!slug) return false
-  return getApiPlanForTier(tierKey, currentBillingCycle.value)?.slug === slug
+const DENIED_REASON_COPY_KEYS: Readonly<Record<string, string>> = {
+  not_a_member: 'subscription.planUnavailable.notAMember',
+  not_workspace_owner: 'subscription.planUnavailable.notWorkspaceOwner',
+  not_original_owner: 'subscription.planUnavailable.notOriginalOwner',
+  sales_managed: 'subscription.planUnavailable.salesManaged',
+  billing_operation_parked:
+    'subscription.planUnavailable.billingOperationParked',
+  billing_operation_in_progress:
+    'subscription.planUnavailable.billingOperationInProgress',
+  annual_to_monthly_unsupported:
+    'subscription.planUnavailable.annualToMonthlyUnsupported',
+  incompatible_transition:
+    'subscription.planUnavailable.incompatibleTransition',
+  exceeds_max_seats: 'subscription.planUnavailable.exceedsMaxSeats',
+  billing_state_unknown: 'subscription.planUnavailable.billingStateUnknown'
 }
 
 const getButtonLabel = (tier: PricingTierConfig): string => {
@@ -860,41 +857,41 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     currentBillingCycle.value === 'yearly'
       ? t('subscription.tierNameYearly', { name: tier.name })
       : tier.name
+  if (isSamePlan(tier.key)) return t('subscription.currentPlan')
+  const action = getPlanAction(tier.key)
+  if (action === 'none') return planName
+  return t(PLAN_ACTION_LABEL_KEYS[action], { plan: planName })
+}
 
-  if (isCurrentPlan(tier.key)) {
-    return isCancelled.value
-      ? t('subscription.resubscribeTo', { plan: planName })
-      : t('subscription.currentPlan')
+const getDeniedReasonCopy = (tierKey: CheckoutTierKey): string | undefined => {
+  const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
+  if (plan?.action !== 'none' || plan.denied_reason === 'same_plan') {
+    return undefined
   }
-
-  if (showScheduledPlanChange.value && isScheduledDestination(tier.key)) {
-    return t('subscription.scheduledForDate', {
-      date: scheduledPlanChange.formattedDate.value
-    })
+  if (plan.denied_reason === 'subscription_change_in_progress') {
+    const date = formatSubscriptionDate(
+      plan.denied_reason_params?.effective_at,
+      locale.value
+    )
+    return date
+      ? t('subscription.planUnavailable.subscriptionChangeScheduled', { date })
+      : t('subscription.planUnavailable.subscriptionChangeInProgress')
   }
-
-  return hasActivePaidPlan(currentAccountTier.value)
-    ? t('subscription.changeTo', { plan: planName })
-    : t('subscription.subscribeTo', { plan: planName })
+  const key = plan.denied_reason && DENIED_REASON_COPY_KEYS[plan.denied_reason]
+  return t(key || 'subscription.planUnavailable.generic')
 }
 
 const getButtonSeverity = (
   tier: PricingTierConfig
 ): 'primary' | 'secondary' => {
-  if (isCurrentPlan(tier.key)) {
-    return isCancelled.value ? 'primary' : 'secondary'
-  }
+  if (getPlanAction(tier.key) === 'reactivate') return 'primary'
+  if (isSamePlan(tier.key)) return 'secondary'
   if (tier.key === 'creator') return 'primary'
   return 'secondary'
 }
 
-const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean =>
-  canSelectPersonalPlan.value &&
-  offersTransition(isCurrentPlan(tierKey)) &&
-  personalPlanActionPermitted.value
-
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>
-  isLoading || !canUsePersonalPlanAction(tier.key)
+  isLoading || getPlanAction(tier.key) === 'none'
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
@@ -915,11 +912,11 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
 }
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (isLoading || !canUsePersonalPlanAction(tierKey)) return
-  if (isCurrentPlan(tierKey)) {
-    if (isCancelled.value) {
-      emit('resubscribe')
-    }
+  if (isLoading) return
+  const action = getPlanAction(tierKey)
+  if (action === 'none') return
+  if (action === 'reactivate') {
+    emit('resubscribe')
     return
   }
   emit('subscribe', { tierKey, billingCycle: currentBillingCycle.value })

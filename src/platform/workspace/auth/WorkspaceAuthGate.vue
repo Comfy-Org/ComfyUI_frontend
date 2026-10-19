@@ -96,7 +96,7 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { SessionRevokedError } from '@/platform/auth/session/useSessionCookie'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { signedInOnWebSession } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import {
@@ -105,6 +105,7 @@ import {
 } from '@/platform/remoteConfig/remoteConfig'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ReportErrorOptions } from '@/platform/telemetry/reportError'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -165,9 +166,6 @@ async function initialize(): Promise<void> {
   const { isInitialized, isAuthenticated } = storeToRefs(authStore)
 
   try {
-    // Step 1: Wait for Firebase auth to resolve
-    // This is shared with router guard - both wait for the same thing,
-    // but this gate blocks rendering while router guard blocks navigation
     if (!isInitialized.value) {
       await until(isInitialized).toBe(true, {
         timeout: FIREBASE_INIT_TIMEOUT_MS,
@@ -176,15 +174,11 @@ async function initialize(): Promise<void> {
     }
     if (generation !== initializationGeneration) return
 
-    // Step 2: If not authenticated, nothing more to do
-    // Unauthenticated users don't have workspace context
     if (!isAuthenticated.value) {
       initializationState.value = 'ready'
       return
     }
 
-    // Step 3: Refresh feature flags with auth context
-    // Timeout prevents hanging if server is slow/unresponsive
     let timeoutId: ReturnType<typeof setTimeout>
     await Promise.race([
       refreshRemoteConfig({ useAuth: true, signal: controller.signal }),
@@ -226,7 +220,8 @@ async function initialize(): Promise<void> {
     if (generation !== initializationGeneration) return
     reportError(error, {
       surface: 'auth',
-      errorType: 'workspace_auth_gate_initialization_failure'
+      errorType: 'workspace_auth_gate_initialization_failure',
+      ...initializationFailureReport(error)
     })
     initializationRetryable.value = isRetryableInitializationError(error)
     initializationState.value =
@@ -239,6 +234,17 @@ async function initialize(): Promise<void> {
     if (generation !== initializationGeneration) return
     errorPanel.value?.focus()
   }
+}
+
+function initializationFailureReport(
+  error: unknown
+): Pick<ReportErrorOptions, 'level' | 'tags'> {
+  return error instanceof SessionRevokedError
+    ? {
+        level: 'warning',
+        tags: { failure_code: error.code, outcome: 'gave_up' }
+      }
+    : { level: 'error' }
 }
 
 function isRetryableInitializationError(error: unknown): boolean {
@@ -324,6 +330,8 @@ function initializeWorkspacesInBackground(): Promise<void> {
       return
     }
     await initializeWorkspaceMode()
+    if (generation !== initializationGeneration) return
+    void billingCapabilities.initialize()
   })().catch((error: unknown) => {
     if (generation === initializationGeneration) {
       console.warn(
