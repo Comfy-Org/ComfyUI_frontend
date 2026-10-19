@@ -20,9 +20,9 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/platform/remote/comfyui/execution/types.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {
       "name": "Websocket execution-output schemas accept backend result items and task outputs",

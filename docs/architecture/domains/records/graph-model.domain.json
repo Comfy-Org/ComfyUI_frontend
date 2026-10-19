@@ -413,7 +413,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["comfyui-api", "node-definition"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

@@ -24,9 +24,9 @@
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {
       "name": "V1 node definitions migrate to V2 and input spec trees report diagnostics within bounds",
