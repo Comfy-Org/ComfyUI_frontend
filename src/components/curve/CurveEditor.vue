@@ -109,12 +109,17 @@ const modelValue = defineModel<CurvePoint[]>({
   required: true
 })
 
+const emit = defineEmits<{
+  editEnd: []
+}>()
+
 const svgRef = useTemplateRef<SVGSVGElement>('svgRef')
 
 const { curvePath, handleSvgPointerDown, startDrag } = useCurveEditor({
   svgRef,
   modelValue,
-  interpolation: toRef(() => interpolation)
+  interpolation: toRef(() => interpolation),
+  onEditEnd: () => emit('editEnd')
 })
 
 function onSvgPointerDown(e: PointerEvent) {

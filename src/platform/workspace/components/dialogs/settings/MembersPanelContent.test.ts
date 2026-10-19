@@ -81,8 +81,6 @@ const {
       canInviteMembers: true,
       canManageInvites: true,
       canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }),
     mockUiConfig: ref({
@@ -93,7 +91,6 @@ const {
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null as string | null
     })
@@ -271,8 +268,6 @@ describe('MembersPanelContent', () => {
       canInviteMembers: true,
       canManageInvites: true,
       canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }
     mockUiConfig.value = {
@@ -283,7 +278,6 @@ describe('MembersPanelContent', () => {
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null
     }
@@ -581,8 +575,6 @@ describe('MembersPanelContent', () => {
         canInviteMembers: false,
         canManageInvites: false,
         canManageMembers: false,
-        canLeaveWorkspace: true,
-        canAccessWorkspaceMenu: true,
         canManageSubscription: false
       }
       mockUiConfig.value.showPendingTab = false

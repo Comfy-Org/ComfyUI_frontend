@@ -103,7 +103,8 @@ function connectAgentHeldWorkflow() {
     docInputNames: (nodeId) => follower.docInputNames(nodeId),
     docPromotedWidgets: (nodeId) => follower.docPromotedWidgets(nodeId),
     mayWritePromotedHost: (nodeId) => follower.mayWritePromotedHost(nodeId),
-    onWidgetWriteRefused: () => follower.notifyWidgetWriteRefused()
+    onWidgetWriteRefused: (nodeId, widgetName) =>
+      follower.notifyWidgetWriteRefused(nodeId, widgetName)
   })
   onTestFinished(() => minter.detach())
 
