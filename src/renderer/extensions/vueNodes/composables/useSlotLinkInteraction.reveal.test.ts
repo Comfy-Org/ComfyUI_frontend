@@ -17,9 +17,9 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import {
   createMockCanvasRenderingContext2D,
-  createTestCanvas,
-  createTestLink
-} from '@/utils/__tests__/litegraphTestUtils'
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
+import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 
 import {
   isRerouteVisibleForLinkDrag,
