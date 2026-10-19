@@ -770,6 +770,68 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('keeps a deferred live frame stale through a resubscribe while the graph is missing', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, status } = mountFollower('wf-1', true, () => graph.value)
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: false
+      })
+      expect(status().canvasMayBeStale).toBe(true)
+
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      graph.value = fromPartial<LGraph>({})
+      await nextTick()
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('keeps a deferred catch-up frame stale through a drop and an integrated ack', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, status } = mountFollower('wf-1', true, () => graph.value)
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: true
+      })
+      expect(status().canvasMayBeStale).toBe(true)
+
+      agentSocket.drop()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+      unmount()
+    })
+
     it('keeps a subscribed canvas stale across a tab detour until catch-up applies', async () => {
       const { unmount, status, isTargetActive } = mountFollower('wf-1')
       dispatchFrame('doc_subscribed', {

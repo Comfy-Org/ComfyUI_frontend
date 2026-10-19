@@ -684,7 +684,9 @@ function startAgentCrdtFollower(
   const retryFailedProjection = (workflowId: string): boolean => {
     const outcome = projection.retryFailed(workflowId)
     if (outcome === null) {
-      const pending = projection.hasPendingFailure(workflowId)
+      const pending =
+        projection.hasPendingFailure(workflowId) ||
+        (getGraph() === null && projectionFailureFor === workflowId)
       if (!pending) clearProjectionStaleness(workflowId)
       return !pending
     }
