@@ -10,7 +10,7 @@ export default defineConfig({
   retries: 0,
   reporter: [
     ['list'],
-    ['html', { outputFolder: 'playwright-report/storybook', open: 'never' }]
+    ['html', { outputFolder: '../playwright-report/storybook', open: 'never' }]
   ],
   outputDir: '../test-results/storybook',
   use: {

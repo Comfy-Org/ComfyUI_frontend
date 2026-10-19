@@ -61,6 +61,59 @@ test.describe('Marketing catalog', { tag: '@smoke' }, () => {
     })
   }
 
+  test('published manifest links resolve in the built catalog', async ({
+    request
+  }) => {
+    const indexResponse = await request.get('/index.json')
+    expect(indexResponse.ok()).toBe(true)
+    const manifestResponse = await request.get(
+      '/design-system/component-manifest.json'
+    )
+    expect(manifestResponse.ok()).toBe(true)
+    const index: { entries: Record<string, unknown> } =
+      await indexResponse.json()
+    const manifest: {
+      components: Array<{
+        stories: Array<{ storyId: string }>
+        agent: { storybookPath: string; docsPath: string }
+      }>
+      recipes: Array<{ storyId: string }>
+    } = await manifestResponse.json()
+    const ids = [
+      ...manifest.components.flatMap(({ stories, agent }) => [
+        ...stories.map(({ storyId }) => storyId),
+        agent.storybookPath.split('/').at(-1),
+        agent.docsPath.split('/').at(-1)
+      ]),
+      ...manifest.recipes.map(({ storyId }) => storyId)
+    ]
+    expect(ids.filter((id) => !id || !(id in index.entries))).toEqual([])
+  })
+
+  test('event recipe filters retain their matching articles', async ({
+    page
+  }) => {
+    await page.goto(
+      '/iframe.html?id=website-recipes-page-patterns--event&viewMode=story'
+    )
+    for (const [tab, visible, hidden] of [
+      [
+        'Livestreams',
+        'Building production-ready workflows',
+        'A practical guide to reusable graphs'
+      ],
+      [
+        'Community',
+        'A practical guide to reusable graphs',
+        'Building production-ready workflows'
+      ]
+    ]) {
+      await page.getByRole('button', { name: new RegExp(tab) }).click()
+      await expect(page.getByText(visible, { exact: true })).toBeVisible()
+      await expect(page.getByText(hidden, { exact: true })).toHaveCount(0)
+    }
+  })
+
   test('FAQ opens and closes with the keyboard', async ({ page }) => {
     await page.goto(
       '/iframe.html?id=website-common-faqsection--mobile&viewMode=story&globals=a11y.manual:true'

@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
   "componentCount": 528,
-  "documentedComponentCount": 71,
-  "missingStoryCount": 457,
+  "documentedComponentCount": 72,
+  "missingStoryCount": 456,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 3,
-    "page-local": 272,
+    "page-local": 271,
     "reusable-candidate": 24,
     "template-local": 125
   },
@@ -84,11 +84,6 @@
     },
     {
       "source": "src/components/blocks/PlayOverlay.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/blocks/WatchPageLayout.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -2314,7 +2309,6 @@
     "src/components/auth/AuthSpinnerIcon.vue",
     "src/components/auth/AuthToast.vue",
     "src/components/blocks/PlayOverlay.vue",
-    "src/components/blocks/WatchPageLayout.vue",
     "src/components/booking-confirmation/ResourceList.vue",
     "src/components/careers/HeroSection.vue",
     "src/components/careers/RolesSection.vue",

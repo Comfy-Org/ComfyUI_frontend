@@ -8,23 +8,25 @@ on:
       - 'packages/tailwind-utils/**'
       - 'pnpm-lock.yaml'
       - '.github/workflows/ci-marketing-storybook-preview.yaml'
+      - '.github/workflows/pr-marketing-storybook-preview.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  preview:
-    if: github.event.pull_request.head.repo.fork == false
+  verify:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
       - uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: false
       - name: Typecheck marketing stories
         run: pnpm --filter @comfyorg/website typecheck:storybook
       - name: Build marketing Storybook
@@ -37,6 +39,7 @@ jobs:
         if: always()
         with:
           name: marketing-storybook-browser-report
+          if-no-files-found: error
           path: apps/website/playwright-report/storybook
           retention-days: 7
       - name: Verify generated metadata
@@ -46,37 +49,9 @@ jobs:
           SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           node --input-type=module -e "import {writeFileSync} from 'node:fs'; writeFileSync('apps/website/dist/storybook/build-info.json', JSON.stringify({commit:process.env.SOURCE_SHA}) + '\n')"
-      - name: Deploy isolated preview
-        id: deploy
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
-            echo '::error::Marketing preview requires the existing Cloudflare Pages credentials.'
-            exit 1
-          fi
-          pnpm dlx wrangler@^4.0.0 pages deploy apps/website/dist/storybook \
-            --project-name=comfy-storybook --branch="marketing-pr-$PR_NUMBER" \
-            --commit-hash="$SOURCE_SHA" 2>&1 | tee marketing-deploy.log
-          URL=$(sed -n 's/.*\(https:\/\/[^ ]*\.pages.dev\).*/\1/p' marketing-deploy.log | head -1)
-          test -n "$URL"
-          printf 'url=%s\n' "$URL" >> "$GITHUB_OUTPUT"
-          printf '{"commit":"%s","url":"%s"}\n' "$SOURCE_SHA" "$URL" > marketing-preview.json
       - uses: actions/upload-artifact@v6
         with:
-          name: marketing-storybook-preview
-          path: marketing-preview.json
+          name: marketing-storybook-static
+          path: apps/website/dist/storybook
+          if-no-files-found: error
           retention-days: 7
-      - uses: ./.github/actions/upsert-comment-section
-        with:
-          pr-number: ${{ github.event.pull_request.number }}
-          section-name: marketing-storybook
-          section-content: |
-            ### Marketing Storybook
-            [Component catalog preview](${{ steps.deploy.outputs.url }})
-            Source commit: `${{ github.event.pull_request.head.sha }}`
-          comment-marker: '<!-- COMFYUI_FRONTEND_PR_REPORT -->'
-          token: ${{ github.token }}

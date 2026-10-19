@@ -17,6 +17,7 @@ const articles = [
 ].map((title, index) => ({
   id: `article-${index + 1}`,
   category: index % 2 === 0 ? 'Workflow' : 'Guide',
+  filterKey: index % 2 === 0 ? 'workflow' : 'guide',
   title,
   media: {
     type: 'image' as const,

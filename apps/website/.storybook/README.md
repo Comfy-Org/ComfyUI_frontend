@@ -14,9 +14,13 @@ routes, button variants, font metric overrides, or Safari fallbacks are added.
 CTA/arrow guidance is documented through existing variants. Proposed missing
 Hub components remain explicitly unimplemented and unapproved.
 
-`CI: Marketing Storybook Preview` publishes only PR previews under a distinct
-Cloudflare Pages branch, with the source SHA at `/build-info.json`. It requires
-the repository's existing Cloudflare credentials. The existing application
+`CI: Marketing Storybook Preview` verifies every PR, including forks, with a
+read-only token and uploads the static catalog. `PR: Marketing Storybook Preview`
+consumes successful runs from the trusted default branch, checks the current PR
+head and stamped artifact SHA, deploys a distinct Cloudflare Pages preview, and
+posts its link. Only that consumer receives the existing Cloudflare credentials
+and comment permission. New workflow-run consumers become active after merging
+them into the default branch. The source SHA is available at `/build-info.json`. The existing application
 Storybook and website preview workflows keep their commands and destinations.
 
 The generated metadata describes catalog coverage and source status; rendering

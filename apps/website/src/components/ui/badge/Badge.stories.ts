@@ -7,6 +7,13 @@ const meta: Meta<typeof Badge> = {
   component: Badge,
   tags: ['autodocs', 'stable'],
   args: { default: 'New' },
+  argTypes: {
+    variant: {
+      control: 'select',
+      options: ['default', 'subtle', 'category', 'accent', 'callout']
+    },
+    size: { control: 'select', options: ['md', 'xs', 'xxs'] }
+  },
   render: (args) => ({
     components: { Badge },
     setup: () => ({ args }),
@@ -18,7 +25,6 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {}
-export const Subtle: Story = { args: { variant: 'subtle' } }
 export const Category: Story = {
   args: { variant: 'category', default: 'Models' }
 }
@@ -28,4 +34,3 @@ export const Accent: Story = {
 export const Callout: Story = {
   args: { variant: 'callout', default: 'Featured' }
 }
-export const ExtraSmall: Story = { args: { size: 'xs' } }

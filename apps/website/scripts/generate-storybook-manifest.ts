@@ -1,6 +1,8 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 
+import { componentImport, storyId } from './storybook-metadata'
+
 type ComponentManifestEntry = {
   component: string
   source: string
@@ -84,17 +86,6 @@ async function findVueFiles(directory: string): Promise<string[]> {
   return paths.flat()
 }
 
-function storyId(title: string, exportName: string): string {
-  const sanitize = (value: string) =>
-    value
-      .replace(/[^a-zA-Z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .toLowerCase()
-  const storyName = exportName.replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-
-  return `${sanitize(title)}--${sanitize(storyName)}`
-}
-
 function capabilities(component: string): string[] {
   return [
     ...new Set(
@@ -169,9 +160,7 @@ async function manifestEntry(
   const title = [...contents.matchAll(/title:\s*'([^']+)'/g)]
     .map(([, value]) => value)
     .find((value) => value.startsWith('Website/'))
-  const componentImport = contents.match(
-    /import\s+([A-Z][A-Za-z0-9]*)\s+from\s+'(\.\/[^']+\.vue)'/
-  )
+  const importedComponent = componentImport(contents)
   const exports = [...contents.matchAll(/^export const (\w+):/gm)].map(
     ([, exportName]) => exportName
   )
@@ -179,19 +168,21 @@ async function manifestEntry(
   if (!title) {
     throw new Error(`Missing Storybook title in ${storyFile}`)
   }
-  if (!componentImport) {
+  if (!importedComponent) {
     throw new Error(`Missing component import in ${storyFile}`)
   }
   if (exports.length === 0) {
     throw new Error(`Unable to derive Storybook metadata from ${storyFile}`)
   }
 
-  const [, component, componentPath] = componentImport
+  const { component, componentPath } = importedComponent
   const needsTests = contents.includes("'needs-tests'")
   const stable = contents.includes("'stable'")
   const source = relative(
     websiteRoot,
-    resolve(dirname(storyFile), componentPath)
+    componentPath.startsWith('@/')
+      ? resolve(sourceRoot, componentPath.slice(2))
+      : resolve(dirname(storyFile), componentPath)
   )
 
   return {

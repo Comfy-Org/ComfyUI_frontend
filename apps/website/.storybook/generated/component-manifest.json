@@ -12,7 +12,7 @@
     "unknownPattern": "Treat as a gap; do not invent a local substitute."
   },
   "componentCount": 72,
-  "storyCount": 249,
+  "storyCount": 247,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -1519,22 +1519,22 @@
       ]
     },
     {
-      "component": "WatchAuthorCard",
-      "source": "src/components/blocks/WatchAuthorCard.vue",
+      "component": "WatchPageLayout",
+      "source": "src/components/blocks/WatchPageLayout.vue",
       "storyFile": "src/components/blocks/WatchPageLayout.stories.ts",
       "title": "Website/Blocks/WatchPageLayout",
       "status": "documented",
       "category": "blocks",
-      "capabilities": ["linked-content"],
+      "capabilities": ["responsive-layout"],
       "testEligible": true,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
         "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
-        "sourceOfTruth": "src/components/blocks/WatchAuthorCard.vue"
+        "sourceOfTruth": "src/components/blocks/WatchPageLayout.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/WatchAuthorCard",
+        "importPath": "@/components/blocks/WatchPageLayout",
         "storybookPath": "/?path=/story/website-blocks-watchpagelayout--default",
         "docsPath": "/?path=/docs/website-blocks-watchpagelayout--docs",
         "states": ["Default", "TitleOnly"],
@@ -2378,7 +2378,7 @@
         },
         {
           "exportName": "Mp4Only",
-          "storyId": "website-common-sitevideo--mp4-only"
+          "storyId": "website-common-sitevideo--mp-4-only"
         }
       ]
     },
@@ -2569,14 +2569,7 @@
         "importPath": "@/components/ui/badge/Badge",
         "storybookPath": "/?path=/story/website-ui-badge--default",
         "docsPath": "/?path=/docs/website-ui-badge--docs",
-        "states": [
-          "Default",
-          "Subtle",
-          "Category",
-          "Accent",
-          "Callout",
-          "ExtraSmall"
-        ],
+        "states": ["Default", "Category", "Accent", "Callout"],
         "hasInteractionTest": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
@@ -2585,10 +2578,6 @@
         {
           "exportName": "Default",
           "storyId": "website-ui-badge--default"
-        },
-        {
-          "exportName": "Subtle",
-          "storyId": "website-ui-badge--subtle"
         },
         {
           "exportName": "Category",
@@ -2601,10 +2590,6 @@
         {
           "exportName": "Callout",
           "storyId": "website-ui-badge--callout"
-        },
-        {
-          "exportName": "ExtraSmall",
-          "storyId": "website-ui-badge--extra-small"
         }
       ]
     },

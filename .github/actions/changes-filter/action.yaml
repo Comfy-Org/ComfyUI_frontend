@@ -106,8 +106,7 @@ runs:
             - '.storybook/**'
             - 'build/**'
             - 'vite.config.mts'
-            - 'apps/website/src/**'
-            - 'apps/website/.storybook/**'
+            - 'apps/website/src/styles/**'
           docs:
             - 'docs/**'
             - '**/*.md'

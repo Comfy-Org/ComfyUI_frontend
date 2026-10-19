@@ -1,5 +1,4 @@
 import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 import type { StorybookConfig } from '@storybook/vue3-vite'
 import tailwindcss from '@tailwindcss/vite'
@@ -19,6 +18,7 @@ const isNamedPlugin = (plugin: unknown): plugin is { name: string } =>
 const config: StorybookConfig = {
   stories: [
     '../src/storybook/*.mdx',
+    '../src/components/workshop/PlaygroundOutput.stories.ts',
     '../src/{components/{blocks,common,ui,product},templates,storybook}/**/*.stories.@(js|jsx|mjs|ts|tsx)'
   ],
   addons: [
@@ -60,9 +60,7 @@ const config: StorybookConfig = {
       resolve: {
         alias: {
           '@': websiteSource,
-          'astro:env/client': fileURLToPath(
-            new URL('./astroEnv.ts', import.meta.url)
-          )
+          'astro:env/client': join(websiteSource, 'test/astroEnv.ts')
         }
       },
       optimizeDeps: {

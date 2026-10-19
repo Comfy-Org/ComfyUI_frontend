@@ -32,7 +32,6 @@ const meta: Meta<typeof PlaygroundOutput> = {
   ],
   args: {
     now: NOW,
-    modelName: 'SwitchX Image Edit',
     state: { status: 'idle' }
   }
 }

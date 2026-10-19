@@ -13,8 +13,8 @@ const meta: Meta<typeof SiteVideo> = {
     })
   ],
   args: {
-    name: 'hero',
-    baseUrl: 'https://media.comfy.org/website/minimax',
+    name: 'terminal-session-v2',
+    baseUrl: 'https://media.comfy.org/website/cli',
     width: 1280,
     formats: ['webm', 'mp4'],
     poster: '/images/demos/image-to-video-thumb.webp',
