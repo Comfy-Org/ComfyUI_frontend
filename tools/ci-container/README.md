@@ -174,3 +174,7 @@ Publishing and consumer adoption remain separate stages of
 `ghcr.io/comfy-org/comfyui-ci-container:0.0.27`. Changing the updater to discover
 monorepo source tags, updating consumers, and archiving the old repository
 belong to FE-3240. Keep the old package versions available for rollback.
+Keep the archived repository readable: every publication checks that its
+publisher is disabled and its runs have finished. Before deleting the old
+repository, remove those checks in a reviewed change after confirming that
+the old publisher can no longer run. A missing repository stops publication.
