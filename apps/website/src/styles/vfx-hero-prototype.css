@@ -1,0 +1,196 @@
+.vfx-hero-stage {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.vfx-hero-view {
+  width: 100%;
+}
+.vfx-sample-scene {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  padding-top: 0;
+}
+.vfx-sample-scene video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 6px;
+}
+.vfx-connected .vfx-sample-scene .wf-node-heading {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  margin: 0;
+}
+.vfx-sample-wire {
+  width: 100%;
+  height: 80px;
+  overflow: visible;
+}
+.vfx-sample-wire path {
+  fill: none;
+  stroke: var(--color-primary-comfy-yellow);
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+.vfx-sample-choices {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 24px;
+}
+.vfx-sample-choices button {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  text-align: start;
+  color: var(--color-primary-comfy-canvas);
+  font-size: 12px;
+}
+.vfx-sample-choices img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+.vfx-sample-choices [aria-pressed='true'] img {
+  border-color: var(--color-primary-comfy-yellow);
+}
+.vfx-hero-stage button:focus-visible {
+  outline: 2px solid var(--color-primary-comfy-yellow);
+  outline-offset: 4px;
+}
+.vfx-hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+}
+.vfx-workspace-heading button {
+  font-size: 12px;
+  color: var(--color-primary-comfy-canvas);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.vfx-hero-caption {
+  margin-top: 12px;
+  color: var(--color-primary-comfy-canvas);
+  opacity: 0.7;
+  font-size: 12px;
+}
+.vfx-workspace-heading h2 {
+  margin-top: 16px;
+  font-size: 24px;
+  color: var(--color-primary-comfy-canvas);
+}
+.vfx-workspace-enter-active,
+.vfx-workspace-leave-active {
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+.vfx-workspace-enter-from {
+  opacity: 0;
+  transform: translateX(48px);
+}
+.vfx-workspace-leave-to {
+  opacity: 0;
+  transform: translateX(-48px);
+}
+.vfx-hero-stage:not(.is-assembled) .vfx-sample-source,
+.vfx-hero-stage:not(.is-assembled) .vfx-sample-result,
+.vfx-hero-stage:not(.is-assembled) .vfx-sample-choices,
+.vfx-hero-stage:not(.is-assembled) .vfx-sample-wire {
+  opacity: 0;
+}
+.is-assembled .vfx-sample-source {
+  animation: vfx-assemble 350ms ease both;
+}
+.is-assembled .vfx-sample-wire {
+  animation: vfx-assemble 350ms 180ms ease both;
+}
+.is-assembled .vfx-sample-result {
+  animation: vfx-assemble 350ms 360ms ease both;
+}
+.is-assembled .vfx-sample-choices {
+  animation: vfx-assemble 350ms 600ms ease both;
+}
+.vfx-hero-stage[data-workspace='true'] .vfx-sample-scene > * {
+  animation: none;
+}
+@keyframes vfx-assemble {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 639px) {
+  .vfx-hero-stage {
+    min-height: 0;
+  }
+  .vfx-sample-scene {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .vfx-sample-choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .vfx-connected .vfx-sample-scene .wf-node-heading {
+    font-size: 9px;
+    padding: 4px;
+    top: 4px;
+    left: 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vfx-hero-stage .vfx-sample-scene > * {
+    animation: none;
+    opacity: 1;
+  }
+  .vfx-workspace-enter-active,
+  .vfx-workspace-leave-active {
+    transition: none;
+  }
+}
+
+.vfx-hero-stage.is-settled .vfx-sample-scene > * {
+  animation: none;
+}
+
+@media (min-width: 768px) {
+  .vfx-hero-prototype .vfx-sample-result {
+    aspect-ratio: 2.87;
+  }
+  .vfx-hero-prototype .vfx-sample-result video {
+    height: 100%;
+    object-fit: cover;
+  }
+}
+.vfx-hero-prototype .vfx-sample-choices {
+  margin-top: 20px;
+  gap: 24px;
+}
+.vfx-hero-prototype .vfx-sample-choices img {
+  border: 0;
+  margin-bottom: 0;
+  border-radius: 12px;
+}
+@media (max-width: 767px) {
+  .vfx-hero-prototype .vfx-sample-choices {
+    gap: 12px;
+    margin-top: 16px;
+  }
+}

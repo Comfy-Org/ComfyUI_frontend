@@ -13,8 +13,22 @@ function linkPlacement(
 export function mountVfxCampaign(root: HTMLElement): () => void {
   function onPlay(event: Event) {
     if (!(event.target instanceof HTMLVideoElement)) return
+    const canvas = event.target.closest('vfx-workflow-showcase')
+    if (canvas && event.target.matches('video[data-src]')) return
+    const comparison =
+      canvas ?? event.target.closest('[data-synchronized-comparison]')
     for (const video of root.querySelectorAll('video')) {
-      if (video !== event.target && !video.paused) video.pause()
+      if (
+        video !== event.target &&
+        !(
+          comparison &&
+          video.closest('vfx-workflow-showcase') &&
+          video.matches('video[data-src]')
+        ) &&
+        !comparison?.contains(video) &&
+        !video.paused
+      )
+        video.pause()
     }
   }
 

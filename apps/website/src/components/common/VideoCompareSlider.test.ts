@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, h } from 'vue'
+import { createSSRApp, defineComponent, h, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import VideoCompareSlider from './VideoCompareSlider.vue'
@@ -45,6 +45,50 @@ async function pressAt(
 }
 
 describe('VideoCompareSlider', () => {
+  it('lets the synchronized controller coordinate autoplay after readiness', async () => {
+    const { beforeVideo, afterVideo } = await renderSlider({
+      synchronizedPlayback: true
+    })
+    expect(beforeVideo.autoplay).toBe(false)
+    expect(afterVideo.autoplay).toBe(false)
+    expect(beforeVideo).toHaveAttribute('preload', 'auto')
+    expect(beforeVideo.muted).toBe(true)
+    expect(afterVideo.muted).toBe(true)
+  })
+
+  it('seeks both paused synchronized clips when their shared time changes', async () => {
+    const time = ref(0)
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(VideoCompareSlider, {
+            ...props,
+            synchronizedPlayback: true,
+            paused: true,
+            time: time.value,
+            'onUpdate:time': (value: number) => {
+              time.value = value
+            }
+          })
+      })
+    )
+    const beforeVideo = screen.getByTestId<HTMLVideoElement>(
+      'video-compare-before'
+    )
+    const afterVideo = screen.getByTestId<HTMLVideoElement>(
+      'video-compare-after'
+    )
+    vi.spyOn(beforeVideo, 'duration', 'get').mockReturnValue(4.5)
+    vi.spyOn(afterVideo, 'duration', 'get').mockReturnValue(4.5)
+    time.value = 1.25
+    await waitFor(() => {
+      expect(beforeVideo.currentTime).toBe(1.25)
+      expect(afterVideo.currentTime).toBe(1.25)
+    })
+    expect(beforeVideo.paused).toBe(true)
+    expect(afterVideo.paused).toBe(true)
+  })
+
   beforeEach(() => {
     motion.reduced = false
   })
