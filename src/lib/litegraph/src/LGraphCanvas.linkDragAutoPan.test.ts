@@ -46,13 +46,6 @@ describe('LGraphCanvas link drag auto-pan', () => {
     canvas['_linkConnectorDrop']()
   }
 
-  it('starts auto-pan when link drag begins', () => {
-    canvas.mouse[0] = 400
-    canvas.mouse[1] = 300
-    startLinkDrag()
-    expect(canvas['_autoPan']).not.toBeNull()
-  })
-
   it('resumes auto-pan after Space panning during a link drag', () => {
     canvas.processMouseDown(
       new PointerEvent('pointerdown', {

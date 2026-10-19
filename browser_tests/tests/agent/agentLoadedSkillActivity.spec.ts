@@ -13,14 +13,14 @@ test.describe('Loaded skill activity', { tag: ['@cloud', '@ui'] }, () => {
   test('keeps the visible skill name through completion', async ({
     acceptedTurns,
     agentPanel,
-    getWebSocket
+    getAgentSocket
   }) => {
     await agentPanel.open()
     await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('Use the comfy-director skill')
     await expect.poll(() => acceptedTurns).toHaveLength(1)
 
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
     const event = (status: 'running' | 'success', skill?: string) =>
       ({
         type: 'agent_tool_call',

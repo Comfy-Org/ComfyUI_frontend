@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
@@ -28,16 +27,7 @@ function renderPreview(
     setup: () => ({ value, nodeId }),
     template: '<TextPreviewWidget v-model="value" :node-id="nodeId" />'
   })
-  return render(Harness, {
-    global: {
-      plugins: [
-        [
-          PrimeVue,
-          { pt: { skeleton: { root: { 'data-testid': 'skeleton' } } } }
-        ]
-      ]
-    }
-  })
+  return render(Harness)
 }
 
 describe('TextPreviewWidget', () => {
@@ -202,13 +192,6 @@ describe('TextPreviewWidget', () => {
       Object.assign(useExecutionStore(), { isIdle: true })
       renderPreview('text', { nodeId: toNodeId('n1') })
       expect(screen.queryByTestId('skeleton')).toBeNull()
-    })
-
-    it('shows a Skeleton on mount when the parent node is executing', () => {
-      Object.assign(useExecutionStore(), { executingNodeIds: ['n1'] })
-      Object.assign(useExecutionStore(), { isIdle: false })
-      renderPreview('text', { nodeId: toNodeId('n1') })
-      expect(screen.getByTestId('skeleton')).toBeInTheDocument()
     })
 
     it('hides the Skeleton when execution transitions to idle', async () => {

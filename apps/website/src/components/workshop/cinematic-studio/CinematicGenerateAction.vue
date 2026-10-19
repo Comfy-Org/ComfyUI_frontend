@@ -4,14 +4,14 @@ import { computed } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ShotEstimate } from '../../../lib/workshop/cinematic-studio/estimate'
+import type { ShotEstimate } from '@/lib/workshop/cinematic-studio/estimate'
 import {
   formatCreditRange,
   takesWithin
-} from '../../../lib/workshop/cinematic-studio/estimate'
-import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+} from '@/lib/workshop/cinematic-studio/estimate'
+import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import CinematicCostLabel from './CinematicCostLabel.vue'
 import CinematicGateButton from './CinematicGateButton.vue'
 

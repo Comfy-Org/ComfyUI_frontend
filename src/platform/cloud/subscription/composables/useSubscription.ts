@@ -6,6 +6,8 @@ import {
   useEventListener
 } from '@vueuse/core'
 
+import type { BillingPortalTarget } from '@comfyorg/account-core/billing'
+
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -15,7 +17,7 @@ import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetc
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError as reportTelemetryError } from '@/platform/telemetry/reportError'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
 import type {
   CheckoutAttributionMetadata,
   ResubscribeClickMetadata,
@@ -35,14 +37,10 @@ import {
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import { useDialogService } from '@/services/dialogService'
 import { toTierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { operations } from '@/types/comfyRegistryTypes'
-import {
-  isWorkspaceBillingRequiredError,
-  parseErrorResponse
-} from '@/platform/remote/comfyui/errors'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import {
   PENDING_SUBSCRIPTION_CHECKOUT_EVENT,
   PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
@@ -60,6 +58,7 @@ import {
   runReportedCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 type CloudSubscriptionCheckoutResponse = NonNullable<
   operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
@@ -116,9 +115,7 @@ function useSubscriptionInternal() {
 
     return subscriptionStatus.value?.is_active ?? false
   })
-  const { reportError, accessBillingPortal, accessBillingPortalDirect } =
-    useAuthActions()
-  const { showSubscriptionRequiredDialog } = useDialogService()
+  const { reportError, accessBillingPortalDirect } = useAuthActions()
 
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -555,7 +552,7 @@ function useSubscriptionInternal() {
 
         if (!response.checkout_url) throw missingCheckoutUrlError()
 
-        if (!window.open(response.checkout_url, '_blank')) {
+        if (!openBillingUrl(response.checkout_url)) {
           throw new PaymentPopupBlockedError(
             t('subscription.preview.paymentPopupBlocked')
           )
@@ -566,10 +563,6 @@ function useSubscriptionInternal() {
     )
 
   const subscribe = wrapWithErrorHandlingAsync(subscribeDirect, reportError)
-
-  const showSubscriptionDialog = (options?: SubscriptionDialogOptions) => {
-    void showSubscriptionRequiredDialog(options)
-  }
 
   /**
    * Whether cloud subscription mode is enabled (cloud distribution with subscription_required config).
@@ -586,28 +579,30 @@ function useSubscriptionInternal() {
       shouldWatchCancellation: isSubscriptionEnabled
     })
 
-  const manageSubscription = async () => {
-    let didOpenPortal: boolean | undefined
+  const openBillingPortal = async (
+    target: BillingPortalTarget,
+    options?: { cancelSubscription?: boolean }
+  ) => {
+    const portal = createBillingPortalReporter(telemetry, target)
+    let opened: boolean
     try {
-      didOpenPortal = await accessBillingPortalDirect()
-    } catch (err) {
-      // The legacy billing adapter recovers from a rail-mismatch refusal.
-      if (isWorkspaceBillingRequiredError(err)) throw err
-      reportError(err)
+      opened = await accessBillingPortalDirect(undefined, options)
+    } catch (error) {
+      portal.failed(error, 'legacy')
+      throw error
     }
-    if (!didOpenPortal) {
-      return
-    }
-
-    startCancellationWatcher()
+    if (opened) portal.opened('legacy')
+    else portal.blocked('legacy')
+    return opened
   }
 
-  const requireActiveSubscription = async (): Promise<void> => {
-    await fetchSubscriptionStatus()
-
-    if (!canAccessSubscriptionFeatures.value) {
-      showSubscriptionDialog({ reason: 'subscription_required' })
+  const manageSubscription = async (options?: {
+    cancelSubscription?: boolean
+  }) => {
+    if (!(await openBillingPortal('manage_subscription', options))) {
+      throw new PaymentPopupBlockedError(t('subscription.billingTabBlocked'))
     }
+    startCancellationWatcher()
   }
 
   const handleViewUsageHistory = () => {
@@ -618,9 +613,9 @@ function useSubscriptionInternal() {
     window.open('https://docs.comfy.org', '_blank')
   }
 
-  const handleInvoiceHistory = async () => {
-    await accessBillingPortal()
-  }
+  const handleInvoiceHistory = wrapWithErrorHandlingAsync(async () => {
+    await openBillingPortal('invoices')
+  }, reportError)
 
   type PendingCheckoutRecoverySource =
     | 'bootstrap'
@@ -853,6 +848,13 @@ function useSubscriptionInternal() {
     if (scope === observedStatusScope) return
     observedStatusScope = scope
     statusScopeGeneration += 1
+    // The invoice link is a bearer payment URL: never carry it across scopes.
+    if (subscriptionStatus.value?.renewal_invoice) {
+      subscriptionStatus.value = {
+        ...subscriptionStatus.value,
+        renewal_invoice: undefined
+      }
+    }
   }
 
   watch(
@@ -929,7 +931,7 @@ function useSubscriptionInternal() {
     const rail = useBillingReadRail()
     try {
       const status = rail
-        ? await readOnRail(rail.readStatus)
+        ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       return status
     } catch (error) {
@@ -1122,9 +1124,7 @@ function useSubscriptionInternal() {
     subscribeDirect,
     fetchStatus,
     fetchStatusDirect: fetchSubscriptionStatus,
-    showSubscriptionDialog,
     manageSubscription,
-    requireActiveSubscription,
     handleViewUsageHistory,
     handleLearnMore,
     handleInvoiceHistory

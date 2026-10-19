@@ -1,5 +1,6 @@
 import type { Page, WebSocketRoute } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { AgentAskServerFrame } from '@comfyorg/ingest-types'
 
 import {
   DOC_PROTOCOL_VERSION,
@@ -20,6 +21,7 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import type {
   ParsedWireBatch,
@@ -27,6 +29,7 @@ import type {
 } from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
+const COMFY_SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 
 /**
  * ComfyUI execution frames the fake host can emit alongside doc and agent
@@ -50,6 +53,7 @@ export type ExecutionHostFrame =
  * `hold` records it and never answers, so the batch stays in flight.
  */
 export type HumanOpsHost = 'apply' | 'hold'
+export type HostUpdateSink = (frame: HostFrame) => void
 
 /** One `doc_*` frame the page sent, as the test attaches it. */
 export interface ClientDocFrame {
@@ -57,9 +61,11 @@ export interface ClientDocFrame {
   atMs: number
   type: string
   workflowId: string | null
+  stateVector: string | null
   /** `op:node_id` per op for a `doc_ops` frame; empty otherwise. */
   ops: string[]
   opIds: string[]
+  connection: number
 }
 
 interface ParsedClientDocFrame {
@@ -102,14 +108,19 @@ function parseClientDocFrame(
   }
 }
 
-/** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
   private refuseReason: string | null = null
   private refusalsLeft = 0
   private refusedSubscribes = 0
 
   private socket: WebSocketRoute | null = null
+  private comfySocket: WebSocketRoute | null = null
+  private connections = 0
   private subscribes = 0
+  private subscribeAnswer = (stateVector: string): HostFrame[] => [
+    this.host.subscribed(),
+    this.host.catchUp(stateVector)
+  ]
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
   private readonly heldBatches: WireOpEnvelope[][] = []
@@ -123,47 +134,50 @@ export class AgentFollowerHostSocket {
     private readonly page: Page,
     private readonly workflowId: string,
     private readonly host: HostDoc,
-    private readonly socketSid: string,
-    private readonly humanOpsHost: HumanOpsHost = 'hold'
+    private readonly humanOpsHost: HumanOpsHost = 'hold',
+    private readonly hostUpdateSink?: HostUpdateSink
   ) {}
 
   async install(): Promise<void> {
     await this.page.routeWebSocket(/\/ws/, (socket) => {
-      this.socket = socket
-      socket.onMessage((raw) => this.onClientFrame(raw))
+      this.comfySocket = socket
       socket.send(
         JSON.stringify({
           type: 'status',
           data: {
             status: { exec_info: { queue_remaining: 0 } },
-            sid: this.socketSid
+            sid: COMFY_SOCKET_SID
           }
         })
       )
     })
+    await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
+      this.connections += 1
+      this.socket = socket
+      socket.onMessage((raw) => this.onClientFrame(raw))
+    })
   }
 
-  send(frame: AgentWsEvent | HostFrame): void {
+  send(frame: AgentWsEvent | AgentAskServerFrame | HostFrame): void {
     if (frame.type.startsWith('doc_') || frame.type === 'awareness') {
       if (parseServerDocFrame(frame) === null)
         throw new Error(`host frame ${frame.type} is not a valid doc frame`)
     } else if (!parseAgentWsEvent(frame).success) {
       throw new Error(`agent event ${frame.type} is not a valid agent event`)
     }
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    if (!this.socket)
+      throw new Error('the panel has not opened the agent socket yet')
     this.socket.send(JSON.stringify(frame))
   }
 
-  /** Emits a ComfyUI execution frame on the shared `/ws`. */
   sendExecution(frame: ExecutionHostFrame): void {
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
-    this.socket.send(JSON.stringify(frame))
+    if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
+    this.comfySocket.send(JSON.stringify(frame))
   }
 
-  /** Emits a binary ComfyUI execution frame on the shared `/ws`. */
   sendExecutionBinary(frame: Buffer): void {
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
-    this.socket.send(frame)
+    if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
+    this.comfySocket.send(frame)
   }
 
   async waitForSubscribe(): Promise<void> {
@@ -203,8 +217,10 @@ export class AgentFollowerHostSocket {
       atMs: Date.now() - this.createdAt,
       type: frame.type,
       workflowId: frame.workflowId,
+      stateVector: frame.stateVector,
       ops: ops.map((op) => opLabel(op)),
-      opIds: ops.map((op) => op.op_id)
+      opIds: ops.map((op) => op.op_id),
+      connection: this.connections
     })
   }
 
@@ -266,17 +282,19 @@ export class AgentFollowerHostSocket {
     this.refusalsLeft = times
   }
 
+  answerSubscribesWith(answer: (stateVector: string) => HostFrame[]): void {
+    this.subscribeAnswer = answer
+  }
+
   private answerSubscribe(stateVector: string): void {
     if (this.refuseReason !== null && this.refusalsLeft > 0) {
       this.refusalsLeft -= 1
       this.refusedSubscribes += 1
       this.send(this.host.subscribeRefused(this.refuseReason))
-      this.subscribes += 1
       this.resolveSubscribed?.()
       return
     }
-    this.send(this.host.subscribed())
-    this.send(this.host.catchUp(stateVector))
+    for (const frame of this.subscribeAnswer(stateVector)) this.send(frame)
     this.subscribes += 1
     this.resolveSubscribed?.()
   }
@@ -303,7 +321,7 @@ export class AgentFollowerHostSocket {
     const { result, update, outcomes } = this.host.applyWire(opsResult.ops)
     this.humanOutcomes.push(...outcomes)
     this.send(result)
-    if (update) this.send(update)
+    if (update) (this.hostUpdateSink ?? ((frame) => this.send(frame)))(update)
   }
 
   // A doc_ops batch for a workflow this host does not serve gets a failed
@@ -338,13 +356,22 @@ export class AgentFollowerHostSocket {
     }
   }
 
-  /** Rises once per follower subscribe, after the catch-up frame was sent. */
+  /**
+   * Rises once per subscribe the host accepted, after its answer was sent.
+   * A custom answer from {@link answerSubscribesWith} may carry no catch-up;
+   * refused subscribes count only in {@link refusedSubscribeCount}.
+   */
   subscribeCount(): number {
     return this.subscribes
   }
 
+  connectionCount(): number {
+    return this.connections
+  }
+
   async disconnect(): Promise<void> {
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    if (!this.socket)
+      throw new Error('the panel has not opened the agent socket yet')
     await this.socket.close()
   }
 

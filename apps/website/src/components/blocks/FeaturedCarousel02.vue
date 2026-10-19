@@ -10,13 +10,13 @@ import { computed, ref, useTemplateRef } from 'vue'
 
 import type { HTMLAttributes } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { resolveRel } from '../../utils/cta'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import Badge from '../ui/badge/Badge.vue'
-import Button from '../ui/button/Button.vue'
+import type { Locale } from '@/i18n/translations'
+import { useCarouselAutoplay } from '@/composables/useCarouselAutoplay'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { resolveRel } from '@/utils/cta'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 type FeaturedSlideMedia = {
   type: 'image' | 'video'

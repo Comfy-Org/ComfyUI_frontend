@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { workshopDisplaySchema } from '../content/workshop-display.schema'
+import { workshopDisplaySchema } from '@/content/workshop-display.schema'
 import type { WorkshopModelDetail } from './models-catalogue'
 import { schemaForModel, validateForm } from './workshop-playground'
 import { workshopPromptDefaults } from './workshop-prompt-defaults'

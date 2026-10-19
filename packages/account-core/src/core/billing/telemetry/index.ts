@@ -18,6 +18,11 @@ export {
 } from './payload.js'
 export { BILLING_TELEMETRY_EVENTS } from './eventNames.js'
 export { toBillingTelemetryEvent } from './operationLifecycleEvent.js'
+export type {
+  CheckoutHostedStep,
+  CheckoutRedirectNavigation
+} from './checkoutRedirectEvent.js'
+export type { BillingPortalTarget } from './portalEvent.js'
 export type { SubscriptionCheckoutUi } from './subscriptionCheckoutEvent.js'
 export type {
   WebEntryBillingEvent,
@@ -36,14 +41,19 @@ export type {
 } from './webSessionEvent.js'
 export type {
   CheckoutAssignmentStatus,
+  CheckoutEndingAttribution,
+  CheckoutEndingKind,
   CheckoutEntryFlow,
+  CheckoutExit,
   CheckoutEntrySource,
   CheckoutJourneyArm,
   CheckoutJourneyContext,
+  CheckoutJourneyPhase,
   CheckoutJourneyPhaseEvent,
   CheckoutJourneyTelemetryEvent,
   CheckoutJourneyTelemetryEventName,
   CheckoutJourneyTelemetryEventPayload,
+  CheckoutMethodKind,
   CheckoutUiMode
 } from './checkoutJourney.js'
 export {
@@ -53,6 +63,8 @@ export {
   getCheckoutJourneyTelemetryEventPayload,
   getCloudAppCheckoutJourneyTelemetryEventPayload
 } from './checkoutJourney.js'
+export type { TopupAmountPreset } from './topupEvent.js'
+export { getTopupAmountPreset, TOPUP_AMOUNT_PRESETS_USD } from './topupEvent.js'
 export type {
   BillingCycle,
   BillingTierKey,

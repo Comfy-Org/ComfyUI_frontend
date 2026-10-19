@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
 
 const EXTENSION_ERROR = 'Invalid call to runtime.sendMessage(). Tab not found.'
+const MESSAGING_ERROR =
+  '[messaging] In this JS context, only one listener can be setup for queryMediaBinding'
 
 describe('third-party error noise', () => {
   it.for([
@@ -21,6 +23,13 @@ describe('third-party error noise', () => {
         exception: { values: [{ value: EXTENSION_ERROR }] }
       },
       hint: {}
+    },
+    {
+      event: {
+        type: undefined,
+        exception: { values: [{ value: `Error: ${MESSAGING_ERROR}` }] }
+      },
+      hint: {}
     }
   ] satisfies Array<{ event: ErrorEvent; hint: EventHint }>)(
     'drops the extension error from Sentry',
@@ -28,6 +37,77 @@ describe('third-party error noise', () => {
       expect(sentryThirdPartyErrorFilter(event, hint)).toBeNull()
     }
   )
+
+  it.for([
+    {
+      event: { type: undefined },
+      hint: {
+        originalException: new DOMException(
+          'The user aborted a request.',
+          'AbortError'
+        )
+      }
+    },
+    {
+      event: {
+        type: undefined,
+        exception: {
+          values: [{ type: 'AbortError', value: 'The user aborted a request.' }]
+        }
+      },
+      hint: {}
+    },
+    {
+      event: {
+        type: undefined,
+        exception: {
+          values: [
+            { type: 'TypeError', value: 'cause' },
+            { type: 'AbortError', value: 'The user aborted a request.' }
+          ]
+        }
+      },
+      hint: {}
+    }
+  ] satisfies Array<{ event: ErrorEvent; hint: EventHint }>)(
+    'drops intentional AbortErrors from Sentry',
+    ({ event, hint }) => {
+      expect(sentryThirdPartyErrorFilter(event, hint)).toBeNull()
+    }
+  )
+
+  it('keeps a first-party error that wraps an AbortError cause', () => {
+    const event = {
+      type: undefined,
+      exception: {
+        values: [
+          { type: 'AbortError', value: 'The user aborted a request.' },
+          { type: 'Error', value: 'Failed to load model list' }
+        ]
+      }
+    } satisfies ErrorEvent
+
+    expect(
+      sentryThirdPartyErrorFilter(event, {
+        originalException: new Error('Failed to load model list', {
+          cause: new DOMException('The user aborted a request.', 'AbortError')
+        })
+      })
+    ).toBe(event)
+  })
+
+  it('keeps other error types', () => {
+    const event = {
+      type: undefined,
+      exception: { values: [{ type: 'TypeError', value: 'Failed to fetch' }] }
+    } satisfies ErrorEvent
+
+    expect(
+      sentryThirdPartyErrorFilter(event, {
+        originalException: new TypeError('Failed to fetch')
+      })
+    ).toBe(event)
+  })
 
   it('keeps ordinary Sentry events unchanged', () => {
     const event = {

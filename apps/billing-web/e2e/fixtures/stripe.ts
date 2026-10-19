@@ -18,6 +18,9 @@ const FAKE_STRIPE_JS = `
   window.__e2eFakeStripe = {
     confirmationTokens: 0,
     nextActions: 0,
+    // Payment elements taken off the page, so a spec can tell a form kept as
+    // typed from one mounted afresh.
+    unmounts: 0,
     // Every argument the app actually passed to handleNextAction, so a spec
     // can tell "called correctly" from "called with the wrong secret".
     nextActionCalls: []
@@ -29,8 +32,12 @@ const FAKE_STRIPE_JS = `
     if (failing) window.__e2eStripeLoadErrors -= 1
     return {
       mount() {},
-      unmount() {},
-      destroy() {},
+      unmount() {
+        window.__e2eFakeStripe.unmounts += 1
+      },
+      destroy() {
+        window.__e2eFakeStripe.unmounts += 1
+      },
       on(event, handler) {
         if (event === (failing ? 'loaderror' : 'ready'))
           setTimeout(() => handler({ error: { code: 'e2e_load_error' } }))
@@ -62,8 +69,10 @@ const FAKE_STRIPE_JS = `
       },
       // The intent's next step as Stripe reports it: an in-page challenge,
       // or the redirect a method such as Alipay finishes on.
-      retrievePaymentIntent: () =>
-        Promise.resolve({
+      // A spec sets window.__e2eStripeHoldRetrieve to keep the answer back
+      // until it calls window.__e2eFakeStripe.releaseRetrieve.
+      retrievePaymentIntent: () => {
+        const answer = {
           paymentIntent: window.__e2eStripeIntentSettled
             ? { status: 'succeeded', next_action: null }
             : {
@@ -74,7 +83,12 @@ const FAKE_STRIPE_JS = `
                 : 'use_stripe_sdk'
             }
           }
-        }),
+        }
+        if (!window.__e2eStripeHoldRetrieve) return Promise.resolve(answer)
+        return new Promise((resolve) => {
+          window.__e2eFakeStripe.releaseRetrieve = () => resolve(answer)
+        })
+      },
       // A spec sets window.__e2eStripeRedirectTo before load to make the
       // challenge leave the page the way a redirect method does, or
       // window.__e2eStripeHoldNextAction to keep it open until the spec

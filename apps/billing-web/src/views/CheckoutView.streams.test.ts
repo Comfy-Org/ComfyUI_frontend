@@ -143,18 +143,17 @@ function stubBillingRoutes() {
       status: 'succeeded'
     }
   }
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (url: string) => {
-      const { pathname } = new URL(url)
-      if (pathname === '/api/billing/ops/op_1') await polled
-      const body = answers[pathname]
-      return new Response(JSON.stringify(body ?? {}), {
-        status: body === undefined ? 404 : 200,
-        headers: { 'Content-Type': 'application/json' }
-      })
+  vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+    const url = String(input)
+
+    const { pathname } = new URL(url)
+    if (pathname === '/api/billing/ops/op_1') await polled
+    const body = answers[pathname]
+    return new Response(JSON.stringify(body ?? {}), {
+      status: body === undefined ? 404 : 200,
+      headers: { 'Content-Type': 'application/json' }
     })
-  )
+  })
   return answerPoll
 }
 
@@ -240,6 +239,7 @@ describe('the embedded checkout journey beside the attempt and the SDK stream', 
       { name: 'billing.operation.started', billingOpId: 'op_1' },
       { name: 'billing.checkout.operation_linked', billingOpId: 'op_1' },
       { name: 'billing.operation.succeeded', billingOpId: 'op_1' },
+      { name: 'billing.checkout.ended', billingOpId: 'op_1' },
       { name: 'billing.subscription_checkout.succeeded', billingOpId: 'op_1' }
     ])
   })

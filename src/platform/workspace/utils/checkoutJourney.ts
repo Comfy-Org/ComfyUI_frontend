@@ -6,10 +6,13 @@ import type {
   CheckoutJourneyContext,
   CheckoutUiMode
 } from '@comfyorg/account-core/billing'
-import { isContractIdentifier } from '@comfyorg/billing-contract'
+import {
+  isBillingSource,
+  isContractIdentifier
+} from '@comfyorg/billing-contract'
 
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/paymentIntentSource'
 
 /**
  * One lifecycle owner for a checkout journey's frozen entry context and
@@ -22,11 +25,7 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
 const CHECKOUT_JOURNEY_MAX_AGE_MS = 24 * 60 * 60 * 1000
 const CHECKOUT_JOURNEY_STORAGE_KEY = 'comfy.checkout.journey'
-// Typed to the enum member's value so a future correction of the flag key (or
-// its `checked`/`checkout` typo) fails to compile here instead of silently
-// reading a stale key. Type-only, so consumers' test mocks need no runtime enum.
-const EMBEDDED_CHECKOUT_FLAG_KEY: `${ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED}` =
-  'embedded_checked_enabled'
+const EMBEDDED_CHECKOUT_FLAG_KEY = 'embedded_checked_enabled'
 
 const ENTRY_FLOWS = {
   initial_subscription: true,
@@ -101,6 +100,11 @@ export interface CheckoutJourneyRecord {
   entry_flow: CheckoutEntryFlow
   entry_source: CheckoutEntrySource
   /**
+   * The source the customer entered from, as the one source list names it.
+   * Absent on a record written before it was kept, or opened with no source.
+   */
+  payment_intent_source?: PaymentIntentSource
+  /**
    * Stable key for the intended purchase within the flow (e.g. tier:cycle).
    * A change of intent starts a new journey rather than resuming.
    */
@@ -123,6 +127,7 @@ interface CheckoutJourneyIdentity {
 export interface StartCheckoutJourneyInput extends CheckoutJourneyIdentity {
   entryFlow: CheckoutEntryFlow
   entrySource: CheckoutEntrySource
+  paymentIntentSource?: PaymentIntentSource
   assignment: CheckoutAssignment
   /** Stable key for the intended purchase (e.g. tier:cycle); a change starts a new journey. */
   intent?: string
@@ -177,6 +182,9 @@ export function createCheckoutJourneyRecord(
     workspace_id: input.workspaceId,
     entry_flow: input.entryFlow,
     entry_source: input.entrySource,
+    ...(input.paymentIntentSource !== undefined && {
+      payment_intent_source: input.paymentIntentSource
+    }),
     ...(input.intent !== undefined && { intent: input.intent }),
     assignment_status: input.assignment.status,
     ...(input.assignment.status === 'resolved' && {
@@ -261,6 +269,21 @@ export function resolveCheckoutJourney(
 
 export function getActiveCheckoutJourney(): CheckoutJourneyRecord | null {
   return loadCheckoutJourney()
+}
+
+/**
+ * The source of the journey bound to `billingOpId`, for an operation event
+ * emitted by a tab that did not start it (a poll recovered after reload).
+ */
+export function getCheckoutJourneyPaymentIntentSource(
+  billingOpId: string
+): PaymentIntentSource | undefined {
+  const journey = loadCheckoutJourney()
+  if (journey?.billing_op_id !== billingOpId) return undefined
+  return (
+    journey.payment_intent_source ??
+    paymentIntentSourceForJourneyEntry(journey.entry_source)
+  )
 }
 
 export function bindOperationToCheckoutJourney(
@@ -485,8 +508,10 @@ function readAssignment(
 }
 
 function readOptionalFields(candidate: Record<string, unknown>) {
-  const { intent, ui_mode, billing_op_id } = candidate
+  const { intent, ui_mode, billing_op_id, payment_intent_source } = candidate
   return {
+    ...(typeof payment_intent_source === 'string' &&
+      isBillingSource(payment_intent_source) && { payment_intent_source }),
     ...(typeof intent === 'string' && { intent }),
     ...(isAllowlisted(UI_MODES, ui_mode) && { ui_mode }),
     ...(typeof billing_op_id === 'string' && { billing_op_id })

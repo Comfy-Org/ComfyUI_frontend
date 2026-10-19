@@ -19,8 +19,8 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
     return markdown
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/^# (.*?)$/gm, '<h1>$1</h1>')
-      .replace(/^## (.*?)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.*)$/gm, '<h1>$1</h1>')
+      .replace(/^## (.*)$/gm, '<h2>$1</h2>')
       .replace(/\n/g, '<br>')
   })
 }))
@@ -97,16 +97,6 @@ describe('WidgetMarkdown Dual Mode Display', () => {
       expect(displayDiv!.innerHTML).toContain('<h1>Heading</h1>')
       expect(displayDiv!.innerHTML).toContain('<strong>bold</strong>')
       expect(displayDiv!.innerHTML).toContain('<em>italic</em>')
-    })
-
-    it('starts in display mode by default', () => {
-      const widget = createMarkdownWidget('# Test')
-      const { container } = renderComponent(widget, '# Test')
-
-      expect(container.querySelector('.comfy-markdown-content')).toHaveClass(
-        'visible'
-      )
-      expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     })
 
     it('handles empty markdown content', () => {

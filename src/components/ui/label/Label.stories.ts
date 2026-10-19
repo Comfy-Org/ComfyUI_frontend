@@ -4,11 +4,11 @@ import Input from '@/components/ui/input/Input.vue'
 
 import Label from './Label.vue'
 
-const meta = {
+const meta: Meta<typeof Label> = {
   title: 'Components/Label',
   component: Label,
   tags: ['autodocs']
-} satisfies Meta<typeof Label>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>

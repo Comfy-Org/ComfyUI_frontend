@@ -3,7 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import type { BillingPlansData } from '@comfyorg/account-core/billing'
+import type {
+  BillingPlansData,
+  BillingTelemetryEvent,
+  SubscriptionCommandResult
+} from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -18,6 +22,7 @@ import {
   planOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
+import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import SubscriptionView from '@/views/SubscriptionView.vue'
 
 vi.mock(import('@datadog/browser-rum'))
@@ -76,13 +81,13 @@ async function renderSubscription(options: FakeBillingClientOptions = {}) {
   })
   await router.push(`${SURFACE_PATH}?${ENTRY_QUERY}`)
   await router.isReady()
-  render(SubscriptionView, {
+  const { unmount } = render(SubscriptionView, {
     global: {
       plugins: [createBillingI18n(), router],
       provide: { [BILLING_CLIENT_KEY]: fake.client }
     }
   })
-  return fake
+  return { ...fake, unmount }
 }
 
 describe('SubscriptionView', () => {
@@ -389,6 +394,148 @@ describe('SubscriptionView', () => {
         "We couldn't reach the billing service. Please try again."
       )
     ).toBeInTheDocument()
+  })
+
+  describe('cancel flow telemetry', () => {
+    const PRO_ANNUAL: BillingPlansData = {
+      current_plan_slug: 'pro_annual',
+      plans: [planOf({ slug: 'pro_annual', tier: 'PRO', duration: 'ANNUAL' })]
+    }
+
+    const flow = {
+      operation: 'cancel',
+      billing_client: 'sdk',
+      current_tier: 'pro',
+      cycle: 'yearly'
+    } as const
+
+    const INTENT: BillingTelemetryEvent = {
+      ...flow,
+      stage: 'intent',
+      outcome: 'pending'
+    }
+
+    function cancelEvents(sent: () => BillingTelemetryEvent[]) {
+      return sent().filter((event) => event.operation === 'cancel')
+    }
+
+    async function openCancelFlow(cancel?: SubscriptionCommandResult) {
+      const sent = trackedBillingEvents()
+      const view = await renderSubscription({
+        capabilities: { can_cancel: true },
+        plans: { status: 'ok', value: PRO_ANNUAL },
+        ...(cancel ? { cancel } : {})
+      })
+      await screen.findByText('Current plan: Pro · Yearly')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Cancel subscription' })
+      )
+      return { sent, view }
+    }
+
+    it('reports opening the confirmation and keeping the plan', async () => {
+      const { sent } = await openCancelFlow()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Keep my plan' })
+      )
+
+      expect(cancelEvents(sent)).toEqual([
+        INTENT,
+        { ...flow, stage: 'abandoned', outcome: 'pending' }
+      ])
+    })
+
+    it('reports leaving the page while the confirmation is open as abandoned', async () => {
+      const { sent, view } = await openCancelFlow()
+
+      view.unmount()
+
+      expect(cancelEvents(sent)).toEqual([
+        INTENT,
+        { ...flow, stage: 'abandoned', outcome: 'pending' }
+      ])
+    })
+
+    it.for<{ name: string; cancel: SubscriptionCommandResult }>([
+      {
+        name: 'a cancel the server settled',
+        cancel: {
+          status: 'ok',
+          value: { phase: 'succeeded', operation: succeededOperation() }
+        }
+      },
+      {
+        name: 'a cancel operation that failed',
+        cancel: {
+          status: 'ok',
+          value: {
+            phase: 'failed',
+            operation: failedOperation('card_declined')
+          }
+        }
+      },
+      {
+        name: 'a cancel that already held',
+        cancel: { status: 'ok', value: { phase: 'succeeded' } }
+      }
+    ])(
+      'leaves the end of $name to the operation events',
+      async ({ cancel }) => {
+        const { sent, view } = await openCancelFlow(cancel)
+
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Confirm cancellation' })
+        )
+        await waitFor(() =>
+          expect(view.cancelSubscription).toHaveBeenCalledOnce()
+        )
+        view.unmount()
+
+        expect(cancelEvents(sent)).toEqual([INTENT])
+      }
+    )
+
+    it.for<{
+      name: string
+      cancel: SubscriptionCommandResult
+      failure: Record<string, string>
+    }>([
+      {
+        name: 'a request that never reached the server',
+        cancel: { status: 'error', code: 'REQUEST_FAILED' },
+        failure: { failure_category: 'network' }
+      },
+      {
+        name: 'no subscription to cancel',
+        cancel: { status: 'error', code: 'NO_ACTIVE_SUBSCRIPTION' },
+        failure: { failure_category: 'api_rejected' }
+      },
+      {
+        name: 'an earlier payment still open',
+        cancel: { status: 'error', code: 'OPERATION_ALREADY_PENDING' },
+        failure: {
+          failure_category: 'api_rejected',
+          error_code: 'operation_already_pending'
+        }
+      }
+    ])(
+      'reports $name as a failed cancel before any operation exists',
+      async ({ cancel, failure }) => {
+        const { sent } = await openCancelFlow(cancel)
+
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Confirm cancellation' })
+        )
+
+        await waitFor(() =>
+          expect(cancelEvents(sent)).toEqual([
+            INTENT,
+            { ...flow, stage: 'failed', outcome: 'failure', ...failure }
+          ])
+        )
+      }
+    )
   })
 })
 

@@ -4,12 +4,18 @@
  */
 import type { Page } from '@playwright/test'
 
-import { capabilitiesWith, succeededOperation } from './fixtures/scenario'
+import {
+  capabilitiesWith,
+  challengeRequiredOperation,
+  succeededOperation
+} from './fixtures/scenario'
+import { installFakeStripe } from './fixtures/stripe'
 import { entryPath, expect, test as base } from './fixtures/test'
 
 const test = base.extend<{ fullPage: void }>({
   fullPage: [
-    async ({ cloud }, use) => {
+    async ({ context, cloud }, use) => {
+      await installFakeStripe(context)
       cloud.scenario.checkoutUi = 'full_page'
       await use(undefined)
     },
@@ -45,6 +51,69 @@ test('265-4362: the summary leads with the credits the server quotes and dates t
     (request) => request.path === '/billing/topup/quote'
   )
   expect(quote?.body).toEqual({ amount_cents: 2500 })
+})
+
+test('names the default card the top-up charges, read-only', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = [
+    {
+      id: 'pm_e2e_mastercard',
+      type: 'card',
+      brand: 'mastercard',
+      last4: '4402',
+      is_default: false
+    },
+    {
+      id: 'pm_e2e_visa',
+      type: 'card',
+      brand: 'visa',
+      last4: '3184',
+      is_default: true
+    }
+  ]
+  await signIn(TOPUP)
+
+  await expect(
+    page.getByRole('heading', { name: 'Payment method' })
+  ).toBeVisible()
+  await expect(page.getByText('·· 3184')).toBeVisible()
+  await expect(page.getByText('·· 4402')).toBeHidden()
+  await expect(page.getByRole('combobox')).toBeHidden()
+  await expect(payButton(page)).toBeEnabled()
+})
+
+test('a saved-methods read that never answers still opens a payable top-up, naming no card', async ({
+  page,
+  signIn
+}) => {
+  await page.route('**/billing/payment-methods', () => {})
+  await signIn(TOPUP)
+
+  await expect(payButton(page)).toBeEnabled()
+  await expect(
+    page.getByRole('heading', { name: 'Payment method' })
+  ).toBeHidden()
+})
+
+test('a failed saved-methods read names no card, and Pay stays live', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.reply('GET', '/billing/payment-methods', () => ({
+    status: 500,
+    body: { code: 'INTERNAL', message: 'boom' }
+  }))
+  await signIn(TOPUP)
+
+  await expect(payButton(page)).toBeEnabled()
+  await expect(page.getByText('·· 4242')).toBeHidden()
+  await expect(
+    page.getByRole('heading', { name: 'Payment method' })
+  ).toBeHidden()
 })
 
 test('180-6679: Pay reads just Pay, over terms that authorize one charge and link Terms and Privacy Policy', async ({
@@ -99,6 +168,41 @@ test('77-3783: a Pay that goes through names the credits added and what they cos
     (request) => request.path === '/billing/topup'
   )
   expect(topups).toHaveLength(1)
+})
+
+test('a saved card the bank challenges is verified on this page and ends on the credits added, never on the hosted invoice', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.operations.op_topup = {
+    ...challengeRequiredOperation('op_topup', 'pi_topup_secret'),
+    action_url: 'https://invoice.stripe.com/i/e2e_topup'
+  }
+  await page.addInitScript(() => {
+    Object.assign(window, { __e2eStripeHoldNextAction: true })
+  })
+  await signIn(TOPUP)
+  await payButton(page).click()
+
+  await expect
+    .poll(() => page.evaluate('window.__e2eFakeStripe?.nextActionCalls'))
+    .toEqual([{ clientSecret: 'pi_topup_secret' }])
+  await expect(page).toHaveURL(/\/v1\/top-up\?/)
+
+  cloud.scenario.operations.op_topup = {
+    ...succeededOperation('op_topup'),
+    amount_charged_cents: 2500,
+    credits_added: 5275
+  }
+  await page.evaluate(
+    "window.__e2eFakeStripe.releaseNextAction({ paymentIntent: { status: 'succeeded' } })"
+  )
+
+  await expect(
+    page.getByRole('heading', { name: '5,275 credits added' })
+  ).toBeVisible()
+  await expect(page).toHaveURL(/\/v1\/top-up\?/)
 })
 
 test('394-4991 / 410-5225: credits still landing read Payment received, and a reload once they land is Already completed with no balance', async ({

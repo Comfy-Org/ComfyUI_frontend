@@ -1,8 +1,8 @@
+import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
 import type {
-  INodeFlags,
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import type {
   LGraphEventMode,
   RenderShape,
@@ -10,9 +10,10 @@ import type {
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeProperty } from '@/types/nodeProperty'
 import type { UUID } from '@/utils/uuid'
 
-export type NodeProperty = string | number | boolean | object | null
+export type { NodeProperty } from '@/types/nodeProperty'
 
 /**
  * The fields the renderer draws. Selection, execution, errors, geometry, widget

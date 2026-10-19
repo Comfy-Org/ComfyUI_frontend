@@ -2,8 +2,8 @@
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import BrandButton from '../common/BrandButton.vue'
-import Card from '../ui/card/Card.vue'
+import BrandButton from '@/components/common/BrandButton.vue'
+import Card from '@/components/ui/card/Card.vue'
 import type { CardWorkflowItem } from './CardWorkflow01.vue'
 import TeamMemberDialog01 from './TeamMemberDialog01.vue'
 

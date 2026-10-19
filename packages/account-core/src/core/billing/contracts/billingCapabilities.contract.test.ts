@@ -7,22 +7,38 @@ import type {
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
+import type { CapabilityDenialReason } from '../capabilityDenials.js'
+
 type CapabilitiesResponseBody = z.input<typeof zBillingCapabilitiesResponse>
 type CapabilitiesResponse = z.infer<typeof zBillingCapabilitiesResponse>
 type Capabilities = z.infer<typeof zBillingCapabilities>
 type CapabilityScope = z.infer<typeof zBillingCapabilityScope>
 type RolloutDefaults = z.infer<typeof zBillingCapabilityRolloutDefaults>
+type DeniedReasons = NonNullable<CapabilitiesResponse['denied_reasons']>
+type ServerDenialReason = NonNullable<DeniedReasons[keyof DeniedReasons]>
 
 function capabilities(): Capabilities {
   return {
     can_cancel: true,
     can_change_seats: true,
     can_downgrade_to_personal: false,
+    can_edit_workspace: true,
     can_invite_members: true,
+    can_manage_auto_top_up: true,
+    can_manage_members: true,
+    can_manage_subscription: true,
+    can_delete_workspace: false,
+    can_leave_workspace: false,
+    can_manage_billing: false,
+    can_manage_partner_node_access: false,
+    can_view_pending_invites: false,
+    can_view_team_usage: false,
     can_reactivate: false,
     can_revert_scheduled_change: false,
+    can_run_workflows: true,
     can_subscribe_self_serve: true,
-    can_top_up: true
+    can_top_up: true,
+    can_upgrade: true
   }
 }
 
@@ -43,26 +59,46 @@ function capabilitiesBody(
   }
 }
 
-// Compile-time pins: a regen that moves these fails the package typecheck.
-
-// The five fields the reader composes its own schema from.
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
+  | 'auto_top_up_setup'
   | 'capabilities'
+  | 'denied_reason_params'
+  | 'denied_reasons'
   | 'expires_at'
+  | 'payment_recovery_available'
+  | 'plan_kind'
+  | 'recovery_route'
   | 'resolved_for'
   | 'revision'
   | 'rollout_defaults_applied'
+  | 'subscription_state_authoritative'
 >()
 expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_cancel: boolean
   can_change_seats: boolean
+  can_delete_workspace: boolean
   can_downgrade_to_personal: boolean
+  can_edit_workspace: boolean
   can_invite_members: boolean
+  can_leave_workspace: boolean
+  can_manage_auto_top_up: boolean
+  can_manage_billing: boolean
+  can_manage_members: boolean
+  can_manage_partner_node_access: boolean
+  can_manage_subscription: boolean
   can_reactivate: boolean
   can_revert_scheduled_change: boolean
+  can_run_workflows: boolean
   can_subscribe_self_serve: boolean
   can_top_up: boolean
+  can_upgrade: boolean
+  can_view_own_usage?: boolean | undefined
+  can_view_pending_invites: boolean
+  can_view_team_usage: boolean
 }>()
+expectTypeOf<ServerDenialReason>().toEqualTypeOf<
+  Exclude<CapabilityDenialReason, 'unspecified'>
+>()
 expectTypeOf<CapabilityScope>().toEqualTypeOf<{
   user_id: string
   workspace_id: string
@@ -72,7 +108,6 @@ expectTypeOf<RolloutDefaults>().toEqualTypeOf<{
   can_subscribe_self_serve: boolean
   can_top_up: boolean
 }>()
-// The expiry the reader paces freshness from; the revision it reads as a number.
 expectTypeOf<CapabilitiesResponse['expires_at']>().toEqualTypeOf<string>()
 expectTypeOf<CapabilitiesResponse['revision']>().toEqualTypeOf<bigint>()
 
@@ -103,13 +138,18 @@ describe('billing capabilities contract', () => {
     expect(zBillingCapabilitiesResponse.safeParse(unsafe).success).toBe(false)
   })
 
-  it('omits denied reasons, which the reader therefore decodes off the raw body', () => {
-    const parsed = zBillingCapabilitiesResponse.safeParse({
-      ...capabilitiesBody(),
+  it('rejects an unrecognised denied reason, which the reader therefore decodes leniently off the raw body', () => {
+    const known = capabilitiesBody({
       denied_reasons: { can_subscribe_self_serve: 'not_workspace_owner' }
     })
+    const unknown = {
+      ...capabilitiesBody(),
+      denied_reasons: { can_subscribe_self_serve: 'something_new' }
+    }
 
-    expect(parsed).toMatchObject({ success: true })
-    expect(parsed.success && 'denied_reasons' in parsed.data).toBe(false)
+    expect(zBillingCapabilitiesResponse.safeParse(known)).toMatchObject({
+      success: true
+    })
+    expect(zBillingCapabilitiesResponse.safeParse(unknown).success).toBe(false)
   })
 })

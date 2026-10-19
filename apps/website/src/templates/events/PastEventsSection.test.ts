@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { ComfyEvent } from '../../data/events'
+import type { ComfyEvent } from '@/data/events'
 
 import PastEventsSection from './PastEventsSection.vue'
 

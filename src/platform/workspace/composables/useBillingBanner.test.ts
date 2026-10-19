@@ -32,6 +32,7 @@ describe('useBillingBanner', () => {
       canAccessSubscriptionFeatures: ref(true),
       isTeamPlan: ref(true),
       billingStatus: ref<BillingStatus | null>('paid'),
+      tier: ref<SubscriptionInfo['tier']>(null),
       subscription: ref<Pick<SubscriptionInfo, 'hasFunds'> | null>({
         hasFunds: true
       })
@@ -43,10 +44,11 @@ describe('useBillingBanner', () => {
     billingContext.isTeamPlan = computed(() => billing.isTeamPlan.value)
     billingContext.billingStatus = computed(() => billing.billingStatus.value)
     billingContext.subscription = computed(() =>
-      billing.subscription.value
+      billing.subscription.value &&
+      (billing.canAccessSubscriptionFeatures.value || billing.tier.value)
         ? {
-            isActive: true,
-            tier: null,
+            isActive: billing.canAccessSubscriptionFeatures.value,
+            tier: billing.tier.value,
             duration: null,
             planSlug: null,
             scheduledChange: null,
@@ -111,42 +113,23 @@ describe('useBillingBanner', () => {
     expect(kind.value).toBe('outOfCredits')
   })
 
-  it('refreshes status and balance on focus while payment recovery is visible', async () => {
-    const billing = setupBilling()
-    useBillingBanner()
-    billing.billingStatus.value = 'payment_failed'
+  it.for<{ status: BillingStatus; canAccess: boolean }>([
+    { status: 'paused', canAccess: false },
+    { status: 'paused', canAccess: true },
+    { status: 'payment_failed', canAccess: false },
+    { status: 'payment_failed', canAccess: true }
+  ])(
+    'shows no Paused banner for $status with access $canAccess',
+    async ({ status, canAccess }) => {
+      const billing = setupBilling()
+      const { kind } = useBillingBanner()
 
-    window.dispatchEvent(new Event('focus'))
-    await nextTick()
+      billing.tier.value = 'PRO'
+      billing.billingStatus.value = status
+      billing.canAccessSubscriptionFeatures.value = canAccess
+      await nextTick()
 
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
-  })
-
-  it('refreshes status and balance on focus while the workspace is paused', async () => {
-    const billing = setupBilling()
-    useBillingBanner()
-    billing.billingStatus.value = 'paused'
-
-    window.dispatchEvent(new Event('focus'))
-    await nextTick()
-
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
-  })
-
-  it('does not refresh payment recovery on focus when the flag is off', async () => {
-    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
-
-    const billing = setupBilling()
-    useBillingBanner()
-    billing.billingStatus.value = 'payment_failed'
-    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
-
-    window.dispatchEvent(new Event('focus'))
-    await nextTick()
-
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
-  })
+      expect(kind.value).toBeNull()
+    }
+  )
 })

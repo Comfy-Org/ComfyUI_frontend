@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { SummaryLedger } from '@/checkout/summaryLedger'
 
 const { row } = defineProps<{ row: SummaryLedger['items'][number] }>()
@@ -7,10 +9,17 @@ const { row } = defineProps<{ row: SummaryLedger['items'][number] }>()
 <template>
   <li class="flex flex-col gap-1">
     <div class="flex items-baseline justify-between gap-4">
-      <span class="text-sm font-semibold text-base-foreground">
+      <span class="text-sm font-semibold text-foreground">
         {{ row.label }}
       </span>
-      <span class="shrink-0 text-sm text-base-foreground tabular-nums">
+      <span
+        :class="
+          cn(
+            'shrink-0 text-sm tabular-nums',
+            row.credit ? 'text-muted-foreground' : 'text-foreground'
+          )
+        "
+      >
         {{ row.amount }}
       </span>
     </div>

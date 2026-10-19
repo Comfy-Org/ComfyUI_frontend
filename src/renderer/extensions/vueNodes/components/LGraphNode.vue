@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.render', 'Node Render Error') }}
   </div>
   <div
@@ -10,17 +10,15 @@
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate touch-none text-xs',
+        'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        isLightTheme
-          ? 'drop-shadow-md drop-shadow-black/15'
-          : 'drop-shadow-xl drop-shadow-black/40',
+        'drop-shadow-lg',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isSelected && 'outline-node-component-outline',
-        executing && 'outline-node-stroke-executing',
+        isSelected && 'outline-foreground',
+        executing && 'outline-primary',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
           !isGhostPlacing
@@ -36,8 +34,7 @@
       opacity: nodeOpacity
     }"
     :inert="isGhostPlacing"
-    v-bind="remainingPointerHandlers"
-    @pointerdown="nodeOnPointerdown"
+    v-bind="pointerHandlers"
     @wheel="handleWheel"
     @contextmenu="handleContextMenu"
     @dragover.prevent="handleDragOver"
@@ -61,9 +58,7 @@
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isSelected
-            ? 'border-node-component-outline'
-            : 'border-node-stroke-executing'
+          isSelected ? 'border-foreground' : 'border-primary'
         )
       "
     />
@@ -71,20 +66,21 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col bg-node-component-header-surface',
+          'flex flex-1 flex-col bg-node-header',
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4',
-          errorSeverity === 'missing' && 'ring-warning-background',
-          errorSeverity === 'error' && 'ring-destructive-background',
+          errorSeverity === 'missing' && 'ring-warning',
+          errorSeverity === 'error' && 'ring-destructive',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
-          isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
+          isDraggingOver && 'bg-primary/10 ring-4 ring-primary'
         )
       "
       :style="{
-        '--component-node-background': applyLightThemeColor(nodeData.bgcolor),
+        '--node': applyLightThemeColor(nodeData.bgcolor),
+        '--component-node-background': 'var(--node)',
         backgroundColor: applyLightThemeColor(nodeData?.color)
       }"
     >
@@ -146,10 +142,7 @@
 
         <div
           :class="
-            cn(
-              'flex flex-1 flex-col bg-component-node-background pt-1 pb-3',
-              bodyRoundingClass
-            )
+            cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
           "
           :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
           :data-testid="`node-body-${nodeData.id}`"
@@ -254,7 +247,7 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, onErrorCaptured, ref } from 'vue'
+import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@/types/nodeState'
@@ -264,11 +257,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
 import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
-import {
-  LGraphCanvas,
-  LGraphEventMode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -285,12 +274,10 @@ import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
-import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeExecutionState } from '@/renderer/extensions/vueNodes/execution/useNodeExecutionState'
-import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import { useNodePreviewState } from '@/renderer/extensions/vueNodes/preview/useNodePreviewState'
 import {
@@ -306,7 +293,6 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -315,11 +301,9 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
-  locatorIdFromState,
-  subgraphIdFromState
+  locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { toNodeId } from '@/types/nodeId'
 import { isTransparent } from '@/utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
@@ -346,14 +330,9 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
-const colorPaletteStore = useColorPaletteStore()
-const isLightTheme = computed(
-  () => !!colorPaletteStore.completedActivePalette.light_theme
-)
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
-const { bringNodeToFront } = useNodeZIndex()
 
 const nodeId = computed(() => nodeData.id)
 
@@ -436,27 +415,7 @@ const nodeSizeStyle = computed(() =>
 )
 
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
-const { onPointerdown, ...remainingPointerHandlers } = pointerHandlers
-const { startDrag } = useNodeDrag()
 const badges = usePartitionedBadges(nodeData)
-
-async function nodeOnPointerdown(event: PointerEvent) {
-  const node = resolveLGraphNode()
-  if (event.altKey && node) {
-    const result = LGraphCanvas.cloneNodes([node])
-    if (result?.created.length) {
-      const [newNode] = result.created
-      const newNodeId =
-        typeof newNode.id === 'number' ? toNodeId(newNode.id) : newNode.id
-      startDrag(event, newNodeId)
-      layoutStore.isDraggingVueNodes.value = true
-      await nextTick()
-      bringNodeToFront(newNodeId)
-      return
-    }
-  }
-  onPointerdown(event)
-}
 
 // Handle right-click context menu
 const handleContextMenu = (event: MouseEvent) => {
@@ -464,7 +423,7 @@ const handleContextMenu = (event: MouseEvent) => {
   event.stopPropagation()
 
   // First handle the standard right-click behavior (selection)
-  handleNodeRightClick(event as PointerEvent, nodeData.id)
+  handleNodeRightClick(event, nodeData.id)
 
   // Show the node options menu at the cursor position
   showNodeOptions(event, { nodeId: nodeData.id })
@@ -510,7 +469,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
+const progressClasses = 'h-2 bg-primary transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
@@ -641,11 +600,6 @@ const handleEnterSubgraph = () => {
 
 const nodeOutputs = useNodeOutputStore()
 
-const nodeOutputLocatorId = computed(() => {
-  const subgraphId = subgraphIdFromState(nodeData, canvasStore.rootGraphId)
-  return subgraphId ? `${subgraphId}:${nodeData.id}` : nodeData.id
-})
-
 function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
@@ -727,7 +681,8 @@ const hasVideoEditWidget = computed(() =>
 )
 
 const nodeMedia = computed(() => {
-  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
+  const locatorId = nodeLocatorId.value
+  const newOutputs = locatorId ? nodeOutputs.nodeOutputs[locatorId] : undefined
   const node = lgraphNode.value
 
   if (
@@ -775,8 +730,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop() {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = resolveLGraphNode()
+  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>

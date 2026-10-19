@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { getRoutes } from '../../config/routes'
-import { translationsFor } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
-import GlassCard from '../common/GlassCard.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
+import { getRoutes } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import BrandButton from '@/components/common/BrandButton.vue'
+import GlassCard from '@/components/common/GlassCard.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

@@ -6,7 +6,7 @@
  * the checkout composable, whose continuation redirects this tab when the
  * server asks for a card.
  */
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type {
@@ -19,7 +19,14 @@ import { useHostedCopy } from '@/composables/useHostedCopy'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
+import { createCancelFlowTelemetry } from '@/telemetry/cancelTelemetry'
+import type { CancelledPlan } from '@/telemetry/cancelTelemetry'
 import { createResubscribeTelemetry } from '@/telemetry/resubscribeTelemetry'
+
+const { currentPlan } = defineProps<{
+  /** The plan a cancel would end, for the cancel flow's telemetry. */
+  currentPlan?: CancelledPlan
+}>()
 
 const emit = defineEmits<{
   /** The subscription changed on the server; readers over it are stale. */
@@ -40,6 +47,9 @@ const checkout = useCheckout({
 })
 const { entry } = useBillingEntry()
 const resubscribeAttempts = createResubscribeTelemetry()
+
+const cancelFlow = createCancelFlowTelemetry({ plan: () => currentPlan })
+onBeforeUnmount(() => cancelFlow.abandoned())
 
 const allowed = ref<BillingCapabilities | undefined>()
 const confirmingCancel = ref(false)
@@ -87,12 +97,14 @@ async function settle(
 /** The trigger is replaced by these controls, so the keyboard has to follow. */
 async function askToCancel() {
   confirmingCancel.value = true
+  cancelFlow.intent()
   await nextTick()
   confirmCancelAction.value?.focus()
 }
 
 async function keepPlan() {
   confirmingCancel.value = false
+  cancelFlow.abandoned()
   await nextTick()
   cancelTrigger.value?.focus()
 }
@@ -100,7 +112,7 @@ async function keepPlan() {
 async function cancelSubscription() {
   confirmingCancel.value = false
   await settle(
-    () => commands.cancelSubscription(),
+    () => cancelFlow.confirm(() => commands.cancelSubscription()),
     t('hosted.subscription.cancelled')
   )
 }
@@ -118,14 +130,10 @@ async function resubscribe() {
     v-if="allowed?.can_cancel || allowed?.can_reactivate"
     class="flex flex-col gap-3"
   >
-    <p v-if="notice" role="status" class="m-0 text-sm text-base-foreground">
+    <p v-if="notice" role="status" class="m-0 text-sm text-foreground">
       {{ notice }}
     </p>
-    <p
-      v-if="failure"
-      role="alert"
-      class="m-0 text-sm text-destructive-background"
-    >
+    <p v-if="failure" role="alert" class="m-0 text-sm text-destructive">
       {{ failure }}
     </p>
 
@@ -138,7 +146,7 @@ async function resubscribe() {
           ref="confirmCancelAction"
           type="button"
           :disabled="busy"
-          class="h-11 cursor-pointer rounded-lg bg-destructive-background px-5 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
+          class="h-11 cursor-pointer rounded-lg bg-destructive px-5 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
           @click="cancelSubscription"
         >
           {{ t('hosted.subscription.cancelConfirmAction') }}
@@ -146,7 +154,7 @@ async function resubscribe() {
         <button
           type="button"
           :disabled="busy"
-          class="h-11 cursor-pointer rounded-lg bg-secondary-background px-5 font-medium text-base-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          class="h-11 cursor-pointer rounded-lg bg-secondary px-5 font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
           @click="keepPlan"
         >
           {{ t('hosted.subscription.keepPlan') }}
@@ -160,7 +168,7 @@ async function resubscribe() {
         ref="cancelTrigger"
         type="button"
         :disabled="busy"
-        class="h-11 cursor-pointer rounded-lg bg-secondary-background px-5 font-medium text-base-foreground disabled:cursor-not-allowed disabled:opacity-40"
+        class="h-11 cursor-pointer rounded-lg bg-secondary px-5 font-medium text-foreground disabled:cursor-not-allowed disabled:opacity-40"
         @click="askToCancel"
       >
         {{ t('hosted.subscription.cancel') }}
@@ -169,7 +177,7 @@ async function resubscribe() {
         v-if="allowed?.can_reactivate"
         type="button"
         :disabled="busy"
-        class="h-11 cursor-pointer rounded-lg bg-base-foreground px-5 font-semibold text-base-background disabled:cursor-not-allowed disabled:opacity-40"
+        class="h-11 cursor-pointer rounded-lg bg-foreground px-5 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
         @click="resubscribe"
       >
         {{ t('hosted.subscription.resubscribe') }}

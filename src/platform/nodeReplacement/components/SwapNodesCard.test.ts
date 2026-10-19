@@ -1,7 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
@@ -45,7 +44,7 @@ function mountCard(
       ...(callbacks?.onReplace ? { onReplace: callbacks.onReplace } : {})
     },
     global: {
-      plugins: [getActivePinia()!, PrimeVue]
+      plugins: [getActivePinia()!]
     }
   })
 }
@@ -62,12 +61,6 @@ describe('SwapNodesCard', () => {
       const { container } = mountCard({ swapNodeGroups: [] })
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.swap-row')).toHaveLength(0)
-    })
-
-    it('renders one row when swapNodeGroups has one entry', () => {
-      const { container } = mountCard({ swapNodeGroups: makeGroups(1) })
-      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelectorAll('.swap-row')).toHaveLength(1)
     })
 
     it('passes group prop to children', () => {

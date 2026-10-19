@@ -354,6 +354,27 @@ describe('trackCheckoutJourneyEvent', () => {
     )
   })
 
+  it('sends an abandoned checkout to PostHog by beacon, since the page is going away', async () => {
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+
+    telemetry.trackCheckoutJourneyEvent({
+      ...ENTERED,
+      phase: 'abandoned',
+      last_phase: 'entered',
+      exit: 'page_exit'
+    })
+
+    expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+      'billing.checkout.abandoned',
+      expect.objectContaining({ last_phase: 'entered', exit: 'page_exit' }),
+      { transport: 'sendBeacon' }
+    )
+  })
+
   it('holds back the journey phases the backend switched off, and only those', async () => {
     const telemetry = createBillingWebTelemetry()
     await telemetry.startPostHog({
@@ -395,6 +416,35 @@ describe('trackWebSessionEvent', () => {
     })
 
     telemetry.trackWebSessionEvent(event)
+
+    expect(datadogRum.addAction).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+    expect(posthog.capture).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
+    )
+  })
+})
+
+describe('trackSsoEvent', () => {
+  it('sends an SSO event to RUM and PostHog as is', async () => {
+    vi.mocked(datadogRum.getInitConfiguration).mockReturnValue({
+      clientToken: 'pub',
+      applicationId: 'app'
+    })
+    const telemetry = createBillingWebTelemetry()
+    await telemetry.startPostHog({
+      config: Promise.resolve(CONFIGURED),
+      identity: ref<SessionIdentity>({ kind: 'unknown' })
+    })
+    const event = {
+      name: 'app:sso_continue_clicked',
+      properties: { surface: 'billing_web', flow_id: 'flow-1' }
+    } as const
+
+    telemetry.trackSsoEvent(event)
 
     expect(datadogRum.addAction).toHaveBeenCalledExactlyOnceWith(
       event.name,

@@ -3,7 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 
-import type { UseCase } from '../../config/models-catalogue'
+import type { UseCase } from '@/config/models-catalogue'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 

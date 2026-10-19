@@ -3,8 +3,11 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { AssetExport } from '@/stores/assetExportStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -18,6 +21,9 @@ const isExpanded = ref(false)
 const exportJobs = computed(() => assetExportStore.exportList)
 const failedJobs = computed(() =>
   assetExportStore.finishedExports.filter((e) => e.status === 'failed')
+)
+const cancelledJobs = computed(() =>
+  assetExportStore.finishedExports.filter((e) => e.status === 'cancelled')
 )
 
 const isInProgress = computed(() => assetExportStore.hasActiveExports)
@@ -38,22 +44,23 @@ const footerLabel = computed(() => {
   if (isInProgress.value) return currentJobName.value
   if (failedJobs.value.length > 0)
     return t('exportToast.exportFailed', { count: failedJobs.value.length })
+  if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
   return t('exportToast.allExportsCompleted')
 })
+
+const announcement = computed(() =>
+  isInProgress.value ? t('exportToast.exportingAssets') : footerLabel.value
+)
 
 const footerIconClass = computed(() => {
   if (isInProgress.value)
     return 'icon-[lucide--loader-circle] animate-spin text-muted-foreground'
   if (failedJobs.value.length > 0)
-    return 'icon-[lucide--circle-alert] text-destructive-background'
-  return 'icon-[lucide--check-circle] text-jade-600'
+    return 'icon-[lucide--circle-alert] text-destructive'
+  if (cancelledJobs.value.length > 0)
+    return 'icon-[lucide--circle-x] text-muted-foreground'
+  return 'icon-[lucide--check-circle] text-success'
 })
-
-const tooltipConfig = computed(() => ({
-  value: footerLabel.value,
-  disabled: isExpanded.value,
-  pt: { root: { class: 'z-10000!' } }
-}))
 
 function progressPercent(job: AssetExport): number {
   return Math.round(job.progress * 100)
@@ -66,12 +73,10 @@ function closeDialog() {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
-      <div
-        class="flex h-12 items-center justify-between border-b border-border-default px-4"
-      >
-        <h3 class="text-sm font-bold text-base-foreground">
+      <div class="flex h-12 items-center justify-between border-b px-4">
+        <h3 class="text-sm font-bold">
           {{ t('exportToast.exportingAssets') }}
         </h3>
       </div>
@@ -83,7 +88,7 @@ function closeDialog() {
             :key="job.taskId"
             :class="
               cn(
-                'flex items-center justify-between rounded-lg bg-modal-card-background px-4 py-3',
+                'flex items-center justify-between rounded-lg bg-secondary px-4 py-3',
                 job.status === 'completed' && 'opacity-50'
               )
             "
@@ -94,8 +99,8 @@ function closeDialog() {
                   cn(
                     'block truncate text-sm',
                     job.status === 'failed'
-                      ? 'text-destructive-background'
-                      : 'text-base-foreground'
+                      ? 'text-destructive'
+                      : 'text-foreground'
                   )
                 "
               >
@@ -112,15 +117,13 @@ function closeDialog() {
             <div class="flex items-center gap-2">
               <template v-if="job.status === 'failed'">
                 <i
-                  class="icon-[lucide--circle-alert] size-4 text-destructive-background"
+                  class="icon-[lucide--circle-alert] size-4 text-destructive"
                 />
               </template>
               <template
                 v-else-if="job.status === 'completed' && job.downloadError"
               >
-                <span
-                  class="max-w-32 truncate text-xs text-destructive-background"
-                >
+                <span class="max-w-32 truncate text-xs text-destructive">
                   {{ job.downloadError }}
                 </span>
                 <Button
@@ -130,7 +133,7 @@ function closeDialog() {
                   @click.stop="assetExportStore.triggerDownload(job, true)"
                 >
                   <i
-                    class="icon-[lucide--rotate-ccw] size-4 text-destructive-background"
+                    class="icon-[lucide--rotate-ccw] size-4 text-destructive"
                   />
                 </Button>
               </template>
@@ -141,16 +144,17 @@ function closeDialog() {
                   :aria-label="t('exportToast.downloadExport')"
                   @click.stop="assetExportStore.triggerDownload(job, true)"
                 >
-                  <i
-                    class="icon-[lucide--download] size-4 text-success-background"
-                  />
+                  <i class="icon-[lucide--download] size-4 text-success" />
                 </Button>
               </template>
-              <template v-else-if="job.status === 'running'">
-                <Loader size="sm" class="text-base-foreground" />
-                <span class="text-xs text-base-foreground">
-                  {{ progressPercent(job) }}%
+              <template v-else-if="job.status === 'cancelled'">
+                <span class="text-xs text-muted-foreground">
+                  {{ t('electronFileDownload.cancelled') }}
                 </span>
+              </template>
+              <template v-else-if="job.status === 'running'">
+                <Loader size="sm" class="text-foreground" />
+                <span class="text-xs"> {{ progressPercent(job) }}% </span>
               </template>
               <template v-else>
                 <span class="text-xs text-muted-foreground">
@@ -178,17 +182,19 @@ function closeDialog() {
 
     <template #footer="{ toggle }">
       <div
-        class="flex h-12 min-w-0 flex-1 items-center justify-between gap-2 border-t border-border-default px-4"
+        class="flex h-12 min-w-0 flex-1 items-center justify-between gap-2 border-t px-4"
       >
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
-          <i
-            v-tooltip.top="tooltipConfig"
-            :class="cn('size-4 shrink-0', footerIconClass)"
-          />
+          <Tooltip :disabled="isExpanded">
+            <TooltipTrigger as-child>
+              <i :class="cn('size-4 shrink-0', footerIconClass)" />
+            </TooltipTrigger>
+            <TooltipContent>{{ footerLabel }}</TooltipContent>
+          </Tooltip>
           <span
             :class="
               cn(
-                'truncate overflow-hidden font-bold text-base-foreground transition-all duration-300',
+                'truncate overflow-hidden font-bold transition-all duration-300',
                 isExpanded ? 'min-w-0 flex-1' : 'w-0'
               )
             "
@@ -249,5 +255,5 @@ function closeDialog() {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>

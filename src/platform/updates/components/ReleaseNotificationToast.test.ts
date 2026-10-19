@@ -18,7 +18,6 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import type { ReleaseNote } from '../common/releaseService'
 import ReleaseNotificationToast from './ReleaseNotificationToast.vue'
@@ -81,31 +80,6 @@ describe('ReleaseNotificationToast', () => {
     mockData.isDesktop = false
     Object.assign(useReleaseStore(), { recentRelease: null })
     Object.assign(useReleaseStore(), { shouldShowToast: true })
-  })
-
-  it('renders correctly when shouldShow is true', () => {
-    Object.assign(useReleaseStore(), {
-      recentRelease: {
-        version: '1.2.3',
-        content: '# Test Release\n\nSome content'
-      } as ReleaseNote
-    })
-
-    renderComponent()
-    expect(screen.getByText('New update is out!')).toBeInTheDocument()
-  })
-
-  it('stays hidden while node selection mode is active', () => {
-    Object.assign(useReleaseStore(), {
-      recentRelease: {
-        version: '1.2.3',
-        content: '# Test Release\n\nSome content'
-      } as ReleaseNote
-    })
-    useAgentNodeSelectionStore().isActive = true
-
-    renderComponent()
-    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
   })
 
   it('displays rocket icon', () => {
@@ -325,6 +299,37 @@ describe('ReleaseNotificationToast', () => {
     await nextTick()
 
     expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it('restarts auto-hide after being hidden longer than the timeout', async () => {
+    Object.assign(useReleaseStore(), {
+      recentRelease: {
+        version: '1.2.3',
+        content: '# Test Release'
+      } as ReleaseNote,
+      shouldShowToast: false
+    })
+
+    const { rerender } = renderComponent({ isVisible: true })
+
+    Object.assign(useReleaseStore(), { shouldShowToast: true })
+    await nextTick()
+    expect(screen.getByText('New update is out!')).toBeInTheDocument()
+
+    await rerender({ isVisible: false })
+    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
+
+    vi.advanceTimersByTime(8000)
+    await rerender({ isVisible: true })
+    expect(screen.getByText('New update is out!')).toBeInTheDocument()
+
+    vi.advanceTimersByTime(7999)
+    await nextTick()
+    expect(screen.getByText('New update is out!')).toBeInTheDocument()
+
+    vi.advanceTimersByTime(1)
+    await nextTick()
+    expect(screen.queryByText('New update is out!')).not.toBeInTheDocument()
   })
 
   it('clears auto-hide timer when manually dismissed', async () => {

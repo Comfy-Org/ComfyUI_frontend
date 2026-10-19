@@ -1,13 +1,14 @@
 import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
 
-import type { Locale } from '../config/locales'
-import { LOCALE_CODES } from '../config/locales'
+import type { Locale } from '@/config/locales'
+import { LOCALE_CODES } from '@/config/locales'
+import { translationExclusions } from '@/config/translation'
 import { translationsFor } from './translations'
 
 type Catalog = { [key: string]: string | Catalog }
 
-const catalogSources = import.meta.glob<string>('../locales/*/*.json', {
+const catalogSources = import.meta.glob<string>('@/locales/*/*.json', {
   eager: true,
   query: '?raw',
   import: 'default'
@@ -55,12 +56,12 @@ const catalogFiles = new Map(
 )
 
 const catalogs = [...catalogFiles]
-  .filter(([path]) => path.startsWith('../locales/en/'))
+  .filter(([path]) => path.startsWith('/src/locales/en/'))
   .map(([path, english]) => {
-    const file = path.slice('../locales/en/'.length)
+    const file = path.slice('/src/locales/en/'.length)
     const messages = Object.fromEntries(
       LOCALE_CODES.flatMap((locale) => {
-        const catalog = catalogFiles.get(`../locales/${locale}/${file}`)
+        const catalog = catalogFiles.get(`/src/locales/${locale}/${file}`)
         return catalog ? [[locale, catalog]] : []
       })
     )
@@ -68,6 +69,10 @@ const catalogs = [...catalogFiles]
   })
 
 describe('site translations', () => {
+  it('discovers the English catalogs', () => {
+    expect(catalogs.map(({ file }) => file)).toContain('main.json')
+  })
+
   it('binds translations to a locale', () => {
     expect(translationsFor('zh-CN').t('hero.title')).toBe(
       '视觉 AI 的\n最强可控性'
@@ -77,13 +82,13 @@ describe('site translations', () => {
   it('falls back from Japanese to English', () => {
     const { t } = translationsFor('ja')
     expect(t('hero.title')).toBe('ビジュアルAIを自在にコントロール')
-    expect(t('tags.partnerNodes')).toBe('Partner Nodes')
+    expect(t('tos.effectiveDateLabel')).toBe('Effective Date')
   })
 
   it.for([
     ['en', '42 models'],
     ['zh-CN', '42 个模型'],
-    ['ja', '42 models']
+    ['ja', '42件のモデル']
   ] as const)('renders the model directory count in %s', ([locale, text]) => {
     expect(
       translationsFor(locale).t('workshop.catalogue.directoryCount', {
@@ -108,12 +113,18 @@ describe('site translations', () => {
 })
 
 describe.for(catalogs)('$file catalog', ({ english, messages }) => {
-  it('includes Chinese copy for every English message', () => {
+  it('includes Chinese copy for every eligible English message', () => {
     const chinese = messages['zh-CN'] ?? {}
     const chineseKeys = new Set(leafMessages(chinese).map(([key]) => key))
     const missing = leafMessages(english)
       .map(([key]) => key)
-      .filter((key) => !chineseKeys.has(key))
+      .filter(
+        (key) =>
+          !chineseKeys.has(key) &&
+          !translationExclusions.some(
+            (prefix) => key === prefix || key.startsWith(`${prefix}.`)
+          )
+      )
 
     expect(missing).toEqual([])
   })

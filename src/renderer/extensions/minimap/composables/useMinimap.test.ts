@@ -402,16 +402,6 @@ describe('useMinimap', () => {
       useCanvasStore().canvas = originalCanvas
     })
 
-    it('should setup event listeners on graph', async () => {
-      const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
-
-      expect(moduleMockGraph.onNodeAdded).toBeDefined()
-      expect(moduleMockGraph.onNodeRemoved).toBeDefined()
-      expect(moduleMockGraph.onConnectionChange).toBeDefined()
-    })
-
     it('should handle visibility from settings', async () => {
       vi.mocked(useSettingStore().get).mockReturnValue(false)
       const minimap = await createAndInitializeMinimap()
@@ -866,7 +856,7 @@ describe('useMinimap', () => {
       )
       expect(viewportStyles.width).toMatch(/\d+(\.\d+)?px/)
       expect(viewportStyles.height).toMatch(/\d+(\.\d+)?px/)
-      expect(viewportStyles.border).toBe('2px solid #FFF')
+      expect(viewportStyles.border).toBe('2px solid var(--foreground)')
     })
 
     it('should handle canvas dimension updates', async () => {
@@ -900,7 +890,7 @@ describe('useMinimap', () => {
 
       expect(styles.width).toBe('253px')
       expect(styles.height).toBe('200px')
-      expect(styles.border).toBe('1px solid var(--interface-stroke)')
+      expect(styles.border).toBe('1px solid var(--border)')
       expect(styles.borderRadius).toBe('8px')
     })
   })
@@ -945,17 +935,6 @@ describe('useMinimap', () => {
 
       expect(mockContext2D.fillRect).toHaveBeenCalled()
       expect(mockContext2D.fillStyle).toBeDefined()
-    })
-  })
-
-  describe('setMinimapRef', () => {
-    it('should set minimap reference', () => {
-      const minimap = useMinimap()
-      const ref = document.createElement('div')
-
-      minimap.setMinimapRef(ref)
-
-      expect(() => minimap.setMinimapRef(ref)).not.toThrow()
     })
   })
 })

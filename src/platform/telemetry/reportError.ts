@@ -7,8 +7,11 @@ import type { ComfyDesktop2TelemetryProperties } from '@comfyorg/comfyui-desktop
 import { REPORTED_ERROR_PREFIX } from '@comfyorg/shared-frontend-utils/telemetry'
 
 import { isCloud } from '@/platform/distribution/types'
+import { getFrontendBucket } from '@/platform/telemetry/initDatadogRum'
 import { isHostTelemetryEnabled } from '@/platform/telemetry/hostTelemetryEnabled'
 import { toError } from '@/utils/errorUtil'
+
+import { redactTelemetryValues } from './redactTelemetryUrls'
 
 export type Surface =
   | 'agent'
@@ -63,6 +66,16 @@ const NO_DELIVERY: DeliveryState = {
  */
 const pendingReports: PendingReport[] = []
 const MAX_PENDING_REPORTS = 25
+const reportedErrors = new WeakSet<Error>()
+
+/**
+ * Prevents an error with its own complete diagnostic from being reported again
+ * by a higher-level catch boundary. The original error remains unchanged for
+ * user-facing handling.
+ */
+export function markErrorReported(error: Error): void {
+  reportedErrors.add(error)
+}
 
 const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
 
@@ -77,7 +90,7 @@ const definedEntriesOf = <V>(
   )
 
 /** Written from `options`, so a caller tag of the same name never lands. */
-const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface'])
+const RESERVED_TAG_KEYS = new Set(['error_type', 'level', 'surface', 'bucket'])
 
 let dispatching = false
 
@@ -152,6 +165,64 @@ function dispatchToDesktop(
   }
 }
 
+function dispatchToSentry(
+  error: Error,
+  errorType: string,
+  surface: Surface,
+  tags: Record<string, string | number | boolean>,
+  context: Record<string, unknown>,
+  level: ReportErrorOptions['level']
+): boolean {
+  try {
+    captureException(error, {
+      tags: { ...tags, error_type: errorType, surface },
+      extra: context,
+      level
+    })
+    return true
+  } catch (reporterFailure) {
+    console.error(
+      '[reportError] Sentry delivery failed',
+      reporterFailure,
+      error
+    )
+    return false
+  }
+}
+
+function dispatchToDatadog(
+  error: Error,
+  errorType: string,
+  surface: Surface,
+  tags: Record<string, string | number | boolean>,
+  context: Record<string, unknown>,
+  level: ReportErrorOptions['level']
+): boolean {
+  try {
+    const redactedCause = redactTelemetryValues({ cause: error.cause })?.cause
+    const datadogError = Object.assign(new Error(error.message), error, {
+      name: errorType,
+      stack: error.stack,
+      cause: redactedCause
+    })
+    datadogRum.addError(datadogError, {
+      ...context,
+      ...tags,
+      error_type: errorType,
+      surface,
+      ...(level ? { level } : {})
+    })
+    return true
+  } catch (reporterFailure) {
+    console.error(
+      '[reportError] Datadog delivery failed',
+      reporterFailure,
+      error
+    )
+    return false
+  }
+}
+
 function dispatch(
   error: Error,
   options: ReportErrorOptions,
@@ -159,60 +230,45 @@ function dispatch(
 ): DeliveryState {
   const { errorType, surface, level } = options
   const context = definedEntriesOf(options.context)
-  const tags = definedTagsOf(options.tags)
+  const bucket = getFrontendBucket()
+  const tags = {
+    ...definedTagsOf(options.tags),
+    ...(bucket ? { bucket } : {})
+  }
   const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
   const datadogLive = !alreadyDelivered.datadog && isDatadogRumLive()
   let sentryDelivered = alreadyDelivered.sentry
   let datadogDelivered = alreadyDelivered.datadog
-  let desktopDelivered = alreadyDelivered.desktop
 
   dispatching = true
   try {
     if (sentryLive) {
-      try {
-        captureException(error, {
-          tags: { ...tags, error_type: errorType, surface },
-          extra: context,
-          level
-        })
-        sentryDelivered = true
-      } catch (reporterFailure) {
-        console.error(
-          '[reportError] Sentry delivery failed',
-          reporterFailure,
-          error
-        )
-      }
+      sentryDelivered = dispatchToSentry(
+        error,
+        errorType,
+        surface,
+        tags,
+        context,
+        level
+      )
     }
     if (datadogLive) {
-      try {
-        const datadogError = Object.assign(
-          new Error(error.message, { cause: error.cause }),
-          error,
-          { name: errorType, stack: error.stack }
-        )
-        datadogRum.addError(datadogError, {
-          ...context,
-          ...tags,
-          error_type: errorType,
-          surface,
-          ...(level ? { level } : {})
-        })
-        datadogDelivered = true
-      } catch (reporterFailure) {
-        console.error(
-          '[reportError] Datadog delivery failed',
-          reporterFailure,
-          error
-        )
-      }
+      datadogDelivered = dispatchToDatadog(
+        error,
+        errorType,
+        surface,
+        tags,
+        context,
+        level
+      )
     }
   } finally {
     dispatching = false
   }
-  if (!desktopDelivered) {
-    desktopDelivered = dispatchToDesktop(error, errorType, surface, tags, level)
-  }
+
+  const desktopDelivered =
+    alreadyDelivered.desktop ||
+    dispatchToDesktop(error, errorType, surface, tags, level)
 
   return {
     sentry: sentryDelivered,
@@ -312,6 +368,7 @@ function logReport(
  */
 export function reportError(cause: unknown, options: ReportErrorOptions): void {
   try {
+    if (cause instanceof Error && reportedErrors.has(cause)) return
     if (dispatching) {
       logReport(cause, options, ' (suppressed: raised while reporting)')
       return

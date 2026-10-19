@@ -18,6 +18,7 @@ import type {
   BillingResult,
   BillingStatusData,
   BillingStatusSnapshot,
+  CancelOperationResult,
   CapabilitiesSnapshot,
   PaymentMethodsSnapshot,
   PaymentPortalResult,
@@ -51,6 +52,8 @@ const READ_AT = 1_700_000_000_000
 export interface FakeBillingClientOptions {
   readonly plans?: BillingResult<BillingPlansData>
   readonly paymentMethods?: BillingResult<readonly SavedPaymentMethod[]>
+  /** Methods an earlier read left cached, before this page reads its own. */
+  readonly cachedPaymentMethods?: readonly SavedPaymentMethod[]
   readonly preview?: PreviewSubscribeResult
   readonly portalUrl?: string
   /** Overrides `portalUrl` when the portal itself should answer with a failure. */
@@ -65,6 +68,7 @@ export interface FakeBillingClientOptions {
   readonly status?: BillingStatusData
   readonly topupQuote?: TopupQuoteResult
   readonly topup?: TopupResult
+  readonly cancelOperation?: CancelOperationResult
 }
 
 export interface FakeBillingClient {
@@ -78,6 +82,9 @@ export interface FakeBillingClient {
   readonly reportChallengeStarted: Mock<
     BillingClient['lifecycle']['reportChallengeStarted']
   >
+  readonly reportHostedStepOpened: Mock<
+    BillingClient['lifecycle']['reportHostedStepOpened']
+  >
   readonly reportChallengeSettled: Mock<
     BillingClient['lifecycle']['reportChallengeSettled']
   >
@@ -88,6 +95,7 @@ export interface FakeBillingClient {
     BillingClient['commands']['cancelSubscription']
   >
   readonly resubscribe: Mock<BillingClient['commands']['resubscribe']>
+  readonly cancelOperation: Mock<BillingClient['commands']['cancelOperation']>
   readonly recover: Mock<BillingClient['lifecycle']['recover']>
   readonly quoteTopup: Mock<BillingClient['topup']['quoteTopup']>
   readonly createTopupCheckout: Mock<
@@ -115,6 +123,7 @@ export function createFakeBillingClient(
       value: { current_plan_slug: undefined, plans: [] }
     },
     paymentMethods = { status: 'ok', value: [] },
+    cachedPaymentMethods,
     preview = { status: 'error', code: 'REQUEST_FAILED' },
     portalUrl = 'https://billing.stripe.test/session',
     portal: portalOutcome = { status: 'ok', value: { url: portalUrl } },
@@ -136,7 +145,8 @@ export function createFakeBillingClient(
       team_credit_stop: null
     },
     topupQuote = { status: 'error', code: 'REQUEST_FAILED' },
-    topup: topupOutcome = { status: 'error', code: 'REQUEST_FAILED' }
+    topup: topupOutcome = { status: 'error', code: 'REQUEST_FAILED' },
+    cancelOperation: cancelOperationOutcome = { status: 'canceled' }
   } = options
 
   const operations = new Map<string, BillingOperationState>()
@@ -173,6 +183,9 @@ export function createFakeBillingClient(
   const reportChallengeStarted: Mock<
     BillingClient['lifecycle']['reportChallengeStarted']
   > = vi.fn()
+  const reportHostedStepOpened: Mock<
+    BillingClient['lifecycle']['reportHostedStepOpened']
+  > = vi.fn()
   const reportChallengeSettled: Mock<
     BillingClient['lifecycle']['reportChallengeSettled']
   > = vi.fn()
@@ -202,17 +215,31 @@ export function createFakeBillingClient(
     return topupOutcome
   })
   const cancelSubscription = commandOf(cancelOutcome)
+  const cancelOperation: Mock<BillingClient['commands']['cancelOperation']> =
+    vi.fn(async () => cancelOperationOutcome)
   const resubscribe = commandOf(resubscribeOutcome)
   const capabilitiesSnapshot: CapabilitiesSnapshot = {
     capabilities: {
       can_cancel: false,
       can_change_seats: false,
       can_downgrade_to_personal: false,
+      can_edit_workspace: false,
       can_invite_members: false,
+      can_manage_auto_top_up: false,
+      can_manage_members: false,
+      can_manage_subscription: false,
+      can_delete_workspace: false,
+      can_leave_workspace: false,
+      can_manage_billing: false,
+      can_manage_partner_node_access: false,
+      can_view_pending_invites: false,
+      can_view_team_usage: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,
+      can_run_workflows: false,
       can_subscribe_self_serve: false,
       can_top_up: false,
+      can_upgrade: false,
       ...granted
     },
     denials,
@@ -255,6 +282,7 @@ export function createFakeBillingClient(
       switchPresentation: unusedByHostedSurfaces(
         'lifecycle.switchPresentation'
       ),
+      reportHostedStepOpened,
       reportChallengeStarted,
       reportChallengeSettled,
       get: (id) => operations.get(id),
@@ -289,7 +317,12 @@ export function createFakeBillingClient(
     },
     paymentMethods: {
       read: readPaymentMethods,
-      getSnapshot: () => undefined,
+      getSnapshot: () =>
+        cachedPaymentMethods && {
+          scope: SCOPE,
+          methods: cachedPaymentMethods,
+          readAt: READ_AT
+        },
       invalidate: invalidatePaymentMethods,
       dispose: () => {}
     },
@@ -310,6 +343,7 @@ export function createFakeBillingClient(
       previewSubscribe,
       resubscribe,
       cancelSubscription,
+      cancelOperation,
       openPaymentPortal
     }
   }
@@ -337,6 +371,7 @@ export function createFakeBillingClient(
     readPlans,
     readPaymentMethods,
     invalidatePaymentMethods,
+    reportHostedStepOpened,
     reportChallengeStarted,
     reportChallengeSettled,
     previewSubscribe,
@@ -344,6 +379,7 @@ export function createFakeBillingClient(
     subscribe,
     cancelSubscription,
     resubscribe,
+    cancelOperation,
     recover,
     quoteTopup,
     createTopupCheckout,
@@ -386,6 +422,7 @@ export function planOf(
   overrides: Partial<BillingPlansData['plans'][number]> = {}
 ): BillingPlansData['plans'][number] {
   return {
+    action: 'subscribe',
     availability: { available: true },
     credits_cents: 6900n,
     duration: 'MONTHLY',

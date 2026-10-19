@@ -11,28 +11,28 @@ import {
 } from 'vitest'
 import { computed, markRaw, readonly, ref, shallowRef } from 'vue'
 
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { useWorkshopModelBalance } from '../../config/workshop-model-balance'
-import type { WorkshopSession } from '../../config/workshop-session-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
-import type { WorkflowState } from '../../config/workshop-workflow-state'
-import { workflowDetailsBySlug } from '../../config/workshop-workflow-content'
-import { useWorkflowRun } from '../../composables/useWorkflowRun'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { useWorkshopModelBalance } from '@/config/workshop-model-balance'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { WorkflowState } from '@/config/workshop-workflow-state'
+import { workflowDetailsBySlug } from '@/config/workshop-workflow-content'
+import { useWorkflowRun } from '@/composables/useWorkflowRun'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-credits'))
-vi.mock(import('../../config/workshop-model-balance'), () => ({
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
+vi.mock(import('@/config/workshop-model-balance'), () => ({
   useWorkshopModelBalance: vi.fn()
 }))
-vi.mock(import('../../composables/useWorkflowRun'))
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/composables/useWorkflowRun'))
+vi.mock(import('@/scripts/posthog'))
 
 beforeEach(() => {
   vi.mocked(useWorkshopModelBalance).mockReturnValue(
@@ -101,7 +101,45 @@ describe('WorkflowPlayground analytics', () => {
     })
     expect(
       vi.mocked(captureWorkshopEvent).mock.calls.map(([event]) => event.name)
-    ).toEqual(['model_viewed', 'api_viewed'])
+    ).toEqual(['model_viewed', 'tab_switched', 'api_viewed'])
+  })
+})
+
+describe('WorkflowPlayground tab analytics', () => {
+  it('reports a tab switch with the tab switched to and workflow attribution', async () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+    const visitor = userEvent.setup()
+
+    await visitor.click(screen.getByRole('tab', { name: 'Details' }))
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'tab_switched',
+      properties: expect.objectContaining({
+        model_slug: model.slug,
+        page_type: 'workflow',
+        workflow_id: model.workflowId,
+        tab: 'workflow'
+      })
+    })
+
+    vi.mocked(captureWorkshopEvent).mockClear()
+    await visitor.click(screen.getByRole('tab', { name: 'Details' }))
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
+  })
+
+  it('reports no tab switch while Workflows access is off', async () => {
+    const model = workflowDetailsBySlug.get('workflows/remove-background')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(false)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'Details' }))
+
+    expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 })
 
@@ -176,15 +214,15 @@ describe('WorkflowPlayground API tab analytics', () => {
 })
 
 describe('WorkflowPlayground input panel', () => {
-  // The way out of the page lives on Details beside the graph, so the panel
-  // that asks the questions carries the run control and nothing else.
-  it('heads the questions and leaves the ways out to Details', () => {
+  // The ways out of the page live in the page header, so the panel that asks
+  // the questions carries the run control and nothing else.
+  it('heads the questions and leaves the ways out to the page header', () => {
     const model = workflowDetailsBySlug.get('workflows/remove-background')
     assert(model)
     vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
     vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
     render(WorkflowPlayground, {
-      props: { model, scope: 'anonymous', cloudHref: 'https://cloud/?t=1' }
+      props: { model, scope: 'anonymous' }
     })
 
     const panel = screen.getByRole('tabpanel', { name: 'Playground' })
@@ -314,4 +352,38 @@ describe('WorkflowPlayground examples', () => {
       expect(examples).not.toBeVisible()
     }
   )
+
+  it('moves the chosen mark to the example the gallery opened', async () => {
+    const model = workflowDetailsBySlug.get('workflows/change-material')
+    assert(model)
+    expect(model.examples.length).toBeGreaterThan(1)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    const [first, second] = screen.getAllByTestId('example-card')
+    expect(first).toHaveAttribute('aria-current', 'true')
+
+    await userEvent.setup().click(second)
+
+    await waitFor(() => expect(second).toHaveAttribute('aria-current', 'true'))
+    expect(first).not.toHaveAttribute('aria-current')
+    expect(screen.getAllByTestId('example-chosen')).toHaveLength(1)
+    expect(within(second).getByTestId('example-chosen')).toBeTruthy()
+  })
+
+  it('keeps the chosen example where it is while a run holds the form', async () => {
+    const model = workflowDetailsBySlug.get('workflows/change-material')
+    assert(model)
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    mockWorkflowRun(shallowRef<WorkflowState>({ phase: 'preparing' }))
+    render(WorkflowPlayground, { props: { model, scope: 'anonymous' } })
+
+    const [first, second] = screen.getAllByTestId('example-card')
+    await userEvent.setup().click(second)
+
+    expect(first).toHaveAttribute('aria-current', 'true')
+    expect(second).not.toHaveAttribute('aria-current')
+  })
 })

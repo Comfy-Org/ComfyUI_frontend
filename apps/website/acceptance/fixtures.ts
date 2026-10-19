@@ -7,7 +7,7 @@ import type { Page, TestInfo } from '@playwright/test'
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { validateArtifact } from '../scripts/router-model-artifacts'
+import { validateArtifact } from '@website/scripts/router-model-artifacts'
 import { readBalanceCents } from './billing'
 import type { BalanceRead } from './billing'
 import type { ModelCase } from './cases'
@@ -225,7 +225,7 @@ export async function runAndVerify(
   const response = await accepted
   expect(response.status(), 'Router submission HTTP status').toBe(201)
   const { request_id: acceptedId } = z
-    .object({ request_id: z.string().uuid() })
+    .object({ request_id: z.uuid() })
     .parse(await response.json())
   await testInfo.attach(`${variant}-accepted-job`, {
     contentType: 'application/json',

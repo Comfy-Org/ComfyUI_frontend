@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 

@@ -5,7 +5,7 @@ import type {
   CurveInputSpec,
   InputSpec as InputSpecV2
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
+import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 const DEFAULT_CURVE_DATA: CurveData = {
   points: [
@@ -22,7 +22,13 @@ export const useCurveWidget = (): ComfyWidgetConstructorV2 => {
       ? { ...spec.default, points: [...spec.default.points] }
       : { ...DEFAULT_CURVE_DATA, points: [...DEFAULT_CURVE_DATA.points] }
 
-    const rawWidget = node.addWidget('curve', spec.name, defaultValue, () => {})
+    const rawWidget = node.addWidget(
+      'curve',
+      spec.name,
+      defaultValue,
+      () => {},
+      { hideInPanel: true }
+    )
 
     if (rawWidget.type !== 'curve') {
       throw new Error(`Unexpected widget type: ${rawWidget.type}`)

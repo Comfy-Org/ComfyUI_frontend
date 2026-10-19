@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import {
   useEventListener,
   useIntersectionObserver,
@@ -8,7 +9,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -17,6 +18,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { TurnId } from '../../schemas/agentApiSchema'
 import type { PromptSnapshot } from '../../types/workflowReference'
@@ -40,7 +42,7 @@ const {
 const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
@@ -48,6 +50,27 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const skills = useSkillPacksStore()
+const conversation = useAgentConversationStore()
+const hasSkills = computed(() =>
+  entries.some((entry) => entry.role === 'user' && entry.skillReference)
+)
+function refreshSkills(): void {
+  void skills.startFlagGate({ fetch: false })
+  if (skills.enabled) void skills.refreshPacks()
+}
+// Opening a conversation refreshes the catalog its skills are shown against.
+// A live turn's first skill doesn't: the session refreshes when it ends.
+watch(
+  () => conversation.historySkillNames,
+  (names) => {
+    if (names.length) refreshSkills()
+  },
+  { immediate: true }
+)
+watch([() => skills.enabled, () => skills.scope], () => {
+  if (hasSkills.value) refreshSkills()
+})
 
 const scrollContainer = ref<HTMLElement>()
 const content = ref<HTMLElement>()
@@ -217,6 +240,7 @@ watch(
               :attachments="entry.attachments"
               :tags="entry.tags"
               :workflow-references="entry.workflowReferences"
+              :skill-reference="entry.skillReference"
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
               @open-reference-workflow="
@@ -230,10 +254,7 @@ watch(
               :answering-ask-ids
               :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
-              @answer-ask="
-                (askId: string, selection: 'run' | 'cancel') =>
-                  emit('answerAsk', askId, selection)
-              "
+              @answer-ask="(askId, answer) => emit('answerAsk', askId, answer)"
               @approval-shown="
                 (askId, turnId, workflowId) =>
                   emit('approvalShown', askId, turnId, workflowId)
@@ -251,7 +272,7 @@ watch(
 
     <Button
       v-if="!shouldFollowLatest"
-      v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
+      :tooltip="t('agent.latest')"
       type="button"
       variant="secondary"
       size="icon"
