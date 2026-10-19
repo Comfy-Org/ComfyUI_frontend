@@ -1,68 +1,132 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-import type { ComponentProps } from 'vue-component-type-helpers'
 
 import HowToEnterSection from './HowToEnterSection.vue'
 
 const props = {
-  heading: 'How to enter',
-  facts: [
-    { id: 'what', term: 'What you make', description: 'A working app.' },
-    {
-      id: 'deadline',
-      term: 'Submission deadline',
-      description: 'October 30'
-    }
-  ],
-  intro: 'Every submission must include:',
-  deliverables: [
-    { id: 'repo', title: 'GitHub repo', description: 'Your app code.' },
-    { id: 'demo', title: 'Demo video', description: 'Two minutes max.' }
-  ],
-  requirementsHeading: 'Requirements',
-  requirements: ['One submission per person', 'Lawful and SFW'],
-  note: 'About the demo video.'
-} satisfies ComponentProps<typeof HowToEnterSection>
+  signupHref: 'https://example.com/signup',
+  submitHref: 'https://example.com/submit'
+}
 
-const textOf = (elements: HTMLElement[]) =>
+const textsOf = (elements: HTMLElement[]) =>
   elements.map((element) => element.textContent.trim())
 
+async function openStep(name: string) {
+  await userEvent.click(screen.getByRole('button', { name }))
+  return screen.findByRole('region', { name })
+}
+
 describe('HowToEnterSection', () => {
-  it('pairs each fact term with its description', () => {
-    render(HowToEnterSection, { props })
+  it('renders the localized heading and open sign-up step', () => {
+    render(HowToEnterSection, { props: { ...props, locale: 'zh-CN' } })
 
     expect(
-      screen.getByRole('heading', { level: 2, name: 'How to enter' })
+      screen.getByRole('heading', { level: 2, name: '如何参赛' })
     ).toBeInTheDocument()
-    expect(textOf(screen.getAllByRole('term'))).toEqual([
-      'What you make',
-      'Submission deadline'
-    ])
-    expect(textOf(screen.getAllByRole('definition'))).toEqual([
-      'A working app.',
-      'October 30'
+    expect(screen.getByRole('link', { name: '点此报名' })).toHaveAttribute(
+      'href',
+      props.signupHref
+    )
+  })
+
+  it('numbers the four steps in order', () => {
+    render(HowToEnterSection, { props })
+
+    expect(textsOf(screen.getAllByRole('button'))).toEqual([
+      '1. Sign up',
+      '2. App requirements',
+      '3. Prepare your submission',
+      '4. Submit'
     ])
   })
 
-  it('numbers the deliverables in order', () => {
+  it.for([
+    {
+      locale: 'en',
+      step: '2. App requirements',
+      name: 'Developer Platform',
+      href: '/platform/'
+    },
+    {
+      locale: 'en',
+      step: '2. App requirements',
+      name: 'Comfy SDK',
+      href: 'https://docs.comfy.org/development/api-development/sdks'
+    },
+    {
+      locale: 'zh-CN',
+      step: '2. 应用要求',
+      name: '开发者平台',
+      href: '/zh-CN/platform/'
+    },
+    {
+      locale: 'zh-CN',
+      step: '2. 应用要求',
+      name: 'Comfy SDK',
+      href: 'https://docs.comfy.org/zh/development/api-development/sdks'
+    }
+  ] as const)(
+    'links the $locale "$name" requirement to $href',
+    async ({ locale, step, name, href }) => {
+      render(HowToEnterSection, { props: { ...props, locale } })
+
+      const region = await openStep(step)
+
+      expect(within(region).getByRole('link', { name })).toHaveAttribute(
+        'href',
+        href
+      )
+    }
+  )
+
+  it('lists every app requirement in order', async () => {
     render(HowToEnterSection, { props })
 
-    expect(textOf(screen.getAllByText(/^0\d$/))).toEqual(['01', '02'])
-    expect(textOf(screen.getAllByRole('heading', { level: 3 }))).toEqual([
-      'GitHub repo',
-      'Demo video'
+    const region = await openStep('2. App requirements')
+
+    expect(textsOf(within(region).getAllByRole('listitem'))).toEqual([
+      'Your work must be built using the Comfy Developer Platform (Comfy Router and/or Comfy SDK)',
+      'Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine',
+      'Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video',
+      'All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses',
+      'By submitting, you agree to allow ComfyUI, NVIDIA, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels',
+      'One submission per person'
     ])
   })
 
-  it('shows the requirements open by default with the demo note', () => {
+  it('lists the four deliverables in order', async () => {
     render(HowToEnterSection, { props })
 
-    const requirements = screen.getByRole('group')
-    expect(requirements).toHaveAttribute('open')
-    expect(textOf(within(requirements).getAllByRole('listitem'))).toEqual([
-      'One submission per person',
-      'Lawful and SFW'
+    const region = await openStep('3. Prepare your submission')
+
+    expect(textsOf(within(region).getAllByRole('listitem'))).toEqual([
+      expect.stringMatching(/^GitHub repo/),
+      expect.stringMatching(/^Demo video/),
+      expect.stringMatching(/^A link to try it/),
+      expect.stringMatching(/^Social post/)
     ])
-    expect(screen.getByText('About the demo video.')).toBeInTheDocument()
+  })
+
+  it('stacks sign-up and submit calls to action under the heading', () => {
+    render(HowToEnterSection, { props })
+
+    expect(screen.getByRole('link', { name: 'Sign up' })).toHaveAttribute(
+      'href',
+      props.signupHref
+    )
+    expect(
+      screen.getByRole('link', { name: 'Submit your entry' })
+    ).toHaveAttribute('href', props.submitHref)
+  })
+
+  it('ends the steps with the submit entry call to action', async () => {
+    render(HowToEnterSection, { props })
+
+    const region = await openStep('4. Submit')
+
+    expect(
+      within(region).getByRole('link', { name: 'Submit your entry' })
+    ).toHaveAttribute('href', props.submitHref)
   })
 })

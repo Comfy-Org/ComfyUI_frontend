@@ -23,6 +23,8 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toRootGraphId } from '@/types/graphScopeId'
@@ -767,6 +769,24 @@ describe('attachDocOpMinter', () => {
     docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
     return { host, doc }
   }
+
+  it('does not grow a promoted input the subgraph host doc lacks, reporting it instead', async () => {
+    const { host, doc } = seedPromotedHost()
+    expect(host.inputs[1].widget).toEqual({ name: 'text' })
+    const source = new LGraphNode('Text Source')
+    source.addOutput('STRING', 'STRING')
+    withGraphIntentSource('load', () => graph.add(source))
+    docInputNames = (nodeId) => (nodeId === host.id ? [] : null)
+
+    source.connect(0, host, 1)
+    await afterFlush()
+
+    expect(minted).toEqual([])
+    expect(
+      vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+    ).toEqual(['agent_crdt_link_slot_not_in_doc'])
+    doc.destroy()
+  })
 
   it('PM-1995: mints a promoted host write the doc host accepts', async () => {
     const { host, doc } = seedPromotedHost()
@@ -1959,5 +1979,229 @@ describe('attachDocOpMinter', () => {
 
       expect(isRootGraphDocBound(graph.id)).toBe(false)
     })
+  })
+})
+
+describe('wireNodeSnapshot widget form (schema A24)', () => {
+  function nodeDef(
+    name: string,
+    required: NonNullable<ComfyNodeDefV1['input']>['required']
+  ): ComfyNodeDefV1 {
+    return {
+      name,
+      display_name: name,
+      category: 'test',
+      python_module: 'custom_nodes.test',
+      description: '',
+      input: { required },
+      output: [],
+      output_name: [],
+      output_is_list: [],
+      output_node: false
+    }
+  }
+
+  function nodeWith(
+    type: string,
+    build: (node: LGraphNode) => void
+  ): LGraphNode {
+    const node = new LGraphNode(type, type)
+    node.serialize_widgets = true
+    build(node)
+    return node
+  }
+
+  it('declares the order when an extension adds a value widget the definition does not describe', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Display Int', { input: ['INT', { forceInput: true }] })
+    )
+    const node = nodeWith('Display Int', (n) => {
+      n.addInput('input', 'INT')
+      n.addWidget('text', 'output', '', () => {})
+      n.addWidget('button', 'copy', 'copy', () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values: { output: '' },
+      widgets_values_form: { order: ['output'] }
+    })
+  })
+
+  it('declares every value widget, described ones included, once one is not', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Mixed', { steps: ['INT', {}] }))
+    const node = nodeWith('Mixed', (n) => {
+      n.addWidget('number', 'steps', 20, () => {})
+      n.addWidget('text', 'preview', 'x', () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values: { steps: 20, preview: 'x' },
+      widgets_values_form: { order: ['steps', 'preview'] }
+    })
+  })
+
+  it('keeps the catalog path when every widget is a definition input', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
+    const node = nodeWith('Described', (n) => {
+      n.addWidget('number', 'steps', 20, () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('treats a companion linked to a described widget as described', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Seeded', { seed: ['INT', {}] }))
+    const node = nodeWith('Seeded', (n) => {
+      const seed = n.addWidget('number', 'seed', 1, () => {})
+      const control = n.addWidget(
+        'combo',
+        'control_after_generate',
+        'fixed',
+        () => {},
+        { values: ['fixed', 'randomize'] }
+      )
+      seed.linkedWidgets = [control]
+    })
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('treats a dynamic child named under a definition input as described', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
+    )
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
+      n.addWidget('number', 'mode.steps', 4, () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('declares the order when an extension widget shares a forceInput name', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Display Any', { source: ['*', { forceInput: true }] })
+    )
+    const node = nodeWith('Display Any', (n) => {
+      n.addInput('source', '*')
+      n.addWidget('text', 'source', '', () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values_form: { order: ['source'] }
+    })
+  })
+
+  it('declares nothing for a node built by the real widget constructors', () => {
+    const required = {
+      seed: ['INT', { default: 1, control_after_generate: true }],
+      sampler_name: [['euler', 'dpmpp_2m'], {}],
+      model: ['MODEL', {}]
+    } satisfies NonNullable<ComfyNodeDefV1['input']>['required']
+    useNodeDefStore().addNodeDef(nodeDef('Real Sampler', required))
+    const node = nodeWith('Real Sampler', (n) => {
+      for (const [name, spec] of Object.entries(required))
+        useLitegraphService().addNodeInput(
+          n,
+          transformInputSpecV1ToV2(spec, { name })
+        )
+    })
+
+    expect(Object.keys(wireNodeSnapshot(node)?.widgets_values ?? {})).toEqual(
+      expect.arrayContaining(['seed', 'sampler_name'])
+    )
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('declares the order when an extension widget shares a socket-only input name', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Display Image', { source: ['IMAGE', {}] })
+    )
+    const node = nodeWith('Display Image', (n) => {
+      n.addInput('source', 'IMAGE')
+      n.addWidget('text', 'source', '', () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values_form: { order: ['source'] }
+    })
+  })
+
+  it('drops a form the node carried in from a loaded projection when none applies', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Described', { steps: ['INT', {}] }))
+    const node = nodeWith('Described', (n) => {
+      n.addWidget('number', 'steps', 20, () => {})
+    })
+    node.configure(
+      Object.assign(node.serialize(), {
+        widgets_values_form: { order: ['steps', 'gone'] }
+      })
+    )
+    expect(node.serialize()).toHaveProperty('widgets_values_form')
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('declares nothing for a class with no definition', () => {
+    const node = nodeWith('Undefined Class', (n) => {
+      n.addWidget('text', 'output', '', () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('declares nothing when the node has no value widgets', () => {
+    useNodeDefStore().addNodeDef(nodeDef('Buttons', {}))
+    const node = nodeWith('Buttons', (n) => {
+      n.addWidget('button', 'refresh', 'refresh', () => {})
+    })
+
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('mints a declared node the applier accepts against a catalog that lists no widgets', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Display Int', { input: ['INT', { forceInput: true }] })
+    )
+    const node = nodeWith('Display Int', (n) => {
+      n.addInput('input', 'INT')
+      n.addWidget('text', 'output', '', () => {})
+    })
+    const snapshot = wireNodeSnapshot(node)!
+    const catalog: WidgetCatalog = {
+      types: { 'Display Int': { widget_order: [] } }
+    }
+    const doc = mint({ nodes: [], links: [] }, catalog)
+
+    const result = applyOps(
+      doc,
+      mintWireOps(
+        [
+          {
+            op: 'add_node',
+            node_id: snapshot.id,
+            class_type: snapshot.type,
+            pos: [0, 0],
+            node: snapshot
+          }
+        ],
+        {
+          actor: 'human:user:tab',
+          baseVersion: 1
+        }
+      ),
+      catalog
+    )
+
+    expect(result.outcomes).toEqual([
+      expect.objectContaining({ outcome: 'applied' })
+    ])
+    expect(project(doc, catalog).nodes).toEqual([
+      expect.objectContaining({
+        type: 'Display Int',
+        widgets_values: { output: '' },
+        widgets_values_form: { order: ['output'] }
+      })
+    ])
   })
 })

@@ -3,12 +3,10 @@
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavItem" :nav-items="tempNavigation">
         <template #header-icon>
-          <i class="icon-[lucide--puzzle] text-base-foreground" />
+          <i class="icon-[lucide--puzzle] text-foreground" />
         </template>
         <template #header-title>
-          <span class="text-base text-base-foreground">{{
-            $t('g.title')
-          }}</span>
+          <span class="text-base text-foreground">{{ $t('g.title') }}</span>
         </template>
       </LeftSidePanel>
     </template>
@@ -103,7 +101,7 @@
     </template>
 
     <template #rightPanel>
-      <div class="size-full bg-modal-panel-background pr-6 pb-8 pl-4"></div>
+      <div class="size-full bg-card pr-6 pb-8 pl-4"></div>
     </template>
   </BaseModalLayout>
 </template>

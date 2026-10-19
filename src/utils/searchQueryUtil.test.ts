@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildPackSearchFallbacks,
   splitOnSeparators,
-  stripRepoOwner
+  toRepoName
 } from '@/utils/searchQueryUtil'
 
 describe('splitOnSeparators', () => {
@@ -46,7 +46,7 @@ describe('splitOnSeparators', () => {
   })
 })
 
-describe('stripRepoOwner', () => {
+describe('toRepoName', () => {
   it.for([
     { query: 'kijai/comfyui-kjnodes', expected: 'comfyui-kjnodes' },
     { query: 'github.com/kijai/ComfyUI-KJNodes', expected: 'ComfyUI-KJNodes' },
@@ -78,6 +78,12 @@ describe('stripRepoOwner', () => {
       expected: 'ComfyUI-KJNodes'
     },
     { query: 'kijai/ComfyUI-KJNodes', expected: 'ComfyUI-KJNodes' },
+    { query: 'kijai/comfyui-kjnodes.git', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/ComfyUI-KJNodes.GIT', expected: 'ComfyUI-KJNodes' },
+    { query: 'kijai/comfyui-kjnodes/', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/comfyui-kjnodes//', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/comfyui-kjnodes.git/', expected: 'comfyui-kjnodes' },
+    { query: 'kijai/comfyui-kjnodes.git//', expected: 'comfyui-kjnodes' },
     { query: 'Comfy-Org/ComfyUI-Manager', expected: 'ComfyUI-Manager' },
     { query: 'ZHO-ZHO-ZHO/ComfyUI-Gemini', expected: 'ComfyUI-Gemini' },
     {
@@ -85,15 +91,30 @@ describe('stripRepoOwner', () => {
       expected: 'comfyui-seedvr2_videoupscaler'
     }
   ])('strips "$query" to "$expected"', ({ query, expected }) => {
-    expect(stripRepoOwner(query)).toBe(expected)
+    expect(toRepoName(query)).toBe(expected)
   })
 
   it.for([
+    { query: 'ComfyUI-KJNodes.git', expected: 'ComfyUI-KJNodes' },
+    { query: 'ComfyUI-KJNodes.GIT', expected: 'ComfyUI-KJNodes' },
+    { query: 'comfyui-kjnodes/', expected: 'comfyui-kjnodes' },
+    { query: ' comfyui-kjnodes.git// ', expected: 'comfyui-kjnodes' },
+    { query: 'trailing-slash/', expected: 'trailing-slash' },
+    { query: 'kijai/kjnodes/', expected: 'kijai/kjnodes' },
+    { query: 'image/upscaling/', expected: 'image/upscaling' }
+  ])(
+    'drops only the suffix from "$query" to "$expected"',
+    ({ query, expected }) => {
+      expect(toRepoName(query)).toBe(expected)
+    }
+  )
+
+  it.for([
     'comfyui-kjnodes',
+    'github',
     'image to video',
     'upscale / restore',
     '/leading-slash',
-    'trailing-slash/',
     'SD1.5/SDXL',
     'sdxl/sd1.5',
     'sd1.5/comfyui-x',
@@ -108,14 +129,26 @@ describe('stripRepoOwner', () => {
     'owner/repo-name/tree/main',
     'github.com/kijai'
   ])('keeps %j unchanged', (query) => {
-    expect(stripRepoOwner(query)).toBe(query)
+    expect(toRepoName(query)).toBe(query)
   })
 })
 
 describe('buildPackSearchFallbacks', () => {
   it.for([
     {
+      query: 'ComfyUI-KJNodes.git',
+      expected: ['ComfyUI-KJNodes', 'ComfyUI KJNodes']
+    },
+    {
+      query: 'kijai/comfyui-KJNodes//',
+      expected: ['comfyui-KJNodes', 'comfyui KJNodes']
+    },
+    {
       query: 'kijai/comfyui-KJNodes',
+      expected: ['comfyui-KJNodes', 'comfyui KJNodes']
+    },
+    {
+      query: 'kijai/comfyui-KJNodes/',
       expected: ['comfyui-KJNodes', 'comfyui KJNodes']
     },
     {
@@ -139,6 +172,10 @@ describe('buildPackSearchFallbacks', () => {
     'EulerDiscreteScheduler',
     'sd1.5',
     'image/upscaling',
+    'image/upscaling/',
+    'image/upscaling//',
+    'https://github.com/kijai/',
+    'kijai/kjnodes/',
     'kijai/c',
     '',
     '   ',

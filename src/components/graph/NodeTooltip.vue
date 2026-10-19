@@ -145,10 +145,10 @@ useEventListener(window, 'click', hideTooltip)
 <style lang="css" scoped>
 .node-tooltip {
   pointer-events: none;
-  background: var(--comfy-input-bg);
+  background: var(--input);
   border-radius: 5px;
   box-shadow: 0 0 5px rgb(0 0 0 / 0.4);
-  color: var(--input-text);
+  color: var(--foreground);
   left: 0;
   max-width: 30vw;
   padding: 4px 8px;

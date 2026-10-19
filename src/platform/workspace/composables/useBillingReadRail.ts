@@ -7,13 +7,12 @@ import type {
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   BillingBalanceResponse,
-  BillingCapabilitiesResponse,
+  BillingCapabilitiesRead,
   BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 
 /** The reads a rail serves, in the shape the host's billing state holds. */
 export interface BillingReadRail {
@@ -22,12 +21,19 @@ export interface BillingReadRail {
   readPlans: () => Promise<BillingResult<BillingPlansResponse>>
   readCapabilities: (
     options: CapabilitiesReadOptions
-  ) => Promise<BillingResult<BillingCapabilitiesResponse>>
+  ) => Promise<BillingResult<BillingCapabilitiesRead>>
   readPaymentMethods: () => Promise<BillingResult<SavedPaymentMethod[]>>
   /** The only read whose request varies per call: it asks for one page. */
   readEvents: (
     options?: BillingEventsReadOptions
   ) => Promise<BillingResult<BillingEventsResponse>>
+}
+
+let useBillingSdkStore: () => BillingReadRail
+
+/** Called by `billingSdkStore` when it loads; the readers it imports reach it through here. */
+export function provideBillingSdkStore(useStore: () => BillingReadRail): void {
+  useBillingSdkStore = useStore
 }
 
 /**

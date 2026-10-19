@@ -1473,6 +1473,8 @@
     "clickToResetZoom": "Click to reset zoom",
     "brushSettings": "Brush Settings",
     "brushShape": "Brush Shape",
+    "brushShapeCircle": "Circle brush",
+    "brushShapeSquare": "Square brush",
     "colorSelector": "Color Selector",
     "thickness": "Thickness",
     "opacity": "Opacity",
@@ -1740,6 +1742,7 @@
     "3DViewer": "3DViewer",
     "Canvas Navigation": "Canvas Navigation",
     "PlanCredits": "Plan & Credits",
+    "Billing": "Billing",
     "Members": "Members",
     "Allowlist": "Partner Models",
     "Vue Nodes": "Nodes 2.0",
@@ -2494,7 +2497,9 @@
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
     "colors": "color_palette",
-    "grid": "Grid"
+    "grid": "Grid",
+    "undo": "Undo",
+    "redo": "Redo"
   },
   "palette": {
     "addColor": "Add a color",
@@ -2950,7 +2955,14 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "noPaymentMethodError": "No payment method is saved for this workspace. Add one via Settings → Plan & Credits → Manage billing, then retry the top-up.",
+      "noPaymentMethodCheckoutHint": "This workspace has no card saved for one-click top-ups. Pay on a checkout page instead, or set a default card so future top-ups charge it directly.",
+      "continueToCheckout": "Continue to checkout",
+      "checkoutBlockedTitle": "Checkout didn't open",
+      "checkoutBlockedBody": "Your browser blocked the new tab. Open checkout to finish paying.",
+      "openCheckout": "Open checkout",
+      "checkoutOpenFailed": "The payment page couldn't open. Nothing was charged. Try again.",
+      "setDefaultCard": "Set a default card",
+      "setDefaultCardError": "Couldn't open card settings",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2989,6 +3001,7 @@
     "details": "Details",
     "time": "Time",
     "additionalInfo": "Additional Info",
+    "charge": "Charge",
     "model": "Model",
     "api": "API",
     "added": "Added",
@@ -3029,7 +3042,6 @@
     "expiredCardDetail": "This card has expired. Use a different payment method.",
     "incorrectCvcDetail": "The card security code is incorrect. Check it and try again.",
     "processingErrorDetail": "Your payment couldn't be processed. Try again or use another payment method.",
-    "authenticationUnavailable": "Secure payment authentication is unavailable. Please refresh and try again.",
     "authenticationFailedDetail": "We couldn't complete payment verification. Please try again.",
     "authenticatePaymentDetail": "Your bank needs to approve this payment. Please try again and confirm the payment with your bank when prompted.",
     "authenticatePaymentBlockedDetail": "Your bank didn't approve this payment. Contact your bank before trying another purchase.",
@@ -3044,6 +3056,7 @@
     "previewLoadFailed": "Failed to load subscription preview",
     "unableToSubscribe": "Unable to subscribe",
     "billingTabBlocked": "Couldn't open the billing page. Allow pop-ups for this site and try again.",
+    "billingPortalUnavailable": "Couldn't open the billing page. Try again in a moment.",
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",
@@ -3191,6 +3204,8 @@
     "inactiveTeamDescription": "Reactivate your Team plan to add more members and run workflows",
     "inactiveTeamPlanIncludes": "An active plan features everything in {plan}, plus:",
     "reactivateToUseCredits": "Reactivate your plan to use these credits",
+    "resubscribeToUseCredits": "Resubscribe to use credits on Cloud.",
+    "subscribeToUseCredits": "Subscribe to use credits on Cloud.",
     "salesManagedInactiveCreditsNote": "Spendable once your plan is restored.",
     "salesManagedCreditsEndedNote": "Plan credits ended with your subscription.",
     "inactiveEnterpriseDescription": "You can't run workflows or add new members. Contact sales to restore access.",
@@ -3279,7 +3294,6 @@
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeForMore": "Upgrade",
-    "upgradeToAddCredits": "Upgrade to add credits",
     "subscribe": "Subscribe",
     "subscribeNow": "Subscribe",
     "subscribeToComfyCloud": "Subscribe to Comfy Cloud",
@@ -3300,7 +3314,6 @@
     "personalHeader": "Personal plans are for individual use only. {action}",
     "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
-    "scheduledForDate": "Scheduled for {date}",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
     "yearlyCredits": "credits per year",
@@ -3361,6 +3374,21 @@
     "upgradePlan": "Upgrade Plan",
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
+    "planUnavailable": {
+      "notAMember": "You're no longer a member of this workspace, so you can't change its plan.",
+      "notWorkspaceOwner": "Only the workspace owner can change the plan.",
+      "notOriginalOwner": "Only the person who created this workspace can make this plan change.",
+      "salesManaged": "Your plan is managed by our sales team. Contact sales to change it.",
+      "billingOperationInProgress": "A billing change is in progress. This plan will be available again shortly.",
+      "billingOperationParked": "A recent billing change needs a fix from our team. Contact support to change your plan.",
+      "subscriptionChangeScheduled": "Your scheduled plan change takes effect on {date}. You can choose another plan after that.",
+      "subscriptionChangeInProgress": "You already have a plan change scheduled. You can choose another plan after it takes effect.",
+      "annualToMonthlyUnsupported": "You can't move to a higher monthly plan until your annual plan ends.",
+      "incompatibleTransition": "This plan can't be selected from your current plan.",
+      "exceedsMaxSeats": "Your workspace has more members than this plan allows.",
+      "billingStateUnknown": "We couldn't confirm your billing details. Try again in a moment.",
+      "generic": "This plan isn't available for your workspace."
+    },
     "maxDuration": {
       "free": "10 min",
       "standard": "30 min",
@@ -3450,9 +3478,6 @@
       },
       "promoCodePlaceholder": "Promo code",
       "applyPromoCode": "Apply",
-      "applyQuoteBeforeContinuing": "Apply the promo code to refresh your quote before continuing.",
-      "quoteStale": "Your quote changed. Review the updated amount and try again.",
-      "quoteRefreshFailed": "Your quote expired and couldn't be refreshed. Choose your plan again.",
       "renewsAt": "Renews at {amount} on {date}. Cancel anytime.",
       "renewsAtAmount": "Renews at {amount}. Cancel anytime.",
       "discountComposition": "Discounts",
@@ -3536,6 +3561,97 @@
     "updatePassword": "Update Password"
   },
   "workspacePanel": {
+    "billingTab": {
+      "autoTopUp": {
+        "actions": {
+          "manage": "Manage",
+          "turnOn": "Turn on",
+          "updatePayment": "Update payment"
+        },
+        "failed": "Your charge didn't go through. Update your payment method or add credits manually.",
+        "limit": "Monthly limit: {spent} of {limit} used",
+        "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
+        "limitTooltipNoDate": "Counts only auto top-up charges.",
+        "off": "Refills credits when your balance runs low",
+        "onHold": "No default payment method. Add a card to resume auto top-up.",
+        "paused": "Monthly limit reached. Resumes {date}.",
+        "pausedNoDate": "Monthly limit reached.",
+        "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
+        "status": {
+          "failed": "Failed",
+          "off": "Off",
+          "on": "On",
+          "onHold": "On hold",
+          "paused": "Paused"
+        },
+        "title": "Auto top-up",
+        "unavailable": "Couldn't load auto top-up."
+      },
+      "credits": {
+        "addCredits": "Add credits",
+        "available": "Available",
+        "inUse": "In use now",
+        "overdrawn": "Your runs used {count} more credit than you had. | Your runs used {count} more credits than you had.",
+        "plan": "Plan",
+        "planOfPool": "{remaining} of {total}",
+        "planTooltip": "Credits included with your plan. They refill each billing period.",
+        "rateInfo": "About credits",
+        "rateTooltip": "Credits pay for runs. {credits} credits = $1.",
+        "resubscribe": "Resubscribe to use credits on Cloud.",
+        "subscribe": "Subscribe to use credits on Cloud.",
+        "title": "Credits",
+        "topUp": "Top-up",
+        "topUpTooltip": "Credits you added. They're used once plan credits run out.",
+        "unavailable": "Couldn't load your balance."
+      },
+      "handoff": {
+        "member": {
+          "action": "View usage",
+          "label": "Usage"
+        },
+        "owner": {
+          "action": "Open billing",
+          "label": "Payment methods, invoices, and usage"
+        }
+      },
+      "loadError": "We couldn't load your plan.",
+      "plan": {
+        "actions": {
+          "choosePlan": "Choose a plan",
+          "manage": "Manage",
+          "resume": "Resume plan",
+          "stay": "Stay on {plan}",
+          "subscribe": "Subscribe"
+        },
+        "active": {
+          "monthly": "Billed monthly. Next invoice {date}.",
+          "yearly": "Billed yearly. Next invoice {date}."
+        },
+        "ended": "Ended {date}.",
+        "ending": "Ends {date}. You won't be charged again.",
+        "lifecycleRefused": "We couldn't make this change. Try again.",
+        "managedByOwner": "Managed by the workspace owner.",
+        "noPlan": {
+          "freeRunsLeft": "You have {remaining} of {total} free runs left. Subscribe to keep running workflows after that.",
+          "freeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows.",
+          "line": "Subscribe to run workflows on Cloud.",
+          "title": "This workspace has no active plan"
+        },
+        "resumeConfirm": {
+          "body": "Your plan will renew on {date}. You can cancel again anytime.",
+          "title": "Resume your {plan} plan?"
+        },
+        "scheduledChange": "Changes to {plan} on {date}.",
+        "stayConfirm": {
+          "body": "Your plan won't change to {plan} on {date}. You can schedule a change again anytime.",
+          "title": "Cancel your change to {plan}?"
+        },
+        "unknown": {
+          "title": "Your plan"
+        }
+      },
+      "tryAgain": "Try again"
+    },
     "activity": {
       "columns": {
         "creditsUsed": "Credits",
@@ -3553,17 +3669,13 @@
       }
     },
     "billingStatus": {
-      "paused": {
-        "title": "Subscription paused",
-        "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "Ask your workspace owner to restore the workspace's subscription."
-      },
       "outOfCredits": {
         "title": "Out of credits",
         "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
         "bodyNoDate": "Your team has used all its credits. Add more credits.",
         "personalBody": "You've used all your credits. Add more credits or wait until credits refill on {date}.",
         "personalBodyNoDate": "You've used all your credits. Add more credits.",
+        "pastDueBody": "You've used all your credits. Update your payment method to add credits.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
@@ -3597,8 +3709,7 @@
         "title": "Your plan changes to {plan} on {date}.",
         "body": "Your current plan stays active until then."
       },
-      "updatePayment": "Update payment",
-      "payInvoice": "Pay invoice"
+      "updatePayment": "Update payment"
     },
     "invite": "Invite",
     "inviteMember": "Invite member",
@@ -3732,7 +3843,15 @@
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
       "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
-      "deleteWorkspaceAfterPlanEndsTooltip": "You can delete this workspace after your plan ends on {date}",
+      "deleteWorkspaceAfterPlanEndsTooltip": "You can delete this workspace after your plan ends on {date}.",
+      "deleteWorkspacePlanNotEndedTooltip": "You can delete this workspace after its plan ends. Cancel it from Manage plan.",
+      "deleteWorkspaceBillingParkedTooltip": "A recent payment needs a fix from our team. Contact support.",
+      "deleteWorkspaceBillingInProgressTooltip": "A billing change is in progress. Try again in a moment.",
+      "deleteWorkspaceUnavailableTooltip": "This workspace can't be deleted right now.",
+      "leaveWorkspaceCreatorTooltip": "You created this workspace, so you can't leave it.",
+      "leaveWorkspaceOnlyOwnerTooltip": "Make another member an owner before you leave this workspace.",
+      "leaveWorkspaceDirectoryTooltip": "Your organization manages this membership, so you can't leave this workspace.",
+      "leaveWorkspaceUnavailableTooltip": "You can't leave this workspace right now.",
       "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
@@ -3868,6 +3987,8 @@
     "failedToSwitch": "Failed to switch workspace"
   },
   "deploymentSwitcher": {
+    "lookupUnavailable": "Could not check which deployment this editor runs on.",
+    "lookupUnavailableDetail": "The models shown are Comfy Cloud's. Reload to try again.",
     "runningOn": "Running on",
     "comfyCloud": "Comfy Cloud",
     "comfyCloudCaption": "Comfy's own node set",
@@ -5651,6 +5772,10 @@
     },
     "loadFailed": "The agent panel failed to load.",
     "entryButton": "Agent",
+    "entryStarting": "Agent starting…",
+    "entryFailed": "Agent unavailable",
+    "entryFailedReason": "ComfyUI could not start the agent: {reason}",
+    "entryStartingReason": "ComfyUI is starting the agent: {reason}",
     "feedbackCaption": "Share feedback",
     "freeUseNoticeLabel": "Free use notice",
     "freeUseNotice": "Try your first chat for free!",
@@ -5673,7 +5798,38 @@
       "run": "Run",
       "answerFailed": "Could not send your answer. Reload the page and try again.",
       "answerUncertain": "Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.",
-      "answerSuperseded": "This request was already answered somewhere else, so that answer was used instead of yours."
+      "answerSuperseded": "This was already answered somewhere else, so that answer was used instead of yours."
+    },
+    "askUnavailable": "The agent is waiting on a step this panel can't show.",
+    "askUser": {
+      "card": "Question from the agent",
+      "chooseUpTo": "Choose up to {max}",
+      "chooseOneOrNone": "Choose one, or none",
+      "chooseAtLeast": "Choose at least {min}",
+      "chooseExactly": "Choose {min}",
+      "chooseBetween": "Choose {min} to {max}",
+      "chooseAny": "Choose all that apply",
+      "other": "Other",
+      "otherPlaceholder": "Type your own answer",
+      "answered": "Answered",
+      "otherAnswer": "Other: {text}",
+      "unconfirmed": "We couldn't confirm your answer reached the agent.",
+      "closed": "This question was closed without an answer.",
+      "retired": "This question is no longer open here.",
+      "answerRejected": "The agent couldn't accept that answer. Change your choices or stop the turn."
+    },
+    "deleteApproval": {
+      "card": "Delete request from the agent",
+      "nodes": "Nodes the agent asked to delete",
+      "moreNodes": "{count} more node not listed | {count} more nodes not listed",
+      "delete": "Delete",
+      "keep": "Keep",
+      "deleted": "Answered: delete it | Answered: delete them",
+      "kept": "Answered: keep it | Answered: keep them",
+      "answered": "Answered",
+      "unconfirmed": "We couldn't confirm your answer. Check the canvas before trying again.",
+      "closed": "This request was closed without an answer.",
+      "retired": "This request is no longer open here."
     },
     "dismiss": "Dismiss",
     "latest": "Latest",
@@ -5702,8 +5858,8 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, / use skills, {'@'} add references, drag in assets",
-    "placeholderWithoutSkills": "Describe ideas, {'@'} add references, drag in assets",
+    "placeholder": "Describe what you want to create",
+    "placeholderWithoutSkills": "Describe what you want to create",
     "skills": "Skills",
     "typeToSearch": "type to search",
     "skillNotAvailable": "Not available",
