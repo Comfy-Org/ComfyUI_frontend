@@ -104,10 +104,16 @@ describe('widget values form serialization', () => {
     expect(policy.widgetLayoutDependsOnValues).toHaveBeenCalledWith(node)
   })
 
-  it('keeps an unlabeled widget positional instead of declaring it', () => {
-    const node = nodeWithWidgets([{ name: '', value: 'hello' }])
+  it.for([
+    { widgets: 'an unlabeled widget', names: [''] },
+    { widgets: 'widgets sharing a name', names: ['prompt', 'prompt'] }
+  ])('keeps $widgets positional instead of declaring it', ({ names }) => {
+    const node = new LGraphNode('test')
+    node.serialize_widgets = true
+    for (const name of names) node.addWidget('text', name, name, () => {}, {})
 
-    expect(node.serialize()).toMatchObject({ widgets_values: ['hello'] })
+    expect(node.widgets?.map((widget) => widget.name)).toEqual(names)
+    expect(node.serialize()).toMatchObject({ widgets_values: names })
     expect(node.serialize()).not.toHaveProperty('widgets_values_form')
   })
 

@@ -138,6 +138,7 @@ export function finalizeWidgetValuesForm(
     coreSerialization &&
     coreSerialization.order.length > 0 &&
     coreSerialization.order.every((name) => name.length > 0) &&
+    new Set(coreSerialization.order).size === coreSerialization.order.length &&
     Array.isArray(values) &&
     isEqual(values, coreSerialization.widgets_values) &&
     isEqual(
