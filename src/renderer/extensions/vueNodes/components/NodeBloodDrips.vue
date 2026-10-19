@@ -19,13 +19,16 @@
       </defs>
     </svg>
     <span
-      v-for="drop in 5"
-      :key="drop"
+      v-for="drop in drops"
+      :key="drop.left"
       data-testid="node-blood-drop"
-      class="node-blood-drop absolute -top-1 size-3 rounded-full bg-current"
+      class="node-blood-drop absolute -top-1 rounded-full bg-current"
       :style="{
-        left: `${8 + (drop - 1) * 20}%`,
-        animationDelay: `${-drop * 0.73}s`
+        left: `${drop.left}%`,
+        width: `${drop.size}px`,
+        height: `${drop.size}px`,
+        animationDelay: `${drop.delay}s`,
+        animationDuration: `${drop.duration}s`
       }"
     />
   </div>
@@ -35,4 +38,11 @@
 import { useId } from 'vue'
 
 const filterId = `node-blood-${useId()}`
+const drops = [
+  { left: 9, size: 9, delay: -0.4, duration: 3.2 },
+  { left: 31, size: 15, delay: -1.8, duration: 4.1 },
+  { left: 48, size: 7, delay: -0.9, duration: 2.8 },
+  { left: 72, size: 12, delay: -2.7, duration: 3.7 },
+  { left: 89, size: 10, delay: -3.2, duration: 4.6 }
+]
 </script>
