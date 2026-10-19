@@ -110,6 +110,6 @@ describe('allContentRefs', () => {
     const refs = allContentRefs(doc, (n) =>
       n.kind === 'raster' ? [(n as RasterData).contentId] : []
     )
-    expect([...refs].sort()).toEqual(['ca', 'cb', 'cc', 'saved-pix'])
+    expect(refs).toEqual(new Set(['ca', 'cb', 'cc', 'saved-pix']))
   })
 })
