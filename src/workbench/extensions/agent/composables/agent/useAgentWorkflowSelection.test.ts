@@ -4,6 +4,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import { i18n } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -17,6 +18,7 @@ import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './useAgentWorkflowSelection'
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 function setup() {
   const workflows = useWorkflowStore()
@@ -337,6 +339,11 @@ describe('historical workflow restoration', () => {
     expect(panel.selectedWorkflow).toBeNull()
     expect(panel.targetUnavailable).toBe(false)
     expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_workflow_restore_failed',
+      context: { workflowId: 'wf-saved' }
+    })
   })
 
   it.for([
@@ -408,6 +415,11 @@ describe('historical workflow restoration', () => {
       expect(workflows.activeWorkflow?.path).toBe(current.path)
       expect(panel.targetUnavailable).toBe(false)
       expect(warnRestoreFailed).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_workflow_restore_failed',
+        context: { workflowId: 'wf-saved' }
+      })
     }
   )
 
