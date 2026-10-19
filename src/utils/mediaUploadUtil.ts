@@ -15,3 +15,15 @@ export function isUploadableVideo(file: File) {
 export function isExtensionlessVideo(file: File) {
   return file.type.startsWith('video/') && !hasFilenameExtension(file)
 }
+
+/**
+ * Like {@link isExtensionlessVideo}, for routes that only accept video.
+ * Browsers derive `File.type` from the extension, so a video renamed without
+ * one arrives with an empty type and must be treated as a video here.
+ */
+export function isExtensionlessVideoUpload(file: File) {
+  return (
+    (file.type === '' || file.type.startsWith('video/')) &&
+    !hasFilenameExtension(file)
+  )
+}
