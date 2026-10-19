@@ -71,21 +71,21 @@ test.describe('App mode dropdown clipping', { tag: '@ui' }, () => {
 
     const inputs: [string, string][] = [
       ...DEFAULT_INPUTS,
-      [saveVideoId, 'codec']
+      [saveVideoId, 'format']
     ]
     await comfyPage.appMode.enterAppModeWithInputs(inputs)
 
     await expect(comfyPage.appMode.linearWidgets).toBeVisible()
 
-    // Scroll to bottom so the codec widget is at the clipping edge
+    // Scroll to bottom so the format widget is at the clipping edge
     const widgetList = comfyPage.appMode.linearWidgets
     await widgetList.evaluate((el) =>
       el.scrollTo({ top: el.scrollHeight, behavior: 'instant' })
     )
 
-    // Click the codec select (combobox role with aria-label from WidgetSelectDefault)
-    const codecSelect = widgetList.getByRole('combobox', { name: 'codec' })
-    await codecSelect.click()
+    // Click the format select (combobox role with aria-label from WidgetSelectDefault)
+    const formatSelect = widgetList.getByRole('combobox', { name: 'format' })
+    await formatSelect.click()
 
     const overlay = comfyPage.page
       .getByTestId('widget-select-default-overlay')
