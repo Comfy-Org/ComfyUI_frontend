@@ -239,6 +239,18 @@ export function createAgentEventTransport(
     )
   }
 
+  function shouldHoldForCanvas(
+    part: ToolPart,
+    status: 'success' | 'error',
+    correlation: { workflowId: string; opIds: ReadonlySet<string> } | undefined
+  ): boolean {
+    return (
+      status === 'success' &&
+      CANVAS_MUTATING_TOOLS.has(part.name) &&
+      shouldAwaitCanvasSync(correlation?.workflowId)
+    )
+  }
+
   function rememberCanvasEvidence(evidence: CanvasSyncEvidence): void {
     let observed = observedCanvasOps.get(evidence.workflowId)
     if (observed === undefined) {
@@ -320,11 +332,7 @@ export function createAgentEventTransport(
     const baseline = canvasSyncBaseline.get(part)
     canvasSyncBaseline.delete(part)
     const correlation = correlationFrom(data)
-    if (
-      status === 'success' &&
-      CANVAS_MUTATING_TOOLS.has(part.name) &&
-      shouldAwaitCanvasSync(correlation?.workflowId)
-    ) {
+    if (shouldHoldForCanvas(part, status, correlation)) {
       if (correlation !== undefined && correlationObserved(correlation)) {
         part.state = 'done'
         claimCanvasSyncOutcome()
