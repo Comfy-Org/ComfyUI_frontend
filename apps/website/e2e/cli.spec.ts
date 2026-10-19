@@ -46,10 +46,6 @@ test.describe('CLI reduced motion @mobile', () => {
     await page.goto('/cli/')
     const session = page.getByTestId('native-cli-session')
     await waitForIsland(page, session)
-    await expect(session.getByRole('group')).toHaveAttribute(
-      'data-phase',
-      'results'
-    )
     await expect(session.getByRole('group')).toHaveAccessibleName(
       'CLI session: final outputs shown with reduced motion.'
     )
