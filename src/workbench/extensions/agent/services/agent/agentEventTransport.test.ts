@@ -1166,6 +1166,26 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     ])
   })
 
+  it('releases a correlated call when matching catch-up evidence materializes', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-add']
+      })
+    )
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-add'],
+      isLive: false
+    })
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+  })
+
   it('remembers exact op evidence that arrives before the terminal tool frame', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
