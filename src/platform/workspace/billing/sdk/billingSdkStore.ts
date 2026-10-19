@@ -36,7 +36,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   BillingBalanceResponse,
-  BillingCapabilitiesResponse,
+  BillingCapabilitiesRead,
   BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
@@ -567,7 +567,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   async function readCapabilities(
     options: CapabilitiesReadOptions
-  ): Promise<BillingResult<BillingCapabilitiesResponse>> {
+  ): Promise<BillingResult<BillingCapabilitiesRead>> {
     const result = await sdk.capabilities.read(options)
     return result.status === 'ok'
       ? { status: 'ok', value: projectBillingCapabilities(result.value) }

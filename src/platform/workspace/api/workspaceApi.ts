@@ -1,5 +1,6 @@
 import type {
   AcceptInviteResponse,
+  AutoReloadSettings,
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
   BillingEventsResponse,
@@ -34,6 +35,8 @@ import type {
   RetentionAcceptRequest,
   RetentionFlowEventRequest,
   RetentionFlowResponse,
+  RevertScheduledChangeRequest,
+  RevertScheduledChangeResponse,
   SavedPaymentMethod,
   ScheduledPlanChange,
   SubscribeRequest,
@@ -108,7 +111,6 @@ export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
-
 export interface SubscribeOptions {
   confirmationToken?: string
   promotionCode?: string
@@ -143,9 +145,14 @@ export type { BillingStatusResponse }
 export type { RenewalInvoice }
 export type { ScheduledPlanChange }
 
+export type { AutoReloadSettings }
 export type { BillingBalanceResponse }
 export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
+export type BillingCapabilitiesRead = Omit<
+  BillingCapabilitiesResponse,
+  'denied_reasons'
+> & { denied_reasons?: Readonly<Partial<Record<string, string>>> }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
@@ -648,6 +655,23 @@ export const workspaceApi = {
   },
 
   /**
+   * Get automatic top-up settings and status for the current workspace
+   * GET /api/billing/auto-reload
+   */
+  async getBillingAutoReload(): Promise<AutoReloadSettings> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<AutoReloadSettings>(
+        workspaceApiUrl('/billing/auto-reload'),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'getBillingAutoReload')
+    }
+  },
+
+  /**
    * Get available subscription plans
    * GET /api/billing/plans
    */
@@ -857,18 +881,45 @@ export const workspaceApi = {
   },
 
   /**
+   * Undo the pending scheduled plan change
+   * POST /api/billing/subscription/revert-scheduled-change
+   */
+  async revertScheduledChange(
+    idempotencyKey?: string
+  ): Promise<RevertScheduledChangeResponse> {
+    const auth = await requestAuth()
+    try {
+      const response =
+        await workspaceApiClient.post<RevertScheduledChangeResponse>(
+          workspaceApiUrl('/billing/subscription/revert-scheduled-change'),
+          {
+            idempotency_key: idempotencyKey
+          } satisfies RevertScheduledChangeRequest,
+          auth
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'revertScheduledChange')
+    }
+  },
+
+  /**
    * Get Stripe payment portal URL for managing payment methods
    * POST /api/billing/payment-portal
    */
   async getPaymentPortalUrl(
-    returnUrl?: string
+    returnUrl?: string,
+    flowType?: PaymentPortalRequest['flow_type']
   ): Promise<PaymentPortalResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
         workspaceApiUrl('/billing/payment-portal'),
-        { return_url: returnUrl } satisfies PaymentPortalRequest,
-        auth
+        {
+          return_url: returnUrl,
+          flow_type: flowType
+        } satisfies PaymentPortalRequest,
+        { ...auth, timeout: 30_000 }
       )
       return response.data
     } catch (err) {

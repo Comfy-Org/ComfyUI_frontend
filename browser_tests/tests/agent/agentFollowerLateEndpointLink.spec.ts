@@ -99,7 +99,7 @@ test.describe(
 
     test('connects the wire once the missing endpoint node materializes', async ({
       page,
-      getWebSocket
+      getAgentSocket
     }) => {
       test.setTimeout(90_000)
       await page.setViewportSize({ width: 1920, height: 1280 })
@@ -121,21 +121,22 @@ test.describe(
       })
       await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
 
-      const socket = await getWebSocket()
       const outboundFrames: string[] = []
-      socket.onMessage((message) => outboundFrames.push(String(message)))
-
       const vueNodes = new VueNodeHelpers(page)
       const agentPanel = new AgentPanel(page)
 
-      await test.step('bind the workflow so the follower subscribes', async () => {
-        await agentPanel.open()
-        await agentPanel.selectWorkflow()
-        await agentPanel.sendMessage('wire the source into the sink')
-        await expect
-          .poll(() => outboundFrames, { timeout: 15_000 })
-          .toContainEqual(expect.stringContaining('doc_subscribe'))
-      })
+      const socket =
+        await test.step('bind the workflow so the follower subscribes', async () => {
+          await agentPanel.open()
+          const opened = await getAgentSocket()
+          opened.onMessage((message) => outboundFrames.push(String(message)))
+          await agentPanel.selectWorkflow()
+          await agentPanel.sendMessage('wire the source into the sink')
+          await expect
+            .poll(() => outboundFrames, { timeout: 15_000 })
+            .toContainEqual(expect.stringContaining('doc_subscribe'))
+          return opened
+        })
 
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
       const sink = vueNodes.getNodeLocator(String(SINK_NODE_ID))

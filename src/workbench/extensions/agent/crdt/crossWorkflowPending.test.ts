@@ -3,14 +3,10 @@ import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { render } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { DocOp } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
-
-const apiEvents: EventTarget = api
 
 const bridgeState = vi.hoisted(() => {
   const transport = { up: true }
@@ -124,6 +120,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 
@@ -140,14 +137,20 @@ function mountFollower(initial: string): {
   workflowId: Ref<string | null>
   enqueue: (operations: GraphOperation[]) => Promise<void>
   status: () => AgentCrdtStatus
+  reconnect: () => void
 } {
+  const agentSocket = createFakeAgentSocket()
   const workflowId = ref<string | null>(initial)
   let enqueue!: (operations: GraphOperation[]) => Promise<void>
   let exposedStatus!: () => AgentCrdtStatus
   const host = defineComponent({
     setup() {
-      const { enqueueHumanOperations, status } =
-        useAgentCrdtFollower(workflowId)
+      const { enqueueHumanOperations, status } = useAgentCrdtFollower(
+        workflowId,
+        {
+          transport: agentSocket.transport
+        }
+      )
       enqueue = async (operations) => {
         enqueueHumanOperations(operations)
         await Promise.resolve()
@@ -158,7 +161,13 @@ function mountFollower(initial: string): {
   })
   const { unmount } = render(host)
   onTestFinished(unmount)
-  return { unmount, workflowId, enqueue, status: exposedStatus }
+  return {
+    unmount,
+    workflowId,
+    enqueue,
+    status: exposedStatus,
+    reconnect: () => agentSocket.open()
+  }
 }
 
 async function switchWorkflow(workflowId: Ref<string | null>, next: string) {
@@ -177,7 +186,6 @@ function dispatchOpsResult(detail: unknown): void {
 }
 
 beforeEach(() => {
-  api.socket = fromPartial({ readyState: 1, send: vi.fn() })
   useAgentPanelStore().enabled = true
   bridgeState.current = null
   bridgeState.transport.up = true
@@ -421,7 +429,7 @@ function ackResubscribe(workflowId: string): void {
  */
 describe('a human edit made while the document connection is down', () => {
   it('does not flush a pending batch on reconnect before the resubscribe ack', async () => {
-    const { enqueue } = mountFollower('wf-a')
+    const { enqueue, reconnect } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
@@ -433,7 +441,7 @@ describe('a human edit made while the document connection is down', () => {
     expect(clientState.sent).toHaveLength(0)
 
     clientState.transportUp = true
-    apiEvents.dispatchEvent(new Event('reconnected'))
+    reconnect()
     expect(bridge().reconnect).toHaveBeenCalledOnce()
     expect(clientState.sent).toHaveLength(0)
   })
@@ -458,7 +466,7 @@ describe('a human edit made while the document connection is down', () => {
   })
 
   it('does not resend an acknowledged retry on a later reconnect', async () => {
-    const { enqueue } = mountFollower('wf-a')
+    const { enqueue, reconnect } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
@@ -482,7 +490,7 @@ describe('a human edit made while the document connection is down', () => {
         ops: [expect.objectContaining({ op_id: replayedOperationId })]
       })
     )
-    apiEvents.dispatchEvent(new Event('reconnected'))
+    reconnect()
     ackResubscribe('wf-a')
 
     expect(clientState.sent).toHaveLength(1)

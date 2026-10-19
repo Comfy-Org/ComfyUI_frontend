@@ -13,6 +13,7 @@ import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 
 vi.mock(import('@/i18n'))
 
@@ -36,17 +37,30 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+vi.mock(import('@/platform/workspace/composables/usePaymentRecoveryDialog'), {
+  spy: true
+})
+
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
+const mockShowPaymentRecoveryDialog = vi.fn()
+
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     const billing = useBillingContext()
     billing.type = computed(() => 'workspace')
     vi.mocked(useBillingContext).mockReturnValue(billing)
+    vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
+      showPaymentRecoveryDialog: mockShowPaymentRecoveryDialog,
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn(async () => undefined)
+    })
 
     mockIsCloud.value = true
   })
@@ -87,6 +101,78 @@ describe('showTopUpCreditsDialog', () => {
       key: 'insufficient-credits-member'
     })
   })
+
+  it.for([
+    {
+      type: 'workspace',
+      canTopUp: false,
+      denial: 'payment_past_due',
+      opensRecovery: true,
+      storeDialogs: []
+    },
+    {
+      type: 'legacy',
+      canTopUp: false,
+      denial: 'payment_past_due',
+      opensRecovery: true,
+      storeDialogs: []
+    },
+    {
+      type: 'workspace',
+      canTopUp: false,
+      denial: 'not_workspace_owner',
+      opensRecovery: false,
+      storeDialogs: ['insufficient-credits-member']
+    },
+    {
+      type: 'workspace',
+      canTopUp: false,
+      denial: 'free_plan',
+      opensRecovery: false,
+      storeDialogs: ['insufficient-credits-member']
+    },
+    {
+      type: 'workspace',
+      canTopUp: false,
+      denial: undefined,
+      opensRecovery: false,
+      storeDialogs: ['insufficient-credits-member']
+    },
+    {
+      type: 'legacy',
+      canTopUp: false,
+      denial: 'subscription_ended',
+      opensRecovery: false,
+      storeDialogs: []
+    },
+    {
+      type: 'workspace',
+      canTopUp: true,
+      denial: undefined,
+      opensRecovery: false,
+      storeDialogs: ['top-up-credits']
+    }
+  ] as const)(
+    'routes a $type top-up denied as $denial (recovery: $opensRecovery, dialogs: $storeDialogs)',
+    async ({ type, canTopUp, denial, opensRecovery, storeDialogs }) => {
+      useBillingContext().type = computed(() => type)
+      useBillingCapabilities().canTopUp = computed(() => canTopUp)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+
+      await useBillingDialogs().showTopUpCreditsDialog({
+        isInsufficientCredits: true
+      })
+
+      const storeDialogKeys = vi
+        .mocked(useDialogStore().showDialog)
+        .mock.calls.map(([args]) => args.key)
+      expect(mockShowPaymentRecoveryDialog).toHaveBeenCalledTimes(
+        opensRecovery ? 1 : 0
+      )
+      expect(storeDialogKeys).toEqual(storeDialogs)
+      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+    }
+  )
 
   it('uses the server capability on legacy billing', async () => {
     useBillingContext().type = computed(() => 'legacy')

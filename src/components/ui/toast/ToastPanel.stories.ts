@@ -42,16 +42,16 @@ const meta: Meta<PanelStoryArgs> = {
     template: `
       <ToastDock>
         <ToastPanel v-model:expanded="isExpanded" visible>
-          <div class="flex h-12 items-center border-b border-border-default px-4">
-            <h3 class="text-sm font-bold text-base-foreground">Download Queue</h3>
+          <div class="flex h-12 items-center border-b border-border px-4">
+            <h3 class="text-sm font-bold text-foreground">Download Queue</h3>
           </div>
           <div class="flex max-h-75 flex-col gap-2 overflow-y-auto p-4">
             <ProgressToastItem v-for="job in args.jobs" :key="job.taskId" :job="job" />
           </div>
           <template #footer="{ toggle }">
-            <div class="flex h-12 items-center justify-between gap-2 border-t border-border-default px-4 text-sm">
+            <div class="flex h-12 items-center justify-between gap-2 border-t border-border px-4 text-sm">
               <i :class="cn('size-4', args.statusIcon)" />
-              <span class="font-bold text-base-foreground">{{ args.status }}</span>
+              <span class="font-bold text-foreground">{{ args.status }}</span>
               <Button variant="muted-textonly" size="icon" @click.stop="toggle">
                 <i :class="cn('size-4', isExpanded ? 'icon-[lucide--chevron-down]' : 'icon-[lucide--chevron-up]')" />
               </Button>
@@ -105,6 +105,6 @@ export const WithError: Story = {
     expanded: true,
     jobs: [createMockJob({ progress: 0.23, status: 'failed' })],
     status: '1 download failed',
-    statusIcon: 'icon-[lucide--circle-alert] text-destructive-background'
+    statusIcon: 'icon-[lucide--circle-alert] text-destructive'
   }
 }

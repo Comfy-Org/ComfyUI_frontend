@@ -231,7 +231,7 @@ describe('SingleSelect', () => {
 
     const trigger = screen.getByRole('combobox')
     expect(trigger).toHaveClass('bg-transparent')
-    expect(trigger).not.toHaveClass('bg-secondary-background')
+    expect(trigger).not.toHaveClass('bg-secondary')
 
     unmount()
   })

@@ -26,8 +26,8 @@ const notice = computed<NoticePart>(() =>
       cn(
         'flex items-start gap-2 rounded-xl border px-3 py-2 text-sm',
         notice.level === 'error'
-          ? 'border-destructive-background/40 text-destructive-background'
-          : 'border-component-node-border text-muted-foreground'
+          ? 'border-destructive/40 text-destructive'
+          : 'border-border text-muted-foreground'
       )
     "
   >

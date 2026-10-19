@@ -395,7 +395,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
 
         <!-- Right Panel - Only when hasRightPanel is true -->
         <template #rightPanel>
-          <div class="size-full bg-modal-panel-background pr-6 pb-8 pl-4"></div>
+          <div class="size-full bg-card pr-6 pb-8 pl-4"></div>
         </template>
       </BaseModalLayout>
     </div>

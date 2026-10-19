@@ -12,7 +12,7 @@ const { class: className } = defineProps<{
   <div
     :class="
       cn(
-        'flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border-default px-4',
+        'flex h-12 shrink-0 items-center justify-between gap-2 border-b px-4',
         className
       )
     "
