@@ -15,9 +15,7 @@ test.describe(
     }
   },
   () => {
-    test('load with declared types and queue numbers', async ({
-      comfyPage
-    }) => {
+    test('load and queue with declared types', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow(
         'widgets/stringified_typed_widget_values'
       )
