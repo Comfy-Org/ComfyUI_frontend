@@ -13,8 +13,8 @@ import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
@@ -201,7 +201,7 @@ function createPreview3DExtension(
           if (!reported) {
             const msg = t('toastMessages.unableToGetModelFilePath')
             console.error(msg)
-            useToastStore().addAlert(msg)
+            useToast().warning(msg)
             return
           }
 

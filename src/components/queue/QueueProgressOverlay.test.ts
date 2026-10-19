@@ -98,9 +98,6 @@ function renderComponent(
         QueueOverlayExpanded: QueueOverlayExpandedStub,
         QueueOverlayActive: true,
         MediaLightbox: true
-      },
-      directives: {
-        tooltip: () => {}
       }
     }
   })

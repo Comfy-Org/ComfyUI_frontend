@@ -67,14 +67,13 @@ vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
-  }
+  },
+  isDesktop: false
 }))
 
 vi.mock(import('./checkoutAttributionLoader'), () => ({
   loadCheckoutAttributionModule: mockLoadCheckoutAttributionModule
 }))
-
-global.fetch = vi.fn()
 
 vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
 

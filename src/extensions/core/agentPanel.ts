@@ -3,12 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import {
-  authenticatedRemoteConfigState,
-  remoteConfigRevision
-} from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -38,10 +33,39 @@ import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/
 import { useDialogStore } from '@/stores/dialogStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
-/** Upper bound on how long readiness consumers wait for a gate decision. */
-export const GATE_SETTLE_TIMEOUT_MS = 5_000
-
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
+const ACTIVATION_VISITS_STORAGE_KEY = 'Comfy.AgentPanel.activationVisits'
+const AUTOMATIC_ACTIVATION_VISITS = 2
+
+function claimAutomaticActivationVisit(): boolean {
+  try {
+    const storedVisits = Number(
+      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
+    )
+    const priorVisits =
+      Number.isSafeInteger(storedVisits) && storedVisits >= 0 ? storedVisits : 0
+    if (priorVisits >= AUTOMATIC_ACTIVATION_VISITS) return false
+
+    localStorage.setItem(ACTIVATION_VISITS_STORAGE_KEY, String(priorVisits + 1))
+    return true
+  } catch {
+    return false
+  }
+}
+
+function automaticActivationVisitsComplete(): boolean {
+  try {
+    const storedVisits = Number(
+      localStorage.getItem(ACTIVATION_VISITS_STORAGE_KEY) ?? 0
+    )
+    return Number.isSafeInteger(storedVisits)
+      ? storedVisits >= AUTOMATIC_ACTIVATION_VISITS
+      : false
+  } catch {
+    // Storage failures must not turn into an unbounded automatic opener.
+    return true
+  }
+}
 
 function automaticConsentOfferScope(
   {
@@ -136,8 +160,7 @@ export function registerAgentPanelExtension(): void {
       const consentStore = useAgentConsentStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const workspaceStore = useTeamWorkspaceStore()
-      const { isAuthInitialized, resolvedUserInfo, isLoggedIn } =
-        useCurrentUser()
+      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
       const { withConsent } = useAgentConsent()
       const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
@@ -362,7 +385,12 @@ export function registerAgentPanelExtension(): void {
         void withConsent(
           'first_load',
           () => {
-            if (!agentPanelStore.enabled || agentPanelStore.isOpen) return
+            if (
+              !agentPanelStore.enabled ||
+              automaticActivationVisitsComplete() ||
+              agentPanelStore.isOpen
+            )
+              return
             agentPanelStore.open('automatic_consent')
           },
           {
@@ -393,8 +421,20 @@ export function registerAgentPanelExtension(): void {
         // rather than landing it on a late first-run screen.
         whenStartupDecided()
           .then((decided) => {
-            if (decided) offerConsentUnprompted()
-            else if (offerEligible()) withholdOffer('boot_undecided')
+            if (decided) {
+              // Once the discovery window is over, a closed panel is a
+              // persisted preference. Consent remains available from an
+              // already-open panel or explicit user action.
+              if (
+                automaticActivationVisitsComplete() &&
+                !agentPanelStore.isOpen
+              ) {
+                reportOfferExit('activation_window_complete', 'startup')
+                dropHold()
+                return
+              }
+              offerConsentUnprompted()
+            } else if (offerEligible()) withholdOffer('boot_undecided')
             else {
               // An undecided boot that is also ineligible reported nothing at
               // all: `boot_undecided` is gated on eligibility, so the forfeited
@@ -422,7 +462,7 @@ export function registerAgentPanelExtension(): void {
           .then((decided) => {
             if (decided && agentPanelStore.enabled) {
               activationOffered = true
-              if (!agentPanelStore.isOpen) {
+              if (claimAutomaticActivationVisit() && !agentPanelStore.isOpen) {
                 agentPanelStore.open('activation')
                 activationOpenedPanel = true
               }
@@ -490,29 +530,25 @@ export function registerAgentPanelExtension(): void {
           loadConsentIfEligible()
         }
       )
-      setupFlagGate(
-        loadConsentIfEligible,
-        openWhenStartupDecided,
-        () => isAuthInitialized.value && resolvedUserInfo.value === null
-      )
+      setupFlagGate(loadConsentIfEligible, openWhenStartupDecided)
     }
   })
 }
 
 function setupFlagGate(
   loadConsentIfEligible: () => void,
-  openWhenStartupDecided: () => void,
-  isSignedOut: () => boolean
+  openWhenStartupDecided: () => void
 ): void {
   const agentPanelStore = useAgentPanelStore()
-  const { flags } = useFeatureFlags()
+  const devForcedOn =
+    import.meta.env.MODE === 'development' &&
+    import.meta.env.VITE_AGENT_STANDALONE === 'true'
 
   watch(
     () =>
       [
-        import.meta.env.MODE === 'development' ||
-          flags.agentInAppExperienceEnabled,
-        remoteConfigRevision.value
+        devForcedOn || agentPanelStore.comfyAgent?.state === 'ready',
+        agentPanelStore.comfyAgent
       ] as const,
     ([enabled]) => {
       agentPanelStore.enabled = enabled
@@ -522,37 +558,11 @@ function setupFlagGate(
     },
     { immediate: true }
   )
-
-  const settle = (): void => {
-    agentPanelStore.gateSettled = true
-  }
-  let settleTimer: ReturnType<typeof setTimeout> | undefined
-  const clearSettleTimer = (): void => {
-    clearTimeout(settleTimer)
-    settleTimer = undefined
-  }
-  const scheduleSignedOutFallback = (): void => {
-    clearSettleTimer()
-    settleTimer = setTimeout(() => {
-      if (isSignedOut()) settle()
-    }, GATE_SETTLE_TIMEOUT_MS)
-  }
   watch(
-    () =>
-      [
-        import.meta.env.MODE === 'development' ||
-          authenticatedRemoteConfigState.value === 'authenticated' ||
-          authenticatedRemoteConfigState.value === 'error',
-        isSignedOut()
-      ] as const,
-    ([decided, signedOut]) => {
-      agentPanelStore.gateSettled = decided
-      clearSettleTimer()
-      if (!decided && signedOut) scheduleSignedOutFallback()
+    () => devForcedOn || agentPanelStore.flagsSettled,
+    (settled) => {
+      agentPanelStore.gateSettled = settled
     },
     { immediate: true }
   )
-  // A signed-out session never runs the authenticated /features refresh
-  // (WorkspaceAuthGate returns early with no user), so the watch above never
-  // reaches a decided state for it.
 }

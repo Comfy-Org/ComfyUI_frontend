@@ -1,14 +1,16 @@
 <template>
   <div class="flex h-full flex-col">
-    <div>
+    <div class="text-sm">
       <h2 class="text-2xl font-bold">{{ $t('secrets.title') }}</h2>
-      <p class="mt-1 text-sm text-muted">{{ $t('secrets.description') }}</p>
-      <p class="mt-1 text-sm text-muted">
+      <p class="mt-1 text-muted-foreground">
+        {{ $t('secrets.description') }}
+      </p>
+      <p class="mt-1 text-muted-foreground">
         {{ $t('secrets.descriptionUsage') }}
       </p>
     </div>
 
-    <div class="my-4 border-t border-interface-stroke" />
+    <div class="my-4 border-t" />
 
     <div class="my-4 flex items-center justify-between">
       <h3 class="my-0 text-lg font-semibold">
@@ -26,7 +28,7 @@
 
     <div
       v-else-if="secrets.length === 0"
-      class="py-4 text-center text-sm text-muted"
+      class="py-4 text-center text-sm text-muted-foreground"
     >
       {{ $t('secrets.noSecrets') }}
     </div>

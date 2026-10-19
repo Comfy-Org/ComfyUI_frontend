@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Card from '@/components/ui/card/Card.vue'
 import { computed, inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -33,11 +34,12 @@ const workflowLabel = computed(
 </script>
 
 <template>
-  <div
-    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-component-node-border bg-secondary-background p-4 shadow-interface"
+  <Card
+    surface="secondary"
+    class="flex w-full flex-col gap-2 overflow-hidden p-4 shadow-md"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
-      <p class="m-0 text-base-foreground">
+      <p class="m-0">
         {{
           t(
             hideWorkflowName
@@ -98,5 +100,5 @@ const workflowLabel = computed(
         {{ t('agent.runApproval.run') }}
       </Button>
     </div>
-  </div>
+  </Card>
 </template>

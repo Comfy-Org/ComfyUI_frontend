@@ -31,15 +31,20 @@
               )
             "
           />
-          <i
+          <Tooltip
             v-if="
               command.keybindings.some(
                 (binding) => binding.combo.isBrowserReserved
               )
             "
-            v-tooltip="$t('g.browserReservedKeybindingTooltip')"
-            class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
-          />
+          >
+            <TooltipTrigger as-child>
+              <i class="icon-[lucide--triangle-alert] shrink-0 text-warning" />
+            </TooltipTrigger>
+            <TooltipContent>{{
+              $t('g.browserReservedKeybindingTooltip')
+            }}</TooltipContent>
+          </Tooltip>
           {{ command.label }}
         </div>
       </TableCell>
@@ -54,15 +59,11 @@
           command.source || '-'
         }}</span>
       </TableCell>
-      <TableCell class="p-1 whitespace-nowrap">
-        <div
-          class="flex flex-row justify-end whitespace-nowrap"
-          @click.stop
-          @dblclick.stop
-        >
+      <TableCell class="p-1">
+        <div class="flex justify-end" @click.stop @dblclick.stop>
           <Button
             v-if="command.keybindings.length === 1"
-            v-tooltip="$t('g.edit')"
+            :tooltip="$t('g.edit')"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.edit')"
@@ -71,7 +72,7 @@
             <i class="icon-[lucide--pencil]" />
           </Button>
           <Button
-            v-tooltip="$t('g.addNewKeybinding')"
+            :tooltip="$t('g.addNewKeybinding')"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.addNewKeybinding')"
@@ -80,7 +81,7 @@
             <i class="icon-[lucide--plus]" />
           </Button>
           <Button
-            v-tooltip="$t('g.reset')"
+            :tooltip="$t('g.reset')"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.reset')"
@@ -90,7 +91,7 @@
             <i class="icon-[lucide--rotate-ccw]" />
           </Button>
           <Button
-            v-tooltip="$t('g.delete')"
+            :tooltip="$t('g.delete')"
             variant="textonly"
             size="icon"
             :aria-label="$t('g.delete')"
@@ -110,7 +111,7 @@
           v-for="(binding, index) in command.keybindings"
           :key="binding.combo.serialize()"
           data-testid="keybinding-expansion-binding"
-          class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
+          class="flex items-center justify-between border-b border-border/50 py-1.5 last:border-b-0"
         >
           <div class="flex items-center gap-4">
             <span class="text-muted-foreground">{{ command.label }}</span>
@@ -119,9 +120,9 @@
               :is-modified="command.isModified"
             />
           </div>
-          <div class="flex flex-row">
+          <div class="flex">
             <Button
-              v-tooltip="$t('g.edit')"
+              :tooltip="$t('g.edit')"
               variant="textonly"
               size="icon"
               :aria-label="$t('g.edit')"
@@ -130,7 +131,7 @@
               <i class="icon-[lucide--pencil]" />
             </Button>
             <Button
-              v-tooltip="$t('g.removeKeybinding')"
+              :tooltip="$t('g.removeKeybinding')"
               variant="textonly"
               size="icon"
               :aria-label="$t('g.removeKeybinding')"
@@ -153,6 +154,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 

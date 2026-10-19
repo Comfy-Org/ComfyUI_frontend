@@ -15,7 +15,7 @@ const emit = defineEmits<{ 'download-model': [rowId: string] }>()
 <template>
   <section
     :aria-labelledby="titleId"
-    class="border-t border-border-subtle/60 pb-2 first:border-t-0"
+    class="border-t border-border/30 pb-2 first:border-t-0"
   >
     <div class="flex h-10 items-center gap-2 px-2">
       <h3 :id="titleId" class="m-0 text-sm font-medium">{{ group.label }}</h3>
@@ -38,7 +38,7 @@ const emit = defineEmits<{ 'download-model': [rowId: string] }>()
         "
       >
         <span
-          class="col-start-1 row-start-1 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary-background text-muted-foreground"
+          class="col-start-1 row-start-1 flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md bg-secondary text-muted-foreground"
         >
           <img
             v-if="row.kind === 'input' && row.preview?.mediaType === 'image'"

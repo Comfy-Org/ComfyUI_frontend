@@ -1,21 +1,19 @@
 <template>
   <DefineTrigger>
-    <button
-      ref="wrapperRef"
-      v-tooltip.bottom="{
-        value: tooltipText,
-        showDelay: 512
-      }"
-      type="button"
+    <Button
+      variant="textonly"
+      size="unset"
+      :tooltip="tooltipText"
+      tooltip-side="bottom"
       :data-testid="`subgraph-breadcrumb-item-${item.key}`"
       :data-active="isActive ? '' : undefined"
       draggable="false"
       :class="
         cn(
-          'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit]',
-          isActive &&
-            'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
-          menuOpen && 'p-breadcrumb-item-link-menu-visible'
+          'flex h-8 appearance-none items-center justify-start gap-0 overflow-hidden border-none bg-transparent px-[calc(var(--breadcrumb-item-margin)+var(--breadcrumb-item-padding))] py-0 text-inherit select-none [font:inherit] hover:bg-transparent',
+          isRoot && 'pl-(--breadcrumb-item-padding)',
+          isActive && 'gap-1 text-foreground',
+          menuOpen && 'bg-accent text-foreground hover:bg-accent'
         )
       "
       @click="handleClick"
@@ -24,9 +22,9 @@
       <i
         v-if="hasMissingNodes && isRoot"
         data-testid="subgraph-breadcrumb-missing-nodes-icon"
-        class="icon-[lucide--triangle-alert] text-warning-background"
+        class="icon-[lucide--triangle-alert] text-warning"
       />
-      <span class="p-breadcrumb-item-label max-w-72 truncate px-2">
+      <span ref="labelRef" class="max-w-72 truncate px-2">
         {{ item.label }}
       </span>
       <Badge
@@ -37,7 +35,7 @@
         {{ t('breadcrumbsMenu.blueprint') }}
       </Badge>
       <i v-if="isActive" class="pi pi-angle-down text-2xs"></i>
-    </button>
+    </Button>
   </DefineTrigger>
   <Menu
     v-if="isActive"
@@ -66,10 +64,11 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { createReusableTemplate } from '@vueuse/core'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItemAction } from '@/components/ui/menu/types'
@@ -116,7 +115,7 @@ const workflowService = useWorkflowService()
 const isEditing = ref(false)
 const itemLabel = ref<string>()
 const itemInputRef = ref<InstanceType<typeof Input>>()
-const wrapperRef = ref<HTMLButtonElement>()
+const labelRef = ref<HTMLSpanElement>()
 
 const rename = async (
   newName: string | null | undefined,
@@ -155,13 +154,13 @@ const tooltipText = computed(() => {
   if (hasMissingNodes.value && isRoot) {
     return t('breadcrumbsMenu.missingNodesWarning')
   }
-  return item.label
+  return toValue(item.label)
 })
 
 const startRename = async () => {
   // Check if element is hidden (collapsed breadcrumb)
   // When collapsed, root item is hidden via CSS display:none, so use rename command
-  if (isRoot && wrapperRef.value?.offsetParent === null) {
+  if (isRoot && labelRef.value?.offsetParent === null) {
     await useCommandStore().execute('Comfy.RenameWorkflow')
     return
   }

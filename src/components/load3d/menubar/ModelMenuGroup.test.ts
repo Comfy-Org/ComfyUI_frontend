@@ -27,7 +27,7 @@ function renderGroup(
 ) {
   const result = render(ModelMenuGroup, {
     props: { config: makeConfig(), ...props },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }
@@ -45,7 +45,7 @@ describe('ModelMenuGroup', () => {
 
       const option = screen.getByRole('button', { name: selected })
       expect(option).toHaveAttribute('aria-pressed', 'true')
-      expect(option).toHaveClass('bg-secondary-background-selected')
+      expect(option).toHaveClass('bg-muted')
     }
   )
 

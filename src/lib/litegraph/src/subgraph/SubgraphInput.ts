@@ -1,25 +1,27 @@
+import type {
+  LGraphNode,
+  SubgraphInputNode,
+  SubgraphOutput
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
 import { linkIdReservations, mintLinkId } from '../idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type { RerouteId } from '@/types/rerouteId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { SubgraphInputEventMap } from '@/lib/litegraph/src/infrastructure/SubgraphInputEventMap'
+import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  Point,
-  ReadOnlyRect
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import type { SubgraphInputNode } from './SubgraphInputNode'
-import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphSlot } from './SubgraphSlotBase'
-import { isNodeSlot, isSubgraphOutput } from './subgraphUtils'
+import { isNodeSlot, isSubgraphOutput } from './subgraphTypeGuards'
 
 /**
  * An input "slot" from a parent graph into a subgraph.
@@ -251,4 +253,10 @@ export class SubgraphInput extends SubgraphSlot {
 
     return false
   }
+}
+
+type RegisteredSubgraphInput = SubgraphInput
+
+declare module '../types/entityRegistry' {
+  interface SubgraphInput extends RegisteredSubgraphInput {}
 }

@@ -55,5 +55,15 @@ export const PRESERVED_QUERY_DEFINITIONS: PreservedQueryDefinition[] = [
     namespace: PRESERVED_QUERY_NAMESPACES.WORKSPACE,
     keys: ['workspace'],
     rejectRepeated: true
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.DEPLOYMENT,
+    keys: ['deployment'],
+    rejectRepeated: true
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.WORKFLOWS,
+    keys: ['workflows'],
+    rejectRepeated: true
   }
 ]

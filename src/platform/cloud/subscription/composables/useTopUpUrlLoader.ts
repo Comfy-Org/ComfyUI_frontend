@@ -9,7 +9,7 @@ import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQuery
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
 
@@ -24,9 +24,8 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
 export function useTopUpUrlLoader() {
   const route = useRoute()
   const router = useRouter()
-  const dialogService = useDialogService()
-  const { canTopUp, canSubscribeSelfServe, initialize } =
-    useBillingCapabilities()
+  const { showTopUpCreditsDialog } = useBillingDialogs()
+  const { canTopUp, initialize } = useBillingCapabilities()
   const telemetry = useTelemetry()
 
   /** Reads `?topup=`, strips it, and opens the dialog when the gate allows. */
@@ -53,13 +52,11 @@ export function useTopUpUrlLoader() {
     // just gets stripped above.
     if (!shouldOpen) return
 
-    if (!canTopUp.value && !canSubscribeSelfServe.value) return
+    if (!canTopUp.value) return
 
-    if (canTopUp.value) {
-      telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
-    }
+    telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })
 
-    void dialogService.showTopUpCreditsDialog({
+    void showTopUpCreditsDialog({
       source: paymentIntentSourceForAddCreditsClick('deep_link')
     })
   }

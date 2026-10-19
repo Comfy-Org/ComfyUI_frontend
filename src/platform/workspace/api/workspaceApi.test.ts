@@ -12,6 +12,7 @@ const { mockAxiosInstance } = vi.hoisted(() => ({
   mockAxiosInstance: {
     get: vi.fn(),
     post: vi.fn(),
+    put: vi.fn(),
     patch: vi.fn(),
     delete: vi.fn(),
     interceptors: { response: { use: vi.fn() } }
@@ -45,8 +46,11 @@ beforeEach(() => {
 })
 
 import { workspaceApi } from './workspaceApi'
+import { installWorkspaceApiAuth } from './workspaceApiAuth'
 import { NoWorkspaceAccessError } from './workspaceApiError'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+installWorkspaceApiAuth()
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
@@ -348,6 +352,111 @@ describe('workspaceApi', () => {
     })
   })
 
+  describe('deployment picking', () => {
+    it('listDeployments() sends GET /workspaces/:id/deployments with a 30 second timeout', async () => {
+      const data = { items: [], builds_visible: true }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.listDeployments('ws-1')
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments',
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('pickDeployment() sends PUT /workspaces/:id/deployment with the deployment', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+
+      await workspaceApi.pickDeployment('ws-1', { deployment_id: 'dep-1' })
+
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('does not dispatch a canceled deployment selection when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const auth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
+        auth
+      )
+      const controller = new AbortController()
+      const selected = workspaceApi.pickDeployment(
+        'ws-1',
+        { deployment_id: 'dep-1' },
+        controller.signal
+      )
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(selected).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.put).not.toHaveBeenCalled()
+    })
+
+    it('forwards deployment selection cancellation to the transport', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+      const controller = new AbortController()
+      await workspaceApi.pickDeployment(
+        'ws-1',
+        { deployment_id: 'dep-1' },
+        controller.signal
+      )
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER, signal: controller.signal }
+      )
+    })
+
+    it('clearDeployment() sends DELETE /workspaces/:id/deployment, with follow=workspace only when asked', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({})
+
+      await workspaceApi.clearDeployment('ws-1')
+      await workspaceApi.clearDeployment('ws-1', { follow: 'workspace' })
+
+      expect(mockAxiosInstance.delete).toHaveBeenNthCalledWith(
+        1,
+        '/api/workspaces/ws-1/deployment',
+        { headers: AUTH_HEADER, params: undefined }
+      )
+      expect(mockAxiosInstance.delete).toHaveBeenNthCalledWith(
+        2,
+        '/api/workspaces/ws-1/deployment',
+        { headers: AUTH_HEADER, params: { follow: 'workspace' } }
+      )
+    })
+
+    it('setDefaultDeployment() sends PUT /workspaces/:id/default-deployment with the deployment', async () => {
+      mockAxiosInstance.put.mockResolvedValue({})
+
+      await workspaceApi.setDefaultDeployment('ws-1', {
+        deployment_id: 'dep-1'
+      })
+
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/default-deployment',
+        { deployment_id: 'dep-1' },
+        { headers: AUTH_HEADER }
+      )
+    })
+
+    it('clearDefaultDeployment() sends DELETE /workspaces/:id/default-deployment', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({})
+
+      await workspaceApi.clearDefaultDeployment('ws-1')
+
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/default-deployment',
+        { headers: AUTH_HEADER }
+      )
+    })
+  })
+
   describe('member management', () => {
     it('listMembers() sends GET with params', async () => {
       const data = {
@@ -525,6 +634,13 @@ describe('workspaceApi', () => {
           can_reactivate: true,
           can_change_seats: true,
           can_invite_members: true,
+          can_manage_members: true,
+          can_delete_workspace: false,
+          can_leave_workspace: false,
+          can_manage_billing: false,
+          can_manage_partner_node_access: false,
+          can_view_pending_invites: false,
+          can_view_team_usage: false,
           can_downgrade_to_personal: false
         }
       }
@@ -537,6 +653,19 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/capabilities',
         { headers: AUTH_HEADER, timeout: 10_000, signal: controller.signal }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getBillingAutoReload() sends GET /billing/auto-reload with a 10 second timeout', async () => {
+      const data = { status: 'off' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getBillingAutoReload()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/auto-reload',
+        { headers: AUTH_HEADER, timeout: 10_000 }
       )
       expect(result).toEqual(data)
     })
@@ -902,9 +1031,29 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/payment-portal',
         { return_url: 'https://app.com/settings' },
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 30_000 }
       )
       expect(result).toEqual(data)
+    })
+
+    it('getPaymentPortalUrl() asks for the payment-method update flow when named', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { url: 'https://stripe.com/portal' }
+      })
+
+      await workspaceApi.getPaymentPortalUrl(
+        'https://app.com/settings',
+        'payment_method_update'
+      )
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/payment-portal',
+        {
+          return_url: 'https://app.com/settings',
+          flow_type: 'payment_method_update'
+        },
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
     })
 
     it('createTopup() sends POST with amount_cents and idempotency_key', async () => {

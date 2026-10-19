@@ -13,13 +13,11 @@ import type {
   PreviewSubscribeInput
 } from '@comfyorg/account-core/billing'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
@@ -35,6 +33,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
 import { openHostedBillingTabOutcome } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
@@ -55,6 +54,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import type {
   BalanceInfo,
   BillingActions,
+  BillingPortalOutcome,
   BillingState,
   SubscriptionInfo
 } from '../../../composables/billing/types'
@@ -241,7 +241,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
       agentHasFunds:
-        status.scoped_effective_has_funds?.agent ?? status.has_funds
+        status.scoped_effective_has_funds?.agent ?? status.has_funds,
+      agentScopedHasFunds: status.scoped_has_funds?.agent
     }
   })
 
@@ -254,6 +255,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       currency: data.currency,
       effectiveBalanceMicros:
         data.effective_balance_micros ?? data.amount_micros,
+      effectiveBalanceAuthoritative: data.effective_balance_authoritative,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
     }
@@ -373,7 +375,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const status = rail
-        ? await readOnRail(rail.readStatus)
+        ? await readOnRail(rail.readStatus, 'getBillingStatus')
         : await workspaceApi.getBillingStatus()
       if (status === undefined || isStaleStatusRead(requestId, workspaceId))
         return
@@ -402,7 +404,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     error.value = null
     try {
       const balance = rail
-        ? await readOnRail(rail.readBalance)
+        ? await readOnRail(rail.readBalance, 'getBillingBalance')
         : await workspaceApi.getBillingBalance()
       if (balance !== undefined && requestId === latestBillingReadIds.balance) {
         balanceData.value = balance
@@ -468,15 +470,35 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     options?: SubscribeOptions
   ): Promise<SettledSubscribeResponse> {
     const rail = useSubscriptionRail()
-    if (rail) {
+    const attemptStartedAt = options?.attemptStartedAt
+    if (rail?.subscriptionRouteAvailable) {
       const response = await onSubscriptionRail(() =>
         rail.subscribe(subscribeInputFrom(planSlug, options), {
-          callerStarted: options?.attemptStartedAt !== undefined
+          callerStarted: attemptStartedAt !== undefined
         })
       )
       // The SDK waited for the operation, so the refresh the legacy path fires
       // and forgets has already run on the rail.
       if (response !== DECLINED) return response
+      if (attemptStartedAt !== undefined) {
+        // The caller started this attempt on the rail; the legacy call is its own attempt.
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'failed',
+          outcome: 'failure',
+          operation_type: 'subscription',
+          billing_client: 'sdk',
+          failure_category: 'api_rejected',
+          duration_ms: Date.now() - attemptStartedAt
+        })
+        telemetry?.trackBillingEvent({
+          operation: 'operation',
+          stage: 'started',
+          outcome: 'pending',
+          operation_type: 'subscription',
+          billing_client: 'legacy'
+        })
+      }
     }
 
     isLoading.value = true
@@ -564,10 +586,14 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   }
 
   function reportBillingTabBlocked(): void {
-    useToastStore().add({
-      severity: 'warn',
-      summary: t('g.warning'),
-      detail: t('subscription.billingTabBlocked')
+    useToast().warning(t('g.warning'), {
+      description: t('subscription.billingTabBlocked')
+    })
+  }
+
+  function reportBillingPortalUnavailable(): void {
+    useToast().error(t('g.error'), {
+      description: t('subscription.billingPortalUnavailable')
     })
   }
 
@@ -599,33 +625,34 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  // Layer C first; the rail, and then the legacy client, only when the one
-  // before them doesn't serve this workspace. The portal tab is reserved
-  // before the first request: one opened after it resolves has lost the
-  // click's activation, and a refused reservation mints no portal session.
-  async function manageSubscription(): Promise<void> {
+  async function manageSubscription(): Promise<BillingPortalOutcome> {
     error.value = null
     const hosted = openHostedBillingTabOutcome('payment-methods')
-    if (hosted === 'opened') return
-    if (hosted === 'blocked') return reportBillingTabBlocked()
+    if (hosted === 'opened') return { ok: true }
+    if (hosted === 'blocked') {
+      reportBillingTabBlocked()
+      return { ok: false, reason: 'blocked' }
+    }
 
     const portal = createBillingPortalReporter(telemetry, 'manage_subscription')
-    // The handle arms the return refresh, so adding `noopener` here (which
-    // nulls it) silently stops billing state from re-reading on return.
-    const portalTab = window.open('', '_blank')
+    const portalTab = reserveBillingTab()
     if (!portalTab) {
       portal.blocked()
-      return reportBillingTabBlocked()
+      reportBillingTabBlocked()
+      return { ok: false, reason: 'blocked' }
     }
     try {
       const { url, billingClient } = await requestPortalUrl()
       if (!url) {
         portal.failed(undefined, billingClient)
-        return portalTab.close()
+        portalTab.close()
+        reportBillingPortalUnavailable()
+        return { ok: false, reason: 'missing_url' }
       }
-      portalTab.location.href = url
+      portalTab.navigate(url)
       portal.opened(billingClient)
       refreshOnPortalReturn()
+      return { ok: true }
     } catch (err) {
       portalTab.close()
       portal.failed(err)
@@ -813,19 +840,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  const subscriptionDialog = useSubscriptionDialog()
-
-  async function requireActiveSubscription(): Promise<void> {
-    await fetchStatus()
-    if (!canAccessSubscriptionFeatures.value) {
-      subscriptionDialog.show({ reason: 'subscription_required' })
-    }
-  }
-
-  function showSubscriptionDialog(options?: SubscriptionDialogOptions): void {
-    subscriptionDialog.show(options)
-  }
-
   return {
     // State
     isInitialized,
@@ -858,8 +872,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     cancelSubscription,
     resubscribe,
     topup,
-    fetchPlans,
-    requireActiveSubscription,
-    showSubscriptionDialog
+    fetchPlans
   }
 }

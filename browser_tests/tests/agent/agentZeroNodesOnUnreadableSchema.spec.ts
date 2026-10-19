@@ -1,25 +1,21 @@
-import type { WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * Regression test for PM-1343: the in-app agent used to report a turn as
@@ -65,7 +61,6 @@ const THREAD_ID = 'c9b6a9c0-9b1a-4b9b-8f0e-1a2b3c4d5e70'
 const MESSAGE_ID = '0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5002'
 const ADDED_NODE_ID = 9002
 const NODE_TEXT = 'added after the schema gate tripped'
-const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e70'
 
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
@@ -74,11 +69,6 @@ const SEED: WorkflowJSON = { nodes: [], links: [] }
 
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 
 test.describe(
   'Agent canvas recovers after an unreadable doc schema is repaired',
@@ -91,17 +81,15 @@ test.describe(
       const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
       const vueNodes = new VueNodeHelpers(page)
 
-      let socket: WebSocketRoute | null = null
-
-      const send = (frame: AgentWsEvent | HostFrame): void => {
-        if (
-          (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-          parseServerDocFrame(frame) === null
-        )
-          throw new Error(`frame ${frame.type} is not a valid doc frame`)
-        if (!socket) throw new Error('the app has not opened /ws yet')
-        socket.send(JSON.stringify(frame))
-      }
+      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
+      hostSocket.answerSubscribesWith((stateVector) => {
+        host.corruptSchemaVersion()
+        return [
+          host.subscribed(),
+          host.catchUp(stateVector),
+          host.repairSchemaVersion()
+        ]
+      })
 
       await page.route('**/api/agent/threads', (route) =>
         route.fulfill(jsonRoute({ threads: [] }))
@@ -120,50 +108,7 @@ test.describe(
         }
         return route.fulfill(jsonRoute([]))
       })
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: {
-              status: { exec_info: { queue_remaining: 0 } },
-              sid: SOCKET_SID
-            }
-          })
-        )
-        ws.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== WORKFLOW_ID ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          // Simulates the unproven trigger this repro exercises (see file
-          // header): the catch-up frame's merged doc has no readable
-          // meta.schema_version at all.
-          host.corruptSchemaVersion()
-          send(host.subscribed())
-          send(host.catchUp(state_vector_b64))
-          // Sent as its own later-seq frame -- not folded silently into a
-          // later apply()'s delta -- so the fix that stops the latch from
-          // outliving one bad frame is exercised for real: this repair alone
-          // is enough for the gate to pass again before the add_node frame
-          // below arrives.
-          send(host.repairSchemaVersion())
-        })
-      })
+      await hostSocket.install()
 
       await bootAgentApp(page, true, {
         settings: {
@@ -234,16 +179,18 @@ test.describe(
 
       // Setup checkpoint, still expected to pass: the doc subscription round
       // trip (with its corrupted catch-up) actually completed.
-      await expect.poll(() => socket !== null).toBe(true)
+      await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
-      const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
+      const composer = panel.getByRole('textbox', {
+        name: AGENT_COMPOSER_LABEL
+      })
       await composer.fill('Add a note to the canvas.')
       await panel.getByRole('button', { name: SEND_LABEL }).click()
       await expect(
         panel.getByText('Add a note to the canvas.').first()
       ).toBeVisible()
 
-      send({
+      hostSocket.send({
         type: 'agent_active_tab',
         data: {
           workflow_id: WORKFLOW_ID,
@@ -252,7 +199,7 @@ test.describe(
           message_id: MESSAGE_ID
         }
       })
-      send({
+      hostSocket.send({
         type: 'agent_tool_call',
         data: {
           tool_call_id: 'call-1',
@@ -266,7 +213,7 @@ test.describe(
 
       // The op lands on the host's own authoritative document, and is sent to
       // the browser the same way agentConversationFixture's replay does.
-      send(
+      hostSocket.send(
         host.apply([
           {
             op: 'add_node',
@@ -291,7 +238,7 @@ test.describe(
       )
       expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
 
-      send({
+      hostSocket.send({
         type: 'agent_message_delta',
         data: {
           delta: 'Added a note to the canvas.',
@@ -299,7 +246,7 @@ test.describe(
           message_id: MESSAGE_ID
         }
       })
-      send({
+      hostSocket.send({
         type: 'agent_message_done',
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })

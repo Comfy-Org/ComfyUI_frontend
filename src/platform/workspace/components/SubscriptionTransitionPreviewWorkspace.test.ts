@@ -102,8 +102,6 @@ function preview(
   }
 }
 
-// Shape returned while embedded checkout is disabled: every exact-quote field
-// is absent and only the legacy cost fields are populated.
 function legacyPreview(
   overrides: Partial<PreviewSubscribeResponse>
 ): PreviewSubscribeResponse {
@@ -216,22 +214,16 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     ).toBeDisabled()
   })
 
-  it('reports failed verification without offering to resume it', () => {
+  it('withholds a stale verification link once the last attempt failed', () => {
     render(SubscriptionTransitionPreviewWorkspace, {
       props: {
         previewData: preview({}),
-        embeddedCheckoutEnabled: true,
         authenticationState: 'failed_retryable',
-        authenticationError: 'Challenge was closed',
-        // A stale action_url from the abandoned challenge can still be present
-        // when the server reports failed_retryable; the button must stay
-        // hidden regardless.
         actionUrl: 'https://verify.example/sensitive-token'
       },
       global: globalOptions
     })
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
     expect(
       screen.queryByRole('button', {
         name: 'subscription.preview.completeVerification'

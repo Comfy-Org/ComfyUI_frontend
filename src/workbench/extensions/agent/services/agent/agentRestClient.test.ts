@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   markErrorReported,
@@ -8,10 +8,13 @@ import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
+import { withAgentAuth } from './agentAuth'
+
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('./agentAuth'))
 
 import {
   AgentApiError,
@@ -197,12 +200,25 @@ describe('agentRestClient route + method', () => {
 
   it('answerAsk POSTs the selected option to the encoded ask path', async () => {
     respond(jsonResponse(202, { status: 'answered' }))
-    await makeClient().answerAsk('t7/x', 'turn-1:call/1', ['run'])
+    await makeClient().answerAsk('t7/x', 'turn-1:call/1', { selected: ['run'] })
 
     const { route, init } = lastCall()
     expect(route).toBe('/agent/threads/t7%2Fx/asks/turn-1%3Acall%2F1/answer')
     expect(init.method).toBe('POST')
     expect(JSON.parse(init.body as string)).toEqual({ selected: ['run'] })
+  })
+
+  it('answerAsk sends free text as other_text alongside the chosen ids', async () => {
+    respond(jsonResponse(202, { status: 'answered' }))
+    await makeClient().answerAsk('t7', 'ask-1', {
+      selected: ['a'],
+      other_text: 'something else'
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      selected: ['a'],
+      other_text: 'something else'
+    })
   })
 
   it.for([
@@ -218,7 +234,7 @@ describe('agentRestClient route + method', () => {
     respond(jsonResponse(202, body))
 
     await expect(
-      makeClient().answerAsk('t7', 'ask-1', ['run'])
+      makeClient().answerAsk('t7', 'ask-1', { selected: ['run'] })
     ).resolves.toEqual(body)
   })
 
@@ -322,6 +338,25 @@ describe('agentRestClient route + method', () => {
   })
 })
 
+describe('getIdentity', () => {
+  it('reads the identity the agent authenticated this client as', async () => {
+    respond(
+      jsonResponse(200, { workspace_id: 'w-local', user_id: 'local-user' })
+    )
+
+    const identity = await makeClient().getIdentity()
+
+    expect(identity).toEqual({ userId: 'local-user' })
+    expect(lastCall().route).toBe('/agent/identity')
+  })
+
+  it('rejects a malformed identity rather than returning a partial one', async () => {
+    respond(jsonResponse(200, { workspace_id: 'w-local', user_id: '' }))
+
+    await expect(makeClient().getIdentity()).rejects.toThrow()
+  })
+})
+
 // The one read that can tell a live version-less draft from a deleted
 // workflow: cloud's `GetByID` excludes soft-deleted rows but, unlike `List`,
 // not version-less ones.
@@ -375,6 +410,7 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1']
@@ -382,15 +418,28 @@ describe('postMessage wire body', () => {
     expect(contentType(init)).toBe('application/json')
   })
 
+  it('sends current_tab_unbound when the turn comes from a tab with no workflow', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'add a node',
+      currentTabUnbound: true
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'add a node',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      current_tab_unbound: true
+    })
+  })
+
   it('omits absent optionals rather than sending them as undefined keys', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', { content: 'just text' })
 
-    const parsed = JSON.parse(lastCall().init.body as string) as Record<
-      string,
-      unknown
-    >
-    expect(Object.keys(parsed)).toEqual(['content'])
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'just text',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval']
+    })
   })
 
   // The id this send already reports on app:agent_message_sent has to reach the
@@ -406,6 +455,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
     })
   })
@@ -428,6 +478,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
   })
@@ -510,6 +561,48 @@ describe('success response parsing', () => {
 })
 
 describe('error mapping', () => {
+  it('formats an attachment rejection without parsing the evolving accepted policy', async () => {
+    respond(
+      jsonResponse(422, {
+        accepted: {
+          image: ['.png', '.future-image-format'],
+          text: [],
+          video: []
+        },
+        error: 'server fallback',
+        rejected: ['draft.future-image-format'],
+        rejected_count: 1,
+        type: 'ATTACHMENT_TYPE_NOT_ACCEPTED'
+      })
+    )
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toContain(
+      'draft.future-image-format is not a file type the agent accepts'
+    )
+  })
+
+  it('does not treat another error type as an attachment rejection', async () => {
+    respond(
+      jsonResponse(422, {
+        error: 'another route failed',
+        rejected: ['private.pdf'],
+        rejected_count: 1,
+        type: 'OTHER_ERROR'
+      })
+    )
+
+    const error = await makeClient()
+      .getMessages('t1')
+      .catch((caught: unknown) => caught)
+
+    expect(error).toBeInstanceOf(AgentApiError)
+    expect((error as AgentApiError).message).toBe('another route failed')
+  })
   it.for(['', '   '])(
     'gives a status-bearing message when the supplied message is %j',
     (message) => {
@@ -584,7 +677,7 @@ describe('error mapping', () => {
     expect(error.body).toBeUndefined()
   })
 
-  it('falls back to the HTTP status when the response has no error text', async () => {
+  it('falls back to the HTTP status when the response has no error body or status text', async () => {
     respond(new Response('', { status: 503 }))
 
     const error = await makeClient()
@@ -595,6 +688,18 @@ describe('error mapping', () => {
     expect((error as AgentApiError).message).toBe(
       'Agent request failed (HTTP 503)'
     )
+  })
+
+  it('carries its operation so a non-auth status can still be tagged downstream (PM-2103)', async () => {
+    respond(new Response('', { status: 503 }))
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    if (!(error instanceof AgentApiError)) throw error
+    expect(error.operation).toBe('post_thread_message')
+    expect(error.status).toBe(503)
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
@@ -861,7 +966,7 @@ describe('error mapping', () => {
       'cloud-auth-header'
     )
     await makeClient()
-      .answerAsk('t-secret', 'ask-secret', ['run'])
+      .answerAsk('t-secret', 'ask-secret', { selected: ['run'] })
       .catch((e: unknown) => e)
 
     expect(reportedTags()).toEqual({
@@ -1169,6 +1274,64 @@ describe('Retry-After contract', () => {
     )
     expect(await retryAfterSeconds('Friday, 31-Dec-00 00:00:00 GMT')).toBe(
       expected
+    )
+  })
+})
+
+const emptyThreadPage = {
+  threads: [],
+  pagination: { offset: 0, limit: 1, total: 0, has_more: false }
+}
+
+describe('user auth on agent requests', () => {
+  beforeEach(() => {
+    vi.mocked(withAgentAuth).mockImplementation(async (init) => {
+      const headers = new Headers(init.headers)
+      headers.set('Authorization', 'Bearer id-token')
+      return { ...init, headers }
+    })
+  })
+
+  const calls: [
+    string,
+    (client: AgentRestClient) => Promise<unknown>,
+    unknown
+  ][] = [
+    [
+      'POST messages',
+      (c) => c.postMessage('new', { content: 'hi' }),
+      turnAccepted
+    ],
+    ['GET messages', (c) => c.getMessages('t1'), []],
+    [
+      'POST answer',
+      (c) => c.answerAsk('t1', 'ask-1', { selected: ['allow'] }),
+      { status: 'answered' }
+    ],
+    ['the credential refresh', (c) => c.refreshCredential(), emptyThreadPage]
+  ]
+
+  it.for(calls)(
+    'sends the user auth header with %s',
+    async ([, call, body]) => {
+      respond(jsonResponse(200, body))
+
+      await call(makeClient())
+
+      expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
+        'Bearer id-token'
+      )
+    }
+  )
+
+  it('sends no auth header for a signed-out user', async () => {
+    vi.mocked(withAgentAuth).mockImplementation(async (init) => init)
+    respond(jsonResponse(200, []))
+
+    await makeClient().getMessages('t1')
+
+    expect(new Headers(lastCall().init.headers).has('Authorization')).toBe(
+      false
     )
   })
 })

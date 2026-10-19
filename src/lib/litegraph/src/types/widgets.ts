@@ -1,9 +1,13 @@
+import type {
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
-import type { NodeId } from '@/types/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { LightInfoEntry } from '@/types/lightInfo'
+import type { WidgetValue } from '@/types/widgetValue'
 import type { WidgetId } from '@/types/widgetId'
 import type {
   WidgetSurfaces,
@@ -18,12 +22,10 @@ import type {
   RequiredProps,
   Size
 } from '../interfaces'
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { CanvasPointerEvent } from './events'
 
-export interface NodeBindable {
-  setNodeId(nodeId: NodeId): void
-}
+export type { NodeBindable } from '../utils/type'
 
 export interface IWidgetOptions<TValues = unknown> {
   on?: string
@@ -156,6 +158,7 @@ export type IWidget =
   | IVideoEditWidget
   | IResolutionPreviewWidget
   | IBoundingBoxesWidget
+  | ILightInfoWidget
   | IColorsWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
@@ -381,6 +384,14 @@ export interface IBoundingBoxesWidget extends IBaseWidget<
 > {
   type: 'boundingboxes'
   value: BoundingBox[]
+}
+
+export interface ILightInfoWidget extends IBaseWidget<
+  LightInfoEntry[],
+  'lightinfo'
+> {
+  type: 'lightinfo'
+  value: LightInfoEntry[]
 }
 
 export interface IColorsWidget extends IBaseWidget<string[], 'colors'> {

@@ -1,6 +1,7 @@
 <template>
   <Button
-    v-tooltip.bottom="{ value: $t('sideToolbar.closeSidebar'), showDelay: 300 }"
+    :tooltip="$t('sideToolbar.closeSidebar')"
+    tooltip-side="bottom"
     variant="muted-textonly"
     size="icon"
     class="shrink-0"

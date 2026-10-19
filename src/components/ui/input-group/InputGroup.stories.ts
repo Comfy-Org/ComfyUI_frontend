@@ -70,7 +70,7 @@ export const Invalid: Story = {
       <InputGroup class="w-80">
         <InputGroupInput model-value="not a url" aria-invalid="true" />
         <InputGroupAddon align="inline-end">
-          <i class="icon-[lucide--x] size-4 text-destructive-background" />
+          <i class="icon-[lucide--x] size-4 text-destructive" />
         </InputGroupAddon>
       </InputGroup>`
   })

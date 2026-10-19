@@ -13,7 +13,7 @@
         <Menu v-if="isCloud" :modal="false">
           <template #trigger>
             <Button
-              v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
+              :tooltip="$t('assetBrowser.filterBy')"
               variant="secondary"
               size="icon"
               icon="icon-[lucide--list-filter]"
@@ -26,9 +26,7 @@
             v-model:media-type-filters="mediaTypeFilters"
           />
         </Menu>
-        <MediaAssetSettingsButton
-          v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
-        >
+        <MediaAssetSettingsButton>
           <template #default>
             <MediaAssetSettingsMenu
               v-model:view-mode="viewMode"
@@ -48,7 +46,7 @@
       <span
         v-for="chip in filterChips"
         :key="chip.key"
-        class="inline-flex items-center gap-1 rounded-md bg-secondary-background py-1 pr-1 pl-2 text-xs whitespace-nowrap"
+        class="inline-flex items-center gap-1 rounded-md bg-secondary py-1 pr-1 pl-2 text-xs whitespace-nowrap"
       >
         <span>{{ chip.label }}</span>
         <Button
@@ -65,11 +63,7 @@
           <i class="icon-[lucide--x] size-3" />
         </Button>
       </span>
-      <Button
-        variant="textonly"
-        class="h-6 px-1.5 text-xs text-muted-foreground"
-        @click="clearFilters"
-      >
+      <Button variant="muted-textonly" class="h-6 px-1.5" @click="clearFilters">
         {{ $t('sideToolbar.mediaAssets.clearFilters') }}
       </Button>
     </div>

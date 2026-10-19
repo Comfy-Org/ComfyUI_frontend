@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.render', 'Node Render Error') }}
   </div>
   <div
@@ -10,17 +10,15 @@
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
-        'group/node lg-node absolute isolate touch-none text-xs',
+        'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        isLightTheme
-          ? 'drop-shadow-md drop-shadow-black/15'
-          : 'drop-shadow-xl drop-shadow-black/40',
+        'drop-shadow-lg',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
-        isSelected && 'outline-node-component-outline',
-        executing && 'outline-node-stroke-executing',
+        isSelected && 'outline-foreground',
+        executing && 'outline-primary',
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
           !isGhostPlacing
@@ -60,9 +58,7 @@
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
           hasAnyError ? '-inset-1.75' : '-inset-0.75',
-          isSelected
-            ? 'border-node-component-outline'
-            : 'border-node-stroke-executing'
+          isSelected ? 'border-foreground' : 'border-primary'
         )
       "
     />
@@ -70,20 +66,21 @@
       data-testid="node-inner-wrapper"
       :class="
         cn(
-          'flex flex-1 flex-col bg-node-component-header-surface',
+          'flex flex-1 flex-col bg-node-header',
           'w-(--node-width)',
           !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4',
-          errorSeverity === 'missing' && 'ring-warning-background',
-          errorSeverity === 'error' && 'ring-destructive-background',
+          errorSeverity === 'missing' && 'ring-warning',
+          errorSeverity === 'error' && 'ring-destructive',
           bypassed && bypassOverlayClass,
           muted && mutedOverlayClass,
-          isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
+          isDraggingOver && 'bg-primary/10 ring-4 ring-primary'
         )
       "
       :style="{
-        '--component-node-background': applyLightThemeColor(nodeData.bgcolor),
+        '--node': applyLightThemeColor(nodeData.bgcolor),
+        '--component-node-background': 'var(--node)',
         backgroundColor: applyLightThemeColor(nodeData?.color)
       }"
     >
@@ -145,10 +142,7 @@
 
         <div
           :class="
-            cn(
-              'flex flex-1 flex-col bg-component-node-background pt-1 pb-3',
-              bodyRoundingClass
-            )
+            cn('flex flex-1 flex-col bg-node pt-1 pb-3', bodyRoundingClass)
           "
           :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
           :data-testid="`node-body-${nodeData.id}`"
@@ -299,7 +293,6 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -308,8 +301,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
   getNodeByLocatorId,
-  locatorIdFromState,
-  subgraphIdFromState
+  locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@/utils/colorUtil'
@@ -338,10 +330,6 @@ const { t } = useI18n()
 
 const { isSelectMode, isSelectOutputsMode } = useAppMode()
 const settingStore = useSettingStore()
-const colorPaletteStore = useColorPaletteStore()
-const isLightTheme = computed(
-  () => !!colorPaletteStore.completedActivePalette.light_theme
-)
 
 const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
@@ -481,7 +469,7 @@ const hasCustomContent = computed(() => {
 })
 
 // Computed classes and conditions for better reusability
-const progressClasses = 'h-2 bg-primary-500 transition-all duration-300'
+const progressClasses = 'h-2 bg-primary transition-all duration-300'
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
@@ -612,11 +600,6 @@ const handleEnterSubgraph = () => {
 
 const nodeOutputs = useNodeOutputStore()
 
-const nodeOutputLocatorId = computed(() => {
-  const subgraphId = subgraphIdFromState(nodeData, canvasStore.rootGraphId)
-  return subgraphId ? `${subgraphId}:${nodeData.id}` : nodeData.id
-})
-
 function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
@@ -698,7 +681,8 @@ const hasVideoEditWidget = computed(() =>
 )
 
 const nodeMedia = computed(() => {
-  const newOutputs = nodeOutputs.nodeOutputs[nodeOutputLocatorId.value]
+  const locatorId = nodeLocatorId.value
+  const newOutputs = locatorId ? nodeOutputs.nodeOutputs[locatorId] : undefined
   const node = lgraphNode.value
 
   if (
@@ -746,8 +730,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop() {
+function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = resolveLGraphNode()
+  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>

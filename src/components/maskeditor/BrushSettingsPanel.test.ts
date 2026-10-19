@@ -1,4 +1,4 @@
-/* oxlint-disable testing-library/no-container, testing-library/no-node-access -- shape buttons are unlabeled divs and number inputs have no aria labels */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access -- number inputs have no aria labels */
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -30,6 +30,8 @@ const i18n = createI18n({
       maskEditor: {
         brushSettings: 'Brush Settings',
         brushShape: 'Brush Shape',
+        brushShapeCircle: 'Circle brush',
+        brushShapeSquare: 'Square brush',
         colorSelector: 'Color Selector',
         thickness: 'Thickness',
         opacity: 'Opacity',
@@ -68,25 +70,19 @@ describe('BrushSettingsPanel', () => {
   describe('brush shape buttons', () => {
     it('should set brushSettings.type to Arc when arc button clicked', async () => {
       mockStore.brushSettings.type = BrushShape.Rect
-      const { container } = renderPanel()
+      renderPanel()
       const user = userEvent.setup()
 
-      const arcEl = container.querySelector(
-        '.maskEditor_sidePanelBrushShapeCircle'
-      )
-      await user.click(arcEl as Element)
+      await user.click(screen.getByRole('button', { name: 'Circle brush' }))
 
       expect(mockStore.brushSettings.type).toBe(BrushShape.Arc)
     })
 
     it('should set brushSettings.type to Rect when rect button clicked', async () => {
-      const { container } = renderPanel()
+      renderPanel()
       const user = userEvent.setup()
 
-      const rectEl = container.querySelector(
-        '.maskEditor_sidePanelBrushShapeSquare'
-      )
-      await user.click(rectEl as Element)
+      await user.click(screen.getByRole('button', { name: 'Square brush' }))
 
       expect(mockStore.brushSettings.type).toBe(BrushShape.Rect)
     })
