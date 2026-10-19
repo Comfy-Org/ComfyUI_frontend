@@ -47,7 +47,7 @@ const { softwareId, nodes: cliJsonLd } = cliPageJsonLd(siteUrl, url, locale)
   ogImage="https://media.comfy.org/website/cli/og-v2.jpg"
 >
   <HeroSection locale="en" client:load />
-  <CliAgentExperience heading-tag="h2" client:load />
+  <CliAgentExperience locale="en" heading-tag="h2" client:visible />
   <SkillsSection locale="en" client:visible />
   <AIModelsSection locale="en" cards={cliModelCards} compact client:visible />
   <AgentsSection locale="en" />

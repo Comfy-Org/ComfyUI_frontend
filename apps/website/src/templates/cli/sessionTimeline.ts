@@ -1,5 +1,3 @@
-// Timing and commands transcribed from the user-supplied 39.7s movie.
-// Responses are shortened; machine paths and temporary URLs are omitted.
 export interface SessionEvent {
   start: number
   end: number

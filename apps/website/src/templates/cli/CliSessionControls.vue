@@ -1,23 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import BrandButton from '@/components/common/BrandButton.vue'
-const { zh, reduced, paused } = defineProps<{
-  zh: boolean
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+const {
+  locale = 'en',
+  reduced,
+  paused
+} = defineProps<{
+  locale?: Locale
   reduced: boolean
   paused: boolean
 }>()
+const { t } = translationsFor(locale)
 const emit = defineEmits<{ toggle: []; replay: [] }>()
-const statusLabel = computed(() => {
-  if (reduced)
-    return zh
-      ? '已减少动态效果：展示最终输出'
-      : 'Reduced motion: final outputs shown'
-  return zh ? '录制示例 · 不执行命令' : 'Recorded example · no commands execute'
-})
-const playbackLabel = computed(() => {
-  if (paused) return zh ? '继续' : 'Resume'
-  return zh ? '暂停' : 'Pause'
-})
+const statusLabel = computed(() =>
+  t(reduced ? 'cli.session.reducedStatus' : 'cli.session.recordedStatus')
+)
+const playbackLabel = computed(() =>
+  t(paused ? 'cli.session.resume' : 'cli.session.pause')
+)
 </script>
 <template>
   <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
@@ -38,7 +40,7 @@ const playbackLabel = computed(() => {
         class="uppercase"
         variant="outline"
         @click="emit('replay')"
-        >{{ zh ? '重播' : 'Replay' }}</BrandButton
+        >{{ t('cli.session.replay') }}</BrandButton
       >
     </div>
   </div>

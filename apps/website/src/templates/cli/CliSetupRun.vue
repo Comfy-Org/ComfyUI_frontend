@@ -5,33 +5,42 @@ import CardHeader from '@/components/ui/card/CardHeader.vue'
 import CardTitle from '@/components/ui/card/CardTitle.vue'
 import CardContent from '@/components/ui/card/CardContent.vue'
 import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
+import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-const { t } = translationsFor('en')
-const copyLabel = t('ui.copy')
-const copiedLabel = t('ui.copied')
 const codeFieldClass =
   '[&>span]:text-2xs/relaxed sm:[&>span]:text-xs/relaxed lg:[&>span]:text-sm/relaxed'
-const { client, usesManualSetup, isHeadless, activeConnectionId, runCommands } =
-  defineProps<{
-    client: { name: string; kind: 'agent' | 'shell' }
-    usesManualSetup: boolean
-    isHeadless: boolean
-    activeConnectionId: 'cloud' | 'local'
-    runCommands: string[]
-  }>()
+const {
+  locale = 'en',
+  client,
+  usesManualSetup,
+  isHeadless,
+  activeConnectionId,
+  runCommands
+} = defineProps<{
+  locale?: Locale
+  client: { name: string; kind: 'agent' | 'shell' }
+  usesManualSetup: boolean
+  isHeadless: boolean
+  activeConnectionId: 'cloud' | 'local'
+  runCommands: string[]
+}>()
+
+const { t } = translationsFor(locale)
+const copyLabel = t('ui.copy')
+const copiedLabel = t('ui.copied')
 
 const description = computed(() => {
   if (client.kind !== 'agent')
     return isHeadless
-      ? 'Run your workflow in your configured runner.'
-      : 'Your terminal is ready for Comfy CLI commands.'
+      ? t('cli.experience.runHeadless')
+      : t('cli.experience.runTerminal')
   if (usesManualSetup)
     return activeConnectionId === 'cloud'
-      ? 'Complete browser sign-in if prompted, then run Comfy CLI commands in your terminal.'
-      : 'Run Comfy CLI commands against your local ComfyUI installation.'
+      ? t('cli.experience.runManualCloud')
+      : t('cli.experience.runManualLocal')
   return activeConnectionId === 'cloud'
-    ? `Complete browser sign-in when prompted, then ask ${client.name} to generate an image or video.`
-    : `Ask ${client.name} to run a workflow on your local ComfyUI installation.`
+    ? t('cli.experience.runAgentCloud', { client: client.name })
+    : t('cli.experience.runAgentLocal', { client: client.name })
 })
 </script>
 <template>
@@ -43,7 +52,9 @@ const description = computed(() => {
       ><CardTitle class="text-xl font-light md:text-xl"
         >2.
         {{
-          usesManualSetup ? 'Run a command' : 'Connect and start creating'
+          usesManualSetup
+            ? t('cli.experience.runManualTitle')
+            : t('cli.experience.runAgentTitle')
         }}</CardTitle
       ></CardHeader
     >

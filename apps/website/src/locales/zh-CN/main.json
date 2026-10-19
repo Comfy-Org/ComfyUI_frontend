@@ -883,12 +883,24 @@
       "alt": "终端录屏：comfy generate 保存 cat.png、一次 Comfy Cloud 工作流运行、自带技能列表，以及会话保存的两张图像",
       "heading": "一次真实会话，从头到尾。",
       "subtitle": "原生动画重现 Comfy Cloud 会话：生成猫咪、运行灯塔工作流，并展示两个已保存的输出。录制响应已精简；不会执行任何命令。",
-      "transcript": "会话文字记录：comfy generate 生成猫咪并保存 cat.png。comfy templates fetch 将 image_z_image_turbo 保存为 zimage.json。comfy workflow set-slot 将提示词改为黄昏灯塔。comfy run 在云端运行工作流，comfy download 保存 f5308bc5_000.png。动画最后展示两张已保存的图片。"
+      "transcript": "会话文字记录：comfy generate 生成猫咪并保存 cat.png。comfy templates fetch 将 image_z_image_turbo 保存为 zimage.json。comfy workflow set-slot 将提示词改为黄昏灯塔。comfy run 在云端运行工作流，comfy download 保存 f5308bc5_000.png。动画最后展示两张已保存的图片。",
+      "pauseAnimation": "暂停 CLI 会话动画",
+      "resumeAnimation": "继续 CLI 会话动画",
+      "animationLabel": "CLI 会话动画；按空格键暂停或继续",
+      "reducedLabel": "CLI 会话：已减少动态效果，展示最终输出。",
+      "reducedStatus": "已减少动态效果：展示最终输出",
+      "recordedStatus": "录制示例 · 不执行命令",
+      "pause": "暂停",
+      "resume": "继续",
+      "replay": "重播",
+      "filesSaved": "已保存 2 个文件",
+      "catAlt": "月光下的猫咪，来自所提供的录屏",
+      "lighthouseAlt": "黄昏灯塔，来自所提供的录屏"
     },
     "setup": {
       "agent": {
         "commandCloud": "帮我配置 Comfy CLI：pip install comfy-cli，然后 comfy setup --where cloud，再 comfy skills install。请按照 {url} 的指南操作，完成后告诉我。",
-        "commandLocal": "帮我配置 Comfy CLI：pip install comfy-cli，然后 comfy setup，再 comfy skills install。请按照 {url} 的指南操作，完成后告诉我。",
+        "commandLocal": "帮我配置 Comfy CLI：pip install comfy-cli，然后 comfy setup --where local，再 comfy skills install。请按照 {url} 的指南操作，完成后告诉我。",
         "description": "把这段粘贴进 {client}。它会安装 CLI、运行 setup、完成登录并添加自带技能。",
         "title": "让 {client} 为你配置"
       },
@@ -988,7 +1000,9 @@
       "moreSkillsLinkLabel": "Comfy Skills 仓库",
       "moreSkillsPrefix": "更多智能体技能见",
       "moreSkillsSuffix": "。",
-      "subtitle": "一条命令安装五个自带技能，让 Claude Code、Cursor 和任何支持 AGENTS.md 的工具掌握整个 CLI。下面是六个生产简报，每条提示都可以直接粘贴。"
+      "subtitle": "一条命令安装五个自带技能，让 Claude Code、Cursor 和任何支持 AGENTS.md 的工具掌握整个 CLI。下面是六个生产简报，每条提示都可以直接粘贴。",
+      "exampleLabel": "示例图片",
+      "promptCopyLabel": "复制提示词"
     },
     "why": {
       "1": {
@@ -1015,6 +1029,46 @@
       "headingHighlight": "Comfy CLI？",
       "mcpLinkLabel": "配置 Comfy MCP",
       "subtitle": "Comfy MCP 的终端搭档：同一个引擎、同一个账户，脚本化。"
+    },
+    "experience": {
+      "heading": "创建图像和视频",
+      "headingWith": "使用 {client}。",
+      "terminal": "你的终端",
+      "subtitle": "将 ComfyUI 工作流和创意模型带入你日常使用的工具。在 Comfy Cloud 或你自己的机器上运行。",
+      "setup": "配置 {client}",
+      "manual": "手动安装",
+      "summary": "Python CLI · 云端或本地 · 内含智能体技能",
+      "sessionLabel": "从提示词到输出",
+      "sessionHeading": "从终端开启创意会话。",
+      "close": "关闭配置",
+      "dialogManual": "在终端配置 Comfy CLI",
+      "dialogAgent": "配置 {client}",
+      "dialogDescription": "安装、连接，然后开始创作。滚动查看全部配置步骤。",
+      "clientLabel": "选择 CLI 客户端",
+      "setupClientLabel": "选择配置客户端",
+      "connectionLabel": "ComfyUI 运行位置",
+      "methodLabel": "配置方式",
+      "agentMode": "使用智能体",
+      "manualMode": "手动",
+      "localBilling": "开源，可在你自己的机器上免费运行。本地模式需要已安装 ComfyUI，工作流在你自己的硬件上运行。",
+      "cloudBilling": "{tagline} 云端使用需要 Comfy Cloud 订阅或积分。",
+      "localGuide": "本地配置指南",
+      "reference": "CLI 命令参考",
+      "installManual": "1. 安装并连接",
+      "installAgent": "1. 复制并发送给 {client}",
+      "headlessHelp": "配置运行环境，无需交互提示。使用云端时请替换 API 密钥占位符。",
+      "cloudHelp": "配置会打开浏览器供你登录，然后安装智能体技能。",
+      "localHelp": "配置本地连接并安装智能体技能。",
+      "apiKey": "获取 API 密钥",
+      "runHeadless": "在已配置的运行环境中运行工作流。",
+      "runTerminal": "你的终端已准备好运行 Comfy CLI 命令。",
+      "runManualCloud": "如有提示，请在浏览器完成登录，然后在终端运行 Comfy CLI 命令。",
+      "runManualLocal": "使用 Comfy CLI 命令操作本地安装的 ComfyUI。",
+      "runAgentCloud": "按提示在浏览器完成登录，然后让 {client} 生成图像或视频。",
+      "runAgentLocal": "让 {client} 在本地安装的 ComfyUI 上运行工作流。",
+      "runManualTitle": "运行命令",
+      "runAgentTitle": "连接并开始创作",
+      "localLabel": "本地"
     }
   },
   "cloud": {

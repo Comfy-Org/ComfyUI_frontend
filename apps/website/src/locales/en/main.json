@@ -2194,8 +2194,8 @@
       "agent": {
         "title": "Ask {client} to set it up",
         "description": "Paste this into {client}. It installs the CLI, runs setup, signs you in, and adds the bundled skills.",
-        "commandCloud": "Set up the Comfy CLI for me: pip install comfy-cli, then comfy setup --where cloud, then comfy skills install. Follow the guide at {url} and tell me when it's ready.",
-        "commandLocal": "Set up the Comfy CLI for me: pip install comfy-cli, then comfy setup, then comfy skills install. Follow the guide at {url} and tell me when it's ready."
+        "commandCloud": "Set up the Comfy CLI for me: pip install comfy-cli,\nthen comfy setup --where cloud,\nthen comfy skills install.\nFollow the guide at {url} and tell me when it's ready.",
+        "commandLocal": "Set up the Comfy CLI for me: pip install comfy-cli,\nthen comfy setup --where local,\nthen comfy skills install.\nFollow the guide at {url} and tell me when it's ready."
       },
       "clients": {
         "terminal": {
@@ -2225,7 +2225,19 @@
       "heading": "A real session, start to finish.",
       "subtitle": "A native recreation of a Comfy Cloud session: generate a cat, run a lighthouse workflow, and reveal the two saved outputs. Recorded responses are shortened; no commands execute.",
       "alt": "Recorded terminal session: comfy generate saving cat.png, a workflow run on Comfy Cloud, the bundled skills list, and the two images the session saved",
-      "transcript": "Session transcript: comfy generate renders a cat and saves cat.png. comfy templates fetch retrieves image_z_image_turbo as zimage.json. comfy workflow set-slot changes the prompt to a lighthouse at dusk. comfy run submits that workflow to Cloud and comfy download saves f5308bc5_000.png. The animation ends with both saved images."
+      "transcript": "Session transcript: comfy generate renders a cat and saves cat.png. comfy templates fetch retrieves image_z_image_turbo as zimage.json. comfy workflow set-slot changes the prompt to a lighthouse at dusk. comfy run submits that workflow to Cloud and comfy download saves f5308bc5_000.png. The animation ends with both saved images.",
+      "pauseAnimation": "Pause CLI session animation",
+      "resumeAnimation": "Resume CLI session animation",
+      "animationLabel": "CLI session animation. Press Space to pause or resume.",
+      "reducedLabel": "CLI session: final outputs shown with reduced motion.",
+      "reducedStatus": "Reduced motion: final outputs shown",
+      "recordedStatus": "Recorded example · no commands execute",
+      "pause": "Pause",
+      "resume": "Resume",
+      "replay": "Replay",
+      "filesSaved": "2 files saved",
+      "catAlt": "Cat in moonlight, extracted from the supplied recording",
+      "lighthouseAlt": "Lighthouse at dusk, extracted from the supplied recording"
     },
     "skills": {
       "label": "AGENT SKILLS",
@@ -2267,7 +2279,9 @@
           "title": "CAMPAIGN KEY ART",
           "prompt": "Match frame_04.png's palette and produce campaign key art in 1:1, 4:5, and 16:9."
         }
-      }
+      },
+      "exampleLabel": "Illustrative examples",
+      "promptCopyLabel": "COPY PROMPT"
     },
     "agents": {
       "1": {
@@ -2372,6 +2386,46 @@
         "a": "• Generate images, video, audio, and 3D through partner models like Flux, Seedance, Kling, and Ideogram\n• Build, edit, validate, and run workflow graphs; save and rerun them\n• Queue batches, wait on jobs, and download every output\n• Search templates, models, and nodes with full schemas\n• Compose multi-stage workflows from typed fragments\n\nRun comfy skills install once, and the bundled skills teach your agent all of it."
       },
       "heading": "Q&As"
+    },
+    "experience": {
+      "heading": "Create images and videos",
+      "headingWith": "with {client}.",
+      "terminal": "your terminal",
+      "subtitle": "Bring ComfyUI workflows and creative models into the tools you already use. Run on Comfy Cloud or your own machine.",
+      "setup": "SET UP {client}",
+      "manual": "INSTALL MANUALLY",
+      "summary": "Python CLI · Cloud or Local · Agent skills included",
+      "sessionLabel": "FROM PROMPT TO OUTPUT",
+      "sessionHeading": "A creative session, from your terminal.",
+      "close": "Close setup",
+      "dialogManual": "Set up Comfy CLI in your terminal",
+      "dialogAgent": "Set up {client}",
+      "dialogDescription": "Install, connect, then create. Scroll for all setup steps.",
+      "clientLabel": "Choose your CLI client",
+      "setupClientLabel": "Choose your setup client",
+      "connectionLabel": "Where ComfyUI runs",
+      "methodLabel": "Setup method",
+      "agentMode": "Use agent",
+      "manualMode": "Manual",
+      "localBilling": "Open source. Runs free on your own machine. Local requires an existing ComfyUI installation. Local workflows run on your own hardware.",
+      "cloudBilling": "{tagline} Cloud usage requires a Comfy Cloud subscription or credits.",
+      "localGuide": "Local setup guide",
+      "reference": "CLI command reference",
+      "installManual": "1. Install and connect",
+      "installAgent": "1. Copy and send this to {client}",
+      "headlessHelp": "Configure your runner without interactive prompts. Replace the API key placeholder when using Cloud.",
+      "cloudHelp": "Setup opens your browser for sign-in, then installs the agent skills.",
+      "localHelp": "Configure the local connection and install agent skills.",
+      "apiKey": "Get your API key",
+      "runHeadless": "Run your workflow in your configured runner.",
+      "runTerminal": "Your terminal is ready for Comfy CLI commands.",
+      "runManualCloud": "Complete browser sign-in if prompted, then run Comfy CLI commands in your terminal.",
+      "runManualLocal": "Run Comfy CLI commands against your local ComfyUI installation.",
+      "runAgentCloud": "Complete browser sign-in when prompted, then ask {client} to generate an image or video.",
+      "runAgentLocal": "Ask {client} to run a workflow on your local ComfyUI installation.",
+      "runManualTitle": "Run a command",
+      "runAgentTitle": "Connect and start creating",
+      "localLabel": "Local"
     }
   },
   "surfaces": {

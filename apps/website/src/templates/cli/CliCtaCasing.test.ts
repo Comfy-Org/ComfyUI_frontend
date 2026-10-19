@@ -1,3 +1,4 @@
+import { externalLinks } from '@/config/routes'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { defineComponent } from 'vue'
@@ -9,8 +10,6 @@ import HowItWorksSection from './HowItWorksSection.vue'
 import AIModelsSection from '@/components/product/shared/AIModelsSection.vue'
 import ProductCardsSection from '@/components/common/ProductCardsSection.vue'
 
-// Test actual CLI compositions, so a new title-case CTA cannot hide behind a
-// system component import. Utility copy controls and prose links are excluded.
 describe('CLI CTA casing', () => {
   it.for([
     ['hero', HeroSection],
@@ -45,7 +44,7 @@ describe('CLI CTA casing', () => {
       })
       expect(ctas.length).toBeGreaterThan(0)
       for (const cta of ctas) {
-        const label = cta.textContent.trim()
+        const label = cta.innerText.trim()
         expect(label.length).toBeGreaterThan(0)
         expect(
           cta.classList.contains('uppercase') || label === label.toUpperCase()
@@ -61,32 +60,39 @@ it('delivers the repository label as literal uppercase text', () => {
     name: 'COMFY SKILLS REPOSITORY'
   })
   expect(repository).toHaveTextContent('COMFY SKILLS REPOSITORY')
-  expect(
-    within(repository).getAllByText(/.*/, { selector: 'svg' })
-  ).toHaveLength(1)
+  expect(repository).toHaveAttribute('href', externalLinks.mcpSkills)
   expect(screen.getAllByText('COPY PROMPT')).toHaveLength(6)
 })
-it('keeps dialog action links uppercase across client and connection states', async () => {
-  const user = userEvent.setup()
-  render(CliAgentExperience)
-  await user.click(screen.getByRole('button', { name: 'SET UP Claude Code' }))
-  const dialog = within(screen.getByRole('dialog'))
-  for (const connection of ['Local', 'Comfy Cloud']) {
+it.for([
+  { connection: 'Local', client: 'Claude Code' },
+  { connection: 'Local', client: 'Codex' },
+  { connection: 'Local', client: 'Cursor' },
+  { connection: 'Local', client: 'Gemini CLI' },
+  { connection: 'Local', client: 'OpenClaw' },
+  { connection: 'Local', client: 'Hermes' },
+  { connection: 'Local', client: 'Terminal' },
+  { connection: 'Local', client: 'CI / Headless' },
+  { connection: 'Comfy Cloud', client: 'Claude Code' },
+  { connection: 'Comfy Cloud', client: 'Codex' },
+  { connection: 'Comfy Cloud', client: 'Cursor' },
+  { connection: 'Comfy Cloud', client: 'Gemini CLI' },
+  { connection: 'Comfy Cloud', client: 'OpenClaw' },
+  { connection: 'Comfy Cloud', client: 'Hermes' },
+  { connection: 'Comfy Cloud', client: 'Terminal' },
+  { connection: 'Comfy Cloud', client: 'CI / Headless' }
+])(
+  'keeps dialog action links uppercase for $client / $connection',
+  async ({ connection, client }) => {
+    const user = userEvent.setup()
+    render(CliAgentExperience)
+    await user.click(screen.getByRole('button', { name: 'SET UP Claude Code' }))
+    const dialog = within(screen.getByRole('dialog'))
     await user.click(dialog.getByRole('button', { name: connection }))
-    for (const client of [
-      'Claude Code',
-      'Codex',
-      'Cursor',
-      'Gemini CLI',
-      'OpenClaw',
-      'Hermes',
-      'Terminal',
-      'CI / Headless'
-    ]) {
-      await user.click(dialog.getByRole('tab', { name: client }))
-      for (const link of dialog.getAllByRole('link')) {
-        expect(link.classList.contains('uppercase')).toBe(true)
-      }
-    }
+    await user.click(dialog.getByRole('tab', { name: client }))
+    expect(
+      dialog
+        .getAllByRole('link')
+        .map((link) => link.classList.contains('uppercase'))
+    ).toEqual(dialog.getAllByRole('link').map(() => true))
   }
-})
+)

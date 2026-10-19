@@ -16,8 +16,6 @@ import { translationsFor } from '@/i18n/translations'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
 
-// Bundled skills installed by `comfy skills install`
-// (docs.comfy.org/agent-tools/cli).
 const bundledSkills: { name: string; descriptionKey: TranslationKey }[] = [
   { name: 'comfy', descriptionKey: 'cli.skills.bundled.comfy' },
   {
@@ -80,7 +78,6 @@ function cardTitle(key: TranslationKey): string {
   return sentence.replace(/\b3d\b/gi, '3D')
 }
 
-// Existing Comfy Learning and MCP media; illustrative examples, not claimed CLI outputs.
 const images = [
   'https://media.comfy.org/website/learning/advertising3-thumb.png',
   'https://media.comfy.org/website/learning/advertising2-thumb.png',
@@ -89,6 +86,9 @@ const images = [
   'https://media.comfy.org/website/learning/animation4-thumb.jpg',
   'https://media.comfy.org/website/learning/advertising1-thumb.png'
 ]
+const skillsById = Object.fromEntries(
+  cards.map((card) => [card.id, card.skill])
+)
 const rows: FeatureRow[] = cards.map((card, index) => ({
   id: card.id,
   title: cardTitle(card.titleKey),
@@ -101,8 +101,8 @@ const rows: FeatureRow[] = cards.map((card, index) => ({
   }
 }))
 
-const exampleLabel = locale === 'en' ? 'Illustrative examples' : '示例图片'
-const promptCopyLabel = locale === 'en' ? 'COPY PROMPT' : '复制提示词'
+const exampleLabel = t('cli.skills.exampleLabel')
+const promptCopyLabel = t('cli.skills.promptCopyLabel')
 const copyLabel = t('ui.copy')
 const copiedLabel = t('ui.copied')
 </script>
@@ -132,12 +132,12 @@ const copiedLabel = t('ui.copied')
       <div class="flex flex-wrap items-center justify-between gap-3">
         <span
           class="font-mono text-2xs/relaxed whitespace-nowrap text-primary-comfy-yellow sm:text-xs/relaxed lg:text-sm/relaxed"
-          >{{ cards.find((card) => card.id === row.id)?.skill }}</span
+          >{{ skillsById[row.id] }}</span
         >
         <CopyTextButton
           class="uppercase"
           :value="row.description"
-          :label="`${copyLabel}: ${t(cards.find((card) => card.id === row.id)!.titleKey)}`"
+          :label="`${promptCopyLabel}: ${row.title}`"
           :copied-label="copiedLabel"
           >{{ promptCopyLabel }}</CopyTextButton
         >

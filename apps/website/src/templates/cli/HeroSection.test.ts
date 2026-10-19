@@ -13,12 +13,9 @@ describe('CLI hero', () => {
       const ctas = cliCtas(locale)
       render(HeroSection, { props: { locale } })
 
-      expect(
-        screen
-          .getByRole('heading', { level: 1 })
-          .textContent.replace(/\s+/g, ' ')
-          .trim()
-      ).toBe(t('cli.hero.heading').replace(/\s+/g, ' ').trim())
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+        t('cli.hero.heading').replace(/\s+/g, ' ').trim()
+      )
       expect(
         screen
           .getByRole('link', { name: ctas.installCli.label })

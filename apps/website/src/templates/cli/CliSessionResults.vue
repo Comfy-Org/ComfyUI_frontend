@@ -1,12 +1,15 @@
 <script setup lang="ts">
-defineProps<{ zh: boolean }>()
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { t } = translationsFor(locale)
 </script>
 <template>
   <div
     class="absolute inset-0 flex flex-col items-center justify-center gap-6 p-6 sm:gap-8 sm:p-10"
   >
     <p class="font-mono text-sm text-primary-comfy-yellow">
-      ✓ {{ zh ? '已保存 2 个文件' : '2 files saved' }}
+      ✓ {{ t('cli.session.filesSaved') }}
     </p>
     <div class="grid w-full max-w-3xl grid-cols-2 gap-4 sm:gap-8">
       <figure
@@ -14,16 +17,12 @@ defineProps<{ zh: boolean }>()
           {
             src: 'cat.png',
             name: 'cat.png',
-            alt: zh
-              ? '月光下的猫咪，来自所提供的录屏'
-              : 'Cat in moonlight, extracted from the supplied recording'
+            alt: t('cli.session.catAlt')
           },
           {
             src: 'lighthouse.png',
             name: 'f5308bc5_000.png',
-            alt: zh
-              ? '黄昏灯塔，来自所提供的录屏'
-              : 'Lighthouse at dusk, extracted from the supplied recording'
+            alt: t('cli.session.lighthouseAlt')
           }
         ]"
         :key="output.src"

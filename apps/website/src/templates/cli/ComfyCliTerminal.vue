@@ -134,7 +134,7 @@ onUnmounted(() => clearTimeout(timer))
     data-testid="cli-terminal"
     role="img"
     :aria-label="t('cli.hero.terminalAria')"
-    class="overflow-hidden rounded-3xl bg-[#2a2230]"
+    class="overflow-hidden rounded-3xl bg-cli-terminal"
   >
     <!-- Every sequence is stacked invisibly in the same grid cell so the
          panel is always as tall as the longest and typing never reflows

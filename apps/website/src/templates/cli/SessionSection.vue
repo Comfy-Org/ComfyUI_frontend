@@ -25,9 +25,5 @@ const { t } = translationsFor(locale)
     <div class="mx-auto mt-12 w-full max-w-4xl lg:mt-16">
       <NativeCliSession :locale="locale" />
     </div>
-
-    <p class="sr-only">
-      {{ t('cli.session.transcript') }}
-    </p>
   </section>
 </template>

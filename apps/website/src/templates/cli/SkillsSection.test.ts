@@ -7,7 +7,7 @@ import { externalLinks } from '@/config/routes'
 import SkillsSection from './SkillsSection.vue'
 
 describe('CLI skill briefs', () => {
-  it.for(['en', 'zh-CN'] as const)(
+  it.for(['en', 'zh-CN', 'ja'] as const)(
     'shows a prompt once and copies it in full for %s',
     async (locale) => {
       const user = userEvent.setup()
@@ -26,7 +26,7 @@ describe('CLI skill briefs', () => {
       const card = screen.getAllByRole('article')[0]
       await user.click(
         within(card).getByRole('button', {
-          name: `${t('ui.copy')}: ${t('cli.skills.card.packshots.title')}`
+          name: new RegExp(`^${t('cli.skills.promptCopyLabel')}:`, 'i')
         })
       )
       expect(await navigator.clipboard.readText()).toBe(prompt)

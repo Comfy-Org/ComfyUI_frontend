@@ -21,16 +21,20 @@ import ToggleGroup from '@/components/ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '@/components/ui/toggle-group/ToggleGroupItem.vue'
 import { externalLinks } from '@/config/routes'
 import { translationsFor } from '@/i18n/translations'
+import {
+  captureCliClientTabClick,
+  captureCliConnectionTabClick
+} from '@/scripts/posthog'
+import type { Locale } from '@/i18n/translations'
 import type { CliClientId } from '@/scripts/posthog'
-const { headingTag = 'h1' } = defineProps<{ headingTag?: 'h1' | 'h2' }>()
-const locale = 'en'
+const { headingTag = 'h1', locale = 'en' } = defineProps<{
+  headingTag?: 'h1' | 'h2'
+  locale?: Locale
+}>()
 const { t } = translationsFor(locale)
 type ConnectionId = 'cloud' | 'local'
 
-// Commands are verbatim from docs.comfy.org/agent-tools/cli and
-// docs.comfy.org/comfy-cli/getting-started.
 const INSTALL_COMMAND = 'pip install comfy-cli'
-// Router CodeTabs typography, scoped to this page's CopyableField text only.
 const codeFieldClass =
   '[&>span]:text-2xs/relaxed sm:[&>span]:text-xs/relaxed lg:[&>span]:text-sm/relaxed'
 
@@ -110,16 +114,16 @@ const connections: Record<ConnectionId, CliConnection> = {
     manualCommand: 'comfy setup --where cloud\ncomfy skills install',
     agentCommand: t('cli.setup.agent.commandCloud', {
       url: externalLinks.docsCliMd
-    }).replace('then comfy setup,', 'then comfy setup --where local,')
+    })
   },
   local: {
-    name: t('cli.setup.connections.local.name'),
+    name: t('cli.experience.localLabel'),
     tagline: t('cli.setup.connections.local.tagline'),
     installDescription: t('cli.setup.install.localDescription'),
     manualCommand: 'comfy setup --where local\ncomfy skills install',
     agentCommand: t('cli.setup.agent.commandLocal', {
       url: externalLinks.docsCliMd
-    }).replace('then comfy setup,', 'then comfy setup --where local,')
+    })
   }
 }
 
@@ -136,11 +140,7 @@ function activeClientFor(connId: ConnectionId): CliClient {
 }
 
 const connection = computed(() => connections[activeConnectionId.value])
-const agentPrompt = computed(() =>
-  connection.value.agentCommand
-    .replaceAll(', then ', ',\nthen ')
-    .replace('. Follow', '.\nFollow')
-)
+const agentPrompt = computed(() => connection.value.agentCommand)
 const client = computed(() => activeClientFor(activeConnectionId.value))
 const isHeadless = computed(
   () => activeClientIds.value[activeConnectionId.value] === 'ci'
@@ -154,11 +154,22 @@ const runCommands = computed(
   () => client.value.shell?.commands[activeConnectionId.value].slice(1) ?? []
 )
 function selectConnection(value: unknown) {
-  if (value === 'cloud' || value === 'local') {
+  if (
+    (value === 'cloud' || value === 'local') &&
+    value !== activeConnectionId.value
+  ) {
+    captureCliConnectionTabClick(value)
     const selectedClient = activeClientIds.value[activeConnectionId.value]
     activeClientIds.value[value] = selectedClient
     activeConnectionId.value = value
   }
+}
+function selectClient(value: unknown) {
+  if (typeof value !== 'string' || !Object.hasOwn(clients, value)) return
+  const id = value as CliClientId
+  if (id === activeClientIds.value[activeConnectionId.value]) return
+  activeClientIds.value[activeConnectionId.value] = id
+  captureCliClientTabClick(id)
 }
 const copyLabel = t('ui.copy')
 const copiedLabel = t('ui.copied')
@@ -175,7 +186,10 @@ const setupMode = computed({
     manual.value = value === 'manual'
   }
 })
-const setupModes = { agent: { name: 'Use agent' }, manual: { name: 'Manual' } }
+const setupModes = {
+  agent: { name: t('cli.experience.agentMode') },
+  manual: { name: t('cli.experience.manualMode') }
+}
 const opener = shallowRef<HTMLElement>()
 function focusDialog(event: Event) {
   event.preventDefault()
@@ -202,13 +216,14 @@ function openSetup(event: MouseEvent, manualMode = false) {
       class="mx-auto max-w-6xl scroll-mt-36 px-6 py-12 lg:py-20"
     >
       <TabsRoot
-        v-model="activeClientIds[activeConnectionId]"
+        :model-value="activeClientIds[activeConnectionId]"
         activation-mode="manual"
         class="text-center"
+        @update:model-value="selectClient"
       >
         <AgentSetupClientTabs
           :clients="clients"
-          label="Choose your CLI client"
+          :label="t('cli.experience.clientLabel')"
         />
         <TabsContent :value="activeClientIds[activeConnectionId]">
           <div class="mt-12 lg:mt-16">
@@ -217,15 +232,20 @@ function openSetup(event: MouseEvent, manualMode = false) {
               heading-size="hero"
               max-width="xl"
             >
-              Create images and videos<br class="hidden sm:block" />
-              with
-              {{ client.kind === 'agent' ? client.name : 'your terminal' }}.
+              {{ t('cli.experience.heading') }}<br class="hidden sm:block" />
+              {{
+                t('cli.experience.headingWith', {
+                  client:
+                    client.kind === 'agent'
+                      ? client.name
+                      : t('cli.experience.terminal')
+                })
+              }}
               <template #subtitle
                 ><p
                   class="mx-auto mt-6 max-w-2xl text-base text-smoke-700 lg:text-lg"
                 >
-                  Bring ComfyUI workflows and creative models into the tools you
-                  already use. Run on Comfy Cloud or your own machine.
+                  {{ t('cli.experience.subtitle') }}
                 </p></template
               >
             </SectionHeader>
@@ -234,14 +254,16 @@ function openSetup(event: MouseEvent, manualMode = false) {
             <BrandButton
               class="px-8 py-4 text-base uppercase focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
               @click="openSetup($event, false)"
-              >SET UP {{ client.name }}</BrandButton
+              >{{
+                t('cli.experience.setup', { client: client.name })
+              }}</BrandButton
             >
             <BrandButton
               v-if="client.kind === 'agent'"
               class="px-8 py-4 text-base uppercase focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
               variant="outline"
               @click="openSetup($event, true)"
-              >INSTALL MANUALLY</BrandButton
+              >{{ t('cli.experience.manual') }}</BrandButton
             >
           </div>
           <div class="mx-auto mt-8 max-w-md">
@@ -253,7 +275,7 @@ function openSetup(event: MouseEvent, manualMode = false) {
             />
           </div>
           <p class="mt-4 text-center text-xs text-primary-warm-gray">
-            Python CLI · Cloud or Local · Agent skills included
+            {{ t('cli.experience.summary') }}
           </p>
         </TabsContent></TabsRoot
       >
@@ -266,17 +288,19 @@ function openSetup(event: MouseEvent, manualMode = false) {
       <SectionHeader
         heading-tag="h2"
         heading-size="compact"
-        label="FROM PROMPT TO OUTPUT"
-        ><span id="session-preview-heading"
-          >A creative session, from your terminal.</span
-        ></SectionHeader
+        :label="t('cli.experience.sessionLabel')"
+        ><span id="session-preview-heading">{{
+          t('cli.experience.sessionHeading')
+        }}</span></SectionHeader
       >
-      <div class="mt-8"><NativeCliSession :show-footer="false" /></div>
+      <div class="mt-8">
+        <NativeCliSession :locale="locale" :show-footer="false" />
+      </div>
     </section>
     <Dialog v-model:open="setupOpen">
       <DialogContent
         hide-close
-        close-label="Close setup"
+        :close-label="t('cli.experience.close')"
         :style="{
           top: dialogTop,
           maxHeight: dialogTop
@@ -291,43 +315,45 @@ function openSetup(event: MouseEvent, manualMode = false) {
           ><IconButton
             variant="outline"
             class="absolute top-6 right-6 size-12 border-0 bg-transparency-white-t8 text-primary-warm-white hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink"
-            aria-label="Close setup"
+            :aria-label="t('cli.experience.close')"
             ><X class="size-6" aria-hidden="true" /></IconButton
         ></DialogClose>
         <DialogTitle class="pr-16 text-2xl font-light">{{
           usesManualSetup
-            ? 'Set up Comfy CLI in your terminal'
-            : `Set up ${client.name}`
+            ? t('cli.experience.dialogManual')
+            : t('cli.experience.dialogAgent', { client: client.name })
         }}</DialogTitle>
-        <DialogDescription class="mt-2 pr-12 text-xs"
-          >Install, connect, then create. Scroll for all setup
-          steps.</DialogDescription
-        >
+        <DialogDescription class="mt-2 pr-12 text-xs">{{
+          t('cli.experience.dialogDescription')
+        }}</DialogDescription>
         <TabsRoot
-          v-model="activeClientIds[activeConnectionId]"
+          :model-value="activeClientIds[activeConnectionId]"
           activation-mode="manual"
           class="mt-4"
+          @update:model-value="selectClient"
         >
           <AgentSetupClientTabs
             :clients="clients"
-            label="Choose your setup client" />
+            :label="t('cli.experience.setupClientLabel')" />
           <TabsContent :value="activeClientIds[activeConnectionId]">
             <TabsRoot v-model="setupMode" activation-mode="manual">
               <div class="mt-4 flex flex-wrap items-center gap-4">
                 <ToggleGroup
                   type="single"
                   :model-value="activeConnectionId"
-                  aria-label="Where ComfyUI runs"
+                  :aria-label="t('cli.experience.connectionLabel')"
                   @update:model-value="selectConnection"
                 >
                   <ToggleGroupItem value="cloud">Comfy Cloud</ToggleGroupItem
-                  ><ToggleGroupItem value="local">Local</ToggleGroupItem>
+                  ><ToggleGroupItem value="local">{{
+                    t('cli.experience.localLabel')
+                  }}</ToggleGroupItem>
                 </ToggleGroup>
                 <CodeTabsPicker
                   v-if="client.kind === 'agent'"
                   v-model="setupMode"
                   :tabs="setupModes"
-                  label="Setup method"
+                  :label="t('cli.experience.methodLabel')"
                 />
               </div>
               <component
@@ -335,6 +361,7 @@ function openSetup(event: MouseEvent, manualMode = false) {
                 :value="client.kind === 'agent' ? setupMode : undefined"
               >
                 <CliSetupInstall
+                  :locale="locale"
                   :client="client"
                   :uses-manual-setup="usesManualSetup"
                   :is-headless="isHeadless"
@@ -343,6 +370,7 @@ function openSetup(event: MouseEvent, manualMode = false) {
                   :connect-command="connectCommand"
                 />
                 <CliSetupRun
+                  :locale="locale"
                   :client="client"
                   :uses-manual-setup="usesManualSetup"
                   :is-headless="isHeadless"
@@ -352,8 +380,10 @@ function openSetup(event: MouseEvent, manualMode = false) {
                 <p class="mt-5 text-xs text-primary-warm-gray">
                   {{
                     activeConnectionId === 'local'
-                      ? 'Open source. Runs free on your own machine. Local requires an existing ComfyUI installation. Local workflows run on your own hardware.'
-                      : `${connection.tagline} Cloud usage requires a Comfy Cloud subscription or credits.`
+                      ? t('cli.experience.localBilling')
+                      : t('cli.experience.cloudBilling', {
+                          tagline: connection.tagline
+                        })
                   }}
                 </p>
                 <div class="mt-5 flex flex-wrap items-center gap-x-6 gap-y-3">
@@ -362,7 +392,8 @@ function openSetup(event: MouseEvent, manualMode = false) {
                     variant="underlineLink"
                     size="sm"
                     href="https://docs.comfy.org/comfy-cli/getting-started#install-comfyui-local"
-                    >Local setup guide<template #append
+                    >{{ t('cli.experience.localGuide')
+                    }}<template #append
                       ><ArrowUpRight
                         class="size-4"
                         aria-hidden="true" /></template></Button
@@ -370,7 +401,8 @@ function openSetup(event: MouseEvent, manualMode = false) {
                     variant="underlineLink"
                     size="sm"
                     :href="externalLinks.docsCliReference"
-                    >CLI command reference<template #append
+                    >{{ t('cli.experience.reference')
+                    }}<template #append
                       ><ArrowUpRight
                         class="size-4"
                         aria-hidden="true" /></template

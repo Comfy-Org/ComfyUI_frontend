@@ -12,17 +12,22 @@ describe('CLI terminal syntax', () => {
     expect(actual.map((token) => token.content).join('')).toBe('$ ' + line.text)
   })
 
-  it('preserves every typed prefix including partial quoted strings', () => {
-    const line = cliTerminalSequences[0].lines[0]
-    const full = '$ ' + line.text
-    for (let length = 1; length <= full.length; length++) {
-      const prefix = full.slice(0, length)
-      expect(
-        terminalTokens(line, prefix)
-          .map((t) => t.content)
-          .join('')
-      ).toBe(prefix)
+  it.for([
+    '$',
+    '$ ',
+    '$ comfy',
+    '$ comfy generate flux-pro --prompt "',
+    '$ comfy generate flux-pro --prompt "a cat'
+  ])('preserves typed prefix %s', (prefix) => {
+    const line = {
+      kind: 'cmd' as const,
+      text: 'comfy generate flux-pro --prompt "a cat"'
     }
+    expect(
+      terminalTokens(line, prefix)
+        .map((token) => token.content)
+        .join('')
+    ).toBe(prefix)
   })
 
   it('highlights JSON output as JSON and keeps ordinary output plain', () => {

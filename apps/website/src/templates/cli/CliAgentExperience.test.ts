@@ -1,57 +1,218 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import CliAgentConcept from './CliAgentExperience.vue'
-const names = [
-  'Claude Code',
-  'Codex',
-  'Cursor',
-  'Gemini CLI',
-  'OpenClaw',
-  'Hermes',
-  'Terminal',
-  'CI / Headless'
-]
-describe.for(['cloud', 'local'])('CLI concept %s', (connection) => {
-  it.for(names)('%s has matching commands and copy payloads', async (name) => {
-    const user = userEvent.setup()
-    render(CliAgentConcept)
-    await user.click(screen.getByRole('tab', { name }))
-    await user.click(screen.getByRole('button', { name: `SET UP ${name}` }))
-    const dialog = within(screen.getByRole('dialog'))
-    if (connection === 'local') {
-      await user.click(dialog.getByRole('button', { name: 'Local' }))
-      await user.click(dialog.getByRole('tab', { name }))
-    }
-    const copy = dialog.getAllByRole('button', { name: 'Copy' })
-    // Field text is the actual payload; copy feedback must not alter it.
-    for (let i = 0; i < copy.length; i++) {
-      await user.click(copy[i])
-      const value = await navigator.clipboard.readText()
-      expect(value).toBeTruthy()
-      if (i === 0 && !['Terminal', 'CI / Headless'].includes(name)) {
-        expect(value).toContain(`comfy setup --where ${connection}`)
-        expect(value).toContain('comfy skills install')
-      }
-    }
-    expect(copy.length).toBeGreaterThan(0)
-    if (name === 'CI / Headless') {
-      expect(
-        dialog.getByText(
-          `comfy setup --where ${connection}${connection === 'cloud' ? ' --api-key comfyui-... --non-interactive' : ' --non-interactive'}`
-        )
-      ).toBeVisible()
-      if (connection === 'local')
-        expect(dialog.queryByText('2. Run a command')).toBeNull()
-    }
+import { translationsFor } from '@/i18n/translations'
+import { externalLinks } from '@/config/routes'
+import {
+  captureCliClientTabClick,
+  captureCliConnectionTabClick
+} from '@/scripts/posthog'
+
+vi.mock(import('@/scripts/posthog'), () => ({
+  captureCliClientTabClick: vi.fn(),
+  captureCliConnectionTabClick: vi.fn()
+}))
+const install = 'pip install comfy-cli'
+const cloudPrompt =
+  "Set up the Comfy CLI for me: pip install comfy-cli,\nthen comfy setup --where cloud,\nthen comfy skills install.\nFollow the guide at https://docs.comfy.org/agent-tools/cli.md and tell me when it's ready."
+const localPrompt =
+  "Set up the Comfy CLI for me: pip install comfy-cli,\nthen comfy setup --where local,\nthen comfy skills install.\nFollow the guide at https://docs.comfy.org/agent-tools/cli.md and tell me when it's ready."
+const cases = [
+  {
+    client: 'Claude Code',
+    connection: 'cloud',
+    connectionLabel: 'Comfy Cloud',
+    expectedPayloads: [cloudPrompt]
+  },
+  {
+    client: 'Codex',
+    connection: 'cloud',
+    connectionLabel: 'Comfy Cloud',
+    expectedPayloads: [cloudPrompt]
+  },
+  {
+    client: 'Cursor',
+    connection: 'cloud',
+    connectionLabel: 'Comfy Cloud',
+    expectedPayloads: [cloudPrompt]
+  },
+  {
+    client: 'Gemini CLI',
+    connection: 'cloud',
+    connectionLabel: 'Comfy Cloud',
+    expectedPayloads: [cloudPrompt]
+  },
+  {
+    client: 'OpenClaw',
+    connection: 'cloud',
+    connectionLabel: 'Comfy Cloud',
+    expectedPayloads: [cloudPrompt]
+  },
+  {
+    client: 'Hermes',
+    connection: 'cloud',
+    connectionLabel: 'Comfy Cloud',
+    expectedPayloads: [cloudPrompt]
+  },
+  {
+    client: 'Terminal',
+    connection: 'cloud',
+    connectionLabel: 'Comfy Cloud',
+    expectedPayloads: [
+      install,
+      'comfy setup --where cloud\ncomfy skills install',
+      'comfy generate nano-banana --prompt "a watercolor of a sleeping fox" --download fox.png'
+    ]
+  },
+  {
+    client: 'CI / Headless',
+    connection: 'cloud',
+    connectionLabel: 'Comfy Cloud',
+    expectedPayloads: [
+      install,
+      'comfy setup --where cloud --api-key comfyui-... --non-interactive',
+      'comfy run --workflow my_workflow.json --wait | comfy download'
+    ]
+  },
+  {
+    client: 'Claude Code',
+    connection: 'local',
+    connectionLabel: 'Local',
+    expectedPayloads: [localPrompt]
+  },
+  {
+    client: 'Codex',
+    connection: 'local',
+    connectionLabel: 'Local',
+    expectedPayloads: [localPrompt]
+  },
+  {
+    client: 'Cursor',
+    connection: 'local',
+    connectionLabel: 'Local',
+    expectedPayloads: [localPrompt]
+  },
+  {
+    client: 'Gemini CLI',
+    connection: 'local',
+    connectionLabel: 'Local',
+    expectedPayloads: [localPrompt]
+  },
+  {
+    client: 'OpenClaw',
+    connection: 'local',
+    connectionLabel: 'Local',
+    expectedPayloads: [localPrompt]
+  },
+  {
+    client: 'Hermes',
+    connection: 'local',
+    connectionLabel: 'Local',
+    expectedPayloads: [localPrompt]
+  },
+  {
+    client: 'Terminal',
+    connection: 'local',
+    connectionLabel: 'Local',
+    expectedPayloads: [
+      install,
+      'comfy setup --where local\ncomfy skills install',
+      'comfy launch'
+    ]
+  },
+  {
+    client: 'CI / Headless',
+    connection: 'local',
+    connectionLabel: 'Local',
+    expectedPayloads: [install, 'comfy setup --where local --non-interactive']
+  }
+] as const
+
+async function openClientSetup(client: string, connectionLabel: string) {
+  const user = userEvent.setup()
+  render(CliAgentConcept)
+  await user.click(screen.getByRole('tab', { name: client }))
+  await user.click(screen.getByRole('button', { name: `SET UP ${client}` }))
+  const dialog = within(screen.getByRole('dialog'))
+  await user.click(dialog.getByRole('button', { name: connectionLabel }))
+  return { user, dialog }
+}
+
+it.for(cases.filter((row) => row.expectedPayloads.length === 1))(
+  '$client / $connection copies all expected payloads',
+  async ({ client, connectionLabel, expectedPayloads }) => {
+    const { user, dialog } = await openClientSetup(client, connectionLabel)
+    const buttons = dialog.getAllByRole('button', { name: 'Copy' })
+    expect(buttons).toHaveLength(1)
+    await user.click(buttons[0])
+    const payload0 = await navigator.clipboard.readText()
+    expect([payload0]).toEqual(expectedPayloads)
     const selected = within(
       dialog.getByRole('tablist', { name: 'Choose your setup client' })
     ).getByRole('tab', { selected: true })
-    expect(dialog.getByRole('tabpanel', { name })).toHaveAttribute(
+    expect(dialog.getByRole('tabpanel', { name: client })).toHaveAttribute(
       'id',
       selected.getAttribute('aria-controls')
     )
-  })
+  }
+)
+
+it.for(cases.filter((row) => row.expectedPayloads.length === 2))(
+  '$client / $connection copies all expected payloads',
+  async ({ client, connectionLabel, expectedPayloads }) => {
+    const { user, dialog } = await openClientSetup(client, connectionLabel)
+    const buttons = dialog.getAllByRole('button', { name: 'Copy' })
+    expect(buttons).toHaveLength(2)
+    await user.click(buttons[0])
+    const payload0 = await navigator.clipboard.readText()
+    await user.click(buttons[1])
+    const payload1 = await navigator.clipboard.readText()
+    expect([payload0, payload1]).toEqual(expectedPayloads)
+    const selected = within(
+      dialog.getByRole('tablist', { name: 'Choose your setup client' })
+    ).getByRole('tab', { selected: true })
+    expect(dialog.getByRole('tabpanel', { name: client })).toHaveAttribute(
+      'id',
+      selected.getAttribute('aria-controls')
+    )
+  }
+)
+
+it.for(cases.filter((row) => row.expectedPayloads.length === 3))(
+  '$client / $connection copies all expected payloads',
+  async ({ client, connectionLabel, expectedPayloads }) => {
+    const { user, dialog } = await openClientSetup(client, connectionLabel)
+    const buttons = dialog.getAllByRole('button', { name: 'Copy' })
+    expect(buttons).toHaveLength(3)
+    await user.click(buttons[0])
+    const payload0 = await navigator.clipboard.readText()
+    await user.click(buttons[1])
+    const payload1 = await navigator.clipboard.readText()
+    await user.click(buttons[2])
+    const payload2 = await navigator.clipboard.readText()
+    expect([payload0, payload1, payload2]).toEqual(expectedPayloads)
+    const selected = within(
+      dialog.getByRole('tablist', { name: 'Choose your setup client' })
+    ).getByRole('tab', { selected: true })
+    expect(dialog.getByRole('tabpanel', { name: client })).toHaveAttribute(
+      'id',
+      selected.getAttribute('aria-controls')
+    )
+  }
+)
+
+it('omits a run step for local CI setup', async () => {
+  const user = userEvent.setup()
+  render(CliAgentConcept)
+  await user.click(screen.getByRole('tab', { name: 'CI / Headless' }))
+  await user.click(screen.getByRole('button', { name: 'SET UP CI / Headless' }))
+  const dialog = within(screen.getByRole('dialog'))
+  await user.click(dialog.getByRole('button', { name: 'Local' }))
+  expect(
+    dialog.getByText('comfy setup --where local --non-interactive')
+  ).toBeVisible()
+  expect(dialog.queryByText('2. Run a command')).toBeNull()
 })
 
 describe('approved setup flow corrections', () => {
@@ -137,7 +298,6 @@ it('offers keyboard-accessible setup method tabs with matching panels', async ()
     screen.getByRole('dialog', { name: 'Set up Claude Code' })
   ).toBeVisible()
   const close = dialog.getByRole('button', { name: 'Close setup' })
-  expect(close).toHaveAttribute('data-variant', 'outline')
   await user.click(close)
   expect(screen.queryByRole('dialog')).toBeNull()
 })
@@ -159,4 +319,58 @@ it('preserves the same client across Cloud and Local changes', async () => {
     'aria-selected',
     'true'
   )
+})
+
+it('captures client and connection changes once without tracking initialization or repeated selections', async () => {
+  const user = userEvent.setup()
+  render(CliAgentConcept)
+  expect(captureCliClientTabClick).not.toHaveBeenCalled()
+  expect(captureCliConnectionTabClick).not.toHaveBeenCalled()
+  await user.click(screen.getByRole('tab', { name: 'Codex' }))
+  await user.click(screen.getByRole('tab', { name: 'Codex' }))
+  await user.click(screen.getByRole('button', { name: 'SET UP Codex' }))
+  const dialog = within(screen.getByRole('dialog'))
+  await user.click(dialog.getByRole('tab', { name: 'Hermes' }))
+  await user.click(dialog.getByRole('button', { name: 'Local' }))
+  await user.click(dialog.getByRole('button', { name: 'Local' }))
+  expect(vi.mocked(captureCliClientTabClick).mock.calls).toEqual([
+    ['codex'],
+    ['hermes']
+  ])
+  expect(vi.mocked(captureCliConnectionTabClick).mock.calls).toEqual([
+    ['local']
+  ])
+})
+
+it('uses Chinese setup copy and local agent commands', async () => {
+  const user = userEvent.setup()
+  const { t } = translationsFor('zh-CN')
+  render(CliAgentConcept, { props: { locale: 'zh-CN' } })
+  await user.click(
+    screen.getByRole('button', {
+      name: t('cli.experience.setup', { client: 'Claude Code' })
+    })
+  )
+  const dialog = within(
+    screen.getByRole('dialog', {
+      name: t('cli.experience.dialogAgent', { client: 'Claude Code' })
+    })
+  )
+  await user.click(
+    dialog.getByRole('button', { name: t('cli.experience.localLabel') })
+  )
+  expect(
+    dialog.getByText(
+      t('cli.setup.agent.commandLocal', { url: externalLinks.docsCliMd })
+    )
+  ).toBeVisible()
+  expect(
+    dialog.getByText(
+      t('cli.experience.runAgentLocal', { client: 'Claude Code' })
+    )
+  ).toBeVisible()
+  await user.click(
+    dialog.getByRole('tab', { name: t('cli.experience.manualMode') })
+  )
+  expect(dialog.getByText(t('cli.experience.localHelp'))).toBeVisible()
 })

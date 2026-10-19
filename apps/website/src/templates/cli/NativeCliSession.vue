@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useElementVisibility } from '@vueuse/core'
+import { useDocumentVisibility, useElementVisibility } from '@vueuse/core'
 import {
   computed,
   nextTick,
@@ -12,6 +12,7 @@ import {
 import CliSessionResults from './CliSessionResults.vue'
 import CliSessionControls from './CliSessionControls.vue'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { translationsFor } from '@/i18n/translations'
 import type { Locale } from '@/i18n/translations'
 import { terminalTokens } from './cliTerminalHighlight'
 import {
@@ -24,7 +25,8 @@ const { locale = 'en', showFooter = true } = defineProps<{
   locale?: Locale
   showFooter?: boolean
 }>()
-const zh = locale !== 'en'
+const { t } = translationsFor(locale)
+const documentVisibility = useDocumentVisibility()
 const root = useTemplateRef<HTMLElement>('root')
 const terminal = useTemplateRef<HTMLElement>('terminal')
 const visible = useElementVisibility(root)
@@ -32,24 +34,17 @@ const FIRST_ENTRY_START = RESULTS_START * 0.75
 const elapsed = ref(FIRST_ENTRY_START)
 const paused = ref(false)
 const playbackLabel = computed(() =>
-  zh
-    ? paused.value
-      ? '继续 CLI 会话动画'
-      : '暂停 CLI 会话动画'
-    : paused.value
-      ? 'Resume CLI session animation'
-      : 'Pause CLI session animation'
+  t(paused.value ? 'cli.session.resumeAnimation' : 'cli.session.pauseAnimation')
 )
 const reduced = computed(() => prefersReducedMotion())
 const inlinePlaybackControl = computed(() => !showFooter && !reduced.value)
 const sessionTabIndex = computed(() => (showFooter ? 0 : undefined))
-const sessionLabel = zh
-  ? 'CLI 会话动画；按空格键暂停或继续'
-  : 'CLI session animation. Press Space to pause or resume.'
+const sessionLabel = computed(() =>
+  t(reduced.value ? 'cli.session.reducedLabel' : 'cli.session.animationLabel')
+)
 const resultsVisible = computed(
   () => reduced.value || elapsed.value >= RESULTS_START
 )
-// Highlight immutable lines once; animation only slices the cached tokens.
 const preparedEvents = sessionEvents.map((event) => {
   const kind = event.kind === 'response' ? ('out' as const) : event.kind
   const text = (event.kind === 'cmd' ? '$ ' : '') + event.text
@@ -79,9 +74,14 @@ const lines = computed(() => {
       return { ...event, tokens }
     })
 })
-const transcript = sessionEvents
-  .map((event) => (event.kind === 'cmd' ? '$ ' : '') + event.text)
-  .join('\n\n')
+const transcript = t('cli.session.transcript')
+const canPlay = computed(
+  () =>
+    visible.value &&
+    documentVisibility.value === 'visible' &&
+    !paused.value &&
+    !reduced.value
+)
 let frame = 0
 let last = 0
 let accumulated = 0
@@ -92,20 +92,28 @@ function replay() {
   last = performance.now()
 }
 function toggle() {
-  paused.value = !paused.value
+  if (!reduced.value) paused.value = !paused.value
 }
 function tick(now: number) {
+  frame = 0
+  if (!canPlay.value) return
   const delta = Math.min(now - last, 100)
   last = now
-  if (visible.value && !document.hidden && !paused.value && !reduced.value) {
-    accumulated += delta
-    if (accumulated >= 50) {
-      elapsed.value = (elapsed.value + accumulated) % SESSION_DURATION
-      accumulated = 0
-    }
+  accumulated += delta
+  if (accumulated >= 50) {
+    elapsed.value = (elapsed.value + accumulated) % SESSION_DURATION
+    accumulated = 0
   }
   frame = requestAnimationFrame(tick)
 }
+function syncPlayback() {
+  cancelAnimationFrame(frame)
+  frame = 0
+  if (!canPlay.value) return
+  last = performance.now()
+  frame = requestAnimationFrame(tick)
+}
+watch(canPlay, syncPlayback)
 watch(elapsed, async () => {
   await nextTick()
   if (terminal.value) terminal.value.scrollTop = terminal.value.scrollHeight
@@ -113,8 +121,7 @@ watch(elapsed, async () => {
 watch(reduced, replay)
 onMounted(() => {
   elapsed.value = reduced.value ? RESULTS_START : FIRST_ENTRY_START
-  last = performance.now()
-  frame = requestAnimationFrame(tick)
+  syncPlayback()
 })
 onUnmounted(() => cancelAnimationFrame(frame))
 </script>
@@ -122,7 +129,7 @@ onUnmounted(() => cancelAnimationFrame(frame))
 <template>
   <div ref="root" data-testid="native-cli-session">
     <div
-      class="relative h-88 overflow-hidden rounded-3xl bg-[#2a2230] focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none sm:h-144 lg:h-160"
+      class="relative h-88 overflow-hidden rounded-3xl bg-cli-terminal focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none sm:h-144 lg:h-160"
       :tabindex="sessionTabIndex"
       role="group"
       :aria-label="sessionLabel"
@@ -150,7 +157,7 @@ onUnmounted(() => cancelAnimationFrame(frame))
           :class="!paused && !reduced && 'animate-cursor-blink'"
         />
       </div>
-      <CliSessionResults v-show="resultsVisible" :zh="zh" />
+      <CliSessionResults v-show="resultsVisible" :locale="locale" />
       <button
         v-if="inlinePlaybackControl"
         type="button"
@@ -161,7 +168,7 @@ onUnmounted(() => cancelAnimationFrame(frame))
     </div>
     <CliSessionControls
       v-if="showFooter"
-      :zh="zh"
+      :locale="locale"
       :reduced="reduced"
       :paused="paused"
       @toggle="toggle"
