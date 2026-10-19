@@ -570,20 +570,24 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       return
     }
     if ('reason' in routed) {
-      if (routed.reason === 'doc_not_synced') {
-        const heldSince = held?.heldSince ?? performance.now()
-        if (
-          performance.now() - heldSince <
-          PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
-        ) {
-          holdPromotedWrite({ event, rootGraphId, heldSince })
-          return
-        }
-      }
-      refuseWidgetWrite(rootGraphId, event, routed)
+      holdOrRefuseWidgetWrite(rootGraphId, event, routed, held)
       return
     }
     schedule({ kind: 'op', operation: routed })
+  }
+
+  function holdOrRefuseWidgetWrite(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>,
+    refusal: PromotedWriteRefusal,
+    held: HeldPromotedWrite | null
+  ): void {
+    const heldSince = held?.heldSince ?? performance.now()
+    const mayWait =
+      refusal.reason === 'doc_not_synced' &&
+      performance.now() - heldSince < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
+    if (mayWait) holdPromotedWrite({ event, rootGraphId, heldSince })
+    else refuseWidgetWrite(rootGraphId, event, refusal)
   }
 
   function refuseWidgetWrite(
