@@ -161,7 +161,7 @@ export function useSlotLinkInteraction({
 
   // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
-  const dragReveal = useSlotLinkReveal({ nodeId, index, type, source: 'drag' })
+  const dragReveal = useSlotLinkReveal({ nodeId, index, type, kind: 'drag' })
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
