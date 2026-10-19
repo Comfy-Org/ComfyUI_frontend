@@ -153,6 +153,13 @@ function catalogLimitations(needsTests: boolean): string[] {
     : []
 }
 
+function componentSource(storyFile: string, componentPath: string): string {
+  const absolutePath = componentPath.startsWith('@/')
+    ? resolve(sourceRoot, componentPath.slice(2))
+    : resolve(dirname(storyFile), componentPath)
+  return relative(websiteRoot, absolutePath)
+}
+
 async function manifestEntry(
   storyFile: string
 ): Promise<ComponentManifestEntry> {
@@ -178,12 +185,7 @@ async function manifestEntry(
   const { component, componentPath } = importedComponent
   const needsTests = contents.includes("'needs-tests'")
   const stable = contents.includes("'stable'")
-  const source = relative(
-    websiteRoot,
-    componentPath.startsWith('@/')
-      ? resolve(sourceRoot, componentPath.slice(2))
-      : resolve(dirname(storyFile), componentPath)
-  )
+  const source = componentSource(storyFile, componentPath)
 
   return {
     component,
