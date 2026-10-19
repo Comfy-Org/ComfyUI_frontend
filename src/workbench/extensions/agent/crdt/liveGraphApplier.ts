@@ -2,7 +2,8 @@ import {
   linksMap,
   nodesMap,
   OPAQUE_WIDGETS_KEY,
-  readStamps
+  readStamps,
+  WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
 import { isEqual } from 'es-toolkit'
 import * as Y from 'yjs'
@@ -287,7 +288,7 @@ function readDocNode(
     } else if (key === OPAQUE_WIDGETS_KEY) {
       const opaque = plain(value)
       if (Array.isArray(opaque)) widgets = opaque
-    } else if (key !== 'id') {
+    } else if (key !== 'id' && key !== WIDGET_FORM_KEY) {
       fields[key] = plain(value)
     }
   })

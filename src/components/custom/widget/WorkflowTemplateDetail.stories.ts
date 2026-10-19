@@ -21,7 +21,7 @@ const withPreview: NonNullable<Story['render']> = (args) => ({
       <WorkflowTemplateDetail v-bind="args">
         <template #preview>
           <div
-            class="grid aspect-8/5 place-items-center bg-secondary-background text-xs text-muted-foreground"
+            class="grid aspect-8/5 place-items-center bg-secondary text-xs text-muted-foreground"
           >
             Template preview
           </div>

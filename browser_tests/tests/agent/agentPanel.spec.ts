@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 
+import type { AgentMessage } from '@comfyorg/ingest-types'
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -75,7 +77,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = agentPanel.composer
     const sendButton = panel.getByRole('button', { name: 'Send' })
 
     await expect(composer).toHaveText('')
@@ -185,7 +187,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
     const panel = agentPanel.root
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = agentPanel.composer
     const prompt = 'Build a product photo workflow'
 
     await test.step('reject the next turn with a no-funds admission error', async () => {
@@ -248,6 +250,33 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('finish the funded recovery while the panel is closed', async () => {
+      const firstTurn = acceptedTurns.at(0)
+      assert(firstTurn)
+      const history: AgentMessage[] = [
+        {
+          id: `user-${firstTurn.message_id}`,
+          thread_id: firstTurn.thread_id,
+          turn_id: firstTurn.message_id,
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Complete this workflow without a refusal' }
+        },
+        {
+          id: firstTurn.message_id,
+          thread_id: firstTurn.thread_id,
+          turn_id: firstTurn.message_id,
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'Done.' }
+        }
+      ]
+      await page.route('**/api/agent/threads/*/messages', (route) =>
+        route.request().method() === 'GET'
+          ? route.fulfill(jsonRoute(history))
+          : route.fallback()
+      )
       agentBilling.setFundingState('funded')
       const recovery = agentBilling.holdNextFundedRefresh()
       await paywall
@@ -265,6 +294,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await test.step('reopen without the stale paywall', async () => {
       await agentPanel.open()
+      await expect(
+        agentPanel.root.getByTestId('user-message-bubble')
+      ).toHaveText(['Complete this workflow without a refusal'])
       await expect(paywall).toHaveCount(0)
       agentBilling.resumeRefreshes()
     })
@@ -394,9 +426,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
       await test.step('retain tool metadata without conversation content', async () => {
         await agentPanel.selectWorkflow()
-        const composer = agentPanel.root.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
+        const composer = agentPanel.composer
         await composer.fill('private diagnostic prompt')
         await agentPanel.root.getByRole('button', { name: 'Send' }).click()
         await expect(
@@ -457,7 +487,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       await agentPanel.open()
 
       const panel = agentPanel.root
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = agentPanel.composer
       const input = panel.getByTestId('composer-inline-input')
 
       await comfyPage.clipboard.writeText('A growing prompt line\n'.repeat(14))
@@ -675,7 +705,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.selectWorkflow()
 
     const panel = agentPanel.root
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = agentPanel.composer
     const originalPrompt = 'Build a rainy city at night'
     const revisedPrompt = 'Build a rainy city at sunrise'
 

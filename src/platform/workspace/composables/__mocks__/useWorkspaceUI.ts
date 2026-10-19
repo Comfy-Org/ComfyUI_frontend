@@ -8,8 +8,6 @@ function defaults(): ReturnType<typeof realUseWorkspaceUI> {
     permissions: computed(() => ({
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
       canDowngradeToPersonal: false
@@ -25,7 +23,6 @@ function defaults(): ReturnType<typeof realUseWorkspaceUI> {
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     })),
@@ -34,9 +31,9 @@ function defaults(): ReturnType<typeof realUseWorkspaceUI> {
     isInPersonalWorkspace: computed(() => true),
     isWorkspaceSubscribed: computed(() => false),
     canAccessSubscriptionFeatures: computed(() => false),
-    isOriginalOwner: computed(() => true),
     isSubscriptionCancelled: computed(() => false),
-    isTeamPlanCancelled: computed(() => false)
+    isTeamPlanCancelled: computed(() => false),
+    isWorkspaceMenuInHeader: computed(() => false)
   }
 }
 

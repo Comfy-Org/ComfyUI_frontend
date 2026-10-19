@@ -7,7 +7,15 @@ import { FirebaseError } from 'firebase/app'
 import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -23,7 +31,6 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import {
-  cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
@@ -500,6 +507,42 @@ describe('useAuthStore', () => {
           headers: expect.objectContaining({ 'X-API-KEY': 'test-api-key' })
         })
       )
+    })
+
+    it('accessBillingPortal gives up on a billing request that hangs for 30 seconds', async () => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms) => {
+        const controller = new AbortController()
+        setTimeout(
+          () =>
+            controller.abort(
+              new DOMException('The operation timed out.', 'TimeoutError')
+            ),
+          ms
+        )
+        return controller.signal
+      })
+      respondToFetch(
+        BILLING_URL,
+        (_input, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(init.signal?.reason)
+            )
+          })
+      )
+
+      const request = store.accessBillingPortal()
+      const settled = vi.fn()
+      request.then(settled, settled)
+      await vi.advanceTimersByTimeAsync(29_999)
+      expect(settled).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      await expect(request).rejects.toMatchObject({ name: 'TimeoutError' })
     })
 
     it('accessBillingPortal throws userNotAuthenticated when neither credential exists', async () => {
@@ -2359,7 +2402,7 @@ describe('useAuthStore', () => {
         .mockImplementationOnce(async (_route, options) => {
           options?.onAuthHeader?.(true)
           return new Response(
-            JSON.stringify({ legacy_billing_migration_enabled: false }),
+            JSON.stringify({ subscription_required: false }),
             { status: 200 }
           )
         })
@@ -2370,19 +2413,16 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
       expect(accountASignal?.aborted).toBe(true)
       expect(remoteConfigState.value).toBe('unloaded')
-      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
 
       await refreshRemoteConfig()
       resolveAccountA?.(
-        new Response(
-          JSON.stringify({ legacy_billing_migration_enabled: true }),
-          { status: 200 }
-        )
+        new Response(JSON.stringify({ subscription_required: true }), {
+          status: 200
+        })
       )
       await accountARefresh
 
-      expect(remoteConfig.value.legacy_billing_migration_enabled).toBe(false)
-      expect(cachedLegacyBillingMigrationEnabled.value).toBe(false)
+      expect(remoteConfig.value.subscription_required).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {
