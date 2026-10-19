@@ -20,7 +20,6 @@ export const useFreeTierQuota = createSharedComposable(function () {
     { immediate: true }
   )
 
-  // The backend sends free_tier_balance only when the free tier is on for this user.
   const quotaEnabled = computed(() => isCloud && maxAvailable.value > 0)
   const hasInvalidNodes = computed(() => {
     const app = useApp()
