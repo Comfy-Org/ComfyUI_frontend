@@ -1,11 +1,10 @@
-import type { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import type { AxiosInstance, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 
 import type { ExecuteRequestOptions } from '@/composables/useApiRequest'
 import { useApiRequest } from '@/composables/useApiRequest'
 import { t, tPlain } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -61,22 +60,21 @@ export const useComfyManagerService = () => {
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string => {
-    if (!axios.isAxiosError(err)) {
+    if (!axios.isAxiosError<{ message?: string }>(err)) {
       return tPlain('serviceErrors.failedWithMessage', {
         context,
         message: err instanceof Error ? err.message : String(err)
       })
     }
 
-    const axiosError = err as AxiosError<{ message: string }>
-    if (!axiosError.response) {
+    if (!err.response) {
       return tPlain('serviceErrors.failedWithMessage', {
         context,
-        message: axiosError.message
+        message: err.message
       })
     }
 
-    const status = axiosError.response.status
+    const status = err.response.status
     if (routeSpecificErrors?.[status]) {
       return routeSpecificErrors[status]
     }
@@ -85,7 +83,7 @@ export const useComfyManagerService = () => {
     }
 
     return (
-      axiosError.response.data?.message ??
+      err.response.data.message ??
       tPlain('serviceErrors.failedWithStatus', { context, status })
     )
   }
@@ -101,62 +99,27 @@ export const useComfyManagerService = () => {
 
   const executeRequest = <T>(
     apiCall: (client: AxiosInstance) => Promise<AxiosResponse<T>>,
-    options: Omit<ExecuteRequestOptions, 'onSuccess'> & {
-      isQueueOperation?: boolean
-    }
+    options: ExecuteRequestOptions
   ): Promise<T | null> => {
-    const { isQueueOperation, ...requestOptions } = options
-
     // Block service calls if not in NEW_UI state
     if (!isManagerServiceAvailable()) {
-      const message = t('serviceErrors.manager.unavailable')
-      error.value = message
-      requestOptions.onError?.(message)
+      error.value = t('serviceErrors.manager.unavailable')
       return Promise.resolve(null)
     }
 
-    return sendRequest(apiCall, {
-      ...requestOptions,
-      onSuccess: isQueueOperation
-        ? async () => {
-            const queueStartError = await requestQueueStart()
-            if (!queueStartError) return
-            error.value = queueStartError
-            reportError(new Error(queueStartError), {
-              errorType: 'manager_queue_start_failed'
-            })
-            return false
-          }
-        : undefined
-    })
+    return sendRequest(apiCall, options)
   }
 
-  /**
-   * Resolves to *this* invocation's failure message, or `null` on success.
-   * The shared `error` ref cannot answer that: concurrent Manager requests
-   * reset it on start and overwrite it on failure.
-   */
-  const requestQueueStart = async (
-    signal?: AbortSignal
-  ): Promise<string | null> => {
+  const startQueue = async (signal?: AbortSignal) => {
     const errorContext = t('serviceErrors.context.startingQueue')
+    const routeSpecificErrors = {
+      403: t('serviceErrors.manager.securityError')
+    }
 
-    let failure: string | null = null
-    await executeRequest<null>(
+    return executeRequest<string>(
       (client) => client.post(ManagerRoute.START_QUEUE, null, { signal }),
-      {
-        errorContext,
-        onError: (message) => {
-          failure = message
-        }
-      }
+      { errorContext, routeSpecificErrors }
     )
-    return failure
-  }
-
-  const startQueue = async (signal?: AbortSignal): Promise<null> => {
-    await requestQueueStart(signal)
-    return null
   }
 
   const getQueueStatus = async (client_id?: string, signal?: AbortSignal) => {
@@ -230,9 +193,9 @@ export const useComfyManagerService = () => {
       404: t('serviceErrors.route.taskQueueFailed')
     }
 
-    return executeRequest<null>(
+    return executeRequest<string>(
       (client) => client.post(ManagerRoute.QUEUE_TASK, task, { signal }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -256,7 +219,7 @@ export const useComfyManagerService = () => {
     params: components['schemas']['DisablePackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ): Promise<null> => {
+  ) => {
     return queueTask('disable', params, ui_id, signal)
   }
 
@@ -264,7 +227,7 @@ export const useComfyManagerService = () => {
     params: components['schemas']['EnablePackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ): Promise<null> => {
+  ) => {
     return queueTask('enable', params, ui_id, signal)
   }
 
@@ -272,7 +235,7 @@ export const useComfyManagerService = () => {
     params: components['schemas']['UpdatePackParams'],
     ui_id?: string,
     signal?: AbortSignal
-  ): Promise<null> => {
+  ) => {
     return queueTask('update', params, ui_id, signal)
   }
 
@@ -293,13 +256,13 @@ export const useComfyManagerService = () => {
       ui_id: ui_id || uuidv4()
     }
 
-    return executeRequest<null>(
+    return executeRequest<string>(
       (client) =>
         client.post(ManagerRoute.UPDATE_ALL, null, {
           params: queryParams,
           signal
         }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
+      { errorContext, routeSpecificErrors }
     )
   }
 
@@ -320,13 +283,13 @@ export const useComfyManagerService = () => {
       ...params
     }
 
-    return executeRequest<null>(
+    return executeRequest<string>(
       (client) =>
         client.post(ManagerRoute.UPDATE_COMFYUI, null, {
           params: queryParams,
           signal
         }),
-      { errorContext, routeSpecificErrors, isQueueOperation: true }
+      { errorContext, routeSpecificErrors }
     )
   }
 

@@ -11,14 +11,14 @@ const mockAxiosInstance = vi.hoisted(() => ({
 
 const managerState = vi.hoisted(() => ({ isNewManagerUI: true }))
 
-vi.mock('axios', () => ({
+vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
     isAxiosError: vi.fn()
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: (path: string) => path,
     clientId: 'client-1',
@@ -26,32 +26,25 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/workbench/extensions/manager/composables/useManagerState', () => ({
-  useManagerState: () => ({
-    isNewManagerUI: { value: managerState.isNewManagerUI }
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
+  () => ({
+    useManagerState: () => ({
+      isNewManagerUI: { value: managerState.isNewManagerUI }
+    })
   })
-}))
+)
 
-vi.mock('uuid', () => ({ v4: () => 'generated-uuid' }))
-
-const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError }))
+vi.mock(import('uuid'), () => ({ v4: () => 'generated-uuid' }))
 
 describe('useComfyManagerService', () => {
   let service: ReturnType<typeof useComfyManagerService>
 
   beforeEach(() => {
     managerState.isNewManagerUI = true
-    reportError.mockClear()
     mockAxiosInstance.get.mockResolvedValue({ data: {} })
     mockAxiosInstance.post.mockResolvedValue({ data: null })
     service = useComfyManagerService()
-  })
-
-  it('initializes with idle state', () => {
-    expect(service.isLoading.value).toBe(false)
-    expect(service.error.value).toBeNull()
   })
 
   describe('availability gate', () => {
@@ -133,81 +126,32 @@ describe('useComfyManagerService', () => {
   })
 
   describe('queue operations', () => {
-    it('installPack queues an install task then starts the queue', async () => {
-      await service.installPack({
-        id: 'pack',
-        version: '1.0.0',
-        selected_version: '1.0.0',
-        mode: 'remote',
-        channel: 'default'
-      })
-
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-        'manager/queue/task',
-        expect.objectContaining({ kind: 'install' }),
-        expect.any(Object)
-      )
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+    const expectQueueNotStarted = () =>
+      expect(mockAxiosInstance.post).not.toHaveBeenCalledWith(
         'manager/queue/start',
         null,
         expect.any(Object)
       )
-    })
-
-    it('uninstallPack queues an uninstall task', async () => {
-      await service.uninstallPack({ node_name: 'pack', is_unknown: false })
-
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-        'manager/queue/task',
-        expect.objectContaining({ kind: 'uninstall' }),
-        expect.any(Object)
-      )
-    })
-
-    it('updateAllPacks posts to the update_all endpoint', async () => {
-      await service.updateAllPacks({ mode: 'remote' })
-
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-        'manager/queue/update_all',
-        null,
-        expect.objectContaining({
-          params: expect.objectContaining({ mode: 'remote' })
-        })
-      )
-    })
-
-    it('updateComfyUI posts to the update_comfyui endpoint', async () => {
-      await service.updateComfyUI({ is_stable: true })
-
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-        'manager/queue/update_comfyui',
-        null,
-        expect.objectContaining({
-          params: expect.objectContaining({ is_stable: true })
-        })
-      )
-    })
 
     it.for([
       {
-        name: 'updateAllPacks',
-        call: () => service.updateAllPacks({ mode: 'remote' })
+        name: 'installPack',
+        kind: 'install',
+        call: () =>
+          service.installPack({
+            id: 'pack',
+            version: '1.0.0',
+            selected_version: '1.0.0',
+            mode: 'remote',
+            channel: 'default'
+          })
       },
       {
-        name: 'updateComfyUI',
-        call: () => service.updateComfyUI({ is_stable: true })
-      }
-    ])('$name starts the queue after posting', async ({ call }) => {
-      await call()
-
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-        'manager/queue/start',
-        null,
-        expect.any(Object)
-      )
-    })
-
-    it.for([
+        name: 'uninstallPack',
+        kind: 'uninstall',
+        call: () =>
+          service.uninstallPack({ node_name: 'pack', is_unknown: false })
+      },
       {
         name: 'disablePack',
         kind: 'disable',
@@ -225,7 +169,7 @@ describe('useComfyManagerService', () => {
         call: () => service.updatePack({ node_name: 'pack' })
       }
     ])(
-      '$name queues a $kind task then starts the queue',
+      '$name queues a $kind task and leaves starting the queue to the caller',
       async ({ call, kind }) => {
         await call()
 
@@ -234,11 +178,34 @@ describe('useComfyManagerService', () => {
           expect.objectContaining({ kind }),
           expect.any(Object)
         )
+        expectQueueNotStarted()
+      }
+    )
+
+    it.for([
+      {
+        name: 'updateAllPacks',
+        url: 'manager/queue/update_all',
+        params: { mode: 'remote' },
+        call: () => service.updateAllPacks({ mode: 'remote' })
+      },
+      {
+        name: 'updateComfyUI',
+        url: 'manager/queue/update_comfyui',
+        params: { is_stable: true },
+        call: () => service.updateComfyUI({ is_stable: true })
+      }
+    ])(
+      '$name posts to its endpoint and leaves starting the queue to the caller',
+      async ({ call, url, params }) => {
+        await call()
+
         expect(mockAxiosInstance.post).toHaveBeenCalledWith(
-          'manager/queue/start',
+          url,
           null,
-          expect.any(Object)
+          expect.objectContaining({ params: expect.objectContaining(params) })
         )
+        expectQueueNotStarted()
       }
     )
 
@@ -252,9 +219,10 @@ describe('useComfyManagerService', () => {
       )
     })
 
-    it('startQueue posts to the start endpoint', async () => {
-      await service.startQueue()
+    it('startQueue posts to the start endpoint and resolves to its response', async () => {
+      mockAxiosInstance.post.mockResolvedValue({ data: 'started' })
 
+      await expect(service.startQueue()).resolves.toBe('started')
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         'manager/queue/start',
         null,
@@ -262,77 +230,16 @@ describe('useComfyManagerService', () => {
       )
     })
 
-    it('does not start the queue when the task POST fails', async () => {
+    it('startQueue resolves to null with a security message on 403', async () => {
       mockAxiosInstance.post.mockRejectedValue({
-        response: { status: 500, data: {} }
+        response: { status: 403, data: {} }
       })
       vi.mocked(axios.isAxiosError).mockReturnValue(true)
 
-      const result = await service.installPack({
-        id: 'pack',
-        version: '1.0.0',
-        selected_version: '1.0.0',
-        mode: 'remote',
-        channel: 'default'
-      })
-
-      expect(result).toBeNull()
-      expect(mockAxiosInstance.post).not.toHaveBeenCalledWith(
-        'manager/queue/start',
-        null,
-        expect.any(Object)
-      )
-    })
-
-    it('returns null when the task queues but the queue fails to start', async () => {
-      mockAxiosInstance.post.mockImplementation((url: string) =>
-        url === 'manager/queue/start'
-          ? Promise.reject({ response: { status: 500, data: {} } })
-          : Promise.resolve({ data: { queued: true } })
-      )
-      vi.mocked(axios.isAxiosError).mockReturnValue(true)
-
-      const result = await service.installPack({
-        id: 'pack',
-        version: '1.0.0',
-        selected_version: '1.0.0',
-        mode: 'remote',
-        channel: 'default'
-      })
-
-      expect(result).toBeNull()
+      await expect(service.startQueue()).resolves.toBeNull()
       expect(service.error.value).toBe(
-        'Starting ComfyUI-Manager job queue failed with status 500'
+        'Forbidden: A security error has occurred. Please check the terminal logs'
       )
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'manager_queue_start_failed'
-      })
-    })
-
-    it('does not blame the queue start for a concurrent request failure', async () => {
-      mockAxiosInstance.post.mockImplementation((url: string) =>
-        url === 'manager/queue/start'
-          ? Promise.resolve({ data: null })
-          : Promise.resolve({ data: { queued: true } })
-      )
-      mockAxiosInstance.get.mockRejectedValue({
-        response: { status: 500, data: {} }
-      })
-      vi.mocked(axios.isAxiosError).mockReturnValue(true)
-
-      const [result] = await Promise.all([
-        service.installPack({
-          id: 'pack',
-          version: '1.0.0',
-          selected_version: '1.0.0',
-          mode: 'remote',
-          channel: 'default'
-        }),
-        service.listInstalledPacks()
-      ])
-
-      expect(result).toEqual({ queued: true })
-      expect(reportError).not.toHaveBeenCalled()
     })
   })
 

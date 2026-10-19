@@ -1,38 +1,49 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { paymentReturnUrl } from './paymentReturnUrl'
+import { stripPaymentReturnParams } from './paymentReturnUrl'
 
-vi.mock('@/config/comfyApi', () => ({
-  getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
-}))
-
-describe('paymentReturnUrl', () => {
-  it('returns to the page the checkout started on, without query or hash', () => {
+describe('stripPaymentReturnParams', () => {
+  it('also drops the outcome billing-web appends on the way back', () => {
+    const replaceState = vi.fn()
     vi.stubGlobal('location', {
-      origin: 'https://cloud.comfy.org',
-      pathname: '/workspace/abc',
-      search: '?pricing=team',
-      hash: '#section'
+      href: 'https://cloud.comfy.org/?workspace=ws_1&billing_result=success&billing_ref=op_9#graph'
     })
-    expect(paymentReturnUrl()).toBe('https://cloud.comfy.org/workspace/abc')
-  })
+    vi.stubGlobal('history', { state: { key: 1 }, replaceState })
 
-  it('accepts an HTTP origin', () => {
-    vi.stubGlobal('location', {
-      origin: 'http://localhost:5173',
-      pathname: '/workspace/abc'
-    })
+    stripPaymentReturnParams()
 
-    expect(paymentReturnUrl()).toBe('http://localhost:5173/workspace/abc')
-  })
-
-  it('falls back to the platform success page on a non-HTTP origin, which the backend would reject', () => {
-    vi.stubGlobal('location', {
-      origin: 'file://',
-      pathname: '/index.html'
-    })
-    expect(paymentReturnUrl()).toBe(
-      'https://platform.comfy.org/payment/success'
+    expect(replaceState).toHaveBeenCalledWith(
+      { key: 1 },
+      '',
+      new URL('https://cloud.comfy.org/?workspace=ws_1#graph')
     )
+  })
+
+  it('drops the Stripe return params, client secret included', () => {
+    const replaceState = vi.fn()
+    vi.stubGlobal('location', {
+      href: 'https://cloud.comfy.org/?workspace=ws_1&payment_intent=pi_1&payment_intent_client_secret=pi_1_secret&redirect_status=succeeded'
+    })
+    vi.stubGlobal('history', { state: null, replaceState })
+
+    stripPaymentReturnParams()
+
+    expect(replaceState).toHaveBeenCalledWith(
+      null,
+      '',
+      new URL('https://cloud.comfy.org/?workspace=ws_1')
+    )
+  })
+
+  it('leaves a URL without return params untouched', () => {
+    const replaceState = vi.fn()
+    vi.stubGlobal('location', {
+      href: 'https://cloud.comfy.org/?workspace=ws_1'
+    })
+    vi.stubGlobal('history', { state: null, replaceState })
+
+    stripPaymentReturnParams()
+
+    expect(replaceState).not.toHaveBeenCalled()
   })
 })

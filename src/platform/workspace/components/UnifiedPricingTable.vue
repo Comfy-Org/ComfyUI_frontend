@@ -3,15 +3,16 @@
     <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
          on top of the content area — outside it, attached with no gap (DES QA). -->
     <div class="flex justify-center">
-      <SelectButton
-        v-model="planMode"
-        :options="planScopeOptions"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        unstyled
-        :pt="planScopeButtonPt"
-      />
+      <ToggleGroup v-model="planMode" type="single" :allow-empty="false">
+        <ToggleGroupItem
+          v-for="option in planScopeOptions"
+          :key="option.value"
+          :value="option.value"
+          class="h-8 rounded-b-none bg-background px-4 text-foreground opacity-50 hover:bg-background hover:opacity-100 data-[state=on]:bg-background data-[state=on]:opacity-100"
+        >
+          {{ option.label }}
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
 
     <!-- Content well: a borderless base-background area (DES-197 "Personal Plan,
@@ -21,7 +22,7 @@
          Grows to fill the dialog so its height stays constant across the
          personal/team toggle. -->
     <div
-      class="flex min-h-0 flex-col gap-6 rounded-2xl bg-base-background p-8 xl:flex-1"
+      class="flex min-h-0 flex-col gap-6 rounded-2xl bg-background p-8 xl:flex-1"
     >
       <!-- Plan-scope description, above the billing toggle (DES-197). -->
       <I18nT
@@ -33,7 +34,7 @@
         <template #action>
           <button
             type="button"
-            class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
+            class="cursor-pointer border-none bg-transparent p-0 text-foreground hover:text-muted-foreground"
             @click="planMode = 'team'"
           >
             {{ t('subscription.personalHeaderAction') }}
@@ -49,7 +50,7 @@
         <template #learnMore>
           <button
             type="button"
-            class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
+            class="cursor-pointer border-none bg-transparent p-0 text-foreground hover:text-muted-foreground"
             @click="handleViewEnterprise"
           >
             {{ t('subscription.teamHeaderLearnMore') }}
@@ -60,62 +61,57 @@
       <!-- Billing-cycle toggle: drives both the personal tier cards and the
            team credit slider (team monthly halves the yearly discount). -->
       <div class="flex justify-center">
-        <SelectButton
+        <ToggleGroup
           v-model="currentBillingCycle"
-          :options="billingCycleOptions"
-          option-label="label"
-          option-value="value"
+          type="single"
           :allow-empty="false"
-          unstyled
-          :pt="toggleButtonPt"
+          class="rounded-lg bg-secondary p-1.5"
         >
-          <template #option="{ option }">
+          <ToggleGroupItem
+            v-for="option in billingCycleOptions"
+            :key="option.value"
+            :value="option.value"
+            class="h-8 min-w-44 px-5 data-[state=on]:bg-foreground data-[state=on]:text-background"
+          >
             <div class="flex items-center gap-2">
               <span>{{ option.label }}</span>
-              <div
+              <Badge
                 v-if="option.value === 'yearly'"
-                class="flex items-center rounded-full bg-primary-background px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-white"
+                variant="pill"
+                severity="default"
+                class="font-bold"
               >
                 {{
                   planMode === 'team'
                     ? t('subscription.saveYearlyUpTo')
                     : t('subscription.saveYearly')
                 }}
-              </div>
+              </Badge>
             </div>
-          </template>
-        </SelectButton>
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
       <!-- PERSONAL PLANS: tier cards (data-driven via the billing facade,
          falling back to TIER_PRICING). -->
       <div
         v-if="planMode === 'personal'"
-        class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
+        class="flex flex-col gap-6 xl:flex-1 xl:flex-row xl:justify-center"
       >
-        <div
+        <Card
           v-for="tier in tiers"
           :key="tier.id"
-          class="flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:w-80"
+          class="flex flex-col shadow-sm xl:w-80"
         >
           <div class="flex flex-1 flex-col gap-4 p-6 pb-0">
-            <div class="flex flex-row items-center justify-between gap-2">
-              <span
-                class="font-inter text-base/normal font-bold text-base-foreground"
-              >
-                {{ tier.name }}
-              </span>
-              <div
-                v-if="tier.isPopular"
-                class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
-              >
-                {{ t('subscription.mostPopular') }}
-              </div>
-            </div>
+            <PricingTierHeading
+              :name="tier.name"
+              :is-popular="tier.isPopular"
+            />
             <div class="flex flex-col gap-2">
-              <div class="flex flex-row items-baseline gap-2">
+              <div class="flex items-baseline gap-2">
                 <span
-                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
+                  class="text-[28px] leading-normal font-semibold tabular-nums"
                 >
                   ${{ getPrice(tier) }}
                   <span
@@ -125,7 +121,7 @@
                     ${{ getMonthlyPrice(tier) }}
                   </span>
                 </span>
-                <span class="font-inter text-sm/normal text-base-foreground">
+                <span class="text-sm/normal">
                   {{ t('subscription.usdPerMonth') }}
                 </span>
               </div>
@@ -140,7 +136,7 @@
               </span>
             </div>
 
-            <div class="h-px w-full bg-border-default" />
+            <div class="h-px w-full bg-border" />
 
             <!-- Progressive feature list: "What's included" then
                  "Everything in {prev tier}, plus:" (DES-197). -->
@@ -151,9 +147,9 @@
               <div
                 v-for="feature in tier.features"
                 :key="feature"
-                class="flex flex-row items-start gap-2"
+                class="flex items-start gap-2"
               >
-                <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
+                <i class="pi pi-check mt-0.5 text-xs" />
                 <span class="text-sm font-normal text-muted-foreground">
                   {{ feature }}
                 </span>
@@ -163,30 +159,28 @@
             <!-- Credit grant + template-based video estimate, pinned to the
                  card bottom so the figures align across tiers. -->
             <div class="mt-auto flex flex-col gap-1">
-              <div class="flex flex-row items-center gap-2">
+              <div class="flex items-center gap-2">
                 <i
                   class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                   aria-hidden="true"
                 />
-                <span
-                  class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
-                >
-                  {{ n(tier.pricing.credits) }}
+                <span class="text-sm/normal font-bold tabular-nums">
+                  {{ n(creditsForTier(tier)) }}
                 </span>
                 <span class="text-sm text-muted-foreground">
-                  {{ t('subscription.monthlyCredits') }}
+                  {{ t(creditsLabelKey) }}
                 </span>
               </div>
               <span class="text-sm text-muted-foreground">
                 {{
                   t('subscription.videoEstimate', {
-                    count: n(tier.pricing.videoEstimate)
+                    count: n(videoEstimateForTier(tier))
                   })
                 }}
               </span>
             </div>
           </div>
-          <div class="flex flex-col p-6">
+          <div class="flex flex-col gap-2 p-6">
             <Button
               :variant="getButtonSeverity(tier)"
               :disabled="isButtonDisabled(tier)"
@@ -196,33 +190,38 @@
                   'h-10 w-full',
                   getButtonTextClass(tier),
                   tier.key === 'creator'
-                    ? 'border-transparent bg-base-foreground hover:bg-inverted-background-hover'
-                    : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
+                    ? 'border-transparent bg-foreground hover:bg-foreground/90'
+                    : 'border-transparent bg-secondary hover:bg-accent focus:bg-muted'
                 )
               "
+              :data-dd-action-name="planCtaActionName(tier.key)"
               @click="() => handleSubscribe(tier.key)"
             >
               {{ getButtonLabel(tier) }}
             </Button>
+            <p
+              v-if="getDeniedReasonCopy(tier.key)"
+              class="m-0 text-center text-sm text-muted-foreground"
+            >
+              {{ getDeniedReasonCopy(tier.key) }}
+            </p>
           </div>
-        </div>
+        </Card>
       </div>
 
       <!-- TEAM PLAN: [Team Plan | Details] card + Enterprise card -->
       <div v-else class="flex min-h-0 flex-col gap-6 xl:flex-1">
         <div
-          class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
+          class="flex flex-col gap-6 xl:flex-1 xl:flex-row xl:justify-center"
         >
           <!-- Team Plan + Details share one card, split by a divider. -->
-          <div
-            class="flex flex-[2.6] flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:flex-row xl:overflow-hidden"
+          <Card
+            class="flex flex-[2.6] flex-col shadow-sm xl:flex-row xl:overflow-hidden"
           >
             <!-- Team Plan column -->
             <div class="flex flex-[1.6] flex-col gap-6 p-6">
               <div class="flex flex-col gap-1">
-                <span
-                  class="font-inter text-base/normal font-bold text-base-foreground"
-                >
+                <span class="text-base/normal font-bold">
                   {{ t('subscription.teamPlan.name') }}
                 </span>
                 <span class="text-sm text-muted-foreground">
@@ -241,18 +240,16 @@
 
               <!-- Selected credit grant + template-based video estimate -->
               <div class="flex flex-col gap-1">
-                <div class="flex flex-row items-center gap-2">
+                <div class="flex items-center gap-2">
                   <i
                     class="icon-[lucide--coins] size-4 shrink-0 bg-credit"
                     aria-hidden="true"
                   />
-                  <span
-                    class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
-                  >
-                    {{ n(teamCredits) }}
+                  <span class="text-sm/normal font-bold tabular-nums">
+                    {{ n(teamCreditsForCurrentCycle) }}
                   </span>
                   <span class="text-sm text-muted-foreground">
-                    {{ t('subscription.monthlyCredits') }}
+                    {{ t(creditsLabelKey) }}
                   </span>
                 </div>
                 <span class="text-sm text-muted-foreground">
@@ -268,7 +265,8 @@
               <Button
                 variant="inverted"
                 :disabled="isTeamButtonDisabled"
-                class="mt-auto h-10 w-full font-inter text-sm/normal font-bold"
+                class="mt-auto h-10 w-full text-sm/normal font-bold"
+                :data-dd-action-name="BILLING_ACTION_NAME.subscribeTeamPlan"
                 @click="handleSubscribeTeam"
               >
                 {{ teamButtonLabel }}
@@ -277,14 +275,12 @@
 
             <!-- Divider: horizontal when stacked, vertical at xl -->
             <div
-              class="h-px w-full shrink-0 self-stretch bg-border-default xl:h-auto xl:w-px"
+              class="h-px w-full shrink-0 self-stretch bg-border xl:h-auto xl:w-px"
             />
 
             <!-- Details column -->
             <div class="flex flex-1 flex-col gap-4 p-6">
-              <span
-                class="font-inter text-base/normal font-bold text-base-foreground"
-              >
+              <span class="text-base/normal font-bold">
                 {{ t('subscription.teamPlan.detailsTitle') }}
               </span>
 
@@ -299,144 +295,172 @@
                 <div
                   v-for="perk in teamDetailPerks"
                   :key="perk"
-                  class="flex flex-row items-start gap-2"
+                  class="flex items-start gap-2"
                 >
-                  <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
+                  <i class="pi pi-check mt-0.5 text-xs" />
                   <span class="text-sm font-normal text-muted-foreground">
                     {{ perk }}
                   </span>
                 </div>
               </div>
 
-              <div class="flex flex-col gap-3">
-                <span class="text-sm text-muted-foreground">
+              <div class="flex flex-col gap-3 text-muted-foreground">
+                <span class="text-sm">
                   {{ t('subscription.teamPlan.comingSoonLabel') }}
                 </span>
-                <div class="flex flex-row items-start gap-2">
-                  <i class="pi pi-clock mt-0.5 text-xs text-muted-foreground" />
-                  <span class="text-sm font-normal text-muted-foreground">
+                <div class="flex items-start gap-2">
+                  <i class="pi pi-clock mt-0.5 text-xs" />
+                  <span class="text-sm font-normal">
                     {{ t('subscription.teamPlan.perkProjectAssets') }}
                   </span>
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
 
           <!-- Enterprise card -->
-          <div
-            class="flex flex-1 flex-col gap-4 rounded-2xl border border-border-default bg-base-background p-6 shadow-[0_0_12px_rgba(0,0,0,0.1)]"
-          >
-            <span
-              class="font-inter text-base/normal font-bold text-base-foreground"
-            >
+          <Card class="flex flex-1 flex-col gap-4 p-6 shadow-sm">
+            <span class="text-base/normal font-bold">
               {{ t('subscription.enterprise.name') }}
             </span>
-            <div class="flex flex-col gap-3">
-              <span class="text-sm/relaxed font-normal text-muted-foreground">
+            <div
+              class="flex flex-col gap-3 text-sm/relaxed font-normal text-muted-foreground"
+            >
+              <span>
                 {{ t('subscription.enterprise.needMoreMembers') }}
               </span>
-              <span class="text-sm/relaxed font-normal text-muted-foreground">
+              <span>
                 {{ t('subscription.enterprise.flexibility') }}
               </span>
             </div>
-            <div class="h-px w-full bg-border-default" />
+            <div class="h-px w-full bg-border" />
             <span class="text-sm/relaxed font-normal text-muted-foreground">
               {{ t('subscription.enterprise.reachOut') }}
             </span>
             <Button
               variant="secondary"
-              class="mt-auto h-10 w-full border-transparent bg-secondary-background font-bold hover:bg-secondary-background-hover"
+              class="mt-auto h-10 w-full border-transparent font-bold"
               @click="handleViewEnterprise"
             >
               {{ t('subscription.enterprise.cta') }}
             </Button>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
 
-    <!-- Footnote: template caveat + contact / pricing links -->
-    <I18nT
-      keypath="subscription.pricingBlurb"
-      tag="p"
-      class="m-0 mt-auto pt-4 text-center text-sm text-text-secondary"
-    >
-      <template #seeDetails>
-        <a
-          :href="VIDEO_TEMPLATE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbSeeDetails') }}
-        </a>
-      </template>
-      <template #questions>
-        <a
-          :href="QUESTIONS_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbQuestions') }}
-        </a>
-      </template>
-      <template #enterpriseDiscussions>
-        <a
-          :href="ENTERPRISE_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbEnterprise') }}
-        </a>
-      </template>
-      <template #clickHere>
-        <a
-          :href="PRICING_URL"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
-        >
-          {{ t('subscription.pricingBlurbClickHere') }}
-        </a>
-      </template>
-    </I18nT>
+    <div class="mt-auto flex min-h-14 items-center justify-center pt-4 text-sm">
+      <div
+        v-if="showScheduledPlanChange"
+        role="status"
+        class="flex items-center gap-2 rounded-full bg-foreground px-3 py-1.5 text-background"
+      >
+        <i
+          class="icon-[lucide--info] size-4 shrink-0 bg-background"
+          aria-hidden="true"
+        />
+        <span>
+          {{
+            t('subscription.scheduledChangeNotice', {
+              plan: scheduledPlanChange.planName.value,
+              date: scheduledPlanChange.formattedDate.value
+            })
+          }}
+        </span>
+      </div>
+      <I18nT
+        v-else
+        keypath="subscription.pricingBlurb"
+        tag="p"
+        class="m-0 text-center text-muted-foreground"
+      >
+        <template #seeDetails>
+          <a
+            :href="VIDEO_TEMPLATE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbSeeDetails') }}
+          </a>
+        </template>
+        <template #questions>
+          <a
+            :href="QUESTIONS_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbQuestions') }}
+          </a>
+        </template>
+        <template #enterpriseDiscussions>
+          <a
+            :href="ENTERPRISE_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbEnterprise') }}
+          </a>
+        </template>
+        <template #clickHere>
+          <a
+            :href="PRICING_URL"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="cursor-pointer text-foreground no-underline hover:text-muted-foreground"
+          >
+            {{ t('subscription.pricingBlurbClickHere') }}
+          </a>
+        </template>
+      </I18nT>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
+import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
+import Card from '@/components/ui/card/Card.vue'
+import {
+  BILLING_ACTION_NAME,
+  planCtaActionName
+} from '@/platform/telemetry/billingActionNames'
+import type { PlanAction } from '@comfyorg/ingest-types'
 import { cn } from '@comfyorg/tailwind-utils'
-import SelectButton from 'primevue/selectbutton'
-import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import {
+  ENTERPRISE_URL,
   TIER_PRICING,
-  hasActivePaidPlan,
-  toTierKey
+  amountForBillingCycle
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   RegistrySubscriptionTier,
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
-  DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
   getStopDiscountedMonthlyUsd,
   mapApiTeamCreditStops
+} from '@comfyorg/account-ui/billing/catalog'
+import {
+  DEFAULT_TEAM_PLAN_STOP_INDEX,
+  TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { formatSubscriptionDate } from '@/platform/workspace/components/subscriptionPanelWorkspace.logic'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
@@ -467,25 +491,36 @@ const emit = defineEmits<{
   ]
 }>()
 
-const { t, n } = useI18n()
+const { t, n, locale } = useI18n()
 const capabilities = useBillingCapabilities()
-const { permissions, canReactivatePlan } = useWorkspaceUI()
+const { permissions } = useWorkspaceUI()
 
-const canSubscribeSelfServe = computed(() =>
-  isCloud
-    ? capabilities.canSubscribeSelfServe.value
-    : permissions.value.canManageSubscription
-)
-const canChangeSeats = computed(() =>
-  isCloud
-    ? capabilities.canChangeSeats.value
-    : permissions.value.canManageSubscription
-)
-const canDowngradeToPersonal = computed(() =>
-  isCloud
-    ? capabilities.canDowngradeToPersonal.value
-    : permissions.value.canDowngradeToPersonal
-)
+// Every CTA here resolves to a billing write the server authorizes on its own,
+// so each catalog asks whether any write that reaches it is permitted instead of
+// mapping each card to one capability itself — that mapping is policy, and the
+// response carries no plan dimension to derive it from. An unresolved snapshot
+// is not a denial: the CTA stays live and the checkout endpoint answers, the
+// same trade canOpenPricingSurface and canTopUp already make.
+//
+// The team catalog is not reachable by downgrading to personal, so its gate
+// stops at the three writes that do reach it.
+const lifecycleActionPermitted = computed(() => {
+  if (!isCloud) return permissions.value.canManageSubscription
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return (
+    capabilities.canSubscribeSelfServe.value ||
+    capabilities.canChangeSeats.value ||
+    capabilities.canReactivate.value
+  )
+})
+
+// Read on its own by the plan-scope toggle, which offers or withholds the whole
+// personal catalog rather than one CTA, so it keeps its own capability.
+const canDowngradeToPersonal = computed(() => {
+  if (!isCloud) return permissions.value.canDowngradeToPersonal
+  if (!capabilities.snapshotAuthoritative.value) return true
+  return capabilities.canDowngradeToPersonal.value
+})
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
@@ -495,7 +530,6 @@ const VIDEO_TEMPLATE_URL =
 
 /** External footnote destinations — rendered as real links (open in a new tab). */
 const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
-const ENTERPRISE_URL = 'https://comfy.org/cloud/enterprise/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
@@ -522,49 +556,6 @@ interface PricingTierConfig {
   featuresHeader: string
   features: string[]
   isPopular?: boolean
-}
-
-// Billing-cycle toggle: the active option is a solid white pill (DES-197).
-const toggleButtonPt = {
-  root: {
-    class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
-  },
-  pcToggleButton: {
-    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-      class: [
-        // min-w keeps Yearly (with its discount badge) and Monthly the same
-        // width so the active pill doesn't resize when toggling (DES QA).
-        'h-8 min-w-44 px-5 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-        context.active
-          ? 'bg-base-foreground text-base-background'
-          : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
-      ]
-    }),
-    label: { class: 'flex items-center gap-2 ' }
-  }
-}
-
-// Plan-scope toggle (For Personal / For Teams): active is a subtle raised pill,
-// not the solid white of the billing toggle (DES-197 2951:592113).
-const planScopeButtonPt = {
-  // No pill container (DES "Plan Type Tabs" 2812:818371 has no bg) — just the
-  // tabs, so the active base-background tab sits flush on top of the content area.
-  root: {
-    class: 'flex gap-1'
-  },
-  pcToggleButton: {
-    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
-      class: [
-        'h-8 px-4 rounded-t-md transition cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
-        // Inactive tab is the active tab at half opacity (DES QA) — same fill
-        // and text, faded as one, not a separate muted colour.
-        context.active
-          ? 'bg-base-background text-base-foreground'
-          : 'bg-base-background text-base-foreground opacity-50 hover:opacity-100'
-      ]
-    }),
-    label: { class: 'flex items-center gap-2' }
-  }
 }
 
 const allPlanScopeOptions: PlanScopeOption[] = [
@@ -624,11 +615,11 @@ const tiers: PricingTierConfig[] = [
 
 const {
   plans: apiPlans,
-  currentPlanSlug,
   fetchPlans,
   isTeamPlan,
   subscription,
   subscriptionStatus,
+  teamCreditStops,
   currentTeamCreditStop
 } = useBillingContext()
 
@@ -650,15 +641,32 @@ watch(
   { immediate: true }
 )
 
-const { teamCreditStops } = useBillingPlans()
-
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+const scheduledPlanChange = useScheduledPlanChange()
+const showScheduledPlanChange = computed(
+  () => scheduledPlanChange.isDisplayable.value && !isCancelled.value
+)
 
 // An ended subscription still reports its plan slug and tier, so the plan it
 // held must not read as current — it is buyable again.
 const isEnded = computed(() => subscriptionStatus.value === 'ended')
 
+// An active current plan has nothing to transition to, which describes the card
+// rather than the actor's permission — so it stays a client-side check while
+// permission comes from lifecycleActionPermitted.
+const offersTransition = (isCurrent: boolean): boolean =>
+  !isCurrent || isCancelled.value
+
 const currentBillingCycle = ref<BillingCycle>('yearly')
+
+const isYearly = computed(() => currentBillingCycle.value === 'yearly')
+
+const amountForCurrentCycle = (monthlyAmount: number) =>
+  amountForBillingCycle(monthlyAmount, isYearly.value)
+
+const creditsLabelKey = computed(() =>
+  isYearly.value ? 'subscription.yearlyCredits' : 'subscription.monthlyCredits'
+)
 
 // Team credit stops: backend-sourced when the API supplies them, otherwise the
 // hardcoded DES-197 fallback so OSS / pre-deploy still renders. Always non-empty
@@ -687,9 +695,11 @@ const selectedTeamStop = computed(
     teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
     defaultTeamStop.value
 )
-const teamCredits = computed(() => selectedTeamStop.value.credits)
+const teamCreditsForCurrentCycle = computed(() =>
+  amountForCurrentCycle(selectedTeamStop.value.credits)
+)
 const teamVideoEstimate = computed(() =>
-  Math.round(teamCredits.value * VIDEO_PER_CREDIT)
+  Math.round(teamCreditsForCurrentCycle.value * VIDEO_PER_CREDIT)
 )
 
 // The team's currently-subscribed stop (null when on no team plan). Matched to
@@ -761,14 +771,14 @@ const teamButtonLabel = computed(() => {
   return t('subscription.teamPlan.changePlan')
 })
 
-const isTeamButtonDisabled = computed(() => {
-  if (isLoading) return true
-  if (!isTeamSubscribed.value) return !canSubscribeSelfServe.value
-  if (isTeamCurrentPlanSelected.value) {
-    return !isCancelled.value || !canReactivatePlan.value
-  }
-  return !canChangeSeats.value
-})
+const isTeamButtonDisabled = computed(
+  () =>
+    isLoading ||
+    !offersTransition(
+      isTeamSubscribed.value && isTeamCurrentPlanSelected.value
+    ) ||
+    !lifecycleActionPermitted.value
+)
 
 // A subscriber moving off their current plan is a prorated change rather than a
 // fresh subscribe; re-subscribe and the locked current plan exit before the
@@ -799,30 +809,46 @@ function getPriceFromApi(tier: PricingTierConfig): number | null {
   return currentBillingCycle.value === 'yearly' ? price / 12 : price
 }
 
-const currentAccountTier = computed(() =>
-  subscription.value?.tier && !isEnded.value ? subscription.value.tier : null
-)
+const creditsForTier = (tier: PricingTierConfig): number =>
+  getApiPlanForTier(tier.key, currentBillingCycle.value)?.credits ??
+  amountForCurrentCycle(tier.pricing.credits)
 
-const currentTierKey = computed<TierKey | null>(() =>
-  currentAccountTier.value ? toTierKey(currentAccountTier.value) : null
-)
-
-const isYearlySubscription = computed(
-  () => subscription.value?.duration === 'ANNUAL'
-)
-
-const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
-  if (isEnded.value) return false
-  if (currentPlanSlug.value) {
-    const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
-    return plan?.slug === currentPlanSlug.value
-  }
-  if (!currentTierKey.value) return false
-  const selectedIsYearly = currentBillingCycle.value === 'yearly'
-  return (
-    currentTierKey.value === tierKey &&
-    isYearlySubscription.value === selectedIsYearly
+const videoEstimateForTier = (tier: PricingTierConfig): number =>
+  Math.round(
+    creditsForTier(tier) * (tier.pricing.videoEstimate / tier.pricing.credits)
   )
+
+const getPlanAction = (tierKey: CheckoutTierKey): PlanAction =>
+  getApiPlanForTier(tierKey, currentBillingCycle.value)?.action ?? 'none'
+
+const isSamePlan = (tierKey: CheckoutTierKey): boolean =>
+  getApiPlanForTier(tierKey, currentBillingCycle.value)?.denied_reason ===
+  'same_plan'
+
+const PLAN_ACTION_LABEL_KEYS: Readonly<
+  Record<Exclude<PlanAction, 'none'>, string>
+> = {
+  subscribe: 'subscription.subscribeTo',
+  change: 'subscription.changeTo',
+  downgrade: 'subscription.changeTo',
+  reactivate: 'subscription.resubscribeTo'
+}
+
+const DENIED_REASON_COPY_KEYS: Readonly<Record<string, string>> = {
+  not_a_member: 'subscription.planUnavailable.notAMember',
+  not_workspace_owner: 'subscription.planUnavailable.notWorkspaceOwner',
+  not_original_owner: 'subscription.planUnavailable.notOriginalOwner',
+  sales_managed: 'subscription.planUnavailable.salesManaged',
+  billing_operation_parked:
+    'subscription.planUnavailable.billingOperationParked',
+  billing_operation_in_progress:
+    'subscription.planUnavailable.billingOperationInProgress',
+  annual_to_monthly_unsupported:
+    'subscription.planUnavailable.annualToMonthlyUnsupported',
+  incompatible_transition:
+    'subscription.planUnavailable.incompatibleTransition',
+  exceeds_max_seats: 'subscription.planUnavailable.exceedsMaxSeats',
+  billing_state_unknown: 'subscription.planUnavailable.billingStateUnknown'
 }
 
 const getButtonLabel = (tier: PricingTierConfig): string => {
@@ -830,46 +856,46 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
     currentBillingCycle.value === 'yearly'
       ? t('subscription.tierNameYearly', { name: tier.name })
       : tier.name
+  if (isSamePlan(tier.key)) return t('subscription.currentPlan')
+  const action = getPlanAction(tier.key)
+  if (action === 'none') return planName
+  return t(PLAN_ACTION_LABEL_KEYS[action], { plan: planName })
+}
 
-  if (isCurrentPlan(tier.key)) {
-    return isCancelled.value
-      ? t('subscription.resubscribeTo', { plan: planName })
-      : t('subscription.currentPlan')
+const getDeniedReasonCopy = (tierKey: CheckoutTierKey): string | undefined => {
+  const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
+  if (plan?.action !== 'none' || plan.denied_reason === 'same_plan') {
+    return undefined
   }
-
-  return hasActivePaidPlan(currentAccountTier.value)
-    ? t('subscription.changeTo', { plan: planName })
-    : t('subscription.subscribeTo', { plan: planName })
+  if (plan.denied_reason === 'subscription_change_in_progress') {
+    const date = formatSubscriptionDate(
+      plan.denied_reason_params?.effective_at,
+      locale.value
+    )
+    return date
+      ? t('subscription.planUnavailable.subscriptionChangeScheduled', { date })
+      : t('subscription.planUnavailable.subscriptionChangeInProgress')
+  }
+  const key = plan.denied_reason && DENIED_REASON_COPY_KEYS[plan.denied_reason]
+  return t(key || 'subscription.planUnavailable.generic')
 }
 
 const getButtonSeverity = (
   tier: PricingTierConfig
 ): 'primary' | 'secondary' => {
-  if (isCurrentPlan(tier.key)) {
-    return isCancelled.value ? 'primary' : 'secondary'
-  }
+  if (getPlanAction(tier.key) === 'reactivate') return 'primary'
+  if (isSamePlan(tier.key)) return 'secondary'
   if (tier.key === 'creator') return 'primary'
   return 'secondary'
 }
 
-const canUsePersonalPlanAction = (tierKey: CheckoutTierKey): boolean => {
-  if (!canSelectPersonalPlan.value) return false
-  if (isTeamPlan.value) return canDowngradeToPersonal.value
-  if (isCurrentPlan(tierKey)) {
-    return isCancelled.value && canReactivatePlan.value
-  }
-  return hasActivePaidPlan(currentAccountTier.value)
-    ? canChangeSeats.value
-    : canSubscribeSelfServe.value
-}
-
 const isButtonDisabled = (tier: PricingTierConfig): boolean =>
-  isLoading || !canUsePersonalPlanAction(tier.key)
+  isLoading || getPlanAction(tier.key) === 'none'
 
 const getButtonTextClass = (tier: PricingTierConfig): string =>
   tier.key === 'creator'
-    ? 'font-inter text-sm font-bold leading-normal text-base-background'
-    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+    ? 'font-inter text-sm font-bold leading-normal text-background'
+    : 'font-inter text-sm font-bold leading-normal text-foreground'
 
 const getPrice = (tier: PricingTierConfig): number =>
   getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
@@ -885,11 +911,11 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
 }
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
-  if (isLoading || !canUsePersonalPlanAction(tierKey)) return
-  if (isCurrentPlan(tierKey)) {
-    if (isCancelled.value) {
-      emit('resubscribe')
-    }
+  if (isLoading) return
+  const action = getPlanAction(tierKey)
+  if (action === 'none') return
+  if (action === 'reactivate') {
+    emit('resubscribe')
     return
   }
   emit('subscribe', { tierKey, billingCycle: currentBillingCycle.value })

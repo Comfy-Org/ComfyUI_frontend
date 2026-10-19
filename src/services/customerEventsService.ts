@@ -1,8 +1,8 @@
-import type { AxiosError } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
 import { useApiRequest } from '@/composables/useApiRequest'
+import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, t, tPlain } from '@/i18n'
@@ -51,28 +51,27 @@ export const useCustomerEventsService = () => {
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string => {
-    if (!axios.isAxiosError(err)) {
+    if (!axios.isAxiosError<Partial<ErrorResponse>>(err)) {
       return tPlain('serviceErrors.failedWithMessage', {
         context,
         message: err instanceof Error ? err.message : String(err)
       })
     }
 
-    const axiosError = err as AxiosError<ErrorResponse>
-    if (!axiosError.response) {
+    if (!err.response) {
       return tPlain('serviceErrors.failedWithMessage', {
         context,
-        message: axiosError.message
+        message: err.message
       })
     }
 
-    const status = axiosError.response.status
+    const status = err.response.status
     if (routeSpecificErrors?.[status]) {
       return routeSpecificErrors[status]
     }
 
     return (
-      axiosError.response.data?.message ??
+      err.response.data.message ??
       tPlain('serviceErrors.failedWithStatus', { context, status })
     )
   }
@@ -95,6 +94,8 @@ export const useCustomerEventsService = () => {
         return t('credits.eventTypes.gpuUsage')
       case 'api_node_usage':
         return t('credits.eventTypes.apiNodeUsage')
+      case 'agent_usage':
+        return t('credits.eventTypes.agentUsage')
       default:
         return eventType
     }
@@ -141,6 +142,7 @@ export const useCustomerEventsService = () => {
       case 'api_usage_completed':
       case 'gpu_usage':
       case 'api_node_usage':
+      case 'agent_usage':
         return 'warning'
       default:
         return 'info'
@@ -150,18 +152,6 @@ export const useCustomerEventsService = () => {
   function hasAdditionalInfo(event: AuditLog) {
     const { amount, api_name, model, ...otherParams } = event.params || {}
     return Object.keys(otherParams).length > 0
-  }
-
-  function getTooltipContent(event: AuditLog) {
-    const { ...params } = event.params || {}
-
-    return Object.entries(params)
-      .map(([key, value]) => {
-        const formattedKey = formatJsonKey(key)
-        const formattedValue = formatJsonValue(value)
-        return `<strong>${formattedKey}:</strong> ${formattedValue}`
-      })
-      .join('<br>')
   }
 
   function formatAmount(amountMicros?: number) {
@@ -182,10 +172,25 @@ export const useCustomerEventsService = () => {
     const authStore = useAuthStore()
     const requestOwner = authStore.currentUserIdentity()
     const requestId = ++latestRequestId
+    if (!authStore.hasPersonalWorkspace) {
+      isLoading.value = false
+      error.value = t('toastMessages.noPersonalWorkspace')
+      return null
+    }
     isLoading.value = true
     error.value = null
 
-    const authHeaders = await authStore.getUserAuthHeader()
+    let authHeaders
+    try {
+      authHeaders =
+        (await webSessionResourceHeader()) ??
+        (await authStore.getUserAuthHeader())
+    } catch (err) {
+      if (requestId !== latestRequestId) return null
+      isLoading.value = false
+      error.value = mapError(err, errorContext)
+      return null
+    }
     if (requestId !== latestRequestId) {
       return null
     }
@@ -205,7 +210,13 @@ export const useCustomerEventsService = () => {
           params: { page, limit },
           headers: authHeaders
         }),
-      { errorContext, routeSpecificErrors }
+      {
+        errorContext,
+        routeSpecificErrors,
+        isCurrent: () =>
+          requestId === latestRequestId &&
+          authStore.currentUserIdentity() === requestOwner
+      }
     )
 
     if (requestId !== latestRequestId) {
@@ -213,7 +224,6 @@ export const useCustomerEventsService = () => {
     }
     isLoading.value = false
     if (authStore.currentUserIdentity() !== requestOwner) {
-      error.value = null
       return null
     }
     return result
@@ -232,7 +242,6 @@ export const useCustomerEventsService = () => {
     hasAdditionalInfo,
     formatDate,
     formatJsonKey,
-    formatJsonValue,
-    getTooltipContent
+    formatJsonValue
   }
 }

@@ -9,9 +9,15 @@ import {
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface
+} from '@/types/widgetVisibility'
 
 import { searchWidgets } from '../shared'
 import type { NodeWidgetsList } from '../shared'
@@ -25,7 +31,9 @@ const { node } = defineProps<{
 const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const rightSidePanelStore = useRightSidePanelStore()
-const { focusedSection, searchQuery } = storeToRefs(rightSidePanelStore)
+const widgetValueStore = useWidgetValueStore()
+const { focusedSection } = storeToRefs(rightSidePanelStore)
+const searchQuery = ref('')
 
 const advancedInputsCollapsed = ref(true)
 const firstSectionCollapsed = ref(false)
@@ -64,8 +72,20 @@ watch(
   { immediate: true }
 )
 
+function isPromotedWidgetVisibleInPanel(widget: IBaseWidget): boolean {
+  const visibility = widget.widgetId
+    ? widgetValueStore.getWidgetVisibility(widget.widgetId)
+    : undefined
+  return (
+    !visibility ||
+    isWidgetVisibleOnSurface(visibility, 'panel', { showAdvanced: true })
+  )
+}
+
 const widgetsList = computed((): NodeWidgetsList => {
-  return promotedInputWidgets(node).map((widget) => ({ node, widget }))
+  return promotedInputWidgets(node)
+    .filter(isPromotedWidgetVisibleInPanel)
+    .map((widget) => ({ node, widget }))
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {
@@ -74,7 +94,13 @@ const advancedInputsWidgets = computed((): NodeWidgetsList => {
   const allInteriorWidgets = interiorNodes.flatMap((interiorNode) => {
     const { widgets = [] } = interiorNode
     return widgets
-      .filter((w) => !w.computedDisabled && !w.options.canvasOnly)
+      .filter((widget) =>
+        isWidgetVisibleOnSurface(
+          widget.visibility ?? deriveWidgetVisibility(widget),
+          'panel',
+          { showAdvanced: true }
+        )
+      )
       .map((widget) => ({ node: interiorNode, widget }))
   })
 
@@ -138,7 +164,7 @@ const label = computed(() => {
         ? ''
         : t('rightSidePanel.inputsNoneTooltip')
     "
-    class="border-b border-interface-stroke"
+    class="border-b"
     @update:collapse="(v) => (firstSectionCollapsed = v)"
     @reorder="handleReorder"
   >
@@ -156,6 +182,6 @@ const label = computed(() => {
     :host="node"
     :widgets="advancedInputsWidgets"
     show-node-name
-    class="border-b border-interface-stroke"
+    class="border-b"
   />
 </template>

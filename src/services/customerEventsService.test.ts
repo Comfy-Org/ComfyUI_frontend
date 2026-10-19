@@ -1,11 +1,20 @@
+import { SessionTokenError } from '@comfyorg/account-core/sessionTokenMint'
 import axios from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type * as I18n from '@/i18n'
+vi.mock(import('firebase/auth'))
+
+import { d } from '@/i18n'
 import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
+import {
+  WebSessionTokenError,
+  webSessionResourceHeader
+} from '@/platform/auth/session/webSessionFetch'
+import { useAuthStore } from '@/stores/authStore'
+import type { AuthHeader } from '@/types/authTypes'
 
 // Hoist the mocks to avoid hoisting issues
 const mockAxiosInstance = vi.hoisted(() => ({
@@ -13,45 +22,28 @@ const mockAxiosInstance = vi.hoisted(() => ({
   interceptors: { response: { use: vi.fn() } }
 }))
 
-const mockAuthStore = vi.hoisted(() => ({
-  getUserAuthHeader: vi.fn(),
-  currentUserIdentity: vi.fn()
-}))
-
-const mockI18n = vi.hoisted(() => ({
-  d: vi.fn()
-}))
-
 // Mock dependencies
-vi.mock('axios', () => ({
+vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
     isAxiosError: vi.fn()
   }
 }))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => mockAuthStore)
-}))
+vi.mock(import('@/i18n'), { spy: true })
 
-// Only the date formatter is stubbed; `t` stays real so the assertions below
-// exercise the messages users actually see.
-vi.mock('@/i18n', async (importOriginal) => ({
-  ...(await importOriginal<typeof I18n>()),
-  d: mockI18n.d
-}))
-
-vi.mock('@/utils/typeGuardUtil', () => ({
+vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isAbortError: vi.fn()
 }))
+
+vi.mock(import('@/platform/auth/session/webSessionFetch'), { spy: true })
 
 describe('useCustomerEventsService', () => {
   let service: ReturnType<typeof useCustomerEventsService>
 
   const mockAuthHeaders = {
-    Authorization: 'Bearer mock-token',
-    'Content-Type': 'application/json'
-  }
+    Authorization: 'Bearer mock-token'
+  } satisfies AuthHeader
 
   const mockEventsResponse = {
     events: [
@@ -84,20 +76,11 @@ describe('useCustomerEventsService', () => {
   }
 
   beforeEach(() => {
-    mockAuthStore.getUserAuthHeader.mockResolvedValue(mockAuthHeaders)
-    mockAuthStore.currentUserIdentity.mockReturnValue('api-key-a')
-    mockI18n.d.mockImplementation((date, options) => {
-      // Mock i18n date formatting
-      if (options?.month === 'short') {
-        return date.toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
-      }
-      return date.toLocaleString()
-    })
+    vi.mocked(webSessionResourceHeader).mockResolvedValue(undefined)
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(
+      mockAuthHeaders
+    )
+    vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-a')
 
     service = useCustomerEventsService()
   })
@@ -106,10 +89,6 @@ describe('useCustomerEventsService', () => {
     it('should initialize with default state', () => {
       expect(service.isLoading.value).toBe(false)
       expect(service.error.value).toBeNull()
-    })
-
-    it('should initialize i18n date formatter', () => {
-      expect(mockI18n.d).toBeDefined()
     })
   })
 
@@ -122,7 +101,7 @@ describe('useCustomerEventsService', () => {
         limit: 10
       })
 
-      expect(mockAuthStore.getUserAuthHeader).toHaveBeenCalled()
+      expect(useAuthStore().getUserAuthHeader).toHaveBeenCalled()
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/customers/events', {
         params: { page: 1, limit: 10 },
         headers: mockAuthHeaders
@@ -144,8 +123,63 @@ describe('useCustomerEventsService', () => {
       })
     })
 
+    it.for([
+      {
+        name: 'no web session sends the user header',
+        session: undefined,
+        headers: mockAuthHeaders,
+        userHeaderCalls: 1
+      },
+      {
+        name: 'a web session sends its own header instead',
+        session: { Authorization: 'Bearer session-jwt' },
+        headers: { Authorization: 'Bearer session-jwt' },
+        userHeaderCalls: 0
+      }
+    ])(
+      'authorizes the request: $name',
+      async ({ session, headers, userHeaderCalls }) => {
+        vi.mocked(webSessionResourceHeader).mockResolvedValue(session)
+        mockAxiosInstance.get.mockResolvedValue({ data: mockEventsResponse })
+
+        await service.getMyEvents()
+
+        expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+          '/customers/events',
+          { params: { page: 1, limit: 10 }, headers }
+        )
+        expect(useAuthStore().getUserAuthHeader).toHaveBeenCalledTimes(
+          userHeaderCalls
+        )
+      }
+    )
+
+    it('keeps the mint error message and hides its code', async () => {
+      vi.mocked(webSessionResourceHeader).mockRejectedValue(
+        new WebSessionTokenError(
+          new SessionTokenError({
+            status: 'error',
+            code: 'SESSION_REVOKED',
+            retryable: false
+          }),
+          'Your session ended. Sign in again to continue.'
+        )
+      )
+      vi.mocked(axios.isAxiosError).mockReturnValue(false)
+
+      const result = await service.getMyEvents()
+
+      expect(result).toBeNull()
+      expect(service.error.value).toContain(
+        'Your session ended. Sign in again to continue.'
+      )
+      expect(service.error.value).not.toContain('SESSION_REVOKED')
+      expect(service.isLoading.value).toBe(false)
+      expect(mockAxiosInstance.get).not.toHaveBeenCalled()
+    })
+
     it('should return null when auth headers are missing', async () => {
-      mockAuthStore.getUserAuthHeader.mockResolvedValue(null)
+      vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
 
       const result = await service.getMyEvents()
 
@@ -167,7 +201,7 @@ describe('useCustomerEventsService', () => {
 
       const request = service.getMyEvents()
       await eventsRequestStarted
-      mockAuthStore.currentUserIdentity.mockReturnValue('api-key-b')
+      vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-b')
       resolveEvents({ data: mockEventsResponse })
 
       await expect(request).resolves.toBeNull()
@@ -187,7 +221,7 @@ describe('useCustomerEventsService', () => {
 
       const request = service.getMyEvents()
       await eventsRequestStarted
-      mockAuthStore.currentUserIdentity.mockReturnValue('api-key-b')
+      vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-b')
       rejectEvents({
         response: { status: 400, data: { message: 'account A backend error' } }
       })
@@ -198,8 +232,12 @@ describe('useCustomerEventsService', () => {
     })
 
     it('ignores a stale auth preflight once a newer request begins', async () => {
-      let resolveStaleHeader!: (value: unknown) => void
-      mockAuthStore.getUserAuthHeader.mockImplementationOnce(
+      let resolveStaleHeader!: (
+        value: Awaited<
+          ReturnType<ReturnType<typeof useAuthStore>['getUserAuthHeader']>
+        >
+      ) => void
+      vi.mocked(useAuthStore().getUserAuthHeader).mockImplementationOnce(
         () =>
           new Promise((resolve) => {
             resolveStaleHeader = resolve
@@ -207,7 +245,7 @@ describe('useCustomerEventsService', () => {
       )
       const staleRequest = service.getMyEvents()
 
-      mockAuthStore.currentUserIdentity.mockReturnValue('api-key-b')
+      vi.mocked(useAuthStore().currentUserIdentity).mockReturnValue('api-key-b')
       const activeRequestStarted = new Promise<void>((requestStarted) => {
         mockAxiosInstance.get.mockImplementation(() => {
           requestStarted()
@@ -224,6 +262,52 @@ describe('useCustomerEventsService', () => {
       expect(service.isLoading.value).toBe(true)
       void activeRequest
     })
+
+    it.for([
+      {
+        newer: 'success',
+        expectedError: null,
+        startNewer: () => {
+          mockAxiosInstance.get.mockResolvedValueOnce({
+            data: mockEventsResponse
+          })
+        }
+      },
+      {
+        newer: 'noPersonalWorkspace',
+        expectedError:
+          'This account has no personal billing. Manage billing from your team workspace.',
+        startNewer: () => {
+          Object.assign(useAuthStore(), { hasPersonalWorkspace: false })
+        }
+      }
+    ])(
+      'keeps an older failure from overwriting a newer $newer result',
+      async ({ expectedError, startNewer }) => {
+        let rejectOlder!: (reason: unknown) => void
+        const olderRequestStarted = new Promise<void>((requestStarted) => {
+          mockAxiosInstance.get.mockImplementationOnce(() => {
+            requestStarted()
+            return new Promise((_resolve, reject) => {
+              rejectOlder = reject
+            })
+          })
+        })
+        vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+        const olderRequest = service.getMyEvents()
+        await olderRequestStarted
+        startNewer()
+        await service.getMyEvents()
+
+        rejectOlder({
+          response: { status: 400, data: { message: 'older backend error' } }
+        })
+
+        await expect(olderRequest).resolves.toBeNull()
+        expect(service.error.value).toBe(expectedError)
+      }
+    )
 
     it('should handle 400 errors', async () => {
       const errorResponse = {
@@ -293,7 +377,8 @@ describe('useCustomerEventsService', () => {
       account_created: 'Account Created',
       api_usage_completed: 'API Usage',
       gpu_usage: 'GPU Usage',
-      api_node_usage: 'Partner Node Usage'
+      api_node_usage: 'Partner Node Usage',
+      agent_usage: 'Agent Usage'
     }
 
     it('maps known legacy and unified event types to their labels', () => {
@@ -323,6 +408,7 @@ describe('useCustomerEventsService', () => {
     it('returns warning for unified usage events', () => {
       expect(service.getEventSeverity('gpu_usage')).toBe('warning')
       expect(service.getEventSeverity('api_node_usage')).toBe('warning')
+      expect(service.getEventSeverity('agent_usage')).toBe('warning')
     })
 
     it('should return default severity for unknown event types', () => {
@@ -349,7 +435,7 @@ describe('useCustomerEventsService', () => {
 
       service.formatDate(dateString)
 
-      expect(mockI18n.d).toHaveBeenCalledWith(new Date(dateString), {
+      expect(d).toHaveBeenCalledWith(new Date(dateString), {
         month: 'short',
         day: 'numeric',
         hour: '2-digit',
@@ -407,50 +493,6 @@ describe('useCustomerEventsService', () => {
       }
 
       expect(service.hasAdditionalInfo(event)).toBe(false)
-    })
-  })
-
-  describe('getTooltipContent', () => {
-    it('should generate HTML tooltip content for all parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'api_usage_completed',
-        params: {
-          transaction_id: 'txn-123',
-          duration: 5000,
-          status: 'completed'
-        },
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      const result = service.getTooltipContent(event)
-
-      expect(result).toContain('<strong>Transaction Id:</strong> txn-123')
-      expect(result).toContain('<strong>Duration:</strong> 5,000')
-      expect(result).toContain('<strong>Status:</strong> completed')
-      expect(result).toContain('<br>')
-    })
-
-    it('should return empty string when no parameters', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: {},
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
-    })
-
-    it('should handle undefined params', () => {
-      const event = {
-        event_id: 'test',
-        event_type: 'account_created',
-        params: undefined,
-        createdAt: '2024-01-01T10:00:00Z'
-      }
-
-      expect(service.getTooltipContent(event)).toBe('')
     })
   })
 

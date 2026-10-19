@@ -17,6 +17,7 @@ import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -44,6 +45,7 @@ import TabErrors from './errors/TabErrors.vue'
 import { useHasBlockingError } from './errors/useHasBlockingError'
 
 const canvasStore = useCanvasStore()
+const workflowStore = useWorkflowStore()
 const executionErrorStore = useExecutionErrorStore()
 const missingModelStore = useMissingModelStore()
 const missingMediaStore = useMissingMediaStore()
@@ -108,6 +110,20 @@ const selectedSingleNode = computed(() => {
 const isSingleSubgraphNode = computed(() => {
   return selectedSingleNode.value instanceof SubgraphNode
 })
+
+const workflowKey = computed(() => workflowStore.activeWorkflow?.path ?? '')
+
+const selectedNodesKey = computed(() => {
+  const nodeIds = selectedNodes.value.map((n) => n.id).join(',')
+  const groupIds = selectedGroups.value.map((g) => g.id).join(',')
+  return `${workflowKey.value}|${nodeIds}|${groupIds}`
+})
+
+const singleSubgraphKey = computed(() =>
+  selectedSingleNode.value
+    ? `${workflowKey.value}:${selectedSingleNode.value.id}`
+    : ''
+)
 
 function closePanel() {
   useTelemetry()?.trackUiButtonClicked({
@@ -213,8 +229,8 @@ const tabs = computed<RightSidePanelTabList>(() => {
             className: cn(
               'ml-1',
               hasBlockingError.value
-                ? 'icon-[lucide--octagon-alert] bg-node-stroke-error'
-                : 'icon-[lucide--triangle-alert] bg-warning-foreground'
+                ? 'icon-[lucide--octagon-alert] bg-destructive'
+                : 'icon-[lucide--triangle-alert] bg-warning'
             ),
             label: () =>
               t(
@@ -334,7 +350,7 @@ function handleTitleCancel() {
 <template>
   <div
     data-testid="properties-panel"
-    class="flex size-full flex-col bg-comfy-menu-bg"
+    class="flex size-full flex-col bg-background"
   >
     <!-- Panel Header -->
     <section class="pt-1">
@@ -355,7 +371,7 @@ function handleTitleCancel() {
               variant="link"
               size="unset"
               :aria-label="t('rightSidePanel.editTitle')"
-              class="relative top-[2px] ml-2 shrink-0"
+              class="top-[2px] ml-2 shrink-0"
               @click="isEditing = true"
             >
               <i aria-hidden="true" class="icon-[lucide--pencil] size-4" />
@@ -373,7 +389,7 @@ function handleTitleCancel() {
             size="icon"
             data-testid="subgraph-editor-toggle"
             :aria-label="t('rightSidePanel.editSubgraph')"
-            :class="cn(isEditingSubgraph && 'bg-secondary-background-selected')"
+            :class="cn(isEditingSubgraph && 'bg-muted')"
             @click="
               rightSidePanelStore.openPanel(
                 isEditingSubgraph ? 'parameters' : 'subgraph'
@@ -419,21 +435,27 @@ function handleTitleCancel() {
     <div class="flex-1 scrollbar-thin overflow-y-auto">
       <TabErrors v-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
-        <TabGlobalParameters v-if="activeTab === 'parameters'" />
-        <TabNodes v-else-if="activeTab === 'nodes'" />
+        <TabGlobalParameters
+          v-if="activeTab === 'parameters'"
+          :key="workflowKey"
+        />
+        <TabNodes v-else-if="activeTab === 'nodes'" :key="workflowKey" />
         <TabGlobalSettings v-else-if="activeTab === 'settings'" />
       </template>
       <SubgraphEditor
         v-else-if="isSingleSubgraphNode && isEditingSubgraph"
+        :key="singleSubgraphKey"
         :node="selectedSingleNode"
       />
       <template v-else>
         <TabSubgraphInputs
           v-if="activeTab === 'parameters' && isSingleSubgraphNode"
+          :key="singleSubgraphKey"
           :node="selectedSingleNode as SubgraphNode"
         />
         <TabNormalInputs
           v-else-if="activeTab === 'parameters'"
+          :key="selectedNodesKey"
           :nodes="selectedNodes"
           :must-show-node-title="selectedGroups.length > 0"
         />

@@ -122,7 +122,7 @@ echo "Last stable release: $LAST_STABLE"
    - Public TypeScript interfaces
    - Extension APIs
    - Component props
-   - CLAUDE.md guidelines
+   - AGENTS.md guidelines
 2. Check for:
    - Removed public functions/classes
    - Changed function signatures

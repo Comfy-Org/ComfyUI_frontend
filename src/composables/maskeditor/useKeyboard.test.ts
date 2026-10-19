@@ -1,32 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { useKeyboard } from '@/composables/maskeditor/useKeyboard'
-
-type MockCanvasHistory = {
-  undo: ReturnType<typeof vi.fn>
-  redo: ReturnType<typeof vi.fn>
-}
-
-type MockStore = {
-  canvasHistory: MockCanvasHistory
-}
-
-const { mockStore, mockCanvasHistory } = vi.hoisted(() => {
-  const mockCanvasHistory: MockCanvasHistory = {
-    undo: vi.fn(),
-    redo: vi.fn()
-  }
-
-  const mockStore: MockStore = {
-    canvasHistory: mockCanvasHistory
-  }
-
-  return { mockStore, mockCanvasHistory }
-})
-
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: vi.fn(() => mockStore)
-}))
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 const dispatchKeyDown = (
   init: KeyboardEventInit & { key: string }
@@ -42,10 +18,32 @@ const dispatchKeyUp = (key: string): void => {
 
 describe('useKeyboard', () => {
   let keyboard: ReturnType<typeof useKeyboard>
+  let container: HTMLDivElement
+  let externalTarget: HTMLElement | undefined
+
+  const mountOutsideEditor = <T extends HTMLElement>(element: T): T => {
+    document.body.appendChild(element)
+    externalTarget = element
+    return element
+  }
 
   beforeEach(() => {
-    keyboard = useKeyboard()
+    vi.spyOn(useMaskEditorStore().canvasHistory, 'undo').mockImplementation(
+      () => {}
+    )
+    vi.spyOn(useMaskEditorStore().canvasHistory, 'redo').mockImplementation(
+      () => {}
+    )
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    keyboard = useKeyboard(ref(container))
     keyboard.addListeners()
+  })
+
+  afterEach(() => {
+    externalTarget?.remove()
+    externalTarget = undefined
+    container.remove()
   })
 
   afterEach(() => {
@@ -94,9 +92,16 @@ describe('useKeyboard', () => {
       expect(keyboard.isKeyDown('a')).toBe(false)
     })
 
-    it('should prevent default and blur the active element on space', () => {
+    it('should prevent default on space when nothing text-like is focused', () => {
+      const event = dispatchKeyDown({ key: ' ' })
+
+      expect(event.defaultPrevented).toBe(true)
+      expect(keyboard.isKeyDown(' ')).toBe(true)
+    })
+
+    it('should blur a text entry target that is focus-trapped inside the editor', () => {
       const input = document.createElement('input')
-      document.body.appendChild(input)
+      container.appendChild(input)
       input.focus()
       const blurSpy = vi.spyOn(input, 'blur')
 
@@ -104,7 +109,32 @@ describe('useKeyboard', () => {
 
       expect(event.defaultPrevented).toBe(true)
       expect(blurSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not prevent default or blur a text entry target outside the editor (PM-2081)', () => {
+      const input = mountOutsideEditor(document.createElement('input'))
+      input.focus()
+      const blurSpy = vi.spyOn(input, 'blur')
+
+      const event = dispatchKeyDown({ key: ' ' })
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(blurSpy).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(input)
       expect(keyboard.isKeyDown(' ')).toBe(true)
+    })
+
+    it('should not prevent default or blur a contenteditable target outside the editor (PM-2081)', () => {
+      const editable = mountOutsideEditor(document.createElement('div'))
+      editable.contentEditable = 'true'
+      editable.focus()
+      const blurSpy = vi.spyOn(editable, 'blur')
+
+      const event = dispatchKeyDown({ key: ' ' })
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(blurSpy).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(editable)
     })
 
     it('should not throw when activeElement is null', () => {
@@ -123,36 +153,36 @@ describe('useKeyboard', () => {
     it('should call undo on Ctrl+Z without shift', () => {
       dispatchKeyDown({ key: 'z', ctrlKey: true })
 
-      expect(mockCanvasHistory.undo).toHaveBeenCalledTimes(1)
-      expect(mockCanvasHistory.redo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).toHaveBeenCalledTimes(1)
+      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
     })
 
     it('should call undo on Meta+Z without shift', () => {
       dispatchKeyDown({ key: 'z', metaKey: true })
 
-      expect(mockCanvasHistory.undo).toHaveBeenCalledTimes(1)
+      expect(useMaskEditorStore().canvasHistory.undo).toHaveBeenCalledTimes(1)
     })
 
     it('should call redo on Ctrl+Shift+Z', () => {
       dispatchKeyDown({ key: 'Z', ctrlKey: true, shiftKey: true })
 
-      expect(mockCanvasHistory.redo).toHaveBeenCalledTimes(1)
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).toHaveBeenCalledTimes(1)
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
     })
 
     it('should call redo on Ctrl+Y', () => {
       dispatchKeyDown({ key: 'y', ctrlKey: true })
 
-      expect(mockCanvasHistory.redo).toHaveBeenCalledTimes(1)
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).toHaveBeenCalledTimes(1)
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
     })
 
     it('should not trigger undo or redo when alt is held', () => {
       dispatchKeyDown({ key: 'z', ctrlKey: true, altKey: true })
       dispatchKeyDown({ key: 'y', ctrlKey: true, altKey: true })
 
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
-      expect(mockCanvasHistory.redo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
     })
 
     it('should not trigger undo or redo without ctrl or meta', () => {
@@ -160,15 +190,15 @@ describe('useKeyboard', () => {
       dispatchKeyDown({ key: 'y' })
       dispatchKeyDown({ key: 'Z', shiftKey: true })
 
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
-      expect(mockCanvasHistory.redo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
     })
 
     it('should ignore Ctrl+Shift+Y', () => {
       dispatchKeyDown({ key: 'Y', ctrlKey: true, shiftKey: true })
 
-      expect(mockCanvasHistory.redo).not.toHaveBeenCalled()
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
     })
   })
 
@@ -192,7 +222,7 @@ describe('useKeyboard', () => {
       dispatchKeyDown({ key: 'z', ctrlKey: true })
 
       expect(keyboard.isKeyDown('a')).toBe(false)
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
     })
 
     it('should stop clearing keys on window blur after removal', () => {

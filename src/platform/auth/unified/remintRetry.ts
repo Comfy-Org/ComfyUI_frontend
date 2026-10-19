@@ -5,8 +5,15 @@ import type {
 } from 'axios'
 import axios, { AxiosHeaders } from 'axios'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { RetrySignalLifecycle } from '@/platform/auth/apiAuthProvider'
+import {
+  presentForRefusal,
+  presentForResponse
+} from '@/platform/auth/sso/ssoRequired'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type {
   UnifiedAuthRetryFailureReason,
   UnifiedAuthRetryMetadata
@@ -15,6 +22,15 @@ import type {
 let cachedUnifiedFlags:
   | { readonly unifiedCloudAuthEnabled: boolean }
   | undefined
+
+type UnifiedRemint = (expectedToken: string) => Promise<string | null>
+
+let remintUnified: UnifiedRemint | undefined
+
+/** Installed by `workspaceAuthStore`; importing it here cycles through `authStore`. */
+export function provideUnifiedRemint(remint: UnifiedRemint): void {
+  remintUnified = remint
+}
 
 /**
  * Single gate for the reactive guard: a cloud build with `unified_cloud_auth`
@@ -25,10 +41,7 @@ let cachedUnifiedFlags:
  */
 export async function shouldRemintCloudRequest(): Promise<boolean> {
   if (!isCloud) return false
-  if (!cachedUnifiedFlags) {
-    const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
-    cachedUnifiedFlags = useFeatureFlags().flags
-  }
+  if (!cachedUnifiedFlags) cachedUnifiedFlags = useFeatureFlags().flags
   return cachedUnifiedFlags.unifiedCloudAuthEnabled
 }
 
@@ -38,16 +51,25 @@ export async function shouldRemintCloudRequest(): Promise<boolean> {
  * active unified session, or the re-mint failed. A permanent auth failure is
  * surfaced + torn down inside `remintUnifiedOnce` (error toast + session clear,
  * matching the proactive refresh path); the `catch` here only guards an
- * unexpected throw (e.g. a chunk-load failure or no active Pinia), which it
- * logs. Either way `null` makes the caller surface its original 401 unchanged.
+ * unexpected throw (e.g. no active Pinia), which it
+ * reports as `auth_unified_remint_unexpected`. Either way `null` makes the
+ * caller surface its original 401 unchanged.
  */
 async function tryRemintToken(expectedToken: string): Promise<string | null> {
   try {
-    const { useWorkspaceAuthStore } =
-      await import('@/platform/workspace/stores/workspaceAuthStore')
-    return await useWorkspaceAuthStore().remintUnifiedOnce(expectedToken)
+    return (await remintUnified?.(expectedToken)) ?? null
   } catch (err) {
-    console.warn('Unified re-mint primitive threw unexpectedly:', err)
+    reportError(err, {
+      surface: 'auth',
+      errorType: 'auth_unified_remint_unexpected',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'auth',
+        operation: 'auth',
+        outcome: 'failed'
+      },
+      level: 'error'
+    })
     return null
   }
 }
@@ -93,6 +115,18 @@ function fetchRequestHeaders(
   return input instanceof Request ? new Headers(input.headers) : new Headers()
 }
 
+/** Best-effort: the SSO screen never replaces the 403 the caller is owed. */
+async function presentSsoRequired(present: () => unknown): Promise<void> {
+  try {
+    await present()
+  } catch (error) {
+    reportError(error, {
+      surface: 'auth',
+      errorType: 'failure_presenting_sso_required'
+    })
+  }
+}
+
 /**
  * Issues a `fetch` and, on a `401`, re-mints the unified Cloud JWT once and
  * retries the request exactly once with the fresh token. A persistent `401`
@@ -104,17 +138,24 @@ function fetchRequestHeaders(
  * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}):
  * flag-OFF traffic returns after a single `fetch` and never enters the re-mint
  * path, so the legacy cascade stays untouched for instant rollback.
+ *
+ * `retrySignalLifecycle`, when supplied, ends the initial fetch's timeout
+ * before re-minting and creates a fresh signal immediately before the retry.
  */
 export async function fetchWithUnifiedRemint(
   input: RequestInfo | URL,
   init: RequestInit,
-  shouldRetryOn401: boolean
+  shouldRetryOn401: boolean,
+  retrySignalLifecycle?: RetrySignalLifecycle
 ): Promise<Response> {
   const retryInput =
     shouldRetryOn401 && input instanceof Request && input.body !== null
       ? input.clone()
       : input
   const response = await fetch(input, init)
+  if (response.status === 403 && isCloud) {
+    await presentSsoRequired(() => presentForResponse(response))
+  }
   if (!shouldRetryOn401 || response.status !== 401) {
     return response
   }
@@ -134,6 +175,7 @@ export async function fetchWithUnifiedRemint(
     return response
   }
 
+  retrySignalLifecycle?.clearInitialTimeout()
   const token = await tryRemintToken(expectedToken)
   if (!token) {
     trackRetry('fetch', 'failed', response.status, 'remint_failed')
@@ -142,8 +184,11 @@ export async function fetchWithUnifiedRemint(
 
   const headers = requestHeaders
   headers.set('Authorization', `Bearer ${token}`)
+  const retryInit = retrySignalLifecycle
+    ? { ...init, headers, signal: retrySignalLifecycle.createSignal() }
+    : { ...init, headers }
   try {
-    const retryResponse = await fetch(retryInput, { ...init, headers })
+    const retryResponse = await fetch(retryInput, retryInit)
     trackRetryResponse('fetch', retryResponse.status)
     return retryResponse
   } catch (error) {
@@ -163,6 +208,15 @@ function isRetriableUnauthorized(
   return error.response?.status === 401
 }
 
+async function presentSsoRefusal(error: unknown): Promise<void> {
+  if (!isCloud || !axios.isAxiosError(error)) return
+  const response = error.response
+  if (response?.status !== 403) return
+  await presentSsoRequired(() =>
+    presentForRefusal(response.status, response.data)
+  )
+}
+
 /**
  * Installs a response interceptor that gives a cloud axios client the same
  * reactive 401 guard as {@link fetchWithUnifiedRemint}: a single re-mint + a
@@ -174,6 +228,7 @@ export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
   client.interceptors.response.use(
     (response) => response,
     async (error: unknown) => {
+      await presentSsoRefusal(error)
       if (
         !isRetriableUnauthorized(error) ||
         !(await shouldRemintCloudRequest())

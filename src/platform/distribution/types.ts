@@ -18,6 +18,5 @@ export const isCloud = DISTRIBUTION === 'cloud'
 /**
  * Whether this is a nightly build (from main branch).
  * Nightly builds may show experimental features and surveys.
- * @public
  */
 export const isNightly = __IS_NIGHTLY__

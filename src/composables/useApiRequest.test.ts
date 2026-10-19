@@ -1,26 +1,22 @@
-import type { AxiosInstance, AxiosResponse } from 'axios'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AxiosResponse } from 'axios'
+import axios, { AxiosHeaders } from 'axios'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useApiRequest } from '@/composables/useApiRequest'
 
-const mockIsAbortError = vi.hoisted(() => vi.fn())
-
-vi.mock('@/utils/typeGuardUtil', () => ({
-  isAbortError: mockIsAbortError
-}))
-
-const client = { id: 'test-client' } as unknown as AxiosInstance
+const client = axios.create()
 
 function response<T>(data: T): AxiosResponse<T> {
-  return { data } as AxiosResponse<T>
+  return {
+    data,
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config: { headers: new AxiosHeaders() }
+  }
 }
 
 describe('useApiRequest', () => {
-  beforeEach(() => {
-    mockIsAbortError.mockReset()
-    mockIsAbortError.mockReturnValue(false)
-  })
-
   it('returns response data and toggles loading state', async () => {
     const { isLoading, error, executeRequest } = useApiRequest({
       client,
@@ -89,13 +85,12 @@ describe('useApiRequest', () => {
   })
 
   it('swallows cancellations without mapping an error', async () => {
-    mockIsAbortError.mockReturnValue(true)
     const mapError = vi.fn(() => 'should not run')
     const { error, executeRequest } = useApiRequest({ client, mapError })
 
     const result = await executeRequest(
       () => {
-        throw new Error('aborted')
+        throw new DOMException('aborted', 'AbortError')
       },
       { errorContext: 'ctx' }
     )
@@ -105,56 +100,18 @@ describe('useApiRequest', () => {
     expect(error.value).toBeNull()
   })
 
-  it('runs onSuccess only after a successful response', async () => {
-    const onSuccess = vi.fn()
-    const { executeRequest } = useApiRequest({ client, mapError: vi.fn() })
-
-    await executeRequest(async () => response('ok'), {
-      errorContext: 'ctx',
-      onSuccess
-    })
-    expect(onSuccess).toHaveBeenCalledTimes(1)
-
-    onSuccess.mockClear()
-    await executeRequest(
-      () => {
-        throw new Error('boom')
-      },
-      { errorContext: 'ctx', onSuccess }
-    )
-    expect(onSuccess).not.toHaveBeenCalled()
-  })
-
-  it('does not run onSuccess when the request is aborted', async () => {
-    mockIsAbortError.mockReturnValue(true)
-    const onSuccess = vi.fn()
-    const { executeRequest } = useApiRequest({ client, mapError: vi.fn() })
+  it('does not publish an error once the request is no longer current', async () => {
+    const mapError = vi.fn(() => 'stale message')
+    const { error, executeRequest } = useApiRequest({ client, mapError })
 
     const result = await executeRequest(
       () => {
-        throw new Error('aborted')
+        throw new Error('boom')
       },
-      { errorContext: 'ctx', onSuccess }
+      { errorContext: 'ctx', isCurrent: () => false }
     )
 
     expect(result).toBeNull()
-    expect(onSuccess).not.toHaveBeenCalled()
-  })
-
-  it('resolves to null and preserves error when onSuccess returns false', async () => {
-    const mapError = vi.fn()
-    const { executeRequest, error } = useApiRequest({ client, mapError })
-
-    const result = await executeRequest(async () => response('ok'), {
-      errorContext: 'ctx',
-      onSuccess: () => {
-        error.value = 'side effect failed'
-        return false
-      }
-    })
-
-    expect(result).toBeNull()
-    expect(error.value).toBe('side effect failed')
-    expect(mapError).not.toHaveBeenCalled()
+    expect(error.value).toBeNull()
   })
 })

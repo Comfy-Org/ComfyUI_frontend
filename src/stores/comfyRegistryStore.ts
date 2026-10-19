@@ -78,7 +78,7 @@ export const useComfyRegistryStore = defineStore('comfyRegistry', () => {
 
       const { nodes = [] } = uncachedPacks ?? {}
       nodes.forEach((pack) => {
-        if (pack?.id) {
+        if (pack.id) {
           getPacksByIdCache.set(pack.id, pack)
           resolvedPacks.push(pack)
         }

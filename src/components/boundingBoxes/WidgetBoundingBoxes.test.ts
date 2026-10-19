@@ -1,6 +1,7 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
+/* oxlint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -8,11 +9,22 @@ import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
 import boundingBoxes from '@/locales/en/main.json'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const { appState } = vi.hoisted(() => ({ appState: { node: null as unknown } }))
+const { appState } = vi.hoisted(() => {
+  const appState: { node: unknown } = { node: null }
+  return { appState }
+})
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById: () => appState.node } } }
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    rootGraph: { id: 'graph' },
+    canvas: {
+      graph: { id: 'graph', getNodeById: () => appState.node }
+    },
+    nodeOutputs: {},
+    nodePreviewImages: {}
+  }
 }))
 
 const i18n = createI18n({
@@ -65,25 +77,28 @@ function prepCanvas(canvas: HTMLCanvasElement) {
   })
   canvas.getContext = (() =>
     fakeCtx) as unknown as HTMLCanvasElement['getContext']
-  canvas.getBoundingClientRect = () =>
-    ({
-      left: 0,
-      top: 0,
-      right: 100,
-      bottom: 100,
-      width: 100,
-      height: 100,
-      x: 0,
-      y: 0,
-      toJSON: () => ({})
-    }) as DOMRect
+  canvas.getBoundingClientRect = () => ({
+    left: 0,
+    top: 0,
+    right: 100,
+    bottom: 100,
+    width: 100,
+    height: 100,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
   canvas.setPointerCapture = () => {}
   canvas.releasePointerCapture = () => {}
 }
 
 function renderWidget(modelValue: BoundingBox[]) {
   const result = render(WidgetBoundingBoxes, {
-    props: { nodeId: toNodeId('1'), modelValue },
+    props: {
+      nodeId: toNodeId('1'),
+      widget: fromPartial<SimplifiedWidget>({ name: 'editor_state' }),
+      modelValue
+    },
     global: { plugins: [i18n] }
   })
   const canvas = screen.getByTestId('bounding-boxes').querySelector('canvas')!

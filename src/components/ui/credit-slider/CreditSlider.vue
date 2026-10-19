@@ -11,10 +11,10 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Slider from '@/components/ui/slider/Slider.vue'
+import { getStopDiscountedMonthlyUsd } from '@comfyorg/account-ui/billing/catalog'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
-  getStopDiscountedMonthlyUsd
+  TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 
@@ -142,22 +142,26 @@ const { t } = useI18n()
   <div :class="cn('flex w-full flex-col gap-3', rootClass)">
     <!-- Price: discounted monthly + struck pre-discount + save badge -->
     <div class="flex flex-col gap-2">
-      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <span class="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
+      <div
+        class="flex flex-wrap items-center gap-x-2 gap-y-1 whitespace-nowrap"
+      >
+        <span
+          class="flex shrink-0 items-baseline gap-1.5 text-base text-muted-foreground"
+        >
           <span
-            class="text-[2rem]/none font-semibold text-base-foreground tabular-nums"
+            class="text-[2rem]/none font-semibold text-foreground tabular-nums"
             data-testid="credit-slider-price"
           >
             {{ formatUsd(displayMonthly) }}
           </span>
           <span
             v-if="hasDiscount"
-            class="text-base text-muted-foreground tabular-nums line-through"
+            class="tabular-nums line-through"
             data-testid="credit-slider-original-price"
           >
             {{ formatUsd(displayOriginal) }}
           </span>
-          <span class="text-base text-muted-foreground">
+          <span>
             {{ t('subscription.usdPerMonth') }}
           </span>
         </span>
@@ -167,7 +171,7 @@ const { t } = useI18n()
         <span
           v-if="hasDiscount"
           data-testid="credit-slider-save"
-          class="shrink-0 rounded-full border-2 border-primary-background px-2 py-1 text-sm font-bold whitespace-nowrap text-primary-background xl:ms-auto"
+          class="shrink-0 rounded-full border-2 border-primary px-2 py-1 text-sm font-bold text-primary xl:ms-auto"
         >
           {{
             t('subscription.creditSliderSave', {
@@ -198,8 +202,8 @@ const { t } = useI18n()
       :max="lastIndex"
       :step="1"
       :disabled="disabled"
-      range-class="bg-base-foreground"
-      thumb-class="bg-base-foreground"
+      range-class="bg-foreground"
+      thumb-class="bg-foreground"
     />
 
     <!-- Credit stop labels; the selected stop is emphasized -->
@@ -215,7 +219,7 @@ const { t } = useI18n()
           cn(
             'flex items-center gap-1 text-xs tabular-nums',
             i === selectedIndex
-              ? 'font-semibold text-base-foreground'
+              ? 'font-semibold text-foreground'
               : 'text-muted-foreground'
           )
         "
@@ -224,7 +228,7 @@ const { t } = useI18n()
           :class="
             cn(
               'icon-[lucide--coins] size-3 shrink-0',
-              i === selectedIndex ? 'bg-amber-400' : 'bg-muted-foreground'
+              i === selectedIndex ? 'bg-credit' : 'bg-muted-foreground'
             )
           "
           aria-hidden="true"

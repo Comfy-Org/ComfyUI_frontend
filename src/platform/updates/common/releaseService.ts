@@ -1,4 +1,3 @@
-import type { AxiosError } from 'axios'
 import axios from 'axios'
 import { watch } from 'vue'
 
@@ -35,7 +34,7 @@ export const useReleaseService = () => {
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string => {
-    if (!axios.isAxiosError(err))
+    if (!axios.isAxiosError<ErrorResponse>(err))
       return err instanceof Error
         ? tPlain('serviceErrors.contextWithMessage', {
             context,
@@ -43,10 +42,8 @@ export const useReleaseService = () => {
           })
         : tPlain('serviceErrors.unknownError', { context })
 
-    const axiosError = err as AxiosError<ErrorResponse>
-
-    if (axiosError.response) {
-      const { status, data } = axiosError.response
+    if (err.response) {
+      const { status, data } = err.response
 
       if (routeSpecificErrors && routeSpecificErrors[status])
         return routeSpecificErrors[status]
@@ -54,34 +51,34 @@ export const useReleaseService = () => {
       switch (status) {
         case 400:
           return tPlain('serviceErrors.badRequest', {
-            message: data?.message || t('serviceErrors.invalidInput')
+            message: data.message || t('serviceErrors.invalidInput')
           })
         case 401:
           return t('serviceErrors.unauthorized')
         case 403:
           return tPlain('serviceErrors.forbidden', {
-            message: data?.message || t('serviceErrors.accessDenied')
+            message: data.message || t('serviceErrors.accessDenied')
           })
         case 404:
           return tPlain('serviceErrors.notFound', {
-            message: data?.message || t('serviceErrors.resourceNotFound')
+            message: data.message || t('serviceErrors.resourceNotFound')
           })
         case 500:
           return tPlain('serviceErrors.serverError', {
-            message: data?.message || t('serviceErrors.internalServerError')
+            message: data.message || t('serviceErrors.internalServerError')
           })
         default:
           return tPlain('serviceErrors.contextWithMessage', {
             context,
-            message: data?.message || axiosError.message
+            message: data.message || err.message
           })
       }
     }
 
-    return axiosError.message
+    return err.message
       ? tPlain('serviceErrors.contextWithMessage', {
           context,
-          message: axiosError.message
+          message: err.message
         })
       : tPlain('serviceErrors.unknownError', { context })
   }

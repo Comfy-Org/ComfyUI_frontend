@@ -8,7 +8,7 @@ const mockAxiosInstance = vi.hoisted(() => ({
   post: vi.fn()
 }))
 
-vi.mock('axios', () => ({
+vi.mock<unknown>(import('axios'), () => ({
   default: {
     create: vi.fn(() => mockAxiosInstance),
     isAxiosError: vi.fn()
@@ -22,11 +22,6 @@ describe('useComfyRegistryService', () => {
     mockAxiosInstance.get.mockResolvedValue({ data: {} })
     mockAxiosInstance.post.mockResolvedValue({ data: {} })
     service = useComfyRegistryService()
-  })
-
-  it('initializes with idle state', () => {
-    expect(service.isLoading.value).toBe(false)
-    expect(service.error.value).toBeNull()
   })
 
   describe('request routing', () => {

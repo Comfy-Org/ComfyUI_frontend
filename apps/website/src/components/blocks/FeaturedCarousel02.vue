@@ -10,13 +10,13 @@ import { computed, ref, useTemplateRef } from 'vue'
 
 import type { HTMLAttributes } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { useCarouselAutoplay } from '../../composables/useCarouselAutoplay'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import { resolveRel } from '../../utils/cta'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import Badge from '../ui/badge/Badge.vue'
-import Button from '../ui/button/Button.vue'
+import type { Locale } from '@/i18n/translations'
+import { useCarouselAutoplay } from '@/composables/useCarouselAutoplay'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import { resolveRel } from '@/utils/cta'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 type FeaturedSlideMedia = {
   type: 'image' | 'video'
@@ -173,16 +173,16 @@ useCarouselAutoplay({
 
 <template>
   <section :class="cn('w-full px-6 lg:px-12', className)">
-    <div ref="rootEl" class="max-w-9xl mx-auto">
+    <div ref="rootEl" class="mx-auto max-w-9xl">
       <div
         ref="trackEl"
-        class="flex snap-x snap-mandatory scrollbar-none gap-4 overflow-x-auto overscroll-x-contain"
+        class="scrollbar-none flex snap-x snap-mandatory gap-4 overflow-x-auto overscroll-x-contain"
         @scroll.passive="syncActiveFromScroll"
       >
         <article
           v-for="(slide, index) in slides"
           :key="slide.id"
-          class="bg-transparency-white-t4 lg:rounded-5xl flex w-full shrink-0 snap-center flex-col gap-4 rounded-4xl p-2 lg:flex-row lg:gap-8"
+          class="flex w-full shrink-0 snap-center flex-col gap-4 rounded-4xl bg-transparency-white-t4 p-2 lg:flex-row lg:gap-8 lg:rounded-5xl"
           :aria-hidden="index !== activeIndex"
           :inert="index !== activeIndex"
         >
@@ -198,7 +198,7 @@ useCarouselAutoplay({
               :aria-label="slide.media.alt"
               autoplay
               mute-only
-              class="lg:rounded-4.5xl absolute inset-0 aspect-auto h-full rounded-3xl border-0"
+              class="absolute inset-0 aspect-auto h-full rounded-3xl border-0 lg:rounded-4.5xl"
             />
             <img
               v-else-if="
@@ -214,11 +214,11 @@ useCarouselAutoplay({
               :alt="slide.media.alt"
               :loading="index === 0 ? 'eager' : 'lazy'"
               decoding="async"
-              class="lg:rounded-4.5xl absolute inset-0 size-full rounded-3xl object-cover object-center"
+              class="absolute inset-0 size-full rounded-3xl object-cover object-center lg:rounded-4.5xl"
             />
             <div
               v-else
-              class="lg:rounded-4.5xl absolute inset-0 rounded-3xl bg-black"
+              class="absolute inset-0 rounded-3xl bg-black lg:rounded-4.5xl"
             />
           </div>
 
@@ -227,7 +227,7 @@ useCarouselAutoplay({
           >
             <p
               v-if="slide.eyebrow"
-              class="text-primary-comfy-yellow text-sm font-bold tracking-[0.7px] uppercase"
+              class="text-sm font-bold tracking-[0.7px] text-primary-comfy-yellow uppercase"
             >
               {{ slide.eyebrow }}
             </p>
@@ -292,24 +292,34 @@ useCarouselAutoplay({
         </article>
       </div>
 
-      <div
-        v-if="slides.length > 1"
-        class="mt-6 flex items-center justify-center gap-6"
-      >
-        <button
-          v-for="(slide, index) in slides"
-          :key="slide.id"
-          type="button"
-          class="size-3 rounded-full transition-all duration-300"
-          :class="
-            index === activeIndex
-              ? 'scale-125 bg-primary-warm-white'
-              : 'bg-primary-warm-gray/60 hover:bg-primary-warm-gray'
-          "
-          :aria-label="slide.title"
-          :aria-current="index === activeIndex ? 'true' : undefined"
-          @click="goTo(index)"
-        />
+      <div v-if="slides.length > 1" class="mt-6 flex justify-center">
+        <div class="group/pagination relative flex h-8 w-72 items-center">
+          <div
+            aria-hidden="true"
+            class="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full bg-primary-warm-gray/60 transition-[height] duration-200 group-focus-within/pagination:h-2 group-hover/pagination:h-2"
+          />
+          <button
+            v-for="(slide, index) in slides"
+            :key="slide.id"
+            type="button"
+            class="group relative h-8 flex-1 focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-comfy-yellow"
+            :aria-label="slide.title"
+            :aria-current="index === activeIndex ? 'true' : undefined"
+            @click="goTo(index)"
+          >
+            <span
+              aria-hidden="true"
+              :class="
+                cn(
+                  'absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 rounded-full transition-[height,background-color] duration-200 group-focus-within/pagination:h-2 group-hover/pagination:h-2',
+                  index === activeIndex
+                    ? 'bg-primary-comfy-yellow'
+                    : 'group-hover:bg-primary-warm-white/30'
+                )
+              "
+            />
+          </button>
+        </div>
       </div>
     </div>
   </section>

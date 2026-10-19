@@ -55,6 +55,7 @@ const mockBillingStatus: BillingStatusResponse = {
   max_seats: 1,
   occupied_seats: 1,
   team_credit_stop: null,
+  scheduled_change: null,
   subscription_status: 'canceled',
   subscription_tier: 'PRO',
   subscription_duration: 'MONTHLY',
@@ -180,6 +181,46 @@ test.describe('Current user popover credits row', { tag: '@cloud' }, () => {
     const popoverRight = popoverBox!.x + popoverBox!.width
     const resubscribeRight = resubscribeBox!.x + resubscribeBox!.width
     expect(resubscribeRight).toBeLessThanOrEqual(popoverRight)
+  })
+
+  test('keeps the user card inside the single popover frame', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    await setupCloudApp(page, {
+      workspace: workspace('personal', 'owner'),
+      features: { subscription_required: false }
+    })
+    await page.goto(APP_URL)
+    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+      timeout: 45_000
+    })
+    await page.getByRole('button', { name: 'Close dialog' }).click()
+    await expect(page.getByTestId('dialog-overlay')).toBeHidden()
+
+    await page.getByRole('button', { name: 'Current user' }).click()
+
+    const popover = page.locator('.current-user-popover')
+    await expect(popover).toBeVisible()
+    const shell = page.getByRole('dialog').filter({ has: popover })
+
+    await expect(popover).toHaveCSS('border-top-width', '0px')
+    await expect(popover).toHaveCSS('box-shadow', 'none')
+    await expect
+      .poll(async () => {
+        const [card, frame] = await Promise.all([
+          popover.boundingBox(),
+          shell.boundingBox()
+        ])
+        if (!card || !frame) return false
+        return (
+          card.x >= frame.x &&
+          card.y >= frame.y &&
+          card.x + card.width <= frame.x + frame.width &&
+          card.y + card.height <= frame.y + frame.height
+        )
+      })
+      .toBe(true)
   })
 
   test(

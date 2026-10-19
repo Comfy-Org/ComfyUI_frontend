@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
+  clearAllWorkspaceStorage,
   clearAllWorkflowStorage,
   clearWorkflowRestoreState,
   deleteOrphanPayloads,
@@ -388,6 +389,29 @@ describe('storageIO', () => {
     })
   })
 
+  describe('clearAllWorkspaceStorage', () => {
+    it('clears scoped and legacy Agent persistence on account logout', () => {
+      localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
+      localStorage.setItem('Comfy.Agent.WorkflowTabBindings:ws-1', '{}')
+      localStorage.setItem('Comfy.Agent.ChatTitles:ws-1', '{}')
+      localStorage.setItem('Comfy.Agent.DeletedThreads:ws-1', '[]')
+      localStorage.setItem('Comfy.Agent.ThreadId', 'legacy-thread')
+      localStorage.setItem('Comfy.Agent.WorkflowTabBindings', '{}')
+      localStorage.setItem('Comfy.Agent.WorkflowTabBindings.v2', '{}')
+      localStorage.setItem('Comfy.Agent.ChatTitles', '{}')
+      localStorage.setItem('Comfy.Agent.DeletedThreads', '[]')
+      localStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        [...Array(localStorage.length)].map((_, index) =>
+          localStorage.key(index)
+        )
+      ).toEqual(['unrelated'])
+    })
+  })
+
   describe('workflow storage transitions', () => {
     it('blocks writes and clears restore state when a persistence flush fails', async () => {
       const isolatedStorageIO = await import('./storageIO')
@@ -397,9 +421,6 @@ describe('storageIO', () => {
         'Storage unavailable',
         'SecurityError'
       )
-      const consoleWarnSpy = vi
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
       const unregisterFailedFlush =
         isolatedStorageIO.registerWorkflowPersistenceFlush(() => {
           throw flushError
@@ -413,13 +434,12 @@ describe('storageIO', () => {
 
       expect(successfulFlush).toHaveBeenCalledOnce()
       expect(localStorage.getItem('workflow')).toBeNull()
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(console.warn).toHaveBeenCalledWith(
         'Failed to flush pending workflow persistence',
         flushError
       )
       unregisterFailedFlush()
       unregisterSuccessfulFlush()
-      consoleWarnSpy.mockRestore()
     })
 
     it('resumes writes when a workspace transition is cancelled', async () => {

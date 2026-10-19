@@ -1,7 +1,7 @@
 <template>
   <BaseWorkflowsSidebarTab
     :title="$t('sideToolbar.workflows')"
-    :search-subject="$t('g.workflow')"
+    :search-subject="$t('sideToolbar.workflows')"
     data-testid="workflows-sidebar"
   />
 </template>

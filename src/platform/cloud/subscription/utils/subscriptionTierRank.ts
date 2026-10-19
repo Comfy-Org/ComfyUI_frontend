@@ -1,6 +1,8 @@
+import type { BillingCycle } from '@comfyorg/account-core/billing'
+
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 
-export type BillingCycle = 'monthly' | 'yearly'
+export type { BillingCycle }
 
 type RankedTierKey = Exclude<TierKey, 'founder' | 'free'>
 type RankedPlanKey = `${BillingCycle}-${RankedTierKey}`
@@ -29,7 +31,7 @@ const toRankedPlanKey = (
   billingCycle: BillingCycle
 ): RankedPlanKey | null => {
   if (tierKey === 'founder' || tierKey === 'free') return null
-  return `${billingCycle}-${tierKey}` as RankedPlanKey
+  return `${billingCycle}-${tierKey}`
 }
 
 export const getPlanRank = ({

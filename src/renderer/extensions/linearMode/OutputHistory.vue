@@ -48,7 +48,7 @@ const queueCount = computed(
 
 const itemClass = cn(
   'shrink-0 cursor-pointer rounded-lg border-2 border-transparent p-1 outline-none',
-  'relative data-[state=checked]:border-interface-panel-job-progress-border'
+  'relative data-[state=checked]:border-foreground'
 )
 
 const hasActiveContent = computed(
@@ -56,7 +56,7 @@ const hasActiveContent = computed(
 )
 
 const visibleHistory = computed(() =>
-  outputs.media.value.filter((a) => allOutputs(a).length > 0)
+  toValue(outputs.items).filter((a) => allOutputs(a).length > 0)
 )
 
 const selectableItems = computed(() => {
@@ -71,7 +71,7 @@ const selectableItems = computed(() => {
       itemId: item.id
     })
   }
-  for (const asset of outputs.media.value) {
+  for (const asset of toValue(outputs.items)) {
     const outs = allOutputs(asset)
     for (let k = 0; k < outs.length; k++) {
       items.push({
@@ -137,9 +137,9 @@ function doEmit() {
     }
     return
   }
-  const asset = outputs.media.value.find((a) => a.id === sel.assetId)
+  const asset = toValue(outputs.items).find((a) => a.id === sel.assetId)
   const output = asset ? allOutputs(asset)[sel.key] : undefined
-  const isFirst = outputs.media.value[0]?.id === sel.assetId
+  const isFirst = toValue(outputs.items)[0]?.id === sel.assetId
   emit('updateSelection', {
     asset,
     output,
@@ -170,7 +170,7 @@ watch(
 
 // Keep history selection stable on media changes
 watch(
-  () => outputs.media.value,
+  () => toValue(outputs.items),
   (newAssets, oldAssets) => {
     if (
       newAssets.length === oldAssets.length ||
@@ -219,9 +219,15 @@ watch(
   }
 )
 
-useInfiniteScroll(outputsRef, outputs.loadMore, {
-  canLoadMore: () => outputs.hasMore.value
-})
+useInfiniteScroll(
+  outputsRef,
+  async () => {
+    await outputs.loadMore()
+  },
+  {
+    canLoadMore: () => toValue(outputs.hasMore)
+  }
+)
 
 function navigateToAdjacent(direction: 1 | -1) {
   const items = selectableItems.value
@@ -340,7 +346,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
 
       <div
         v-if="hasActiveContent && visibleHistory.length > 0"
-        class="mx-4 h-12 shrink-0 border-l border-border-default"
+        class="mx-4 h-12 shrink-0 border-l"
       />
     </div>
 
@@ -351,10 +357,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
     >
       <div class="flex h-15 w-fit items-start gap-0.5">
         <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
-          <div
-            v-if="aIdx > 0"
-            class="mx-4 h-12 shrink-0 border-l border-border-default"
-          />
+          <div v-if="aIdx > 0" class="mx-4 h-12 shrink-0 border-l" />
           <div
             v-for="(output, key) in toValue(allOutputs(asset))"
             :key

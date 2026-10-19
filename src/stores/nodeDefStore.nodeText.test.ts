@@ -1,11 +1,10 @@
-import { createTestingPinia } from '@pinia/testing'
 import { clone } from 'es-toolkit/compat'
-import { setActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { mergeCustomNodesI18n, setActiveLocale } from '@/i18n'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 function def(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
   return {
@@ -18,7 +17,7 @@ function def(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
     output_node: false,
     python_module: 'test.module',
     ...overrides
-  } as ComfyNodeDefV1
+  }
 }
 
 // `KSampler` is chosen because the shipped zh bundle translates both fields and
@@ -129,10 +128,6 @@ describe('ComfyNodeDefImpl node text', () => {
 })
 
 describe('useNodeDefStore locale reactivity', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   afterEach(async () => {
     await setActiveLocale('en')
   })

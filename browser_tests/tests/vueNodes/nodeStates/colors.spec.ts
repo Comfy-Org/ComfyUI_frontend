@@ -8,9 +8,7 @@ test.describe(
   'Vue Node Custom Colors',
   { tag: ['@screenshot', '@vue-nodes'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
-    })
+    test.use({ initialSettings: { 'Comfy.Canvas.SelectionToolbox': true } })
 
     test('displays color picker button and allows color selection', async ({
       comfyPage
@@ -44,6 +42,28 @@ test.describe(
       await expect(comfyPage.canvas).toHaveScreenshot(
         'vue-node-custom-colors-dark-all-colors.png'
       )
+    })
+
+    test('exposes a custom node color through the deprecated background alias', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+      const backgrounds = await node.body.evaluate((body) => {
+        const probe = (background: string) => {
+          const el = document.createElement('div')
+          el.style.background = background
+          body.append(el)
+          const color = getComputedStyle(el).backgroundColor
+          el.remove()
+          return color
+        }
+        return {
+          alias: probe('var(--component-node-background)'),
+          node: probe('var(--node)')
+        }
+      })
+      expect(backgrounds.alias).toBe(backgrounds.node)
     })
 
     test('should show brightened node colors on light theme', async ({

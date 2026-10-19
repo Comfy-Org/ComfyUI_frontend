@@ -109,7 +109,6 @@ test.describe(
         test.setTimeout(30_000)
         await comfyPage.page.setViewportSize(SMALL_VIEWPORT)
         await comfyPage.workflow.loadWorkflow('widgets/multiline_single_node')
-        await comfyPage.vueNodes.waitForNodes()
 
         // Vue Nodes widgets are plain DOM children of their node, so CSS
         // keeps them attached on resize -- assert relative offset instead.

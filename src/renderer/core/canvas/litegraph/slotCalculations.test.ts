@@ -1,23 +1,13 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
-const mockLiteGraph = vi.hoisted(() => ({
-  NODE_TITLE_HEIGHT: 30,
-  NODE_SLOT_HEIGHT: 20,
-  NODE_COLLAPSED_WIDTH: 80,
-  vueNodesMode: false
-}))
-
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
-  LiteGraph: mockLiteGraph
-}))
-
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -31,8 +21,15 @@ import {
 } from './slotCalculations'
 import type { SlotPositionContext } from './slotCalculations'
 
-const SLOT_HEIGHT = mockLiteGraph.NODE_SLOT_HEIGHT
-const TITLE_HEIGHT = mockLiteGraph.NODE_TITLE_HEIGHT
+const SLOT_HEIGHT = 20
+const TITLE_HEIGHT = 30
+
+beforeEach(() => {
+  const previousMode = LiteGraph.vueNodesMode
+  return () => {
+    LiteGraph.vueNodesMode = previousMode
+  }
+})
 
 function makeContext(
   overrides: Partial<SlotPositionContext> = {}
@@ -79,7 +76,7 @@ function makeNode(
     flags: { collapsed: overrides.collapsed ?? false },
     title_mode: overrides.titleMode ?? TitleMode.NORMAL_TITLE,
     type: overrides.type ?? 'TestNode',
-    _collapsed_width: mockLiteGraph.NODE_COLLAPSED_WIDTH,
+    _collapsed_width: 80,
     constructor: { slot_start_y: undefined },
     inputs: overrides.inputs ?? [],
     outputs: overrides.outputs ?? [],
@@ -180,7 +177,7 @@ describe('calculateInputSlotPosFromSlot', () => {
 
 describe('getSlotPosition — legacy fallback (vueNodesMode disabled)', () => {
   beforeEach(() => {
-    mockLiteGraph.vueNodesMode = false
+    LiteGraph.vueNodesMode = false
   })
 
   it('calculates input slot position from node.pos', () => {
@@ -211,7 +208,7 @@ describe('getSlotPosition — legacy fallback (vueNodesMode disabled)', () => {
     const output = makeOutput()
     const node = makeNode({ outputs: [output], collapsed: true })
     const [x, y] = getSlotPosition(node, 0, false)
-    expect(x).toBe(100 + mockLiteGraph.NODE_COLLAPSED_WIDTH)
+    expect(x).toBe(180)
     expect(y).toBe(200 - TITLE_HEIGHT * 0.5)
   })
 
@@ -225,7 +222,7 @@ describe('getSlotPosition — legacy fallback (vueNodesMode disabled)', () => {
 
 describe('Vue slot geometry', () => {
   beforeEach(() => {
-    mockLiteGraph.vueNodesMode = true
+    LiteGraph.vueNodesMode = true
     layoutStore.resetForTests()
   })
 

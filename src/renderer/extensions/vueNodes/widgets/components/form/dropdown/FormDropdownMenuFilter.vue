@@ -21,14 +21,14 @@ const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
 const singleFilterOption = computed(() => filterOptions.length === 1)
 
 const uploadButtonStyle = cn(
-  'ml-auto h-8 rounded-lg bg-base-foreground text-base-background',
+  'ml-auto h-8 rounded-lg bg-foreground text-background',
   'flex items-center justify-center gap-2 p-2',
-  'transition-all duration-150 hover:bg-base-foreground/90 active:scale-95'
+  'transition-all duration-150 hover:bg-foreground/90 active:scale-95'
 )
 </script>
 
 <template>
-  <div class="text-secondary mb-4 flex justify-start gap-1 px-4">
+  <div class="mb-4 flex gap-1 px-4 text-muted-foreground">
     <button
       v-for="option in filterOptions"
       :key="option.value"
@@ -36,11 +36,11 @@ const uploadButtonStyle = cn(
       :disabled="singleFilterOption"
       :class="
         cn(
-          'inline-flex appearance-none items-center justify-center rounded-md border-0 px-4 py-2 text-base-foreground select-none',
+          'inline-flex appearance-none items-center justify-center rounded-md border-0 px-4 py-2 text-foreground select-none',
           !singleFilterOption &&
-            'cursor-pointer transition-all duration-150 hover:bg-interface-menu-component-surface-hovered hover:text-base-foreground active:scale-95',
+            'cursor-pointer transition-all duration-150 hover:bg-accent hover:text-foreground active:scale-95',
           !singleFilterOption && filterSelected === option.value
-            ? 'bg-interface-menu-component-surface-selected! text-base-foreground'
+            ? 'bg-muted! text-foreground'
             : 'bg-transparent'
         )
       "

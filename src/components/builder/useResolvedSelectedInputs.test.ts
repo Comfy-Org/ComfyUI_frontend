@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { toNodeId } from '@/types/nodeId'
@@ -11,13 +11,16 @@ import { widgetId } from '@/types/widgetId'
 
 import { useResolvedSelectedInputs } from './useResolvedSelectedInputs'
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     rootGraph: {
       id: '11111111-1111-4111-8111-111111111111',
       nodes: [] as LGraphNode[],
       events: new EventTarget(),
       getNodeById: vi.fn() as (id: number) => LGraphNode | null
+    },
+    get rootGraphOrUndefined() {
+      return this.rootGraph
     }
   }
 }))
@@ -54,7 +57,7 @@ function setRootGraphNodes(nodes: LGraphNode[]) {
 }
 
 function dispatchRootGraphEvent(type: string) {
-  ;(app.rootGraph!.events as unknown as EventTarget).dispatchEvent(
+  ;(app.rootGraph.events as unknown as EventTarget).dispatchEvent(
     new Event(type)
   )
 }

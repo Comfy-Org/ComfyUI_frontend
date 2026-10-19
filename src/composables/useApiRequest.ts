@@ -17,18 +17,7 @@ export type ApiErrorMapper = (
 export interface ExecuteRequestOptions {
   errorContext: string
   routeSpecificErrors?: Record<number, string>
-  /**
-   * Side effect run after a successful response, before the data is returned.
-   * Returning `false` marks the overall request as failed: `executeRequest`
-   * resolves to `null` and leaves `error` as the side effect set it.
-   */
-  onSuccess?: () => boolean | void | Promise<boolean | void>
-  /**
-   * Called with the mapped message when *this* request fails, so a caller can
-   * tell its own failure apart from the shared `error` ref, which any
-   * concurrent request may reset or overwrite. Not called on cancellation.
-   */
-  onError?: (message: string) => void
+  isCurrent?: () => boolean
 }
 
 /**
@@ -51,21 +40,18 @@ export function useApiRequest({
     apiCall: (client: AxiosInstance) => Promise<AxiosResponse<T>>,
     options: ExecuteRequestOptions
   ): Promise<T | null> {
-    const { errorContext, routeSpecificErrors, onSuccess, onError } = options
+    const { errorContext, routeSpecificErrors, isCurrent } = options
 
     pendingCount.value++
     error.value = null
 
     try {
       const response = await apiCall(client)
-      if ((await onSuccess?.()) === false) return null
       return response.data
     } catch (err) {
-      if (isAbortError(err)) return null
+      if (isAbortError(err) || isCurrent?.() === false) return null
 
-      const message = mapError(err, errorContext, routeSpecificErrors)
-      error.value = message
-      onError?.(message)
+      error.value = mapError(err, errorContext, routeSpecificErrors)
       return null
     } finally {
       pendingCount.value--

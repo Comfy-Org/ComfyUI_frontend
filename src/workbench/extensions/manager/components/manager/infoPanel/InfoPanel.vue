@@ -4,18 +4,16 @@
       ref="scrollContainer"
       class="flex scrollbar-custom h-full flex-col overflow-y-auto"
     >
-      <PropertiesAccordionItem v-if="!importFailed" :class="accordionClass">
+      <PropertiesAccordionItem v-if="!importFailed" variant="card">
         <template #label>
-          <span class="font-inter text-xs uppercase">
-            {{ t('manager.actions') }}
-          </span>
+          {{ t('manager.actions') }}
         </template>
         <div class="flex flex-col gap-1 px-4">
           <template v-if="canTryNightlyUpdate">
             <PackTryUpdateButton :node-pack="nodePack" size="md" />
             <PackUninstallButton :node-packs="[nodePack]" size="md" />
           </template>
-          <template v-else-if="isUpdateAvailable">
+          <template v-else-if="isAllInstalled && !isNightlyPack">
             <PackUpdateButton :node-packs="[nodePack]" size="md" />
             <PackUninstallButton :node-packs="[nodePack]" size="md" />
           </template>
@@ -33,11 +31,9 @@
         </div>
       </PropertiesAccordionItem>
 
-      <PropertiesAccordionItem :class="accordionClass">
+      <PropertiesAccordionItem variant="card">
         <template #label>
-          <span class="font-inter text-xs uppercase">
-            {{ t('manager.basicInfo') }}
-          </span>
+          {{ t('manager.basicInfo') }}
         </template>
         <ModelInfoField :label="t('g.name')">
           <span class="text-muted-foreground">{{ nodePack.name }}</span>
@@ -61,6 +57,7 @@
         </ModelInfoField>
         <ModelInfoField :label="t('g.status')">
           <PackStatusMessage
+            :has-import-failed="importFailed"
             :status-type="
               nodePack.status as components['schemas']['NodeVersionStatus']
             "
@@ -72,34 +69,25 @@
         </ModelInfoField>
       </PropertiesAccordionItem>
 
-      <PropertiesAccordionItem :class="accordionClass">
+      <PropertiesAccordionItem variant="card">
         <template #label>
-          <span class="font-inter text-xs uppercase">
-            {{ t('g.description') }}
-          </span>
+          {{ t('g.description') }}
         </template>
         <DescriptionTabPanel :node-pack="nodePack" />
       </PropertiesAccordionItem>
 
-      <PropertiesAccordionItem
-        v-if="hasCompatibilityIssues"
-        :class="accordionClass"
-      >
+      <PropertiesAccordionItem v-if="hasCompatibilityIssues" variant="card">
         <template #label>
-          <span class="font-inter text-xs uppercase">
-            ⚠️ {{ importFailed ? t('g.error') : t('g.warning') }}
-          </span>
+          ⚠️ {{ importFailed ? t('g.error') : t('g.warning') }}
         </template>
         <div class="px-4 py-2">
           <WarningTabPanel :conflict-result="conflictResult" />
         </div>
       </PropertiesAccordionItem>
 
-      <PropertiesAccordionItem :class="accordionClass">
+      <PropertiesAccordionItem variant="card">
         <template #label>
-          <span class="font-inter text-xs uppercase">
-            {{ t('g.nodes') }}
-          </span>
+          {{ t('g.nodes') }}
         </template>
         <div class="px-4 py-2">
           <NodesTabPanel :node-pack="nodePack" :node-names="nodeNames" />
@@ -122,7 +110,6 @@ import { useI18n } from 'vue-i18n'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import type { components } from '@/types/comfyRegistryTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue'
@@ -138,7 +125,10 @@ import { useConflictDetection } from '@/workbench/extensions/manager/composables
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import { IsInstallingKey } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import {
+  IsInstallingKey,
+  isMergedNodePack
+} from '@/workbench/extensions/manager/types/comfyManagerTypes'
 import type {
   ConflictDetail,
   ConflictDetectionResult
@@ -157,10 +147,6 @@ const { nodePack } = defineProps<{
 
 const scrollContainer = ref<HTMLElement | null>(null)
 
-const accordionClass = cn(
-  'border-t border-border-default bg-modal-panel-background'
-)
-
 const managerStore = useComfyManagerStore()
 const { isPackInstalled } = managerStore
 const isInstalled = computed(() => isPackInstalled(nodePack.id))
@@ -170,7 +156,7 @@ whenever(isInstalled, () => {
   isInstalling.value = false
 })
 
-const { canTryNightlyUpdate, isUpdateAvailable } = usePackUpdateStatus(
+const { canTryNightlyUpdate, isNightlyPack } = usePackUpdateStatus(
   () => nodePack
 )
 
@@ -225,9 +211,7 @@ provide(ImportFailedKey, {
 })
 
 const nodeNames = computed(() => {
-  // @ts-expect-error comfy_nodes is an Algolia-specific field
-  const { comfy_nodes } = nodePack
-  return comfy_nodes ?? []
+  return isMergedNodePack(nodePack) ? (nodePack.comfy_nodes ?? []) : []
 })
 
 const infoItems = computed<InfoItem[]>(() => [

@@ -87,11 +87,11 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     if (typeof window.gtag !== 'function') {
       function gtag() {
         // gtag queue shape is dataLayer.push(arguments)
-        // eslint-disable-next-line prefer-rest-params
+        // oxlint-disable-next-line prefer-rest-params
         ;(window.dataLayer as unknown[] | undefined)?.push(arguments)
       }
 
-      window.gtag = gtag as Window['gtag']
+      window.gtag = gtag
     }
 
     const gtagScriptSrc = `https://www.googletagmanager.com/gtag/js?id=${measurementId}`
@@ -160,7 +160,13 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   ): void {
     const ga4EventName =
       event === 'modal_opened' ? 'view_promotion' : 'select_promotion'
-    this.pushEvent(ga4EventName, metadata ? { ...metadata } : undefined)
+    this.pushEvent(
+      ga4EventName,
+      metadata && {
+        current_tier: metadata.current_tier,
+        reason: metadata.reason
+      }
+    )
   }
 
   trackSignupOpened(): void {
@@ -192,7 +198,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       trigger_source: properties.trigger_source ?? 'unknown',
       view_mode: properties.view_mode,
       is_app_mode: properties.is_app_mode,
-      dock_state: properties.dock_state
+      dock_state: properties.dock_state,
+      agent_panel_open: properties.agent_panel_open
     })
   }
 
@@ -300,7 +307,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.pushEvent('page_visibility', {
-      visibility_state: metadata.visibility_state
+      visibility_state: metadata.visibility_state,
+      agent_panel_open: metadata.agent_panel_open
     })
   }
 

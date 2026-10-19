@@ -1,14 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import {
-  assert,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  onTestFinished,
-  vi
-} from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
 import {
@@ -41,8 +31,6 @@ function connectedGraph() {
 }
 
 describe('Reroute ↔ rerouteStore integration', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('createReroute registers the chain, removeReroute unregisters it', () => {
     const { graph, link } = connectedGraph()
     const store = useRerouteStore()
@@ -60,7 +48,6 @@ describe('Reroute ↔ rerouteStore integration', () => {
   it('does not add a reroute when its id is already registered', () => {
     const graph = new LGraph()
     const incumbent = new Reroute(toRerouteId(1), graph, [0, 0])
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     useRerouteStore().registerReroute(graphScopeOf(graph), incumbent._chain)
     layoutStore.applyOperation({
       type: 'createReroute',
@@ -364,8 +351,6 @@ describe('Reroute ↔ rerouteStore integration', () => {
 })
 
 describe('Reroute position lives only in layoutStore', () => {
-  beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
-
   it('registers geometry after graph ownership', () => {
     const { graph, link } = connectedGraph()
 

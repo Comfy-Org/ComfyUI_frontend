@@ -146,12 +146,11 @@ function runsDirectlyInWatchEffect(
 
   const callback = ancestors[callbackIndex]
   const parent = ancestors[callbackIndex - 1]
-  if (parent?.type !== 'CallExpression') return false
+  if (parent.type !== 'CallExpression') return false
 
   const call = parent as CallExpression
   return (
-    call.arguments.includes(callback as Expression) &&
-    isVueWatchEffect(context, call.callee)
+    call.arguments.includes(callback) && isVueWatchEffect(context, call.callee)
   )
 }
 

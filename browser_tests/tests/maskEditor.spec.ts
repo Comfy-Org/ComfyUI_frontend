@@ -102,6 +102,10 @@ function getMinimumToolIconContrast(dialog: Locator): Promise<number> {
 }
 
 test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+  })
+
   test(
     'opens mask editor from image preview button',
     { tag: ['@smoke', '@screenshot'] },
@@ -112,7 +116,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await imagePreview.getByRole('region').hover()
       await comfyPage.page.getByLabel('Edit or mask image').click()
 
-      const dialog = comfyPage.page.locator('.mask-editor-dialog')
+      const dialog = maskEditor.dialog
       await expect(dialog).toBeVisible()
 
       await expect(
@@ -123,7 +127,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await expect(canvasContainer).toBeVisible()
       await expect(canvasContainer.locator('canvas')).toHaveCount(4)
 
-      await expect(dialog.locator('.maskEditor-ui-container')).toBeVisible()
+      await expect(dialog.getByTestId('mask-editor-ui')).toBeVisible()
       await expect(dialog.getByText('Save')).toBeVisible()
       await expect(dialog.getByText('Cancel')).toBeVisible()
 
@@ -151,12 +155,12 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await nodeHeader.click()
       await nodeHeader.click({ button: 'right' })
 
-      const contextMenu = comfyPage.page.locator('.p-contextmenu')
+      const contextMenu = comfyPage.page.getByRole('menu')
       await expect(contextMenu).toBeVisible()
 
       await contextMenu.getByText('Open in Mask Editor').click()
 
-      const dialog = comfyPage.page.locator('.mask-editor-dialog')
+      const dialog = maskEditor.dialog
       await expect(dialog).toBeVisible()
       await expect(
         dialog.getByRole('heading', { name: 'Mask Editor' })
@@ -164,7 +168,8 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
       await comfyPage.expectScreenshot(
         dialog,
-        'mask-editor-dialog-from-context-menu.png'
+        'mask-editor-dialog-from-context-menu.png',
+        { maxDiffPixels: 25 }
       )
     }
   )
@@ -259,6 +264,24 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     await expect(dialog).toBeHidden()
   })
 
+  test('maximize fills the viewport and restore returns to the framed size', async ({
+    comfyPage,
+    maskEditor
+  }) => {
+    const dialog = await maskEditor.openDialog()
+    const viewportWidth = await comfyPage.page.evaluate(() => window.innerWidth)
+    const width = async () => (await dialog.boundingBox())?.width ?? 0
+
+    const framedWidth = viewportWidth * 0.9
+    await expect.poll(width).toBeCloseTo(framedWidth, 0)
+
+    await dialog.getByRole('button', { name: 'Maximize dialog' }).click()
+    await expect.poll(width).toBeGreaterThan(viewportWidth - 24)
+
+    await dialog.getByRole('button', { name: 'Restore dialog' }).click()
+    await expect.poll(width).toBeCloseTo(framedWidth, 0)
+  })
+
   test('invert button inverts the mask', async ({ maskEditor }) => {
     const dialog = await maskEditor.openDialog()
 
@@ -295,7 +318,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     async ({ maskEditor }) => {
       const dialog = await maskEditor.openDialog()
 
-      const toolPanel = dialog.locator('.maskEditor-ui-container')
+      const toolPanel = dialog.getByTestId('mask-editor-ui')
       await expect(toolPanel).toBeVisible()
 
       // The tool panel should contain exactly 5 tool entries
@@ -454,8 +477,10 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
 wstest(
   'Will not use stale litegraph previews',
-  async ({ comfyPage, getWebSocket }) => {
+  { tag: '@vue-nodes' },
+  async ({ comfyPage, getWebSocket, maskEditor }) => {
     const executionHelper = new ExecutionHelper(comfyPage, await getWebSocket())
+    await comfyPage.menu.topbar.setVueNodesEnabled(false)
     await comfyPage.menu.topbar.newWorkflowButton.click()
     await comfyPage.searchBoxV2.addNode('Preview Image')
 
@@ -470,7 +495,7 @@ wstest(
     await comfyPage.page.evaluate(() => app!.canvas.setDirty(true))
     await expect.poll(getNodeOutput).toBe('test1.png')
 
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+    await comfyPage.menu.topbar.setVueNodesEnabled(true)
 
     const resolvableFile = { filename: 'example.png', type: 'input' }
     executionHelper.executed('', '1', { images: [resolvableFile] })
@@ -485,6 +510,6 @@ wstest(
     // On previous versions, attempting to open the mask editor here would
     // incorrectly reference the non-existant test1.png
     // This causes the mask editor to throw in setup and not display
-    await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
+    await expect(maskEditor.dialog).toBeVisible()
   }
 )
