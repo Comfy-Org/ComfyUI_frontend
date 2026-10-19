@@ -361,7 +361,6 @@ export class AgentConversationHarness {
     )
   }
 
-  /** Userdata path of the workflow the app last saved, or null before any save. */
   savedWorkflowPath(): string | null {
     const name = this.savedWorkflow?.savedName()
     return name === undefined ? null : `workflows/${name}.json`
