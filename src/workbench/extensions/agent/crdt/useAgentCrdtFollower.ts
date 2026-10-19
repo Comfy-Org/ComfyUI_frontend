@@ -374,10 +374,13 @@ function startAgentCrdtFollower(
   }: Required<AgentCrdtFollowerOptions>
 ) {
   const connected = ref(false)
-  const canvasMayBeStale = ref(false)
   let catchUpAwaitingProjectionFor: string | null = null
-  let syncCanvasMayBeStale = false
-  let projectionFailureFor: string | null = null
+  /** The two causes a bound canvas can be behind the document for. */
+  const syncCanvasMayBeStale = ref(false)
+  const projectionFailureFor = ref<string | null>(null)
+  const canvasMayBeStale = computed(
+    () => syncCanvasMayBeStale.value || projectionFailureFor.value !== null
+  )
   const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
@@ -421,32 +424,27 @@ function startAgentCrdtFollower(
   const pendingRejected = new Map<string, Op[]>()
 
   function markCanvasStale(): void {
-    syncCanvasMayBeStale = true
-    canvasMayBeStale.value = true
+    syncCanvasMayBeStale.value = true
     catchUpAwaitingProjectionFor = null
   }
 
   function markProjectionStale(workflowId: string): void {
-    projectionFailureFor = workflowId
-    canvasMayBeStale.value = true
+    projectionFailureFor.value = workflowId
   }
 
   function clearProjectionStaleness(workflowId: string): void {
-    if (projectionFailureFor === workflowId) projectionFailureFor = null
-    canvasMayBeStale.value =
-      syncCanvasMayBeStale || projectionFailureFor !== null
+    if (projectionFailureFor.value === workflowId)
+      projectionFailureFor.value = null
   }
 
   function clearSyncStaleness(): void {
-    syncCanvasMayBeStale = false
-    canvasMayBeStale.value = projectionFailureFor !== null
+    syncCanvasMayBeStale.value = false
     catchUpAwaitingProjectionFor = null
   }
 
   function clearCanvasStaleness(): void {
-    syncCanvasMayBeStale = false
-    projectionFailureFor = null
-    canvasMayBeStale.value = false
+    syncCanvasMayBeStale.value = false
+    projectionFailureFor.value = null
     catchUpAwaitingProjectionFor = null
   }
 
@@ -670,24 +668,23 @@ function startAgentCrdtFollower(
     const refusal = reseeding
       ? { shouldNotify: false }
       : handleSubscribeRefusal(detail, lifecycle)
-    if (!reseeding && lifecycle.refusalIsFinal()) {
-      terminal.value = 'refused'
-    }
+    if (!reseeding && lifecycle.refusalIsFinal()) terminal.value = 'refused'
     releaseHeldOps()
     sender.abortIfUnbound()
     if (refusal.shouldNotify)
       events.onSyncError?.(refusal.message, refusal.code)
   }
 
-  const subscribeBaselineIsIntegrated = (seq: unknown): boolean =>
-    (seq ?? 0) === 0 || bridge.isSubscribeBaselineIntegrated
+  function subscribeBaselineIsIntegrated(seq: number | undefined): boolean {
+    return (seq ?? 0) === 0 || bridge.isSubscribeBaselineIntegrated
+  }
 
-  const retryFailedProjection = (workflowId: string): boolean => {
+  function retryFailedProjection(workflowId: string): boolean {
     const outcome = projection.retryFailed(workflowId)
     if (outcome === null) {
       const pending =
         projection.hasPendingFailure(workflowId) ||
-        (getGraph() === null && projectionFailureFor === workflowId)
+        (getGraph() === null && projectionFailureFor.value === workflowId)
       if (!pending) clearProjectionStaleness(workflowId)
       return !pending
     }
@@ -707,7 +704,7 @@ function startAgentCrdtFollower(
       ok?: unknown
       code?: unknown
       message?: unknown
-      seq?: unknown
+      seq?: number
     } | null
     const ok = detail?.ok === true
     connected.value = ok
@@ -726,13 +723,11 @@ function startAgentCrdtFollower(
       handleRejectedSubscription(detail)
     }
   }
-  const settleCatchUpProjection = (
+  function settleCatchUpProjection(
     update: ClassifiedDocUpdate,
     outcome: FrameOutcome
-  ): void => {
-    if (!outcome.applied && getGraph() === null) {
-      markProjectionStale(update.workflowId)
-    } else if (outcome.applied && outcome.failureCount > 0) {
+  ): void {
+    if (outcome.applied ? outcome.failureCount > 0 : getGraph() === null) {
       markProjectionStale(update.workflowId)
     } else if (
       projectionAppliedCleanly(outcome) &&
