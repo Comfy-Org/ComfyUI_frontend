@@ -115,6 +115,8 @@ function buildExecutionNodeLookup(
  */
 export const MAX_PROGRESS_JOBS = 1000
 
+const MAX_JOB_LOOKUP_ENTRIES = 4000
+
 export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
 
 interface WorkflowStatusUpdate {
@@ -965,7 +967,7 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.isAppMode = isAppModeValue(mode)
     const wid = workflow.activeState?.id ?? workflow.initialState?.id
     if (wid) {
-      jobIdToWorkflowId.value.set(id, wid)
+      setJobWorkflowId(id, wid)
     }
     if (workflow.path) {
       ensureSessionWorkflowPath(id, workflow.path, workflow.instanceId)
@@ -1005,9 +1007,6 @@ export const useExecutionStore = defineStore('execution', () => {
     jobIdToWorkflow.delete(jobId)
   }
 
-  // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
-  const MAX_SESSION_PATH_ENTRIES = 4000
-
   function ensureSessionWorkflowPath(
     jobId: JobId,
     path: string,
@@ -1019,7 +1018,7 @@ export const useExecutionStore = defineStore('execution', () => {
     if (jobIdToSessionWorkflowPath.value.get(jobId) === path) return
     const next = new Map(jobIdToSessionWorkflowPath.value)
     next.set(jobId, path)
-    while (next.size > MAX_SESSION_PATH_ENTRIES) {
+    while (next.size > MAX_JOB_LOOKUP_ENTRIES) {
       const oldest = next.keys().next().value
       if (oldest !== undefined) {
         next.delete(oldest)
@@ -1027,6 +1026,17 @@ export const useExecutionStore = defineStore('execution', () => {
       } else break
     }
     jobIdToSessionWorkflowPath.value = next
+  }
+
+  function setJobWorkflowId(jobId: JobId, workflowId: WorkflowId) {
+    const map = jobIdToWorkflowId.value
+    map.delete(jobId)
+    map.set(jobId, workflowId)
+    while (map.size > MAX_JOB_LOOKUP_ENTRIES) {
+      const oldest = map.keys().next().value
+      if (oldest === undefined) break
+      map.delete(oldest)
+    }
   }
 
   function rewriteSessionWorkflowPaths(
@@ -1052,7 +1062,7 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   function registerJobWorkflowIdMapping(jobId: JobId, workflowId: WorkflowId) {
     if (!jobId || !workflowId) return
-    jobIdToWorkflowId.value.set(jobId, workflowId)
+    setJobWorkflowId(jobId, workflowId)
     flushPendingExecutionError(jobId)
   }
 

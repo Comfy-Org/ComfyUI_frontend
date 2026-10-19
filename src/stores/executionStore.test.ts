@@ -83,6 +83,15 @@ function createQueuedWorkflow(path: string = 'workflows/test.json') {
   })
 }
 
+function registerSequentialJobs(
+  store: ReturnType<typeof useExecutionStore>,
+  count: number
+) {
+  for (let i = 0; i < count; i++) {
+    store.registerJobWorkflowIdMapping(`job-${i}`, `wf-${i}`)
+  }
+}
+
 function createPromptNode(title: string, classType: string) {
   return {
     inputs: {},
@@ -2654,6 +2663,41 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
 
     expect(store.jobIdToWorkflowId.get('job-1')).toBe('wf-1')
     expect(store.jobIdToWorkflowId.size).toBe(1)
+  })
+
+  it('jobIdToWorkflowId evicts the oldest jobs beyond its cap', () => {
+    registerSequentialJobs(store, 4005)
+
+    expect(store.jobIdToWorkflowId.size).toBe(4000)
+    expect(store.jobIdToWorkflowId.has('job-4')).toBe(false)
+    expect(store.jobIdToWorkflowId.get('job-5')).toBe('wf-5')
+    expect(store.jobIdToWorkflowId.get('job-4004')).toBe('wf-4004')
+  })
+
+  it('jobIdToWorkflowId evicts re-registered jobs last', () => {
+    store.registerJobWorkflowIdMapping('job-live', 'wf-live')
+    registerSequentialJobs(store, 3999)
+    store.registerJobWorkflowIdMapping('job-live', 'wf-live')
+    store.registerJobWorkflowIdMapping('job-new', 'wf-new')
+
+    expect(store.jobIdToWorkflowId.size).toBe(4000)
+    expect(store.jobIdToWorkflowId.has('job-0')).toBe(false)
+    expect(store.jobIdToWorkflowId.get('job-live')).toBe('wf-live')
+  })
+
+  it('storeJob respects the jobIdToWorkflowId cap', () => {
+    registerSequentialJobs(store, 4000)
+    store.storeJob({
+      nodes: [],
+      id: 'job-stored',
+      promptOutput: {},
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
+    })
+
+    expect(store.jobIdToWorkflowId.size).toBe(4000)
+    expect(store.jobIdToWorkflowId.has('job-0')).toBe(false)
+    expect(store.jobIdToWorkflowId.get('job-stored')).toBe('workflow-id')
   })
 
   it('ensureSessionWorkflowPath is idempotent and updates on change', () => {

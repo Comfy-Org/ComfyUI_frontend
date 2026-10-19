@@ -587,33 +587,34 @@ describe('useAlgoliaSearchProvider', () => {
     })
   })
 
-  describe('memoization', () => {
-    it('should memoize toRegistryPack conversions', async () => {
-      const mockHit = {
-        objectID: 'algolia-1',
-        id: 'pack-1',
-        name: 'Test Pack',
+  describe('pack conversion', () => {
+    it('should reflect fresh pack data after the search cache is cleared', async () => {
+      const hit = (downloads: number) => ({
+        objectID: 'algolia-refresh',
+        id: 'pack-refresh',
+        name: 'Refreshed Pack',
         publisher_id: 'pub1',
-        total_install: 100,
+        total_install: downloads,
+        latest_version: `1.0.${downloads}`,
         comfy_nodes: []
-      }
-
-      mockSearchClient.search.mockResolvedValue({
-        results: [
-          { hits: [mockHit, mockHit, mockHit] }, // Same object 3 times
-          { hits: [] }
-        ]
       })
-
       const provider = useAlgoliaSearchProvider()
-      const result = await provider.searchPacks('test', {
-        pageSize: 10,
-        pageNumber: 0
-      })
+      const params = { pageSize: 10, pageNumber: 0 }
 
-      // All 3 results should be the same object reference due to memoization
-      expect(result.nodePacks[0]).toBe(result.nodePacks[1])
-      expect(result.nodePacks[1]).toBe(result.nodePacks[2])
+      mockSearchClient.search.mockResolvedValueOnce({
+        results: [{ hits: [hit(1)] }]
+      })
+      const first = await provider.searchPacks('refresh', params)
+      expect(first.nodePacks[0].downloads).toBe(1)
+
+      provider.clearSearchCache()
+      mockSearchClient.search.mockResolvedValueOnce({
+        results: [{ hits: [hit(2)] }]
+      })
+      const second = await provider.searchPacks('refresh', params)
+
+      expect(second.nodePacks[0].downloads).toBe(2)
+      expect(second.nodePacks[0].latest_version?.version).toBe('1.0.2')
     })
 
     it('keys conversions of hits without an id by objectID', async () => {
