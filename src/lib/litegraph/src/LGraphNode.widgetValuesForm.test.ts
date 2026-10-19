@@ -6,7 +6,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { setWidgetSerializationFormReporter } from '@/lib/litegraph/src/widgetSerializationFormReporter'
+import { setWidgetValuesFormPolicy } from '@/lib/litegraph/src/widgets/widgetValuesForm'
 
 function nodeWithWidgets(
   widgets: readonly { name: string; value: string }[]
@@ -22,8 +22,17 @@ function nodeWithWidgets(
 
 describe('widget values form serialization', () => {
   afterEach(() => {
-    setWidgetSerializationFormReporter(undefined)
+    setWidgetValuesFormPolicy(undefined)
   })
+
+  function installPolicy(layoutDependsOnValues = false) {
+    const policy = {
+      reportMissingDeclaration: vi.fn(),
+      widgetLayoutDependsOnValues: vi.fn(() => layoutDependsOnValues)
+    }
+    setWidgetValuesFormPolicy(policy)
+    return policy
+  }
 
   it('emits the form after extension serialization', () => {
     const node = nodeWithWidgets([
@@ -54,33 +63,51 @@ describe('widget values form serialization', () => {
     })
   })
 
-  it('suppresses an inferred form when a hook replaces the values', () => {
-    const node = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
-    node.onSerialize = (data) => {
-      data.widgets_values = ['changed']
+  it.for([
+    {
+      hook: 'replaces the values',
+      onSerialize: (data: ISerialisedNode) => {
+        data.widgets_values = ['changed']
+      }
+    },
+    {
+      hook: 'appends a value in place',
+      onSerialize: (data: ISerialisedNode) => {
+        data.widgets_values?.push('extra')
+      }
+    },
+    {
+      hook: 'reorders values in place',
+      onSerialize: (data: ISerialisedNode) => {
+        data.widgets_values?.reverse()
+      }
     }
-
-    expect(node.serialize()).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('suppresses an inferred form when a hook appends a value in place', () => {
-    const node = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
-    node.onSerialize = (data) => {
-      data.widgets_values?.push('extra')
-    }
-
-    expect(node.serialize()).not.toHaveProperty('widgets_values_form')
-  })
-
-  it('suppresses an inferred form when a hook reorders values in place', () => {
+  ])('suppresses an inferred form when a hook $hook', ({ onSerialize }) => {
     const node = nodeWithWidgets([
       { name: 'prompt', value: 'hello' },
       { name: 'seed', value: '7' }
     ])
-    node.onSerialize = (data) => {
-      data.widgets_values?.reverse()
-    }
+    node.onSerialize = onSerialize
 
+    expect(node.serialize()).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('leaves a value-dependent widget layout undeclared', () => {
+    const policy = installPolicy(true)
+    const node = nodeWithWidgets([
+      { name: 'mode', value: 'a' },
+      { name: 'mode.steps', value: '4' }
+    ])
+
+    expect(node.serialize()).toMatchObject({ widgets_values: ['a', '4'] })
+    expect(node.serialize()).not.toHaveProperty('widgets_values_form')
+    expect(policy.widgetLayoutDependsOnValues).toHaveBeenCalledWith(node)
+  })
+
+  it('keeps an unlabeled widget positional instead of declaring it', () => {
+    const node = nodeWithWidgets([{ name: '', value: 'hello' }])
+
+    expect(node.serialize()).toMatchObject({ widgets_values: ['hello'] })
     expect(node.serialize()).not.toHaveProperty('widgets_values_form')
   })
 
@@ -119,36 +146,94 @@ describe('widget values form serialization', () => {
     expect(Object.hasOwn(restored, 'widgets_values_form')).toBe(false)
   })
 
-  it('reports object-shaped values without a declared form', () => {
-    const reporter = vi.fn()
-    setWidgetSerializationFormReporter(reporter)
-    const node = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
-    node.onSerialize = (data) => {
-      Reflect.set(data, 'widgets_values', { prompt: 'hello' })
-    }
+  it('reports object-shaped values without a declared form once per node', () => {
+    const { reportMissingDeclaration } = installPolicy()
+    const [node, other] = [0, 1].map(() => {
+      const created = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
+      created.onSerialize = (data) => {
+        Reflect.set(data, 'widgets_values', { prompt: 'hello' })
+      }
+      return created
+    })
 
     expect(node.serialize()).not.toHaveProperty('widgets_values_form')
-    expect(reporter).toHaveBeenCalledWith({
-      nodeId: String(node.id),
-      nodeType: node.type
-    })
+    node.serialize()
+    other.serialize()
+
+    expect(reportMissingDeclaration.mock.calls).toEqual([
+      [{ nodeId: String(node.id), nodeType: node.type }],
+      [{ nodeId: String(other.id), nodeType: other.type }]
+    ])
   })
 
-  it('rejects a form whose length disagrees with array values', () => {
+  it.for([
+    {
+      form: 'length disagrees with array values',
+      arrange: (node: LGraphNode) => {
+        node.onSerialize = (data) => {
+          data.widgets_values?.push('extra')
+          data.widgets_values_form = { order: ['prompt', 'seed'] }
+        }
+      }
+    },
+    {
+      form: 'repeats a name',
+      arrange: (node: LGraphNode) => {
+        node.onSerialize = (data) => {
+          data.widgets_values_form = { order: ['prompt', 'prompt'] }
+        }
+      }
+    },
+    {
+      form: 'carries a key besides order',
+      arrange: (node: LGraphNode) => {
+        node.onSerialize = (data) => {
+          Reflect.set(data, 'widgets_values_form', {
+            order: ['prompt', 'seed'],
+            extra: true
+          })
+        }
+      }
+    },
+    {
+      form: 'describes values the hook deleted',
+      arrange: (node: LGraphNode) => {
+        node.onSerialize = (data) => {
+          delete data.widgets_values
+          data.widgets_values_form = { order: ['prompt', 'seed'] }
+        }
+      }
+    },
+    {
+      form: 'names a key missing from object values',
+      arrange: (node: LGraphNode) => {
+        node.onSerialize = (data) => {
+          Reflect.set(data, 'widgets_values', { prompt: 'hello' })
+          data.widgets_values_form = { order: ['prompt', 'seed'] }
+        }
+      }
+    },
+    {
+      form: 'predates a hook that reorders the widgets',
+      arrange: (node: LGraphNode) => {
+        node.onSerialize = (data) => {
+          node.widgets?.reverse()
+          data.widgets_values_form = { order: ['prompt', 'seed'] }
+        }
+      }
+    }
+  ])('drops a declared form that $form', ({ arrange }) => {
+    vi.stubEnv('DEV', false)
     const node = nodeWithWidgets([
       { name: 'prompt', value: 'hello' },
       { name: 'seed', value: '7' }
     ])
-    node.onSerialize = (data) => {
-      data.widgets_values_form = { order: ['prompt'] }
-    }
+    arrange(node)
 
-    expect(() => node.serialize()).toThrow(
-      '[Assertion failed]: Widget values form length must match array-shaped values'
-    )
+    expect(node.serialize()).not.toHaveProperty('widgets_values_form')
   })
 
-  it('rejects duplicate names in a declared form', () => {
+  it('fails loudly in development on a malformed declared form', () => {
     const node = nodeWithWidgets([
       { name: 'prompt', value: 'first' },
       { name: 'second_prompt', value: 'second' }
@@ -159,18 +244,6 @@ describe('widget values form serialization', () => {
 
     expect(() => node.serialize()).toThrow(
       '[Assertion failed]: Widget values form must be closed to a non-empty order'
-    )
-  })
-
-  it('rejects a form after a hook deletes the values it describes', () => {
-    const node = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
-    node.onSerialize = (data) => {
-      delete data.widgets_values
-      data.widgets_values_form = { order: ['prompt'] }
-    }
-
-    expect(() => node.serialize()).toThrow(
-      '[Assertion failed]: Widget values form must describe array- or object-shaped values'
     )
   })
 

@@ -98,6 +98,11 @@ function isNonArrayObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function serializedWidgetValue(value: unknown): unknown {
+  if (value == null || typeof value !== 'object') return value ?? null
+  return JSON.parse(JSON.stringify(value))
+}
+
 type IntentOf<T extends GraphIntentEvent['type']> = Extract<
   GraphIntentEvent,
   { type: T }
@@ -127,8 +132,10 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   const declaredForm = snapshot.widgets_values_form
   const declaredValues = snapshot.widgets_values
   const namedValues = declaredForm?.order.map((name) => named[name])
-  const liveValues = declaredForm?.order.map(
-    (name) => node.widgets?.find((widget) => widget.name === name)?.value
+  const liveValues = declaredForm?.order.map((name) =>
+    serializedWidgetValue(
+      node.widgets?.find((widget) => widget.name === name)?.value
+    )
   )
   const hasCustomDeclaredValues =
     declaredForm !== undefined &&

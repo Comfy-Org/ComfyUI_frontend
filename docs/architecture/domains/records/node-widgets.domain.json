@@ -88,6 +88,10 @@
       "role": "application"
     },
     {
+      "path": "src/core/graph/widgets/widgetValuesFormPolicy.ts",
+      "role": "application"
+    },
+    {
       "path": "src/extensions/core/customWidgets.clone.test.ts",
       "role": "integration"
     },

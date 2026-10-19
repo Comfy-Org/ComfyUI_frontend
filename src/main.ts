@@ -6,8 +6,8 @@ import { createApp } from 'vue'
 import { setAssertReporter } from '@/base/assert'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
+import { installWidgetValuesFormPolicy } from '@/core/graph/widgets/widgetValuesFormPolicy'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import { setWidgetSerializationFormReporter } from '@/lib/litegraph/src/widgetSerializationFormReporter'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
@@ -21,10 +21,7 @@ import {
   markStoresReady
 } from '@/platform/telemetry/storeReadiness'
 import { syncHostUserIdWithFirebaseAuth } from '@/platform/telemetry/hostUserIdSync'
-import {
-  flushErrorReports,
-  reportError
-} from '@/platform/telemetry/reportError'
+import { flushErrorReports } from '@/platform/telemetry/reportError'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
@@ -134,14 +131,7 @@ setAssertReporter(
   { forwardsToRum: isCloud }
 )
 
-setWidgetSerializationFormReporter(({ nodeId, nodeType }) => {
-  reportError(new Error('Object-shaped widget values have no declared form'), {
-    errorType: 'error_serializing_widget_values_form_missing_declaration',
-    surface: 'graph',
-    tags: { outcome: 'degraded' },
-    context: { nodeId, nodeType }
-  })
-})
+installWidgetValuesFormPolicy()
 
 app.use(router).use(pinia).use(i18n)
 

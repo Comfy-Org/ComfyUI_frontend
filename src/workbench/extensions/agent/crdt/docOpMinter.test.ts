@@ -5,6 +5,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
+import { installWidgetValuesFormPolicy } from '@/core/graph/widgets/widgetValuesFormPolicy'
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import {
   emitGraphIntent,
@@ -195,6 +196,7 @@ function seedGraph(graph: LGraph) {
 }
 
 beforeEach(() => {
+  installWidgetValuesFormPolicy()
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestSink', TestSink)
   LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
@@ -1603,10 +1605,15 @@ describe('attachDocOpMinter', () => {
     })
   })
 
-  it('preserves a named-only serializer change', () => {
+  it.for([
+    { live: 'a primitive', value: 'hello' },
+    { live: 'undefined', value: undefined },
+    { live: 'a Date', value: new Date('2020-01-01T00:00:00.000Z') }
+  ])('preserves a named-only serializer change over $live', ({ value }) => {
     const node = new LGraphNode('Named serializer')
     node.serialize_widgets = true
-    node.addWidget('text', 'prompt', 'hello', () => {})
+    const widget = node.addWidget('text', 'prompt', 'hello', () => {})
+    Reflect.set(widget, 'value', value)
     graph.add(node)
     node.onSerialize = (data) => {
       assert.exists(data.widgets_values_named)
@@ -2142,19 +2149,75 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     })
   })
 
-  it('declares a dynamic child named under a definition input', () => {
-    useNodeDefStore().addNodeDef(
-      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
-    )
+  it.for([
+    { input: 'COMFY_DYNAMICCOMBO_V3' },
+    { input: 'COMFY_DYNAMICGROUP_V3' },
+    { input: 'COMFY_AUTOGROW_V3' }
+  ])('keeps a node with a $input input on the catalog layout', ({ input }) => {
+    useNodeDefStore().addNodeDef(nodeDef('Dynamic', { mode: [input, {}] }))
     const node = nodeWith('Dynamic', (n) => {
       n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a'] })
       n.addWidget('number', 'mode.steps', 4, () => {})
     })
 
-    expect(wireNodeSnapshot(node)).toMatchObject({
-      widgets_values: { mode: 'a', 'mode.steps': 4 },
-      widgets_values_form: { order: ['mode', 'mode.steps'] }
+    expect(node.serialize()).not.toHaveProperty('widgets_values_form')
+    expect(wireNodeSnapshot(node)?.widgets_values).toEqual({
+      mode: 'a',
+      'mode.steps': 4
     })
+    expect(wireNodeSnapshot(node)).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('keeps a catalogued dynamic combo writable after its selection changes', () => {
+    useNodeDefStore().addNodeDef(
+      nodeDef('Dynamic', { mode: ['COMFY_DYNAMICCOMBO_V3', {}] })
+    )
+    const node = nodeWith('Dynamic', (n) => {
+      n.addWidget('combo', 'mode', 'a', () => {}, { values: ['a', 'b'] })
+      n.addWidget('number', 'mode.steps', 4, () => {})
+    })
+    const catalog: WidgetCatalog = {
+      types: {
+        Dynamic: {
+          widget_order: ['mode', 'mode.steps'],
+          dynamic_combos: {
+            mode: {
+              default: 'a',
+              options: {
+                a: { widgets: ['mode.steps'], defaults: { 'mode.steps': 4 } },
+                b: { widgets: ['mode.other'], defaults: { 'mode.other': 0 } }
+              }
+            }
+          }
+        }
+      }
+    }
+    const doc = mint({ nodes: [], links: [] }, catalog)
+    const operations: GraphOperation[] = [
+      {
+        op: 'add_node',
+        node_id: node.id,
+        class_type: 'Dynamic',
+        pos: [0, 0],
+        node: wireNodeSnapshot(node)!
+      },
+      { op: 'set_widget', node_id: node.id, widget: 'mode', value: 'b' },
+      { op: 'set_widget', node_id: node.id, widget: 'mode.other', value: 7 }
+    ]
+
+    const { outcomes } = applyOps(
+      doc,
+      mintWireOps(operations, { actor: 'human:user:tab', baseVersion: 1 }),
+      catalog
+    )
+
+    expect(outcomes.map((outcome) => outcome.outcome)).toEqual([
+      'applied',
+      'applied',
+      'applied'
+    ])
+    expect(project(doc, catalog).nodes[0]?.widgets_values).toEqual(['b', 7])
+    doc.destroy()
   })
 
   it('declares the order when an extension widget shares a forceInput name', () => {

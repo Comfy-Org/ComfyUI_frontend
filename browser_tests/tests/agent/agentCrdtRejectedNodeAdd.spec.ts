@@ -17,6 +17,7 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { installLegacyObjectSerializer } from '@e2e/fixtures/helpers/legacyObjectSerializer'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -210,27 +211,6 @@ function nodeIdsOfType(page: Page, type: string): Promise<string[]> {
   )
 }
 
-async function installLegacyObjectSerializer(
-  page: Page,
-  type: string
-): Promise<void> {
-  await page.evaluate((nodeType) => {
-    window.app!.registerExtension({
-      name: 'AgentRejectedNodeLegacyObjectSerializer',
-      nodeCreated(node) {
-        if (node.constructor.comfyClass !== nodeType) return
-        node.onSerialize = (data) => {
-          const values = data.widgets_values
-          Reflect.set(data, 'widgets_values', {
-            text: Array.isArray(values) ? values[0] : ''
-          })
-          delete data.widgets_values_form
-        }
-      }
-    })
-  }, type)
-}
-
 /**
  * Adds a node the way a person does: double-click the canvas, type the class
  * into the node search box, Enter, then click to place it. Returns the id the
@@ -318,10 +298,10 @@ test.describe(
       await expect(seedNode).toBeVisible()
       await pinCanvasTransform(page)
       const addAt = await emptyCanvasPointBelow(page, seedNode)
+      await installLegacyObjectSerializer(page, ADDED_CLASS)
 
       const addedNodeId =
         await test.step('the person adds a node and sees it on the canvas', async () => {
-          await installLegacyObjectSerializer(page, ADDED_CLASS)
           const addedNodeId = await addThroughSearchBox(
             page,
             ADDED_CLASS,

@@ -73,23 +73,16 @@ deliberately different. ECS/store code addresses a widget by the derived
 node as `widgets_values_form: { order: string[] }`. A portable workflow must
 not persist process-local entity IDs or require the registry that created them.
 
-`LGraphNode.serializeFromStoreState` emits this form only after extension
-serialization, and only when the final `widgets_values` array is deeply equal
-to the array core produced from the same serializable widgets before the hook.
-This is a proof obligation rather than a best-effort derivation: a declared
-form is authoritative to readers, so a wrong form is worse than no form.
-Widget-level `serialize === false` is the exclusion predicate;
-`widget.options.serialize` governs API prompt generation and does not alter the
-saved workflow layout.
+Core serialization declares this form only when it can prove the final
+`widgets_values` array is the one core produced from the live serializable
+widgets. A declared form is authoritative to readers, so a wrong form is worse
+than no form. Serializers that replace the values must declare their own form;
+the serializer reports object-shaped values that arrive without one.
 
-Custom serializers that replace values with an object must explicitly declare
-their form. Post-hook assertions require every declared name to identify a
-serializable live widget, require array length or object-key coverage to agree,
-and reject a widget order changed during serialization. An object-shaped value
-without a declaration emits the production error
-`error_serializing_widget_values_form_missing_declaration`. Missing-node shells
-cannot acquire a newly derived form, and `SubgraphNode` removes the base form
-when its final writer replaces the base widget values.
+A declared form is closed, so core does not declare one for a node whose
+definition makes its widget set depend on its values (dynamic combos, dynamic
+groups, autogrow). Readers derive those layouts from the definition, which
+follows a later selection change; a form captured before that change would not.
 
 The form is a canonical serialization field, not extension state and not an
 own property restored onto `LGraphNode`. The existing Agent minter carries the
