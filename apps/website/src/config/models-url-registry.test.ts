@@ -16,7 +16,7 @@ import {
 } from './models-url-registry'
 
 const hub: ModelsUrlEntry = { path: '/models', kind: 'hub' }
-const roots = ['/models', '/hub/models', '/hub/workflows', '/hub/apps']
+const roots = ['/models', '/hub']
 
 const sources = {
   models: new Map([['acme--image--generate-images', 'acme-image']]),
@@ -28,6 +28,7 @@ const sources = {
 
 describe('models URL registry', () => {
   it.for<[string, string | undefined]>([
+    ['/hub/', 'section'],
     ['/hub/models/', 'hub'],
     ['/models/', 'alias'],
     ['/hub/workflows/', 'section'],
@@ -142,7 +143,7 @@ describe('models URL registry', () => {
     [
       'an address outside every root',
       [hub, { path: '/workflows/new', kind: 'model' }],
-      '/workflows/new is outside /models, /hub/models, /hub/workflows, /hub/apps'
+      '/workflows/new is outside /models, /hub'
     ]
   ])('rejects a registry with %s', ([, entries, message]) => {
     expect(() => buildModelsUrlRegistry(entries, roots)).toThrow(message)
@@ -216,16 +217,9 @@ describe('models URL registry', () => {
   it('matches built pages when a root ends in a slash', () => {
     const registry = buildModelsUrlRegistry(modelsUrlEntries(sources), [
       '/models/',
-      '/hub/models/',
-      '/hub/workflows/',
-      '/hub/apps/'
+      '/hub/'
     ])
-    expect(registry.roots).toEqual([
-      '/models',
-      '/hub/models',
-      '/hub/workflows',
-      '/hub/apps'
-    ])
+    expect(registry.roots).toEqual(['/models', '/hub'])
     expect(modelsUrlKind('/hub/models/acme-image/', registry)).toBe('model')
     expect(
       unregisteredModelsPaths(

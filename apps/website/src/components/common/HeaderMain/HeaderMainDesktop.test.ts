@@ -9,7 +9,8 @@ import HeaderMainDesktop from './HeaderMainDesktop.vue'
 const ALL_SECTIONS: HubSections = {
   workflows: true,
   apps: true,
-  reshoot: true
+  reshoot: true,
+  explore: true
 }
 
 async function openHub(hubSections: HubSections = ALL_SECTIONS) {
@@ -111,7 +112,8 @@ describe('HeaderMainDesktop', () => {
     const menu = await openHub({
       workflows: false,
       apps: false,
-      reshoot: false
+      reshoot: false,
+      explore: false
     })
 
     expect(menu.queryByRole('list', { name: 'Workflows' })).toBeNull()
@@ -151,4 +153,26 @@ describe('HeaderMainDesktop', () => {
       ]).toEqual([hub, products])
     }
   )
+})
+
+describe('Hub menu: the way into the Hub home', () => {
+  it('offers the way in once the flag opens the Hub home', async () => {
+    const menu = await openHub()
+
+    expect(menu.getByTestId('nav-explore-row')).toBeTruthy()
+    expect(menu.getByTestId('nav-explore-link').getAttribute('href')).toBe(
+      '/hub/'
+    )
+  })
+
+  it('leaves the way in out while the flag is closed', async () => {
+    const menu = await openHub({
+      workflows: true,
+      apps: true,
+      reshoot: true,
+      explore: false
+    })
+
+    expect(menu.queryByTestId('nav-explore-row')).toBeNull()
+  })
 })

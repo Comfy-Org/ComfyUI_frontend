@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useMounted } from '@vueuse/core'
 import { WORKSHOP_INCLUDED } from 'astro:env/client'
 import {
@@ -19,10 +20,12 @@ import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopEnabledSettled,
+  useWorkshopFlag,
   useWorkshopWorkflowsEnabled
 } from '@/scripts/posthog'
 
-import type { CatalogueTab } from './CatalogueTabs.vue'
+import { HUB_HOME_FLAG } from '@/lib/workshop/hub-section'
+import type { HubSection } from '@/lib/workshop/hub-section'
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 import {
@@ -40,7 +43,7 @@ const {
   slug?: string
   workflowId?: string
   heading?: string
-  section?: CatalogueTab
+  section?: HubSection
 }>()
 
 const loadingLabel = t('workshop.load.pending')
@@ -66,17 +69,32 @@ const enabled = useWorkshopEnabled()
 const settled = useWorkshopEnabledSettled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const appsEnabled = useWorkshopAppsEnabled()
+const homeEnabled = useWorkshopFlag(HUB_HOME_FLAG)
 const gateAllows = computed(() => {
   if (isWorkflow.value || section === 'workflows') return workflowsEnabled.value
-  return section === 'apps' ? appsEnabled.value : undefined
+  if (section === 'apps') return appsEnabled.value
+  return section === 'explore' ? homeEnabled.value : undefined
 })
-const catalogueView = computed(() => {
+const homeView = computed(() =>
+  mounted.value && homeEnabled.value ? 'granted' : 'denied'
+)
+const sectionView = computed(() => {
   if (!mounted.value || (section !== 'models' && !settled.value))
     return 'loading'
   return section === 'models' || (enabled.value && gateAllows.value)
     ? 'granted'
     : 'denied'
 })
+const catalogueView = computed(() =>
+  section === 'explore' ? homeView.value : sectionView.value
+)
+const isHome = computed(() => section === 'explore')
+const headingClass = computed(() =>
+  cn(
+    inSection.value ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3',
+    isHome.value && 'text-center'
+  )
+)
 // Inside a category the category's own title carries the page, so the hub's
 // eyebrow and heading give up their space to it. They stay in the document
 // rather than leaving: the page keeps the one heading it is supposed to have,
@@ -184,6 +202,21 @@ function createContent() {
         const { default: ModelPage } = await import('./ModelPage.vue')
         return () => h(ModelPage, { page: { ...page, model } })
       }
+      if (section === 'explore') {
+        const [{ default: ExploreHome }, models] = await Promise.all([
+          import('./ExploreHome.vue'),
+          fetchModelsCatalogue()
+        ])
+        return () =>
+          h(
+            'div',
+            {
+              class:
+                'max-w-10xl mx-auto px-6 pb-16 max-sm:pb-10 lg:px-8 lg:pb-24'
+            },
+            [h(ExploreHome, { models, appsShown: appsEnabled.value })]
+          )
+      }
       const forwarding = forwardLegacyLink()
       const catalogue = Promise.all([
         import('./ModelsCatalogue.vue'),
@@ -235,11 +268,8 @@ const Content = shallowRef(createContent())
       v-if="heading && catalogueView !== 'denied'"
       class="mx-auto max-w-10xl px-6 pt-8 max-sm:pt-5 lg:px-8 lg:pt-12"
     >
-      <div
-        data-testid="workshop-heading"
-        :class="inSection ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3'"
-      >
-        <p :class="workshopEyebrowClass">
+      <div data-testid="workshop-heading" :class="headingClass">
+        <p v-if="!isHome" :class="workshopEyebrowClass">
           {{ t('workshop.catalogue.eyebrow') }}
         </p>
         <h1 :class="workshopHeadingClass">{{ heading }}</h1>

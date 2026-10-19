@@ -15,6 +15,7 @@ import { NO_HUB_SECTIONS, getMainNavigation } from '@/data/mainNavigation'
 import type { HubSections, NavItem } from '@/data/mainNavigation'
 import type { Locale } from '@/i18n/translations'
 import NavColumn from './NavColumn.vue'
+import NavExploreRow from './NavExploreRow.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
@@ -58,7 +59,10 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
 </script>
 
 <template>
-  <NavigationMenu data-testid="desktop-nav-links">
+  <NavigationMenu
+    :viewport-align="hubSections.explore ? 'start' : 'center'"
+    data-testid="desktop-nav-links"
+  >
     <NavigationMenuList>
       <NavigationMenuItem
         v-for="navItem in mainNavigation"
@@ -77,6 +81,10 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           </NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
             <div class="w-max">
+              <NavExploreRow
+                v-if="navItem.exploreLink"
+                :link="navItem.exploreLink"
+              />
               <ul :class="cn('flex', columnGap(navItem))">
                 <NavFeaturedCard
                   v-if="navItem.featured"

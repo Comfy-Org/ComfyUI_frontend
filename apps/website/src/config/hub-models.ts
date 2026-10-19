@@ -2,6 +2,7 @@ import hubAppNames from './hub-app-names.json' with { type: 'json' }
 import hubWorkflowNames from './hub-workflow-names.json' with { type: 'json' }
 import { modelAliasUrls, modelPageUrls } from './model-urls'
 
+export const HUB_PATH = '/hub'
 export const HUB_MODELS_PATH = '/hub/models'
 export const HUB_WORKFLOWS_PATH = '/hub/workflows'
 export const HUB_APPS_PATH = '/hub/apps'
