@@ -4,6 +4,7 @@ import type { Object3D } from 'three'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import { adoptClonedModel } from '@/extensions/core/load3d/quadWireframe/adoptClonedModel'
 import { cloneObject3DResources } from '@/extensions/core/load3d/SceneModelManager'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 type SkeletonUtilsModule = { clone: (source: Object3D) => Object3D }
@@ -67,8 +68,10 @@ export async function copyLoad3dState(source: Load3d, target: Load3d) {
 
     if (source.isSplatModel()) {
       const originalURL = source.modelManager.originalURL
-      if (originalURL && (await target.loadModel(originalURL)) !== 'loaded') {
-        return
+      if (originalURL) {
+        const outcome = await target.loadModel(originalURL)
+        reportLoadModelOutcome(outcome)
+        if (outcome !== 'loaded') return
       }
     } else {
       const SkeletonUtils = await loadSkeletonUtils()

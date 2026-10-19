@@ -5,6 +5,7 @@ import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -513,6 +514,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       setupAnimationEvents()
 
       const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
       if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
@@ -546,6 +548,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     try {
       saveStandaloneConfig()
       const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
       if (outcome !== 'loaded') return
       currentModelUrl = modelUrl
       restoreStandaloneConfig(modelUrl)
@@ -839,6 +842,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       )
 
       const outcome = await load3d.loadModel(modelUrl)
+      reportLoadModelOutcome(outcome)
       if (outcome !== 'loaded') return
 
       captureAdapterFlags(load3d)

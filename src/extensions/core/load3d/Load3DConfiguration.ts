@@ -3,6 +3,7 @@ import { effectScope, watch } from 'vue'
 import { LOAD3D_NONE_MODEL } from '@/extensions/core/load3d/constants'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import type {
   CameraConfig,
   CameraState,
@@ -294,9 +295,8 @@ class Load3DConfiguration {
         )
       )
 
-      const outcome = await this.load3d.loadModel(modelUrl, filename, {
-        silentOnNotFound
-      })
+      const outcome = await this.load3d.loadModel(modelUrl, filename)
+      reportLoadModelOutcome(outcome, { silentOnNotFound })
       if (outcome !== 'loaded') return
 
       const modelConfig = this.loadModelConfig()

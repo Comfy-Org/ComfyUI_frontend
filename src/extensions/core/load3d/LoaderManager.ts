@@ -1,8 +1,5 @@
 import type * as THREE from 'three'
 
-import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast/toastStore'
-
 import { MeshModelAdapter } from './MeshModelAdapter'
 import { createAdapterRef, fetchModelData } from './ModelAdapter'
 import type {
@@ -23,12 +20,6 @@ import type {
   ModelManagerInterface
 } from './interfaces'
 
-/**
- * three.js's HttpError attaches the failed `Response` to the thrown Error.
- * fetchModelData throws a plain Error whose message embeds the status code.
- * Detect both forms so we can keep the toast for parse / network failures
- * but stay silent on 404 when the caller opted in.
- */
 function isNotFoundError(error: unknown): boolean {
   if (!(error instanceof Error)) return false
   if (
@@ -113,9 +104,8 @@ export class LoaderManager implements LoaderManagerInterface {
         // The agent path may pass a credential-bearing URL, so keep this
         // error URL-free; the thumbnail caller redacts what it reports.
         if (options?.silent) throw new TypeError('Unknown model file type')
-        useToast().warning(t('toastMessages.couldNotDetermineFileType'))
         this.eventManager.emitEvent('modelLoadingEnd', null)
-        return 'empty'
+        return 'unknown-type'
       }
 
       const result = await this.loadModelInternal(
@@ -206,17 +196,9 @@ export class LoaderManager implements LoaderManagerInterface {
   ): LoadModelOutcome {
     if (loadId !== this.currentLoadId) return 'cancelled'
     this.eventManager.emitEvent('modelLoadingEnd', null)
-    // A silent load's error (and the untrusted URL it may embed, e.g.
-    // from three.js's FileLoader "fetch for <url> responded with ...")
-    // is the caller's to report — logging it here on their behalf would
-    // write it to the console unredacted regardless of what the caller
-    // does with the rethrown error.
     if (options?.silent) throw error
     console.error('Error loading model:', error)
-    if (!(options?.silentOnNotFound && isNotFoundError(error))) {
-      useToast().warning(t('toastMessages.errorLoadingModel'))
-    }
-    return 'failed'
+    return isNotFoundError(error) ? 'not-found' : 'failed'
   }
 
   private disposeLoadResult(

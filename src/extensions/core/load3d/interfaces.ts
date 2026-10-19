@@ -252,17 +252,8 @@ export interface LoadModelOptions {
   /** Cancels network work when the caller abandons the load. */
   signal?: AbortSignal
   /**
-   * When true, suppress the user-facing toast for file-not-found
-   * (HTTP 404) errors. Other errors (parse failures, network drops)
-   * still surface a toast. Use for "preview" surfaces whose model
-   * file is server-produced and may legitimately be absent locally
-   * (e.g. shared workflows on a fresh machine).
-   */
-  silentOnNotFound?: boolean
-  /**
-   * When true, raise no toast and reject instead of returning `'empty'` or
-   * `'failed'`. Use for offscreen renders such as thumbnail generation, whose
-   * caller reports the failure itself.
+   * When true, reject instead of returning a failure outcome, without logging
+   * the untrusted URL. Use for offscreen renders such as thumbnail generation.
    */
   silent?: boolean
 }
@@ -283,11 +274,20 @@ export interface SceneOverlay {
  *   the manager may already be torn down.
  * - `'empty'`: for a normal call, the URL had no filename, no adapter claimed
  *   the file, or the adapter produced no model.
- * - `'failed'`: for a normal call, fetching, parsing, or model setup threw.
+ * - `'unknown-type'`: the file type could not be determined from the name.
+ * - `'not-found'`: the model file responded with HTTP 404.
+ * - `'failed'`: fetching, parsing, or model setup threw.
  *
- * With `{ silent: true }`, the `'empty'` and `'failed'` cases reject instead.
+ * With `{ silent: true }`, every outcome except `'loaded'` and `'cancelled'`
+ * rejects instead.
  */
-export type LoadModelOutcome = 'loaded' | 'cancelled' | 'empty' | 'failed'
+export type LoadModelOutcome =
+  | 'loaded'
+  | 'cancelled'
+  | 'empty'
+  | 'unknown-type'
+  | 'not-found'
+  | 'failed'
 
 export interface LoaderManagerInterface {
   init(): void

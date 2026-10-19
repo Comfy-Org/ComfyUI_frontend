@@ -1,4 +1,3 @@
-import { useToast } from '@/components/ui/toast/toastStore'
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -349,14 +348,13 @@ describe('LoaderManager', () => {
       expect(modelManager.originalFileName).toBe('model')
     })
 
-    it('alerts when the file extension cannot be determined', async () => {
+    it('reports an unknown type when the file extension cannot be determined', async () => {
       const { lm, modelManager } = makeLoaderManager()
 
-      await lm.loadModel('api/view?other=1')
-
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.couldNotDetermineFileType'
+      await expect(lm.loadModel('api/view?other=1')).resolves.toBe(
+        'unknown-type'
       )
+
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(meshLoad).not.toHaveBeenCalled()
     })
@@ -502,7 +500,6 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(useToast().warning).not.toHaveBeenCalled()
       expect(console.error).not.toHaveBeenCalled()
     })
 
@@ -535,7 +532,6 @@ describe('LoaderManager', () => {
         'modelLoadingEnd',
         null
       )
-      expect(useToast().warning).not.toHaveBeenCalled()
     })
 
     it('dispatches .ply via the adapter matches() tiebreaker, not extension order — a splat adapter whose matches() returns false yields to point-cloud', async () => {
@@ -576,92 +572,64 @@ describe('LoaderManager', () => {
       expect(lm.getCurrentAdapter()?.kind).toBe('pointCloud')
     })
 
-    it('handles adapter errors by alerting and still emitting modelLoadingEnd', async () => {
+    it('reports adapter errors as failed and still emits modelLoadingEnd', async () => {
       const { lm, eventManager } = makeLoaderManager()
-      const err = new Error('boom')
-      meshLoad.mockRejectedValueOnce(err)
+      meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
 
-      await lm.loadModel('api/view?filename=cube.glb')
+      await expect(lm.loadModel('api/view?filename=cube.glb')).resolves.toBe(
+        'failed'
+      )
 
       expect(eventManager.emitEvent).toHaveBeenCalledWith(
         'modelLoadingEnd',
         null
       )
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.errorLoadingModel'
-      )
       expect(console.error).toHaveBeenCalled()
     })
 
-    it('suppresses the alert on a 404 when silentOnNotFound is set', async () => {
+    it.for([
+      {
+        name: 'a status code in the error message',
+        error: new Error('fetch for "..." responded with 404: Not Found')
+      },
+      {
+        name: 'the response status on three.js HttpError',
+        error: Object.assign(new Error('not found'), {
+          response: { status: 404 }
+        })
+      }
+    ])('reports not-found from $name', async ({ error }) => {
       const { lm } = makeLoaderManager()
-      const notFound = new Error(
-        'fetch for "..." responded with 404: Not Found'
-      )
-      meshLoad.mockRejectedValueOnce(notFound)
+      meshLoad.mockRejectedValueOnce(error)
 
-      await lm.loadModel('api/view?filename=cube.glb', undefined, {
-        silentOnNotFound: true
-      })
-
-      expect(console.error).toHaveBeenCalled()
-      expect(useToast().warning).not.toHaveBeenCalledWith(
-        'toastMessages.errorLoadingModel'
+      await expect(lm.loadModel('api/view?filename=cube.glb')).resolves.toBe(
+        'not-found'
       )
     })
 
-    it('detects a 404 from the response status field on three.js HttpError', async () => {
-      const { lm } = makeLoaderManager()
-      const httpError = Object.assign(new Error('not found'), {
-        response: { status: 404 }
-      })
-      meshLoad.mockRejectedValueOnce(httpError)
-
-      await lm.loadModel('api/view?filename=cube.glb', undefined, {
-        silentOnNotFound: true
-      })
-
-      expect(useToast().warning).not.toHaveBeenCalledWith(
-        'toastMessages.errorLoadingModel'
-      )
-    })
-
-    it('still alerts on non-404 errors when silentOnNotFound is set', async () => {
-      const { lm } = makeLoaderManager()
-      meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
-
-      await lm.loadModel('api/view?filename=cube.glb', undefined, {
-        silentOnNotFound: true
-      })
-
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.errorLoadingModel'
-      )
-    })
-
-    it('rejects with the load failure instead of alerting when silent is set', async () => {
+    it('rejects with the load failure when silent is set', async () => {
       const { lm } = makeLoaderManager()
       meshLoad.mockRejectedValueOnce(new Error('parse failure: bad header'))
 
       await expect(
         lm.loadModel('api/view?filename=cube.glb', undefined, { silent: true })
       ).rejects.toThrow('parse failure: bad header')
-      expect(useToast().warning).not.toHaveBeenCalled()
     })
 
-    it('rejects on an undeterminable file type instead of alerting when silent is set', async () => {
+    it('rejects on an undeterminable file type when silent is set', async () => {
       const { lm } = makeLoaderManager()
 
       await expect(
         lm.loadModel('api/view?type=output', undefined, { silent: true })
       ).rejects.toThrow(/Unknown model file type/)
-      expect(useToast().warning).not.toHaveBeenCalled()
     })
 
     it('ends loading when a visible load has no file type', async () => {
       const { lm, eventManager } = makeLoaderManager()
 
-      await expect(lm.loadModel('api/view?type=output')).resolves.toBe('empty')
+      await expect(lm.loadModel('api/view?type=output')).resolves.toBe(
+        'unknown-type'
+      )
 
       expect(eventManager.emitEvent).toHaveBeenCalledWith(
         'modelLoadingEnd',
@@ -678,7 +646,6 @@ describe('LoaderManager', () => {
         })
       ).rejects.toThrow(/No model was produced/)
       expect(modelManager.setupModel).not.toHaveBeenCalled()
-      expect(useToast().warning).not.toHaveBeenCalled()
     })
 
     it('rejects when the URL carries no filename and silent is set', async () => {
@@ -687,7 +654,6 @@ describe('LoaderManager', () => {
       await expect(
         lm.loadModel('api/view?type=output', 'scene.glb', { silent: true })
       ).rejects.toThrow(/No model was produced/)
-      expect(useToast().warning).not.toHaveBeenCalled()
       expect(console.error).not.toHaveBeenCalled()
     })
 
@@ -864,7 +830,6 @@ describe('LoaderManager', () => {
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(disposeGeometry).toHaveBeenCalledOnce()
       expect(disposeMaterial).toHaveBeenCalledOnce()
-      expect(useToast().warning).not.toHaveBeenCalled()
     })
 
     it('does not start an adapter load after disposal during adapter selection', async () => {
@@ -926,7 +891,6 @@ describe('LoaderManager', () => {
 
       await expect(load).resolves.toBe('cancelled')
       expect(modelManager.setupModel).not.toHaveBeenCalled()
-      expect(useToast().warning).not.toHaveBeenCalled()
     })
 
     it('drops a load started after disposal without alerting', async () => {
@@ -938,7 +902,6 @@ describe('LoaderManager', () => {
       )
       expect(modelManager.setupModel).not.toHaveBeenCalled()
       expect(meshLoad).not.toHaveBeenCalled()
-      expect(useToast().warning).not.toHaveBeenCalled()
     })
 
     it('logs and drops the load when the URL is missing a filename param', async () => {
@@ -1009,7 +972,6 @@ describe('LoaderManager', () => {
 
       await Promise.all([firstPromise, secondPromise])
 
-      expect(useToast().warning).not.toHaveBeenCalled()
       const endEmits = eventManager.emitEvent.mock.calls.filter(
         (call: unknown[]) => call[0] === 'modelLoadingEnd'
       )

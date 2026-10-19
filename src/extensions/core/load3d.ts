@@ -30,6 +30,7 @@ import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
@@ -108,7 +109,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
 
     useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
-        await load3d.loadModel(modelUrl)
+        reportLoadModelOutcome(await load3d.loadModel(modelUrl))
       } catch {
         useToast().warning(t('toastMessages.failedToLoadModel'))
       }
