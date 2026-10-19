@@ -61,7 +61,13 @@ jobs:
       - name: Verify architecture contracts
         id: architecture
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && hashFiles('tools/architecture/src/cli.ts') != '' }}
-        run: pnpm architecture:check --report "$RUNNER_TEMP/architecture-findings.md"
+        # PR heads branched before --report existed reject it; drop the fallback once those have rebased.
+        run: |
+          if grep -q -- '--report' tools/architecture/src/cli.ts; then
+            pnpm architecture:check --report "$RUNNER_TEMP/architecture-findings.md"
+          else
+            pnpm architecture:check
+          fi
 
       - name: Check server facts on changed lines
         env:
