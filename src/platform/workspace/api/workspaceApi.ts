@@ -1,5 +1,6 @@
 import type {
   AcceptInviteResponse,
+  AutoReloadSettings,
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
   BillingEventsResponse,
@@ -144,6 +145,7 @@ export type { BillingStatusResponse }
 export type { RenewalInvoice }
 export type { ScheduledPlanChange }
 
+export type { AutoReloadSettings }
 export type { BillingBalanceResponse }
 export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
@@ -649,6 +651,23 @@ export const workspaceApi = {
       return response.data
     } catch (err) {
       handleAxiosError(err, 'getBillingCapabilities')
+    }
+  },
+
+  /**
+   * Get automatic top-up settings and status for the current workspace
+   * GET /api/billing/auto-reload
+   */
+  async getBillingAutoReload(): Promise<AutoReloadSettings> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<AutoReloadSettings>(
+        workspaceApiUrl('/billing/auto-reload'),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'getBillingAutoReload')
     }
   },
 

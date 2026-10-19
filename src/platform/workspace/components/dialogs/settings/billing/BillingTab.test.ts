@@ -9,6 +9,8 @@ import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -23,6 +25,7 @@ import BillingTab from './BillingTab.vue'
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/cloud/subscription/composables/useFreeTierQuota'))
@@ -58,6 +61,9 @@ interface Scenario {
   capabilitiesReady?: boolean
   capabilitiesResolved?: boolean
   balance?: BalanceInfo | null
+  autoTopUpFlag?: boolean
+  canManageAutoTopUp?: boolean
+  canTopUp?: boolean
 }
 
 function arrange(scenario: Scenario = {}) {
@@ -102,7 +108,14 @@ function arrange(scenario: Scenario = {}) {
         () => scenario.canRevertScheduledChange ?? false
       ),
       canReactivate: computed(() => scenario.canReactivate ?? false),
-      canTopUp: computed(() => true),
+      canTopUp: computed(() => scenario.canTopUp ?? true),
+      canManageAutoTopUp: computed(() =>
+        receiveServerFact(
+          'can_manage_auto_top_up',
+          scenario.canManageAutoTopUp ?? true
+        )
+      ),
+      autoTopUpSetup: computed(() => null),
       isReady: computed(() => scenario.capabilitiesReady ?? true),
       hasResolvedCapabilities: computed(
         () => scenario.capabilitiesResolved ?? true
@@ -111,6 +124,8 @@ function arrange(scenario: Scenario = {}) {
       refresh
     })
   )
+  vi.mocked(useFeatureFlags().flags).autoTopUpEnabled =
+    scenario.autoTopUpFlag ?? true
   vi.mocked(useWorkspaceUI).mockReturnValue(
     fromPartial({ workspaceRole: computed(() => scenario.role ?? 'owner') })
   )
@@ -488,5 +503,34 @@ describe('BillingTab', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
 
     expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalled()
+  })
+
+  describe('Auto top-up card', () => {
+    it('shows the card when the flag is on and the server grants both facts', async () => {
+      arrange()
+
+      expect(
+        await screen.findByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent('Off')
+    })
+
+    it.for<{ case: string; scenario: Scenario }>([
+      { case: 'the flag is off', scenario: { autoTopUpFlag: false } },
+      {
+        case: 'a member without can_manage_auto_top_up',
+        scenario: { role: 'member', canManageAutoTopUp: false }
+      },
+      {
+        case: 'top-up is paused (can_top_up false)',
+        scenario: { canTopUp: false }
+      }
+    ])('hides the card when $case', ({ scenario }) => {
+      arrange(scenario)
+
+      expect(
+        screen.queryByTestId('billing-auto-top-up-card')
+      ).not.toBeInTheDocument()
+      expect(workspaceApi.getBillingAutoReload).not.toHaveBeenCalled()
+    })
   })
 })

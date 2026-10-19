@@ -16,6 +16,7 @@ import type {
   PromotedHostWrite,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
+import { isEqual } from 'es-toolkit'
 
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
@@ -77,7 +78,7 @@ export interface DocOpMinterDeps {
    * sent the root host's `add_node` into the same document.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
-  onWidgetWriteRefused(): void
+  onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
 }
 
 type PromotedWriteRefusal =
@@ -108,16 +109,15 @@ type PendingOp =
 
 /**
  * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
- * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
- * sidecar projection accepts only the pinned catalog's `widget_order` names;
- * control widgets like a `button` serialize a named entry but are not in
- * `widget_order`, and any extra key is an opaque server-side 500).
+ * own `widgets_values_named` minus non-value widgets. A validated
+ * `widgets_values_form` travels with those values so the host does not need
+ * the pinned catalog to recover their names. Custom serializers that declare
+ * an object or a changed array keep their original shape and residue.
  *
  * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
  * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
- * entry. The applier rejects a name-keyed record for such a class
- * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
- * those keep the positional form `serialize()` already produced.
+ * entry. Those keep the serialized array shape rather than switching to the
+ * named shadow; a declared form makes that array self-describing.
  *
  * `flags.ghost` is a placement-in-progress marker the placement click clears
  * without minting, so the document must not record it.
@@ -137,12 +137,28 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
-  const hasDeclaredObjectForm =
-    snapshot.widgets_values_form !== undefined &&
-    isNonArrayObject(snapshot.widgets_values)
-  return named && !node.isVirtualNode && !hasDeclaredObjectForm
-    ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
-    : snapshot
+  if (!named || node.isVirtualNode) return snapshot
+  const declaredForm = snapshot.widgets_values_form
+  const declaredValues = snapshot.widgets_values
+  const hasCustomDeclaredValues =
+    declaredForm !== undefined &&
+    (isNonArrayObject(declaredValues) ||
+      (Array.isArray(declaredValues) &&
+        !isEqual(declaredValues, Object.values(named))))
+  if (hasCustomDeclaredValues) return snapshot
+
+  const values = valueWidgetsOnly(node, named)
+  const { widgets_values_form: _form, ...snapshotWithoutForm } = snapshot
+  const order = declaredForm?.order.filter((name) =>
+    Object.hasOwn(values, name)
+  )
+  return order?.length
+    ? {
+        ...snapshotWithoutForm,
+        widgets_values: values,
+        widgets_values_form: { order }
+      }
+    : { ...snapshotWithoutForm, widgets_values: values }
 }
 
 function valueWidgetsOnly(
@@ -495,7 +511,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
     if ('reason' in routed) {
       reportRefusal(rootGraphId, event, routed)
-      deps.onWidgetWriteRefused()
+      deps.onWidgetWriteRefused(event.nodeId, event.name)
       return
     }
     schedule({ kind: 'op', operation: routed })
