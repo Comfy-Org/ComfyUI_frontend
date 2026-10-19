@@ -113,10 +113,6 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
       await bootstrapTracer.settle('auth-gate/initialized', waitForCloudAuth)
       await bootCloudIdentity()
 
-      // Signed-out cloud pages (/cloud/login) must issue no authenticated
-      // request, so bootstrap parks here until the user signs in rather than
-      // loading stores that can only answer 401. A validated stored API key
-      // is a sign-in too: the router admits it, so bootstrap must as well.
       const authStore = useAuthStore()
       const apiKeyAuthStore = useApiKeyAuthStore()
       await until(

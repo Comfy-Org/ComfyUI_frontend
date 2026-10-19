@@ -5,20 +5,20 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 const API_KEY = 'comfyui-e2e-cloud-api-key'
 
-/** A cloud tab whose only credential is a stored API key that the API accepts. */
 const test = comfyPageFixture.extend({
   page: async ({ page }, use) => {
     await page.route('**/customers', (route) => {
-      if (route.request().method() !== 'POST') return route.fallback()
+      const request = route.request()
+      if (request.method() !== 'POST') return route.fallback()
+      if (request.headers()['x-api-key'] !== API_KEY) {
+        return route.fulfill({ status: 401, json: { message: 'Unauthorized' } })
+      }
       return route.fulfill({ status: 201, json: { id: 'api-key-owner' } })
     })
     await use(page)
   }
 })
 
-// The router admits an API-key session to the app, but bootstrap waited only
-// for a Firebase or web-session sign-in, so settings never loaded and the
-// loading overlay never cleared (stagingcloud live retest blocked 2026-10-19).
 test.describe('Cloud boot on an API-key session', { tag: '@cloud' }, () => {
   test.describe.configure({ timeout: 60_000 })
 
