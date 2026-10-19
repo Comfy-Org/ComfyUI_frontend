@@ -4,9 +4,7 @@
     data-testid="billing-plan-row"
   >
     <div class="flex min-w-0 flex-col gap-1">
-      <h3
-        class="m-0 text-base font-semibold wrap-break-word text-base-foreground"
-      >
+      <h3 class="m-0 text-base font-semibold wrap-break-word text-foreground">
         {{ title }}
       </h3>
       <p

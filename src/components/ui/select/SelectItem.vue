@@ -17,10 +17,10 @@ const { class: className, ...restProps } = defineProps<
       cn(
         'relative flex w-full cursor-pointer items-center justify-between select-none',
         'gap-3 rounded-sm px-2 py-3 text-sm outline-none',
-        'hover:bg-secondary-background-hover',
-        'focus:bg-secondary-background-hover',
-        'data-[state=checked]:bg-secondary-background-selected',
-        'data-[state=checked]:hover:bg-secondary-background-selected',
+        'hover:bg-accent',
+        'focus:bg-accent',
+        'data-[state=checked]:bg-muted',
+        'data-[state=checked]:hover:bg-muted',
         'data-disabled:pointer-events-none data-disabled:opacity-50',
         className
       )
@@ -31,7 +31,7 @@ const { class: className, ...restProps } = defineProps<
     </SelectItemText>
 
     <SelectItemIndicator class="flex shrink-0 items-center justify-center">
-      <i class="icon-[lucide--check] text-base-foreground" aria-hidden="true" />
+      <i class="icon-[lucide--check] text-foreground" aria-hidden="true" />
     </SelectItemIndicator>
   </SelectItem>
 </template>

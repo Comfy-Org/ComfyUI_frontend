@@ -137,7 +137,7 @@ export const CustomBackground: Story = {
         <SearchInput
           v-bind="args"
           v-model="searchText"
-          class="bg-component-node-widget-background"
+          class="bg-input"
         />
       </div>
     `
