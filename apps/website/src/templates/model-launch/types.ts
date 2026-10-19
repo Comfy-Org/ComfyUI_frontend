@@ -52,6 +52,9 @@ export interface ModelLaunchHero {
   // 'overlay' centres the eyebrow, heading and CTAs on top of the media behind
   // a scrim, which is how the announcement pages are designed.
   layout?: 'media-first' | 'content-first' | 'overlay'
+  mediaOutline?: 'gray'
+  titleSize?: 'default' | 'compact'
+  logoSize?: 'default' | 'large'
   promptBar?: ModelLaunchPromptBar
   // Small label above the heading on announcement pages, e.g. COMING SOON.
   eyebrowKey?: TranslationKey
@@ -61,6 +64,9 @@ export interface ModelLaunchHero {
   // Rendered muted directly after `titleKey`, for the two-tone Figma heading.
   titleRestKey?: TranslationKey
   descriptionKey?: TranslationKey
+  // Shorter copy shown in place of `descriptionKey` below the md breakpoint,
+  // for the media-first and content-first layouts.
+  mobileDescriptionKey?: TranslationKey
   // Optional so a hero can render as title + description + badges only.
   primaryCta?: ModelLaunchCta
   secondaryCta?: ModelLaunchCta
@@ -77,26 +83,31 @@ export type ModelLaunchMedia =
   | { kind: 'video'; src: string; posterSrc?: string }
   | { kind: 'image'; src: string }
 
-interface ModelLaunchGalleryCard {
+export interface ModelLaunchGalleryCard {
   id: string
   name: LocalizedText
   tier: ModelLaunchTier
-  note: LocalizedText
+  note?: LocalizedText
   description: LocalizedText
   // The prompt that produced the clip. Cards that have one also offer a copy
   // button; cards still waiting on copy simply omit it.
   prompt?: LocalizedText
+  span?: 'full'
+  expandable?: boolean
   media: ModelLaunchMedia
+  comparison?: { beforeSrc: string; afterSrc: string }
   // Brand mark drawn over the card, for pages whose gallery mixes models.
   logoSrc?: string
   href: string
 }
 
 export interface ModelLaunchGallery {
-  headingKey: TranslationKey
+  headingKey?: TranslationKey
   // 'accent' paints the per-card link solid yellow. Defaults to the muted
   // treatment /minimax ships, so opting in cannot restyle a live page.
-  ctaVariant?: 'muted' | 'accent'
+  ctaVariant?: 'muted' | 'accent' | 'none'
+  cardMeta?: 'default' | 'none'
+  captionPlacement?: 'below' | 'overlay'
   cards: readonly ModelLaunchGalleryCard[]
 }
 
@@ -114,6 +125,45 @@ export interface ModelLaunchAudioCard {
 
 export interface ModelLaunchAudioGallery {
   cards: readonly ModelLaunchAudioCard[]
+}
+
+interface ModelLaunchListVoice {
+  name: string
+  alias?: string
+}
+
+export interface ModelLaunchListItem {
+  id: string
+  title: LocalizedText
+  prompt: string
+  durationSeconds: number
+  voices: readonly ModelLaunchListVoice[]
+  href: string
+  audioSources: readonly { src: string; type: string }[]
+}
+
+export interface ModelLaunchList {
+  headingKey: TranslationKey
+  ctaKey?: TranslationKey
+  items: readonly ModelLaunchListItem[]
+}
+
+interface ModelLaunchShowcaseCard {
+  id: string
+  alt: LocalizedText
+  src: string
+}
+
+// A centred heading and subhead over a full-bleed strip of stills. The strip
+// stands still until the pointer is over it, then loops as a marquee. Visitors
+// who prefer reduced motion get a still strip they can scroll by hand. A page
+// stacks one per use case.
+export interface ModelLaunchShowcase {
+  headingKey: TranslationKey
+  descriptionKey?: TranslationKey
+  // Inline text link rendered after the description.
+  cta?: ModelLaunchCta
+  cards: readonly ModelLaunchShowcaseCard[]
 }
 
 interface ModelLaunchPricingBanner {
@@ -181,33 +231,58 @@ export interface ModelLaunchComparison {
   rows: readonly ModelLaunchComparisonRow[]
 }
 
+interface ModelLaunchBeforeAfterTab {
+  id: string
+  label: LocalizedText
+  caption: LocalizedText
+  beforeSrc: string
+  afterSrc: string
+  beforePosterSrc?: string
+  afterPosterSrc?: string
+}
+
+export interface ModelLaunchBeforeAfter {
+  headingKey: TranslationKey
+  bodyKey?: TranslationKey
+  tabs: readonly ModelLaunchBeforeAfterTab[]
+}
+
 export interface ModelLaunchRunOptions {
   headingKey: TranslationKey
   subtitleKey: TranslationKey
   ctaKey: TranslationKey
 }
 
+// The yellow promo card. It points at /mcp unless a page names another route
+// to cross-sell. It renders above the testimonials by default; a page that
+// sets `highlight` at the top level instead places it in the body order.
+export interface ModelLaunchHighlight {
+  titleKey: TranslationKey
+  descriptionKey: TranslationKey
+  ctaKey: TranslationKey
+  route?: keyof ReturnType<typeof getRoutes>
+}
+
 export interface ModelLaunchReviews {
   headingKey: TranslationKey
-  // The promo card above the testimonials. It points at /mcp unless a page
-  // names another route to cross-sell.
-  highlight: {
-    titleKey: TranslationKey
-    descriptionKey: TranslationKey
-    ctaKey: TranslationKey
-    route?: keyof ReturnType<typeof getRoutes>
-  }
+  autoplayMs?: number
+  quoteSize?: 'default' | 'compact'
+  highlight?: ModelLaunchHighlight
 }
 
 // The optional body sections, in the order they render between the hero and the
 // run-options footer. hero/runOptions/reviews are fixed and are not listed here.
 export type ModelLaunchSection =
+  | 'showcases'
+  | 'beforeAfter'
   | 'gallery'
   | 'audioGallery'
+  | 'list'
   | 'steps'
   | 'comparison'
   | 'pricing'
   | 'faq'
+  | 'highlight'
   | 'closingCta'
 
 // The order the video launch pages shipped with; audioGallery slots in beside
@@ -215,10 +290,14 @@ export type ModelLaunchSection =
 // reorders its sections with `sectionOrder` rather than editing the template,
 // so one page's layout never moves another's.
 export const DEFAULT_SECTION_ORDER: readonly ModelLaunchSection[] = [
+  'showcases',
+  'beforeAfter',
   'gallery',
   'audioGallery',
+  'list',
   'pricing',
   'faq',
+  'highlight',
   'steps',
   'comparison',
   'closingCta'
@@ -229,13 +308,20 @@ export interface ModelLaunchPage {
   metaDescriptionKey: TranslationKey
   breadcrumbLabelKey: TranslationKey
   breadcrumbUpdatedKey: TranslationKey
+  // Puts the updated date on its own row under the crumbs below the md
+  // breakpoint instead of beside them.
+  stackBreadcrumbOnMobile?: boolean
   hero: ModelLaunchHero
+  showcases?: readonly ModelLaunchShowcase[]
+  beforeAfter?: ModelLaunchBeforeAfter
   // Absent on announcement pages, which render hero, run options and reviews
   // only until the model ships.
   gallery?: ModelLaunchGallery
   audioGallery?: ModelLaunchAudioGallery
+  list?: ModelLaunchList
   pricing?: ModelLaunchPricing
   faq?: ModelLaunchFaqSection
+  highlight?: ModelLaunchHighlight
   steps?: ModelLaunchSteps
   comparison?: ModelLaunchComparison
   // Pages that end on a steps CTA row do not need a separate closing CTA.

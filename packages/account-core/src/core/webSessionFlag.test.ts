@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  readAnonymousFeatureFlag,
   readWebSessionProbe,
   resolveUnifiedWebSession
 } from './webSessionFlag.js'
@@ -49,6 +50,27 @@ const FAILURES: ReadonlyArray<{
   },
   { name: 'a non-object body', fetchImpl: () => jsonFetch(null) }
 ]
+
+describe('readAnonymousFeatureFlag', () => {
+  it.for([
+    { body: { sso_enabled: true }, expected: true },
+    { body: { sso_enabled: 'true' }, expected: false },
+    { body: { web_session_probe: true }, expected: false }
+  ])(
+    'reads only the named key: $body is $expected',
+    async ({ body, expected }) => {
+      const fetchImpl = jsonFetch(body)
+
+      await expect(
+        readAnonymousFeatureFlag(
+          { cloudBaseUrl: CLOUD, fetchImpl },
+          'sso_enabled'
+        )
+      ).resolves.toBe(expected)
+      expect(sentInit(fetchImpl).init).toEqual({ credentials: 'omit' })
+    }
+  )
+})
 
 describe('readWebSessionProbe', () => {
   it('sends a plain anonymous GET: credentials omitted, no headers or cache mode', async () => {

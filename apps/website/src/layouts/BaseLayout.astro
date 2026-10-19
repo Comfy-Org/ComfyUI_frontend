@@ -6,7 +6,8 @@ import SiteFooter from '@/components/common/SiteFooter.vue'
 import GoogleTagManager from '@/components/common/GoogleTagManager.astro'
 import HeaderMain from '@/components/common/HeaderMain/HeaderMain.vue'
 import AnnouncementBanner from '@/templates/drops/AnnouncementBanner.vue'
-import { bannerConfig, getBannerData } from '@/config/banner'
+import type { BannerConfig } from '@/config/banner'
+import { activeBannerFor, bannerConfig, getBannerData } from '@/config/banner'
 import { getRoutes } from '@/config/routes'
 import {
   headIndexing,
@@ -14,8 +15,11 @@ import {
   isNoindexPathname
 } from '@/config/indexing'
 import { isWorkshopInBuild } from '@/config/workshop-release'
+import { appModels } from '@/config/workshop-app-content'
+import type { HubApp } from '@/data/mainNavigation'
 import {
   hreflangAlternates,
+  localeAlternates,
   ogLocale,
   ogLocaleAlternates
 } from '@/lib/hreflang'
@@ -24,8 +28,7 @@ import { isHrefActive } from '@/composables/useCurrentPath'
 import {
   BANNER_DISMISS_ATTR,
   BANNER_STORAGE_KEY,
-  createBannerVersion,
-  evaluateBannerVisibility
+  createBannerVersion
 } from '@/utils/banner'
 import { fetchGitHubStars, formatStarCount } from '@/utils/github'
 import {
@@ -56,6 +59,8 @@ interface Props {
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
   hideAnnouncementBanner?: boolean
+  smoothScroll?: boolean
+  banner?: BannerConfig
   /** PP Formula faces this page renders above the fold beyond the site-wide set. */
   preloadFonts?: readonly PPFormulaFace[]
 }
@@ -75,6 +80,8 @@ const {
   extraJsonLd,
   minimal = false,
   hideAnnouncementBanner = false,
+  smoothScroll = false,
+  banner,
   preloadFonts = []
 } = Astro.props
 
@@ -92,6 +99,7 @@ const head = headIndexing({
   pageNoindex: shouldNoindex,
   indexableBuild: isIndexableBuild()
 })
+const languageAlternates = localeAlternates(canonicalURL.pathname)
 const alternates = head.emitAlternates
   ? hreflangAlternates(canonicalURL.pathname, canonicalURL.origin)
   : []
@@ -104,14 +112,15 @@ const githubStars = rawStars ? formatStarCount(rawStars) : ''
 // Announcement banner — build-time visibility gate + content-hash version key.
 // A promo never advertises the page you are already on, so the banner is
 // suppressed when its CTA points at the current path.
-const bannerData = getBannerData(bannerConfig, locale)
+const activeBanner = activeBannerFor(banner, {
+  currentLocale: locale,
+  currentSection: 'sitewide',
+  now: new Date()
+})
+const bannerData = getBannerData(activeBanner ?? bannerConfig, locale)
 const bannerVisible =
   !hideAnnouncementBanner &&
-  evaluateBannerVisibility(bannerConfig, {
-    currentLocale: locale,
-    currentSection: 'sitewide',
-    now: new Date()
-  }) &&
+  activeBanner !== undefined &&
   !isHrefActive(bannerData.link?.href ?? '', Astro.url.pathname)
 const bannerVersion = createBannerVersion(bannerData, locale)
 
@@ -130,6 +139,10 @@ const structuredData = head.emitStructuredData
       ...(extraJsonLd ?? [])
     )
   : undefined
+const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
+  appId,
+  ...(flag && { flag })
+}))
 ---
 
 <!doctype html>
@@ -138,6 +151,7 @@ const structuredData = head.emitStructuredData
      visible. The horizontal clip lives on <body>. */}
 <html
   lang={locale}
+  class:list={{ 'scroll-smooth motion-reduce:scroll-auto': smoothScroll }}
   data-banner-version={bannerVisible ? bannerVersion : undefined}
 >
   <head>
@@ -316,6 +330,7 @@ const structuredData = head.emitStructuredData
         locale={locale}
         github-stars={githubStars}
         workshop-in-build={isWorkshopInBuild()}
+        hub-apps={hubApps}
         client:load
       />
     )}
@@ -328,7 +343,11 @@ const structuredData = head.emitStructuredData
       <slot />
     </main>
     {!minimal && (
-      <SiteFooter locale={locale} client:visible={{ rootMargin: '200px' }} />
+      <SiteFooter
+        locale={locale}
+        alternates={languageAlternates}
+        client:visible={{ rootMargin: '200px' }}
+      />
     )}
 
     <Analytics />

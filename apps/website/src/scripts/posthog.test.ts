@@ -17,7 +17,7 @@ const hoisted = vi.hoisted(() => ({
   mockIsFeatureEnabled: vi.fn(),
   mockGetFeatureFlag: vi.fn(),
   mockIdentify: vi.fn(),
-  mockReset: vi.fn(),
+  mockPosthogReset: vi.fn(),
   mockGetProperty: vi.fn(),
   mockReloadFeatureFlags: vi.fn(),
   mockSetPersonPropertiesForFlags: vi.fn()
@@ -62,7 +62,7 @@ const postHogMock = {
   isFeatureEnabled: hoisted.mockIsFeatureEnabled,
   getFeatureFlag: hoisted.mockGetFeatureFlag,
   identify: hoisted.mockIdentify,
-  reset: hoisted.mockReset,
+  reset: hoisted.mockPosthogReset,
   get_property: hoisted.mockGetProperty,
   reloadFeatureFlags: hoisted.mockReloadFeatureFlags,
   setPersonPropertiesForFlags: hoisted.mockSetPersonPropertiesForFlags
@@ -200,14 +200,16 @@ describe('Workshop visibility', () => {
     hoisted.mockSetPersonPropertiesForFlags.mockClear()
     hoisted.mockGetProperty.mockReturnValue('signed-in-before')
     identifyWorkshopUser({ uid: 'someone-else' })
-    expect(hoisted.mockReset).toHaveBeenCalled()
+    expect(hoisted.mockPosthogReset).toHaveBeenCalled()
     expect(hoisted.mockSetPersonPropertiesForFlags).toHaveBeenCalledWith(
       environment,
       false
     )
     expect(
       hoisted.mockSetPersonPropertiesForFlags.mock.invocationCallOrder[0]
-    ).toBeGreaterThan(hoisted.mockReset.mock.invocationCallOrder.at(-1) ?? 0)
+    ).toBeGreaterThan(
+      hoisted.mockPosthogReset.mock.invocationCallOrder.at(-1) ?? 0
+    )
   })
 
   it('requires an explicit enable and keeps the last answer through load failures', async () => {
@@ -288,7 +290,7 @@ describe('Workshop visibility', () => {
     emitFeatureFlags()
     identifyWorkshopUser(null)
     expect(useWorkshopEnabled().value).toBe(false)
-    expect(hoisted.mockReset).toHaveBeenCalledTimes(2)
+    expect(hoisted.mockPosthogReset).toHaveBeenCalledTimes(2)
     expect(hoisted.mockReloadFeatureFlags).toHaveBeenCalledTimes(3)
   })
 
@@ -434,9 +436,10 @@ describe('Workshop visibility', () => {
       identifyWorkshopUser({ uid: 'staff-uid' })
       hoisted.mockIsFeatureEnabled.mockReturnValue(true)
       emitFeatureFlags()
-      vi.spyOn(console, 'error').mockImplementation(() => undefined)
       const call =
-        operation === 'identify' ? hoisted.mockIdentify : hoisted.mockReset
+        operation === 'identify'
+          ? hoisted.mockIdentify
+          : hoisted.mockPosthogReset
       call.mockImplementationOnce(() => {
         throw new Error('Unavailable')
       })
@@ -455,14 +458,14 @@ describe('Workshop visibility', () => {
     const { initPostHog, identifyWorkshopUser } = await import('./posthog')
     initPostHog()
     identifyWorkshopUser(null)
-    expect(hoisted.mockReset).not.toHaveBeenCalled()
+    expect(hoisted.mockPosthogReset).not.toHaveBeenCalled()
 
     vi.resetModules()
     hoisted.mockGetProperty.mockReturnValue('previous-user')
     const restored = await import('./posthog')
     restored.initPostHog()
     restored.identifyWorkshopUser(null)
-    expect(hoisted.mockReset).toHaveBeenCalledOnce()
+    expect(hoisted.mockPosthogReset).toHaveBeenCalledOnce()
   })
 })
 
@@ -715,7 +718,6 @@ describe('Workshop analytics transport', () => {
       'website:workshop_catalogue_viewed',
       { model_count: 10 }
     )
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     hoisted.mockCapture.mockImplementation(() => {
       throw new Error('Capture unavailable')
     })
@@ -749,6 +751,215 @@ describe('captureDownloadClick', () => {
     captureDownloadClick('windows')
 
     expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})
+
+describe('nav featured card analytics', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  const properties = {
+    placement: 'gemini-omni',
+    dropdown: 'products',
+    href: '/gemini-omni/',
+    variant: 'control',
+    variant_source: 'flag',
+    locale: 'en'
+  } as const
+
+  it('captures the viewed and clicked events with the placement payload', async () => {
+    const {
+      initPostHog,
+      captureNavFeaturedCardViewed,
+      captureNavFeaturedCardClicked
+    } = await import('./posthog')
+    initPostHog()
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardClicked(properties)
+
+    expect(hoisted.mockCapture).toHaveBeenNthCalledWith(
+      1,
+      'website:nav_featured_card_viewed',
+      properties
+    )
+    expect(hoisted.mockCapture).toHaveBeenNthCalledWith(
+      2,
+      'website:nav_featured_card_clicked',
+      properties
+    )
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureNavFeaturedCardViewed } = await import('./posthog')
+    captureNavFeaturedCardViewed(properties)
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+
+  it('reads a flag variant through its states without an exposure event', async () => {
+    const { initPostHog, readFlagVariant } = await import('./posthog')
+    hoisted.mockGetFeatureFlag.mockReturnValue('bold-image')
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'not_loaded'
+    })
+
+    initPostHog()
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'unanswered'
+    })
+
+    emitFeatureFlags()
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'answered',
+      key: 'bold-image'
+    })
+    expect(hoisted.mockGetFeatureFlag).toHaveBeenCalledWith(
+      'nav-featured-card-image-x',
+      { send_event: false }
+    )
+  })
+
+  it.for([
+    { name: 'an off flag', answer: false },
+    { name: 'a missing flag', answer: undefined },
+    { name: 'a plain boolean flag', answer: true }
+  ])('reports no flag for $name', async ({ answer }) => {
+    const { initPostHog, readFlagVariant } = await import('./posthog')
+    initPostHog()
+    hoisted.mockGetFeatureFlag.mockReturnValue(answer)
+    emitFeatureFlags()
+
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'no_flag'
+    })
+  })
+
+  it('reports no flag when reading the flag throws', async () => {
+    const { initPostHog, readFlagVariant } = await import('./posthog')
+    initPostHog()
+    emitFeatureFlags()
+    hoisted.mockGetFeatureFlag.mockImplementation(() => {
+      throw new Error('boom')
+    })
+    vi.mocked(console.error).mockImplementation(() => {})
+
+    expect(readFlagVariant('nav-featured-card-image-x')).toEqual({
+      state: 'no_flag'
+    })
+    expect(console.error).toHaveBeenCalledOnce()
+  })
+
+  it('captures at most one view per placement and keeps counting clicks', async () => {
+    const {
+      initPostHog,
+      captureNavFeaturedCardViewed,
+      captureNavFeaturedCardClicked
+    } = await import('./posthog')
+    initPostHog()
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardViewed({
+      ...properties,
+      placement: 'minimax-license'
+    })
+    captureNavFeaturedCardClicked(properties)
+    captureNavFeaturedCardClicked(properties)
+
+    expect(
+      hoisted.mockCapture.mock.calls.map(([name, props]) => [
+        name,
+        props.placement
+      ])
+    ).toEqual([
+      ['website:nav_featured_card_viewed', 'gemini-omni'],
+      ['website:nav_featured_card_viewed', 'minimax-license'],
+      ['website:nav_featured_card_clicked', 'gemini-omni'],
+      ['website:nav_featured_card_clicked', 'gemini-omni']
+    ])
+  })
+
+  it.for(['unanswered', 'not_loaded'] as const)(
+    'keeps the placement view open after a %s view so a resolved reopen is counted',
+    async (variantSource) => {
+      const { initPostHog, captureNavFeaturedCardViewed } =
+        await import('./posthog')
+      initPostHog()
+      captureNavFeaturedCardViewed({
+        ...properties,
+        variant_source: variantSource
+      })
+      captureNavFeaturedCardViewed({
+        ...properties,
+        variant_source: variantSource
+      })
+      captureNavFeaturedCardViewed(properties)
+      captureNavFeaturedCardViewed(properties)
+
+      expect(
+        hoisted.mockCapture.mock.calls.map(([, props]) => props.variant_source)
+      ).toEqual([variantSource, variantSource, 'flag'])
+    }
+  )
+
+  it.for(['flag', 'control_flag', 'no_flag', 'unknown_variant'] as const)(
+    'uses up the placement view on a resolved %s view',
+    async (variantSource) => {
+      const { initPostHog, captureNavFeaturedCardViewed } =
+        await import('./posthog')
+      initPostHog()
+      captureNavFeaturedCardViewed({
+        ...properties,
+        variant_source: variantSource
+      })
+      captureNavFeaturedCardViewed({ ...properties, variant_source: 'flag' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('lets each page view count its own view, resetting on astro:page-load', async () => {
+    const { initPostHog, captureNavFeaturedCardViewed } =
+      await import('./posthog')
+    initPostHog()
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardViewed(properties)
+    expect(hoisted.mockCapture).toHaveBeenCalledTimes(1)
+
+    document.dispatchEvent(new Event('astro:page-load'))
+    captureNavFeaturedCardViewed(properties)
+    captureNavFeaturedCardViewed(properties)
+    expect(hoisted.mockCapture).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not use up a placement view while PostHog is not initialized', async () => {
+    const { initPostHog, captureNavFeaturedCardViewed } =
+      await import('./posthog')
+    captureNavFeaturedCardViewed(properties)
+    initPostHog()
+    captureNavFeaturedCardViewed(properties)
+
+    expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+      'website:nav_featured_card_viewed',
+      properties
+    )
+  })
+})
+
+describe('VFX campaign clicks', () => {
+  beforeEach(() => vi.resetModules())
+
+  it('captures the destination and placement without visitor form data', async () => {
+    const { initPostHog, captureVfxLinkClick } = await import('./posthog')
+    initPostHog()
+    captureVfxLinkClick({ destination: '/contact/', placement: 'hero' })
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:vfx_link_clicked',
+      {
+        destination: '/contact/',
+        placement: 'hero'
+      }
+    )
   })
 })
 
@@ -867,7 +1078,6 @@ describe('useWorkshopAuthFlag', () => {
     hoisted.mockInit.mockImplementationOnce(() => {
       throw new Error('Analytics unavailable')
     })
-    vi.spyOn(console, 'error').mockImplementation(() => undefined)
     const { initPostHog, useWorkshopAuthFlag } = await import('./posthog')
 
     initPostHog()

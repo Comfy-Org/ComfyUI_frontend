@@ -24,7 +24,7 @@ const meta: Meta<typeof UnifiedPricingTable> = {
     (story) => ({
       components: { story },
       template:
-        '<div class="mx-auto max-w-[1328px] bg-base-background p-8"><story /></div>'
+        '<div class="mx-auto max-w-[1328px] bg-background p-8"><story /></div>'
     })
   ]
 }

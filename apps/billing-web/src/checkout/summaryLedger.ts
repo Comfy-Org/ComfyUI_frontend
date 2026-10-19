@@ -137,10 +137,9 @@ export function formatHeadlineMoney(
   }).format(cents / 100)
 }
 
-function verbOf(quote: SubscriptionPreview, commitChange: boolean) {
+function verbOf(quote: SubscriptionPreview) {
   if (quote.transition_type === 'new_subscription') return 'subscribe'
-  if (quote.transition_type !== 'upgrade') return 'switch'
-  return commitChange ? 'change' : 'upgrade'
+  return quote.transition_type === 'upgrade' ? 'upgrade' : 'switch'
 }
 
 function planLabeller({ t, tierName }: Pick<LedgerContext, 't' | 'tierName'>) {
@@ -171,7 +170,7 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
   const money = (cents: number) => formatQuoteMoney(cents, currency, locale)
   const planLabel = planLabeller(context)
   const plan = planLabel(next, cadenceChanges)
-  const action = t(`${S}.verb.${verbOf(quote, commitChange)}`, { plan })
+  const action = t(`${S}.verb.${verbOf(quote)}`, { plan })
   const dueCents = quote.amount_due_cents ?? quote.cost_today_cents
   const formatCount = (count: number | undefined) =>
     count === undefined
@@ -337,6 +336,36 @@ function grantedToday(r: QuoteReading): SummaryLedger['credits'] {
 }
 
 /**
+ * A team plan is one tier at many commitments, so a team-to-team proration
+ * names each side by the rate the quote reports for it.
+ */
+function commitmentNamed(r: QuoteReading, plan: Plan): string {
+  return r.t(`${S}.planAtRate`, {
+    tier: r.tierName(plan.tier),
+    rate: r.t(BY_DURATION[plan.duration].itemRate, {
+      amount: r.headlineMoney(plan.seat_summary.total_cost_cents)
+    })
+  })
+}
+
+/** The plans either side of a proration: team commitments by their rates. */
+function prorationSides(r: QuoteReading) {
+  const current = r.current ?? r.next
+  return r.commitChange
+    ? { plan: commitmentNamed(r, r.next), current: commitmentNamed(r, current) }
+    : { plan: r.plan, current: r.planLabel(current, r.cadenceChanges) }
+}
+
+function netProrationLine(r: QuoteReading): string {
+  if (r.commitChange)
+    return r.t(`${S}.item.remainingTimeBetween`, prorationSides(r))
+  return r.t(`${S}.item.remainingTime`, {
+    plan: r.tierName(r.next.tier),
+    current: r.tierName(r.current?.tier ?? r.next.tier)
+  })
+}
+
+/**
  * A quote that itemizes its proration reads as the remaining time on the new
  * plan and the unused-time credit from the old one, at the server's amounts.
  * Otherwise one net row stands for both.
@@ -349,26 +378,18 @@ function proratedItems(r: QuoteReading): LedgerRow[] {
       {
         label: r.t(`${S}.item.prorated`, { plan: r.plan }),
         amount: r.money(r.itemCents),
-        sublines: [
-          r.t(`${S}.item.remainingTime`, {
-            plan: r.tierName(r.next.tier),
-            current: r.tierName(r.current?.tier ?? r.next.tier)
-          }),
-          ...refillsToLine(r)
-        ]
+        sublines: [netProrationLine(r), ...refillsToLine(r)]
       }
     ]
-  const current = r.current ?? r.next
+  const sides = prorationSides(r)
   return [
     {
-      label: r.t(`${S}.item.remainingTimeOn`, { plan: r.plan }),
+      label: r.t(`${S}.item.remainingTimeOn`, { plan: sides.plan }),
       amount: r.money(remainingCents),
       sublines: refillsToLine(r)
     },
     {
-      label: r.t(`${S}.item.unusedTimeOn`, {
-        plan: r.planLabel(current, r.cadenceChanges)
-      }),
+      label: r.t(`${S}.item.unusedTimeOn`, { plan: sides.current }),
       amount: deduction(r, unusedCents),
       sublines: [],
       credit: true
@@ -517,8 +538,7 @@ function chargeNowLedger(r: QuoteReading): FamilyLedger {
  * reported; a slot whose number the quote does not carry is left out rather
  * than derived. The family is the server's too: an immediate `upgrade`
  * priced at a `proration_at` instant is prorated, while a reset-to-yearly
- * `duration_change` carries `proration_at` but charges in full. A team commit
- * change is held at the neutral charge until its proration copy is confirmed.
+ * `duration_change` carries `proration_at` but charges in full.
  */
 export function buildSummaryLedger(
   quote: SubscriptionPreview,
@@ -533,8 +553,7 @@ function familyLedger(r: QuoteReading): FamilyLedger {
   if (!r.quote.is_immediate) return scheduledLedger(r)
   if (
     r.quote.transition_type === 'upgrade' &&
-    r.quote.proration_at !== undefined &&
-    !r.commitChange
+    r.quote.proration_at !== undefined
   )
     return proratedLedger(r)
   return chargeNowLedger(r)

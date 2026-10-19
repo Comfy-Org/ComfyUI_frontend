@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
 import WorkflowTemplateModelStatus from '@/components/custom/widget/WorkflowTemplateModelStatus.vue'
 import type { TemplateDetailRow } from '@/platform/workflow/templates/types/templateDetail'
 
@@ -59,6 +60,30 @@ const rows: TemplateDetailRow[] = [
       fraction: 0.25
     }
   }),
+  row('unknown-size', {
+    kind: 'downloadable',
+    label: 'Download model',
+    downloadState: {
+      status: 'downloading',
+      attempt: 1,
+      activity: 'active',
+      receivedBytes: 256_000_000,
+      totalBytes: null,
+      fraction: null
+    }
+  }),
+  row('paused-unknown-size', {
+    kind: 'downloadable',
+    label: 'Download model',
+    downloadState: {
+      status: 'downloading',
+      attempt: 1,
+      activity: 'paused',
+      receivedBytes: 256_000_000,
+      totalBytes: null,
+      fraction: null
+    }
+  }),
   row('downloaded', {
     kind: 'downloadable',
     label: 'Download model',
@@ -86,6 +111,19 @@ const rows: TemplateDetailRow[] = [
 
 export const EveryState: Story = {
   render: () => ({
+    components: { WorkflowTemplateDetailGroup },
+    setup: () => ({ group: { id: 'states', label: 'Models', rows } }),
+    template: `
+      <div class="w-[32rem]">
+        <WorkflowTemplateDetailGroup :group="group" title-id="states-title" />
+      </div>
+    `
+  })
+}
+
+/** The same states outside a row, where grid placement does nothing. */
+export const WithoutRowContext: Story = {
+  render: () => ({
     components: { WorkflowTemplateModelStatus },
     setup: () => ({ rows }),
     template: `
@@ -93,7 +131,7 @@ export const EveryState: Story = {
         <div
           v-for="row in rows"
           :key="row.id"
-          class="flex items-center justify-between gap-4 rounded-md border border-border-default px-3 py-2"
+          class="flex items-center justify-between gap-4 rounded-md border border-border px-3 py-2"
         >
           <span class="text-xs text-muted-foreground">{{ row.name }}</span>
           <WorkflowTemplateModelStatus :row="row" />

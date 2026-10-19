@@ -1,9 +1,9 @@
 <template>
   <div
-    class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1"
+    class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs"
     data-testid="bounding-box"
   >
-    <label class="content-center text-xs text-node-component-slot-text">
+    <label class="content-center">
       {{ $t('boundingBox.x') }}
     </label>
     <ScrubableNumberInput
@@ -13,7 +13,7 @@
       :disabled
       data-testid="bounding-box-x"
     />
-    <label class="content-center text-xs text-node-component-slot-text">
+    <label class="content-center">
       {{ $t('boundingBox.y') }}
     </label>
     <ScrubableNumberInput
@@ -23,7 +23,7 @@
       :disabled
       data-testid="bounding-box-y"
     />
-    <label class="content-center text-xs text-node-component-slot-text">
+    <label class="content-center">
       {{ $t('boundingBox.width') }}
     </label>
     <ScrubableNumberInput
@@ -33,7 +33,7 @@
       :disabled
       data-testid="bounding-box-width"
     />
-    <label class="content-center text-xs text-node-component-slot-text">
+    <label class="content-center">
       {{ $t('boundingBox.height') }}
     </label>
     <ScrubableNumberInput

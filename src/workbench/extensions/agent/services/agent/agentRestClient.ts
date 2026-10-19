@@ -1,4 +1,5 @@
 import type {
+  AgentAnswerRequest,
   AgentPostMessageRequest,
   UploadImageResponse,
   WorkflowResponse
@@ -7,27 +8,41 @@ import {
   zUploadImageResponse,
   zWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { z } from 'zod'
 
+import type {
+  AuthRejectionStatus,
+  AuthRejectionTags
+} from '@/platform/auth/authRejection'
+import {
+  authRejectionTags,
+  isAuthRejectionStatus
+} from '@/platform/auth/authRejection'
 import {
   markErrorReported,
   reportError
 } from '@/platform/telemetry/reportError'
-import type { AuthScheme } from '@/scripts/api'
 import { api } from '@/scripts/api'
+import type { AuthCredential, AuthScheme } from '@/types/authTypes'
+
+import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
+import { withAgentAuth } from './agentAuth'
 
 import {
-  zAgentAnswerAccepted,
+  RENDERED_ASK_KINDS,
+  zAgentAnswerReceipt,
   zAgentCancelAccepted,
   zAgentError,
+  zAgentIdentity,
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
+  zAttachmentRejection,
   zCloudWorkflowIndex
 } from '../../schemas/agentApiSchema'
 import type {
-  AgentAnswerAccepted,
+  AgentAnswerReceipt,
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
@@ -40,7 +55,7 @@ const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
- * request a consent card's buttons wait on, since the card is held disabled
+ * request an ask card's Submit waits on, since the card is held disabled
  * from the click until this settles. A quarter of it, rather than merely lower, so that
  * the caller's single re-drive still fits inside the 60s the card used to be
  * able to wait. Goes through `timeoutMs` rather than a raw signal so a timeout
@@ -67,6 +82,7 @@ const ANSWER_ASK_TIMEOUT_MS = 15_000
 type AgentApiOperation =
   | 'answer_thread_ask'
   | 'cancel_thread_message'
+  | 'get_agent_identity'
   | 'get_cloud_workflow'
   | 'get_run_mode'
   | 'get_thread_messages'
@@ -74,30 +90,72 @@ type AgentApiOperation =
   | 'list_threads'
   | 'post_thread_message'
   | 'put_run_mode'
+  | 'refresh_credential'
   | 'upload_image'
 
 type ReportedAuthScheme = AuthScheme | 'unreported'
+type ReportedAuthCredential = AuthCredential | 'unreported'
 
 /**
  * The reported message for an auth rejection, constant by construction.
  *
  * The backend's own text is what `AgentApiError` carries to the caller, but it
- * is not what gets reported: it is uncontrolled, is not needed to diagnose
- * PM-1802, and varies enough to fragment issue grouping across what is one
- * failure mode. Status, operation and auth scheme ride as tags instead.
+ * is not the Sentry message: it is uncontrolled and varies enough to fragment
+ * issue grouping across what is one failure mode. Status, operation, auth
+ * scheme, credential kind and an allowlisted classification of the backend's
+ * refusal ride as tags.
  */
 const AUTH_REJECTED_MESSAGE = 'Agent API request rejected by authentication'
+
+interface AuthRejection {
+  status: AuthRejectionStatus
+  operation: AgentApiOperation
+  authScheme: ReportedAuthScheme
+  credential: ReportedAuthCredential
+  body: unknown
+  message: string
+}
+
+function reportAuthRejection({
+  status,
+  operation,
+  authScheme,
+  credential,
+  body,
+  message
+}: AuthRejection): boolean {
+  let backendTags: AuthRejectionTags
+  try {
+    backendTags = authRejectionTags(body, message)
+  } catch {
+    backendTags = {}
+  }
+  try {
+    reportError(new Error(AUTH_REJECTED_MESSAGE), {
+      surface: 'agent',
+      errorType: 'agent_api_auth_rejected',
+      tags: { operation, status, authScheme, credential, ...backendTags },
+      level: 'warning'
+    })
+    return true
+  } catch {
+    return false
+  }
+}
 
 export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
   readonly retryAfterSeconds?: number
+  /** The {@link AgentApiOperation} that raised this error. */
+  readonly operation?: string
 
   constructor(
     message: string,
     status: number,
     body: unknown,
-    retryAfterSeconds?: number
+    retryAfterSeconds?: number,
+    operation?: string
   ) {
     super(
       message.trim().length > 0
@@ -108,6 +166,7 @@ export class AgentApiError extends Error {
     this.status = status
     this.body = body
     this.retryAfterSeconds = retryAfterSeconds
+    this.operation = operation
   }
 }
 
@@ -170,15 +229,6 @@ export interface PostMessageInput {
 }
 
 /**
- * The turn POST body, plus `client_message_id`.
- *
- * Widened here rather than in `agentApiSchema.ts` because the generated types are
- * published from the cloud repo's `openapi.yaml`, so the field is only typed
- * locally until the next package release carries it. One line to delete then.
- */
-type TurnPostBody = AgentPostMessageRequest & { client_message_id?: string }
-
-/**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
  * JSON body rather than sent as an explicit null-ish key. `false` and `0` are
  * values and survive - `current_tab_unbound: false` is a meaningful signal, so
@@ -214,6 +264,14 @@ function parseErrorBody(text: string): unknown {
 }
 
 function getErrorMessage(body: unknown, fallback: string): string {
+  const refused = zAttachmentRejection.safeParse(body)
+  if (refused.success) {
+    return refusedAttachmentsMessage(
+      refused.data.rejected,
+      refused.data.rejected_count
+    )
+  }
+
   const plain = zAgentError.safeParse(body)
   if (plain.success) {
     return typeof plain.data.error === 'string'
@@ -432,7 +490,8 @@ export function createAgentRestClient() {
   async function toApiError(
     response: Response,
     operation: AgentApiOperation,
-    authScheme: ReportedAuthScheme
+    authScheme: ReportedAuthScheme,
+    credential: ReportedAuthCredential
   ): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
     const message = getErrorMessage(body, response.statusText)
@@ -447,15 +506,20 @@ export function createAgentRestClient() {
       message,
       response.status,
       body,
-      retryAfterSeconds
+      retryAfterSeconds,
+      operation
     )
-    if (response.status === 401 || response.status === 403) {
-      reportError(new Error(AUTH_REJECTED_MESSAGE), {
-        surface: 'agent',
-        errorType: 'agent_api_auth_rejected',
-        tags: { operation, status: response.status, authScheme },
-        level: 'warning'
+    if (
+      isAuthRejectionStatus(response.status) &&
+      reportAuthRejection({
+        status: response.status,
+        operation,
+        authScheme,
+        credential,
+        body,
+        message
       })
+    ) {
       // Callers still receive the backend text for the UI, but their generic
       // catch boundaries must not emit it as a second, separately-grouped
       // report after the complete bounded diagnostic above.
@@ -471,13 +535,22 @@ export function createAgentRestClient() {
     schema: z.ZodType<T>
   ): Promise<T> {
     let authScheme: ReportedAuthScheme = 'unreported'
-    const response = await api.fetchApi(route, {
-      ...init,
-      onAuthScheme: (scheme) => {
-        authScheme = scheme
-      }
-    })
-    if (!response.ok) throw await toApiError(response, operation, authScheme)
+    let credential: ReportedAuthCredential = 'unreported'
+    const response = await api.fetchApi(
+      route,
+      await withAgentAuth({
+        ...init,
+        onAuthScheme: (scheme) => {
+          authScheme = scheme
+        },
+        onAuthCredential: (kind) => {
+          credential = kind
+        }
+      })
+    )
+    if (!response.ok) {
+      throw await toApiError(response, operation, authScheme, credential)
+    }
     let payload: unknown
     try {
       payload = await response.json()
@@ -500,8 +573,9 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body = withoutUndefined<TurnPostBody>({
+    const body = withoutUndefined<AgentPostMessageRequest>({
       content: req.content,
+      ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: req.workflowId,
       open_tabs: req.tabs?.open_tabs,
       current_tab: req.tabs?.current_tab,
@@ -540,6 +614,16 @@ export function createAgentRestClient() {
       zAgentThreads
     )
     return page.threads
+  }
+
+  async function getIdentity(): Promise<{ userId: string }> {
+    const identity = await request(
+      'get_agent_identity',
+      '/agent/identity',
+      { method: 'GET' },
+      zAgentIdentity
+    )
+    return { userId: identity.user_id }
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -584,10 +668,6 @@ export function createAgentRestClient() {
         cursor = nextCursor
       }
     } while (hasMore)
-    if (hasMore)
-      console.warn(
-        `[agent] cloud workflow index truncated at ${entries.length} entries`
-      )
     return { entries, complete: !hasMore }
   }
 
@@ -617,13 +697,22 @@ export function createAgentRestClient() {
   async function answerAsk(
     threadId: string,
     askId: string,
-    selected: string[]
-  ): Promise<AgentAnswerAccepted> {
+    answer: AgentAnswerRequest
+  ): Promise<AgentAnswerReceipt> {
     return request(
       'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
-      zAgentAnswerAccepted
+      { ...jsonInit('POST', answer), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
+      zAgentAnswerReceipt
+    )
+  }
+
+  async function refreshCredential(): Promise<void> {
+    await request(
+      'refresh_credential',
+      '/agent/threads?limit=1',
+      { method: 'GET' },
+      z.unknown()
     )
   }
 
@@ -651,12 +740,14 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getIdentity,
     getRunMode,
     putRunMode,
     listCloudWorkflows,
     getCloudWorkflow,
     cancelMessage,
     answerAsk,
+    refreshCredential,
     uploadImage
   }
 }

@@ -34,6 +34,8 @@ interface TokenMint {
 }
 
 interface WebSessionFixtures {
+  /** Flags merged into both `/api/features` answers, over the backend's. */
+  serverFeatures: RemoteConfig
   tokenMints: TokenMint[]
   workspaceReads: Request[]
   firebaseRequests: string[]
@@ -41,6 +43,7 @@ interface WebSessionFixtures {
 }
 
 export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
+  serverFeatures: [{}, { option: true }],
   tokenMints: async ({ context }, use) => {
     const mints: TokenMint[] = []
     context.on('request', (request) => {
@@ -97,6 +100,7 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
     {
       page,
       context,
+      serverFeatures,
       tokenMints,
       workspaceReads,
       firebaseRequests,
@@ -120,8 +124,12 @@ export const webSessionTest = comfyPageFixture.extend<WebSessionFixtures>({
       await route.fulfill(
         jsonRoute(
           credentialed
-            ? { ...backendFeatures, ...WEB_SESSION_FEATURES }
-            : { ...backendFeatures, ...WEB_SESSION_ANONYMOUS_FEATURES }
+            ? { ...backendFeatures, ...WEB_SESSION_FEATURES, ...serverFeatures }
+            : {
+                ...backendFeatures,
+                ...WEB_SESSION_ANONYMOUS_FEATURES,
+                ...serverFeatures
+              }
         )
       )
     })

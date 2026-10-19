@@ -1,39 +1,29 @@
 <template>
-  <div
-    class="flex flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background"
+  <DialogPanel
+    class="w-90 max-w-full"
     data-testid="insufficient-credits-member-message"
+    @close="onClose"
   >
-    <div
-      class="flex h-12 items-center gap-2 border-b border-border-default p-4"
-    >
-      <p class="m-0 min-w-0 flex-1 font-inter text-sm text-base-foreground">
-        {{ $t('credits.insufficient.memberTitle') }}
-      </p>
-      <button
-        type="button"
-        :aria-label="$t('g.close')"
-        class="flex size-4 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent text-base-foreground"
-        @click="onClose"
-      >
-        <i class="icon-[lucide--x] size-3" />
-      </button>
-    </div>
+    <template #title>
+      {{ $t('credits.insufficient.memberTitle') }}
+    </template>
 
     <div class="p-4">
-      <p class="m-0 font-inter text-sm text-muted-foreground">
+      <p class="m-0 text-sm text-muted-foreground">
         {{ $t('credits.insufficient.memberDescription') }}
       </p>
     </div>
 
-    <div class="flex items-center justify-end p-4">
+    <template #footer>
       <Button variant="secondary" size="lg" @click="onClose">
         {{ $t('credits.insufficient.memberCta') }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 const { onClose } = defineProps<{

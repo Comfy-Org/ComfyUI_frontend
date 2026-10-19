@@ -2,11 +2,12 @@
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import WorkflowTemplateDescription from '@/components/custom/widget/WorkflowTemplateDescription.vue'
 import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type {
   TemplateDetailGroup,
-  TemplateModelSetupState
+  TemplateModelSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 
 const {
@@ -16,7 +17,7 @@ const {
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  modelSetupState = 'none'
+  modelSetup
 } = defineProps<{
   title: string
   description: string
@@ -24,7 +25,7 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetupState?: TemplateModelSetupState
+  modelSetup?: TemplateModelSetup
 }>()
 
 const emit = defineEmits<{
@@ -38,7 +39,14 @@ const detailRoot = ref<HTMLElement | null>(null)
 const detailId = useId()
 const cloudTitleId = `${detailId}-cloud-title`
 const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
-const offerDownloadAndOpen = computed(() => modelSetupState !== 'none')
+const offerDownloadAndOpen = computed(() => modelSetup !== undefined)
+const downloadModelsAndOpenLabel = computed(() => {
+  const size =
+    modelSetup?.state === 'startable' ? modelSetup.remainingSize : undefined
+  return size
+    ? t('templateWorkflows.detail.downloadModelsAndOpenWithSize', { size })
+    : t('templateWorkflows.detail.downloadModelsAndOpen')
+})
 
 defineExpose({
   focus: () => detailRoot.value?.focus()
@@ -51,13 +59,13 @@ defineExpose({
     data-testid="template-workflow-detail"
     :aria-label="title"
     tabindex="-1"
-    class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-base-background text-base-foreground"
+    class="@container/template-detail flex size-full min-h-0 flex-1 flex-col overflow-hidden bg-background text-foreground"
   >
     <div
-      class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden border-t border-border-subtle @[48rem]/template-detail:grid-cols-[minmax(20rem,5fr)_minmax(0,6fr)] @[48rem]/template-detail:grid-rows-[auto_minmax(0,1fr)]"
+      class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden border-t border-border/50 @[48rem]/template-detail:grid-cols-[minmax(20rem,5fr)_minmax(0,6fr)] @[48rem]/template-detail:grid-rows-[auto_minmax(0,1fr)]"
     >
       <aside
-        class="flex min-h-0 shrink-0 flex-col gap-6 overflow-y-auto border-b border-border-subtle p-6 @[48rem]/template-detail:row-span-2 @[48rem]/template-detail:gap-8 @[48rem]/template-detail:border-r @[48rem]/template-detail:border-b-0 @[48rem]/template-detail:p-8"
+        class="flex min-h-0 shrink-0 flex-col gap-6 overflow-y-auto border-b border-border/50 p-6 @[48rem]/template-detail:row-span-2 @[48rem]/template-detail:gap-8 @[48rem]/template-detail:border-r @[48rem]/template-detail:border-b-0 @[48rem]/template-detail:p-8"
       >
         <div class="w-full shrink-0 overflow-hidden rounded-lg">
           <slot name="preview" />
@@ -66,7 +74,7 @@ defineExpose({
         <section
           v-if="cloudUrl"
           :aria-labelledby="cloudTitleId"
-          class="flex shrink-0 flex-col gap-4 rounded-lg bg-secondary-background/50 p-4"
+          class="flex shrink-0 flex-col gap-4 rounded-lg bg-secondary/50 p-4"
         >
           <div class="flex min-w-0 flex-col gap-2">
             <h3 :id="cloudTitleId" class="m-0 text-sm font-medium">
@@ -95,7 +103,7 @@ defineExpose({
             rel="noopener noreferrer"
             variant="secondary"
             size="md"
-            class="w-full text-base-foreground no-underline"
+            class="w-full no-underline"
           >
             {{ t('templateWorkflows.detail.openInCloud') }}
           </Button>
@@ -108,11 +116,7 @@ defineExpose({
         <h2 class="m-0 text-base font-semibold wrap-break-word">
           {{ title }}
         </h2>
-        <p
-          class="m-0 max-w-2xl text-sm/relaxed wrap-break-word text-muted-foreground"
-        >
-          {{ description }}
-        </p>
+        <WorkflowTemplateDescription :description />
       </div>
 
       <div
@@ -120,7 +124,7 @@ defineExpose({
         role="region"
         :aria-label="t('templateWorkflows.detail.requirements')"
         tabindex="0"
-        class="min-h-0 overflow-y-auto border-t border-border-subtle px-4 py-2"
+        class="min-h-0 overflow-y-auto border-t border-border/50 px-4 py-2 @[48rem]/template-detail:px-6"
       >
         <WorkflowTemplateDetailGroup
           v-for="group in groups"
@@ -133,36 +137,36 @@ defineExpose({
     </div>
 
     <footer
-      class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border-subtle px-6 py-4"
+      class="flex min-h-15 shrink-0 flex-wrap items-center justify-end gap-3 border-t border-border/50 px-6 py-4"
     >
-      <Button
-        v-if="offerDownloadAndOpen"
-        variant="outline"
-        size="sm"
-        :disabled="openPending"
-        @click="emit('open-template')"
-      >
-        {{ t('templateWorkflows.detail.openNow') }}
-      </Button>
-      <Button
-        variant="inverted"
-        size="sm"
-        :loading="openPending"
-        :disabled="modelSetupState === 'resolving'"
-        @click="
-          offerDownloadAndOpen
-            ? emit('download-models-and-open')
-            : emit('open-template')
-        "
-      >
-        {{
-          t(
+      <div class="ml-auto flex flex-wrap items-center justify-end gap-3">
+        <Button
+          v-if="offerDownloadAndOpen"
+          variant="outline"
+          size="lg"
+          :aria-disabled="openPending"
+          @click="emit('open-template')"
+        >
+          {{ t('templateWorkflows.detail.openNow') }}
+        </Button>
+        <Button
+          variant="inverted"
+          size="lg"
+          :loading="openPending"
+          :disabled="modelSetup?.state === 'resolving'"
+          @click="
             offerDownloadAndOpen
-              ? 'templateWorkflows.detail.downloadModelsAndOpen'
-              : 'templateWorkflows.detail.openNow'
-          )
-        }}
-      </Button>
+              ? emit('download-models-and-open')
+              : emit('open-template')
+          "
+        >
+          {{
+            offerDownloadAndOpen
+              ? downloadModelsAndOpenLabel
+              : t('templateWorkflows.detail.openNow')
+          }}
+        </Button>
+      </div>
     </footer>
   </article>
 </template>

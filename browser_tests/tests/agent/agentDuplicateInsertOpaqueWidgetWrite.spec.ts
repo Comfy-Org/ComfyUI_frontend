@@ -14,7 +14,6 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -244,7 +243,7 @@ async function ksamplerNodeIds(page: Page): Promise<string[]> {
  */
 async function driveThroughDuplicateInsert(
   page: Page,
-  getWebSocket: () => Promise<WebSocketRoute>
+  getAgentSocket: () => Promise<WebSocketRoute>
 ): Promise<DuplicateInsertHandles> {
   await page.setViewportSize({ width: 1920, height: 1280 })
   await page.addInitScript(() => {
@@ -263,12 +262,12 @@ async function driveThroughDuplicateInsert(
     }
   })
   await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
-  const socket = await getWebSocket()
-  const outboundFrames: string[] = []
-  socket.onMessage((message) => outboundFrames.push(String(message)))
 
   const agentPanel = new AgentPanel(page)
   await agentPanel.open()
+  const socket = await getAgentSocket()
+  const outboundFrames: string[] = []
+  socket.onMessage((message) => outboundFrames.push(String(message)))
   await agentPanel.selectWorkflow()
   await agentPanel.sendMessage('Create a z-turbo image workflow')
 
@@ -327,9 +326,9 @@ interface RejectedWidgetEditHandles extends DuplicateInsertHandles {
  */
 async function driveThroughRejectedWidgetEdit(
   page: Page,
-  getWebSocket: () => Promise<WebSocketRoute>
+  getAgentSocket: () => Promise<WebSocketRoute>
 ): Promise<RejectedWidgetEditHandles> {
-  const handles = await driveThroughDuplicateInsert(page, getWebSocket)
+  const handles = await driveThroughDuplicateInsert(page, getAgentSocket)
   const { vueNodes, socket, outboundFrames, copyBNodeId } = handles
 
   // The two copies sit at IDENTICAL canvas coordinates (the overlap under
@@ -412,10 +411,10 @@ test.describe(
 
     test('two insert_workflow calls with different op ids leave two fully overlapping, visually indistinguishable copies of the template', async ({
       page,
-      getWebSocket
+      getAgentSocket
     }) => {
       const { vueNodes, copyANodeId, copyBNodeId } =
-        await driveThroughDuplicateInsert(page, getWebSocket)
+        await driveThroughDuplicateInsert(page, getAgentSocket)
 
       expect(
         await page.evaluate(
@@ -464,10 +463,11 @@ test.describe(
 
     test('a rejected widget edit is reported and rolled back to the value the shared document kept', async ({
       page,
-      getWebSocket
+      toast,
+      getAgentSocket
     }) => {
       const { host, seedInput, copyBNodeId } =
-        await driveThroughRejectedWidgetEdit(page, getWebSocket)
+        await driveThroughRejectedWidgetEdit(page, getAgentSocket)
 
       // The refused register is put back from the document, so the widget
       // the human is looking at and the document a subsequent run would read
@@ -486,7 +486,7 @@ test.describe(
       // and `toContainText` passes on any node in the collection, so either
       // alone would accept a message the user never sees. Filter to the text
       // and require it on screen.
-      const rejectionToast = new ToastHelper(page).toastErrors.filter({
+      const rejectionToast = toast.toastErrors.filter({
         hasText: 'Widget edit was rejected and was not saved'
       })
       await expect(rejectionToast).toBeVisible({ timeout: 3_000 })

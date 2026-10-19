@@ -81,7 +81,7 @@
               class="flex shrink-0 items-center justify-center"
             >
               <i
-                class="icon-[lucide--check] text-base-foreground"
+                class="icon-[lucide--check] text-foreground"
                 aria-hidden="true"
               />
             </SelectItemIndicator>
@@ -152,7 +152,6 @@ const {
   loading?: boolean
   /** Disable the select */
   disabled?: boolean
-  /** Show an input that filters options by name */
   searchable?: boolean
   searchPlaceholder?: string
   /** Maximum height of the dropdown panel (default: 28rem) */

@@ -1,12 +1,14 @@
+import type { LGraph } from '@/lib/litegraph/src/types/entityRegistry'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4 } from '@/utils/uuid'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
-import type { INodeInputSlot, Point } from '../interfaces'
-import type { LGraph } from '../LGraph'
+import type { Point } from '../interfaces'
+import type { INodeInputSlot } from '../types/slots'
+
 import { LGraphNode } from '../LGraphNode'
-import { LiteGraph } from '../litegraph'
+import { LiteGraph } from '../litegraphInstance'
 import type { ISerialisedNode } from '../types/serialisation'
 
 export type UnpackedTargetInput =

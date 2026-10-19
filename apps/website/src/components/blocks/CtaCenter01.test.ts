@@ -31,6 +31,16 @@ describe('CtaCenter01', () => {
     expect(buttonSizes()).toEqual(['default', 'default'])
   })
 
+  it('lets the page override the heading size', () => {
+    render(CtaCenter01, {
+      props: { ...ctas, headingClass: 'text-3xl lg:text-5xl/tight' }
+    })
+
+    const { classList } = screen.getByRole('heading', { name: 'Ship it' })
+    expect(classList).toContain('lg:text-5xl/tight')
+    expect(classList).not.toContain('lg:text-6xl/snug')
+  })
+
   it('supports rich heading content without changing its accessible name', () => {
     render(CtaCenter01, {
       props: ctas,

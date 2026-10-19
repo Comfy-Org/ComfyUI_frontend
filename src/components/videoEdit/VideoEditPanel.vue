@@ -3,22 +3,17 @@
     <div
       v-if="!hasSource"
       data-testid="video-edit-empty"
-      class="flex min-h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-node-stroke bg-node-component-surface p-4 text-center"
+      class="flex min-h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-node-border bg-node p-4 text-center text-muted-foreground"
     >
-      <i class="icon-[lucide--film] size-6 text-muted-foreground" />
-      <p class="m-0 text-sm text-muted-foreground">
+      <i class="icon-[lucide--film] size-6" />
+      <p class="m-0 text-sm">
         {{ t('videoEdit.noVideoSource') }}
       </p>
     </div>
     <div
       v-else
       data-testid="video-preview-container"
-      :class="
-        cn(
-          'overflow-hidden rounded-lg bg-node-component-surface',
-          hasCrop && 'p-1.5'
-        )
-      "
+      :class="cn('overflow-hidden rounded-lg bg-node', hasCrop && 'p-1.5')"
     >
       <div class="relative w-full" :style="videoAspectRatioStyle">
         <video
@@ -45,7 +40,7 @@
         />
         <div
           v-if="loading"
-          class="absolute inset-0 flex flex-col items-center justify-center gap-0 bg-node-component-surface"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-0 bg-node"
           data-testid="video-preview-loading"
           :aria-busy="true"
           :aria-label="t('videoEdit.loadingVideo')"
@@ -57,12 +52,12 @@
         </div>
         <div
           v-else-if="error"
-          class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-node-component-surface"
+          class="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-node text-muted-foreground"
           data-testid="video-preview-error"
           role="alert"
         >
-          <i class="icon-[lucide--video-off] size-6 text-muted-foreground" />
-          <p class="m-0 text-sm text-muted-foreground">
+          <i class="icon-[lucide--video-off] size-6" />
+          <p class="m-0 text-sm">
             {{
               error === 'canvas-unavailable'
                 ? t('videoEdit.canvasUnavailable')
@@ -72,7 +67,7 @@
           <button
             type="button"
             data-testid="video-preview-retry"
-            class="mt-1 cursor-pointer rounded-md border-none bg-component-node-widget-background px-3 py-1 text-sm text-base-foreground hover:bg-component-node-widget-background-hovered"
+            class="mt-1 cursor-pointer rounded-md border-none bg-input px-3 py-1 text-sm text-foreground hover:bg-muted"
             @click="emit('retry')"
           >
             {{ t('videoEdit.retry') }}
@@ -91,10 +86,10 @@
         data-testid="playback-toggle"
         :class="
           cn(
-            'flex size-6 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-component-node-foreground',
+            'flex size-6 shrink-0 items-center justify-center rounded-md border-none bg-transparent text-foreground',
             loading
               ? 'cursor-default opacity-50'
-              : 'cursor-pointer hover:bg-component-node-widget-background-hovered'
+              : 'cursor-pointer hover:bg-muted'
           )
         "
         :disabled="loading"
@@ -112,7 +107,7 @@
       </button>
       <span
         data-testid="playback-timecode"
-        class="shrink-0 text-component-node-foreground-secondary tabular-nums"
+        class="shrink-0 text-muted-foreground tabular-nums"
       >
         {{ timecodeLabel }}
       </span>
@@ -129,7 +124,7 @@
       <button
         type="button"
         data-testid="playback-fullscreen"
-        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-component-node-foreground-secondary hover:bg-component-node-widget-background-hovered"
+        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-muted-foreground hover:bg-muted"
         :aria-label="t('videoEdit.fullscreen')"
         @click="enterFullscreen"
       >
@@ -138,7 +133,7 @@
       <button
         type="button"
         data-testid="playback-mute"
-        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-component-node-foreground-secondary hover:bg-component-node-widget-background-hovered"
+        class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-muted-foreground hover:bg-muted"
         :aria-label="isMuted ? t('videoEdit.unmute') : t('videoEdit.mute')"
         @click="isMuted = !isMuted"
       >
@@ -187,7 +182,7 @@
       />
 
       <div v-if="hasCrop" class="col-span-full flex items-center gap-2">
-        <label :for="ratioSelectId" class="text-xs text-muted-foreground">
+        <label :for="ratioSelectId">
           {{ t('imageCrop.ratio') }}
         </label>
         <Select v-model="selectedRatio" :disabled="!canLockRatio">
@@ -230,17 +225,17 @@
       />
 
       <div
-        class="col-span-full mt-2 grid grid-cols-subgrid gap-y-0.5 border-t border-node-stroke py-2"
+        class="col-span-full mt-2 grid grid-cols-subgrid gap-y-0.5 border-t border-node-border py-2"
       >
         <div
           v-for="row in metadataRows"
           :key="row.label"
           class="col-span-full grid grid-cols-subgrid py-0.5"
         >
-          <span class="truncate text-node-component-slot-text">
+          <span class="truncate">
             {{ row.label }}
           </span>
-          <span class="text-right text-component-node-foreground">
+          <span class="text-right text-foreground">
             {{ row.value }}
           </span>
         </div>

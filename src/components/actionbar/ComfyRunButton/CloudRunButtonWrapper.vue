@@ -104,8 +104,8 @@ function updatePayment(): Promise<void> {
       contentProps: { isUpdatingPayment: true }
     })
     try {
-      await manageSubscription()
-      if (!isUnmounted) {
+      const outcome = await manageSubscription()
+      if (outcome.ok && !isUnmounted) {
         refreshBillingOnFocus = true
         closePaymentRecoveryDialog()
       }
@@ -138,10 +138,7 @@ function showPaymentRecoveryDialog() {
       onUpdatePayment: updatePayment
     },
     dialogComponentProps: {
-      renderer: 'reka',
-      headless: true,
-      contentClass:
-        'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
+      headless: true
     }
   })
 }

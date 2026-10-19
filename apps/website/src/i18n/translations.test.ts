@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Locale } from '@/config/locales'
 import { LOCALE_CODES } from '@/config/locales'
+import { translationExclusions } from '@/config/translation'
 import { translationsFor } from './translations'
 
 type Catalog = { [key: string]: string | Catalog }
@@ -81,13 +82,13 @@ describe('site translations', () => {
   it('falls back from Japanese to English', () => {
     const { t } = translationsFor('ja')
     expect(t('hero.title')).toBe('ビジュアルAIを自在にコントロール')
-    expect(t('tags.partnerNodes')).toBe('Partner Nodes')
+    expect(t('tos.effectiveDateLabel')).toBe('Effective Date')
   })
 
   it.for([
     ['en', '42 models'],
     ['zh-CN', '42 个模型'],
-    ['ja', '42 models']
+    ['ja', '42件のモデル']
   ] as const)('renders the model directory count in %s', ([locale, text]) => {
     expect(
       translationsFor(locale).t('workshop.catalogue.directoryCount', {
@@ -112,12 +113,18 @@ describe('site translations', () => {
 })
 
 describe.for(catalogs)('$file catalog', ({ english, messages }) => {
-  it('includes Chinese copy for every English message', () => {
+  it('includes Chinese copy for every eligible English message', () => {
     const chinese = messages['zh-CN'] ?? {}
     const chineseKeys = new Set(leafMessages(chinese).map(([key]) => key))
     const missing = leafMessages(english)
       .map(([key]) => key)
-      .filter((key) => !chineseKeys.has(key))
+      .filter(
+        (key) =>
+          !chineseKeys.has(key) &&
+          !translationExclusions.some(
+            (prefix) => key === prefix || key.startsWith(`${prefix}.`)
+          )
+      )
 
     expect(missing).toEqual([])
   })

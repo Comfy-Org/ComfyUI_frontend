@@ -7,7 +7,8 @@ import {
   acquireSharedRenderer,
   applyRendererViewState,
   createRendererViewState,
-  ensureRendererSize
+  ensureRendererSize,
+  ensureSharedHighPrecisionTarget
 } from './sharedWebGLRenderer'
 
 vi.mock(import('three'), { spy: true })
@@ -94,6 +95,27 @@ describe('acquireSharedRenderer', () => {
     expect(dispose).not.toHaveBeenCalled()
     second.release()
     expect(dispose).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('ensureSharedHighPrecisionTarget', () => {
+  it('lives as long as the shared renderer and is recreated afterwards', () => {
+    const first = acquireSharedRenderer()
+    const second = acquireSharedRenderer()
+    const target = ensureSharedHighPrecisionTarget(100, 100)
+    const disposeTarget = vi.spyOn(target, 'dispose')
+    disposeTarget.mockClear()
+
+    first.release()
+    expect(ensureSharedHighPrecisionTarget(50, 50)).toBe(target)
+    expect(disposeTarget).not.toHaveBeenCalled()
+
+    second.release()
+    expect(disposeTarget).toHaveBeenCalledOnce()
+
+    const next = acquireSharedRenderer()
+    expect(ensureSharedHighPrecisionTarget(50, 50)).not.toBe(target)
+    next.release()
   })
 })
 

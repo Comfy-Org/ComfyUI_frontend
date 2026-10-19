@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-full items-center justify-between gap-2">
+  <div class="flex w-full items-center justify-between gap-2 border-b p-2">
     <div class="flex items-center gap-2">
       <i class="icon-[lucide--layers-2] size-4" />
       <h3 class="m-0 text-sm font-semibold">{{ t('layerEditor.title') }}</h3>
