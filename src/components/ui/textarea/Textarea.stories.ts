@@ -40,7 +40,7 @@ export const WithLabel: Story = {
       return { value }
     },
     template: `
-      <div class="relative max-w-sm rounded-lg bg-component-node-widget-background">
+      <div class="relative max-w-sm rounded-lg bg-input">
         <label class="pointer-events-none absolute left-3 top-1.5 text-2xs text-muted-foreground z-10">
           Prompt
         </label>

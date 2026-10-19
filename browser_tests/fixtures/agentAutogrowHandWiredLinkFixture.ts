@@ -18,6 +18,7 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * A hand-wired link on an autogrow node's spare slot survives a later agent
@@ -273,7 +274,7 @@ async function setUpFixture(page: Page) {
 
   await test.step('first agent turn binds the workflow and materializes the graph', async () => {
     const composer = panel.getByRole('textbox', {
-      name: /^Describe ideas/
+      name: AGENT_COMPOSER_LABEL
     })
     await composer.fill('hello')
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
@@ -368,7 +369,7 @@ async function sendSecondTurnAndReconnectFirstSlot(
   ctx: AutogrowHandWiredLinkContext
 ): Promise<void> {
   const { panel, hostSocket, host } = ctx
-  const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   await composer.fill('use a different reference image')
   await panel.getByRole('button', { name: enMessages.agent.send }).click()
   await expect(

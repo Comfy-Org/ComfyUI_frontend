@@ -1,7 +1,7 @@
 <template>
   <div class="w-80 pt-1">
     <div class="py-2">
-      <span class="pl-3 text-base font-semibold text-neutral-500">
+      <span class="pl-3 text-base font-semibold text-muted-foreground">
         {{ $t('manager.selectVersion') }}
       </span>
     </div>
@@ -33,7 +33,7 @@
           :value="option.value"
           :disabled="option.isDisabled"
           :aria-disabled="option.isDisabled"
-          class="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 outline-none data-disabled:cursor-not-allowed data-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
+          class="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 outline-none data-disabled:cursor-not-allowed data-disabled:opacity-50 data-highlighted:bg-accent"
         >
           <div class="flex items-center gap-2">
             <div v-if="option.value === 'nightly'" class="w-4"></div>
@@ -43,7 +43,7 @@
             >
               <TooltipTrigger as-child>
                 <i
-                  class="icon-[lucide--triangle-alert] text-warning-background"
+                  class="icon-[lucide--triangle-alert] text-warning"
                   role="img"
                   :aria-label="option.conflictMessage"
                 />
@@ -59,7 +59,7 @@
             />
           </div>
           <ListboxItemIndicator as-child>
-            <i class="icon-[lucide--check] text-primary-background" />
+            <i class="icon-[lucide--check] text-primary" />
           </ListboxItemIndicator>
         </ListboxItem>
       </ListboxContent>

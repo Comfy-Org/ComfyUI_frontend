@@ -15,6 +15,8 @@ interface PlanFixtureOptions {
   monthlyCredits: number
   maxSeats?: number
   seatCount?: number
+  action?: Plan['action']
+  deniedReason?: Plan['denied_reason']
 }
 
 /**
@@ -28,12 +30,16 @@ export function createPlan({
   priceCents,
   monthlyCredits,
   maxSeats = 1,
-  seatCount = 1
+  seatCount = 1,
+  action = 'subscribe',
+  deniedReason
 }: PlanFixtureOptions): Plan {
   const creditsCents = Math.ceil(
     (monthlyCredits * MONTHS_PER_DURATION[duration] * 100) / CREDITS_PER_USD
   )
   return {
+    action,
+    ...(deniedReason && { denied_reason: deniedReason }),
     slug,
     tier,
     duration,

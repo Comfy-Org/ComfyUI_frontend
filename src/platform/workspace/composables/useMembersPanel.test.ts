@@ -1006,6 +1006,23 @@ describe('useMembersPanel', () => {
     })
   })
 
+  describe('workspace menu placement', () => {
+    it.for([
+      { inHeader: false, shown: true },
+      { inHeader: true, shown: false }
+    ])(
+      'keeps the menu in the Members controls: $shown (in header: $inHeader)',
+      async ({ inHeader, shown }) => {
+        vi.mocked(useWorkspaceUI()).isWorkspaceMenuInHeader = computed(
+          () => inHeader
+        )
+        const panel = await setup()
+
+        expect(panel.showWorkspaceMenu.value).toBe(shown)
+      }
+    )
+  })
+
   describe('isOriginalOwner', () => {
     it('protects the matching creator in a personal workspace', async () => {
       setOriginalOwner()

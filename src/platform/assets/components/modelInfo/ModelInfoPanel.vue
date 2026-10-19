@@ -3,11 +3,9 @@
     data-component-id="ModelInfoPanel"
     class="flex scrollbar-custom h-full flex-col"
   >
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase select-none">
-          {{ t('assetBrowser.modelInfo.basicInfo') }}
-        </span>
+        {{ t('assetBrowser.modelInfo.basicInfo') }}
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.displayName')">
         <div class="group flex justify-between">
@@ -44,7 +42,7 @@
           :href="sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           <img
             v-if="sourceName === 'Civitai'"
@@ -64,15 +62,13 @@
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase select-none">
-          {{ t('assetBrowser.modelInfo.modelTagging') }}
-        </span>
+        {{ t('assetBrowser.modelInfo.modelTagging') }}
       </template>
       <ModelInfoField :label="t('assetBrowser.modelInfo.modelType')">
         <Select v-if="isModelTypeEditable" v-model="selectedModelType">
-          <SelectTrigger class="w-full">
+          <SelectTrigger>
             <SelectValue
               :placeholder="t('assetBrowser.modelInfo.selectModelType')"
             />
@@ -149,11 +145,9 @@
       </ModelInfoField>
     </PropertiesAccordionItem>
 
-    <PropertiesAccordionItem :class="accordionClass">
+    <PropertiesAccordionItem variant="card">
       <template #label>
-        <span class="font-inter text-xs uppercase select-none">
-          {{ t('assetBrowser.modelInfo.modelDescription') }}
-        </span>
+        {{ t('assetBrowser.modelInfo.modelDescription') }}
       </template>
       <ModelInfoField
         v-if="triggerPhrases.length > 0"
@@ -204,7 +198,7 @@
           rows="3"
           :class="
             cn(
-              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 text-sm text-component-node-foreground transition-colors outline-none focus:bg-component-node-widget-background',
+              'w-full resize-y scrollbar-gutter-stable rounded-lg border border-transparent bg-transparent px-3 py-2 transition-colors outline-none focus:bg-input',
               isImmutable && 'cursor-not-allowed'
             )
           "
@@ -262,10 +256,6 @@ const { copyToClipboard } = useCopyToClipboard()
 
 const descriptionTextarea = useTemplateRef<HTMLTextAreaElement>(
   'descriptionTextarea'
-)
-
-const accordionClass = cn(
-  'border-t border-border-default bg-modal-panel-background'
 )
 
 const { asset, cacheKey } = defineProps<{

@@ -170,7 +170,7 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
         <div
           v-for="session in items"
           :key="session.id"
-          class="group flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-secondary-background-hover"
+          class="group flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-accent"
         >
           <div
             v-if="renamingId === session.id"
