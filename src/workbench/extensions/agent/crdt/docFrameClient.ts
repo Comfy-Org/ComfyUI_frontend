@@ -13,17 +13,6 @@ export const PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES = [
 ] as const
 export type PermanentDocSubscribeRefusalCode =
   (typeof PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES)[number]
-export interface PermanentDocSubscribedRefusalFrame {
-  type: 'doc_subscribed'
-  data: {
-    v: typeof DOC_PROTOCOL_VERSION
-    workflow_id: string
-    ok: false
-    code: PermanentDocSubscribeRefusalCode
-    expected_seq?: number
-    message?: string
-  }
-}
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
 const MAX_WORKFLOW_ID_LENGTH = 128

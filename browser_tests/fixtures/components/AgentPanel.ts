@@ -420,7 +420,7 @@ export class AgentPanel {
   async expectTurnSettled(): Promise<void> {
     await expect(
       this.stopButton,
-      'turn 1 must settle before turn 2 is composed, so the ack binding is in place'
+      'the active turn must settle before another turn is composed'
     ).toHaveCount(0)
     await expect(this.composer).toHaveText('')
   }

@@ -2,6 +2,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import type { PermanentDocSubscribeRefusalCode } from './docFrameClient'
 import { PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES } from './docFrameClient'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
@@ -54,14 +55,21 @@ const PERMANENT_SUBSCRIBE_REFUSAL_CODES: ReadonlySet<string> = new Set(
   PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES
 )
 
+function isPermanentSubscribeRefusalCode(
+  code: string
+): code is PermanentDocSubscribeRefusalCode {
+  return PERMANENT_SUBSCRIBE_REFUSAL_CODES.has(code)
+}
+
 // `unsupported` means the doc surface is off for this whole deployment, so
 // every user hits it - latching it must not paint an "incompatible document
 // version" toast that has nothing to do with any one person's workflow.
-const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<string> = new Set([
-  'unsupported'
-])
+const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<PermanentDocSubscribeRefusalCode> =
+  new Set(['unsupported'])
 
-function isNotifyingPermanentRefusalCode(code: string): boolean {
+function isNotifyingPermanentRefusalCode(
+  code: PermanentDocSubscribeRefusalCode
+): boolean {
   return !SILENT_PERMANENT_REFUSAL_CODES.has(code)
 }
 
@@ -250,7 +258,7 @@ export class AgentCrdtDocLifecycle {
 
   /** Returns whether this refusal newly triggered a give-up notification. */
   onSubscribeRefused(code?: string): boolean {
-    if (code !== undefined && PERMANENT_SUBSCRIBE_REFUSAL_CODES.has(code)) {
+    if (code !== undefined && isPermanentSubscribeRefusalCode(code)) {
       // See `confirmedSinceLastSend`: bail out before touching any timer,
       // so a stale straggler can't clear the probe/backoff state the
       // confirm it raced behind already armed.
