@@ -111,6 +111,7 @@
           "src/workbench/extensions/agent/crdt/agentCrdtTransport.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugGate.test.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugGate.ts",
+          "src/workbench/extensions/agent/crdt/crdtDebugReport.apiLogs.test.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugReport.test.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugReport.ts",
           "src/workbench/extensions/agent/crdt/crdtLog.test.ts",
