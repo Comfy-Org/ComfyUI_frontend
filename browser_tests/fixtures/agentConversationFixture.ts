@@ -382,7 +382,6 @@ export class AgentConversationHarness {
     return workflow
   }
 
-  /** Serves the saved workflow with every `search` replaced on later GETs. */
   replaceInSavedWorkflow(search: string, replacement: string): void {
     const content = this.savedWorkflow?.savedContent()
     if (!content?.includes(search))
