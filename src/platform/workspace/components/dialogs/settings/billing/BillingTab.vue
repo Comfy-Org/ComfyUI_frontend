@@ -27,7 +27,7 @@
       <BillingPlanRow
         :state="planRow"
         :action="action"
-        :can-manage-billing="canManageBilling"
+        :can-manage-subscription="capabilities.canManageSubscription.value"
       />
       <BillingCreditsCard
         :state="creditsCard"
@@ -35,6 +35,11 @@
         @retry="retryBalance"
         @add-credits="addCredits"
       />
+      <template v-if="flags.autoTopUpEnabled">
+        <template v-if="capabilities.canManageAutoTopUp.value">
+          <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
+        </template>
+      </template>
     </template>
 
     <section
@@ -66,10 +71,11 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
+import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
 import {
@@ -79,12 +85,11 @@ import {
 import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
-const { workspaceRole } = useWorkspaceUI()
+const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const { showTopUpCreditsDialog } = useBillingDialogs()
@@ -95,12 +100,8 @@ const HANDOFF_PATH = {
   member: '/profile/usage'
 } as const
 
-const canManageBilling = computed(() =>
-  pendingServerFact('BE-20308', workspaceRole.value === 'owner')
-)
-
 const handoffAudience = computed(() =>
-  canManageBilling.value ? 'owner' : 'member'
+  capabilities.canManageBilling.value ? 'owner' : 'member'
 )
 
 const load = computed(() =>

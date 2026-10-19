@@ -257,7 +257,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         data.effective_balance_micros ?? data.amount_micros,
       effectiveBalanceAuthoritative: data.effective_balance_authoritative,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
-      cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0
+      cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0,
+      suggestedTopupAmountCents: data.suggested_topup_amount_cents
     }
   })
 

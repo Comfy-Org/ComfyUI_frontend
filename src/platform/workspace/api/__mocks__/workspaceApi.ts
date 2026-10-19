@@ -125,6 +125,24 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
         }
       }
     },
+    getBillingAutoReload: async () => ({
+      configured: false,
+      cycle_resets_at: null,
+      disabled_reason: null,
+      enabled: false,
+      last_failure_at: null,
+      last_failure_reason: null,
+      max_monthly_budget_cents: 0,
+      min_reload_credits: 0,
+      monthly_budget_cents: null,
+      paused_by_budget: false,
+      paused_by_decline: false,
+      reload_amount_cents: null,
+      reload_credits: null,
+      spent_this_cycle_cents: 0,
+      status: 'off',
+      threshold_credits: null
+    }),
     getBillingPlans: async () => ({ plans: [] }),
     listSavedPaymentMethods: async () => [],
     previewSubscribe: async (slug) => ({

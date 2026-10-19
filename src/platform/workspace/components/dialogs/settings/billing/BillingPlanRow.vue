@@ -46,10 +46,10 @@ import type {
 } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 
-const { state, action, canManageBilling } = defineProps<{
+const { state, action, canManageSubscription } = defineProps<{
   state: PlanRowState
   action: PlanRowAction | null
-  canManageBilling: boolean
+  canManageSubscription: boolean
 }>()
 
 const { t, locale } = useI18n()
@@ -85,7 +85,7 @@ function activeLine(state: Extract<PlanRowState, { kind: 'active' }>) {
 
 function noPlanLine(state: Extract<PlanRowState, { kind: 'noPlan' }>) {
   const key = 'workspacePanel.billingTab.plan.noPlan'
-  if (!canManageBilling) return ''
+  if (!canManageSubscription) return ''
   if (!state.freeRuns) return t(`${key}.line`)
   const { remaining, total } = state.freeRuns
   return remaining > 0
@@ -111,7 +111,7 @@ const statusLine = computed(() => {
 })
 
 const line = computed(() =>
-  canManageBilling
+  canManageSubscription
     ? statusLine.value
     : [statusLine.value, t('workspacePanel.billingTab.plan.managedByOwner')]
         .filter(Boolean)

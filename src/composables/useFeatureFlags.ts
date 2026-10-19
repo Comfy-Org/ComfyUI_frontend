@@ -337,16 +337,6 @@ export function useFeatureFlags() {
         cachedV1PaymentRecovery
       )
     },
-    get freeTierJobAllowanceEnabled() {
-      const config = remoteConfig.value as typeof remoteConfig.value & {
-        free_tier_job_allowance_enabled?: boolean
-      }
-      return resolveFlag(
-        ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED,
-        config.free_tier_job_allowance_enabled,
-        false
-      )
-    },
     get signupTurnstileMode() {
       return resolveFlag(
         ServerFeatureFlag.SIGNUP_TURNSTILE,
@@ -434,8 +424,6 @@ export function startFeatureFlagTelemetry() {
         flags.unifiedBillingSettingsEnabled,
       [ServerFeatureFlag.AUTO_TOP_UP_ENABLED]: flags.autoTopUpEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
-      [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
-        flags.freeTierJobAllowanceEnabled,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,

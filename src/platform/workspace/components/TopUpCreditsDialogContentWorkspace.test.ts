@@ -4,6 +4,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { BalanceInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   failedTopup,
@@ -88,11 +89,6 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
     clearPendingTopup: mockClearPendingTopup,
     startPendingTopup: mockStartPendingTopup
   })
-}))
-
-vi.mock(import('@/base/credits/comfyCredits'), () => ({
-  creditsToUsd: (credits: number) => credits,
-  usdToCredits: (usd: number) => usd
 }))
 
 const i18n = createI18n({
@@ -601,6 +597,115 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'intent',
       outcome: 'pending'
     })
+  })
+
+  function renderWithBalance(overrides: Partial<BalanceInfo>) {
+    const balance: BalanceInfo = {
+      amountMicros: 10_000,
+      currency: 'usd',
+      effectiveBalanceMicros: 10_000,
+      effectiveBalanceAuthoritative: true,
+      suggestedTopupAmountCents: null,
+      ...overrides
+    }
+    Object.assign(mockBillingContext(), { balance: computed(() => balance) })
+    renderDialog()
+  }
+
+  it.for([
+    { name: 'the server suggestion', suggested: 11_400, pay: 'Pay $114.00' },
+    {
+      name: 'the default without a suggestion',
+      suggested: null,
+      pay: 'Pay $50.00'
+    },
+    {
+      name: 'the default for a suggestion that is not whole dollars',
+      suggested: 11_450,
+      pay: 'Pay $50.00'
+    }
+  ])('opens at $name', async ({ suggested, pay }) => {
+    renderWithBalance({ suggestedTopupAmountCents: suggested })
+
+    await clickAddCredits()
+
+    expect(screen.getByRole('button', { name: pay })).toBeEnabled()
+  })
+
+  function renderBeforeBalanceArrives() {
+    const balance = ref<BalanceInfo | null>(null)
+    Object.assign(mockBillingContext(), { balance })
+    renderDialog()
+    return (suggestedTopupAmountCents: number) => {
+      balance.value = {
+        amountMicros: -10_000,
+        currency: 'usd',
+        effectiveBalanceMicros: -10_000,
+        effectiveBalanceAuthoritative: true,
+        suggestedTopupAmountCents
+      }
+    }
+  }
+
+  it('adopts a suggestion that arrives after the dialog opens', async () => {
+    const balanceArrives = renderBeforeBalanceArrives()
+
+    balanceArrives(11_400)
+    await clickAddCredits()
+
+    expect(screen.getByRole('button', { name: 'Pay $114.00' })).toBeEnabled()
+  })
+
+  it('keeps an amount the user chose when the suggestion arrives later', async () => {
+    const balanceArrives = renderBeforeBalanceArrives()
+
+    await userEvent.click(screen.getByRole('button', { name: '$25' }))
+    balanceArrives(11_400)
+    await clickAddCredits()
+
+    expect(screen.getByRole('button', { name: 'Pay $25.00' })).toBeEnabled()
+  })
+
+  it('keeps the confirmed amount when the suggestion arrives after confirming', async () => {
+    const balanceArrives = renderBeforeBalanceArrives()
+
+    await clickAddCredits()
+    balanceArrives(11_400)
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
+  })
+
+  it('explains that the top-up covers a negative balance first', () => {
+    renderWithBalance({
+      amountMicros: -10_000,
+      effectiveBalanceMicros: -10_000,
+      suggestedTopupAmountCents: 11_400
+    })
+
+    expect(
+      screen.getByText(
+        'Your balance is −21,100 credits. This top-up covers that first.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it.for<{ name: string; balance: Partial<BalanceInfo> }>([
+    { name: 'a positive balance', balance: {} },
+    {
+      name: 'a balance the server could not read',
+      balance: {
+        amountMicros: -10_000,
+        effectiveBalanceMicros: -10_000,
+        effectiveBalanceAuthoritative: false
+      }
+    }
+  ])('says nothing about the balance for $name', ({ balance }) => {
+    renderWithBalance(balance)
+
+    expect(
+      screen.queryByText(/This top-up covers that first/)
+    ).not.toBeInTheDocument()
   })
 
   describe('without a default payment method', () => {
