@@ -26,9 +26,7 @@ const subscription: ReturnType<typeof realUseSubscription> = {
   subscribeDirect: vi.fn(async () => {}),
   fetchStatus: vi.fn(async () => undefined),
   fetchStatusDirect: vi.fn(async () => null),
-  showSubscriptionDialog: vi.fn(),
   manageSubscription: vi.fn(async () => {}),
-  requireActiveSubscription: vi.fn(async () => {}),
   handleViewUsageHistory: vi.fn(),
   handleLearnMore: vi.fn(),
   handleInvoiceHistory: vi.fn(async () => {})

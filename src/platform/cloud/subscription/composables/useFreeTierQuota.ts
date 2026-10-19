@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { graphCreditsBadges } from '@/systems/badgeSystem'
 
 export const useFreeTierQuota = createSharedComposable(function () {
@@ -23,6 +23,7 @@ export const useFreeTierQuota = createSharedComposable(function () {
   // The backend sends free_tier_balance only when the free tier is on for this user.
   const quotaEnabled = computed(() => isCloud && maxAvailable.value > 0)
   const hasInvalidNodes = computed(() => {
+    const app = useApp()
     return app.isGraphReady && graphCreditsBadges(app.rootGraph).length > 0
   })
   const freeTierExecutionPermitted = computed(

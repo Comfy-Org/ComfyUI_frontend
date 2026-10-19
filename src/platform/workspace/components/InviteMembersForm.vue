@@ -17,8 +17,7 @@
         :class="
           cn(
             'rounded-full',
-            !isValidEmail(email) &&
-              'bg-destructive-background/20 text-destructive-background'
+            !isValidEmail(email) && 'bg-destructive/20 text-destructive'
           )
         "
       >
@@ -38,7 +37,7 @@
       v-if="invalidEmails.length > 0"
       :id="invalidEmailsHintId"
       role="alert"
-      class="m-0 text-xs text-destructive-background"
+      class="m-0 text-xs text-destructive"
     >
       {{
         $t(
@@ -51,7 +50,7 @@
       v-if="alreadyInvitedEmails.length > 0"
       :id="pendingInvitesHintId"
       aria-live="polite"
-      class="m-0 text-xs text-warning-background"
+      class="m-0 text-xs text-warning"
     >
       <template v-if="alreadyInvitedEmails.length === 1">
         {{ $t('workspacePanel.inviteMemberDialog.pendingInviteSingle') }}
@@ -68,7 +67,7 @@
       v-if="seatOverage > 0"
       :id="seatLimitHintId"
       role="alert"
-      class="m-0 text-xs text-destructive-background"
+      class="m-0 text-xs text-destructive"
     >
       {{
         $t('workspacePanel.inviteMemberDialog.seatLimitExceeded', {
@@ -110,7 +109,7 @@
 
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -144,7 +143,7 @@ const {
   occupiedSeats = 0,
   showSubmit = true,
   autoFocus = false,
-  tagsInputClass = 'min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover'
+  tagsInputClass = 'min-h-10 w-full bg-muted px-3 focus-within:bg-muted hover:bg-muted/80'
 } = defineProps<{
   submitLabel: string
   placeholder: string
@@ -288,14 +287,10 @@ async function onSubmit() {
     })
 
     emails.value = failedEmails
-    toast.add({
-      severity: 'error',
-      summary: t(
-        'workspacePanel.inviteMemberDialog.failedCount',
-        failedEmails.length
-      ),
-      life: 5000
-    })
+    toast.error(
+      t('workspacePanel.inviteMemberDialog.failedCount', failedEmails.length),
+      { duration: 5000 }
+    )
   } finally {
     loading.value = false
   }

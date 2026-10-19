@@ -650,7 +650,7 @@ describe('historical workflow restoration', () => {
     expect(panel.targetUnavailable).toBe(true)
     expect(panel.selectedWorkflow).toBeNull()
     expect(workflows.activeWorkflow?.path).toBe(current.path)
-    expect(vi.mocked(workflows.syncWorkflows)).not.toHaveBeenCalled()
+    expect(workflows.syncWorkflows).not.toHaveBeenCalled()
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 

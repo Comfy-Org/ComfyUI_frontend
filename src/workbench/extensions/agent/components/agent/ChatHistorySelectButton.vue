@@ -51,7 +51,7 @@ const errorId = useId()
       v-if="failed"
       :id="errorId"
       role="alert"
-      class="pl-6 text-xs whitespace-normal text-destructive-background"
+      class="pl-6 text-xs whitespace-normal text-destructive"
       >{{ t('agent.historyOpenFailed') }}</span
     >
   </div>

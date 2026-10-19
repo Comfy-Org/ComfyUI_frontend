@@ -176,6 +176,44 @@ export function agentSubgraphFrames(): {
   return { initial, followUp }
 }
 
+export const AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT = 'a lighthouse at dawn'
+export const AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS = 33
+
+export function agentSubgraphInteriorFrames(): {
+  initial: HostFrame[]
+  stepsEdit: HostFrame
+  textEdit: HostFrame
+} {
+  const host = new HostDoc(
+    AGENT_SUBGRAPH_WORKFLOW_ID,
+    subgraphWorkflow,
+    catalog
+  )
+  host.apply(initialOps)
+  const initial = host.initialSync()
+  const stepsEdit = host.apply([
+    {
+      op: 'set_widget',
+      node_id: 11,
+      widget: 'steps',
+      value: AGENT_SUBGRAPH_INTERIOR_EDITED_STEPS,
+      path: ['11', '11'],
+      inner_widget: 'steps'
+    }
+  ])
+  const textEdit = host.apply([
+    {
+      op: 'set_widget',
+      node_id: 10,
+      widget: 'text',
+      value: AGENT_SUBGRAPH_INTERIOR_EDITED_TEXT,
+      path: ['11', '10'],
+      inner_widget: 'text'
+    }
+  ])
+  return { initial, stepsEdit, textEdit }
+}
+
 export function agentSubgraphWidgetDriftFrames(): HostFrame[] {
   const workflow = structuredClone(subgraphWorkflow)
   const host = workflow.nodes.find((node) => node.id === AGENT_SUBGRAPH_HOST_ID)

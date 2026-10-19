@@ -33,6 +33,7 @@ test.describe('API-key login billing surfaces', () => {
       0
     )
     await expect(popover).toContainText(API_KEY_BALANCE_DISPLAY)
+    await expect(popover.getByTestId('add-credits-button')).toBeVisible()
 
     await popover.getByTestId('plans-credits-menu-item').click()
 

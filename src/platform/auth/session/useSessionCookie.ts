@@ -1,12 +1,17 @@
 import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useCurrentUserAccess } from '@/platform/auth/currentUserAccess'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
+import {
+  SessionRevokedError,
+  revokedCodeOf
+} from '@/platform/auth/session/sessionRevokedError'
 import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import { useAuthStore } from '@/stores/authStore'
+import { useAuthStoreAccess } from '@/platform/auth/authStoreAccess'
 
 interface InFlightCreateSession {
   ownerUid: string | null
@@ -42,15 +47,20 @@ export const useSessionCookie = () => {
 
   const readSessionError = async (response: Response): Promise<Error> => {
     const errorData: unknown = await response.json().catch(() => null)
-    const message = (errorData as { message?: unknown } | null)?.message
-    const text = typeof message === 'string' ? message : response.statusText
-    return isSsoRequiredRefusal(response.status, errorData)
-      ? new SsoRequiredSessionError(text)
+    const refusal = zErrorResponse.partial().safeParse(errorData).data
+    const text = refusal?.message ?? response.statusText
+    if (isSsoRequiredRefusal(response.status, errorData)) {
+      return new SsoRequiredSessionError(text)
+    }
+    const revokedCode =
+      response.status === 401 ? revokedCodeOf(refusal?.code) : null
+    return revokedCode
+      ? new SessionRevokedError(text, revokedCode)
       : new Error(text)
   }
 
   const getSessionHeaderOrThrow = async (): Promise<Record<string, string>> => {
-    const authStore = useAuthStore()
+    const authStore = useAuthStoreAccess()
     const firebaseToken = await authStore.getIdToken()
     if (!firebaseToken) {
       throw new Error('No Firebase token available for session creation')
@@ -63,7 +73,7 @@ export const useSessionCookie = () => {
   const performCreateSession = async (
     expectedOwnerUid: string
   ): Promise<void> => {
-    const authStore = useAuthStore()
+    const authStore = useAuthStoreAccess()
     const authHeader = await getSessionHeaderOrThrow()
 
     if ((authStore.currentUser?.uid ?? null) !== expectedOwnerUid) {
@@ -97,12 +107,12 @@ export const useSessionCookie = () => {
       ownerUid,
       promise: sessionMutationTail
         .then(async () => {
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if ((useAuthStoreAccess().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed before creation')
           }
           await performCreateSession(ownerUid)
           confirmedSessionOwnerUid = ownerUid
-          if ((useAuthStore().currentUser?.uid ?? null) !== ownerUid) {
+          if ((useAuthStoreAccess().currentUser?.uid ?? null) !== ownerUid) {
             throw new Error('Session identity changed during creation')
           }
         })
@@ -119,7 +129,7 @@ export const useSessionCookie = () => {
   }
 
   const currentOwnerUidOrThrow = (): string => {
-    const ownerUid = useAuthStore().currentUser?.uid
+    const ownerUid = useAuthStoreAccess().currentUser?.uid
     if (!ownerUid) {
       throw new Error('No authenticated user available for session creation')
     }
@@ -128,7 +138,7 @@ export const useSessionCookie = () => {
 
   const isApiKeyOnWebSession = () =>
     useFeatureFlags().flags.unifiedWebSessionEnabled &&
-    useCurrentUser().isApiKeyLogin.value
+    useCurrentUserAccess().isApiKeyLogin.value
 
   const ensureSessionCookie = async (): Promise<void> => {
     if (!isCloud || isApiKeyOnWebSession()) return
@@ -143,8 +153,7 @@ export const useSessionCookie = () => {
     try {
       await establishSession(currentOwnerUidOrThrow(), true)
     } catch (error) {
-      // The session cookie is the only credential <img>/media loads carry, so
-      // a swallowed creation failure means images break with no other signal.
+      if (error instanceof SessionRevokedError) return
       reportError(error, {
         surface: 'auth',
         errorType: 'session_cookie_creation_failure',

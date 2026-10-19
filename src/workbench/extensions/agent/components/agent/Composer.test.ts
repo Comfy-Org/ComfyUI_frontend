@@ -4,18 +4,24 @@ import type {
   WorkflowReferenceOption
 } from '../../types/workflowReference'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  isInaccessible,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
-import type { DirectiveBinding, ShallowRef } from 'vue'
+import type { ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
@@ -24,18 +30,10 @@ import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSet
 
 setupInlinePromptEditorDom()
 
-const tooltipBindings = new WeakMap<Element, unknown>()
-const tooltipDirectiveStub = {
-  mounted(element: Element, binding: DirectiveBinding<unknown>) {
-    tooltipBindings.set(element, binding.value)
-  },
-  updated(element: Element, binding: DirectiveBinding<unknown>) {
-    tooltipBindings.set(element, binding.value)
-  }
-}
-
+vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('../../services/agent/agentAuth'))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
@@ -69,8 +67,7 @@ function mount(
     props: { hasWorkflowTarget: true, selectWorkflowReference, ...props },
     attrs,
     global: {
-      plugins: [i18n],
-      directives: { tooltip: tooltipDirectiveStub }
+      plugins: [i18n]
     }
   })
   return { ...view, selectWorkflowReference }
@@ -135,14 +132,6 @@ describe('Composer', () => {
       getMentionNodes: () => [{ id: '7', title: 'KSampler' }]
     }
     const { emitted } = mount(props)
-    const inline = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
-    expect(inline).toHaveAttribute('aria-disabled', 'true')
-    expect(inline).toHaveAccessibleDescription(reason)
-    await userEvent.click(inline)
-    expect(emitted().selectNodes).toBeUndefined()
-
     await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
     const plusNodes = screen.getByRole('menuitem', { name: 'Nodes' })
     expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
@@ -164,6 +153,34 @@ describe('Composer', () => {
     expect(emitted().mentionPick).toBeUndefined()
   })
 
+  it.for([
+    {
+      entryPoint: 'add menu',
+      open: () =>
+        userEvent.click(screen.getByRole('button', { name: 'Add to prompt' })),
+      target: () => screen.getByRole('menuitem', { name: 'Nodes' })
+    },
+    {
+      entryPoint: 'mention menu',
+      open: async () => {
+        await userEvent.click(screen.getByRole('textbox'))
+        await userEvent.paste('@')
+      },
+      target: () => screen.getByRole('menuitem', { name: 'Nodes' })
+    }
+  ])(
+    'shows why nodes are blocked in a tooltip on the $entryPoint',
+    async ({ open, target }) => {
+      const reason = 'Please select a workflow first'
+      mount({ nodeReferenceDisabledReason: reason })
+
+      await open()
+      await userEvent.hover(target())
+
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(reason)
+    }
+  )
+
   it('invalidates an open Nodes submenu when the viewed workflow becomes ineligible', async () => {
     const { rerender, emitted } = mount({
       getMentionNodes: () => [{ id: '7', title: 'KSampler' }]
@@ -184,23 +201,10 @@ describe('Composer', () => {
     expect(emitted().mentionPick).toBeUndefined()
   })
 
-  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
+  it('uses one primary action in the empty composer placeholder', () => {
     mount()
 
-    const text = screen.getByText(
-      'Describe ideas, @ to reference workflows, drag in media asset and files, or'
-    )
-    expect(text).toBeVisible()
-    const addNodes = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
-    expect(addNodes).toBeVisible()
-    expect(addNodes).toContainHTML(
-      '<span class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"></span>'
-    )
-    expect(
-      text.compareDocumentPosition(addNodes) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy()
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
   })
 
   it.for([
@@ -214,51 +218,113 @@ describe('Composer', () => {
     async ({ attachments }) => {
       const store = useAgentComposerStore()
       store.replaceDraft({ text: '', workflowReferences: [], attachments })
-      const { emitted } = mount()
+      mount()
       const box = screen.getByRole('textbox')
-      expect(
-        screen.getByRole('button', { name: 'mention nodes' })
-      ).toBeVisible()
+      expect(screen.getByText('Describe what you want to create')).toBeVisible()
 
       await userEvent.click(box)
       await userEvent.paste('hello')
 
       expect(store.draft).toBe('hello')
-      expect(screen.queryByRole('button', { name: 'mention nodes' })).toBeNull()
+      expect(
+        isInaccessible(screen.getByText('Describe what you want to create'))
+      ).toBe(true)
 
       await userEvent.keyboard('{Control>}a{/Control}{Backspace}')
       expect(store.draft).toBe('')
-      await userEvent.click(
-        screen.getByRole('button', { name: 'mention nodes' })
-      )
-      expect(emitted().selectNodes).toHaveLength(1)
+      expect(screen.getByText('Describe what you want to create')).toBeVisible()
       expect(store.attachments).toEqual(attachments)
     }
   )
 
-  it('enters graph selection mode from the empty-composer hint', async () => {
+  it('enters graph selection mode with the keyboard from Add to prompt', async () => {
     const getMentionNodes = vi.fn(() => [])
     const { emitted } = mount({ getMentionNodes })
-    const hintButton = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
-
-    await userEvent.tab()
-    await userEvent.tab()
-    expect(hintButton).toHaveFocus()
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    screen.getByRole('menuitem', { name: 'Nodes' }).focus()
     await userEvent.keyboard('{Enter}')
 
     expect(emitted().selectNodes).toHaveLength(1)
     expect(getMentionNodes).not.toHaveBeenCalled()
   })
 
-  it('enters graph selection mode from a click on the empty-composer hint', async () => {
+  it('opens the node and workflow reference picker from the @ control', async () => {
+    mount({ getMentionNodes: () => [{ id: '7', title: 'KSampler' }] })
+    const textbox = screen.getByRole('textbox')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+    expect(textbox).toHaveTextContent('@')
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+    expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+  })
+
+  it('enters graph selection mode from a click in Add to prompt', async () => {
     const { emitted } = mount({ getMentionNodes: vi.fn(() => []) })
 
-    await userEvent.click(screen.getByRole('button', { name: 'mention nodes' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
 
     expect(emitted().selectNodes).toHaveLength(1)
     expect(screen.getByRole('textbox')).not.toHaveFocus()
+  })
+
+  it.for([
+    { preceding: 'a word', text: 'edit this', draft: 'edit this @' },
+    { preceding: 'a space', text: 'edit this ', draft: 'edit this @' }
+  ])(
+    'inserts a Reference trigger after $preceding',
+    async ({ text, draft }) => {
+      mount({ getMentionNodes: () => [{ id: '7', title: 'KSampler' }] })
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste(text)
+
+      await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+      expect(useAgentComposerStore().draft).toBe(draft)
+      expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    }
+  )
+
+  it('replaces selected text with a Reference trigger', async () => {
+    mount()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('edit this')
+    await userEvent.keyboard('{Control>}a{/Control}')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+    expect(useAgentComposerStore().draft).toBe('@')
+  })
+
+  it('inserts a Reference trigger before an adjacent reference chip', async () => {
+    const store = useAgentComposerStore()
+    store.replaceDraft({
+      text: 'hello world',
+      workflowReferences: [
+        { id: 'workflow', name: 'Reference', textOffset: 5 }
+      ],
+      attachments: []
+    })
+    mount()
+    const textbox = screen.getByRole('textbox')
+    const chip = await screen.findByTestId('workflow-reference-chip')
+    await userEvent.click(textbox)
+    const caret = document.createRange()
+    caret.setStartBefore(chip)
+    caret.collapse(true)
+    document.getSelection()?.removeAllRanges()
+    document.getSelection()?.addRange(caret)
+    document.dispatchEvent(new Event('selectionchange'))
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+    expect(store.draft).toBe('hello @ world')
+    expect(store.workflowReferences).toEqual([
+      { id: 'workflow', name: 'Reference', textOffset: 7 }
+    ])
   })
 
   it('retains the draft on Enter while a workflow selection is saving', async () => {
@@ -287,13 +353,10 @@ describe('Composer', () => {
     expect(send).toBeEnabled()
 
     await userEvent.hover(send)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Send')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Send')
   })
 
   it('renders without vue-i18n message compilation errors', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     mount({ canAttach: true, canOpenAssets: true })
 
     // The menu strings only compile once reka mounts the lazy menu content.
@@ -302,11 +365,9 @@ describe('Composer', () => {
 
     // Unescaped syntax characters (@, |, {) in a locale message compile to an
     // error and silently fall back to the raw string.
-    expect(consoleError.mock.calls.flat().join(' ')).not.toContain(
+    expect(vi.mocked(console.error).mock.calls.flat().join(' ')).not.toContain(
       'Message compilation error'
     )
-
-    consoleError.mockRestore()
   })
 
   it('emits trimmed text and leaves the draft for the submission owner', async () => {
@@ -357,9 +418,7 @@ describe('Composer', () => {
     mount({ streaming: true })
     const stop = screen.getByRole('button', { name: 'Stop' })
     await userEvent.hover(stop)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Stop Esc')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
   })
 
   it('emits stop on Escape while running and ignores Enter', async () => {
@@ -443,8 +502,7 @@ describe('Composer', () => {
     })
     render(Host, {
       global: {
-        plugins: [i18n],
-        directives: { tooltip: tooltipDirectiveStub }
+        plugins: [i18n]
       }
     })
     const box = screen.getByRole('textbox')
@@ -463,9 +521,7 @@ describe('Composer', () => {
   it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
     const submitting = mount({ submitting: true })
     await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Stop Esc')
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('Stop Esc')
     submitting.unmount()
 
     const { emitted } = mount({ streaming: true })
@@ -529,8 +585,7 @@ describe('Composer', () => {
     })
     render(Host, {
       global: {
-        plugins: [i18n],
-        directives: { tooltip: tooltipDirectiveStub }
+        plugins: [i18n]
       }
     })
     const box = screen.getByRole('textbox')
@@ -662,10 +717,12 @@ describe('Composer', () => {
         ).toBeChecked()
       )
       expect(screen.getByRole('status')).toBeEmptyDOMElement()
-      expect(useToastStore().messagesToAdd).toContainEqual({
-        severity: 'error',
-        detail: i18n.global.t('agent.runModeSaveFailed')
-      })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          title: i18n.global.t('agent.runModeSaveFailed')
+        })
+      )
       expect(telemetry.trackAgentRunModeChanged).not.toHaveBeenCalled()
     })
 
@@ -801,10 +858,10 @@ describe('Composer', () => {
         )
         mount()
 
-        const trigger = screen.getByRole('button', { name: triggerName })
-        expect(tooltipBindings.get(trigger)).toMatchObject({
-          value: tooltipCopy
-        })
+        await userEvent.hover(screen.getByRole('button', { name: triggerName }))
+        expect(await screen.findByRole('tooltip')).toHaveTextContent(
+          tooltipCopy
+        )
       }
     )
 
@@ -1721,11 +1778,7 @@ describe('Composer', () => {
   it('keeps the empty prompt hint visible when only nodes are selected', () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    expect(
-      screen.getByText(
-        'Describe ideas, @ to reference workflows, drag in media asset and files, or'
-      )
-    ).toBeVisible()
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
   })
 
   it('hides the conditional entries from the add menu by default', async () => {
@@ -1867,6 +1920,7 @@ describe('Composer', () => {
               promptId: 'slot_1',
               promptIndex: 0,
               promptCount: 5,
+              visiblePromptCount: 5,
               promptTextHash: 'deadbeef',
               locale: 'en'
             }

@@ -42,9 +42,11 @@ export class NodeOperationsHelper {
 
   async getSelectedNodeIds(): Promise<NodeId[]> {
     const selectedNodeIds = await this.page.evaluate(() => {
-      const selected = window.app?.canvas.selected_nodes
-      if (!selected) return []
-      return Object.keys(selected)
+      const canvas = window.app?.canvas
+      if (!canvas?.graph) return []
+      return canvas.graph.nodes
+        .filter((node) => canvas.selectedItems.has(node))
+        .map((node) => String(node.id))
     })
     return selectedNodeIds.map(toNodeId)
   }

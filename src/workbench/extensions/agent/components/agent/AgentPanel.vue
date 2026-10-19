@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -7,14 +8,14 @@ import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
+  AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@/platform/telemetry/types'
-import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 
+import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
 import type { ActiveTab } from '../../types/activeTab'
 import type {
   WorkflowReference,
@@ -78,7 +79,9 @@ const {
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
-  freeUsePlacement = 'control'
+  freeUsePlacement = 'control',
+  starterPromptAssignment = 'control',
+  attributeStarterPromptExperiment = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -119,6 +122,8 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
+  starterPromptAssignment?: AgentStarterPromptAssignment
+  attributeStarterPromptExperiment?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -129,6 +134,7 @@ const emit = defineEmits<{
   stop: [method: AgentStopMethod]
   attach: []
   attachFiles: [files: File[]]
+  removeAttachment: [id: string]
   openAssets: []
   selectNodes: []
   removeTag: [id: string]
@@ -147,12 +153,13 @@ const emit = defineEmits<{
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
   renameChat: [title: string]
-  answerAsk: [askId: string, selection: 'run' | 'cancel']
+  answerAsk: [askId: string, answer: AgentAnswerRequest]
   openWorkflow: [askId: string, workflowId: string, workflowName?: string]
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
+  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
 }>()
 
 const targetNotice = computed(() => {
@@ -347,7 +354,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
 <template>
   <section
-    class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"
+    class="@container flex h-full flex-col overflow-hidden bg-background text-foreground"
   >
     <PanelHeader
       :is-maximized
@@ -381,12 +388,13 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"
-          v-tooltip.right="buildTooltipConfig(t('agent.showChatHistory'))"
+          :tooltip="t('agent.showChatHistory')"
+          tooltip-side="right"
           type="button"
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
+          class="size-6 shrink-0 data-coach-hover:bg-accent"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
@@ -413,7 +421,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             type="button"
             variant="muted-textonly"
             size="sm"
-            :disabled="sessionId === null"
             class="min-w-0 justify-start text-left"
             @click="startRename"
           >
@@ -431,7 +438,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           >
             <template #trigger>
               <Button
-                v-tooltip.bottom="buildTooltipConfig(t('agent.chatOptions'))"
+                :tooltip="t('agent.chatOptions')"
+                tooltip-side="bottom"
                 variant="muted-textonly"
                 size="icon-sm"
                 :aria-label="t('agent.chatOptions')"
@@ -448,6 +456,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         <EmptyState
           v-if="!entries.length"
           :user-name
+          :assignment="starterPromptAssignment"
+          :attribute-experiment="attributeStarterPromptExperiment"
+          @rendered="emit('starterPromptRendered', $event)"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
@@ -485,8 +496,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer class="shrink-0 py-3">
-        <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+      <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
+        <div
+          data-testid="agent-composer-stack"
+          class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
+        >
+          <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
             data-testid="agent-credits-exhausted-paywall"
@@ -522,6 +537,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @stop="emit('stop', $event)"
             @attach="emit('attach')"
             @attach-files="emit('attachFiles', $event)"
+            @remove-attachment="emit('removeAttachment', $event)"
             @open-assets="emit('openAssets')"
             @select-nodes="emit('selectNodes')"
             @remove-tag="emit('removeTag', $event)"

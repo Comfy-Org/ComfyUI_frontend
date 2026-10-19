@@ -1,0 +1,33 @@
+{
+  "id": "node-templates",
+  "capability": "Node templates",
+  "description": "Saving canvas selections as reusable node templates, inserting them from the canvas menu, and managing, importing, and exporting them through the legacy dialog. Workflow templates are a separate capability.",
+  "modules": [
+    {
+      "path": "src/extensions/core/nodeTemplates.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/nodeTemplates.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Saving, inserting, deleting, importing, and exporting preserve node template persistence",
+      "checks": [
+        "src/extensions/core/nodeTemplates.test.ts",
+        "browser_tests/tests/nodeTemplates.spec.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "The core extension remains the host integration seam for the canvas menu and template dialog.",
+    "Saved templates remain stored through the existing user data API."
+  ],
+  "deepImports": "inventory"
+}

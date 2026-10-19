@@ -11,16 +11,7 @@ vi.mock(import('@/renderer/core/thumbnail/graphThumbnailRenderer'), () => ({
   createGraphThumbnail: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    moveUserData: vi.fn(),
-    listUserDataFullInfo: vi.fn(),
-    addEventListener: vi.fn(),
-    getUserData: vi.fn(),
-    storeUserData: vi.fn(),
-    apiURL: vi.fn((path: string) => `/api${path}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useWorkflowThumbnail', () => {
   let workflowStore: ReturnType<typeof useWorkflowStore>

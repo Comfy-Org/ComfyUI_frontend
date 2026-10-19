@@ -1,20 +1,18 @@
 <template>
   <Menu :items="translatedItems" class="comfy-command-menu">
     <template #trigger="{ open }">
-      <button
-        v-tooltip="{
-          value: t('sideToolbar.labels.menu'),
-          showDelay: 300,
-          hideDelay: 300
-        }"
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="t('sideToolbar.labels.menu')"
+        tooltip-side="right"
         data-testid="comfy-menu-button"
         type="button"
         :aria-label="t('sideToolbar.labels.menu')"
         :class="
           cn(
-            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-2 transition-colors hover:bg-interface-panel-hover-surface',
-            open &&
-              'bg-interface-panel-selected-surface hover:bg-interface-panel-selected-surface'
+            'flex h-(--sidebar-item-height) w-(--sidebar-width) shrink-0 flex-col rounded-none p-2 hover:bg-accent',
+            open && 'bg-muted hover:bg-muted'
           )
         "
         @click="onLogoMenuClick"
@@ -29,7 +27,7 @@
             mode="fill"
           />
         </div>
-      </button>
+      </Button>
     </template>
   </Menu>
 </template>
@@ -41,6 +39,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyLogo from '@/components/icons/ComfyLogo.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
@@ -53,7 +52,7 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import type { AppMenuItem, CommandMenuItem } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const { t } = useI18n()
@@ -61,7 +60,6 @@ const menuItemStore = useMenuItemStore()
 const colorPaletteStore = useColorPaletteStore()
 const colorPaletteService = useColorPaletteService()
 const settingsDialog = useSettingsDialog()
-const managerState = useManagerState()
 const settingStore = useSettingStore()
 
 const nodes2Enabled = computed(
@@ -97,7 +95,7 @@ const showSettings = (defaultPanel?: SettingPanelType) => {
 }
 
 const showManageExtensions = async () => {
-  await managerState.openManager({
+  await useManagerDialog().openManager({
     initialTab: ManagerTab.All,
     showToastOnLegacyError: false
   })

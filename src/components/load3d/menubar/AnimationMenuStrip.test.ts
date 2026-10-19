@@ -23,7 +23,7 @@ type RenderProps = Partial<ComponentProps<typeof AnimationMenuStrip>>
 function renderStrip(props: RenderProps = {}) {
   const result = render(AnimationMenuStrip, {
     props: { animations: clips, animationDuration: 10, ...props },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }
@@ -90,7 +90,7 @@ describe('AnimationMenuStrip', () => {
     await user.click(screen.getByRole('button', { name: 'Playback speed' }))
     expect(
       screen.getByRole('button', { name: '1x', pressed: true })
-    ).toHaveClass('bg-secondary-background-selected')
+    ).toHaveClass('bg-muted')
     await user.click(screen.getByRole('button', { name: '0.5x' }))
 
     expect(onUpdateSpeed).toHaveBeenCalledWith(0.5)
@@ -106,7 +106,7 @@ describe('AnimationMenuStrip', () => {
     await user.click(screen.getByRole('button', { name: 'Animation clip' }))
     expect(
       screen.getByRole('button', { name: 'idle', pressed: true })
-    ).toHaveClass('bg-secondary-background-selected')
+    ).toHaveClass('bg-muted')
     await user.click(screen.getByRole('button', { name: 'walk' }))
 
     expect(onUpdateClip).toHaveBeenCalledWith(1)

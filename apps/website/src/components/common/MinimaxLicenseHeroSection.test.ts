@@ -8,9 +8,9 @@ const happyWindow = window as typeof window & {
   happyDOM: { setViewport: (viewport: { width: number }) => void }
 }
 
-function renderHero(locale: 'en' | 'zh-CN' = 'en') {
+function renderHero(locale: 'en' | 'zh-CN' = 'en', fitCtas = false) {
   return render(MinimaxLicenseHeroSection, {
-    props: { locale }
+    props: { locale, fitCtas }
   })
 }
 
@@ -44,6 +44,18 @@ describe('MinimaxLicenseHeroSection', () => {
         .getByRole('link', { name: 'TRY H3 ON COMFY CLOUD' })
         .getAttribute('href')
     ).toBe('https://cloud.comfy.org/?share=a781503cf508')
+  })
+
+  it('keeps full-width CTAs unless fitCtas is set', () => {
+    const { unmount } = renderHero()
+    const full = screen.getByRole('link', { name: 'REQUEST LICENSE' })
+    expect(full.parentElement?.className).toContain('w-full')
+    unmount()
+
+    renderHero('en', true)
+    const fit = screen.getByRole('link', { name: 'REQUEST LICENSE' })
+    expect(fit.parentElement?.className).toContain('items-center')
+    expect(fit.parentElement?.className).not.toContain('w-full')
   })
 
   it('localizes the embedded hero', () => {

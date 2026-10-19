@@ -26,8 +26,8 @@ const meta: Meta<typeof AssetFilterBar> = {
   decorators: [
     () => ({
       template: `
-        <div class="min-h-screen bg-base-background">
-          <div class="bg-base-background border-b border-border-default">
+        <div class="min-h-screen bg-background">
+          <div class="bg-background border-b border-border">
             <story />
           </div>
           <div class="p-6 text-sm text-muted-foreground">
@@ -222,7 +222,7 @@ export const CategorySwitchingReactivity: Story = {
               'px-4 py-2 rounded border',
               selectedCategory === 'all'
                 ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-secondary-background border-border-default'
+                : 'bg-secondary border-border'
             ]"
           >
             All (.safetensors + .pt, sd15 + sdxl)
@@ -233,7 +233,7 @@ export const CategorySwitchingReactivity: Story = {
               'px-4 py-2 rounded border',
               selectedCategory === 'checkpoints'
                 ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-secondary-background border-border-default'
+                : 'bg-secondary border-border'
             ]"
           >
             Checkpoints (.safetensors, sd15 + sdxl)
@@ -244,7 +244,7 @@ export const CategorySwitchingReactivity: Story = {
               'px-4 py-2 rounded border',
               selectedCategory === 'loras'
                 ? 'bg-blue-500 text-white border-blue-600'
-                : 'bg-secondary-background border-border-default'
+                : 'bg-secondary border-border'
             ]"
           >
             LoRAs (.pt, sd15 only)

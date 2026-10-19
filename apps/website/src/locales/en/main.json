@@ -78,7 +78,6 @@
       "select": "Select an option",
       "maxFiles": "Select no more than {count} files.",
       "invalidJson": "This JSON does not match what the model expects.",
-      "runNext": "Run model — sign-in coming next",
       "codeLanguage": "Code language",
       "copy": "Copy code",
       "copied": "Copied",
@@ -95,7 +94,11 @@
         "priceNoUnit": "Typical cost: {credits} credits.",
         "title": "{name} API & Playground - Comfy",
         "titleUnbranded": "{name} API & Playground",
-        "titleApi": "{name} API - Comfy"
+        "titleApi": "{name} API - Comfy",
+        "units": {
+          "image": "image",
+          "run": "run"
+        }
       },
       "tabs": {
         "playground": "Playground",
@@ -124,7 +127,15 @@
       "text": "Text",
       "image": "Image",
       "video": "Video",
-      "audio": "Audio"
+      "audio": "Audio",
+      "output": {
+        "text": "text",
+        "image": "image",
+        "video": "video",
+        "audio": "audio",
+        "3d": "3D",
+        "other": "other"
+      }
     },
     "models": {
       "heading": "Models"
@@ -537,7 +548,7 @@
         "show": "Show {n} workflows",
         "noResults": "No matches"
       },
-      "models": "Model",
+      "models": "Models",
       "categories": "CATEGORIES",
       "docs": "Read docs",
       "tryNow": "Try now",
@@ -563,6 +574,7 @@
       "graphNote": "The node graph behind this deployment is read-only here. Open it on comfy.org or download the JSON to edit it in ComfyUI.",
       "openComfy": "Open on comfy.org",
       "download": "Download workflow JSON",
+      "downloadShort": "Download Workflow",
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
@@ -655,7 +667,22 @@
       "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
-    "cinematic": {}
+    "cinematic": {},
+    "videoTrim": {
+      "title": "Trim video",
+      "description": "Choose the part to use. It can be {min} to {max} seconds long.",
+      "play": "Play the selected part",
+      "pause": "Pause",
+      "start": "Start of the part to keep",
+      "end": "End of the part to keep",
+      "seek": "Seek within the selected part",
+      "selected": "{from} – {to} · {seconds} s of {total} s",
+      "tooShort": "This video is {seconds} s long. It needs to be at least {min} s.",
+      "unreadable": "This video could not be read. Try an MP4.",
+      "reading": "Reading the video",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    }
   },
   "auth": {
     "signIn": {
@@ -726,7 +753,8 @@
       "needHelp": "Need Help?"
     },
     "toast": {
-      "close": "Close"
+      "close": "Close",
+      "viewportLabel": "Notifications ({hotkey})"
     },
     "hero": {
       "carouselLabel": "Featured models",
@@ -919,15 +947,18 @@
     "subtitle2": "Start from a community template or build from scratch.",
     "feature1": {
       "title": "Full Control with Nodes",
-      "description": "Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable."
+      "description": "Build powerful AI pipelines by connecting nodes on an infinite canvas. Every model, parameter, and processing step is visible and adjustable.",
+      "cta": "Download Desktop"
     },
     "feature2": {
-      "title": "App mode, a simplified view of your workflows",
-      "description": "If you are new to ComfyUI, get started with App Mode, a simplified view of your workflows. You can flip back to the node graph view anytime to go deeper."
+      "title": "Comfy Agent",
+      "description": "Describe what you want and Comfy Agent builds and runs the workflow for you.",
+      "cta": "Explore Comfy Agent"
     },
     "feature3": {
-      "title": "Community Workflows on Comfy Workflows",
-      "description": "Browse and remix thousands of community-shared workflows. Start from a proven template and customize it to your needs."
+      "title": "Comfy API",
+      "description": "Run Comfy workflows and models from your own app with one API.",
+      "cta": "Explore Comfy API"
     },
     "badgeHow": "HOW",
     "badgeWorks": "WORKS"
@@ -1491,6 +1522,7 @@
       },
       "standard": {
         "label": "STANDARD",
+        "whatsIncluded": "What's included:",
         "price": "$20",
         "yearlyPrice": "$16",
         "yearlyTotal": "$192",
@@ -1505,6 +1537,7 @@
       },
       "creator": {
         "label": "CREATOR",
+        "everythingInStandardPlus": "Everything in Standard, plus:",
         "price": "$35",
         "yearlyPrice": "$28",
         "yearlyTotal": "$336",
@@ -1519,6 +1552,7 @@
       },
       "pro": {
         "label": "PRO",
+        "everythingInCreatorPlus": "Everything in Creator, plus:",
         "price": "$100",
         "yearlyPrice": "$80",
         "yearlyTotal": "$960",
@@ -1551,7 +1585,7 @@
     "creditsLabelYearly": "credits per year",
     "banner": {
       "title": "Start Comfy Cloud for free. Upgrade when ready.",
-      "subtitle": "5 free runs on real GPUs — no credit card required.",
+      "subtitle": "5 free runs on real GPUs and free Comfy Agent credits for new users",
       "cta": "TRY FREE"
     },
     "feature": {
@@ -1562,7 +1596,7 @@
       "importModels": "Import your own models",
       "longRuntime": "Longer workflow runtime (up to 1 hr)",
       "inviteMembers": "Invite members",
-      "inviteMembersUpTo50": "Invite members up to 50",
+      "inviteMembersUpTo50": "Invite up to 50 members",
       "concurrentWorkflows": "Members can run workflows concurrently",
       "sharedCreditPool": "Shared credit pool for all members",
       "roleBasedPermissions": "Role-based permissions"
@@ -1632,15 +1666,21 @@
     },
     "comfyApi": {
       "heading": "Comfy API pricing",
-      "subtitle": "Comfy API is a separate product from your Comfy Cloud plan, for teams building on Comfy Cloud programmatically. GPU time and storage are billed by the second; release, deployment, and concurrency limits apply to each plan below.",
-      "metricColumn": "Limit",
+      "subtitle": "Comfy API lets you deploy your workflow as a production API. GPU time and storage are billed by the second; build, deployment, and concurrency limits depend on your plan.",
       "metric": {
-        "releases": "Total releases limit",
+        "builds": "Total builds limit",
         "deployments": "Total deployments limit",
         "concurrency": "Max worker concurrency (per deployment)"
       },
       "enterpriseNote": "Enterprise limits are determined by your contract.",
-      "learnMore": "Learn More"
+      "learnMore": "Learn More",
+      "cardTitle": "Comfy API",
+      "cardFeature": {
+        "builds": "{count} builds",
+        "deployments": "{count} deployments",
+        "concurrency": "Up to {count} workers per deployment",
+        "notIncluded": "Comfy API access"
+      }
     },
     "minimaxLicense": {
       "heading": "MiniMax license pricing",
@@ -1650,6 +1690,45 @@
     "cycle": {
       "monthly": "monthly",
       "yearly": "yearly"
+    },
+    "agent": {
+      "heading": "Comfy Agent",
+      "subtitle": "Build and run workflows by describing what you want. Comfy Agent works on every plan, and new users get free credits to try it.",
+      "learnMore": "Learn More",
+      "limit": {
+        "availability": {
+          "title": "Available on every plan",
+          "description": "Any Comfy Cloud account can use Comfy Agent. It is not locked to a specific plan: all you need is free new-user credits or a positive credit balance."
+        },
+        "credits": {
+          "title": "Billed in Comfy Credits",
+          "description": "Once your free credits are used up, Comfy Agent draws on your Comfy Credits for LLM tokens, at the same rates as LLM Partner Nodes. On the Team plan, usage comes from the shared credit pool."
+        },
+        "runs": {
+          "title": "Workflow runs",
+          "description": "Workflows the agent runs are charged exactly like runs you start yourself, with no surcharge, and follow your plan's runtime and job limits."
+        },
+        "model": {
+          "title": "Model",
+          "description": "Comfy picks the model for you. Bringing your own LLM key is not supported yet."
+        },
+        "queue": {
+          "title": "No message cap",
+          "description": "There is no limit on how many messages you send. Past your plan's limits, new tasks wait in line instead of failing. When your credits run out, the agent pauses until you add more."
+        }
+      },
+      "metric": {
+        "tasksPerMember": "Agent tasks at once, per member",
+        "requestsPerWorkspace": "Agent requests at once, per workspace"
+      },
+      "enterpriseNote": "Enterprise plans get higher Agent limits.",
+      "cardTitle": "Comfy Agent",
+      "cardFeature": {
+        "sessionsPerWorkspace": "{count} concurrent agent sessions per workspace"
+      }
+    },
+    "planLimits": {
+      "metricColumn": "Limit"
     }
   },
   "player": {
@@ -1718,10 +1797,6 @@
     }
   },
   "gallery": {
-    "label": "GALLERY",
-    "heroTitleBefore": "Built, Tweaked, and Dreamed in ",
-    "heroTitleAfter": "",
-    "heroSubtitle": "A small glimpse of what’s being created with ComfyUI by the community.",
     "card": {
       "by": "By",
       "and": "and",
@@ -1731,10 +1806,6 @@
     "detail": {
       "close": "Close",
       "visitHub": "VISIT COMMUNITY HUB"
-    },
-    "contact": {
-      "label": "CONTACT",
-      "heading": "Built something cool with ComfyUI?<br> <a href=\"https://docs.google.com/forms/d/1B6_RPQfhTyKvqHk9OO2bUn8z1Qgh6QIZsF3GNMiCXDw/preview\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Submit</a> your work to be featured on our website and socials and get seen by the global ComfyUI community."
     }
   },
   "about": {
@@ -2394,11 +2465,33 @@
     "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
+    "featuredEnterpriseAlt": "MiniMax commercial license video",
+    "opensInNewTab": "opens in new tab",
     "featuredCompanyCtaAria": "Watch the Black Math customer story",
     "developerPlatform": "Developer Platform",
     "comfyRouter": "Comfy Router",
     "workshop": "Hub",
-    "comfyWorkshop": "Browse Models",
+    "hubModels": "Models",
+    "hubModelsDescription": "Run the latest AI models",
+    "hubSeedream5Pro": "Seedream 5.0 Pro",
+    "hubSeedance25": "Seedance 2.5",
+    "hubNanoBanana2": "Nano Banana 2",
+    "hubGptImage2": "GPT Image 2",
+    "hubAllModels": "All models",
+    "hubWorkflows": "Workflows",
+    "hubWorkflowsDescription": "Ready-made recipes for a task",
+    "hubImageToVideo": "Image to video",
+    "hubVideoFromReferences": "Video from references",
+    "hubMotionTransfer": "Motion transfer",
+    "hubEditSelectedRegion": "Edit selected region",
+    "hubAllWorkflows": "All workflows",
+    "hubApps": "Apps",
+    "hubAppsDescription": "Full tools built on Comfy",
+    "reshoot": "Re-shoot",
+    "hubAllApps": "All apps",
+    "featuredHubAlt": "Seedance 2.5 video: animals carry balloons spelling SEEDANCE 2.5 across a rainy street",
+    "featuredHubCta": "Try now",
+    "featuredHubCtaAria": "Try Seedance 2.5 reference to video in the Hub",
     "signIn": "Sign in",
     "signOut": "Log out",
     "accountMenu": "Account menu",
@@ -2421,7 +2514,19 @@
     "upgrade": "Upgrade",
     "addCredits": "Add credits",
     "upgradeToAddCredits": "Upgrade to add credits",
-    "cinematicStudio": "Cinematic Studio"
+    "cinematicStudio": "Cinematic Studio",
+    "enterprise": "Enterprise",
+    "comfyApi": "Comfy API",
+    "comfySdks": "Comfy SDKs",
+    "builds": "Builds",
+    "teamBilling": "Team Billing",
+    "commercialLicensing": "Commercial Licensing",
+    "contactSales": "Contact Sales",
+    "colCreate": "Create",
+    "colAutomate": "Automate",
+    "colBuild": "Build",
+    "colResources": "Resources",
+    "colUpdates": "Updates"
   },
   "breadcrumb": {
     "agent": "Comfy Agent",
@@ -2461,6 +2566,8 @@
     "workflows": "Workflows",
     "useCases": "Use Cases",
     "location": "San Francisco, USA",
+    "language": "Language",
+    "social": "Follow Comfy",
     "enterpriseMsa": "Enterprise MSA",
     "flux3": "Flux 3",
     "wanAnimate2": "Wan Animate 2",
@@ -2470,6 +2577,9 @@
     "chatgptImage25": "ChatGPT Images 2.5",
     "qwenImage21": "Qwen-Image 2.1",
     "nanoBanana": "Nano Banana 2.1",
+    "fishAudio": "Fish Audio",
+    "nvidiaVfx": "Nvidia VFX",
+    "flux3ImageKlein": "FLUX 3 Image Klein",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
     "changelog": "Changelog"
@@ -3540,27 +3650,9 @@
     }
   },
   "launches": {
-    "page": {
-      "title": "Launches: Everything New in ComfyUI",
-      "description": "Every ComfyUI launch in one place: new models, desktop, cloud, MCP, CLI, and core engine releases, with the livestreams that walk through them."
-    },
-    "hero": {
-      "title": "Everything new in ComfyUI",
-      "primary": "Download Desktop",
-      "secondary": "Try Cloud for free",
-      "visualAlt": "Comfy"
-    },
     "banner": {
       "text": "Comfy Agent can now build workflows inside ComfyUI.",
       "cta": "Try It for Free"
-    },
-    "cta": {
-      "heading": "Everything Comfy ships. All in one place.",
-      "primary": "Open Comfy Cloud",
-      "secondary": "Try Workflow"
-    },
-    "section": {
-      "title": "Latest Launches"
     }
   },
   "ltx": {
@@ -3893,7 +3985,15 @@
   "modelLaunch": {
     "tagFree": "Free",
     "tagPremium": "Premium",
-    "copyPrompt": "Copy prompt"
+    "copyPrompt": "Copy prompt",
+    "voices": "voice: | voices:",
+    "clipSeconds": "({seconds}s)",
+    "beforeAfter": {
+      "tabsLabel": "Comparison",
+      "sliderLabel": "Comparison slider",
+      "before": "Before",
+      "after": "After"
+    }
   },
   "flux3": {
     "meta": {
@@ -4174,6 +4274,51 @@
       }
     }
   },
+  "nvidiaRtx": {
+    "meta": {
+      "title": "Nvidia VFX Nodes for ComfyUI",
+      "description": "Three ComfyUI nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion."
+    },
+    "breadcrumb": {
+      "model": "NVIDIA VFX",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "Nvidia VFX Nodes",
+      "description": "Three custom nodes powered by Nvidia's RTX technology for ultra fast video super resolution, frame generation and SDR-to-HDR conversion. Built for VFX artists and professional video creators.",
+      "tagUpscale": "Super Resolution up to 4×",
+      "tagFrameRate": "Frame Rate up to 16×",
+      "tagSdrToHdr": "SDR-to-HDR",
+      "primaryCta": "TRY ON COMFY CLOUD",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "beforeAfter": {
+      "heading": "One clip, two states.",
+      "body": "Source on one side, output on the other. Drag the line to compare them frame by frame."
+    },
+    "gallery": {
+      "heading": "Made on NVIDIA RTX"
+    },
+    "steps": {
+      "heading": "Prefer running locally?",
+      "step": "Step",
+      "primaryCta": "DOWNLOAD DESKTOP"
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Run on your RTX PC today. Move the same workflow to Comfy Cloud or the API when a job outgrows your desk.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say",
+      "highlightTitle": "COMFY AGENT",
+      "highlightDescription": "Now live in Comfy Desktop. Describe what you want, and it plans, builds, and runs the workflow side by side with you. Every step stays on the canvas for you to adjust.",
+      "highlightCta": "TRY IN COMFY DESKTOP"
+    }
+  },
   "minimax": {
     "meta": {
       "title": "MiniMax H3 on Comfy: Open-Weight Video Model",
@@ -4320,6 +4465,57 @@
       },
       "intro": "Tell us about your team and we'll get your license set up. Professional is a fixed-price monthly license covering up to 10 users —",
       "introCta": "see what it includes"
+    }
+  },
+  "fishAudio": {
+    "meta": {
+      "title": "Fish Audio Drama 3 on Comfy: Multi-Character Scenes",
+      "description": "Fish Audio's Drama 3, its most emotive and controllable model yet, generates multi-character scenes as one conversation. Try it in Comfy Cloud from day one."
+    },
+    "breadcrumb": {
+      "model": "Fish Audio Drama 3",
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "titleModel": "Fish Audio Drama 3",
+      "titleRest": " is now on Comfy",
+      "description": "Get 50% off for your first 30 days. Drama 3 is Fish Audio's most emotive, controllable model yet. Write a multi-character scene as one conversation, then build it with audio in a single workflow.",
+      "badge1": "Partner node",
+      "badge2": "Multi-character scenes",
+      "badge3": "50% off at launch",
+      "primaryCta": "RUN DRAMA 3",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "faq": {
+      "heading": "Q&A"
+    },
+    "pricing": {
+      "banner": {
+        "title": "Launch offer: 50% off Fish Audio Drama 3 for your first 30 days",
+        "subtitle": "5 free runs on real GPUs — no credit card required.",
+        "cta": "TRY FREE"
+      }
+    },
+    "samples": {
+      "heading": "Made with Drama 3",
+      "cta": "TRY NOW"
+    },
+    "steps": {
+      "heading": "Direct your first scene",
+      "step": "Step",
+      "primaryCta": "RUN DRAMA 3",
+      "secondaryCta": "VIEW DOCS"
+    },
+    "runOptions": {
+      "heading": "One engine, every way to run it",
+      "subtitle": "Run Drama 3 in Comfy Cloud today, batch scenes through the API, or run it from ComfyUI on your own machine.",
+      "cta": "LEARN MORE"
+    },
+    "reviews": {
+      "heading": "4+ million Comfy creators say",
+      "highlightTitle": "Comfy MCP: now turn your agent into a creative technologist.",
+      "highlightDescription": "Your AI assistant can access the ecosystem, build workflows, and generate images, video, audio, or 3D.",
+      "highlightCta": "GET STARTED"
     }
   },
   "fdct": {
@@ -4511,11 +4707,6 @@
       "subtitle": "The fastest way from ComfyUI workflow\nto production endpoint.",
       "getStarted": "Get Started",
       "readDocs": "Read the docs"
-    },
-    "challengeBanner": {
-      "label": "OPEN CALL CHALLENGE",
-      "line": "Build on the platform for a chance to win $10k. Ends Oct 19, 9am PT.",
-      "cta": "Read the post"
     },
     "serverless": {
       "codeHeading": "Call your endpoint",
@@ -5109,7 +5300,10 @@
       "prototype": "Prototype",
       "reshoot": "Re-shoot a video",
       "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
-      "reshootMeta": "Video · MiniMax H3"
+      "reshootMeta": "Video · MiniMax H3",
+      "openjutsu": "Openjutsu",
+      "openjutsuSummary": "Swap a character in your video for one from a single image, and keep the scene and its sound.",
+      "openjutsuMeta": "Video · MiniMax H3"
     },
     "stage": {
       "longWait": "Still going. Some models take about a minute. Nothing is queued; yours already started.",
@@ -5195,7 +5389,7 @@
     "beta": "Beta",
     "repo": {
       "view": "View on GitHub",
-      "soon": "GitHub · Coming soon"
+      "org": "Comfy on GitHub"
     },
     "meta": {
       "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
@@ -5352,6 +5546,21 @@
       "yourPalette": "Your palette",
       "edit": "Edit palette",
       "done": "Done"
+    },
+    "download": {
+      "label": "Download",
+      "locked": "Run to download"
+    },
+    "zoom": {
+      "label": "Zoom",
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "fit": "Fit to screen, now {n}%"
+    },
+    "compare": {
+      "label": "Compare",
+      "before": "Before",
+      "after": "After"
     }
   },
   "reshoot": {
@@ -5569,6 +5778,103 @@
     "play": "Play",
     "pause": "Pause"
   },
+  "openjutsu": {
+    "title": "Openjutsu",
+    "panel": "Swap settings",
+    "closed": "Openjutsu is not open yet",
+    "unavailable": "Openjutsu is not available right now. Try again later.",
+    "signIn": "Sign in to run a swap.",
+    "video": {
+      "add": "Upload video",
+      "limits": "MP4 or MOV · up to 15 s is used",
+      "remove": "Remove video",
+      "restore": "Undo remove video"
+    },
+    "target": {
+      "heading": "Extra direction (optional)",
+      "placeholder": "Optional: add character details or fix the last take, e.g. darker jacket, keep the glasses, less smiling.",
+      "empty": "No extra direction",
+      "anyone": "the person"
+    },
+    "seed": {
+      "shuffle": "Pick a random seed",
+      "placeholder": "Random seed"
+    },
+    "trim": {
+      "first": "Using the first {seconds} s",
+      "part": "Using {from}–{to} s",
+      "change": "Change",
+      "changeLabel": "Change the part used"
+    },
+    "needs": {
+      "video": "Add a video to start",
+      "character": "Add a character image"
+    },
+    "generate": {
+      "note": "The original sound is kept on the result. Each run also makes a first-frame image, charged separately.",
+      "busy": "Swapping. You can set up the next take meanwhile."
+    },
+    "phase": {
+      "uploading": "Uploading your files",
+      "starting": "Starting a server",
+      "queued": "Waiting for a server",
+      "running": "Swapping the character",
+      "fetching": "Fetching the result",
+      "elapsed": "{time} elapsed"
+    },
+    "take": {
+      "name": "Take {n}",
+      "source": "Source video",
+      "reuse": "Use these settings",
+      "retry": "Back to settings",
+      "detail": "Replaced {target}"
+    },
+    "examples": {
+      "title": "Start with an example",
+      "singer": {
+        "place": "Home studio",
+        "character": "Disco diva"
+      },
+      "boxer": {
+        "place": "Old gym",
+        "character": "Comfy fan"
+      },
+      "painter": {
+        "place": "Painter's studio",
+        "character": "Ronin"
+      },
+      "cowboy": {
+        "place": "Desert canyon",
+        "character": "Robot"
+      },
+      "failed": "That example could not be loaded. Try again, or add your own video."
+    },
+    "error": {
+      "swap": "The swap did not finish. Try again, or try a shorter part."
+    },
+    "sample": {
+      "banner": "Sample mode: this page is answering itself. No model runs and nothing is charged.",
+      "result": "Sample result: this is your own clip handed back unchanged, to show where a real swap will appear."
+    },
+    "size": {
+      "label": "Quality",
+      "768p": "768p · Sharper",
+      "480p": "480p · Faster"
+    },
+    "run": "Swap character",
+    "tools": "Result views",
+    "sheet": {
+      "expand": "Show swap settings",
+      "collapse": "Hide swap settings"
+    },
+    "compare": {
+      "slider": "Drag to compare the source and the result"
+    },
+    "peek": {
+      "seconds": "{seconds} s"
+    },
+    "noscript": "Openjutsu needs JavaScript to run."
+  },
   "changelog": {
     "meta": {
       "title": "Changelog - Comfy",
@@ -5581,5 +5887,340 @@
     "loading": "Loading the latest release notes…",
     "introduction": "The latest ComfyUI features, improvements, and fixes, updated from Comfy docs.",
     "retry": "Try again"
+  },
+  "eventChallenge": {
+    "name": "Open Source Higgsfield",
+    "banner": {
+      "label": "Open Source Higgsfield:",
+      "line": "Build an app by 10/30. Win up to $10K.",
+      "cta": "LEARN MORE"
+    },
+    "description": "Higgsfield said they’d open source their platform. Let’s help. You have two weeks to rebuild their most popular apps and more on the Comfy Developer Platform.",
+    "submit": "Submit your entry",
+    "signup": "Sign up now",
+    "signupCredits": "First 200 signups get free credits",
+    "how": "How to enter",
+    "winnersFeatured": "All winner submissions will be featured on comfy.org/hub with credit.",
+    "examples": "You’ve seen the outputs. Now build the apps",
+    "examplesBody": "Start with a recognizable output: a performance effect, a cinematic camera move, or a music-video transformation. Build a working app that makes it easy for someone else to create their own. These are inspiration prompts for your entry.",
+    "comingSoon": "Coming soon",
+    "openjutsu": "Openjutsu",
+    "enter": "How to enter",
+    "enterLead": "Create your favorite app and more using the Comfy Developer Platform. Submission deadline is October 30.",
+    "enterSignupTitle": "Sign up",
+    "enterSignupBody": "The first 200 signups get free credits to use.",
+    "enterSignupLink": "Sign up here",
+    "enterSignupCta": "Sign up",
+    "enterRequirementsTitle": "App requirements",
+    "enterPrepareTitle": "Prepare your submission",
+    "enterSubmitTitle": "Submit",
+    "enterSubmitBody": "Submit by October 30. Final winners will be announced November 6.",
+    "enterIntro": "Every submission must include:",
+    "requirement1": "Your work must be built using the Comfy <a href=\"/platform/\" class=\"text-primary-comfy-yellow underline\">Developer Platform</a> (Comfy Router and/or <a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>)",
+    "requirement2": "Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine",
+    "requirement3": "Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video",
+    "requirement4": "All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses",
+    "requirement5": "By submitting, you agree to allow ComfyUI, NVIDIA, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels",
+    "requirement6": "One submission per person",
+    "enterRepo": "GitHub repo",
+    "enterRepoBody": "Your app code, workflow files, an open-source license, and instructions to run it locally.",
+    "enterDemo": "Demo video",
+    "enterDemoBody": "Two minutes max, in case we can’t get it running ourselves.",
+    "enterLink": "A link to try it",
+    "enterLinkBody": "Optional, but strongly encouraged: the deployed app or endpoint.",
+    "enterSocial": "Social post",
+    "enterSocialBody": "Link to your demo video on Reddit, X, IG, LI, YT, or TikTok tagging #OpenSourceHiggsfield",
+    "timelineNightsTitle": "Build Nights",
+    "timelineNightsDate": "10/28 – 10/29",
+    "timelineNightsBody": "SF 10/28 · LA 10/29. Register above.",
+    "prizes": "Prizes & Categories",
+    "partners": "Partners",
+    "prizeMainLabel": "Main prizes",
+    "prizeOverall": "Best Overall",
+    "prizeOverallAward": "$10,000",
+    "prizeOverallBody": "Best overall build. Every entry is automatically considered.",
+    "prizeInnovative": "Most Innovative",
+    "prizeInnovativeBody": "An app that’s never been done, novel custom node packs or uses of ComfyUI. Demo video must explain why the submission is innovative.",
+    "prizeViral": "Most Viral",
+    "prizeViralBody": "Delightful to use and made to be shared.",
+    "prizeOpenWeights": "Open Weights Only",
+    "prizeOpenWeightsBody": "No partner nodes or closed-source APIs, open-weights models only.",
+    "prizeRunnerUp": "10 Runner Ups",
+    "prizeRunnerUpAward": "$250 in Comfy Credits",
+    "prizeBonusLabel": "OSS Ecosystem Bonuses",
+    "prizeLtx": "VFX Workflow Built with LTX",
+    "prizeLtxAward": "$2,000 cash",
+    "prizeLtxBody": "LTX must be the core video model in the workflow to qualify.",
+    "prizeFlux": "Built with FLUX",
+    "prizeFluxAward": "$1,000 / $500 / $250 in Flux API credits",
+    "prizeFluxBody": "FLUX 3 must be the core model in the workflow to qualify.",
+    "prizeMinimax": "Built with MiniMax H3",
+    "prizeMinimaxAward": "$1,000 in API credits",
+    "prizeMinimaxBody": "MiniMax H3 must be the core model in the workflow to qualify.",
+    "totalPrize": "$25,000",
+    "totalPrizeCaption": "total worth in prizes",
+    "shareImageAlt": "Open Source Higgsfield: $25,000 in prizes",
+    "gpu": "GeForce RTX 5090",
+    "details": "The details",
+    "timeline": "Timeline",
+    "submitNav": "Submit your entry",
+    "timelineSignupDate": "10/15",
+    "timelineSignupBody": "Registration opens for the online competition.",
+    "timelineSignupTitle": "Signups open",
+    "timelineWindowTitle": "Build",
+    "timelineWindowDate": "10/15 – 10/30",
+    "timelineWindowBody": "Submission window closes: October 30 · 9am PT.",
+    "timelineWinnerDate": "11/6",
+    "timelineWinnerTitle": "Winners announced",
+    "timelineWinnerBody": "Winning entries are featured on comfy.org/hub with credit.",
+    "meetupHeading": "Build together IRL",
+    "meetupBody": "Bring your laptop and join the Comfy team and community for building, demos, and meeting the people behind the workflows.",
+    "meetupCta": "Register",
+    "meetupSfTitle": "Comfy Build Night: San Francisco",
+    "meetupSfBody": "Hosted by the Comfy team.",
+    "meetupSfLocation": "Frontier Tower, San Francisco, CA",
+    "meetupSfDate": "October 28, 2026",
+    "meetupLaTitle": "Comfy Build Night: Los Angeles",
+    "meetupLaBody": "In partnership with AI On The Lot.",
+    "meetupLaLocation": "Los Angeles, CA",
+    "meetupLaDate": "October 29, 2026",
+    "closing": "Show us what you built.",
+    "questions": "Q & A",
+    "faqDemo": "Do I need a polished demo video?",
+    "faqDemoBody": "We’re judging the work, not your video editing or quality. The best demo shows your work in action with an explanation of how it was built.",
+    "faqEvent": "Do I have to attend a Build Night?",
+    "faqEventBody": "The online competition and the Build Nights are separate. Use the submission form to enter the competition and register for a Build Night above.",
+    "faqLicense": "Does my repo need a license?",
+    "faqLicenseBody": "Yes. Publish your app code with an open-source license and setup instructions. You may use partner models; only the Open Weights Only category requires open-weights models with no partner nodes or closed-source APIs.",
+    "faqBonus": "Can I win a main prize and a bonus prize?",
+    "faqBonusBody": "Each entry is eligible for both a main category and a model-provider bonus category."
+  },
+  "vfx": {
+    "meta": {
+      "title": "Comfy for VFX | Workflows for your production pipeline",
+      "description": "Explore VFX examples and ready-to-use ComfyUI workflows for sky replacement, cleanplate, de-aging, mattes and frame adjustments."
+    },
+    "hero": {
+      "heading": "Build your VFX pipeline\nwith Comfy.",
+      "subtitle": "From cleanplates to sky replacement, turn complex shot work into workflows your team can inspect, adapt, and use again.",
+      "explore": "Explore VFX workflows",
+      "contact": "Talk to our team",
+      "videoLabel": "Comfy showcase"
+    },
+    "examples": {
+      "heading": "See what you can make.",
+      "eyebrow": "VFX in practice",
+      "sky": "Replace the sky. Keep the shot.",
+      "skyDescription": "Watch Doug Hogan build a sky-replacement workflow in ComfyUI, then explore the steps and adapt the workflow to your footage.",
+      "clean": "Start with a clean plate.",
+      "cleanDescription": "Explore a cleanplate workflow and see how ComfyUI fits into shot cleanup. Follow the walkthrough before bringing it into your own pipeline."
+    },
+    "workflows": {
+      "heading": "Popular VFX workflows",
+      "description": "Explore popular Visual Effects workflows from the Comfy community. Open a workflow and make it your own.",
+      "tag": "Watch + open workflow",
+      "tryNow": "Try now",
+      "browse": "Browse all VFX workflows",
+      "featured": "Featured workflow",
+      "storyboard": "Storyboard to Seedance",
+      "storyboarding": "Storyboarding"
+    },
+    "why": {
+      "heading": "Your pipeline.\nYour control.",
+      "subtitle": "Build around the way your team works.",
+      "1": {
+        "title": "Inspect every step",
+        "description": "Connect models and processing steps in a node-based workflow. See how a result is made, then change the parts your shot needs."
+      },
+      "2": {
+        "title": "Reuse what works",
+        "description": "Save a workflow and adapt it to the next shot. Give artists and technical directors a shared starting point for repeatable work."
+      },
+      "3": {
+        "title": "Choose how you run",
+        "description": "Work locally or in Comfy Cloud. For studio deployment requirements, talk to our team about managed builds."
+      }
+    },
+    "proof": {
+      "heading": "See how creative teams build with Comfy",
+      "title": "Inside Black Math’s creative systems",
+      "description": "Artists and technical directors at Black Math explain how they build extendable creative systems while keeping art direction with the team."
+    },
+    "contact": {
+      "heading": "Bring Comfy into your studio’s pipeline.",
+      "button": "Talk to our team",
+      "models": "Explore Enterprise"
+    },
+    "faq": {
+      "heading": "VFX questions, answered.",
+      "1": {
+        "q": "Can I use these workflows with my own footage?",
+        "a": "Yes. Start with the linked walkthrough, open its workflow, and replace the example inputs with your own. Review the models and settings before using the output in production."
+      },
+      "2": {
+        "q": "Where can I open the workflows?",
+        "a": "Each workflow card opens its page in the Comfy Hub, where you can review the workflow and its requirements before running it."
+      },
+      "3": {
+        "q": "Can my team run Comfy locally?",
+        "a": "Yes. ComfyUI is open source and can run locally. Hardware requirements depend on the models and workflow you choose. Comfy Cloud is another option for running workflows."
+      },
+      "4": {
+        "q": "How do we discuss a studio deployment?",
+        "a": "Bring your deployment requirements to our team. We can discuss Managed Builds, capacity, commercial model terms, and implementation support."
+      },
+      "5": {
+        "q": "Can we use these models commercially?",
+        "a": "On Cloud, every model is licensed for commercial use. Local model licenses vary by provider. Comfy offers MiniMax commercial licenses; discuss local terms with our team."
+      }
+    }
+  },
+  "vfxV2": {
+    "comfy": {
+      "badge": "VFX",
+      "heroTitle": "VFX workflows.\nBuilt for your pipeline.",
+      "heroDescription": "Remove objects, build mattes, restyle footage, and upscale shots in workflows you can inspect and extend. Run ComfyUI locally or connect it to your production pipeline.",
+      "primaryCta": "EXPLORE VFX WORKFLOWS",
+      "contactHeading": "Bring Comfy into your studio pipeline.",
+      "contactButton": "TALK TO COMFY"
+    },
+    "shared": {
+      "secondaryCta": "SEE THE APPROACH"
+    },
+    "proof": {
+      "label": "VFX IN PRACTICE",
+      "upscale": "SHOT UPSCALING",
+      "upscaleDescription": "Compare the source frame with the upscaled result.",
+      "cleanplate": "OBJECT REMOVAL",
+      "cleanplateDescription": "Mask an object and rebuild the background plate with LTX.",
+      "restyling": "VIDEO RESTYLING",
+      "restylingDescription": "Explore a published MiniMax video-restyling workflow.",
+      "compareHint": "Move the divider to compare before and after.",
+      "demoLabel": "Published workflow example"
+    },
+    "workflows": {
+      "heading": "A starting point for the next shot.",
+      "description": "Open the graph, inspect the steps, and adapt it to your footage.",
+      "featured": "FEATURED VFX WORKFLOWS"
+    },
+    "pipeline": {
+      "heading": "Fits the way your studio works.",
+      "1": {
+        "title": "Workstations & render infrastructure",
+        "description": "Run ComfyUI on hardware you control. Scope shared infrastructure and deployment with your technical team."
+      },
+      "2": {
+        "title": "Control in the graph",
+        "description": "Inspect models, masks, parameters, and processing steps. Keep the workflow editable as the shot evolves."
+      },
+      "3": {
+        "title": "API & SDK",
+        "description": "Run workflow graphs from code and connect them to existing tools. Use the Comfy SDK with Cloud or a ComfyUI you host."
+      },
+      "4": {
+        "title": "Custom nodes & DCCs",
+        "description": "Extend the pipeline through custom nodes and community integrations. Evaluate each integration for your studio’s tools and requirements."
+      },
+      "download": "RUN COMFYUI LOCALLY",
+      "sdk": "EXPLORE THE SDK",
+      "platform": "DEVELOPER PLATFORM"
+    },
+    "fdc": {
+      "heading": "Build your custom workflows with our Forward Deployed Creatives",
+      "cta": "LEARN MORE"
+    },
+    "learning": {
+      "heading": "Go inside the workflow.",
+      "description": "Follow the cleanplate and sky-replacement walkthroughs when you’re ready to build."
+    },
+    "production": {
+      "eyebrow": "MANAGED BUILDS",
+      "heading": "One approved environment.\nAcross your team.",
+      "body": "Pin the ComfyUI release, nodes, models, and dependencies. Give your team a consistent build wherever the work runs.",
+      "features": {
+        "1": "Private nodes and models",
+        "2": "Supported provider keys and existing contracts",
+        "3": "Build assignment through company identity"
+      },
+      "releasesLabel": "COMFYUI RELEASE",
+      "environmentsLabel": "PYTHON · PYTORCH · CUDA",
+      "nodesLabel": "CUSTOM NODES",
+      "modelsLabel": "MODELS",
+      "privateNodes": "studio-nodes (private)",
+      "privateModel": "brand-lora (private)",
+      "pinnedLabel": "pinned",
+      "moreOptionsLabel": "more options",
+      "nodesUnit": "nodes",
+      "modelsUnit": "models",
+      "cta": "DISCUSS MANAGED BUILDS",
+      "detailsHeading": "Production details,\nwhen you need them.",
+      "details": {
+        "licensing": {
+          "question": "Model licensing & commercial use",
+          "answer": "Review the commercial licensing offering for MiniMax and ask Comfy about provider-specific terms for other local models. Model rights depend on the model and intended use."
+        },
+        "capacity": {
+          "question": "Deployment, capacity & support",
+          "answer": "Discuss Cloud, Developer Platform, or infrastructure you control. Dedicated capacity, onboarding, support, and response commitments are scoped in your enterprise agreement."
+        },
+        "security": {
+          "question": "Identity & security review",
+          "answer": "Discuss company identity, approved build access, private assets, and your studio’s security requirements with Comfy. Scope the review around your deployment plan."
+        }
+      },
+      "enterprise": "VIEW ENTERPRISE DETAILS",
+      "licensing": "MINIMAX LICENSING"
+    }
+  },
+  "krea3": {
+    "meta": {
+      "title": "Krea 3: Reference-driven image editing | Comfy",
+      "description": "Edit images with visual references. Explore Krea 3 workflows for product campaigns, interiors, and character work in Comfy."
+    },
+    "hero": {
+      "title": "KREA 3",
+      "description": "Start with your images. Direct the edit. Keep what matters. Build reference-driven image workflows with Krea 3.",
+      "cta": "EDIT WITH KREA 3",
+      "references": "REFERENCE-DRIVEN EDITING",
+      "image": "IMAGE MODEL",
+      "workflows": "VIEW WORKFLOWS"
+    },
+    "references": "YOUR REFERENCES. YOUR DIRECTION.",
+    "products": "ONE PRODUCT.\nANOTHER CAMPAIGN.",
+    "interiors": "SAME SPACE. NEW POSSIBILITIES.",
+    "characters": "KEEP THE CHARACTER. CHANGE THE SCENE.",
+    "steps": {
+      "heading": "BUILD YOUR REFERENCE-EDITING WORKFLOW",
+      "label": "STEP"
+    },
+    "faq": "KREA 3, EXPLAINED",
+    "closing": {
+      "heading": "BRING YOUR NEXT IDEA INTO COMFY",
+      "description": "Connect your references, edits, and next steps in a workflow you can return to.",
+      "cta": "EDIT WITH KREA 3"
+    },
+    "workflows": {
+      "heading": "Made with Krea 3"
+    }
+  },
+  "flux3Image": {
+    "meta": {
+      "title": "FLUX 3 Image Klein Launch {'|'} Comfy"
+    },
+    "breadcrumb": {
+      "updated": "Updated October 2026"
+    },
+    "hero": {
+      "title": "FLUX 3 Image Klein",
+      "description": "Black Forest Labs' newest open-weight model comes in two variants: standard and step-distilled turbo. Both generate and edit images. Create an image with standard, or iterate fast with turbo.",
+      "openSource": "Open Source",
+      "imageGeneration": "Image generation",
+      "imageEdit": "Image edit",
+      "primaryCta": "RUN FLUX 3 IMAGE KLEIN",
+      "secondaryCta": "READ DOCS"
+    },
+    "runOptions": {
+      "subtitle": "Build workflows in the browser, explore ComfyUI on your own hardware, or connect your creative pipeline through the API."
+    }
   }
 }

@@ -1,0 +1,194 @@
+<template>
+  <section class="flex flex-col gap-3" data-testid="billing-credits-card">
+    <h3
+      class="m-0 flex items-center gap-1 text-sm font-semibold text-foreground"
+    >
+      {{ $t('workspacePanel.billingTab.credits.title') }}
+      <Button
+        :tooltip="
+          $t('workspacePanel.billingTab.credits.rateTooltip', {
+            credits: CREDITS_PER_USD
+          })
+        "
+        :aria-label="$t('workspacePanel.billingTab.credits.rateInfo')"
+        variant="muted-textonly"
+        size="icon-sm"
+      >
+        <i class="icon-[lucide--info] size-4" aria-hidden="true" />
+      </Button>
+    </h3>
+
+    <div class="flex flex-col rounded-lg border border-border">
+      <div class="flex items-start justify-between gap-4 p-4">
+        <div class="flex min-w-0 flex-col gap-1">
+          <span class="text-sm text-muted-foreground">
+            {{ $t('workspacePanel.billingTab.credits.available') }}
+          </span>
+          <span
+            :class="
+              cn(
+                'text-2xl font-semibold text-foreground',
+                state.kind === 'unavailable' && 'text-muted-foreground'
+              )
+            "
+            data-testid="billing-credits-available"
+          >
+            {{
+              state.kind === 'unavailable' ? '—' : credits(state.availableCents)
+            }}
+          </span>
+          <p
+            v-if="state.kind === 'unavailable'"
+            class="m-0 flex items-center gap-1 text-sm text-muted-foreground"
+            role="alert"
+          >
+            {{ $t('workspacePanel.billingTab.credits.unavailable') }}
+            <Button variant="link" size="sm" @click="emit('retry')">
+              {{ $t('workspacePanel.billingTab.tryAgain') }}
+            </Button>
+          </p>
+          <p
+            v-else-if="overdrawnCredits > 0"
+            class="m-0 text-sm text-muted-foreground"
+          >
+            {{
+              $t(
+                'workspacePanel.billingTab.credits.overdrawn',
+                { count: credits(-state.availableCents) },
+                overdrawnCredits
+              )
+            }}
+          </p>
+          <p
+            v-if="state.kind === 'noPlan' && state.hint"
+            class="m-0 text-sm text-muted-foreground"
+          >
+            {{ $t(HINT_KEYS[state.hint]) }}
+          </p>
+        </div>
+        <Button
+          v-if="state.kind === 'noPlan' && canTopUp"
+          variant="secondary"
+          class="shrink-0"
+          @click="emit('addCredits')"
+        >
+          {{ $t('workspacePanel.billingTab.credits.addCredits') }}
+        </Button>
+      </div>
+
+      <div v-if="state.kind === 'plan'" class="flex border-t border-border">
+        <div class="flex flex-1 flex-col gap-1 border-r border-border p-4">
+          <span class="flex items-center gap-1 text-sm text-muted-foreground">
+            {{ $t('workspacePanel.billingTab.credits.plan') }}
+            <Button
+              :tooltip="$t('workspacePanel.billingTab.credits.planTooltip')"
+              :aria-label="$t('workspacePanel.billingTab.credits.planTooltip')"
+              variant="muted-textonly"
+              size="icon-sm"
+            >
+              <i class="icon-[lucide--info] size-4" aria-hidden="true" />
+            </Button>
+          </span>
+          <span
+            class="text-sm font-semibold text-foreground"
+            data-testid="billing-credits-plan"
+          >
+            {{ planAmount(state.planCents, state.planPoolCredits) }}
+          </span>
+        </div>
+        <div class="flex flex-1 items-start justify-between gap-4 p-4">
+          <div class="flex flex-col gap-1">
+            <span class="flex items-center gap-1 text-sm text-muted-foreground">
+              {{ $t('workspacePanel.billingTab.credits.topUp') }}
+              <Button
+                :tooltip="$t('workspacePanel.billingTab.credits.topUpTooltip')"
+                :aria-label="
+                  $t('workspacePanel.billingTab.credits.topUpTooltip')
+                "
+                variant="muted-textonly"
+                size="icon-sm"
+              >
+                <i class="icon-[lucide--info] size-4" aria-hidden="true" />
+              </Button>
+            </span>
+            <span
+              class="text-sm font-semibold text-foreground"
+              data-testid="billing-credits-top-up"
+            >
+              {{ credits(state.topUpCents) }}
+            </span>
+            <span v-if="state.topUpInUse" class="text-xs text-muted-foreground">
+              {{ $t('workspacePanel.billingTab.credits.inUse') }}
+            </span>
+          </div>
+          <Button
+            v-if="canTopUp"
+            variant="secondary"
+            class="shrink-0"
+            @click="emit('addCredits')"
+          >
+            {{ $t('workspacePanel.billingTab.credits.addCredits') }}
+          </Button>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import {
+  CREDITS_PER_USD,
+  centsToCredits,
+  formatCredits,
+  formatCreditsFromCents
+} from '@/base/credits/comfyCredits'
+import Button from '@/components/ui/button/Button.vue'
+import type { CreditsCardState } from '@/platform/workspace/components/dialogs/settings/billing/creditsCard'
+
+const { state, canTopUp } = defineProps<{
+  state: CreditsCardState
+  canTopUp: boolean
+}>()
+
+const emit = defineEmits<{
+  retry: []
+  addCredits: []
+}>()
+
+const { t, locale } = useI18n()
+
+const HINT_KEYS = {
+  subscribe: 'workspacePanel.billingTab.credits.subscribe',
+  resubscribe: 'workspacePanel.billingTab.credits.resubscribe'
+} as const
+
+const WHOLE = { maximumFractionDigits: 0 }
+
+function credits(cents: number) {
+  return formatCreditsFromCents({
+    cents,
+    locale: locale.value,
+    numberOptions: WHOLE
+  })
+}
+
+function planAmount(cents: number, poolCredits: number | null) {
+  if (poolCredits === null) return credits(cents)
+  return t('workspacePanel.billingTab.credits.planOfPool', {
+    remaining: credits(cents),
+    total: formatCredits({
+      value: poolCredits,
+      locale: locale.value,
+      numberOptions: WHOLE
+    })
+  })
+}
+
+const overdrawnCredits = computed(() =>
+  state.kind === 'unavailable' ? 0 : centsToCredits(-state.availableCents)
+)
+</script>

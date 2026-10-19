@@ -9,7 +9,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
-import type { SubscriptionCheckoutSelection } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import type { SubscriptionCheckoutSelection } from '@/composables/billing/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -121,9 +121,6 @@ export function usePricingTableUrlLoader() {
       return
     }
 
-    // Strip any present pricing param (even ineligible or malformed values) and
-    // write the clean URL in a single replace before any await, so a clean URL
-    // is guaranteed even if the replace rejects or the gate later denies.
     const cleanQuery = { ...query }
     delete cleanQuery.pricing
     delete cleanQuery.stop
@@ -136,15 +133,10 @@ export function usePricingTableUrlLoader() {
     })
     clearPreservedQuery(NAMESPACE)
 
-    // Only a non-empty string value opens the table; an empty/array param just
-    // gets stripped above.
     if (typeof param !== 'string' || !param) return
 
-    if (!permissions.value.canManageSubscription) return
-
-    // The loader can run before the capability snapshot resolves; a
-    // sales-managed workspace must not see the table through that gap.
     await initializeCapabilities()
+    if (!permissions.value.canManageSubscription) return
     if (!canOpenPricingSurface.value) return
 
     const teamCheckoutRequest = getTeamCheckoutRequest(

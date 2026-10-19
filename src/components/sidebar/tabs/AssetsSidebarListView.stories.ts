@@ -23,7 +23,7 @@ type StoryArgs = {
 function baseDecorator() {
   return {
     template: `
-        <div class="bg-base-background p-6">
+        <div class="bg-background p-6">
           <story />
         </div>
       `

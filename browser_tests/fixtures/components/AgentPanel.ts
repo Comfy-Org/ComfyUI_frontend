@@ -5,40 +5,60 @@ import { escapeRegExp } from 'es-toolkit'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
+import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
+import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
+import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
+import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+
+type AgentAttachmentOutcome =
+  | 'attached'
+  | 'refused'
+  | 'workflowError'
+  | 'ignored'
+
+const HAND_OVER_TIMEOUT = 5_000
 
 export class AgentPanel {
-  public readonly root: Locator
-  public readonly dockedPanel: Locator
-  public readonly openButton: Locator
+  public readonly activityRows: Locator
+  public readonly attachmentChips: Locator
   public readonly closeButton: Locator
+  public readonly composer: Locator
+  public readonly composerAssetSection: Locator
+  public readonly composerPromptArea: Locator
+  public readonly composerStack: Locator
+  public readonly copiedButton: Locator
+  public readonly copyReportButton: Locator
+  public readonly creditsExhaustedPaywall: Locator
+  public readonly creditTransitionNotice: Locator
   public readonly debugHeading: Locator
+  public readonly dockedPanel: Locator
+  public readonly dockedPanelShell: Locator
+  public readonly fileInput: Locator
+  public readonly nodeSelectionBanner: Locator
+  public readonly openButton: Locator
+  public readonly resizeHandle: Locator
+  public readonly root: Locator
+  public readonly scrollAssetsRight: Locator
+  public readonly sendButton: Locator
   public readonly serverLogsSwitch: Locator
   public readonly settingsSwitch: Locator
-  public readonly workflowSwitch: Locator
-  public readonly copyReportButton: Locator
-  public readonly copiedButton: Locator
-  public readonly workflowPicker: Locator
-  public readonly fileInput: Locator
-  public readonly composerAssetSection: Locator
-  public readonly scrollAssetsRight: Locator
-  public readonly attachmentChips: Locator
-  public readonly composer: Locator
-  public readonly composerPromptArea: Locator
-  public readonly sendButton: Locator
   public readonly stopButton: Locator
-  public readonly creditsExhaustedPaywall: Locator
+  public readonly suggestedPrompts: Locator
+  private readonly toasts: ToastHelper
+  public readonly workflowPicker: Locator
+  public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
-  public readonly nodeSelectionBanner: Locator
-  public readonly activityRows: Locator
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
-    this.dockedPanel = page.getByTestId('docked-agent-panel')
-    this.openButton = page.getByRole('button', {
-      name: enMessages.agent.entryButton,
-      exact: true
-    })
+    this.toasts = new ToastHelper(page)
+    this.activityRows = this.root
+      .getByTestId(TestIds.agent.activityTrace)
+      .getByRole('listitem')
+    this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
     this.closeButton = this.root
       .locator('header')
       .getByRole('button', { name: enMessages.g.close, exact: true })
@@ -48,46 +68,64 @@ export class AgentPanel {
           exact: true
         })
       )
-    this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
-    this.serverLogsSwitch = this.root.getByRole('switch', {
-      name: 'Server logs'
+    this.composer = this.root.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
     })
-    this.settingsSwitch = this.root.getByRole('switch', { name: 'Settings' })
-    this.workflowSwitch = this.root.getByRole('switch', {
-      name: 'Workflow JSON'
-    })
+    this.composerStack = this.root.getByTestId('agent-composer-stack')
+    this.composerAssetSection = this.root.getByTestId('composer-asset-section')
+    this.composerPromptArea = this.root.getByTestId('composer-inline-input')
+    this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
     this.copyReportButton = this.root.getByRole('button', {
       name: 'Copy full report'
-    })
-    this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
-    this.workflowPicker = this.root.getByRole('button', {
-      name: enMessages.agent.switchWorkflow
-    })
-    this.fileInput = this.root.getByTestId('agent-file-input')
-    this.composerAssetSection = this.root.getByTestId('composer-asset-section')
-    this.scrollAssetsRight = this.root.getByRole('button', {
-      name: enMessages.g.scrollRight
-    })
-    this.attachmentChips = this.root.getByTestId('agent-attachment-chip')
-    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
-    this.composerPromptArea = this.root.getByTestId('composer-inline-input')
-    this.sendButton = this.root.getByRole('button', {
-      name: enMessages.agent.send
-    })
-    this.stopButton = this.root.getByRole('button', {
-      name: enMessages.agent.stop,
-      exact: true
     })
     this.creditsExhaustedPaywall = this.root.getByRole('alert').filter({
       hasText: enMessages.agent.paywall.title
     })
+    this.creditTransitionNotice = this.root.getByTestId(
+      'agent-credit-transition-notice'
+    )
+    this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
+    this.dockedPanel = page.getByTestId('docked-agent-panel')
+    this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
+    this.fileInput = this.root.getByTestId('agent-file-input')
+    this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
+    this.openButton = page.getByRole('button', {
+      name: enMessages.agent.entryButton,
+      exact: true
+    })
+    this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
+    this.scrollAssetsRight = this.root.getByRole('button', {
+      name: enMessages.g.scrollRight
+    })
+    this.sendButton = this.root.getByRole('button', {
+      name: enMessages.agent.send
+    })
+    this.serverLogsSwitch = this.root.getByRole('switch', {
+      name: 'Server logs'
+    })
+    this.settingsSwitch = this.root.getByRole('switch', { name: 'Settings' })
+    this.stopButton = this.root.getByRole('button', {
+      name: enMessages.agent.stop,
+      exact: true
+    })
+    /**
+     * Includes hidden buttons: the compact empty state keeps every suggestion
+     * in the DOM and hides the overflow, so a visible-only locator cannot tell
+     * "hidden" from "never rendered". Resolved by position rather than by
+     * prompt text, which varies with distribution and starter-prompt variant.
+     */
+    this.suggestedPrompts = this.root
+      .getByTestId('suggested-prompts')
+      .getByRole('button', { includeHidden: true })
+    this.workflowPicker = this.root.getByRole('button', {
+      name: enMessages.agent.switchWorkflow
+    })
+    this.workflowSwitch = this.root.getByRole('switch', {
+      name: 'Workflow JSON'
+    })
     this.workSummary = this.root.getByRole('button', {
       name: new RegExp(`^${escapeRegExp(enMessages.agent.worked)}`)
     })
-    this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
-    this.activityRows = this.root
-      .getByTestId(TestIds.agent.activityTrace)
-      .getByRole('listitem')
   }
 
   async scrollAssetsToEnd(): Promise<void> {
@@ -171,6 +209,74 @@ export class AgentPanel {
     )
   }
 
+  private async dropOptions() {
+    const box = await this.root.boundingBox()
+    if (!box) throw new Error('Agent panel is not visible')
+    return {
+      preserveNativePropagation: true,
+      dropPosition: { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+    }
+  }
+
+  async dropFile(dragDrop: DragDropHelper, fileName: string): Promise<void> {
+    await dragDrop.dragAndDropFile(fileName, await this.dropOptions())
+  }
+
+  async dropGeneratedFile(
+    dragDrop: DragDropHelper,
+    generatedFile: { name: string; type: string; byteLength: number }
+  ): Promise<void> {
+    await dragDrop.dragAndDropGeneratedFile(
+      generatedFile,
+      await this.dropOptions()
+    )
+  }
+
+  async handOverAttachment(
+    fileName: string,
+    route: () => Promise<void>
+  ): Promise<AgentAttachmentOutcome> {
+    await route()
+    const toastReading = (messages: string[]): Locator =>
+      this.toasts.withText(new RegExp(messages.map(escapeRegExp).join('|')))
+    const attachmentRefusals = [
+      enMessages.agent.attachmentTooLarge
+        .replace('{name}', fileName)
+        .split('{limit}')[0]
+        .trimEnd(),
+      enMessages.agent.attachmentUploadFailed.replace('{name}', fileName)
+    ]
+
+    return await Promise.any([
+      this.attachmentChip(fileName)
+        .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+        .then(() => 'attached' as const),
+      toastReading(attachmentRefusals)
+        .first()
+        .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+        .then(() => 'refused' as const),
+      toastReading([
+        enMessages.toastMessages.fileLoadError.replace('{fileName}', fileName)
+      ])
+        .first()
+        .waitFor({ state: 'visible', timeout: HAND_OVER_TIMEOUT })
+        .then(() => 'workflowError' as const)
+    ]).catch(() => 'ignored' as const)
+  }
+
+  async removeAllAttachments(): Promise<void> {
+    const removeName = new RegExp(
+      `^${escapeRegExp(enMessages.agent.removeAsset.replace('{name}', ''))}`
+    )
+    for (let count = await this.attachmentChips.count(); count > 0; count--) {
+      const chip = this.attachmentChips.first()
+      await chip.hover()
+      await chip.getByRole('button', { name: removeName }).click()
+      await expect(this.attachmentChips).toHaveCount(count - 1)
+    }
+    await this.toasts.closeToasts()
+  }
+
   async open(timeout?: number): Promise<Locator> {
     if (await this.root.isVisible()) return this.root
 
@@ -207,6 +313,40 @@ export class AgentPanel {
     await expect(this.root).toHaveCount(0)
   }
 
+  /**
+   * Drags the resize handle until `target` is exactly `width` wide.
+   *
+   * Defaults to the panel root, the element the Agent container queries resolve
+   * against, so a breakpoint test measures what the CSS measures. Pass
+   * `dockedPanel` to size the outer dock the user drags instead.
+   */
+  async resizeTo(width: number, target: Locator = this.root): Promise<void> {
+    const [panelBox, handleBox] = await Promise.all([
+      target.boundingBox(),
+      this.resizeHandle.boundingBox()
+    ])
+    if (!panelBox || !handleBox) {
+      throw new Error('Agent panel and resize handle must be visible')
+    }
+
+    const handleCenterX = handleBox.x + handleBox.width / 2
+    const handleY = handleBox.y + 20
+    await this.page.mouse.move(handleCenterX, handleY)
+    await this.page.mouse.down()
+    await this.page.mouse.move(
+      handleCenterX - (width - panelBox.width),
+      handleY
+    )
+    await this.page.mouse.up()
+    await expect(target).toHaveCSS('width', `${width}px`)
+  }
+
+  async suggestedPromptVisibility(): Promise<boolean[]> {
+    return this.suggestedPrompts.evaluateAll((buttons) =>
+      buttons.map((button) => getComputedStyle(button).display !== 'none')
+    )
+  }
+
   async expectPanelSize(expected: { x: number; width: number }): Promise<void> {
     await expect
       .poll(async () => {
@@ -228,6 +368,30 @@ export class AgentPanel {
   async selectWorkflow(name: string = 'Unsaved Workflow'): Promise<void> {
     await this.chooseWorkflow(name)
     await expect(this.workflowPicker).toHaveText(name)
+    await this.page.mouse.move(0, 0)
+    await this.workflowPicker.blur()
+    await expect(
+      this.page.getByRole('tooltip').filter({ visible: true })
+    ).toHaveCount(0)
+  }
+
+  /** Denies every turn POST with this admission denial for the rest of the test. */
+  async rejectEveryTurn({
+    status,
+    body,
+    retryAfterSeconds
+  }: AgentAdmissionDenialMock): Promise<void> {
+    // Scoped to POST so the agent fixture's GET handler still serves history.
+    await this.page.route('**/api/agent/threads/*/messages', async (route) => {
+      if (route.request().method() !== 'POST') {
+        return route.fallback()
+      }
+      await route.fulfill({
+        ...jsonRoute(body),
+        status,
+        headers: { 'Retry-After': String(retryAfterSeconds) }
+      })
+    })
   }
 
   async openWorkSummary(): Promise<void> {
@@ -267,6 +431,7 @@ export class AgentPanel {
       .getByRole('menuitem', { name: enMessages.agent.nodes })
       .click()
     await expect(this.nodeSelectionBanner).toBeVisible()
+    await waitForCanvasViewToSettle(this.page)
   }
 
   async exitNodeSelectionMode(): Promise<void> {

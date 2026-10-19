@@ -1,12 +1,20 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { LightInfoViewport } from '@/extensions/core/lightInfo/LightInfoViewport'
 import type { LightInfoViewportOptions } from '@/extensions/core/lightInfo/LightInfoViewport'
 import { createDefaultLight } from '@/extensions/core/lightInfo/types'
 import type { LightInfoEntry } from '@/extensions/core/lightInfo/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -74,10 +82,13 @@ function makeNode(initial: LightInfoEntry[]): {
   return { node, editorId }
 }
 
-function mount(initial: LightInfoEntry[]) {
+function mount(initial: LightInfoEntry[], withHistory = false) {
   const { node, editorId } = makeNode(initial)
-  const light = useLightInfo(node)
+  const light = useLightInfo(node, () =>
+    withHistory ? { rootGraphId: GRAPH_ID, widgetId: editorId } : null
+  )
   light.initialize(document.createElement('div'))
+  onTestFinished(() => light.cleanup())
   const stored = () => useWidgetValueStore().getWidget(editorId)?.value
   return { node, editorId, light, stored }
 }
@@ -174,10 +185,10 @@ describe('useLightInfo widget boundary', () => {
 
     useWidgetValueStore().setValue(editorId, [createDefaultLight('point')])
 
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        detail:
-          'Failed to initialize Light Info viewer. Try reloading the page.'
+        kind: 'warning',
+        title: 'Failed to initialize Light Info viewer. Try reloading the page.'
       })
     ])
     expect(light.lights.value).toHaveLength(0)
@@ -279,6 +290,93 @@ describe('useLightInfo editing', () => {
     onlyViewport().options.onSelectLight?.(1)
 
     expect(light.selectedLight.value?.type).toBe('point')
+  })
+})
+
+describe('useLightInfo node history', () => {
+  beforeEach(() => {
+    viewportInstances.length = 0
+  })
+
+  it('undoes and redoes adding a light', () => {
+    const { light, stored } = mount([directional], true)
+    light.addLight('spot')
+
+    light.undo()
+    expect(stored()).toEqual([directional])
+    expect(light.selectedIndex.value).toBe(0)
+
+    light.redo()
+    expect(stored()).toEqual([directional, createDefaultLight('spot')])
+  })
+
+  it('selects the light brought back by redo when none was selected', () => {
+    const { light } = mount([], true)
+    light.addLight('point')
+    light.undo()
+
+    light.redo()
+
+    expect(light.selectedLight.value?.type).toBe('point')
+  })
+
+  it('undoes continuous edits to one light field as a single step', () => {
+    const { light, stored } = mount([directional], true)
+    light.updateSelectedLight({ color: '#111111' })
+    light.updateSelectedLight({ color: '#222222' })
+
+    light.undo()
+
+    expect(stored()).toEqual([directional])
+    expect(light.canUndo.value).toBe(false)
+  })
+
+  it('undoes a viewport drag as a single step', () => {
+    const { light, stored } = mount([directional], true)
+    const viewport = onlyViewport()
+    viewport.options.onLightsChange?.([
+      { ...directional, position: { x: 4, y: 4, z: 4 } }
+    ])
+    viewport.options.onLightsChange?.([
+      { ...directional, position: { x: 5, y: 5, z: 5 } }
+    ])
+    viewport.options.onEditEnd?.()
+
+    light.undo()
+
+    expect(stored()).toEqual([directional])
+    expect(light.canUndo.value).toBe(false)
+  })
+
+  it('drops edits made before a value written from outside the widget', () => {
+    const point = createDefaultLight('point')
+    const { editorId, light, stored } = mount([directional], true)
+    light.addLight('spot')
+    useWidgetValueStore().setValue(editorId, [point])
+    expect(light.canUndo.value).toBe(false)
+
+    light.updateSelectedLight({ intensity: 2 })
+    light.undo()
+
+    expect(stored()).toEqual([point])
+    expect(light.canUndo.value).toBe(false)
+  })
+
+  it('keeps the history when the widget mounts again', () => {
+    const { node, editorId, light } = mount([directional], true)
+    light.addLight('spot')
+    light.cleanup()
+
+    const remounted = useLightInfo(node, () => ({
+      rootGraphId: GRAPH_ID,
+      widgetId: editorId
+    }))
+    remounted.initialize(document.createElement('div'))
+    onTestFinished(() => remounted.cleanup())
+
+    expect(remounted.canUndo.value).toBe(true)
+    remounted.undo()
+    expect(remounted.lights.value).toEqual([directional])
   })
 })
 
