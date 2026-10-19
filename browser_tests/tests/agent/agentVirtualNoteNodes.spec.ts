@@ -1,10 +1,10 @@
 import type { AgentRunMode, JobsListResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
   MARKDOWN_BODY,
   MARKDOWN_HEADING,
@@ -122,14 +122,7 @@ test.describe(
         )
         await page.reload({ waitUntil: 'domcontentloaded' })
         await expect(agentConversation.panel).toBeVisible({ timeout: 30_000 })
-        const picker = agentConversation.panel.getByRole('button', {
-          name: enMessages.agent.switchWorkflow
-        })
-        await picker.click()
-        await page
-          .getByRole('menuitemradio', { name: SAVED_NAME, exact: true })
-          .click()
-        await expect(picker).toHaveText(SAVED_NAME)
+        await new AgentPanel(page).selectWorkflow(SAVED_NAME)
         expect((await restoredContent).ok()).toBe(true)
         await expectBothNotes(SERVED_NOTE_TEXT, SERVED_MARKDOWN_HEADING)
         const afterPath = testInfo.outputPath('after-reload.png')
