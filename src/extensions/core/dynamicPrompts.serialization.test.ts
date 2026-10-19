@@ -40,6 +40,10 @@ function createDynamicNode(
     'STRING',
     { default: 'hello /*hidden*/world', multiline, dynamicPrompts }
   ]
+  const secondText: InputSpec = [
+    'STRING',
+    { default: 'second /*hidden*/option', multiline, dynamicPrompts }
+  ]
   useLitegraphService().addNodeInput(
     node,
     transformInputSpecV1ToV2(
@@ -48,7 +52,7 @@ function createDynamicNode(
         {
           options: [
             { key: 'first', inputs: { required: { text } } },
-            { key: 'second', inputs: { required: { text } } }
+            { key: 'second', inputs: { required: { text: secondText } } }
           ]
         }
       ],
@@ -77,12 +81,30 @@ describe('dynamic prompt serialization', () => {
   })
 
   it.for([
-    { name: 'reselected option', selected: 'first', multiline: false },
-    { name: 'switched option', selected: 'second', multiline: false },
-    { name: 'switched multiline option', selected: 'second', multiline: true }
+    {
+      name: 'reselected option',
+      selected: 'first',
+      multiline: false,
+      expected: 'hello world',
+      raw: 'hello /*hidden*/world'
+    },
+    {
+      name: 'switched option',
+      selected: 'second',
+      multiline: false,
+      expected: 'second option',
+      raw: 'second /*hidden*/option'
+    },
+    {
+      name: 'switched multiline option',
+      selected: 'second',
+      multiline: true,
+      expected: 'second option',
+      raw: 'second /*hidden*/option'
+    }
   ])(
     'expands a dynamic string in the $name',
-    async ({ selected, multiline }) => {
+    async ({ selected, multiline, expected, raw }) => {
       const { graph, node, combo } = createDynamicNode(true, multiline)
       combo.value = selected
 
@@ -90,11 +112,11 @@ describe('dynamic prompt serialization', () => {
 
       expect(output[String(node.id)].inputs).toEqual({
         mode: selected,
-        'mode.text': 'hello world'
+        'mode.text': expected
       })
       expect(
         node.widgets?.find((widget) => widget.name === 'mode.text')?.value
-      ).toBe('hello /*hidden*/world')
+      ).toBe(raw)
     }
   )
 
@@ -122,7 +144,7 @@ describe('dynamic prompt serialization', () => {
 
     expect(output[String(node.id)].inputs).toEqual({
       mode: 'second',
-      'mode.text': 'hello /*hidden*/world'
+      'mode.text': 'second /*hidden*/option'
     })
   })
 
