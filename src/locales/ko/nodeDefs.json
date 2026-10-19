@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "권장 설정:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226토큰 패딩)\ncosmos: 이전 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (권장) 또는 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 또는 Music3 Qwen/RVQ",
+    "description": "레시피:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-토큰 패딩)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (권장) 또는 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 또는 Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "CLIP 로드",
     "inputs": {
       "clip_name": {
@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "3D 미리보기로 피사체 주변의 카메라 앵글을 선택합니다. 3D 노드용 camera_info와 프롬프트용 일반 영어 샷 설명을 출력합니다.",
+    "display_name": "카메라 앵글 프롬프트 구성",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "피사체 주변의 방위각(도)입니다. 0은 정면, 90은 오른쪽 측면, 180은 후면입니다."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "3D 미리보기에서 피사체 큐브의 앞면에 표시할 선택적 참조 이미지입니다."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "고도(도)입니다. 음수는 아래에서 위를 바라보고, 양수는 위에서 아래를 내려다봅니다."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "피사체에 대한 렌즈 줌입니다. 0은 와이드 샷, 10은 클로즈업입니다. camera_info.zoom에 반영됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny 경계 필터",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "이 옵션이 적용될 첫 번째 시그마 값입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "원본에 충실하면서 얼굴, 피부 및 미세한 질감을 복원하는 고충실도 업스케일러인 Clarity AI의 Crystal Upscaler로 이미지를 업스케일합니다. 최대 출력: 1억 메가픽셀.",
+    "display_name": "Clarity AI Crystal 업스케일",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "카메라 정보를 생성합니다. 'orbit' 모드는 타겟을 중심으로 yaw/pitch/거리로 회전하며, 'look_at'은 월드 좌표에 카메라를 배치합니다. 좌표는 뷰어의 월드 공간(오른손 좌표계, Y-업) 기준입니다.",
+    "description": "camera_info를 구성합니다. 'orbit' 모드는 대상 주변에서 yaw/pitch/distance로 조준하며, 'look_at'는 월드 위치에 카메라를 배치합니다. 좌표는 뷰어의 월드 공간(오른손 좌표계, Y축 위쪽)입니다.",
     "display_name": "카메라 정보 생성",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "Render Splat에서 사용하는 투영 방식: 원근(foreshortening) 또는 직교(평행)."
@@ -4860,7 +4919,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 또는 ISO-639-3 언어 코드(예: 'en', 'es', 'fra'). 자동 감지를 원하면 비워 두세요."
+        "tooltip": "ISO 639-1 언어 코드(예: 'en', 'es', 'ja')입니다. 자동 감지를 사용하려면 비워 두세요."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4989,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 또는 ISO-639-3 언어 코드(예: 'en', 'es', 'fra'). 자동 감지를 원하면 비워 두세요."
+        "tooltip": "ISO 639-1 언어 코드(예: 'en', 'es', 'ja')입니다. 자동 감지를 사용하려면 비워 두세요."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4997,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5651,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "텍스트를 음성으로 변환합니다. 텍스트의 감정 단서(s2.1-pro에서는 [happy], [whispering], s1에서는 (happy))와 여러 음성이 연결된 경우 {'@'}Voice1/{'@'}Voice2 태그를 통한 다중 화자 대화를 지원합니다.",
+    "description": "텍스트를 음성으로 변환합니다. 텍스트 내 감정 큐([happy], [whispering]는 s2.1-pro에서, (happy)는 s1에서), drama-3의 일반 언어 [지시문] 및 `<whisper>...</whisper>` 단어 태그, 그리고 여러 음성을 연결하여 {'@'}Voice1/{'@'}Voice2 태그를 사용하는 다화자 대화를 지원합니다.",
     "display_name": "Fish Audio 텍스트 음성 변환",
     "inputs": {
       "control_after_generate": {
@@ -5842,6 +5892,52 @@
       }
     }
   },
+  "Flux3ImageNode": {
+    "description": "프롬프트로 FLUX 3 Image를 사용해 이미지를 생성하거나, 최대 10개의 참조 이미지를 편집 및 결합합니다. 프롬프트에서 참조 이미지는 image 1, image 2 등으로 지정하세요.",
+    "display_name": "FLUX 3 Image",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto'는 첫 번째 참조 이미지를 따르거나 프롬프트에서 비율을 선택합니다."
+      },
+      "bounding_boxes": {
+        "name": "바운딩 박스",
+        "tooltip": "출력에서 객체나 텍스트를 배치하는 Create Bounding Boxes의 선택적 박스입니다. 위치는 캔버스를 기준으로 하므로 출력의 종횡비를 지정하세요."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "생성 전에 모델이 웹 및 이미지 검색으로 프롬프트를 조사하도록 합니다."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "선택적 참조 이미지입니다. 총 최대 10개까지 가능하며, 각각 최소 256x256픽셀이어야 합니다."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "생성할 내용 또는 적용할 편집입니다. 프롬프트는 생성 전에 해석되고 확장됩니다."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "선택한 종횡비의 출력 크기입니다. 0.75K는 약 0.6메가픽셀, 1K는 1MP, 1.5K는 2.4MP, 2K는 4.2MP, 4K는 16.8MP입니다."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "검열 허용 수준입니다. 0이 가장 엄격합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. FLUX 3는 자체 시드를 선택하므로 이 값과 관계없이 실제 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3ImageToVideoNode": {
     "description": "FLUX 3로 1~10장의 이미지를 애니메이션으로 만듭니다. 각 이미지는 clip의 프레임이 됩니다: 한 장은 시작 프레임, 두 장은 처음에서 끝으로 변환, 그 이상은 clip 전체에 분산되거나 사용자가 선택한 시간에 고정됩니다.",
     "display_name": "Flux 3 이미지에서 비디오로",
@@ -5888,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "Create Bounding Boxes의 박스를 레이아웃 테이블로서 FLUX 3 Image 프롬프트에 추가합니다.",
+    "display_name": "FLUX 3 이미지 레이아웃 프롬프트",
+    "inputs": {
+      "element": {
+        "name": "요소",
+        "tooltip": "Create Bounding Boxes 노드의 프롬프트 요소입니다. 색상 팔레트는 사용되지 않으므로 설명에 색상을 기술하세요."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "프롬프트 텍스트입니다. 단어를 박스에 연결하려면 박스 N을 <obj_N>으로 참조하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "프롬프트",
         "tooltip": null
       }
     }
@@ -6803,7 +6919,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Google Vertex API를 통해 이미지를 동기적으로 생성하거나 편집합니다.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -6853,7 +6969,7 @@
       },
       "2": {
         "name": "사고 이미지",
-        "tooltip": "모델의 사고 과정에서 생성된 첫 번째 이미지입니다. 사고 수준이 HIGH이고, 모달리티가 IMAGE+TEXT일 때만 제공됩니다."
+        "tooltip": "모델의 사고 과정에서 나온 첫 번째 이미지입니다. IMAGE+TEXT 모달리티에서만 사용할 수 있습니다."
       }
     }
   },
@@ -7127,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "오디오 latent의 길이, 오디오 채널 수 및 배치 크기를 반환합니다.",
+    "display_name": "오디오 latent 크기 가져오기",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "검사할 오디오 또는 오디오/비디오 latent입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "길이",
+        "tooltip": "오디오 latent 길이입니다."
+      },
+      "1": {
+        "name": "오디오_채널",
+        "tooltip": "오디오 채널 수입니다. 오디오 채널 차원이 없는 latent에는 채널이 하나입니다."
+      },
+      "2": {
+        "name": "배치_크기",
+        "tooltip": "배치에 있는 latent의 수입니다."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "LoRA가 로드된 모델의 safetensors 메타데이터에서 IC-LoRA 파라미터를 추출하여 LTXVAddGuide(예: reference_downscale_factor)에 출력합니다.",
     "display_name": "IC-LoRA 파라미터 가져오기",
@@ -7179,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "이미지 또는 비디오 latent의 너비, 높이, 프레임 수 및 배치 크기를 반환합니다.",
+    "display_name": "이미지/비디오 latent 크기 가져오기",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "검사할 이미지 또는 비디오 latent입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "너비",
+        "tooltip": "latent 너비입니다."
+      },
+      "1": {
+        "name": "높이",
+        "tooltip": "latent 높이입니다."
+      },
+      "2": {
+        "name": "프레임",
+        "tooltip": "latent 프레임 수입니다. 이미지 latent에는 프레임이 하나입니다."
+      },
+      "3": {
+        "name": "배치_크기",
+        "tooltip": "배치에 있는 latent의 수입니다."
       }
     }
   },
@@ -7434,7 +7602,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "종횡비",
-        "tooltip": "출력 비디오의 종횡비입니다."
+        "tooltip": "출력 비디오의 종횡비입니다. 입력 이미지가 제공되면 무시되며, 비디오는 이미지의 종횡비를 따릅니다."
       },
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -7453,11 +7621,11 @@
       },
       "prompt": {
         "name": "프롬프트",
-        "tooltip": "원하는 비디오의 텍스트 설명입니다. 입력 이미지가 제공된 경우 grok-imagine-video-1.5에서는 선택 사항입니다."
+        "tooltip": "원하는 비디오에 대한 텍스트 설명입니다. 입력 이미지가 제공되면 grok-imagine-video-1.5 모델에서는 선택 사항입니다."
       },
       "resolution": {
         "name": "해상도",
-        "tooltip": "출력 동영상의 해상도입니다. 1080p는 grok-imagine-video-1.5에서만 사용할 수 있습니다."
+        "tooltip": "출력 비디오의 해상도입니다. grok-imagine-video에서는 1080p를 사용할 수 없습니다."
       },
       "seed": {
         "name": "시드",
@@ -7950,6 +8118,67 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "description": "HeyGen Voice 1.0으로 한 명의 화자가 녹음된 음성에서 목소리를 복제합니다. voice_id를 HeyGen Voice 1.0 Text to Speech 또는 HeyGen Avatar Video 및 HeyGen Talking Photo의 custom_voice_id에 연결하세요.",
+    "display_name": "HeyGen Voice 1.0 즉시 복제",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "한 명의 화자가 녹음된 오디오입니다. 선명한 음성을 최소 10초 이상 사용하세요. 처음 3분만 사용됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "language": {
+        "name": "언어",
+        "tooltip": "녹음에서 사용된 언어입니다."
+      },
+      "remove_background_noise": {
+        "name": "배경 소음 제거"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드를 변경하여 녹음을 다시 복제하세요. 각 복제본은 조금씩 다른 음성입니다."
+      },
+      "similarity": {
+        "name": "유사도",
+        "tooltip": "음성이 녹음을 얼마나 가깝게 따르는지입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "HeyGen Voice 1.0 Instant Clone으로 복제한 음성으로 텍스트를 말합니다.",
+    "display_name": "HeyGen Voice 1.0 텍스트 음성 변환",
+    "inputs": {
+      "model": {
+        "name": "모델",
+        "tooltip": "heygen-voice-1-turbo는 더 빠르고 비용이 절반입니다."
+      },
+      "model_expressiveness_boost": {
+        "name": "표현력 향상"
+      },
+      "model_language": {
+        "name": "언어"
+      },
+      "model_text": {
+        "name": "텍스트"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "샘플링 후반부에 여러 번 이동된 패치 그리드 위치에서 모델 출력을 평균화합니다. 이음새를 제거합니다.",
     "display_name": "HiDream-O1 Patch Seam Smoothing",
@@ -8010,6 +8239,33 @@
       },
       "1": {
         "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "참조 이미지의 새 캐릭터, 장소 또는 스타일로 비디오를 재구성하면서 모션, 카메라 움직임 및 타이밍은 유지합니다.",
+    "display_name": "Higgsfield Genjutsu 모션 전송",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9175,6 +9431,28 @@
       }
     }
   },
+  "ImageSDRToHDR": {
+    "description": "sRGB 밝기를 Rec.2020 HLG HDR로 확장합니다. HDR 색 공간을 선택한 상태로 결과를 저장하세요. 알파는 유지됩니다.",
+    "display_name": "SDR을 HDR로 변환",
+    "inputs": {
+      "algorithm": {
+        "name": "알고리즘",
+        "tooltip": "보정된 단조 로그 게인 곡선과 혼합된 Lottes 스타일의 유리식 확장입니다."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "sRGB의 SDR 이미지입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ImageScale": {
     "display_name": "이미지 확대",
     "inputs": {
@@ -10327,6 +10605,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "의류 아이템을 사람에게 입힙니다. 결과는 사람 이미지와 동일한 크기이며, 가장 긴 변은 2048px로 제한됩니다.",
+    "display_name": "Kling 가상 피팅",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "입힐 의류입니다: 제품 사진, 플랫 레이, 마네킹 또는 모델 착용 사진. 모델 착용 사진은 해당 의상의 나머지 부분도 함께 반영할 수 있습니다. 의류만 지원하며 신발, 가방 및 액세서리는 지원하지 않습니다."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "더 나은 의상 표현을 위해 포즈 변경을 허용하려면 끄세요."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "한 명이 담긴 사진으로, 정면 또는 45도 각도 뷰가 이상적입니다. 한 변이 2048px를 넘는 이미지는 먼저 축소됩니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "Kling V3로 비디오를 생성합니다. 텍스트-투-비디오, 이미지-투-비디오, 선택적 스토리보드 멀티 프롬프트 및 오디오 생성을 지원합니다.",
     "display_name": "Kling 3.0 비디오",
@@ -10437,6 +10745,41 @@
     "outputs": {
       "0": {
         "name": "스타일 참조",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Krea 3로 이미지를 편집하거나, 이미지가 연결되지 않은 경우 텍스트로 새 이미지를 생성합니다.",
+    "display_name": "Krea 3 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "precise_edit"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_thinking_mode": {
+        "name": "thinking_mode"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -11285,11 +11628,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "잠재 데이터 CFG 연산 (연산 적용)",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "모델의 노이즈 제거 일정 중 이 비율에서 연산 적용을 중지합니다. 1은 끝점입니다."
+      },
       "model": {
         "name": "모델"
       },
       "operation": {
         "name": "연산"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "모델의 노이즈 제거 일정 중 이 비율부터 연산 적용을 시작합니다. 0은 시작점입니다."
       }
     },
     "outputs": {
@@ -11524,6 +11875,24 @@
       },
       "samples": {
         "name": "잠재 데이터"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "전체 잠재를 참조 잠재 쪽으로 혼합하며, 필요할 경우 최근접 이웃 보간으로 참조를 리사이즈합니다.",
+    "display_name": "잠재 연산 혼합",
+    "inputs": {
+      "reference": {
+        "name": "참조"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "0은 잠재를 변경하지 않으며, 1은 리사이즈된 참조 잠재와 일치합니다."
       }
     },
     "outputs": {
@@ -11933,6 +12302,80 @@
     "inputs": {
       "latent": {
         "name": "잠재 데이터"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "확산 모델에 LoRA 스택을 적용합니다. LoRA당 행을 하나씩 추가하세요. 각 행에서 LoRA 파일과 강도를 선택합니다.",
+    "display_name": "LoRA 불러오기 (모델)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "각 행은 모델에 LoRA 하나를 적용합니다."
+      },
+      "loras_$add": {
+        "name": "LoRA 추가"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 활성화"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 강도"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "LoRA가 적용될 확산 모델입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 확산 모델입니다."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "CLIP 텍스트 인코더에 LoRA 스택을 적용합니다. LoRA당 행을 하나씩 추가하세요. 각 행에서 LoRA 파일과 강도를 선택합니다.",
+    "display_name": "LoRA 불러오기 (텍스트 인코더)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRA가 적용될 CLIP 텍스트 인코더입니다."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "각 행은 텍스트 인코더에 하나의 LoRA를 적용합니다."
+      },
+      "loras_$add": {
+        "name": "LoRA 추가"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 활성화됨"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 강도"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "수정된 CLIP 텍스트 인코더입니다."
       }
     }
   },
@@ -12936,6 +13379,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "프롬프트와 Create Bounding Boxes의 상자에서 MOSS-Image 레이아웃 프롬프트를 만듭니다.",
+    "display_name": "MOSS-Image 레이아웃 프롬프트",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "Create Bounding Boxes 미리보기에서 태그된 대로 객체 대신 캐릭터로 레이블을 지정할 객체 상자의 번호입니다. 예: \"1, 3\"."
+      },
+      "element": {
+        "name": "요소",
+        "tooltip": "Create Bounding Boxes 노드의 프롬프트 요소입니다. 설명은 상자의 캡션이며, 텍스트 상자는 해당 텍스트도 렌더링합니다."
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "생성된 이미지의 높이입니다. 상자는 해당 이미지의 픽셀에 배치됩니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "전체 이미지에 대한 설명입니다."
+      },
+      "width": {
+        "name": "너비",
+        "tooltip": "생성된 이미지의 너비입니다. 상자는 해당 이미지의 픽셀에 배치됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "프롬프트",
         "tooltip": null
       }
     }
@@ -18481,7 +18956,7 @@
   "PrimitiveInt": {
     "display_name": "정수",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "생성 후 제어"
       },
       "value": {
@@ -18632,7 +19107,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Quiver AI를 사용하여 래스터 이미지를 SVG로 벡터화합니다.",
-    "display_name": "Quiver 이미지 → SVG",
+    "display_name": "Quiver 이미지를 SVG로 (레거시)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18663,7 +19138,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+        "tooltip": "그리기 전에 모델이 사용하는 추론량입니다. 높은 수준일수록 세부 묘사가 향상되지만 더 많은 토큰이 소모됩니다."
       },
       "seed": {
         "name": "seed",
@@ -18676,9 +19151,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Quiver AI를 사용하여 래스터 이미지를 SVG로 벡터화합니다.",
+    "display_name": "Quiver 이미지를 SVG로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "SVG 벡터화에 사용할 모델입니다."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_target_size": {
+        "name": "target_size"
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Quiver AI를 사용하여 텍스트 프롬프트로부터 SVG를 생성합니다.",
-    "display_name": "Quiver 텍스트 → SVG",
+    "display_name": "Quiver 텍스트를 SVG로 (레거시)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18706,7 +19226,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+        "tooltip": "그리기 전에 모델이 사용하는 추론량입니다. 수준이 높을수록 세부 묘사가 향상되지만 더 많은 토큰이 소모됩니다."
       },
       "reference_images": {
         "name": "reference_images",
@@ -18715,6 +19235,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Quiver AI를 사용하여 텍스트 프롬프트로 SVG를 생성합니다.",
+    "display_name": "Quiver 텍스트를 SVG로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "SVG 생성에 사용할 모델입니다."
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_instructions": {
+        "name": "지침"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_temperature": {
+        "name": "온도"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "너비"
       }
     },
     "outputs": {
@@ -19520,6 +20085,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "참조 이미지를 인코딩하고 해당 잠재 공간 표현을 편집 모델용 긍정 및 선택적 부정 컨디셔닝에 추가합니다.",
+    "display_name": "참조 다중 잠재 공간 설정",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "negative": {
+        "name": "부정"
+      },
+      "positive": {
+        "name": "긍정"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "VAE가 연결되지 않으면 참조 이미지가 무시됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정",
+        "tooltip": null
+      },
+      "1": {
+        "name": "부정",
+        "tooltip": "부정 컨디셔닝이 연결되지 않은 경우 긍정 출력을 반환합니다."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "첫 번째 참조 잠재 공간 표현에 0.0을 곱한 값 또는 선택한 해상도의 정사각형 빈 잠재 공간 표현입니다."
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "이 노드는 timbre(ace step 1.5용) 기준 오디오를 설정합니다.",
     "display_name": "ReferenceTimbreAudio",
@@ -19634,7 +20235,7 @@
     "inputs": {
       "band": {
         "name": "band",
-        "tooltip": "복셀 단위의 협대역 폭입니다. UDF 모드에서는 표면도 오프셋합니다."
+        "tooltip": "복셀 단위의 좁은 밴드 너비입니다. udf 모드에서는 표면도 오프셋합니다. solid 모드에서는 닫기 반경입니다. 이 크기에서 모서리는 필렛 처리되고 틈은 연결되며, 표면은 복셀 반 개만큼 바깥쪽에 위치합니다."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19661,7 +20262,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: 복잡한/non-manifold 입력에 강합니다. sdf: QEF (Quadratic Error Function)를 사용한 날카로운 특징 복원이 가능한 깔끔한 단일 표면이지만, 일관된 winding이 필요합니다."
+        "tooltip": "udf: 복잡하거나 비매니폴드인 입력에도 견고합니다. sdf: QEF(이차 오차 함수)를 사용한 날카로운 특징 복원이 가능한 깔끔한 단일 표면이지만, 일관된 와인딩이 필요합니다. solid: 복잡한 입력에서 하나의 방수 솔리드를 생성합니다. 전역 내부/외부 그래프 컷(CelloCut)이 이중 셸을 제거하고 작은 구멍을 닫습니다. 더 느립니다."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
@@ -22372,8 +22973,8 @@
   "SeedNode": {
     "display_name": "시드",
     "inputs": {
-      "fixed": {
-        "name": "생성 후 고정"
+      "control_after_generate": {
+        "name": "생성 후 제어"
       },
       "seed": {
         "name": "시드"
@@ -27514,6 +28115,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "시작 프레임과 선택적 프롬프트로 비디오를 생성합니다. 출력은 입력 이미지의 종횡비를 유지합니다.",
+    "display_name": "Vidu Q4 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "생성된 비디오의 시작 프레임입니다. 종횡비는 1:5에서 5:1 사이여야 합니다."
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_audio": {
+        "name": "오디오"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "참조 이미지, 선택적 참조 오디오 및 프롬프트로 비디오를 생성합니다.",
+    "display_name": "Vidu Q4 참조 이미지-비디오 생성",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "비디오 생성에 사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_audio": {
+        "name": "오디오"
+      },
+      "model_duration": {
+        "name": "길이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
       }
     },
     "outputs": {
