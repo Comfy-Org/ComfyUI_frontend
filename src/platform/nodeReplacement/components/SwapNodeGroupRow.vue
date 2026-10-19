@@ -148,7 +148,7 @@
               :label="
                 t(
                   'rightSidePanel.locateNodeFor',
-                  { item: getLabel(nodeType) },
+                  { item: `${nodeType.type} #${nodeType.nodeId}` },
                   { escapeParameter: false }
                 )
               "

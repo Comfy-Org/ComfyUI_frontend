@@ -117,7 +117,7 @@ describe('SwapNodeGroupRow', () => {
         screen.getByRole('button', { name: 'Expand OldNodeType' })
       )
       expect(
-        screen.getAllByRole('button', { name: 'Locate OldNodeType' })
+        screen.getAllByRole('button', { name: /^Locate OldNodeType #/ })
       ).toHaveLength(2)
     })
 
@@ -128,7 +128,7 @@ describe('SwapNodeGroupRow', () => {
         screen.getByRole('button', { name: 'Expand OldNodeType' })
       )
       expect(
-        screen.getAllByRole('button', { name: 'Locate OldNodeType' })
+        screen.getAllByRole('button', { name: /^Locate OldNodeType #/ })
       ).toHaveLength(2)
       await user.click(
         screen.getByRole('button', { name: 'Collapse OldNodeType' })
@@ -188,7 +188,7 @@ describe('SwapNodeGroupRow', () => {
       renderRow()
       await expand()
       expect(
-        screen.getAllByRole('button', { name: 'Locate OldNodeType' })
+        screen.getAllByRole('button', { name: /^Locate OldNodeType #/ })
       ).toHaveLength(2)
     })
 
@@ -229,7 +229,7 @@ describe('SwapNodeGroupRow', () => {
         })
       ).toHaveLength(1)
       expect(
-        screen.getAllByRole('button', { name: 'Locate MixedNodeType' })
+        screen.getAllByRole('button', { name: 'Locate MixedNodeType #10' })
       ).toHaveLength(1)
     })
 
@@ -247,10 +247,10 @@ describe('SwapNodeGroupRow', () => {
       await expand()
 
       expect(
-        screen.getByRole('button', { name: 'Locate AlphaNode' })
+        screen.getByRole('button', { name: 'Locate AlphaNode #1' })
       ).toBeInTheDocument()
       expect(
-        screen.getByRole('button', { name: 'Locate BetaNode' })
+        screen.getByRole('button', { name: 'Locate BetaNode #2' })
       ).toBeInTheDocument()
     })
   })
@@ -263,13 +263,14 @@ describe('SwapNodeGroupRow', () => {
       await user.click(
         screen.getByRole('button', { name: 'Expand OldNodeType' })
       )
-      const locateBtns = screen.getAllByRole('button', {
-        name: 'Locate OldNodeType'
-      })
-      await user.click(locateBtns[0])
+      await user.click(
+        screen.getByRole('button', { name: 'Locate OldNodeType #1' })
+      )
       expect(onLocateNode).toHaveBeenCalledWith('1')
 
-      await user.click(locateBtns[1])
+      await user.click(
+        screen.getByRole('button', { name: 'Locate OldNodeType #2' })
+      )
       expect(onLocateNode).toHaveBeenCalledWith('2')
     })
 
