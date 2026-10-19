@@ -603,8 +603,9 @@ function collectTurnThinking(
 }
 
 function fitTurnThinking(turns: readonly RetainedTurnThinking[]) {
-  const fits = (candidate: readonly RetainedTurnThinking[]) =>
-    json(redactSecrets(candidate)).length <= MAX_THINKING_CHARS
+  function fits(candidate: readonly RetainedTurnThinking[]) {
+    return json(redactSecrets(candidate)).length <= MAX_THINKING_CHARS
+  }
   if (fits(turns)) return { turns, omittedTurns: 0 }
   const firstFittingTurn = turns.findIndex((_, index) =>
     fits(turns.slice(index))
@@ -616,12 +617,14 @@ function fitTurnThinking(turns: readonly RetainedTurnThinking[]) {
     }
   }
   const latest = turns[turns.length - 1]
-  const withLastDurations = (count: number) => ({
-    ...latest,
-    thinkingDurationsMs: latest.thinkingDurationsMs.slice(
-      latest.thinkingDurationsMs.length - count
-    )
-  })
+  function withLastDurations(count: number) {
+    return {
+      ...latest,
+      thinkingDurationsMs: latest.thinkingDurationsMs.slice(
+        latest.thinkingDurationsMs.length - count
+      )
+    }
+  }
   let low = 0
   let high = latest.thinkingDurationsMs.length
   while (low < high) {

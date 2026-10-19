@@ -714,11 +714,11 @@ describe('collectCrdtDebugReport', () => {
           parts: [
             ...Array.from(
               { length: 20_000 },
-              (): MessagePart => ({
+              (_, index): MessagePart => ({
                 type: 'thinking',
                 text: '',
                 state: 'done',
-                durationMs: 1
+                durationMs: index + 1
               })
             ),
             ...toolCalls('latest', 1)
@@ -735,27 +735,33 @@ describe('collectCrdtDebugReport', () => {
       ?.split('\n\n## ')[0]
     assert.exists(section)
     expect(section.length).toBeLessThanOrEqual(60_000)
-    expect(section).toMatch(/keeps only its last \d+ durations/)
+    const kept = Number(
+      section.match(/keeps only its last (\d+) durations/)?.[1]
+    )
+    expect(kept).toBeGreaterThan(0)
+    expect(kept).toBeLessThan(20_000)
     const [, thinking] = toolSectionJson(report)
     expect(thinking).toEqual([
-      expect.objectContaining({
+      {
         turnId: 'turn-latest',
-        thinkingTotalMs: 20_000
-      })
+        thinkingDurationsMs: Array.from(
+          { length: kept },
+          (_, index) => 20_000 - kept + index + 1
+        ),
+        thinkingTotalMs: (20_000 * 20_001) / 2
+      }
     ])
   })
 
   it('drops older turns from the thinking block before trimming the latest turn', async () => {
-    const thinkingParts = (count: number) =>
-      Array.from(
-        { length: count },
-        (): MessagePart => ({
-          type: 'thinking',
-          text: '',
-          state: 'done',
-          durationMs: 1
-        })
-      )
+    function thinkingParts(count: number): MessagePart[] {
+      return Array.from({ length: count }, () => ({
+        type: 'thinking',
+        text: '',
+        state: 'done',
+        durationMs: 1
+      }))
+    }
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,
       events: [],
