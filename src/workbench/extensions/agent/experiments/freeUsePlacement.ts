@@ -32,18 +32,25 @@ export function useFreeUsePlacement() {
   const panelStore = useAgentPanelStore()
   const assigned = ref<FreeUseVariant>('control')
 
+  const sessionOverride = getSessionOverride<unknown>(FREE_USE_PLACEMENT_FLAG)
   const override =
-    getSessionOverride<unknown>(FREE_USE_PLACEMENT_FLAG) ??
-    getDevOverride<unknown>(FREE_USE_PLACEMENT_FLAG)
+    sessionOverride !== undefined
+      ? sessionOverride
+      : getDevOverride<unknown>(FREE_USE_PLACEMENT_FLAG)
   const hasQaOverride = override !== undefined
 
   function assign(): void {
     const served = remoteConfig.value[FREE_USE_PLACEMENT_FLAG]
-    if (!isFreeUseVariant(served)) return
+    if (!isFreeUseVariant(served)) {
+      assigned.value = 'control'
+      return
+    }
     assigned.value = served
     if (panelStore.reportedFreeUseExposure) return
+    const telemetry = useTelemetry()
+    if (!telemetry) return
     panelStore.reportedFreeUseExposure = true
-    useTelemetry()?.trackAgentFreeUseExposure({
+    telemetry.trackAgentFreeUseExposure({
       placement: served,
       [`$feature/${FREE_USE_PLACEMENT_FLAG}`]: served
     })
@@ -51,10 +58,6 @@ export function useFreeUsePlacement() {
 
   if (hasQaOverride) {
     if (isFreeUseVariant(override)) assigned.value = override
-    else
-      console.warn(
-        `[agent] ignoring unknown ${FREE_USE_PLACEMENT_FLAG} override ${JSON.stringify(override)}; expected one of ${FREE_USE_VARIANTS.join(', ')}`
-      )
   } else if (isAuthenticatedConfigLoaded.value) {
     assign()
   } else {
@@ -65,13 +68,29 @@ export function useFreeUsePlacement() {
     })
   }
 
+  if (!hasQaOverride) {
+    watch(
+      () => remoteConfig.value[FREE_USE_PLACEMENT_FLAG],
+      () => {
+        if (isAuthenticatedConfigLoaded.value) assign()
+      }
+    )
+    watch(
+      () => panelStore.isOpen,
+      (isOpen) => {
+        if (isOpen && isAuthenticatedConfigLoaded.value) assign()
+      }
+    )
+  }
+
   function reportNotice(metadata: AgentFreeUseNoticeMetadata): void {
     if (hasQaOverride) return
-    if (metadata.action === 'shown') {
-      if (panelStore.reportedFreeUseImpression) return
-      panelStore.reportedFreeUseImpression = true
-    }
-    useTelemetry()?.trackAgentFreeUseNotice(metadata)
+    if (metadata.action === 'shown' && panelStore.reportedFreeUseImpression)
+      return
+    const telemetry = useTelemetry()
+    if (!telemetry) return
+    if (metadata.action === 'shown') panelStore.reportedFreeUseImpression = true
+    telemetry.trackAgentFreeUseNotice(metadata)
   }
 
   return {

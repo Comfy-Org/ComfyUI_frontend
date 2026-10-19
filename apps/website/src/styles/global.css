@@ -74,6 +74,7 @@
   --color-primary-comfy-ink: #211927;
   --color-primary-comfy-ink-light: #2a2330;
   --color-primary-comfy-canvas: #c2bfb9;
+  --color-timeline-neutral: #e0d9f1;
   --color-primary-warm-white: #f0efed;
   --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
@@ -83,6 +84,7 @@
   --color-primary-comfy-plum: #49378b;
   --color-secondary-deep-plum: #2b2040;
   --color-secondary-cool-gray: #3c3c3c;
+  --color-secondary-charcoal: #242428;
   --color-illustration-forest: #20464c;
   --color-workflow-foreground: #eee;
   --color-workflow-selection: #a894ef;
@@ -103,6 +105,7 @@
   --container-8xl: 88rem;
   --container-9xl: 96rem;
   --container-10xl: 100rem;
+  --container-editor-panel: clamp(280px, 16vw, 340px);
   --aspect-ratio-gallery-card: 47/31;
   --color-page: var(--color-primary-comfy-ink);
   --color-brand: var(--color-primary-comfy-yellow);

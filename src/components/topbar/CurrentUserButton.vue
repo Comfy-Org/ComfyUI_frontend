@@ -12,7 +12,7 @@
       <div
         :class="
           cn(
-            'flex items-center justify-center gap-1 rounded-full hover:bg-interface-button-hover-surface',
+            'flex items-center justify-center gap-1 rounded-full hover:bg-accent',
             compact && 'size-full'
           )
         "
@@ -37,7 +37,12 @@
     <Popover
       ref="popover"
       align="end"
-      content-class="w-80 overflow-visible p-0"
+      :content-class="
+        cn(
+          'overflow-visible border-border shadow-md',
+          showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
+        )
+      "
       @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace

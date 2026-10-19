@@ -6,11 +6,9 @@ import { createI18n } from 'vue-i18n'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import { useTelemetry } from '@/platform/telemetry'
-import {
-  ComfyNodeDefImpl,
-  useNodeDefStore,
-  useNodeFrequencyStore
-} from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import { FuseFilter } from '@/utils/fuseUtil'
 import NodeSearchBox from './NodeSearchBox.vue'
 
@@ -82,7 +80,7 @@ describe('NodeSearchBox', () => {
       output_name: [],
       output_node: false
     })
-    vi.spyOn(useNodeFrequencyStore(), 'topNodeDefs', 'get').mockReturnValue([
+    vi.spyOn(useNodeDefStore(), 'topNodeDefs', 'get').mockReturnValue([
       frequent
     ])
     const filter = new FuseFilter<ComfyNodeDefImpl>([], {

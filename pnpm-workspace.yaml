@@ -75,6 +75,7 @@ catalog:
   cva: 1.0.0-beta.4
   dompurify: 3.4.13
   dotenv: ^16.4.5
+  es-toolkit: ^1.39.9
   eslint: ^10.10.0
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.5
@@ -165,6 +166,7 @@ catalog:
   '@comfyorg/comfy-multi-player': 0.3.10
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
   dependency-cruiser: ^18.5.0
+  '@microsoft/api-extractor': 7.58.9
 
 cleanupUnusedCatalogs: true
 

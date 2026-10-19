@@ -1,6 +1,6 @@
 <template>
   <div
-    class="dark-theme flex h-svh w-screen items-center bg-primary-comfy-ink font-formula text-primary-comfy-canvas"
+    class="flex h-svh w-screen items-center bg-primary-comfy-ink font-formula text-primary-comfy-canvas"
   >
     <div class="mx-auto flex size-full max-h-248 max-w-[100rem]">
       <div v-if="showHero" class="relative min-h-0 flex-1 overflow-hidden">

@@ -34,8 +34,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
           flagState.billingSdkSubscriptionEnabled &&
           flagState.unifiedCloudAuthEnabled
         )
-      },
-      embeddedCheckoutEnabled: false
+      }
     }
   })
 }))

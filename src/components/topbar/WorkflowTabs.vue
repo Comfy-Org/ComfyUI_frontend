@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'workflow-tabs-container flex h-full flex-auto flex-row gap-1 overflow-hidden bg-comfy-menu-bg px-1',
+        'workflow-tabs-container flex h-full flex-auto flex-row gap-1 overflow-hidden bg-background px-1',
         isDesktop ? 'max-w-[env(titlebar-area-width,100vw)]' : 'max-w-full'
       )
     "
@@ -10,7 +10,7 @@
     <div
       ref="tabStripRef"
       data-testid="workflow-tab-strip"
-      class="no-drag scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
+      class="no-drag scrollbar-thin scrollbar-thumb-smoke-500/50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
       @wheel="handleWheel"
       @transitionend="handleTabResize"
     >
@@ -50,7 +50,7 @@
     />
     <Button
       :tooltip="$t('sideToolbar.newBlankWorkflow')"
-      class="new-blank-workflow-button no-drag shrink-0 self-center rounded-lg"
+      class="new-blank-workflow-button no-drag shrink-0 self-center"
       variant="muted-textonly"
       size="icon"
       :aria-label="$t('sideToolbar.newBlankWorkflow')"
@@ -70,7 +70,7 @@
       <div
         v-if="topbarBadgeStore.badges.length"
         data-testid="environment-badge-separator"
-        class="h-5 w-px shrink-0 bg-border-subtle"
+        class="h-5 w-px shrink-0 bg-border/50"
       />
       <Button
         v-if="isCloud || isNightly"
@@ -88,11 +88,12 @@
       <template v-if="showAgentEntry">
         <div
           data-testid="agent-entry-separator"
-          class="h-5 w-px shrink-0 bg-border-subtle"
+          class="h-5 w-px shrink-0 bg-border/50"
         />
         <AgentEntryButton
           :active="agentPanelStore.isVisible"
           :inviting="!agentPanelStore.hasEverOpened"
+          :comfy-agent="comfyAgentNotReady"
           @click="onAgentEntryClick"
         />
       </template>
@@ -161,12 +162,19 @@ const { withConsent, isChecking } = useAgentConsent()
 const isOpeningAgent = ref(false)
 const { isLoggedIn } = useCurrentUser()
 
+const comfyAgentNotReady = computed(() =>
+  agentPanelStore.enabled || agentPanelStore.comfyAgent?.state === 'ready'
+    ? undefined
+    : agentPanelStore.comfyAgent
+)
 const showAgentEntry = computed(
-  () => agentPanelStore.enabled && !(agentPanelStore.isOpen && isChecking.value)
+  () =>
+    (agentPanelStore.enabled || comfyAgentNotReady.value !== undefined) &&
+    !(agentPanelStore.isOpen && isChecking.value)
 )
 
 async function onAgentEntryClick(): Promise<void> {
-  if (isOpeningAgent.value) return
+  if (isOpeningAgent.value || comfyAgentNotReady.value) return
   isOpeningAgent.value = true
 
   try {

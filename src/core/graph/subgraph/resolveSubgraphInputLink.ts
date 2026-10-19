@@ -1,5 +1,5 @@
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 type SubgraphInputLinkContext = {
   inputNode: LGraphNode

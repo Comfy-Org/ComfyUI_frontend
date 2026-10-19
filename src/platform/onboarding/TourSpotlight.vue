@@ -22,7 +22,7 @@
       <rect
         width="100%"
         height="100%"
-        class="fill-coach-scrim"
+        class="fill-black/60"
         :mask="`url(#${maskId})`"
       />
       <path
@@ -40,7 +40,7 @@
       :class="
         cn(
           'pointer-events-auto absolute inset-0',
-          !useMaskScrim && !targetRect && 'bg-coach-scrim'
+          !useMaskScrim && !targetRect && 'bg-black/60'
         )
       "
     />
@@ -49,10 +49,11 @@
       data-testid="coach-spotlight"
       :class="
         cn(
-          'pointer-events-none absolute rounded-xl outline-2 outline-coach-ring',
+          'pointer-events-none absolute rounded-xl outline-2 outline-white',
           !targetMoves &&
             'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
-          !useMaskScrim && 'shadow-[0_0_0_9999px_var(--color-coach-scrim)]'
+          !useMaskScrim &&
+            'shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-black)_60%,transparent)]'
         )
       "
       :style="spotlightStyle"
@@ -88,7 +89,7 @@
           data-testid="coach-cursor"
           :class="
             cn(
-              'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
+              'absolute icon-[lucide--mouse-pointer-2] size-4 text-foreground drop-shadow-md',
               cursorClass
             )
           "
@@ -123,7 +124,7 @@
                 v-if="canGoBack"
                 variant="secondary"
                 size="md"
-                class="border border-solid border-border-default"
+                class="border border-solid"
                 @click="emit('back')"
               >
                 <i class="icon-[lucide--arrow-left]" />
