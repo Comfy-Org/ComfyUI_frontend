@@ -314,6 +314,19 @@ describe('useAlgoliaSearchProvider', () => {
       ).resolves.toEqual({ ok: false, cause: algoliaError })
     })
 
+    it('throws a bug in mapping the response instead of failing over', async () => {
+      mockSearchClient.search.mockResolvedValue({ results: [] })
+
+      const provider = useAlgoliaSearchProvider()
+
+      await expect(
+        provider.searchPacks('euler-discrete-scheduler', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      ).rejects.toThrow(TypeError)
+    })
+
     it('preserves raw results and suggestions when the rewrite request fails', async () => {
       const fallbackError = new Error('Algolia rewrite request failed')
       mockSearchClient.search

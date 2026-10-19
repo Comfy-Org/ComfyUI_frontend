@@ -216,11 +216,11 @@ describe('useRegistrySearch', () => {
 
   it('reruns without reporting an error when a search fails after the mode changed', async () => {
     const { searchPacks } = useRegistrySearchGateway()
-    let rejectStaleSearch: (error: Error) => void = () => {}
+    let failStaleSearch: (error: Error) => void = () => {}
     vi.mocked(searchPacks)
       .mockReturnValueOnce(
         new Promise((resolve) => {
-          rejectStaleSearch = (cause) => resolve({ ok: false, cause })
+          failStaleSearch = (cause) => resolve({ ok: false, cause })
         })
       )
       .mockResolvedValueOnce(
@@ -236,7 +236,7 @@ describe('useRegistrySearch', () => {
 
     searchMode.value = 'packs'
     await nextTick()
-    rejectStaleSearch(new Error('search unavailable'))
+    failStaleSearch(new Error('search unavailable'))
     await until(search.isLoading).toBe(false)
 
     expect(reportError).not.toHaveBeenCalled()
@@ -654,10 +654,10 @@ describe('useRegistrySearch', () => {
 
   it('neither searches again nor reports when a search settles for an older query after its scope is disposed', async () => {
     const { searchPacks } = useRegistrySearchGateway()
-    let rejectSearch: (error: Error) => void = () => {}
+    let failSearch: (error: Error) => void = () => {}
     vi.mocked(searchPacks).mockReturnValueOnce(
       new Promise((resolve) => {
-        rejectSearch = (cause) => resolve({ ok: false, cause })
+        failSearch = (cause) => resolve({ ok: false, cause })
       })
     )
     const query = ref('gguf')
@@ -669,7 +669,7 @@ describe('useRegistrySearch', () => {
 
     scope.stop()
     query.value = 'gguf loader'
-    rejectSearch(new Error('search unavailable'))
+    failSearch(new Error('search unavailable'))
     await until(search.isLoading).toBe(false)
 
     expect(searchPacks).toHaveBeenCalledOnce()

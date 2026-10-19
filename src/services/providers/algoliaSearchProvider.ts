@@ -110,7 +110,10 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   const searchPacksInternal = async (
     query: string,
     params: SearchNodePacksParams
-  ): Promise<{ result: SearchPacksResult; fallbacksFailed: boolean }> => {
+  ): Promise<
+    | { ok: true; result: SearchPacksResult; fallbacksFailed: boolean }
+    | { ok: false; cause: unknown }
+  > => {
     const { pageSize, pageNumber } = params
 
     async function searchFallbacks(
@@ -139,6 +142,20 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       }
     }
 
+    async function searchRawQuery(requests: SearchQuery[]) {
+      try {
+        const { results } = await searchClient.search<
+          AlgoliaNodePack | NodesIndexSuggestion
+        >({
+          requests,
+          strategy: 'none'
+        })
+        return { ok: true as const, results }
+      } catch (cause) {
+        return { ok: false as const, cause }
+      }
+    }
+
     const shouldQuerySuggestions =
       query.length >= MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA
     const requests: SearchQuery[] = [buildPackSearchRequest(query, params)]
@@ -149,12 +166,9 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       })
     }
 
-    const { results } = await searchClient.search<
-      AlgoliaNodePack | NodesIndexSuggestion
-    >({
-      requests,
-      strategy: 'none'
-    })
+    const response = await searchRawQuery(requests)
+    if (!response.ok) return response
+    const { results } = response
 
     const nodePacks = results[0] as SearchResponse<AlgoliaNodePack>
     const querySuggestions = results[1] as
@@ -178,6 +192,7 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       })) ?? []
 
     return {
+      ok: true,
       result: {
         nodePacks: registryPacks,
         querySuggestions: suggestions,
@@ -200,16 +215,10 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
     const cachedResult = searchPacksCache.get(cacheKey)
     if (cachedResult !== undefined) return { ok: true, result: cachedResult }
 
-    try {
-      const { result, fallbacksFailed } = await searchPacksInternal(
-        query,
-        params
-      )
-      if (!fallbacksFailed) searchPacksCache.set(cacheKey, result)
-      return { ok: true, result }
-    } catch (cause) {
-      return { ok: false, cause }
-    }
+    const outcome = await searchPacksInternal(query, params)
+    if (!outcome.ok) return outcome
+    if (!outcome.fallbacksFailed) searchPacksCache.set(cacheKey, outcome.result)
+    return { ok: true, result: outcome.result }
   }
 
   const clearSearchCache = () => {
