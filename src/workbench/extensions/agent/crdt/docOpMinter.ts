@@ -46,7 +46,10 @@ import {
   traverseSubgraphPath
 } from '@/utils/graphTraversalUtil'
 
-import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
+import {
+  SUBSCRIBE_ACK_MAX_TIMEOUTS,
+  SUBSCRIBE_ACK_TIMEOUT_MS
+} from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 
@@ -90,16 +93,17 @@ export interface DocOpMinterDeps {
 
 /**
  * How long a promoted-host write waits for the bound document to catch up
- * before it is refused: two subscribe ack timeouts, so a catch-up that lands
- * after one ack-timeout retry still carries the write.
+ * before it is refused: as long as the subscribe lifecycle keeps retrying.
  */
-export const PROMOTED_WRITE_CATCH_UP_DEADLINE_MS = 2 * SUBSCRIBE_ACK_TIMEOUT_MS
+export const PROMOTED_WRITE_CATCH_UP_DEADLINE_MS =
+  SUBSCRIBE_ACK_MAX_TIMEOUTS * SUBSCRIBE_ACK_TIMEOUT_MS
 /** How often a held promoted-host write rechecks the catch-up gate. */
 export const PROMOTED_WRITE_RETRY_MS = 100
 
 type PromotedWriteRefusal =
   | { reason: 'unpromoted_widget'; liveNames: readonly string[] }
   | { reason: 'doc_not_synced' }
+  | { reason: 'workflow_changed' }
   | {
       reason: 'layout_drift'
       liveNames: readonly string[]
@@ -122,7 +126,7 @@ interface HeldPromotedWrite {
 }
 
 function heldWriteKey(event: IntentOf<'set_widget'>): string {
-  return `${nodeKey(event.graphId, event.nodeId)}:${event.name}`
+  return JSON.stringify([event.graphId, String(event.nodeId), event.name])
 }
 
 type PendingOp =
@@ -427,18 +431,14 @@ function growForMissingSlot(
   }
 }
 
-function canvasStillShows(
-  graph: LGraph,
-  event: IntentOf<'set_widget'>
-): boolean {
+function canvasReplaced(graph: LGraph, event: IntentOf<'set_widget'>): boolean {
   const eventGraph = reachableIntentGraph(graph, event.graphId)
   const host = eventGraph ? findNodeInHierarchy(eventGraph, event.nodeId) : null
   const input = host?.inputs.find((slot) => slot.name === event.name)
-  if (!input?.widgetId) return false
-  return isEqual(
-    useWidgetValueStore().getWidget(input.widgetId)?.value,
-    event.value
-  )
+  const stored = input?.widgetId
+    ? useWidgetValueStore().getWidget(input.widgetId)
+    : undefined
+  return stored !== undefined && !isEqual(stored.value, event.value)
 }
 
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
@@ -542,8 +542,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function routeSetWidget(
     event: IntentOf<'set_widget'>,
-    held: HeldPromotedWrite | null
+    retried: HeldPromotedWrite | null
   ): void {
+    const held = retried ?? takeHeldWrite(event)
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
@@ -555,14 +556,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
     if ('unresolvedGraphId' in routed) {
-      const graphId = routed.unresolvedGraphId
-      reportOnce(
-        `owner:${nodeKey(graphId, event.nodeId)}`,
-        'Agent widget write has an unresolvable owner',
-        'agent_crdt_widget_owner_unresolved',
-        { graphId, nodeId: event.nodeId },
-        reportedRefusals
-      )
+      reportUnresolvedOwner(routed.unresolvedGraphId, event)
       return
     }
     if ('reason' in routed) {
@@ -570,6 +564,28 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       return
     }
     schedule({ kind: 'op', operation: routed })
+  }
+
+  function takeHeldWrite(
+    event: IntentOf<'set_widget'>
+  ): HeldPromotedWrite | null {
+    const key = heldWriteKey(event)
+    const held = heldPromotedWrites.get(key) ?? null
+    heldPromotedWrites.delete(key)
+    return held
+  }
+
+  function reportUnresolvedOwner(
+    graphId: string,
+    event: IntentOf<'set_widget'>
+  ): void {
+    reportOnce(
+      `owner:${nodeKey(graphId, event.nodeId)}`,
+      'Agent widget write has an unresolvable owner',
+      'agent_crdt_widget_owner_unresolved',
+      { graphId, nodeId: event.nodeId },
+      reportedRefusals
+    )
   }
 
   function holdOrRefuseWidgetWrite(
@@ -598,60 +614,50 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   function holdPromotedWrite(held: HeldPromotedWrite): void {
     heldPromotedWrites.set(heldWriteKey(held.event), held)
     if (heldRetryTimer !== null) return
-    scheduleHeldPromotedWriteRetry()
-  }
-
-  function scheduleHeldPromotedWriteRetry(): void {
     heldRetryTimer = setTimeout(
       retryHeldPromotedWrites,
       PROMOTED_WRITE_RETRY_MS
     )
   }
 
-  function refuseInvalidHeldPromotedWrites(rootGraphId: RootGraphId): void {
-    for (const [key, entry] of heldPromotedWrites) {
-      if (
-        rootGraphId === entry.rootGraphId &&
-        performance.now() - entry.heldSince <
-          PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
-      )
-        continue
-      heldPromotedWrites.delete(key)
-      refuseWidgetWrite(entry.rootGraphId, entry.event, {
-        reason: 'doc_not_synced'
-      })
-    }
-  }
-
-  function replayHeldPromotedWrites(graph: LGraph): void {
-    const held = [...heldPromotedWrites.values()]
-    heldPromotedWrites.clear()
-    for (const entry of held) {
-      if (!canvasStillShows(graph, entry.event)) continue
-      routeSetWidget(entry.event, entry)
-    }
-  }
-
   function retryHeldPromotedWrites(): void {
     heldRetryTimer = null
     if (detached) return
-    const rootGraphId = deps.boundRootGraphId()
-    if (!deps.isEnabled() || rootGraphId === null) {
-      heldPromotedWrites.clear()
+    const held = [...heldPromotedWrites.values()]
+    heldPromotedWrites.clear()
+    const bound = deps.isDocBound()
+    if (!deps.isEnabled() || (!bound && deps.boundRootGraphId() === null))
+      return
+    const graph = bound ? deps.getGraph() : null
+    for (const entry of held) {
+      if (graph) retryHeldWrite(graph, entry)
+      else waitOrGiveUp(entry, bound)
+    }
+  }
+
+  function waitOrGiveUp(entry: HeldPromotedWrite, bound: boolean): void {
+    if (!heldTooLong(entry)) holdPromotedWrite(entry)
+    else if (bound)
+      refuseWidgetWrite(entry.rootGraphId, entry.event, {
+        reason: 'doc_not_synced'
+      })
+  }
+
+  function heldTooLong(entry: HeldPromotedWrite): boolean {
+    return (
+      performance.now() - entry.heldSince >= PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
+    )
+  }
+
+  function retryHeldWrite(graph: LGraph, entry: HeldPromotedWrite): void {
+    if (canvasReplaced(graph, entry.event)) return
+    if ((deps.boundRootGraphId() ?? graph.id) !== entry.rootGraphId) {
+      refuseWidgetWrite(entry.rootGraphId, entry.event, {
+        reason: 'workflow_changed'
+      })
       return
     }
-    refuseInvalidHeldPromotedWrites(rootGraphId)
-    if (heldPromotedWrites.size === 0) return
-    if (!deps.isDocBound()) {
-      scheduleHeldPromotedWriteRetry()
-      return
-    }
-    const graph = deps.getGraph()
-    if (!graph) {
-      scheduleHeldPromotedWriteRetry()
-      return
-    }
-    replayHeldPromotedWrites(graph)
+    routeSetWidget(entry.event, entry)
   }
 
   function reportRefusal(
@@ -688,6 +694,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
             widget: event.name,
             liveNames: refusal.liveNames
           },
+          reportedRefusals
+        )
+        return
+      case 'workflow_changed':
+        reportOnce(
+          `promoted_workflow_changed:${rootGraphId}:${host}`,
+          `Subgraph host ${host} was edited while the bound document caught up, and the bound workflow changed before it did; refusing to mint a promoted write`,
+          'agent_crdt_promoted_widget_workflow_changed',
+          { nodeId: event.nodeId, widget: event.name },
           reportedRefusals
         )
         return
@@ -837,15 +852,12 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
-    const held =
-      event.type === 'set_widget'
-        ? (heldPromotedWrites.get(heldWriteKey(event)) ?? null)
-        : null
-    if (event.type === 'set_widget')
-      heldPromotedWrites.delete(heldWriteKey(event))
-    if (!deps.isEnabled() || !deps.isDocBound()) return
-    if (event.type === 'set_widget') routeSetWidget(event, held)
-    else mintIntent(event)
+    if (!deps.isEnabled() || !deps.isDocBound()) {
+      if (event.type === 'set_widget')
+        heldPromotedWrites.delete(heldWriteKey(event))
+      return
+    }
+    mintIntent(event)
   }
 
   function mintIntent(event: GraphIntentEvent): void {

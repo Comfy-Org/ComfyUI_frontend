@@ -139,14 +139,17 @@ async function expectNoRejectionToast(toast: ToastHelper): Promise<void> {
       })
     )
   const quietWindowStartedAt = Date.now()
-  let rejectionSeen = false
+  let sightings = 0
   await expect
-    .soft(async () => {
-      if ((await rejectionToast.count()) > 0) rejectionSeen = true
-      expect(rejectionSeen).toBe(false)
-      expect(Date.now() - quietWindowStartedAt).toBeGreaterThanOrEqual(2_000)
-    })
-    .toPass({ timeout: 4_000, intervals: [100, 250, 500] })
+    .poll(
+      async () => {
+        sightings += await rejectionToast.count()
+        return Date.now() - quietWindowStartedAt >= 2_000
+      },
+      { timeout: 4_000, intervals: [100] }
+    )
+    .toBe(true)
+  expect.soft(sightings).toBe(0)
 }
 
 async function pressRunAndRandomizeSeed(
