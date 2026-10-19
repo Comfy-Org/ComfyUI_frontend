@@ -4,7 +4,7 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CreateTopupResponse,
+  CreateTopupCheckoutResponse,
   Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
@@ -160,14 +160,25 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
     memberRemovals: [] as Request[]
   }
 
-  // Recorded rather than performed: a hosted page is an external origin, and
-  // the truthy return keeps the popup-blocked fallback out of these rows.
   await page.addInitScript(() => {
     const opened: string[] = []
     Object.defineProperty(window, '__openedUrls', { get: () => opened })
+    const standInTab = new Proxy(window, {
+      get: (target, property) =>
+        property === 'location'
+          ? {
+              set href(destination: string) {
+                opened.push(destination)
+              }
+            }
+          : property === 'close'
+            ? () => {}
+            : Reflect.get(target, property),
+      set: () => true
+    })
     window.open = (url?: string | URL) => {
-      opened.push(String(url))
-      return window
+      if (url) opened.push(String(url))
+      return standInTab
     }
   })
 
@@ -183,8 +194,6 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
     features: SUBSCRIPTION_RAIL_ONLY,
     billingCapabilities: createWorkspaceBillingCapabilities(setup.workspace)
   })
-  // The handshake is the fallback channel; seeding it too keeps the two
-  // channels agreeing, so neither alone is what the rows rest on.
   await new FeatureFlagHelper(page).seedServerFlags({
     billing_sdk_subscription_enabled: true,
     billing_sdk_topup_enabled: false
@@ -235,16 +244,12 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
       jsonRoute({ billing_op_id: OPERATION_ID, status: 'pending' })
     )
   })
-  await page.route('**/api/billing/topup', (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
+  await page.route('**/api/billing/topup/checkout', (route) => {
     routes.topupRequests.push(route.request())
     return route.fulfill(
       jsonRoute({
-        billing_op_id: 'op-e2e-topup',
-        topup_id: 'topup-e2e',
-        status: 'completed',
-        amount_cents: 5_000
-      } satisfies CreateTopupResponse)
+        checkout_url: 'https://checkout.stripe.com/c/pay/cs_e2e_subscription'
+      } satisfies CreateTopupCheckoutResponse)
     )
   })
   await page.route('**/api/billing/ops/**', (route) => {
@@ -449,10 +454,8 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
 
     const topUp = new TopUpCreditsDialog(page)
     await topUp.open()
-    await topUp.root
-      .getByRole('button', { name: 'Add credits', exact: true })
-      .click()
-    await topUp.root.getByRole('button', { name: 'Pay $50.00' }).click()
+    await topUp.continueToPaymentButton.click()
+    await expect(topUp.checkoutOpenedHeading).toBeVisible()
 
     await expect.poll(() => routes.topupRequests.length).toBe(1)
     expect(routes.cancelRequests).toHaveLength(1)
@@ -462,7 +465,6 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     const [topup] = routes.topupRequests
     expect(transport(topup)).toBe('xhr')
     expect(idempotencyKey(topup)).toBeUndefined()
-    expect(topup.postDataJSON()).not.toHaveProperty('idempotency_key')
   })
 
   test('shows the server end date for a cancelled plan after a reload', async ({

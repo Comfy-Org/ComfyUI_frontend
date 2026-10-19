@@ -4,8 +4,7 @@ import type {
   BillingBalanceResponse,
   BillingOpStatusResponse,
   BillingStatusResponse,
-  CreateTopupResponse,
-  SavedPaymentMethod
+  CreateTopupCheckoutResponse
 } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -13,17 +12,13 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import {
-  mockWorkspaceList,
-  workspace
-} from '@e2e/fixtures/utils/workspaceMocks'
+import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const OPERATION_ID = 'op-e2e-topup-outcome'
-const HOSTED_URL = 'https://pay.stripe.example/invoice/op-e2e-topup-outcome'
+const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_e2e_outcome'
 
 const RAIL_FEATURES = {
   billing_control_enabled: true,
@@ -31,29 +26,12 @@ const RAIL_FEATURES = {
   billing_sdk_topup_enabled: true
 } satisfies RemoteConfig
 
-const SAVED_CARD = {
-  id: 'pm_e2e_visa',
-  type: 'card',
-  brand: 'visa',
-  last4: '4242',
-  is_default: true
-} satisfies SavedPaymentMethod
-
 const BALANCE = {
   amount_micros: 10_000_000,
   currency: 'usd'
 } satisfies BillingBalanceResponse
 
 const STARTED_AT = '2026-09-20T00:00:00Z'
-
-function purchase(status: CreateTopupResponse['status']): CreateTopupResponse {
-  return {
-    billing_op_id: OPERATION_ID,
-    topup_id: OPERATION_ID,
-    status,
-    amount_cents: 5_000
-  }
-}
 
 function operation(
   fields: Omit<BillingOpStatusResponse, 'id' | 'started_at'>
@@ -83,44 +61,41 @@ function billingStatus(pendingTopupId?: string): BillingStatusResponse {
   }
 }
 
-interface TopupScenario {
-  readonly savedCards: SavedPaymentMethod[]
-  readonly purchase: CreateTopupResponse
-  readonly operation: BillingOpStatusResponse
-}
-
 interface TopupRoutes {
-  readonly purchaseRequests: Request[]
+  readonly checkoutRequests: Request[]
+  readonly chargeRequests: Request[]
   readonly pollRequests: Request[]
-  readonly balanceRequests: Request[]
-  /** How many balance reads had happened when each purchase request arrived. */
-  readonly balanceReadsAtPurchase: number[]
+  payOnHostedCheckout: () => void
   /** What the next poll of the operation answers. */
   setOperation: (next: BillingOpStatusResponse) => void
-  /** Every URL the app handed to `window.open`, in order. */
-  hostedOpens: () => Promise<string[]>
+  checkoutOpens: () => Promise<string[]>
 }
 
-async function setupTopUp(
-  page: Page,
-  scenario: TopupScenario
-): Promise<TopupRoutes> {
+async function setupTopUp(page: Page): Promise<TopupRoutes> {
   const ws = workspace('personal', 'owner')
-  const purchaseRequests: Request[] = []
+  const checkoutRequests: Request[] = []
+  const chargeRequests: Request[] = []
   const pollRequests: Request[] = []
-  const balanceRequests: Request[] = []
-  const balanceReadsAtPurchase: number[] = []
-  let current = scenario.operation
+  let pendingTopupId: string | undefined
+  let current = operation({ status: 'pending', phase: 'in_progress' })
 
-  // The hosted page is recorded rather than loaded: network isolation blocks
-  // the provider origin, and the offer itself is what is under test.
   await page.addInitScript(() => {
     const opened: string[] = []
-    Object.defineProperty(window, '__hostedOpens', { get: () => opened })
-    window.open = (url?: string | URL) => {
-      opened.push(String(url))
-      return null
-    }
+    Object.defineProperty(window, '__checkoutOpens', { get: () => opened })
+    const standInTab = new Proxy(window, {
+      get: (target, property) =>
+        property === 'location'
+          ? {
+              set href(destination: string) {
+                opened.push(destination)
+              }
+            }
+          : property === 'close'
+            ? () => {}
+            : Reflect.get(target, property),
+      set: () => true
+    })
+    window.open = () => standInTab
   })
 
   await setupCloudApp(page, {
@@ -128,7 +103,6 @@ async function setupTopUp(
     features: RAIL_FEATURES,
     billingCapabilities: createBillingCapabilities(ws.id)
   })
-  // Otherwise the templates dialog opens once the top-up dialog closes.
   await page.route('**/api/settings', (route) =>
     route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -136,56 +110,49 @@ async function setupTopUp(
     billing_sdk_topup_enabled: true
   })
 
-  await page.route('**/api/billing/payment-methods', (route) =>
-    route.fulfill(jsonRoute(scenario.savedCards))
+  await page.route('**/api/billing/balance', (route) =>
+    route.fulfill(jsonRoute(BALANCE))
   )
-  await page.route('**/api/billing/balance', (route) => {
-    balanceRequests.push(route.request())
-    return route.fulfill(jsonRoute(BALANCE))
-  })
+  await page.route('**/api/billing/status', (route) =>
+    route.fulfill(jsonRoute(billingStatus(pendingTopupId)))
+  )
+  await page.route('**/api/billing/payment-methods', (route) =>
+    route.fulfill(jsonRoute([]))
+  )
   await page.route('**/api/billing/topup', (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
-    purchaseRequests.push(route.request())
-    balanceReadsAtPurchase.push(balanceRequests.length)
-    return route.fulfill(jsonRoute(scenario.purchase))
+    chargeRequests.push(route.request())
+    return route.fulfill({ status: 500, body: '' })
+  })
+  await page.route('**/api/billing/topup/checkout', (route) => {
+    checkoutRequests.push(route.request())
+    return route.fulfill(
+      jsonRoute({
+        checkout_url: CHECKOUT_URL
+      } satisfies CreateTopupCheckoutResponse)
+    )
   })
   await page.route(`**/api/billing/ops/${OPERATION_ID}`, (route) => {
     pollRequests.push(route.request())
+    if (current.status !== 'pending') pendingTopupId = undefined
     return route.fulfill(jsonRoute(current))
   })
 
   return {
-    purchaseRequests,
+    checkoutRequests,
+    chargeRequests,
     pollRequests,
-    balanceRequests,
-    balanceReadsAtPurchase,
+    payOnHostedCheckout: () => {
+      pendingTopupId = OPERATION_ID
+    },
     setOperation: (next) => {
       current = next
     },
-    hostedOpens: () =>
+    checkoutOpens: () =>
       page.evaluate(() => [
-        ...(window as unknown as { __hostedOpens: string[] }).__hostedOpens
+        ...(window as unknown as { __checkoutOpens: string[] }).__checkoutOpens
       ])
   }
-}
-
-/** Which workspaces hold an operation pointer in this tab's sessionStorage. */
-function operationPointerWorkspaces(page: Page): Promise<string[]> {
-  return page.evaluate(() =>
-    Object.keys(sessionStorage)
-      .filter((key) => key.startsWith('comfy:billing:operation:'))
-      .map((key) => key.split(':').at(-1) ?? '')
-  )
-}
-
-/** Switches through the profile menu, which reloads the app into the target. */
-async function switchWorkspace(page: Page, name: string) {
-  await page.getByRole('button', { name: 'Current user' }).click()
-  await page.getByTestId('workspace-switcher-trigger').click()
-  await Promise.all([
-    page.waitForEvent('load'),
-    page.getByTestId('workspace-switcher-list').getByText(name).click()
-  ])
 }
 
 /** A customer returning to the tab: the rail polls every pending operation now. */
@@ -193,275 +160,57 @@ async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
-async function openConfirmStep(page: Page) {
+async function openTopUp(page: Page) {
   const dialog = new TopUpCreditsDialog(page)
   await page.goto(`${APP_URL}/?topup=1`)
   await expect(dialog.heading).toBeVisible({ timeout: 45_000 })
-  await dialog.root
-    .getByRole('button', { name: 'Add credits', exact: true })
-    .click()
   return dialog
 }
 
-const payButton = (dialog: TopUpCreditsDialog) =>
-  dialog.root.getByRole('button', { name: 'Pay $50.00' })
-
 test.describe('Top-up rail outcomes', { tag: '@cloud' }, () => {
-  test('sends a purchase with no saved card to the hosted page and settles it on return', async ({
+  test('hands off to the hosted checkout and closes once the server settles the top-up', async ({
     page,
     toast
   }) => {
     test.setTimeout(90_000)
-    const routes = await setupTopUp(page, {
-      savedCards: [],
-      purchase: purchase('pending'),
-      operation: operation({
-        status: 'pending',
-        phase: 'awaiting_payment_method',
-        action_url: HOSTED_URL
-      })
-    })
+    const routes = await setupTopUp(page)
 
-    const dialog = await openConfirmStep(page)
-    await payButton(dialog).click()
+    const dialog = await openTopUp(page)
+    await dialog.continueToPaymentButton.click()
 
-    await expect(
-      dialog.root.getByRole('heading', { name: 'Verify your payment' })
-    ).toBeVisible()
-    const completeVerification = dialog.root.getByRole('button', {
-      name: 'Complete verification'
-    })
-    await completeVerification.click()
-    await expect.poll(() => routes.hostedOpens()).toEqual([HOSTED_URL])
+    await expect(dialog.checkoutOpenedHeading).toBeVisible()
+    await expect.poll(() => routes.checkoutOpens()).toEqual([CHECKOUT_URL])
 
-    const balanceReadsBeforeSettlement = routes.balanceRequests.length
+    routes.payOnHostedCheckout()
+    await expect
+      .poll(() => routes.pollRequests.length, { timeout: 15_000 })
+      .toBeGreaterThan(0)
+    await expect(dialog.checkoutOpenedHeading).toBeVisible()
+
     routes.setOperation(
       operation({ status: 'succeeded', completed_at: '2026-09-20T00:01:00Z' })
     )
     await returnToTab(page)
 
-    await expect(
-      toast.toastSuccesses.filter({ hasText: 'Credits added successfully!' })
-    ).toBeVisible()
-    await expect(dialog.root).toBeHidden()
-    expect(routes.balanceRequests.length).toBeGreaterThan(
-      balanceReadsBeforeSettlement
-    )
-    expect(routes.purchaseRequests).toHaveLength(1)
-    expect(routes.purchaseRequests[0].resourceType()).toBe('fetch')
-  })
-
-  test('fails a declined card the way the legacy rail does, without a retry', async ({
-    page,
-    toast
-  }) => {
-    test.setTimeout(60_000)
-    const routes = await setupTopUp(page, {
-      savedCards: [SAVED_CARD],
-      purchase: purchase('failed'),
-      operation: operation({
-        status: 'failed',
-        decline_reason: 'insufficient_funds',
-        recovery_action: 'replace_payment_method',
-        retryable: true,
-        completed_at: '2026-09-20T00:00:01Z'
-      })
-    })
-
-    const dialog = await openConfirmStep(page)
-    await payButton(dialog).click()
-
-    await expect(
-      toast.toastErrors.filter({ hasText: 'Purchase Failed' })
-    ).toBeVisible()
-    await expect(payButton(dialog)).toBeEnabled()
-    await expect(toast.toastSuccesses).toHaveCount(0)
-    // A settled purchase re-reads the balance; a declined one must not.
-    expect(routes.balanceRequests).toHaveLength(
-      routes.balanceReadsAtPurchase[0]
-    )
-    expect(routes.purchaseRequests).toHaveLength(1)
-    expect(routes.purchaseRequests[0].resourceType()).toBe('fetch')
-    expect(
-      routes.purchaseRequests.filter((r) => r.resourceType() === 'xhr')
-    ).toHaveLength(0)
-  })
-
-  test('sends one purchase for a double-clicked Pay', async ({ page }) => {
-    test.setTimeout(60_000)
-    const routes = await setupTopUp(page, {
-      savedCards: [SAVED_CARD],
-      purchase: purchase('pending'),
-      operation: operation({ status: 'pending', phase: 'in_progress' })
-    })
-
-    const dialog = await openConfirmStep(page)
-    await payButton(dialog).dblclick()
-
-    await expect.poll(() => routes.pollRequests.length).toBeGreaterThan(0)
-    await expect(payButton(dialog)).toBeDisabled()
-    expect(routes.purchaseRequests).toHaveLength(1)
-  })
-
-  test('adopts the open purchase instead of charging again after a reload', async ({
-    page
-  }) => {
-    test.setTimeout(90_000)
-    const routes = await setupTopUp(page, {
-      savedCards: [SAVED_CARD],
-      purchase: purchase('pending'),
-      operation: operation({ status: 'pending', phase: 'in_progress' })
-    })
-
-    const dialog = await openConfirmStep(page)
-    await payButton(dialog).click()
-    await expect.poll(() => routes.pollRequests.length).toBeGreaterThan(0)
-
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(billingStatus(OPERATION_ID)))
-    )
-    const pollsBeforeReload = routes.pollRequests.length
-    await page.goto(`${APP_URL}/?topup=1`)
-    await expect(dialog.heading).toBeVisible({ timeout: 45_000 })
-
-    await expect
-      .poll(() => routes.pollRequests.length)
-      .toBeGreaterThan(pollsBeforeReload)
-    await expect(
-      dialog.root.getByRole('button', { name: 'Add credits', exact: true })
-    ).toBeDisabled()
-    expect(routes.purchaseRequests).toHaveLength(1)
-  })
-
-  test('keeps a purchase started in one workspace out of another', async ({
-    page,
-    toast
-  }) => {
-    test.setTimeout(150_000)
-    const personal = workspace('personal', 'owner')
-    const team = workspace('team', 'owner')
-    const routes = await setupTopUp(page, {
-      savedCards: [SAVED_CARD],
-      purchase: purchase('pending'),
-      operation: operation({ status: 'pending', phase: 'in_progress' })
-    })
-    let active = personal
-    const personalOpen: { operationId?: string } = {}
-    await mockWorkspaceList(page, [personal, team])
-    await page.route('**/api/auth/token', (route) => {
-      const { workspace_id } = route.request().postDataJSON() as {
-        workspace_id?: string
-      }
-      active = workspace_id === team.id ? team : personal
-      return route.fulfill(
-        jsonRoute(
-          makeWorkspaceTokenResponse(
-            active,
-            `mock-workspace-token-${active.id}`
-          )
-        )
-      )
-    })
-    await page.route('**/api/billing/capabilities', (route) => {
-      if (route.request().method() !== 'GET') return route.fallback()
-      return route.fulfill(jsonRoute(createBillingCapabilities(active.id)))
-    })
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill(
-        jsonRoute(
-          billingStatus(
-            active.id === personal.id ? personalOpen.operationId : undefined
-          )
-        )
-      )
-    )
-
-    const dialog = await openConfirmStep(page)
-    await payButton(dialog).click()
-    await expect.poll(() => routes.pollRequests.length).toBeGreaterThan(0)
-    personalOpen.operationId = OPERATION_ID
-    await expect
-      .poll(() => operationPointerWorkspaces(page))
-      .toEqual([personal.id])
-
-    await dialog.root.getByRole('button', { name: 'Close' }).click()
-    await switchWorkspace(page, team.name)
-    await expect.poll(() => active.id).toBe(team.id)
-    const pollsBeforeTeam = routes.pollRequests.length
-    routes.setOperation(
-      operation({ status: 'succeeded', completed_at: '2026-09-20T00:01:00Z' })
-    )
-    const topUp = new TopUpCreditsDialog(page)
-    await page.goto(`${APP_URL}/?topup=1`)
-    await expect(topUp.heading).toBeVisible({ timeout: 45_000 })
-    await expect(
-      topUp.root.getByRole('button', { name: 'Add credits', exact: true })
-    ).toBeEnabled()
-    await returnToTab(page)
-
-    expect(routes.pollRequests).toHaveLength(pollsBeforeTeam)
-    await expect(toast.toastSuccesses).toHaveCount(0)
-    expect(await operationPointerWorkspaces(page)).toEqual([personal.id])
-
-    await topUp.root.getByRole('button', { name: 'Close' }).click()
-    await switchWorkspace(page, personal.name)
     await expect(
       toast.toastSuccesses.filter({ hasText: 'Credits added successfully' })
-    ).toBeVisible({ timeout: 45_000 })
-    expect(routes.pollRequests.length).toBeGreaterThan(pollsBeforeTeam)
-    await expect.poll(() => operationPointerWorkspaces(page)).toEqual([])
-    expect(routes.purchaseRequests).toHaveLength(1)
+    ).toBeVisible()
+    await expect(dialog.root).toBeHidden()
+    expect(routes.checkoutRequests).toHaveLength(1)
+    expect(routes.checkoutRequests[0].resourceType()).toBe('fetch')
+    expect(routes.chargeRequests).toHaveLength(0)
   })
 
-  test('shows a failed bank verification with its reason and does not offer it again', async ({
-    page,
-    toast
+  test('creates one checkout for a double-clicked Continue to payment', async ({
+    page
   }) => {
-    test.setTimeout(90_000)
-    const routes = await setupTopUp(page, {
-      savedCards: [SAVED_CARD],
-      purchase: purchase('pending'),
-      operation: operation({
-        status: 'pending',
-        phase: 'awaiting_invoice_payment',
-        authentication_state: 'requires_action',
-        action_url: HOSTED_URL
-      })
-    })
+    test.setTimeout(60_000)
+    const routes = await setupTopUp(page)
 
-    const dialog = await openConfirmStep(page)
-    await payButton(dialog).click()
-    await dialog.root
-      .getByRole('button', { name: 'Complete verification' })
-      .click()
-    await expect.poll(() => routes.hostedOpens()).toEqual([HOSTED_URL])
+    const dialog = await openTopUp(page)
+    await dialog.continueToPaymentButton.dblclick()
 
-    const balanceReadsBeforeFailure = routes.balanceRequests.length
-    routes.setOperation(
-      operation({
-        status: 'pending',
-        phase: 'awaiting_invoice_payment',
-        authentication_state: 'failed_retryable',
-        decline_reason: 'authentication_failed',
-        action_url: HOSTED_URL
-      })
-    )
-    await returnToTab(page)
-
-    await expect(
-      dialog.root.getByText(
-        "We couldn't complete payment verification. Please try again."
-      )
-    ).toBeVisible()
-    await expect(
-      dialog.root.getByRole('button', { name: 'Start over' })
-    ).toBeVisible()
-    await expect(
-      dialog.root.getByRole('button', { name: 'Complete verification' })
-    ).toHaveCount(0)
-    await expect(toast.toastSuccesses).toHaveCount(0)
-    expect(routes.balanceRequests).toHaveLength(balanceReadsBeforeFailure)
-    expect(await routes.hostedOpens()).toEqual([HOSTED_URL])
-    expect(routes.purchaseRequests).toHaveLength(1)
+    await expect(dialog.checkoutOpenedHeading).toBeVisible()
+    expect(routes.checkoutRequests).toHaveLength(1)
   })
 })

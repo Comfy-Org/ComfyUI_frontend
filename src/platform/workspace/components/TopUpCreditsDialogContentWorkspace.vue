@@ -1,80 +1,49 @@
 <template>
   <Card class="flex min-h-[500px] w-[min(512px,95vw)] flex-col shadow-md">
-    <!-- Header -->
     <div class="flex items-center justify-between p-8">
-      <div class="flex items-center gap-2">
-        <button
-          v-if="step === 'confirm'"
-          class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
-          :disabled="paymentLocked"
-          :aria-label="$t('g.back')"
-          @click="showAmountStep"
-        >
-          <i class="icon-[lucide--arrow-left] size-5" />
-        </button>
-        <DialogTitle
-          v-if="step === 'amount' || step === 'confirm'"
-          class="m-0 font-bold"
-        >
-          {{
-            step === 'confirm'
-              ? $t('credits.topUp.confirmTitle')
-              : isInsufficientCredits
-                ? $t('credits.topUp.addMoreCreditsToRun')
-                : $t('credits.topUp.addMoreCredits')
-          }}
-        </DialogTitle>
-      </div>
+      <DialogTitle v-if="isAmountStep" class="m-0 font-bold">
+        {{
+          isInsufficientCredits
+            ? $t('credits.topUp.addMoreCreditsToRun')
+            : $t('credits.topUp.addMoreCredits')
+        }}
+      </DialogTitle>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+        class="ml-auto cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         :aria-label="$t('g.close')"
-        @click="() => handleClose(!topupIsParkedWithoutLink)"
+        @click="closeDialog"
       >
         <i class="icon-[lucide--x] size-6" />
       </button>
     </div>
     <p
-      v-if="isInsufficientCredits && step === 'amount'"
+      v-if="isInsufficientCredits && isAmountStep"
       class="m-0 px-8 text-sm text-muted-foreground"
     >
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
-    <template v-if="step === 'confirm'">
-      <p class="m-0 px-8 text-sm text-muted-foreground">
-        {{ $t('credits.topUp.confirmSubtitle') }}
-      </p>
-      <div class="flex flex-col gap-3 px-8 pt-6 font-semibold">
-        <span class="flex items-center gap-2 py-2 text-2xl tabular-nums">
-          <i class="icon-[lucide--coins] size-5 text-credit" />
-          {{ formatNumber(creditsModel) }}
-        </span>
-        <div class="flex items-center justify-between border-t pt-4 text-base">
-          <span>
-            {{ $t('subscription.preview.totalDueToday') }}
-          </span>
-          <span class="tabular-nums">
-            {{ displayTotal }}
-          </span>
-        </div>
-      </div>
-      <p
-        v-if="checkoutRecovery === 'refused'"
-        class="m-0 px-8 pt-4 text-sm text-muted-foreground"
-      >
-        {{ $t('credits.topUp.noPaymentMethodCheckoutHint') }}
+    <div
+      v-if="isHandOffStep"
+      class="flex flex-col items-center gap-3 px-8 text-center"
+    >
+      <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
+        {{ $t('credits.topUp.checkoutOpenedTitle') }}
+      </DialogTitle>
+      <p class="m-0 text-sm text-balance text-muted-foreground">
+        {{ $t('credits.topUp.checkoutOpenedBody') }}
       </p>
       <p
-        v-else-if="checkoutRecovery === 'failed'"
+        v-if="state.kind === 'checkoutOpened' && state.reopenFailed"
         role="alert"
-        class="m-0 px-8 pt-4 text-sm text-destructive"
+        class="m-0 text-sm text-destructive"
       >
         {{ $t('credits.topUp.checkoutOpenFailed') }}
       </p>
-    </template>
+    </div>
 
     <div
-      v-if="step === 'checkoutBlocked'"
+      v-if="state.kind === 'checkoutBlocked'"
       class="flex flex-col items-center gap-3 px-8 text-center"
     >
       <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
@@ -85,260 +54,194 @@
       </p>
     </div>
 
-    <template v-if="step === 'verifying'">
-      <div class="flex flex-col items-center gap-3 px-8 text-center">
-        <i class="icon-[lucide--shield-alert] size-10 text-warning" />
-        <DialogTitle class="m-0 text-xl lg:text-2xl">
-          {{ $t('credits.topUp.verifyTitle') }}
-        </DialogTitle>
-        <p class="m-0 text-sm text-balance text-muted-foreground">
-          {{ verifyingBody }}
-        </p>
-        <span v-if="topupReconciliationOperationId" class="font-mono text-sm">
-          {{ topupReconciliationOperationId }}
-        </span>
+    <template v-if="isAmountStep">
+      <div class="px-8">
+        <h3 class="m-0 text-sm font-normal text-muted-foreground">
+          {{ $t('credits.topUp.selectAmount') }}
+        </h3>
+        <div class="flex gap-2 pt-3">
+          <Button
+            v-for="amount in TOPUP_AMOUNT_PRESETS_USD"
+            :key="amount"
+            :autofocus="amount === 50"
+            variant="secondary"
+            size="lg"
+            :class="
+              cn(
+                'h-10 w-full text-base focus-visible:ring-ring',
+                selectedPreset === amount && 'bg-muted'
+              )
+            "
+            @click="handlePresetClick(amount)"
+          >
+            ${{ amount }}
+          </Button>
+        </div>
       </div>
+      <div class="flex gap-2 px-8 pt-8">
+        <div
+          class="flex min-w-0 flex-1 flex-col gap-3"
+          data-testid="top-up-pay-amount"
+        >
+          <div class="text-sm text-muted-foreground">
+            {{ $t('credits.topUp.youPay') }}
+          </div>
+          <NumberField
+            :model-value="payAmount"
+            :min="0"
+            :max="MAX_AMOUNT"
+            :step="getStepAmount(payAmount)"
+            :format-options="{ maximumFractionDigits: 0 }"
+            @update:model-value="handlePayAmountChange"
+          >
+            <NumberFieldDecrement />
+            <span class="shrink-0 text-base font-semibold">$</span>
+            <NumberFieldInput
+              :aria-label="$t('credits.topUp.youPay')"
+              class="text-lg font-medium"
+            />
+            <NumberFieldIncrement />
+          </NumberField>
+        </div>
+
+        <div class="flex min-w-0 flex-1 flex-col gap-3">
+          <div class="text-sm text-muted-foreground">
+            {{ $t('credits.topUp.youGet') }}
+          </div>
+          <NumberField
+            v-model="creditsModel"
+            :min="0"
+            :max="usdToCredits(MAX_AMOUNT)"
+            :step="getCreditsStepAmount(creditsModel)"
+            :format-options="{ maximumFractionDigits: 0 }"
+          >
+            <NumberFieldDecrement />
+            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
+            <NumberFieldInput
+              :aria-label="$t('credits.topUp.youGet')"
+              class="text-lg font-medium"
+            />
+            <NumberFieldIncrement />
+          </NumberField>
+        </div>
+      </div>
+
+      <p
+        v-if="negativeBalanceCredits !== null"
+        class="m-0 px-8 pt-4 text-sm text-muted-foreground"
+      >
+        {{
+          $t(
+            'credits.topUp.negativeBalanceNotice',
+            { credits: formatNumber(negativeBalanceCredits) },
+            negativeBalanceCredits
+          )
+        }}
+      </p>
+      <p
+        v-if="isBelowMin"
+        class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
+      >
+        <i class="icon-[lucide--coins] size-4" />
+        {{
+          $t('credits.topUp.minRequired', {
+            credits: formatNumber(usdToCredits(MIN_AMOUNT))
+          })
+        }}
+      </p>
+      <p
+        v-if="showCeilingWarning"
+        class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-warning"
+      >
+        <i class="icon-[lucide--coins] size-4" />
+        {{
+          $t('credits.topUp.maxAllowed', {
+            credits: formatNumber(usdToCredits(MAX_AMOUNT))
+          })
+        }}
+        <span>{{ $t('credits.topUp.needMore') }}</span>
+        <a
+          href="https://comfy.org/cloud/enterprise/"
+          target="_blank"
+          class="ml-1 text-inherit"
+          >{{ $t('credits.topUp.contactUs') }}</a
+        >
+      </p>
+      <p
+        v-if="state.kind === 'amount' && state.checkoutOpenFailed"
+        role="alert"
+        class="m-0 px-8 pt-4 text-sm text-destructive"
+      >
+        {{ $t('credits.topUp.checkoutOpenFailed') }}
+      </p>
     </template>
 
-    <!-- Preset amount buttons -->
-    <div v-if="step === 'amount'" class="px-8">
-      <h3 class="m-0 text-sm font-normal text-muted-foreground">
-        {{ $t('credits.topUp.selectAmount') }}
-      </h3>
-      <div class="flex gap-2 pt-3">
-        <Button
-          v-for="amount in TOPUP_AMOUNT_PRESETS_USD"
-          :key="amount"
-          :autofocus="amount === 50"
-          variant="secondary"
-          size="lg"
-          :class="
-            cn(
-              'h-10 w-full text-base focus-visible:ring-ring',
-              selectedPreset === amount && 'bg-muted'
-            )
-          "
-          @click="handlePresetClick(amount)"
-        >
-          ${{ amount }}
-        </Button>
-      </div>
-    </div>
-    <!-- Amount (USD) / Credits -->
-    <div v-if="step === 'amount'" class="flex gap-2 px-8 pt-8">
-      <!-- You Pay -->
-      <div
-        class="flex min-w-0 flex-1 flex-col gap-3"
-        data-testid="top-up-pay-amount"
-      >
-        <div class="text-sm text-muted-foreground">
-          {{ $t('credits.topUp.youPay') }}
-        </div>
-        <NumberField
-          :model-value="payAmount"
-          :min="0"
-          :max="MAX_AMOUNT"
-          :step="getStepAmount(payAmount)"
-          :format-options="{ maximumFractionDigits: 0 }"
-          @update:model-value="handlePayAmountChange"
-        >
-          <NumberFieldDecrement />
-          <span class="shrink-0 text-base font-semibold">$</span>
-          <NumberFieldInput
-            :aria-label="$t('credits.topUp.youPay')"
-            class="text-lg font-medium"
-          />
-          <NumberFieldIncrement />
-        </NumberField>
-      </div>
-
-      <!-- You Get -->
-      <div class="flex min-w-0 flex-1 flex-col gap-3">
-        <div class="text-sm text-muted-foreground">
-          {{ $t('credits.topUp.youGet') }}
-        </div>
-        <NumberField
-          v-model="creditsModel"
-          :min="0"
-          :max="usdToCredits(MAX_AMOUNT)"
-          :step="getCreditsStepAmount(creditsModel)"
-          :format-options="{ maximumFractionDigits: 0 }"
-        >
-          <NumberFieldDecrement />
-          <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
-          <NumberFieldInput
-            :aria-label="$t('credits.topUp.youGet')"
-            class="text-lg font-medium"
-          />
-          <NumberFieldIncrement />
-        </NumberField>
-      </div>
-    </div>
-
-    <!-- Warnings -->
-
-    <p
-      v-if="negativeBalanceCredits !== null && step === 'amount'"
-      class="m-0 px-8 pt-4 text-sm text-muted-foreground"
-    >
-      {{
-        $t(
-          'credits.topUp.negativeBalanceNotice',
-          { credits: formatNumber(negativeBalanceCredits) },
-          negativeBalanceCredits
-        )
-      }}
-    </p>
-    <p
-      v-if="isBelowMin && step === 'amount'"
-      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
-    >
-      <i class="icon-[lucide--coins] size-4" />
-      {{
-        $t('credits.topUp.minRequired', {
-          credits: formatNumber(usdToCredits(MIN_AMOUNT))
-        })
-      }}
-    </p>
-    <p
-      v-if="showCeilingWarning && step === 'amount'"
-      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-warning"
-    >
-      <i class="icon-[lucide--coins] size-4" />
-      {{
-        $t('credits.topUp.maxAllowed', {
-          credits: formatNumber(usdToCredits(MAX_AMOUNT))
-        })
-      }}
-      <span>{{ $t('credits.topUp.needMore') }}</span>
-      <a
-        href="https://comfy.org/cloud/enterprise/"
-        target="_blank"
-        class="ml-1 text-inherit"
-        >{{ $t('credits.topUp.contactUs') }}</a
-      >
-    </p>
-
     <div class="mt-auto flex flex-col gap-8 p-8">
-      <div v-if="step === 'verifying'">
+      <div v-if="isHandOffStep" class="flex flex-col items-center gap-4">
         <Button
-          v-if="topupIsFailedRetryable"
-          variant="primary"
-          size="lg"
-          class="w-full"
-          @click="startOverTopup"
-        >
-          {{ $t('credits.topUp.startOver') }}
-        </Button>
-        <Button
-          v-else-if="topupIsParkedWithoutLink"
           variant="secondary"
           size="lg"
           class="w-full"
-          @click="() => handleClose(false)"
+          @click="closeDialog"
         >
-          {{ $t('g.ok') }}
+          {{ $t('g.close') }}
         </Button>
         <Button
-          v-else-if="!topupReconciliationOperationId"
-          variant="primary"
-          size="lg"
-          class="w-full"
-          :disabled="!topupActionUrl || !canTopUp"
-          :loading="!topupActionUrl"
-          :aria-label="$t('subscription.preview.completeVerification')"
-          @click="openTopupVerification"
+          variant="link"
+          size="md"
+          :disabled="!canTopUp"
+          :loading="state.kind === 'reopeningCheckout'"
+          @click="reopenCheckout"
         >
-          {{ $t('subscription.preview.completeVerification') }}
+          {{ $t('credits.topUp.reopenCheckout') }}
+          <i class="icon-[lucide--external-link] size-4" />
         </Button>
       </div>
       <Button
-        v-else-if="step === 'checkoutBlocked'"
+        v-else-if="state.kind === 'checkoutBlocked'"
+        as="a"
+        :href="state.checkoutUrl"
+        target="_blank"
+        rel="noopener"
         variant="primary"
         size="lg"
         class="w-full"
-        @click="openBlockedCheckout"
+        @click="followBlockedCheckoutLink"
       >
         {{ $t('credits.topUp.openCheckout') }}
         <i class="icon-[lucide--external-link] size-4" />
       </Button>
-      <div v-else class="flex flex-col gap-2">
+      <template v-else>
         <Button
-          v-if="step === 'confirm' && topupActionUrl && canTopUp"
           variant="primary"
           size="lg"
-          @click="openTopupVerification"
-        >
-          {{ $t('subscription.preview.completeVerification') }}
-        </Button>
-        <Button
-          v-if="step === 'confirm' && checkoutRecovery"
-          variant="primary"
-          size="lg"
-          :disabled="!isValidAmount || paymentLocked || !canTopUp"
-          :loading="paymentInFlight"
-          @click="continueToCheckout"
-        >
-          {{ $t('credits.topUp.continueToCheckout') }}
-          <i class="icon-[lucide--external-link] size-4" />
-        </Button>
-        <Button
-          v-else
-          :disabled="!isValidAmount || paymentLocked || !canTopUp"
-          :loading="paymentInFlight"
-          :variant="
-            step === 'confirm' && topupActionUrl ? 'tertiary' : 'primary'
-          "
-          size="lg"
-          class="tabular-nums"
+          :disabled="!canContinue"
+          :loading="state.kind === 'creatingCheckout'"
           :data-dd-action-name="BILLING_ACTION_NAME.topUpPrimary"
-          @click="handlePrimaryAction"
+          @click="continueToPayment"
         >
-          {{
-            step === 'confirm'
-              ? $t('credits.topUp.payAmount', { amount: displayTotal })
-              : $t('subscription.addCredits')
-          }}
-        </Button>
-        <Button
-          v-if="step === 'confirm' && checkoutRecovery"
-          variant="secondary"
-          size="lg"
-          :disabled="paymentLocked"
-          :loading="openingDefaultCardPortal"
-          @click="setDefaultCard"
-        >
-          {{ $t('credits.topUp.setDefaultCard') }}
-        </Button>
-      </div>
-      <div
-        v-if="step === 'amount'"
-        class="flex items-center justify-center gap-1"
-      >
-        <a
-          :href="pricingUrl"
-          target="_blank"
-          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
-        >
-          {{ $t('credits.topUp.viewPricing') }}
+          {{ $t('credits.topUp.buyCredits') }}
           <i class="icon-[lucide--external-link] size-4" />
-        </a>
-      </div>
+        </Button>
+        <div class="flex items-center justify-center gap-1">
+          <a
+            :href="pricingUrl"
+            target="_blank"
+            class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
+          >
+            {{ $t('credits.topUp.viewPricing') }}
+            <i class="icon-[lucide--external-link] size-4" />
+          </a>
+        </div>
+      </template>
     </div>
   </Card>
 </template>
 
 <script setup lang="ts">
-import Card from '@/components/ui/card/Card.vue'
-import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
-import {
-  getTopupAmountPreset,
-  TOPUP_AMOUNT_PRESETS_USD
-} from '@comfyorg/account-core/billing'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { TOPUP_AMOUNT_PRESETS_USD } from '@comfyorg/account-core/billing'
+import { cn } from '@comfyorg/tailwind-utils'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import {
   centsToCredits,
@@ -346,38 +249,33 @@ import {
   usdToCredits
 } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import Card from '@/components/ui/card/Card.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
-import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
-import { usePendingTopup } from '@/composables/billing/usePendingTopup'
-import { isCloud } from '@/platform/distribution/types'
+import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import {
-  WorkspaceApiError,
-  workspaceApi
-} from '@/platform/workspace/api/workspaceApi'
 import type { BillingTab } from '@/platform/workspace/billing/billingTab'
 import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
-import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
+import { watchHostedTopupCheckout } from '@/platform/workspace/billing/openHostedBillingTab'
+import type {
+  TopupCheckoutDialogEvent,
+  TopupCheckoutDialogState
+} from '@/platform/workspace/billing/topupCheckoutDialogState'
+import {
+  INITIAL_TOPUP_CHECKOUT_DIALOG_STATE,
+  transitionTopupCheckoutDialog
+} from '@/platform/workspace/billing/topupCheckoutDialogState'
 import { topupCheckoutReturnUrl } from '@/platform/workspace/billing/topupCheckoutReturnUrl'
-import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
-import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
+import { useTopupCheckout } from '@/platform/workspace/composables/useTopupCheckout'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
-  bindOperationToCheckoutJourney,
-  clearCheckoutJourney,
-  getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
   resolveEntrySource
@@ -389,25 +287,23 @@ import {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { getErrorMessage } from '@/utils/errorUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
   source?: PaymentIntentSource
 }>()
 
-const { n, t } = useI18n()
-const dialogStore = useDialogStore()
-const settingsDialog = useSettingsDialog()
-const telemetry = useTelemetry()
-const toast = useToast()
-const { buildDocsUrl, docsPaths } = useExternalLink()
-const { balance, fetchBalance, fetchStatus } = useBillingContext()
-const billingCapabilities = useBillingCapabilities()
-const { canTopUp } = billingCapabilities
+const MIN_AMOUNT = 5
+const MAX_AMOUNT = 10000
+const DEFAULT_AMOUNT = 50
 
+const dialogStore = useDialogStore()
+const telemetry = useTelemetry()
+const { buildDocsUrl, docsPaths } = useExternalLink()
+const { balance } = useBillingContext()
+const { canTopUp } = useBillingCapabilities()
 const workspaceStore = useTeamWorkspaceStore()
+const { createHostedCheckout } = useTopupCheckout()
 
 function enterTopupJourney(): void {
   const workspaceId = workspaceStore.activeWorkspaceId
@@ -431,60 +327,29 @@ function enterTopupJourney(): void {
 
 onMounted(enterTopupJourney)
 useCheckoutJourneyExit()
-const {
-  billingClient,
-  isAddingCredits,
-  topupOperation,
-  topup,
-  createHostedCheckout,
-  dismissOperation,
-  adoptPendingOperation
-} = useTopupOperation()
-// Start over invalidates the attempt in flight: on the SDK rail the purchase
-// call resolves only at settlement, so a superseded attempt must not unlock
-// or close the dialog for the attempt that replaced it.
-let purchaseAttempt = 0
-const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
-const topupAuthenticationError = computed(
-  () => topupOperation.value?.errorMessage ?? null
-)
-const topupIsFailedRetryable = computed(
-  () => topupOperation.value?.authenticationState === 'failed_retryable'
-)
-// Parked on the customer with no link to send them to. The operation stays open
-// server-side, and that also refuses a replacement purchase, so this state
-// explains the wait rather than offering a restart that would be rejected.
-// Leaving this screen keeps the pending-top-up marker: the copy sends the
-// customer off to pay elsewhere, and the marker outlives the wait, so it is
-// what refreshes the balance when they come back to a settled purchase.
-// Latent on this rail today — only the legacy hosted-checkout path sets the
-// marker, so usually there is none here to keep. Preserving it is still right,
-// and it starts paying off if this rail ever sets one when it parks.
-const topupIsParkedWithoutLink = computed(
-  () =>
-    !topupActionUrl.value &&
-    isBlockedOnCustomerPhase(topupOperation.value?.phase)
-)
-const topupReconciliationOperationId = computed(() =>
-  topupOperation.value?.status === 'reconciliation_needed'
-    ? topupOperation.value.opId
-    : null
-)
-const verifyingBody = computed(() => {
-  if (topupReconciliationOperationId.value) {
-    return t('billingOperation.reconciliationDetail')
-  }
-  if (topupAuthenticationError.value) return topupAuthenticationError.value
-  if (topupIsParkedWithoutLink.value) {
-    return t('credits.topUp.awaitingBankApprovalBody')
-  }
-  return t('credits.topUp.verifyBody')
+
+let unmounted = false
+onUnmounted(() => {
+  unmounted = true
 })
 
-// Constants
-const MIN_AMOUNT = 5
-const MAX_AMOUNT = 10000
-const DEFAULT_AMOUNT = 50
+const state = shallowRef<TopupCheckoutDialogState>(
+  INITIAL_TOPUP_CHECKOUT_DIALOG_STATE
+)
+
+function dispatch(event: TopupCheckoutDialogEvent): void {
+  state.value = transitionTopupCheckoutDialog(state.value, event)
+}
+
+const isAmountStep = computed(
+  () => state.value.kind === 'amount' || state.value.kind === 'creatingCheckout'
+)
+
+const isHandOffStep = computed(
+  () =>
+    state.value.kind === 'checkoutOpened' ||
+    state.value.kind === 'reopeningCheckout'
+)
 
 function wholeDollarsOrNull(cents: number | null | undefined): number | null {
   if (cents == null) return null
@@ -492,7 +357,6 @@ function wholeDollarsOrNull(cents: number | null | undefined): number | null {
   return Number.isInteger(dollars) ? dollars : null
 }
 
-// State
 const suggestedAmount = computed(() =>
   wholeDollarsOrNull(balance.value?.suggestedTopupAmountCents)
 )
@@ -503,20 +367,12 @@ const payAmount = ref(suggestedAmount.value ?? DEFAULT_AMOUNT)
 const amountEditedByUser = ref(false)
 
 watch(suggestedAmount, (amount) => {
-  if (amount === null || amountEditedByUser.value || step.value !== 'amount')
-    return
+  if (amount === null || amountEditedByUser.value) return
+  if (state.value.kind !== 'amount') return
   payAmount.value = amount
   selectedPreset.value = null
 })
-const loading = ref(false)
-const paymentSubmitted = ref(false)
-const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
-const blockedCheckoutUrl = ref<string | null>(null)
-const step = ref<'amount' | 'confirm' | 'verifying' | 'checkoutBlocked'>(
-  topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
-)
 
-// Computed
 const pricingUrl = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
 )
@@ -534,6 +390,8 @@ const isValidAmount = computed(
   () => payAmount.value >= MIN_AMOUNT && payAmount.value <= MAX_AMOUNT
 )
 
+const canContinue = computed(() => canTopUp.value && isValidAmount.value)
+
 const negativeBalanceCredits = computed(() => {
   const info = balance.value
   const cents = info?.effectiveBalanceMicros
@@ -545,49 +403,10 @@ const negativeBalanceCredits = computed(() => {
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
 const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
 
-const displayTotal = computed(() =>
-  n(payAmount.value, {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  })
-)
-
-const paymentInFlight = computed(
-  () =>
-    loading.value ||
-    paymentSubmitted.value ||
-    isAddingCredits.value ||
-    !!topupOperation.value
-)
-
-const openingDefaultCardPortal = ref(false)
-
-const paymentLocked = computed(
-  () => paymentInFlight.value || openingDefaultCardPortal.value
-)
-
-watch(
-  [isAddingCredits, topupOperation, canTopUp],
-  ([addingCredits, operation, allowed]) => {
-    if (addingCredits || operation) loading.value = false
-    if (step.value === 'verifying' && !addingCredits && !operation) {
-      step.value = 'amount'
-      return
-    }
-    if (operation && allowed) {
-      step.value = 'verifying'
-    }
-  }
-)
-
-// Utility functions
 function formatNumber(num: number): string {
   return num.toLocaleString('en-US')
 }
 
-// Step amount functions
 function getStepAmount(currentAmount: number): number {
   if (currentAmount < 100) return 5
   if (currentAmount < 1000) return 50
@@ -599,7 +418,6 @@ function getCreditsStepAmount(currentCredits: number): number {
   return usdToCredits(getStepAmount(usdAmount))
 }
 
-// Event handlers
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
@@ -612,390 +430,68 @@ function handlePresetClick(amount: number) {
   amountEditedByUser.value = true
 }
 
-function handlePrimaryAction() {
-  if (step.value === 'amount') {
-    telemetry?.trackBillingEvent({
-      operation: 'topup',
-      stage: 'intent',
-      outcome: 'pending',
-      payment_intent_source: source
-    })
-    step.value = 'confirm'
-    return
-  }
-  void handleBuy()
-}
-
-function openTopupVerification() {
-  if (!topupActionUrl.value) return
-  window.open(topupActionUrl.value, '_blank', 'noopener,noreferrer')
-}
-
-function showAmountStep() {
-  checkoutRecovery.value = null
-  step.value = 'amount'
-}
-
-function startOverTopup() {
-  purchaseAttempt += 1
-  const operation = topupOperation.value
-  if (operation) dismissOperation(operation.opId)
-  paymentSubmitted.value = false
-  showAmountStep()
-}
-
-function handleClose(clearTracking = true) {
-  if (clearTracking) {
-    usePendingTopup().clearPendingTopup()
-  }
+function closeDialog() {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
-async function handleBuy() {
-  if (paymentLocked.value || !isValidAmount.value || !canTopUp.value) {
-    return
-  }
-
-  purchaseAttempt += 1
-  const attempt = purchaseAttempt
-  const isCurrentAttempt = () => attempt === purchaseAttempt
-  checkoutRecovery.value = null
-  loading.value = true
-  paymentSubmitted.value = true
-  const attemptStartedAt = Date.now()
-  const amountCents = payAmount.value * 100
-  try {
-    telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    telemetry?.trackBillingEvent({
-      operation: 'topup',
-      stage: 'started',
-      outcome: 'pending',
-      payment_intent_source: source,
-      amount_cents: amountCents,
-      amount_preset: getTopupAmountPreset(selectedPreset.value)
-    })
-    telemetry?.trackBillingEvent({
-      operation: 'operation',
-      stage: 'started',
-      outcome: 'pending',
-      operation_type: 'topup',
-      billing_client: billingClient
-    })
-
-    const submittingJourney = getActiveCheckoutJourney()
-    if (submittingJourney) {
-      trackCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
-    }
-
-    const response = await topup(amountCents)
-    if (!response) {
-      if (isCurrentAttempt()) paymentSubmitted.value = false
-      reportTerminal(attemptStartedAt, {
-        stage: 'failed',
-        outcome: 'failure',
-        failure_category: 'unknown'
-      })
-      return
-    }
-
-    // Only correlate the response to the journey that submitted it: the user
-    // may have closed this dialog and started another journey while the
-    // request was in flight, and that later journey must not be bound here.
-    const submittingJourneyStillActive =
-      submittingJourney !== null &&
-      getActiveCheckoutJourney()?.journey_id === submittingJourney.journey_id
-    if (submittingJourneyStillActive) {
-      const linkedJourney = bindOperationToCheckoutJourney(
-        response.billing_op_id
-      )
-      if (linkedJourney) {
-        trackCheckoutJourneyPhase(linkedJourney, {
-          phase: 'operation_linked',
-          billing_op_id: response.billing_op_id
-        })
-      }
-    }
-
-    reportResponseTerminal(response, attemptStartedAt)
-
-    if (response.status === 'completed') {
-      if (
-        getActiveCheckoutJourney()?.billing_op_id === response.billing_op_id
-      ) {
-        clearCheckoutJourney()
-      }
-      toast.success(t('credits.topUp.purchaseSuccess'), { duration: 5000 })
-      await Promise.allSettled([fetchBalance(), fetchStatus()])
-      if (!isCurrentAttempt()) return
-      handleClose(false)
-      settingsDialog.show(isCloud ? 'workspace' : 'credits')
-    } else if (response.status === 'pending') {
-      void adoptPendingOperation(response.billing_op_id, {
-        attemptStartedAt,
-        paymentIntentSource: source
-      })
-        .then(() => {
-          if (isCurrentAttempt()) paymentSubmitted.value = false
-        })
-        .catch(() => {
-          reportPurchaseError(
-            attemptStartedAt,
-            response.billing_op_id,
-            undefined,
-            isCurrentAttempt()
-          )
-        })
-    } else {
-      if (isCurrentAttempt()) paymentSubmitted.value = false
-      toast.error(t('credits.topUp.purchaseError'), {
-        description: t('credits.topUp.unknownError')
-      })
-    }
-  } catch (error) {
-    reportPurchaseError(attemptStartedAt, undefined, error, isCurrentAttempt())
-  } finally {
-    if (isCurrentAttempt()) loading.value = false
-  }
-}
-
-function reportPurchaseError(
-  attemptStartedAt: number,
-  billingOpId?: string,
-  error?: unknown,
-  currentAttempt = true
-) {
-  if (currentAttempt) paymentSubmitted.value = false
-  console.error('Purchase failed', ...(error === undefined ? [] : [error]))
-
-  reportTerminal(
-    attemptStartedAt,
-    {
-      stage: 'failed',
-      outcome: 'failure',
-      failure_category:
-        error === undefined ? 'unknown' : categorizeBillingApiError(error)
-    },
-    billingOpId
-  )
-  if (isNoPaymentMethodRefusal(error)) {
-    if (currentAttempt) checkoutRecovery.value = 'refused'
-    return
-  }
-  toast.error(t('credits.topUp.purchaseError'), {
-    description: purchaseErrorDetail(error)
-  })
-}
-
-function isNoPaymentMethodRefusal(error: unknown): boolean {
-  return (
-    error instanceof WorkspaceApiError && error.code === 'NO_PAYMENT_METHOD'
-  )
-}
-
-let unmounted = false
-let stopDefaultCardReturnRefresh: (() => void) | null = null
-onUnmounted(() => {
-  unmounted = true
-  stopDefaultCardReturnRefresh?.()
-})
-
-function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
+function handOff(checkoutTab: BillingTab, checkoutUrl: string) {
   checkoutTab.navigate(checkoutUrl)
-  usePendingTopup().startPendingTopup()
-  watchForTopupBalanceUpdate({
-    source: {
-      current: () => balance.value?.amountMicros ?? null,
-      fetch: async () => {
-        const [balanceRead, statusRead] = await Promise.allSettled([
-          fetchBalance(),
-          fetchStatus()
-        ])
-        if (balanceRead.status === 'rejected') throw balanceRead.reason
-        if (statusRead.status === 'rejected') throw statusRead.reason
-        return balance.value?.amountMicros ?? null
-      }
-    }
-  })
-  handleClose(false)
+  watchHostedTopupCheckout()
 }
 
-function refreshOnDefaultCardReturn() {
-  stopDefaultCardReturnRefresh?.()
-  stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
-    const [paymentMethods] = await Promise.allSettled([
-      workspaceApi.listSavedPaymentMethods(),
-      fetchStatus(),
-      fetchBalance(),
-      billingCapabilities.refresh()
-    ])
-    if (
-      paymentMethods.status !== 'fulfilled' ||
-      !paymentMethods.value.some((method) => method.is_default)
-    ) {
-      return
-    }
-    stopDefaultCardReturnRefresh?.()
-    stopDefaultCardReturnRefresh = null
-    checkoutRecovery.value = null
+function trackPaymentIntent() {
+  telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
+  telemetry?.trackBillingEvent({
+    operation: 'topup',
+    stage: 'intent',
+    outcome: 'pending',
+    payment_intent_source: source
   })
 }
 
-async function setDefaultCard() {
-  if (paymentLocked.value) return
-  const portalTab = reserveBillingTab()
-  if (!portalTab) {
-    toast.warning(t('g.warning'), {
-      description: t('subscription.billingTabBlocked')
-    })
-    return
-  }
-  openingDefaultCardPortal.value = true
-  try {
-    const { url } = await workspaceApi.getPaymentPortalUrl(
-      window.location.href,
-      'payment_method_update'
-    )
-    if (unmounted) {
-      portalTab.close()
-      return
-    }
-    if (!url) return reportDefaultCardPortalFailure(portalTab)
-    portalTab.navigate(url)
-    refreshOnDefaultCardReturn()
-  } catch {
-    reportDefaultCardPortalFailure(portalTab)
-  } finally {
-    openingDefaultCardPortal.value = false
-  }
-}
-
-function reportDefaultCardPortalFailure(portalTab: BillingTab) {
-  portalTab.close()
-  if (unmounted) return
-  toast.error(t('credits.topUp.setDefaultCardError'), {
-    description: t('credits.topUp.unknownError')
-  })
-}
-
-async function continueToCheckout() {
-  if (!(canTopUp.value && isValidAmount.value && !paymentLocked.value)) {
-    return
-  }
+async function createCheckoutInReservedTab() {
   const returnUrl = topupCheckoutReturnUrl()
   if (!returnUrl) {
-    checkoutRecovery.value = 'failed'
+    dispatch({ type: 'checkoutFailed' })
     return
   }
   const checkoutTab = reserveBillingTab()
-  loading.value = true
-  try {
-    const checkoutUrl = await createHostedCheckout(
-      payAmount.value * 100,
-      returnUrl
-    )
-    if (unmounted) {
-      checkoutTab?.close()
-      return
-    }
-    if (checkoutTab) {
-      handOffToCheckout(checkoutTab, checkoutUrl)
-      return
-    }
-    blockedCheckoutUrl.value = checkoutUrl
-    step.value = 'checkoutBlocked'
-  } catch (error) {
+  const outcome = await createHostedCheckout(payAmount.value * 100, returnUrl)
+  if (unmounted) {
     checkoutTab?.close()
-    console.error('Hosted top-up checkout failed to open', error)
-    if (unmounted) return
-    checkoutRecovery.value = 'failed'
-  } finally {
-    loading.value = false
+    return
   }
-}
-
-function openBlockedCheckout() {
-  const checkoutUrl = blockedCheckoutUrl.value
-  const checkoutTab = checkoutUrl ? reserveBillingTab() : null
-  if (checkoutUrl && checkoutTab) handOffToCheckout(checkoutTab, checkoutUrl)
-}
-
-/**
- * The terminal a response's status implies. A synchronous `failed` is a
- * declined charge, not a pre-attempt rejection; a `pending` one is the
- * poller's to report once it settles.
- */
-const RESPONSE_TERMINALS: Record<
-  CreateTopupResponse['status'],
-  BillingOperationTerminal | undefined
-> = {
-  completed: { stage: 'succeeded', outcome: 'success' },
-  failed: {
-    stage: 'failed',
-    outcome: 'failure',
-    failure_category: 'provider_decline'
-  },
-  pending: undefined
-}
-
-function reportResponseTerminal(
-  response: CreateTopupResponse,
-  attemptStartedAt: number
-) {
-  const terminal =
-    response instanceof UncreditedTopupResponse
-      ? response.terminal
-      : RESPONSE_TERMINALS[response.status]
-  if (terminal) {
-    reportTerminal(attemptStartedAt, terminal, response.billing_op_id)
+  if (outcome.status === 'failed') {
+    checkoutTab?.close()
+    console.error('Hosted top-up checkout failed to open', outcome.error)
+    dispatch({ type: 'checkoutFailed' })
+    return
   }
-}
-
-function reportTerminal(
-  attemptStartedAt: number,
-  terminal: BillingOperationTerminal,
-  billingOpId?: string
-) {
-  const attempt = {
-    ...(billingOpId ? { billing_op_id: billingOpId } : {}),
-    duration_ms: Date.now() - attemptStartedAt
-  }
-  // No timeout stage on the top-up funnel; the poller reports it as failed too.
-  telemetry?.trackBillingEvent(
-    terminal.stage === 'succeeded'
-      ? {
-          operation: 'topup',
-          stage: 'succeeded',
-          outcome: 'success',
-          payment_intent_source: source,
-          ...attempt
-        }
-      : {
-          operation: 'topup',
-          stage: 'failed',
-          outcome: 'failure',
-          payment_intent_source: source,
-          failure_category: terminal.failure_category,
-          ...attempt
-        }
-  )
-  telemetry?.trackBillingEvent({
-    operation: 'operation',
-    operation_type: 'topup',
-    billing_client: billingClient,
-    ...terminal,
-    ...attempt
+  if (checkoutTab) handOff(checkoutTab, outcome.checkoutUrl)
+  dispatch({
+    type: 'checkoutCreated',
+    checkoutUrl: outcome.checkoutUrl,
+    tabOpened: checkoutTab !== null
   })
 }
 
-function purchaseErrorDetail(error?: unknown): string {
-  const code = error instanceof WorkspaceApiError ? error.code : undefined
-  // Only one billing operation is open at a time, so this refusal means the
-  // previous purchase has not settled or expired yet — not that anything failed.
-  if (code === 'SUBSCRIPTION_CHANGE_IN_PROGRESS') {
-    return t('credits.topUp.changeInProgressError')
-  }
-  return t('credits.topUp.purchaseErrorDetail', {
-    error: getErrorMessage(error) ?? t('credits.topUp.unknownError')
-  })
+async function continueToPayment() {
+  if (state.value.kind !== 'amount') return
+  if (!canContinue.value) return
+  trackPaymentIntent()
+  dispatch({ type: 'continueRequested' })
+  await createCheckoutInReservedTab()
+}
+
+async function reopenCheckout() {
+  if (state.value.kind !== 'checkoutOpened') return
+  if (!canContinue.value) return
+  dispatch({ type: 'reopenRequested' })
+  await createCheckoutInReservedTab()
+}
+
+function followBlockedCheckoutLink() {
+  watchHostedTopupCheckout()
+  dispatch({ type: 'blockedCheckoutLinkOpened' })
 }
 </script>

@@ -76,12 +76,7 @@ export function projectTopupOperation(
   }
 }
 
-/**
- * A purchase the SDK settled without crediting, as the response the dialog
- * handles, carrying the terminal its status cannot: the decline reason, or
- * that this tab stopped watching, or that support must reconcile it.
- */
-export class UncreditedTopupResponse implements CreateTopupResponse {
+class UncreditedTopupResponse implements CreateTopupResponse {
   readonly topup_id = ''
 
   constructor(

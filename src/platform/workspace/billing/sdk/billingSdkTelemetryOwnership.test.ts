@@ -7,15 +7,13 @@ import {
   PREVIEW_SUBSCRIBE_ROUTE,
   RESUBSCRIBE_ROUTE,
   SUBSCRIBE_ROUTE,
-  TOPUP_ROUTE,
   operationRoute
 } from '@comfyorg/account-core/billing'
 import type {
   AccountCredential,
   SessionSnapshot
 } from '@comfyorg/account-core/session'
-import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,20 +23,17 @@ import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   Plan,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
-import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useDowngradeToPersonal } from '@/platform/workspace/composables/useDowngradeToPersonal'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { useDialogStore } from '@/stores/dialogStore'
 import {
   stubAccountIdentityPort,
   stubFirebaseAuthHarness
@@ -370,30 +365,6 @@ async function driveDowngrade() {
     .catch(() => undefined)
 }
 
-async function driveTopupDialog() {
-  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
-  render(TopUpCreditsDialogContentWorkspace, {
-    global: {
-      plugins: [i18n],
-      stubs: {
-        FormattedNumberStepper: {
-          name: 'FormattedNumberStepper',
-          props: ['modelValue'],
-          template: '<div />'
-        }
-      }
-    }
-  })
-  const user = userEvent.setup()
-  await user.click(screen.getByRole('button', { name: 'Add credits' }))
-  const pay = await screen.findByRole('button', { name: /^Pay / })
-  await vi.waitFor(() => expect(pay).toBeEnabled())
-  await user.click(pay)
-  await vi.waitFor(() =>
-    expect(useSettingsDialog().show).toHaveBeenCalledOnce()
-  )
-}
-
 function operationEvents() {
   const telemetry = useTelemetry()
   assert.exists(telemetry)
@@ -534,16 +505,6 @@ describe('billing operation telemetry ownership on the SDK rail', () => {
       ),
       drive: driveWorkspaceBilling('resubscribe'),
       expected: [LIFECYCLE_STARTED, SUCCEEDED]
-    },
-    {
-      name: 'top-up succeeds',
-      routes: issuedThenSettled(
-        TOPUP_ROUTE,
-        { amount_cents: 5000, status: 'pending', topup_id: 'topup-1' },
-        { status: 'succeeded' }
-      ),
-      drive: driveTopupDialog,
-      expected: [STARTED, SUCCEEDED]
     }
   ] as const)(
     'reports one started and one terminal operation event when $name',

@@ -184,6 +184,14 @@
       "role": "application"
     },
     {
+      "path": "src/platform/workspace/billing/topupCheckoutDialogState.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/workspace/billing/topupCheckoutDialogState.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/platform/workspace/billing/sdk/**",
       "role": "infrastructure"
     },
@@ -460,11 +468,11 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useTopupOperation.test.ts",
+      "path": "src/platform/workspace/composables/useTopupCheckout.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/composables/useTopupOperation.ts",
+      "path": "src/platform/workspace/composables/useTopupCheckout.ts",
       "role": "application"
     },
     {
@@ -577,7 +585,8 @@
         "src/platform/workspace/billing/sdk/subscriptionOperationView.test.ts",
         "src/platform/workspace/billing/sdk/operationRecordView.test.ts",
         "src/platform/workspace/stores/billingOperationStore.test.ts",
-        "src/platform/workspace/composables/useTopupOperation.test.ts",
+        "src/platform/workspace/composables/useTopupCheckout.test.ts",
+        "src/platform/workspace/billing/topupCheckoutDialogState.test.ts",
         "src/composables/billing/usePendingTopup.test.ts",
         "src/composables/billing/topupBalanceRefresh.test.ts",
         "src/platform/workspace/components/TopUpCreditsDialogContentWorkspace.test.ts"

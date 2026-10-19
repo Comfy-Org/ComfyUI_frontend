@@ -4,12 +4,13 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CreateTopupResponse,
+  CreateTopupCheckoutResponse,
   Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
   SubscribeResponse
 } from '@comfyorg/ingest-types'
+import { omit } from 'es-toolkit'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -47,6 +48,7 @@ const RAIL_MATRIX = [
 const OPERATION_ID = 'op-e2e-progress-toast'
 const HOSTED_PAYMENT_URL =
   'https://checkout.stripe.example/pay/op-e2e-progress-toast'
+const TOPUP_CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_e2e_toast'
 
 const SUBSCRIPTION_PROCESSING =
   'Processing payment — setting up your workspace...'
@@ -170,7 +172,6 @@ interface ToastSetup {
   status?: BillingStatusResponse
   operation?: BillingOpStatusResponse
   subscribeResponse?: SubscribeResponse
-  topupResponse?: CreateTopupResponse
 }
 
 async function setupToastParity(
@@ -182,22 +183,23 @@ async function setupToastParity(
     subscribeResponse = {
       billing_op_id: OPERATION_ID,
       status: 'pending_payment'
-    },
-    topupResponse = {
-      billing_op_id: OPERATION_ID,
-      topup_id: OPERATION_ID,
-      status: 'pending',
-      amount_cents: 5_000
     }
   }: ToastSetup
 ): Promise<BillingServer> {
   const ws = workspace('personal', 'owner')
   const server: BillingServer = { status, operation }
 
-  // A hosted page is an external origin; the truthy return keeps the
-  // popup-blocked warning out of rows that are about the progress toast.
   await page.addInitScript(() => {
-    window.open = () => window
+    const standInTab = new Proxy(window, {
+      get: (target, property) =>
+        property === 'location'
+          ? { set href(_destination: string) {} }
+          : property === 'close'
+            ? () => {}
+            : Reflect.get(target, property),
+      set: () => true
+    })
+    window.open = () => standInTab
   })
 
   await setupCloudApp(page, {
@@ -243,13 +245,22 @@ async function setupToastParity(
   await page.route('**/api/billing/subscription/cancel', (route) =>
     route.fulfill(jsonRoute({ billing_op_id: OPERATION_ID, status: 'pending' }))
   )
-  await page.route('**/api/billing/topup', (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
-    return route.fulfill(jsonRoute(topupResponse))
-  })
-  await page.route(`**/api/billing/ops/${OPERATION_ID}`, (route) =>
-    route.fulfill(jsonRoute(server.operation))
+  await page.route('**/api/billing/topup/checkout', (route) =>
+    route.fulfill(
+      jsonRoute({
+        checkout_url: TOPUP_CHECKOUT_URL
+      } satisfies CreateTopupCheckoutResponse)
+    )
   )
+  await page.route(`**/api/billing/ops/${OPERATION_ID}`, (route) => {
+    if (server.operation.status !== 'pending') {
+      server.status = omit(server.status, [
+        'pending_billing_op_id',
+        'pending_billing_op_type'
+      ])
+    }
+    return route.fulfill(jsonRoute(server.operation))
+  })
 
   return server
 }
@@ -418,14 +429,17 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
 
         const dialog = new TopUpCreditsDialog(page)
         await dialog.open()
-        await dialog.root
-          .getByRole('button', { name: 'Add credits', exact: true })
-          .click()
-        await dialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
+        await dialog.continueToPaymentButton.click()
+        await expect(dialog.checkoutOpenedHeading).toBeVisible()
+        server.status = {
+          ...server.status,
+          pending_billing_op_id: OPERATION_ID,
+          pending_billing_op_type: 'topup'
+        }
         const processingToast = toast.toastLoadings.filter({
           hasText: TOPUP_PROCESSING
         })
-        await expect(processingToast).toBeVisible()
+        await expect(processingToast).toBeVisible({ timeout: 15_000 })
 
         server.operation = SETTLED_OPERATION
         await returnToTab(page)

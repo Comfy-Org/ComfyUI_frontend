@@ -10,7 +10,7 @@ import { useBillingOperationStore } from '@/platform/workspace/stores/billingOpe
  * legacy path.
  *
  * Read once at the start of an action and held for the whole of it, for the
- * same reason as `useTopupOperation`: a flag flip mid-flow must not issue on
+ * same reason as `useTopupCheckout`: a flag flip mid-flow must not issue on
  * one rail and observe the result on the other.
  */
 export function useSubscriptionRail(): SubscriptionRail | null {
