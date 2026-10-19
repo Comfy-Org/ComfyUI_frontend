@@ -1,4 +1,5 @@
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
+import { expect } from '@playwright/test'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
@@ -14,6 +15,8 @@ import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowAct
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import type { PermanentDocSubscribedRefusalFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
@@ -43,6 +46,32 @@ const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
 
 export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
+}
+
+const PERMANENTLY_REFUSED_SUBSCRIBE = {
+  type: 'doc_subscribed',
+  data: {
+    v: DOC_PROTOCOL_VERSION,
+    workflow_id: WORKFLOW_ID,
+    ok: false,
+    code: 'schema_version_mismatch'
+  }
+} satisfies PermanentDocSubscribedRefusalFrame
+
+export function refuseDocSubscribePermanently(ws: WebSocketRoute): void {
+  ws.send(JSON.stringify(PERMANENTLY_REFUSED_SUBSCRIBE))
+}
+
+export async function pushTurnDoneOnceTurnIsActive(
+  agentPanel: AgentPanel,
+  renderedPrompts: string[],
+  ws: WebSocketRoute
+): Promise<void> {
+  await expect(
+    agentPanel.userMessageBubbles,
+    'the turn must already be the active one before the done frame is pushed'
+  ).toHaveText(renderedPrompts)
+  pushAgentEvent(ws, MESSAGE_DONE_EVENT)
 }
 
 const FUNDED_BILLING_STATUS = {

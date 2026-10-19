@@ -2,6 +2,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
+import { PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES } from './docFrameClient'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -49,11 +50,9 @@ export type SubscribeGiveUpReason = 'refused' | 'timeout'
 // `catalog_mismatch` are cloud's `socketDocCode()` sibling arms sharing the
 // same "retrying will not help" contract; `unsupported` (`docSurfaceOffReason`)
 // is permanent for the life of the connection.
-const PERMANENT_SUBSCRIBE_REFUSAL_CODES: ReadonlySet<string> = new Set([
-  'schema_version_mismatch',
-  'catalog_mismatch',
-  'unsupported'
-])
+const PERMANENT_SUBSCRIBE_REFUSAL_CODES: ReadonlySet<string> = new Set(
+  PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES
+)
 
 // `unsupported` means the doc surface is off for this whole deployment, so
 // every user hits it - latching it must not paint an "incompatible document

@@ -47,6 +47,7 @@ export class AgentPanel {
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
   public readonly suggestedPrompts: Locator
+  public readonly userMessageBubbles: Locator
   private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
@@ -108,15 +109,10 @@ export class AgentPanel {
       name: enMessages.agent.stop,
       exact: true
     })
-    /**
-     * Includes hidden buttons: the compact empty state keeps every suggestion
-     * in the DOM and hides the overflow, so a visible-only locator cannot tell
-     * "hidden" from "never rendered". Resolved by position rather than by
-     * prompt text, which varies with distribution and starter-prompt variant.
-     */
     this.suggestedPrompts = this.root
       .getByTestId('suggested-prompts')
       .getByRole('button', { includeHidden: true })
+    this.userMessageBubbles = this.root.getByTestId('user-message-bubble')
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
@@ -419,6 +415,14 @@ export class AgentPanel {
   async sendMessage(message: string): Promise<void> {
     await this.composer.fill(message)
     await this.sendButton.click()
+  }
+
+  async expectTurnSettled(): Promise<void> {
+    await expect(
+      this.stopButton,
+      'turn 1 must settle before turn 2 is composed, so the ack binding is in place'
+    ).toHaveCount(0)
+    await expect(this.composer).toHaveText('')
   }
 
   async enterNodeSelectionMode(): Promise<void> {
