@@ -666,6 +666,16 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Pay $25.00' })).toBeEnabled()
   })
 
+  it('keeps the confirmed amount when the suggestion arrives after confirming', async () => {
+    const balanceArrives = renderBeforeBalanceArrives()
+
+    await clickAddCredits()
+    balanceArrives(11_400)
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
+  })
+
   it('explains that the top-up covers a negative balance first', () => {
     renderWithBalance({
       amountMicros: -10_000,

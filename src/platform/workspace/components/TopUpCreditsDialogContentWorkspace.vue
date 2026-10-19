@@ -503,7 +503,8 @@ const payAmount = ref(suggestedAmount.value ?? DEFAULT_AMOUNT)
 const amountEditedByUser = ref(false)
 
 watch(suggestedAmount, (amount) => {
-  if (amount === null || amountEditedByUser.value) return
+  if (amount === null || amountEditedByUser.value || step.value !== 'amount')
+    return
   payAmount.value = amount
   selectedPreset.value = null
 })
