@@ -476,49 +476,48 @@ describe('collectCrdtDebugReport', () => {
     ])
   })
 
+  function toolCalls(turn: string, count: number, offset = 0): ToolPart[] {
+    return Array.from({ length: count }, (_, index) => ({
+      type: 'tool',
+      callId: `${turn}-call-${index + offset}`,
+      name: 'inspect_workflow',
+      state: 'done',
+      ok: true
+    }))
+  }
+
+  function toolSectionJson(report: string): unknown[] {
+    const section = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.split('\n\n## ')[0]
+    assert.exists(section)
+    return [...section.matchAll(/```json\n([\s\S]*?)\n```/g)].map(([, body]) =>
+      JSON.parse(body)
+    )
+  }
+
   it.for([
-    {
-      count: 50,
-      status: 'collected (50/50 retained calls)',
-      includesOldest: true,
-      newest: 'call-49'
-    },
-    {
-      count: 51,
-      status: 'truncated (50/51 retained calls)',
-      includesOldest: false,
-      newest: 'call-50'
-    }
+    { olderCount: 50, status: 'collected (120/120 retained calls)' },
+    { olderCount: 51, status: 'truncated (120/121 retained calls)' }
   ])(
-    'bounds $count tool calls to the most recent 50',
-    async ({ count, status, includesOldest, newest }) => {
+    'keeps all 70 latest-turn calls and the most recent 50 of $olderCount older calls',
+    async ({ olderCount, status }) => {
       const report = await collectCrdtDebugReport({
         crdt: SNAPSHOT,
         events: [],
         agentMessages: [
           {
-            ...createAssistantMessage(toTurnId('turn-many-1')),
-            parts: Array.from({ length: 30 }, (_, index) => ({
-              type: 'tool',
-              callId: `call-${index}`,
-              name: 'inspect_workflow',
-              state: 'done',
-              ok: true
-            }))
+            ...createAssistantMessage(toTurnId('turn-old-1')),
+            parts: toolCalls('old', 30)
           },
           {
-            ...createAssistantMessage(toTurnId('turn-many-2')),
+            ...createAssistantMessage(toTurnId('turn-old-2')),
+            parts: toolCalls('old', olderCount - 30, 30)
+          },
+          {
+            ...createAssistantMessage(toTurnId('turn-latest')),
             parts: [
-              ...Array.from(
-                { length: count - 30 },
-                (_, index): ToolPart => ({
-                  type: 'tool',
-                  callId: `call-${index + 30}`,
-                  name: 'inspect_workflow',
-                  state: 'done',
-                  ok: true
-                })
-              ),
+              ...toolCalls('latest', 70),
               {
                 type: 'text',
                 text: 'private text after the newest tool call',
@@ -530,21 +529,85 @@ describe('collectCrdtDebugReport', () => {
       })
 
       expect(report).toContain(`- Agent tool calls: ${status}`)
-      expect(report.includes('"callId": "call-0"')).toBe(includesOldest)
-      expect(report).toContain(`"callId": "${newest}"`)
       expect(
-        [...report.matchAll(/"callId": "(call-\d+)"/g)].map(
+        [...report.matchAll(/"callId": "([a-z]+-call-\d+)"/g)].map(
           ([, callId]) => callId
         )
-      ).toEqual(
-        Array.from(
+      ).toEqual([
+        ...Array.from(
           { length: 50 },
-          (_, index) => `call-${index + Math.max(0, count - 50)}`
-        )
-      )
+          (_, index) => `old-call-${index + olderCount - 50}`
+        ),
+        ...Array.from({ length: 70 }, (_, index) => `latest-call-${index}`)
+      ])
       expect(report).not.toContain('private text after the newest tool call')
     }
   )
+
+  it('reports thinking durations for every retained turn and the latest turn', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-without-tools')),
+          parts: [
+            {
+              type: 'thinking',
+              text: 'dropped reasoning',
+              state: 'done',
+              durationMs: 900
+            }
+          ]
+        },
+        {
+          ...createAssistantMessage(toTurnId('turn-with-tools')),
+          parts: [
+            {
+              type: 'thinking',
+              text: 'private reasoning',
+              state: 'done',
+              durationMs: 300
+            },
+            ...toolCalls('older', 1),
+            { type: 'thinking', text: 'untimed reasoning', state: 'done' },
+            ...toolCalls('older', 1, 1)
+          ]
+        },
+        {
+          ...createAssistantMessage(toTurnId('turn-latest')),
+          parts: [
+            {
+              type: 'thinking',
+              text: 'latest reasoning',
+              state: 'done',
+              durationMs: 1200
+            },
+            {
+              type: 'thinking',
+              text: 'more latest reasoning',
+              state: 'done',
+              durationMs: 4800
+            }
+          ]
+        }
+      ]
+    })
+
+    expect(toolSectionJson(report)[1]).toEqual([
+      {
+        turnId: 'turn-with-tools',
+        thinkingDurationsMs: [300, null],
+        thinkingTotalMs: 300
+      },
+      {
+        turnId: 'turn-latest',
+        thinkingDurationsMs: [1200, 4800],
+        thinkingTotalMs: 6000
+      }
+    ])
+    expect(report).not.toMatch(/(dropped|private|untimed|latest) reasoning/)
+  })
 
   it('redacts credential-shaped tool metadata', async () => {
     const report = await collectCrdtDebugReport({
