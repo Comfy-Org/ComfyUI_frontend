@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { t } from '../../i18n/translations'
+import { t } from '@/i18n/translations'
 import ComfyApiPricingSection from './ComfyApiPricingSection.vue'
 
 describe('ComfyApiPricingSection', () => {
@@ -10,12 +10,12 @@ describe('ComfyApiPricingSection', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: t('pricing.comfyApi.heading', 'en')
+        name: t('pricing.comfyApi.heading', {}, { locale: 'en' })
       })
     ).toBeTruthy()
     expect(
       screen.queryByRole('heading', {
-        name: t('platform.pricing.heading', 'en')
+        name: t('platform.pricing.heading', {}, { locale: 'en' })
       })
     ).toBeNull()
   })
@@ -25,8 +25,23 @@ describe('ComfyApiPricingSection', () => {
 
     expect(screen.getAllByText('RTX PRO 6000').length).toBeGreaterThan(0)
     expect(
-      screen.getAllByText(t('pricing.comfyApi.metric.releases', 'en')).length
+      screen.getAllByText(
+        t('pricing.comfyApi.metric.builds', {}, { locale: 'en' })
+      ).length
     ).toBeGreaterThan(0)
+  })
+
+  it('omits the plan-limits table when the plan cards already show it', () => {
+    render(ComfyApiPricingSection, {
+      props: { locale: 'en', showPlanLimits: false }
+    })
+
+    expect(screen.getAllByText('RTX PRO 6000').length).toBeGreaterThan(0)
+    expect(
+      screen.queryByText(
+        t('pricing.comfyApi.metric.builds', {}, { locale: 'en' })
+      )
+    ).toBeNull()
   })
 
   it('hides the Learn More CTA by default', () => {
@@ -34,7 +49,7 @@ describe('ComfyApiPricingSection', () => {
 
     expect(
       screen.queryByRole('link', {
-        name: t('pricing.comfyApi.learnMore', 'en')
+        name: t('pricing.comfyApi.learnMore', {}, { locale: 'en' })
       })
     ).toBeNull()
   })
@@ -45,7 +60,9 @@ describe('ComfyApiPricingSection', () => {
     })
 
     expect(
-      screen.getByRole('link', { name: t('pricing.comfyApi.learnMore', 'en') })
+      screen.getByRole('link', {
+        name: t('pricing.comfyApi.learnMore', {}, { locale: 'en' })
+      })
     ).toHaveAttribute('href', '/platform/comfy-api/')
   })
 
@@ -56,7 +73,7 @@ describe('ComfyApiPricingSection', () => {
 
     expect(
       screen.getByRole('link', {
-        name: t('pricing.comfyApi.learnMore', 'zh-CN')
+        name: t('pricing.comfyApi.learnMore', {}, { locale: 'zh-CN' })
       })
     ).toHaveAttribute('href', '/zh-CN/platform/comfy-api/')
   })

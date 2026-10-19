@@ -1,7 +1,11 @@
 import { without } from 'es-toolkit'
 
 import type { IColorable, ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { NodeBindable } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/types/nodeId'
+
+export interface NodeBindable {
+  setNodeId(nodeId: NodeId): void
+}
 
 /**
  * Converts a plain object to a class instance if it is not already an instance of the class.
@@ -39,10 +43,15 @@ export function isNodeBindable(widget: unknown): widget is NodeBindable {
   )
 }
 
-export function commonType(...types: ISlotType[]): ISlotType | undefined {
-  if (!isStrings(types)) return undefined
+export function slotTypeKey(type: ISlotType): string | number {
+  return Array.isArray(type) ? type.join(',') : type
+}
 
-  const withoutWildcards = without(types, '*')
+export function commonType(...types: ISlotType[]): ISlotType | undefined {
+  const keys = types.map(slotTypeKey)
+  if (!isStrings(keys)) return undefined
+
+  const withoutWildcards = without(keys, '*')
   if (withoutWildcards.length === 0) return '*'
 
   const typeLists: string[][] = withoutWildcards.map((type) => type.split(','))

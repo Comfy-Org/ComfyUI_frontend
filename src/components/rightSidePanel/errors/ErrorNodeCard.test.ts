@@ -1,7 +1,6 @@
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -16,17 +15,13 @@ import { validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
+import { api } from '@/scripts/api'
 
-const mockGetLogs = vi.fn(() => Promise.resolve('mock server logs'))
 const mockGenerateErrorReport = vi.fn(
   (_data?: unknown) => '# ComfyUI Error Report\n...'
 )
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getLogs: () => mockGetLogs()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'))
 
@@ -41,7 +36,7 @@ describe('ErrorNodeCard.vue', () => {
 
   beforeEach(() => {
     cardIdCounter = 0
-    mockGetLogs.mockResolvedValue('mock server logs')
+    vi.mocked(api.getLogs).mockResolvedValue('mock server logs')
     mockGenerateErrorReport.mockReturnValue('# ComfyUI Error Report\n...')
     vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
     useSystemStatsStore().systemStats = {
@@ -103,7 +98,7 @@ describe('ErrorNodeCard.vue', () => {
     const { container } = render(ErrorNodeCard, {
       props: { card, onCopyToClipboard, onLocateNode },
       global: {
-        plugins: [PrimeVue, i18n, getActivePinia()!],
+        plugins: [i18n, getActivePinia()!],
         stubs: {
           TransitionCollapse: { template: '<div><slot /></div>' }
         }
@@ -234,7 +229,7 @@ describe('ErrorNodeCard.vue', () => {
       expect(screen.getByText('Error details')).toBeInTheDocument()
     })
 
-    expect(mockGetLogs).not.toHaveBeenCalled()
+    expect(api.getLogs).not.toHaveBeenCalled()
     expect(mockGenerateErrorReport).not.toHaveBeenCalled()
   })
 
@@ -316,7 +311,7 @@ describe('ErrorNodeCard.vue', () => {
   })
 
   it('generates report with fallback logs when getLogs fails', async () => {
-    mockGetLogs.mockRejectedValue(new Error('Network error'))
+    vi.mocked(api.getLogs).mockRejectedValue(new Error('Network error'))
 
     renderCard(makeRuntimeErrorCard())
 

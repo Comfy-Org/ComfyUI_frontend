@@ -5,9 +5,11 @@ import { defineComponent, h } from 'vue'
 import {
   DEFAULT_CAMERA,
   frameTime
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import { translationsFor } from '@/i18n/translations'
 import ReshootMoveControls from './ReshootMoveControls.vue'
+
+const { t: rc } = translationsFor('en')
 
 const keys = [
   { frame: 0, camera: DEFAULT_CAMERA },
@@ -27,14 +29,22 @@ describe('ReshootMoveControls', () => {
       const edits = [
         ...keys.map((key) =>
           screen.getByRole('button', {
-            name: rc('reshoot.move.remove', 'en', {
-              time: frameTime(key.frame)
-            })
+            name: rc(
+              'reshoot.move.remove',
+              {
+                time: frameTime(key.frame)
+              },
+              { locale: 'en' }
+            )
           })
         ),
         ...keys.map((key) =>
           screen.getByRole('button', {
-            name: rc('reshoot.move.goTo', 'en', { time: frameTime(key.frame) })
+            name: rc(
+              'reshoot.move.goTo',
+              { time: frameTime(key.frame) },
+              { locale: 'en' }
+            )
           })
         )
       ]

@@ -11,6 +11,7 @@ import { BILLING_WEB_ENV } from '@/config/env'
 import { useBillingEntry } from '@/entry/billingEntry'
 import { returnToHost } from '@/entry/returnToHost'
 import { useBilledScope } from '@/session/billingWebAuth'
+import { reportReturnClicked } from '@/telemetry/webReturnTelemetry'
 
 /** What the trip back should say, when the surface has a result to report. */
 const { returnResult } = defineProps<{ returnResult?: BillingReturn }>()
@@ -47,16 +48,21 @@ const returnLink = computed(() => {
     })
   }
 })
+
+function leaveForHost(href: string) {
+  reportReturnClicked('host_link')
+  returnToHost(href)
+}
 </script>
 
 <template>
   <main
-    class="dark-theme fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
+    class="fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
   >
     <div class="mx-auto flex max-w-3xl flex-col gap-6">
       <header class="flex flex-wrap items-center justify-between gap-3">
         <div class="flex flex-col gap-1">
-          <h1 class="m-0 text-xl font-semibold text-base-foreground">
+          <h1 class="m-0 text-xl font-semibold text-foreground">
             {{ title }}
           </h1>
           <p v-if="workspaceLabel" class="m-0 text-xs text-muted-foreground">
@@ -66,8 +72,8 @@ const returnLink = computed(() => {
         <a
           v-if="returnLink"
           :href="returnLink.href"
-          class="text-sm text-muted-foreground underline underline-offset-4 hover:text-base-foreground"
-          @click.prevent="returnToHost(returnLink.href)"
+          class="text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground"
+          @click.prevent="leaveForHost(returnLink.href)"
         >
           {{ returnLink.label }}
         </a>
@@ -75,9 +81,9 @@ const returnLink = computed(() => {
 
       <section
         v-if="error"
-        class="rounded-xl border border-border-subtle bg-secondary-background p-6"
+        class="rounded-xl border border-border/50 bg-secondary p-6"
       >
-        <h2 class="m-0 text-base font-semibold text-base-foreground">
+        <h2 class="m-0 text-base font-semibold text-foreground">
           {{ t('hosted.entryError.title') }}
         </h2>
         <p class="mt-2 mb-0 text-sm text-muted-foreground">

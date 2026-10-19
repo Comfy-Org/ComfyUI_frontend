@@ -1,6 +1,7 @@
 import type { Locator } from '@playwright/test'
 
 import { BADGE_GAP } from '@/lib/litegraph/src/canvas/linkBadges'
+import type { RerouteId } from '@/types/rerouteId'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
@@ -23,6 +24,17 @@ export class LinkVisibilityHelper {
     })
     const point = await handle.jsonValue()
     if (!point) throw new Error('Rendered link midpoint was not found')
+    await this.clickMenuAction(point, 'Hide Link')
+  }
+
+  async hideRerouteSegment(rerouteId: RerouteId): Promise<void> {
+    const handle = await this.comfyPage.page.waitForFunction((id) => {
+      const reroute = window.app!.graph.getReroute(id)
+      if (!reroute?.path) return null
+      return [reroute._pos[0], reroute._pos[1]] satisfies Point
+    }, rerouteId)
+    const point = await handle.jsonValue()
+    if (!point) throw new Error('Rendered reroute segment was not found')
     await this.clickMenuAction(point, 'Hide Link')
   }
 

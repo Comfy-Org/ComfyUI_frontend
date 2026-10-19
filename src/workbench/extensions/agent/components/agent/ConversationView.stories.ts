@@ -21,7 +21,7 @@ const meta: Meta<typeof ConversationView> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-secondary-background h-120 w-100"><story /></div>'
+        '<div class="agent-scope bg-secondary h-120 w-100"><story /></div>'
     })
   ]
 }

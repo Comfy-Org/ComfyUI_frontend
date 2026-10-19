@@ -14,7 +14,8 @@ import {
 } from '@comfyorg/account-core/telemetry'
 import type {
   AuthCompletedMetadata,
-  AuthErrorMetadata
+  AuthErrorMetadata,
+  WebSessionTelemetryEvent
 } from '@comfyorg/account-core/telemetry'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 import { normalizeTurnstileMode } from '@comfyorg/account-core/turnstile'
@@ -22,7 +23,7 @@ import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
-import { WORKSHOP_CLOUD_ENV } from '../config/workshop-env'
+import { WORKSHOP_CLOUD_ENV } from '@/config/workshop-env'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 import { captureWorkshopHealth } from './workshop-datadog'
 
@@ -44,6 +45,7 @@ const ANALYTICS_EVENT = {
   routerRoadmapCardExpanded: 'website:router_roadmap_card_expanded',
   agentFaqExpanded: 'website:agent_faq_expanded',
   agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
+  vfxLinkClicked: 'website:vfx_link_clicked',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -67,6 +69,11 @@ export type CliClientId =
 export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case' | 'byok'
 
 type AnalyticsEvent =
+  | WebSessionTelemetryEvent
+  | {
+      name: typeof ANALYTICS_EVENT.vfxLinkClicked
+      properties: VfxLinkProperties
+    }
   | {
       name: `website:workshop_${WorkshopAnalyticsEvent['name']}`
       properties: WorkshopAnalyticsEvent['properties']
@@ -123,6 +130,11 @@ type AnalyticsEvent =
     }
 
 let initialized = false
+
+interface VfxLinkProperties {
+  destination: string
+  placement: 'hero' | 'workflows' | 'studio' | 'page'
+}
 
 const WORKSHOP_AUTH_FLAG = 'workshop-auth'
 const WORKSHOP_ENABLED_FLAG = 'workshop-enabled'
@@ -438,6 +450,10 @@ export function capturePageview(): void {
   captureEvent({ name: ANALYTICS_EVENT.pageview })
 }
 
+export function captureVfxLinkClick(properties: VfxLinkProperties): void {
+  captureEvent({ name: ANALYTICS_EVENT.vfxLinkClicked, properties })
+}
+
 export function captureWorkshopEvent(event: WorkshopAnalyticsEvent): void {
   captureWorkshopHealth(event)
   captureEvent({
@@ -526,6 +542,10 @@ export function captureAuthRefreshFailed(outcome: SessionRefreshOutcome): void {
     name: ANALYTICS_EVENT.authRefreshFailed,
     properties: { outcome }
   })
+}
+
+export function captureWebSessionEvent(event: WebSessionTelemetryEvent): void {
+  captureEvent(event)
 }
 
 export function captureSignupOpened(): void {

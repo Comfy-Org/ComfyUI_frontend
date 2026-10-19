@@ -4,18 +4,14 @@
     data-testid="terminal-root"
     class="relative size-full overflow-hidden bg-neutral-900"
   >
-    <div class="p-terminal size-full rounded-none p-2">
-      <div
-        ref="terminalEl"
-        data-testid="terminal-host"
-        class="terminal-host h-full"
-      />
+    <div
+      class="size-full rounded-none p-2 [&_.xterm]:overflow-x-auto [&_.xterm]:overflow-y-hidden [&_.xterm-screen]:overflow-hidden [&_.xterm-screen]:bg-neutral-900"
+    >
+      <div ref="terminalEl" data-testid="terminal-host" class="h-full" />
     </div>
     <Button
-      v-tooltip.left="{
-        value: tooltipText,
-        showDelay: 300
-      }"
+      :tooltip="tooltipText"
+      tooltip-side="left"
       data-testid="terminal-copy-button"
       variant="secondary"
       size="sm"
@@ -107,14 +103,3 @@ onUnmounted(() => {
   emit('unmounted')
 })
 </script>
-
-<style scoped>
-:deep(.p-terminal) .xterm {
-  overflow: hidden;
-}
-
-:deep(.p-terminal) .xterm-screen {
-  overflow: hidden;
-  background-color: var(--color-neutral-900);
-}
-</style>

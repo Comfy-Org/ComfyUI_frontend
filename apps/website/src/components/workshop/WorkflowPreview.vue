@@ -2,20 +2,15 @@
 import { Box } from '@lucide/vue'
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
-import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import type { TranslationKey } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 
-const {
-  model,
-  cloudHref,
-  active = true
-} = defineProps<{
+const { t } = translationsFor('en')
+const { model, active = true } = defineProps<{
   model: WorkflowWorkshopModelDetail
-  cloudHref?: string
   /** Whether this tab is showing; the graph waits until it first is. */
   active?: boolean
 }>()
@@ -40,10 +35,9 @@ const OUTPUT_LABEL: Record<string, TranslationKey> = {
 const produces = computed(() => {
   const outputs = model.workflow.outputs ?? []
   if (!outputs.length) return undefined
-  const perRun = t('workshop.workflow.perRun').replace(
-    '{count}',
-    String(outputs.length)
-  )
+  const perRun = t('workshop.workflow.perRun', {
+    count: outputs.length
+  })
   const kinds = new Set(outputs.map((output) => output.kind))
   const only = kinds.size === 1 ? [...kinds][0] : undefined
   const label = only ? OUTPUT_LABEL[only] : undefined
@@ -114,27 +108,6 @@ const facts = computed(() => {
 
       <div class="lg:col-span-4">
         <div class="flex flex-col gap-4 lg:sticky lg:top-24">
-          <div class="flex flex-col gap-3" data-testid="workflow-actions">
-            <Button
-              v-if="cloudHref"
-              as="a"
-              :href="cloudHref"
-              target="_blank"
-              rel="noopener"
-              class="h-auto min-h-11 max-w-full whitespace-normal"
-              >{{ t('workshop.workflow.tryCloud') }}</Button
-            >
-            <Button
-              v-if="template?.downloadUrl"
-              as="a"
-              :href="template.downloadUrl"
-              download
-              variant="outline"
-              class="h-auto min-h-11 max-w-full whitespace-normal"
-              >{{ t('workshop.workflow.download') }}</Button
-            >
-          </div>
-
           <div
             class="overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
             data-testid="workflow-facts"

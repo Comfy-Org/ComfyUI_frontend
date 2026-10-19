@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import { getRouterWorkshopModelDetail } from '@/config/workshop-router-content'
 import { priceKey, shotEstimate } from './estimate'
 import { runnableCinematicModels } from './models'
 import { priceCinematicModels } from './pricing'

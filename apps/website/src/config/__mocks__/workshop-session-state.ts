@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
-import type * as realSession from '../workshop-session-state'
+import type * as realSession from '@/config/workshop-session-state'
 
 type Session = ReturnType<typeof realSession.useWorkshopSession>
 
@@ -43,4 +43,4 @@ export const {
 export type {
   WorkshopSession,
   WorkshopSessionUser
-} from '../workshop-session-state'
+} from '@/config/workshop-session-state'

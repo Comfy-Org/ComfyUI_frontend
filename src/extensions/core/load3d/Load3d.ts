@@ -12,6 +12,7 @@ import type { RecordingManager } from './RecordingManager'
 import type { SceneModelManager } from './SceneModelManager'
 import { Viewport3d } from './Viewport3d'
 import type { Viewport3dDeps } from './Viewport3d'
+import { adoptClonedModel } from './quadWireframe/adoptClonedModel'
 import { computeCameraFromMatrices } from './cameraFromMatrices'
 import { DIRECT_EXPORT_FORMATS } from './constants'
 import type {
@@ -19,6 +20,7 @@ import type {
   GizmoMode,
   Load3DOptions,
   LoadModelOptions,
+  LoadModelOutcome,
   MaterialMode,
   Model3DTransform,
   UpDirection
@@ -37,9 +39,8 @@ export type Load3dDeps = Viewport3dDeps & {
 
 function positionThumbnailCamera(
   camera: THREE.PerspectiveCamera,
-  model: THREE.Object3D
+  box: THREE.Box3
 ) {
-  const box = new THREE.Box3().setFromObject(model)
   const size = box.getSize(new THREE.Vector3())
   const center = box.getCenter(new THREE.Vector3())
   const maxDim = Math.max(size.x, size.y, size.z)
@@ -64,9 +65,10 @@ class Load3d extends Viewport3d {
   adapterRef: AdapterRef
   private configurationCleanup?: () => void
 
-  private loadingPromise: Promise<boolean> | null = null
+  private loadingPromise: Promise<LoadModelOutcome> | null = null
   private _loadGeneration: number = 0
   private hasLoadedModel: boolean = false
+  private thumbnailCaptureQueue: Promise<unknown> = Promise.resolve()
 
   constructor(
     container: HTMLElement,
@@ -190,6 +192,7 @@ class Load3d extends Viewport3d {
         format === 'fbx'
           ? Object.assign(cloneSkinned(source), { animations: clips })
           : source.clone()
+      adoptClonedModel(model, source, this.modelManager.originalMaterials)
 
       await new Promise((resolve) => setTimeout(resolve, 10))
 
@@ -333,7 +336,7 @@ class Load3d extends Viewport3d {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<boolean> {
+  ): Promise<LoadModelOutcome> {
     this._loadGeneration += 1
     const loadGeneration = this._loadGeneration
 
@@ -345,13 +348,14 @@ class Load3d extends Viewport3d {
         // Serialization only: the rejection already reached the loadModel caller.
       }
 
+      let outcome: LoadModelOutcome
       try {
-        await this._loadModelInternal(url, originalFileName, options)
+        outcome = await this._loadModelInternal(url, originalFileName, options)
       } finally {
         if (loadGeneration !== this._loadGeneration) this.clearModelState()
       }
 
-      return loadGeneration === this._loadGeneration
+      return loadGeneration === this._loadGeneration ? outcome : 'cancelled'
     })()
 
     // Publish the tail before waiting so every accepted load is visible to
@@ -365,7 +369,7 @@ class Load3d extends Viewport3d {
   }
 
   async whenLoadIdle(): Promise<void> {
-    let last: Promise<boolean> | null = null
+    let last: Promise<LoadModelOutcome> | null = null
     while (this.loadingPromise && this.loadingPromise !== last) {
       last = this.loadingPromise
       try {
@@ -380,7 +384,7 @@ class Load3d extends Viewport3d {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void> {
+  ): Promise<LoadModelOutcome> {
     const shouldRetainView = this.hasLoadedModel
     const savedCameraState = shouldRetainView
       ? this.cameraManager.getCameraState()
@@ -393,8 +397,17 @@ class Load3d extends Viewport3d {
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.animationManager.dispose()
+    this.hasLoadedModel = false
 
-    await this.loaderManager.loadModel(url, originalFileName, options)
+    const outcome = await this.loaderManager.loadModel(
+      url,
+      originalFileName,
+      options
+    )
+
+    if (outcome !== 'loaded') {
+      return outcome
+    }
 
     if (this.modelManager.currentModel) {
       this.animationManager.setupModelAnimations(
@@ -415,6 +428,8 @@ class Load3d extends Viewport3d {
     }
 
     this.handleResize()
+
+    return outcome
   }
 
   isSplatModel(): boolean {
@@ -566,9 +581,20 @@ class Load3d extends Viewport3d {
     this.forceRender()
   }
 
-  public async captureThumbnail(
+  public captureThumbnail(
     width: number = 256,
     height: number = 256
+  ): Promise<string> {
+    const capture = this.thumbnailCaptureQueue.then(() =>
+      this.captureThumbnailNow(width, height)
+    )
+    this.thumbnailCaptureQueue = capture.catch(() => {})
+    return capture
+  }
+
+  private async captureThumbnailNow(
+    width: number,
+    height: number
   ): Promise<string> {
     if (!this.modelManager.currentModel) {
       throw new Error('No model loaded for thumbnail capture')
@@ -585,16 +611,22 @@ class Load3d extends Viewport3d {
         this.cameraManager.toggleCamera('perspective')
       }
 
-      positionThumbnailCamera(
-        this.cameraManager.perspectiveCamera,
-        this.modelManager.currentModel
-      )
+      const box =
+        this.modelManager.getCurrentBounds() ??
+        new THREE.Box3().setFromObject(this.modelManager.currentModel)
 
-      const box = new THREE.Box3().setFromObject(this.modelManager.currentModel)
+      positionThumbnailCamera(this.cameraManager.perspectiveCamera, box)
+
       this.controlsManager.controls.target.copy(
         box.getCenter(new THREE.Vector3())
       )
       this.controlsManager.controls.update()
+
+      if (this.isSplatModel()) {
+        await this.sceneManager.whenSplatsSorted(
+          this.cameraManager.perspectiveCamera
+        )
+      }
 
       const result = await this.captureScene(width, height)
       return result.scene

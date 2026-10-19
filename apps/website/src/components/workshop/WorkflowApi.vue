@@ -5,27 +5,27 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-import { useTablist } from '../../composables/useTablist'
-import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import type { SnippetLanguage } from '../../config/models-snippets'
-import { SNIPPET_LANGUAGES } from '../../config/models-snippets'
-import { apiKeysLink, externalLinks } from '../../config/routes'
-import type { FormValues } from '../../config/workshop-playground'
-import { urlUploadField } from '../../config/workshop-playground'
-import { OBJECT_URL_LIFETIME_MS } from '../../config/workshop-output-download'
-import { initialWorkshopPageState } from '../../config/workshop-page-state'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
-import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
+import { useTablist } from '@/composables/useTablist'
+import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
+import { SNIPPET_LANGUAGES } from '@/config/models-snippets'
+import { apiKeysLink, externalLinks } from '@/config/routes'
+import type { FormValues } from '@/config/workshop-playground'
+import { urlUploadField } from '@/config/workshop-playground'
+import { OBJECT_URL_LIFETIME_MS } from '@/config/workshop-output-download'
+import { initialWorkshopPageState } from '@/config/workshop-page-state'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
+import { workspaceLinkedHref } from '@/config/workshop-workspace-link'
 import {
   workflowCurl,
   workflowPython,
   workflowSdkPlan,
   workflowSnippetRequest,
   workflowTypeScript
-} from '../../config/workshop-workflow-snippet'
-import { t } from '../../i18n/translations'
-import type { CodeLang } from '../../lib/highlight'
+} from '@/config/workshop-workflow-snippet'
+import { t } from '@/i18n/translations'
+import type { CodeLang } from '@/lib/highlight'
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
 import SectionHeading from './SectionHeading.vue'
@@ -140,13 +140,14 @@ const facts = computed(() => {
           :href="keyHref"
           target="_blank"
           rel="noopener"
+          variant="outline"
           class="w-full justify-between"
           data-testid="api-get-key"
           @click="emit('getKey')"
         >
           <template #prepend>
             <span
-              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-ink/15 text-xs font-bold"
+              class="inline-flex size-6 items-center justify-center rounded-full bg-primary-comfy-yellow/15 text-xs font-bold"
               aria-hidden="true"
               >1</span
             >

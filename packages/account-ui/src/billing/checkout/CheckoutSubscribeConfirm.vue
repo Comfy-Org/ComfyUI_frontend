@@ -12,26 +12,29 @@
         >
           <i class="pi pi-arrow-left text-base" />
         </CheckoutButton>
-        <h2 :class="layout.title">
+        <CheckoutTitle :class="layout.title">
           {{ copy.confirmPayment }}
-        </h2>
+        </CheckoutTitle>
       </div>
-      <CheckoutSubscribeSummary
-        :plan
-        :copy
-        :locale
-        :preview-data
-        :billing-cycle
-        :compact="usePaymentElement"
-      />
-      <CheckoutPromotionCode
-        v-if="embeddedCheckoutEnabled"
-        :applied-code="previewData?.promotion_code"
-        :disabled="interactionLocked"
-        :copy
-        @apply="emit('applyPromotionCode', $event)"
-        @invalidate="emit('invalidateQuote')"
-      />
+      <slot v-if="summaryReplaced" name="summary" />
+      <template v-else>
+        <CheckoutSubscribeSummary
+          :plan
+          :copy
+          :locale
+          :preview-data
+          :billing-cycle
+          :compact="usePaymentElement"
+        />
+        <CheckoutPromotionCode
+          v-if="embeddedCheckoutEnabled"
+          :applied-code="previewData?.promotion_code"
+          :disabled="interactionLocked"
+          :copy
+          @apply="emit('applyPromotionCode', $event)"
+          @invalidate="emit('invalidateQuote')"
+        />
+      </template>
       <CheckoutSavedMethods
         v-if="showSavedMethods && savedMethods"
         v-model:selected-method-id="selectedSavedMethodId"
@@ -59,7 +62,7 @@
         :authentication-state
         :authentication-error
         @add-credit-card="emit('addCreditCard')"
-        @confirm-payment="emit('confirmPayment', $event)"
+        @confirm-payment="(token, type) => emit('confirmPayment', token, type)"
         @submitting-change="stripeSubmissionPending = $event"
         @payment-phase="emit('paymentPhase', $event)"
       />
@@ -71,7 +74,9 @@
 /**
  * The confirm step of a new subscription: the plan and today's charge on one
  * side, and the way to pay on the other — the card form, the saved methods
- * that stand in for it, or a hosted continuation the host opens.
+ * that stand in for it, or a hosted continuation the host opens. A host
+ * following a payment it did not quote here replaces the plan and charge
+ * through the `summary` slot and `summaryReplaced`.
  */
 import { computed, ref } from 'vue'
 
@@ -88,6 +93,7 @@ import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
 import CheckoutSavedMethods from './CheckoutSavedMethods.vue'
 import CheckoutSubscribeActions from './CheckoutSubscribeActions.vue'
 import CheckoutSubscribeSummary from './CheckoutSubscribeSummary.vue'
+import CheckoutTitle from './CheckoutTitle.vue'
 import type { CheckoutCopy } from './checkoutCopy'
 import type { CheckoutBillingCycle, CheckoutPlan } from './checkoutQuote'
 import type { CheckoutPayAction } from './checkoutRecovery'
@@ -114,7 +120,8 @@ const {
   savedMethods = null,
   quoteIsCurrent = false,
   isApplyingPromotionCode = false,
-  embeddedCheckoutEnabled = false
+  embeddedCheckoutEnabled = false,
+  summaryReplaced = false
 } = defineProps<{
   plan: CheckoutPlan
   copy: CheckoutCopy
@@ -138,11 +145,13 @@ const {
   quoteIsCurrent?: boolean
   isApplyingPromotionCode?: boolean
   embeddedCheckoutEnabled?: boolean
+  /** The host summarizes a payment it did not quote here in the `summary` slot. */
+  summaryReplaced?: boolean
 }>()
 
 const emit = defineEmits<{
   addCreditCard: []
-  confirmPayment: [confirmationToken: string]
+  confirmPayment: [confirmationToken: string, paymentMethodType: string]
   back: []
   changePaymentMethod: []
   applyPromotionCode: [code: string]
@@ -175,15 +184,15 @@ const layout = computed(() => {
     ),
     summary: cn(
       split &&
-        'xl:w-[42%] xl:shrink-0 xl:border-r xl:border-border-subtle xl:bg-base-background xl:px-12 xl:py-10',
+        'xl:w-[42%] xl:shrink-0 xl:border-r xl:border-border/50 xl:bg-background xl:px-12 xl:py-10',
       // Below xl the same dual tone runs vertically: the summary bleeds
       // dark to the dialog edges, payment continues on the shell below.
       split &&
-        'max-xl:-mx-4 max-xl:-mt-6 max-xl:rounded-t-2xl max-xl:bg-base-background max-xl:p-6'
+        'max-xl:-mx-4 max-xl:-mt-6 max-xl:rounded-t-2xl max-xl:bg-background max-xl:p-6'
     ),
     header: cn('mb-8 flex items-center gap-3', split && 'xl:mb-10'),
     title: cn(
-      'm-0 flex-1 text-center text-xl font-semibold text-base-foreground lg:text-2xl',
+      'm-0 flex-1 text-center text-xl font-semibold text-foreground lg:text-2xl',
       // In the sidebar the title goes quiet and the money block leads.
       split &&
         'xl:text-left xl:text-base xl:font-medium xl:text-muted-foreground'

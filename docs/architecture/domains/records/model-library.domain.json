@@ -1,0 +1,83 @@
+{
+  "id": "model-library",
+  "capability": "Model library",
+  "description": "Backend model folders, metadata, previews, loader-node mapping, desktop download tracking, and the model library sidebar. Asset-backed browsing and missing-model scans remain separate.",
+  "modules": [
+    {
+      "path": "src/components/sidebar/tabs/ModelLibrarySidebarTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/ModelLibrarySidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/modelLibrary/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/widget/SampleModelSelector.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/useModelSelectorDialog.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/electronDownloadStore.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/stores/electronDownloadStore.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/stores/modelStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/modelStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/modelToNodeStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/modelToNodeStore.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Model library tab browses model folders and shows desktop download progress",
+      "checks": [
+        "src/components/sidebar/tabs/ModelLibrarySidebarTab.test.ts",
+        "src/components/sidebar/tabs/modelLibrary/DownloadItem.test.ts"
+      ]
+    },
+    {
+      "name": "Model store loads folders and models with metadata and previews",
+      "checks": [
+        "src/stores/modelStore.test.ts",
+        "browser_tests/tests/sidebar/modelLibrary.spec.ts"
+      ]
+    },
+    {
+      "name": "Model folders map to loader nodes and widget inputs",
+      "checks": ["src/stores/modelToNodeStore.test.ts"]
+    },
+    {
+      "name": "Desktop model downloads track progress, pause, resume, and completion",
+      "checks": ["src/stores/electronDownloadStore.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

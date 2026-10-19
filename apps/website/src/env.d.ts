@@ -1,6 +1,13 @@
 import 'astro/client'
+import type { t } from './i18n/translations'
 
 declare global {
+  namespace App {
+    interface Locals {
+      t: typeof t
+    }
+  }
+
   // Opting into Vite's strict mode drops the `[key: string]: any` fallback on
   // ImportMetaEnv, so an undeclared `import.meta.env.X` is a compile error
   // instead of a silent `any`.
@@ -9,6 +16,7 @@ declare global {
   }
 
   interface ImportMetaEnv {
+    readonly PUBLIC_LAUNCH_DRAFTS: boolean
     /**
      * Which Cloud family Workshop talks to: 'prod', 'staging' or 'test'. Unset
      * means staging for local builds. Deployed builds that include Workshop must

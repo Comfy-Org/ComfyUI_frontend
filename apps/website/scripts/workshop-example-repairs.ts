@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
-import rawRepairs from '../src/data/workshop-example-repairs.json'
-import type { WorkshopDisplayEntry } from '../src/content/workshop-display.schema'
+import rawRepairs from '@/data/workshop-example-repairs.json'
+import type { WorkshopDisplayEntry } from '@/content/workshop-display.schema'
 
 const source = z
   .object({

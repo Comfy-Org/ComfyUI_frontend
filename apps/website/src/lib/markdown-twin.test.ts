@@ -5,17 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
-import ModelPage from '../components/workshop/ModelPage.vue'
-import WorkshopLoading from '../components/workshop/WorkshopLoading.vue'
-import { hubModelSlugs } from '../config/hub-models'
-import { isExcludedFromSitemap } from '../config/indexing'
-import type { ModelPageLaunch } from '../config/model-page-launch'
+import ModelPage from '@/components/workshop/ModelPage.vue'
+import WorkshopLoading from '@/components/workshop/WorkshopLoading.vue'
+import { hubModelSlugs } from '@/config/hub-models'
+import { isExcludedFromSitemap } from '@/config/indexing'
+import type { ModelPageLaunch } from '@/config/model-page-launch'
 import {
   routerModelSlugAliases,
   workshopModels
-} from '../config/workshop-browse-content'
-import { writeMarkdownTwins } from '../integrations/markdown-twins'
-import { prepareModelPage } from '../routes/models/model-page'
+} from '@/config/workshop-browse-content'
+import { writeMarkdownTwins } from '@/integrations/markdown-twins'
+import { prepareModelPage } from '@/routes/models/model-page'
 import { writeSectionIndexes } from './section-index'
 import { htmlToTwin, renderTwin } from './markdown-twin'
 import { markdownTwinPath } from './markdown-twin-path'
@@ -29,7 +29,7 @@ const launch = vi.hoisted(
     launchedWorkflowPages: false
   })
 )
-vi.mock(import('../config/model-page-launch'), () => launch)
+vi.mock(import('@/config/model-page-launch'), () => launch)
 
 const loadingSpinner = await renderToString(
   h(WorkshopLoading, { label: 'Loading' })

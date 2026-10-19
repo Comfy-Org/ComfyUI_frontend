@@ -32,7 +32,6 @@ function track(detach: () => void): void {
 
 afterEach(() => {
   for (const detach of detachers.splice(0)) detach()
-  vi.mocked(reportError).mockClear()
 })
 
 describe('withGraphIntentSource', () => {

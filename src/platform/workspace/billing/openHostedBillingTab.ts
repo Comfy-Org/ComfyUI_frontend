@@ -7,31 +7,27 @@
  */
 import type { BillingIntent } from '@comfyorg/billing-contract'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTelemetry } from '@/platform/telemetry'
+import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
+import {
+  readCheckoutOperation,
+  refreshBilling
+} from '@/platform/workspace/billing/billingRefresh'
 import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { createJourneyId } from '@/platform/workspace/utils/checkoutJourney'
 
 export interface OpenHostedBillingTabOptions {
   readonly plan?: string
   readonly teamCreditStopId?: string
-}
-
-/**
- * `noopener` returns a null handle even on success, so the blocked tab and the
- * opened one are told apart by opening a blank tab and clearing `opener` by
- * hand before it leaves `about:blank`. Only that one property survives: the
- * tab stays in this page's browsing-context group and sends this origin as
- * the referrer, both of which `'noopener,noreferrer'` would have prevented.
- */
-function openDisownedTab(url: URL): boolean {
-  const tab = window.open('', '_blank')
-  if (!tab) return false
-  tab.opener = null
-  tab.location.href = url.href
-  return true
+  /** Why the customer asked, when the click knew. */
+  readonly source?: PaymentIntentSource
+  /** The cloud journey this hands off; one is minted when the entry has none. */
+  readonly journeyId?: string
 }
 
 let stopReturnRefresh: (() => void) | null = null
@@ -93,15 +89,9 @@ function armReturnRefresh(
   workspaceId: string | undefined
 ): void {
   disarmHostedBillingReturnRefresh()
-  // Resolved inside the call, not at module scope: useBillingContext ->
-  // useWorkspaceBilling -> this module would otherwise dereference the
-  // shared context before its state is constructed.
-  const { fetchStatus, fetchBalance, readCheckoutOperation } =
-    useBillingContext()
   stopReturnRefresh = registerRefreshOnReturn(() =>
     Promise.allSettled([
-      fetchStatus(),
-      fetchBalance(),
+      refreshBilling('account'),
       useBillingCapabilities().refresh()
     ])
   )
@@ -127,15 +117,29 @@ export function openHostedBillingTabOutcome(
 ): HostedBillingTabOutcome {
   const { flags } = useFeatureFlags()
   const workspaceId = useTeamWorkspaceStore().activeWorkspaceId ?? undefined
+  const correlationId = options.journeyId ?? createJourneyId()
   const route = hostedBillingRoute(flags.hostedBillingDestination, intent, {
     plan: options.plan,
     teamCreditStopId: options.teamCreditStopId,
-    workspaceId
+    workspaceId,
+    correlationId,
+    source: options.source
   })
   if (route.kind !== 'billing_web') return 'unavailable'
-  if (!openDisownedTab(route.url)) return 'blocked'
-  armReturnRefresh(intent, workspaceId)
-  return 'opened'
+  const tab = reserveBillingTab()
+  tab?.navigate(route.url.href)
+  const result = tab ? 'opened' : 'blocked'
+  useTelemetry()?.trackBillingEvent({
+    operation: 'web_handoff',
+    stage: 'opened',
+    outcome: 'pending',
+    intent,
+    result,
+    payment_intent_source: options.source,
+    correlation_id: correlationId
+  })
+  if (result === 'opened') armReturnRefresh(intent, workspaceId)
+  return result
 }
 
 /**

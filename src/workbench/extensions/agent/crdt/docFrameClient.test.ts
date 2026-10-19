@@ -1,14 +1,16 @@
-import { describe, expect, it, vi } from 'vitest'
+import { SCHEMA_VERSION } from '@comfyorg/comfy-multi-player'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { DocFrameTransport } from './docFrameClient'
+import type { DocFrameTransport, ServerDocFrame } from './docFrameClient'
 import {
   DocFrameClient,
   encodeBase64,
   parseServerDocFrame
 } from './docFrameClient'
+import type { ServerDocFrameType } from './docFrameCodes'
 import { FollowerDoc } from './followerDoc'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 
@@ -34,6 +36,10 @@ function updateAfter(doc: Y.Doc, mutate: () => void): Uint8Array {
 }
 
 describe('doc frame client', () => {
+  it('names every server frame type in SERVER_DOC_FRAME_TYPES', () => {
+    expectTypeOf<ServerDocFrame['type']>().toEqualTypeOf<ServerDocFrameType>()
+  })
+
   it('decodes a base64 doc_update that converges through Y.applyUpdate', () => {
     const source = new Y.Doc()
     source.getMap('nodes').set('one', { x: 10 })
@@ -111,7 +117,9 @@ describe('doc frame client', () => {
         data: {
           v: 1,
           workflow_id: 'wf-1',
-          state_vector_b64: encodeBase64(stateVector)
+          state_vector_b64: encodeBase64(stateVector),
+          supports_reseed: true,
+          schema_version: SCHEMA_VERSION
         }
       },
       {
@@ -314,5 +322,14 @@ describe('doc frame client', () => {
       type: 'doc_update',
       data: { workflowId: 'wf-1', seq: 0, update: new Uint8Array([1]) }
     })
+  })
+
+  it('rejects inherited object keys as frame types', () => {
+    expect(
+      parseServerDocFrame({
+        type: 'constructor',
+        data: { v: 1, workflow_id: 'wf-1' }
+      })
+    ).toBeNull()
   })
 })

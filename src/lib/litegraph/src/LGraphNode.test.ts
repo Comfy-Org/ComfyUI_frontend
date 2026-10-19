@@ -1,3 +1,4 @@
+import { omit } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
 import type {
@@ -11,6 +12,7 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
+  LGraphEventMode,
   LGraphNode,
   LiteGraph,
   LGraph,
@@ -20,10 +22,8 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 
 import { test } from './__fixtures__/testExtensions'
-import {
-  createMockCanvasRenderingContext2D,
-  createMockLGraphNodeWithArrayBoundingRect
-} from '@/utils/__tests__/litegraphTestUtils'
+import { createMockLGraphNodeWithArrayBoundingRect } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 
@@ -50,12 +50,10 @@ function getMockISerialisedNode(
 
 describe('LGraphNode', () => {
   let node: LGraphNode
-  let origLiteGraph: typeof LiteGraph
+  let origLiteGraph: Omit<typeof LiteGraph, 'Classes'>
 
   beforeEach(() => {
-    origLiteGraph = Object.assign({}, LiteGraph)
-    // @ts-expect-error Intended: Force remove an otherwise readonly non-optional property
-    delete origLiteGraph.Classes
+    origLiteGraph = omit(LiteGraph, ['Classes'])
 
     Object.assign(LiteGraph, {
       NODE_TITLE_HEIGHT: 20,
@@ -74,6 +72,16 @@ describe('LGraphNode', () => {
 
   afterEach(() => {
     Object.assign(LiteGraph, origLiteGraph)
+  })
+
+  test.for([
+    LGraphEventMode.ALWAYS,
+    LGraphEventMode.ON_EVENT,
+    LGraphEventMode.NEVER,
+    LGraphEventMode.BYPASS
+  ])('accepts mode %s through changeMode', (mode) => {
+    expect(node.changeMode(mode)).toBe(true)
+    expect(node.mode).toBe(mode)
   })
 
   test('preserves null property values', () => {

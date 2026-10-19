@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useClipboard, watchDebounced } from '@vueuse/core'
-import { default as DOMPurify } from 'dompurify'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -17,16 +16,8 @@ const { code, lang = 'text' } = defineProps<{
 const { t } = useI18n()
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
 
-// shiki highlights asynchronously and its bundle is lazy-loaded, so the block first
-// renders as plain escaped code and swaps to the highlighted markup once shiki resolves.
-// An unknown language (or a shiki failure) degrades to the plain fallback rather than
-// throwing. shiki emits its own trusted <span> markup, safe to inject.
 const highlighted = ref<string | null>(null)
 
-// watchDebounced (not watchEffect) so the code/lang deps are tracked even though the highlight
-// body awaits the lazy shiki import, and streaming token bursts collapse into one re-highlight.
-// The previous highlight stays visible until the next one resolves, so the block never flashes
-// back to plain mid-stream.
 watchDebounced(
   () => [code, lang] as const,
   async ([currentCode, currentLang], _prev, onCleanup) => {
@@ -41,7 +32,7 @@ watchDebounced(
         theme: 'github-dark',
         colorReplacements: { '#24292e': 'transparent' }
       })
-      if (!cancelled) highlighted.value = DOMPurify.sanitize(html)
+      if (!cancelled) highlighted.value = html
     } catch {
       if (!cancelled) highlighted.value = null
     }
@@ -51,17 +42,15 @@ watchDebounced(
 </script>
 
 <template>
-  <div
-    class="group relative my-2 overflow-hidden rounded-md border border-border-default"
-  >
+  <div class="group relative my-2 overflow-hidden rounded-md border">
     <div
-      class="flex items-center justify-between border-b border-border-default bg-secondary-background-hover px-3 py-1.5"
+      class="flex items-center justify-between border-b bg-accent px-3 py-1.5"
     >
       <span
         class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
         <span class="icon-[lucide--file-code] size-3.5" />
-        <span class="text-base-foreground">{{ lang }}</span>
+        <span class="text-foreground">{{ lang }}</span>
       </span>
       <Button
         type="button"
@@ -83,12 +72,13 @@ watchDebounced(
     </div>
     <SanitizedHtml
       v-if="highlighted"
+      profile="highlighted-code"
       class="overflow-x-auto p-4 font-mono text-sm [&_pre]:bg-transparent"
       :html="highlighted"
     />
     <pre
       v-else
-      class="overflow-x-auto p-4 font-mono text-sm text-base-foreground"
+      class="overflow-x-auto p-4 font-mono text-sm"
     ><code>{{ code }}</code></pre>
   </div>
 </template>

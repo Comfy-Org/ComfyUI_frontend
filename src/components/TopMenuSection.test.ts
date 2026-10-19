@@ -1,10 +1,10 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/no-container */
+/* oxlint-disable testing-library/no-node-access */
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import type { MenuItem } from 'primevue/menuitem'
+import type { MenuItem } from '@/components/ui/menu/types'
 import {
   assert,
   beforeEach,
@@ -29,7 +29,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
@@ -70,8 +70,7 @@ vi.mock<unknown>(
 
   () => {
     const managerState = {
-      shouldShowExtensionsButton: computed(() => true),
-      openManager: vi.fn()
+      shouldShowExtensionsButton: computed(() => true)
     }
 
     return {
@@ -86,6 +85,7 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerDialog'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -140,9 +140,6 @@ function createWrapper({
             '<div data-testid="context-menu" :data-model="JSON.stringify(model)" />'
         },
         ...stubs
-      },
-      directives: {
-        tooltip: () => {}
       }
     }
   }
@@ -252,7 +249,7 @@ describe('TopMenuSection', () => {
 
   it('keeps action bars mounted while hiding the error overlay in node selection mode', () => {
     const pinia = getActivePinia()!
-    useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+    useCanvasStore(pinia).isPickingNodes = true
 
     createWrapper({
       pinia,
@@ -401,7 +398,7 @@ describe('TopMenuSection', () => {
     it('does not render inline progress summary while action bars are hidden', async () => {
       const pinia = getActivePinia()!
       configureSettings(pinia, true)
-      useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+      useCanvasStore(pinia).isPickingNodes = true
 
       const { container } = createWrapper({ pinia })
 
@@ -475,8 +472,7 @@ describe('TopMenuSection', () => {
       async ({ isActionBarsHidden, rendered }) => {
         const pinia = getActivePinia()!
         configureSettings(pinia, false)
-        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
-          isActionBarsHidden
+        useCanvasStore(pinia).isPickingNodes = isActionBarsHidden
 
         const { container } = createWrapper({ pinia })
         await nextTick()
@@ -495,8 +491,7 @@ describe('TopMenuSection', () => {
       async ({ isActionBarsHidden, hidden }) => {
         const pinia = getActivePinia()!
         configureSettings(pinia, false)
-        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
-          isActionBarsHidden
+        useCanvasStore(pinia).isPickingNodes = isActionBarsHidden
 
         const { container } = createWrapper({ pinia })
         await nextTick()
@@ -606,12 +601,12 @@ describe('TopMenuSection', () => {
     const { container } = createWrapper()
 
     // Release red dot is mocked as true globally for this test file.
-    expect(container.querySelector('span.bg-red-500')).toBeNull()
+    expect(container.querySelector('span.bg-destructive')).toBeNull()
 
     mockData.setShowConflictRedDot(true)
     await nextTick()
 
-    expect(container.querySelector('span.bg-red-500')).not.toBeNull()
+    expect(container.querySelector('span.bg-destructive')).not.toBeNull()
   })
 
   it('keeps the floating actionbar container open for the extensions button', async () => {
