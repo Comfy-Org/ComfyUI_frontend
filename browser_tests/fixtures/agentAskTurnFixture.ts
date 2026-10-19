@@ -1,4 +1,4 @@
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -16,6 +16,7 @@ import {
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -28,7 +29,6 @@ import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const SOCKET_SID = '8e2f3a4b-5c6d-4e7f-9a01-2b3c4d5e6f70'
 const CATALOG: WidgetCatalog = { types: {} }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
@@ -47,10 +47,6 @@ export interface AskTurn {
   answer: (prompt: string, option: string) => Promise<void>
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
 function isAnswerTo(askId: string): (url: URL) => boolean {
   return (url) => decodeURIComponent(url.pathname) === answerPath(askId)
 }
@@ -60,12 +56,13 @@ async function startAskTurn(
   prompt: string,
   storedMode: AgentRunMode['mode']
 ): Promise<AskTurn> {
-  const host = new HostDoc(ASK_WORKFLOW_ID, SEED, CATALOG)
-  let socket: WebSocketRoute | null = null
-  const send = (frame: AgentWsEvent | AgentAskServerFrame | HostFrame) => {
-    if (!socket) throw new Error('the app has not opened /ws yet')
-    socket.send(JSON.stringify(frame))
-  }
+  const hostSocket = new AgentFollowerHostSocket(
+    page,
+    ASK_WORKFLOW_ID,
+    new HostDoc(ASK_WORKFLOW_ID, SEED, CATALOG)
+  )
+  const send = (frame: AgentWsEvent | AgentAskServerFrame | HostFrame) =>
+    hostSocket.send(frame)
   const answerCalls: AnswerCall[] = []
 
   const runMode: AgentRunMode = { mode: storedMode, credit_limit: null }
@@ -93,29 +90,7 @@ async function startAskTurn(
     }
     return route.fulfill(jsonRoute([]))
   })
-  await page.routeWebSocket(/\/ws/, (ws) => {
-    socket = ws
-    ws.send(
-      JSON.stringify({
-        type: 'status',
-        data: { status: { exec_info: { queue_remaining: 0 } }, sid: SOCKET_SID }
-      })
-    )
-    ws.onMessage((raw) => {
-      const frame: unknown = JSON.parse(raw.toString())
-      if (!isRecord(frame)) return
-      const { type, data } = frame
-      if (type !== 'doc_subscribe' || !isRecord(data)) return
-      const { workflow_id, state_vector_b64 } = data
-      if (
-        workflow_id !== ASK_WORKFLOW_ID ||
-        typeof state_vector_b64 !== 'string'
-      )
-        return
-      send(host.subscribed())
-      send(host.catchUp(state_vector_b64))
-    })
-  })
+  await hostSocket.install()
 
   await bootAgentApp(page, true, {
     settings: { 'Comfy.Graph.CanvasInfo': false }
@@ -139,7 +114,7 @@ async function startAskTurn(
     .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
     .click()
   await expect(picker).toHaveText('Unsaved Workflow')
-  await expect.poll(() => socket !== null).toBe(true)
+  await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
   await panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL }).fill(prompt)
   await panel.getByRole('button', { name: enMessages.agent.send }).click()

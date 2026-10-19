@@ -111,7 +111,7 @@ export const ChipsViaValueSlot: Story = {
             <span
               v-for="item in selected"
               :key="item.value"
-              class="truncate rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs"
+              class="truncate rounded-sm bg-secondary px-1.5 py-0.5 text-xs"
             >
               {{ item.name }}
             </span>

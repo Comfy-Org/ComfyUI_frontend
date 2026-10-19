@@ -2,7 +2,7 @@ import type {
   AgentThreadListResponse,
   PaginationInfo
 } from '@comfyorg/ingest-types'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   markErrorReported,
@@ -12,6 +12,8 @@ import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
+import { withAgentAuth } from './agentAuth'
+
 import type {
   AgentThreadSummary,
   CloudWorkflowEntry
@@ -19,6 +21,7 @@ import type {
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('./agentAuth'))
 
 import {
   AgentApiError,
@@ -426,6 +429,25 @@ describe('listThreads pagination', () => {
   })
 })
 
+describe('getIdentity', () => {
+  it('reads the identity the agent authenticated this client as', async () => {
+    respond(
+      jsonResponse(200, { workspace_id: 'w-local', user_id: 'local-user' })
+    )
+
+    const identity = await makeClient().getIdentity()
+
+    expect(identity).toEqual({ userId: 'local-user' })
+    expect(lastCall().route).toBe('/agent/identity')
+  })
+
+  it('rejects a malformed identity rather than returning a partial one', async () => {
+    respond(jsonResponse(200, { workspace_id: 'w-local', user_id: '' }))
+
+    await expect(makeClient().getIdentity()).rejects.toThrow()
+  })
+})
+
 // The one read that can tell a live version-less draft from a deleted
 // workflow: cloud's `GetByID` excludes soft-deleted rows but, unlike `List`,
 // not version-less ones.
@@ -479,12 +501,26 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1']
     })
     expect(contentType(init)).toBe('application/json')
+  })
+
+  it('sends current_tab_unbound when the turn comes from a tab with no workflow', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'add a node',
+      currentTabUnbound: true
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'add a node',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      current_tab_unbound: true
+    })
   })
 
   it('omits absent optionals rather than sending them as undefined keys', async () => {
@@ -493,7 +529,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'just text',
-      ask_kinds: ['run_approval', 'ask_user']
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval']
     })
   })
 
@@ -510,7 +546,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
     })
   })
@@ -533,7 +569,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
   })
@@ -743,6 +779,18 @@ describe('error mapping', () => {
     expect((error as AgentApiError).message).toBe(
       'Agent request failed (HTTP 503)'
     )
+  })
+
+  it('carries its operation so a non-auth status can still be tagged downstream (PM-2103)', async () => {
+    respond(new Response('', { status: 503 }))
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    if (!(error instanceof AgentApiError)) throw error
+    expect(error.operation).toBe('post_thread_message')
+    expect(error.status).toBe(503)
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
@@ -1317,6 +1365,64 @@ describe('Retry-After contract', () => {
     )
     expect(await retryAfterSeconds('Friday, 31-Dec-00 00:00:00 GMT')).toBe(
       expected
+    )
+  })
+})
+
+const emptyThreadPage = {
+  threads: [],
+  pagination: { offset: 0, limit: 1, total: 0, has_more: false }
+}
+
+describe('user auth on agent requests', () => {
+  beforeEach(() => {
+    vi.mocked(withAgentAuth).mockImplementation(async (init) => {
+      const headers = new Headers(init.headers)
+      headers.set('Authorization', 'Bearer id-token')
+      return { ...init, headers }
+    })
+  })
+
+  const calls: [
+    string,
+    (client: AgentRestClient) => Promise<unknown>,
+    unknown
+  ][] = [
+    [
+      'POST messages',
+      (c) => c.postMessage('new', { content: 'hi' }),
+      turnAccepted
+    ],
+    ['GET messages', (c) => c.getMessages('t1'), []],
+    [
+      'POST answer',
+      (c) => c.answerAsk('t1', 'ask-1', { selected: ['allow'] }),
+      { status: 'answered' }
+    ],
+    ['the credential refresh', (c) => c.refreshCredential(), emptyThreadPage]
+  ]
+
+  it.for(calls)(
+    'sends the user auth header with %s',
+    async ([, call, body]) => {
+      respond(jsonResponse(200, body))
+
+      await call(makeClient())
+
+      expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
+        'Bearer id-token'
+      )
+    }
+  )
+
+  it('sends no auth header for a signed-out user', async () => {
+    vi.mocked(withAgentAuth).mockImplementation(async (init) => init)
+    respond(jsonResponse(200, []))
+
+    await makeClient().getMessages('t1')
+
+    expect(new Headers(lastCall().init.headers).has('Authorization')).toBe(
+      false
     )
   })
 })

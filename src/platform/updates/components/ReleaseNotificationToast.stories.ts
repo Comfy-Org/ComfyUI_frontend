@@ -109,7 +109,7 @@ const meta: Meta<StoryArgs> = {
 
       return {
         template: `
-          <div class="min-h-screen flex items-center justify-center bg-base-background p-8">
+          <div class="min-h-screen flex items-center justify-center bg-background p-8">
             <story />
           </div>
         `

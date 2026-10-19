@@ -2,7 +2,7 @@
   <Button
     ref="buttonRef"
     variant="secondary"
-    class="group h-8 rounded-none! bg-transparent p-0 transition-none! hover:rounded-lg! hover:bg-interface-button-hover-surface!"
+    class="group rounded-none! bg-transparent p-0 transition-none! hover:rounded-lg! hover:bg-accent!"
     :style="buttonStyles"
     :aria-label="$t('graphCanvasMenu.canvasMode')"
     aria-haspopup="menu"
@@ -10,9 +10,7 @@
     @click="toggle"
   >
     <div class="flex items-center gap-1 pr-0.5">
-      <div
-        class="rounded-lg bg-interface-panel-selected-surface p-2 group-hover:bg-interface-button-hover-surface"
-      >
+      <div class="rounded-lg bg-muted p-2 group-hover:bg-accent">
         <i :class="currentModeIcon" class="block size-4" aria-hidden="true" />
       </div>
       <i
@@ -52,11 +50,9 @@
           <i class="icon-[lucide--mouse-pointer-2] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.select') }}</span>
         </div>
-        <span
-          class="text-[9px] text-text-primary"
-          data-testid="shortcut-hint"
-          >{{ unlockCommandText }}</span
-        >
+        <span class="text-[9px] text-foreground" data-testid="shortcut-hint">{{
+          unlockCommandText
+        }}</span>
       </button>
 
       <button
@@ -75,11 +71,9 @@
           <i class="icon-[lucide--hand] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.hand') }}</span>
         </div>
-        <span
-          class="text-[9px] text-text-primary"
-          data-testid="shortcut-hint"
-          >{{ lockCommandText }}</span
-        >
+        <span class="text-[9px] text-foreground" data-testid="shortcut-hint">{{
+          lockCommandText
+        }}</span>
       </button>
     </div>
   </Popover>

@@ -664,6 +664,17 @@ function capabilitiesResponse({
       can_change_seats: false,
       can_invite_members: false,
       can_manage_members: false,
+      can_delete_workspace: false,
+      can_leave_workspace: false,
+      can_manage_billing: false,
+      can_manage_partner_node_access: false,
+      can_view_pending_invites: false,
+      can_view_team_usage: false,
+      can_edit_workspace: false,
+      can_manage_auto_top_up: false,
+      can_manage_subscription: false,
+      can_run_workflows: false,
+      can_upgrade: false,
       can_downgrade_to_personal: false
     },
     rollout_defaults_applied: {
@@ -859,7 +870,7 @@ const sessionRequest = (
   method,
   path,
   headers: { 'x-comfy-client': COMFY_CLIENT, ...headers },
-  credentials: 'include'
+  credentials: 'same-origin'
 })
 
 const LISTED = {
@@ -2787,7 +2798,7 @@ describe.for([{ unified: false }, { unified: true }])(
       await vi.advanceTimersByTimeAsync(60_000)
       await response
       expect(queueReads().map(([, init]) => init?.credentials)).toEqual([
-        'include'
+        'same-origin'
       ])
     })
 

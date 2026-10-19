@@ -3,7 +3,7 @@
     :data-testid="`member-row-${member.id}`"
     :class="
       cn(
-        'grid w-full items-center border-b border-interface-stroke/30 p-2 last:border-0',
+        'grid w-full items-center border-b border-border/30 p-2 last:border-0',
         isSingleSeatPlan ? 'grid-cols-1' : gridCols
       )
     "
@@ -17,20 +17,20 @@
       />
       <div
         v-else
-        class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+        class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary"
       >
         <span class="text-sm text-muted-foreground">
           {{ memberInitial }}
         </span>
       </div>
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <span class="text-sm text-base-foreground">
+      <div class="flex min-w-0 flex-1 flex-col gap-1 text-sm">
+        <span class="text-foreground">
           {{ member.name }}
           <span v-if="isCurrentUser" class="text-muted-foreground">
             ({{ $t('g.you') }})
           </span>
         </span>
-        <span class="text-sm text-muted-foreground">
+        <span class="text-muted-foreground">
           {{ member.email }}
         </span>
       </div>
@@ -49,10 +49,10 @@
     </span>
     <div v-if="showCreditsColumn" class="text-sm tabular-nums">
       <div v-if="hasCreditLimit" class="flex flex-col gap-1">
-        <span class="text-base-foreground">{{ creditsLabel }}</span>
+        <span class="text-foreground">{{ creditsLabel }}</span>
         <div
           v-if="hasCreditUsage"
-          class="h-1 overflow-hidden rounded-full bg-secondary-background-hover"
+          class="h-1 overflow-hidden rounded-full bg-accent"
           role="progressbar"
           :aria-valuenow="creditUsagePercent"
           aria-valuemin="0"

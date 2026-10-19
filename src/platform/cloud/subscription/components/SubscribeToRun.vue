@@ -2,7 +2,7 @@
   <Button
     :tooltip="buttonTooltip"
     tooltip-side="bottom"
-    class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
+    class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4"
     variant="subscribe"
     size="unset"
     data-testid="subscribe-to-run-button"

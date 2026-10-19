@@ -1,4 +1,4 @@
-import type { Page, WebSocketRoute } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -6,15 +6,13 @@ import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
@@ -85,7 +83,6 @@ const THREAD_ID = 'f0e1d2c3-b4a5-4968-8172-6354a3b2c1d0'
 const MESSAGE_ID = '1e2d3c4b-5a69-4788-9061-52f3e4d5c6b7'
 const ADDED_NODE_ID = 4242
 const NODE_TEXT = 'added while the doc broadcast lags'
-const SOCKET_SID = 'a9b8c7d6-e5f4-4321-8a9b-0c1d2e3f4a5b'
 
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
@@ -93,22 +90,6 @@ const CATALOG: WidgetCatalog = {
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
 const SEND_LABEL = enMessages.agent.send
-
-/** The follower's `doc_subscribe` payload for the workflow under test, or null. */
-function subscribeStateVectorOf(raw: Buffer | string): string | null {
-  const frame: unknown = JSON.parse(raw.toString())
-  if (typeof frame !== 'object' || frame === null) return null
-  const { type, data } = frame as { type?: unknown; data?: unknown }
-  if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-    return null
-  const { workflow_id, state_vector_b64 } = data as {
-    workflow_id?: unknown
-    state_vector_b64?: unknown
-  }
-  if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-    return null
-  return state_vector_b64
-}
 
 async function driveThroughToolCallDone(
   page: Page,
@@ -122,16 +103,7 @@ async function driveThroughToolCallDone(
   const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
   const vueNodes = new VueNodeHelpers(page)
 
-  let socket: WebSocketRoute | null = null
-  const send = (frame: AgentWsEvent | HostFrame): void => {
-    if (
-      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-      parseServerDocFrame(frame) === null
-    )
-      throw new Error(`frame ${frame.type} is not a valid doc frame`)
-    if (!socket) throw new Error('the app has not opened /ws yet')
-    socket.send(JSON.stringify(frame))
-  }
+  const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
 
   await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(emptyAgentThreadList()))
@@ -150,24 +122,7 @@ async function driveThroughToolCallDone(
     }
     return route.fulfill(jsonRoute([]))
   })
-  await page.routeWebSocket(/\/ws/, (ws) => {
-    socket = ws
-    ws.send(
-      JSON.stringify({
-        type: 'status',
-        data: {
-          status: { exec_info: { queue_remaining: 0 } },
-          sid: SOCKET_SID
-        }
-      })
-    )
-    ws.onMessage((raw) => {
-      const stateVector = subscribeStateVectorOf(raw)
-      if (stateVector === null) return
-      send(host.subscribed())
-      send(host.catchUp(stateVector))
-    })
-  })
+  await hostSocket.install()
 
   await bootAgentApp(page, true, {
     settings: {
@@ -229,7 +184,7 @@ async function driveThroughToolCallDone(
     .click()
   await expect(picker).toHaveText('Unsaved Workflow')
 
-  await expect.poll(() => socket !== null).toBe(true)
+  await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
   const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   await composer.fill('Add a note to the canvas.')
@@ -238,7 +193,7 @@ async function driveThroughToolCallDone(
     panel.getByText('Add a note to the canvas.').first()
   ).toBeVisible()
 
-  send({
+  hostSocket.send({
     type: 'agent_active_tab',
     data: {
       workflow_id: WORKFLOW_ID,
@@ -271,9 +226,8 @@ async function driveThroughToolCallDone(
   ])
   expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
 
-  if (order === 'docUpdateBeforeToolCall') send(update)
-
-  send({
+  if (order === 'docUpdateBeforeToolCall') hostSocket.send(update)
+  hostSocket.send({
     type: 'agent_tool_call',
     data: {
       tool_call_id: 'call-add-node',
@@ -284,7 +238,7 @@ async function driveThroughToolCallDone(
       message_id: MESSAGE_ID
     }
   })
-  send({
+  hostSocket.send({
     type: 'agent_message_delta',
     data: {
       delta: 'Added a note to the canvas.',
@@ -292,7 +246,7 @@ async function driveThroughToolCallDone(
       message_id: MESSAGE_ID
     }
   })
-  send({
+  hostSocket.send({
     type: 'agent_message_done',
     data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
   })
@@ -303,7 +257,7 @@ async function driveThroughToolCallDone(
   return {
     vueNodes,
     sendDelayedDocUpdate: () => {
-      if (order !== 'docUpdateBeforeToolCall') send(update)
+      if (order !== 'docUpdateBeforeToolCall') hostSocket.send(update)
     }
   }
 }

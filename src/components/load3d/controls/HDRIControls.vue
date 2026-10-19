@@ -17,7 +17,7 @@
       "
       @click="triggerFileInput"
     >
-      <i class="icon-[lucide--upload] text-lg text-base-foreground" />
+      <i class="icon-[lucide--upload] text-lg text-foreground" />
     </Button>
 
     <template v-if="hdriConfig?.hdriPath">
@@ -32,7 +32,7 @@
         :aria-label="$t('load3d.hdri.label')"
         @click="toggleEnabled"
       >
-        <i class="icon-[lucide--globe] text-lg text-base-foreground" />
+        <i class="icon-[lucide--globe] text-lg text-foreground" />
       </Button>
 
       <Button
@@ -49,7 +49,7 @@
         :aria-label="$t('load3d.hdri.showAsBackground')"
         @click="toggleShowAsBackground"
       >
-        <i class="icon-[lucide--image] text-lg text-base-foreground" />
+        <i class="icon-[lucide--image] text-lg text-foreground" />
       </Button>
 
       <Button
@@ -61,7 +61,7 @@
         :aria-label="$t('load3d.hdri.removeFile')"
         @click="onRemoveHDRI"
       >
-        <i class="icon-[lucide--x] text-lg text-base-foreground" />
+        <i class="icon-[lucide--x] text-lg text-foreground" />
       </Button>
     </template>
 

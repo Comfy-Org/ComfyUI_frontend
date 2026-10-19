@@ -34,7 +34,6 @@ import {
   EXPECTED_TARGETS,
   MESSAGE_ID,
   NODE_TYPE,
-  SOCKET_SID,
   SOURCE_NODE_ID,
   SOURCE_NODE_TYPE,
   SPARE_SLOTS,
@@ -112,7 +111,6 @@ export class MultiAutogrowRealignHarness {
       page,
       WORKFLOW_ID,
       this.host,
-      SOCKET_SID,
       'apply'
     )
     this.topbar = new Topbar(page)
@@ -261,9 +259,7 @@ export class MultiAutogrowRealignHarness {
    * otherwise the frame is dropped and the turn never settles.
    */
   async sendTurn(text: string): Promise<void> {
-    await this.panel
-      .getByRole('textbox', { name: /^Describe ideas/ })
-      .fill(text)
+    await this.agentPanel.composer.fill(text)
     await this.panel
       .getByRole('button', { name: enMessages.agent.send })
       .click()

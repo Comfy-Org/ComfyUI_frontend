@@ -1,4 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
 
 import { BaseWidget, extensionValue } from './BaseWidget'

@@ -1,4 +1,4 @@
-import type { Page, WebSocketRoute } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -10,7 +10,6 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
@@ -20,6 +19,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -64,7 +64,6 @@ import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 const WORKFLOW_ID = 'b7e2f1a4-9c3d-4e5f-8a6b-1d2c3e4f5a6b'
 const THREAD_ID = 'd4c5b6a7-8e9f-4a1b-9c2d-3e4f5a6b7c8d'
 const MESSAGE_ID = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5e'
-const SOCKET_SID = '9f8e7d6c-5b4a-4c3d-8e1f-2a3b4c5d6e7f'
 
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
@@ -105,42 +104,6 @@ const SEED: WorkflowJSON = {
 const SEND_LABEL = enMessages.agent.send
 
 /**
- * Parses a raw `/ws` message down to its `doc_subscribe` payload, or `null`
- * if the frame is malformed or is some other frame type. Extracted from the
- * mock's `onMessage` handler to keep that handler's branching to the
- * post-parse decisions (reset-gating, catch-up dropping).
- */
-function parseDocSubscribeData(
-  raw: Buffer | string
-): Record<string, unknown> | null {
-  const frame: unknown = JSON.parse(raw.toString())
-  if (typeof frame !== 'object' || frame === null) return null
-  const { type, data } = frame as { type?: unknown; data?: unknown }
-  if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-    return null
-  return data as Record<string, unknown>
-}
-
-/**
- * Validates a parsed `doc_subscribe` payload against the workflow under
- * test and extracts the state vector the mock needs to build a catch-up
- * frame. Returns `null` for any other workflow's subscribe (there are
- * none in this suite, but the guard mirrors the shape a real backend would
- * check).
- */
-function parseDocSubscribeFields(
-  data: Record<string, unknown>
-): { stateVectorB64: string } | null {
-  const { workflow_id, state_vector_b64 } = data as {
-    workflow_id?: unknown
-    state_vector_b64?: unknown
-  }
-  if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-    return null
-  return { stateVectorB64: state_vector_b64 }
-}
-
-/**
  * The node carries a stamp written before the reset, on an attribute Vue does
  * not manage, so only a fresh element loses it. Both checks below read it;
  * they differ in WHEN, which is the whole point.
@@ -177,19 +140,18 @@ async function driveThroughDocReset(
   const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
   const vueNodes = new VueNodeHelpers(page)
 
-  let socket: WebSocketRoute | null = null
   let resetSent = false
   let resubscribeCountAfterReset = 0
 
-  const send = (frame: AgentWsEvent | HostFrame): void => {
-    if (
-      (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
-      parseServerDocFrame(frame) === null
-    )
-      throw new Error(`frame ${frame.type} is not a valid doc frame`)
-    if (!socket) throw new Error('the app has not opened /ws yet')
-    socket.send(JSON.stringify(frame))
-  }
+  const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
+  hostSocket.answerSubscribesWith((stateVector) => {
+    if (!resetSent) return [host.subscribed(), host.catchUp(stateVector)]
+    resubscribeCountAfterReset += 1
+    return dropCatchUpAfterReset(resubscribeCountAfterReset)
+      ? [host.subscribed()]
+      : [host.subscribed(), host.catchUp(stateVector)]
+  })
+  const send = (frame: AgentWsEvent | HostFrame): void => hostSocket.send(frame)
 
   await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(emptyAgentThreadList()))
@@ -211,32 +173,7 @@ async function driveThroughDocReset(
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) =>
     route.fulfill(jsonRoute({ ok: true }))
   )
-  await page.routeWebSocket(/\/ws/, (ws) => {
-    socket = ws
-    ws.send(
-      JSON.stringify({
-        type: 'status',
-        data: {
-          status: { exec_info: { queue_remaining: 0 } },
-          sid: SOCKET_SID
-        }
-      })
-    )
-    ws.onMessage((raw) => {
-      const data = parseDocSubscribeData(raw)
-      if (data === null) return
-      const fields = parseDocSubscribeFields(data)
-      if (fields === null) return
-      send(host.subscribed())
-      if (!resetSent) {
-        send(host.catchUp(fields.stateVectorB64))
-        return
-      }
-      resubscribeCountAfterReset += 1
-      if (!dropCatchUpAfterReset(resubscribeCountAfterReset))
-        send(host.catchUp(fields.stateVectorB64))
-    })
-  })
+  await hostSocket.install()
 
   await bootAgentApp(page, true, {
     settings: {
@@ -299,7 +236,7 @@ async function driveThroughDocReset(
     .click()
   await expect(picker).toHaveText('Unsaved Workflow')
 
-  await expect.poll(() => socket !== null).toBe(true)
+  await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
   const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   await composer.fill('Run the workflow.')

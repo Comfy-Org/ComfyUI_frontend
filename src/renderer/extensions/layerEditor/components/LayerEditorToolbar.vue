@@ -1,6 +1,6 @@
 <template>
   <div
-    class="absolute top-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border border-border-default bg-base-background p-1 shadow-lg"
+    class="absolute top-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full border bg-background p-1 shadow-lg"
   >
     <ToggleGroup
       type="single"
@@ -30,8 +30,8 @@
         <button
           :class="
             cn(
-              'flex h-8 cursor-pointer items-center gap-1 rounded-full border-0 bg-transparent px-2 text-xs text-base-foreground transition-colors',
-              'hover:bg-secondary-background-hover'
+              'flex h-8 cursor-pointer items-center gap-1 rounded-full border-0 bg-transparent px-2 text-xs text-foreground transition-colors',
+              'hover:bg-accent'
             )
           "
           :title="t('layerEditor.zoom')"
@@ -143,9 +143,9 @@ const zoomPercent = computed(() => `${Math.round(zoomRatio.value * 100)}%`)
 
 function toolButtonClass(active: boolean): string {
   return cn(
-    'flex size-8 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-base-foreground transition-colors',
-    'hover:bg-secondary-background-hover disabled:cursor-default disabled:opacity-40',
-    active && 'bg-secondary-background-selected'
+    'flex size-8 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent text-foreground transition-colors',
+    'hover:bg-accent disabled:cursor-default disabled:opacity-40',
+    active && 'bg-muted'
   )
 }
 </script>
