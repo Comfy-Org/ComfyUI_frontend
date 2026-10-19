@@ -137,6 +137,22 @@ beforeEach(() => {
   mockDistributionState.isDesktop = false
 })
 
+describe('useAuthActions.accessBillingPortalDirect', () => {
+  it('rejects without opening a tab when no billing portal URL is returned', async () => {
+    const open = vi.spyOn(window, 'open').mockImplementation(() => window)
+    vi.mocked(mockAuthStore.accessBillingPortal).mockResolvedValueOnce(
+      fromPartial({})
+    )
+    const { accessBillingPortalDirect } = useAuthActions()
+
+    await expect(accessBillingPortalDirect()).rejects.toThrow(
+      'toastMessages.failedToAccessBillingPortal:No billing portal URL returned'
+    )
+
+    expect(open).not.toHaveBeenCalled()
+  })
+})
+
 describe('useAuthActions.purchaseCreditsDirect', () => {
   it('starts top-up tracking before opening Stripe checkout', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => window)

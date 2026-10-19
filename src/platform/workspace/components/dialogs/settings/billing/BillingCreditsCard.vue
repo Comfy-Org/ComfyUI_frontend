@@ -1,7 +1,7 @@
 <template>
   <section class="flex flex-col gap-3" data-testid="billing-credits-card">
     <h3
-      class="m-0 flex items-center gap-1 text-sm font-semibold text-base-foreground"
+      class="m-0 flex items-center gap-1 text-sm font-semibold text-foreground"
     >
       {{ $t('workspacePanel.billingTab.credits.title') }}
       <Button
@@ -18,7 +18,7 @@
       </Button>
     </h3>
 
-    <div class="flex flex-col rounded-lg border border-interface-stroke">
+    <div class="flex flex-col rounded-lg border border-border">
       <div class="flex items-start justify-between gap-4 p-4">
         <div class="flex min-w-0 flex-col gap-1">
           <span class="text-sm text-muted-foreground">
@@ -27,7 +27,7 @@
           <span
             :class="
               cn(
-                'text-2xl font-semibold text-base-foreground',
+                'text-2xl font-semibold text-foreground',
                 state.kind === 'unavailable' && 'text-muted-foreground'
               )
             "
@@ -76,13 +76,8 @@
         </Button>
       </div>
 
-      <div
-        v-if="state.kind === 'plan'"
-        class="flex border-t border-interface-stroke"
-      >
-        <div
-          class="flex flex-1 flex-col gap-1 border-r border-interface-stroke p-4"
-        >
+      <div v-if="state.kind === 'plan'" class="flex border-t border-border">
+        <div class="flex flex-1 flex-col gap-1 border-r border-border p-4">
           <span class="flex items-center gap-1 text-sm text-muted-foreground">
             {{ $t('workspacePanel.billingTab.credits.plan') }}
             <Button
@@ -95,7 +90,7 @@
             </Button>
           </span>
           <span
-            class="text-sm font-semibold text-base-foreground"
+            class="text-sm font-semibold text-foreground"
             data-testid="billing-credits-plan"
           >
             {{ planAmount(state.planCents, state.planPoolCredits) }}
@@ -117,7 +112,7 @@
               </Button>
             </span>
             <span
-              class="text-sm font-semibold text-base-foreground"
+              class="text-sm font-semibold text-foreground"
               data-testid="billing-credits-top-up"
             >
               {{ credits(state.topUpCents) }}

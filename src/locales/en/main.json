@@ -1473,6 +1473,8 @@
     "clickToResetZoom": "Click to reset zoom",
     "brushSettings": "Brush Settings",
     "brushShape": "Brush Shape",
+    "brushShapeCircle": "Circle brush",
+    "brushShapeSquare": "Square brush",
     "colorSelector": "Color Selector",
     "thickness": "Thickness",
     "opacity": "Opacity",
@@ -2495,7 +2497,9 @@
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
     "colors": "color_palette",
-    "grid": "Grid"
+    "grid": "Grid",
+    "undo": "Undo",
+    "redo": "Redo"
   },
   "palette": {
     "addColor": "Add a color",
@@ -2951,12 +2955,14 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "noPaymentMethodCheckoutHint": "This workspace has no card saved for one-click top-ups. Pay on a checkout page instead.",
+      "noPaymentMethodCheckoutHint": "This workspace has no card saved for one-click top-ups. Pay on a checkout page instead, or set a default card so future top-ups charge it directly.",
       "continueToCheckout": "Continue to checkout",
       "checkoutBlockedTitle": "Checkout didn't open",
       "checkoutBlockedBody": "Your browser blocked the new tab. Open checkout to finish paying.",
       "openCheckout": "Open checkout",
       "checkoutOpenFailed": "The payment page couldn't open. Nothing was charged. Try again.",
+      "setDefaultCard": "Set a default card",
+      "setDefaultCardError": "Couldn't open card settings",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -3050,6 +3056,7 @@
     "previewLoadFailed": "Failed to load subscription preview",
     "unableToSubscribe": "Unable to subscribe",
     "billingTabBlocked": "Couldn't open the billing page. Allow pop-ups for this site and try again.",
+    "billingPortalUnavailable": "Couldn't open the billing page. Try again in a moment.",
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",
@@ -3307,7 +3314,6 @@
     "personalHeader": "Personal plans are for individual use only. {action}",
     "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
-    "scheduledForDate": "Scheduled for {date}",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
     "yearlyCredits": "credits per year",
@@ -3368,6 +3374,21 @@
     "upgradePlan": "Upgrade Plan",
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
+    "planUnavailable": {
+      "notAMember": "You're no longer a member of this workspace, so you can't change its plan.",
+      "notWorkspaceOwner": "Only the workspace owner can change the plan.",
+      "notOriginalOwner": "Only the person who created this workspace can make this plan change.",
+      "salesManaged": "Your plan is managed by our sales team. Contact sales to change it.",
+      "billingOperationInProgress": "A billing change is in progress. This plan will be available again shortly.",
+      "billingOperationParked": "A recent billing change needs a fix from our team. Contact support to change your plan.",
+      "subscriptionChangeScheduled": "Your scheduled plan change takes effect on {date}. You can choose another plan after that.",
+      "subscriptionChangeInProgress": "You already have a plan change scheduled. You can choose another plan after it takes effect.",
+      "annualToMonthlyUnsupported": "You can't move to a higher monthly plan until your annual plan ends.",
+      "incompatibleTransition": "This plan can't be selected from your current plan.",
+      "exceedsMaxSeats": "Your workspace has more members than this plan allows.",
+      "billingStateUnknown": "We couldn't confirm your billing details. Try again in a moment.",
+      "generic": "This plan isn't available for your workspace."
+    },
     "maxDuration": {
       "free": "10 min",
       "standard": "30 min",
@@ -3541,6 +3562,31 @@
   },
   "workspacePanel": {
     "billingTab": {
+      "autoTopUp": {
+        "actions": {
+          "manage": "Manage",
+          "turnOn": "Turn on",
+          "updatePayment": "Update payment"
+        },
+        "failed": "Your charge didn't go through. Update your payment method or add credits manually.",
+        "limit": "Monthly limit: {spent} of {limit} used",
+        "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
+        "limitTooltipNoDate": "Counts only auto top-up charges.",
+        "off": "Refills credits when your balance runs low",
+        "onHold": "No default payment method. Add a card to resume auto top-up.",
+        "paused": "Monthly limit reached. Resumes {date}.",
+        "pausedNoDate": "Monthly limit reached.",
+        "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
+        "status": {
+          "failed": "Failed",
+          "off": "Off",
+          "on": "On",
+          "onHold": "On hold",
+          "paused": "Paused"
+        },
+        "title": "Auto top-up",
+        "unavailable": "Couldn't load auto top-up."
+      },
       "credits": {
         "addCredits": "Add credits",
         "available": "Available",
@@ -3623,17 +3669,13 @@
       }
     },
     "billingStatus": {
-      "paused": {
-        "title": "Subscription paused",
-        "body": "This workspace's subscription is paused. Update payment to resume.",
-        "memberBody": "Ask your workspace owner to restore the workspace's subscription."
-      },
       "outOfCredits": {
         "title": "Out of credits",
         "body": "Your team has used all its credits. Add more credits or wait until credits refill on {date}.",
         "bodyNoDate": "Your team has used all its credits. Add more credits.",
         "personalBody": "You've used all your credits. Add more credits or wait until credits refill on {date}.",
         "personalBodyNoDate": "You've used all your credits. Add more credits.",
+        "pastDueBody": "You've used all your credits. Update your payment method to add credits.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
@@ -3667,8 +3709,7 @@
         "title": "Your plan changes to {plan} on {date}.",
         "body": "Your current plan stays active until then."
       },
-      "updatePayment": "Update payment",
-      "payInvoice": "Pay invoice"
+      "updatePayment": "Update payment"
     },
     "invite": "Invite",
     "inviteMember": "Invite member",
@@ -3807,6 +3848,10 @@
       "deleteWorkspaceBillingParkedTooltip": "A recent payment needs a fix from our team. Contact support.",
       "deleteWorkspaceBillingInProgressTooltip": "A billing change is in progress. Try again in a moment.",
       "deleteWorkspaceUnavailableTooltip": "This workspace can't be deleted right now.",
+      "leaveWorkspaceCreatorTooltip": "You created this workspace, so you can't leave it.",
+      "leaveWorkspaceOnlyOwnerTooltip": "Make another member an owner before you leave this workspace.",
+      "leaveWorkspaceDirectoryTooltip": "Your organization manages this membership, so you can't leave this workspace.",
+      "leaveWorkspaceUnavailableTooltip": "You can't leave this workspace right now.",
       "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
@@ -5813,8 +5858,8 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, / use skills, {'@'} add references, drag in assets",
-    "placeholderWithoutSkills": "Describe ideas, {'@'} add references, drag in assets",
+    "placeholder": "Describe what you want to create",
+    "placeholderWithoutSkills": "Describe what you want to create",
     "skills": "Skills",
     "typeToSearch": "type to search",
     "skillNotAvailable": "Not available",

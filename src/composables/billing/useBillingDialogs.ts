@@ -19,6 +19,10 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import {
+  isTopUpDeniedPastDue,
+  usePaymentRecoveryDialog
+} from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@/utils/errorUtil'
@@ -36,9 +40,14 @@ export function useBillingDialogs() {
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
     const { type } = useBillingContext()
-    const { canTopUp, isReady, initialize } = useBillingCapabilities()
+    const { canTopUp, topUpDenial, isReady, initialize } =
+      useBillingCapabilities()
     if (!isReady.value) await initialize()
     if (!isReady.value) return
+
+    if (isTopUpDeniedPastDue(topUpDenial.value)) {
+      return usePaymentRecoveryDialog().showPaymentRecoveryDialog()
+    }
 
     if (!canTopUp.value && type.value === 'workspace') {
       return dialogStore.showDialog({

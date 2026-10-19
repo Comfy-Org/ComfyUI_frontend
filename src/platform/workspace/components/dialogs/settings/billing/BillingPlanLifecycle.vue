@@ -41,7 +41,7 @@
           <p
             v-if="confirm.phase === 'refused'"
             role="alert"
-            class="m-0 text-sm wrap-break-word text-destructive-background"
+            class="m-0 text-sm wrap-break-word text-destructive"
           >
             {{
               confirm.serverMessage ??

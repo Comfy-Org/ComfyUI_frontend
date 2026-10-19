@@ -370,8 +370,11 @@ const latestEntryHasPaywall = computed(() => {
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
+const threadHasUserMessage = computed(() =>
+  conversationEntries.value.some((entry) => entry.role === 'user')
+)
 const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+  if (!creditsExhausted.value || !threadHasUserMessage.value) return false
   return !latestEntryHasPaywall.value
 })
 
@@ -2114,7 +2117,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     <div
       v-if="assetDragActive"
       role="status"
-      class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border-default bg-secondary-background/90 p-4 font-inter text-sm/5 text-base-foreground"
+      class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed bg-secondary/90 p-4 font-inter text-sm/5 text-foreground"
     >
       <span
         aria-hidden="true"

@@ -189,7 +189,7 @@ function attachmentUrl(
         class="m-0"
       >
         <div
-          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary-background"
+          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary"
         >
           <span
             :class="
@@ -206,7 +206,7 @@ function attachmentUrl(
       v-if="text || workflowReferences.length || skillReference"
       ref="bubble"
       data-testid="user-message-bubble"
-      class="w-fit max-w-full rounded-lg bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      class="w-fit max-w-full rounded-lg bg-secondary px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <template v-for="(part, index) in promptParts" :key="index">
         <Tag

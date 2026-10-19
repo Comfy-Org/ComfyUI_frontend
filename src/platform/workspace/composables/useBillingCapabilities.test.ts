@@ -82,6 +82,11 @@ function capabilitiesResponse(
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_edit_workspace: false,
+      can_manage_auto_top_up: false,
+      can_manage_subscription: false,
+      can_run_workflows: false,
+      can_upgrade: false,
       can_downgrade_to_personal: true,
       ...overrides
     },
@@ -319,6 +324,26 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 
+  it.for([true, false])(
+    'renders can_manage_subscription %s as served',
+    async (served) => {
+      expect(billingCapabilities.canManageSubscription.value).toBe(false)
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        capabilitiesResponse(
+          true,
+          'workspace-1',
+          true,
+          {},
+          { can_manage_subscription: served }
+        )
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.canManageSubscription.value).toBe(served)
+    }
+  )
+
   it('exposes the delete capability and the reason the server named', async () => {
     const response = capabilitiesResponse(
       true,
@@ -341,6 +366,32 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.deleteWorkspaceDenial.value).toBe(
       'plan_not_ended'
     )
+  })
+
+  it('exposes the top-up denial and billing management as the server sent them', async () => {
+    const response = capabilitiesResponse(
+      true,
+      'workspace-1',
+      true,
+      {},
+      {
+        can_top_up: false,
+        can_manage_billing: true
+      }
+    )
+    response.denied_reasons = { can_top_up: 'payment_past_due' }
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      response
+    )
+
+    expect(billingCapabilities.topUpDenial.value).toBeUndefined()
+    expect(billingCapabilities.canManageBilling.value).toBe(false)
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+    expect(billingCapabilities.topUpDenial.value).toBe('payment_past_due')
+    expect(billingCapabilities.canManageBilling.value).toBe(true)
   })
 
   it('grants delete only when the server does', async () => {
@@ -1320,7 +1371,12 @@ describe('useBillingCapabilities on the SDK rail', () => {
           can_subscribe_self_serve: true,
           can_top_up: true,
           can_view_pending_invites: true,
-          can_view_team_usage: false
+          can_view_team_usage: false,
+          can_edit_workspace: false,
+          can_manage_auto_top_up: false,
+          can_manage_subscription: false,
+          can_run_workflows: false,
+          can_upgrade: false
         },
         denials: {
           can_cancel: 'no_subscription',
