@@ -1,8 +1,7 @@
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import * as ModelAdapterModule from './ModelAdapter'
 import type { ModelLoadContext } from './ModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
 
@@ -51,13 +50,9 @@ function makeContext(): ModelLoadContext {
   }
 }
 
-describe('SplatModelAdapter', () => {
-  beforeEach(() => {
-    vi.spyOn(ModelAdapterModule, 'fetchModelData').mockResolvedValue(
-      new ArrayBuffer(8)
-    )
-  })
+const fetchBytes = async () => new ArrayBuffer(8)
 
+describe('SplatModelAdapter', () => {
   it('exposes splat capabilities on the adapter', () => {
     const adapter = new SplatModelAdapter()
     expect(adapter.kind).toBe('splat')
@@ -71,19 +66,15 @@ describe('SplatModelAdapter', () => {
     expect([...adapter.extensions]).toEqual(['spz', 'splat', 'ksplat', 'ply'])
   })
 
-  it('fetches the file, builds a SplatMesh, and wraps it in a Group', async () => {
+  it('builds a SplatMesh from the fetched bytes and wraps it in a Group', async () => {
     const buf = new ArrayBuffer(128)
-    vi.spyOn(ModelAdapterModule, 'fetchModelData').mockResolvedValue(buf)
-
     const adapter = new SplatModelAdapter()
     const ctx = makeContext()
 
-    const result = await adapter.load(ctx, '/api/view?', 'scene.splat')
-
-    expect(ModelAdapterModule.fetchModelData).toHaveBeenCalledWith(
-      '/api/view?',
-      'scene.splat'
+    const result = await adapter.load(ctx, '/api/view?', 'scene.splat', () =>
+      Promise.resolve(buf)
     )
+
     expect(splatMeshSpies.ctor).toHaveBeenCalledWith({
       fileBytes: buf,
       fileName: 'scene.splat'
@@ -100,7 +91,8 @@ describe('SplatModelAdapter', () => {
     const result = await new SplatModelAdapter().load(
       makeContext(),
       '/api/view?',
-      'scene.splat'
+      'scene.splat',
+      fetchBytes
     )
 
     const splat = result.object.children[0]
@@ -111,13 +103,11 @@ describe('SplatModelAdapter', () => {
   })
 
   it('propagates fetch errors', async () => {
-    vi.spyOn(ModelAdapterModule, 'fetchModelData').mockRejectedValue(
-      new Error('Failed to fetch model: 500')
-    )
-
     const adapter = new SplatModelAdapter()
     await expect(
-      adapter.load(makeContext(), '/api/view?', 'scene.splat')
+      adapter.load(makeContext(), '/api/view?', 'scene.splat', () =>
+        Promise.reject(new Error('Failed to fetch model: 500'))
+      )
     ).rejects.toThrow('Failed to fetch model: 500')
   })
 
@@ -127,7 +117,8 @@ describe('SplatModelAdapter', () => {
       const result = await adapter.load(
         makeContext(),
         '/api/view?',
-        'scene.splat'
+        'scene.splat',
+        fetchBytes
       )
       const group = result.object
       const splat = group.children[0]
@@ -159,7 +150,8 @@ describe('SplatModelAdapter', () => {
       const result = await adapter.load(
         makeContext(),
         '/api/view?',
-        'scene.splat'
+        'scene.splat',
+        fetchBytes
       )
 
       adapter.disposeModel(result.object)

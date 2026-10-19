@@ -1,5 +1,6 @@
 import { TimeoutError } from 'es-toolkit'
 
+import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import {
   isAssetPreviewSupported,
   persistThumbnail
@@ -200,7 +201,7 @@ async function renderThumbnailInner(
   const { createLoad3d } = await import('@/extensions/core/load3d/createLoad3d')
   signal.throwIfAborted()
 
-  const load3d = createLoad3d(document.createElement('div'), {
+  const load3d = createLoad3d(document.createElement('div'), load3dHost, {
     width: 256,
     height: 256,
     isViewerMode: true

@@ -3,7 +3,6 @@ import * as THREE from 'three'
 
 import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
 
-import { fetchModelData } from './ModelAdapter'
 import type {
   ModelAdapter,
   ModelAdapterCapabilities,
@@ -34,11 +33,11 @@ export class SplatModelAdapter implements ModelAdapter {
 
   async load(
     ctx: ModelLoadContext,
-    path: string,
+    _path: string,
     filename: string,
-    fetchBytes?: () => Promise<ArrayBuffer>
+    fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<ModelLoadResult> {
-    const arrayBuffer = await (fetchBytes?.() ?? fetchModelData(path, filename))
+    const arrayBuffer = await fetchBytes()
 
     const splatMesh = new SplatMesh({
       fileBytes: arrayBuffer,

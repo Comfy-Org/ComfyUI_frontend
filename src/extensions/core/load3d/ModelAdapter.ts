@@ -1,9 +1,7 @@
 import type * as THREE from 'three'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
-import { api } from '@/scripts/api'
-
-import type { MaterialMode } from './interfaces'
+import type { Load3dHost, MaterialMode } from './interfaces'
 
 export interface ModelLoadContext {
   setOriginalModel(model: THREE.Object3D | THREE.BufferGeometry | GLTF): void
@@ -144,12 +142,13 @@ export interface ModelAdapter {
 }
 
 export async function fetchModelData(
+  fetchApi: Load3dHost['fetchApi'],
   path: string,
   filename: string,
   signal?: AbortSignal
 ): Promise<ArrayBuffer> {
   const route = '/' + path.replace(/^api\//, '') + encodeURIComponent(filename)
-  const response = await api.fetchApi(route, { signal })
+  const response = await fetchApi(route, { signal })
   if (!response.ok) {
     throw new Error(`Failed to fetch model: ${response.status}`)
   }

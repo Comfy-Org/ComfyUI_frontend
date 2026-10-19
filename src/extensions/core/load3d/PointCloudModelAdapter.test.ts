@@ -1,11 +1,10 @@
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { isPLYAsciiFormat } from '@/scripts/metadata/ply'
 
 import type { ModelLoadContext } from './ModelAdapter'
-import * as ModelAdapterModule from './ModelAdapter'
 import { PointCloudModelAdapter } from './PointCloudModelAdapter'
 
 vi.mock(import('@/scripts/metadata/ply'), () => ({
@@ -65,12 +64,12 @@ function makeContext(
 describe('PointCloudModelAdapter', () => {
   describe('identity', () => {
     it('handles the ply extension', () => {
-      const adapter = new PointCloudModelAdapter()
+      const adapter = new PointCloudModelAdapter(() => 'threejs')
       expect([...adapter.extensions]).toEqual(['ply'])
     })
 
     it('identifies as pointCloud with material rebuild + fit-to-viewer + lighting + export, gizmo disabled', () => {
-      const adapter = new PointCloudModelAdapter()
+      const adapter = new PointCloudModelAdapter(() => 'threejs')
       expect(adapter.kind).toBe('pointCloud')
       expect(adapter.capabilities.fitToViewer).toBe(true)
       expect(adapter.capabilities.requiresMaterialRebuild).toBe(true)
@@ -86,19 +85,42 @@ describe('PointCloudModelAdapter', () => {
     })
   })
 
+  describe('PLY engine', () => {
+    it.for([
+      { engine: 'fastply', ascii: true, parser: fastPlyLoaderParse },
+      { engine: 'threejs', ascii: true, parser: plyLoaderParse },
+      { engine: 'fastply', ascii: false, parser: plyLoaderParse }
+    ] as const)(
+      'parses with the $engine choice when ascii is $ascii',
+      async ({ engine, ascii, parser }) => {
+        vi.mocked(isPLYAsciiFormat).mockReturnValue(ascii)
+        const adapter = new PointCloudModelAdapter(() => engine)
+
+        await adapter.load(
+          makeContext(),
+          '/api/view?',
+          'cloud.ply',
+          async () => new ArrayBuffer(0)
+        )
+
+        expect(parser).toHaveBeenCalledOnce()
+      }
+    )
+  })
+
   describe('load', () => {
-    beforeEach(() => {
-      vi.mocked(useSettingStore().get).mockReturnValue('three')
-      vi.spyOn(ModelAdapterModule, 'fetchModelData').mockResolvedValue(
-        new ArrayBuffer(0)
-      )
-    })
+    const fetchBytes = async () => new ArrayBuffer(0)
 
     it('returns a Group containing a Mesh for non-pointCloud modes', async () => {
-      const adapter = new PointCloudModelAdapter()
+      const adapter = new PointCloudModelAdapter(() => 'threejs')
       const ctx = makeContext('original')
 
-      const result = await adapter.load(ctx, '/api/view?', 'cloud.ply')
+      const result = await adapter.load(
+        ctx,
+        '/api/view?',
+        'cloud.ply',
+        fetchBytes
+      )
 
       expect(result!.object).toBeInstanceOf(THREE.Group)
       const child = result!.object.children[0]
@@ -107,10 +129,15 @@ describe('PointCloudModelAdapter', () => {
     })
 
     it('returns a Group containing Points when materialMode is pointCloud', async () => {
-      const adapter = new PointCloudModelAdapter()
+      const adapter = new PointCloudModelAdapter(() => 'threejs')
       const ctx = makeContext('pointCloud')
 
-      const result = await adapter.load(ctx, '/api/view?', 'cloud.ply')
+      const result = await adapter.load(
+        ctx,
+        '/api/view?',
+        'cloud.ply',
+        fetchBytes
+      )
 
       expect(result!.object).toBeInstanceOf(THREE.Group)
       const child = result!.object.children[0]
@@ -119,10 +146,15 @@ describe('PointCloudModelAdapter', () => {
 
     it('forces Points rendering for a face-less PLY even on materialMode=original', async () => {
       plyLoaderParse.mockReturnValueOnce(makePLYGeometry({ withFaces: false }))
-      const adapter = new PointCloudModelAdapter()
+      const adapter = new PointCloudModelAdapter(() => 'threejs')
       const ctx = makeContext('original')
 
-      const result = await adapter.load(ctx, '/api/view?', 'cloud.ply')
+      const result = await adapter.load(
+        ctx,
+        '/api/view?',
+        'cloud.ply',
+        fetchBytes
+      )
 
       const child = result!.object.children[0]
       expect(child).toBeInstanceOf(THREE.Points)
@@ -130,24 +162,26 @@ describe('PointCloudModelAdapter', () => {
 
     it('returns narrowed materialModes capability for a face-less PLY', async () => {
       plyLoaderParse.mockReturnValueOnce(makePLYGeometry({ withFaces: false }))
-      const adapter = new PointCloudModelAdapter()
+      const adapter = new PointCloudModelAdapter(() => 'threejs')
 
       const result = await adapter.load(
         makeContext('original'),
         '/api/view?',
-        'cloud.ply'
+        'cloud.ply',
+        fetchBytes
       )
 
       expect([...result!.capabilities.materialModes]).toEqual(['pointCloud'])
     })
 
     it('returns full materialModes capability for a face-bearing PLY (independent of prior loads)', async () => {
-      const adapter = new PointCloudModelAdapter()
+      const adapter = new PointCloudModelAdapter(() => 'threejs')
       plyLoaderParse.mockReturnValueOnce(makePLYGeometry({ withFaces: false }))
       const faceless = await adapter.load(
         makeContext('original'),
         '/api/view?',
-        'cloud.ply'
+        'cloud.ply',
+        fetchBytes
       )
       expect([...faceless!.capabilities.materialModes]).toEqual(['pointCloud'])
 
@@ -155,7 +189,8 @@ describe('PointCloudModelAdapter', () => {
       const faceful = await adapter.load(
         makeContext('original'),
         '/api/view?',
-        'mesh.ply'
+        'mesh.ply',
+        fetchBytes
       )
       expect([...faceful!.capabilities.materialModes]).toEqual([
         'original',

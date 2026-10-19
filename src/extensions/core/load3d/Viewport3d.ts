@@ -1,7 +1,6 @@
 import * as THREE from 'three'
 
 import type { RendererView } from '@/renderer/three/RendererView'
-import { normalize } from '@/utils/mathUtil'
 
 import type { CameraManager } from './CameraManager'
 import type { ControlsManager } from './ControlsManager'
@@ -27,7 +26,8 @@ import {
   clientPointToLetterboxNdc,
   computeLetterboxBars,
   computeLetterboxedViewport,
-  isLoad3dActive
+  isLoad3dActive,
+  normalize
 } from './load3dViewport'
 
 const LETTERBOX_CLEAR_COLOR = 0x0a0a0a

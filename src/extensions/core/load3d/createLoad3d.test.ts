@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapter, ModelAdapterCapabilities } from './ModelAdapter'
 import { createLoad3d } from './createLoad3d'
+import type { Load3dHost } from './interfaces'
 
 const { rendererCtor } = vi.hoisted(() => ({
   rendererCtor: vi.fn()
@@ -106,6 +107,7 @@ vi.mock(import('./LoaderManager'), () => ({
       constructor(
         _modelManager: unknown,
         _eventManager: unknown,
+        _host: unknown,
         _adapters: unknown,
         adapterRef: unknown
       ) {
@@ -184,6 +186,11 @@ function makeAdapter(overrides: Partial<ModelAdapter> = {}): ModelAdapter {
   } satisfies ModelAdapter
 }
 
+const host: Load3dHost = {
+  fetchApi: vi.fn(),
+  getPLYEngine: () => 'threejs'
+}
+
 describe('createLoad3d', () => {
   beforeEach(() => {
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
@@ -195,7 +202,7 @@ describe('createLoad3d', () => {
     rendererCtor.mockClear()
     const container = createContainer()
 
-    createLoad3d(container)
+    createLoad3d(container, host)
 
     expect(rendererCtor).toHaveBeenCalledWith({ alpha: true, antialias: true })
     expect(container.appendChild).toHaveBeenCalledOnce()
@@ -205,14 +212,18 @@ describe('createLoad3d', () => {
     const container = createContainer()
     const options = { width: 640, height: 480, isViewerMode: true }
 
-    const instance = createLoad3d(container, options) as unknown as FakeLoad3d
+    const instance = createLoad3d(
+      container,
+      host,
+      options
+    ) as unknown as FakeLoad3d
 
     expect(instance.options).toEqual(options)
   })
 
   it('shares one AdapterRef between LoaderManager and SceneModelManager lambdas', () => {
     const container = createContainer()
-    const instance = createLoad3d(container) as unknown as FakeLoad3d
+    const instance = createLoad3d(container, host) as unknown as FakeLoad3d
 
     const adapterRef = instance.deps.adapterRef
     expect(adapterRef.current).toBeNull()
@@ -223,7 +234,10 @@ describe('createLoad3d', () => {
 
   describe('SceneModelManager capability lambdas (default — no adapter loaded)', () => {
     it('getCurrentCapabilities falls back to DEFAULT_MODEL_CAPABILITIES', () => {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = createLoad3d(
+        createContainer(),
+        host
+      ) as unknown as FakeLoad3d
 
       expect(instance.deps.modelManager.getCurrentCapabilities()).toEqual(
         DEFAULT_MODEL_CAPABILITIES
@@ -231,26 +245,38 @@ describe('createLoad3d', () => {
     })
 
     it('getBoundsFromAdapter returns null', () => {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = createLoad3d(
+        createContainer(),
+        host
+      ) as unknown as FakeLoad3d
       expect(instance.deps.modelManager.getBoundsFromAdapter({})).toBeNull()
     })
 
     it('disposeModelViaAdapter is a no-op', () => {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = createLoad3d(
+        createContainer(),
+        host
+      ) as unknown as FakeLoad3d
       expect(() =>
         instance.deps.modelManager.disposeModelViaAdapter({})
       ).not.toThrow()
     })
 
     it('getDefaultCameraPose returns null', () => {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = createLoad3d(
+        createContainer(),
+        host
+      ) as unknown as FakeLoad3d
       expect(instance.deps.modelManager.getDefaultCameraPose()).toBeNull()
     })
   })
 
   describe('SceneModelManager capability lambdas (after adapter is published)', () => {
     function withAdapter(adapter: ModelAdapter) {
-      const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
+      const instance = createLoad3d(
+        createContainer(),
+        host
+      ) as unknown as FakeLoad3d
       instance.deps.adapterRef.current = adapter
       instance.deps.adapterRef.capabilities = adapter.capabilities
       return instance

@@ -6,6 +6,7 @@ import { isGaussianSplatPLY } from '@/scripts/metadata/ply'
 
 import type {
   EventManagerInterface,
+  Load3dHost,
   MaterialMode,
   ModelManagerInterface
 } from './interfaces'
@@ -111,8 +112,6 @@ vi.mock(import('@/scripts/metadata/ply'), () => ({
   isGaussianSplatPLY: vi.fn()
 }))
 
-vi.mock(import('@/i18n'))
-
 type LoaderManagerInternals = {
   pickAdapter(
     extension: string,
@@ -120,16 +119,24 @@ type LoaderManagerInternals = {
   ): Promise<ModelAdapter | null>
 }
 
+const host: Load3dHost = {
+  fetchApi: vi.fn(),
+  getPLYEngine: () => 'threejs'
+}
+
 function makeLoaderManager() {
   const modelManager = makeModelManagerStub()
   const eventManager = makeEventManagerStub()
   const lm = new LoaderManager(
     modelManager as unknown as ConstructorParameters<typeof LoaderManager>[0],
-    eventManager
+    eventManager,
+    host
   )
   const internals = lm as unknown as LoaderManagerInternals
   const pick = (ext: string) =>
-    internals.pickAdapter.call(lm, ext, () => vi.mocked(fetchModelData)('', ''))
+    internals.pickAdapter.call(lm, ext, () =>
+      vi.mocked(fetchModelData)(host.fetchApi, '', '')
+    )
   return { lm, modelManager, eventManager, pick }
 }
 
@@ -220,6 +227,7 @@ describe('LoaderManager', () => {
       const lm = new LoaderManager(
         modelManager,
         eventManager,
+        host,
         [oldAdapter],
         adapterRef
       )
@@ -476,6 +484,7 @@ describe('LoaderManager', () => {
       })
 
       expect(fetchModelData).toHaveBeenCalledWith(
+        host.fetchApi,
         'api/view?type=input&subfolder=&filename=',
         'scan.ply',
         controller.signal
@@ -558,7 +567,7 @@ describe('LoaderManager', () => {
         capabilities: {} as never,
         load: pointCloudLoad
       }
-      const lm = new LoaderManager(modelManager, eventManager, [
+      const lm = new LoaderManager(modelManager, eventManager, host, [
         splatAdapter,
         pointCloudAdapter
       ])

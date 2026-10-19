@@ -1,4 +1,11 @@
-import { denormalize, normalize } from '@/utils/mathUtil'
+/** Linearly maps `value` from [min, max] to [0, 1]; 0 when min equals max. */
+export function normalize(value: number, min: number, max: number): number {
+  return max === min ? 0 : (value - min) / (max - min)
+}
+
+function denormalize(normalized: number, min: number, max: number): number {
+  return min + normalized * (max - min)
+}
 
 type Size = { width: number; height: number }
 

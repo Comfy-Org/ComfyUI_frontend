@@ -17,9 +17,9 @@ import { RecordingManager } from './RecordingManager'
 import { SceneManager } from './SceneManager'
 import { SceneModelManager } from './SceneModelManager'
 import { ViewHelperManager } from './ViewHelperManager'
-import type { Load3DOptions } from './interfaces'
+import type { Load3DOptions, Load3dHost } from './interfaces'
 
-function buildLoad3dDeps(container: HTMLElement): Load3dDeps {
+function buildLoad3dDeps(container: HTMLElement, host: Load3dHost): Load3dDeps {
   const view = new RendererView(container)
   const renderer = view.renderer
   const eventManager = new EventManager()
@@ -76,6 +76,7 @@ function buildLoad3dDeps(container: HTMLElement): Load3dDeps {
   const loaderManager = new LoaderManager(
     modelManager,
     eventManager,
+    host,
     undefined,
     adapterRef
   )
@@ -121,7 +122,8 @@ function buildLoad3dDeps(container: HTMLElement): Load3dDeps {
 
 export function createLoad3d(
   container: HTMLElement,
+  host: Load3dHost,
   options?: Load3DOptions
 ): Load3d {
-  return new Load3d(container, buildLoad3dDeps(container), options)
+  return new Load3d(container, buildLoad3dDeps(container, host), options)
 }

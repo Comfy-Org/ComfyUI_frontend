@@ -14,6 +14,7 @@ import { SplatModelAdapter } from './SplatModelAdapter'
 import { disposeObject3D } from './SceneModelManager'
 import type {
   EventManagerInterface,
+  Load3dHost,
   LoadModelOptions,
   LoadModelOutcome,
   LoaderManagerInterface,
@@ -40,17 +41,18 @@ function isNotFoundError(error: unknown): boolean {
  * async `matches()` tiebreaker is tried first; the unconditional adapter acts
  * as the fallback — so SplatModelAdapter precedes PointCloudModelAdapter.
  */
-function defaultAdapters(): ModelAdapter[] {
+function defaultAdapters(host: Load3dHost): ModelAdapter[] {
   return [
     new MeshModelAdapter(),
     new SplatModelAdapter(),
-    new PointCloudModelAdapter()
+    new PointCloudModelAdapter(host.getPLYEngine)
   ]
 }
 
 export class LoaderManager implements LoaderManagerInterface {
   private readonly modelManager: ModelManagerInterface
   private readonly eventManager: EventManagerInterface
+  private readonly host: Load3dHost
   private readonly adapters: ModelAdapter[]
   private readonly adapterRef: AdapterRef
   private currentLoadId: number = 0
@@ -59,12 +61,14 @@ export class LoaderManager implements LoaderManagerInterface {
   constructor(
     modelManager: ModelManagerInterface,
     eventManager: EventManagerInterface,
+    host: Load3dHost,
     adapters?: readonly ModelAdapter[],
     adapterRef?: AdapterRef
   ) {
     this.modelManager = modelManager
     this.eventManager = eventManager
-    this.adapters = adapters ? [...adapters] : defaultAdapters()
+    this.host = host
+    this.adapters = adapters ? [...adapters] : defaultAdapters(host)
     this.adapterRef = adapterRef ?? createAdapterRef()
   }
 
@@ -284,7 +288,12 @@ export class LoaderManager implements LoaderManagerInterface {
 
     let bytesPromise: Promise<ArrayBuffer> | null = null
     const fetchBytes = () =>
-      (bytesPromise ??= fetchModelData(path, filename, signal))
+      (bytesPromise ??= fetchModelData(
+        this.host.fetchApi,
+        path,
+        filename,
+        signal
+      ))
 
     const adapter = await this.pickAdapter(fileExtension, fetchBytes)
     if (!adapter) return null

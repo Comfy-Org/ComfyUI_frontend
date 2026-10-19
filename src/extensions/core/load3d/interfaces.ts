@@ -248,6 +248,12 @@ export interface ModelManagerInterface {
   setupModelMaterials(model: THREE.Object3D): void
 }
 
+/** Services the host application provides to the Load3D engine. */
+export interface Load3dHost {
+  fetchApi(route: string, init: { signal?: AbortSignal }): Promise<Response>
+  getPLYEngine(): 'threejs' | 'fastply'
+}
+
 export interface LoadModelOptions {
   /** Cancels network work when the caller abandons the load. */
   signal?: AbortSignal

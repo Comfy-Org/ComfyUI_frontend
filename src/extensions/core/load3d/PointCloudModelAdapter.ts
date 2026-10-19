@@ -1,22 +1,16 @@
 import * as THREE from 'three'
 import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { isPLYAsciiFormat } from '@/scripts/metadata/ply'
 
-import { fetchModelData } from './ModelAdapter'
 import type {
   ModelAdapter,
   ModelAdapterCapabilities,
   ModelLoadContext,
   ModelLoadResult
 } from './ModelAdapter'
-import type { MaterialMode } from './interfaces'
+import type { Load3dHost, MaterialMode } from './interfaces'
 import { FastPLYLoader } from './loader/FastPLYLoader'
-
-function getPLYEngine(): string {
-  return useSettingStore().get('Comfy.Load3D.PLYEngine')
-}
 
 const POINT_CLOUD_CAPABILITIES: ModelAdapterCapabilities = {
   fitToViewer: true,
@@ -36,17 +30,19 @@ export class PointCloudModelAdapter implements ModelAdapter {
   private readonly plyLoader = new PLYLoader()
   private readonly fastPlyLoader = new FastPLYLoader()
 
+  constructor(private readonly getPLYEngine: Load3dHost['getPLYEngine']) {}
+
   async load(
     ctx: ModelLoadContext,
     path: string,
-    filename: string,
-    fetchBytes?: () => Promise<ArrayBuffer>
+    _filename: string,
+    fetchBytes: () => Promise<ArrayBuffer>
   ): Promise<ModelLoadResult | null> {
-    const arrayBuffer = await (fetchBytes?.() ?? fetchModelData(path, filename))
+    const arrayBuffer = await fetchBytes()
     const isASCII = isPLYAsciiFormat(arrayBuffer)
 
     const plyGeometry =
-      isASCII && getPLYEngine() === 'fastply'
+      isASCII && this.getPLYEngine() === 'fastply'
         ? this.fastPlyLoader.parse(arrayBuffer)
         : (this.plyLoader.setPath(path), this.plyLoader.parse(arrayBuffer))
 
