@@ -194,8 +194,6 @@ describe('CurrentUserPopoverWorkspace', () => {
     workspaceUI.permissions = computed(() => ({
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canLeaveWorkspace: false,
-      canAccessWorkspaceMenu: false,
       canManageSubscription: state.canManageSubscription,
       canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle,
       canDowngradeToPersonal: false
