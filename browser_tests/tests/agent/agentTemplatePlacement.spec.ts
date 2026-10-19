@@ -18,6 +18,7 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 // Agent template placement (ADR-CRDT-PLACEMENT-0035): when the in-app Comfy
 // Agent inserts a workflow template onto a canvas that already has a node on
@@ -199,7 +200,7 @@ class TemplatePlacementHarness {
 
   async sendPrompt(content: string): Promise<void> {
     const panel = this.page.locator('#agent-panel-root')
-    const composer = panel.getByRole('textbox', { name: /Describe ideas/ })
+    const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
     await composer.fill(content)
     await panel.getByRole('button', { name: 'Send' }).click()
     await expect(panel.getByText(content).first()).toBeVisible()

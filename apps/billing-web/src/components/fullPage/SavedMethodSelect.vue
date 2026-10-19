@@ -55,13 +55,13 @@ function partsOf(method: SavedPaymentMethod) {
 <template>
   <p
     v-if="methods.length === 1 && chosen"
-    class="m-0 flex h-10 w-full items-center gap-3 rounded-lg bg-base-background px-4 text-sm"
+    class="m-0 flex h-10 w-full items-center gap-3 rounded-lg bg-background px-4 text-sm"
   >
     <i
       :class="cn(partsOf(chosen).icon, 'size-4 shrink-0 text-muted-foreground')"
       aria-hidden="true"
     />
-    <span class="text-base-foreground capitalize">
+    <span class="text-foreground capitalize">
       {{ partsOf(chosen).name }}
     </span>
     <span
@@ -77,7 +77,7 @@ function partsOf(method: SavedPaymentMethod) {
       :class="
         cn(
           selectTriggerVariants({ size: 'lg', border: 'none' }),
-          'w-full gap-3 bg-base-background px-4 text-sm'
+          'w-full gap-3 bg-background px-4 text-sm'
         )
       "
     >
@@ -88,7 +88,7 @@ function partsOf(method: SavedPaymentMethod) {
           "
           aria-hidden="true"
         />
-        <span class="text-base-foreground capitalize">
+        <span class="text-foreground capitalize">
           {{ partsOf(chosen).name }}
         </span>
         <span

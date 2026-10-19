@@ -427,10 +427,10 @@ describe('LGraphNode', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
 
-    expect(root).toHaveClass('outline-node-component-outline')
+    expect(root).toHaveClass('outline-foreground')
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('border-node-component-outline')
+    expect(overlay).toHaveClass('border-foreground')
   })
 
   it('should render progress indicator when executing prop is true', () => {
@@ -439,10 +439,10 @@ describe('LGraphNode', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
 
-    expect(root).toHaveClass('outline-node-stroke-executing')
+    expect(root).toHaveClass('outline-primary')
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('border-node-stroke-executing')
+    expect(overlay).toHaveClass('border-primary')
   })
 
   it('hides a linked core LoadImage input preview', () => {
@@ -564,9 +564,7 @@ describe('LGraphNode', () => {
       true
     renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(screen.getByTestId('node-inner-wrapper')).toHaveClass(
-      'ring-warning-background'
-    )
+    expect(screen.getByTestId('node-inner-wrapper')).toHaveClass('ring-warning')
     expect(screen.getByRole('button', { name: 'Issues' })).toBeInTheDocument()
 
     errors.recordNodeErrors({
@@ -577,7 +575,7 @@ describe('LGraphNode', () => {
     await nextTick()
 
     expect(screen.getByTestId('node-inner-wrapper')).toHaveClass(
-      'ring-destructive-background'
+      'ring-destructive'
     )
     expect(screen.getByRole('button', { name: 'Error' })).toBeInTheDocument()
 

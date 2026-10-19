@@ -55,12 +55,11 @@ function updateToastOpen(id: ToastId, open: boolean) {
 }
 
 const icons = {
-  success: 'icon-[lucide--circle-check] text-success-background',
-  error: 'icon-[lucide--circle-x] text-destructive-background',
-  info: 'icon-[lucide--info] text-primary-background',
-  warning: 'icon-[lucide--triangle-alert] text-warning-background',
-  loading:
-    'icon-[lucide--loader-circle] motion-safe:animate-spin text-primary-background'
+  success: 'icon-[lucide--circle-check] text-success',
+  error: 'icon-[lucide--circle-x] text-destructive',
+  info: 'icon-[lucide--info] text-primary',
+  warning: 'icon-[lucide--triangle-alert] text-warning',
+  loading: 'icon-[lucide--loader-circle] motion-safe:animate-spin text-primary'
 } as const
 </script>
 

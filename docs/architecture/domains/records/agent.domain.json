@@ -789,7 +789,14 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["authentication", "design-system"],
+  "allowedDependencies": [
+    "authentication",
+    "design-system",
+    "error-reporting",
+    "extension-runtime",
+    "workbench-shell",
+    "workflow-management"
+  ],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
