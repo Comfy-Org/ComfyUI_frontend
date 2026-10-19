@@ -42,22 +42,23 @@ case "$method $endpoint" in
   *"/labels") jq -r "$filter" "$FAKE_LABELS" ;;
   *"/comments") cat "$FAKE_COMMENTS" | jq -rs "$filter" ;;
   *"/pulls?"*)
-    branch="\${endpoint##*:}"
-    if grep -qxF -- "$branch" "$FAKE_BACKPORTS"; then echo '[{}]'; else echo '[]'; fi | jq -r "$filter" ;;
+    base='' branch="\${endpoint##*:}"
+    case "$endpoint" in *base=*) base="\${endpoint#*base=}" base="\${base%%&*}" ;; esac
+    if awk -v b="$base" -v h="$branch" '$2 == h && (b == "" || $1 == b) { f = 1 } END { exit !f }' "$FAKE_BACKPORTS"; then echo '[{}]'; else echo '[]'; fi | jq -r "$filter" ;;
   *) echo "unexpected gh call: $method $endpoint" >&2; exit 2 ;;
 esac
 `
 
 interface PrSetup {
   labels: string[]
-  backportBranches?: string[]
+  backports?: Array<{ base: string; head: string }>
   comments?: Array<{ author: string; body: string }>
   locked?: boolean
 }
 
 function createPr({
   labels,
-  backportBranches = [],
+  backports = [],
   comments: existingComments = [],
   locked = false
 }: PrSetup) {
@@ -70,7 +71,10 @@ function createPr({
     join(directory, 'labels.json'),
     JSON.stringify(labels.map((name) => ({ name })))
   )
-  writeFileSync(join(directory, 'backports'), backportBranches.join('\n'))
+  writeFileSync(
+    join(directory, 'backports'),
+    backports.map(({ base, head }) => `${base} ${head}`).join('\n')
+  )
   writeFileSync(
     comments,
     existingComments
@@ -145,7 +149,7 @@ describe('backport warning for release labels without needs-backport', () => {
   it('leaves out targets that already have a backport PR', () => {
     const pr = createPr({
       labels: ['core/1.57', 'cloud/1.57'],
-      backportBranches: ['backport-21241-to-core-1.57']
+      backports: [{ base: 'core/1.57', head: 'backport-21241-to-core-1.57' }]
     })
 
     pr.runWarning()
@@ -153,6 +157,17 @@ describe('backport warning for release labels without needs-backport', () => {
     const [comment] = pr.postedComments()
     expect(comment).toContain('`cloud/1.57`')
     expect(comment).not.toContain('`core/1.57`')
+  })
+
+  it('still warns when the matching backport branch targets a different release', () => {
+    const pr = createPr({
+      labels: ['core/1.57'],
+      backports: [{ base: 'core/1.56', head: 'backport-21241-to-core-1.57' }]
+    })
+
+    pr.runWarning()
+
+    expect(pr.postedComments()).toHaveLength(1)
   })
 
   it.for<[string, PrSetup]>([
@@ -169,7 +184,7 @@ describe('backport warning for release labels without needs-backport', () => {
       'every release label is already backported',
       {
         labels: ['core/1.57'],
-        backportBranches: ['backport-21241-to-core-1.57']
+        backports: [{ base: 'core/1.57', head: 'backport-21241-to-core-1.57' }]
       }
     ]
   ])('stays silent when %s', ([, setup]) => {

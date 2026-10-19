@@ -638,7 +638,7 @@ jobs:
             fi
             BACKPORT_BRANCH="backport-${PR_NUMBER}-to-${label//\//-}"
             BACKPORT_PRS=$(gh api \
-              "repos/${GH_REPO}/pulls?state=all&head=${GH_REPO%%/*}:${BACKPORT_BRANCH}" \
+              "repos/${GH_REPO}/pulls?state=all&base=${label}&head=${GH_REPO%%/*}:${BACKPORT_BRANCH}" \
               --jq 'length')
             if [ "${BACKPORT_PRS}" -eq 0 ]; then
               PENDING+=("${label}")
