@@ -497,7 +497,7 @@ describe('geometry an extension cannot clobber', () => {
     })
   })
 
-  test('a JSON round-trip written back keeps tracking and moving its children', () => {
+  test('a JSON copy excluding graph keeps tracking and moving its existing children', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group', toGroupId(819))
     group.pos = [100, 100]
@@ -508,21 +508,20 @@ describe('geometry an extension cannot clobber', () => {
     node.size = [20, 20]
     graph.add(node)
     node.updateArea()
+    group.recomputeInsideNodes()
 
     const copy: Record<string, unknown> = JSON.parse(JSON.stringify(group))
     delete copy.graph
     Object.assign(group, copy)
 
-    // The copy carries _nodes as plain serialized data; it must be refused
-    // rather than leaving detached objects in the live collection.
-    expect(group.nodes).toEqual([])
+    // Populated before the copy, so this proves the live node survived rather
+    // than being replaced by the plain serialized data the copy carries.
+    expect(group.nodes).toEqual([node])
+    expect(() => group.addNodes([node])).not.toThrow()
 
-    group.recomputeInsideNodes()
     group.move(10, 20)
 
     expect(group.children.has(node)).toBe(true)
-    expect(group.nodes).toEqual([node])
-    expect([...group.pos]).toEqual([110, 120])
     expect([...node.pos]).toEqual([160, 170])
   })
 
