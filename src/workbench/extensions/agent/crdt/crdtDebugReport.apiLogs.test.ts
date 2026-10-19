@@ -5,26 +5,10 @@ import { api } from '@/scripts/api'
 
 import { collectCrdtDebugReport } from './crdtDebugReport'
 
-/**
- * The #17773 regression pin: `api.getLogs()` used to hand Axios' `.data`
- * straight to the report writer, so a cloud `/api/logs` array
- * (`[{"level":"info", ...}]`) reached `fence()` unnormalized and threw
- * `body.matchAll is not a function`. Catching that requires the **real**
- * `api.getLogs()` against a mocked transport -- a string-returning
- * `api.getLogs` mock cannot fail this way.
- *
- * That is why this lives in its own file rather than in
- * `crdtDebugReport.test.ts`: that suite's `beforeEach` installs
- * `vi.spyOn(api, 'getLogs')`, which would shadow the method under test.
- * It moved here from `src/scripts/api.logs.test.ts`, where its only
- * remaining tie to that file was the mocked transport: the snapshot it has
- * to construct is an agent-owned `CrdtDebugSnapshot`, so every field added
- * to `AgentCrdtStatus` dragged an edit into a shared, non-agent file.
- */
 vi.mock(import('axios'))
 
-describe('collectCrdtDebugReport through the real api.getLogs', () => {
-  it('collects a report with the cloud log response', async () => {
+describe('collectCrdtDebugReport over the real api.getLogs and a mocked transport', () => {
+  it('normalizes a cloud log array instead of fencing it raw', async () => {
     vi.mocked(axios.get).mockResolvedValueOnce({
       data: [{ level: 'info', message: 'System is running normally' }]
     })
