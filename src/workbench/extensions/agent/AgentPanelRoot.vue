@@ -22,7 +22,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
   AgentErrorMetadata,
-  AgentFreeUseNoticeMetadata,
   AgentMessageSentMetadata,
   AgentPaywallSurface,
   AgentRunApprovalDecision,
@@ -1362,19 +1361,24 @@ const { copy } = useClipboard({ legacy: true })
  * reading the flag here keeps the exposure — and the experiment's
  * denominator — to the panel openers the hypothesis is about.
  */
-const { variant: freeUsePlacement } = useFreeUsePlacement()
-const visibleFreeUsePlacement = computed(() =>
-  agentScopedHasFunds.value === false ? 'control' : freeUsePlacement.value
-)
+const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
+  useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
   expose: exposeStarterPromptSet
 } = useStarterPromptSet()
 
-function onFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
-  useTelemetry()?.trackAgentFreeUseNotice(metadata)
-}
+/**
+ * The notice claims the Agent's own granted allowance, so an authoritative
+ * `scoped_has_funds.agent === false` forces the control arm. This line keeps
+ * the 1.56 predicate it inherited from the credit-transition carrier; main's
+ * stricter fail-closed form rides on a billing-read ordering fixture that is
+ * not on this line.
+ */
+const visibleFreeUsePlacement = computed(() =>
+  agentScopedHasFunds.value === false ? 'control' : freeUseVariant.value
+)
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
