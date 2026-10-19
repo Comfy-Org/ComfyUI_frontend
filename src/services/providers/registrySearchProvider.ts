@@ -1,3 +1,6 @@
+import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
+
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { SearchNodePacksParams } from '@/types/algoliaTypes'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -8,15 +11,20 @@ import type {
 
 type RegistryNodePack = components['schemas']['Node']
 
+const zRegistrySearchResult = z.looseObject({
+  nodes: z.array(
+    z.custom<RegistryNodePack>(
+      (node) => typeof node === 'object' && node !== null,
+      { message: 'expected a node pack object' }
+    )
+  )
+})
+
 interface CachedRegistryRequest<TParams, TResult> {
   call: (params: TParams) => Promise<TResult | null>
   evict: (params: TParams) => void
 }
 
-/**
- * Search provider for the Comfy Registry.
- * Uses public Comfy Registry API.
- */
 export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
   const registryStore = useComfyRegistryStore()
 
@@ -29,10 +37,7 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
     )
   }
 
-  const requestPage = async <
-    TParams,
-    TResult extends { nodes?: RegistryNodePack[] }
-  >(
+  const requestPage = async <TParams, TResult>(
     request: CachedRegistryRequest<TParams, TResult>,
     params: TParams
   ): Promise<SearchPacksOutcome> => {
@@ -41,9 +46,19 @@ export const useComfyRegistrySearchProvider = (): NodePackSearchProvider => {
       request.evict(params)
       return { ok: false, cause: requestFailure() }
     }
+    const parsed = zRegistrySearchResult.safeParse(response)
+    if (!parsed.success) {
+      request.evict(params)
+      return {
+        ok: false,
+        cause: fromZodError(parsed.error, {
+          prefix: 'Malformed registry search response'
+        })
+      }
+    }
     return {
       ok: true,
-      result: { nodePacks: response.nodes ?? [], querySuggestions: [] }
+      result: { nodePacks: parsed.data.nodes, querySuggestions: [] }
     }
   }
 

@@ -76,6 +76,42 @@ describe('useRegistrySearch through the real search gateway', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('fails the search and reports the error when Algolia is unreachable and the registry returns a malformed response', async () => {
+    goOffline()
+    registryAdapter.mockImplementation(async (config) => ({
+      data: { nodes: {} },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config
+    }))
+
+    const search = await searchFor('malformed')
+
+    expect(search.firstPage.value).toEqual({
+      status: 'failed',
+      query: 'malformed'
+    })
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: expect.stringContaining('Malformed registry search response')
+      }),
+      expect.objectContaining({ errorType: 'error_searching_registry_packs' })
+    )
+
+    registryAdapter.mockImplementation(async (config) => ({
+      data: { nodes: [{ id: 'registry-pack' }] },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config
+    }))
+    await search.loadNew()
+
+    expect(search.firstPage.value).toMatchObject({ status: 'loaded' })
+    expect(toValue(search.items)).toEqual([{ id: 'registry-pack' }])
+  })
+
   it('asks the registry again after a failed search instead of reusing the failure', async () => {
     goOffline()
     await searchFor('gguf')
