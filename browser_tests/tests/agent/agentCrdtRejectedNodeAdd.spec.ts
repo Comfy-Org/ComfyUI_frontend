@@ -147,19 +147,6 @@ const nodeDefs: Record<string, ComfyNodeDef> = {
   }
 }
 
-/**
- * The host's catalog describes `KSampler` and NOT `CLIPTextEncode`. That is
- * not a contrived gap: the widget catalog is a sha256-pinned projection of
- * one `object_info` (KEEP-ALIVE 12, pinned at mint via `meta.catalog_version`),
- * so a browser talking to a newer server can create a class the pinned catalog
- * has never described. This fixture installs a legacy custom serializer that
- * replaces the node's array with an object but declares no
- * `widgets_values_form`. The producer cannot prove that object's shape, and
- * the real applier refuses the compatibility name-keyed payload as
- * `uncatalogued_widget_write`, because accepting it would make the document
- * unprojectable on every later read. No wire frame is fabricated here; the
- * verdict below is the applier's own.
- */
 const catalog: WidgetCatalog = {
   types: { [SEED_CLASS]: { widget_order: ['seed', 'steps'] } }
 }

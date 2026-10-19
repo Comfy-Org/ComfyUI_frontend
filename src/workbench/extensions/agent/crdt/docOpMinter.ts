@@ -107,21 +107,7 @@ type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
-/**
- * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
- * own `widgets_values_named` minus non-value widgets. A validated
- * `widgets_values_form` travels with those values so the host does not need
- * the pinned catalog to recover their names. Custom serializers that declare
- * an object or a changed array keep their original shape and residue.
- *
- * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
- * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
- * entry. Those keep the serialized array shape rather than switching to the
- * named shadow; a declared form makes that array self-describing.
- *
- * `flags.ghost` is a placement-in-progress marker the placement click clears
- * without minting, so the document must not record it.
- */
+/** Returns the node's save-format snapshot for a semantic add operation. */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
@@ -144,7 +130,10 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     declaredForm !== undefined &&
     (isNonArrayObject(declaredValues) ||
       (Array.isArray(declaredValues) &&
-        !isEqual(declaredValues, Object.values(named))))
+        !isEqual(
+          declaredValues,
+          declaredForm.order.map((name) => named[name])
+        )))
   if (hasCustomDeclaredValues) return snapshot
 
   const values = valueWidgetsOnly(node, named)

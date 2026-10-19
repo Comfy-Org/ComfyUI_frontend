@@ -1603,6 +1603,20 @@ describe('attachDocOpMinter', () => {
     })
   })
 
+  it('compares integer-like widget names in declared form order', () => {
+    const node = new LGraphNode('Integer-like widget names')
+    node.serialize_widgets = true
+    node.addWidget('text', '2', 'two', () => {})
+    node.addWidget('text', '1', 'one', () => {})
+    node.addWidget('button', 'copy', 'copy', () => {})
+    graph.add(node)
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values: { '2': 'two', '1': 'one' },
+      widgets_values_form: { order: ['2', '1'] }
+    })
+  })
+
   it('omits doc-internal incarnation storage from an imported missing-node snapshot', () => {
     const node = new LGraphNode('Missing ImageScaleToTotalPixels')
     const imported: ISerialisedNode = {
