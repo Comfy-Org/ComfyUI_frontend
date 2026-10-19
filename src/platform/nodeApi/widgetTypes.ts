@@ -21,7 +21,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyWidgetConstructor } from '@/types/comfy'
-import { useWidgetStore } from '@/stores/widgetStore'
+import { registerDeclaredWidget } from './declaredWidgetTypes'
 
 import { ComfyApiError } from './errors'
 import type { NodeHandle } from './nodeHandle'
@@ -137,8 +137,6 @@ function createWidgetTypeContext(
   })
 }
 
-const declaredWidgetTypes = new Map<string, ComfyWidgetConstructor>()
-
 function widgetTypeContainer(def: WidgetTypeDef): HTMLDivElement {
   const container = document.createElement('div')
   container.style.width = '100%'
@@ -177,22 +175,6 @@ function connectWidgetTypeTeardown(
     onRemove?.call(this)
     teardown()
   }
-}
-
-export function constructDeclaredWidget(
-  node: LGraphNode,
-  type: string,
-  name: string,
-  options: object,
-  value: unknown
-): ReturnType<ComfyWidgetConstructor> | undefined {
-  const constructor = declaredWidgetTypes.get(type)
-  if (!constructor) return undefined
-  const inputData = [
-    type,
-    { ...options, default: value }
-  ] as Parameters<ComfyWidgetConstructor>[2]
-  return constructor(node, name, inputData, undefined as never)
 }
 
 export function createWidgetTypeRegistrar(
@@ -249,12 +231,6 @@ export function createWidgetTypeRegistrar(
       return { widget, minWidth: def.minWidth, minHeight: def.minHeight }
     }
 
-    declaredWidgetTypes.set(type, constructor)
-    useWidgetStore().registerCustomWidgets({ [type]: constructor })
-    return () => {
-      if (declaredWidgetTypes.get(type) !== constructor) return
-      declaredWidgetTypes.delete(type)
-      useWidgetStore().unregisterCustomWidget(type)
-    }
+    return registerDeclaredWidget(type, constructor)
   }
 }

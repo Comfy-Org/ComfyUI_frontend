@@ -17,7 +17,7 @@ import type {
   InputSpec
 } from '@/schemas/nodeDefSchema'
 import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
-import type { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import type { CONFIG, GET_CONFIG } from '@/core/graph/widgets/inputConfig'
 import type { SerializedNodeId } from '@/types/nodeId'
 
 /** ComfyUI extensions of litegraph */

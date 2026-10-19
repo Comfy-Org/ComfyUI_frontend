@@ -22,7 +22,7 @@ import { createHandleFactory } from './closedProxy'
 import type { HandleCommon } from './closedProxy'
 import { ComfyApiError } from './errors'
 import { isEmbeddingWorkflow } from './serializeContext'
-import { constructDeclaredWidget } from './widgetTypes'
+import { constructDeclaredWidget } from './declaredWidgetTypes'
 import { subscribeWidgetTextInteraction } from './widgetTextInteraction'
 import type { WidgetTextInteractionEvent } from './widgetTextInteraction'
 

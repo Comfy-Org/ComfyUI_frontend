@@ -17,6 +17,7 @@ import { watch } from 'vue'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { useApp } from '@/scripts/appInstance'
 import type {
   PromptQueuedEventPayload,
   PromptRejectedEventPayload
@@ -335,9 +336,7 @@ export function createQueueApi(
           'run({ nodes }) needs at least one node. Omit `nodes` to run the whole workflow.'
         )
       }
-      // Imported lazily: `app` pulls in most of the application, and a static
-      // import would drag it into any pack's first import of the API.
-      const { app } = await import('@/scripts/app')
+      const app = useApp()
       return nodes
         ? app.queuePrompt(0, batch, executionIds(nodes, getGraph()))
         : app.queuePrompt(0, batch)

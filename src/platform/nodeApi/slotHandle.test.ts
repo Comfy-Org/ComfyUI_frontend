@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
-import { GET_CONFIG } from '@/services/litegraphService'
+import { GET_CONFIG } from '@/core/graph/widgets/inputConfig'
 import { useLinkStore } from '@/stores/linkStore'
 import { toNodeId } from '@/types/nodeId'
 

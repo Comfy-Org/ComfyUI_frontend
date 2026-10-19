@@ -27,7 +27,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { ComfyWidgets, isValidWidgetType } from '@/scripts/widgets'
-import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { CONFIG, GET_CONFIG } from '@/core/graph/widgets/inputConfig'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 

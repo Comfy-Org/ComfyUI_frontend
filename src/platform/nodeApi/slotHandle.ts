@@ -21,7 +21,7 @@ import {
 } from '@/lib/litegraph/src/types/globalEnums'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { CONFIG, GET_CONFIG } from '@/core/graph/widgets/inputConfig'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
