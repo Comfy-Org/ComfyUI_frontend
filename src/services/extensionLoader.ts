@@ -1,3 +1,4 @@
+import { resolveExtensionHost } from '@/services/extensionHostProvider'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   EXTENSION_FAILURES_TRUNCATED_FIELD,
@@ -70,6 +71,11 @@ async function importCustomExtension(
   ext: string
 ): Promise<ExtensionLoadFailure | undefined> {
   try {
+    const host = resolveExtensionHost(ext)
+    if (host) {
+      await host.load(ext)
+      return
+    }
     await import(/* @vite-ignore */ api.fileURL(ext))
   } catch (error) {
     return { ext, error }
