@@ -1,15 +1,15 @@
 import { spawnSync } from 'node:child_process'
 import {
   chmodSync,
-  existsSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 
 interface Workflow {
@@ -24,31 +24,70 @@ const warnScript =
 
 const fakeGh = `#!/usr/bin/env bash
 set -euo pipefail
-if [[ " $* " == *" --method POST "* ]]; then
-  for arg in "$@"; do
-    if [[ "$arg" == body=* ]]; then
-      printf '%s\\n' "\${arg#body=}" >> "$FAKE_COMMENTS"
-      echo posted >> "$FAKE_POSTS"
-    fi
-  done
-else
-  cat "$FAKE_COMMENTS" 2>/dev/null || true
-fi
+shift
+endpoint='' filter='.' method=GET body=''
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --jq) filter="$2"; shift 2 ;;
+    --method) method="$2"; shift 2 ;;
+    -f) body="\${2#body=}"; shift 2 ;;
+    --paginate|--silent) shift ;;
+    *) endpoint="$1"; shift ;;
+  esac
+done
+case "$method $endpoint" in
+  POST\\ *)
+    [ -z "\${FAKE_LOCKED:-}" ] || { echo 'Issue is locked' >&2; exit 1; }
+    jq -nc --arg body "$body" '{user: {login: "github-actions[bot]"}, body: $body}' >> "$FAKE_COMMENTS" ;;
+  *"/labels") jq -r "$filter" "$FAKE_LABELS" ;;
+  *"/comments") cat "$FAKE_COMMENTS" | jq -rs "$filter" ;;
+  *"/pulls?"*)
+    branch="\${endpoint##*:}"
+    if grep -qxF -- "$branch" "$FAKE_BACKPORTS"; then echo '[{}]'; else echo '[]'; fi | jq -r "$filter" ;;
+  *) echo "unexpected gh call: $method $endpoint" >&2; exit 2 ;;
+esac
 `
 
-function createPr(labels: string[]) {
+interface PrSetup {
+  labels: string[]
+  backportBranches?: string[]
+  comments?: Array<{ author: string; body: string }>
+  locked?: boolean
+}
+
+function createPr({
+  labels,
+  backportBranches = [],
+  comments: existingComments = [],
+  locked = false
+}: PrSetup) {
   const directory = mkdtempSync(join(tmpdir(), 'backport-missing-trigger-'))
-  const event = join(directory, 'event.json')
+  onTestFinished(() => rmSync(directory, { recursive: true, force: true }))
   const comments = join(directory, 'comments')
-  const posts = join(directory, 'posts')
   writeFileSync(join(directory, 'gh'), fakeGh)
   chmodSync(join(directory, 'gh'), 0o755)
   writeFileSync(
-    event,
-    JSON.stringify({
-      pull_request: { labels: labels.map((name) => ({ name })) }
-    })
+    join(directory, 'labels.json'),
+    JSON.stringify(labels.map((name) => ({ name })))
   )
+  writeFileSync(join(directory, 'backports'), backportBranches.join('\n'))
+  writeFileSync(
+    comments,
+    existingComments
+      .map(
+        ({ author, body }) =>
+          `${JSON.stringify({ user: { login: author }, body })}\n`
+      )
+      .join('')
+  )
+  const initialCount = existingComments.length
+
+  const botComments = () =>
+    readFileSync(comments, 'utf8')
+      .split('\n')
+      .filter(Boolean)
+      .slice(initialCount)
+      .map((line) => (JSON.parse(line) as { body: string }).body)
 
   return {
     runWarning: () =>
@@ -56,54 +95,114 @@ function createPr(labels: string[]) {
         encoding: 'utf8',
         env: {
           ...process.env,
+          FAKE_BACKPORTS: join(directory, 'backports'),
           FAKE_COMMENTS: comments,
-          FAKE_POSTS: posts,
+          FAKE_LABELS: join(directory, 'labels.json'),
+          FAKE_LOCKED: locked ? '1' : '',
           GH_REPO: 'Comfy-Org/ComfyUI_frontend',
-          GITHUB_EVENT_PATH: event,
           PATH: `${directory}:${process.env.PATH}`,
           PR_NUMBER: '21241'
         }
       }),
-    postCount: () =>
-      existsSync(posts)
-        ? readFileSync(posts, 'utf8').trim().split('\n').length
-        : 0,
-    comments: () => (existsSync(comments) ? readFileSync(comments, 'utf8') : '')
+    postedComments: botComments,
+    setLabels: (next: string[]) =>
+      writeFileSync(
+        join(directory, 'labels.json'),
+        JSON.stringify(next.map((name) => ({ name })))
+      )
   }
 }
 
 describe('backport warning for release labels without needs-backport', () => {
   it('posts one comment naming the release labels and how to start the backport', () => {
-    const pr = createPr(['core/1.57', 'cloud/1.57', 'bug'])
+    const pr = createPr({ labels: ['core/1.57', 'cloud/1.57', 'bug'] })
 
     const result = pr.runWarning()
 
     expect(result.status).toBe(0)
-    expect(pr.postCount()).toBe(1)
-    expect(pr.comments()).toContain('`core/1.57` `cloud/1.57`')
-    expect(pr.comments()).toContain('add the `needs-backport` label')
-    expect(pr.comments()).not.toContain('`bug`')
+    expect(pr.postedComments()).toHaveLength(1)
+    const [comment] = pr.postedComments()
+    expect(comment).toContain('`core/1.57` `cloud/1.57`')
+    expect(comment).toContain('add the `needs-backport` label')
+    expect(comment).not.toContain('`bug`')
   })
 
-  it('does not post again when the workflow re-runs on a later label event', () => {
-    const pr = createPr(['core/1.57'])
+  it('does not post again on a later label event, but warns about a newly added release label', () => {
+    const pr = createPr({ labels: ['core/1.57'] })
 
     pr.runWarning()
-    const rerun = pr.runWarning()
+    pr.runWarning()
+    pr.setLabels(['core/1.57', 'cloud/1.58'])
+    pr.runWarning()
 
-    expect(rerun.status).toBe(0)
-    expect(pr.postCount()).toBe(1)
+    const posted = pr.postedComments()
+    expect(posted).toHaveLength(2)
+    expect(posted[1]).toContain('`cloud/1.58`')
+    expect(posted[1]).not.toContain('`core/1.57`')
   })
 
-  it.for([[['bug']], [['1.57', 'branch:release/hotfix']], [['core/1.57-rc']]])(
-    'stays silent without a core/X.Y or cloud/X.Y label: %j',
-    ([labels]) => {
-      const pr = createPr(labels)
+  it('leaves out targets that already have a backport PR', () => {
+    const pr = createPr({
+      labels: ['core/1.57', 'cloud/1.57'],
+      backportBranches: ['backport-21241-to-core-1.57']
+    })
 
-      const result = pr.runWarning()
+    pr.runWarning()
 
-      expect(result.status).toBe(0)
-      expect(pr.postCount()).toBe(0)
-    }
-  )
+    const [comment] = pr.postedComments()
+    expect(comment).toContain('`cloud/1.57`')
+    expect(comment).not.toContain('`core/1.57`')
+  })
+
+  it.for<[string, PrSetup]>([
+    ['no release label', { labels: ['bug'] }],
+    [
+      'only labels outside the core/X.Y or cloud/X.Y form',
+      { labels: ['1.57', 'branch:release/hotfix', 'core/1.57-rc'] }
+    ],
+    [
+      'needs-backport was added after the event fired',
+      { labels: ['core/1.57', 'needs-backport'] }
+    ],
+    [
+      'every release label is already backported',
+      {
+        labels: ['core/1.57'],
+        backportBranches: ['backport-21241-to-core-1.57']
+      }
+    ]
+  ])('stays silent when %s', ([, setup]) => {
+    const pr = createPr(setup)
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(pr.postedComments()).toHaveLength(0)
+  })
+
+  it('still warns when someone other than the workflow posted the marker', () => {
+    const pr = createPr({
+      labels: ['core/1.57'],
+      comments: [
+        {
+          author: 'someone',
+          body: '<!-- pr-backport:missing-needs-backport core/1.57 -->'
+        }
+      ]
+    })
+
+    pr.runWarning()
+
+    expect(pr.postedComments()).toHaveLength(1)
+  })
+
+  it('reports a rejected comment on a locked PR as a warning without failing', () => {
+    const pr = createPr({ labels: ['core/1.57'], locked: true })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(result.stdout).toContain('::warning::')
+    expect(result.stdout).toContain('core/1.57')
+  })
 })

@@ -60,8 +60,9 @@ later ship as v1.40.2). Same commits, no divergence — the branch just prevents
 3. Conflicts produce a comment with details and an agent prompt
 
 Release labels alone do not start the backport. A merged PR with a
-`core/X.Y` or `cloud/X.Y` label but no `needs-backport` gets one comment saying
-the backport did not run.
+`core/X.Y` or `cloud/X.Y` label but no `needs-backport` gets a comment saying
+the backport did not run. Each label is warned about once, and labels whose
+target already has a backport PR are left out.
 
 ## Release Sheriff Assignment
 
