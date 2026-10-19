@@ -1,8 +1,17 @@
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished
+} from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -15,18 +24,6 @@ import {
 } from './restoreOpMinter'
 import type { RestoreOpMinter } from './restoreOpMinter'
 
-/**
- * PM-2165: the agent deleted rows of a workflow that used VideoHelperSuite, and
- * Ctrl+Z could not bring them back. The undo re-add of a video node carried its
- * display-only `videopreview` DOM widget (`serialize: false`, not a definition
- * input) as a named value, the doc host refused the `add_node` with
- * `unknown_widget`, and the whole restore batch was dropped.
- *
- * The node's own widget form (schema A24, PM-2003) now declares that widget, so
- * the host takes the add. This pins the reported path end to end: undo restore
- * minter → wire ops → the real applier, with a catalog that does not list the
- * preview widget, as the pinned catalog does not.
- */
 const LOAD_VIDEO = 'VHS_LoadVideo'
 
 const LOAD_VIDEO_DEF: ComfyNodeDefV1 = {
@@ -80,6 +77,13 @@ class PreviewSink extends LGraphNode {
   }
 }
 
+function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
+  return {
+    ...rest,
+    nodes: nodes.map(({ flags, ...node }) => ({ ...node, flags: { ...flags } }))
+  }
+}
+
 describe('PM-2165: undo restores a deleted node that has a display-only DOM widget', () => {
   let graph: LGraph
   let minted: GraphOperation[]
@@ -109,29 +113,48 @@ describe('PM-2165: undo restores a deleted node that has a display-only DOM widg
     const loader = new LoadVideoWithPreview()
     graph.add(loader)
     loader.connect(0, sink, 0)
-    graph.remove(loader)
-    const doc = mint(graph.serialize() as unknown as WorkflowJSON, CATALOG)
+    const linkId = sink.inputs[0].link
+    assert(linkId != null)
+    const beforeDelete = graph.serialize()
+    const doc = mint(toWorkflowJson(beforeDelete), CATALOG)
+    onTestFinished(() => doc.destroy())
 
-    const restored = new LoadVideoWithPreview()
-    restored.id = loader.id
+    graph.remove(loader)
+    const deleted = applyOps(
+      doc,
+      mintWireOps(
+        [
+          {
+            op: 'delete_node',
+            node_id: String(loader.id),
+            removed_links: [linkId]
+          }
+        ],
+        { actor: 'agent:turn', baseVersion: 1 }
+      ),
+      CATALOG
+    )
+    expect(deleted.outcomes.map((outcome) => outcome.outcome)).toEqual([
+      'applied'
+    ])
+
     notifyRestoreMintersBeforeGraphLoad()
-    graph.add(restored)
-    restored.connect(0, sink, 0)
+    graph.configure(beforeDelete)
     notifyRestoreMintersAfterGraphConfigure()
 
     expect(minted.map((operation) => operation.op)).toEqual([
       'add_node',
       'connect'
     ])
+    expect(minted[0]).toHaveProperty('node.widgets_values.videopreview')
     const { outcomes } = applyOps(
       doc,
-      mintWireOps(minted, { actor: 'human:user:tab', baseVersion: 1 }),
+      mintWireOps(minted, { actor: 'human:user:tab', baseVersion: 2 }),
       CATALOG
     )
     expect(outcomes.map((outcome) => outcome.outcome)).toEqual([
       'applied',
       'applied'
     ])
-    doc.destroy()
   })
 })
