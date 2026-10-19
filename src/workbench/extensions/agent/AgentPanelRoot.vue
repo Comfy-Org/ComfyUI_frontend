@@ -309,13 +309,17 @@ const creditsExhausted = computed(() => {
   )
 })
 
+const threadHasUserMessage = computed(() =>
+  conversationEntries.value.some((entry) => entry.role === 'user')
+)
+
 /**
  * Suppressed while the latest transcript entry is an unresolved inline card:
  * the two render the same copy. An older card may be scrolled away and must not
  * hide the standing recovery path after a later server-side refusal.
  */
 const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+  if (!creditsExhausted.value || !threadHasUserMessage.value) return false
   const latestEntry = conversationEntries.value.at(-1)
   return !(
     latestEntry?.role === 'assistant' &&
