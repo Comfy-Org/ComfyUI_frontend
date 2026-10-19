@@ -8,7 +8,7 @@ const { downloadBlobMock } = vi.hoisted(() => ({
   downloadBlobMock: vi.fn()
 }))
 
-vi.mock(import('@/base/common/downloadUtil'), () => ({
+vi.mock(import('./downloadBlob'), () => ({
   downloadBlob: downloadBlobMock
 }))
 

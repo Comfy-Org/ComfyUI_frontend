@@ -4,9 +4,7 @@ import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
 import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
-import { downloadBlob } from '@/base/common/downloadUtil'
-import { t } from '@/i18n'
-import { useToast } from '@/components/ui/toast/toastStore'
+import { downloadBlob } from './downloadBlob'
 
 export class ModelExporter {
   static detectFormatFromURL(url: string): string | null {
@@ -37,18 +35,12 @@ export class ModelExporter {
     url: string,
     desiredFilename: string
   ): Promise<void> {
-    try {
-      const response = await fetch(url)
-      if (!response.ok) {
-        throw new Error(`Failed to download file (HTTP ${response.status})`)
-      }
-      const blob = await response.blob()
-      downloadBlob(desiredFilename, blob)
-    } catch (error) {
-      console.error('Error downloading from URL:', error)
-      useToast().warning(t('toastMessages.failedToDownloadFile'))
-      throw error
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to download file (HTTP ${response.status})`)
     }
+    const blob = await response.blob()
+    downloadBlob(desiredFilename, blob)
   }
 
   static async exportGLB(
@@ -62,32 +54,24 @@ export class ModelExporter {
 
     const exporter = new GLTFExporter()
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
-      const result = await new Promise<ArrayBuffer>((resolve, reject) => {
-        exporter.parse(
-          model,
-          (gltf) => {
-            resolve(gltf as ArrayBuffer)
-          },
-          (error) => {
-            reject(error)
-          },
-          { binary: true }
-        )
-      })
-
-      await new Promise((resolve) => setTimeout(resolve, 50))
-
-      ModelExporter.saveArrayBuffer(result, filename)
-    } catch (error) {
-      console.error('Error exporting GLB:', error)
-      useToast().warning(
-        t('toastMessages.failedToExportModel', { format: 'GLB' })
+    const result = await new Promise<ArrayBuffer>((resolve, reject) => {
+      exporter.parse(
+        model,
+        (gltf) => {
+          resolve(gltf as ArrayBuffer)
+        },
+        (error) => {
+          reject(error)
+        },
+        { binary: true }
       )
-      throw error
-    }
+    })
+
+    await new Promise((resolve) => setTimeout(resolve, 50))
+
+    ModelExporter.saveArrayBuffer(result, filename)
   }
 
   static async exportOBJ(
@@ -101,21 +85,13 @@ export class ModelExporter {
 
     const exporter = new OBJExporter()
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
-      const result = exporter.parse(model)
+    const result = exporter.parse(model)
 
-      await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
-      ModelExporter.saveString(result, filename)
-    } catch (error) {
-      console.error('Error exporting OBJ:', error)
-      useToast().warning(
-        t('toastMessages.failedToExportModel', { format: 'OBJ' })
-      )
-      throw error
-    }
+    ModelExporter.saveString(result, filename)
   }
 
   static async exportFBX(
@@ -129,28 +105,19 @@ export class ModelExporter {
 
     const exporter = new FBXExporter()
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
-      const bytes = await exporter.parseAsync(model)
+    const bytes = await exporter.parseAsync(model)
 
-      await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
-      // FBXExporter returns Uint8Array — wrap into ArrayBuffer for download.
-      ModelExporter.saveArrayBuffer(
-        bytes.buffer.slice(
-          bytes.byteOffset,
-          bytes.byteOffset + bytes.byteLength
-        ) as ArrayBuffer,
-        filename
-      )
-    } catch (error) {
-      console.error('Error exporting FBX:', error)
-      useToast().warning(
-        t('toastMessages.failedToExportModel', { format: 'FBX' })
-      )
-      throw error
-    }
+    ModelExporter.saveArrayBuffer(
+      bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength
+      ) as ArrayBuffer,
+      filename
+    )
   }
 
   static async exportSTL(
@@ -164,21 +131,13 @@ export class ModelExporter {
 
     const exporter = new STLExporter()
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
-      const result = exporter.parse(model)
+    const result = exporter.parse(model)
 
-      await new Promise((resolve) => setTimeout(resolve, 50))
+    await new Promise((resolve) => setTimeout(resolve, 50))
 
-      ModelExporter.saveString(result, filename)
-    } catch (error) {
-      console.error('Error exporting STL:', error)
-      useToast().warning(
-        t('toastMessages.failedToExportModel', { format: 'STL' })
-      )
-      throw error
-    }
+    ModelExporter.saveString(result, filename)
   }
 
   static async exportDirect(

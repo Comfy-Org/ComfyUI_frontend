@@ -2,10 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
-import { downloadBlob } from '@/base/common/downloadUtil'
-import { useToast } from '@/components/ui/toast/toastStore'
-import { t } from '@/i18n'
-
+import { downloadBlob } from './downloadBlob'
 import { ModelExporter } from './ModelExporter'
 
 const { gltfParseMock, objParseMock, stlParseMock, fbxParseAsyncMock } =
@@ -16,11 +13,9 @@ const { gltfParseMock, objParseMock, stlParseMock, fbxParseAsyncMock } =
     fbxParseAsyncMock: vi.fn()
   }))
 
-vi.mock(import('@/base/common/downloadUtil'), () => ({
+vi.mock(import('./downloadBlob'), () => ({
   downloadBlob: vi.fn()
 }))
-
-vi.mock(import('@/i18n'))
 
 vi.mock(import('three/examples/jsm/exporters/GLTFExporter'), () => ({
   GLTFExporter: fromAny(
@@ -135,19 +130,16 @@ describe('ModelExporter', () => {
       vi.unstubAllGlobals()
     })
 
-    it('rethrows and shows a toast alert when fetch fails', async () => {
+    it('rethrows when fetch fails', async () => {
       vi.mocked(fetch).mockRejectedValue(new Error('network'))
 
       await expect(
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('network')
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.failedToDownloadFile'
-      )
       vi.unstubAllGlobals()
     })
 
-    it('rethrows and shows a toast alert when the response status is not ok', async () => {
+    it('rethrows when the response status is not ok', async () => {
       vi.mocked(fetch).mockImplementation(
         async () => new Response(new Blob(['x']), { status: 404 })
       )
@@ -156,9 +148,6 @@ describe('ModelExporter', () => {
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('HTTP 404')
       expect(downloadBlob).not.toHaveBeenCalled()
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.failedToDownloadFile'
-      )
       vi.unstubAllGlobals()
     })
   })
@@ -201,7 +190,7 @@ describe('ModelExporter', () => {
       expect(downloadBlob).toHaveBeenCalledWith('out.glb', expect.any(Blob))
     })
 
-    it('alerts and rethrows when GLTFExporter rejects', async () => {
+    it('rethrows when GLTFExporter rejects', async () => {
       gltfParseMock.mockImplementation(
         (_model: unknown, _onDone: unknown, onError: (e: Error) => void) =>
           onError(new Error('parse fail'))
@@ -211,12 +200,6 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('parse fail')])
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
-      expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
-        format: 'GLB'
-      })
     })
   })
 
@@ -247,7 +230,7 @@ describe('ModelExporter', () => {
       expect(downloadBlob).toHaveBeenCalledWith('out.obj', expect.any(Blob))
     })
 
-    it('alerts and rethrows when OBJExporter throws', async () => {
+    it('rethrows when OBJExporter throws', async () => {
       objParseMock.mockImplementation(() => {
         throw new Error('obj fail')
       })
@@ -256,12 +239,6 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('obj fail')])
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
-      expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
-        format: 'OBJ'
-      })
     })
   })
 
@@ -292,7 +269,7 @@ describe('ModelExporter', () => {
       expect(downloadBlob).toHaveBeenCalledWith('out.stl', expect.any(Blob))
     })
 
-    it('alerts and rethrows when STLExporter throws', async () => {
+    it('rethrows when STLExporter throws', async () => {
       stlParseMock.mockImplementation(() => {
         throw new Error('stl fail')
       })
@@ -301,12 +278,6 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('stl fail')])
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
-      expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
-        format: 'STL'
-      })
     })
   })
 
@@ -325,12 +296,11 @@ describe('ModelExporter', () => {
       vi.unstubAllGlobals()
     })
 
-    it('throws without toasting when there is no source URL, leaving the alert to the caller', async () => {
+    it('throws when there is no source URL', async () => {
       await expect(
         ModelExporter.exportDirect(null, 'out.spz', 'spz')
       ).rejects.toThrow('No source file available to export as spz')
       expect(downloadBlob).not.toHaveBeenCalled()
-      expect(useToast().warning).not.toHaveBeenCalled()
     })
   })
 
@@ -362,19 +332,13 @@ describe('ModelExporter', () => {
       expect(downloadBlob).toHaveBeenCalledWith('out.fbx', expect.any(Blob))
     })
 
-    it('alerts and rethrows when FBXExporter throws', async () => {
+    it('rethrows when FBXExporter throws', async () => {
       fbxParseAsyncMock.mockRejectedValue(new Error('fbx fail'))
 
       const promise = ModelExporter.exportFBX(new THREE.Object3D(), 'out.fbx')
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('fbx fail')])
-      expect(useToast().warning).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
-      expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
-        format: 'FBX'
-      })
     })
   })
 })

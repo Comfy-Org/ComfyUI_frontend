@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import { downloadBlob } from '@/base/common/downloadUtil'
+import { downloadBlob } from './downloadBlob'
 
 import type { EventManagerInterface } from './interfaces'
 
