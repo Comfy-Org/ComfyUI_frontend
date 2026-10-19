@@ -47,6 +47,21 @@ describe('PricingSection', () => {
     expect(screen.queryAllByText('$0.15/GB/mo')).toHaveLength(0)
   })
 
+  it.for(['en', 'zh-CN'] as const)(
+    'states the billing basis, container disk and commercial use in %s',
+    (locale) => {
+      render(PricingSection, { props: { locale } })
+
+      for (const key of [
+        'platform.pricing.billedPerSecond',
+        'platform.pricing.containerDiskIncluded',
+        'platform.pricing.commercialUse'
+      ]) {
+        expect(screen.getAllByText(t(key, {}, { locale }))).toHaveLength(2)
+      }
+    }
+  )
+
   it('renders every rate-card value rather than a hardcoded copy', () => {
     render(PricingSection, { props: { locale: 'en' } })
 
