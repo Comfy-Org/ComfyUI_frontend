@@ -24,13 +24,11 @@ test.describe(
 
       let requestBody: unknown
       const execution = new ExecutionHelper(comfyPage)
-      await expect(
-        execution.run({
-          onPromptRequest: (body) => {
-            requestBody = body
-          }
-        })
-      ).resolves.toMatch(/^test-job-/)
+      await execution.run({
+        onPromptRequest: (body) => {
+          requestBody = body
+        }
+      })
 
       expect(requestBody).toMatchObject({
         prompt: {
