@@ -126,26 +126,10 @@ test.describe(
         await bootAgentApp(page, true, {
           objectInfo: 'server',
           settings: {
-            'Comfy.Graph.CanvasInfo': false,
-            'Comfy.VueNodes.Enabled': true
+            'Comfy.Graph.CanvasInfo': false
           }
         })
         await mockWorkflowPersistence(page, WORKFLOW_ID)
-
-        await panel.open()
-        await panel.selectWorkflow()
-        await panel.sendMessage('Add two Load Image nodes.')
-        await hostSocket.waitForSubscribe()
-
-        hostSocket.send(
-          host.apply([
-            addLoadImageNode(FIRST_NODE_ID, 0),
-            addLoadImageNode(SECOND_NODE_ID, 1),
-            titleWrite(FIRST_NODE_ID, staleTitle(FIRST_STALE_VALUE)),
-            titleWrite(SECOND_NODE_ID, staleTitle(SECOND_STALE_VALUE))
-          ])
-        )
-        hostSocket.send(done(FIRST_MESSAGE_ID))
 
         const firstNode = comfyPage.vueNodes.getNodeLocator(
           String(FIRST_NODE_ID)
@@ -153,82 +137,80 @@ test.describe(
         const secondNode = comfyPage.vueNodes.getNodeLocator(
           String(SECOND_NODE_ID)
         )
-        await expect(firstNode).toBeVisible()
-        await expect(secondNode).toBeVisible()
-        await expect(firstNode.getByTestId('node-title')).toHaveText(
-          staleTitle(FIRST_STALE_VALUE)
-        )
-        await expect(secondNode.getByTestId('node-title')).toHaveText(
-          staleTitle(SECOND_STALE_VALUE)
-        )
-        await expect(panel.sendButton).toBeVisible()
+        const firstTitle = firstNode.getByTestId('node-title')
+        const secondTitle = secondNode.getByTestId('node-title')
 
-        const canvas = await page.evaluateHandle(() => {
-          const root = document.getElementById('vue-app') as unknown as {
-            __vue_app__: {
-              config: {
-                globalProperties: { $pinia: { _s: Map<string, unknown> } }
-              }
-            }
-          }
-          const canvasStore =
-            root.__vue_app__.config.globalProperties.$pinia._s.get(
-              'canvas'
-            ) as { canvas: unknown }
-          const canvas = canvasStore.canvas
-          canvasStore.canvas = null
-          return canvas
+        await test.step('Project two nodes from the first turn', async () => {
+          await panel.open()
+          await panel.selectWorkflow()
+          await panel.sendMessage('Add two Load Image nodes.')
+          await hostSocket.waitForSubscribe()
+
+          hostSocket.send(
+            host.apply([
+              addLoadImageNode(FIRST_NODE_ID, 0),
+              addLoadImageNode(SECOND_NODE_ID, 1),
+              titleWrite(FIRST_NODE_ID, staleTitle(FIRST_STALE_VALUE)),
+              titleWrite(SECOND_NODE_ID, staleTitle(SECOND_STALE_VALUE))
+            ])
+          )
+          hostSocket.send(done(FIRST_MESSAGE_ID))
+
+          await expect(firstNode).toBeVisible()
+          await expect(secondNode).toBeVisible()
+          await expect(firstTitle).toHaveText(staleTitle(FIRST_STALE_VALUE))
+          await expect(secondTitle).toHaveText(staleTitle(SECOND_STALE_VALUE))
+          await expect(panel.sendButton).toBeVisible()
         })
-        hostSocket.send(
-          host.apply([
-            widgetWrite(FIRST_NODE_ID, FIRST_FRESH_VALUE),
-            widgetWrite(SECOND_NODE_ID, SECOND_FRESH_VALUE),
-            titleWrite(FIRST_NODE_ID, freshTitle(FIRST_FRESH_VALUE)),
-            titleWrite(SECOND_NODE_ID, freshTitle(SECOND_FRESH_VALUE))
-          ])
-        )
 
-        await panel.sendMessage('What is on the canvas now?')
-        await expect.poll(() => posts.length).toBe(2)
+        await test.step('Ask while the canvas cannot take two edits', async () => {
+          const canvas = await page.evaluateHandle(() => {
+            const canvasStore = document
+              .getElementById('vue-app')
+              ?.__vue_app__?.config.globalProperties.$pinia._s.get('canvas')
+            if (!canvasStore) throw new Error('canvas store is not mounted')
+            const canvas: unknown = canvasStore.canvas
+            canvasStore.canvas = null
+            return canvas
+          })
+          hostSocket.send(
+            host.apply([
+              widgetWrite(FIRST_NODE_ID, FIRST_FRESH_VALUE),
+              widgetWrite(SECOND_NODE_ID, SECOND_FRESH_VALUE),
+              titleWrite(FIRST_NODE_ID, freshTitle(FIRST_FRESH_VALUE)),
+              titleWrite(SECOND_NODE_ID, freshTitle(SECOND_FRESH_VALUE))
+            ])
+          )
 
-        await page.evaluate((canvas) => {
-          const root = document.getElementById('vue-app') as unknown as {
-            __vue_app__: {
-              config: {
-                globalProperties: { $pinia: { _s: Map<string, unknown> } }
-              }
-            }
-          }
-          const canvasStore =
-            root.__vue_app__.config.globalProperties.$pinia._s.get(
-              'canvas'
-            ) as { canvas: unknown }
-          canvasStore.canvas = canvas
-        }, canvas)
-        await canvas.dispose()
-        await expect(firstNode.getByTestId('node-title')).toHaveText(
-          freshTitle(FIRST_FRESH_VALUE)
-        )
-        await expect(secondNode.getByTestId('node-title')).toHaveText(
-          freshTitle(SECOND_FRESH_VALUE)
-        )
+          await panel.sendMessage('What is on the canvas now?')
+          await expect.poll(() => posts.length).toBe(2)
 
-        const recoveryConnectionCount = hostSocket.connectionCount()
-        await hostSocket.disconnect()
-        await expect
-          .poll(() => hostSocket.connectionCount(), { timeout: 30_000 })
-          .toBeGreaterThan(recoveryConnectionCount)
+          await page.evaluate((canvas) => {
+            const canvasStore = document
+              .getElementById('vue-app')
+              ?.__vue_app__?.config.globalProperties.$pinia._s.get('canvas')
+            if (!canvasStore) throw new Error('canvas store is not mounted')
+            canvasStore.canvas = canvas
+          }, canvas)
+          await canvas.dispose()
+          await expect(firstTitle).toHaveText(freshTitle(FIRST_FRESH_VALUE))
+          await expect(secondTitle).toHaveText(freshTitle(SECOND_FRESH_VALUE))
+        })
 
-        hostSocket.send(done(SECOND_MESSAGE_ID))
-        await expect(firstNode.getByTestId('node-title')).toHaveText(
-          freshTitle(FIRST_FRESH_VALUE)
-        )
-        await expect(secondNode.getByTestId('node-title')).toHaveText(
-          freshTitle(SECOND_FRESH_VALUE)
-        )
-        await expect(
-          panel.root.getByText('What is on the canvas now?')
-        ).toBeVisible()
+        await test.step('Keep the caught-up edits across a reconnect', async () => {
+          const recoveryConnectionCount = hostSocket.connectionCount()
+          await hostSocket.disconnect()
+          await expect
+            .poll(() => hostSocket.connectionCount(), { timeout: 30_000 })
+            .toBeGreaterThan(recoveryConnectionCount)
+
+          hostSocket.send(done(SECOND_MESSAGE_ID))
+          await expect(firstTitle).toHaveText(freshTitle(FIRST_FRESH_VALUE))
+          await expect(secondTitle).toHaveText(freshTitle(SECOND_FRESH_VALUE))
+          await expect(
+            panel.root.getByText('What is on the canvas now?')
+          ).toBeVisible()
+        })
       }
     )
   }
