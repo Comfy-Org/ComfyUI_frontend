@@ -1,7 +1,10 @@
 import type { Page } from '@playwright/test'
 
 import type { PromptResponse } from '@/platform/remote/comfyui/types'
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type {
+  JobDetail,
+  RawJobListItem
+} from '@/platform/remote/comfyui/jobs/jobTypes'
 
 import type { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
@@ -94,6 +97,20 @@ export class AgentExecutionHelper {
       execution_start_time: null,
       execution_end_time: null
     })
+  }
+
+  /**
+   * Serves `GET /api/jobs/{jobId}` — the detail record, which is separate from
+   * the list row `enqueueServerRun` and `upsertJob` maintain. Its `workflow`
+   * field is the body that was POSTed to `/api/prompt`, stored verbatim
+   * (cloud `services/ingest/.../prompt.go`, `SetWorkflowJSON`), and it is the
+   * only thing the "open as workflow" action has to rebuild a graph from.
+   * Without this route that fetch 404s, so a spec about what the action does
+   * with the detail must supply one rather than read a failed fetch as a
+   * product verdict.
+   */
+  async mockJobDetail(jobId: string, detail: JobDetail): Promise<void> {
+    await this.assets.mockJobDetail(jobId, detail)
   }
 
   async startJob(jobId: string): Promise<void> {
