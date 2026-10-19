@@ -2497,7 +2497,9 @@
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
     "colors": "color_palette",
-    "grid": "Grid",
+    "grid": "Grid"
+  },
+  "widgetHistory": {
     "undo": "Undo",
     "redo": "Redo"
   },

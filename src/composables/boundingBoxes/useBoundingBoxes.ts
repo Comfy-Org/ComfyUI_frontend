@@ -19,16 +19,15 @@ import type {
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
 import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  locateWidgetNode,
+  widgetHistoryScope
+} from '@/composables/widgetHistoryScope'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
-import { app } from '@/scripts/app'
-import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
-import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { widgetId } from '@/types/widgetId'
 import { readableTextColor, textOnColor } from '@/utils/colorUtil'
 
 const HANDLE_PX = 8
@@ -78,21 +77,8 @@ export function useBoundingBoxes(
 
   const { width: containerWidth } = useElementSize(canvasContainer)
 
-  function locateNode(): { graph: LGraph; nodeId: NodeId } | null {
-    const located = widget.nodeLocatorId
-      ? parseNodeLocatorId(widget.nodeLocatorId)
-      : null
-    if (!located) {
-      return app.canvas.graph ? { graph: app.canvas.graph, nodeId } : null
-    }
-    const graph = located.subgraphUuid
-      ? app.rootGraph.subgraphs.get(located.subgraphUuid)
-      : app.rootGraph
-    return graph ? { graph, nodeId: located.localNodeId } : null
-  }
-
   const litegraphNode = computed(() => {
-    const location = locateNode()
+    const location = locateWidgetNode(widget, nodeId)
     return location?.graph.getNodeById(location.nodeId) ?? null
   })
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
@@ -638,7 +624,7 @@ export function useBoundingBoxes(
   }
 
   function onActivePaletteChange() {
-    commitEdit()
+    commitEdit(`palette:${activeIndex.value}`)
   }
 
   function syncState() {
@@ -661,18 +647,8 @@ export function useBoundingBoxes(
     syncState()
   }
 
-  function historyScope(): WidgetHistoryScope | null {
-    const location = locateNode()
-    return location
-      ? {
-          rootGraphId: app.rootGraph.id,
-          widgetId: widgetId(location.graph.id, location.nodeId, widget.name)
-        }
-      : null
-  }
-
   const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
-    scope: historyScope,
+    scope: () => widgetHistoryScope(widget, nodeId),
     read: () => state.value.regions,
     apply: restoreRegions
   })
