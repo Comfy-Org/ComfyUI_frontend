@@ -523,6 +523,19 @@ describe('useCustomerEventsService', () => {
       }
     })
 
+    it('renders param keys and values as text, not markup', () => {
+      const event = {
+        event_id: 'evt-html',
+        event_type: 'api_usage_completed',
+        params: { '<b>key</b>': '<img src=x onerror="x()">' },
+        createdAt: '2024-01-01T10:00:00Z'
+      }
+
+      expect(service.getTooltipContent(event)).toBe(
+        '<strong>&lt;b&gt;key&lt;/b&gt;:</strong> &lt;img src=x onerror=&quot;x()&quot;&gt;'
+      )
+    })
+
     it('keeps other params next to the charge', () => {
       const event = {
         event_id: 'agent-3',
