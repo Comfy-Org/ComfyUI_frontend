@@ -473,6 +473,34 @@ describe('useCustomerEventsService', () => {
       expect(result).toContain('<br>')
     })
 
+    it.for([
+      {
+        charge: 33_044,
+        expected: '<strong>credits.charge:</strong> 7 credits.credits'
+      },
+      {
+        charge: '36209',
+        expected: '<strong>credits.charge:</strong> 8 credits.credits'
+      },
+      {
+        charge: 0,
+        expected: '<strong>credits.charge:</strong> 0 credits.credits'
+      },
+      { charge: 'n/a', expected: '<strong>Charge Micro Usd:</strong> n/a' }
+    ])(
+      'shows charge_micro_usd $charge in whole credits',
+      ({ charge, expected }) => {
+        const event = {
+          event_id: 'agent-1',
+          event_type: 'agent_usage',
+          params: { charge_micro_usd: charge },
+          createdAt: '2024-01-01T10:00:00Z'
+        }
+
+        expect(service.getTooltipContent(event)).toBe(expected)
+      }
+    )
+
     it('should return empty string when no parameters', () => {
       const event = {
         event_id: 'test',
