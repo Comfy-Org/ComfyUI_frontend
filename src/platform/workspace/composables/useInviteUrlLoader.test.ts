@@ -5,6 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/components/ui/toast/toastStore'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { WorkspaceApiError } from '../api/workspaceApi'
 import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
@@ -41,15 +42,23 @@ vi.mock(
 const mockRouteQuery = vi.hoisted(() => ({
   value: {} as Record<string, string>
 }))
-const mockRouterReplace = vi.hoisted(() => vi.fn())
+const mockRouterReplace = vi.hoisted(() =>
+  vi.fn(({ query }: { query: Record<string, string> }) => {
+    mockRouteQuery.value = query
+  })
+)
 const mockRouterResolve = vi.hoisted(() =>
   vi.fn(() => ({ href: '/cloud/login?resolved' }))
 )
 
 vi.mock<unknown>(import('vue-router'), () => ({
   useRoute: () => ({
-    query: mockRouteQuery.value,
-    fullPath: `/?${new URLSearchParams(mockRouteQuery.value)}`
+    get query() {
+      return mockRouteQuery.value
+    },
+    get fullPath() {
+      return `/?${new URLSearchParams(mockRouteQuery.value)}`
+    }
   }),
   useRouter: () => ({
     replace: mockRouterReplace,
@@ -89,14 +98,11 @@ function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
               'SSO accounts cannot accept invite links',
             inviteDirectoryManaged: 'Admin manages membership',
             inviteDirectoryManagedDetail: 'Ask your organization admin',
-            switchFailed: 'Failed to switch workspace'
-          },
-          auth: {
-            reauthRequired: {
-              title: 'Re-authentication Required',
-              message: 'This action requires you to sign in again.',
-              confirm: 'Sign In Again'
-            }
+            switchFailed: 'Failed to switch workspace',
+            inviteNeedsSignIn: enMessages.workspace.inviteNeedsSignIn,
+            inviteNeedsSignInDetail:
+              enMessages.workspace.inviteNeedsSignInDetail,
+            inviteSignIn: enMessages.workspace.inviteSignIn
           },
           g: { unknownError: 'Unknown error' }
         }
@@ -455,42 +461,49 @@ describe('useInviteUrlLoader', () => {
         sso: true,
         provider: 'saml.workos',
         firebase: false,
-        outcome: 'ssoUnavailable'
+        outcome: 'shows the SSO toast'
       },
       {
         name: 'an OIDC SSO session',
         sso: true,
         provider: 'oidc.workos',
         firebase: false,
-        outcome: 'ssoUnavailable'
+        outcome: 'shows the SSO toast'
       },
       {
         name: 'an SSO session beside its Firebase login',
         sso: true,
         provider: 'saml.workos',
         firebase: true,
-        outcome: 'accepts'
+        outcome: 'accepts the invite'
       },
       {
         name: 'a Google session beside its Firebase login',
         sso: true,
         provider: 'google.com',
         firebase: true,
-        outcome: 'accepts'
+        outcome: 'accepts the invite'
       },
       {
         name: 'a Google session',
         sso: true,
         provider: 'google.com',
         firebase: false,
-        outcome: 'signsInAgain'
+        outcome: 'offers a sign-in'
       },
       {
         name: 'an SSO session with sso_enabled off',
         sso: false,
         provider: 'saml.workos',
         firebase: false,
-        outcome: 'signsInAgain'
+        outcome: 'offers a sign-in'
+      },
+      {
+        name: 'an API-key login with no web session',
+        sso: true,
+        provider: null,
+        firebase: false,
+        outcome: 'offers a sign-in'
       }
     ])('$name $outcome', async ({ sso, provider, firebase, outcome }) => {
       vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
@@ -499,10 +512,13 @@ describe('useInviteUrlLoader', () => {
         ? fromPartial<User>({ uid: 'session-user' })
         : null
       Object.assign(authStore, {
-        sessionUser: fakeWebSessionUser({
-          id: 'session-user',
-          signInProvider: provider
-        })
+        sessionUser:
+          provider === null
+            ? null
+            : fakeWebSessionUser({
+                id: 'session-user',
+                signInProvider: provider
+              })
       })
       mockRouteQuery.value = { invite: 'valid-token' }
       vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
@@ -515,50 +531,72 @@ describe('useInviteUrlLoader', () => {
 
       expect(
         vi.mocked(useTeamWorkspaceStore().acceptInvite).mock.calls.length
-      ).toBe(outcome === 'accepts' ? 1 : 0)
+      ).toBe(outcome === 'accepts the invite' ? 1 : 0)
       expect(
         useToast().toasts.some(
           ({ title }) => title === 'Ask your admin to add you'
         )
-      ).toBe(outcome === 'ssoUnavailable')
+      ).toBe(outcome === 'shows the SSO toast')
       expect(
         useToast().toasts.some(
-          ({ title }) => title === 'Re-authentication Required'
+          ({ title }) => title === enMessages.workspace.inviteNeedsSignIn
         )
-      ).toBe(outcome === 'signsInAgain')
+      ).toBe(outcome === 'offers a sign-in')
       expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
     })
 
-    it('offers a session-only tab a sign-in that returns to the invite', async () => {
-      vi.stubGlobal('location', { assign: vi.fn() })
-      useAuthStore().currentUser = null
-      mockRouteQuery.value = { invite: 'valid-token' }
+    it.for<{
+      name: string
+      query: Record<string, string>
+      preserved: Record<string, string> | null
+    }>([
+      {
+        name: 'the URL',
+        query: { invite: 'valid-token' },
+        preserved: null
+      },
+      {
+        name: 'the preserved query',
+        query: {},
+        preserved: { invite: 'valid-token' }
+      }
+    ])(
+      'offers a tab with no Firebase login a sign-in that returns to the invite from $name',
+      async ({ query, preserved }) => {
+        vi.stubGlobal('location', { assign: vi.fn() })
+        useAuthStore().currentUser = null
+        mockRouteQuery.value = query
+        preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(
+          preserved
+        )
 
-      await useInviteUrlLoader().loadInviteFromUrl()
+        await useInviteUrlLoader().loadInviteFromUrl()
 
-      expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
-      expect(mockRouterResolve).toHaveBeenCalledWith({
-        name: 'cloud-login',
-        query: {
-          switchAccount: 'true',
-          previousFullPath: encodeURIComponent('/?invite=valid-token')
-        }
-      })
-      const [toast] = useToast().toasts
-      expect(toast).toMatchObject({
-        kind: 'info',
-        title: 'Re-authentication Required',
-        description: 'This action requires you to sign in again.',
-        action: { label: 'Sign In Again' }
-      })
-      expect(location.assign).not.toHaveBeenCalled()
+        expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
+        expect(mockRouterResolve).toHaveBeenCalledWith({
+          name: 'cloud-login',
+          query: {
+            switchAccount: 'true',
+            previousFullPath: encodeURIComponent('/?invite=valid-token')
+          }
+        })
+        const [toast] = useToast().toasts
+        expect(toast).toMatchObject({
+          kind: 'info',
+          title: enMessages.workspace.inviteNeedsSignIn,
+          description: enMessages.workspace.inviteNeedsSignInDetail,
+          action: { label: enMessages.workspace.inviteSignIn }
+        })
+        expect(location.assign).not.toHaveBeenCalled()
 
-      await toast.action?.onClick()
+        assert(toast.action)
+        await toast.action.onClick()
 
-      expect(location.assign).toHaveBeenCalledWith('/cloud/login?resolved')
-    })
+        expect(location.assign).toHaveBeenCalledWith('/cloud/login?resolved')
+      }
+    )
   })
 })

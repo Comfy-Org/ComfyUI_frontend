@@ -85,10 +85,10 @@ export function useInviteUrlLoader() {
         previousFullPath: encodeURIComponent(route.fullPath)
       }
     })
-    toast.info(t('auth.reauthRequired.title'), {
-      description: t('auth.reauthRequired.message'),
+    toast.info(t('workspace.inviteNeedsSignIn'), {
+      description: t('workspace.inviteNeedsSignInDetail'),
       action: {
-        label: t('auth.reauthRequired.confirm'),
+        label: t('workspace.inviteSignIn'),
         onClick: () => window.location.assign(href)
       }
     })
