@@ -47,7 +47,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior. nodeDefSchemaV2 is the only public entry point and graph-model its only approved consumer; other cross-module imports remain inherited debt."
   ],
   "deepImports": "inventory"
 }
