@@ -178,6 +178,18 @@
     <!-- Warnings -->
 
     <p
+      v-if="negativeBalanceCredits !== null && step === 'amount'"
+      class="m-0 px-8 pt-4 text-sm text-muted-foreground"
+    >
+      {{
+        $t(
+          'credits.topUp.negativeBalanceNotice',
+          { credits: formatNumber(negativeBalanceCredits) },
+          negativeBalanceCredits
+        )
+      }}
+    </p>
+    <p
       v-if="isBelowMin && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
     >
@@ -328,7 +340,11 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
+import {
+  centsToCredits,
+  creditsToUsd,
+  usdToCredits
+} from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
@@ -468,10 +484,30 @@ const verifyingBody = computed(() => {
 // Constants
 const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
+const DEFAULT_AMOUNT = 50
+
+function wholeDollarsOrNull(cents: number | null | undefined): number | null {
+  if (cents == null) return null
+  const dollars = cents / 100
+  return Number.isInteger(dollars) ? dollars : null
+}
 
 // State
-const selectedPreset = ref<number | null>(50)
-const payAmount = ref(50)
+const suggestedAmount = computed(() =>
+  wholeDollarsOrNull(balance.value?.suggestedTopupAmountCents)
+)
+const selectedPreset = ref<number | null>(
+  suggestedAmount.value === null ? DEFAULT_AMOUNT : null
+)
+const payAmount = ref(suggestedAmount.value ?? DEFAULT_AMOUNT)
+const amountEditedByUser = ref(false)
+
+watch(suggestedAmount, (amount) => {
+  if (amount === null || amountEditedByUser.value || step.value !== 'amount')
+    return
+  payAmount.value = amount
+  selectedPreset.value = null
+})
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
@@ -490,12 +526,21 @@ const creditsModel = computed({
   set: (newCredits: number) => {
     payAmount.value = Math.round(creditsToUsd(newCredits))
     selectedPreset.value = null
+    amountEditedByUser.value = true
   }
 })
 
 const isValidAmount = computed(
   () => payAmount.value >= MIN_AMOUNT && payAmount.value <= MAX_AMOUNT
 )
+
+const negativeBalanceCredits = computed(() => {
+  const info = balance.value
+  const cents = info?.effectiveBalanceMicros
+  if (cents === undefined || cents >= 0) return null
+  if (info?.effectiveBalanceAuthoritative === false) return null
+  return centsToCredits(-cents)
+})
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
 const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
@@ -558,11 +603,13 @@ function getCreditsStepAmount(currentCredits: number): number {
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
+  amountEditedByUser.value = true
 }
 
 function handlePresetClick(amount: number) {
   payAmount.value = amount
   selectedPreset.value = amount
+  amountEditedByUser.value = true
 }
 
 function handlePrimaryAction() {
