@@ -9,7 +9,7 @@ import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 import { createComfyApi } from './comfyApi'
-import { mayRun } from './queueHandle'
+import { mayRun } from './queueGuard'
 import type { RunRejectedEvent } from './queueHandle'
 
 const { queuePrompt } = vi.hoisted(() => ({
