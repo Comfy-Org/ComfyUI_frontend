@@ -1,3 +1,13 @@
+import type {
+  LGraph,
+  Subgraph,
+  LGraphCanvas,
+  Reroute,
+  SubgraphNode,
+  SubgraphInputNode,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
 import { toValue } from 'vue'
 
 import {
@@ -27,10 +37,11 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { GraphScope } from '@/types/graphScopeId'
-import { mintLinkId } from './idAllocation'
+import { linkIdReservations, mintLinkId } from './idAllocation'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import type { NodeProperty, NodeState } from '@/types/nodeState'
+import type { NodeState } from '@/types/nodeState'
+import type { NodeProperty } from '@/types/nodeProperty'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface,
@@ -51,12 +62,13 @@ import {
 } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
-import type { LGraph } from './LGraph'
+
 import { LGraphBadge } from './LGraphBadge'
 import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
-import { LGraphCanvas } from './LGraphCanvas'
+
+import { canvasClass } from './canvas/canvasClassAccess'
 import { realignGroupWidgetChildLinks } from './linkDeduplication'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
@@ -74,7 +86,11 @@ import {
   createOutputSlotView,
   resolveInputSlotView
 } from './node/slotDescriptorView'
-import { initializeWidgetsView } from './node/widgetsView'
+import {
+  clearWidgetRestorationSlots,
+  getWidgetRestorationSlot,
+  initializeWidgetsView
+} from './node/widgetsView'
 import type { NodeCanonicalField } from './extensionPersistence'
 import {
   extensionConfigureView,
@@ -84,7 +100,7 @@ import {
   runExtensionSerializeHook
 } from './extensionPersistence'
 import { anchorRerouteChain } from './Reroute'
-import type { Reroute, RerouteId } from './Reroute'
+import type { RerouteId } from '@/types/rerouteId'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
 import { emitNodeFieldWrite } from './graphIntents'
@@ -97,16 +113,10 @@ import type {
   DefaultConnectionColors,
   Dictionary,
   IColorable,
-  IContextMenuValue,
-  IFoundSlot,
   INodeFlags,
-  INodeInputSlot,
-  INodeOutputSlot,
   INodeSlot,
-  INodeSlotContextItem,
   IPinnable,
   ISlotType,
-  Panel,
   Point,
   Positionable,
   ReadOnlyRect,
@@ -114,8 +124,17 @@ import type {
   Size,
   SlotIndex
 } from './interfaces'
-import { LiteGraph, Subgraph } from './litegraph'
-import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
+import type { IContextMenuValue } from './types/contextMenu'
+import type {
+  IFoundSlot,
+  INodeInputSlot,
+  INodeOutputSlot,
+  INodeSlotContextItem
+} from './types/slots'
+import type { Panel } from './types/panel'
+import { LiteGraph } from './litegraphInstance'
+import { isSubgraph } from './subgraph/subgraphTypeGuards'
+
 import {
   createBounds,
   isInRect,
@@ -130,8 +149,7 @@ import {
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
-import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+
 import type { NodeLike } from './types/NodeLike'
 import type { CanvasPointerEvent } from './types/events'
 import {
@@ -147,7 +165,7 @@ import type {
   TWidgetType,
   TWidgetValue
 } from './types/widgets'
-import { findFreeSlotOfType } from './utils/collections'
+import { findFreeSlotOfType, provideGraphNodeGuard } from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import {
   computeLegacyWidgetShadow,
@@ -191,18 +209,30 @@ function legacyValue<T>(value: T): T | undefined {
   return value
 }
 
+function cloneWidgetValueTwice(
+  value: TWidgetValue
+): [TWidgetValue, TWidgetValue] {
+  if (value == null || typeof value !== 'object') {
+    const primitive = value ?? null
+    return [primitive, primitive]
+  }
+  const json = JSON.stringify(value)
+  return [JSON.parse(json), JSON.parse(json)]
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
-    positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
+    const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
+    positional.push(positionalValue)
+    Object.defineProperty(named, widget.name, {
+      value: namedValue,
+      writable: true,
+      enumerable: true,
+      configurable: true
+    })
   }
   return { widgets_values: positional, widgets_values_named: named }
 }
@@ -641,7 +671,7 @@ export class LGraphNode
   /** @inheritdoc {@link IColorable.getColorOption} */
   getColorOption(): ColorOption | null {
     return (
-      Object.values(LGraphCanvas.node_colors).find(
+      Object.values(canvasClass.node_colors).find(
         (colorOption) =>
           colorOption.color === this.color &&
           colorOption.bgcolor === this.bgcolor
@@ -1251,7 +1281,12 @@ export class LGraphNode
             graphId,
             this.id,
             widget.name,
-            positionalIndex++
+            getWidgetRestorationSlot(
+              this,
+              widget,
+              positionalIndex++,
+              restoration.positional.length
+            )
           )
           if (restored) widget.value = restored.value
         }
@@ -1280,6 +1315,7 @@ export class LGraphNode
         )
       }
     } finally {
+      clearWidgetRestorationSlots(this)
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
   }
@@ -1709,6 +1745,9 @@ export class LGraphNode
         break
 
       case LGraphEventMode.ALWAYS:
+        break
+
+      case LGraphEventMode.BYPASS:
         break
 
       default:
@@ -2145,7 +2184,7 @@ export class LGraphNode
     function compute_text_size(text: string | undefined, fontStyle: string) {
       const value = text ?? ''
       return (
-        LGraphCanvas._measureText?.(value, fontStyle) ??
+        canvasClass._measureText?.(value, fontStyle) ??
         font_size * value.length * 0.6
       )
     }
@@ -2308,6 +2347,8 @@ export class LGraphNode
     this.widgets ||= []
     const widget = toConcreteWidget(custom_widget, this)
     this.widgets.push(widget)
+
+    if (!this.widgets.includes(widget)) return widget
 
     // Only register with store if node has a valid ID (is already in a graph).
     // If the node isn't in a graph yet (id === -1), registration happens
@@ -3074,7 +3115,7 @@ export class LGraphNode
   connect(
     slot: number | string,
     target_node: LGraphNode | number | null,
-    target_slot: ISlotType,
+    target_slot: number | string,
     afterRerouteId?: RerouteId
   ): LLink | null {
     // Allow legacy API support for searching target_slot by string, without mutating the input variables
@@ -3236,7 +3277,7 @@ export class LGraphNode
     const maybeCommonType =
       input.type && output.type && commonType(input.type, output.type)
 
-    const linkId = mintLinkId(graph.state)
+    const linkId = mintLinkId(graph.state, linkIdReservations(graph.rootGraph))
 
     const link = new LLink(
       linkId,
@@ -3414,10 +3455,7 @@ export class LGraphNode
       }
       disconnected = true
 
-      if (
-        link_info.target_id === SUBGRAPH_OUTPUT_ID &&
-        graph instanceof Subgraph
-      ) {
+      if (link_info.target_id === SUBGRAPH_OUTPUT_ID && isSubgraph(graph)) {
         const targetSlot = legacyArrayItem(
           graph.outputNode.slots,
           link_info.target_slot
@@ -4592,4 +4630,12 @@ export class LGraphNode
     ctx.fillRect(0, 0, this.width * this.progress, 6)
     ctx.fillStyle = originalFillStyle
   }
+}
+
+provideGraphNodeGuard((item): item is LGraphNode => item instanceof LGraphNode)
+
+type RegisteredLGraphNode = LGraphNode
+
+declare module './types/entityRegistry' {
+  interface LGraphNode extends RegisteredLGraphNode {}
 }

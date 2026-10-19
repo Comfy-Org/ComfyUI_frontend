@@ -7,6 +7,10 @@
 import type {
   BillingDeclineReason,
   BillingOperationState,
+  BillingOperationTerminal,
+  BillingTelemetryFailure,
+  HostedTopupCheckoutFailure,
+  HostedTopupCheckoutResult,
   TopupFailure,
   TopupResult
 } from '@comfyorg/account-core/billing'
@@ -16,10 +20,6 @@ import {
 } from '@comfyorg/account-core/billing'
 
 import { t } from '@/i18n'
-import type {
-  BillingFailure,
-  BillingOperationTerminal
-} from '@/platform/telemetry/types'
 import type {
   BillingAuthenticationState,
   BillingOperationPhase,
@@ -92,11 +92,17 @@ export class UncreditedTopupResponse implements CreateTopupResponse {
   ) {}
 }
 
-/**
- * Most SDK refusals carry no HTTP status, which a status-less API error
- * would otherwise report as a network failure, so each names its category.
- */
-function topupFailureError(failure: TopupFailure): WorkspaceApiError {
+function topupFailureError(
+  failure: TopupFailure | HostedTopupCheckoutFailure
+): WorkspaceApiError {
+  if (failure.code === 'OPERATION_ALREADY_PENDING') {
+    return new WorkspaceApiError(
+      t('billingOperation.topupAlreadyPendingDetail'),
+      undefined,
+      failure.code,
+      'stale_operation'
+    )
+  }
   const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
   return new WorkspaceApiError(
     t('credits.topUp.unknownError'),
@@ -107,14 +113,15 @@ function topupFailureError(failure: TopupFailure): WorkspaceApiError {
 }
 
 function topupFailureCategory(
-  failure: TopupFailure
-): BillingFailure['failure_category'] {
+  failure: TopupFailure | HostedTopupCheckoutFailure
+): BillingTelemetryFailure['failure_category'] {
   switch (failure.code) {
     case 'REQUEST_FAILED':
       return failure.httpStatus === undefined ? 'network' : 'api_rejected'
     case 'SUPERSEDED':
       return 'stale_operation'
     case 'INVALID_AMOUNT':
+    case 'INVALID_RETURN_URL':
       return 'validation'
     default:
       return 'api_rejected'
@@ -171,4 +178,12 @@ export function projectTopupResult(
     case 'error':
       throw topupFailureError(result)
   }
+}
+
+/** The hosted Checkout URL, or the failure as the error the dialog handles. */
+export function projectHostedTopupCheckoutResult(
+  result: HostedTopupCheckoutResult
+): string {
+  if (result.status === 'ok') return result.url
+  throw topupFailureError(result)
 }

@@ -1,15 +1,9 @@
-import { Form } from '@primevue/forms'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import ToastService from 'primevue/toastservice'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAuthStore } from '@/stores/authStore'
@@ -19,14 +13,6 @@ vi.mock(import('firebase/auth'))
 
 // Mock the auth composables and stores
 vi.mock(import('@/composables/auth/useAuthActions'))
-
-// Mock toast
-const mockToastAdd = vi.fn()
-vi.mock<unknown>(import('primevue/usetoast'), () => ({
-  useToast: vi.fn(() => ({
-    add: mockToastAdd
-  }))
-}))
 
 const forgotPasswordText = enMessages.auth.login.forgotPassword
 const loginButtonText = enMessages.auth.login.loginButton
@@ -44,10 +30,7 @@ describe('SignInForm', () => {
     })
     const user = userEvent.setup()
     const result = render(SignInForm, {
-      global: {
-        plugins: [PrimeVue, i18n, ToastService],
-        components: { Form, Button, InputText, Password, Spinner }
-      },
+      global: { plugins: [i18n] },
       props
     })
     return { ...result, user }
@@ -64,22 +47,16 @@ describe('SignInForm', () => {
   }
 
   describe('Forgot Password Link', () => {
-    it('shows toast and focuses email input when clicked while disabled', async () => {
+    it('flags the empty email field and focuses it instead of sending a reset', async () => {
       const { user } = renderComponent()
-
-      const emailInput = getEmailInput()
-      const focusSpy = vi.spyOn(emailInput, 'focus')
 
       await user.click(screen.getByText(forgotPasswordText))
 
-      expect(mockToastAdd).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: enMessages.auth.login.emailPlaceholder,
-        life: 5000
-      })
-
-      expect(focusSpy).toHaveBeenCalled()
-
+      await waitFor(() =>
+        expect(getEmailInput()).toHaveAttribute('aria-invalid', 'true')
+      )
+      expect(getEmailInput()).toHaveFocus()
+      expect(useToast().toasts).toEqual([])
       expect(useAuthActions().sendPasswordReset).not.toHaveBeenCalled()
     })
   })
@@ -91,11 +68,15 @@ describe('SignInForm', () => {
 
       await user.type(getEmailInput(), 'test@example.com')
       await user.type(getPasswordInput(), 'password123')
-      await user.click(screen.getByRole('button', { name: loginButtonText }))
+      const submit = screen.getByRole('button', { name: loginButtonText })
+      await waitFor(() => expect(submit).toBeEnabled())
+      await user.click(submit)
 
-      expect(onSubmit).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        password: 'password123'
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith({
+          email: 'test@example.com',
+          password: 'password123'
+        })
       })
     })
 
@@ -151,20 +132,41 @@ describe('SignInForm', () => {
       const passwordInput = getPasswordInput()
       expect(passwordInput).toHaveAttribute('id', 'comfy-org-sign-in-password')
       expect(passwordInput).toHaveAttribute('name', 'password')
+      expect(passwordInput).toHaveAttribute('type', 'password')
+    })
+
+    it('toggles password visibility', async () => {
+      const { user } = renderComponent()
+
+      await user.click(
+        screen.getByRole('button', { name: enMessages.auth.showPassword })
+      )
+
+      expect(getPasswordInput()).toHaveAttribute('type', 'text')
+      expect(
+        screen.getByRole('button', { name: enMessages.auth.hidePassword })
+      ).toHaveAttribute('aria-pressed', 'true')
     })
   })
 
   describe('Forgot Password with valid email', () => {
-    it('calls sendPasswordReset when email is valid', async () => {
+    it('sends a password reset from the keyboard when email is valid', async () => {
       const { user } = renderComponent()
 
       await user.type(getEmailInput(), 'test@example.com')
-      await user.click(screen.getByText(forgotPasswordText))
+      await user.tab()
 
-      expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
-        'test@example.com'
+      expect(
+        screen.getByRole('button', { name: forgotPasswordText })
+      ).toHaveFocus()
+      await user.keyboard('{Enter}')
+
+      await waitFor(() =>
+        expect(useAuthActions().sendPasswordReset).toHaveBeenCalledWith(
+          'test@example.com'
+        )
       )
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
   })
 })

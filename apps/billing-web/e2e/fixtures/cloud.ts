@@ -194,6 +194,18 @@ const POST_REPLIES = new Map<string, ScenarioReply>([
     })
   ],
   ['/billing/preview-subscribe', (scenario) => ({ body: scenario.preview })],
+  ['/billing/topup/quote', (scenario) => ({ body: scenario.topupQuote })],
+  [
+    '/billing/topup',
+    (scenario) => ({
+      body: {
+        amount_cents: scenario.topupQuote.amount_cents,
+        billing_op_id: 'op_topup',
+        status: 'pending',
+        topup_id: 'topup_e2e'
+      }
+    })
+  ],
   [
     '/billing/subscribe',
     () => ({ body: { billing_op_id: 'op_subscribe', status: 'subscribed' } })

@@ -1,13 +1,10 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-4">
-    <div
-      ref="tableContainer"
-      class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-interface-stroke/60"
-    >
+    <div ref="tableContainer" class="flex min-h-0 flex-1 flex-col">
       <Table class="min-h-0 flex-1 px-4">
-        <TableHeader class="sticky top-0 z-10 bg-base-background">
+        <TableHeader class="sticky top-0 z-10 bg-background">
           <TableRow
-            class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-interface-stroke/60"
+            class="hover:bg-transparent [&>th]:h-14 [&>th]:border-b [&>th]:border-border/60"
           >
             <TableHead class="w-40" :aria-sort="ariaSort('date')">
               <button :class="sortHeaderClass" @click="toggleSort('date')">
@@ -49,7 +46,7 @@
           <TableRow
             v-for="event in pagedItems"
             :key="event.id"
-            class="hover:bg-transparent [&:last-child>td]:border-b-0 [&>td]:border-b [&>td]:border-interface-stroke/20"
+            class="hover:bg-transparent [&:last-child>td]:border-b-0 [&>td]:border-b [&>td]:border-border/20"
           >
             <TableCell class="text-sm text-muted-foreground tabular-nums">
               {{ formatDate(event.date) }}
@@ -68,11 +65,11 @@
                     class="flex size-5 shrink-0 items-center justify-center rounded-full"
                     :style="{ backgroundColor: userBadgeColor(event.userName) }"
                   >
-                    <span class="text-2xs font-bold text-base-foreground">
+                    <span class="text-2xs font-bold text-foreground">
                       {{ event.userName.charAt(0).toUpperCase() }}
                     </span>
                   </span>
-                  <span class="truncate text-sm text-base-foreground">
+                  <span class="truncate text-foreground">
                     {{ event.userName }}
                   </span>
                 </HoverCardTrigger>
@@ -90,7 +87,7 @@
                         <i
                           class="icon-[lucide--coins] size-4 text-muted-foreground"
                         />
-                        <span class="text-sm text-base-foreground tabular-nums">
+                        <span class="text-sm text-foreground tabular-nums">
                           {{
                             summaryFor(
                               event.userId
@@ -99,20 +96,20 @@
                         </span>
                       </span>
                     </div>
-                    <div class="flex h-5 items-center justify-between">
-                      <span class="text-sm text-muted-foreground">
+                    <div class="flex h-5 items-center justify-between text-sm">
+                      <span class="text-muted-foreground">
                         {{
                           $t('workspacePanel.activity.hoverCard.lastActivity')
                         }}
                       </span>
-                      <span class="text-sm text-base-foreground">
+                      <span class="text-foreground">
                         {{ lastActivityLabel(event.userId) }}
                       </span>
                     </div>
                   </div>
                 </HoverCardContent>
               </HoverCard>
-              <span v-else class="text-sm text-muted-foreground">—</span>
+              <span v-else class="text-muted-foreground">—</span>
             </TableCell>
             <TableCell class="text-sm text-muted-foreground">
               <HoverCard
@@ -124,15 +121,15 @@
                   {{ event.eventType }}
                 </HoverCardTrigger>
                 <HoverCardContent class="w-72" align="start">
-                  <div class="flex h-5 items-center justify-between gap-4">
-                    <span
-                      class="text-sm whitespace-nowrap text-muted-foreground"
-                    >
+                  <div
+                    class="flex h-5 items-center justify-between gap-4 text-sm"
+                  >
+                    <span class="whitespace-nowrap text-muted-foreground">
                       {{
                         $t('workspacePanel.activity.hoverCard.partnerNodeUsed')
                       }}
                     </span>
-                    <span class="truncate text-sm text-base-foreground">
+                    <span class="truncate text-foreground">
                       {{ event.partnerNode }}
                     </span>
                   </div>
@@ -173,7 +170,7 @@
           :href="fullActivityUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex cursor-pointer items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+          class="flex cursor-pointer items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           <i class="icon-[lucide--external-link] size-4" />
           {{ $t('workspacePanel.activity.fullActivity') }}

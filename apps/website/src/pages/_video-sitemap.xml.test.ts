@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   customerVideoStories,
   getCustomerVideoStory
-} from '../data/customerVideos'
+} from '@/data/customerVideos'
 import { GET, buildVideoSitemap } from './video-sitemap.xml'
 
 function render(site?: URL): Response {

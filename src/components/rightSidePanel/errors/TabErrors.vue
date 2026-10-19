@@ -5,9 +5,7 @@
     <ErrorPanelSurveyCta v-if="ErrorPanelSurveyCta" />
 
     <!-- Fixed Footer: Help Links -->
-    <div
-      class="min-w-0 shrink-0 border-t border-interface-stroke bg-interface-panel-surface p-4"
-    >
+    <div class="min-w-0 shrink-0 border-t bg-background p-4">
       <i18n-t
         keypath="rightSidePanel.errorHelp"
         tag="p"
@@ -17,7 +15,7 @@
           <Button
             variant="textonly"
             size="unset"
-            class="inline text-sm whitespace-nowrap text-inherit underline"
+            class="inline text-inherit underline"
             @click="openGitHubIssues"
           >
             {{ t('rightSidePanel.errorHelpGithub') }}
@@ -27,7 +25,7 @@
           <Button
             variant="textonly"
             size="unset"
-            class="inline text-sm whitespace-nowrap text-inherit underline"
+            class="inline text-inherit underline"
             @click="contactSupport"
           >
             {{ t('rightSidePanel.errorHelpSupport') }}

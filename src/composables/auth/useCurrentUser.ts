@@ -1,6 +1,8 @@
 import { whenever } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -25,7 +27,8 @@ export const useCurrentUser = () => {
     () =>
       apiKeyStore.isAuthenticated &&
       authStore.currentUser === null &&
-      !sessionUser.value
+      !sessionUser.value &&
+      !desktopHostUser.value
   )
   const isLoggedIn = computed(
     () => isApiKeyLogin.value || authStore.isAuthenticated
@@ -55,6 +58,7 @@ export const useCurrentUser = () => {
   }
 
   const userDisplayName = computed(() => {
+    if (desktopHostUser.value) return undefined
     if (isApiKeyLogin.value) {
       return apiKeyStore.currentUser?.name
     }
@@ -101,11 +105,18 @@ export const useCurrentUser = () => {
   })
 
   const isEmailProvider = computed(() => {
-    if (isApiKeyLogin.value) {
+    if (isApiKeyLogin.value || authStore.signedInWithSso) {
       return false
     }
-    return firebaseForSession.value?.providerData[0]?.providerId === 'password'
+    const firebaseUser = firebaseForSession.value
+    return firebaseUser
+      ? firebaseUser.providerData[0]?.providerId === 'password'
+      : sessionUser.value?.signInProvider === 'password'
   })
+
+  const needsFirebaseSignIn = computed(
+    () => !!sessionUser.value && !firebaseForSession.value
+  )
 
   const userPhotoUrl = computed(() => {
     if (isApiKeyLogin.value) return null
@@ -130,6 +141,7 @@ export const useCurrentUser = () => {
     isLoggedIn,
     isApiKeyLogin,
     isEmailProvider,
+    needsFirebaseSignIn,
     userDisplayName,
     userEmail,
     userPhotoUrl,
@@ -143,3 +155,5 @@ export const useCurrentUser = () => {
     onUserLogout
   }
 }
+
+provideCurrentUser(useCurrentUser)

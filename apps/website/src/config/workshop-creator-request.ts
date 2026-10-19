@@ -31,7 +31,7 @@ export interface WorkshopRequestInputs {
   >
 }
 
-const scalar = z.union([z.string(), z.number().finite(), z.boolean()])
+const scalar = z.union([z.string(), z.number(), z.boolean()])
 const ACCEPT: Record<
   WorkshopCreatorForm['files'][number]['accept'],
   readonly string[]

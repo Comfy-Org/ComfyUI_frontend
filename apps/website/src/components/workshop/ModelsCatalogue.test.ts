@@ -9,11 +9,11 @@ import {
   useWorkshopAppsEnabled,
   useWorkshopEnabled,
   useWorkshopFlag
-} from '../../scripts/posthog'
+} from '@/scripts/posthog'
 import ModelsCatalogue from './ModelsCatalogue.vue'
-import type { WorkshopModel } from '../../config/models-catalogue'
+import type { WorkshopModel } from '@/config/models-catalogue'
 
-vi.mock(import('../../scripts/posthog'))
+vi.mock(import('@/scripts/posthog'))
 
 let enabled: Ref<boolean>
 let appsEnabled: Ref<boolean>

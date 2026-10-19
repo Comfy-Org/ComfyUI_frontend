@@ -3,16 +3,12 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
-import {
-  selectedTake,
-  takesOfShot
-} from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { AspectRatio } from '@/lib/workshop/cinematic-studio/catalog'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { Reel } from '@/lib/workshop/cinematic-studio/reel'
+import { selectedTake, takesOfShot } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
 import CinematicCreditSummary from './CinematicCreditSummary.vue'
 import CinematicSequence from './CinematicSequence.vue'
@@ -32,6 +28,7 @@ const {
   memberWorkspace?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{
   select: [id: string]
@@ -51,7 +48,7 @@ const siblings = computed(() =>
 <template>
   <section
     class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
-    :aria-label="tc('cinematic.stage.label', locale)"
+    :aria-label="t('cinematic.stage.label')"
   >
     <header
       class="flex min-h-11 items-center justify-between gap-3 border-b border-transparency-white-t8 px-5 py-1"
@@ -60,7 +57,7 @@ const siblings = computed(() =>
       <span
         class="shrink-0 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
       >
-        {{ t('workshop.output.title', locale) }}
+        {{ t('workshop.output.title') }}
       </span>
       <CinematicTakeBar
         v-if="current"
@@ -109,10 +106,10 @@ const siblings = computed(() =>
           {{ aspect }}
         </span>
         <p class="text-base font-semibold text-primary-warm-white">
-          {{ tc('cinematic.stage.emptyTitle', locale) }}
+          {{ t('cinematic.stage.emptyTitle') }}
         </p>
         <p class="text-sm text-primary-warm-gray">
-          {{ tc('cinematic.stage.emptyBody', locale) }}
+          {{ t('cinematic.stage.emptyBody') }}
         </p>
       </div>
     </div>

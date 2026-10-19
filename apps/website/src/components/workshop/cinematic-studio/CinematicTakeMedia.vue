@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { EyeOff } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Take } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 const {
   current,
   height,
@@ -17,6 +16,7 @@ const {
   pending?: boolean
   locale: Locale
 }>()
+const { t } = translationsFor(locale)
 const emit = defineEmits<{ loaded: [] }>()
 const revealed = defineModel<boolean>('revealed', { required: true })
 </script>
@@ -43,7 +43,7 @@ const revealed = defineModel<boolean>('revealed', { required: true })
     "
     :key="current.id"
     :src="current.output.url"
-    :aria-label="tc('cinematic.video.preview', locale)"
+    :aria-label="t('cinematic.video.preview')"
     controls
     playsinline
     preload="metadata"
@@ -63,14 +63,14 @@ const revealed = defineModel<boolean>('revealed', { required: true })
   >
     <EyeOff class="size-5 text-primary-warm-white" aria-hidden="true" />
     <span class="text-sm text-primary-warm-white">
-      {{ t('workshop.output.nsfw', locale) }}
+      {{ t('workshop.output.nsfw') }}
     </span>
     <button
       type="button"
       class="h-8 rounded-full px-4 text-xs font-bold tracking-wider text-primary-warm-white uppercase ring-1 ring-transparency-white-t20 ring-inset hover:bg-transparency-white-t8"
       @click="revealed = true"
     >
-      {{ t('workshop.output.reveal', locale) }}
+      {{ t('workshop.output.reveal') }}
     </button>
   </div>
 </template>

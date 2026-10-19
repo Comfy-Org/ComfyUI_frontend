@@ -7,6 +7,21 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 const MOCK_COMFYUI_VERSION = '9.99.0-e2e-test'
 
+test.describe('Settings dialog - extension actions', { tag: '@ui' }, () => {
+  test.use({ viewport: { width: 1920, height: 1080 } })
+
+  test('opens the actions menu from its trigger without closing the dialog', async ({
+    comfyPage
+  }) => {
+    const dialog = comfyPage.settingDialog
+    await dialog.open()
+    await dialog.openExtensionActions()
+
+    await comfyPage.contextMenu.clickMenuItemExact('Enable Selected')
+    await expect(dialog.root).toBeVisible()
+  })
+})
+
 test.describe('Settings dialog', { tag: '@ui' }, () => {
   test('About panel renders mocked version from server', async ({
     comfyPage
@@ -180,10 +195,6 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       const settingRow = dialog.root.locator(`[data-setting-id="${settingId}"]`)
       await expect(settingRow).toBeVisible()
 
-      // Wait for the search filter to fully settle — PrimeVue re-renders
-      // the entire settings list after typing, and the combobox element is
-      // replaced during re-render. Wait until the filtered list stabilises
-      // before interacting with the combobox.
       const settingItems = dialog.root.locator('[data-setting-id]')
       await expect
         .poll(() => settingItems.count(), { timeout: 5000 })
@@ -193,20 +204,16 @@ test.describe('Settings dialog', { tag: '@ui' }, () => {
       await expect(select).toBeVisible()
       await expect(select).toBeEnabled()
 
-      // Open the dropdown via its combobox role and verify it expanded.
-      // Retry because the PrimeVue Select may still re-render after the
-      // filter settles, causing the first click to land on a stale element.
-      await expect(async () => {
-        const expanded = await select.getAttribute('aria-expanded')
-        if (expanded !== 'true') await select.click()
-        await expect(select).toHaveAttribute('aria-expanded', 'true')
-      }).toPass({ timeout: 10_000 })
+      await select.click()
 
       // Pick the option that is not the current value
       const targetValue = initialValue === 'Top' ? 'Disabled' : 'Top'
-      await comfyPage.page
-        .getByRole('option', { name: targetValue, exact: true })
-        .click()
+      const targetOption = comfyPage.page.getByRole('option', {
+        name: targetValue,
+        exact: true
+      })
+      await expect(targetOption).toBeVisible()
+      await targetOption.click()
 
       await expect
         .poll(() => comfyPage.settings.getSetting<string>(settingId))

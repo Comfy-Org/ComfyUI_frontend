@@ -1,8 +1,6 @@
 import { render } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
-import Tooltip from 'primevue/tooltip'
 import { defineComponent, h } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -38,20 +36,19 @@ describe('SettingItem', () => {
   function renderComponent(setting: SettingParams) {
     return render(SettingItem, {
       global: {
-        plugins: [PrimeVue, i18n, getActivePinia()!],
+        plugins: [i18n, getActivePinia()!],
         components: { Badge },
         stubs: {
           FormItem: FormItemStub,
           'i-material-symbols:experiment-outline': true
-        },
-        directives: { tooltip: Tooltip }
+        }
       },
       props: { setting }
     })
   }
 
   function getFormItemData(container: Element) {
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const el = container.querySelector('[data-testid="form-item-data"]')
     return JSON.parse(el!.textContent)
   }

@@ -36,6 +36,18 @@ export function normalizeHost(input: string): string {
   return h
 }
 
+/** Whether the host can only name the machine the URL was written on. */
+export function isLoopbackHost(rawHost: string): boolean {
+  const host = normalizeHost(rawHost)
+  return (
+    isLocalhostLabel(host) ||
+    isIPv4Loopback(host) ||
+    isIPv6Loopback(host) ||
+    isUnspecifiedAddress(host) ||
+    isIPv4MappedLoopback(host)
+  )
+}
+
 /** Public check used by the UI. */
 export function isHostWhitelisted(rawHost: string): boolean {
   const host = normalizeHost(rawHost)
@@ -89,6 +101,23 @@ function isIPv6Loopback(h: string): boolean {
 
   // Require that at least one group was actually compressed: i.e., leftCount + rightCount ≤ 6.
   return leftCount + rightCount <= 6
+}
+
+function isUnspecifiedAddress(h: string): boolean {
+  return h === '0.0.0.0' || h === '::'
+}
+
+const V6_MAPPED_HEX_RE = /^::ffff:([0-9a-f]{1,4}):[0-9a-f]{1,4}$/i
+const V6_MAPPED_DOTTED_RE = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i
+
+function isIPv4MappedLoopback(h: string): boolean {
+  const hex = V6_MAPPED_HEX_RE.exec(h)
+  if (hex) {
+    const firstOctet = parseInt(hex[1], 16) >> 8
+    return firstOctet === 127
+  }
+  const dotted = V6_MAPPED_DOTTED_RE.exec(h)
+  return dotted ? isIPv4Loopback(dotted[1]) : false
 }
 
 const COMFY_ORG_HOST = /\.comfy\.org$/

@@ -5,7 +5,10 @@ import { createI18n } from 'vue-i18n'
 
 import { i18n as appI18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import ApiNodesSignInContent from './ApiNodesSignInContent.vue'
 
@@ -26,7 +29,7 @@ function renderContent(props: {
   onCancel?: () => void
 }) {
   return render(ApiNodesSignInContent, {
-    props: { titleId: 'api-nodes-signin', ...props },
+    props,
     global: { plugins: [i18n] }
   })
 }
@@ -100,11 +103,19 @@ describe('ApiNodesSignInContent', () => {
     expect(onCancel).toHaveBeenCalledExactlyOnceWith()
   })
 
-  it('names the dialog for assistive technology', () => {
-    renderContent({ apiNodeNames: [] })
+  it('names the dialog for assistive technology', async () => {
+    render(GlobalDialog, { global: { plugins: [i18n] } })
+    useDialogStore().showDialog({
+      key: 'api-nodes-signin',
+      component: ApiNodesSignInContent,
+      props: { apiNodeNames: [] },
+      dialogComponentProps: { headless: true }
+    })
 
     expect(
-      screen.getByRole('heading', { name: 'Sign in to run partner nodes' })
-    ).toHaveAttribute('id', 'api-nodes-signin')
+      await screen.findByRole('dialog', {
+        name: 'Sign in to run partner nodes'
+      })
+    ).toBeInTheDocument()
   })
 })

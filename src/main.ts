@@ -1,18 +1,13 @@
-import { definePreset } from '@primevue/themes'
-import Aura from '@primevue/themes/aura'
-import type { PaletteDesignToken } from '@primevue/themes/aura'
 import { captureMessage } from '@sentry/vue'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
-import PrimeVue from 'primevue/config'
-import ToastService from 'primevue/toastservice'
-import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
 
 import { setAssertReporter } from '@/base/assert'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import {
   configValueOrDefault,
@@ -31,7 +26,8 @@ import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { stripPaymentReturnParams } from '@/platform/cloud/subscription/utils/paymentReturnUrl'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { installWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApiAuth'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -42,7 +38,11 @@ import { i18n } from './i18n'
 const isCloud = __DISTRIBUTION__ === 'cloud'
 const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
 
-if (isCloud) stripPaymentReturnParams()
+if (isCloud) {
+  stripPaymentReturnParams()
+  installCloudApiAuth()
+}
+installWorkspaceApiAuth()
 
 bootstrapTracer.armWatchdog()
 
@@ -74,12 +74,16 @@ if (hasHostTelemetryBridge) {
   initHostTelemetry()
 }
 
-const ComfyUIPreset = definePreset(Aura, {
-  semantic: {
-    primary: (Aura as { primitive: { blue: PaletteDesignToken } }).primitive
-      .blue
-  }
-})
+const desktopHostAuth = isCloud ? undefined : window.__comfyDesktop2?.Auth
+if (desktopHostAuth) {
+  const { startDesktopHostSession } =
+    await import('@/platform/auth/desktopHost/desktopHostSession')
+  await startDesktopHostSession(desktopHostAuth)
+} else if (!isCloud) {
+  const { startLocalWebSession } =
+    await import('@/platform/auth/localWeb/localWebSession')
+  await startLocalWebSession()
+}
 
 const phaseFirebase = bootstrapTracer.startPhase('startup/firebase-init')
 // Throws unless remote config has settled; the awaited remote-config phase above guarantees it has.
@@ -120,50 +124,13 @@ setAssertReporter(
       reportAssertFailure(message, context)
     }
     if (isNightly) {
-      useToastStore(pinia).add({
-        severity: 'warn',
-        summary: 'Assertion failed',
-        detail: message
-      })
+      useToast(pinia).warning('Assertion failed', { description: message })
     }
   },
   { forwardsToRum: isCloud }
 )
 
-app.directive('tooltip', Tooltip)
-app
-  .use(router)
-  .use(PrimeVue, {
-    pt: {
-      popover: {
-        root: { 'aria-modal': false }
-      }
-    },
-    zIndex: {
-      modal: 1800,
-      overlay: 1800,
-      menu: 1800,
-      // Tooltips sit above modals/menus so a menu-item tooltip isn't hidden
-      // behind a body-portaled dropdown that lifts itself to modal + 1.
-      tooltip: 2000
-    },
-    theme: {
-      preset: ComfyUIPreset,
-      options: {
-        prefix: 'p',
-        cssLayer: {
-          name: 'primevue',
-          order: 'theme, base, primevue'
-        },
-        // This is a workaround for the issue with the dark mode selector
-        // https://github.com/primefaces/primevue/issues/5515
-        darkModeSelector: '.dark-theme, :root:has(.dark-theme)'
-      }
-    }
-  })
-  .use(ToastService)
-  .use(pinia)
-  .use(i18n)
+app.use(router).use(pinia).use(i18n)
 
 markStoresReady()
 

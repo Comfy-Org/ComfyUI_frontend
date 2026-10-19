@@ -24,12 +24,8 @@ import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
-import {
-  ComfyWidgets,
-  addValueControlWidgets,
-  isValidWidgetType
-} from '@/scripts/widgets'
-import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
+import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
+import { ComfyWidgets, isValidWidgetType } from '@/scripts/widgets'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
@@ -37,6 +33,10 @@ import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 
 const replacePropertyName = 'Run widget replace on values'
+const isPrimitiveNode = (
+  node: LGraphNode
+): node is PrimitiveNode & LGraphNode => node.type === 'PrimitiveNode'
+
 export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
@@ -196,7 +196,10 @@ export class PrimitiveNode extends LGraphNode {
   ) {
     // Fires before the link is made allowing us to reject it if it isn't valid
     // No widget, we can't connect
-    if (!input.widget && !(input.type in ComfyWidgets)) {
+    if (
+      !input.widget &&
+      (typeof input.type !== 'string' || !(input.type in ComfyWidgets))
+    ) {
       return false
     }
 

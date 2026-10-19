@@ -38,6 +38,11 @@ for (const path of PAGES) {
       )
     }
     await page.goto(path)
+    if (path === '/download')
+      await page
+        .getByRole('link', { name: /^DOWNLOAD DESKTOP .+/ })
+        .first()
+        .waitFor()
     if (path === '/hub/models/')
       await page.getByTestId('workshop-hero').waitFor()
     await page.evaluate(() => document.fonts.ready)

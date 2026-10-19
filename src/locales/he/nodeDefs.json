@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "בחירת זווית מצלמה סביב נושא עם תצוגה מקדימה בתלת־ממד. הפלט הוא camera_info עבור צומתי תלת־ממד ותיאור צילום באנגלית פשוטה עבור פרומפטים.",
+    "display_name": "חיבור הנחיית זווית מצלמה",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "אַזִימוּט סביב הנושא במעלות. 0 הוא החזית, 90 הצד הימני, ו־180 הגב."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "תמונת ייחוס אופציונלית המוצגת בחזית קוביית הנושא בתצוגה המקדימה בתלת־ממד."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "גובה במעלות. ערך שלילי מביט מעלה מלמטה, וערך חיובי מביט מטה מלמעלה."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "זום העדשה על הנושא: 0 הוא צילום רחב, 10 הוא תקריב. מועבר אל camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "זיהוי קצוות (Canny)",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "start_sigma",
         "tooltip": "ה-sigma הראשון בו אפשרויות אלו יהיו בתוקף."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "הגדלת רזולוציה של תמונה באמצעות Crystal Upscaler של Clarity AI, מגדיל רזולוציה בנאמנות גבוהה השומר על נאמנות למקור ומשחזר פנים, עור ומרקם עדין. פלט מרבי: 100 מגה־פיקסל.",
+    "display_name": "הגדלת רזולוציה Crystal של Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "בנה camera_info. מצב 'orbit' מכוון עם yaw/pitch/distance סביב המטרה; 'look_at' ממקם את המצלמה במיקום עולמי. הקואורדינטות הן במרחב העולם של הצופה (ימין-יד, Y למעלה).",
+    "description": "בניית camera_info. המצב 'orbit' מכוון באמצעות yaw/pitch/distance סביב היעד; המצב 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן מרחב העולם של הצופה (right-handed,Y-up).",
     "display_name": "יצירת מידע מצלמה",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "סוג מצלמה",
         "tooltip": "היטל בשימוש על ידי Render Splat: פרספקטיבה (קיצור) או אורתוגרפי (מקבילי)."
@@ -4860,7 +4919,7 @@
       },
       "language_code": {
         "name": "קוד שפה",
-        "tooltip": "קוד שפה לפי ISO-639-1 או ISO-639-3 (למשל, 'en', 'es', 'fra'). השאר ריק לזיהוי אוטומטי."
+        "tooltip": "קוד שפה ISO 639-1 (לדוגמה, 'en', 'es', 'ja'). יש להשאיר ריק לזיהוי אוטומטי."
       },
       "model": {
         "name": "מודל",
@@ -4930,7 +4989,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "קוד שפה לפי ISO-639-1 או ISO-639-3 (למשל, 'en', 'es', 'fra'). השאר ריק לזיהוי אוטומטי."
+        "tooltip": "קוד שפה ISO 639-1 (לדוגמה, 'en', 'es', 'ja'). יש להשאיר ריק לזיהוי אוטומטי."
       },
       "model": {
         "name": "model",
@@ -4938,15 +4997,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5884,52 @@
       },
       "width": {
         "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "יוצר תמונה עם FLUX 3 מפרומפט, או עורך ומשלב עד 10 תמונות ייחוס. יש להתייחס לתמונות הייחוס בפרומפט כאל תמונה 1, תמונה 2 וכן הלאה.",
+    "display_name": "Flux 3 תמונה",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' מתבסס על תמונת הייחוס הראשונה, או בוחר יחס מהפרומפט."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "תיבות אופציונליות מ-Create Bounding Boxes, הממקמות אובייקטים או טקסט בפלט. המיקומים יחסיים לקנבס, לכן יש לספק לו את יחס הגובה-רוחב של הפלט."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "מאפשר למודל לחקור את הפרומפט באמצעות חיפוש באינטרנט ובתמונות לפני היצירה."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "תמונות ייחוס אופציונליות, עד 10 בסך הכול, בגודל של לפחות 256x256 פיקסלים כל אחת."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "מה ליצור, או איזו עריכה לבצע. הפרומפט מפורש ומורחב לפני היצירה."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "גודל הפלט ביחס הגובה-רוחב שנבחר: 0.75K הוא כ-0.6 מגה-פיקסל, 1K הוא 1 MP, ‏1.5K הוא 2.4 MP, ‏2K הוא 4.2 MP, ‏4K הוא 16.8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "סבילות לבקרת תוכן; 0 הוא המחמיר ביותר."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed לקביעה אם יש להפעיל את הצומת מחדש; FLUX 3 בוחר seed משלו, ולכן התוצאות בפועל אינן דטרמיניסטיות ללא קשר לערך זה."
       }
     },
     "outputs": {
@@ -6803,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "יצירת או עריכת תמונות באופן סינכרוני באמצעות Google Vertex API.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -6853,7 +6949,7 @@
       },
       "2": {
         "name": "thought_image",
-        "tooltip": "התמונה הראשונה מתהליך החשיבה של המודל. זמין רק כאשר thinking_level מוגדר ל-HIGH ו-modality הוא IMAGE+TEXT."
+        "tooltip": "התמונה הראשונה מתהליך החשיבה של המודל. זמינה רק עם המודאליות IMAGE+TEXT."
       }
     }
   },
@@ -7434,7 +7530,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
-        "tooltip": "יחס הגובה-רוחב של הווידאו המופק."
+        "tooltip": "יחס הגובה-רוחב של סרטון הפלט. המערכת מתעלמת ממנו כאשר מסופקת תמונת קלט; הסרטון יפעל לפי יחס הגובה-רוחב של התמונה."
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -7453,11 +7549,11 @@
       },
       "prompt": {
         "name": "prompt",
-        "tooltip": "תיאור טקסטואלי של הווידאו הרצוי. אופציונלי עבור grok-imagine-video-1.5 כאשר מסופקת תמונת קלט."
+        "tooltip": "תיאור טקסטואלי של הווידאו הרצוי. אופציונלי עבור המודלים grok-imagine-video-1.5 כאשר מסופקת תמונת קלט."
       },
       "resolution": {
         "name": "resolution",
-        "tooltip": "הרזולוציה של הווידאו המופק. 1080p זמין רק עבור grok-imagine-video-1.5."
+        "tooltip": "הרזולוציה של סרטון הפלט. 1080p אינו זמין עבור grok-imagine-video."
       },
       "seed": {
         "name": "seed",
@@ -7759,6 +7855,67 @@
       },
       "1": {
         "name": "preview",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenImageToVideoNode": {
+    "description": "הנפשת תמונה לכדי וידאו עם דיאלוג וקול מסונכרנים באמצעות HeyGen Video 1.0. התמונה משמשת כפריים הראשון.",
+    "display_name": "HeyGen Video 1.0 תמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "יצירת וידאו עם דיאלוג וקול מסונכרנים מפרומפט טקסט באמצעות HeyGen Video 1.0. אפשר לחבר עד 12 תמונות, סרטוני וידאו וקטעי שמע להפניה, ולציין אותם בפרומפט כ-{'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 הפניה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8376,6 +8533,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "עריכה או שילוב של עד 5 תמונות בהנחיית פרומפט טקסט באמצעות Ideogram 4.5. התמונה כולה מרונדרת מחדש, וניתן לשנות את גודלה או את יחס הגובה-רוחב שלה; כדי להשאיר פיקסלים שלא נגעו בהם ללא שינוי, השתמשו ב-Ideogram 4.5 Precise Edit.",
+    "display_name": "Ideogram 4.5 עריכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "יוצר תמונות באמצעות P-Image, מודל טקסט-לתמונה מהיר של Ideogram. טיפוגרפיה חזקה ופוטוריאליזם; תומך ב־Ideogram 4.0 structured JSON captions לטקסט, צבעים ופריסה מדויקים.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8608,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "הפרומפט שממנו התמונה נוצרה בפועל (הכיתוב המובנה המשוכתב כאשר prompt_upsampling הופעל, אחרת הפרומפט שלכם). ניתן להזינו שוב עם prompt_upsampling ב־OFF ואותו seed כדי לשחזר את התמונה."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "עריכת תמונה בהנחיית פרומפט טקסט באמצעות העריכה המדויקת של Ideogram 4.5: רק מה שהפרומפט מבקש משתנה, פיקסלים שלא נגעו בהם נשארים זהים, והפלט שומר על גודל תמונה 1 (תמונות מעל ~4 MP מוקטנות תחילה). ניתן לקבל עד 4 תמונות להפניה.",
+    "display_name": "Ideogram 4.5 עריכה מדויקת",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "יצירת תמונות מפרומפט טקסט באמצעות Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "הכיתוב המובנה שממנו נוצרה התמונה. הזינו אותו שוב כאשר magic_prompt מוגדר ל-'off' ובאותו זרע כדי לשחזר את התמונה."
       }
     }
   },
@@ -10166,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "הלבשת אדם בפריט לבוש. לתוצאה יש אותו גודל כמו לתמונת האדם, עד למגבלה של 2048px בצד הארוך ביותר.",
+    "display_name": "מדידה וירטואלית של Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "הבגד להלבשה: תמונת מוצר, צילום פריסה שטוחה, בובת תצוגה או תמונה של דוגמן/ית הלובש/ת אותו. תמונה של דוגמן/ית עשויה להעביר גם את שאר פרטי התלבושת. בגדים בלבד; נעליים, תיקים ואביזרים אינם נתמכים."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "יש לכבות כדי לאפשר לתנוחה להשתנות להצגת תלבושת טובה יותר."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "תמונה של אדם אחד, רצוי במבט קדמי או בזווית של שלושה רבעים. תמונות שבהן אחד הצדדים גדול מ־2048px מוקטנות תחילה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed קובע אם הצומת אמור לפעול מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל־seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "יצירת סרטונים עם Kling V3. תומך בטקסט-לווידאו ותמונה-לווידאו עם אפשרות לפרומפט מרובה (storyboard) ויצירת אודיו.",
     "display_name": "Kling 3.0 וידאו",
@@ -11124,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "הפסקת החלת הפעולה בשיעור זה של לוח הזמנים לניקוי רעשים של המודל. 1 הוא הסוף."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "פעולה"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "התחלת החלת הפעולה בשיעור זה של לוח הזמנים לניקוי רעשים של המודל. 0 הוא ההתחלה."
       }
     },
     "outputs": {
@@ -11363,6 +11658,24 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "מיזוג ה־latent כולו לעבר ה־latent לייחוס, תוך שינוי גודל הייחוס באמצעות אינטרפולציית השכן הקרוב בעת הצורך.",
+    "display_name": "מיזוג פעולת latent",
+    "inputs": {
+      "reference": {
+        "name": "ייחוס"
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "0 משאיר את ה-latent ללא שינוי; 1 תואם ל-latent הייחוס ששונה גודלו."
       }
     },
     "outputs": {
@@ -11772,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "החלת ערימת LoRA על מודל דיפוזיה. יש להוסיף שורה אחת לכל LoRA; בכל שורה נבחרים קובץ LoRA והעוצמה שלו.",
+    "display_name": "טעינת LoRA (מודל)",
+    "inputs": {
+      "loras": {
+        "name": "LoRA",
+        "tooltip": "כל שורה מחילה LoRA אחד על המודל."
+      },
+      "loras_$add": {
+        "name": "הוספת LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 מופעל"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "עוצמת LoRA #1"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "מודל הדיפוזיה שעליו יוחלו ה-LoRA."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "מודל הדיפוזיה ששונה."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "החלת ערימת LoRA על מקודד טקסט מסוג CLIP. יש להוסיף שורה אחת לכל LoRA; בכל שורה נבחרים קובץ LoRA והעוצמה שלו.",
+    "display_name": "טעינת LoRA (מקודד טקסט)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "מקודד הטקסט CLIP שעליו יוחלו ה-LoRA."
+      },
+      "loras": {
+        "name": "LoRA",
+        "tooltip": "כל שורה מחילה LoRA אחד על מקודד הטקסט."
+      },
+      "loras_$add": {
+        "name": "הוספת LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 מופעל"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "עוצמת LoRA #1"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "מקודד הטקסט CLIP ששונה."
       }
     }
   },
@@ -18320,8 +18707,8 @@
   "PrimitiveInt": {
     "display_name": "מספר שלם",
     "inputs": {
-      "fixed": {
-        "name": "שליטה לאחר יצירה"
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
       },
       "value": {
         "name": "value"
@@ -18471,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "המרת תמונה רסטרית ל-SVG באמצעות Quiver AI.",
-    "display_name": "Quiver Image ל-SVG",
+    "display_name": "המרת תמונת Quiver ל-SVG (מדור קודם)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18515,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "המרת תמונת רסטר ל-SVG וקטורי באמצעות Quiver AI.",
+    "display_name": "המרת תמונת Quiver ל-SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש לווקטוריזציה של SVG."
+      },
+      "model_auto_crop": {
+        "name": "חיתוך_אוטומטי"
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_presence_penalty": {
+        "name": "קנס_נוכחות"
+      },
+      "model_reasoning_effort": {
+        "name": "מאמץ_הסקה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_target_size": {
+        "name": "גודל_יעד"
+      },
+      "model_temperature": {
+        "name": "טמפרטורה"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "יצירת SVG מתוך הנחיה טקסטואלית באמצעות Quiver AI.",
-    "display_name": "Quiver Text ל-SVG",
+    "display_name": "Quiver טקסט ל-SVG (מדור קודם)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18554,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "יצירת SVG מהנחיית טקסט באמצעות Quiver AI.",
+    "display_name": "Quiver טקסט ל-SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת SVG."
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_instructions": {
+        "name": "הוראות"
+      },
+      "model_presence_penalty": {
+        "name": "קנס_נוכחות"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_reasoning_effort": {
+        "name": "מאמץ_הסקה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_temperature": {
+        "name": "טמפרטורה"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "רוחב"
       }
     },
     "outputs": {
@@ -22211,8 +22688,8 @@
   "SeedNode": {
     "display_name": "Seed",
     "inputs": {
-      "fixed": {
-        "name": "שליטה לאחר יצירה"
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
       },
       "seed": {
         "name": "seed"
@@ -27353,6 +27830,79 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "יצירת וידאו מתמונת פתיחה ומהנחיה אופציונלית. הפלט שומר על יחס הממדים של תמונת הקלט.",
+    "display_name": "Vidu Q4 יצירת תמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונת הפתיחה של הווידאו שנוצר. יחס הממדים חייב להיות בין 1:5 ל־5:1."
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_audio": {
+        "name": "שמע"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "יצירת וידאו מתמונות הפניה, משמע הפניה אופציונלי ומהנחיה.",
+    "display_name": "Vidu Q4 יצירת וידאו מהפניה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_ממדים"
+      },
+      "model_audio": {
+        "name": "שמע"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
       }
     },
     "outputs": {

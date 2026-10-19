@@ -1,13 +1,24 @@
 import {
   linksMap,
   nodesMap,
-  OPAQUE_WIDGETS_KEY
+  OPAQUE_WIDGETS_KEY,
+  readStamps,
+  WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
+import { isEqual } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
-import type { INodeFlags, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import {
+  applyRemoteDynamicGroupRowCount,
+  isDynamicGroupController,
+  reachesDynamicGroupRowCount,
+  reportRemoteDynamicGroupRowMismatch
+} from '@/core/graph/widgets/dynamicGroupDiagnostics'
+import { growAutogrowInput } from '@/core/graph/widgets/dynamicWidgets'
+import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -23,8 +34,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { inputSpecTree } from '@/schemas/nodeDef/inputSpecTree'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkId } from '@/types/linkId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -33,7 +44,8 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import {
   allSubgraphDefinitions,
-  readSubgraphDefinitions
+  readSubgraphDefinitions,
+  readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
 import { placementOffset } from './batchPlacement'
@@ -45,12 +57,22 @@ export type NodeChange = 'add' | 'update' | 'delete'
  * Ids are document keys (strings); the applier resolves them against the live
  * graph.
  */
+
+type InteriorChanges = ReadonlyMap<
+  string,
+  ReadonlyMap<string, ReadonlySet<string> | 'all'>
+>
+
 export interface FrameChanges {
   nodes: ReadonlyMap<string, NodeChange>
   /** Widget names edited per node, or `'all'` when the storage was replaced. */
   widgets: ReadonlyMap<string, ReadonlySet<string> | 'all'>
   resyncNodes: ReadonlySet<string>
   links: ReadonlySet<string>
+
+  interiors?: InteriorChanges
+
+  interiorDefinitions?: ReadonlySet<string>
 }
 
 export interface RemoteApplyContext {
@@ -74,6 +96,7 @@ export interface LiveGraphApplierDeps {
 
 export interface ApplyResult {
   createdNodeIds: NodeId[]
+  failureCount: number
 }
 
 /**
@@ -125,6 +148,11 @@ interface DocLink {
   targetSlot: number
 }
 
+interface ApplyWidgetOptions {
+  documentWidgets?: DocNode['widgets']
+  reportMissing?: boolean
+}
+
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
   return structuredClone(value)
@@ -169,11 +197,80 @@ const zDocNodeFields = zComfyNode
     title: z.string().optional(),
     inputs: z.array(zDocSlot).optional(),
     outputs: z.array(zDocSlot).optional(),
-    properties: z.record(zNodeProperty.optional()).optional()
+    properties: z.record(z.string(), zNodeProperty.optional()).optional()
   })
+
+/**
+ * Only the actor's kind is reported: the segments after it in
+ * `agent:<thread>:<turn>` and `human:<user>:<tab>` identify a user.
+ */
+type ActorKind = 'agent' | 'human' | 'unknown'
+type NodeProducer =
+  | { origin: 'operation'; actorKind: ActorKind; opId: string; version: number }
+  | { origin: 'unstamped' | 'unreadable' }
 
 interface MalformedDocNode {
   malformed: string
+  discriminate(): {
+    classType?: string
+    valueShapes: string
+    producer: NodeProducer
+  }
+}
+
+function valueShape(value: unknown): string {
+  if (value === null) return 'null'
+  if (Array.isArray(value)) return `array:${value.length}`
+  if (typeof value === 'object') return `object:${Object.keys(value).length}`
+  return typeof value
+}
+
+/** `absent` when the path's own key is missing, so it is not read as `undefined`. */
+function shapeAtPath(root: unknown, path: readonly PropertyKey[]): string {
+  let cursor: unknown = root
+  for (const [depth, key] of path.entries()) {
+    if (cursor === null || typeof cursor !== 'object') return 'unreachable'
+    if (!Object.hasOwn(cursor, key))
+      return depth === path.length - 1 ? 'absent' : 'unreachable'
+    cursor = Reflect.get(cursor, key)
+  }
+  return valueShape(cursor)
+}
+
+function issueShapes(fields: unknown, error: z.ZodError): string {
+  return error.issues
+    .map(
+      (issue) =>
+        `${issue.path.join('.')} ${issue.code} ${shapeAtPath(fields, issue.path)}`
+    )
+    .join('; ')
+}
+
+function actorKind(actor: unknown): ActorKind {
+  const kind = typeof actor === 'string' ? actor.split(':', 1)[0] : ''
+  return kind === 'agent' || kind === 'human' ? kind : 'unknown'
+}
+
+function nodeProducer(doc: Y.Doc, id: string): NodeProducer {
+  let stamps: Readonly<Record<string, unknown>>
+  try {
+    stamps = readStamps(doc)
+  } catch {
+    return { origin: 'unreadable' }
+  }
+  const key = JSON.stringify(['node', id])
+  if (!Object.hasOwn(stamps, key)) return { origin: 'unstamped' }
+  const stamp = stamps[key]
+  if (!Array.isArray(stamp)) return { origin: 'unreadable' }
+  const [version, actor, opId]: unknown[] = stamp
+  if (typeof version !== 'number' || typeof opId !== 'string')
+    return { origin: 'unreadable' }
+  return {
+    origin: 'operation',
+    actorKind: actorKind(actor),
+    opId,
+    version
+  }
 }
 
 function readDocNode(
@@ -191,16 +288,24 @@ function readDocNode(
     } else if (key === OPAQUE_WIDGETS_KEY) {
       const opaque = plain(value)
       if (Array.isArray(opaque)) widgets = opaque
-    } else if (key !== 'id') {
+    } else if (key !== 'id' && key !== WIDGET_FORM_KEY) {
       fields[key] = plain(value)
     }
   })
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
+    const { error } = parsed
     return {
-      malformed: parsed.error.issues
+      malformed: error.issues
         .map((issue) => `${issue.path.join('.')} ${issue.message}`)
-        .join('; ')
+        .join('; '),
+      discriminate() {
+        return {
+          classType: typeof fields.type === 'string' ? fields.type : undefined,
+          valueShapes: issueShapes(fields, error),
+          producer: nodeProducer(doc, id)
+        }
+      }
     }
   }
   const {
@@ -323,6 +428,84 @@ function serializableWidgets(node: LGraphNode): IBaseWidget[] {
   return (node.widgets ?? []).filter((widget) => widget.serialize !== false)
 }
 
+function supportsDynamicWidgetOverflow(node: LGraphNode): boolean {
+  const inputs = node.constructor.nodeData?.inputs
+  return (
+    inputs !== undefined &&
+    Object.values(inputs).some((spec) =>
+      inputSpecTree(spec).some(({ type }) => type === 'COMFY_DYNAMICCOMBO_V3')
+    )
+  )
+}
+
+const OVERFLOW_WIDGET_NAME_RE = /^_extra_(0|[1-9]\d*)$/
+
+function overflowWidgetIndex(name: string): number | null {
+  const match = OVERFLOW_WIDGET_NAME_RE.exec(name)
+  return match ? Number(match[1]) : null
+}
+
+function documentWidget(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  return (
+    node.widgets?.find((widget) => widget.name === name) ??
+    overflowWidget(node, name)
+  )
+}
+
+/** The live widget an overflow alias addresses, if the node has that position. */
+function overflowWidget(
+  node: LGraphNode,
+  name: string
+): IBaseWidget | undefined {
+  if (!supportsDynamicWidgetOverflow(node)) return undefined
+  const overflowIndex = overflowWidgetIndex(name)
+  return overflowIndex === null
+    ? undefined
+    : serializableWidgets(node).at(overflowIndex)
+}
+
+/**
+ * Whether `name` is an overflow alias for a position the document also
+ * addresses by the live widget's real name; the named entry wins. Judged
+ * against the node's whole document map so an alias-only partial frame cannot
+ * overwrite the named value.
+ */
+function supersededOverflowAlias(
+  node: LGraphNode,
+  name: string,
+  document: DocNode['widgets']
+): boolean {
+  if (document === undefined || Array.isArray(document)) return false
+  if (node.widgets?.some((widget) => widget.name === name)) return false
+  const positional = overflowWidget(node, name)
+  return positional !== undefined && Object.hasOwn(document, positional.name)
+}
+
+/**
+ * Document entries for widgets that only exist after `configure`: aliases past
+ * the constructed list, and names the constructor did not build but the node
+ * now serializes. `constructed` is the serializable list from before
+ * `configure`; a name that still matches nothing is dropped without a report.
+ */
+function mountedWidgetValues(
+  node: LGraphNode,
+  widgets: DocNode['widgets'],
+  constructed: readonly IBaseWidget[],
+  constructedNames: ReadonlySet<string>
+): Record<string, unknown> | undefined {
+  if (widgets === undefined || Array.isArray(widgets)) return undefined
+  const mounted = Object.entries(widgets).filter(([name]) => {
+    const index = overflowWidgetIndex(name)
+    return index === null
+      ? !constructedNames.has(name)
+      : overflowWidget(node, name) === undefined || index >= constructed.length
+  })
+  return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
+}
+
 /**
  * The document stores an ordinary node's widget values by name; `configure`
  * restores them positionally over the node's serializable widgets, so project
@@ -339,9 +522,17 @@ function positionalWidgetValues(
       (value): WidgetValue => (isWidgetValue(value) ? value : undefined)
     )
   }
-  return serializableWidgets(node).map((widget): WidgetValue => {
-    const value = widgets[widget.name]
-    return widget.name in widgets && isWidgetValue(value) ? value : widget.value
+  return serializableWidgets(node).map((widget, index) => {
+    const alias = `_extra_${index}`
+    const name = Object.hasOwn(widgets, widget.name)
+      ? widget.name
+      : overflowWidget(node, alias) === widget && Object.hasOwn(widgets, alias)
+        ? alias
+        : widget.name
+    const value = widgets[name]
+    return Object.hasOwn(widgets, name) && isWidgetValue(value)
+      ? value
+      : widget.value
   })
 }
 
@@ -371,6 +562,8 @@ function floorSizeToContent(node: LGraphNode): void {
 export class LiveGraphApplier {
   private readonly deps: LiveGraphApplierDeps
   private readonly reported = new Set<string>()
+  private readonly interiorIds = new Map<string, Map<string, NodeId>>()
+  private readonly failureCounts: number[] = []
 
   constructor(deps: LiveGraphApplierDeps) {
     this.deps = deps
@@ -384,44 +577,54 @@ export class LiveGraphApplier {
     mode: ApplyMode = 'merge'
   ): ApplyResult {
     const graph = this.deps.getGraph()
-    if (!graph) return { createdNodeIds: [] }
-    return this.write(graph, context, () => {
-      if (mode === 'replace') this.removeAbsent(graph, doc, context)
-      const created: NodeId[] = []
-      const touchedNodes = new Set<string>()
-      this.registerDefinitions(graph, doc)
+    if (!graph) return { createdNodeIds: [], failureCount: 0 }
+    this.failureCounts.push(0)
+    try {
+      return this.write(graph, context, () => {
+        if (mode === 'replace') this.removeAbsent(graph, doc, context)
+        const created: NodeId[] = []
+        const touchedNodes = new Set<string>()
+        this.registerDefinitions(graph, doc)
 
-      for (const [id, change] of changes.nodes) {
-        if (change === 'delete') {
-          this.try(context, () => this.deleteNode(graph, id))
-          continue
-        }
-        touchedNodes.add(id)
-        this.try(context, () => {
-          const result = this.upsertNode(graph, doc, id)
-          if (result === 'created') created.push(toNodeId(id))
-          if (result === 'recreated') {
-            for (const link of docLinksIncident(doc, id)) {
-              this.connectLink(graph, doc, link)
-            }
+        for (const [id, change] of changes.nodes) {
+          if (change === 'delete') {
+            this.try(context, () => this.deleteNode(graph, id))
+            continue
           }
-        })
-      }
+          touchedNodes.add(id)
+          this.try(context, () => {
+            const result = this.upsertNode(graph, doc, id, mode)
+            if (result === 'created') created.push(toNodeId(id))
+            if (result === 'created' || result === 'recreated') {
+              for (const link of docLinksIncident(doc, id)) {
+                this.connectLink(graph, doc, link)
+              }
+            }
+          })
+        }
 
-      for (const id of changes.resyncNodes) {
-        if (touchedNodes.has(id)) continue
-        this.try(context, () => this.syncFields(graph, doc, id))
-      }
+        for (const id of changes.resyncNodes) {
+          if (touchedNodes.has(id)) continue
+          this.try(context, () => this.syncFields(graph, doc, id))
+        }
 
-      for (const [id, names] of changes.widgets) {
-        if (touchedNodes.has(id)) continue
-        this.try(context, () => this.syncWidgets(graph, doc, id, names))
-      }
+        for (const [id, names] of changes.widgets) {
+          if (touchedNodes.has(id)) continue
+          this.try(context, () => this.syncWidgets(graph, doc, id, names, mode))
+        }
 
-      this.applyLinks(graph, doc, [...changes.links], context)
-      if (mode === 'merge') this.placeBatch(graph, created)
-      return { createdNodeIds: created }
-    })
+        this.applyInteriors(graph, doc, changes, context, mode)
+
+        this.applyLinks(graph, doc, [...changes.links], context)
+        if (mode === 'merge') this.placeBatch(graph, created)
+        return {
+          createdNodeIds: created,
+          failureCount: this.currentFailureCount()
+        }
+      })
+    } finally {
+      this.failureCounts.pop()
+    }
   }
 
   private removeAbsent(
@@ -465,6 +668,7 @@ export class LiveGraphApplier {
     try {
       fn()
     } catch (error) {
+      this.incrementFailureCount()
       reportError(error, {
         surface: 'agent',
         errorType: 'agent_graph_apply_failed',
@@ -478,16 +682,30 @@ export class LiveGraphApplier {
     key: string,
     message: string,
     errorType: string,
-    context: Record<string, unknown>
+    context: Record<string, unknown>,
+    cause?: unknown
   ): void {
+    this.incrementFailureCount()
     if (this.reported.has(key)) return
     this.reported.add(key)
-    reportError(new Error(message), {
-      surface: 'agent',
-      errorType,
-      tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
-      context
-    })
+    reportError(
+      cause === undefined ? new Error(message) : new Error(message, { cause }),
+      {
+        surface: 'agent',
+        errorType,
+        tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+        context
+      }
+    )
+  }
+
+  private currentFailureCount(): number {
+    return this.failureCounts.at(-1) ?? 0
+  }
+
+  private incrementFailureCount(): void {
+    const index = this.failureCounts.length - 1
+    if (index >= 0) this.failureCounts[index] += 1
   }
 
   private registerDefinitions(graph: LGraph, doc: Y.Doc): void {
@@ -501,8 +719,10 @@ export class LiveGraphApplier {
       const failure = tryCreateSubgraph(rootGraph, definition, reserved)
       if (failure === undefined) {
         this.reported.delete(`definition:${definition.id}`)
+        this.recordInteriorIds(rootGraph, definition)
         continue
       }
+      this.incrementFailureCount()
       if (this.reported.has(`definition:${definition.id}`)) continue
       this.reported.add(`definition:${definition.id}`)
       reportError(failure, {
@@ -514,6 +734,32 @@ export class LiveGraphApplier {
     }
   }
 
+  private recordInteriorIds(
+    rootGraph: LGraph,
+    definition: ExportedSubgraph
+  ): void {
+    const live = rootGraph.subgraphs.get(definition.id)
+    if (!live || !definition.nodes) return
+    this.recordInteriorMapping(
+      definition.id,
+      definition.nodes.map((node) => String(node.id)),
+      live.nodes
+    )
+  }
+
+  private recordInteriorMapping(
+    definitionId: string,
+    orderedDocIds: readonly string[],
+    liveNodes: readonly LGraphNode[]
+  ): void {
+    if (orderedDocIds.length !== liveNodes.length) return
+    const mapping = new Map<string, NodeId>()
+    for (const [index, docId] of orderedDocIds.entries()) {
+      mapping.set(docId, liveNodes[index].id)
+    }
+    this.interiorIds.set(definitionId, mapping)
+  }
+
   private deleteNode(graph: LGraph, id: string): void {
     const node = graph.getNodeById(toNodeId(id))
     if (node) graph.remove(node)
@@ -522,22 +768,27 @@ export class LiveGraphApplier {
   private upsertNode(
     graph: LGraph,
     doc: Y.Doc,
-    id: string
+    id: string,
+    mode: ApplyMode
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
     const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.applyFields(live, docNode)
-      this.applyWidgets(live, docNode.widgets)
+      this.applyWidgets(live, docNode.widgets, mode)
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.createNode(graph, docNode)
+    this.createNode(graph, docNode, mode)
     return live ? 'recreated' : 'created'
   }
 
-  private createNode(graph: LGraph, docNode: DocNode): LGraphNode {
+  private createNode(
+    graph: LGraph,
+    docNode: DocNode,
+    mode: ApplyMode
+  ): LGraphNode {
     const node =
       LiteGraph.createNode(docNode.type, docNode.serialised.title) ??
       missingNode(docNode)
@@ -566,10 +817,36 @@ export class LiveGraphApplier {
       node.last_serialization = info
       node.configure(info)
     } else {
-      node.configure({
-        ...info,
-        widgets_values: positionalWidgetValues(node, docNode.widgets)
-      })
+      if (node.isSubgraphNode()) {
+        const beforeConfigurePromotedIds = promotedWidgetIds(node)
+        node.configure(info)
+        this.applyConfiguredHostWidgets(
+          node,
+          docNode.widgets,
+          beforeConfigurePromotedIds,
+          mode
+        )
+      } else {
+        const constructed = serializableWidgets(node)
+        const constructedNames = new Set(
+          node.widgets?.map((widget) => widget.name)
+        )
+        node.configure({
+          ...info,
+          widgets_values: positionalWidgetValues(node, docNode.widgets)
+        })
+        const mounted = mountedWidgetValues(
+          node,
+          docNode.widgets,
+          constructed,
+          constructedNames
+        )
+        if (mounted)
+          this.applyWidgets(node, mounted, mode, {
+            documentWidgets: docNode.widgets,
+            reportMissing: false
+          })
+      }
     }
     floorSizeToContent(node)
     return node
@@ -579,9 +856,15 @@ export class LiveGraphApplier {
     const source = docNode.serialised
     if (source.title !== undefined && node.title !== source.title)
       node.title = source.title
-    if (node.mode !== source.mode) node.mode = source.mode
-    const { ghost } = node.flags
-    node.flags = ghost === undefined ? source.flags : { ...source.flags, ghost }
+    if (node.mode !== source.mode && !node.changeMode(source.mode)) {
+      this.reportOnce(
+        `node-mode:${docNode.id}:${source.mode}`,
+        `Document node ${docNode.id} rejected mode ${source.mode}`,
+        'agent_graph_node_mode_rejected',
+        { nodeId: docNode.id, mode: source.mode }
+      )
+    }
+    applyFlags(node, source.flags)
     for (const [key, value] of Object.entries(source.properties ?? {})) {
       if (node.properties[key] !== value) node.setProperty(key, value)
     }
@@ -591,15 +874,18 @@ export class LiveGraphApplier {
   private readDocNode(doc: Y.Doc, id: string): DocNode | null {
     const read = readDocNode(doc, id)
     if (read === null) return null
+    const key = `node-shape:${id}`
     if (!('malformed' in read)) {
-      this.reported.delete(`node-shape:${id}`)
+      this.reported.delete(key)
       return read
     }
+    if (this.reported.has(key)) return null
+    const { classType, valueShapes, producer } = read.discriminate()
     this.reportOnce(
-      `node-shape:${id}`,
-      `Document node ${id} is malformed: ${read.malformed}`,
+      key,
+      `Document node ${id} (${classType ?? 'unknown class'}) is malformed: ${read.malformed}`,
       'agent_graph_node_malformed',
-      { nodeId: id, issues: read.malformed }
+      { nodeId: id, issues: read.malformed, classType, valueShapes, producer }
     )
     return null
   }
@@ -615,74 +901,288 @@ export class LiveGraphApplier {
     graph: LGraph,
     doc: Y.Doc,
     id: string,
-    names: ReadonlySet<string> | 'all'
+    names: ReadonlySet<string> | 'all',
+    mode: ApplyMode
   ): void {
     const docNode = this.readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
     const widgets = docNode.widgets
     if (names === 'all' || Array.isArray(widgets)) {
-      this.applyWidgets(node, widgets)
+      this.applyWidgets(node, widgets, mode)
       return
     }
     if (!widgets) return
     this.applyWidgets(
       node,
       Object.fromEntries(
-        Object.entries(widgets).filter(([name]) => names.has(name))
-      )
+        Object.entries(widgets).filter(([name]) => changed(node, name, names))
+      ),
+      mode,
+      { documentWidgets: widgets }
     )
   }
 
-  private applyWidgets(node: LGraphNode, widgets: DocNode['widgets']): void {
-    if (widgets === undefined) return
-    if (node.isSubgraphNode()) {
-      this.applyHostWidgets(node, widgets)
+  private applyInteriors(
+    graph: LGraph,
+    doc: Y.Doc,
+    changes: FrameChanges,
+    context: RemoteApplyContext,
+    mode: ApplyMode
+  ): void {
+    const granular = changes.interiors
+    const full = changes.interiorDefinitions
+    const hasGranular = granular !== undefined && granular.size > 0
+    const hasFull = full !== undefined && full.size > 0
+    if (!hasGranular && !hasFull) return
+    const docInteriors = readSubgraphInteriorWidgets(doc)
+    const targets = interiorSyncTargets(granular, full, docInteriors)
+    for (const [definitionId, nodes] of targets) {
+      this.try(context, () =>
+        this.syncDefinitionInteriors(
+          graph,
+          definitionId,
+          nodes,
+          docInteriors,
+          mode
+        )
+      )
+    }
+  }
+
+  private syncDefinitionInteriors(
+    graph: LGraph,
+    definitionId: string,
+    nodes: ReadonlyMap<string, ReadonlySet<string> | 'all'>,
+    docInteriors: ReturnType<typeof readSubgraphInteriorWidgets>,
+    mode: ApplyMode
+  ): void {
+    const subgraph = graph.rootGraph.subgraphs.get(definitionId)
+    if (!subgraph) return
+    const docNodes = docInteriors.get(definitionId)
+    if (!docNodes) return
+    if (!this.interiorIds.has(definitionId)) {
+      this.recordInteriorMapping(
+        definitionId,
+        [...docNodes.keys()],
+        subgraph.nodes
+      )
+    }
+    for (const [nodeId, names] of nodes) {
+      const widgets = docNodes.get(nodeId)
+      if (widgets === undefined) continue
+      const mapped = this.interiorIds.get(definitionId)?.get(nodeId)
+      const live = mapped
+        ? subgraph.getNodeById(mapped)
+        : subgraph.getNodeById(toNodeId(nodeId))
+      if (!live) continue
+      this.applyInteriorWidgets(live, widgets, names, mode)
+      this.propagateInteriorToHosts(
+        graph,
+        definitionId,
+        live,
+        widgets,
+        names,
+        mode
+      )
+    }
+  }
+
+  private propagateInteriorToHosts(
+    graph: LGraph,
+    definitionId: string,
+    liveInterior: LGraphNode,
+    widgets: unknown,
+    names: ReadonlySet<string> | 'all',
+    mode: ApplyMode
+  ): void {
+    if (names === 'all') return
+    if (widgets === undefined || Array.isArray(widgets)) return
+    const record = widgets as Record<string, unknown>
+    for (const host of subgraphHostInstances(graph, definitionId)) {
+      this.propagateInteriorToHost(host, liveInterior, record, names, mode)
+    }
+  }
+
+  private applyInteriorWidgets(
+    live: LGraphNode,
+    widgets: Record<string, unknown> | readonly unknown[],
+    names: ReadonlySet<string> | 'all',
+    mode: ApplyMode
+  ): void {
+    if (names === 'all' || Array.isArray(widgets)) {
+      this.applyWidgets(live, widgets as DocNode['widgets'], mode)
       return
     }
-    const entries = Array.isArray(widgets)
-      ? serializableWidgets(node).map((widget, index): [string, unknown] => [
-          widget.name,
-          widgets[index]
-        ])
-      : Object.entries(widgets)
-    for (const [name, value] of entries) {
-      if (value === undefined || !isWidgetValue(value)) continue
+    const filtered = Object.fromEntries(
+      Object.entries(widgets).filter(([name]) => names.has(name))
+    )
+    if (Object.keys(filtered).length === 0) return
+    this.applyWidgets(live, filtered, mode, {
+      documentWidgets: widgets as DocNode['widgets']
+    })
+  }
+
+  private propagateInteriorToHost(
+    host: LGraphNode,
+    liveInterior: LGraphNode,
+    record: Record<string, unknown>,
+    names: ReadonlySet<string>,
+    mode: ApplyMode
+  ): void {
+    for (const input of promotedInputs(host)) {
+      const target = host.isSubgraphNode()
+        ? host.resolvePromotedTarget(input.name)
+        : undefined
+      if (!target || target.nodeId !== liveInterior.id) continue
+      if (!names.has(target.widgetName)) continue
+      if (!Object.hasOwn(record, target.widgetName)) continue
+      this.applyHostWidgets(
+        host,
+        { [input.name]: record[target.widgetName] },
+        mode
+      )
+    }
+  }
+
+  /**
+   * `options.documentWidgets` is the node's whole document map. It differs
+   * from `widgets` on partial frames, where alias precedence still depends on
+   * every key. Creation can suppress reports for unmatched names while still
+   * reporting unresolved overflow aliases.
+   */
+  private applyWidgets(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    mode: ApplyMode,
+    options: ApplyWidgetOptions = {}
+  ): void {
+    if (widgets === undefined) return
+    if (node.isSubgraphNode()) {
+      this.applyHostWidgets(node, widgets, mode)
+      return
+    }
+    const { documentWidgets = widgets, reportMissing = true } = options
+    let pending = ordinaryWidgetEntries(node, widgets).filter(isWidgetEntry)
+    while (pending.length > 0) {
+      const { resolved, unresolved } = this.applyWidgetRound(
+        node,
+        pending,
+        documentWidgets
+      )
+      if (!resolved) {
+        this.reportMissingWidgets(node, unresolved, reportMissing)
+        return
+      }
+      pending = unresolved
+    }
+  }
+
+  private applyWidgetRound(
+    node: LGraphNode,
+    pending: readonly [string, WidgetValue][],
+    documentWidgets: DocNode['widgets']
+  ): { resolved: boolean; unresolved: [string, WidgetValue][] } {
+    const unresolved: [string, WidgetValue][] = []
+    let resolved = false
+    for (const [name, value] of pending) {
+      if (supersededOverflowAlias(node, name, documentWidgets)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const widget = node.widgets?.find((candidate) => candidate.name === name)
-      if (!widget) {
-        this.reportOnce(
-          `widget:${String(node.id)}:${name}`,
-          `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
-          'agent_graph_widget_missing',
-          { nodeId: node.id, type: node.type, name }
-        )
+      const widget = documentWidget(node, name)
+      if (widget === undefined) {
+        unresolved.push([name, value])
         continue
       }
-      this.setWidgetValue(node, widget, value)
+      if (
+        widget.name !== name &&
+        this.holdsLocalWrite(node, widget.name, value)
+      )
+        continue
+      if (isDynamicGroupController(widget))
+        this.applyDynamicGroupRowCount(node, widget, value)
+      else this.setWidgetValue(node, widget, value)
+      resolved = true
     }
+    return { resolved, unresolved }
+  }
+
+  private reportMissingWidgets(
+    node: LGraphNode,
+    unresolved: readonly [string, WidgetValue][],
+    reportMissing: boolean
+  ): void {
+    for (const [name] of unresolved) {
+      if (reportMissing || overflowWidgetIndex(name) !== null)
+        this.reportMissingWidget(node, name)
+    }
+  }
+
+  private reportMissingWidget(node: LGraphNode, name: string): void {
+    this.reportOnce(
+      `widget:${String(node.id)}:${name}`,
+      `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
+      'agent_graph_widget_missing',
+      { nodeId: node.id, type: node.type, name }
+    )
+  }
+
+  private applyConfiguredHostWidgets(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    beforeConfigurePromotedIds: readonly string[],
+    mode: ApplyMode
+  ): void {
+    const afterConfigurePromotedIds = promotedWidgetIds(node)
+    if (
+      Array.isArray(widgets) &&
+      (widgets.length !== afterConfigurePromotedIds.length ||
+        !isEqual(beforeConfigurePromotedIds, afterConfigurePromotedIds))
+    ) {
+      this.reportHostWidgetDrift(
+        node,
+        widgets.length,
+        afterConfigurePromotedIds.length,
+        mode,
+        { beforeConfigurePromotedIds, afterConfigurePromotedIds }
+      )
+      return
+    }
+    this.applyHostWidgets(node, widgets, mode)
+  }
+
+  private reportHostWidgetDrift(
+    node: LGraphNode,
+    actual: number,
+    expected: number,
+    mode: ApplyMode,
+    identity?: {
+      beforeConfigurePromotedIds: readonly string[]
+      afterConfigurePromotedIds: readonly string[]
+    }
+  ): void {
+    this.reportOnce(
+      `host-widgets:${mode}:${String(node.id)}`,
+      `Subgraph host ${String(node.id)} (${node.type}) carries ${actual} opaque widget values for ${expected} promoted widgets`,
+      'agent_graph_host_widgets_mismatch',
+      { nodeId: node.id, type: node.type, expected, actual, mode, ...identity }
+    )
   }
 
   private applyHostWidgets(
     node: LGraphNode,
-    widgets: DocNode['widgets']
+    widgets: DocNode['widgets'],
+    mode: ApplyMode
   ): void {
-    const promoted = node.inputs.filter((input) => input.widgetId)
+    const promoted = promotedInputs(node)
     if (Array.isArray(widgets) && widgets.length !== promoted.length) {
-      this.reportOnce(
-        `host-widgets:${String(node.id)}:${widgets.length}`,
-        `Subgraph host ${String(node.id)} carries ${widgets.length} opaque widget values for ${promoted.length} promoted widgets`,
-        'agent_graph_host_widgets_mismatch',
-        { nodeId: node.id, expected: promoted.length, actual: widgets.length }
-      )
+      this.reportHostWidgetDrift(node, widgets.length, promoted.length, mode)
       return
     }
-    const store = useWidgetValueStore()
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
       if (this.holdsLocalWrite(node, name, value)) continue
-      const widgetId = promoted.find((input) => input.name === name)?.widgetId
-      if (!widgetId) {
+      const input = promoted.find((candidate) => candidate.name === name)
+      if (!input) {
         this.reportOnce(
           `widget:${String(node.id)}:${name}`,
           `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
@@ -691,9 +1191,31 @@ export class LiveGraphApplier {
         )
         continue
       }
-      store.setValue(widgetId, value)
+      const widget = node.getWidgetFromSlot(input)
+      if (!widget) {
+        this.reportOnce(
+          `widget:${String(node.id)}:${name}:unresolved`,
+          `Subgraph host ${String(node.id)} (${node.type}) could not resolve promoted widget '${name}'`,
+          'agent_graph_widget_missing',
+          { nodeId: node.id, type: node.type, name }
+        )
+        continue
+      }
+      try {
+        this.setPromotedWidgetValue(node, widget, value)
+      } catch (error) {
+        const options = {
+          surface: 'agent',
+          errorType: 'agent_graph_apply_failed',
+          tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
+          context: {
+            nodeId: String(node.id),
+            widget: name
+          }
+        } as const
+        reportError(error, options)
+      }
     }
-    node.graph?.incrementVersion()
   }
 
   private holdsLocalWrite(
@@ -704,6 +1226,22 @@ export class LiveGraphApplier {
     return (
       this.deps.holdsLocalWrite?.(String(node.id), widget, docValue) ?? false
     )
+  }
+
+  private applyDynamicGroupRowCount(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ) {
+    applyRemoteDynamicGroupRowCount(node, () =>
+      this.setWidgetValue(node, widget, value)
+    )
+    if (reachesDynamicGroupRowCount(widget, value)) return
+    this.incrementFailureCount()
+    reportRemoteDynamicGroupRowMismatch(node, value, Number(widget.value), {
+      ...AGENT_APPLY_TAGS,
+      outcome: 'degraded'
+    })
   }
 
   private setWidgetValue(
@@ -719,6 +1257,38 @@ export class LiveGraphApplier {
       node.onWidgetChanged?.(widget.name, value, previous, widget)
     } catch (error) {
       rollback()
+      throw error
+    }
+    node.graph?.incrementVersion()
+  }
+
+  private setPromotedWidgetValue(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ): void {
+    if (widget.type === 'button' || Object.is(widget.value, value)) return
+    const previous = widget.value
+    const callback = widget.callback
+    function writeWithoutCallback<T>(write: () => T): T {
+      widget.callback = undefined
+      try {
+        return write()
+      } finally {
+        widget.callback = callback
+      }
+    }
+    const rollback = writeWithoutCallback(() =>
+      writeWidgetValue(node, widget, value, false)
+    )
+    try {
+      callback?.call(widget, value, this.deps.getCanvas?.() ?? undefined, node)
+      node.onWidgetChanged?.(widget.name, value, previous, widget)
+      if (!Object.is(widget.value, value)) {
+        writeWithoutCallback(() => writeWidgetValue(node, widget, value, false))
+      }
+    } catch (error) {
+      writeWithoutCallback(rollback)
       throw error
     }
     node.graph?.incrementVersion()
@@ -773,12 +1343,7 @@ export class LiveGraphApplier {
       link.originSlot,
       'positional'
     )
-    const targetSlot = resolveSlot(
-      target.inputs.map((input) => input.name),
-      readDocSlotName(doc, link.target, 'inputs', link.targetSlot),
-      link.targetSlot,
-      'none'
-    )
+    const targetSlot = resolveTargetSlot(target, doc, link)
     if (originSlot < 0 || targetSlot < 0) {
       if (graph.links.has(link.id)) graph.removeLink(link.id)
       return 'unresolved'
@@ -833,6 +1398,121 @@ function isLinkPresent(
   )
 }
 
+/** Rank of a not-yet-mounted document name; past every live/overflow position. */
+const MOUNTED_LAST = Number.MAX_SAFE_INTEGER
+
+/**
+ * Apply order for a document widget map: live widgets in their positional
+ * order, then overflow aliases by position, then names no widget carries yet.
+ * The live order keeps a selector ahead of children it may rebuild. Unresolved
+ * entries are retried after each round, so selectors can mount widgets at any
+ * depth.
+ */
+function widgetEntryRank(node: LGraphNode, name: string): number {
+  const live = serializableWidgets(node)
+  const liveIndex = live.findIndex((widget) => widget.name === name)
+  if (liveIndex !== -1) return liveIndex
+  const index = overflowWidgetIndex(name)
+  return index === null ? MOUNTED_LAST : live.length + index
+}
+
+function isWidgetEntry(
+  entry: [string, unknown]
+): entry is [string, WidgetValue] {
+  return entry[1] !== undefined && isWidgetValue(entry[1])
+}
+
+/**
+ * Ordinary node widget values by document name, ordered so Y.Map insertion
+ * order cannot decide the outcome (`widgetEntryRank`); a positional list is
+ * read in serializable-widget order.
+ */
+function ordinaryWidgetEntries(
+  node: LGraphNode,
+  widgets: NonNullable<DocNode['widgets']>
+): [string, unknown][] {
+  if (!Array.isArray(widgets)) {
+    return Object.entries(widgets).sort(
+      ([a], [b]) => widgetEntryRank(node, a) - widgetEntryRank(node, b)
+    )
+  }
+  return serializableWidgets(node).map((widget, index) => [
+    widget.name,
+    widgets[index]
+  ])
+}
+
+/**
+ * Whether the changed-name set covers this document key, either directly or
+ * through the live widget an overflow alias resolves to (rejected-op name sets
+ * carry the widget's real name).
+ */
+function changed(
+  node: LGraphNode,
+  name: string,
+  names: ReadonlySet<string>
+): boolean {
+  if (names.has(name)) return true
+  const positional = overflowWidget(node, name)
+  return positional !== undefined && names.has(positional.name)
+}
+
+type InteriorSyncTargets = Map<string, Map<string, ReadonlySet<string> | 'all'>>
+
+function interiorSyncTargets(
+  granular: InteriorChanges | undefined,
+  full: ReadonlySet<string> | undefined,
+  docInteriors: ReturnType<typeof readSubgraphInteriorWidgets>
+): InteriorSyncTargets {
+  const targets: InteriorSyncTargets = new Map()
+  if (granular) {
+    for (const [definitionId, nodes] of granular) {
+      targets.set(definitionId, new Map(nodes))
+    }
+  }
+  if (full) {
+    for (const definitionId of full) {
+      const nodes = targets.get(definitionId) ?? new Map()
+      for (const nodeId of docInteriors.get(definitionId)?.keys() ?? []) {
+        if (!nodes.has(nodeId)) nodes.set(nodeId, 'all')
+      }
+      targets.set(definitionId, nodes)
+    }
+  }
+  return targets
+}
+
+function promotedInputs(node: LGraphNode): INodeInputSlot[] {
+  return node.inputs.filter((input) => input.widgetId)
+}
+
+function subgraphHostInstances(
+  graph: LGraph,
+  definitionId: string
+): LGraphNode[] {
+  const hosts: LGraphNode[] = []
+  const seen = new Set<LGraphNode>()
+  const visit = (nodes: readonly LGraphNode[]): void => {
+    for (const node of nodes) {
+      if (seen.has(node)) continue
+      seen.add(node)
+      if (node.isSubgraphNode() && node.subgraph.id === definitionId) {
+        hosts.push(node)
+      }
+    }
+  }
+  visit(graph.rootGraph.nodes)
+  for (const subgraph of graph.rootGraph.subgraphs.values())
+    visit(subgraph.nodes)
+  return hosts
+}
+
+function promotedWidgetIds(node: LGraphNode): string[] {
+  return promotedInputs(node).flatMap((input) =>
+    input.widgetId ? [input.widgetId] : []
+  )
+}
+
 /** Host widget values by promoted-input name; a positional list is read in promoted-input order. */
 function hostWidgetEntries(
   promoted: readonly INodeInputSlot[],
@@ -847,11 +1527,12 @@ function hostWidgetEntries(
 function writeWidgetValue(
   node: LGraphNode,
   widget: IBaseWidget,
-  value: WidgetValue
+  value: WidgetValue,
+  mirrorProperty = true
 ): () => void {
   const previous = widget.value
   const property = widget.options.property
-  if (!property || node.properties[property] === undefined) {
+  if (!mirrorProperty || !property || node.properties[property] === undefined) {
     widget.value = value
     return () => {
       widget.value = previous
@@ -866,13 +1547,57 @@ function writeWidgetValue(
   }
 }
 
+function applyFlags(node: LGraphNode, flags: INodeFlags): void {
+  if (node.collapsed !== !!flags.collapsed) node.collapse(true)
+  if (node.pinned !== !!flags.pinned) node.pin(!!flags.pinned)
+  for (const [key, value] of Object.entries({ ...node.flags, ...flags })) {
+    if (['ghost', 'collapsed', 'pinned'].includes(key)) continue
+    if (key in flags) {
+      Object.assign(node.flags, { [key]: value })
+    } else {
+      Reflect.deleteProperty(node.flags, key)
+    }
+  }
+}
+
 function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {
+  const color = source.color ?? node.color
+  const bgcolor = source.bgcolor ?? node.bgcolor
+  if (node.color !== color || node.bgcolor !== bgcolor) {
+    const option = Object.values(LGraphCanvas.node_colors).find(
+      (option) => option.color === color && option.bgcolor === bgcolor
+    )
+    if (option) node.setColorOption(option)
+  }
   for (const key of SYNCED_APPEARANCE_FIELDS) {
     const value = source[key]
     if (value !== undefined && node[key] !== value) {
       Object.assign(node, { [key]: value })
     }
   }
+}
+
+/**
+ * The live input index a document link targets. A dynamic input slot the host
+ * grew has no live counterpart until the node's autogrow group is grown to it,
+ * so grow it rather than drop a link the document holds against a slot it
+ * legitimately owns. `growAutogrowInput` refuses a name outside the node's own
+ * groups, leaving a slot the live node really lacks unresolved as before.
+ */
+function resolveTargetSlot(
+  target: LGraphNode,
+  doc: Y.Doc,
+  link: DocLink
+): number {
+  const docName = readDocSlotName(doc, link.target, 'inputs', link.targetSlot)
+  const resolved = resolveSlot(
+    target.inputs.map((input) => input.name),
+    docName,
+    link.targetSlot,
+    'none'
+  )
+  if (resolved >= 0 || docName === undefined) return resolved
+  return growAutogrowInput(target, docName) ?? resolved
 }
 
 /**

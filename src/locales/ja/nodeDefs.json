@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "3Dプレビューで被写体の周囲のカメラアングルを選択します。3Dノード用の camera_info と、プロンプト用の平易な英語によるショット説明を出力します。",
+    "display_name": "カメラアングルプロンプトを作成",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "被写体の周囲の方位角（度）。0は正面、90は右側、180は背面です。"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "3Dプレビューで被写体キューブの前面に表示する、任意の参照画像です。"
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "仰角（度）。負の値は下から見上げ、正の値は上から見下ろします。"
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "被写体に対するレンズズーム：0はワイドショット、10はクローズアップです。camera_info.zoom に引き継がれます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "キャニー",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "開始シグマ",
         "tooltip": "これらのオプションが有効になる最初のシグマ値。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Clarity AIのCrystal Upscalerで画像をアップスケールします。原画に忠実で、顔、肌、細部のテクスチャを復元する高忠実度のアップスケーラーです。最大出力：100メガピクセル。",
+    "display_name": "Clarity AI Crystal アップスケール",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "使用するモデル。"
+      },
+      "model_creativity": {
+        "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "camera_infoを構築します。モード「orbit」はターゲットの周囲をヨー/ピッチ/距離で回転します。「look_at」はカメラをワールド座標に配置します。座標はビューアのワールド空間（右手系、Yアップ）です。",
+    "description": "camera_info を構築します。モード「orbit」は対象の周囲でyaw/pitch/distanceを使用してカメラを向けます。「look_at」はカメラをワールド座標に配置します。座標はビューアのワールド空間です（右手系、Y軸が上）。",
     "display_name": "カメラ情報の作成",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "カメラタイプ",
         "tooltip": "Render Splatで使用する投影方法：パースペクティブ（遠近法）またはオーソグラフィック（平行投影）。"
@@ -4860,7 +4919,7 @@
       },
       "language_code": {
         "name": "言語コード",
-        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+        "tooltip": "ISO 639-1 言語コード（例: 'en'、'es'、'ja'）。自動検出する場合は空欄のままにします。"
       },
       "model": {
         "name": "モデル",
@@ -4930,7 +4989,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "ISO-639-1 または ISO-639-3 言語コード（例: 'en', 'es', 'fra'）。自動検出の場合は空欄にしてください。"
+        "tooltip": "ISO 639-1 言語コード（例: 'en'、'es'、'ja'）。自動検出する場合は空欄のままにします。"
       },
       "model": {
         "name": "model",
@@ -4938,15 +4997,6 @@
       },
       "model_similarity_boost": {
         "name": "similarity_boost"
-      },
-      "model_speed": {
-        "name": "speed"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "use_speaker_boost"
       },
       "output_format": {
         "name": "output_format",
@@ -5834,6 +5884,52 @@
       },
       "width": {
         "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "プロンプトから FLUX 3 で画像を生成するか、最大10枚の参照画像を編集・組み合わせます。プロンプト内では、参照画像を画像1、画像2のように指定してください。",
+    "display_name": "Flux 3 画像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "'auto' は最初の参照画像に従うか、プロンプトから比率を選択します。"
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "出力内にオブジェクトまたはテキストを配置する、Create Bounding Boxes からの任意のボックス。位置はキャンバスを基準とするため、出力のアスペクト比を指定してください。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "生成前に、モデルがウェブ検索と画像検索でプロンプトを調査できるようにします。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "任意の参照画像。合計で最大10枚まで指定でき、各画像は少なくとも256×256ピクセル必要です。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "生成する内容、または行う編集。プロンプトは生成前に解釈・展開されます。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "選択したアスペクト比での出力サイズ: 0.75K は約0.6メガピクセル、1K は1 MP、1.5K は2.4 MP、2K は4.2 MP、4K は16.8 MPです。"
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "モデレーションの許容度。0 が最も厳格です。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを決定するシード値。FLUX 3 は独自のシードを選択するため、この値に関係なく実際の結果は非決定的です。"
       }
     },
     "outputs": {
@@ -6803,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Google Vertex API を使用して画像を同期的に生成または編集します。",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "生成後のコントロール"
@@ -6853,7 +6949,7 @@
       },
       "2": {
         "name": "思考画像",
-        "tooltip": "モデルの思考過程から得られる最初の画像。思考レベルがHIGHかつモダリティがIMAGE+TEXTの場合のみ利用可能です。"
+        "tooltip": "モデルの思考プロセスからの最初の画像です。IMAGE+TEXT モダリティでのみ利用できます。"
       }
     }
   },
@@ -7434,7 +7530,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "アスペクト比",
-        "tooltip": "出力動画のアスペクト比。"
+        "tooltip": "出力動画のアスペクト比。入力画像が提供されている場合は無視され、動画は画像のアスペクト比に従います。"
       },
       "control_after_generate": {
         "name": "生成後の制御"
@@ -7453,11 +7549,11 @@
       },
       "prompt": {
         "name": "プロンプト",
-        "tooltip": "目的の動画のテキスト説明。入力画像が指定されている場合、grok-imagine-video-1.5 では省略可能です。"
+        "tooltip": "目的の動画のテキスト説明。入力画像が提供されている場合、grok-imagine-video-1.5 モデルでは任意です。"
       },
       "resolution": {
         "name": "解像度",
-        "tooltip": "出力動画の解像度。1080pはgrok-imagine-video-1.5でのみ利用できます。"
+        "tooltip": "出力動画の解像度。grok-imagine-video では 1080p は利用できません。"
       },
       "seed": {
         "name": "シード値",
@@ -7759,6 +7855,67 @@
       },
       "1": {
         "name": "プレビュー",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenImageToVideoNode": {
+    "description": "HeyGen Video 1.0 を使用して、画像を同期した会話と音声を含む動画にアニメーション化します。画像は最初のフレームとして使用されます。",
+    "display_name": "HeyGen Video 1.0 画像から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "HeyGen Video 1.0 を使用して、テキストプロンプトから同期した会話と音声を含む動画を生成します。最大12個の参照画像、動画、オーディオクリップを任意で接続し、プロンプト内で {'@'}Image1、{'@'}Video1、{'@'}Audio1 として指定できます。",
+    "display_name": "HeyGen Video 1.0 参照から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8376,6 +8533,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Ideogram 4.5 を使用して、テキストプロンプトに従い最大5枚の画像を編集または結合します。画像全体を再レンダリングするため、サイズやアスペクト比が変わる場合があります。変更していないピクセルをそのまま維持するには、Ideogram 4.5 Precise Edit を使用してください。",
+    "display_name": "Ideogram 4.5 編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
+      },
+      "model_width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "P-Image（Ideogramの高速テキストから画像生成モデル）を使用して画像を生成します。強力なタイポグラフィとフォトリアリズムを実現し、Ideogram 4.0の構造化JSONキャプションによる正確なテキスト、色、レイアウト指定に対応しています。",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8608,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "実際に画像生成に使用されたプロンプト（prompt_upsamplingが有効な場合は書き換え後の構造化キャプション、無効な場合は入力プロンプト）。prompt_upsamplingをOFF、同じシードで再入力すると同じ画像を再現できます。"
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Ideogram 4.5 の精密編集を使用して、テキストプロンプトに従い画像を編集します。プロンプトで指定された部分のみが変更され、変更していないピクセルは同一に保たれ、出力は画像1のサイズを維持します（約4 MPを超える画像は先に縮小されます）。最大4枚の参照画像を受け付けます。",
+    "display_name": "Ideogram 4.5 精密編集",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Ideogram 4.5 を使用して、テキストプロンプトから画像を生成します。",
+    "display_name": "Ideogram 4.5 テキストから画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデル。"
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_size": {
+        "name": "サイズ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "画像生成に使用された構造化キャプションです。magic_prompt を 'off' に設定し、同じシードで再度入力すると、画像を再現できます。"
       }
     }
   },
@@ -10166,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "人物に衣類アイテムを着せます。結果は人物画像と同じサイズで、長辺は2048pxに制限されます。",
+    "display_name": "Kling バーチャル試着",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "着せる衣類：商品写真、平置き写真、マネキン写真、またはモデル着用写真。モデル着用写真では、そのコーディネートの残りの衣類も引き継がれる場合があります。衣類のみ対応しており、靴、バッグ、アクセサリーはサポートされません。"
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "より良い衣装の見せ方のためにポーズの変更を許可するには、オフにします。"
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "1人の人物の写真。正面向きまたは斜め前向きが理想的です。いずれかの辺が2048pxを超える画像は、先に縮小されます。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "Kling V3でビデオを生成します。テキストからビデオ、画像からビデオ、オプションでストーリーボードのマルチプロンプトやオーディオ生成に対応しています。",
     "display_name": "Kling 3.0 ビデオ",
@@ -11124,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "潜在操作CFGを適用",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "モデルのノイズ除去スケジュールにおけるこの割合で、操作の適用を停止します。1が終了です。"
+      },
       "model": {
         "name": "モデル"
       },
       "operation": {
         "name": "操作"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "モデルのノイズ除去スケジュールにおけるこの割合から、操作の適用を開始します。0が開始です。"
       }
     },
     "outputs": {
@@ -11363,6 +11658,24 @@
       },
       "samples": {
         "name": "samples"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "必要に応じて最近傍補間で参照潜在空間をリサイズし、潜在空間全体を参照潜在空間に向けてブレンドします。",
+    "display_name": "潜在空間演算ブレンド",
+    "inputs": {
+      "reference": {
+        "name": "参照"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "0ではlatentは変更されず、1ではリサイズされた参照latentに一致します。"
       }
     },
     "outputs": {
@@ -11772,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "拡散モデルにLoRAのスタックを適用します。LoRAごとに行を追加し、各行でLoRAファイルとその強度を選択します。",
+    "display_name": "LoRAを読み込む（モデル）",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "各行で1つのLoRAをモデルに適用します。"
+      },
+      "loras_$add": {
+        "name": "LoRAを追加"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 を有効化"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 の強度"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "LoRAが適用される拡散モデル。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "変更後の拡散モデル。"
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "CLIPテキストエンコーダーにLoRAのスタックを適用します。LoRAごとに行を追加し、各行でLoRAファイルとその強度を選択します。",
+    "display_name": "LoRAを読み込む（テキストエンコーダー）",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "LoRAが適用されるCLIPテキストエンコーダー。"
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "各行で1つのLoRAをテキストエンコーダーに適用します。"
+      },
+      "loras_$add": {
+        "name": "LoRAを追加"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA #1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA #1 を有効化"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA #1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA #1 の強度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "変更後のCLIPテキストエンコーダー。"
       }
     }
   },
@@ -18320,8 +18707,8 @@
   "PrimitiveInt": {
     "display_name": "整数",
     "inputs": {
-      "fixed": {
-        "name": "生成後に制御"
+      "control_after_generate": {
+        "name": "生成後の制御"
       },
       "value": {
         "name": "値"
@@ -18471,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Quiver AIを使ってラスタ画像をSVGにベクトル化します。",
-    "display_name": "Quiver画像からSVGへ",
+    "display_name": "Quiver 画像からSVGへ（レガシー）",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18515,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Quiver AIを使用してラスター画像をSVGにベクター化します。",
+    "display_name": "Quiver 画像からSVGへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "SVGのベクター化に使用するモデル。"
+      },
+      "model_auto_crop": {
+        "name": "自動クロップ"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_target_size": {
+        "name": "対象サイズ"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Quiver AIを使ってテキストプロンプトからSVGを生成します。",
-    "display_name": "QuiverテキストからSVGへ",
+    "display_name": "Quiver テキストから SVG（レガシー）",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18554,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Quiver AI を使用してテキストプロンプトから SVG を生成します。",
+    "display_name": "Quiver テキストから SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "SVG の生成に使用するモデル。"
+      },
+      "model_height": {
+        "name": "高さ"
+      },
+      "model_instructions": {
+        "name": "指示"
+      },
+      "model_presence_penalty": {
+        "name": "存在ペナルティ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_reasoning_effort": {
+        "name": "推論の労力"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_temperature": {
+        "name": "温度"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "幅"
       }
     },
     "outputs": {
@@ -22211,8 +22688,8 @@
   "SeedNode": {
     "display_name": "シード",
     "inputs": {
-      "fixed": {
-        "name": "生成後に制御"
+      "control_after_generate": {
+        "name": "生成後の制御"
       },
       "seed": {
         "name": "シード"
@@ -27352,6 +27829,79 @@
         "tooltip": "動画生成用のテキスト説明（最大2000文字）。"
       },
       "seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "開始フレームと任意のプロンプトから動画を生成します。出力は入力画像のアスペクト比を維持します。",
+    "display_name": "Vidu Q4 画像から動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "生成される動画の開始フレーム。アスペクト比は 1:5 ～ 5:1 である必要があります。"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_audio": {
+        "name": "音声"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "参照画像、任意の参照音声、プロンプトから動画を生成します。",
+    "display_name": "Vidu Q4 参照から動画生成",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル",
+        "tooltip": "動画生成に使用するモデル。"
+      },
+      "model_aspect_ratio": {
+        "name": "アスペクト比"
+      },
+      "model_audio": {
+        "name": "音声"
+      },
+      "model_duration": {
+        "name": "長さ"
+      },
+      "model_prompt": {
+        "name": "プロンプト"
+      },
+      "model_resolution": {
+        "name": "解像度"
+      },
+      "model_seed": {
         "name": "シード"
       }
     },

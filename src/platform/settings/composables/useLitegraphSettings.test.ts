@@ -6,8 +6,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 
 import { useLitegraphSettings } from './useLitegraphSettings'
 
@@ -73,7 +75,7 @@ describe('useLitegraphSettings', () => {
       const canvasStore = useCanvasStore()
       canvasStore.canvas = createCanvas(vi.fn())
       useSettingStore().settingValues['Comfy.Graph.CanvasInfo'] = canvasInfo
-      useAgentNodeSelectionStore().isActive = picking
+      canvasStore.isPickingNodes = picking
 
       scope.run(useLitegraphSettings)
       await nextTick()
@@ -86,19 +88,40 @@ describe('useLitegraphSettings', () => {
     const draw = vi.fn()
     const canvasStore = useCanvasStore()
     const settingStore = useSettingStore()
-    const agentNodeSelectionStore = useAgentNodeSelectionStore()
     canvasStore.canvas = createCanvas(draw)
     settingStore.settingValues['Comfy.Graph.CanvasInfo'] = true
     scope.run(useLitegraphSettings)
 
-    agentNodeSelectionStore.isActive = true
+    canvasStore.isPickingNodes = true
     await nextTick()
     settingStore.settingValues['Comfy.Graph.CanvasInfo'] = false
     await nextTick()
-    agentNodeSelectionStore.isActive = false
+    canvasStore.isPickingNodes = false
     await nextTick()
 
     expect(canvasStore.canvas.show_info).toBe(false)
     expect(draw).toHaveBeenCalledTimes(4)
   })
+
+  it.for([
+    { mode: LinkRenderType.HIDDEN_LINK, cleared: true },
+    { mode: LinkRenderType.SPLINE_LINK, cleared: false }
+  ])(
+    'clears the link selection only when links are hidden (mode $mode)',
+    async ({ mode, cleared }) => {
+      useCanvasStore().canvas = createCanvas(vi.fn())
+      const linkSelection = useLinkSelectionStore()
+      linkSelection.select({
+        links: [fromPartial<LLink>({ id: 1 })],
+        marquee: { x: 0, y: 0, width: 10, height: 10 },
+        anchorX: 0
+      })
+
+      scope.run(useLitegraphSettings)
+      useSettingStore().settingValues['Comfy.LinkRenderMode'] = mode
+      await nextTick()
+
+      expect(linkSelection.selection === null).toBe(cleared)
+    }
+  )
 })

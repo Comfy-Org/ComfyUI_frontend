@@ -1,4 +1,4 @@
-import { WORKSHOP_ROUTER_BASE_URL } from '../../../../config/workshop-env'
+import { WORKSHOP_ROUTER_BASE_URL } from '@/config/workshop-env'
 
 interface ReshootOutput {
   readonly id?: string

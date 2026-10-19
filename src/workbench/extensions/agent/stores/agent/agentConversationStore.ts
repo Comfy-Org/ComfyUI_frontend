@@ -1,5 +1,6 @@
+import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { toTurnId } from '../../schemas/agentApiSchema'
@@ -8,12 +9,30 @@ import type {
   AgentEventTransport
 } from '../../services/agent/agentEventTransport'
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../services/agent/agentMessageParts'
-import { createAssistantMessage } from '../../services/agent/agentMessageParts'
-import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import type {
+  AskUserResolution,
+  AssistantMessage
+} from '../../services/agent/agentMessageParts'
+import {
+  askIdOf,
+  createAssistantMessage,
+  isOpenAskPart,
+  isPendingAskPart,
+  retireAskParts,
+  settleResolution
+} from '../../services/agent/agentMessageParts'
+import {
+  normalizeAgentTranscript,
+  settleLiveMessage
+} from '../../services/agent/agentTranscript'
 import { createUndeliverableAskReporter } from '../../services/agent/undeliverableAskReporter'
-import type { UserAttachment } from '../../services/agent/agentTranscript'
+import type {
+  NormalizedAgentTranscript,
+  UserAttachment
+} from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
+import type { SkillReference } from '../../types/skillReference'
+import { parseSkillReferenceText } from '../../utils/skillReferenceText'
 
 export type { UserAttachment }
 
@@ -26,16 +45,40 @@ interface UserEntry {
   attachments?: UserAttachment[]
   tags?: string[]
   workflowReferences?: WorkflowReference[]
+  skillReference?: SkillReference
 }
 
 export type ConversationEntry = UserEntry | AssistantMessage
 
 interface BackgroundTurn {
+  threadId: string
   messageId: TurnId
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
+  skillReference?: SkillReference
   settled: boolean
+}
+
+interface ActiveTurnSlot {
+  origin: 'local' | 'snapshot' | 'background'
+  turnId: TurnId
+  index: number
+  threadId: string | null
+  message: AssistantMessage
+  transport: AgentEventTransport
+}
+
+/**
+ * PM-1658: how long an accepted answer waits for its `agent_ask_resolved`
+ * frame before the card is retired anyway. Generous, because the frame is the
+ * normal release and arrives in milliseconds; it exists only so a lost frame
+ * cannot leave the card disabled for the rest of the session.
+ */
+const ASK_RESOLUTION_GRACE_MS = 15_000
+
+function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
+  return part.type === 'tool' && part.name === 'load_skill'
 }
 
 export interface LiveTurn {
@@ -65,7 +108,7 @@ function anchorLocalParts(
       textOffset = 0
       continue
     }
-    if (part.type === 'runApproval') continue
+    if (isOpenAskPart(part)) continue
     localParts.push({ part, toolCount, textOffset })
   }
   return localParts
@@ -158,7 +201,18 @@ function finishWithPersistedParts(
   persistedParts: AssistantMessage['parts'] | undefined
 ): void {
   if (persistedParts === undefined) {
-    message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+    message.parts = message.parts.filter((part) => !isOpenAskPart(part))
+    for (const part of message.parts) {
+      if (!('state' in part) || part.state !== 'streaming') continue
+      if (part.type === 'tool') {
+        // A successful tool can still be waiting for canvas catch-up. Keep
+        // that transport-owned state live; only clamp calls that never
+        // received an outcome.
+        if (part.ok !== undefined) continue
+        part.ok = false
+      }
+      part.state = 'done'
+    }
     return
   }
   message.parts = interleaveLocalParts(
@@ -173,18 +227,22 @@ export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
     const messages = ref<AssistantMessage[]>([])
-    const activeTurnId = ref<TurnId | null>(null)
     const threadId = ref<string | null>(null)
     const userTexts = ref(new Map<TurnId, string>())
     const userAttachments = ref(new Map<TurnId, UserAttachment[]>())
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
+    const userSkillReferences = ref(new Map<TurnId, SkillReference>())
+    /**
+     * Skill names in the last loaded history; each load replaces it, and live
+     * turns never add to it. Marks when an opened conversation needs the
+     * saved-skill catalog its references are shown against.
+     */
+    const historySkillNames = shallowRef<readonly string[]>([])
     const attachmentNamesByThread = new Map<string, Map<string, string>>()
     const latestWorkflowId = ref<string>()
     const resolvedPaywallIds = ref(new Set<TurnId>())
-    let transport: AgentEventTransport | null = null
-    let activeTransportThreadId: string | null = null
-    let liveMessage: AssistantMessage | null = null
+    const activeSlot = shallowRef<ActiveTurnSlot | null>(null)
     // PM-1575: whether a newly-created transport should hold a tool-call's
     // chat "done" state back until canvas catch-up is confirmed (see
     // agentEventTransport.ts). Defaults to never deferring, so a caller that
@@ -214,14 +272,17 @@ export const useAgentConversationStore = defineStore(
     // has nothing left pending.
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = new Map<string, BackgroundTurn>()
+    let hydratedMessageIds = new Set<string>()
     let hydratedTurnIds = new Map<string, TurnId>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
+    const demotedSnapshotByStash = new Map<TurnId, TurnId>()
+    const restoredBackgroundMessageIds = new Set<TurnId>()
     const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
-    const activeIndex = ref(-1)
+    const activeTurnId = computed(() => activeSlot.value?.turnId ?? null)
 
     function recordApprovalShown(askId: string, shownAt: number): boolean {
       if (shownApprovalIds.has(askId)) return false
@@ -252,11 +313,11 @@ export const useAgentConversationStore = defineStore(
     }
 
     function replaceActive(message: AssistantMessage): void {
-      // PM-1575: looked up by id, not `activeIndex.value`. A turn's own
+      // PM-1575: looked up by id, not the active slot's index. A turn's own
       // transport keeps emitting after settle -- notifyCanvasCaughtUp() can
       // still land on it while a tool-call part is held pending canvas
       // catch-up (see settledActiveTransports below) -- and by then
-      // clearActive() has already reset activeIndex.value to -1, even though
+      // clearActive() has already released the active slot, even though
       // the settled message is still sitting in `messages` at its own slot.
       const index = messages.value.findIndex((m) => m.id === message.id)
       if (index >= 0) messages.value[index] = message
@@ -279,7 +340,11 @@ export const useAgentConversationStore = defineStore(
       tags?: string[],
       workflowReferences?: WorkflowReference[]
     ): void {
-      userTexts.value.set(turnId, text)
+      const prompt = parseSkillReferenceText(text, workflowReferences)
+      userTexts.value.set(turnId, prompt.text)
+      if (prompt.skillReference)
+        userSkillReferences.value.set(turnId, prompt.skillReference)
+      else userSkillReferences.value.delete(turnId)
       if (attachments !== undefined && attachments.length > 0) {
         userAttachments.value.set(turnId, attachments)
         rememberAttachmentNames(attachments)
@@ -287,7 +352,7 @@ export const useAgentConversationStore = defineStore(
       if (tags !== undefined && tags.length > 0)
         userTags.value.set(turnId, tags)
       if (workflowReferences !== undefined && workflowReferences.length > 0)
-        userWorkflowReferences.value.set(turnId, workflowReferences)
+        userWorkflowReferences.value.set(turnId, prompt.workflowReferences)
     }
 
     function setThreadId(id: string | null): void {
@@ -300,7 +365,7 @@ export const useAgentConversationStore = defineStore(
       text: string,
       parts: AssistantMessage['parts']
     ): void {
-      userTexts.value.set(turnId, text)
+      recordUser(turnId, text)
       const message = createAssistantMessage(turnId)
       message.streaming = false
       message.parts = parts
@@ -342,24 +407,119 @@ export const useAgentConversationStore = defineStore(
       return true
     }
 
-    function startTurn(turnId: TurnId): void {
-      if (transport) abortActiveTurn()
-      const message = createAssistantMessage(turnId)
-      liveMessage = message
-      activeTurnId.value = turnId
-      activeIndex.value = messages.value.push(message) - 1
-      activeTransportThreadId = threadId.value
-      transport = createAgentEventTransport(
-        message,
-        replaceActive,
-        () => canvasSyncGate(),
-        () => canvasSyncOutcomeCount(),
-        reportUndeliverableAskData
+    function retireAsk(
+      askId: string,
+      resolution: AskUserResolution,
+      owner?: string
+    ): void {
+      const key = threadKey(owner)
+      if (key === threadKey()) {
+        messages.value = messages.value.map((message) => {
+          const parts = retireAskParts(message.parts, askId, resolution)
+          return parts === message.parts ? message : { ...message, parts }
+        })
+        activeSlot.value?.transport.retireAskPart(askId, resolution)
+        for (const settledTransport of settledActiveTransports)
+          settledTransport.retireAskPart(askId, resolution)
+      }
+      for (const entry of backgroundTurns.values())
+        if (entry.threadId === key)
+          entry.transport.retireAskPart(askId, resolution)
+      const retired = retiredAsksFor(key)
+      retired.set(askId, settleResolution(retired.get(askId), resolution))
+      clearAskResolutionWatchdog(askId)
+      submittedAskAnswers.delete(askId)
+      setAskAnswering(askId, false)
+    }
+
+    const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
+
+    const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
+
+    function retiredAsksFor(owner?: string): Map<string, AskUserResolution> {
+      const key = threadKey(owner)
+      const retired =
+        retiredAsks.get(key) ?? new Map<string, AskUserResolution>()
+      retiredAsks.set(key, retired)
+      return retired
+    }
+
+    const submittedAskAnswers = new Map<string, AgentAnswerRequest>()
+
+    function recordAskAnswer(askId: string, answer: AgentAnswerRequest): void {
+      submittedAskAnswers.set(askId, answer)
+    }
+
+    function takeSubmittedAskAnswer(
+      askId: string
+    ): AgentAnswerRequest | undefined {
+      const answer = submittedAskAnswers.get(askId)
+      submittedAskAnswers.delete(askId)
+      return answer
+    }
+
+    const askResolutionWatchdogs = new Map<
+      string,
+      ReturnType<typeof setTimeout>
+    >()
+
+    function clearAskResolutionWatchdog(askId: string): void {
+      const timer = askResolutionWatchdogs.get(askId)
+      if (timer === undefined) return
+      clearTimeout(timer)
+      askResolutionWatchdogs.delete(askId)
+    }
+
+    const answeringAskIds = ref<ReadonlySet<string>>(new Set())
+
+    function setAskAnswering(askId: string, answering: boolean): void {
+      const next = new Set(answeringAskIds.value)
+      if (answering) next.add(askId)
+      else next.delete(askId)
+      answeringAskIds.value = next
+    }
+
+    function commitAsk(
+      askId: string,
+      owner: string,
+      committed: AskUserResolution
+    ): void {
+      if (!activeTurnOwnsAsk(askId) || owner !== threadKey()) {
+        retireAsk(askId, committed, owner)
+        return
+      }
+      clearAskResolutionWatchdog(askId)
+      askResolutionWatchdogs.set(
+        askId,
+        setTimeout(
+          () => retireAsk(askId, committed, owner),
+          ASK_RESOLUTION_GRACE_MS
+        )
       )
     }
 
+    function startTurn(turnId: TurnId): void {
+      if (activeSlot.value) abortActiveTurn()
+      const message = createAssistantMessage(turnId)
+      activeSlot.value = {
+        origin: 'local',
+        turnId,
+        index: messages.value.push(message) - 1,
+        threadId: threadId.value,
+        message,
+        transport: createAgentEventTransport(
+          message,
+          replaceActive,
+          () => canvasSyncGate(),
+          () => canvasSyncOutcomeCount(),
+          reportUndeliverableAskData
+        )
+      }
+    }
+
     function ingest(event: AgentChatEvent): void {
-      const activeTransport = transport
+      if (isRetiredAskReplay(event)) return
+      const activeTransport = activeSlot.value?.transport
       if (activeTransport && event.data.message_id === activeTurnId.value) {
         ingestActiveTurnEvent(event, activeTransport)
         return
@@ -378,6 +538,15 @@ export const useAgentConversationStore = defineStore(
       // every event except `agent_active_tab`, handled above.
       if (eventThreadId === undefined) return
       ingestBackgroundTurnEvent(event, eventThreadId)
+    }
+
+    function isRetiredAskReplay(event: AgentChatEvent): boolean {
+      return (
+        event.type === 'agent_ask' &&
+        retiredAsks
+          .get(threadKey(event.data.thread_id))
+          ?.has(event.data.ask_id) === true
+      )
     }
 
     /**
@@ -445,17 +614,20 @@ export const useAgentConversationStore = defineStore(
       eventThreadId: string | undefined
     ): void {
       if (eventThreadId === undefined || eventThreadId === threadId.value)
-        transport?.ingest(event)
-      else backgroundTurns.get(eventThreadId)?.transport.ingest(event)
+        activeSlot.value?.transport.ingest(event)
+      else soleLiveBackgroundTurn(eventThreadId)?.transport.ingest(event)
     }
 
     function ingestBackgroundTurnEvent(
       event: AgentChatEvent,
       eventThreadId: string
     ): void {
-      const entry = backgroundTurns.get(eventThreadId)
-      if (!entry || entry.messageId !== event.data.message_id) {
-        const eventMessageId = event.data.message_id
+      const eventMessageId = event.data.message_id
+      const entry =
+        eventMessageId === undefined
+          ? undefined
+          : backgroundTurns.get(eventMessageId)
+      if (!entry || entry.threadId !== eventThreadId) {
         const reason =
           eventMessageId === undefined
             ? undefined
@@ -487,7 +659,7 @@ export const useAgentConversationStore = defineStore(
      * pending.
      */
     function notifyCanvasCaughtUp(): void {
-      transport?.notifyCanvasCaughtUp()
+      activeSlot.value?.transport.notifyCanvasCaughtUp()
       for (const settledTransport of settledActiveTransports) {
         settledTransport.notifyCanvasCaughtUp()
         if (!settledTransport.hasPendingCanvasSync())
@@ -498,120 +670,259 @@ export const useAgentConversationStore = defineStore(
     }
 
     function abortActiveTurn(): void {
-      if (!transport) return
+      const slot = activeSlot.value
+      if (!slot) return
       rememberDepartedActiveTurn('no-live-turn')
-      transport.settle()
+      slot.transport.settle()
       // Not `settledActiveTransports`: an abort is not a natural completion
       // whose held parts might still catch up, so flush them to `done` and
       // cancel their timers now rather than leaving them reachable only by
       // their own STALE_AFTER_MS fallback (or, worse, orphaned).
-      transport.dispose()
+      slot.transport.dispose()
       clearActive()
     }
 
     function stashActiveTurn(): void {
-      if (!transport || liveMessage === null) return
-      if (threadId.value === null || activeTurnId.value === null) {
+      const slot = activeSlot.value
+      if (!slot) return
+      if (slot.threadId === null) {
         abortActiveTurn()
         return
       }
-      backgroundTurns.set(threadId.value, {
-        messageId: activeTurnId.value,
-        message: liveMessage,
-        transport,
-        userText: userTexts.value.get(liveMessage.id),
+      backgroundTurns.set(slot.turnId, {
+        threadId: slot.threadId,
+        messageId: slot.turnId,
+        message: slot.message,
+        transport: slot.transport,
+        userText: userTexts.value.get(slot.message.id),
+        skillReference: userSkillReferences.value.get(slot.message.id),
         settled: false
       })
       clearActive()
     }
 
     function resumeBackgroundTurn(): void {
-      if (threadId.value === null) return
-      const entry = backgroundTurns.get(threadId.value)
-      if (!entry) return
-      backgroundTurns.delete(threadId.value)
+      const resumable = backgroundTurnToResume()
+      if (!resumable) return
+      const { entry, resumedThreadId } = resumable
+      backgroundTurns.delete(entry.messageId)
+      replaceSnapshotWithBackgroundTurn(entry, resumedThreadId)
+    }
+
+    function backgroundTurnToResume():
+      | { entry: BackgroundTurn; resumedThreadId: string }
+      | undefined {
+      const resumedThreadId = threadId.value
+      if (resumedThreadId === null) return undefined
+      const entry = latestBackgroundTurn(resumedThreadId)
+      if (!entry) return undefined
+      // A live turn from the thread we are leaving must become a background
+      // turn before the selected thread resumes. A newer turn on the selected
+      // thread, however, already owns the slot; replacing it would orphan its
+      // transport, so leave the older stash routable in the background.
+      const slot = activeSlot.value
+      if (slot !== null && slot.origin !== 'snapshot') {
+        if (slot.threadId === resumedThreadId) return undefined
+        stashActiveTurn()
+      }
+      return { entry, resumedThreadId }
+    }
+
+    function replaceSnapshotWithBackgroundTurn(
+      entry: BackgroundTurn,
+      resumedThreadId: string
+    ): void {
+      // A snapshot the stash could not be matched to installed its own live
+      // row, and this stash is about to take the slot. Ownership matching
+      // cannot close that gap alone: a multi-row turn's acknowledgement row
+      // id, its newest persisted row id, and its `turn_id` are three
+      // different values, and `pending` carries the last two while the stash
+      // carries the first. Settling what we replace is what makes the outcome
+      // independent of which of them coincide -- left alone, that row's
+      // transport is unreachable and it streams for good.
+      const unmatchedSnapshotId = abortUnmatchedSnapshot()
       // The stash keys a turn by its message_id while hydrate() re-keys the same
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
-      const persisted = messages.value.find(
-        (message) => message.id === hydratedTurnIds.get(entry.messageId)
-      )
-      if (persisted && !persisted.streaming) {
-        rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
-        // The persisted, authoritative copy is already on screen. This
-        // entry's transport is now discarded for good, so flush anything it
-        // is still holding rather than leaving it unreachable until its own
-        // STALE_AFTER_MS fallback.
-        entry.transport.dispose()
-        return
-      }
+      const persistedMessageId = hydratedTurnIds.get(entry.messageId)
       const kept = messages.value.filter(
         (message) =>
-          message.id !== entry.message.id && message.id !== persisted?.id
+          message.id !== entry.message.id && message.id !== unmatchedSnapshotId
       )
-      removeHydratedCopy(entry, kept)
-      if (persisted) entry.message.id = persisted.id
+      // Called before the branch, not inside it: it pops the duplicate row and
+      // its user text whether or not this entry turns out to be settled.
+      const replacedIndex = removeHydratedCopy(entry, kept)
+      if (retirePersistedBackgroundTurn(entry, replacedIndex !== undefined))
+        return
+      if (persistedMessageId !== undefined)
+        entry.message.id = persistedMessageId
+      restoreBackgroundUserText(entry)
+      const index = replacedIndex ?? kept.length
+      kept.splice(index, 0, entry.message)
+      restoredBackgroundMessageIds.add(entry.messageId)
+      messages.value = kept
+      if (entry.settled) {
+        retireBackgroundTurn(entry)
+        return
+      }
+      claimSlotForBackgroundTurn(entry, index, resumedThreadId)
+    }
+
+    function abortUnmatchedSnapshot(): string | undefined {
+      const slot = activeSlot.value
+      if (slot?.origin !== 'snapshot') return undefined
+      const snapshotId = slot.message.id
+      abortActiveTurn()
+      userTexts.value.delete(snapshotId)
+      return snapshotId
+    }
+
+    function claimSlotForBackgroundTurn(
+      entry: BackgroundTurn,
+      index: number,
+      resumedThreadId: string
+    ): void {
+      activeSlot.value = {
+        origin: 'background',
+        turnId: entry.messageId,
+        index,
+        threadId: resumedThreadId,
+        message: entry.message,
+        transport: entry.transport
+      }
+    }
+
+    /**
+     * Whether the hydrated transcript already shows this settled turn, so the
+     * entry has nothing left to contribute but the transport it is about to
+     * hand over.
+     */
+    function persistedCopyOutlivesEntry(
+      entry: BackgroundTurn,
+      poppedHydratedCopy: boolean
+    ): boolean {
+      return (
+        entry.settled &&
+        !poppedHydratedCopy &&
+        hydratedMessageIds.has(entry.messageId)
+      )
+    }
+
+    function retirePersistedBackgroundTurn(
+      entry: BackgroundTurn,
+      poppedHydratedCopy: boolean
+    ): boolean {
+      if (!persistedCopyOutlivesEntry(entry, poppedHydratedCopy)) return false
+      retireBackgroundTurn(entry)
+      return true
+    }
+
+    /**
+     * PM-1575: flush what the discarded transport still holds rather than
+     * leaving it reachable only by its own STALE_AFTER_MS fallback.
+     */
+    function retireBackgroundTurn(entry: BackgroundTurn): void {
+      rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
+      entry.transport.dispose()
+    }
+
+    function latestBackgroundTurn(
+      backgroundThreadId: string
+    ): BackgroundTurn | undefined {
+      let latest: BackgroundTurn | undefined
+      for (const entry of backgroundTurns.values()) {
+        if (entry.threadId === backgroundThreadId) latest = entry
+      }
+      return latest
+    }
+
+    /**
+     * `agent_active_tab` is the one event whose `message_id` is optional, so an
+     * unkeyed frame on a thread holding several live turns names no sender.
+     * Insertion order is not that identity, and the frame is not inert on the
+     * turn it lands in: `handleActiveTabEvent` closes the open text part, so
+     * the next delta starts a second one, and it clears the thinking
+     * indicator. A guess therefore fragments an unrelated live transcript and
+     * misfiles the link. Dropping costs one tabLink on a thread off screen.
+     */
+    function soleLiveBackgroundTurn(
+      backgroundThreadId: string
+    ): BackgroundTurn | undefined {
+      let sole: BackgroundTurn | undefined
+      for (const entry of backgroundTurns.values()) {
+        if (entry.threadId !== backgroundThreadId || entry.settled) continue
+        if (sole) return undefined
+        sole = entry
+      }
+      return sole
+    }
+
+    function restoreBackgroundUserText(entry: BackgroundTurn): void {
       if (
         entry.userText !== undefined &&
         !userTexts.value.has(entry.message.id)
-      )
+      ) {
         userTexts.value.set(entry.message.id, entry.userText)
-      const index = kept.push(entry.message) - 1
-      messages.value = kept
-      if (entry.settled) {
-        rememberDepartedTurn(threadId.value, entry.messageId, 'settled-turn')
-        // PM-1575: this settled turn is kept on screen but not reactivated --
-        // its transport is discarded for good right after this, same as the
-        // hydrated-copy-dropped branch above, so flush anything it is still
-        // holding rather than leaving it unreachable until its own
-        // STALE_AFTER_MS fallback.
-        entry.transport.dispose()
-        return
+        if (entry.skillReference)
+          userSkillReferences.value.set(entry.message.id, entry.skillReference)
       }
-      activeTurnId.value = entry.messageId
-      activeIndex.value = index
-      activeTransportThreadId = threadId.value
-      transport = entry.transport
-      liveMessage = entry.message
     }
 
     function removeHydratedCopy(
       entry: BackgroundTurn,
       kept: AssistantMessage[]
-    ): boolean {
-      if (kept.length !== messages.value.length) return false
+    ): number | undefined {
+      const demotedSnapshotId = demotedSnapshotByStash.get(entry.messageId)
+      demotedSnapshotByStash.delete(entry.messageId)
+      if (demotedSnapshotId !== undefined) {
+        const index = kept.findIndex(
+          (message) => message.id === demotedSnapshotId
+        )
+        if (index !== -1) {
+          kept.splice(index, 1)
+          userTexts.value.delete(demotedSnapshotId)
+          return index
+        }
+      }
+      if (kept.length !== messages.value.length) return undefined
       const last = kept.at(-1)
-      if (!last || hydratedAssistantTurnIds.has(last.id)) return false
+      if (
+        !last ||
+        hydratedAssistantTurnIds.has(last.id) ||
+        restoredBackgroundMessageIds.has(last.id)
+      )
+        return undefined
       if (
         entry.userText === undefined ||
         userTexts.value.get(last.id) !== entry.userText
       )
-        return false
+        return undefined
+      const index = kept.length - 1
       kept.pop()
       userTexts.value.delete(last.id)
-      return true
+      return index
     }
 
     function settleBackgroundTurn(turnId: string): TurnId | null {
-      for (const [key, entry] of backgroundTurns) {
-        if (entry.messageId !== turnId) continue
-        rememberDepartedTurn(key, entry.messageId, 'settled-turn')
+      const entry = backgroundTurns.get(turnId)
+      if (entry) {
+        rememberDepartedTurn(entry.threadId, entry.messageId, 'settled-turn')
         entry.transport.settle()
         // This turn is being dropped from the map here, unlike the
         // agent_message_done path in ingestBackgroundTurnEvent -- nothing
         // will keep it reachable afterwards, so flush its held parts now.
         entry.transport.dispose()
-        backgroundTurns.delete(key)
+        backgroundTurns.delete(entry.messageId)
         return entry.messageId
       }
       return null
     }
 
     function dropBackgroundTurns(): void {
-      for (const [backgroundThreadId, entry] of backgroundTurns) {
+      for (const entry of backgroundTurns.values()) {
         rememberDepartedTurn(
-          backgroundThreadId,
+          entry.threadId,
           entry.messageId,
           entry.settled ? 'settled-turn' : 'no-live-turn'
         )
@@ -622,33 +933,62 @@ export const useAgentConversationStore = defineStore(
     }
 
     function liveTurns(): LiveTurn[] {
-      const background = Array.from(backgroundTurns)
-        .filter(([, entry]) => !entry.settled)
-        .map(([key, entry]) => ({ threadId: key, messageId: entry.messageId }))
-      if (!transport || threadId.value === null || activeTurnId.value === null)
-        return background
+      const background = Array.from(backgroundTurns.values())
+        .filter((entry) => !entry.settled)
+        .map((entry) => ({
+          threadId: entry.threadId,
+          messageId: entry.messageId
+        }))
+      const slot = activeSlot.value
+      if (slot === null || slot.threadId === null) return background
       return [
-        { threadId: threadId.value, messageId: activeTurnId.value },
+        { threadId: slot.threadId, messageId: slot.turnId },
         ...background
       ]
+    }
+
+    function liveTurnSkillState(
+      turn: LiveTurn
+    ): Pick<BackgroundTurn, 'message' | 'skillReference'> | undefined {
+      const slot = activeSlot.value
+      if (slot?.threadId === turn.threadId && slot.turnId === turn.messageId)
+        return {
+          message: slot.message,
+          skillReference: userSkillReferences.value.get(slot.message.id)
+        }
+      const entry = backgroundTurns.get(turn.messageId)
+      return entry?.threadId === turn.threadId && !entry.settled
+        ? entry
+        : undefined
+    }
+
+    function turnUsesSkill(turn: LiveTurn): boolean {
+      const live = liveTurnSkillState(turn)
+      return (
+        live !== undefined &&
+        (live.skillReference !== undefined ||
+          live.message.parts.some(isLoadSkillPart))
+      )
     }
 
     function settleTurn(
       turn: LiveTurn,
       persistedParts: AssistantMessage['parts'] | undefined
     ): void {
+      const slot = activeSlot.value
       const isActive =
-        turn.threadId === threadId.value &&
-        turn.messageId === activeTurnId.value
-      if (isActive && transport && liveMessage) {
-        finishWithPersistedParts(liveMessage, persistedParts)
+        slot !== null &&
+        turn.threadId === slot.threadId &&
+        turn.messageId === slot.turnId
+      if (isActive) {
+        finishWithPersistedParts(slot.message, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
-        transport.settle()
-        transport.dispose()
+        slot.transport.settle()
+        slot.transport.dispose()
         clearActive()
         return
       }
-      const entry = backgroundTurns.get(turn.threadId)
+      const entry = backgroundTurns.get(turn.messageId)
       if (!entry || entry.messageId !== turn.messageId || entry.settled) return
       finishWithPersistedParts(entry.message, persistedParts)
       entry.transport.settle()
@@ -675,17 +1015,13 @@ export const useAgentConversationStore = defineStore(
     function rememberDepartedActiveTurn(
       reason: 'no-live-turn' | 'settled-turn'
     ): void {
-      if (activeTransportThreadId === null || activeTurnId.value === null)
-        return
-      rememberDepartedTurn(activeTransportThreadId, activeTurnId.value, reason)
+      const slot = activeSlot.value
+      if (slot === null || slot.threadId === null) return
+      rememberDepartedTurn(slot.threadId, slot.turnId, reason)
     }
 
     function clearActive(): void {
-      transport = null
-      activeTransportThreadId = null
-      liveMessage = null
-      activeIndex.value = -1
-      activeTurnId.value = null
+      activeSlot.value = null
     }
 
     // PM-1575: reset() and hydrate() both discard the active transport (if
@@ -695,7 +1031,7 @@ export const useAgentConversationStore = defineStore(
     // and write a stale snapshot back over transcript content hydrate() has
     // since replaced under the same turn id.
     function disposeActiveAndSettledTransports(): void {
-      transport?.dispose()
+      activeSlot.value?.transport.dispose()
       for (const settledTransport of settledActiveTransports)
         settledTransport.dispose()
       settledActiveTransports.clear()
@@ -716,37 +1052,73 @@ export const useAgentConversationStore = defineStore(
       userTexts.value = new Map()
       userTags.value = new Map()
       userWorkflowReferences.value = new Map()
+      userSkillReferences.value = new Map()
+      historySkillNames.value = []
       latestWorkflowId.value = undefined
       resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
       attachmentNamesByThread.clear()
       threadId.value = null
       forgetAllApprovals()
+      hydratedMessageIds = new Set()
       hydratedTurnIds = new Map()
       hydratedAssistantTurnIds = new Set()
+      demotedSnapshotByStash.clear()
+      restoredBackgroundMessageIds.clear()
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
       clearActive()
     }
 
+    function reapplyRetiredAsks(
+      transcript: ReturnType<typeof normalizeAgentTranscript>
+    ): void {
+      const retired = retiredAsksFor()
+      if (retired.size === 0) return
+      const named = new Set(
+        transcript.messages.flatMap((message) =>
+          message.parts.flatMap((part) => askIdOf(part) ?? [])
+        )
+      )
+      for (const askId of retired.keys())
+        if (!named.has(askId)) retired.delete(askId)
+      for (const message of transcript.messages)
+        for (const [askId, resolution] of retired)
+          message.parts = retireAskParts(message.parts, askId, resolution)
+    }
+
     function hydrate(history: AgentMessages): void {
-      if (transport) rememberDepartedActiveTurn('no-live-turn')
+      if (activeSlot.value) rememberDepartedActiveTurn('no-live-turn')
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(history)
+      // Only the card is retired, never the turn: answering it is what lets
+      // the turn RESUME, so it is still live and still needs a transport, or
+      // every frame of the rest of it is dropped and the row stays "Working…"
+      // with nothing able to settle it.
+      reapplyRetiredAsks(transcript)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
       userWorkflowReferences.value = transcript.userWorkflowReferences
+      userSkillReferences.value = transcript.userSkillReferences
+      historySkillNames.value = [
+        ...new Set(
+          [...transcript.userSkillReferences.values()].map(({ name }) => name)
+        )
+      ]
       latestWorkflowId.value = transcript.latestWorkflowId
+      hydratedMessageIds = transcript.rowIds
       hydratedTurnIds = new Map(
         history
           .filter((row) => row.role === 'assistant')
           .map((row) => [row.id, toTurnId(row.turn_id)])
       )
       hydratedAssistantTurnIds = transcript.assistantTurnIds
+      demotedSnapshotByStash.clear()
+      restoredBackgroundMessageIds.clear()
       dropAttachmentPreviews()
       const rememberedNames =
         threadId.value === null
@@ -764,26 +1136,59 @@ export const useAgentConversationStore = defineStore(
           })
         ])
       )
-      const background =
-        threadId.value === null
-          ? undefined
-          : backgroundTurns.get(threadId.value)
-      if (
-        transcript.pending &&
-        background?.messageId !== transcript.pending.messageId
-      ) {
-        liveMessage = transcript.pending.message
-        activeTurnId.value = transcript.pending.messageId
-        activeIndex.value = messages.value.indexOf(transcript.pending.message)
-        activeTransportThreadId = threadId.value
-        transport = createAgentEventTransport(
-          transcript.pending.message,
-          replaceActive,
-          () => canvasSyncGate(),
-          () => canvasSyncOutcomeCount(),
-          reportUndeliverableAskData
-        )
+      const pending = unstashedLiveTurn(transcript)
+      if (pending) {
+        activeSlot.value = {
+          origin: 'snapshot',
+          turnId: pending.messageId,
+          index: messages.value.indexOf(pending.message),
+          threadId: threadId.value,
+          message: pending.message,
+          transport: createAgentEventTransport(
+            pending.message,
+            replaceActive,
+            () => canvasSyncGate(),
+            () => canvasSyncOutcomeCount(),
+            reportUndeliverableAskData
+          )
+        }
       }
+    }
+
+    /**
+     * The transcript's live turn, unless a stashed background turn already
+     * owns that same turn. The stash kept the turn's parts and never stopped
+     * receiving frames, so letting the server's snapshot take the active slot
+     * would route the rest of the stream to the wrong copy and leave
+     * `resumeBackgroundTurn` restoring an entry that never saw its own
+     * `agent_message_done` -- a turn stuck running for good.
+     *
+     * Demoted rather than merely skipped: the snapshot stays on screen when
+     * its row id differs from the stash's, and a second live-looking row is
+     * exactly what the caller is hydrating to get rid of. No lookup at resume
+     * can pair the two, since the stash is keyed by row id and the snapshot
+     * by `turn_id`; `removeHydratedCopy`'s tail branch cannot either, because
+     * a snapshot's id is always in `hydratedAssistantTurnIds`. So the pairing
+     * is recorded here, at the one point ownership is established, as
+     * `demotedSnapshotByStash`. The resume
+     * reads it to drop the snapshot and seat the stash at that same index,
+     * leaving one row where a duplicate used to render until settlement.
+     */
+    function unstashedLiveTurn(
+      transcript: NormalizedAgentTranscript
+    ): NormalizedAgentTranscript['pending'] {
+      const pending = transcript.pending
+      if (!pending) return undefined
+      const owner = [...backgroundTurns.values()].find(
+        (stashed) =>
+          stashed.threadId === threadId.value &&
+          (stashed.messageId === pending.messageId ||
+            stashed.message.id === pending.message.id)
+      )
+      if (!owner) return pending
+      demotedSnapshotByStash.set(owner.messageId, pending.message.id)
+      settleLiveMessage(pending.message)
+      return undefined
     }
 
     const entries = computed<ConversationEntry[]>(() =>
@@ -800,6 +1205,7 @@ export const useAgentConversationStore = defineStore(
             }
           : recordedMessage
         const text = userTexts.value.get(message.id)
+        const skillReference = userSkillReferences.value.get(message.id)
         const assistantEntries =
           isPaywallResolved && message.parts.length === 0 ? [] : [message]
         if (text === undefined) return assistantEntries
@@ -810,7 +1216,8 @@ export const useAgentConversationStore = defineStore(
             text,
             attachments: userAttachments.value.get(message.id),
             tags: userTags.value.get(message.id),
-            workflowReferences: userWorkflowReferences.value.get(message.id)
+            workflowReferences: userWorkflowReferences.value.get(message.id),
+            ...(skillReference ? { skillReference } : {})
           },
           ...assistantEntries
         ]
@@ -818,8 +1225,22 @@ export const useAgentConversationStore = defineStore(
     )
 
     const activeMessage = computed(() =>
-      activeIndex.value >= 0 ? messages.value[activeIndex.value] : null
+      activeSlot.value === null ? null : messages.value[activeSlot.value.index]
     )
+    /**
+     * PM-1658: whether the live turn still owns this ask, i.e. whether an
+     * `agent_ask_resolved` frame for it has a transport to route through.
+     * False once a socket drop or a newer turn has detached the message the
+     * card sits on — which is when a caller has to resolve it itself.
+     */
+    function activeTurnOwnsAsk(askId: string): boolean {
+      return (
+        activeMessage.value?.parts.some(
+          (part) => isPendingAskPart(part) && part.askId === askId
+        ) ?? false
+      )
+    }
+
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
     const status = computed<ConversationStatus>(() => {
@@ -847,6 +1268,12 @@ export const useAgentConversationStore = defineStore(
       recordPaywall,
       resolvePaywalls,
       claimPaywallImpression,
+      answeringAskIds,
+      setAskAnswering,
+      recordAskAnswer,
+      takeSubmittedAskAnswer,
+      commitAsk,
+      retireAsk,
       startTurn,
       ingest,
       setCanvasSyncGate,
@@ -857,6 +1284,8 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      turnUsesSkill,
+      historySkillNames,
       settleTurn,
       reset,
       hydrate

@@ -2766,6 +2766,41 @@
       }
     }
   },
+  "CameraAngle": {
+    "description": "Choisissez un angle de caméra autour d’un sujet avec un aperçu 3D. Produit un camera_info pour les nœuds 3D et une description de plan en langage clair pour les prompts.",
+    "display_name": "Composer un prompt d’angle de caméra",
+    "inputs": {
+      "horizontal_angle": {
+        "name": "horizontal_angle",
+        "tooltip": "Azimut autour du sujet en degrés. 0 correspond à l’avant, 90 au côté droit, 180 à l’arrière."
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image de référence facultative affichée sur la face avant du cube du sujet dans l’aperçu 3D."
+      },
+      "vertical_angle": {
+        "name": "vertical_angle",
+        "tooltip": "Élévation en degrés. Une valeur négative regarde vers le haut depuis le dessous, une valeur positive regarde vers le bas depuis le dessus."
+      },
+      "view": {
+        "name": "view"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Zoom de l’objectif sur le sujet : 0 correspond à un plan large, 10 à un gros plan. Transmis dans camera_info.zoom."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "1": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Canny": {
     "display_name": "Canny",
     "inputs": {
@@ -2900,6 +2935,27 @@
       "start_sigma": {
         "name": "sigma_début",
         "tooltip": "Premier sigma pour lequel ces options seront actives."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalUpscaleNode": {
+    "description": "Agrandit une image avec Crystal Upscaler de Clarity AI, un outil d’agrandissement haute fidélité qui reste fidèle à l’original et restaure les visages, la peau et les textures fines. Sortie maximale : 100 mégapixels.",
+    "display_name": "Agrandissement Crystal par Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_creativity": {
+        "name": "créativité"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -4078,9 +4134,12 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Construit une camera_info. Le mode 'orbit' vise avec les angles de lacet/tangage/distance autour de la cible ; 'look_at' place la caméra à une position dans l'espace mondial. Les coordonnées sont dans l'espace mondial du spectateur (main droite, Y vers le haut).",
+    "description": "Crée un camera_info. Le mode « orbit » vise la cible avec lacet/inclinaison/distance autour d’elle ; « look_at » place la caméra à une position du monde. Les coordonnées correspondent à l’espace monde du visualiseur (repère droitier, axe Y vers le haut).",
     "display_name": "Créer des informations de caméra",
     "inputs": {
+      "camera_info_state": {
+        "name": "camera_info_state"
+      },
       "camera_type": {
         "name": "camera_type",
         "tooltip": "Projection utilisée par Render Splat : perspective (raccourcissement) ou orthographique (parallèle)."
@@ -4860,7 +4919,7 @@
       },
       "language_code": {
         "name": "language_code",
-        "tooltip": "Code de langue ISO-639-1 ou ISO-639-3 (ex. : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+        "tooltip": "Code de langue ISO 639-1 (p. ex., « en », « es », « ja »). Laissez vide pour la détection automatique."
       },
       "model": {
         "name": "model",
@@ -4930,7 +4989,7 @@
       },
       "language_code": {
         "name": "code langue",
-        "tooltip": "Code langue ISO-639-1 ou ISO-639-3 (ex : 'en', 'es', 'fra'). Laisser vide pour une détection automatique."
+        "tooltip": "Code de langue ISO 639-1 (p. ex., « en », « es », « ja »). Laissez vide pour la détection automatique."
       },
       "model": {
         "name": "modèle",
@@ -4938,15 +4997,6 @@
       },
       "model_similarity_boost": {
         "name": "augmentation de similarité"
-      },
-      "model_speed": {
-        "name": "vitesse"
-      },
-      "model_style": {
-        "name": "style"
-      },
-      "model_use_speaker_boost": {
-        "name": "utiliser le speaker boost"
       },
       "output_format": {
         "name": "format de sortie",
@@ -5834,6 +5884,52 @@
       },
       "width": {
         "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3ImageNode": {
+    "description": "Génère une image avec FLUX 3 à partir d’un prompt, ou modifie et combine jusqu’à 10 images de référence. Faites référence aux images dans le prompt en tant qu’image 1, image 2, et ainsi de suite.",
+    "display_name": "Image Flux 3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "« auto » suit la première image de référence ou choisit un ratio à partir du prompt."
+      },
+      "bounding_boxes": {
+        "name": "bounding_boxes",
+        "tooltip": "Boîtes facultatives provenant de Créer des boîtes englobantes, qui placent des objets ou du texte dans la sortie. Les positions sont relatives au canevas ; utilisez donc le ratio de la sortie."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "grounding": {
+        "name": "grounding",
+        "tooltip": "Permet au modèle d’effectuer des recherches sur le prompt sur le Web et dans les images avant de générer."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence facultatives, jusqu’à 10 au total, d’au moins 256x256 pixels chacune."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ce qu’il faut générer ou la modification à effectuer. Le prompt est interprété et développé avant la génération."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Taille de sortie selon le ratio choisi : 0.75K correspond à environ 0,6 mégapixel, 1K à 1 MP, 1.5K à 2,4 MP, 2K à 4,2 MP, 4K à 16,8 MP."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "Tolérance de modération ; 0 est le niveau le plus strict."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Graine permettant de déterminer si le nœud doit être réexécuté ; FLUX 3 choisit sa propre graine, les résultats réels sont donc non déterministes quelle que soit cette valeur."
       }
     },
     "outputs": {
@@ -6803,7 +6899,7 @@
   },
   "GeminiNanoBanana2V2": {
     "description": "Générez ou modifiez des images de manière synchrone via l'API Google Vertex.",
-    "display_name": "Nano Banana 2",
+    "display_name": "Nano Banana 2.1",
     "inputs": {
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -6853,7 +6949,7 @@
       },
       "2": {
         "name": "image de réflexion",
-        "tooltip": "Première image issue du processus de réflexion du modèle. Disponible uniquement avec le niveau de réflexion ÉLEVÉ et la modalité IMAGE+TEXTE."
+        "tooltip": "Première image issue du processus de réflexion du modèle. Disponible uniquement avec la modalité IMAGE+TEXT."
       }
     }
   },
@@ -7434,7 +7530,7 @@
     "inputs": {
       "aspect_ratio": {
         "name": "rapport d'aspect",
-        "tooltip": "Le rapport d'aspect de la vidéo générée."
+        "tooltip": "Ratio de la vidéo de sortie. Ignoré lorsqu’une image d’entrée est fournie ; la vidéo reprend le ratio de l’image."
       },
       "control_after_generate": {
         "name": "contrôle après génération"
@@ -7453,11 +7549,11 @@
       },
       "prompt": {
         "name": "invite",
-        "tooltip": "Description textuelle de la vidéo souhaitée. Facultative pour grok-imagine-video-1.5 lorsqu’une image d’entrée est fournie."
+        "tooltip": "Description textuelle de la vidéo souhaitée. Facultatif pour les modèles grok-imagine-video-1.5 lorsqu’une image d’entrée est fournie."
       },
       "resolution": {
         "name": "résolution",
-        "tooltip": "La résolution de la vidéo de sortie. Le 1080p est uniquement disponible pour grok-imagine-video-1.5."
+        "tooltip": "Résolution de la vidéo de sortie. Le 1080p n’est pas disponible pour grok-imagine-video."
       },
       "seed": {
         "name": "graine",
@@ -7759,6 +7855,67 @@
       },
       "1": {
         "name": "aperçu",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenImageToVideoNode": {
+    "description": "Anime une image en vidéo avec des dialogues et du son synchronisés à l’aide de HeyGen Video 1.0. L’image est utilisée comme première image.",
+    "display_name": "HeyGen Video 1.0 Image vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenReferenceToVideoNode": {
+    "description": "Génère une vidéo avec des dialogues et du son synchronisés à partir d’une invite textuelle à l’aide de HeyGen Video 1.0. Connectez éventuellement jusqu’à 12 images, vidéos et extraits audio de référence, et mentionnez-les dans l’invite sous la forme {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "display_name": "HeyGen Video 1.0 Référence vers vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "model_aspect_ratio": {
+        "name": "rapport_largeur_hauteur"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8376,6 +8533,42 @@
       }
     }
   },
+  "IdeogramEditApi": {
+    "description": "Modifie ou combine jusqu’à 5 images selon une invite textuelle à l’aide d’Ideogram 4.5. Effectue un nouveau rendu de l’image entière et peut modifier sa taille ou son rapport largeur/hauteur ; utilisez Ideogram 4.5 Modification précise pour que les pixels non modifiés restent inchangés.",
+    "display_name": "Ideogram 4.5 Modifier",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_size": {
+        "name": "taille"
+      },
+      "model_width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramPImage": {
     "description": "Génère des images à l'aide de P-Image, le modèle texte-vers-image rapide d'Ideogram. Excellente typographie et photoréalisme ; prend en charge les légendes JSON structurées Ideogram 4.0 pour un texte, des couleurs et une mise en page exacts.",
     "display_name": "Ideogram & Pruna P-Image",
@@ -8415,6 +8608,70 @@
       "1": {
         "name": "final_prompt",
         "tooltip": "Le prompt à partir duquel l'image a réellement été générée (la légende structurée réécrite si prompt_upsampling a été utilisé, sinon votre prompt). Réutilisez-le avec prompt_upsampling sur OFF et la même graine pour reproduire cette image."
+      }
+    }
+  },
+  "IdeogramPreciseEditApi": {
+    "description": "Modifie une image selon une invite textuelle à l’aide de la modification précise d’Ideogram 4.5 : seuls les éléments demandés par l’invite changent, les pixels non modifiés restent identiques et la sortie conserve la taille de l’image 1 (les images de plus de ~4 MP sont d’abord réduites). Accepte jusqu’à 4 images de référence.",
+    "display_name": "Ideogram 4.5 Modification précise",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramTextToImageApi": {
+    "description": "Génère des images à partir d’une invite textuelle à l’aide d’Ideogram 4.5.",
+    "display_name": "Ideogram 4.5 Texte vers image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_magic_prompt": {
+        "name": "magic_prompt"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_quality": {
+        "name": "qualité"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_size": {
+        "name": "taille"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "final_prompt",
+        "tooltip": "La légende structurée à partir de laquelle l’image a été générée. Renvoyez-la avec magic_prompt défini sur « off » et la même graine pour reproduire l’image."
       }
     }
   },
@@ -10166,6 +10423,36 @@
       }
     }
   },
+  "KlingTryOnNode": {
+    "description": "Habille une personne avec un vêtement. Le résultat a les mêmes dimensions que l’image de la personne, avec un maximum de 2048px sur le côté le plus long.",
+    "display_name": "Essayage virtuel Kling",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "garment_image": {
+        "name": "garment_image",
+        "tooltip": "Le vêtement à mettre : photo de produit, vêtement à plat, mannequin ou photo portée. Une photo portée peut reprendre le reste de cette tenue. Vêtements uniquement ; les chaussures, sacs et accessoires ne sont pas pris en charge."
+      },
+      "keep_pose": {
+        "name": "keep_pose",
+        "tooltip": "Désactivez cette option pour permettre à la pose de changer afin de mieux présenter la tenue."
+      },
+      "person_image": {
+        "name": "person_image",
+        "tooltip": "Photo d’une seule personne, idéalement de face ou de trois quarts. Les images dont un côté dépasse 2048px sont d’abord réduites."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "La seed détermine si le nœud doit être réexécuté ; les résultats ne sont pas déterministes, quelle que soit la seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingVideoNode": {
     "description": "Générez des vidéos avec Kling V3. Prend en charge le texte-vers-vidéo et l’image-vers-vidéo avec storyboard multi-invite optionnel et génération audio.",
     "display_name": "Kling 3.0 Vidéo",
@@ -11124,11 +11411,19 @@
   "LatentApplyOperationCFG": {
     "display_name": "LatentApplyOperationCFG",
     "inputs": {
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Arrête d’appliquer l’opération à cette fraction du programme de débruitage du modèle. 1 correspond à la fin."
+      },
       "model": {
         "name": "model"
       },
       "operation": {
         "name": "operation"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Commence à appliquer l’opération à cette fraction du programme de débruitage du modèle. 0 correspond au début."
       }
     },
     "outputs": {
@@ -11363,6 +11658,24 @@
       },
       "samples": {
         "name": "échantillons"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LatentOperationBlend": {
+    "description": "Mélange l’intégralité du latent vers le latent de référence, en redimensionnant la référence avec une interpolation au plus proche voisin si nécessaire.",
+    "display_name": "Fusion d’opérations latentes",
+    "inputs": {
+      "reference": {
+        "name": "référence"
+      },
+      "strength": {
+        "name": "intensité",
+        "tooltip": "0 laisse le latent inchangé ; 1 correspond au latent de référence redimensionné."
       }
     },
     "outputs": {
@@ -11772,6 +12085,80 @@
     "inputs": {
       "latent": {
         "name": "latent"
+      }
+    }
+  },
+  "LoadLoraModel": {
+    "description": "Appliquez une pile de LoRA à un modèle de diffusion. Ajoutez une ligne par LoRA ; chaque ligne sélectionne un fichier LoRA et son intensité.",
+    "display_name": "Charger LoRA (modèle)",
+    "inputs": {
+      "loras": {
+        "name": "loras",
+        "tooltip": "Chaque ligne applique un LoRA au modèle."
+      },
+      "loras_$add": {
+        "name": "Ajouter un LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA nº 1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA nº 1 activé"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA nº 1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA nº 1 intensité"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle de diffusion auquel les LoRA seront appliqués."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Le modèle de diffusion modifié."
+      }
+    }
+  },
+  "LoadLoraTextEncoder": {
+    "description": "Appliquez une pile de LoRA à un encodeur de texte CLIP. Ajoutez une ligne par LoRA ; chaque ligne sélectionne un fichier LoRA et son intensité.",
+    "display_name": "Charger LoRA (encodeur de texte)",
+    "inputs": {
+      "clip": {
+        "name": "clip",
+        "tooltip": "L’encodeur de texte CLIP auquel les LoRA seront appliqués."
+      },
+      "loras": {
+        "name": "loras",
+        "tooltip": "Chaque ligne applique un LoRA à l’encodeur de texte."
+      },
+      "loras_$add": {
+        "name": "Ajouter un LoRA"
+      },
+      "loras_$notice": {
+        "name": "LoRA"
+      },
+      "loras_0": {
+        "name": "LoRA nº 1"
+      },
+      "loras_0_enabled": {
+        "name": "LoRA nº 1 activé"
+      },
+      "loras_0_lora_name": {
+        "name": "LoRA nº 1 lora_name"
+      },
+      "loras_0_strength": {
+        "name": "LoRA nº 1 intensité"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "L’encodeur de texte CLIP modifié."
       }
     }
   },
@@ -18320,7 +18707,7 @@
   "PrimitiveInt": {
     "display_name": "Int",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "contrôle après génération"
       },
       "value": {
@@ -18471,7 +18858,7 @@
   },
   "QuiverImageToSVGNode": {
     "description": "Vectorisez une image matricielle en SVG à l'aide de Quiver AI.",
-    "display_name": "Quiver Image vers SVG",
+    "display_name": "Image Quiver en SVG (hérité)",
     "inputs": {
       "auto_crop": {
         "name": "auto_crop",
@@ -18515,9 +18902,54 @@
       }
     }
   },
+  "QuiverImageToSVGNodeV2": {
+    "description": "Vectorisez une image matricielle en SVG à l’aide de Quiver AI.",
+    "display_name": "Image Quiver en SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la vectorisation SVG."
+      },
+      "model_auto_crop": {
+        "name": "auto_crop"
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "model_reasoning_effort": {
+        "name": "reasoning_effort"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_target_size": {
+        "name": "taille cible"
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuiverTextToSVGNode": {
     "description": "Générez un SVG à partir d'une invite textuelle avec Quiver AI.",
-    "display_name": "Quiver Texte vers SVG",
+    "display_name": "Texte Quiver vers SVG (hérité)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18554,6 +18986,51 @@
       "seed": {
         "name": "seed",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit le seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QuiverTextToSVGNodeV2": {
+    "description": "Générez un SVG à partir d’un prompt textuel avec Quiver AI.",
+    "display_name": "Texte Quiver vers SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de SVG."
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_instructions": {
+        "name": "instructions"
+      },
+      "model_presence_penalty": {
+        "name": "pénalité de présence"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reasoning_effort": {
+        "name": "effort de raisonnement"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "model_width": {
+        "name": "largeur"
       }
     },
     "outputs": {
@@ -22211,7 +22688,7 @@
   "SeedNode": {
     "display_name": "Graine",
     "inputs": {
-      "fixed": {
+      "control_after_generate": {
         "name": "contrôle après génération"
       },
       "seed": {
@@ -27352,6 +27829,79 @@
         "tooltip": "Description textuelle pour la génération de vidéo, longueur maximale de 2000 caractères."
       },
       "seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ImageToVideoNode": {
+    "description": "Générez une vidéo à partir d’une image de départ et d’un prompt facultatif. La sortie conserve le rapport largeur/hauteur de l’image d’entrée.",
+    "display_name": "Génération vidéo à partir d’une image avec Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Image de départ de la vidéo générée. Le rapport largeur/hauteur doit être compris entre 1:5 et 5:1."
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de vidéos."
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Vidu4ReferenceVideoNode": {
+    "description": "Générez une vidéo à partir d’images de référence, d’un audio de référence facultatif et d’un prompt.",
+    "display_name": "Génération vidéo à partir de références avec Vidu Q4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser pour la génération de vidéos."
+      },
+      "model_aspect_ratio": {
+        "name": "rapport largeur/hauteur"
+      },
+      "model_audio": {
+        "name": "audio"
+      },
+      "model_duration": {
+        "name": "durée"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
         "name": "graine"
       }
     },

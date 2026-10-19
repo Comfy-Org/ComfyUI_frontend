@@ -16,6 +16,9 @@ describe('starter prompt identity', () => {
     expect(STARTER_PROMPT_IDS).toHaveLength(
       enMain.agent.suggestedPrompts.local.length
     )
+    expect(STARTER_PROMPT_IDS).toHaveLength(
+      enMain.agent.suggestedPrompts.treatment.cloud.length
+    )
   })
 
   it('names a slot beyond the table rather than borrowing a neighbour', () => {
@@ -64,8 +67,23 @@ describe('starter prompt identity', () => {
       promptId: 'slot_4',
       promptIndex: 3,
       promptCount: 5,
+      visiblePromptCount: 5,
       promptTextHash: '3849a858',
       locale: 'zh'
     })
+  })
+
+  it('keeps the visible count separate from the set size', () => {
+    const compact = starterPromptAttribution(
+      'Explain the selected node',
+      3,
+      5,
+      'en',
+      undefined,
+      3
+    )
+
+    expect(compact.promptCount).toBe(5)
+    expect(compact.visiblePromptCount).toBe(3)
   })
 })

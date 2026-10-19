@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,7 +6,10 @@ import { fromAny } from '@total-typescript/shoehorn'
 
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -25,6 +28,7 @@ import type { NodeState } from '@/types/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -43,6 +47,13 @@ const mockData = vi.hoisted(() => ({
   mockLgraphNode: null as Record<string, unknown> | null,
   resizeCallback: null as ResizeCallback | null
 }))
+const mockNodeEventHandlers = vi.hoisted(
+  (): ReturnType<typeof useNodeEventHandlers> => ({
+    handleNodeCollapse: vi.fn(),
+    handleNodeRightClick: vi.fn(),
+    handleNodeTitleUpdate: vi.fn()
+  })
+)
 
 vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
@@ -53,12 +64,9 @@ vi.mocked(getNodeByLocatorId).mockImplementation(() =>
 
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
-vi.mock<unknown>(
+vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
-  () => {
-    const handleNodeSelect = vi.fn()
-    return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
-  }
+  () => ({ useNodeEventHandlers: () => mockNodeEventHandlers })
 )
 
 vi.mock(
@@ -73,7 +81,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
     rootGraph: { id: 'graph-test', getNodeById: vi.fn() },
     canvas: { setDirty: vi.fn() },
     nodeOutputs: {},
-    nodePreviewImages: {}
+    nodePreviewImages: {},
+    getPreviewFormatParam: () => '',
+    getRandParam: () => ''
   }
 }))
 
@@ -180,7 +190,9 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
             '<div data-testid="node-widgets">{{ processedWidgetModel.processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
         },
         NodeContent: {
-          template: '<div data-testid="node-content" />'
+          props: ['media'],
+          template:
+            '<div data-testid="node-content">{{ media?.urls?.join(",") }}</div>'
         },
         SlotConnectionDot: true
       }
@@ -217,6 +229,7 @@ describe('LGraphNode', () => {
     mockData.mockExecuting = false
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
+    app.dragOverNode = null
 
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
@@ -242,6 +255,17 @@ describe('LGraphNode', () => {
 
     expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
       'test-node-123'
+    )
+  })
+
+  it('binds the node context menu handler to the root element', async () => {
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
+
+    await fireEvent.contextMenu(getNodeRoot(container))
+
+    expect(mockNodeEventHandlers.handleNodeRightClick).toHaveBeenCalledWith(
+      expect.any(MouseEvent),
+      mockNodeData.id
     )
   })
 
@@ -410,10 +434,10 @@ describe('LGraphNode', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
 
-    expect(root).toHaveClass('outline-node-component-outline')
+    expect(root).toHaveClass('outline-foreground')
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('border-node-component-outline')
+    expect(overlay).toHaveClass('border-foreground')
   })
 
   it('should render progress indicator when executing prop is true', () => {
@@ -422,10 +446,10 @@ describe('LGraphNode', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)
 
-    expect(root).toHaveClass('outline-node-stroke-executing')
+    expect(root).toHaveClass('outline-primary')
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
-    expect(overlay).toHaveClass('border-node-stroke-executing')
+    expect(overlay).toHaveClass('border-primary')
   })
 
   it('hides a linked core LoadImage input preview', () => {
@@ -479,6 +503,42 @@ describe('LGraphNode', () => {
 
     expect(screen.getByTestId('node-content')).toBeInTheDocument()
   })
+
+  it.for([
+    { label: 'numeric', rawId: '9' },
+    {
+      label: 'insert_workflow-remapped',
+      rawId: 'insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:9'
+    }
+  ])(
+    'renders an executed output stored under the $label node locator',
+    ({ rawId }) => {
+      const fakeRootGraph: Record<string, unknown> = {
+        id: 'graph-test',
+        getNodeById: () => null,
+        subgraphs: new Map()
+      }
+      fakeRootGraph.rootGraph = fakeRootGraph
+      useCanvasStore().currentGraph = fromAny(fakeRootGraph)
+      const nodeId = toNodeId(rawId)
+      mockData.mockLgraphNode = {
+        id: nodeId,
+        graph: fakeRootGraph,
+        isSubgraphNode: () => false
+      }
+      useNodeOutputStore().nodeOutputs[createNodeLocatorId(null, nodeId)] = {
+        images: [{ filename: 'output.png', type: 'output' }]
+      }
+
+      renderLGraphNode({
+        nodeData: { ...mockNodeData, id: nodeId, graphId: 'graph-test' }
+      })
+
+      expect(screen.getByTestId('node-content')).toHaveTextContent(
+        'filename=output.png'
+      )
+    }
+  )
 
   it('restores only the core LoadAudio input player on disconnect', async () => {
     const isAudioLinked = ref(true)
@@ -547,9 +607,7 @@ describe('LGraphNode', () => {
       true
     renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(screen.getByTestId('node-inner-wrapper')).toHaveClass(
-      'ring-warning-background'
-    )
+    expect(screen.getByTestId('node-inner-wrapper')).toHaveClass('ring-warning')
     expect(screen.getByRole('button', { name: 'Issues' })).toBeInTheDocument()
 
     errors.recordNodeErrors({
@@ -560,7 +618,7 @@ describe('LGraphNode', () => {
     await nextTick()
 
     expect(screen.getByTestId('node-inner-wrapper')).toHaveClass(
-      'ring-destructive-background'
+      'ring-destructive'
     )
     expect(screen.getByRole('button', { name: 'Error' })).toBeInTheDocument()
 
@@ -749,20 +807,38 @@ describe('LGraphNode', () => {
       const { container } = renderLGraphNode({
         nodeData: mockRerouteNodeData
       })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelector('[role="button"][aria-label]')).toBeNull()
     })
 
     it('should render resize handle for regular nodes', () => {
       const { container } = renderLGraphNode({ nodeData: mockNodeData })
       expect(
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         container.querySelector('[role="button"][aria-label]')
       ).not.toBeNull()
     })
   })
 
   describe('handleDrop', () => {
+    it('clears the native file target when another handler already consumed the drop', async () => {
+      mockData.mockLgraphNode = {
+        onDragOver: vi.fn(),
+        isSubgraphNode: () => false
+      }
+      app.dragOverNode = {
+        id: toNodeId('previous-node'),
+        onDragDrop: vi.fn(() => false)
+      }
+      const { container } = renderLGraphNode({ nodeData: mockNodeData })
+      const event = new Event('drop', { bubbles: true, cancelable: true })
+      event.preventDefault()
+
+      await fireEvent(getNodeRoot(container), event)
+
+      expect(app.dragOverNode).toBeNull()
+    })
+
     it('should set app.dragOverNode and let event bubble', async () => {
       mockData.mockLgraphNode = {
         onDragOver: vi.fn(),
@@ -771,7 +847,7 @@ describe('LGraphNode', () => {
 
       const { container } = renderLGraphNode({ nodeData: mockNodeData })
       const nodeEl = getNodeRoot(container)
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       const parent = nodeEl.parentElement!
 
       const parentListener = vi.fn()

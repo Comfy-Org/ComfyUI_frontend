@@ -1,4 +1,5 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { partition } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 type PasteHandler<T> = (files: File[]) => Promise<T>
@@ -7,6 +8,7 @@ interface NodePasteOptions<T> {
   onPaste: PasteHandler<T>
   fileFilter?: (file: File) => boolean
   allow_batch?: boolean
+  onReject?: (files: File[]) => void
 }
 
 /**
@@ -19,13 +21,15 @@ export const useNodePaste = <T>(
   const { onPaste, fileFilter = () => true, allow_batch = false } = options
 
   const installedPasteFiles = function (files: File[]) {
-    const filteredFiles = Array.from(files).filter(fileFilter)
-    if (!filteredFiles.length) return false
+    const [filteredFiles, rejectedFiles] = partition(files, fileFilter)
+    if (rejectedFiles.length) options.onReject?.(rejectedFiles)
+    if (!filteredFiles.length) {
+      return
+    }
 
     const paste = allow_batch ? filteredFiles : filteredFiles.slice(0, 1)
 
     void onPaste(paste)
-    return true
   }
   node.pasteFiles = installedPasteFiles
 

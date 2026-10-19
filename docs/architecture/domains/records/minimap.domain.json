@@ -1,0 +1,64 @@
+{
+  "id": "minimap",
+  "capability": "Minimap",
+  "description": "Graph overview rendering, viewport navigation, settings, redraw scheduling, and the shared minimap decoration registry. Canvas stores remain external.",
+  "modules": [
+    {
+      "path": "src/platform/canvas/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/minimap/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/minimap/MiniMap.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/minimap/MiniMapPanel.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/minimap/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/minimap/types.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Viewport navigation and settings preserve minimap interaction",
+      "checks": [
+        "src/renderer/extensions/minimap/composables/useMinimapInteraction.test.ts",
+        "src/renderer/extensions/minimap/composables/useMinimapViewport.test.ts",
+        "src/renderer/extensions/minimap/composables/useMinimapSettings.test.ts"
+      ]
+    },
+    {
+      "name": "Graph rendering and progress delivery preserve redraw behavior",
+      "checks": [
+        "src/renderer/extensions/minimap/minimapCanvasRenderer.test.ts",
+        "src/renderer/extensions/minimap/data/MinimapDataSource.test.ts",
+        "src/renderer/extensions/minimap/composables/useMinimap.progressBaseline.test.ts"
+      ]
+    },
+    {
+      "name": "Decoration layers register, resolve per graph scope, and report failing layers without breaking the minimap",
+      "checks": [
+        "src/renderer/extensions/minimap/minimapDecorationRegistry.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Existing graph canvas and menu callers may continue importing minimap internals during inventory.",
+    "The minimap consumes graph geometry, execution progress, and decorations without owning their stores."
+  ],
+  "deepImports": "inventory"
+}

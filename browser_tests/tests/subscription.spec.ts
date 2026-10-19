@@ -72,7 +72,7 @@ unsubscribedTest.describe(
           .getByTestId(TestIds.topbar.subscribeToRunButton)
           .click()
         await expect(
-          comfyPage.page.locator('[aria-labelledby="subscription-required"]')
+          comfyPage.page.locator('[data-dialog-key="subscription-required"]')
         ).toBeVisible()
       }
     )
@@ -104,7 +104,7 @@ unsubscribedTest.describe(
       async ({ comfyPage, subscriptionHelper }) => {
         await subscriptionHelper.clickPopoverSubscribe()
         await expect(
-          comfyPage.page.locator('[aria-labelledby="subscription-required"]')
+          comfyPage.page.locator('[data-dialog-key="subscription-required"]')
         ).toBeVisible()
       }
     )
@@ -160,7 +160,7 @@ unsubscribedTest.describe(
       async ({ comfyPage, subscriptionHelper }) => {
         await subscriptionHelper.clickPopoverSubscribe()
         const dialog = comfyPage.page.locator(
-          '[aria-labelledby="subscription-required"]'
+          '[data-dialog-key="subscription-required"]'
         )
         await expect(dialog).toBeVisible()
 

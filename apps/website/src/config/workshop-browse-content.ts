@@ -1,20 +1,22 @@
-import catalogJson from '../content/workshop-models.json'
-import displayJson from '../content/workshop-display.json'
-import indexJson from '../content/workshop-router-index.json'
-import aliasesJson from '../content/workshop-router-aliases.json'
-import displayNames from '../data/workshop-router-display-names.json'
-import useCaseOverrides from '../data/workshop-use-case-overrides.json'
-import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
-import { workshopModelSchema } from '../content/workshop-models.schema'
-import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import catalogJson from '@/content/workshop-models.json'
+import displayJson from '@/content/workshop-display.json'
+import indexJson from '@/content/workshop-router-index.json'
+import aliasesJson from '@/content/workshop-router-aliases.json'
+import displayNames from '@/data/workshop-router-display-names.json'
+import useCaseOverrides from '@/data/workshop-use-case-overrides.json'
+import summaryOverrides from '@/data/workshop-model-summaries.json'
+import { workshopDisplayEntriesSchema } from '@/content/workshop-display.schema'
+import { workshopModelSchema } from '@/content/workshop-models.schema'
+import type { WorkshopModelEntry } from '@/content/workshop-models.schema'
+import type { WorkshopDisplayEntry } from '@/content/workshop-display.schema'
 import type { Modality, UseCase, RouterWorkshopModel } from './models-catalogue'
 import { USE_CASES } from './models-catalogue'
 import { workshopRouterIndexSchema } from './workshop-router-index'
 import { workshopRouterAliasesSchema } from './workshop-router-identity'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 import { workshopContentInputs } from './workshop-content-inputs'
-import { modelSummary } from '../lib/workshop/model-summary'
-import { providerName } from '../lib/workshop/provider-name'
+import { modelSummary } from '@/lib/workshop/model-summary'
+import { providerName } from '@/lib/workshop/provider-name'
 import { modelOrderRank } from './workshop-model-order'
 import { hubModelHref } from './hub-models'
 import {
@@ -76,6 +78,29 @@ function taskForUseCases(
 export const workshopDisplayEntries =
   workshopDisplayEntriesSchema.parse(displayJson)
 const displaySlugs = new Set(workshopDisplayEntries.map((entry) => entry.slug))
+const modelPageSlugs = new Set(
+  workshopDisplayEntries
+    .filter((entry) => entry.type === undefined || entry.type === 'MODEL')
+    .map((entry) => entry.slug)
+)
+
+export function editorialSummariesFor(
+  overrides: Readonly<Record<string, string>>,
+  pageSlugs: ReadonlySet<string>
+): ReadonlyMap<string, string> {
+  const summaries = new Map(
+    Object.entries(overrides).map(([slug, summary]) => [slug, summary.trim()])
+  )
+  for (const [slug, summary] of summaries)
+    if (!pageSlugs.has(slug) || !summary)
+      throw new Error(`Invalid model summary for page: ${slug}`)
+  return summaries
+}
+
+const editorialSummaries = editorialSummariesFor(
+  summaryOverrides,
+  modelPageSlugs
+)
 for (const slug of modelOrderRank.keys())
   if (!displaySlugs.has(slug))
     throw new Error(`Recommended model order names an unknown page: ${slug}`)
@@ -129,6 +154,23 @@ export const authoredRouterContentBySlug = new Map(
 export const routerContentBySlug = new Map(
   publishedContentSources.map((source) => [source.overlay.slug, source])
 )
+
+export function unpublishedSummaryWarning(
+  summarySlugs: Iterable<string>,
+  publishedSlugs: Pick<ReadonlySet<string>, 'has'>
+): string | undefined {
+  const unpublished = [...summarySlugs].filter(
+    (slug) => !publishedSlugs.has(slug)
+  )
+  if (!unpublished.length) return undefined
+  return `Model summaries kept for pages this build does not publish: ${unpublished.join(', ')}`
+}
+
+const summaryWarning = unpublishedSummaryWarning(
+  editorialSummaries.keys(),
+  routerContentBySlug
+)
+if (summaryWarning) console.warn(summaryWarning)
 export const routerContentById = new Map(
   routerIndex.flatMap((record) => {
     const sources = publishedContentSources.filter(
@@ -138,28 +180,76 @@ export const routerContentById = new Map(
   })
 )
 
+export function correctedUseCase(
+  overrides: ReadonlyMap<string, UseCase>,
+  ids: { entryId: string; routerId: string },
+  authored: UseCase
+): UseCase {
+  return overrides.get(ids.entryId) ?? overrides.get(ids.routerId) ?? authored
+}
+
+export function publishableMedia(
+  media: WorkshopDisplayEntry['media'],
+  hasContentIssue: boolean
+) {
+  if (hasContentIssue) return { exampleCount: 0, thumbnail: undefined }
+  return {
+    exampleCount: Math.min(6, media.samples?.length ?? 0),
+    thumbnail: media.thumbnail
+  }
+}
+
+export function modelDisplayName(names: {
+  authored?: string
+  canonical?: string
+  entry: string
+  modelsSharingRouterUseCase?: number
+}): string {
+  const disambiguated =
+    (names.modelsSharingRouterUseCase ?? 0) > 1 ? names.entry : undefined
+  return names.authored ?? disambiguated ?? names.canonical ?? names.entry
+}
+
+export function modelSummaryFor(
+  editorial: string | undefined,
+  description: string,
+  model: { name: string; provider: string }
+): string | undefined {
+  if (editorial !== undefined) return editorial
+  return description
+    ? modelSummary(description, model.name, model.provider)
+    : undefined
+}
+
 const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
   ({ entry, overlay, binding, record }) => {
     const useCases = [
-      correctedUseCases.get(entry.id) ??
-        correctedUseCases.get(record.id) ??
+      correctedUseCase(
+        correctedUseCases,
+        { entryId: entry.id, routerId: record.id },
         overlay.useCase
+      )
     ]
-    const exampleCount = Math.min(
-      6,
-      binding.contentIssue ? 0 : (overlay.media.samples?.length ?? 0)
+    const { exampleCount, thumbnail } = publishableMedia(
+      overlay.media,
+      binding.contentIssue !== undefined
     )
-    const thumbnail = binding.contentIssue ? undefined : overlay.media.thumbnail
     const slug = overlay.slug
     const recommendedRank = modelOrderRank.get(slug)
-    const name =
-      overlay.displayName ??
-      ((sharedNames.get(`${record.id}:${overlay.useCase}`)?.size ?? 0) > 1
-        ? entry.displayName
-        : undefined) ??
-      canonicalNames.get(record.id) ??
-      entry.displayName
+    const name = modelDisplayName({
+      authored: overlay.displayName,
+      canonical: canonicalNames.get(record.id),
+      entry: entry.displayName,
+      modelsSharingRouterUseCase: sharedNames.get(
+        `${record.id}:${overlay.useCase}`
+      )?.size
+    })
     const provider = providerName(entry.provider)
+    const summary = modelSummaryFor(
+      editorialSummaries.get(slug),
+      entry.description,
+      { name, provider }
+    )
     return {
       slug,
       name,
@@ -177,12 +267,14 @@ const browseModels: readonly RouterWorkshopModel[] = contentSources.map(
       ...(thumbnail
         ? {
             thumbnailUrl: thumbnail.url,
-            thumbnail: { url: thumbnail.url, kind: thumbnail.kind }
+            thumbnail: {
+              url: thumbnail.url,
+              kind: thumbnail.kind,
+              ...(thumbnail.poster ? { poster: thumbnail.poster } : {})
+            }
           }
         : {}),
-      ...(entry.description
-        ? { summary: modelSummary(entry.description, name, provider) }
-        : {}),
+      ...(summary ? { summary } : {}),
       ...(overlay.status === 'deprecated'
         ? { status: 'deprecated' as const }
         : {})

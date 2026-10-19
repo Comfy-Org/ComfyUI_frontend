@@ -2,6 +2,10 @@ import type { Component } from 'vue'
 import type { RouterHistory, RouteRecordRaw } from 'vue-router'
 import { createRouter, createWebHistory } from 'vue-router'
 
+import type {
+  WebEntryBounceReason,
+  WebEntryBounceTarget
+} from '@comfyorg/account-core/billing'
 import type { SessionSnapshot } from '@comfyorg/account-core/session'
 import type {
   BillingEntry,
@@ -25,24 +29,42 @@ import {
   billingWebPhase,
   onBillingWebEntryWorkspace
 } from '@/session/billingWebAuth'
+import {
+  reportEntryBounced,
+  reportEntryReceived,
+  reportEntryRejected
+} from '@/telemetry/webEntryTelemetry'
 import BillingHomeView from '@/views/BillingHomeView.vue'
 import CheckoutRouteView from '@/views/CheckoutRouteView.vue'
+import TopupReturnView from '@/views/TopupReturnView.vue'
 import EntryErrorView from '@/views/EntryErrorView.vue'
 import InvoicesView from '@/views/InvoicesView.vue'
 import PaymentMethodsView from '@/views/PaymentMethodsView.vue'
 import ResultView from '@/views/ResultView.vue'
 import SignInView from '@/views/SignInView.vue'
 import SubscriptionView from '@/views/SubscriptionView.vue'
+import TopupRouteView from '@/views/TopupRouteView.vue'
 
 /** The app's own front door, outside the entry contract: it names no product. */
 const APP_ENTRY_PATH = '/'
 
 export const SIGN_IN_PATH = '/sign-in'
 
+/** Where hosted top-up checkouts from Desktop and local builds land; shipped builds keep this URL. */
+export const TOPUP_RETURN_PATH = '/return/topup'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    /** Opens signed out, outside the entry contract and the billing shell. */
+    readonly public?: true
+  }
+}
+
 const INTENT_VIEWS: Record<BillingIntent, Component> = {
   pricing: EntryErrorView,
   subscription: SubscriptionView,
   checkout: CheckoutRouteView,
+  'top-up': TopupRouteView,
   'payment-methods': PaymentMethodsView,
   invoices: InvoicesView,
   result: ResultView
@@ -58,6 +80,12 @@ const routes: RouteRecordRaw[] = [
     path: SIGN_IN_PATH,
     name: 'sign-in',
     component: SignInView
+  },
+  {
+    path: TOPUP_RETURN_PATH,
+    name: 'topup-return',
+    component: TopupReturnView,
+    meta: { public: true }
   },
   ...BILLING_INTENTS.map((intent) => ({
     path: billingIntentPath(intent),
@@ -88,6 +116,17 @@ const isPlanlessCheckout = (entry: BillingEntry) =>
 function fullPageKeepsPlanless(): false | Promise<boolean> {
   if (billingWebLivePhase.value !== 'authenticated') return false
   return awaitCheckoutUiVariant().then((variant) => variant === 'full_page')
+}
+
+/** A link read from the URL, and whether its checkout `return_to` was replaced to read it. */
+interface Arrival {
+  readonly entry: BillingEntry
+  readonly returnRewritten: boolean
+}
+
+interface HostDestination {
+  readonly href: string | undefined
+  readonly to: WebEntryBounceTarget
 }
 
 /** Echoes the host's own workspace back, leaving this tab's binding alone. */
@@ -133,16 +172,20 @@ function withCheckoutReturn(fullPath: string): string {
  * no pricing table, so its link goes back to its own `return_to`, or to
  * Platform's billing page when that is not one billing may follow.
  */
-function planPickerHref(
+function planPicker(
   entry: BillingEntry,
   followsReturn: boolean
-): string | undefined {
+): HostDestination {
   if (entry.product !== 'platform')
-    return pricingTableUrl(
-      entry.teamCreditStopId === undefined ? 'default' : 'team',
-      entry.workspaceId
-    )
-  return returnHref(followsReturn ? entry.returnTo : 'platform_billing', entry)
+    return {
+      href: pricingTableUrl(
+        entry.teamCreditStopId === undefined ? 'default' : 'team',
+        entry.workspaceId
+      ),
+      to: 'pricing_table'
+    }
+  const to = followsReturn ? entry.returnTo : 'platform_billing'
+  return { href: returnHref(to, entry), to }
 }
 
 function leaveForHost(href: string): void {
@@ -150,8 +193,9 @@ function leaveForHost(href: string): void {
 }
 
 /**
- * Billing is never public: every route but the sign-in page needs a live
- * workspace session, and `pending` is not one — a restored identity that
+ * Billing is never public beyond its `public` return pages, which read
+ * neither the entry nor the session: every other route but the sign-in page
+ * needs a live workspace session, and `pending` is not one — a restored identity that
  * mints afterwards is carried back by the sign-in page's own redirect.
  *
  * The entry is read before the guard runs, so a link we cannot read explains
@@ -177,19 +221,30 @@ export function createBillingRouter(
   let latestNavigation = 0
 
   function recordUnknownReturn(): boolean {
+    reportEntryRejected('UNKNOWN_RETURN_TARGET')
     recordBillingEntry({ status: 'error', code: 'UNKNOWN_RETURN_TARGET' })
     return true
   }
 
   /** False once the link has left this tab for its host. */
-  function sendToHost(href: string | undefined): boolean {
+  function sendToHost(
+    { href, to }: HostDestination,
+    reason: WebEntryBounceReason
+  ): boolean {
     if (href === undefined) return recordUnknownReturn()
+    reportEntryBounced({ reason, to })
     leave(href)
     return false
   }
 
-  function admitEntry(entry: BillingEntry): boolean {
+  function admitEntry({ entry, returnRewritten }: Arrival): boolean {
     recordBillingEntry({ status: 'ok', entry })
+    reportEntryReceived(entry)
+    if (returnRewritten)
+      reportEntryBounced({
+        reason: 'return_target_rewritten',
+        to: entry.returnTo
+      })
     if (entry.workspaceId !== undefined) onEntryWorkspace(entry.workspaceId)
     return true
   }
@@ -199,37 +254,49 @@ export function createBillingRouter(
    * an answer that arrives after a newer navigation started acts on nothing.
    */
   function readPlanless(
-    entry: BillingEntry,
-    pickPlanAt: string | undefined
+    arrival: Arrival,
+    pickPlanAt: HostDestination
   ): boolean | Promise<boolean> {
     const kept = fullPageKeepsPlanless()
-    if (kept === false) return sendToHost(pickPlanAt)
+    if (kept === false) return sendToHost(pickPlanAt, 'planless_checkout')
     const navigation = latestNavigation
     return kept.then((full) => {
       if (navigation !== latestNavigation) return false
-      return full ? admitEntry(entry) : sendToHost(pickPlanAt)
+      return full
+        ? admitEntry(arrival)
+        : sendToHost(pickPlanAt, 'planless_checkout')
     })
   }
 
   function readEntry(fullPath: string): boolean | Promise<boolean> {
-    const result = parseBillingEntry(withCheckoutReturn(fullPath))
+    const readable = withCheckoutReturn(fullPath)
+    const result = parseBillingEntry(readable)
     if (result.status === 'error') {
+      reportEntryRejected(result.code)
       recordBillingEntry(result)
       return true
     }
     const { entry } = result
     if (entry.intent === 'pricing')
-      return sendToHost(returnHref(entry.returnTo, entry))
+      return sendToHost(
+        { href: returnHref(entry.returnTo, entry), to: entry.returnTo },
+        'pricing_link'
+      )
+    const arrival = { entry, returnRewritten: readable !== fullPath }
     if (isPlanlessCheckout(entry))
       return readPlanless(
-        entry,
-        planPickerHref(entry, followsLinkReturn(linkUrl(fullPath)))
+        arrival,
+        planPicker(entry, followsLinkReturn(linkUrl(fullPath)))
       )
-    return admitEntry(entry)
+    return admitEntry(arrival)
   }
 
   router.beforeEach(async (to) => {
     latestNavigation += 1
+    if (to.meta.public) {
+      recordBillingEntry(undefined)
+      return true
+    }
     if (to.path === APP_ENTRY_PATH) recordBillingEntry(undefined)
     else if (to.path !== SIGN_IN_PATH && !(await readEntry(to.fullPath)))
       return false

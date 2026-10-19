@@ -1,6 +1,6 @@
 ---
-import '../../styles/workflow-canvas.css'
-import type { Locale } from '../../i18n/translations'
+import '@/styles/workflow-canvas.css'
+import type { Locale } from '@/i18n/translations'
 import WorkflowScene from './WorkflowScene.astro'
 import { tAgent } from './agentTranslations'
 
@@ -17,6 +17,7 @@ const { locale } = Astro.props
 >
   <workflow-examples>
     <WorkflowScene
+      locale={locale}
       userCursorLabel={tAgent('agentPage.workflow.userCursorLabel', locale)}
     />
   </workflow-examples>

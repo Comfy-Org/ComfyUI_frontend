@@ -3,12 +3,13 @@ import { createMemoryHistory } from 'vue-router'
 import type { Router } from 'vue-router'
 
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
+import type { BillingSource } from '@comfyorg/billing-contract'
 
 import App from '@/App.vue'
 import { safeReturnTo } from '@/auth/returnTo'
 import { recordBillingEntry, useBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
-import { createBillingRouter } from '@/router'
+import { createBillingRouter, TOPUP_RETURN_PATH } from '@/router'
 import type { BillingWebSessionPhase } from '@/router'
 import { createFakeBillingClient } from '@/test/fakeBillingClient'
 
@@ -193,6 +194,48 @@ describe('the billing route guard', () => {
   })
 })
 
+describe('the top-up return page', () => {
+  it.for(['pending', 'signed-out', 'minting', 'error'] as const)(
+    'opens for a %s visitor without asking for a session',
+    async (phase) => {
+      const readPhase = vi.fn(() => phase)
+      const router = createBillingRouter(createMemoryHistory(), readPhase)
+
+      await router.push(TOPUP_RETURN_PATH)
+
+      expect(router.currentRoute.value.fullPath).toBe(TOPUP_RETURN_PATH)
+      expect(readPhase).not.toHaveBeenCalled()
+    }
+  )
+
+  it('reads the same whether the payment went through or was canceled', async () => {
+    await arriveAt(TOPUP_RETURN_PATH, routerAt('signed-out'))
+
+    expect(
+      await screen.findByRole('heading', { name: 'Return to ComfyUI' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Your balance updates in the app once the payment is confirmed. If you canceled, nothing was charged.'
+      )
+    ).toBeInTheDocument()
+    expect(screen.getByText('You can close this tab now.')).toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
+
+  it('is not replaced by the error of a link read earlier in the tab', async () => {
+    const router = await arriveAt(`/v1/refunds?${ENTRY_QUERY}`)
+
+    await router.push(TOPUP_RETURN_PATH)
+
+    expect(
+      await screen.findByRole('heading', { name: 'Return to ComfyUI' })
+    ).toBeInTheDocument()
+    expect(useBillingEntry().error.value).toBeUndefined()
+  })
+})
+
 describe("a checkout's return_to, which is optional", () => {
   it.for([
     {
@@ -281,6 +324,39 @@ describe('hosted billing entry routing', () => {
       product: 'comfyui',
       returnTo: 'comfyui_workspace',
       plan: 'creator_monthly'
+    })
+  })
+
+  it('publishes the source and journey the product handed over', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=agent_paywall&correlation_id=journey-1`
+    )
+
+    const { entry } = useBillingEntry()
+    expect(entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      source: 'agent_paywall',
+      correlationId: 'journey-1'
+    })
+    expectTypeOf(entry.value?.source).toEqualTypeOf<BillingSource | undefined>()
+    expectTypeOf(entry.value?.correlationId).toEqualTypeOf<string | undefined>()
+  })
+
+  it('publishes a link whose source is outside the shared list without one', async () => {
+    await arriveAt(
+      `/v1/subscription?${ENTRY_QUERY}&source=https%3A%2F%2Fevil.test&correlation_id=journey-1`
+    )
+
+    expect(useBillingEntry().error.value).toBeUndefined()
+    expect(useBillingEntry().entry.value).toEqual({
+      version: 'v1',
+      intent: 'subscription',
+      product: 'comfyui',
+      returnTo: 'comfyui_workspace',
+      correlationId: 'journey-1'
     })
   })
 

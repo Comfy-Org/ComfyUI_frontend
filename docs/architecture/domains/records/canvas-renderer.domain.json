@@ -1,0 +1,260 @@
+{
+  "id": "canvas-renderer",
+  "capability": "Canvas renderer runtime (shared technical module)",
+  "description": "Shared technical module, not a business domain. The Vue-side host around the LiteGraph canvas: the canvas Pinia store (active canvas, read-only and picking mode, selection mirror, node picking), viewport and device-pixel-ratio sizing, camera state normalization, redraw scheduling, auto-pan, wheel and pointer routing, interaction-mode reads, slot link drag UI state, Canvas2D link path rendering, and adapters that translate LiteGraph links, selection, slot geometry, link drops, and legacy layout to and from the layout store. The LiteGraph canvas view-controller (graph-canvas), link connection, the selection store, settings, and graph layout storage remain outside this record.",
+  "modules": [
+    {
+      "path": "src/components/graph/CanvasBanner.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/CanvasModeSelector.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/CanvasModeSelector.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/GraphCanvasMenu.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/LinkOverlayCanvas.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeSelectionModeBanner.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeSelectionModeBanner.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeTooltip.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeTooltip.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/SelectionRectangle.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/SelectionRectangle.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/TitleEditor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/TitleEditor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/modals/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/nodeProgressCanvasSync.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/nodeProgressCanvasSync.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/canvas/useFocusNode.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/canvas/useFocusNode.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/canvas/visibleCanvasViewport.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/canvas/visibleCanvasViewport.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/element/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useZoomControls.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/__mocks__/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/__tests__/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/__tests__/cameraState.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/canvas/__tests__/canvasViewport.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/core/canvas/cameraState.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/core/canvas/canvasRedrawBudget.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/canvasStore.nodePicking.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/canvasStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/canvasStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/canvasViewport.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/core/canvas/interaction/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/interaction/canvasPointerEvent.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/canvas/links/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/canvas/links/slotLinkDragUIState.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/litegraph/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/core/canvas/pathRenderer.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/core/canvas/pathRenderer.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/core/canvas/useAutoPan.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/useAutoPan.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/useCanvasInteractions.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/useCanvasInteractions.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/core/canvas/useCanvasScheduler.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Canvas store, interaction mode, and redraw scheduling preserve canvas state",
+      "checks": [
+        "src/renderer/core/canvas/canvasStore.test.ts",
+        "src/renderer/core/canvas/canvasStore.nodePicking.test.ts",
+        "src/renderer/core/canvas/interaction/canvasInteractionMode.test.ts",
+        "src/renderer/core/canvas/__tests__/useCanvasScheduler.test.ts",
+        "src/renderer/core/canvas/canvasRedrawBudget.test.ts"
+      ]
+    },
+    {
+      "name": "Viewport sizing, camera state, pointer routing, and auto-pan preserve navigation",
+      "checks": [
+        "src/renderer/core/canvas/__tests__/canvasViewport.test.ts",
+        "src/renderer/core/canvas/__tests__/cameraState.test.ts",
+        "src/renderer/core/canvas/useCanvasInteractions.test.ts",
+        "src/renderer/core/canvas/useAutoPan.test.ts",
+        "browser_tests/tests/canvas/logicalCanvasSizing.spec.ts",
+        "browser_tests/tests/vueNodes/interactions/canvas/zoom.spec.ts",
+        "browser_tests/tests/vueNodes/interactions/canvas/pan.spec.ts"
+      ]
+    },
+    {
+      "name": "LiteGraph adapters preserve link drops, slot geometry, and legacy layout",
+      "checks": [
+        "src/renderer/core/canvas/links/linkDropOrchestrator.test.ts",
+        "src/renderer/core/canvas/litegraph/slotCalculations.test.ts",
+        "src/renderer/core/canvas/litegraph/notifyLayoutChanges.test.ts",
+        "src/renderer/core/canvas/litegraph/arrangeForLegacyRender.test.ts",
+        "src/renderer/core/canvas/pathRenderer.test.ts",
+        "browser_tests/tests/vueNodes/interactions/links/linkInteraction.spec.ts"
+      ]
+    },
+    {
+      "name": "Canvas overlays follow canvas interaction mode, zoom controls, and node picking",
+      "checks": [
+        "src/components/graph/CanvasModeSelector.test.ts",
+        "src/components/graph/modals/ZoomControlsModal.test.ts",
+        "src/components/graph/NodeSelectionModeBanner.test.ts",
+        "src/components/graph/SelectionRectangle.test.ts"
+      ]
+    },
+    {
+      "name": "Title editor, node tooltip, and execution progress sync track the LiteGraph canvas",
+      "checks": [
+        "src/components/graph/TitleEditor.test.ts",
+        "src/components/graph/NodeTooltip.test.ts",
+        "src/components/graph/nodeProgressCanvasSync.test.ts"
+      ]
+    },
+    {
+      "name": "Focusing a node frames it inside the visible canvas viewport",
+      "checks": [
+        "src/composables/canvas/useFocusNode.test.ts",
+        "src/composables/canvas/visibleCanvasViewport.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md",
+    "docs/adr/CANVAS-VIEWPORT-0009-canvas-viewport-system.md",
+    "docs/adr/CANVAS-SELECTION-0028-single-selection-store.md",
+    "docs/adr/CANVAS-SELECTION-0031-ordered-set-storage.md",
+    "docs/adr/CANVAS-GESTURE-0029-pointer-gesture-state-machine.md",
+    "docs/adr/CANVAS-INTERACTION-0035-agent-node-picking-policy.md",
+    "docs/adr/RENDERING-ATOMICITY-0020-frame-atomic-rendering.md",
+    "docs/adr/RENDERING-INVALIDATION-0021-classified-frame-coalesced-canvas-invalidation.md"
+  ],
+  "compatibilityPromises": [
+    "Existing callers in the Vue node renderer, widget runtime, linear mode, minimap, onboarding, agent, workbench, and shared composables may continue importing canvas internals during inventory; this record grants no new cross-domain permissions.",
+    "LiteGraph canvas callbacks, setDirty semantics, and the DragAndScale state shape observed by extensions remain unchanged."
+  ],
+  "deepImports": "inventory"
+}

@@ -105,6 +105,8 @@ export const useCustomerEventsService = () => {
         return t('credits.eventTypes.gpuUsage')
       case 'api_node_usage':
         return t('credits.eventTypes.apiNodeUsage')
+      case 'agent_usage':
+        return t('credits.eventTypes.agentUsage')
       default:
         return eventType
     }
@@ -151,6 +153,7 @@ export const useCustomerEventsService = () => {
       case 'api_usage_completed':
       case 'gpu_usage':
       case 'api_node_usage':
+      case 'agent_usage':
         return 'warning'
       default:
         return 'info'
@@ -160,18 +163,6 @@ export const useCustomerEventsService = () => {
   function hasAdditionalInfo(event: AuditLog) {
     const { amount, api_name, model, ...otherParams } = event.params || {}
     return Object.keys(otherParams).length > 0
-  }
-
-  function getTooltipContent(event: AuditLog) {
-    const { ...params } = event.params || {}
-
-    return Object.entries(params)
-      .map(([key, value]) => {
-        const formattedKey = formatJsonKey(key)
-        const formattedValue = formatJsonValue(value)
-        return `<strong>${formattedKey}:</strong> ${formattedValue}`
-      })
-      .join('<br>')
   }
 
   function formatAmount(amountMicros?: number) {
@@ -192,6 +183,11 @@ export const useCustomerEventsService = () => {
     const authStore = useAuthStore()
     const requestOwner = authStore.currentUserIdentity()
     const requestId = ++latestRequestId
+    if (!authStore.hasPersonalWorkspace) {
+      isLoading.value = false
+      error.value = t('toastMessages.noPersonalWorkspace')
+      return null
+    }
     isLoading.value = true
     error.value = null
 
@@ -252,7 +248,6 @@ export const useCustomerEventsService = () => {
     hasAdditionalInfo,
     formatDate,
     formatJsonKey,
-    formatJsonValue,
-    getTooltipContent
+    formatJsonValue
   }
 }

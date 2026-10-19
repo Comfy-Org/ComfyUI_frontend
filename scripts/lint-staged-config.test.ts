@@ -70,14 +70,57 @@ describe('lint-staged config', () => {
     }
   )
 
+  it('spawns ESLint only for the files it lints', async () => {
+    const lintStaged = await freshConfig()
+
+    const commands = [
+      lintStaged([
+        'scripts/check-frozen-dirs.ts',
+        'src/stores/appStore.test.ts',
+        'src/components/Button.vue',
+        'src/components/button.variants.ts'
+      ])
+    ].flat()
+
+    expect(commands).toContain(
+      `${stagedEslint} "src/components/Button.vue" "src/components/button.variants.ts"`
+    )
+  })
+
+  it('skips ESLint when no staged file is in its scope', async () => {
+    const lintStaged = await freshConfig()
+
+    const commands = [lintStaged(['scripts/check-frozen-dirs.ts'])].flat()
+
+    expect(commands.some((command) => command.includes('eslint '))).toBe(false)
+  })
+
+  it.for([
+    ['src/stores/appStore.ts', ['pnpm lint:server-facts --staged']],
+    ['src/styles.css', []]
+  ] as const)(
+    'runs the server-fact gate only when code is staged: %s',
+    async ([fileName, expected]) => {
+      const lintStaged = await freshConfig()
+
+      const commands = [lintStaged([fileName])].flat()
+
+      expect(
+        commands.filter(
+          (command) => command === 'pnpm lint:server-facts --staged'
+        )
+      ).toEqual(expected)
+    }
+  )
+
   it('keeps per-file commands scoped to their own chunk', async () => {
     const lintStaged = await freshConfig()
 
-    const first = lintStaged(['src/one.ts'])
-    const second = lintStaged(['src/two.ts'])
+    const first = lintStaged(['src/One.vue'])
+    const second = lintStaged(['src/Two.vue'])
 
-    expect(first).toContain(`${stagedEslint} "src/one.ts"`)
-    expect(second).toContain(`${stagedEslint} "src/two.ts"`)
+    expect(first).toContain(`${stagedEslint} "src/One.vue"`)
+    expect(second).toContain(`${stagedEslint} "src/Two.vue"`)
   })
 })
 

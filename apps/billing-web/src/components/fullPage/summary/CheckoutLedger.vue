@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 import type { SummaryLedger } from '@/checkout/summaryLedger'
+import LedgerRows from '@/components/fullPage/summary/LedgerRows.vue'
 
 const { ledger } = defineProps<{ ledger: SummaryLedger }>()
 
@@ -9,9 +10,16 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div class="mt-16 flex flex-col gap-2">
-    <p class="m-0 text-sm text-muted-foreground">{{ ledger.eyebrow }}</p>
-    <p class="m-0 text-2xl font-semibold text-base-foreground tabular-nums">
+  <div class="mt-16 flex flex-col gap-2 text-muted-foreground">
+    <p class="m-0 text-sm">{{ ledger.eyebrow }}</p>
+    <p
+      class="m-0 flex items-baseline gap-1.5 text-2xl font-semibold text-foreground tabular-nums"
+    >
+      <i
+        v-if="ledger.headline.icon"
+        class="icon-[lucide--coins] size-5 shrink-0 self-center text-muted-foreground"
+        aria-hidden="true"
+      />
       {{ ledger.headline.amount }}
       <span class="text-base font-normal">
         {{ ledger.headline.currency }}
@@ -20,10 +28,7 @@ const { t } = useI18n()
         </template>
       </span>
     </p>
-    <p
-      v-if="ledger.credits"
-      class="m-0 flex items-start gap-1.5 text-base text-muted-foreground"
-    >
+    <p v-if="ledger.credits" class="m-0 flex items-start gap-1.5 text-base">
       <i class="mt-1 icon-[lucide--coins] size-4 shrink-0" aria-hidden="true" />
       <span>
         <span class="tabular-nums">{{ ledger.credits.count }}</span>
@@ -32,55 +37,20 @@ const { t } = useI18n()
     </p>
   </div>
 
-  <template v-if="ledger.items.length + ledger.discounts.length > 0">
-    <hr class="mt-8 mb-0 border-border-default" />
-    <ul class="m-0 flex list-none flex-col gap-4 p-0 pt-6">
-      <li
-        v-for="(row, index) in ledger.items"
-        :key="`item-${index}`"
-        class="flex flex-col gap-1"
-      >
-        <div class="flex items-baseline justify-between gap-4">
-          <span class="text-sm font-semibold text-base-foreground">
-            {{ row.label }}
-          </span>
-          <span class="shrink-0 text-sm text-base-foreground tabular-nums">
-            {{ row.amount }}
-          </span>
-        </div>
-        <span
-          v-for="subline in row.sublines"
-          :key="subline"
-          class="text-xs text-muted-foreground"
-        >
-          {{ subline }}
-        </span>
-      </li>
-      <li
-        v-for="(row, index) in ledger.discounts"
-        :key="`discount-${index}`"
-        class="flex items-baseline justify-between gap-4"
-      >
-        <span class="text-sm font-semibold text-base-foreground">
-          {{ row.label }}
-        </span>
-        <span class="shrink-0 text-sm text-muted-foreground tabular-nums">
-          {{ row.amount }}
-        </span>
-      </li>
-    </ul>
-  </template>
+  <LedgerRows :ledger />
 
   <div class="pt-4 empty:hidden">
     <slot />
   </div>
 
-  <hr class="mt-6 mb-0 border-border-default" />
-  <div class="flex items-center justify-between gap-4 pt-6">
-    <span class="text-base font-semibold text-base-foreground">
+  <hr class="mt-6 mb-0" />
+  <div
+    class="flex items-center justify-between gap-4 pt-6 text-base font-semibold text-foreground"
+  >
+    <span>
       {{ t('checkout.totalDueToday') }}
     </span>
-    <span class="text-base font-semibold text-base-foreground tabular-nums">
+    <span class="tabular-nums">
       {{ ledger.total }}
     </span>
   </div>

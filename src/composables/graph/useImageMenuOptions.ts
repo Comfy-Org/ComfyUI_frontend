@@ -2,10 +2,12 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/stores/commandStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 
-import type { MenuOption } from './useMoreOptionsMenu'
+import type { MenuOption } from './menuOption'
 
 type ImageMenuAvailability = Record<CoreMediaMenuActionKind, boolean>
 
@@ -44,6 +46,7 @@ async function pasteClipboardImageToNode(node: LGraphNode): Promise<void> {
  */
 export function useImageMenuOptions() {
   const { t } = useI18n()
+  const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 
   const openMaskEditor = () => {
     const commandStore = useCommandStore()
@@ -55,8 +58,7 @@ export function useImageMenuOptions() {
     if (!images?.length) return
     const img = images.at(node.imageIndex ?? 0)
     if (!img) return
-    const url = new URL(img.src)
-    url.searchParams.delete('preview')
+    const url = getImageFileUrl(img)
     void openFileInNewTab(url.toString())
   }
 
@@ -99,8 +101,7 @@ export function useImageMenuOptions() {
     if (!img) return
 
     try {
-      const url = new URL(img.src)
-      url.searchParams.delete('preview')
+      const url = getImageFileUrl(img)
       downloadFile(url.toString())
     } catch (error) {
       console.error('Failed to save image:', error)
@@ -113,9 +114,11 @@ export function useImageMenuOptions() {
   ): MenuOption[] => {
     const hasImages = !!node.imgs?.length
     const canPaste = canPasteImage(node)
+    const canExportOutputs = availability.preview && hasMultipleOutputs(node)
     if (
       (!hasImages || !availability.preview) &&
-      (!canPaste || !availability.input)
+      (!canPaste || !availability.input) &&
+      !canExportOutputs
     )
       return []
 
@@ -154,6 +157,14 @@ export function useImageMenuOptions() {
         label: t('contextMenu.Save Image'),
         icon: 'icon-[lucide--download]',
         action: () => saveImage(node)
+      })
+    }
+
+    if (canExportOutputs) {
+      options.push({
+        label: t('contextMenu.Download Images'),
+        icon: 'icon-[lucide--folder-down]',
+        action: () => showOutputsExportDialog(node)
       })
     }
 

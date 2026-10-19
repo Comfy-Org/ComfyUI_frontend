@@ -97,6 +97,30 @@ void Example
 `
   },
   {
+    file: path.join(probeDirs.source, 'mockMethodNames.ts'),
+    source: `interface Cache {
+  mockClear(): void
+  mockReset: () => void
+}
+type Store = { mockRestore(): void }
+class Fake {
+  mockClear() {}
+  mockReset = () => {}
+}
+const fake = { mockRestore() {}, 'mockClear': () => {}, mockReset }
+const { mockReset: renamed } = source
+const allowed = { reset() {}, mockFn: vi.fn() }
+void (fake as Cache & Store)
+void Fake
+void renamed
+void allowed
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'vitest.config.ts'),
+    source: 'export default { test: { mockReset: true, restoreMocks: true } }\n'
+  },
+  {
     file: path.join(probeDirs.source, 'computed.vue'),
     source: `<script setup lang="ts">
 computed(() => element.getBoundingClientRect())
@@ -277,10 +301,16 @@ function parseDiagnostics(output: string): Diagnostic[] {
   ) {
     throw new Error('Oxlint returned an invalid JSON report')
   }
-  if (!report.diagnostics.every(isDiagnostic)) {
+  const ruleDiagnostics = report.diagnostics.filter(isRuleDiagnostic)
+  if (!ruleDiagnostics.every(isDiagnostic)) {
     throw new Error('Oxlint returned diagnostics in an unexpected shape')
   }
-  return report.diagnostics
+  return ruleDiagnostics
+}
+
+// The suppressions-file summary ("new violations not covered...") has no rule code.
+function isRuleDiagnostic(value: unknown): boolean {
+  return typeof value === 'object' && value !== null && 'code' in value
 }
 
 describe('restricted syntax rules', () => {
@@ -374,6 +404,28 @@ describe('restricted syntax rules', () => {
       new Set([
         'Do not use JavaScript hard-private class members. Use TypeScript private members instead.'
       ])
+    )
+  })
+
+  it('rejects members named after Vitest mock cleanup methods outside Vite configs', () => {
+    const mockNameFindings = findingsFor('no-vitest-mock-method-names')
+    expect(
+      mockNameFindings.map(({ filename, labels }) => [
+        path.basename(filename),
+        labels[0].span.line
+      ])
+    ).toEqual([
+      ['mockMethodNames.ts', 2],
+      ['mockMethodNames.ts', 3],
+      ['mockMethodNames.ts', 5],
+      ['mockMethodNames.ts', 7],
+      ['mockMethodNames.ts', 8],
+      ['mockMethodNames.ts', 10],
+      ['mockMethodNames.ts', 10],
+      ['mockMethodNames.ts', 10]
+    ])
+    expect(mockNameFindings.every(({ severity }) => severity === 'error')).toBe(
+      true
     )
   })
 
