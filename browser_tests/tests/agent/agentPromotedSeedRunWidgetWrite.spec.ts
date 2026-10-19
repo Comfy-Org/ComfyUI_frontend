@@ -114,10 +114,25 @@ async function attachAgent(
     await agentPanel.open()
     await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('Have a look at this workflow')
+    // `waitForSubscribe` is the attachment gate: it resolves only once the
+    // follower has issued its subscribe over the host socket.
     await hostSocket.waitForSubscribe()
+  })
+
+  // Baseline, NOT a readiness gate — stated explicitly because the seed read
+  // alone reads like one and is not: `loadSeedIntoActiveTab` already put
+  // `AGENT_SUBGRAPH_INITIAL_SEED` on the canvas before the agent attached, so
+  // polling the canvas for it would pass whether or not the follower ever
+  // subscribed. What this does buy is a stated starting point on BOTH
+  // replicas, so "the randomized seed reached the shared document" later is a
+  // change rather than a coincidence, and it fails loudly if the host doc
+  // carries no named `seed` widget at all — which `projectedHostValues`
+  // silently depends on.
+  await test.step('both replicas start on the known seed', async () => {
     await expect
       .poll(() => promotedSeed(page))
       .toBe(AGENT_SUBGRAPH_INITIAL_SEED)
+    expect(projectedHostValues(host)).toContain(AGENT_SUBGRAPH_INITIAL_SEED)
   })
 
   return { host, hostSocket, submitted }
@@ -167,25 +182,25 @@ async function pressRunAndRandomizeSeed(
   })
 }
 
+/**
+ * The already-synced case, where nothing has to be caught up. The
+ * re-subscribing case below deliberately does NOT reuse this: it needs its
+ * catch-up to sit outside an expected-failure window, and threading that
+ * through as a callback is exactly what made the pin vacuous.
+ */
 async function expectRandomizedSeedSaved(
   { host }: AttachedAgent,
   randomizedSeed: number,
-  toast: ToastHelper,
-  catchUp: () => void = () => {}
+  toast: ToastHelper
 ): Promise<void> {
   await test.step('no rejected-edit notice is shown', () =>
     expectNoRejectionToast(toast))
-
-  await test.step('the follower catches up', catchUp)
 
   await test.step('the randomized seed reaches the shared document', async () => {
     await expect
       .soft(() => expect(projectedHostValues(host)).toContain(randomizedSeed))
       .toPass({ timeout: 5_000 })
   })
-
-  await test.step('no rejected-edit notice is shown after catch-up', () =>
-    expectNoRejectionToast(toast))
 }
 
 test.describe(
@@ -226,16 +241,39 @@ test.describe(
 
       const randomizedSeed = await pressRunAndRandomizeSeed(page, rig)
 
+      // Answering the withheld re-subscribe is scenario mechanics, not the
+      // defect, so it runs OUTSIDE the expected-failure window below. Wrapped
+      // inside it — which is what `expectRandomizedSeedSaved`'s `catchUp`
+      // callback used to do — a missing state vector, a `subscribed()` or
+      // `catchUp()` that threw, or a socket that never reconnected would all
+      // have been absorbed as "the expected PM-2003 failure", and the test
+      // would have reported a pass while proving nothing.
+      await test.step('the withheld re-subscribe is answered', () => {
+        expect(withheldStateVector).not.toBeNull()
+        rig.hostSocket.send(rig.host.subscribed())
+        rig.hostSocket.send(rig.host.catchUp(withheldStateVector!))
+      })
+
+      // From here on, and only from here on, failure is the known defect:
+      // the promoted write is refused rather than deferred, so the
+      // widget-write rejection toast appears and the randomized seed never
+      // reaches the shared document. Both assertions below are consequences
+      // of that one refusal, which is why the window covers both and nothing
+      // else.
       test.fail(
         true,
         'PM-2003: a promoted write made between a resubscribe and its ack is refused with the widget-write toast (docOpMinter doc_not_synced) instead of being deferred'
       )
 
-      await expectRandomizedSeedSaved(rig, randomizedSeed, toast, () => {
-        if (withheldStateVector === null)
-          throw new Error('no re-subscribe was withheld')
-        rig.hostSocket.send(rig.host.subscribed())
-        rig.hostSocket.send(rig.host.catchUp(withheldStateVector))
+      await test.step('no rejected-edit notice is shown', () =>
+        expectNoRejectionToast(toast))
+
+      await test.step('the randomized seed reaches the shared document', async () => {
+        await expect
+          .soft(() =>
+            expect(projectedHostValues(rig.host)).toContain(randomizedSeed)
+          )
+          .toPass({ timeout: 5_000 })
       })
     })
   }
