@@ -2,22 +2,21 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import Button from './button/Button.vue'
-import Dialog from './dialog/Dialog.vue'
-import DialogContent from './dialog/DialogContent.vue'
-import DialogOverlay from './dialog/DialogOverlay.vue'
-import DialogPortal from './dialog/DialogPortal.vue'
-import DialogTitle from './dialog/DialogTitle.vue'
-import Menu from './menu/Menu.vue'
-import Popover from './Popover.vue'
-import SingleSelect from './single-select/SingleSelect.vue'
-import ToastDock from './toast/ToastDock.vue'
+import Button from '../button/Button.vue'
+import Dialog from './Dialog.vue'
+import DialogContent from './DialogContent.vue'
+import DialogOverlay from './DialogOverlay.vue'
+import DialogPortal from './DialogPortal.vue'
+import DialogTitle from './DialogTitle.vue'
+import Menu from '../menu/Menu.vue'
+import Popover from '../Popover.vue'
+import SingleSelect from '../single-select/SingleSelect.vue'
+import ToastDock from '../toast/ToastDock.vue'
 
 const meta: Meta = {
   title: 'Components/Dialog/Overlay ordering',
   tags: ['autodocs'],
-  args: { retained: false },
-  render: (args) => ({
+  render: () => ({
     components: {
       Button,
       Dialog,
@@ -32,7 +31,6 @@ const meta: Meta = {
     },
     setup() {
       return {
-        args,
         a: ref(false),
         b: ref(false),
         selected: ref('a'),
@@ -49,12 +47,12 @@ const meta: Meta = {
         <Button @click="a = true">Open A</Button>
         <Button @click="b = true">Open B</Button>
       </div>
-      <Dialog v-model:open="a" :unmount-on-hide="!args.retained">
+      <Dialog v-model:open="a">
         <DialogPortal>
           <DialogOverlay data-testid="scrim-a" />
           <DialogContent data-testid="dialog-a" class="gap-4 p-6" @pointer-down-outside="onRekaPointerDownOutside({}, $event)">
             <DialogTitle>Dialog A</DialogTitle>
-            <input aria-label="Retained text" class="rounded border p-2" placeholder="Retained text" />
+            <input aria-label="Dialog input" class="rounded border p-2" placeholder="Dialog input" />
             <SingleSelect v-model="selected" label="Choose a value" :options />
             <Menu :items><template #trigger><Button>Open menu</Button></template></Menu>
             <Popover><template #button><Button>Open popover</Button></template><Button>Popover action</Button></Popover>

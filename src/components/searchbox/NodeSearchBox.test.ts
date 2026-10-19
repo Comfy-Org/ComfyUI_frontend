@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
+import { DialogPortal } from 'reka-ui'
 import { useTelemetry } from '@/platform/telemetry'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -149,12 +149,12 @@ describe('NodeSearchBox', () => {
     })
     const manager = screen.getByTestId('existing-overlay')
     const Harness = defineComponent({
-      components: { NodeSearchBox, OverlayPortal },
+      components: { NodeSearchBox, DialogPortal },
       setup: () => ({ filterVisible: ref(false) }),
       template: `
-        <OverlayPortal :open="true"><div data-testid="search-content">
+        <DialogPortal><div data-testid="search-content">
           <NodeSearchBox v-model:filter-visible="filterVisible" :filters="[]" />
-        </div></OverlayPortal>
+        </div></DialogPortal>
       `
     })
     render(Harness, {

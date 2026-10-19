@@ -3,13 +3,12 @@ import type { SelectContentEmits, SelectContentProps } from 'reka-ui'
 import {
   SelectContent,
   SelectViewport,
-  injectSelectRootContext,
-  useForwardPropsEmits
+  useForwardPropsEmits,
+  SelectPortal
 } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SelectScrollDownButton from './SelectScrollDownButton.vue'
@@ -41,12 +40,10 @@ const delegatedProps = computed(() => ({
 }))
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
-
-const rootContext = injectSelectRootContext()
 </script>
 
 <template>
-  <OverlayPortal :open="rootContext.open.value" :disabled="disablePortal">
+  <SelectPortal :disabled="disablePortal">
     <SelectContent
       v-bind="{ ...forwarded, ...$attrs }"
       :class="
@@ -82,5 +79,5 @@ const rootContext = injectSelectRootContext()
       </SelectViewport>
       <SelectScrollDownButton />
     </SelectContent>
-  </OverlayPortal>
+  </SelectPortal>
 </template>

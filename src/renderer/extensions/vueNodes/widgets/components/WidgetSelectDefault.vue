@@ -65,7 +65,7 @@
         </div>
       </ComboboxAnchor>
 
-      <OverlayPortal :open="isOpen">
+      <ComboboxPortal v-if="isOpen">
         <ComboboxContent
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
@@ -156,14 +156,14 @@
             </div>
           </div>
         </ComboboxContent>
-      </OverlayPortal>
+      </ComboboxPortal>
     </ComboboxRoot>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import {
+  ComboboxPortal,
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,

@@ -108,7 +108,7 @@ describe('SingleSelect', () => {
     unmount()
   })
 
-  it('selects a filtered option with the keyboard', async () => {
+  it('keeps a keyboard-selected option when reopened', async () => {
     const user = userEvent.setup()
     const { unmount } = renderInParent(undefined, { searchable: true })
 
@@ -118,6 +118,11 @@ describe('SingleSelect', () => {
     await user.keyboard('{ArrowDown}{Enter}')
 
     expect(screen.getByLabelText('Pick')).toHaveTextContent('Option C')
+    await openSelect(screen.getByLabelText('Pick'))
+    expect(screen.getByRole('option', { name: 'Option C' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
 
     unmount()
   })

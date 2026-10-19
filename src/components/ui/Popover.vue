@@ -3,12 +3,12 @@ import {
   PopoverArrow,
   PopoverContent,
   PopoverRoot,
-  PopoverTrigger
+  PopoverTrigger,
+  PopoverPortal
 } from 'reka-ui'
 
 import { ref } from 'vue'
 
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
@@ -28,7 +28,7 @@ const open = ref(false)
     <PopoverTrigger as-child>
       <slot name="button" />
     </PopoverTrigger>
-    <OverlayPortal :open :to>
+    <PopoverPortal v-if="open" :to>
       <PopoverContent
         side="bottom"
         :side-offset="5"
@@ -48,6 +48,6 @@ const open = ref(false)
           class="fill-background stroke-border/50"
         />
       </PopoverContent>
-    </OverlayPortal>
+    </PopoverPortal>
   </PopoverRoot>
 </template>

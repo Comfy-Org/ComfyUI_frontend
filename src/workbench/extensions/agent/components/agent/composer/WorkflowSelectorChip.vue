@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
-import { cn } from '@comfyorg/tailwind-utils'
 import {
+  DropdownMenuPortal,
   DropdownMenuItemIndicator,
   DropdownMenuRadioGroup,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -150,7 +150,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <OverlayPortal :open="open">
+      <DropdownMenuPortal v-if="open">
         <MenuContent
           side="top"
           align="start"
@@ -249,7 +249,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
             </div>
           </DropdownMenuRadioGroup>
         </MenuContent>
-      </OverlayPortal>
+      </DropdownMenuPortal>
     </DropdownMenuRoot>
   </div>
 </template>

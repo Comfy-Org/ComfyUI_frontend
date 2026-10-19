@@ -32,7 +32,7 @@
             </PopoverTrigger>
           </template>
         </i18n-t>
-        <OverlayPortal :open="open">
+        <PopoverPortal v-if="open">
           <PopoverContent
             side="top"
             :side-offset="5"
@@ -46,21 +46,21 @@
               @update:model-value="$emit('select', $event)"
             />
           </PopoverContent>
-        </OverlayPortal>
+        </PopoverPortal>
       </div>
     </PopoverAnchor>
   </PopoverRoot>
 </template>
 
 <script setup lang="ts">
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
-import { computed } from 'vue'
 import {
+  PopoverPortal,
   PopoverAnchor,
   PopoverContent,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 

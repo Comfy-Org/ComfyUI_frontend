@@ -2,13 +2,13 @@
 import {
   HoverCardContent,
   injectHoverCardRootContext,
-  useForwardProps
+  useForwardProps,
+  HoverCardPortal
 } from 'reka-ui'
 import type { HoverCardContentProps } from 'reka-ui'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -24,7 +24,7 @@ const { open } = injectHoverCardRootContext()
 </script>
 
 <template>
-  <OverlayPortal :open>
+  <HoverCardPortal v-if="open || rest.forceMount">
     <HoverCardContent
       v-bind="forwarded"
       :side
@@ -38,5 +38,5 @@ const { open } = injectHoverCardRootContext()
     >
       <slot />
     </HoverCardContent>
-  </OverlayPortal>
+  </HoverCardPortal>
 </template>

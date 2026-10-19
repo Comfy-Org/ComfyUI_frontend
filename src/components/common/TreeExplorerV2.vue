@@ -40,24 +40,24 @@
         </TreeVirtualizer>
       </TreeRoot>
     </ContextMenuTrigger>
-    <OverlayPortal :open="menuOpen">
+    <ContextMenuPortal v-if="menuOpen">
       <ContextMenuContent :class="menuContentClass">
         <MenuItems :items="menuItems" />
       </ContextMenuContent>
-    </OverlayPortal>
+    </ContextMenuPortal>
   </ContextMenuRoot>
 </template>
 
 <script setup lang="ts">
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
-import type { FlattenedItem } from 'reka-ui'
 import {
+  ContextMenuPortal,
   ContextMenuRoot,
   ContextMenuTrigger,
   ContextMenuContent,
   TreeRoot,
   TreeVirtualizer
 } from 'reka-ui'
+import type { FlattenedItem } from 'reka-ui'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

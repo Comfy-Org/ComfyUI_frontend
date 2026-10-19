@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { PopoverContent, PopoverRoot, PopoverTrigger } from 'reka-ui'
+import {
+  PopoverContent,
+  PopoverRoot,
+  PopoverTrigger,
+  PopoverPortal
+} from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import type { HSVA } from '@/utils/colorUtil'
 import { hexToHsva, hsbToRgb, hsvaToHex, rgbToHex } from '@/utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -116,7 +120,7 @@ const isOpen = ref(false)
         </button>
       </slot>
     </PopoverTrigger>
-    <OverlayPortal :open="isOpen">
+    <PopoverPortal v-if="isOpen">
       <PopoverContent
         side="bottom"
         align="start"
@@ -130,6 +134,6 @@ const isOpen = ref(false)
           :alpha
         />
       </PopoverContent>
-    </OverlayPortal>
+    </PopoverPortal>
   </PopoverRoot>
 </template>

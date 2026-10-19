@@ -45,7 +45,7 @@
       </ComboboxTrigger>
     </ComboboxAnchor>
 
-    <OverlayPortal :open="isOpen">
+    <ComboboxPortal v-if="isOpen">
       <ComboboxContent
         position="popper"
         :side-offset="8"
@@ -96,7 +96,7 @@
           </ComboboxViewport>
         </FocusScope>
       </ComboboxContent>
-    </OverlayPortal>
+    </ComboboxPortal>
   </ComboboxRoot>
 </template>
 
@@ -113,7 +113,8 @@ import {
   ComboboxRoot,
   ComboboxTrigger,
   ComboboxViewport,
-  FocusScope
+  FocusScope,
+  ComboboxPortal
 } from 'reka-ui'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { StyleValue } from 'vue'
@@ -130,7 +131,6 @@ import {
 import type { SelectOption } from '@/components/ui/select/types'
 import { useSelectSearch } from '@/components/ui/select/useSelectSearch'
 import { useAttrsClass } from '@/composables/useAttrsClass'
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 
 defineOptions({ inheritAttrs: false })

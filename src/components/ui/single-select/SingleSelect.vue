@@ -55,7 +55,7 @@
       </div>
     </SelectTrigger>
 
-    <OverlayPortal :open="isOpen">
+    <SelectPortal>
       <SelectContent
         position="popper"
         :side-offset="8"
@@ -88,7 +88,7 @@
           </SelectItem>
         </SelectViewport>
       </SelectContent>
-    </OverlayPortal>
+    </SelectPortal>
   </SelectRoot>
 </template>
 
@@ -101,7 +101,8 @@ import {
   SelectRoot,
   SelectTrigger,
   SelectValue,
-  SelectViewport
+  SelectViewport,
+  SelectPortal
 } from 'reka-ui'
 import { ref } from 'vue'
 import type { StyleValue } from 'vue'
@@ -116,7 +117,6 @@ import {
 } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import {
+  DropdownMenuPortal,
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
@@ -113,7 +113,7 @@ const options: {
         />
       </Button>
     </DropdownMenuTrigger>
-    <OverlayPortal :open="open">
+    <DropdownMenuPortal v-if="open">
       <DropdownMenuContent
         side="top"
         align="end"
@@ -200,6 +200,6 @@ const options: {
       <span v-if="open" role="status" class="sr-only">
         {{ savingMode === null ? '' : t('g.saving') }}
       </span>
-    </OverlayPortal>
+    </DropdownMenuPortal>
   </DropdownMenuRoot>
 </template>

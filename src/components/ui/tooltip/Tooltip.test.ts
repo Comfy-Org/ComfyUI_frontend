@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
+import { DialogPortal } from 'reka-ui'
 
 import Tooltip from './Tooltip.vue'
 import TooltipContent from './TooltipContent.vue'
@@ -16,7 +16,7 @@ const TooltipHarness = defineComponent({
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
-    OverlayPortal
+    DialogPortal
   },
   props: {
     delayDuration: { type: Number, default: 0 },
@@ -35,7 +35,7 @@ const TooltipHarness = defineComponent({
         <TooltipContent>Helpful text</TooltipContent>
       </Tooltip>
       <button @click="dialogs++">Open dialog</button>
-      <OverlayPortal v-for="n in dialogs" :key="n" :open="true"><div data-testid="dialog" class="fixed z-overlay" /></OverlayPortal>
+      <DialogPortal v-for="n in dialogs" :key="n"><div data-testid="dialog" class="fixed z-overlay" /></DialogPortal>
     </TooltipProvider>
   `
 })

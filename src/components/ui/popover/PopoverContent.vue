@@ -3,12 +3,12 @@ import type { PopoverContentEmits, PopoverContentProps } from 'reka-ui'
 import {
   PopoverContent,
   injectPopoverRootContext,
-  useForwardPropsEmits
+  useForwardPropsEmits,
+  PopoverPortal
 } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
 
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
@@ -34,7 +34,7 @@ const rootContext = injectPopoverRootContext()
 </script>
 
 <template>
-  <OverlayPortal :open="rootContext.open.value">
+  <PopoverPortal v-if="rootContext.open.value || restProps.forceMount">
     <PopoverContent
       v-bind="{ ...forwarded, ...$attrs }"
       :class="
@@ -51,5 +51,5 @@ const rootContext = injectPopoverRootContext()
     >
       <slot />
     </PopoverContent>
-  </OverlayPortal>
+  </PopoverPortal>
 </template>

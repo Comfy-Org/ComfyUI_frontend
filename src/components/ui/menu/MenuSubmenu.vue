@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { DropdownMenuSub } from 'reka-ui'
+import { DropdownMenuSub, DropdownMenuPortal } from 'reka-ui'
 import { computed, toValue } from 'vue'
-
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 
 import MenuRadioGroup from './MenuRadioGroup.vue'
 import MenuSubContent from './MenuSubContent.vue'
@@ -30,7 +28,7 @@ const disabled = computed(
     >
       <slot />
     </MenuSubTrigger>
-    <OverlayPortal :open>
+    <DropdownMenuPortal v-if="open">
       <MenuSubContent
         :data-menu-owner="ownerId"
         :side-offset="2"
@@ -43,6 +41,6 @@ const disabled = computed(
           :options="item.radioGroup.options"
         />
       </MenuSubContent>
-    </OverlayPortal>
+    </DropdownMenuPortal>
   </DropdownMenuSub>
 </template>

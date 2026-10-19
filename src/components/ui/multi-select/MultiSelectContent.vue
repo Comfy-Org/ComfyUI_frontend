@@ -1,5 +1,5 @@
 <template>
-  <OverlayPortal :open>
+  <ComboboxPortal v-if="open">
     <ComboboxContent
       position="popper"
       :side-offset="8"
@@ -96,7 +96,7 @@
         </div>
       </FocusScope>
     </ComboboxContent>
-  </OverlayPortal>
+  </ComboboxPortal>
 </template>
 
 <script setup lang="ts">
@@ -109,14 +109,14 @@ import {
   ComboboxItemIndicator,
   ComboboxViewport,
   FocusScope,
-  injectComboboxRootContext
+  injectComboboxRootContext,
+  ComboboxPortal
 } from 'reka-ui'
 import { computed } from 'vue'
 import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useSelectSearch } from '@/components/ui/select/useSelectSearch'
 

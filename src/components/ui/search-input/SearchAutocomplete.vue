@@ -73,7 +73,7 @@
       />
     </ComboboxAnchor>
 
-    <OverlayPortal :open="isOpen">
+    <ComboboxPortal v-if="isOpen">
       <ComboboxContent
         v-if="suggestions.length > 0"
         position="popper"
@@ -105,7 +105,7 @@
           </slot>
         </ComboboxItem>
       </ComboboxContent>
-    </OverlayPortal>
+    </ComboboxPortal>
   </ComboboxRoot>
 </template>
 
@@ -118,13 +118,13 @@ import {
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
-  ComboboxRoot
+  ComboboxRoot,
+  ComboboxPortal
 } from 'reka-ui'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import type { SearchInputVariants } from './searchInput.variants'
 import {
   searchInputSizeConfig,

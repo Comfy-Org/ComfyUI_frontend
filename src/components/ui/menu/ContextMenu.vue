@@ -2,15 +2,14 @@
 import {
   DropdownMenuContent,
   DropdownMenuRoot,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuPortal
 } from 'reka-ui'
 import type { DropdownMenuContentProps } from 'reka-ui'
 import { useEventListener } from '@vueuse/core'
 import { nextTick, ref, useId, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 
 import MenuItems from './MenuItems.vue'
 import { getMenuAnchorPosition } from './menuAnchor'
@@ -131,7 +130,7 @@ defineExpose({ hide, show, toggle, visible })
         />
       </DropdownMenuTrigger>
     </Teleport>
-    <OverlayPortal :open="visible">
+    <DropdownMenuPortal v-if="visible">
       <DropdownMenuContent
         :id="providedId ?? generatedId"
         :reference
@@ -155,6 +154,6 @@ defineExpose({ hide, show, toggle, visible })
           </template>
         </MenuItems>
       </DropdownMenuContent>
-    </OverlayPortal>
+    </DropdownMenuPortal>
   </DropdownMenuRoot>
 </template>

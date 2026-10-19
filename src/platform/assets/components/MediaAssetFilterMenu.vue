@@ -82,7 +82,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <OverlayPortal :open="open">
+    <DropdownMenuPortal v-if="open">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"
@@ -104,7 +104,7 @@
           </DropdownMenuItemIndicator>
         </DropdownMenuCheckboxItem>
       </DropdownMenuSubContent>
-    </OverlayPortal>
+    </DropdownMenuPortal>
   </DropdownMenuSub>
 
   <DropdownMenuSub v-if="!isSearching" v-slot="{ open }">
@@ -120,7 +120,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <OverlayPortal :open="open">
+    <DropdownMenuPortal v-if="open">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"
@@ -144,13 +144,13 @@
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuSubContent>
-    </OverlayPortal>
+    </DropdownMenuPortal>
   </DropdownMenuSub>
 </template>
 
 <script setup lang="ts">
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import {
+  DropdownMenuPortal,
   DropdownMenuCheckboxItem,
   DropdownMenuItemIndicator,
   DropdownMenuLabel,

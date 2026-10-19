@@ -12,7 +12,7 @@
         </div>
       </Button>
     </PopoverTrigger>
-    <OverlayPortal :open="isOpen">
+    <PopoverPortal v-if="isOpen">
       <PopoverContent
         side="bottom"
         :side-offset="5"
@@ -58,13 +58,13 @@
         </div>
         <PopoverArrow class="fill-background stroke-border/50" />
       </PopoverContent>
-    </OverlayPortal>
+    </PopoverPortal>
   </PopoverRoot>
 </template>
 
 <script setup lang="ts">
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import {
+  PopoverPortal,
   PopoverArrow,
   PopoverContent,
   PopoverRoot,

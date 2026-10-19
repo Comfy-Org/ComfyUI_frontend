@@ -104,11 +104,11 @@
         </Button>
       </div>
     </ContextMenuTrigger>
-    <OverlayPortal :open="menuOpen">
+    <ContextMenuPortal v-if="menuOpen">
       <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
         <MenuItems :items="contextMenuItems" />
       </ContextMenuContent>
-    </OverlayPortal>
+    </ContextMenuPortal>
   </ContextMenuRoot>
   <WorkflowTabPopover
     ref="popoverRef"
@@ -119,8 +119,8 @@
 </template>
 
 <script setup lang="ts">
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import {
+  ContextMenuPortal,
   ContextMenuContent,
   ContextMenuRoot,
   ContextMenuTrigger

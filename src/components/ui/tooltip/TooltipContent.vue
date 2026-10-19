@@ -4,12 +4,12 @@ import {
   TooltipArrow,
   TooltipContent,
   injectTooltipRootContext,
-  useForwardPropsEmits
+  useForwardPropsEmits,
+  TooltipPortal
 } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed, onUpdated, ref, useTemplateRef, watch } from 'vue'
 
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
@@ -50,7 +50,7 @@ const forwarded = useForwardPropsEmits(
 </script>
 
 <template>
-  <OverlayPortal v-if="rootContext.open.value" :open="rootContext.open.value">
+  <TooltipPortal v-if="rootContext.open.value">
     <div class="pointer-events-none">
       <TooltipContent
         v-bind="{ ...forwarded, ...$attrs }"
@@ -75,5 +75,5 @@ const forwarded = useForwardPropsEmits(
         />
       </TooltipContent>
     </div>
-  </OverlayPortal>
+  </TooltipPortal>
 </template>

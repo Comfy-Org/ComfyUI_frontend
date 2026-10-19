@@ -37,7 +37,6 @@ jobs:
                     . != "package.json"
                     and . != "LICENSE"
                     and . != "README.md"
-                    and . != "src/OverlayPortal.vue"
                     and . != "src/workspaceAvatar.ts"
                     and . != "src/button.variants.ts"
                     and . != "src/select.variants.ts"

@@ -14,7 +14,7 @@
       </div>
     </SelectTrigger>
 
-    <OverlayPortal :open="isOpen">
+    <SelectPortal>
       <SelectContent
         position="popper"
         :side-offset="8"
@@ -46,7 +46,7 @@
           </SelectItem>
         </SelectViewport>
       </SelectContent>
-    </OverlayPortal>
+    </SelectPortal>
   </SelectRoot>
 </template>
 
@@ -60,14 +60,13 @@ import {
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
+  SelectPortal,
   SelectRoot,
   SelectTrigger,
   SelectValue,
   SelectViewport
 } from 'reka-ui'
 import { ref } from 'vue'
-
-import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 
 import {
   selectContentClass,
