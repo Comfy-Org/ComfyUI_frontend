@@ -80,7 +80,7 @@ export interface DocOpMinterDeps {
    * sent the root host's `add_node` into the same document.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
-  onWidgetWriteRefused(): void
+  onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
 }
 
 type PromotedWriteRefusal =
@@ -524,7 +524,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
     if ('reason' in routed) {
       reportRefusal(rootGraphId, event, routed)
-      deps.onWidgetWriteRefused()
+      deps.onWidgetWriteRefused(event.nodeId, event.name)
       return
     }
     schedule({ kind: 'op', operation: routed })
