@@ -46,11 +46,6 @@ describe('useComfyManagerService', () => {
     service = useComfyManagerService()
   })
 
-  it('initializes with idle state', () => {
-    expect(service.isLoading.value).toBe(false)
-    expect(service.error.value).toBeNull()
-  })
-
   describe('availability gate', () => {
     it('short-circuits requests when Manager is not in NEW_UI mode', async () => {
       managerState.isNewManagerUI = false

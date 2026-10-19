@@ -1,4 +1,3 @@
-import type { AxiosError } from 'axios'
 import axios from 'axios'
 import { watch } from 'vue'
 
@@ -34,15 +33,13 @@ export const useReleaseService = () => {
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string => {
-    if (!axios.isAxiosError(err))
+    if (!axios.isAxiosError<ErrorResponse>(err))
       return err instanceof Error
         ? `${context}: ${err.message}`
         : `${context}: Unknown error occurred`
 
-    const axiosError = err as AxiosError<ErrorResponse>
-
-    if (axiosError.response) {
-      const { status, data } = axiosError.response
+    if (err.response) {
+      const { status, data } = err.response
 
       if (routeSpecificErrors && routeSpecificErrors[status])
         return routeSpecificErrors[status]
@@ -59,11 +56,11 @@ export const useReleaseService = () => {
         case 500:
           return `Server error: ${data.message || 'Internal server error'}`
         default:
-          return `${context}: ${data.message || axiosError.message}`
+          return `${context}: ${data.message || err.message}`
       }
     }
 
-    return `${context}: ${axiosError.message}`
+    return `${context}: ${err.message}`
   }
 
   const { isLoading, error, executeRequest } = useApiRequest({

@@ -1,4 +1,4 @@
-import type { AxiosError, AxiosInstance, AxiosResponse } from 'axios'
+import type { AxiosInstance, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -62,16 +62,15 @@ export const useComfyManagerService = () => {
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string => {
-    if (!axios.isAxiosError(err)) {
+    if (!axios.isAxiosError<{ message?: string }>(err)) {
       return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
     }
 
-    const axiosError = err as AxiosError<{ message: string }>
-    if (!axiosError.response) {
-      return `${context} failed: ${axiosError.message}`
+    if (!err.response) {
+      return `${context} failed: ${err.message}`
     }
 
-    const status = axiosError.response.status
+    const status = err.response.status
     if (routeSpecificErrors?.[status]) {
       return routeSpecificErrors[status]
     }
@@ -80,8 +79,7 @@ export const useComfyManagerService = () => {
     }
 
     return (
-      axiosError.response.data?.message ??
-      `${context} failed with status ${status}`
+      err.response.data.message ?? `${context} failed with status ${status}`
     )
   }
 

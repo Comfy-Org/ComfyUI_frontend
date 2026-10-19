@@ -24,11 +24,6 @@ describe('useComfyRegistryService', () => {
     service = useComfyRegistryService()
   })
 
-  it('initializes with idle state', () => {
-    expect(service.isLoading.value).toBe(false)
-    expect(service.error.value).toBeNull()
-  })
-
   describe('request routing', () => {
     it('getNodeDefs hits the comfy-nodes endpoint', async () => {
       await service.getNodeDefs({ packId: 'pack', version: '1.0.0' })

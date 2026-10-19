@@ -1,4 +1,3 @@
-import type { AxiosError } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
@@ -52,23 +51,21 @@ export const useCustomerEventsService = () => {
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string => {
-    if (!axios.isAxiosError(err)) {
+    if (!axios.isAxiosError<Partial<ErrorResponse>>(err)) {
       return `${context} failed: ${err instanceof Error ? err.message : String(err)}`
     }
 
-    const axiosError = err as AxiosError<ErrorResponse>
-    if (!axiosError.response) {
-      return `${context} failed: ${axiosError.message}`
+    if (!err.response) {
+      return `${context} failed: ${err.message}`
     }
 
-    const status = axiosError.response.status
+    const status = err.response.status
     if (routeSpecificErrors?.[status]) {
       return routeSpecificErrors[status]
     }
 
     return (
-      axiosError.response.data?.message ??
-      `${context} failed with status ${status}`
+      err.response.data.message ?? `${context} failed with status ${status}`
     )
   }
 

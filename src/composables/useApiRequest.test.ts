@@ -1,4 +1,5 @@
-import type { AxiosInstance, AxiosResponse } from 'axios'
+import type { AxiosResponse } from 'axios'
+import axios, { AxiosHeaders } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useApiRequest } from '@/composables/useApiRequest'
@@ -9,10 +10,16 @@ vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
   isAbortError: mockIsAbortError
 }))
 
-const client = { id: 'test-client' } as unknown as AxiosInstance
+const client = axios.create()
 
 function response<T>(data: T): AxiosResponse<T> {
-  return { data } as AxiosResponse<T>
+  return {
+    data,
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config: { headers: new AxiosHeaders() }
+  }
 }
 
 describe('useApiRequest', () => {
