@@ -1,7 +1,7 @@
 import { isEqual } from 'es-toolkit'
 
 import { assert } from '@/base/assert'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type {
   IBaseWidget,
@@ -14,7 +14,7 @@ export interface CoreWidgetSerialization {
   widgets_values_named: Record<string, TWidgetValue>
 }
 
-export interface WidgetSerializationFormReport {
+interface WidgetSerializationFormReport {
   nodeId: string
   nodeType: string
 }
