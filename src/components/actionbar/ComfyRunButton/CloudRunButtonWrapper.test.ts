@@ -17,7 +17,7 @@ const mockCanRunWorkflows = ref(true)
 const mockIsFreeTier = ref(true)
 const mockIsInitialized = ref(true)
 const mockSubscriptionTier = ref<string | null>(null)
-const mockPaymentRecoveryAvailable = ref(false)
+const mockPaymentRecoveryLock = ref<'owner' | 'member' | null>(null)
 const showPaymentRecoveryDialog = vi.fn()
 const refreshCapabilities = vi.fn(async () => undefined)
 
@@ -41,7 +41,7 @@ vi.mock<unknown>(
       props: ['paymentRecoveryLock'],
       emits: ['paymentRecoveryClick'],
       template:
-        '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock === \'owner\' ? \'Update payment to run\' : \'Run\' }}</button><div data-testid="queue-dropdown"/></div>'
+        '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" :title="paymentRecoveryLock === \'member\' ? \'Ask your workspace owner to restore this subscription\' : undefined" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock === \'owner\' ? \'Update payment to run\' : \'Run\' }}</button><div data-testid="queue-dropdown"/></div>'
     }
   })
 )
@@ -96,7 +96,7 @@ function portalOpenedCallback() {
 function restoreRunOnRefresh() {
   vi.mocked(useBillingContext().fetchStatus).mockImplementationOnce(
     async () => {
-      mockPaymentRecoveryAvailable.value = false
+      mockPaymentRecoveryLock.value = null
       mockCanRunWorkflows.value = true
     }
   )
@@ -118,14 +118,12 @@ describe('CloudRunButtonWrapper', () => {
     mockIsInitialized.value = true
     mockSubscriptionTier.value = null
     mockIsFreeTier.value = true
-    mockPaymentRecoveryAvailable.value = false
+    mockPaymentRecoveryLock.value = null
     vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
       showPaymentRecoveryDialog,
       updatePayment: vi.fn(),
       isUpdatingPayment: computed(() => false),
-      paymentRecoveryLock: computed(() =>
-        mockPaymentRecoveryAvailable.value ? 'owner' : null
-      ),
+      paymentRecoveryLock: computed(() => mockPaymentRecoveryLock.value),
       refreshCapabilities
     })
   })
@@ -159,7 +157,7 @@ describe('CloudRunButtonWrapper', () => {
 
     it('keeps the topbar CTA under payment recovery, where the prompt never mounts', () => {
       mockCanRunWorkflows.value = false
-      mockPaymentRecoveryAvailable.value = true
+      mockPaymentRecoveryLock.value = 'owner'
 
       renderCtaSurface()
 
@@ -238,7 +236,7 @@ describe('CloudRunButtonWrapper', () => {
     (billingStatus) => {
       useBillingContext().billingStatus = computed(() => billingStatus)
       mockCanRunWorkflows.value = false
-      mockPaymentRecoveryAvailable.value = true
+      mockPaymentRecoveryLock.value = 'owner'
       renderWrapper()
 
       expect(screen.getByTestId('queue-button')).toHaveTextContent(
@@ -261,6 +259,25 @@ describe('CloudRunButtonWrapper', () => {
       expect(screen.queryByTestId('queue-group')).not.toBeInTheDocument()
     }
   )
+
+  it('locks Run for a member of a past-due workspace and opens the recovery dialog, not the portal', async () => {
+    mockCanRunWorkflows.value = false
+    mockPaymentRecoveryLock.value = 'member'
+    renderWrapper()
+
+    const run = screen.getByRole('button', { name: 'Run' })
+    expect(run).toHaveAccessibleDescription(
+      'Ask your workspace owner to restore this subscription'
+    )
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(run)
+
+    expect(showPaymentRecoveryDialog).toHaveBeenCalledOnce()
+    expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
+  })
 
   it('refreshes stale billing state on focus and restores Run', async () => {
     mockCanRunWorkflows.value = false
@@ -392,7 +409,7 @@ describe('CloudRunButtonWrapper', () => {
 
   it('preserves queue controls and opens the recovery dialog when payment recovery is available', async () => {
     mockCanRunWorkflows.value = false
-    mockPaymentRecoveryAvailable.value = true
+    mockPaymentRecoveryLock.value = 'owner'
     renderWrapper()
 
     expect(screen.getByTestId('batch-count')).toBeInTheDocument()
@@ -407,7 +424,7 @@ describe('CloudRunButtonWrapper', () => {
 
   it('does not refresh billing before the recovery portal is opened', async () => {
     mockCanRunWorkflows.value = false
-    mockPaymentRecoveryAvailable.value = true
+    mockPaymentRecoveryLock.value = 'owner'
     renderWrapper()
 
     await userEvent.click(
@@ -422,7 +439,7 @@ describe('CloudRunButtonWrapper', () => {
 
   it('refreshes billing and capabilities once on focus after returning from the portal', async () => {
     mockCanRunWorkflows.value = false
-    mockPaymentRecoveryAvailable.value = true
+    mockPaymentRecoveryLock.value = 'owner'
     restoreRunOnRefresh()
     renderWrapper()
 

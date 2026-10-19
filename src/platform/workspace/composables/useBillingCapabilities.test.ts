@@ -1492,6 +1492,27 @@ describe('useBillingCapabilities on the SDK rail', () => {
     expect(readCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
+
+  it.for([
+    { denial: 'payment_past_due', expected: true },
+    { denial: 'no_funds', expected: false },
+    { denial: undefined, expected: false }
+  ])(
+    'reads a can_run_workflows denial of $denial as payment past due: $expected',
+    async ({ denial, expected }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'ok',
+        value: {
+          ...capabilitiesResponse(true),
+          denied_reasons: { can_run_workflows: denial }
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.runDeniedPaymentPastDue.value).toBe(expected)
+    }
+  )
 })
 
 describe('useBillingCapabilities capability gates', () => {

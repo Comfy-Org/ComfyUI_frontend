@@ -6,7 +6,8 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
   canManageBillingFact,
-  paymentRecoveryAvailableFact
+  paymentRecoveryAvailableFact,
+  runDeniedPaymentPastDueFact
 } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
@@ -68,13 +69,18 @@ describe('usePaymentRecoveryDialog', () => {
   )
 
   it.for([
-    { available: true, lock: 'owner' },
-    { available: false, lock: null }
+    { available: true, runDeniedPastDue: false, lock: 'owner' },
+    { available: true, runDeniedPastDue: true, lock: 'owner' },
+    { available: false, runDeniedPastDue: true, lock: 'member' },
+    { available: false, runDeniedPastDue: false, lock: null }
   ])(
-    'locks for recovery as $lock when payment_recovery_available is $available',
-    ({ available, lock }) => {
-      useBillingCapabilities().paymentRecoveryAvailable =
+    'locks for recovery as $lock when payment_recovery_available is $available and Run is denied past due: $runDeniedPastDue',
+    ({ available, runDeniedPastDue, lock }) => {
+      const capabilities = useBillingCapabilities()
+      capabilities.paymentRecoveryAvailable =
         paymentRecoveryAvailableFact(available)
+      capabilities.runDeniedPaymentPastDue =
+        runDeniedPaymentPastDueFact(runDeniedPastDue)
 
       expect(usePaymentRecoveryDialog().paymentRecoveryLock.value).toBe(lock)
     }
