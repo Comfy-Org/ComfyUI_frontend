@@ -3,15 +3,12 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
-import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
-import {
-  selectedTake,
-  takesOfShot
-} from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { translationsFor } from '../../../i18n/translations'
+import type { AspectRatio } from '@/lib/workshop/cinematic-studio/catalog'
+import type { CinematicModel } from '@/lib/workshop/cinematic-studio/models'
+import type { Reel } from '@/lib/workshop/cinematic-studio/reel'
+import { selectedTake, takesOfShot } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { framedStyle } from './aspect-style'
 import CinematicCreditSummary from './CinematicCreditSummary.vue'
 import CinematicSequence from './CinematicSequence.vue'

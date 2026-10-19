@@ -1,0 +1,33 @@
+{
+  "id": "graph-compatibility",
+  "capability": "Legacy graph utility adapters",
+  "description": "Shared technical module for the existing mixed-purpose LiteGraph utility file: media-node detection, widget lookup and callbacks, slot migration, and graph-item presentation. This records the current compatibility module and its debt; it does not assert that these concerns should remain together.",
+  "modules": [
+    {
+      "path": "src/utils/__mocks__/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/litegraphUtil.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/utils/litegraphUtil.ts",
+      "role": "integration"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Legacy graph utility adapters preserves its existing behavior",
+      "checks": ["src/utils/litegraphUtil.test.ts"]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and behavior without granting cross-module permissions. This record describes current responsibilities, not a proposed extraction interface."
+  ],
+  "deepImports": "inventory"
+}

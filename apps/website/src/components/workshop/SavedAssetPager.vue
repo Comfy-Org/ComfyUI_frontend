@@ -3,8 +3,8 @@ import { ChevronLeft, ChevronRight } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { translationsFor } from '../../i18n/translations'
-import type { Locale } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
 const {
   index,
@@ -27,7 +27,7 @@ const dotClass = (active: boolean) =>
     'size-2 cursor-pointer rounded-full transition-colors',
     active
       ? 'bg-primary-comfy-yellow'
-      : 'bg-transparency-white-t20 hover:bg-transparency-white-t40'
+      : 'bg-transparency-white-t20 hover:bg-white/40'
   )
 </script>
 

@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
-import type * as realPosthog from '../posthog'
+import type * as realPosthog from '@/scripts/posthog'
 
 const workshopEnabled = readonly(ref(false))
 const workshopEnabledSettled = readonly(ref(true))
@@ -19,6 +19,7 @@ const posthog: typeof realPosthog = {
   initPostHog: vi.fn(),
   identifyWorkshopUser: vi.fn(),
   capturePageview: vi.fn(),
+  captureVfxLinkClick: vi.fn(),
   captureWorkshopEvent: vi.fn(),
   captureDownloadClick: vi.fn(),
   captureCliConnectionTabClick: vi.fn(),
@@ -48,6 +49,7 @@ const {
   initPostHog,
   identifyWorkshopUser,
   capturePageview,
+  captureVfxLinkClick,
   captureWorkshopEvent,
   captureDownloadClick,
   captureCliConnectionTabClick,
@@ -77,6 +79,7 @@ export {
   initPostHog,
   identifyWorkshopUser,
   capturePageview,
+  captureVfxLinkClick,
   captureWorkshopEvent,
   captureDownloadClick,
   captureCliConnectionTabClick,

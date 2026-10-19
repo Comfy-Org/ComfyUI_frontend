@@ -3,10 +3,13 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import AgentConsentCard from '@/workbench/extensions/agent/components/agent/AgentConsentCard.vue'
+import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 const MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
-const VIDEO_SRC = `${MEDIA_BASE}/agent-consent-v2-1280.webm`
-const VIDEO_SRC_MP4 = `${MEDIA_BASE}/agent-consent-v2-1280.mp4`
+const VIDEO_SOURCES = [
+  { src: `${MEDIA_BASE}/agent-consent-v2-1280.webm`, type: 'video/webm' },
+  { src: `${MEDIA_BASE}/agent-consent-v2-1280.mp4`, type: 'video/mp4' }
+]
 const POSTER_SRC = `${MEDIA_BASE}/agent-consent-v2-poster.jpg`
 
 const paragraphs = [
@@ -23,15 +26,14 @@ const meta: Meta<typeof AgentConsentCard> = {
   args: {
     title: enMessages.agent.consent.title,
     paragraphs,
-    videoSrc: VIDEO_SRC,
-    videoSrcMp4: VIDEO_SRC_MP4,
+    videoSources: VIDEO_SOURCES,
     posterSrc: POSTER_SRC,
-    docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent'
+    docsUrl: AGENT_DOCS_URL
   },
   decorators: [
     () => ({
       template:
-        '<div class="grid place-items-center bg-base-background p-8"><story /></div>'
+        '<div class="grid place-items-center bg-background p-8"><story /></div>'
     })
   ]
 }
@@ -53,7 +55,7 @@ export const InLightApp: Story = {
 }
 
 export const WithoutVideo: Story = {
-  args: { videoSrc: '' }
+  args: { videoSources: [] }
 }
 
 export const SingleParagraph: Story = {
@@ -72,7 +74,7 @@ export const InNarrowPanel: Story = {
   decorators: [
     () => ({
       template:
-        '<div class="grid place-items-center bg-base-background p-8"><div class="w-[380px]"><story /></div></div>'
+        '<div class="grid place-items-center bg-background p-8"><div class="w-[380px]"><story /></div></div>'
     })
   ]
 }

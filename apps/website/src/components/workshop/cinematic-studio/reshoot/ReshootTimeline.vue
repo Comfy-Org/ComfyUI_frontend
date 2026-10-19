@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { KeyRound, Pause, Play } from '@lucide/vue'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
@@ -8,13 +8,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type {
   CameraKey,
   ReshootMotion
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
+} from '@/lib/workshop/cinematic-studio/reshoot'
 import {
   RESHOOT_MOTIONS,
   frameTime
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import type { Locale } from '../../../../i18n/translations'
-import CinematicMenu from '../CinematicMenu.vue'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import type { Locale } from '@/i18n/translations'
+import CinematicMenu from '@/components/workshop/cinematic-studio/CinematicMenu.vue'
 
 // The clip's timeline under the live preview: play it, scrub it, and key the
 // camera where the playhead is. Keys are the diamonds under the track; once

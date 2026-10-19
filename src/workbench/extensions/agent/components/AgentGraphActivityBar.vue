@@ -35,11 +35,9 @@ const presentation = computed(() => ({
   testId: isComplete.value
     ? 'agent-graph-added-toast'
     : 'agent-graph-activity-bar',
-  accent: isComplete.value
-    ? 'border-l-success-background'
-    : 'border-l-base-foreground',
+  accent: isComplete.value ? 'border-l-success' : 'border-l-foreground',
   iconClass: isComplete.value
-    ? 'icon-[lucide--check] text-success-background'
+    ? 'icon-[lucide--check] text-success'
     : 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin',
   title: isComplete.value
     ? t('agent.nodesAdded', visibleState.value?.nodeIds.length ?? 0)
@@ -104,7 +102,6 @@ function viewNodes(): void {
               v-if="liveNodes.length > 0"
               variant="secondary"
               size="sm"
-              class="whitespace-nowrap"
               @click="viewNodes"
             >
               {{ t('agent.viewAddedNodes', liveNodes.length) }}

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { ArrowUpRight } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../../i18n/translations'
-import { captureWorkshopEvent } from '../../../scripts/posthog'
+import type { Locale } from '@/i18n/translations'
+import { captureWorkshopEvent } from '@/scripts/posthog'
 
 const {
   repo,

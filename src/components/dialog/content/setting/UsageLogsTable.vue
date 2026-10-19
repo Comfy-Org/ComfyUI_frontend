@@ -6,102 +6,102 @@
     <div v-else-if="error" class="p-4">
       <Message severity="error">{{ error }}</Message>
     </div>
-    <DataTable
-      v-else
-      :value="events"
-      :paginator="true"
-      :rows="pagination.limit"
-      :total-records="pagination.total"
-      :first="dataTableFirst"
-      :lazy="true"
-      class="p-datatable-sm custom-datatable"
-      @page="onPageChange"
-    >
-      <Column field="event_type" :header="$t('credits.eventType')">
-        <template #body="{ data }">
-          <Badge
-            variant="badge"
-            :severity="customerEventService.getEventSeverity(data.event_type)"
+    <template v-else>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{{ $t('credits.eventType') }}</TableHead>
+            <TableHead>{{ $t('credits.details') }}</TableHead>
+            <TableHead>{{ $t('credits.time') }}</TableHead>
+            <TableHead>{{ $t('credits.additionalInfo') }}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow
+            v-for="(event, index) in events"
+            :key="event.event_id ?? index"
           >
-            {{ customerEventService.formatEventType(data.event_type) }}
-          </Badge>
-        </template>
-      </Column>
-      <Column field="details" :header="$t('credits.details')">
-        <template #body="{ data }">
-          <div class="event-details">
-            <!-- Credits Added -->
-            <template v-if="data.event_type === EventType.CREDIT_ADDED">
-              <div class="font-semibold text-green-500">
+            <TableCell>
+              <Badge
+                variant="badge"
+                :severity="
+                  customerEventService.getEventSeverity(event.event_type ?? '')
+                "
+              >
+                {{
+                  customerEventService.formatEventType(event.event_type ?? '')
+                }}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <div
+                v-if="event.event_type === EventType.CREDIT_ADDED"
+                class="font-semibold text-success"
+              >
                 {{ $t('credits.added') }} ${{
-                  customerEventService.formatAmount(data.params?.amount)
+                  customerEventService.formatAmount(eventAmount(event))
                 }}
               </div>
-            </template>
-
-            <!-- Account Created -->
-            <template v-else-if="data.event_type === EventType.ACCOUNT_CREATED">
-              <div>{{ $t('credits.accountInitialized') }}</div>
-            </template>
-
-            <!-- API Usage -->
-            <template
-              v-else-if="data.event_type === EventType.API_USAGE_COMPLETED"
-            >
-              <div class="flex flex-col gap-1">
+              <div v-else-if="event.event_type === EventType.ACCOUNT_CREATED">
+                {{ $t('credits.accountInitialized') }}
+              </div>
+              <div
+                v-else-if="event.event_type === EventType.API_USAGE_COMPLETED"
+                class="flex flex-col gap-1"
+              >
                 <div class="font-semibold">
-                  {{ data.params?.api_name || 'API' }}
+                  {{ event.params?.api_name || $t('credits.api') }}
                 </div>
-                <div class="text-sm text-smoke-400">
-                  {{ $t('credits.model') }}: {{ data.params?.model || '-' }}
+                <div class="text-muted-foreground">
+                  {{ $t('credits.model') }}: {{ event.params?.model || '-' }}
                 </div>
               </div>
-            </template>
-          </div>
-        </template>
-      </Column>
-      <Column field="createdAt" :header="$t('credits.time')">
-        <template #body="{ data }">
-          {{ customerEventService.formatDate(data.createdAt) }}
-        </template>
-      </Column>
-      <Column field="params" :header="$t('credits.additionalInfo')">
-        <template #body="{ data }">
-          <Button
-            v-if="customerEventService.hasAdditionalInfo(data)"
-            v-tooltip.top="{
-              escape: false,
-              value: tooltipContentMap.get(data.event_id) || '',
-              pt: {
-                text: {
-                  style: {
-                    width: 'max-content !important'
-                  }
-                }
-              }
-            }"
-            variant="textonly"
-            size="icon-sm"
-            :aria-label="$t('credits.additionalInfo')"
-          >
-            <i class="pi pi-info-circle" />
-          </Button>
-        </template>
-      </Column>
-    </DataTable>
+            </TableCell>
+            <TableCell>
+              {{ customerEventService.formatDate(event.createdAt ?? '') }}
+            </TableCell>
+            <TableCell>
+              <Button
+                v-if="customerEventService.hasAdditionalInfo(event)"
+                :tooltip="additionalInfoTooltip(event)"
+                variant="textonly"
+                size="icon-sm"
+                :aria-label="$t('credits.additionalInfo')"
+              >
+                <i class="pi pi-info-circle" />
+              </Button>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+      <Pagination
+        v-if="pagination.total > pagination.limit"
+        :page="pagination.page"
+        :total="pagination.total"
+        :items-per-page="pagination.limit"
+        class="mt-3"
+        @update:page="onPageChange"
+      />
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import Column from 'primevue/column'
-import DataTable from 'primevue/datatable'
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Message from '@/components/ui/message/Message.vue'
+import Pagination from '@/components/ui/pagination/Pagination.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Table from '@/components/ui/table/Table.vue'
+import TableBody from '@/components/ui/table/TableBody.vue'
+import TableCell from '@/components/ui/table/TableCell.vue'
+import TableHead from '@/components/ui/table/TableHead.vue'
+import TableHeader from '@/components/ui/table/TableHeader.vue'
+import TableRow from '@/components/ui/table/TableRow.vue'
+import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -115,7 +115,7 @@ import {
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 const events = ref<AuditLog[]>([])
 const loading = ref(true)
@@ -128,23 +128,41 @@ const { shouldUseWorkspaceBilling } = useBillingRouting()
 const pagination = ref({
   page: 1,
   limit: 7,
-  total: 0,
-  totalPages: 0
+  total: 0
 })
 
-const dataTableFirst = computed(
-  () => (pagination.value.page - 1) * pagination.value.limit
-)
+function toFiniteNumber(raw: unknown) {
+  const value = typeof raw === 'string' && raw.trim() ? Number(raw) : raw
+  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+}
 
-const tooltipContentMap = computed(() => {
-  const map = new Map<string, string>()
-  events.value.forEach((event) => {
-    if (customerEventService.hasAdditionalInfo(event) && event.event_id) {
-      map.set(event.event_id, customerEventService.getTooltipContent(event))
-    }
+function eventAmount(event: AuditLog) {
+  return toFiniteNumber(event.params?.amount)
+}
+
+function formatChargeCredits(microUsd: number) {
+  const amount = formatCreditsFromUsd({
+    usd: microUsd / 1_000_000,
+    locale: locale.value,
+    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
   })
-  return map
-})
+  return `${amount} ${t('credits.credits')}`
+}
+
+function formatParam(key: string, value: unknown) {
+  const microUsd =
+    key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
+  if (microUsd !== undefined) {
+    return `${t('credits.charge')}: ${formatChargeCredits(microUsd)}`
+  }
+  return `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
+}
+
+function additionalInfoTooltip(event: AuditLog) {
+  return Object.entries(event.params ?? {})
+    .map(([key, value]) => formatParam(key, value))
+    .join('\n')
+}
 
 // A billing-route flip can overlap two loads against different backends; only
 // the latest may mutate state, so a superseded response is discarded.
@@ -154,7 +172,7 @@ const readWorkspaceEvents = (params: { page: number; limit: number }) => {
   const rail = useBillingReadRail()
   return rail === null
     ? workspaceApi.getBillingEvents(params)
-    : readOnRail(() => rail.readEvents(params))
+    : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
 }
 
 const loadEvents = async () => {
@@ -216,10 +234,6 @@ const loadEvents = async () => {
       if (response.total != null) {
         pagination.value.total = response.total
       }
-
-      if (response.totalPages != null) {
-        pagination.value.totalPages = response.totalPages
-      }
     } else {
       const legacyError = shouldUseWorkspaceBilling.value
         ? null
@@ -235,8 +249,8 @@ const loadEvents = async () => {
   }
 }
 
-const onPageChange = (event: { page: number }) => {
-  pagination.value.page = event.page + 1
+const onPageChange = (page: number) => {
+  pagination.value.page = page
   loadEvents().catch((error) => {
     console.error('Error loading events:', error)
   })
@@ -249,7 +263,7 @@ const onPageChange = (event: { page: number }) => {
  */
 const dropRenderedEvents = () => {
   events.value = []
-  pagination.value = { ...pagination.value, page: 1, total: 0, totalPages: 0 }
+  pagination.value = { ...pagination.value, page: 1, total: 0 }
 }
 
 const refresh = async () => {

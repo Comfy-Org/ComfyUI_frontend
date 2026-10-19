@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import { deployPromptFor } from '../../config/deploy-prompt'
+import { deployPromptFor } from '@/config/deploy-prompt'
 import ServerlessSkipSetupBanner from './ServerlessSkipSetupBanner.vue'
 
 describe('ServerlessSkipSetupBanner', () => {

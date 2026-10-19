@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import Popover from 'primevue/popover'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import HoneyToast from '@/components/honeyToast/HoneyToast.vue'
+import ToastPanel from '@/components/ui/toast/ToastPanel.vue'
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -66,6 +66,19 @@ const currentJobName = computed(() => {
   return activeJob?.assetName || t('progressToast.downloadingModel')
 })
 
+const outcomeLabel = computed(() => {
+  if (failedJobs.value.length > 0)
+    return t('progressToast.downloadsFailed', {
+      count: failedJobs.value.length
+    })
+  if (cancelledJobs.value.length > 0) return t('electronFileDownload.cancelled')
+  return t('progressToast.allDownloadsCompleted')
+})
+
+const announcement = computed(() =>
+  isInProgress.value ? t('progressToast.importingModels') : outcomeLabel.value
+)
+
 const completedCount = computed(
   () =>
     completedJobs.value.length +
@@ -111,12 +124,10 @@ async function cancelDownload(taskId: TaskId) {
 </script>
 
 <template>
-  <HoneyToast v-model:expanded="isExpanded" :visible>
+  <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
-      <div
-        class="flex h-12 items-center justify-between border-b border-border-default px-4"
-      >
-        <h3 class="text-sm font-bold text-base-foreground">
+      <div class="flex h-12 items-center justify-between border-b px-4">
+        <h3 class="text-sm font-bold">
           {{ t('progressToast.importingModels') }}
         </h3>
         <div class="flex items-center gap-2">
@@ -132,20 +143,11 @@ async function cancelDownload(taskId: TaskId) {
           </Button>
           <Popover
             ref="filterPopoverRef"
-            :dismissable="true"
-            :close-on-escape="true"
-            unstyled
-            :base-z-index="9999"
-            :pt="{
-              root: { class: 'absolute z-50' },
-              content: {
-                class:
-                  'bg-transparent border-none p-0 pt-2 rounded-lg shadow-lg'
-              }
-            }"
+            align="end"
+            content-class="border-none bg-transparent p-0 pt-2"
           >
             <div
-              class="flex min-w-30 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
+              class="flex min-w-30 flex-col rounded-lg border bg-background px-2 py-3"
             >
               <Button
                 v-for="option in filterOptions"
@@ -155,8 +157,7 @@ async function cancelDownload(taskId: TaskId) {
                 :class="
                   cn(
                     'w-full justify-start bg-transparent',
-                    activeFilter === option.value &&
-                      'bg-secondary-background-selected'
+                    activeFilter === option.value && 'bg-muted'
                   )
                 "
                 @click="setFilter(option.value)"
@@ -202,44 +203,36 @@ async function cancelDownload(taskId: TaskId) {
     </template>
 
     <template #footer="{ toggle }">
-      <div
-        class="flex h-12 items-center justify-between gap-2 border-t border-border-default px-4"
-      >
+      <div class="flex h-12 items-center justify-between gap-2 border-t px-4">
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <template v-if="isInProgress">
             <Loader size="sm" class="shrink-0 text-muted-foreground" />
-            <span
-              class="min-w-0 flex-1 truncate font-bold text-base-foreground"
-            >
+            <span class="min-w-0 flex-1 truncate font-bold">
               {{ currentJobName }}
             </span>
           </template>
           <template v-else-if="failedJobs.length > 0">
             <i
-              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
+              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive"
             />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{
-                t('progressToast.downloadsFailed', {
-                  count: failedJobs.length
-                })
-              }}
+            <span class="min-w-0 truncate font-bold">
+              {{ outcomeLabel }}
             </span>
           </template>
           <template v-else-if="cancelledJobs.length > 0">
             <i
               class="icon-[lucide--circle-x] size-4 shrink-0 text-muted-foreground"
             />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{ t('electronFileDownload.cancelled') }}
+            <span class="min-w-0 truncate font-bold">
+              {{ outcomeLabel }}
             </span>
           </template>
           <template v-else>
             <i
-              class="icon-[lucide--check-circle] size-4 shrink-0 text-jade-600"
+              class="icon-[lucide--check-circle] size-4 shrink-0 text-success"
             />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
-              {{ t('progressToast.allDownloadsCompleted') }}
+            <span class="min-w-0 truncate font-bold">
+              {{ outcomeLabel }}
             </span>
           </template>
         </div>
@@ -291,5 +284,5 @@ async function cancelDownload(taskId: TaskId) {
         </div>
       </div>
     </template>
-  </HoneyToast>
+  </ToastPanel>
 </template>

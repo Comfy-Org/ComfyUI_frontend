@@ -1,18 +1,14 @@
 <template>
-  <div
-    class="flex h-12 items-center gap-2 border-b border-interface-stroke px-2"
-  >
-    <div class="min-w-0 flex-1 px-2 text-[14px] font-normal text-text-primary">
+  <div class="flex h-12 items-center gap-2 border-b px-2">
+    <div class="min-w-0 flex-1 px-2 text-[14px] font-normal">
       <span>{{ headerTitle }}</span>
     </div>
-    <div
-      class="inline-flex h-6 items-center gap-2 text-[12px] leading-none text-text-primary"
-    >
+    <div class="inline-flex h-6 items-center gap-2 text-[12px] leading-none">
       <span :class="{ 'opacity-50': queuedCount === 0 }">{{
         t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
       }}</span>
       <Button
-        v-tooltip.top="clearAllJobsTooltip"
+        :tooltip="t('sideToolbar.queueProgressOverlay.clearAllJobsTooltip')"
         variant="destructive"
         size="icon"
         :aria-label="t('sideToolbar.queueProgressOverlay.clearQueued')"
@@ -27,12 +23,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import JobHistoryActionsMenu from '@/components/queue/JobHistoryActionsMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 defineProps<{
   headerTitle: string
@@ -45,7 +39,4 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
-const clearAllJobsTooltip = computed(() =>
-  buildTooltipConfig(t('sideToolbar.queueProgressOverlay.clearAllJobsTooltip'))
-)
 </script>

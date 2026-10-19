@@ -3,26 +3,26 @@ import { useClipboard } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { apiKeysLink } from '../../config/routes'
-import type { WorkshopDetailModel } from '../../config/workshop-detail'
-import { defaultWorkshopValues } from '../../config/workshop-detail'
-import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
+import { apiKeysLink } from '@/config/routes'
+import type { WorkshopDetailModel } from '@/config/workshop-detail'
+import { defaultWorkshopValues } from '@/config/workshop-detail'
+import { parseWorkshopJsonInput } from '@/config/workshop-json-schema'
 import {
   onBeforeSignInLeave,
   popWorkshopForm,
   stashWorkshopForm
-} from '../../config/workshop-return'
-import type { WorkshopSnippetLanguage } from '../../config/workshop-snippets'
+} from '@/config/workshop-return'
+import type { WorkshopSnippetLanguage } from '@/config/workshop-snippets'
 import {
   WORKSHOP_SNIPPET_LANGUAGES,
   buildWorkshopInput,
   buildWorkshopSnippet,
   workshopIdempotencyKey
-} from '../../config/workshop-snippets'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
+} from '@/config/workshop-snippets'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import { workspaceLinkedHref } from '@/config/workshop-workspace-link'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import WorkshopForm from './WorkshopForm.vue'
 
 const { model, locale = 'en' } = defineProps<{

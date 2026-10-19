@@ -1,13 +1,9 @@
-import type { Locale } from '../../i18n/translations'
-import type { JsonLdNode } from '../../utils/jsonLd'
+import type { Locale } from '@/i18n/translations'
+import type { JsonLdNode } from '@/utils/jsonLd'
 
-import { externalLinks } from '../../config/routes'
-import { translationsFor } from '../../i18n/translations'
-import {
-  faqPageNode,
-  jsonLdId,
-  softwareApplicationNode
-} from '../../utils/jsonLd'
+import { externalLinks } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
+import { faqPageNode, jsonLdId, softwareApplicationNode } from '@/utils/jsonLd'
 import { cliFaqs } from './faqs'
 
 // One source for both locales' <head> structured data, so the /cli and

@@ -4,7 +4,6 @@
 
     <Slider
       :model-value="sliderValue"
-      class="w-full"
       :min="lightIntensityMinimum"
       :max="lightIntensityMaximum"
       :step="lightAdjustmentIncrement"

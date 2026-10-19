@@ -1,6 +1,5 @@
 import type { SubscriptionPreview } from '@comfyorg/account-core/billing'
 import { formatQuoteMoney } from '@comfyorg/account-ui/billing/checkout'
-import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { longDate, monthDay } from '@/checkout/longDate'
 
@@ -138,19 +137,9 @@ export function formatHeadlineMoney(
   }).format(cents / 100)
 }
 
-/**
- * The server's credit count. The cents fallback serves a server without
- * cloud PR 11905 and misses the receipt by a credit; delete it once every
- * preview carries the count.
- */
-function grantedCredits(count: number | undefined, cents: number): number {
-  return count ?? centsToCredits(cents)
-}
-
-function verbOf(quote: SubscriptionPreview, commitChange: boolean) {
+function verbOf(quote: SubscriptionPreview) {
   if (quote.transition_type === 'new_subscription') return 'subscribe'
-  if (quote.transition_type !== 'upgrade') return 'switch'
-  return commitChange ? 'change' : 'upgrade'
+  return quote.transition_type === 'upgrade' ? 'upgrade' : 'switch'
 }
 
 function planLabeller({ t, tierName }: Pick<LedgerContext, 't' | 'tierName'>) {
@@ -181,17 +170,12 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
   const money = (cents: number) => formatQuoteMoney(cents, currency, locale)
   const planLabel = planLabeller(context)
   const plan = planLabel(next, cadenceChanges)
-  const action = t(`${S}.verb.${verbOf(quote, commitChange)}`, { plan })
+  const action = t(`${S}.verb.${verbOf(quote)}`, { plan })
   const dueCents = quote.amount_due_cents ?? quote.cost_today_cents
-  const formatCount = new Intl.NumberFormat(locale).format
-  const todayCount = grantedCredits(
-    quote.credits_today,
-    quote.credits_today_cents
-  )
-  const nextPeriodCount = grantedCredits(
-    quote.credits_next_period,
-    quote.credits_next_period_cents
-  )
+  const formatCount = (count: number | undefined) =>
+    count === undefined
+      ? undefined
+      : new Intl.NumberFormat(locale).format(count)
 
   return {
     quote,
@@ -210,12 +194,20 @@ function readQuote(quote: SubscriptionPreview, context: LedgerContext) {
     monthDay: (iso: string) => monthDay(iso, locale),
     headlineMoney: (cents: number) =>
       formatHeadlineMoney(cents, currency, locale),
-    todayCount,
-    nextPeriodCount,
-    creditsToday: formatCount(todayCount),
-    creditsNextPeriod: formatCount(nextPeriodCount),
+    /**
+     * The server's whole credit counts, absent from a quote not priced
+     * against Stripe. The `_cents` siblings round, so they are never
+     * converted back; a missing count leaves its line out.
+     */
+    creditsToday: formatCount(quote.credits_today),
+    creditsNextPeriod: formatCount(quote.credits_next_period),
     currency: currency.toUpperCase(),
     dueCents,
+    /**
+     * Today's charge before promotions and account balance: the server's
+     * subtotal when it itemizes them. `cost_today_cents` is already net.
+     */
+    itemCents: quote.subtotal_cents ?? quote.cost_today_cents,
     recurringCents: quote.renewal_amount_cents ?? quote.cost_next_period_cents,
     /**
      * The discounts that get a row. A `plan` discount is a catalog coupon the
@@ -244,10 +236,10 @@ function renewalLine(r: QuoteReading): string {
       })
 }
 
-function refillsToLine(r: QuoteReading): string {
-  return r.t(r.byNew.refillsTo, {
-    credits: r.creditsNextPeriod
-  })
+function refillsToLine({ t, byNew, creditsNextPeriod }: QuoteReading) {
+  return creditsNextPeriod === undefined
+    ? []
+    : [t(byNew.refillsTo, { credits: creditsNextPeriod })]
 }
 
 /**
@@ -278,10 +270,13 @@ function scheduledLedger(r: QuoteReading): FamilyLedger {
       currency: r.currency,
       rate: r.t(r.byNew.rate, {})
     },
-    credits: {
-      count: r.creditsNextPeriod,
-      qualifier: r.t(r.byNew.refillAfter, { date: startsAt })
-    },
+    credits:
+      r.creditsNextPeriod === undefined
+        ? undefined
+        : {
+            count: r.creditsNextPeriod,
+            qualifier: r.t(r.byNew.refillAfter, { date: startsAt })
+          },
     items: [
       {
         label: r.plan,
@@ -327,6 +322,7 @@ function keptPlanLine(r: QuoteReading, current: Plan, until: string): string {
 
 /** Today's grant, dated by the server's renewal when it carries one. */
 function grantedToday(r: QuoteReading): SummaryLedger['credits'] {
+  if (r.creditsToday === undefined) return undefined
   const expiresAt = r.quote.renewal_at
   return {
     count: r.creditsToday,
@@ -337,6 +333,36 @@ function grantedToday(r: QuoteReading): SummaryLedger['credits'] {
             date: r.monthDay(expiresAt)
           })
   }
+}
+
+/**
+ * A team plan is one tier at many commitments, so a team-to-team proration
+ * names each side by the rate the quote reports for it.
+ */
+function commitmentNamed(r: QuoteReading, plan: Plan): string {
+  return r.t(`${S}.planAtRate`, {
+    tier: r.tierName(plan.tier),
+    rate: r.t(BY_DURATION[plan.duration].itemRate, {
+      amount: r.headlineMoney(plan.seat_summary.total_cost_cents)
+    })
+  })
+}
+
+/** The plans either side of a proration: team commitments by their rates. */
+function prorationSides(r: QuoteReading) {
+  const current = r.current ?? r.next
+  return r.commitChange
+    ? { plan: commitmentNamed(r, r.next), current: commitmentNamed(r, current) }
+    : { plan: r.plan, current: r.planLabel(current, r.cadenceChanges) }
+}
+
+function netProrationLine(r: QuoteReading): string {
+  if (r.commitChange)
+    return r.t(`${S}.item.remainingTimeBetween`, prorationSides(r))
+  return r.t(`${S}.item.remainingTime`, {
+    plan: r.tierName(r.next.tier),
+    current: r.tierName(r.current?.tier ?? r.next.tier)
+  })
 }
 
 /**
@@ -351,27 +377,19 @@ function proratedItems(r: QuoteReading): LedgerRow[] {
     return [
       {
         label: r.t(`${S}.item.prorated`, { plan: r.plan }),
-        amount: r.money(r.quote.cost_today_cents),
-        sublines: [
-          r.t(`${S}.item.remainingTime`, {
-            plan: r.tierName(r.next.tier),
-            current: r.tierName(r.current?.tier ?? r.next.tier)
-          }),
-          refillsToLine(r)
-        ]
+        amount: r.money(r.itemCents),
+        sublines: [netProrationLine(r), ...refillsToLine(r)]
       }
     ]
-  const current = r.current ?? r.next
+  const sides = prorationSides(r)
   return [
     {
-      label: r.t(`${S}.item.remainingTimeOn`, { plan: r.plan }),
+      label: r.t(`${S}.item.remainingTimeOn`, { plan: sides.plan }),
       amount: r.money(remainingCents),
-      sublines: [refillsToLine(r)]
+      sublines: refillsToLine(r)
     },
     {
-      label: r.t(`${S}.item.unusedTimeOn`, {
-        plan: r.planLabel(current, r.cadenceChanges)
-      }),
+      label: r.t(`${S}.item.unusedTimeOn`, { plan: sides.current }),
       amount: deduction(r, unusedCents),
       sublines: [],
       credit: true
@@ -385,7 +403,7 @@ function proratedLedger(r: QuoteReading): FamilyLedger {
     family: 'prorated_change',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: grantedToday(r),
-    items: moneyItems(r, r.quote.cost_today_cents, proratedItems(r)),
+    items: moneyItems(r, r.itemCents, proratedItems(r)),
     trailing: [
       r.t(`${S}.trailing.creditsKept`, {}),
       renewalLine(r),
@@ -401,6 +419,7 @@ function proratedLedger(r: QuoteReading): FamilyLedger {
  */
 function chargeNowCredits(r: QuoteReading): SummaryLedger['credits'] {
   if (!grantIsAllowance(r)) return grantedToday(r)
+  if (r.creditsToday === undefined) return undefined
   return {
     count: r.creditsToday,
     qualifier: r.t(
@@ -410,14 +429,11 @@ function chargeNowCredits(r: QuoteReading): SummaryLedger['credits'] {
   }
 }
 
-function grantIsAllowance(r: QuoteReading): boolean {
-  const { quote } = r
-  if (
-    quote.credits_today === undefined &&
-    quote.credits_next_period === undefined
+function grantIsAllowance({ quote }: QuoteReading): boolean {
+  return (
+    quote.credits_today !== undefined &&
+    quote.credits_today === quote.credits_next_period
   )
-    return quote.credits_today_cents === quote.credits_next_period_cents
-  return r.todayCount === r.nextPeriodCount
 }
 
 function chargeNowTrailing(r: QuoteReading): string[] {
@@ -498,16 +514,16 @@ function cadenceLineOf(r: QuoteReading): string {
 function chargeNowLedger(r: QuoteReading): FamilyLedger {
   const rateLine = rateLineOf(r)
   const refills =
-    r.cadenceChanges || !grantIsAllowance(r) ? [refillsToLine(r)] : []
+    r.cadenceChanges || !grantIsAllowance(r) ? refillsToLine(r) : []
   return {
     ...r.shared,
     family: 'charge_now',
     headline: { amount: r.headlineMoney(r.dueCents), currency: r.currency },
     credits: chargeNowCredits(r),
-    items: moneyItems(r, r.quote.cost_today_cents, [
+    items: moneyItems(r, r.itemCents, [
       {
         label: r.plan,
-        amount: r.money(r.quote.cost_today_cents),
+        amount: r.money(r.itemCents),
         ...('comparedRate' in rateLine
           ? { comparedRate: rateLine.comparedRate, sublines: refills }
           : { sublines: [rateLine.subline, ...refills] })
@@ -522,8 +538,7 @@ function chargeNowLedger(r: QuoteReading): FamilyLedger {
  * reported; a slot whose number the quote does not carry is left out rather
  * than derived. The family is the server's too: an immediate `upgrade`
  * priced at a `proration_at` instant is prorated, while a reset-to-yearly
- * `duration_change` carries `proration_at` but charges in full. A team commit
- * change is held at the neutral charge until its proration copy is confirmed.
+ * `duration_change` carries `proration_at` but charges in full.
  */
 export function buildSummaryLedger(
   quote: SubscriptionPreview,
@@ -538,8 +553,7 @@ function familyLedger(r: QuoteReading): FamilyLedger {
   if (!r.quote.is_immediate) return scheduledLedger(r)
   if (
     r.quote.transition_type === 'upgrade' &&
-    r.quote.proration_at !== undefined &&
-    !r.commitChange
+    r.quote.proration_at !== undefined
   )
     return proratedLedger(r)
   return chargeNowLedger(r)

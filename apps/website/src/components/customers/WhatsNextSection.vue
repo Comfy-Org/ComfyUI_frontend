@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale, TranslationKey } from '@/i18n/translations'
 
-import { translationsFor } from '../../i18n/translations'
-import GlassCard from '../common/GlassCard.vue'
+import { translationsFor } from '@/i18n/translations'
+import GlassCard from '@/components/common/GlassCard.vue'
 
 const {
   title,

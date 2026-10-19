@@ -12,6 +12,7 @@ export interface ChatSession {
   id: string
   title: string
   updatedAt: number
+  titleSource: 'server' | 'fallback'
 }
 
 export interface HistoryGroups {

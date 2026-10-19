@@ -1,7 +1,7 @@
 <template>
   <ButtonGroup class="shrink-0">
     <Button
-      v-tooltip.top="
+      :tooltip="
         hasDisabledUpdatePacks
           ? $t('manager.disabledNodesWontUpdate')
           : $t('manager.updateLatestActiveTooltip')
@@ -18,19 +18,19 @@
         nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
       }}</span>
     </Button>
-    <DropdownMenu :entries="updateOptions" align="end">
-      <template #button>
+    <Menu :items="updateOptions" align="end">
+      <template #trigger>
         <Button
           variant="primary"
           :size
-          class="shrink-0 rounded-l-none border-0 border-l border-solid border-border-subtle px-3"
+          class="shrink-0 rounded-l-none border-0 border-l border-solid border-border/50 px-3"
           :disabled="isUpdating || !enabledPacks.length"
           :aria-label="$t('manager.updateOptions')"
         >
           <TinyChevronIcon />
         </Button>
       </template>
-    </DropdownMenu>
+    </Menu>
   </ButtonGroup>
 </template>
 
@@ -40,7 +40,7 @@ import { useI18n } from 'vue-i18n'
 
 import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'

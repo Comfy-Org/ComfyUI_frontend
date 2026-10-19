@@ -7,14 +7,14 @@
 // /events on a direct visit.
 import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 
-import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue'
-import { lockScroll, unlockScroll } from '../../composables/scrollLock'
-import { localizeHref } from '../../config/routes'
-import type { Locale } from '../../i18n/translations'
-import type { CalendarEvent } from '../../utils/calendar'
+import AddToCalendarButton from '@/components/blocks/AddToCalendarButton.vue'
+import { lockScroll, unlockScroll } from '@/composables/scrollLock'
+import { localizeHref } from '@/config/routes'
+import type { Locale } from '@/i18n/translations'
+import type { CalendarEvent } from '@/utils/calendar'
 
-import { translationsFor } from '../../i18n/translations'
-import { isUrlUnderPath, previousEntryUrl } from '../../utils/previousEntry'
+import { translationsFor } from '@/i18n/translations'
+import { isUrlUnderPath, previousEntryUrl } from '@/utils/previousEntry'
 
 const {
   title,

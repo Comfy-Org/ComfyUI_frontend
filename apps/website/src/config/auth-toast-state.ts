@@ -2,42 +2,55 @@
  * The auth pages' toast list, shared between the host island in AuthLayout
  * and whichever island raises a message. It owns the rendered list rather
  * than handing messages over, so one raised before the host hydrates still
- * shows. Ids and the add/remove shape mirror PrimeVue's ToastService, which
- * the cloud app's GlobalToast sits on.
+ * shows.
  */
 import { readonly, ref } from 'vue'
 
-export type ToastSeverity = 'success' | 'info' | 'warn' | 'error'
+export type AuthToastKind = 'error' | 'success' | 'warning'
 
-export interface ToastMessageInput {
-  readonly severity: ToastSeverity
-  readonly summary: string
-  readonly detail: string
-  /** Milliseconds until auto-dismiss; absent means sticky until closed. */
-  readonly life?: number
+interface AuthToastOptions {
+  readonly description?: string
+  readonly duration?: number
 }
 
-export interface ToastMessage extends ToastMessageInput {
+export interface AuthToast {
+  readonly duration: number
   readonly id: number
+  readonly kind: AuthToastKind
+  readonly title: string
+  readonly description?: string
 }
 
-const messages = ref<ToastMessage[]>([])
+const toasts = ref<AuthToast[]>([])
 let nextId = 0
 
-export function addToast(message: ToastMessageInput): ToastMessage {
-  const entry: ToastMessage = { ...message, id: nextId++ }
-  messages.value = [...messages.value, entry]
-  return entry
+function add(
+  kind: AuthToastKind,
+  title: string,
+  { description, duration = Number.POSITIVE_INFINITY }: AuthToastOptions = {}
+): number {
+  const id = nextId++
+  toasts.value = [...toasts.value, { description, duration, id, kind, title }]
+  return id
 }
 
-export function removeToast(id: number): void {
-  messages.value = messages.value.filter((message) => message.id !== id)
+export const authToast: Record<
+  AuthToastKind,
+  (title: string, options?: AuthToastOptions) => number
+> = {
+  error: (title, options) => add('error', title, options),
+  success: (title, options) => add('success', title, options),
+  warning: (title, options) => add('warning', title, options)
 }
 
-export function removeAllToasts(): void {
-  messages.value = []
+export function dismissAuthToast(id: number): void {
+  toasts.value = toasts.value.filter((toast) => toast.id !== id)
+}
+
+export function dismissAllAuthToasts(): void {
+  toasts.value = []
 }
 
 export function useAuthToasts() {
-  return { messages: readonly(messages) }
+  return { toasts: readonly(toasts) }
 }

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { GridPack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
+import type { GridPack } from '@/data/cloudNodes'
+import type { Locale } from '@/i18n/translations'
 
-import { translationsFor } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import NodeList from './NodeList.vue'
 import PackBanner from './PackBanner.vue'
 

@@ -1,54 +1,54 @@
 <template>
-  <div
-    v-tooltip.bottom="{
-      value: t('menu.batchCount'),
-      showDelay: 600
-    }"
-    class="batch-count h-full"
-    :aria-label="t('menu.batchCount')"
-  >
-    <div
-      class="flex h-full w-14 overflow-hidden rounded-l-lg bg-secondary-background"
-    >
-      <input
-        ref="batchCountInputRef"
-        v-model="batchCountInput"
-        type="text"
-        inputmode="numeric"
-        :aria-label="t('menu.batchCount')"
-        :class="inputClass"
-        @focus="onInputFocus"
-        @input="onInput"
-        @blur="onInputBlur"
-        @keydown.enter.prevent="onInputEnter"
-      />
-      <div class="flex h-full w-6 flex-col">
-        <Button
-          variant="secondary"
-          size="unset"
-          :aria-label="t('g.increment')"
-          :class="cn(stepButtonClass, incrementButtonClass)"
-          :disabled="isIncrementDisabled"
-          @click="incrementBatchCount"
-        >
-          <TinyChevronIcon rotate-up />
-        </Button>
-        <Button
-          variant="secondary"
-          size="unset"
-          :aria-label="t('g.decrement')"
-          :class="cn(stepButtonClass, decrementButtonClass)"
-          :disabled="isDecrementDisabled"
-          @click="decrementBatchCount"
-        >
-          <TinyChevronIcon />
-        </Button>
+  <Tooltip>
+    <TooltipTrigger as-child>
+      <div class="batch-count h-full" :aria-label="t('menu.batchCount')">
+        <div class="flex h-full w-14 overflow-hidden rounded-l-lg bg-secondary">
+          <input
+            ref="batchCountInputRef"
+            v-model="batchCountInput"
+            type="text"
+            inputmode="numeric"
+            :aria-label="t('menu.batchCount')"
+            :class="inputClass"
+            @focus="onInputFocus"
+            @input="onInput"
+            @blur="onInputBlur"
+            @keydown.enter.prevent="onInputEnter"
+          />
+          <div class="flex h-full w-6 flex-col">
+            <Button
+              variant="secondary"
+              size="unset"
+              :aria-label="t('g.increment')"
+              :class="cn(stepButtonClass, incrementButtonClass)"
+              :disabled="isIncrementDisabled"
+              @click="incrementBatchCount"
+            >
+              <TinyChevronIcon rotate-up />
+            </Button>
+            <Button
+              variant="secondary"
+              size="unset"
+              :aria-label="t('g.decrement')"
+              :class="cn(stepButtonClass, decrementButtonClass)"
+              :disabled="isDecrementDisabled"
+              @click="decrementBatchCount"
+            >
+              <TinyChevronIcon />
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+    </TooltipTrigger>
+    <TooltipContent side="bottom">{{ t('menu.batchCount') }}</TooltipContent>
+  </Tooltip>
 </template>
 
 <script lang="ts" setup>
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+
 import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -80,10 +80,10 @@ const isIncrementDisabled = computed(
 )
 const isDecrementDisabled = computed(() => batchCount.value <= minQueueCount)
 const inputClass =
-  'h-full min-w-0 flex-1 border-none bg-secondary-background pl-1 pr-0 text-center text-sm font-normal tabular-nums text-base-foreground outline-none'
+  'h-full min-w-0 flex-1 border-none bg-secondary pl-1 pr-0 text-center text-sm font-normal tabular-nums text-foreground outline-none'
 const stepButtonClass =
-  'h-1/2 w-full rounded-none border-none p-0 text-muted-foreground hover:bg-secondary-background-hover disabled:cursor-not-allowed disabled:opacity-50'
-const incrementButtonClass = 'rounded-tr-none border-b border-border-subtle'
+  'h-1/2 w-full rounded-none border-none p-0 text-muted-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50'
+const incrementButtonClass = 'rounded-tr-none border-b border-border/50'
 const decrementButtonClass = 'rounded-br-none'
 
 watch(batchCount, (nextBatchCount) => {

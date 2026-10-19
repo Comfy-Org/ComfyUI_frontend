@@ -8,8 +8,9 @@ import {
 import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
-import { translationsFor } from '../../i18n/translations'
-import type { Locale } from '../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { formatClock } from '@/utils/formatClock'
 import PlayPauseButton from './PlayPauseButton.vue'
 
 type AudioSource = {
@@ -79,12 +80,7 @@ const displayTime = computed(() =>
   scrubbing.value ? pendingTime.value : currentTime.value
 )
 
-const timestamp = computed(() => {
-  const secs = Math.floor(displayTime.value)
-  const m = String(Math.floor(secs / 60)).padStart(2, '0')
-  const s = String(secs % 60).padStart(2, '0')
-  return `${m}:${s}`
-})
+const timestamp = computed(() => formatClock(displayTime.value))
 
 function handleScrubberKeydown(e: KeyboardEvent) {
   if (!duration.value) return

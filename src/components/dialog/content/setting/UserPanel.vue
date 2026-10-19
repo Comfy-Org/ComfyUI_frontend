@@ -2,7 +2,7 @@
   <div class="user-settings-container h-full">
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
-      <div class="mt-4 mb-3 border-t border-interface-stroke" />
+      <div class="mt-4 mb-3 border-t" />
 
       <!-- Normal User Panel -->
       <div v-if="isLoggedIn" class="flex flex-col gap-2">
@@ -16,7 +16,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.name') }}
           </h3>
-          <div class="text-muted">
+          <div class="text-muted-foreground">
             {{ userDisplayName || $t('userSettings.notSet') }}
           </div>
         </div>
@@ -25,7 +25,7 @@
           <h3 class="font-medium">
             {{ $t('userSettings.email') }}
           </h3>
-          <span class="text-muted">
+          <span class="text-muted-foreground">
             {{ userEmail }}
           </span>
         </div>
@@ -34,15 +34,12 @@
           <h3 class="font-medium">
             {{ $t('userSettings.provider') }}
           </h3>
-          <div class="flex items-center gap-1 text-muted">
+          <div class="flex items-center gap-1 text-muted-foreground">
             <i :class="providerIcon" />
             {{ providerName }}
             <Button
               v-if="isEmailProvider"
-              v-tooltip="{
-                value: $t('userSettings.updatePassword'),
-                showDelay: 300
-              }"
+              :tooltip="$t('userSettings.updatePassword')"
               variant="muted-textonly"
               size="icon-sm"
               :aria-label="$t('userSettings.updatePassword')"
@@ -66,7 +63,7 @@
             v-if="!isApiKeyLogin"
             keypath="auth.deleteAccount.contactSupport"
             tag="p"
-            class="text-sm text-muted"
+            class="text-sm text-muted-foreground"
           >
             <template #email>
               <a href="mailto:support@comfy.org" class="underline"
@@ -79,7 +76,7 @@
 
       <!-- Login Section -->
       <div v-else class="flex flex-col gap-4">
-        <p class="text-smoke-600">
+        <p class="text-muted-foreground">
           {{ $t('auth.login.title') }}
         </p>
 
@@ -101,11 +98,13 @@ import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import SignOutEverywhereButton from '@/platform/auth/session/components/SignOutEverywhereButton.vue'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 
 const { t } = useI18n()
 const router = useRouter()
 const dialogService = useDialogService()
+const { showUpdatePasswordDialog } = useAuthDialogs()
 const {
   loading,
   isLoggedIn,
@@ -122,7 +121,7 @@ const {
 } = useCurrentUser()
 async function onUpdatePassword() {
   if (!needsFirebaseSignIn.value) {
-    await dialogService.showUpdatePasswordDialog()
+    await showUpdatePasswordDialog()
     return
   }
   const confirmed = await dialogService.confirm({

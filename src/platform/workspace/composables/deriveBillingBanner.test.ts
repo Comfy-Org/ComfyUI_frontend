@@ -5,38 +5,21 @@ import { deriveBillingBanner } from './useBillingBanner'
 
 const funded: BillingBannerInputs = {
   billingControlEnabled: true,
-  v1PaymentRecovery: true,
   isTeamPlan: true,
   isEnterprise: false,
   isKnownPersonalTier: false,
-  hasRenewalInvoice: false,
-  isInvoiceRecoverableTier: false,
   isLoaded: true,
   canAccessSubscriptionFeatures: true,
-  billingStatus: 'paid',
   hasFunds: true,
   isCancelled: false,
   endDate: null,
   canManage: true,
   isPlanEnded: false,
+  isPlanTerminal: false,
   planEndedDismissed: false,
   outOfCreditsDismissed: false,
   planChangeDismissed: false,
   hasScheduledChange: false
-}
-
-// The backend folds billing_status into is_active, so every spend-denying status
-// arrives paired with is_active=false. Pinning that pairing is what keeps these
-// cases honest — spreading `funded` instead would assert an input the backend
-// cannot emit, and pass no matter where the check sits.
-const paused: Partial<BillingBannerInputs> = {
-  billingStatus: 'paused',
-  canAccessSubscriptionFeatures: false
-}
-
-const paymentFailed: Partial<BillingBannerInputs> = {
-  billingStatus: 'payment_failed',
-  canAccessSubscriptionFeatures: false
 }
 
 function derive(overrides: Partial<BillingBannerInputs>, now?: number) {
@@ -48,73 +31,83 @@ describe('deriveBillingBanner', () => {
     expect(derive({})).toBeNull()
   })
 
-  it('keeps team billing-control notices out of personal plans', () => {
-    expect(derive({ isTeamPlan: false, hasFunds: false })).toBeNull()
-  })
+  describe('personal plan', () => {
+    const personal: Partial<BillingBannerInputs> = {
+      isTeamPlan: false,
+      isKnownPersonalTier: true
+    }
+    const endingSoon: Partial<BillingBannerInputs> = {
+      isCancelled: true,
+      endDate: '2026-08-01T00:00:00Z'
+    }
+    // usePlanEnded leaves personal plans out; only the terminal test applies.
+    const terminal: Partial<BillingBannerInputs> = {
+      isPlanTerminal: true,
+      canAccessSubscriptionFeatures: false
+    }
 
-  it('shows paused to personal workspaces on a known tier', () => {
-    expect(
-      derive({ ...paused, isTeamPlan: false, isKnownPersonalTier: true })
-    ).toBe('paused')
-  })
+    it.for([
+      {
+        name: 'out of credits',
+        inputs: { hasFunds: false },
+        kind: 'outOfCredits'
+      },
+      { name: 'an ending plan', inputs: endingSoon, kind: 'ending' },
+      { name: 'an ended plan', inputs: terminal, kind: 'planEnded' }
+    ] as const)('shows $name to a known personal tier', ({ inputs, kind }) => {
+      expect(derive({ ...personal, ...inputs })).toBe(kind)
+    })
 
-  it('denies paused to an unrecognized tier', () => {
-    expect(
-      derive({ ...paused, isTeamPlan: false, isKnownPersonalTier: false })
-    ).toBeNull()
-  })
+    it.for([
+      { name: 'out of credits', inputs: { hasFunds: false } },
+      { name: 'an ending plan', inputs: endingSoon },
+      { name: 'an ended plan', inputs: terminal }
+    ])('fails closed on $name for an unrecognized tier', ({ inputs }) => {
+      expect(
+        derive({ ...inputs, isTeamPlan: false, isKnownPersonalTier: false })
+      ).toBeNull()
+    })
 
-  it('shows payment failed to personal workspace owners', () => {
-    expect(
-      derive({ ...paymentFailed, isTeamPlan: false, isKnownPersonalTier: true })
-    ).toBe('paymentFailed')
-  })
+    it('keeps out of credits and ending behind billing control', () => {
+      expect(
+        derive({ ...personal, hasFunds: false, billingControlEnabled: false })
+      ).toBeNull()
+      expect(
+        derive({ ...personal, ...endingSoon, billingControlEnabled: false })
+      ).toBeNull()
+    })
 
-  // An unrecognized server tier reads as "not team, not Enterprise" — it must
-  // not borrow the personal payment-recovery claim (fail-closed policy).
-  it('denies payment recovery to an unrecognized tier', () => {
-    expect(
-      derive({
-        ...paymentFailed,
-        isTeamPlan: false,
-        isKnownPersonalTier: false,
-        hasRenewalInvoice: true,
-        isInvoiceRecoverableTier: false
-      })
-    ).toBeNull()
-  })
+    it('ships plan ended without the billing control flag', () => {
+      expect(
+        derive({ ...personal, ...terminal, billingControlEnabled: false })
+      ).toBe('planEnded')
+    })
 
-  it('offers payment recovery to a FREE or tierless owner with an invoice', () => {
-    expect(
-      derive({
-        ...paymentFailed,
-        isTeamPlan: false,
-        isKnownPersonalTier: false,
-        hasRenewalInvoice: true,
-        isInvoiceRecoverableTier: true
-      })
-    ).toBe('paymentFailed')
+    it('ranks plan ended above out of credits', () => {
+      expect(derive({ ...personal, ...terminal, hasFunds: false })).toBe(
+        'planEnded'
+      )
+    })
+
+    it('stays hidden once plan ended is dismissed', () => {
+      expect(
+        derive({ ...personal, ...terminal, planEndedDismissed: true })
+      ).toBeNull()
+    })
+
+    it('hides out of credits once dismissed', () => {
+      expect(
+        derive({ ...personal, hasFunds: false, outOfCreditsDismissed: true })
+      ).toBeNull()
+    })
+
+    it('never shows a scheduled plan change', () => {
+      expect(derive({ ...personal, hasScheduledChange: true })).toBeNull()
+    })
   })
 
   it('hides existing notices when billing control is rolled back', () => {
     expect(derive({ billingControlEnabled: false, hasFunds: false })).toBeNull()
-  })
-
-  it('keeps payment recovery independent from billing control', () => {
-    expect(derive({ ...paymentFailed, billingControlEnabled: false })).toBe(
-      'paymentFailed'
-    )
-  })
-
-  it('hides payment recovery states when their flag is off', () => {
-    expect(derive({ ...paymentFailed, v1PaymentRecovery: false })).toBeNull()
-    expect(derive({ ...paused, v1PaymentRecovery: false })).toBeNull()
-  })
-
-  it('does not move existing notices onto the payment recovery flag', () => {
-    expect(derive({ hasFunds: false, v1PaymentRecovery: false })).toBe(
-      'outOfCredits'
-    )
   })
 
   it('shows no banner until the subscription snapshot has loaded', () => {
@@ -131,27 +124,6 @@ describe('deriveBillingBanner', () => {
 
   it('hides out of credits once dismissed', () => {
     expect(derive({ hasFunds: false, outOfCreditsDismissed: true })).toBeNull()
-  })
-
-  it('shows payment failed to owners even though the backend reports the plan inactive', () => {
-    expect(derive(paymentFailed)).toBe('paymentFailed')
-  })
-
-  it('prioritizes payment failure over out of credits for owners', () => {
-    expect(derive({ ...paymentFailed, hasFunds: false })).toBe('paymentFailed')
-  })
-
-  it('shows payment failed to members too, since their runs are blocked', () => {
-    expect(derive({ ...paymentFailed, canManage: false })).toBe('paymentFailed')
-  })
-
-  it('prioritizes paused above everything, for owners and members', () => {
-    expect(derive({ ...paused, hasFunds: false })).toBe('paused')
-    expect(derive({ ...paused, canManage: false })).toBe('paused')
-  })
-
-  it('shows paused even though the backend reports the workspace inactive', () => {
-    expect(derive(paused)).toBe('paused')
   })
 
   it('surfaces the ending banner for a cancelled-but-active owner', () => {
@@ -185,8 +157,7 @@ describe('deriveBillingBanner', () => {
   describe('plan ended', () => {
     const ended: Partial<BillingBannerInputs> = {
       isPlanEnded: true,
-      canAccessSubscriptionFeatures: false,
-      billingStatus: 'inactive'
+      canAccessSubscriptionFeatures: false
     }
 
     it('shows for team and Enterprise, owners and members alike', () => {
@@ -203,8 +174,7 @@ describe('deriveBillingBanner', () => {
       )
     })
 
-    it('ranks below payment recovery and above out of credits', () => {
-      expect(derive({ ...ended, ...paused })).toBe('paused')
+    it('ranks above out of credits', () => {
       expect(derive({ ...ended, hasFunds: false })).toBe('planEnded')
     })
 
@@ -216,8 +186,7 @@ describe('deriveBillingBanner', () => {
   it('shows no banner for an inactive subscription (that is a run-lock modal)', () => {
     expect(
       derive({
-        canAccessSubscriptionFeatures: false,
-        billingStatus: 'inactive'
+        canAccessSubscriptionFeatures: false
       })
     ).toBeNull()
   })
@@ -234,13 +203,6 @@ describe('deriveBillingBanner', () => {
     expect(
       derive({ hasScheduledChange: true, planChangeDismissed: true })
     ).toBeNull()
-  })
-
-  it('keeps recovery notices ahead of a scheduled change', () => {
-    expect(derive({ ...paused, hasScheduledChange: true })).toBe('paused')
-    expect(derive({ ...paymentFailed, hasScheduledChange: true })).toBe(
-      'paymentFailed'
-    )
   })
 
   it('prefers the ending banner when the plan is cancelled, not changing', () => {
@@ -345,16 +307,6 @@ describe('deriveBillingBanner', () => {
 
     it('does not leak team-only banners into enterprise workspaces', () => {
       expect(derive({ ...enterprise, hasFunds: false }, NOW)).toBeNull()
-      expect(
-        derive(
-          {
-            ...enterprise,
-            billingStatus: 'paused',
-            canAccessSubscriptionFeatures: false
-          },
-          NOW
-        )
-      ).toBeNull()
     })
 
     it('lets enterprise take precedence if a subscription reads as both', () => {
