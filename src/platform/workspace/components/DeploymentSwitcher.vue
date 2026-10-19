@@ -16,7 +16,7 @@
     <button
       ref="trigger"
       type="button"
-      class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-secondary-background-hover disabled:cursor-wait"
+      class="flex w-full cursor-pointer appearance-none items-center justify-between rounded-lg border-0 bg-transparent px-4 py-2 text-left hover:bg-accent disabled:cursor-wait"
       :aria-expanded="isOpen"
       aria-haspopup="menu"
       aria-controls="deployment-switcher-panel"
@@ -34,7 +34,7 @@
             {{ $t('deploymentSwitcher.runningOn') }}
           </span>
           <span
-            class="truncate text-sm text-base-foreground"
+            class="truncate text-sm text-foreground"
             data-testid="deployment-switcher-current"
           >
             {{ currentLabel }}
@@ -73,7 +73,7 @@
       id="deployment-switcher-panel"
       ref="panel"
       role="menu"
-      class="absolute top-0 right-full z-10 mr-4 flex max-h-96 w-80 flex-col overflow-hidden rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+      class="absolute top-0 right-full z-10 mr-4 flex max-h-96 w-80 flex-col overflow-hidden rounded-lg border bg-background shadow-md"
       data-testid="deployment-switcher-panel"
     >
       <div
@@ -90,9 +90,7 @@
         @set-default="changeDefault(pickedDeploymentId)"
         @clear-default="changeDefault(null)"
       />
-      <div
-        class="shrink-0 border-t border-border-default px-4 py-2 text-xs text-muted-foreground"
-      >
+      <div class="shrink-0 border-t px-4 py-2 text-xs text-muted-foreground">
         {{ $t('deploymentSwitcher.reloadNote') }}
       </div>
     </div>

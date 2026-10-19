@@ -4,7 +4,7 @@
     :class="
       cn(
         'tree-node flex w-full items-center justify-between rounded-sm',
-        canDrop && 'ring-1 ring-base-foreground ring-inset'
+        canDrop && 'ring-1 ring-foreground ring-inset'
       )
     "
     :data-testid="`tree-node-${node.key}`"

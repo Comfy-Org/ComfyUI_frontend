@@ -2,7 +2,7 @@
   <Tabs v-model="bottomPanelStore.activeBottomPanelTabId" class="h-full gap-0">
     <TabsList variant="panel" class="w-full shrink-0">
       <div class="flex w-full justify-between">
-        <div class="tabs-container font-inter">
+        <div class="tabs-container">
           <TabsTrigger
             v-for="tab in bottomPanelStore.bottomPanelTabs"
             :key="tab.id"

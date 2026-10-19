@@ -126,7 +126,7 @@ describe('MultiSelect', () => {
 
     const trigger = screen.getByRole('button')
 
-    expect(trigger).toHaveClass('data-[state=open]:border-border-default')
+    expect(trigger).toHaveClass('data-[state=open]:border-border')
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
     await user.click(trigger)

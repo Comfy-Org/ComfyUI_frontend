@@ -10,7 +10,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--extensions-blocks]" />
-      <h2 class="text-base text-base-foreground">{{ $t('manager.title') }}</h2>
+      <h2 class="text-base text-foreground">{{ $t('manager.title') }}</h2>
     </template>
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavId" :nav-items="navItems" />
@@ -57,20 +57,15 @@
         v-if="shouldShowManagerBanner"
         class="relative mx-6 mt-3 mb-4 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
       >
-        <i
-          class="icon-[lucide--triangle-alert] text-lg text-warning-background"
-        />
-        <div class="flex flex-1 flex-col gap-2">
-          <p class="m-0 text-sm font-bold">
+        <i class="icon-[lucide--triangle-alert] text-lg text-warning" />
+        <div class="flex flex-1 flex-col gap-2 text-sm">
+          <p class="m-0 font-bold">
             {{ $t('manager.conflicts.warningBanner.title') }}
           </p>
           <p class="m-0 text-xs">
             {{ $t('manager.conflicts.warningBanner.message') }}
           </p>
-          <p
-            class="m-0 cursor-pointer text-sm font-bold"
-            @click="onClickWarningLink"
-          >
+          <p class="m-0 cursor-pointer font-bold" @click="onClickWarningLink">
             {{ $t('manager.conflicts.warningBanner.button') }}
           </p>
         </div>
@@ -80,7 +75,7 @@
           size="icon"
           @click="dismissWarningBanner"
         >
-          <i class="pi pi-times text-xs text-base-foreground"></i>
+          <i class="pi pi-times text-xs text-foreground"></i>
         </Button>
       </div>
 

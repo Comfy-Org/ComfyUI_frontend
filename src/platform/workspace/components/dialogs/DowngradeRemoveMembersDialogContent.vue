@@ -4,11 +4,11 @@
       {{ $t('subscription.downgrade.title', { plan: planName }) }}
     </template>
 
-    <div class="flex flex-col gap-4 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
+    <div class="flex flex-col gap-4 p-4 text-sm text-muted-foreground">
+      <p class="m-0">
         {{ bodyText }}
       </p>
-      <label class="flex flex-col gap-2 text-sm text-muted-foreground">
+      <label class="flex flex-col gap-2">
         {{ $t('subscription.downgrade.confirmationPrompt', { phrase }) }}
         <Input
           v-model="typedValue"
