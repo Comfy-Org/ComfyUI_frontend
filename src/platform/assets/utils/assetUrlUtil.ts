@@ -3,10 +3,12 @@
  */
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import type { AssetItem } from '../schemas/assetSchema'
+import { getAssetStoredFilename } from './assetMetadataUtils'
 import { getAssetType } from './assetTypeUtil'
 
 /**
@@ -28,7 +30,7 @@ export function getAssetUrl(
   const assetType = getAssetType(asset, defaultType)
   const subfolder = getAssetSubfolder(asset)
   const params = new URLSearchParams()
-  params.set('filename', asset.name)
+  params.set('filename', getAssetStoredFilename(asset))
   params.set('type', assetType)
   if (subfolder) {
     params.set('subfolder', subfolder)
@@ -65,12 +67,13 @@ export function getAssetSubfolder(asset: AssetItem): string {
   if (previewSubfolder) return previewSubfolder
 
   const { subfolder } = asset.user_metadata ?? {}
-  return typeof subfolder === 'string' ? subfolder : ''
+  if (typeof subfolder === 'string') return subfolder
+
+  return asset.file_path?.split('/').slice(1, -1).join('/') ?? ''
 }
 
 /**
- * Id of the assets-API asset holding this item's own file. A card grouped per
- * job carries the job id as its `id` and keeps its own asset id in metadata.
+ * Id of the assets-API asset holding this item's own file.
  */
 export function getAssetContentId(
   asset: Pick<AssetItem, 'id' | 'user_metadata'>
@@ -96,7 +99,7 @@ export function getAssetFileUrl(
   asset: AssetItem,
   options?: { disposition?: 'inline' | 'attachment' }
 ): string {
-  if (useFeatureFlags().flags.assetsEnabled) {
+  if (useFeatureFlags().flags.assetsEnabled && !isCloud) {
     const query = options?.disposition
       ? `?disposition=${options.disposition}`
       : ''
