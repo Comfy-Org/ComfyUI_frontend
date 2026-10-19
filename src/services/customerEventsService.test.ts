@@ -281,6 +281,51 @@ describe('useCustomerEventsService', () => {
       void activeRequest
     })
 
+    it.for([
+      {
+        newer: 'success',
+        expectedError: null,
+        startNewer: () => {
+          mockAxiosInstance.get.mockResolvedValueOnce({
+            data: mockEventsResponse
+          })
+        }
+      },
+      {
+        newer: 'noPersonalWorkspace',
+        expectedError: 'toastMessages.noPersonalWorkspace',
+        startNewer: () => {
+          Object.assign(useAuthStore(), { hasPersonalWorkspace: false })
+        }
+      }
+    ])(
+      'keeps an older failure from overwriting a newer $newer result',
+      async ({ expectedError, startNewer }) => {
+        let rejectOlder!: (reason: unknown) => void
+        const olderRequestStarted = new Promise<void>((requestStarted) => {
+          mockAxiosInstance.get.mockImplementationOnce(() => {
+            requestStarted()
+            return new Promise((_resolve, reject) => {
+              rejectOlder = reject
+            })
+          })
+        })
+        vi.mocked(axios.isAxiosError).mockReturnValue(true)
+
+        const olderRequest = service.getMyEvents()
+        await olderRequestStarted
+        startNewer()
+        await service.getMyEvents()
+
+        rejectOlder({
+          response: { status: 400, data: { message: 'older backend error' } }
+        })
+
+        await expect(olderRequest).resolves.toBeNull()
+        expect(service.error.value).toBe(expectedError)
+      }
+    )
+
     it('should handle 400 errors', async () => {
       const errorResponse = {
         response: {

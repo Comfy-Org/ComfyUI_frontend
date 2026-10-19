@@ -203,7 +203,13 @@ export const useCustomerEventsService = () => {
           params: { page, limit },
           headers: authHeaders
         }),
-      { errorContext, routeSpecificErrors }
+      {
+        errorContext,
+        routeSpecificErrors,
+        isCurrent: () =>
+          requestId === latestRequestId &&
+          authStore.currentUserIdentity() === requestOwner
+      }
     )
 
     if (requestId !== latestRequestId) {
@@ -211,7 +217,6 @@ export const useCustomerEventsService = () => {
     }
     isLoading.value = false
     if (authStore.currentUserIdentity() !== requestOwner) {
-      error.value = null
       return null
     }
     return result

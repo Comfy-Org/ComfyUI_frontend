@@ -1,14 +1,8 @@
 import type { AxiosResponse } from 'axios'
 import axios, { AxiosHeaders } from 'axios'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useApiRequest } from '@/composables/useApiRequest'
-
-const mockIsAbortError = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
-  isAbortError: mockIsAbortError
-}))
 
 const client = axios.create()
 
@@ -23,10 +17,6 @@ function response<T>(data: T): AxiosResponse<T> {
 }
 
 describe('useApiRequest', () => {
-  beforeEach(() => {
-    mockIsAbortError.mockReturnValue(false)
-  })
-
   it('returns response data and toggles loading state', async () => {
     const { isLoading, error, executeRequest } = useApiRequest({
       client,
@@ -95,19 +85,33 @@ describe('useApiRequest', () => {
   })
 
   it('swallows cancellations without mapping an error', async () => {
-    mockIsAbortError.mockReturnValue(true)
     const mapError = vi.fn(() => 'should not run')
     const { error, executeRequest } = useApiRequest({ client, mapError })
 
     const result = await executeRequest(
       () => {
-        throw new Error('aborted')
+        throw new DOMException('aborted', 'AbortError')
       },
       { errorContext: 'ctx' }
     )
 
     expect(result).toBeNull()
     expect(mapError).not.toHaveBeenCalled()
+    expect(error.value).toBeNull()
+  })
+
+  it('does not publish an error once the request is no longer current', async () => {
+    const mapError = vi.fn(() => 'stale message')
+    const { error, executeRequest } = useApiRequest({ client, mapError })
+
+    const result = await executeRequest(
+      () => {
+        throw new Error('boom')
+      },
+      { errorContext: 'ctx', isCurrent: () => false }
+    )
+
+    expect(result).toBeNull()
     expect(error.value).toBeNull()
   })
 })
