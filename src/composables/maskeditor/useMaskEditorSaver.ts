@@ -222,6 +222,7 @@ export function useMaskEditorSaver() {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
     formData.append('type', 'input')
+    formData.append('subfolder', 'clipspace')
 
     const response = await api.fetchApi('/upload/image', {
       method: 'POST',
