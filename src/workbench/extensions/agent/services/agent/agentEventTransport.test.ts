@@ -1187,6 +1187,25 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 
+  it('does not hold correlated work for a workflow the follower cannot observe', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      (workflowId) => workflowId !== 'background-workflow'
+    )
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-background', undefined, {
+        workflow_id: 'background-workflow',
+        op_ids: ['op-background']
+      })
+    )
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
   // PM-1575 regression: most agent tools are read-only or navigational and
   // never produce a doc_update at all (confirmed against every recorded
   // conversation under browser_tests/fixtures/data/agent/conversations/ --

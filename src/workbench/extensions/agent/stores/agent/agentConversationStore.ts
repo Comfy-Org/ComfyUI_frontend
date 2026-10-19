@@ -254,7 +254,7 @@ export const useAgentConversationStore = defineStore(
     // that already exist -- passing the variable itself would freeze each
     // transport onto whichever function this variable held at its own
     // creation time.
-    let canvasSyncGate: () => boolean = () => false
+    let canvasSyncGate: (_workflowId?: string) => boolean = () => false
     // PM-1575: mirrors canvasSyncGate above, for the monotonic doc-update
     // outcome counter a transport compares its per-tool-call baseline
     // against (agentEventTransport.ts's canvasSyncBaseline). Same
@@ -511,7 +511,7 @@ export const useAgentConversationStore = defineStore(
         transport: createAgentEventTransport(
           message,
           replaceActive,
-          () => canvasSyncGate(),
+          (workflowId) => canvasSyncGate(workflowId),
           () => canvasSyncOutcomeCount(),
           reportUndeliverableAskData
         )
@@ -645,7 +645,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function setCanvasSyncGate(
-      gate: () => boolean,
+      gate: (_workflowId?: string) => boolean,
       outcomeCount: () => number = () => 0
     ): void {
       canvasSyncGate = gate
@@ -1148,7 +1148,7 @@ export const useAgentConversationStore = defineStore(
           transport: createAgentEventTransport(
             pending.message,
             replaceActive,
-            () => canvasSyncGate(),
+            (workflowId) => canvasSyncGate(workflowId),
             () => canvasSyncOutcomeCount(),
             reportUndeliverableAskData
           )

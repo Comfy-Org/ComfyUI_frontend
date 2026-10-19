@@ -221,7 +221,7 @@ function notifyAppliedUpdate(
   outcome: FrameOutcome,
   events: AgentCrdtFollowerEvents
 ): void {
-  if (!outcome.applied || update.catchUp) return
+  if (!outcome.applied || outcome.failureCount > 0) return
   events.onAppliedUpdate?.({
     workflowId: update.workflowId,
     opIds: update.opIds ?? []
@@ -571,8 +571,17 @@ function startAgentCrdtFollower(
     else reportPendingFrames(update.workflowId, 'discarded', NOTHING_APPLIED)
   }
   const applyCollected = (workflowId: string): void => {
+    const pendingFrames = pendingProjectionFrames.get(workflowId) ?? []
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
+    if (outcome.failureCount === 0) {
+      for (const frame of pendingFrames) {
+        events.onAppliedUpdate?.({
+          workflowId,
+          opIds: frame.opIds ?? []
+        })
+      }
+    }
     reportMaterialized(workflowId, outcome.createdNodeIds)
     reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }

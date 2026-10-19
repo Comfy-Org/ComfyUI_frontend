@@ -140,6 +140,33 @@ describe('agentApiSchema contract subtleties', () => {
     })
   })
 
+  it('drops malformed advisory correlation without dropping the terminal tool frame', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'add_node',
+        status: 'success',
+        workflow_id: '',
+        op_ids: [],
+        doc_seq: -1,
+        doc_lineage_seq: null,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    assert(parsed.type === 'agent_tool_call')
+    expect(parsed.data).toMatchObject({
+      tool_call_id: 'call-1',
+      status: 'success'
+    })
+    expect(parsed.data.workflow_id).toBeUndefined()
+    expect(parsed.data.op_ids).toBeUndefined()
+    expect(parsed.data.doc_seq).toBeUndefined()
+    expect(parsed.data.doc_lineage_seq).toBeUndefined()
+  })
+
   it('clamps an over-long skill instead of dropping the tool-call frame', () => {
     const parsed = zAgentWsEvent.parse({
       type: 'agent_tool_call',

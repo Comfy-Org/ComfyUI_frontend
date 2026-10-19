@@ -58,6 +58,9 @@ export interface CanvasSyncEvidence {
   opIds: readonly string[]
 }
 
+const MAX_OBSERVED_CANVAS_WORKFLOWS = 8
+const MAX_OBSERVED_CANVAS_OPS_PER_WORKFLOW = 512
+
 /**
  * PM-1575: tool names whose execution can plausibly land a CRDT `doc_update`
  * -- the only case `resolveToolCallState` below has anything to wait on. Most
@@ -126,7 +129,7 @@ export function createAgentEventTransport(
    * to never deferring, so a caller with no canvas to catch up on (or that
    * never wires this up) keeps the immediate-done behavior.
    */
-  shouldAwaitCanvasSync: () => boolean = () => false,
+  shouldAwaitCanvasSync: (_workflowId?: string) => boolean = () => false,
   /**
    * PM-1575: the bound workflow's CRDT `outcomes.appliedLive` counter (or an
    * equivalent monotonic count of LIVE frames actually applied to the doc --
@@ -236,15 +239,24 @@ export function createAgentEventTransport(
     )
   }
 
-  function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
-    if (evidence !== undefined) {
-      let observed = observedCanvasOps.get(evidence.workflowId)
-      if (observed === undefined) {
-        observed = new Set()
-        observedCanvasOps.set(evidence.workflowId, observed)
-      }
-      for (const opId of evidence.opIds) observed.add(opId)
+  function rememberCanvasEvidence(evidence: CanvasSyncEvidence): void {
+    let observed = observedCanvasOps.get(evidence.workflowId)
+    if (observed === undefined) {
+      if (observedCanvasOps.size === MAX_OBSERVED_CANVAS_WORKFLOWS)
+        observedCanvasOps.delete(observedCanvasOps.keys().next().value!)
+      observed = new Set()
+      observedCanvasOps.set(evidence.workflowId, observed)
     }
+    for (const opId of evidence.opIds) {
+      observed.delete(opId)
+      observed.add(opId)
+      if (observed.size > MAX_OBSERVED_CANVAS_OPS_PER_WORKFLOW)
+        observed.delete(observed.values().next().value!)
+    }
+  }
+
+  function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
+    if (evidence !== undefined) rememberCanvasEvidence(evidence)
 
     let changed = false
     for (const [part, pending] of pendingCanvasSync) {
@@ -307,14 +319,15 @@ export function createAgentEventTransport(
     clearPendingCanvasSyncTimer(part)
     const baseline = canvasSyncBaseline.get(part)
     canvasSyncBaseline.delete(part)
+    const correlation = correlationFrom(data)
     if (
       status === 'success' &&
       CANVAS_MUTATING_TOOLS.has(part.name) &&
-      shouldAwaitCanvasSync()
+      shouldAwaitCanvasSync(correlation?.workflowId)
     ) {
-      const correlation = correlationFrom(data)
       if (correlation !== undefined && correlationObserved(correlation)) {
         part.state = 'done'
+        claimCanvasSyncOutcome()
       } else if (
         correlation === undefined &&
         baseline !== undefined &&

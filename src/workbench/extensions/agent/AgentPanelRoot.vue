@@ -1074,7 +1074,9 @@ const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 // its own matching update and settle to 'done' immediately, defeating the
 // wait this gate exists for.
 conversationStore.setCanvasSyncGate(
-  () => crdtStatus.value.connected,
+  (workflowId) =>
+    crdtStatus.value.connected &&
+    (workflowId === undefined || workflowId === crdtStatus.value.workflowId),
   () => crdtStatus.value.outcomes.appliedLive
 )
 

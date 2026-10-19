@@ -1169,7 +1169,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('reports exact workflow/op evidence only after a live frame applies', () => {
+  it('reports exact workflow/op evidence after live and catch-up frames apply', () => {
     const onAppliedUpdate = vi.fn()
     const { unmount } = mountFollower('wf-1', true, () => null, {
       onAppliedUpdate
@@ -1187,9 +1187,13 @@ describe('useAgentCrdtFollower', () => {
       catchUp: true
     })
 
-    expect(onAppliedUpdate).toHaveBeenCalledExactlyOnceWith({
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(1, {
       workflowId: 'wf-1',
       opIds: ['op-1', 'op-2']
+    })
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(2, {
+      workflowId: 'wf-1',
+      opIds: ['op-catch-up']
     })
     unmount()
   })
