@@ -160,6 +160,40 @@ describe('AgentCrdtProjection frame node delta', () => {
     expect(applyChanges.mock.calls[3][1].nodes.get('3')).toBe('update')
   })
 
+  it('re-derives a retained add the document has since deleted', () => {
+    const graph = fromPartial<NonNullable<ProjectionGraph>>({})
+    const applyChanges = vi
+      .spyOn(LiveGraphApplier.prototype, 'applyChanges')
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 0 })
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
+      .mockReturnValue({ createdNodeIds: [], failureCount: 0 })
+    const { host, follower, projection } = setup(graph)
+
+    nodesMap(host).set('3', new Y.Map([['type', 'KSampler']]))
+    const seed = frame(1, host)
+    follower.applyRemoteUpdate(seed.update)
+    projection.applyFrame(seed)
+
+    let since = Y.encodeStateVector(host)
+    nodesMap(host).set('4', new Y.Map([['type', 'Note']]))
+    const addition = frame(2, host, since)
+    follower.applyRemoteUpdate(addition.update)
+
+    expect(projection.applyFrame(addition)).toMatchObject({ failureCount: 1 })
+    expect(applyChanges.mock.calls[1][1].nodes.get('4')).toBe('add')
+
+    since = Y.encodeStateVector(host)
+    nodesMap(host).delete('4')
+    const removal = frame(3, host, since)
+    follower.applyRemoteUpdate(removal.update)
+    projection.applyFrame(removal)
+
+    expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
+      failureCount: 0
+    })
+    expect(applyChanges.mock.calls[3][1].nodes.get('4')).toBe('delete')
+  })
+
   it('keeps a later failed frame retained when an earlier one retries cleanly', () => {
     const graph = fromPartial<NonNullable<ProjectionGraph>>({})
     vi.spyOn(LiveGraphApplier.prototype, 'applyChanges')
