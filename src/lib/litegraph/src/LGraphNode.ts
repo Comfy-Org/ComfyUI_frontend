@@ -61,7 +61,6 @@ import {
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
-import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import type { DragAndScale } from './DragAndScale'
 
 import { LGraphBadge } from './LGraphBadge'
@@ -227,15 +226,38 @@ function cloneWidgetValueTwice(
   return [JSON.parse(json), JSON.parse(json)]
 }
 
+function cloneWorkflowValueTwice(
+  value: TWidgetValue,
+  widgetName: string
+): [TWidgetValue, TWidgetValue] {
+  if (
+    value == null ||
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value))
+  ) {
+    return cloneWidgetValueTwice(value)
+  }
+  try {
+    const json = legacyValue(JSON.stringify(value))
+    if (json === undefined) throw new TypeError()
+    return [JSON.parse(json), JSON.parse(json)]
+  } catch (cause) {
+    throw new TypeError(
+      `Widget '${widgetName}' returned a non-serializable workflow value.`,
+      { cause }
+    )
+  }
+}
+
 function serialiseWidgetValues(widgets: IBaseWidget[]) {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
   for (const widget of widgets) {
     if (widget.serialize === false) continue
-    const value = widget.serializeWorkflowValue
-      ? widget.serializeWorkflowValue()
-      : widget.value
-    const [positionalValue, namedValue] = cloneWidgetValueTwice(value)
+    const [positionalValue, namedValue] = widget.serializeWorkflowValue
+      ? cloneWorkflowValueTwice(widget.serializeWorkflowValue(), widget.name)
+      : cloneWidgetValueTwice(widget.value)
     positional.push(positionalValue)
     Object.defineProperty(named, widget.name, {
       value: namedValue,

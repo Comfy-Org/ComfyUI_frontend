@@ -133,7 +133,7 @@ describe('onReady', () => {
   it('runs later listeners after an earlier one throws', () => {
     // One pack's broken startup must not silently cancel every pack queued
     // behind it — they share a single listener set.
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+
     const after = vi.fn()
     onAppReady(() => {
       throw new Error('pack is broken')

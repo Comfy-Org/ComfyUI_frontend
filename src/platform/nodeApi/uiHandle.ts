@@ -26,8 +26,8 @@
 import { defineComponent, h, markRaw, onMounted, onUnmounted, ref } from 'vue'
 import type { Component } from 'vue'
 
-import { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import { ContextMenu } from '@/lib/litegraph/src/litegraph'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 

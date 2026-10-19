@@ -11,7 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import { inputLink, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
@@ -391,9 +391,7 @@ function inputWidgetSpec(slot: INodeInputSlot): InputSpec | undefined {
   const custom = slot.widget?.[CONFIG]
   if (custom) return custom
   const getConfig = slot.widget?.[GET_CONFIG]
-  return typeof getConfig === 'function'
-    ? (getConfig() as InputSpec)
-    : undefined
+  return typeof getConfig === 'function' ? getConfig() : undefined
 }
 
 function recreateConnectedPrimitive(

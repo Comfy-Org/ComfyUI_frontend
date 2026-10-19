@@ -10,7 +10,7 @@ import {
 import { toNodeId } from '@/types/nodeId'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import { ComfyApiError } from './errors'
 import { createGraphApi } from './graphHandle'
@@ -520,7 +520,7 @@ describe('replacing a node', () => {
   })
 
   it('warns about a link the new type cannot take', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const node = small()
     const downstream = LiteGraph.createNode('Peer')!
     graph.add(downstream)
@@ -605,12 +605,9 @@ describe('selection', () => {
     expect(api.selection().map((n) => n.id)).toEqual([second.id])
 
     api.select([first], { add: true })
-    expect(
-      api
-        .selection()
-        .map((n) => n.id)
-        .sort()
-    ).toEqual([first.id, second.id].sort())
+    const selectedIds = api.selection().map((n) => n.id)
+    expect(selectedIds).toHaveLength(2)
+    expect(selectedIds).toEqual(expect.arrayContaining([first.id, second.id]))
   })
 
   it('reports the active canvas, not the first one on the graph', () => {
@@ -689,12 +686,11 @@ describe('groups', () => {
 
     outside.pos = [100, 150]
     outside.updateArea()
-    expect(
-      handle
-        .nodes()
-        .map((n) => n.id)
-        .sort()
-    ).toEqual([String(inside.id), String(outside.id)].sort())
+    const nodeIds = handle.nodes().map((n) => n.id)
+    expect(nodeIds).toHaveLength(2)
+    expect(nodeIds).toEqual(
+      expect.arrayContaining([String(inside.id), String(outside.id)])
+    )
   })
 
   it('reports the group rectangle and renames it', () => {
@@ -918,7 +914,7 @@ describe('resolved supplies', () => {
   })
 
   it('reports no edge when the winning priority is tied', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const graph = new LGraph()
     addBroadcaster(graph)
     addBroadcaster(graph)
