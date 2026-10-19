@@ -91,12 +91,6 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   })
 }))
 
-vi.mock(import('@/base/credits/comfyCredits'), () => ({
-  centsToCredits: (cents: number) => cents,
-  creditsToUsd: (credits: number) => credits,
-  usdToCredits: (usd: number) => usd
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -605,61 +599,69 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
   })
 
-  it.for<{
-    name: string
-    balance: BalanceInfo
-    notice: string | null
-    pay: string
-  }>([
-    {
-      name: 'prefills the server suggestion and explains a negative balance',
-      balance: {
-        amountMicros: -10000,
-        currency: 'usd',
-        effectiveBalanceMicros: -10000,
-        effectiveBalanceAuthoritative: true,
-        suggestedTopupAmountCents: 11400
-      },
-      notice: 'Your balance is −10,000 credits. This top-up covers that first.',
-      pay: 'Pay $114.00'
-    },
-    {
-      name: 'keeps the default amount for a positive balance',
-      balance: {
-        amountMicros: 10000,
-        currency: 'usd',
-        effectiveBalanceMicros: 10000,
-        effectiveBalanceAuthoritative: true,
-        suggestedTopupAmountCents: null
-      },
-      notice: null,
-      pay: 'Pay $50.00'
-    },
-    {
-      name: 'says nothing about a balance the server could not read',
-      balance: {
-        amountMicros: -10000,
-        currency: 'usd',
-        effectiveBalanceMicros: -10000,
-        effectiveBalanceAuthoritative: false,
-        suggestedTopupAmountCents: null
-      },
-      notice: null,
-      pay: 'Pay $50.00'
+  function renderWithBalance(overrides: Partial<BalanceInfo>) {
+    const balance: BalanceInfo = {
+      amountMicros: 10_000,
+      currency: 'usd',
+      effectiveBalanceMicros: 10_000,
+      effectiveBalanceAuthoritative: true,
+      suggestedTopupAmountCents: null,
+      ...overrides
     }
-  ])('$name', async ({ balance, notice, pay }) => {
     Object.assign(mockBillingContext(), { balance: computed(() => balance) })
     renderDialog()
+  }
 
-    const noticeElement = screen.queryByText(/This top-up covers that first/)
-    if (notice === null) {
-      expect(noticeElement).not.toBeInTheDocument()
-    } else {
-      expect(noticeElement).toHaveTextContent(notice)
+  it.for([
+    { name: 'the server suggestion', suggested: 11_400, pay: 'Pay $114.00' },
+    {
+      name: 'the default without a suggestion',
+      suggested: null,
+      pay: 'Pay $50.00'
+    },
+    {
+      name: 'the default for a suggestion that is not whole dollars',
+      suggested: 11_450,
+      pay: 'Pay $50.00'
     }
+  ])('opens at $name', async ({ suggested, pay }) => {
+    renderWithBalance({ suggestedTopupAmountCents: suggested })
 
     await clickAddCredits()
+
     expect(screen.getByRole('button', { name: pay })).toBeEnabled()
+  })
+
+  it('explains that the top-up covers a negative balance first', () => {
+    renderWithBalance({
+      amountMicros: -10_000,
+      effectiveBalanceMicros: -10_000,
+      suggestedTopupAmountCents: 11_400
+    })
+
+    expect(
+      screen.getByText(
+        'Your balance is −21,100 credits. This top-up covers that first.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it.for<{ name: string; balance: Partial<BalanceInfo> }>([
+    { name: 'a positive balance', balance: {} },
+    {
+      name: 'a balance the server could not read',
+      balance: {
+        amountMicros: -10_000,
+        effectiveBalanceMicros: -10_000,
+        effectiveBalanceAuthoritative: false
+      }
+    }
+  ])('says nothing about the balance for $name', ({ balance }) => {
+    renderWithBalance(balance)
+
+    expect(
+      screen.queryByText(/This top-up covers that first/)
+    ).not.toBeInTheDocument()
   })
 
   describe('without a default payment method', () => {

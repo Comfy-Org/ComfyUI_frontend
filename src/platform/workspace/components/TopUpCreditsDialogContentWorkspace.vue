@@ -486,17 +486,20 @@ const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
 const DEFAULT_AMOUNT = 50
 
+function wholeDollarsOrNull(cents: number | null | undefined): number | null {
+  if (cents == null) return null
+  const dollars = cents / 100
+  return Number.isInteger(dollars) ? dollars : null
+}
+
 // State
-const suggestedTopupAmountCents =
-  balance.value?.suggestedTopupAmountCents ?? null
+const suggestedAmount = wholeDollarsOrNull(
+  balance.value?.suggestedTopupAmountCents
+)
 const selectedPreset = ref<number | null>(
-  suggestedTopupAmountCents === null ? DEFAULT_AMOUNT : null
+  suggestedAmount === null ? DEFAULT_AMOUNT : null
 )
-const payAmount = ref(
-  suggestedTopupAmountCents === null
-    ? DEFAULT_AMOUNT
-    : suggestedTopupAmountCents / 100
-)
+const payAmount = ref(suggestedAmount ?? DEFAULT_AMOUNT)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
