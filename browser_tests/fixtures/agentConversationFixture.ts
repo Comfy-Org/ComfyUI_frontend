@@ -366,7 +366,6 @@ export class AgentConversationHarness {
     return name === undefined ? null : `workflows/${name}.json`
   }
 
-  /** The last saved workflow, schema-validated; throws when absent or invalid. */
   async savedWorkflowContent(): Promise<ComfyWorkflowJSON> {
     const content = this.savedWorkflow?.savedContent()
     if (content === undefined)
