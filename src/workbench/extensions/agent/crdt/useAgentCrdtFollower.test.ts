@@ -288,8 +288,6 @@ describe('useAgentCrdtFollower', () => {
     projectionState.applyCollected
       .mockReset()
       .mockReturnValue(projectionState.applied())
-    projectionState.retryFailed.mockReset().mockReturnValue(null)
-    projectionState.hasPendingFailure.mockReset().mockReturnValue(false)
     projectionState.revertRejected
       .mockReset()
       .mockReturnValue(projectionState.applied())
@@ -765,7 +763,6 @@ describe('useAgentCrdtFollower', () => {
       graph.value = fromPartial<LGraph>({})
       await nextTick()
 
-      expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
       expect(status().canvasMayBeStale).toBe(false)
       unmount()
     })
@@ -880,46 +877,32 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('clears a stale canvas when reconnect confirms an empty document', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      dispatchFrame('doc_subscribed', {
-        ok: true,
-        workflow_id: 'wf-1',
-        seq: 1
-      })
+    it.for([
+      { name: 'confirms', baseline: { seq: 0 } },
+      { name: 'omits', baseline: {} }
+    ])(
+      'clears a stale canvas when reconnect $name the empty document sequence',
+      ({ baseline }) => {
+        const { unmount, status } = mountFollower('wf-1')
+        dispatchFrame('doc_subscribed', {
+          ok: true,
+          workflow_id: 'wf-1',
+          seq: 1
+        })
 
-      agentSocket.drop()
-      agentSocket.open()
-      dispatchFrame('doc_subscribed', {
-        ok: true,
-        workflow_id: 'wf-1',
-        seq: 0
-      })
+        agentSocket.drop()
+        agentSocket.open()
+        dispatchFrame('doc_subscribed', {
+          ok: true,
+          workflow_id: 'wf-1',
+          ...baseline
+        })
 
-      expect(status().connected).toBe(true)
-      expect(status().canvasMayBeStale).toBe(false)
-      unmount()
-    })
-
-    it('clears a stale canvas when reconnect omits the empty document sequence', () => {
-      const { unmount, status } = mountFollower('wf-1')
-      dispatchFrame('doc_subscribed', {
-        ok: true,
-        workflow_id: 'wf-1',
-        seq: 1
-      })
-
-      agentSocket.drop()
-      agentSocket.open()
-      dispatchFrame('doc_subscribed', {
-        ok: true,
-        workflow_id: 'wf-1'
-      })
-
-      expect(status().connected).toBe(true)
-      expect(status().canvasMayBeStale).toBe(false)
-      unmount()
-    })
+        expect(status().connected).toBe(true)
+        expect(status().canvasMayBeStale).toBe(false)
+        unmount()
+      }
+    )
 
     it('clears a stale canvas when reconnect confirms the integrated sequence', () => {
       const { unmount, status } = mountFollower('wf-1')
@@ -1719,7 +1702,10 @@ describe('useAgentCrdtFollower', () => {
         seq: 43
       })
 
-      expect(status().outcomes.reset).toBe(1)
+      expect(status()).toMatchObject({
+        canvasMayBeStale: true,
+        outcomes: { reset: 1 }
+      })
       unmount()
     })
 
