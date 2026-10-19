@@ -83,6 +83,15 @@ export interface DocOpMinterDeps {
   onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
 }
 
+/**
+ * How long a promoted-host write waits for the bound document to catch up
+ * before it is refused. Matches the subscribe ack timeout: a catch-up that
+ * takes longer than that is already a failed subscribe.
+ */
+export const PROMOTED_WRITE_CATCH_UP_DEADLINE_MS = 15_000
+/** How often a held promoted-host write rechecks the catch-up gate. */
+export const PROMOTED_WRITE_RETRY_MS = 100
+
 type PromotedWriteRefusal =
   | { reason: 'unpromoted_widget'; liveNames: readonly string[] }
   | { reason: 'doc_not_synced' }
