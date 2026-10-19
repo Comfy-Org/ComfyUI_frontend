@@ -57,7 +57,9 @@ describe('showTopUpCreditsDialog', () => {
     vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
       showPaymentRecoveryDialog: mockShowPaymentRecoveryDialog,
       updatePayment: vi.fn(),
-      isUpdatingPayment: computed(() => false)
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn(async () => undefined)
     })
 
     mockIsCloud.value = true
