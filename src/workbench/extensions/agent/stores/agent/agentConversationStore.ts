@@ -6,7 +6,8 @@ import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
-  AgentEventTransport
+  AgentEventTransport,
+  CanvasSyncEvidence
 } from '../../services/agent/agentEventTransport'
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
 import type {
@@ -658,15 +659,15 @@ export const useAgentConversationStore = defineStore(
      * catch-up can settle to 'done'. A no-op on a transport with nothing
      * pending.
      */
-    function notifyCanvasCaughtUp(): void {
-      activeSlot.value?.transport.notifyCanvasCaughtUp()
+    function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
+      activeSlot.value?.transport.notifyCanvasCaughtUp(evidence)
       for (const settledTransport of settledActiveTransports) {
-        settledTransport.notifyCanvasCaughtUp()
+        settledTransport.notifyCanvasCaughtUp(evidence)
         if (!settledTransport.hasPendingCanvasSync())
           settledActiveTransports.delete(settledTransport)
       }
       for (const entry of backgroundTurns.values())
-        entry.transport.notifyCanvasCaughtUp()
+        entry.transport.notifyCanvasCaughtUp(evidence)
     }
 
     function abortActiveTurn(): void {

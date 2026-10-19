@@ -114,6 +114,32 @@ describe('agentApiSchema contract subtleties', () => {
     expect(parsed).toMatchObject({ data: { skill: null } })
   })
 
+  it('keeps terminal document correlation fields for canvas-scoped release', () => {
+    const parsed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'add_node',
+        status: 'success',
+        workflow_id: 'wf-1',
+        op_ids: ['op-1', 'op-2'],
+        doc_seq: 8,
+        doc_lineage_seq: 3,
+        message_id: 'm1',
+        thread_id: 't1'
+      }
+    })
+
+    expect(parsed).toMatchObject({
+      data: {
+        workflow_id: 'wf-1',
+        op_ids: ['op-1', 'op-2'],
+        doc_seq: 8,
+        doc_lineage_seq: 3
+      }
+    })
+  })
+
   it('clamps an over-long skill instead of dropping the tool-call frame', () => {
     const parsed = zAgentWsEvent.parse({
       type: 'agent_tool_call',

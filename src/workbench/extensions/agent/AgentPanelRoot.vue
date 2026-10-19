@@ -968,6 +968,9 @@ const {
   getGraph: () =>
     canvasStore.canvas && app.isGraphReady ? app.rootGraph : null,
   events: {
+    onAppliedUpdate({ workflowId, opIds }) {
+      conversationStore.notifyCanvasCaughtUp({ workflowId, opIds })
+    },
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
@@ -1043,8 +1046,9 @@ const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 // effect has actually reached the canvas -- the CRDT doc_update travels a
 // separate, unrelated listener (see agentEventTransport.ts's file header).
 // Gate the transport's tool-call "done" affordance on canvas catch-up only
-// while the CRDT follower is actually active, and re-check any parts it held
-// back every time the bound workflow applies a fresh update.
+// while the CRDT follower is actually active. `onAppliedUpdate` above carries
+// each applied frame's workflow/op ids into the conversation transport, which
+// releases only the tool call whose exact effects materialized.
 //
 // `agentPanelStore.enabled` alone is NOT that signal: it is the product
 // feature flag ("is the agent panel available at all"), which is on in any
@@ -1072,17 +1076,6 @@ const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 conversationStore.setCanvasSyncGate(
   () => crdtStatus.value.connected,
   () => crdtStatus.value.outcomes.appliedLive
-)
-watch(
-  () => crdtStatus.value.outcomes.appliedLive,
-  (applied, previouslyApplied) => {
-    // `useAgentCrdtFollower`'s status falls back to a disabled status with
-    // `applied: 0` when the follower is torn down, and a restarted follower
-    // counts from 0 again -- so toggling the panel mid-turn can drive this
-    // DOWN, not just up. A decrease is not a catch-up: nothing was applied,
-    // so it must not release parts that are still genuinely waiting.
-    if (applied > previouslyApplied) conversationStore.notifyCanvasCaughtUp()
-  }
 )
 
 // The resumed turn's own workflow outlives a panel remount (the session

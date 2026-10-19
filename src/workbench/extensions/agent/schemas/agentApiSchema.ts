@@ -248,6 +248,10 @@ const zAgentToolCallData = z
     skill: zSkillName,
     args: z.never().optional(),
     duration_ms: z.number().optional(),
+    workflow_id: z.string().min(1).optional(),
+    op_ids: z.array(z.string().min(1).max(128)).min(1).max(256).optional(),
+    doc_seq: z.number().int().positive().optional(),
+    doc_lineage_seq: z.number().int().positive().optional(),
     message_id: z.string(),
     thread_id: z.string()
   })

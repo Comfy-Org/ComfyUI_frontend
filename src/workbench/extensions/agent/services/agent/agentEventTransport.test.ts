@@ -88,7 +88,8 @@ function toolCall(
   tool_name: string,
   status: 'running' | 'success' | 'error',
   tool_call_id = `call-${tool_name}`,
-  skill?: string
+  skill?: string,
+  correlation?: { workflow_id: string; op_ids: string[] }
 ): AgentChatEvent {
   return {
     type: 'agent_tool_call',
@@ -97,6 +98,7 @@ function toolCall(
       tool_name,
       status,
       skill,
+      ...correlation,
       message_id: 'm',
       thread_id: 't'
     }
@@ -1101,6 +1103,62 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     })
 
     transport.notifyCanvasCaughtUp()
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('releases only the held call whose workflow and op ids materialized', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-add']
+      })
+    )
+    transport.ingest(
+      toolCall('connect', 'success', 'call-connect', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-connect']
+      })
+    )
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-b',
+      opIds: ['op-add']
+    })
+    expect(toolParts(message).map(({ state }) => state)).toEqual([
+      'streaming',
+      'streaming'
+    ])
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-add']
+    })
+    expect(toolParts(message).map(({ state }) => state)).toEqual([
+      'done',
+      'streaming'
+    ])
+  })
+
+  it('remembers exact op evidence that arrives before the terminal tool frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-add']
+    })
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-add']
+      })
+    )
+
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 

@@ -62,25 +62,19 @@ import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
  * affordance fires; canvas does not reflect it for a long, but bounded,
  * interval) rather than claiming a specific backend root cause.
  *
- * The fix (client-side decoupling only -- the backend propagation delay
- * itself is out of scope): `createAgentEventTransport` now takes an optional
- * `shouldAwaitCanvasSync` gate. While it returns true, a tool call's `state`
- * is held at `'streaming'` when its frame reports done, instead of flipping
- * straight to `'done'`, until either `notifyCanvasCaughtUp()` is called or
- * `STALE_AFTER_MS` elapses (the same bound `agentCrdtDocLifecycle.ts`'s own
- * passive heartbeat uses). `AgentPanelRoot.vue` wires the gate to
- * `agentPanelStore.enabled` and calls `notifyCanvasCaughtUp()` whenever
- * `useAgentCrdtFollower`'s `outcomes.applied` counter increases for the bound
- * workflow -- mirroring, not reusing, PM-1355's own catch-up-confirmation
- * primitive, since that one lives inside `AgentCrdtDocLifecycle` and answers
- * "is THIS subscribe's own catch-up frame overdue", not "has some later
- * update since landed", which is the question this bug needed answered.
+ * PM-1637 replaces the original broad "some update landed" heuristic with
+ * exact evidence from the terminal tool frame: workflow_id plus op_ids. The
+ * transport holds the row until the follower reports that every named op was
+ * applied for that workflow. Unrelated updates no longer release the row;
+ * legacy terminal frames without correlation retain the bounded heuristic
+ * during rolling deploys.
  */
 
 const WORKFLOW_ID = 'c1d2e3f4-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
 const THREAD_ID = 'f0e1d2c3-b4a5-4968-8172-6354a3b2c1d0'
 const MESSAGE_ID = '1e2d3c4b-5a69-4788-9061-52f3e4d5c6b7'
 const ADDED_NODE_ID = 4242
+const UNRELATED_NODE_ID = 4241
 const NODE_TEXT = 'added while the doc broadcast lags'
 
 const CATALOG: WidgetCatalog = {
@@ -112,9 +106,11 @@ async function driveThroughToolCallDone(
    */
   order:
     | 'toolCallBeforeDocUpdate'
-    | 'docUpdateBeforeToolCall' = 'toolCallBeforeDocUpdate'
+    | 'docUpdateBeforeToolCall' = 'toolCallBeforeDocUpdate',
+  includeUnrelatedUpdate = false
 ): Promise<{
   vueNodes: VueNodeHelpers
+  sendUnrelatedDocUpdate: () => void
   sendDelayedDocUpdate: () => void
 }> {
   const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
@@ -224,6 +220,29 @@ async function driveThroughToolCallDone(
   // tool actually executes -- this is not a race the agent lost, the op is
   // real -- independent of when its broadcast reaches this client relative
   // to the tool call's own terminal frame, which `order` controls below.
+  const unrelatedUpdate = includeUnrelatedUpdate
+    ? host.apply([
+        {
+          op: 'add_node',
+          pos: [250, 0],
+          node: {
+            id: UNRELATED_NODE_ID,
+            pos: [250, 0],
+            mode: 0,
+            size: [200, 100],
+            type: 'MarkdownNote',
+            flags: {},
+            order: 0,
+            inputs: [],
+            outputs: [],
+            properties: {},
+            widgets_values: ['unrelated document operation']
+          },
+          node_id: UNRELATED_NODE_ID,
+          class_type: 'MarkdownNote'
+        }
+      ])
+    : null
   const update = host.apply([
     {
       op: 'add_node',
@@ -246,6 +265,13 @@ async function driveThroughToolCallDone(
     }
   ])
   expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
+  const matchingOpIds = update.data.op_ids
+  if (
+    !Array.isArray(matchingOpIds) ||
+    !matchingOpIds.every((opId): opId is string => typeof opId === 'string')
+  ) {
+    throw new Error('host update did not carry string op_ids')
+  }
 
   // The inverted ordering: the doc_update broadcast reaches this client
   // while the tool is still (from the chat frames' perspective) running --
@@ -263,6 +289,8 @@ async function driveThroughToolCallDone(
       tool_name: 'add_node',
       status: 'success',
       duration_ms: 90,
+      workflow_id: WORKFLOW_ID,
+      op_ids: matchingOpIds,
       thread_id: THREAD_ID,
       message_id: MESSAGE_ID
     }
@@ -288,6 +316,9 @@ async function driveThroughToolCallDone(
 
   return {
     vueNodes,
+    sendUnrelatedDocUpdate: () => {
+      if (unrelatedUpdate) hostSocket.send(unrelatedUpdate)
+    },
     // A no-op once `order` already sent it above -- resending the same
     // update twice is not part of what either ordering means to exercise.
     sendDelayedDocUpdate: () => {
@@ -336,6 +367,38 @@ test.describe(
       // Once the doc host's delayed broadcast actually lands, the tool call's
       // own displayed state catches up in the same moment its node does -- the
       // "done" affordance and canvas reality are no longer decoupled.
+      sendDelayedDocUpdate()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toHaveCount(
+        0
+      )
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+    })
+
+    test('an unrelated doc_update does not settle the correlated tool call', async ({
+      page
+    }) => {
+      const { vueNodes, sendUnrelatedDocUpdate, sendDelayedDocUpdate } =
+        await driveThroughToolCallDone(page, 'toolCallBeforeDocUpdate', true)
+
+      const panel = page.locator('#agent-panel-root')
+      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      await workSummary.click()
+      await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
+
+      const addNodeRow = panel
+        .getByRole('listitem')
+        .filter({ hasText: 'Add node' })
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+
+      sendUnrelatedDocUpdate()
+      await expect(
+        vueNodes.getNodeLocator(String(UNRELATED_NODE_ID))
+      ).toBeVisible()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
+        0
+      )
+
       sendDelayedDocUpdate()
       await expect(addNodeRow.locator('[class*="loader-circle"]')).toHaveCount(
         0

@@ -190,6 +190,10 @@ function opsResultDropReason(
 }
 
 interface AgentCrdtFollowerEvents {
+  onAppliedUpdate?: (event: {
+    workflowId: string
+    opIds: readonly string[]
+  }) => void
   onMaterialized?: (event: {
     workflowId: string
     actor: string | undefined
@@ -665,6 +669,12 @@ function startAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const outcome = applyFrame(update)
+    if (outcome.applied && !update.catchUp) {
+      events.onAppliedUpdate?.({
+        workflowId: update.workflowId,
+        opIds: update.opIds ?? []
+      })
+    }
     const nodes = outcome.nodes
     const created = outcome.applied ? outcome.createdNodeIds : []
     reportFrameProjection(update, outcome)
