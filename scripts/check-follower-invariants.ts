@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { join, relative, resolve } from 'node:path'
+import { basename, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import ts from 'typescript'
@@ -98,7 +98,7 @@ const isAllowedFollowerApply = (
   source: ts.SourceFile,
   call: ts.CallExpression
 ): boolean =>
-  source.fileName.endsWith('/followerDoc.ts') &&
+  basename(source.fileName) === 'followerDoc.ts' &&
   hasAncestorMethod(source, call, 'applyRemoteUpdate') &&
   call.arguments.length >= 2 &&
   isThisDoc(call.arguments[0])
@@ -163,6 +163,7 @@ const trackedName = (name: string): boolean =>
 
 type SupportedDeclaration =
   | ts.VariableDeclaration
+  | ts.BindingElement
   | ts.ParameterDeclaration
   | ts.PropertyDeclaration
 
@@ -193,6 +194,7 @@ const sourceDeclarations = (source: ts.SourceFile): SupportedDeclaration[] => {
   const collect = (node: ts.Node): void => {
     if (
       ts.isVariableDeclaration(node) ||
+      ts.isBindingElement(node) ||
       ts.isParameter(node) ||
       ts.isPropertyDeclaration(node)
     )
@@ -219,13 +221,57 @@ const trackedDocReference =
 const declarationName = (declaration: SupportedDeclaration): string | null =>
   ts.isIdentifier(declaration.name) ? declaration.name.text : null
 
+/**
+ * The expression a destructured binding ultimately reads from, found by walking
+ * out of any nesting of binding patterns to the owning declaration.
+ */
+const bindingSourceExpression = (
+  element: ts.BindingElement
+): ts.Expression | undefined => {
+  let current: ts.Node = element.parent
+  while (
+    ts.isObjectBindingPattern(current) ||
+    ts.isArrayBindingPattern(current) ||
+    ts.isBindingElement(current)
+  )
+    current = current.parent
+  return ts.isVariableDeclaration(current) ? current.initializer : undefined
+}
+
+const boundPropertyName = (element: ts.BindingElement): string | null =>
+  element.propertyName
+    ? propertyName(element.propertyName)
+    : ts.isIdentifier(element.name)
+      ? element.name.text
+      : null
+
+/**
+ * `const { doc } = follower` aliases the shared document without ever naming it,
+ * so the binding has to be tracked from what it destructures.
+ */
+const shouldTrackBindingElement = (
+  element: ts.BindingElement,
+  referencesTrackedDoc: (expression: ts.Expression) => boolean
+): boolean => {
+  const source = bindingSourceExpression(element)
+  if (source === undefined) return false
+  if (referencesTrackedDoc(source)) return true
+  const bound = boundPropertyName(element)
+  if (bound !== 'doc') return false
+  const value = unwrapped(source)
+  return isFollowerProperty(value) || value.kind === ts.SyntaxKind.ThisKeyword
+}
+
 const shouldTrackDeclaration = (
   declaration: SupportedDeclaration,
   referencesTrackedDoc: (expression: ts.Expression) => boolean
 ): boolean => {
   const name = declarationName(declaration)
   if (name === null) return false
-  if (trackedName(name) || hasYType(declaration.type)) return true
+  if (trackedName(name)) return true
+  if (ts.isBindingElement(declaration))
+    return shouldTrackBindingElement(declaration, referencesTrackedDoc)
+  if (hasYType(declaration.type)) return true
   if (isNewYDoc(declaration.initializer)) return true
   return (
     declaration.initializer !== undefined &&

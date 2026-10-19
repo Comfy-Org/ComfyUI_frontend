@@ -25,20 +25,28 @@ describe('follower invariant guard', () => {
   test.for([
     {
       name: 'forbidden-shared-update.ts',
-      message: 'only FollowerDoc.applyRemoteUpdate'
+      message: 'only FollowerDoc.applyRemoteUpdate',
+      line: 5
     },
-    { name: 'forbidden-map-set.ts', message: 'must not call set' },
+    { name: 'forbidden-map-set.ts', message: 'must not call set', line: 5 },
     {
       name: 'forbidden-map-alias-delete.ts',
-      message: 'must not call delete'
+      message: 'must not call delete',
+      line: 6
     },
-    { name: 'forbidden-array-push.ts', message: 'must not call push' }
-  ])('rejects $name', ({ name, message }) => {
-    expect(scanFollowerInvariantSource(fixture(name))).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ message: expect.stringContaining(message) })
-      ])
-    )
+    { name: 'forbidden-array-push.ts', message: 'must not call push', line: 6 },
+    {
+      name: 'forbidden-destructured-doc-set.ts',
+      message: 'must not call set',
+      line: 6
+    }
+  ])('rejects $name', ({ name, message, line }) => {
+    expect(scanFollowerInvariantSource(fixture(name))).toEqual([
+      expect.objectContaining({
+        line,
+        message: expect.stringContaining(message)
+      })
+    ])
   })
 
   test('fails closed when a required source is missing', () => {
@@ -74,7 +82,10 @@ describe('follower invariant guard', () => {
 
   test('accepts the current follower source set', () => {
     expect(
-      scanFollowerInvariantSources(process.cwd(), FOLLOWER_SOURCE_PATHS)
+      scanFollowerInvariantSources(
+        join(import.meta.dirname, '..'),
+        FOLLOWER_SOURCE_PATHS
+      )
     ).toEqual([])
   })
 })
