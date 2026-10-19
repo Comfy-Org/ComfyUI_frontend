@@ -331,16 +331,19 @@ const isAmountStep = computed(
   () => state.value.kind === 'amount' || state.value.kind === 'creatingCheckout'
 )
 
-const suggestedTopupAmountCents =
-  balance.value?.suggestedTopupAmountCents ?? null
+function wholeDollarsOrNull(cents: number | null | undefined): number | null {
+  if (cents == null) return null
+  const dollars = cents / 100
+  return Number.isInteger(dollars) ? dollars : null
+}
+
+const suggestedAmount = wholeDollarsOrNull(
+  balance.value?.suggestedTopupAmountCents
+)
 const selectedPreset = ref<number | null>(
-  suggestedTopupAmountCents === null ? DEFAULT_AMOUNT : null
+  suggestedAmount === null ? DEFAULT_AMOUNT : null
 )
-const payAmount = ref(
-  suggestedTopupAmountCents === null
-    ? DEFAULT_AMOUNT
-    : suggestedTopupAmountCents / 100
-)
+const payAmount = ref(suggestedAmount ?? DEFAULT_AMOUNT)
 
 const pricingUrl = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
