@@ -664,6 +664,41 @@ describe('collectCrdtDebugReport', () => {
     ])
   })
 
+  it('keeps every latest-turn call once dropping an older turn frees its thinking block', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-older')),
+          parts: [
+            ...Array.from(
+              { length: 5_000 },
+              (): MessagePart => ({
+                type: 'thinking',
+                text: '',
+                state: 'done',
+                durationMs: 1
+              })
+            ),
+            ...toolCalls('older', 1)
+          ]
+        },
+        {
+          ...createAssistantMessage(toTurnId('turn-latest')),
+          parts: toolCalls('latest', 2).map((call) => ({
+            ...call,
+            name: 'x'.repeat(25_000)
+          }))
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: truncated (2/3 retained calls)'
+    )
+  })
+
   it('bounds the thinking block without dropping tool calls', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,

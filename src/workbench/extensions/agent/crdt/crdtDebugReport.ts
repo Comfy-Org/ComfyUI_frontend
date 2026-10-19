@@ -520,25 +520,21 @@ function fitToolCalls(
   trailerFor: (retained: readonly RetainedToolCall[]) => string
 ) {
   const redactedCalls = calls.map((call) => redactSecrets(call))
-  const trailer = trailerFor(calls)
-  function render(start: number, sectionTrailer: string) {
+  function render(start: number) {
     return [
       context,
       fence('json', json(redactedCalls.slice(start))),
-      sectionTrailer
+      trailerFor(calls.slice(start))
     ].join('\n\n')
   }
   let low = 0
   let high = calls.length
   while (low < high) {
     const mid = Math.floor((low + high) / 2)
-    if (render(mid, trailer).length > MAX_SECTION_CHARS) low = mid + 1
+    if (render(mid).length > MAX_SECTION_CHARS) low = mid + 1
     else high = mid
   }
-  return {
-    section: render(low, trailerFor(calls.slice(low))),
-    retained: calls.length - low
-  }
+  return { section: render(low), retained: calls.length - low }
 }
 
 function toRetainedToolCall(
