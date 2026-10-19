@@ -75,7 +75,7 @@ describe('async resolution', () => {
   })
 
   it('treats an async resolver as unresolved on the sync path, loudly', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const { relay } = relayChain()
     const resolver: Resolver = async () => ({ 0: { omit: true } })
 
@@ -118,7 +118,7 @@ describe('async resolution', () => {
   })
 
   it('treats an async supplier as supplying nothing on the sync path, loudly', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     const broadcaster = spawn('ASource')
     broadcaster.addOutput('out', 'MODEL')
     const consumer = spawn('AConsumer')

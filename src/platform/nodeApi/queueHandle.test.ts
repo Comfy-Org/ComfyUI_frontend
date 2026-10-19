@@ -1,5 +1,5 @@
 import { nextTick } from 'vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
@@ -36,10 +36,6 @@ describe('comfy.queue', () => {
     cleanups.push(cleanup)
     return cleanup
   }
-
-  beforeEach(() => {
-    queuePrompt.mockClear()
-  })
 
   afterEach(() => {
     while (cleanups.length) cleanups.pop()!()
@@ -212,7 +208,6 @@ describe('comfy.queue', () => {
   })
 
   it('does not let a throwing guard cancel the run', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const comfy = createComfyApi(() => graphWith('A'))
     const stop = track(
       comfy.queue.guard(() => {
@@ -226,7 +221,7 @@ describe('comfy.queue', () => {
 
   it('abandons a guard that never settles rather than stranding the user', async () => {
     vi.useFakeTimers()
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+
     const comfy = createComfyApi(() => graphWith('A'))
     const stop = track(comfy.queue.guard(() => new Promise<boolean>(() => {})))
 
@@ -278,65 +273,68 @@ describe('comfy.queue', () => {
     ])
   })
 
-  it('publishes a frozen prompt rejection with node validation details', () => {
-    const comfy = createComfyApi(() => graphWith('A'))
-    const seen: RunRejectedEvent[] = []
-    track(comfy.queue.onRejected((event) => seen.push(event)))
-    Reflect.apply(api.dispatchCustomEvent, api, [
-      'promptRejected',
-      {
-        status: 400,
-        response: {
+  it.for(['', undefined])(
+    'publishes a frozen rejection when node details are %j',
+    (details) => {
+      const comfy = createComfyApi(() => graphWith('A'))
+      const seen: RunRejectedEvent[] = []
+      track(comfy.queue.onRejected((event) => seen.push(event)))
+      Reflect.apply(api.dispatchCustomEvent, api, [
+        'promptRejected',
+        {
+          status: 400,
+          response: {
+            error: {
+              type: 'prompt_outputs_failed_validation',
+              message: 'Prompt outputs failed validation',
+              details: 'See node errors'
+            },
+            node_errors: {
+              '12': {
+                class_type: 'KSampler',
+                dependent_outputs: [],
+                errors: [
+                  {
+                    type: 'required_input_missing',
+                    message: 'Required input is missing: positive',
+                    ...(details === undefined ? {} : { details }),
+                    extra_info: { input_name: 'positive' }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      ])
+
+      expect(seen).toEqual([
+        {
+          status: 400,
           error: {
             type: 'prompt_outputs_failed_validation',
             message: 'Prompt outputs failed validation',
             details: 'See node errors'
           },
-          node_errors: {
-            '12': {
-              class_type: 'KSampler',
-              dependent_outputs: [],
+          nodeErrors: [
+            {
+              nodeId: '12',
+              nodeType: 'KSampler',
               errors: [
                 {
                   type: 'required_input_missing',
                   message: 'Required input is missing: positive',
-                  details: '',
-                  extra_info: { input_name: 'positive' }
+                  details: details ?? '',
+                  inputName: 'positive'
                 }
               ]
             }
-          }
+          ]
         }
-      }
-    ])
-
-    expect(seen).toEqual([
-      {
-        status: 400,
-        error: {
-          type: 'prompt_outputs_failed_validation',
-          message: 'Prompt outputs failed validation',
-          details: 'See node errors'
-        },
-        nodeErrors: [
-          {
-            nodeId: '12',
-            nodeType: 'KSampler',
-            errors: [
-              {
-                type: 'required_input_missing',
-                message: 'Required input is missing: positive',
-                details: '',
-                inputName: 'positive'
-              }
-            ]
-          }
-        ]
-      }
-    ])
-    expect(Object.isFrozen(seen[0])).toBe(true)
-    expect(Object.isFrozen(Reflect.get(seen[0], 'nodeErrors'))).toBe(true)
-  })
+      ])
+      expect(Object.isFrozen(seen[0])).toBe(true)
+      expect(Object.isFrozen(Reflect.get(seen[0], 'nodeErrors'))).toBe(true)
+    }
+  )
 
   it('runs the cleanup a listener returns when the attempt ends', () => {
     // The motivating case: unmute a branch to build the prompt, put it back

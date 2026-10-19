@@ -7,7 +7,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/interfaces'
+} from '@/lib/litegraph/src/types/slots'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { setActiveLocale } from '@/i18n'
 
@@ -506,7 +506,7 @@ describe('defs.extend', () => {
             b.onExecuted((_n, result) => results.push(result))
           )
       )
-      node.onExecuted?.({ text: ['a', 'b'], custom: 7 } as never)
+      node.onExecuted?.({ text: ['a', 'b'], custom: 7 })
       expect(results).toEqual([
         { images: [], text: ['a', 'b'], raw: { text: ['a', 'b'], custom: 7 } }
       ])
@@ -577,7 +577,7 @@ describe('defs.extend', () => {
 
     it('does not let one failing extension suppress the others', () => {
       const survivor = vi.fn()
-      vi.spyOn(console, 'error').mockImplementation(() => {})
+      vi.mocked(console.error)
       const registry = createDefRegistry()
       const api = registry.forMajor((id) => comfy.graph.node(id)!)
       api.extend('KSampler', () => {
@@ -1058,7 +1058,7 @@ describe('defs.onRefreshed', () => {
   })
 
   it('runs later listeners after an earlier one throws', () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(console.error)
     const api = createComfyApi(() => new LGraph())
     const after = vi.fn()
     const stopFirst = api.defs.onRefreshed(() => {
@@ -1109,7 +1109,7 @@ describe('extend after define', () => {
   })
 
   it('stays quiet when the extension is registered first', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const error = vi.mocked(console.error)
     error.mockClear()
     const api = createComfyApi(() => new LGraph())
 

@@ -337,7 +337,7 @@ describe('supply-side resolution', () => {
     // makes the prompt depend on node order, so the same workflow could queue
     // differently after an unrelated edit. The broadcast pack this exists for
     // reports the ambiguity and leaves the input alone; so do we.
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const warn = vi.mocked(console.warn)
     spawn('Broadcaster')
     spawn('Broadcaster')
     const sink = spawn('Sink')

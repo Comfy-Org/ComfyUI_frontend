@@ -8,7 +8,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyApi } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 
@@ -148,10 +148,32 @@ describe('pack commands', () => {
   })
 
   it('raises a notification through the toast store', () => {
-    commands.notify({ severity: 'warn', summary: 'Careful', detail: 'why' })
+    commands.notify({
+      severity: 'warn',
+      summary: 'Careful',
+      detail: 'why',
+      life: 5000
+    })
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({ severity: 'warn', summary: 'Careful' })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Careful',
+        description: 'why',
+        duration: 5000
+      })
+    )
+  })
+
+  it('uses the host notification defaults when severity and life are omitted', () => {
+    commands.notify({ summary: 'Ready' })
+
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'info',
+        title: 'Ready',
+        duration: Infinity
+      })
     )
   })
 
