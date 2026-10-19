@@ -41,6 +41,7 @@ const MAX_WORKFLOW_CHARS = 200_000
 const MAX_SECTION_CHARS = 60_000
 const MAX_REPORT_CHARS = 256_000
 const MAX_TOOL_CALLS = 50
+const MAX_THINKING_CHARS = 10_000
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 const SOURCE_TIMEOUT_MS = 5_000
@@ -516,21 +517,28 @@ interface RetainedTurnThinking {
 function fitToolCalls(
   calls: readonly RetainedToolCall[],
   context: string,
-  trailer: string
+  trailerFor: (retained: readonly RetainedToolCall[]) => string
 ) {
-  let start = 0
-  const render = () =>
-    [
+  const redactedCalls = calls.map((call) => redactSecrets(call))
+  const trailer = trailerFor(calls)
+  function render(start: number, sectionTrailer: string) {
+    return [
       context,
-      fence('json', json(redactSecrets(calls.slice(start)))),
-      trailer
+      fence('json', json(redactedCalls.slice(start))),
+      sectionTrailer
     ].join('\n\n')
-  let section = render()
-  while (section.length > MAX_SECTION_CHARS && start < calls.length) {
-    start++
-    section = render()
   }
-  return { section, retained: calls.length - start }
+  let low = 0
+  let high = calls.length
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2)
+    if (render(mid, trailer).length > MAX_SECTION_CHARS) low = mid + 1
+    else high = mid
+  }
+  return {
+    section: render(low, trailerFor(calls.slice(low))),
+    retained: calls.length - low
+  }
 }
 
 function toRetainedToolCall(
@@ -552,19 +560,20 @@ function toolPartsOf(message: AssistantMessage) {
 }
 
 /**
- * Every call of the latest turn is kept, because that is the turn a report is
- * filed about; the {@link MAX_TOOL_CALLS} cap only applies to older turns.
+ * The latest turn with tool calls is exempt from the {@link MAX_TOOL_CALLS}
+ * cap, because that is the turn a report is filed about; the cap only applies
+ * to older turns. Section fitting may still drop the oldest calls.
  */
 function collectAgentToolCalls(messages: readonly AssistantMessage[]) {
-  const latest = messages.at(-1)
+  const latestIndex = messages.findLastIndex(
+    (message) => toolPartsOf(message).length > 0
+  )
+  const callsOf = (message: AssistantMessage) =>
+    toolPartsOf(message).map((part) => toRetainedToolCall(message.id, part))
   const olderCalls = messages
-    .slice(0, -1)
-    .flatMap((message) =>
-      toolPartsOf(message).map((part) => toRetainedToolCall(message.id, part))
-    )
-  const latestCalls = latest
-    ? toolPartsOf(latest).map((part) => toRetainedToolCall(latest.id, part))
-    : []
+    .slice(0, Math.max(0, latestIndex))
+    .flatMap(callsOf)
+  const latestCalls = latestIndex === -1 ? [] : callsOf(messages[latestIndex])
   const calls = [
     ...olderCalls.slice(Math.max(0, olderCalls.length - MAX_TOOL_CALLS)),
     ...latestCalls
@@ -597,18 +606,32 @@ function collectTurnThinking(
     })
 }
 
+function thinkingTrailer(
+  messages: readonly AssistantMessage[],
+  calls: readonly RetainedToolCall[]
+) {
+  return [
+    'Model thinking time per retained turn, measured in this tab: one entry per thinking part, null where no timing was observed.',
+    fence(
+      'json',
+      truncate(
+        json(redactSecrets(collectTurnThinking(messages, calls))),
+        MAX_THINKING_CHARS
+      )
+    )
+  ].join('\n\n')
+}
+
 function agentToolSection(messages: readonly AssistantMessage[] | undefined) {
-  const context = `Current conversation metadata retained in this tab only. Restored history may omit tool calls. Every call of the latest turn is kept; older turns keep their most recent ${MAX_TOOL_CALLS} calls. Tool durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.`
+  const context = `Current conversation metadata retained in this tab only. Restored history may omit tool calls. The latest turn with tool calls is exempt from the ${MAX_TOOL_CALLS}-call cap applied to older turns; if the section still exceeds its size limit, the oldest calls are dropped first. Tool durations are backend-reported; missing ok or durationMs means no outcome or timing was observed. State is the retained UI state, not proof a request is still running. No arguments, responses, prompts or reasoning are included.`
   if (messages === undefined) {
     return { section: context, status: 'unavailable' }
   }
 
   const { calls, total } = collectAgentToolCalls(messages)
-  const thinking = [
-    'Model thinking time per retained turn, measured in this tab: one entry per thinking part, null where no timing was observed.',
-    fence('json', json(redactSecrets(collectTurnThinking(messages, calls))))
-  ].join('\n\n')
-  const fitted = fitToolCalls(calls, context, thinking)
+  const fitted = fitToolCalls(calls, context, (retained) =>
+    thinkingTrailer(messages, retained)
+  )
   return {
     section: fitted.section,
     status:

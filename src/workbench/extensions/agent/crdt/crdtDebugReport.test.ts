@@ -497,11 +497,24 @@ describe('collectCrdtDebugReport', () => {
   }
 
   it.for([
-    { olderCount: 50, status: 'collected (120/120 retained calls)' },
-    { olderCount: 51, status: 'truncated (120/121 retained calls)' }
+    {
+      olderCount: 50,
+      trailingNotice: false,
+      status: 'collected (120/120 retained calls)'
+    },
+    {
+      olderCount: 51,
+      trailingNotice: false,
+      status: 'truncated (120/121 retained calls)'
+    },
+    {
+      olderCount: 51,
+      trailingNotice: true,
+      status: 'truncated (120/121 retained calls)'
+    }
   ])(
-    'keeps all 70 latest-turn calls and the most recent 50 of $olderCount older calls',
-    async ({ olderCount, status }) => {
+    'keeps all 70 latest-turn calls and the most recent 50 of $olderCount older calls (trailing notice: $trailingNotice)',
+    async ({ olderCount, trailingNotice, status }) => {
       const report = await collectCrdtDebugReport({
         crdt: SNAPSHOT,
         events: [],
@@ -524,7 +537,10 @@ describe('collectCrdtDebugReport', () => {
                 state: 'done'
               }
             ] satisfies MessagePart[]
-          }
+          },
+          ...(trailingNotice
+            ? [createAssistantMessage(toTurnId('turn-notice'))]
+            : [])
         ]
       })
 
@@ -607,6 +623,79 @@ describe('collectCrdtDebugReport', () => {
       }
     ])
     expect(report).not.toMatch(/(dropped|private|untimed|latest) reasoning/)
+  })
+
+  it('omits thinking for turns whose calls were all dropped by section fitting', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-oversized')),
+          parts: [
+            { type: 'thinking', text: '', state: 'done', durationMs: 700 },
+            {
+              type: 'tool',
+              callId: 'call-oversized',
+              name: 'x'.repeat(70_000),
+              state: 'done'
+            }
+          ]
+        },
+        {
+          ...createAssistantMessage(toTurnId('turn-latest')),
+          parts: [
+            { type: 'thinking', text: '', state: 'done', durationMs: 200 },
+            ...toolCalls('latest', 1)
+          ]
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: truncated (1/2 retained calls)'
+    )
+    expect(toolSectionJson(report)[1]).toEqual([
+      {
+        turnId: 'turn-latest',
+        thinkingDurationsMs: [200],
+        thinkingTotalMs: 200
+      }
+    ])
+  })
+
+  it('bounds the thinking block without dropping tool calls', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-latest')),
+          parts: [
+            ...Array.from(
+              { length: 20_000 },
+              (): MessagePart => ({
+                type: 'thinking',
+                text: '',
+                state: 'done',
+                durationMs: 1
+              })
+            ),
+            ...toolCalls('latest', 1)
+          ]
+        }
+      ]
+    })
+
+    expect(report).toContain(
+      '- Agent tool calls: collected (1/1 retained calls)'
+    )
+    const section = report
+      .split('## Agent tool calls\n\n')[1]
+      ?.split('\n\n## ')[0]
+    assert.exists(section)
+    expect(section.length).toBeLessThanOrEqual(60_000)
+    expect(section).toContain('earlier characters trimmed')
   })
 
   it('redacts credential-shaped tool metadata', async () => {
