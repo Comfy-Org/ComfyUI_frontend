@@ -102,11 +102,10 @@ export const ReducedMotionPreview: Story = {
     loop: true
   },
   parameters: {
-    reducedMotion: 'reduce',
     docs: {
       description: {
         story:
-          'Autoplay is suppressed when the browser reports reduced-motion preference.'
+          'Enable reduced motion in your operating system to preview autoplay suppression; this story uses the browser preference.'
       }
     }
   }

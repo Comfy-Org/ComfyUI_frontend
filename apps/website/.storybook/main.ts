@@ -29,8 +29,7 @@ const config: StorybookConfig = {
     '@storybook/addon-mcp'
   ],
   tags: {
-    deprecated: { defaultFilterSelection: 'exclude' },
-    experimental: { defaultFilterSelection: 'exclude' }
+    deprecated: { defaultFilterSelection: 'exclude' }
   },
   framework: {
     name: '@storybook/vue3-vite',

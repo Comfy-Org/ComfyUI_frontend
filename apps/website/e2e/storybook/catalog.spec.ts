@@ -2,6 +2,8 @@ import { expect } from '@playwright/test'
 import { test } from '@website/e2e/fixtures/blockExternalMedia'
 import axe from 'axe-core'
 
+import manifest from '@website/.storybook/generated/component-manifest.json' with { type: 'json' }
+
 declare global {
   interface Window {
     axe: typeof axe
@@ -19,6 +21,13 @@ const fixtures = [
 ] as const
 
 test.describe('Marketing catalog', { tag: '@smoke' }, () => {
+  test.beforeEach(async ({ context }) => {
+    await context.route(
+      'https://media.comfy.org/website/minimax-music-3/*.mp3',
+      (route) => route.fulfill({ contentType: 'audio/mpeg', body: '' })
+    )
+  })
+
   for (const [id, text] of fixtures) {
     test(id, async ({ page }, testInfo) => {
       await page.goto(
@@ -59,6 +68,33 @@ test.describe('Marketing catalog', { tag: '@smoke' }, () => {
         contentType: 'image/png'
       })
     })
+  }
+
+  for (const component of manifest.components.filter(
+    ({ agent }) => agent.compositionSafe
+  )) {
+    for (const { storyId } of component.stories) {
+      test(`certified story renders: ${storyId}`, async ({ page }) => {
+        const errors: string[] = []
+        page.on('pageerror', (error) => errors.push(error.message))
+        await page.goto(
+          `/iframe.html?id=${storyId}&viewMode=story&globals=a11y.manual:true`
+        )
+        await expect
+          .poll(() =>
+            page.locator('#storybook-root').evaluate((root) => {
+              const content = root.textContent.trim()
+              const visual = root.querySelector(
+                'img,video,svg,canvas,input,button,iframe,[role]'
+              )
+              return Boolean(content || visual)
+            })
+          )
+          .toBe(true)
+        await expect(page.locator('.sb-errordisplay')).not.toBeVisible()
+        expect(errors).toEqual([])
+      })
+    }
   }
 
   test('published manifest links resolve in the built catalog', async ({

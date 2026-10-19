@@ -22,8 +22,7 @@ const config: KnipConfig = {
         '!.claude/**',
         '!worktrees/**',
         '!src/__ecs_matrix__/**',
-        '!**/.vercel/**',
-        '!apps/website-storybook-mcp/public/**'
+        '!**/.vercel/**'
       ],
       ignore: ['scripts/registry-census/detection-proof/**']
     },
@@ -56,11 +55,7 @@ const config: KnipConfig = {
     },
     'apps/website': {
       // Models pages are registered by the release-gate integration.
-      entry: [
-        'src/scripts/**/*.ts',
-        'src/routes/models/*.{astro,ts}',
-        'src/**/*.stories.ts'
-      ],
+      entry: ['src/scripts/**/*.ts', 'src/routes/models/*.{astro,ts}'],
       // Executed by models-snippets.test.ts inside the generated Node examples.
       ignoreDependencies: ['mime-types']
     },

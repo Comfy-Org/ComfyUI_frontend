@@ -34,8 +34,8 @@ export default defineConfig({
   webServer: {
     cwd: dirname(import.meta.dirname),
     command:
-      'python3 -m http.server 6098 --bind 127.0.0.1 --directory dist/storybook',
+      'pnpm exec vite preview --outDir dist/storybook --port 6098 --strictPort --host 127.0.0.1',
     url: 'http://127.0.0.1:6098/iframe.html',
-    reuseExistingServer: !process.env.CI
+    reuseExistingServer: false
   }
 })

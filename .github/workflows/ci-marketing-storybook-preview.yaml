@@ -9,6 +9,15 @@ on:
       - 'pnpm-lock.yaml'
       - '.github/workflows/ci-marketing-storybook-preview.yaml'
       - '.github/workflows/pr-marketing-storybook-preview.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/website/**'
+      - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/ci-marketing-storybook-preview.yaml'
+      - '.github/workflows/pr-marketing-storybook-preview.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - uses: ./.github/actions/setup-frontend
         with:
@@ -34,9 +43,10 @@ jobs:
       - name: Install browser test engines
         run: pnpm exec playwright install --with-deps chromium webkit
       - name: Verify catalog contracts
-        run: pnpm --filter @comfyorg/website test:storybook
+        id: catalog-tests
+        run: pnpm --filter @comfyorg/website test:storybook:built
       - uses: actions/upload-artifact@v6
-        if: always()
+        if: always() && (steps.catalog-tests.outcome == 'success' || steps.catalog-tests.outcome == 'failure')
         with:
           name: marketing-storybook-browser-report
           if-no-files-found: error
@@ -46,7 +56,7 @@ jobs:
         run: git diff --exit-code -- apps/website/.storybook/generated
       - name: Stamp source commit
         env:
-          SOURCE_SHA: ${{ github.event.pull_request.head.sha }}
+          SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           node --input-type=module -e "import {writeFileSync} from 'node:fs'; writeFileSync('apps/website/dist/storybook/build-info.json', JSON.stringify({commit:process.env.SOURCE_SHA}) + '\n')"
       - uses: actions/upload-artifact@v6

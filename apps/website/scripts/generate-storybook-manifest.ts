@@ -1,7 +1,12 @@
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 
-import { componentImport, storyId } from './storybook-metadata'
+import {
+  componentImport,
+  portablePath,
+  storyId,
+  storyTags
+} from './storybook-metadata'
 
 type ComponentManifestEntry = {
   component: string
@@ -157,7 +162,7 @@ function componentSource(storyFile: string, componentPath: string): string {
   const absolutePath = componentPath.startsWith('@/')
     ? resolve(sourceRoot, componentPath.slice(2))
     : resolve(dirname(storyFile), componentPath)
-  return relative(websiteRoot, absolutePath)
+  return portablePath(relative(websiteRoot, absolutePath))
 }
 
 async function manifestEntry(
@@ -183,14 +188,15 @@ async function manifestEntry(
   }
 
   const { component, componentPath } = importedComponent
-  const needsTests = contents.includes("'needs-tests'")
-  const stable = contents.includes("'stable'")
+  const tags = storyTags(contents)
+  const needsTests = tags.includes('needs-tests')
+  const stable = tags.includes('stable')
   const source = componentSource(storyFile, componentPath)
 
   return {
     component,
     source,
-    storyFile: relative(websiteRoot, storyFile),
+    storyFile: portablePath(relative(websiteRoot, storyFile)),
     title,
     status: catalogStatus(needsTests, stable),
     category: title.split('/').slice(1, -1).join('/').toLowerCase(),
@@ -285,7 +291,7 @@ const manifest = {
 }
 const documentedSources = new Set(components.map(({ source }) => source))
 const vueComponents = (await findVueFiles(sourceRoot)).map((path) =>
-  relative(websiteRoot, path)
+  portablePath(relative(websiteRoot, path))
 )
 const uncatalogued = vueComponents
   .filter((source) => !documentedSources.has(source))

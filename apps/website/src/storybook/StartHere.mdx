@@ -30,8 +30,9 @@ changing production pages.
 
 ## Agent access
 
-Codex and Claude can query the running Storybook through its MCP endpoint at
-`/mcp`. The generated component catalog is available at
+Codex and Claude can query the local development Storybook through its MCP endpoint
+at `/mcp`. Static deployments expose story pages and JSON, not the addon MCP server.
+The generated component catalog is available at
 `/design-system/component-manifest.json`. Schema v2 records source and Figma
 provenance, import paths, direct story and docs paths, supported states,
 interaction and responsive coverage, capabilities, and composition safety.

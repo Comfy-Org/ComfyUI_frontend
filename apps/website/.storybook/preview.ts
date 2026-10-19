@@ -53,11 +53,10 @@ const preview: Preview = {
       }
     },
     backgrounds: {
-      default: 'dark',
-      values: [
-        { name: 'dark', value: '#211927' },
-        { name: 'light', value: '#f0efed' }
-      ]
+      options: {
+        dark: { name: 'dark', value: '#211927' },
+        light: { name: 'light', value: '#f0efed' }
+      }
     }
   }
 }

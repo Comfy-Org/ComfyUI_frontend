@@ -44,7 +44,6 @@
     // Static assets, not analyzable source.
     "public/**",
     "**/.vercel/**",
-    "apps/website-storybook-mcp/public/**",
     // Devtools browser-extension artifacts, loaded dynamically (mirrors knip).
     "tools/devtools/**",
     // Storybook-only mocks, reached through Storybook's vite alias, not the prod graph.

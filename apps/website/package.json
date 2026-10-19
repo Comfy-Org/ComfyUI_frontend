@@ -12,7 +12,7 @@
     "dev:crossview-proxy": "tsx scripts/crossview-dev-proxy.ts",
     "build": "astro build",
     "build:e2e": "cross-env WEBSITE_INDEXABLE=1 astro build",
-    "format": "oxfmt --ignore-path .gitignore --write && prettier --write \"src/**/*.astro\"",
+    "format": "pnpm storybook:manifest && oxfmt --ignore-path .gitignore --write && prettier --write \"src/**/*.astro\"",
     "format:check": "oxfmt --ignore-path .gitignore --check && prettier --check \"src/**/*.astro\"",
     "locale": "tsx ../../scripts/i18n/update-locales.ts --target website",
     "locale:check": "tsx ../../scripts/i18n/update-locales.ts --target website --check",
@@ -63,7 +63,8 @@
     "build-storybook": "pnpm storybook:manifest && storybook build -o dist/storybook",
     "storybook:manifest": "tsx scripts/generate-storybook-manifest.ts && cd ../.. && pnpm exec oxfmt --write apps/website/.storybook/generated/*.json",
     "typecheck:storybook": "astro sync && tsx ../../scripts/vue-tsc-native.ts --noEmit --composite false -p tsconfig.stories.json",
-    "test:storybook": "playwright test --config .storybook/playwright.config.ts"
+    "test:storybook": "pnpm build-storybook && pnpm test:storybook:built",
+    "test:storybook:built": "playwright test --config .storybook/playwright.config.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",

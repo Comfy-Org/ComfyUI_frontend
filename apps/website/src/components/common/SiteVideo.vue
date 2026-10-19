@@ -14,9 +14,9 @@ const {
   alt,
   autoplay = false,
   loop = false,
-  muted = autoplay,
+  muted = undefined,
   controls = false,
-  preload = autoplay ? 'auto' : 'metadata',
+  preload,
   containerClass,
   videoClass
 } = defineProps<{
@@ -39,6 +39,10 @@ const sources = computed(() =>
   buildVideoSources({ name, baseUrl, width, formats })
 )
 const remountKey = computed(() => videoKey(sources.value))
+const effectiveMuted = computed(() => muted ?? autoplay)
+const effectivePreload = computed(
+  () => preload ?? (autoplay ? 'auto' : 'metadata')
+)
 const decorative = computed(() => !alt && !controls)
 </script>
 
@@ -48,10 +52,10 @@ const decorative = computed(() => !alt && !controls)
       :key="remountKey"
       :class="cn('size-full', videoClass)"
       :poster
-      :preload
+      :preload="effectivePreload"
       :autoplay
       :loop
-      :muted
+      :muted="effectiveMuted"
       :controls
       :aria-label="alt"
       :aria-hidden="decorative ? true : undefined"

@@ -13,8 +13,10 @@ jobs:
   preview:
     if: >-
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.event == 'pull_request' ||
+       (github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main')) &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,6 +28,7 @@ jobs:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
       - name: Resolve current PR
+        if: github.event.workflow_run.event == 'pull_request'
         id: pr
         uses: ./.github/actions/resolve-pr-from-workflow-run
       - uses: actions/download-artifact@v8
@@ -35,24 +38,20 @@ jobs:
           path: marketing-storybook-static
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
-      - name: Validate static preview
-        if: steps.pr.outputs.skip != 'true'
-        env:
-          SOURCE_SHA: ${{ steps.pr.outputs.head-sha }}
-        run: |
-          python3 - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          root = Path('marketing-storybook-static')
-          assert (root / 'iframe.html').is_file()
-          assert json.loads((root / 'build-info.json').read_text())['commit'] == os.environ['SOURCE_SHA']
-          assert not any(path.name in {'_worker.js', 'functions', 'wrangler.toml', 'wrangler.json', 'wrangler.jsonc'} or path.is_symlink() for path in root.rglob('*'))
-          PY
       - uses: actions/setup-node@v6
         if: steps.pr.outputs.skip != 'true'
         with:
           node-version: '24'
+      - name: Validate static preview
+        if: steps.pr.outputs.skip != 'true'
+        env:
+          SOURCE_SHA: ${{ steps.pr.outputs.head-sha || github.event.workflow_run.head_sha }}
+          SOURCE_EVENT: ${{ github.event.workflow_run.event }}
+        run: |
+          if [[ "$SOURCE_EVENT" == 'push' ]]; then
+            test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          fi
+          node scripts/cicd/validate-marketing-preview.ts marketing-storybook-static "$SOURCE_SHA"
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
         if: steps.pr.outputs.skip != 'true'
         with:
@@ -64,8 +63,8 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          PR_NUMBER: ${{ steps.pr.outputs.number }}
-          SOURCE_SHA: ${{ steps.pr.outputs.head-sha }}
+          DEPLOY_BRANCH: ${{ github.event.workflow_run.event == 'push' && 'marketing' || format('marketing-pr-{0}', steps.pr.outputs.number) }}
+          SOURCE_SHA: ${{ steps.pr.outputs.head-sha || github.event.workflow_run.head_sha }}
         run: |
           set -o pipefail
           if [[ -z "$CLOUDFLARE_API_TOKEN" || -z "$CLOUDFLARE_ACCOUNT_ID" ]]; then
@@ -73,7 +72,7 @@ jobs:
             exit 1
           fi
           pnpm dlx wrangler@4 pages deploy marketing-storybook-static \
-            --project-name=comfy-storybook --branch="marketing-pr-$PR_NUMBER" \
+            --project-name=comfy-storybook --branch="$DEPLOY_BRANCH" \
             --commit-hash="$SOURCE_SHA" 2>&1 | tee marketing-deploy.log
           URL=$(sed -n 's/.*\(https:\/\/[^ ]*\.pages.dev\).*/\1/p' marketing-deploy.log | head -1)
           [[ "$URL" =~ ^https://[a-zA-Z0-9.-]+\.pages\.dev$ ]]
@@ -88,7 +87,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
       - uses: ./.github/actions/post-pr-report-comment
-        if: steps.pr.outputs.skip != 'true'
+        if: steps.pr.outputs.skip != 'true' && github.event.workflow_run.event == 'pull_request'
         with:
           pr-number: ${{ steps.pr.outputs.number }}
           report-file: marketing-preview.md
