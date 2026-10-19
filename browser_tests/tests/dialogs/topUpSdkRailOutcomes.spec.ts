@@ -90,7 +90,9 @@ async function setupTopUp(page: Page): Promise<TopupRoutes> {
                 opened.push(destination)
               }
             }
-          : Reflect.get(target, property),
+          : property === 'close'
+            ? () => {}
+            : Reflect.get(target, property),
       set: () => true
     })
     window.open = () => standInTab

@@ -171,7 +171,9 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
                 opened.push(destination)
               }
             }
-          : Reflect.get(target, property),
+          : property === 'close'
+            ? () => {}
+            : Reflect.get(target, property),
       set: () => true
     })
     window.open = (url?: string | URL) => {

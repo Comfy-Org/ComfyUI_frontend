@@ -194,7 +194,9 @@ async function setupToastParity(
       get: (target, property) =>
         property === 'location'
           ? { set href(_destination: string) {} }
-          : Reflect.get(target, property),
+          : property === 'close'
+            ? () => {}
+            : Reflect.get(target, property),
       set: () => true
     })
     window.open = () => standInTab
