@@ -1603,6 +1603,22 @@ describe('attachDocOpMinter', () => {
     })
   })
 
+  it('preserves a named-only serializer change', () => {
+    const node = new LGraphNode('Named serializer')
+    node.serialize_widgets = true
+    node.addWidget('text', 'prompt', 'hello', () => {})
+    graph.add(node)
+    node.onSerialize = (data) => {
+      assert.exists(data.widgets_values_named)
+      data.widgets_values_named.prompt = 'changed'
+    }
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values: { prompt: 'changed' },
+      widgets_values_form: { order: ['prompt'] }
+    })
+  })
+
   it('compares integer-like widget names in declared form order', () => {
     const node = new LGraphNode('Integer-like widget names')
     node.serialize_widgets = true

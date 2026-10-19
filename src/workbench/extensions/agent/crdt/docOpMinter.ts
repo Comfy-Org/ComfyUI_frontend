@@ -126,14 +126,16 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   if (!named || node.isVirtualNode) return snapshot
   const declaredForm = snapshot.widgets_values_form
   const declaredValues = snapshot.widgets_values
+  const namedValues = declaredForm?.order.map((name) => named[name])
+  const liveValues = declaredForm?.order.map(
+    (name) => node.widgets?.find((widget) => widget.name === name)?.value
+  )
   const hasCustomDeclaredValues =
     declaredForm !== undefined &&
     (isNonArrayObject(declaredValues) ||
       (Array.isArray(declaredValues) &&
-        !isEqual(
-          declaredValues,
-          declaredForm.order.map((name) => named[name])
-        )))
+        !isEqual(declaredValues, namedValues) &&
+        !isEqual(declaredValues, liveValues)))
   if (hasCustomDeclaredValues) return snapshot
 
   const values = valueWidgetsOnly(node, named)
