@@ -1,17 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import Button from '../button/Button.vue'
-import Dialog from './Dialog.vue'
-import DialogContent from './DialogContent.vue'
-import DialogOverlay from './DialogOverlay.vue'
-import DialogPortal from './DialogPortal.vue'
-import DialogTitle from './DialogTitle.vue'
-import Menu from '../menu/Menu.vue'
-import Popover from '../Popover.vue'
-import SingleSelect from '../single-select/SingleSelect.vue'
-import ToastDock from '../toast/ToastDock.vue'
+import Button from '@/components/ui/button/Button.vue'
+import Dialog from '@/components/ui/dialog/Dialog.vue'
+import DialogContent from '@/components/ui/dialog/DialogContent.vue'
+import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import Popover from '@/components/ui/Popover.vue'
+import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import ToastDock from '@/components/ui/toast/ToastDock.vue'
 
 const meta: Meta = {
   title: 'Components/Dialog/Overlay ordering',
@@ -34,7 +33,6 @@ const meta: Meta = {
         a: ref(false),
         b: ref(false),
         selected: ref('a'),
-        onRekaPointerDownOutside,
         options: [
           { name: 'Alpha', value: 'a' },
           { name: 'Beta', value: 'b' }
@@ -50,7 +48,7 @@ const meta: Meta = {
       <Dialog v-model:open="a">
         <DialogPortal>
           <DialogOverlay data-testid="scrim-a" />
-          <DialogContent data-testid="dialog-a" class="gap-4 p-6" @pointer-down-outside="onRekaPointerDownOutside({}, $event)">
+          <DialogContent data-testid="dialog-a" class="gap-4 p-6" @pointer-down-outside.prevent>
             <DialogTitle>Dialog A</DialogTitle>
             <input aria-label="Dialog input" class="rounded border p-2" placeholder="Dialog input" />
             <SingleSelect v-model="selected" label="Choose a value" :options />
@@ -66,7 +64,7 @@ const meta: Meta = {
       <Dialog v-model:open="b">
         <DialogPortal>
           <DialogOverlay data-testid="scrim-b" />
-          <DialogContent data-testid="dialog-b" class="gap-4 p-6" @pointer-down-outside="onRekaPointerDownOutside({}, $event)">
+          <DialogContent data-testid="dialog-b" class="gap-4 p-6" @pointer-down-outside.prevent>
             <DialogTitle>Dialog B</DialogTitle>
             <Button @click="a = true">Reopen A above B</Button>
             <Button @click="b = false">Close B</Button>
