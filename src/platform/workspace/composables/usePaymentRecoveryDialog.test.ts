@@ -4,7 +4,10 @@ import type { BillingPortalOutcome } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { reportError } from '@/platform/telemetry/reportError'
-import { canManageBillingFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
+import {
+  canManageBillingFact,
+  paymentRecoveryAvailableFact
+} from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { useDialogService } from '@/services/dialogService'
@@ -64,6 +67,25 @@ describe('usePaymentRecoveryDialog', () => {
     }
   )
 
+  it.for([
+    { available: true, lock: 'owner' },
+    { available: false, lock: null }
+  ])(
+    'locks for recovery as $lock when payment_recovery_available is $available',
+    ({ available, lock }) => {
+      useBillingCapabilities().paymentRecoveryAvailable =
+        paymentRecoveryAvailableFact(available)
+
+      expect(usePaymentRecoveryDialog().paymentRecoveryLock.value).toBe(lock)
+    }
+  )
+
+  it('refreshes the payment recovery fact from the capabilities read', async () => {
+    await usePaymentRecoveryDialog().refreshCapabilities()
+
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
   it('closes the recovery dialog once the billing portal opens', async () => {
     await expect(usePaymentRecoveryDialog().updatePayment()).resolves.toEqual({
       ok: true
@@ -117,6 +139,28 @@ describe('usePaymentRecoveryDialog', () => {
 
     await recovery.updatePayment()
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(2)
+  })
+
+  it('reopens the dialog showing the portal request still in flight', async () => {
+    let resolvePortal: (outcome: BillingPortalOutcome) => void = () => {}
+    vi.mocked(useBillingContext().manageSubscription).mockReturnValueOnce(
+      new Promise<BillingPortalOutcome>((resolve) => {
+        resolvePortal = resolve
+      })
+    )
+    const recovery = usePaymentRecoveryDialog()
+    const request = recovery.updatePayment()
+
+    recovery.showPaymentRecoveryDialog()
+
+    const [args] = vi.mocked(useDialogService().showLayoutDialog).mock.calls[0]
+    expect(args.props).toMatchObject({ isUpdatingPayment: true })
+    resolvePortal({ ok: true })
+    await request
+    expect(useDialogStore().updateDialog).toHaveBeenLastCalledWith({
+      key: 'subscription-paused',
+      contentProps: { isUpdatingPayment: false }
+    })
   })
 
   it('shares one in-flight portal request across callers', async () => {

@@ -23,12 +23,19 @@ export function isTopUpDeniedPastDue(denial: string | undefined): boolean {
 /** Opens the Update payment dialog, offering the portal only with `can_manage_billing`. */
 export function usePaymentRecoveryDialog() {
   const { manageSubscription } = useBillingContext()
-  const { canManageBilling } = useBillingCapabilities()
+  const {
+    canManageBilling,
+    paymentRecoveryAvailable,
+    refresh: refreshCapabilities
+  } = useBillingCapabilities()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const { toastErrorHandler } = useErrorHandling()
 
   const isUpdatingPayment = computed(() => paymentPortalRequest.value !== null)
+  const paymentRecoveryLock = computed<'owner' | null>(() =>
+    paymentRecoveryAvailable.value ? 'owner' : null
+  )
 
   function closePaymentRecoveryDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -93,5 +100,11 @@ export function usePaymentRecoveryDialog() {
     })
   }
 
-  return { showPaymentRecoveryDialog, updatePayment, isUpdatingPayment }
+  return {
+    showPaymentRecoveryDialog,
+    updatePayment,
+    isUpdatingPayment,
+    paymentRecoveryLock,
+    refreshCapabilities
+  }
 }
