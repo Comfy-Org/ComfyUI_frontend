@@ -97,6 +97,7 @@ describe('AgentCrdtProjection frame node delta', () => {
     const applyChanges = vi
       .spyOn(LiveGraphApplier.prototype, 'applyChanges')
       .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
       .mockReturnValueOnce({ createdNodeIds: [], failureCount: 0 })
     const { host, follower, projection } = setup(graph)
     nodesMap(host).set('3', new Y.Map([['type', 'KSampler']]))
@@ -104,6 +105,10 @@ describe('AgentCrdtProjection frame node delta', () => {
     follower.applyRemoteUpdate(update.update)
 
     expect(projection.applyFrame(update)).toMatchObject({
+      applied: true,
+      failureCount: 1
+    })
+    expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
       applied: true,
       failureCount: 1
     })
@@ -115,7 +120,46 @@ describe('AgentCrdtProjection frame node delta', () => {
     })
     expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(false)
     expect(projection.retryFailed(WORKFLOW_ID)).toBeNull()
-    expect(applyChanges).toHaveBeenCalledTimes(2)
-    expect(applyChanges.mock.calls[1][1]).toBe(applyChanges.mock.calls[0][1])
+    expect(applyChanges).toHaveBeenCalledTimes(3)
+    // The retained frame's registers, not a fresh (and by now empty) take from
+    // the collector. Equality rather than identity because a replay re-reads
+    // its node directions from the document; here the document still holds
+    // node 3, so `add` survives unchanged.
+    expect(applyChanges.mock.calls[2][1]).toEqual(applyChanges.mock.calls[0][1])
+  })
+
+  it('re-derives a retained delete against the document before replaying it', () => {
+    const graph = {} as NonNullable<ProjectionGraph>
+    const applyChanges = vi
+      .spyOn(LiveGraphApplier.prototype, 'applyChanges')
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 0 })
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
+      .mockReturnValue({ createdNodeIds: [], failureCount: 0 })
+    const { host, follower, projection } = setup(graph)
+
+    nodesMap(host).set('3', new Y.Map([['type', 'KSampler']]))
+    const seed = frame(1, host)
+    follower.applyRemoteUpdate(seed.update)
+    projection.applyFrame(seed)
+
+    let since = Y.encodeStateVector(host)
+    nodesMap(host).delete('3')
+    const removal = frame(2, host, since)
+    follower.applyRemoteUpdate(removal.update)
+
+    expect(projection.applyFrame(removal)).toMatchObject({ failureCount: 1 })
+    expect(applyChanges.mock.calls[1][1].nodes.get('3')).toBe('delete')
+
+    since = Y.encodeStateVector(host)
+    nodesMap(host).set('3', new Y.Map([['type', 'KSampler']]))
+    const restore = frame(3, host, since)
+    follower.applyRemoteUpdate(restore.update)
+    projection.applyFrame(restore)
+
+    expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
+      failureCount: 0
+    })
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(false)
+    expect(applyChanges.mock.calls[3][1].nodes.get('3')).not.toBe('delete')
   })
 })
