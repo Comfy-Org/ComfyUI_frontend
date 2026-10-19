@@ -35,13 +35,13 @@
       </Button>
     </div>
     <template v-if="reportOpen">
-      <hr class="border-t border-border-subtle" />
+      <hr class="border-t border-border/50" />
       <div class="h-[400px] w-full max-w-[80vw] overflow-auto">
         <pre class="wrap-break-word whitespace-pre-wrap">{{
           reportContent
         }}</pre>
       </div>
-      <hr class="border-t border-border-subtle" />
+      <hr class="border-t border-border/50" />
     </template>
     <div class="flex justify-end gap-4">
       <FindIssueButton

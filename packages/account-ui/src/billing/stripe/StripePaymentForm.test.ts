@@ -173,12 +173,12 @@ describe('StripePaymentForm', () => {
   })
 
   it('themes Stripe from the theme scope the form renders in, not the page body', async () => {
-    document.body.style.setProperty('--base-foreground', 'rgb(20, 20, 20)')
-    document.body.style.setProperty('--base-background', 'rgb(255, 255, 255)')
+    document.body.style.setProperty('--foreground', 'rgb(20, 20, 20)')
+    document.body.style.setProperty('--background', 'rgb(255, 255, 255)')
     document.body.style.fontFamily = 'serif'
     const darkScope = document.createElement('div')
-    darkScope.style.setProperty('--base-foreground', 'rgb(250, 250, 250)')
-    darkScope.style.setProperty('--base-background', 'rgb(30, 30, 30)')
+    darkScope.style.setProperty('--foreground', 'rgb(250, 250, 250)')
+    darkScope.style.setProperty('--background', 'rgb(30, 30, 30)')
     darkScope.style.fontFamily = 'Inter'
     document.body.append(darkScope)
     onTestFinished(() => {
@@ -204,8 +204,8 @@ describe('StripePaymentForm', () => {
 
   it('re-themes the mounted Elements in place when the host theme changes', async () => {
     const themeRoot = document.createElement('div')
-    themeRoot.style.setProperty('--base-foreground', 'rgb(20, 20, 20)')
-    themeRoot.style.setProperty('--base-background', 'rgb(255, 255, 255)')
+    themeRoot.style.setProperty('--foreground', 'rgb(20, 20, 20)')
+    themeRoot.style.setProperty('--background', 'rgb(255, 255, 255)')
     document.body.append(themeRoot)
     onTestFinished(() => themeRoot.remove())
 
@@ -217,8 +217,8 @@ describe('StripePaymentForm', () => {
       expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
     )
 
-    themeRoot.style.setProperty('--base-foreground', 'rgb(250, 250, 250)')
-    themeRoot.style.setProperty('--base-background', 'rgb(30, 30, 30)')
+    themeRoot.style.setProperty('--foreground', 'rgb(250, 250, 250)')
+    themeRoot.style.setProperty('--background', 'rgb(30, 30, 30)')
     await rerender({ themeKey: 'dark' })
 
     await waitFor(() =>

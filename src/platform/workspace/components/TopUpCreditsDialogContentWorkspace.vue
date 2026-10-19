@@ -1,13 +1,11 @@
 <template>
-  <div
-    class="flex min-h-[500px] w-[min(512px,95vw)] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-  >
+  <Card class="flex min-h-[500px] w-[min(512px,95vw)] flex-col shadow-md">
     <!-- Header -->
     <div class="flex items-center justify-between p-8">
       <div class="flex items-center gap-2">
         <button
           v-if="step === 'confirm'"
-          class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground disabled:pointer-events-none disabled:opacity-40"
+          class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
           :disabled="paymentLocked"
           :aria-label="$t('g.back')"
           @click="showAmountStep"
@@ -28,7 +26,7 @@
         </DialogTitle>
       </div>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="() => handleClose(!topupIsParkedWithoutLink)"
       >
@@ -46,22 +44,16 @@
       <p class="m-0 px-8 text-sm text-muted-foreground">
         {{ $t('credits.topUp.confirmSubtitle') }}
       </p>
-      <div class="flex flex-col gap-3 px-8 pt-6">
-        <span
-          class="flex items-center gap-2 py-2 text-2xl font-semibold text-base-foreground tabular-nums"
-        >
-          <i class="icon-[lucide--coins] size-5 text-gold-500" />
+      <div class="flex flex-col gap-3 px-8 pt-6 font-semibold">
+        <span class="flex items-center gap-2 py-2 text-2xl tabular-nums">
+          <i class="icon-[lucide--coins] size-5 text-credit" />
           {{ formatNumber(creditsModel) }}
         </span>
-        <div
-          class="flex items-center justify-between border-t border-border-default pt-4"
-        >
-          <span class="text-base font-semibold text-base-foreground">
+        <div class="flex items-center justify-between border-t pt-4 text-base">
+          <span>
             {{ $t('subscription.preview.totalDueToday') }}
           </span>
-          <span
-            class="text-base font-semibold text-base-foreground tabular-nums"
-          >
+          <span class="tabular-nums">
             {{ displayTotal }}
           </span>
         </div>
@@ -75,7 +67,7 @@
       <p
         v-else-if="checkoutRecovery === 'failed'"
         role="alert"
-        class="m-0 px-8 pt-4 text-sm text-destructive-background"
+        class="m-0 px-8 pt-4 text-sm text-destructive"
       >
         {{ $t('credits.topUp.checkoutOpenFailed') }}
       </p>
@@ -95,19 +87,14 @@
 
     <template v-if="step === 'verifying'">
       <div class="flex flex-col items-center gap-3 px-8 text-center">
-        <i
-          class="icon-[lucide--shield-alert] size-10 text-warning-background"
-        />
-        <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
+        <i class="icon-[lucide--shield-alert] size-10 text-warning" />
+        <DialogTitle class="m-0 text-xl lg:text-2xl">
           {{ $t('credits.topUp.verifyTitle') }}
         </DialogTitle>
         <p class="m-0 text-sm text-balance text-muted-foreground">
           {{ verifyingBody }}
         </p>
-        <span
-          v-if="topupReconciliationOperationId"
-          class="font-mono text-sm text-base-foreground"
-        >
+        <span v-if="topupReconciliationOperationId" class="font-mono text-sm">
           {{ topupReconciliationOperationId }}
         </span>
       </div>
@@ -127,8 +114,8 @@
           size="lg"
           :class="
             cn(
-              'h-10 w-full text-base font-medium focus-visible:ring-border-default',
-              selectedPreset === amount && 'bg-secondary-background-selected'
+              'h-10 w-full text-base focus-visible:ring-ring',
+              selectedPreset === amount && 'bg-muted'
             )
           "
           @click="handlePresetClick(amount)"
@@ -156,9 +143,7 @@
           @update:model-value="handlePayAmountChange"
         >
           <NumberFieldDecrement />
-          <span class="shrink-0 text-base font-semibold text-base-foreground"
-            >$</span
-          >
+          <span class="shrink-0 text-base font-semibold">$</span>
           <NumberFieldInput
             :aria-label="$t('credits.topUp.youPay')"
             class="text-lg font-medium"
@@ -180,7 +165,7 @@
           :format-options="{ maximumFractionDigits: 0 }"
         >
           <NumberFieldDecrement />
-          <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
+          <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
           <NumberFieldInput
             :aria-label="$t('credits.topUp.youGet')"
             class="text-lg font-medium"
@@ -194,7 +179,7 @@
 
     <p
       v-if="isBelowMin && step === 'amount'"
-      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
+      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
     >
       <i class="icon-[lucide--coins] size-4" />
       {{
@@ -205,7 +190,7 @@
     </p>
     <p
       v-if="showCeilingWarning && step === 'amount'"
-      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
+      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-warning"
     >
       <i class="icon-[lucide--coins] size-4" />
       {{
@@ -279,7 +264,7 @@
           variant="primary"
           size="lg"
           :disabled="!isValidAmount || paymentLocked || !canTopUp"
-          :loading="paymentLocked"
+          :loading="paymentInFlight"
           @click="continueToCheckout"
         >
           {{ $t('credits.topUp.continueToCheckout') }}
@@ -288,7 +273,7 @@
         <Button
           v-else
           :disabled="!isValidAmount || paymentLocked || !canTopUp"
-          :loading="paymentLocked"
+          :loading="paymentInFlight"
           :variant="
             step === 'confirm' && topupActionUrl ? 'tertiary' : 'primary'
           "
@@ -303,6 +288,16 @@
               : $t('subscription.addCredits')
           }}
         </Button>
+        <Button
+          v-if="step === 'confirm' && checkoutRecovery"
+          variant="secondary"
+          size="lg"
+          :disabled="paymentLocked"
+          :loading="openingDefaultCardPortal"
+          @click="setDefaultCard"
+        >
+          {{ $t('credits.topUp.setDefaultCard') }}
+        </Button>
       </div>
       <div
         v-if="step === 'amount'"
@@ -311,17 +306,18 @@
         <a
           :href="pricingUrl"
           target="_blank"
-          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           {{ $t('credits.topUp.viewPricing') }}
           <i class="icon-[lucide--external-link] size-4" />
         </a>
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import Card from '@/components/ui/card/Card.vue'
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import type { BillingOperationTerminal } from '@comfyorg/account-core/billing'
 import {
@@ -349,9 +345,13 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import type { BillingTab } from '@/platform/workspace/billing/billingTab'
 import { reserveBillingTab } from '@/platform/workspace/billing/billingTab'
+import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { topupCheckoutReturnUrl } from '@/platform/workspace/billing/topupCheckoutReturnUrl'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { UncreditedTopupResponse } from '@/platform/workspace/billing/sdk/topupOperationView'
@@ -388,7 +388,8 @@ const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
-const { canTopUp } = useBillingCapabilities()
+const billingCapabilities = useBillingCapabilities()
+const { canTopUp } = billingCapabilities
 
 const workspaceStore = useTeamWorkspaceStore()
 
@@ -508,12 +509,18 @@ const displayTotal = computed(() =>
   })
 )
 
-const paymentLocked = computed(
+const paymentInFlight = computed(
   () =>
     loading.value ||
     paymentSubmitted.value ||
     isAddingCredits.value ||
     !!topupOperation.value
+)
+
+const openingDefaultCardPortal = ref(false)
+
+const paymentLocked = computed(
+  () => paymentInFlight.value || openingDefaultCardPortal.value
 )
 
 watch(
@@ -739,25 +746,88 @@ function isNoPaymentMethodRefusal(error: unknown): boolean {
 }
 
 let unmounted = false
+let stopDefaultCardReturnRefresh: (() => void) | null = null
 onUnmounted(() => {
   unmounted = true
+  stopDefaultCardReturnRefresh?.()
 })
 
 function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
   checkoutTab.navigate(checkoutUrl)
   usePendingTopup().startPendingTopup()
   watchForTopupBalanceUpdate({
-    current: () => balance.value?.amountMicros ?? null,
-    fetch: async () => {
-      const [balanceRead] = await Promise.allSettled([
-        fetchBalance(),
-        fetchStatus()
-      ])
-      if (balanceRead.status === 'rejected') throw balanceRead.reason
-      return balance.value?.amountMicros ?? null
+    source: {
+      current: () => balance.value?.amountMicros ?? null,
+      fetch: async () => {
+        const [balanceRead, statusRead] = await Promise.allSettled([
+          fetchBalance(),
+          fetchStatus()
+        ])
+        if (balanceRead.status === 'rejected') throw balanceRead.reason
+        if (statusRead.status === 'rejected') throw statusRead.reason
+        return balance.value?.amountMicros ?? null
+      }
     }
   })
   handleClose(false)
+}
+
+function refreshOnDefaultCardReturn() {
+  stopDefaultCardReturnRefresh?.()
+  stopDefaultCardReturnRefresh = registerRefreshOnReturn(async () => {
+    const [paymentMethods] = await Promise.allSettled([
+      workspaceApi.listSavedPaymentMethods(),
+      fetchStatus(),
+      fetchBalance(),
+      billingCapabilities.refresh()
+    ])
+    if (
+      paymentMethods.status !== 'fulfilled' ||
+      !paymentMethods.value.some((method) => method.is_default)
+    ) {
+      return
+    }
+    stopDefaultCardReturnRefresh?.()
+    stopDefaultCardReturnRefresh = null
+    checkoutRecovery.value = null
+  })
+}
+
+async function setDefaultCard() {
+  if (paymentLocked.value) return
+  const portalTab = reserveBillingTab()
+  if (!portalTab) {
+    toast.warning(t('g.warning'), {
+      description: t('subscription.billingTabBlocked')
+    })
+    return
+  }
+  openingDefaultCardPortal.value = true
+  try {
+    const { url } = await workspaceApi.getPaymentPortalUrl(
+      window.location.href,
+      'payment_method_update'
+    )
+    if (unmounted) {
+      portalTab.close()
+      return
+    }
+    if (!url) return reportDefaultCardPortalFailure(portalTab)
+    portalTab.navigate(url)
+    refreshOnDefaultCardReturn()
+  } catch {
+    reportDefaultCardPortalFailure(portalTab)
+  } finally {
+    openingDefaultCardPortal.value = false
+  }
+}
+
+function reportDefaultCardPortalFailure(portalTab: BillingTab) {
+  portalTab.close()
+  if (unmounted) return
+  toast.error(t('credits.topUp.setDefaultCardError'), {
+    description: t('credits.topUp.unknownError')
+  })
 }
 
 async function continueToCheckout() {

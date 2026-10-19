@@ -22,9 +22,7 @@
           <Skeleton class="h-20 w-full rounded-lg" />
         </div>
       </main>
-      <footer
-        class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
-      >
+      <footer class="flex items-center justify-end gap-2.5 border-t px-8 py-4">
         <Skeleton class="h-10 w-24" />
         <Skeleton class="h-10 w-40" />
       </footer>
@@ -33,16 +31,14 @@
     <template v-else-if="error">
       <main class="flex flex-col items-center gap-4 p-8">
         <i
-          class="icon-[lucide--circle-alert] size-8 text-warning-background"
+          class="icon-[lucide--circle-alert] size-8 text-warning"
           aria-hidden="true"
         />
         <p class="m-0 text-center text-sm text-muted-foreground">
           {{ $t('openSharedWorkflow.loadError') }}
         </p>
       </main>
-      <footer
-        class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
-      >
+      <footer class="flex items-center justify-end gap-2.5 border-t px-8 py-4">
         <Button
           data-testid="open-shared-workflow-error-close"
           variant="secondary"
@@ -57,9 +53,7 @@
     <template v-else-if="sharedWorkflow">
       <main :class="cn('flex gap-8 px-8 pt-4 pb-6', !hasAssets && 'flex-col')">
         <div class="flex min-w-0 flex-1 flex-col gap-12 py-4">
-          <h2
-            class="m-0 text-2xl font-semibold wrap-anywhere text-base-foreground"
-          >
+          <h2 class="m-0 text-2xl font-semibold wrap-anywhere">
             {{ workflowName }}
           </h2>
           <p
@@ -85,7 +79,7 @@
         <div v-if="hasAssets" class="flex w-96 shrink-0 flex-col gap-2 py-4">
           <CollapsibleRoot
             v-model:open="isWarningExpanded"
-            class="overflow-hidden rounded-lg bg-secondary-background"
+            class="overflow-hidden rounded-lg bg-secondary"
           >
             <CollapsibleTrigger as-child>
               <Button
@@ -93,12 +87,10 @@
                 class="w-full justify-between px-4 py-1 text-sm"
               >
                 <i
-                  class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning-background"
+                  class="icon-[lucide--circle-alert] size-4 shrink-0 text-warning"
                   aria-hidden="true"
                 />
-                <span
-                  class="m-0 flex-1 text-left text-sm text-muted-foreground"
-                >
+                <span class="flex-1 text-left text-sm text-muted-foreground">
                   {{ $t('openSharedWorkflow.nonPublicAssetsWarningLine1') }}
                 </span>
                 <i
@@ -121,9 +113,7 @@
         </div>
       </main>
 
-      <footer
-        class="flex items-center justify-end gap-2.5 border-t border-border-default px-8 py-4"
-      >
+      <footer class="flex items-center justify-end gap-2.5 border-t px-8 py-4">
         <Button
           data-testid="open-shared-workflow-cancel"
           variant="secondary"

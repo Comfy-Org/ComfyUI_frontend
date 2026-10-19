@@ -21,7 +21,7 @@ const dialogRoot = injectDialogRootContext(null)
     :as-child
     :class="
       cn(
-        'min-w-0 text-base font-semibold wrap-break-word text-base-foreground',
+        'min-w-0 text-base font-semibold wrap-break-word text-foreground',
         customClass
       )
     "

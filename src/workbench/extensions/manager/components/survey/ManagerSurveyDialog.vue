@@ -35,12 +35,10 @@
         <div
           v-else-if="status === 'error'"
           data-testid="manager-survey-error"
-          class="flex min-h-56 flex-col items-center justify-center gap-2 text-center"
+          class="flex min-h-56 flex-col items-center justify-center gap-2 text-center text-muted-foreground"
         >
-          <i
-            class="icon-[lucide--triangle-alert] size-6 text-muted-foreground"
-          />
-          <p class="m-0 text-sm text-muted-foreground">
+          <i class="icon-[lucide--triangle-alert] size-6" />
+          <p class="m-0 text-sm">
             {{ $t('manager.survey.error') }}
           </p>
         </div>

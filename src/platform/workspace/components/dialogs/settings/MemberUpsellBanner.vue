@@ -2,19 +2,17 @@
   <div class="@container mb-4">
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-interface-stroke/60 bg-base-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
+      <div class="flex min-w-0 flex-1 flex-col gap-1 text-muted-foreground">
         <div class="flex items-center gap-2">
-          <i
-            class="icon-[lucide--circle-alert] size-4 shrink-0 text-muted-foreground"
-          />
-          <span v-if="title" class="text-sm text-base-foreground">
+          <i class="icon-[lucide--circle-alert] size-4 shrink-0" />
+          <span v-if="title" class="text-sm text-foreground">
             {{ title }}
           </span>
-          <span v-else class="text-sm text-muted-foreground">{{ body }}</span>
+          <span v-else class="text-sm">{{ body }}</span>
         </div>
-        <p v-if="title" class="m-0 pl-6 text-sm text-muted-foreground">
+        <p v-if="title" class="m-0 pl-6 text-sm">
           {{ body }}
         </p>
       </div>

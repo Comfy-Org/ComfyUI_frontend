@@ -28,7 +28,7 @@ const { t } = useI18n()
       :class="
         cn(
           'cursor-pointer underline underline-offset-2',
-          unavailable ? 'text-muted-foreground' : 'text-warning-background'
+          unavailable ? 'text-muted-foreground' : 'text-warning'
         )
       "
       >{{ `/${skill.name}` }}</span
