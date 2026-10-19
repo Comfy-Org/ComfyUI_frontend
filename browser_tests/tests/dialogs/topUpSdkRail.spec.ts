@@ -1,11 +1,6 @@
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
-import type {
-  BillingBalanceResponse,
-  BillingOpStatusResponse,
-  CreateTopupResponse,
-  SavedPaymentMethod
-} from '@comfyorg/ingest-types'
+import type { CreateTopupCheckoutResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -17,67 +12,35 @@ import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * Buying credits across the billing SDK rail — FE-2475.
- *
- * Comfy-Org/ComfyUI_frontend#17665 shipped the top-up rail with 48 dual-path
- * unit tests and no browser coverage, which left the first flow due to be
- * flagged on in staging as the one with no end-to-end proof.
- *
- * Both rails POST `/api/billing/topup`, so the body cannot separate them. The
- * transport can: the SDK runs on `fetch`, the legacy workspace client on axios'
- * XHR adapter, and only the SDK sends an `Idempotency-Key` — the same pair of
- * discriminators `planChangeSdkRail` uses.
- */
 const BOOT_FEATURES = {
   billing_control_enabled: true,
   unified_cloud_auth: true
 } satisfies RemoteConfig
 
-const TOPUP_OPERATION_ID = 'op-e2e-topup'
-
-const SAVED_CARD = {
-  id: 'pm_e2e_visa',
-  type: 'card',
-  brand: 'visa',
-  last4: '4242',
-  is_default: true
-} satisfies SavedPaymentMethod
-
-const PURCHASED = {
-  billing_op_id: TOPUP_OPERATION_ID,
-  topup_id: 'topup-e2e',
-  status: 'completed',
-  amount_cents: 5_000
-} satisfies CreateTopupResponse
-
-const SETTLED_OPERATION = {
-  id: TOPUP_OPERATION_ID,
-  status: 'succeeded',
-  started_at: '2026-09-20T00:00:00Z',
-  completed_at: '2026-09-20T00:00:03Z'
-} satisfies BillingOpStatusResponse
-
-/** The balance the app reads back after a purchase settles, on either rail. */
-const REFRESHED_BALANCE = {
-  amount_micros: 50_000_000,
-  currency: 'usd'
-} satisfies BillingBalanceResponse
+const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_e2e_rail'
 
 interface TopupRoutes {
-  /** Every POST to the purchase route, in order. */
-  readonly purchaseRequests: Request[]
-  /** Every read of the balance, in order — the refresh after settlement. */
-  readonly balanceRequests: Request[]
-  /** Answers the next purchase with a 404, as a closed backend gate does. */
+  readonly checkoutRequests: Request[]
+  readonly chargeRequests: Request[]
   respondNotFound: () => void
 }
 
 async function setupTopUp(page: Page): Promise<TopupRoutes> {
   const ws = workspace('personal', 'owner')
-  const purchaseRequests: Request[] = []
-  const balanceRequests: Request[] = []
+  const checkoutRequests: Request[] = []
+  const chargeRequests: Request[] = []
   let notFound = false
+
+  await page.addInitScript(() => {
+    const standInTab = new Proxy(window, {
+      get: (target, property) =>
+        property === 'location'
+          ? { set href(_destination: string) {} }
+          : Reflect.get(target, property),
+      set: () => true
+    })
+    window.open = () => standInTab
+  })
 
   await setupCloudApp(page, {
     workspace: ws,
@@ -85,34 +48,28 @@ async function setupTopUp(page: Page): Promise<TopupRoutes> {
     billingCapabilities: createBillingCapabilities(ws.id)
   })
 
-  await page.route('**/api/billing/payment-methods', (route) =>
-    route.fulfill(jsonRoute([SAVED_CARD] satisfies SavedPaymentMethod[]))
-  )
-  // Registered after setupCloudApp so it wins over the flat balance that mock
-  // installs: the point of the last row is that the balance is re-read.
-  await page.route('**/api/billing/balance', (route) => {
-    balanceRequests.push(route.request())
-    return route.fulfill(jsonRoute(REFRESHED_BALANCE))
-  })
-  await page.route('**/api/billing/topup', async (route) => {
+  await page.route('**/api/billing/topup', (route) => {
     if (route.request().method() !== 'POST') return route.fallback()
-    purchaseRequests.push(route.request())
+    chargeRequests.push(route.request())
+    return route.fulfill({ status: 500, body: '' })
+  })
+  await page.route('**/api/billing/topup/checkout', async (route) => {
+    checkoutRequests.push(route.request())
     if (notFound) {
       notFound = false
       await route.fulfill({ status: 404, body: '' })
       return
     }
-    await route.fulfill(jsonRoute(PURCHASED))
+    await route.fulfill(
+      jsonRoute({
+        checkout_url: CHECKOUT_URL
+      } satisfies CreateTopupCheckoutResponse)
+    )
   })
-  // Only the SDK rail observes the operation; the legacy path reports the
-  // completed status straight from the purchase body.
-  await page.route(`**/api/billing/ops/${TOPUP_OPERATION_ID}`, (route) =>
-    route.fulfill(jsonRoute(SETTLED_OPERATION))
-  )
 
   return {
-    purchaseRequests,
-    balanceRequests,
+    checkoutRequests,
+    chargeRequests,
     respondNotFound: () => {
       notFound = true
     }
@@ -135,14 +92,11 @@ async function enableSdkRail(page: Page) {
   })
 }
 
-async function openTopUpAndPay(page: Page) {
+async function openTopUpAndContinue(page: Page) {
   const dialog = new TopUpCreditsDialog(page)
   await page.goto(`${APP_URL}/?topup=1`)
   await expect(dialog.heading).toBeVisible({ timeout: 45_000 })
-  await dialog.root
-    .getByRole('button', { name: 'Add credits', exact: true })
-    .click()
-  await dialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
+  await dialog.continueToPaymentButton.click()
   return dialog
 }
 
@@ -151,14 +105,15 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
     test.setTimeout(60_000)
     const routes = await setupTopUp(page)
 
-    await openTopUpAndPay(page)
+    const dialog = await openTopUpAndContinue(page)
 
-    await expect.poll(() => routes.purchaseRequests.length).toBe(1)
-    const [issued] = routes.purchaseRequests
+    await expect(dialog.checkoutOpenedHeading).toBeVisible()
+    expect(routes.checkoutRequests).toHaveLength(1)
+    const [issued] = routes.checkoutRequests
     expect(transport(issued)).toBe('xhr')
     expect(idempotencyKey(issued)).toBeUndefined()
-    // The balance is re-read once the purchase completes, on this rail too.
-    await expect.poll(() => routes.balanceRequests.length).toBeGreaterThan(1)
+    expect(issued.postDataJSON()).toMatchObject({ amount_cents: 5_000 })
+    expect(routes.chargeRequests).toHaveLength(0)
   })
 
   test('issues through the SDK transport while the rail is on', async ({
@@ -168,10 +123,11 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
     const routes = await setupTopUp(page)
     await enableSdkRail(page)
 
-    await openTopUpAndPay(page)
+    const dialog = await openTopUpAndContinue(page)
 
-    await expect.poll(() => routes.purchaseRequests.length).toBe(1)
-    const [issued] = routes.purchaseRequests
+    await expect(dialog.checkoutOpenedHeading).toBeVisible()
+    expect(routes.checkoutRequests).toHaveLength(1)
+    const [issued] = routes.checkoutRequests
     expect(issued.method()).toBe('POST')
     expect(transport(issued)).toBe('fetch')
     expect(idempotencyKey(issued)).toBeTruthy()
@@ -179,34 +135,24 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
       amount_cents: 5_000,
       idempotency_key: idempotencyKey(issued)
     })
-    await expect.poll(() => routes.balanceRequests.length).toBeGreaterThan(1)
+    expect(routes.chargeRequests).toHaveLength(0)
   })
 
-  /**
-   * Pins what the rail does today when the backend gate is still closed, which
-   * is not what FE-2475 assumed. `account-core` maps a 404 to a `NOT_AVAILABLE`
-   * failure (`topup.ts:226`), but no host call site reads that code: there is no
-   * latch and no legacy retry for top-up, unlike the subscription rail's
-   * `subscriptionRouteAvailable` in `billingSdkStore.ts:334`. So the purchase
-   * surfaces as an error and the customer is left to try again.
-   *
-   * Asserting the real behaviour rather than the intended one keeps this spec
-   * honest; closing the gap needs its own change, and this row will be the one
-   * that has to be rewritten when it lands.
-   */
-  test('surfaces a closed backend gate as a failed purchase, with no legacy retry', async ({
-    page,
-    toast
+  test('keeps the amount step and explains a closed backend gate', async ({
+    page
   }) => {
     test.setTimeout(60_000)
     const routes = await setupTopUp(page)
     await enableSdkRail(page)
     routes.respondNotFound()
 
-    await openTopUpAndPay(page)
+    const dialog = await openTopUpAndContinue(page)
 
-    await expect.poll(() => routes.purchaseRequests.length).toBe(1)
-    expect(transport(routes.purchaseRequests[0])).toBe('fetch')
-    await expect(toast.toastErrors).toBeVisible()
+    await expect(dialog.root.getByRole('alert')).toHaveText(
+      "The payment page couldn't open. Nothing was charged. Try again."
+    )
+    expect(routes.checkoutRequests).toHaveLength(1)
+    expect(transport(routes.checkoutRequests[0])).toBe('fetch')
+    await expect(dialog.continueToPaymentButton).toBeEnabled()
   })
 })

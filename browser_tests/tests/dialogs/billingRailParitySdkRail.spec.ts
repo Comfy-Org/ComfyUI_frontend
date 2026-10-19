@@ -5,12 +5,13 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CreateTopupResponse,
+  CreateTopupCheckoutResponse,
   PaymentPortalResponse,
   PreviewSubscribeResponse,
   ResubscribeResponse,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
+import { omit } from 'es-toolkit'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -48,8 +49,8 @@ const SUBSCRIPTION_RAIL_ONLY: Rails = { subscription: true, topup: false }
 
 const OPERATION_ID = 'op-e2e-parity'
 const PORTAL_URL = 'https://billing.example/portal'
+const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_e2e_parity'
 
-/** The purchase the Pay $50.00 button sends, and what it adds on the server. */
 const TOPUP_MICROS = 10_000
 /** What the Creator upgrade grants on the server. */
 const SUBSCRIPTION_GRANT_MICROS = 20_000
@@ -193,9 +194,6 @@ async function setupParity(
     balanceRequests: [] as Request[]
   }
 
-  // Recorded rather than performed: the portal is an external origin, and the
-  // truthy handle is what arms the app's return refresh. A tab reserved blank
-  // and navigated later is recorded when its location is written.
   await page.addInitScript(() => {
     const opened: string[] = []
     Object.defineProperty(window, '__openedUrls', { get: () => opened })
@@ -233,8 +231,6 @@ async function setupParity(
     } satisfies RemoteConfig,
     billingCapabilities: createWorkspaceBillingCapabilities(ws)
   })
-  // The handshake is the fallback channel; seeding it too keeps the two
-  // channels agreeing, so neither alone is what the rows rest on.
   await new FeatureFlagHelper(page).seedServerFlags({
     billing_sdk_subscription_enabled: rails.subscription,
     billing_sdk_topup_enabled: rails.topup
@@ -295,22 +291,18 @@ async function setupParity(
       jsonRoute({ url: PORTAL_URL } satisfies PaymentPortalResponse)
     )
   })
-  await page.route('**/api/billing/topup', (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
+  await page.route('**/api/billing/topup/checkout', (route) => {
     routes.topupRequests.push(route.request())
-    server.balanceMicros += TOPUP_MICROS
     return route.fulfill(
       jsonRoute({
-        billing_op_id: OPERATION_ID,
-        topup_id: 'topup-e2e',
-        status: 'completed',
-        amount_cents: 5_000
-      } satisfies CreateTopupResponse)
+        checkout_url: CHECKOUT_URL
+      } satisfies CreateTopupCheckoutResponse)
     )
   })
-  await page.route('**/api/billing/ops/**', (route) =>
-    route.fulfill(jsonRoute(SETTLED_OPERATION))
-  )
+  await page.route('**/api/billing/ops/**', (route) => {
+    server.status = withoutPendingOperation(server.status)
+    return route.fulfill(jsonRoute(SETTLED_OPERATION))
+  })
 
   return {
     server,
@@ -319,6 +311,21 @@ async function setupParity(
       page.evaluate(
         () => (window as unknown as { __openedUrls: string[] }).__openedUrls
       )
+  }
+}
+
+function withoutPendingOperation(
+  status: BillingStatusResponse
+): BillingStatusResponse {
+  return omit(status, ['pending_billing_op_id', 'pending_billing_op_type'])
+}
+
+function payOnHostedCheckout(server: BillingServer) {
+  server.balanceMicros += TOPUP_MICROS
+  server.status = {
+    ...server.status,
+    pending_billing_op_id: OPERATION_ID,
+    pending_billing_op_type: 'topup'
   }
 }
 
@@ -352,13 +359,16 @@ async function openPlanAndCredits(page: Page): Promise<Locator> {
   return dialog.getByRole('main')
 }
 
-async function buyFiftyDollars(page: Page): Promise<TopUpCreditsDialog> {
+async function buyFiftyDollars(
+  page: Page,
+  routes: ParityRoutes
+): Promise<TopUpCreditsDialog> {
   const dialog = new TopUpCreditsDialog(page)
   await dialog.open()
-  await dialog.root
-    .getByRole('button', { name: 'Add credits', exact: true })
-    .click()
-  await dialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
+  await dialog.continueToPaymentButton.click()
+  await expect(dialog.checkoutOpenedHeading).toBeVisible()
+  await expect.poll(() => routes.openedUrls()).toContain(CHECKOUT_URL)
+  payOnHostedCheckout(routes.server)
   return dialog
 }
 
@@ -368,7 +378,7 @@ async function returnToTab(page: Page) {
 }
 
 const successToast = (toast: ToastHelper) =>
-  toast.toastSuccesses.filter({ hasText: 'Credits added successfully!' })
+  toast.toastSuccesses.filter({ hasText: 'Credits added successfully' })
 
 /** The plan summary on the success step, which names what was bought. */
 const successSummary = (page: Page) =>
@@ -421,20 +431,16 @@ async function expectPortalReturnRefresh(
   )
 }
 
-/**
- * Buys $50 of credits, then upgrades to Creator from Plan & Credits without
- * leaving the page, and returns the panel once the success step is closed.
- */
 async function topUpThenUpgrade(
   page: Page,
+  routes: ParityRoutes,
   toast: ToastHelper
 ): Promise<Locator> {
   await bootApp(page)
-  const topUp = await buyFiftyDollars(page)
+  const topUp = await buyFiftyDollars(page, routes)
   await expect(successToast(toast)).toBeVisible()
   await expect(topUp.root).toBeHidden()
 
-  // A settled purchase lands the customer on Plan & Credits.
   const panel = page.getByTestId('settings-dialog').getByRole('main')
   await expect(
     panel.getByRole('heading', { name: 'Standard Yearly' })
@@ -469,14 +475,14 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
       await bootApp(page)
       const readsBeforePurchase = routes.balanceRequests.length
 
-      await buyFiftyDollars(page)
+      await buyFiftyDollars(page, routes)
 
       await expect(successToast(toast)).toBeVisible()
       expect(routes.topupRequests).toHaveLength(1)
       const [purchase] = routes.topupRequests
       expect(transport(purchase)).toBe('xhr')
       expect(idempotencyKey(purchase)).toBeUndefined()
-      expect(purchase.postDataJSON()).toEqual({ amount_cents: 5_000 })
+      expect(purchase.postDataJSON()).toMatchObject({ amount_cents: 5_000 })
       await expect
         .poll(() => routes.balanceRequests.length)
         .toBeGreaterThan(readsBeforePurchase)
@@ -516,7 +522,7 @@ test.describe('Billing rail parity', { tag: '@cloud' }, () => {
       toast
     }) => {
       const routes = await setupParity(page, { rails: SUBSCRIPTION_RAIL_ONLY })
-      const panel = await topUpThenUpgrade(page, toast)
+      const panel = await topUpThenUpgrade(page, routes, toast)
 
       expect(routes.topupRequests.map(transport)).toEqual(['xhr'])
       expect(routes.subscribeRequests.map(transport)).toEqual(['fetch'])

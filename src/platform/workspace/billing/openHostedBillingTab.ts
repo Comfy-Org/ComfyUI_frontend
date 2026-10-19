@@ -103,6 +103,17 @@ function armReturnRefresh(
   }
 }
 
+/**
+ * Arms the return refresh and the watch that adopts the top-up the server
+ * reports pending, for a hosted checkout tab this app opened itself.
+ */
+export function watchHostedTopupCheckout(): void {
+  armReturnRefresh(
+    'checkout',
+    useTeamWorkspaceStore().activeWorkspaceId ?? undefined
+  )
+}
+
 export type HostedBillingTabOutcome = 'opened' | 'unavailable' | 'blocked'
 
 /**
