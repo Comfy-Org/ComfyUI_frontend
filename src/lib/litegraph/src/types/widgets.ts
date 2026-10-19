@@ -32,12 +32,7 @@ export type { NodeBindable } from '../utils/type'
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
 
-/**
- * A widget that is linked to a slot.
- *
- * This is set by the ComfyUI_frontend logic. See
- * https://github.com/Comfy-Org/ComfyUI_frontend/blob/b80e0e1a3c74040f328c4e344326c969c97f67e0/src/extensions/core/widgetInputs.ts#L659
- */
+/** Identifies the widget a slot is linked to. */
 export interface IWidgetLocator {
   name: string
   type?: string
@@ -103,7 +98,6 @@ export interface IWidgetOptions<TValues = unknown> {
    */
   minNodeSize?: Size
 
-  /** If the widget is advanced, this will be set to true. */
   advanced?: boolean
 
   values?: TValues
@@ -700,16 +694,15 @@ export interface IBaseWidget<
   onRemove?(): void
   beforeQueued?(options?: WidgetCallbackOptions): unknown
   afterQueued?(options?: WidgetCallbackOptions): unknown
-  serializeValue?(node: ExecutableLGraphNode, index: number): unknown
+  serializeValue?(
+    node: ExecutableLGraphNode | LGraphNode,
+    index: number
+  ): unknown
 
   /**
    * Refreshes the widget's value or options from its remote source.
    */
   refresh?(): unknown
 
-  /**
-   * If the widget supports dynamic prompts, this will be set to true.
-   * See extensions/core/dynamicPrompts.ts
-   */
   dynamicPrompts?: boolean
 }
