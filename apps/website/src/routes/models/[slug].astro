@@ -11,6 +11,7 @@ import {
 import { workshopPagePaths } from '@/config/workshop-page-content'
 import { cmsEnabled } from '@/lib/cms/catalog'
 import {
+  catalogDetailFailure,
   catalogDetailHead,
   catalogDetailNoindex,
   loadCatalogDetailPage
@@ -39,6 +40,8 @@ const locale = Astro.locals.catalogLocale ?? 'en'
 const detail = catalog
   ? await loadCatalogDetailPage(Astro.locals, Astro.url.pathname, locale)
   : undefined
+const failure = detail && catalogDetailFailure(detail)
+if (failure) return failure
 if (detail?.status === 'missing') Astro.response.status = 404
 const record = detail?.status === 'ok' ? detail.page : undefined
 const head =

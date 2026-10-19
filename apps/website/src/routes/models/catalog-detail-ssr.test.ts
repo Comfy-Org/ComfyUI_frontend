@@ -5,6 +5,7 @@ import { renderToString } from 'vue/server-renderer'
 
 import CatalogDetailPage from '@/components/workshop/CatalogDetailPage.vue'
 import {
+  catalogDetailFailure,
   catalogDetailHead,
   catalogDetailNoindex,
   loadCatalogDetailPage
@@ -113,6 +114,28 @@ describe('catalog detail pages in server HTML (SEO audit)', () => {
     expect(load.status).toBe('unavailable')
     expect(catalogDetailNoindex({}, load)).toBe(true)
   })
+
+  it('answers an upstream failure with a retryable 503, not a 200 page', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    vi.mocked(fetch).mockResolvedValue(new Response('', { status: 503 }))
+    const load = await loadCatalogDetailPage({}, `${records[0].slug}/`, 'en')
+    const response = catalogDetailFailure(load)
+    expect(response?.status).toBe(503)
+    expect(response?.headers.get('Retry-After')).toBe('5')
+  })
+
+  it.for([
+    { status: 'ok', pathname: `${records[0].slug}/` },
+    { status: 'missing', pathname: '/hub/workflows/does-not-exist/' }
+  ])(
+    'renders a page for a $status record instead of failing the request',
+    async ({ status, pathname }) => {
+      serveCatalog()
+      const load = await loadCatalogDetailPage({}, pathname, 'en')
+      expect(load.status).toBe(status)
+      expect(catalogDetailFailure(load)).toBeUndefined()
+    }
+  )
 
   it('never indexes a staff view, which can show unpublished Draft content', async () => {
     serveCatalog()

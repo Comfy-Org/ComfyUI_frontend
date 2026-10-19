@@ -8,7 +8,7 @@ import { modelTitle } from '@/lib/workshop/model-title'
 import { modelOgImage, prepareModelPage } from '@/routes/models/model-page'
 import { pageContext } from '@/utils/jsonLd'
 import { modelPageJsonLd } from '@/utils/modelJsonLd'
-import { loadSiteCatalog } from './catalog'
+import { catalogUnavailable, loadSiteCatalog } from './catalog'
 import { catalogDetailPath } from './detail-route'
 
 type DetailLocale = Parameters<typeof prepareModelPage>[1]
@@ -108,4 +108,10 @@ export function catalogDetailNoindex(
   load: CatalogDetailLoad
 ): boolean {
   return Boolean(locals.catalogAuthoring ?? locals.site) || load.status !== 'ok'
+}
+
+export function catalogDetailFailure(
+  load: CatalogDetailLoad
+): Response | undefined {
+  return load.status === 'unavailable' ? catalogUnavailable() : undefined
 }
