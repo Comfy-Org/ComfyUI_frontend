@@ -7,7 +7,7 @@ import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 test.describe(
   'Typed widget values saved as strings',
   {
-    tag: ['@canvas', '@screenshot', '@widget'],
+    tag: ['@canvas', '@widget'],
     annotation: {
       type: 'issue',
       description:
