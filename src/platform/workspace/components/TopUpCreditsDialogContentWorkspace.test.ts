@@ -4,6 +4,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { BalanceInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   failedTopup,
@@ -91,6 +92,7 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
 }))
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
+  centsToCredits: (cents: number) => cents,
   creditsToUsd: (credits: number) => credits,
   usdToCredits: (usd: number) => usd
 }))
@@ -601,6 +603,63 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       stage: 'intent',
       outcome: 'pending'
     })
+  })
+
+  it.for<{
+    name: string
+    balance: BalanceInfo
+    notice: string | null
+    pay: string
+  }>([
+    {
+      name: 'prefills the server suggestion and explains a negative balance',
+      balance: {
+        amountMicros: -10000,
+        currency: 'usd',
+        effectiveBalanceMicros: -10000,
+        effectiveBalanceAuthoritative: true,
+        suggestedTopupAmountCents: 11400
+      },
+      notice: 'Your balance is −10,000 credits. This top-up covers that first.',
+      pay: 'Pay $114.00'
+    },
+    {
+      name: 'keeps the default amount for a positive balance',
+      balance: {
+        amountMicros: 10000,
+        currency: 'usd',
+        effectiveBalanceMicros: 10000,
+        effectiveBalanceAuthoritative: true,
+        suggestedTopupAmountCents: null
+      },
+      notice: null,
+      pay: 'Pay $50.00'
+    },
+    {
+      name: 'says nothing about a balance the server could not read',
+      balance: {
+        amountMicros: -10000,
+        currency: 'usd',
+        effectiveBalanceMicros: -10000,
+        effectiveBalanceAuthoritative: false,
+        suggestedTopupAmountCents: null
+      },
+      notice: null,
+      pay: 'Pay $50.00'
+    }
+  ])('$name', async ({ balance, notice, pay }) => {
+    Object.assign(mockBillingContext(), { balance: computed(() => balance) })
+    renderDialog()
+
+    const noticeElement = screen.queryByText(/This top-up covers that first/)
+    if (notice === null) {
+      expect(noticeElement).not.toBeInTheDocument()
+    } else {
+      expect(noticeElement).toHaveTextContent(notice)
+    }
+
+    await clickAddCredits()
+    expect(screen.getByRole('button', { name: pay })).toBeEnabled()
   })
 
   describe('without a default payment method', () => {
