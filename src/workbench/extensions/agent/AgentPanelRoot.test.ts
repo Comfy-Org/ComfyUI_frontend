@@ -636,9 +636,13 @@ describe('AgentPanelRoot first-use experience', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('forwards free-use notice telemetry with its rendered placement', async () => {
+  it('forwards free-use notice interactions to the experiment', async () => {
+    const reportFreeUseNotice = vi.fn()
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
-      fromPartial({ variant: ref('top-banner') })
+      fromPartial({
+        variant: ref('top-banner'),
+        reportNotice: reportFreeUseNotice
+      })
     )
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -649,10 +653,30 @@ describe('AgentPanelRoot first-use experience', () => {
       within(notice).getByRole('button', { name: 'Dismiss' })
     )
 
-    expect(useTelemetry()!.trackAgentFreeUseNotice).toHaveBeenCalledWith({
-      action: 'dismissed',
-      placement: 'top-banner'
-    })
+    // The experiment owns the event now, so it can drop a repeat impression
+    // and stay silent under a QA override. The panel only reports what the
+    // viewer did, and with which rendered placement.
+    expect(reportFreeUseNotice.mock.calls).toEqual([
+      [{ action: 'shown', placement: 'top-banner' }],
+      [{ action: 'dismissed', placement: 'top-banner' }]
+    ])
+  })
+
+  it('says nothing about free turns once the grant is spent', async () => {
+    const reportFreeUseNotice = vi.fn()
+    vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
+      fromPartial({
+        variant: ref('top-banner'),
+        reportNotice: reportFreeUseNotice
+      })
+    )
+    paywallAgentScopedHasFunds.value = false
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
+    expect(reportFreeUseNotice).not.toHaveBeenCalled()
   })
 })
 
