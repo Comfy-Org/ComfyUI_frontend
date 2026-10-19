@@ -18,7 +18,10 @@ import type { ProxyOptions } from 'vite'
 import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
-import { createDevAgentConfig } from './build/devAgentConfig.ts'
+import {
+  createDevAgentConfig,
+  devServerAgentRoutes
+} from './build/devAgentConfig.ts'
 import { comfyAPIPlugin } from './build/plugins/comfyAPIPlugin.ts'
 import {
   hasCompleteSentryUploadConfig,
@@ -218,7 +221,7 @@ const DEV_SEVER_FALLBACK_URL =
 
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
-const devAgentConfig = createDevAgentConfig(process.env)
+const devAgentConfig = createDevAgentConfig(process.env, DISTRIBUTION)
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
@@ -341,7 +344,10 @@ export default defineConfig({
           }
         : {}),
 
-      ...(devAgentConfig.proxy ? { '/api/agent': devAgentConfig.proxy } : {}),
+      ...devServerAgentRoutes(devAgentConfig.proxy, {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig
+      }),
 
       '/api': {
         target: DEV_SERVER_COMFYUI_URL,
@@ -798,7 +804,10 @@ export default defineConfig({
     __ALGOLIA_API_KEY__: JSON.stringify(process.env.ALGOLIA_API_KEY || ''),
     __USE_PROD_CONFIG__: process.env.USE_PROD_CONFIG === 'true',
     __DISTRIBUTION__: JSON.stringify(DISTRIBUTION),
-    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY)
+    __IS_NIGHTLY__: JSON.stringify(IS_NIGHTLY),
+    'import.meta.env.VITE_DEV_AGENT_PROXY_CREDENTIAL': JSON.stringify(
+      devAgentConfig.proxySuppliesCredential ? 'true' : ''
+    )
   },
 
   resolve: {

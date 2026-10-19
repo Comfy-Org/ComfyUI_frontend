@@ -352,6 +352,17 @@ const emptyMentionLabel = computed(() =>
       )
 )
 
+function openReferenceMenu(): void {
+  const editor = editorRef.value
+  if (!editor) return
+  const { start } = editor.selection()
+  const needsSeparator =
+    start > 0 && !/\s/.test(composer.draft.value[start - 1] ?? '')
+  editor.insertText(needsSeparator ? ' @' : '@')
+  editor.focus()
+  syncMention()
+}
+
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
@@ -648,18 +659,30 @@ defineExpose({
       </div>
 
       <div class="flex shrink-0 items-center justify-between px-3 py-2">
-        <ComposerAddMenu
-          :can-attach
-          :can-open-assets
-          :node-reference-disabled-reason
-          :workflows="eligibleWorkflows"
-          :workflow-selecting
-          :select-workflow="selectWorkflow"
-          @select-nodes="onSelectNodes"
-          @attach="emit('attach')"
-          @open-assets="emit('openAssets')"
-          @request-workflow-references="emit('requestWorkflowReferences')"
-        />
+        <div class="flex items-center gap-1">
+          <ComposerAddMenu
+            :can-attach
+            :can-open-assets
+            :node-reference-disabled-reason
+            :workflows="eligibleWorkflows"
+            :workflow-selecting
+            :select-workflow="selectWorkflow"
+            @select-nodes="onSelectNodes"
+            @attach="emit('attach')"
+            @open-assets="emit('openAssets')"
+            @request-workflow-references="emit('requestWorkflowReferences')"
+          />
+          <Button
+            :tooltip="t('agent.reference')"
+            type="button"
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="t('agent.reference')"
+            @click="openReferenceMenu"
+          >
+            <span class="text-base/4 font-medium">@</span>
+          </Button>
+        </div>
 
         <div class="flex items-center gap-1">
           <RunModePopover />

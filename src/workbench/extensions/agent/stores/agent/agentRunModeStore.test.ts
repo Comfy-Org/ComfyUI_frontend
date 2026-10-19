@@ -5,6 +5,7 @@ import { api } from '@/scripts/api'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('../../services/agent/agentAuth'))
 
 import { useAgentComposerStore } from './agentComposerStore'
 import { useAgentRunModeStore } from './agentRunModeStore'
@@ -167,6 +168,7 @@ describe('agentRunModeStore', () => {
 
     const first = store.save('auto_limited', 20)
     const second = store.save('auto', null)
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
     resolveSecond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
     await second
     resolveFirst(jsonResponse(200, { mode: 'auto_limited', credit_limit: 20 }))
@@ -196,6 +198,7 @@ describe('agentRunModeStore', () => {
 
     const first = store.save('auto_limited', 20)
     const second = store.save('auto', null)
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(2))
 
     resolveSecond(jsonResponse(500, { error: 'boom' }))
     await expect(second).rejects.toThrow()

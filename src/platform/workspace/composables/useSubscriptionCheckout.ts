@@ -64,6 +64,7 @@ import {
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
 interface SelectedTeamCheckout {
@@ -559,8 +560,7 @@ export function useSubscriptionCheckout(
           })
         )
       }
-      const paymentWindow = window.open(portalUrl.href, '_blank')
-      if (!paymentWindow) {
+      if (!openBillingUrl(portalUrl.href)) {
         portal.blocked(billingClient)
         // The open above ran after an await, so it had no user gesture behind
         // it and got blocked. The toast's own button click is a gesture, so
@@ -574,7 +574,7 @@ export function useSubscriptionCheckout(
               // checkout reset); a stale click must not reopen its captured URL.
               onClick: () => {
                 if (!isCurrent()) return
-                if (window.open(portalUrl.href, '_blank')) {
+                if (openBillingUrl(portalUrl.href)) {
                   portal.opened(billingClient)
                 } else {
                   portal.blocked(billingClient)
@@ -1344,8 +1344,7 @@ export function useSubscriptionCheckout(
       // The open runs after `await subscribe(...)`, so it's not a direct user
       // gesture and can be popup-blocked; offer a button click as a retry
       // gesture instead of failing silently.
-      const paymentWindow = window.open(initialActionUrl, '_blank')
-      if (!paymentWindow) {
+      if (!openBillingUrl(initialActionUrl)) {
         const paymentMethodUrl = initialActionUrl
         const opId = response.billing_op_id
         paymentRecoveryToasts.push(
