@@ -9,30 +9,14 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
-// Plain text, so `text/html` carries no node payload: the only way a node can
-// reach the graph from this paste is the canvas-paste fallback.
 const COMPOSER_PASTE_TEXT = 'make the sampler deterministic'
 
 type LiveGraphNodes = Awaited<ReturnType<AgentCopyPasteDriver['graphNodes']>>
 
-/**
- * Where `LGraphCanvas.copyToClipboard` parks a Ctrl+C node copy — the state the
- * reports mean by "the *last copied* node". Mirrored from
- * `@/lib/litegraph/src/canvas/clipboardStorage` rather than imported, so this
- * spec stays inside `browser_tests/`.
- */
 const CANVAS_CLIPBOARD_KEY = 'litegrapheditor_clipboard'
 
-/** How long a "nothing happened" assertion has to hold before it is believed. */
 const SETTLE_FRAMES = 10
 
-/**
- * The node types currently on the canvas clipboard. The cases below use this as
- * a precondition: a negative assertion about what a paste did to the graph is
- * satisfiable by an *empty* node clipboard, so without proving the copy landed
- * first, a silently-failed selection turns the pin into a test that passes
- * while binding nothing.
- */
 function nodeClipboardTypes(page: Page): Promise<string[]> {
   return page.evaluate((key) => {
     const raw = localStorage.getItem(key)
@@ -46,21 +30,6 @@ function byId(nodes: LiveGraphNodes): LiveGraphNodes {
   return [...nodes].sort((a, b) => a.id.localeCompare(b.id))
 }
 
-/**
- * Asserts the live graph still holds exactly `before`, and keeps asserting it
- * across a settle window.
- *
- * Two reasons it is not a single `nodesAddedSince` sample. `usePaste`'s
- * document handler is `async` and every route that can insert a node is
- * awaited — `pasteImageNode`, `pasteVideoNode`, `app.loadGraphData` — so a
- * mis-routed paste lands some ticks after the paste event rather than inside
- * the next frame, and one sample reads the graph before it arrives. And
- * `nodesAddedSince` is a one-way difference keyed on node id, so it is blind to
- * a regression that *removes* nodes — which is exactly what the
- * `loadGraphData` route does, since it replaces the graph wholesale. Comparing
- * the whole node set, sorted by id, catches both directions and is
- * order-insensitive.
- */
 async function expectGraphUnchanged(
   page: Page,
   agentCopyPaste: AgentCopyPasteDriver,
@@ -239,13 +208,6 @@ test.describe(
         await expect(agentCopyPaste.composer).toContainText(COMPOSER_PASTE_TEXT)
       })
 
-      // Re-baseline on the post-composer-paste graph instead of reusing
-      // `before`. The canvas paste adds one node of `earlierNode.type`, so
-      // measured against a snapshot taken before *both* pastes, "the canvas
-      // paste worked" and "the composer paste leaked the node and the canvas
-      // paste did nothing" are the same observation — one extra node of that
-      // type either way. Proving the composer paste added nothing first is what
-      // makes the addition below attributable to the canvas paste alone.
       const afterComposerPaste =
         await test.step('the composer paste left the graph alone', async () => {
           await expectGraphUnchanged(page, agentCopyPaste, before)
