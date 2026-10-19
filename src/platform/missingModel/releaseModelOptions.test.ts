@@ -1,5 +1,13 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import {
   cloudReleaseModelOptions,
@@ -11,6 +19,7 @@ import {
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
+import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -170,17 +179,51 @@ describe('releaseModelOptions', () => {
 })
 
 describe('cloudReleaseModelOptions', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+  })
+
   afterEach(() => {
     distribution.isCloud = false
   })
 
   it.for([
-    { runsOn: 'Comfy Cloud', isCloud: true, gives: releaseModelOptions },
-    { runsOn: 'Local', isCloud: false, gives: undefined }
+    {
+      runsOn: 'Comfy Cloud with a deployment hint',
+      isCloud: true,
+      hint: true,
+      url: '/',
+      gives: releaseModelOptions
+    },
+    {
+      runsOn: 'Comfy Cloud from a deployment link',
+      isCloud: true,
+      hint: false,
+      url: '/?deployment=dep-2',
+      gives: releaseModelOptions
+    },
+    {
+      runsOn: 'Comfy Cloud with no hint or link',
+      isCloud: true,
+      hint: false,
+      url: '/',
+      gives: undefined
+    },
+    {
+      runsOn: 'Local',
+      isCloud: false,
+      hint: true,
+      url: '/',
+      gives: undefined
+    }
   ])(
-    'gives releaseModelOptions only on Comfy Cloud: on $runsOn',
-    ({ isCloud, gives }) => {
+    'waits on the listing only where the page may be on a deployment: $runsOn',
+    ({ isCloud, hint, url, gives }) => {
       distribution.isCloud = isCloud
+      setDeploymentHint('ws-1', hint ? 'dep-2' : null)
+      window.history.replaceState(null, '', url)
+      onTestFinished(() => window.history.replaceState(null, '', '/'))
 
       expect(cloudReleaseModelOptions()).toBe(gives)
     }

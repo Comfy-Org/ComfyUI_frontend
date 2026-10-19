@@ -23,6 +23,8 @@ import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -664,6 +666,50 @@ describe('deployment model options at startup', () => {
     onTestFinished(() => {
       distribution.isCloud = false
     })
+    localStorage.clear()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+    setDeploymentHint('ws-1', 'dep-1')
+  })
+
+  it.for([
+    { listing: 'never answers', answer: () => new Promise<void>(() => {}) },
+    { listing: 'fails', answer: () => Promise.resolve() }
+  ])(
+    'mounts the canvas at once, with no lookup toast, when the listing $listing and this browser has no deployment hint',
+    async ({ answer }) => {
+      setDeploymentHint('ws-1', null)
+      const store = useDeploymentPickStore()
+      vi.spyOn(store, 'loadOnce').mockReturnValue(answer())
+
+      await mountGraphCanvas()
+
+      expect(app.setup).toHaveBeenCalledOnce()
+      expect(store.bootDeployment).toBeNull()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
+    }
+  )
+
+  it('waits for the listing when the page opened from a deployment link, with no hint', async () => {
+    setDeploymentHint('ws-1', null)
+    window.history.replaceState(null, '', '/?workspace=ws-1&deployment=dep-1')
+    onTestFinished(() => window.history.replaceState(null, '', '/'))
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+      new Promise(() => {})
+    )
+
+    await mountGraphCanvas()
+    expect(app.setup).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+
+    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+    expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'deploymentSwitcher.lookupUnavailable'
+        })
+      ])
+    )
   })
 
   it('waits for the deployment before constructing workflow widgets', async () => {

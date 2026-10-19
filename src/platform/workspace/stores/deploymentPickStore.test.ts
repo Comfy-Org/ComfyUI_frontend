@@ -8,6 +8,11 @@ import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploym
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
+import {
+  hasDeploymentHint,
+  setDeploymentHint
+} from '@/platform/workspace/deploymentHint'
+
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useDeploymentPickStore } from './deploymentPickStore'
@@ -1381,6 +1386,145 @@ describe('useDeploymentPickStore', () => {
       expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
       expect(reload).not.toHaveBeenCalled()
       expect(store.followsWorkspace).toBe(true)
+    })
+  })
+
+  describe("this browser's deployment hint", () => {
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    it.for([
+      {
+        answer: 'a listing on a deployment',
+        hintBefore: false,
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValue(listing),
+        hintAfter: true
+      },
+      {
+        answer: 'a listing on Comfy Cloud',
+        hintBefore: true,
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValue({
+            ...listing,
+            picked_deployment_id: null,
+            pick_source: null
+          }),
+        hintAfter: false
+      },
+      {
+        answer: 'a 403',
+        hintBefore: true,
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Outside rollout', 403)
+          ),
+        hintAfter: false
+      },
+      {
+        answer: 'a 404',
+        hintBefore: true,
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Not found', 404)
+          ),
+        hintAfter: false
+      },
+      {
+        answer: 'a transient failure, with a hint',
+        hintBefore: true,
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Service unavailable', 503)
+          ),
+        hintAfter: true
+      },
+      {
+        answer: 'a transient failure, without a hint',
+        hintBefore: false,
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockRejectedValue(
+            new WorkspaceApiError('Network Error')
+          ),
+        hintAfter: false
+      }
+    ])(
+      'keeps the hint in step with the boot listing: $answer',
+      async ({ hintBefore, respond, hintAfter }) => {
+        setDeploymentHint('ws-1', hintBefore ? 'dep-1' : null)
+        respond()
+        const store = useDeploymentPickStore()
+
+        const boot = store.loadOnce()
+        await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+        await boot
+
+        expect(hasDeploymentHint('ws-1')).toBe(hintAfter)
+      }
+    )
+
+    it('keeps the hint per workspace', async () => {
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+
+      await useDeploymentPickStore().load()
+
+      expect(hasDeploymentHint('ws-1')).toBe(true)
+      expect(hasDeploymentHint('ws-2')).toBe(false)
+    })
+
+    it.for([
+      {
+        action: 'picking a deployment',
+        hintBefore: false,
+        act: (store: ReturnType<typeof useDeploymentPickStore>) =>
+          store.pick('dep-1'),
+        hintAfter: true
+      },
+      {
+        action: 'picking Comfy Cloud',
+        hintBefore: true,
+        act: (store: ReturnType<typeof useDeploymentPickStore>) =>
+          store.pick(null),
+        hintAfter: false
+      },
+      {
+        action: 'picking from a link',
+        hintBefore: false,
+        act: (store: ReturnType<typeof useDeploymentPickStore>) =>
+          store.pickFromLink('dep-1'),
+        hintAfter: true
+      }
+    ])(
+      'sets the hint for the next boot before reloading: $action',
+      async ({ hintBefore, act, hintAfter }) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+        mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
+        mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+        const store = useDeploymentPickStore()
+        await store.load()
+        setDeploymentHint('ws-1', hintBefore ? 'dep-1' : null)
+
+        await act(store)
+
+        expect(reload).toHaveBeenCalledOnce()
+        expect(hasDeploymentHint('ws-1')).toBe(hintAfter)
+      }
+    )
+
+    it('loads the listing when localStorage throws', async () => {
+      vi.stubGlobal('localStorage', {
+        getItem: () => null,
+        setItem: () => {
+          throw new DOMException('quota', 'QuotaExceededError')
+        }
+      })
+      mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      const store = useDeploymentPickStore()
+
+      await store.loadOnce()
+
+      expect(store.bootDeployment?.deployment_id).toBe('dep-2')
     })
   })
 })

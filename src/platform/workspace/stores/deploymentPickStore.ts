@@ -12,6 +12,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
 import type {
   DeploymentPickEvent,
   DeploymentPickSource,
@@ -183,12 +184,15 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       retryDelaysMs,
       () => workspaceStore.workspaceId === id
     )
-    // The workspace may have changed while the listing was in flight.
     if (workspaceStore.workspaceId !== id) return
-    applyAnswer(request, event)
+    applyAnswer(id, request, event)
   }
 
-  function applyAnswer(request: number, event: DeploymentPickEvent) {
+  function applyAnswer(
+    workspaceId: string,
+    request: number,
+    event: DeploymentPickEvent
+  ) {
     if (request <= lastApplied) {
       if (event.type === 'loaded') keepPickGone(event.gonePickedDeploymentId)
       return
@@ -203,6 +207,15 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     if (event.type === 'loadRefused' && bootDeployment.value === undefined) {
       bootDeployment.value = null
     }
+    setDeploymentHint(
+      workspaceId,
+      pickedDeployment.value?.deployment_id ?? null
+    )
+  }
+
+  function reloadOnto(workspaceId: string, deploymentId: string | null) {
+    setDeploymentHint(workspaceId, deploymentId)
+    window.location.reload()
   }
 
   function keepPickGone(gonePickedDeploymentId: string | null) {
@@ -332,7 +345,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       })
     ]).finally(() => clearTimeout(timeout))
     if (workspaceStore.workspaceId !== workspaceId) return { kind: 'unchanged' }
-    if (outcome.kind === 'picked') window.location.reload()
+    if (outcome.kind === 'picked') reloadOnto(workspaceId, deploymentId)
     else dispatch({ type: 'switchFailed' })
     return outcome
   }
@@ -354,7 +367,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    window.location.reload()
+    reloadOnto(workspaceId, deploymentId)
     return null
   }
 
@@ -373,7 +386,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    window.location.reload()
+    reloadOnto(id, defaultDeploymentId.value)
     return null
   }
 
@@ -409,7 +422,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       return errorMessage(err)
     }
     if (followsWorkspace.value) {
-      window.location.reload()
+      reloadOnto(id, deploymentId)
       return null
     }
     lastApplied = latestRequest
