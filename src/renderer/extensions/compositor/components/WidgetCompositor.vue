@@ -1,7 +1,7 @@
 <template>
   <div class="widget-expands flex size-full flex-col gap-1" @pointerdown.stop>
     <div
-      class="group/preview relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-node-component-surface"
+      class="group/preview relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-node"
       data-testid="compositor-preview-area"
       @dblclick.stop="openEditor"
     >
@@ -14,19 +14,17 @@
         @load="onPreviewLoad"
         @dragstart.prevent
       />
-      <span
-        v-else
-        class="text-xs text-muted-foreground"
-        data-testid="compositor-empty"
-      >
+      <span v-else class="text-muted-foreground" data-testid="compositor-empty">
         {{ t('compositor.empty') }}
       </span>
       <div
         v-if="canOpen"
         class="invisible absolute top-2 right-2 group-focus-within/preview:visible group-hover/preview:visible"
       >
-        <button
-          :class="actionButtonClass"
+        <Button
+          variant="inverted"
+          size="icon"
+          class="shadow-md"
           :disabled="exporting"
           :title="t('compositor.downloadPsd')"
           :aria-label="t('compositor.downloadPsd')"
@@ -34,13 +32,13 @@
           @click="onDownloadPsd"
         >
           <i class="icon-[lucide--download] size-4" />
-        </button>
+        </Button>
       </div>
     </div>
 
     <div
       v-if="dimensionsLabel"
-      class="text-center text-xs text-muted-foreground"
+      class="text-center text-muted-foreground"
       data-testid="compositor-dimensions"
     >
       {{ dimensionsLabel }}
@@ -49,7 +47,7 @@
     <Button
       variant="secondary"
       size="md"
-      class="w-full gap-2"
+      class="w-full"
       :disabled="!canOpen"
       :title="canOpen ? undefined : t('compositor.runWorkflowFirst')"
       data-testid="compositor-open-button"
@@ -84,9 +82,6 @@ const { t } = useI18n()
 const nodeOutputStore = useNodeOutputStore()
 const { openCompositorEditor } = useCompositorEditor()
 const { exporting, downloadPsd } = useCompositorPsdDownload()
-
-const actionButtonClass =
-  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-50'
 
 const naturalSize = ref<{ w: number; h: number } | null>(null)
 const outputUrl = ref<string | null>(null)

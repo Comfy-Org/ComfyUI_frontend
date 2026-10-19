@@ -1,26 +1,10 @@
 {
   "id": "image-compositor",
   "capability": "Image compositor",
-  "description": "Layered image-composition presentation, editing orchestration, extension registration, Vue-node adaptation, and LiteGraph widget integration.",
+  "description": "Layered image composition and layer editing: layer state, editing orchestration, rendering, PSD export, dialogs, extension registrations, Vue-node adaptation, and LiteGraph widget integration.",
   "modules": [
     {
-      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/renderer/extensions/compositor/components/types.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/compositor/composables/**",
-      "role": "application"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
+      "path": "src/extensions/core/imageCompositor.test.ts",
       "role": "integration"
     },
     {
@@ -28,11 +12,87 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/imageCompositor.test.ts",
+      "path": "src/extensions/core/layerEditor.ts",
       "role": "integration"
     },
     {
       "path": "src/lib/litegraph/src/widgets/CompositorWidget.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/compositor/components/WidgetCompositor.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/components/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/**",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/layerEditorDialog.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/composables/layerPanelDnd.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/editor.selection.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/editor.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/editor/editor.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/engine/render/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdExport.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdExport.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdMapping.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/layerEditor/psdMapping.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useCompositorWidget.ts",
       "role": "integration"
     }
   ],
@@ -51,6 +111,35 @@
         "src/renderer/extensions/compositor/composables/compositorWidgets.test.ts",
         "src/renderer/extensions/compositor/components/WidgetCompositor.test.ts",
         "src/extensions/core/imageCompositor.test.ts"
+      ]
+    },
+    {
+      "name": "Layer editor engine keeps the scene document, undo history, layer kinds, and transform tools consistent",
+      "checks": [
+        "src/renderer/extensions/layerEditor/engine/document.test.ts",
+        "src/renderer/extensions/layerEditor/engine/history.test.ts",
+        "src/renderer/extensions/layerEditor/engine/commands/structure.test.ts",
+        "src/renderer/extensions/layerEditor/engine/kinds/kinds.test.ts",
+        "src/renderer/extensions/layerEditor/engine/tools/tools.test.ts",
+        "src/renderer/extensions/layerEditor/engine/editor/editor.test.ts"
+      ]
+    },
+    {
+      "name": "Layer editor renders the stack, bakes and places content, and exports PSD files",
+      "checks": [
+        "src/renderer/extensions/layerEditor/engine/render/renderStack.test.ts",
+        "src/renderer/extensions/layerEditor/engine/render/place.test.ts",
+        "src/renderer/extensions/layerEditor/psdExport.test.ts",
+        "src/renderer/extensions/layerEditor/psdMapping.test.ts",
+        "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.test.ts"
+      ]
+    },
+    {
+      "name": "Layer editor dialog opens from node outputs and drives the editing session",
+      "checks": [
+        "src/renderer/extensions/layerEditor/composables/useLayerEditor.test.ts",
+        "src/renderer/extensions/layerEditor/composables/useLayerEditorSession.test.ts",
+        "src/renderer/extensions/layerEditor/components/LayerEditorContent.test.ts"
       ]
     }
   ],

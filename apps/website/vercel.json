@@ -53,6 +53,26 @@
   ],
   "redirects": [
     {
+      "source": "/vfx",
+      "destination": "/solutions/vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/vfx/",
+      "destination": "/solutions/vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/vfx",
+      "destination": "/zh-CN/solutions/vfx/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/vfx/",
+      "destination": "/zh-CN/solutions/vfx/",
+      "permanent": true
+    },
+    {
       "source": "/career",
       "destination": "/careers/",
       "permanent": true
@@ -4860,6 +4880,16 @@
     {
       "source": "/models/apps/cinematic-studio/",
       "destination": "/hub/apps/cinematic-studio/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/openjutsu",
+      "destination": "/hub/apps/openjutsu/",
+      "permanent": true
+    },
+    {
+      "source": "/models/apps/openjutsu/",
+      "destination": "/hub/apps/openjutsu/",
       "permanent": true
     },
     {

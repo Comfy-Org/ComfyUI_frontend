@@ -695,7 +695,6 @@
       "unsupported": "{model} は参照画像を使用できません。削除するか、別のモデルを選択してください。"
     },
     "repo": {
-      "soon": "GitHub · 近日公開",
       "view": "GitHubで見る"
     },
     "scene": {
@@ -2789,8 +2788,8 @@
       },
       "heroCta": "{name}を今すぐ試す",
       "heroSubtitle": "オープンソースの拡散チェックポイントからパートナーAPIまで、主要なあらゆるモデルに、すぐ実行できるコミュニティのワークフローテンプレートを用意しています。",
-      "heroTitleAfter": "",
-      "heroTitleBefore": "ComfyUIの{name}",
+      "heroTitleAfter": "の{name}",
+      "heroTitleBefore": "",
       "label": "モデル"
     },
     "llms": {
@@ -3069,11 +3068,6 @@
       "3": "マシンごとに異なるバージョンを実行していると、共有ワークフローが壊れます。",
       "4": "環境のメンテナンスにより、ワークフロー作成の時間が奪われます。",
       "heading": "一度ビルドすれば、どこでも同じComfyを実行。"
-    },
-    "challengeBanner": {
-      "cta": "投稿を読む",
-      "label": "オープンコールチャレンジ",
-      "line": "プラットフォーム上で構築して、$10k獲得のチャンス。締め切りは10月19日午前9時（PT）。"
     },
     "closing": {
       "heading": "Developer Platformでスケールと制御を最大化",
@@ -4586,7 +4580,11 @@
         "priceNoUnit": "一般的なコスト：{credits}クレジット。",
         "title": "{name} API & Playground - Comfy",
         "titleApi": "{name} API - Comfy",
-        "titleUnbranded": "{name} API & Playground"
+        "titleUnbranded": "{name} API & Playground",
+        "units": {
+          "image": "画像1枚",
+          "run": "実行1回"
+        }
       },
       "missingInputSchema": "このモデルの入力はまだ不明なため、実行したりコードから呼び出したりすることはできません。このページのその他の機能は引き続き利用できます。",
       "nodePriceDefaults": "公開料金とこのノードのデフォルト設定に基づいています。実際のお支払い額は選択した設定によって異なります。",
@@ -4849,7 +4847,7 @@
       "deliveryFailed": "実行は完了しましたが、一部の出力を配信できませんでした。出力の配信を再試行して、この実行から取得してください。",
       "dismissUnknown": "入力に戻る",
       "download": "ワークフロー JSONをダウンロード",
-      "downloadShort": "ダウンロード",
+      "downloadShort": "ワークフローをダウンロード",
       "explore": "可能性を探る",
       "factAuthor": "作成者",
       "factOutput": "出力",

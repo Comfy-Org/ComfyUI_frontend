@@ -9,7 +9,7 @@
       :aria-label="$t('load3d.switchCamera')"
       @click="switchCamera"
     >
-      <i class="pi pi-camera text-lg text-base-foreground" />
+      <i class="pi pi-camera text-lg text-foreground" />
     </Button>
     <Button
       v-if="hasCustomUp"
@@ -31,7 +31,7 @@
             useCustomUp
               ? 'icon-[lucide--compass]'
               : 'icon-[lucide--rotate-ccw]',
-            'size-5 text-base-foreground'
+            'size-5 text-foreground'
           )
         "
       />

@@ -22,15 +22,7 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 
 vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'), { spy: true })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getJobDetail: vi.fn(),
-    getJobAssets: vi.fn(),
-    apiURL: vi.fn((path: string) => `/api${path}`),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function createResultItem(
   url: string,

@@ -37,7 +37,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useLoad3dService } from '@/services/load3dService'
+import { removeLoad3d } from '@/extensions/core/load3d/load3dInstances'
 
 type Load3dReadyCallback = (load3d: Load3d) => void
 export const nodeToLoad3dMap = new Map<LGraphNode, Load3d>()
@@ -90,7 +90,7 @@ const ensureNodeCleanupChained = (node: LGraphNode): void => {
   if (nodesWithCleanup.has(node)) return
   nodesWithCleanup.add(node)
   node.onRemoved = useChainCallback(node.onRemoved, () => {
-    useLoad3dService().removeLoad3d(node)
+    removeLoad3d(node)
     pendingCallbacks.delete(node)
     persistentReadyCallbacks.delete(node)
   })

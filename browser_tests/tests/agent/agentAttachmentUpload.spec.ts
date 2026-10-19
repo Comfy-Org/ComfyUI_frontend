@@ -31,7 +31,7 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
       const panel = page.locator('#agent-panel-root')
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = agentPanel.composer
       const send = panel.getByRole('button', { name: 'Send', exact: true })
       await composer.fill('Keep this draft')
       await expect(send).toBeEnabled()
@@ -94,9 +94,10 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     await agentPanel.sendButton.hover()
     await expect(
       comfyPage.page.getByRole('tooltip', {
-        name: enMessages.agent.sendBlockedByInvalidVideo
-          .split(' | ')[0]
-          .replace('{name}', 'renamed.mp4'),
+        name: enMessages.agent.sendBlockedByInvalidVideo.replace(
+          '{name}',
+          'renamed.mp4'
+        ),
         exact: true
       })
     ).toBeVisible()

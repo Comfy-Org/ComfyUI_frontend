@@ -39,9 +39,7 @@
             "
           >
             <TooltipTrigger as-child>
-              <i
-                class="icon-[lucide--triangle-alert] shrink-0 text-warning-background"
-              />
+              <i class="icon-[lucide--triangle-alert] shrink-0 text-warning" />
             </TooltipTrigger>
             <TooltipContent>{{
               $t('g.browserReservedKeybindingTooltip')
@@ -61,12 +59,8 @@
           command.source || '-'
         }}</span>
       </TableCell>
-      <TableCell class="p-1 whitespace-nowrap">
-        <div
-          class="flex flex-row justify-end whitespace-nowrap"
-          @click.stop
-          @dblclick.stop
-        >
+      <TableCell class="p-1">
+        <div class="flex justify-end" @click.stop @dblclick.stop>
           <Button
             v-if="command.keybindings.length === 1"
             :tooltip="$t('g.edit')"
@@ -117,7 +111,7 @@
           v-for="(binding, index) in command.keybindings"
           :key="binding.combo.serialize()"
           data-testid="keybinding-expansion-binding"
-          class="flex items-center justify-between border-b border-border-subtle py-1.5 last:border-b-0"
+          class="flex items-center justify-between border-b border-border/50 py-1.5 last:border-b-0"
         >
           <div class="flex items-center gap-4">
             <span class="text-muted-foreground">{{ command.label }}</span>
@@ -126,7 +120,7 @@
               :is-modified="command.isModified"
             />
           </div>
-          <div class="flex flex-row">
+          <div class="flex">
             <Button
               :tooltip="$t('g.edit')"
               variant="textonly"

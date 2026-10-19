@@ -37,6 +37,7 @@ const {
   mockShowSearch,
   mockShowViewTabs,
   mockShowInviteButton,
+  mockShowWorkspaceMenu,
   mockActiveView,
   mockSearchQuery,
   mockMembersLoaded,
@@ -59,6 +60,7 @@ const {
     mockShowSearch: ref(true),
     mockShowViewTabs: ref(true),
     mockShowInviteButton: ref(true),
+    mockShowWorkspaceMenu: ref(true),
     mockIsPlanEnded: ref(false),
     mockIsSalesManagedPlan: ref(false),
     mockIsEnterprisePlanStrict: ref(false),
@@ -79,8 +81,6 @@ const {
       canInviteMembers: true,
       canManageInvites: true,
       canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }),
     mockUiConfig: ref({
@@ -91,7 +91,6 @@ const {
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null as string | null
     })
@@ -116,6 +115,7 @@ vi.mock<unknown>(
       showSearch: mockShowSearch,
       showViewTabs: mockShowViewTabs,
       showInviteButton: mockShowInviteButton,
+      showWorkspaceMenu: mockShowWorkspaceMenu,
       isPlanEnded: mockIsPlanEnded,
       isSalesManagedPlan: mockIsSalesManagedPlan,
       isEnterprisePlan: mockIsEnterprisePlanStrict,
@@ -254,6 +254,7 @@ describe('MembersPanelContent', () => {
     mockShowSearch.value = true
     mockShowViewTabs.value = true
     mockShowInviteButton.value = true
+    mockShowWorkspaceMenu.value = true
     mockIsPlanEnded.value = false
     mockIsSalesManagedPlan.value = false
     mockIsEnterprisePlanStrict.value = false
@@ -267,8 +268,6 @@ describe('MembersPanelContent', () => {
       canInviteMembers: true,
       canManageInvites: true,
       canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }
     mockUiConfig.value = {
@@ -279,7 +278,6 @@ describe('MembersPanelContent', () => {
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null
     }
@@ -379,8 +377,8 @@ describe('MembersPanelContent', () => {
       expect(screen.getByLabelText('workspace-menu-stub')).toBeTruthy()
     })
 
-    it('hides the workspace menu without canAccessWorkspaceMenu', () => {
-      mockPermissions.value.canAccessWorkspaceMenu = false
+    it('leaves the workspace menu to the settings header when told to', () => {
+      mockShowWorkspaceMenu.value = false
 
       renderComponent()
 
@@ -577,8 +575,6 @@ describe('MembersPanelContent', () => {
         canInviteMembers: false,
         canManageInvites: false,
         canManageMembers: false,
-        canLeaveWorkspace: true,
-        canAccessWorkspaceMenu: true,
         canManageSubscription: false
       }
       mockUiConfig.value.showPendingTab = false

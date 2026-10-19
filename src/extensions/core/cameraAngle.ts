@@ -33,6 +33,7 @@ useExtensionService().registerExtension({
           },
           options: {
             serialize: false,
+            hideInPanel: true,
             getValue: () => viewMode,
             setValue: (value) => {
               if (isViewMode(value)) viewMode = value
