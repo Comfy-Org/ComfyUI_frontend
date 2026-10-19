@@ -762,9 +762,10 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
       expect(createCheckout).toHaveBeenCalledWith(5000, window.location.href)
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
-      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-        key: 'top-up-credits'
-      })
+      expect(
+        screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
+      ).toBeInTheDocument()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       expect(mockClearPendingTopup).not.toHaveBeenCalled()
       expect(useToast().error).not.toHaveBeenCalled()
     })
@@ -893,11 +894,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       try {
         await userEvent.click((await payAndGetRefused()).continueButton)
 
-        await waitFor(() =>
-          expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-            key: 'top-up-credits'
+        expect(
+          await screen.findByRole('heading', {
+            name: 'Checkout opened in a new tab'
           })
-        )
+        ).toBeInTheDocument()
         expect(createCheckout).toHaveBeenCalledWith(
           5000,
           'https://testbilling.comfy.org/return/topup'
@@ -975,25 +976,186 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       }
     )
 
-    it('watches for the purchase once the customer follows the blocked checkout link', async () => {
+    function newCheckoutTab() {
+      return { opener: window, location: { href: '' }, close: vi.fn() }
+    }
+
+    it.for([
+      {
+        path: 'the checkout tab opens',
+        tab: newCheckoutTab,
+        follow: async () => {}
+      },
+      {
+        path: 'the customer follows the blocked checkout link',
+        tab: () => null,
+        follow: async () =>
+          userEvent.click(
+            await screen.findByRole('link', { name: 'Open checkout' })
+          )
+      }
+    ])('hands off to the open checkout once $path', async ({ tab, follow }) => {
       refuseForNoPaymentMethod()
       checkoutOpensAt(checkoutUrl)
-      blockNewTabs()
+      vi.spyOn(window, 'open').mockReturnValue(tab() as never)
       stopBrowserFollowingLinks()
       await userEvent.click((await payAndGetRefused()).continueButton)
-      const checkoutLink = await screen.findByRole('link', {
-        name: 'Open checkout'
-      })
-      expect(mockStartPendingTopup).not.toHaveBeenCalled()
-      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
-      await userEvent.click(checkoutLink)
+      await follow()
 
+      expect(
+        await screen.findByRole('heading', {
+          name: 'Checkout opened in a new tab'
+        })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          'Credits are added to this workspace as soon as your payment goes through.'
+        )
+      ).toBeInTheDocument()
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
-      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
-        key: 'top-up-credits'
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    })
+
+    describe('reopening checkout from the hand-off', () => {
+      const reopenedUrl = 'https://checkout.stripe.com/c/pay/cs_test_reopened'
+
+      async function openCheckoutThenReopen({
+        reopenTab,
+        reopened
+      }: {
+        reopenTab: ReturnType<typeof newCheckoutTab> | null
+        reopened: () => Promise<{ checkout_url: string }>
+      }) {
+        refuseForNoPaymentMethod()
+        const createCheckout = vi
+          .spyOn(workspaceApi, 'createTopupCheckout')
+          .mockResolvedValueOnce({ checkout_url: checkoutUrl })
+          .mockImplementationOnce(reopened)
+        const open = vi
+          .spyOn(window, 'open')
+          .mockReturnValueOnce(newCheckoutTab() as never)
+          .mockReturnValueOnce(reopenTab as never)
+        await userEvent.click((await payAndGetRefused()).continueButton)
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Reopen checkout' })
+        )
+        return { createCheckout, open }
+      }
+
+      it('creates a fresh checkout session in a new tab', async () => {
+        const reopenTab = newCheckoutTab()
+        const { createCheckout, open } = await openCheckoutThenReopen({
+          reopenTab,
+          reopened: async () => ({ checkout_url: reopenedUrl })
+        })
+
+        await waitFor(() => expect(reopenTab.location.href).toBe(reopenedUrl))
+        expect(createCheckout).toHaveBeenCalledTimes(2)
+        expect(open).toHaveBeenCalledTimes(2)
+        expect(
+          screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
+        ).toBeInTheDocument()
+      })
+
+      it('links to the fresh session when the reopened tab is blocked', async () => {
+        await openCheckoutThenReopen({
+          reopenTab: null,
+          reopened: async () => ({ checkout_url: reopenedUrl })
+        })
+
+        expect(
+          await screen.findByRole('link', { name: 'Open checkout' })
+        ).toHaveAttribute('href', reopenedUrl)
+      })
+
+      it('stays on the hand-off and explains a session that could not start', async () => {
+        await openCheckoutThenReopen({
+          reopenTab: newCheckoutTab(),
+          reopened: async () => {
+            throw new WorkspaceApiError('Checkout down', 502)
+          }
+        })
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          "The payment page couldn't open. Nothing was charged. Try again."
+        )
+        expect(
+          screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
+        ).toBeInTheDocument()
+        expect(
+          screen.getByRole('button', { name: 'Reopen checkout' })
+        ).toBeEnabled()
       })
     })
+
+    function balanceThatRisesOnFetch() {
+      const billing = mockBillingContext()
+      const balanceMicros = ref(1_000_000)
+      Object.assign(billing, {
+        balance: computed(() => ({
+          amountMicros: balanceMicros.value,
+          currency: 'usd'
+        }))
+      })
+      return () =>
+        vi.mocked(billing.fetchBalance).mockImplementation(async () => {
+          balanceMicros.value = 2_000_000
+        })
+    }
+
+    it('closes the hand-off once the top-up reaches the balance', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      stubCheckoutTab()
+      const creditTopup = balanceThatRisesOnFetch()
+      await userEvent.click((await payAndGetRefused()).continueButton)
+      await screen.findByRole('heading', {
+        name: 'Checkout opened in a new tab'
+      })
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+
+      creditTopup()
+      window.dispatchEvent(new Event('focus'))
+
+      await waitFor(() =>
+        expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+          key: 'top-up-credits'
+        })
+      )
+      expect(mockClearPendingTopup).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { control: 'the header close icon', index: 0 },
+      { control: 'the Close button', index: 1 }
+    ])(
+      'keeps watching for the top-up after $control closes the hand-off',
+      async ({ index }) => {
+        refuseForNoPaymentMethod()
+        checkoutOpensAt(checkoutUrl)
+        stubCheckoutTab()
+        const creditTopup = balanceThatRisesOnFetch()
+        const { unmount, continueButton } = await payAndGetRefused()
+        await userEvent.click(continueButton)
+        await screen.findByRole('heading', {
+          name: 'Checkout opened in a new tab'
+        })
+
+        await userEvent.click(
+          screen.getAllByRole('button', { name: 'Close' })[index]
+        )
+        unmount()
+        const billing = mockBillingContext()
+        creditTopup()
+        vi.mocked(billing.fetchStatus).mockClear()
+        window.dispatchEvent(new Event('focus'))
+
+        expect(useDialogStore().closeDialog).toHaveBeenCalledOnce()
+        expect(mockClearPendingTopup).not.toHaveBeenCalled()
+        await waitFor(() => expect(billing.fetchStatus).toHaveBeenCalled())
+      }
+    )
 
     it('abandons a checkout that resolves after the dialog was dismissed', async () => {
       refuseForNoPaymentMethod()
