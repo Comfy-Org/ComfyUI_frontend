@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
 
+import type { AgentMessage } from '@comfyorg/ingest-types'
 import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -248,6 +250,33 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
 
     await test.step('finish the funded recovery while the panel is closed', async () => {
+      const firstTurn = acceptedTurns.at(0)
+      assert(firstTurn)
+      const history: AgentMessage[] = [
+        {
+          id: `user-${firstTurn.message_id}`,
+          thread_id: firstTurn.thread_id,
+          turn_id: firstTurn.message_id,
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          content: { text: 'Complete this workflow without a refusal' }
+        },
+        {
+          id: firstTurn.message_id,
+          thread_id: firstTurn.thread_id,
+          turn_id: firstTurn.message_id,
+          seq: 2,
+          role: 'assistant',
+          status: 'complete',
+          content: { text: 'Done.' }
+        }
+      ]
+      await page.route('**/api/agent/threads/*/messages', (route) =>
+        route.request().method() === 'GET'
+          ? route.fulfill(jsonRoute(history))
+          : route.fallback()
+      )
       agentBilling.setFundingState('funded')
       const recovery = agentBilling.holdNextFundedRefresh()
       await paywall
@@ -265,6 +294,9 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
 
     await test.step('reopen without the stale paywall', async () => {
       await agentPanel.open()
+      await expect(
+        agentPanel.root.getByTestId('user-message-bubble')
+      ).toHaveText(['Complete this workflow without a refusal'])
       await expect(paywall).toHaveCount(0)
       agentBilling.resumeRefreshes()
     })
