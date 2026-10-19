@@ -10,6 +10,7 @@ import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
@@ -208,6 +209,61 @@ describe('CurrentUserPopoverWorkspace', () => {
     )
   })
 
+  it.for(['personal', 'team'] as const)(
+    'refreshes the %s balance on first opening and reopening the profile menu',
+    async (workspaceType) => {
+      const user = userEvent.setup()
+      useCurrentUser().isLoggedIn = computed(() => true)
+      const balance = ref<BalanceInfo>({ amountMicros: 100, currency: 'USD' })
+      const billing = useBillingContext()
+      billing.balance = computed(() => balance.value)
+      vi.mocked(billing.fetchBalance)
+        .mockImplementationOnce(async () => {
+          balance.value = { amountMicros: 200, currency: 'USD' }
+        })
+        .mockImplementationOnce(async () => {
+          balance.value = { amountMicros: 75, currency: 'USD' }
+        })
+      useTeamWorkspaceStore().initState = 'ready'
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceName: `${workspaceType} workspace`,
+        isInPersonalWorkspace: workspaceType === 'personal'
+      })
+      render(CurrentUserButton, {
+        global: {
+          plugins: [getActivePinia()!, i18n],
+          stubs: {
+            CurrentUserPopoverWorkspace,
+            WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
+            SubscribeButton: SubscribeButtonStub,
+            WorkspaceProfilePic: true,
+            DeploymentSwitcher: DeploymentSwitcherStub
+          }
+        }
+      })
+
+      expect(billing.fetchBalance).not.toHaveBeenCalled()
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      expect(await screen.findByText('422')).toBeInTheDocument()
+      expect(billing.fetchBalance).toHaveBeenCalledOnce()
+
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('credits-info-button')
+        ).not.toBeInTheDocument()
+      )
+      expect(billing.fetchBalance).toHaveBeenCalledOnce()
+
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      expect(await screen.findByText('158')).toBeInTheDocument()
+      expect(billing.fetchBalance).toHaveBeenCalledTimes(2)
+    }
+  )
+
   it('toggles the workspace switcher panel from the selector row', async () => {
     const user = userEvent.setup()
     renderComponent()
@@ -272,6 +328,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-settings-menu-item')
     ).not.toBeInTheDocument()
+    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
   })
 
   describe('with a Desktop host session', () => {
