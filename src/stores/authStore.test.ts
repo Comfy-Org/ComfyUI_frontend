@@ -31,7 +31,6 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import {
-  cachedBillingControlEnabled,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
@@ -2389,13 +2388,6 @@ describe('useAuthStore', () => {
     })
 
     it('discards a remote config response from the previous account', async () => {
-      const previousBillingControl = cachedBillingControlEnabled.value
-      cachedBillingControlEnabled.value = undefined
-      onTestFinished(async () => {
-        cachedBillingControlEnabled.value = previousBillingControl
-        await nextTick()
-      })
-
       let resolveAccountA: ((response: Response) => void) | undefined
       let accountASignal: AbortSignal | undefined
       vi.spyOn(api, 'fetchApi')
@@ -2410,7 +2402,7 @@ describe('useAuthStore', () => {
         .mockImplementationOnce(async (_route, options) => {
           options?.onAuthHeader?.(true)
           return new Response(
-            JSON.stringify({ billing_control_enabled: false }),
+            JSON.stringify({ subscription_required: false }),
             { status: 200 }
           )
         })
@@ -2421,19 +2413,16 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
       expect(accountASignal?.aborted).toBe(true)
       expect(remoteConfigState.value).toBe('unloaded')
-      expect(cachedBillingControlEnabled.value).toBeUndefined()
 
       await refreshRemoteConfig()
-      expect(cachedBillingControlEnabled.value).toBe(false)
       resolveAccountA?.(
-        new Response(JSON.stringify({ billing_control_enabled: true }), {
+        new Response(JSON.stringify({ subscription_required: true }), {
           status: 200
         })
       )
       await accountARefresh
 
-      expect(remoteConfig.value.billing_control_enabled).toBe(false)
-      expect(cachedBillingControlEnabled.value).toBe(false)
+      expect(remoteConfig.value.subscription_required).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {
