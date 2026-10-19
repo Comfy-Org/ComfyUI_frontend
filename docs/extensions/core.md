@@ -62,24 +62,28 @@ tables below follow that grouping.
 | uploadImage.ts          | `Comfy.UploadImage`                                           | Image file upload widget                              | Image    |
 | webcamCapture.ts        | `Comfy.WebcamCapture`                                         | Webcam capture widget                                 | Media    |
 | widgetInputs.ts         | `Comfy.WidgetInputs`                                          | Widget-to-input conversion and primitive wiring       | Widgets  |
+| agentPanel.ts           | `Comfy.AgentPanel`                                            | In-app agent chat panel                               | Agent    |
+
+`agentPanel.ts` registers through an exported `registerAgentPanelExtension()`
+rather than on import, and `index.ts` calls it in every distribution. The
+extension is always registered; what varies is whether the panel is _enabled_.
+That is a runtime gate, not a build gate: `agentPanelStore.enabled` follows
+`comfyAgent?.state === 'ready'`, and `VITE_AGENT_STANDALONE=true` forces it on
+only when `import.meta.env.MODE === 'development'`.
 
 ### Conditionally Loaded
 
-| Extension                    | Registered name             | Loads when                                                             |
-| ---------------------------- | --------------------------- | ---------------------------------------------------------------------- |
-| nodeTemplates.ts             | `Comfy.NodeTemplates`       | not a Cloud build                                                      |
-| cloudRemoteConfig.ts         | `Comfy.Cloud.RemoteConfig`  | Cloud build                                                            |
-| agentPanel.ts                | `Comfy.AgentPanel`          | Cloud build, or `VITE_AGENT_STANDALONE=true` in any other distribution |
-| cloudBadges.ts               | `Comfy.Cloud.Badges`        | Cloud build                                                            |
-| cloudSessionCookie.ts        | `Comfy.Cloud.SessionCookie` | Cloud build                                                            |
-| cloudFeedbackTopbarButton.ts | `Comfy.FeedbackButton`      | Cloud or nightly build                                                 |
-| nightlyBadges.ts             | `Comfy.Nightly.Badges`      | nightly build that is not Cloud                                        |
+| Extension                    | Registered name             | Loads when             |
+| ---------------------------- | --------------------------- | ---------------------- |
+| nodeTemplates.ts             | `Comfy.NodeTemplates`       | not a Cloud build      |
+| cloudRemoteConfig.ts         | `Comfy.Cloud.RemoteConfig`  | Cloud build            |
+| cloudBadges.ts               | `Comfy.Cloud.Badges`        | Cloud build            |
+| cloudSessionCookie.ts        | `Comfy.Cloud.SessionCookie` | Cloud build            |
+| cloudFeedbackTopbarButton.ts | `Comfy.FeedbackButton`      | Cloud or nightly build |
 
 The Cloud block is gated on a literal `__DISTRIBUTION__ === 'cloud'` comparison
 rather than the `isCloud` constant — that literal is what lets the bundler
 dead-code-eliminate the block, and its `posthog-js` import, from OSS builds.
-`agentPanel.ts` registers through an exported `registerAgentPanelExtension()`
-rather than on import.
 
 ### Lazily Loaded (3D)
 
@@ -93,6 +97,8 @@ appears, so THREE.js (~1.8 MB) stays out of the initial bundle:
 | load3dPreviewExtensions.ts | `Comfy.PreviewGaussianSplat`, `Comfy.PreviewPointCloud`, `Comfy.SaveGaussianSplat`, `Comfy.SavePointCloud` | Splat and point-cloud preview/save |
 | saveMesh.ts                | `Comfy.SaveGLB`                                                                                            | 3D mesh saving                     |
 | cameraInfo.ts              | `Comfy.CreateCameraInfo`                                                                                   | Interactive camera-info widget     |
+| cameraAngle.ts             | `Comfy.CameraAngle`                                                                                        | Camera angle authoring widget      |
+| lightInfo.ts               | `Comfy.CreateLightInfo`                                                                                    | Interactive light-info widget      |
 
 ### Shared Helper Modules
 
@@ -103,6 +109,7 @@ imported by the extensions above:
 | ------------------------- | ------------------------------------- |
 | textPreviewWidgets.ts     | `previewAny.ts`, `saveText.ts`        |
 | widgetValuePropagation.ts | `customWidgets.ts`, `widgetInputs.ts` |
+| slotDefaultTypes.ts       | `slotDefaults.ts`                     |
 
 The `load3d/` subdirectory holds the TypeScript manager classes backing the 3D
 viewport (`SceneManager`, `CameraManager`, `ControlsManager`, `LoaderManager`,
@@ -189,6 +196,9 @@ nodeCreated
 | `registerCustomNodes`         | Allows extensions to register additional nodes             |
 | `loadedGraphNode`             | Called when a node is reloaded onto the graph              |
 | `nodeCreated`                 | Called after a node's constructor                          |
+| `beforeLoadGraph`             | Called before a workflow graph starts loading              |
+| `afterLoadGraph`              | Called after a workflow graph has loaded                   |
+| `onGraphLoadError`            | Called when graph configuration fails, to clean up state   |
 | `beforeConfigureGraph`        | Called before a graph is configured                        |
 | `afterConfigureGraph`         | Called after a graph is configured                         |
 | `getSelectionToolboxCommands` | Allows extensions to add commands to the selection toolbox |

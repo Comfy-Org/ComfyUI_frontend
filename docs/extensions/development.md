@@ -88,7 +88,24 @@ import { api } from '/scripts/api.js'
 
 Only `export const|let|var|function|class|async function` declarations are
 detected. Re-exports (`export { x } from './y'`) and default exports are not
-bound to `window.comfyAPI`.
+bound to `window.comfyAPI`. A file with no detected exports emits no shim.
+
+#### Console warnings emitted by the shims
+
+Most generated shims open with a `console.warn`, so importing one prints a
+message once per shim at load time. This is expected and is not an error in
+your extension:
+
+| Shim                                                                                | Warning                                                                                                              |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `scripts/app.js`, `scripts/api.js`                                                  | none — these are the supported entry points                                                                          |
+| `scripts/ui.js`, `extensions/core/groupNode.js`, `extensions/core/nodeTemplates.js` | `[ComfyUI Deprecated] Importing from "<shim>" is deprecated and will be removed in v1.34.`                           |
+| every other shim                                                                    | `[ComfyUI Notice] "<shim>" is an internal module, not part of the public API. Future updates may break this import.` |
+
+Treat the notice literally: anything other than `/scripts/app.js` and
+`/scripts/api.js` is internal and may change without a migration note. The
+deprecation list and its version string live in `DEPRECATED_FILES` in
+`build/plugins/comfyAPIPlugin.ts`.
 
 **Why Dev Server Can't Support This:**
 
