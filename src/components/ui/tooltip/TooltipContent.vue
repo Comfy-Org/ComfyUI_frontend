@@ -3,14 +3,13 @@ import type { TooltipContentEmits, TooltipContentProps } from 'reka-ui'
 import {
   TooltipArrow,
   TooltipContent,
-  TooltipPortal,
   injectTooltipRootContext,
   useForwardPropsEmits
 } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed, onUpdated, ref, useTemplateRef, watch } from 'vue'
 
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })
@@ -23,7 +22,6 @@ const {
 } = defineProps<TooltipContentProps & { class?: HTMLAttributes['class'] }>()
 const emits = defineEmits<TooltipContentEmits>()
 const rootContext = injectTooltipRootContext()
-const contentStyle = useModalLiftedZIndex(rootContext.open)
 const textElement = useTemplateRef<HTMLElement>('text')
 const repeatsTriggerName = ref(false)
 
@@ -52,7 +50,7 @@ const forwarded = useForwardPropsEmits(
 </script>
 
 <template>
-  <TooltipPortal v-if="rootContext.open.value">
+  <OverlayPortal v-if="rootContext.open.value" :open="rootContext.open.value">
     <div class="pointer-events-none">
       <TooltipContent
         v-bind="{ ...forwarded, ...$attrs }"
@@ -61,10 +59,9 @@ const forwarded = useForwardPropsEmits(
         "
         data-slot="tooltip-content"
         data-testid="tooltip-content"
-        :style="contentStyle"
         :class="
           cn(
-            'z-1700 max-w-96 rounded-md border bg-background px-3 py-2 text-xs/tight whitespace-pre-line text-foreground shadow-md',
+            'z-overlay max-w-96 rounded-md border bg-background px-3 py-2 text-xs/tight whitespace-pre-line text-foreground shadow-md',
             className
           )
         "
@@ -78,5 +75,5 @@ const forwarded = useForwardPropsEmits(
         />
       </TooltipContent>
     </div>
-  </TooltipPortal>
+  </OverlayPortal>
 </template>

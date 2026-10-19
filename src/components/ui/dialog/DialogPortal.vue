@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { DialogPortalProps } from 'reka-ui'
-import { DialogPortal } from 'reka-ui'
+import { injectDialogRootContext } from 'reka-ui'
+
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 
 const props = defineProps<DialogPortalProps>()
+const { open } = injectDialogRootContext()
 </script>
 
 <template>
-  <DialogPortal v-bind="props">
+  <OverlayPortal v-bind="props" :open>
     <slot />
-  </DialogPortal>
+  </OverlayPortal>
 </template>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   DropdownMenuItemIndicator,
-  DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRoot,
   DropdownMenuTrigger
@@ -150,7 +150,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuPortal>
+      <OverlayPortal :open="open">
         <MenuContent
           side="top"
           align="start"
@@ -249,7 +249,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
             </div>
           </DropdownMenuRadioGroup>
         </MenuContent>
-      </DropdownMenuPortal>
+      </OverlayPortal>
     </DropdownMenuRoot>
   </div>
 </template>

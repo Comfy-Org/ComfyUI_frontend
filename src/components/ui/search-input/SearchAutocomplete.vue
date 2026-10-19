@@ -73,15 +73,15 @@
       />
     </ComboboxAnchor>
 
-    <ComboboxPortal>
+    <OverlayPortal :open="isOpen">
       <ComboboxContent
         v-if="suggestions.length > 0"
         position="popper"
         :side-offset="4"
-        :style="[contentStyle, liftedContentStyle]"
+        :style="contentStyle"
         :class="
           cn(
-            'z-3000 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
+            'z-overlay max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
             'rounded-lg border bg-background p-1 shadow-lg'
           )
         "
@@ -105,7 +105,7 @@
           </slot>
         </ComboboxItem>
       </ComboboxContent>
-    </ComboboxPortal>
+    </OverlayPortal>
   </ComboboxRoot>
 </template>
 
@@ -118,14 +118,13 @@ import {
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
-  ComboboxPortal,
   ComboboxRoot
 } from 'reka-ui'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import type { SearchInputVariants } from './searchInput.variants'
 import {
   searchInputSizeConfig,
@@ -181,7 +180,6 @@ const comboboxRef = useTemplateRef('comboboxRef')
 const inputRef = ref<InstanceType<typeof ComboboxInput> | null>(null)
 const isOpen = ref(false)
 const isComposing = ref(false)
-const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 function focus() {
   inputRef.value?.$el?.focus()

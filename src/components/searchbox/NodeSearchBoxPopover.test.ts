@@ -6,7 +6,6 @@ import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
@@ -34,11 +33,6 @@ function createFilter(
     value
   }
 }
-
-const OpenDialog = defineComponent({
-  directives: { rekaZIndex: vRekaZIndex },
-  template: '<div v-reka-z-index data-testid="open-dialog" />'
-})
 
 describe('NodeSearchBoxPopover', () => {
   const i18n = createI18n({
@@ -225,8 +219,11 @@ describe('NodeSearchBoxPopover', () => {
   })
 
   it('opens above an already open dialog', async () => {
-    render(OpenDialog)
-    const dialogZIndex = Number(screen.getByTestId('open-dialog').style.zIndex)
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
     const { pinia } = renderComponent({
       'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
     })
@@ -235,11 +232,11 @@ describe('NodeSearchBoxPopover', () => {
     await nextTick()
 
     expect(
-      Number(screen.getByTestId('search-overlay').style.zIndex)
-    ).toBeGreaterThan(dialogZIndex)
+      dialog.compareDocumentPosition(screen.getByTestId('search-overlay'))
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     expect(
-      Number(screen.getByTestId('search-content').style.zIndex)
-    ).toBeGreaterThan(dialogZIndex)
+      dialog.compareDocumentPosition(screen.getByTestId('search-content'))
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
   })
 
   describe('addNode ghost flag (FollowCursor setting)', () => {

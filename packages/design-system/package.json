@@ -16,6 +16,7 @@
   "files": [
     "src/css",
     "src/icons",
+    "src/OverlayPortal.vue",
     "src/button.variants.ts",
     "src/select.variants.ts",
     "src/tag.variants.ts",
@@ -23,6 +24,7 @@
   ],
   "type": "module",
   "exports": {
+    "./OverlayPortal": "./src/OverlayPortal.vue",
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
     "./button.variants": "./src/button.variants.ts",
@@ -54,6 +56,8 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "tailwindcss": "^4.1.0"
+    "reka-ui": "^2.11.0",
+    "tailwindcss": "^4.1.0",
+    "vue": "^3.5.0"
   }
 }

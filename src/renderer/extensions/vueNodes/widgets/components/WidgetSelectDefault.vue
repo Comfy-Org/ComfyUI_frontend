@@ -65,7 +65,7 @@
         </div>
       </ComboboxAnchor>
 
-      <ComboboxPortal>
+      <OverlayPortal :open="isOpen">
         <ComboboxContent
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
@@ -74,7 +74,7 @@
           align="start"
           :class="
             cn(
-              'z-3000 overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
+              'z-overlay overflow-hidden rounded-lg border border-solid border-border bg-background p-0 shadow-md',
               'max-w-(--reka-combobox-content-available-width) min-w-[min(var(--reka-combobox-trigger-width),var(--reka-combobox-content-available-width))]'
             )
           "
@@ -156,19 +156,19 @@
             </div>
           </div>
         </ComboboxContent>
-      </ComboboxPortal>
+      </OverlayPortal>
     </ComboboxRoot>
   </WidgetLayoutField>
 </template>
 
 <script setup lang="ts">
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import {
   ComboboxAnchor,
   ComboboxContent,
   ComboboxInput,
   ComboboxItem,
   ComboboxItemIndicator,
-  ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
   ComboboxVirtualizer

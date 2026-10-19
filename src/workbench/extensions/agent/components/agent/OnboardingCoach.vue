@@ -11,7 +11,6 @@ import {
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
 import {
   SPOTLIGHT_PAD,
@@ -245,7 +244,7 @@ useEventListener(
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" v-reka-z-index class="agent-scope fixed inset-0">
+    <div v-if="visible" class="agent-scope fixed inset-0 z-tour">
       <div class="absolute inset-0" />
       <div
         aria-hidden="true"

@@ -1,10 +1,6 @@
 <script setup lang="ts">
-import {
-  DropdownMenuPortal,
-  DropdownMenuRoot,
-  DropdownMenuSub,
-  DropdownMenuTrigger
-} from 'reka-ui'
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
+import { DropdownMenuRoot, DropdownMenuSub, DropdownMenuTrigger } from 'reka-ui'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
@@ -62,7 +58,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         <span class="icon-[lucide--plus] size-4" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuPortal>
+    <OverlayPortal :open="addMenuOpen">
       <MenuContent
         side="top"
         align="start"
@@ -96,9 +92,8 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
             </span>
             <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
           </MenuSubTrigger>
-          <DropdownMenuPortal>
+          <OverlayPortal :open="workflowSubmenuOpen">
             <MenuSubContent
-              :open="workflowSubmenuOpen"
               :side-offset="4"
               width="compact"
               max-height="compact"
@@ -129,7 +124,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
                 {{ t('agent.noWorkflowsToReference') }}
               </div>
             </MenuSubContent>
-          </DropdownMenuPortal>
+          </OverlayPortal>
         </DropdownMenuSub>
         <MenuItem v-if="canOpenAssets" @select="emit('openAssets')">
           <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
@@ -143,6 +138,6 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
           <span class="whitespace-nowrap">{{ t('agent.attachFiles') }}</span>
         </MenuItem>
       </MenuContent>
-    </DropdownMenuPortal>
+    </OverlayPortal>
   </DropdownMenuRoot>
 </template>

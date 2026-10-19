@@ -1,37 +1,41 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { ConfigProvider } from 'reka-ui'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, nextTick, ref } from 'vue'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
-
+import Popover from '../Popover.vue'
 import ToastDock from './ToastDock.vue'
 
-const DockedPopover = defineComponent({
-  setup() {
-    return { lifted: useModalLiftedZIndex(ref(true)) }
-  },
-  template: '<div data-testid="popover" :style="lifted" />'
-})
-
 describe('ToastDock', () => {
-  it('stays above dialogs opened later and lifts its popovers above itself', async () => {
+  it('keeps descendant popovers in the toast tier and inherits provider direction', async () => {
     render({
-      components: { DockedPopover, ToastDock },
-      template: '<ToastDock data-testid="dock"><DockedPopover /></ToastDock>'
+      components: { ConfigProvider, Popover, ToastDock },
+      template: `
+        <ConfigProvider dir="rtl">
+          <ToastDock data-testid="dock">
+            <Popover>
+              <template #button><button>Details</button></template>
+              <button>Popover action</button>
+            </Popover>
+          </ToastDock>
+        </ConfigProvider>
+      `
     })
     render({
-      directives: { rekaZIndex: vRekaZIndex },
-      template: '<div v-reka-z-index data-testid="dialog" />'
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
     })
-    await nextTick()
+    const user = userEvent.setup()
+    await user.click(await screen.findByRole('button', { name: 'Details' }))
 
-    const dockZ = Number(screen.getByTestId('dock').style.zIndex)
-    expect(dockZ).toBeGreaterThan(
-      Number(screen.getByTestId('dialog').style.zIndex)
+    const dock = screen.getByTestId('dock')
+    expect(dock).toHaveClass('z-toast')
+    expect(await within(dock).findByRole('dialog')).toHaveAttribute(
+      'dir',
+      'rtl'
     )
-    expect(Number(screen.getByTestId('popover').style.zIndex)).toBeGreaterThan(
-      dockZ
-    )
+    expect(
+      within(dock).getByRole('button', { name: 'Popover action' })
+    ).toBeVisible()
   })
 })

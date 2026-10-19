@@ -156,6 +156,6 @@ useEventListener(window, 'click', hideTooltip)
   top: 0;
   transform: translate(5px, calc(-100% - 5px));
   white-space: pre-wrap;
-  z-index: 99999;
+  z-index: var(--z-index-overlay);
 }
 </style>

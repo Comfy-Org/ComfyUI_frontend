@@ -71,7 +71,7 @@
     {{ $t('sideToolbar.mediaAssets.filterGroupAttribute') }}
   </DropdownMenuLabel>
 
-  <DropdownMenuSub v-if="!isSearching">
+  <DropdownMenuSub v-if="!isSearching" v-slot="{ open }">
     <DropdownMenuSubTrigger :class="menuItemClass">
       <i class="icon-[lucide--image] size-4 shrink-0 text-muted-foreground" />
       <span class="flex-1 text-left">
@@ -82,7 +82,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <DropdownMenuPortal>
+    <OverlayPortal :open="open">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"
@@ -104,10 +104,10 @@
           </DropdownMenuItemIndicator>
         </DropdownMenuCheckboxItem>
       </DropdownMenuSubContent>
-    </DropdownMenuPortal>
+    </OverlayPortal>
   </DropdownMenuSub>
 
-  <DropdownMenuSub v-if="!isSearching">
+  <DropdownMenuSub v-if="!isSearching" v-slot="{ open }">
     <DropdownMenuSubTrigger :class="menuItemClass">
       <i
         class="icon-[lucide--calendar] size-4 shrink-0 text-muted-foreground"
@@ -120,7 +120,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <DropdownMenuPortal>
+    <OverlayPortal :open="open">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"
@@ -144,16 +144,16 @@
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuSubContent>
-    </DropdownMenuPortal>
+    </OverlayPortal>
   </DropdownMenuSub>
 </template>
 
 <script setup lang="ts">
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import {
   DropdownMenuCheckboxItem,
   DropdownMenuItemIndicator,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,

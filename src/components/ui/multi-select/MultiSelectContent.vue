@@ -1,10 +1,10 @@
 <template>
-  <ComboboxPortal>
+  <OverlayPortal :open>
     <ComboboxContent
       position="popper"
       :side-offset="8"
       align="start"
-      :style="[popoverStyle, contentStyle, liftedContentStyle]"
+      :style="[popoverStyle, contentStyle]"
       :class="cn(selectContentClass, 'flex flex-col')"
       @keydown="onKeydown"
       @focus-outside="preventFocusDismiss"
@@ -96,7 +96,7 @@
         </div>
       </FocusScope>
     </ComboboxContent>
-  </ComboboxPortal>
+  </OverlayPortal>
 </template>
 
 <script setup lang="ts">
@@ -107,15 +107,16 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxItemIndicator,
-  ComboboxPortal,
   ComboboxViewport,
-  FocusScope
+  FocusScope,
+  injectComboboxRootContext
 } from 'reka-ui'
 import { computed } from 'vue'
 import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useSelectSearch } from '@/components/ui/select/useSelectSearch'
 
@@ -136,8 +137,7 @@ const {
   searchPlaceholder,
   listMaxHeight,
   popoverStyle,
-  contentStyle,
-  liftedContentStyle
+  contentStyle
 } = defineProps<{
   options: SelectOption[]
   showSearchBox: boolean
@@ -148,8 +148,9 @@ const {
   listMaxHeight: string
   popoverStyle: StyleValue
   contentStyle?: StyleValue
-  liftedContentStyle: StyleValue
 }>()
+
+const { open } = injectComboboxRootContext()
 
 const emit = defineEmits<{
   escape: []

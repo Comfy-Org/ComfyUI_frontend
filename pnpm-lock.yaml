@@ -1375,9 +1375,15 @@ importers:
       cva:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@6.0.3)
+      reka-ui:
+        specifier: ^2.11.0
+        version: 2.11.0(vue@3.5.42(typescript@6.0.3))
       tw-animate-css:
         specifier: 'catalog:'
         version: 1.4.0
+      vue:
+        specifier: ^3.5.0
+        version: 3.5.42(typescript@6.0.3)
     devDependencies:
       '@vitest/coverage-v8':
         specifier: 'catalog:'

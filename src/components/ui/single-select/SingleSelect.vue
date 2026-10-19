@@ -55,12 +55,12 @@
       </div>
     </SelectTrigger>
 
-    <SelectPortal>
+    <OverlayPortal :open="isOpen">
       <SelectContent
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[optionStyle, contentStyle, liftedContentStyle]"
+        :style="[optionStyle, contentStyle]"
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
         @keydown="onContentKeydown"
       >
@@ -88,7 +88,7 @@
           </SelectItem>
         </SelectViewport>
       </SelectContent>
-    </SelectPortal>
+    </OverlayPortal>
   </SelectRoot>
 </template>
 
@@ -98,7 +98,6 @@ import {
   SelectItem,
   SelectItemIndicator,
   SelectItemText,
-  SelectPortal,
   SelectRoot,
   SelectTrigger,
   SelectValue,
@@ -117,7 +116,7 @@ import {
 } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -169,7 +168,6 @@ const selectedItem = defineModel<string | number | undefined>({
 
 const { t } = useI18n()
 const isOpen = ref(false)
-const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

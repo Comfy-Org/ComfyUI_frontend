@@ -1,5 +1,5 @@
 <template>
-  <PopoverRoot>
+  <PopoverRoot v-slot="{ open }">
     <PopoverAnchor as-child>
       <div
         data-testid="builder-opens-as"
@@ -32,12 +32,12 @@
             </PopoverTrigger>
           </template>
         </i18n-t>
-        <PopoverPortal>
+        <OverlayPortal :open="open">
           <PopoverContent
             side="top"
             :side-offset="5"
             :collision-padding="10"
-            class="z-1700 rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity]"
+            class="z-overlay rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity]"
           >
             <ViewTypeRadioGroup
               :model-value="isAppMode"
@@ -46,18 +46,18 @@
               @update:model-value="$emit('select', $event)"
             />
           </PopoverContent>
-        </PopoverPortal>
+        </OverlayPortal>
       </div>
     </PopoverAnchor>
   </PopoverRoot>
 </template>
 
 <script setup lang="ts">
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { computed } from 'vue'
 import {
   PopoverAnchor,
   PopoverContent,
-  PopoverPortal,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'

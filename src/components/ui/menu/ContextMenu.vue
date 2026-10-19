@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {
   DropdownMenuContent,
-  DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
@@ -11,7 +10,7 @@ import { nextTick, ref, useId, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 
 import MenuItems from './MenuItems.vue'
 import { getMenuAnchorPosition } from './menuAnchor'
@@ -39,7 +38,6 @@ const anchor = ref<EventTarget | null>(null)
 const anchorPointerDownWhileOpen = ref(false)
 const anchorPosition = ref({ x: 0, y: 0 })
 const showRequest = ref(0)
-const contentStyle = useModalLiftedZIndex(visible)
 
 function setOpen(value: boolean) {
   if (visible.value === value) return
@@ -133,7 +131,7 @@ defineExpose({ hide, show, toggle, visible })
         />
       </DropdownMenuTrigger>
     </Teleport>
-    <DropdownMenuPortal>
+    <OverlayPortal :open="visible">
       <DropdownMenuContent
         :id="providedId ?? generatedId"
         :reference
@@ -145,7 +143,6 @@ defineExpose({ hide, show, toggle, visible })
             $attrs.class
           )
         "
-        :style="contentStyle"
         :side-offset="2"
         align="start"
         :update-position-strategy="reference ? 'always' : 'optimized'"
@@ -158,6 +155,6 @@ defineExpose({ hide, show, toggle, visible })
           </template>
         </MenuItems>
       </DropdownMenuContent>
-    </DropdownMenuPortal>
+    </OverlayPortal>
   </DropdownMenuRoot>
 </template>

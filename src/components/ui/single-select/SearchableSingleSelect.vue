@@ -45,12 +45,12 @@
       </ComboboxTrigger>
     </ComboboxAnchor>
 
-    <ComboboxPortal>
+    <OverlayPortal :open="isOpen">
       <ComboboxContent
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[optionStyle, contentStyle, liftedContentStyle]"
+        :style="[optionStyle, contentStyle]"
         :class="cn(selectContentClass, 'min-w-(--reka-combobox-trigger-width)')"
         @keydown="onContentKeydown"
       >
@@ -96,7 +96,7 @@
           </ComboboxViewport>
         </FocusScope>
       </ComboboxContent>
-    </ComboboxPortal>
+    </OverlayPortal>
   </ComboboxRoot>
 </template>
 
@@ -110,7 +110,6 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxItemIndicator,
-  ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
   ComboboxViewport,
@@ -131,7 +130,7 @@ import {
 import type { SelectOption } from '@/components/ui/select/types'
 import { useSelectSearch } from '@/components/ui/select/useSelectSearch'
 import { useAttrsClass } from '@/composables/useAttrsClass'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 
 defineOptions({ inheritAttrs: false })
@@ -170,7 +169,6 @@ const { t } = useI18n()
 const triggerRef = useTemplateRef('trigger')
 const isOpen = ref(false)
 const searchQuery = ref('')
-const liftedContentStyle = useModalLiftedZIndex(isOpen)
 const filteredOptions = useSelectSearch(searchQuery, () => options)
 const selectedOption = computed({
   get: () => options.find(({ value }) => value === selectedItem.value),

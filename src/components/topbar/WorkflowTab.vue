@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false">
+  <ContextMenuRoot :modal="false" @update:open="menuOpen = $event">
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
@@ -104,11 +104,11 @@
         </Button>
       </div>
     </ContextMenuTrigger>
-    <ContextMenuPortal>
+    <OverlayPortal :open="menuOpen">
       <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
         <MenuItems :items="contextMenuItems" />
       </ContextMenuContent>
-    </ContextMenuPortal>
+    </OverlayPortal>
   </ContextMenuRoot>
   <WorkflowTabPopover
     ref="popoverRef"
@@ -119,9 +119,9 @@
 </template>
 
 <script setup lang="ts">
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import {
   ContextMenuContent,
-  ContextMenuPortal,
   ContextMenuRoot,
   ContextMenuTrigger
 } from 'reka-ui'
@@ -183,6 +183,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const menuOpen = ref(false)
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()

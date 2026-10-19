@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false">
+  <ContextMenuRoot :modal="false" @update:open="menuOpen = $event">
     <ContextMenuTrigger as-child :disabled="!showContextMenu">
       <TreeRoot
         v-model:expanded="expandedKeys"
@@ -40,20 +40,20 @@
         </TreeVirtualizer>
       </TreeRoot>
     </ContextMenuTrigger>
-    <ContextMenuPortal>
+    <OverlayPortal :open="menuOpen">
       <ContextMenuContent :class="menuContentClass">
         <MenuItems :items="menuItems" />
       </ContextMenuContent>
-    </ContextMenuPortal>
+    </OverlayPortal>
   </ContextMenuRoot>
 </template>
 
 <script setup lang="ts">
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 import type { FlattenedItem } from 'reka-ui'
 import {
   ContextMenuRoot,
   ContextMenuTrigger,
-  ContextMenuPortal,
   ContextMenuContent,
   TreeRoot,
   TreeVirtualizer
@@ -76,6 +76,8 @@ const { showContextMenu = false } = defineProps<{
   root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
   showContextMenu?: boolean
 }>()
+
+const menuOpen = ref(false)
 
 const expandedKeys = defineModel<string[]>('expandedKeys', {
   default: () => []

@@ -1,11 +1,9 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import SingleSelect from './SingleSelect.vue'
 
@@ -91,15 +89,6 @@ async function openSelect(triggerEl: HTMLElement) {
     await nextTick()
   }
 }
-
-let openModal: HTMLElement | undefined
-
-afterEach(() => {
-  if (openModal) {
-    releaseModalLayer(openModal)
-    openModal = undefined
-  }
-})
 
 describe('SingleSelect', () => {
   it('filters searchable options', async () => {
@@ -190,25 +179,31 @@ describe('SingleSelect', () => {
     unmount()
   })
 
-  it('opens above a dialog registered with the modal z-index counter', async () => {
-    openModal = document.createElement('div')
-    raiseModalLayer(openModal)
-    const dialogZIndex = Number(openModal.style.zIndex)
+  it('opens above a dialog already in the document', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
     const { unmount } = renderInParent()
 
     await openSelect(screen.getByLabelText('Pick'))
 
     const content = findContentElement()
     expect(content).not.toBeNull()
-    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+    expect(dialog.compareDocumentPosition(content!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
 
     unmount()
   })
 
   it('opens above a dialog even when the caller passes its own contentStyle z-index', async () => {
-    openModal = document.createElement('div')
-    raiseModalLayer(openModal)
-    const dialogZIndex = Number(openModal.style.zIndex)
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
     const { unmount } = renderInParent(undefined, {
       contentStyle: { zIndex: 3000 }
     })
@@ -217,7 +212,9 @@ describe('SingleSelect', () => {
 
     const content = findContentElement()
     expect(content).not.toBeNull()
-    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+    expect(dialog.compareDocumentPosition(content!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
 
     unmount()
   })

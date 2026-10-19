@@ -1,8 +1,8 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index />
-      <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
+      <DialogOverlay />
+      <DialogContent size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{ pack ? $t('skillPacks.editPack') : $t('skillPacks.addPack') }}
@@ -139,7 +139,6 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogClose from '@/components/ui/dialog/DialogClose.vue'

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import {
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
 import type { DropdownMenuContentProps } from 'reka-ui'
+
+import OverlayPortal from '@comfyorg/design-system/OverlayPortal'
 
 import MenuContent from './MenuContent.vue'
 import MenuItems from './MenuItems.vue'
@@ -40,7 +41,7 @@ const open = defineModel<boolean>('open', { default: false })
     <DropdownMenuTrigger as-child>
       <slot name="trigger" :open />
     </DropdownMenuTrigger>
-    <DropdownMenuPortal :to>
+    <OverlayPortal :open :to>
       <MenuContent
         :align
         :collision-padding
@@ -63,6 +64,6 @@ const open = defineModel<boolean>('open', { default: false })
           </MenuItems>
         </slot>
       </MenuContent>
-    </DropdownMenuPortal>
+    </OverlayPortal>
   </DropdownMenuRoot>
 </template>
