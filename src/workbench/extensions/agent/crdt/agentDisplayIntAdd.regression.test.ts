@@ -1,5 +1,6 @@
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
@@ -7,6 +8,7 @@ import { defineComponent, ref } from 'vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { api } from '@/scripts/api'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -16,7 +18,6 @@ import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import type { WireOpEnvelope } from '@e2e/fixtures/agentWireFrame'
 
-import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { attachDocOpMinter } from './docOpMinter'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
@@ -71,21 +72,33 @@ function toastDescriptions(): (string | undefined)[] {
   return useToast().toasts.map((toast) => toast.description)
 }
 
+function deliver(frame: HostFrame): void {
+  EventTarget.prototype.dispatchEvent.call(
+    api,
+    new CustomEvent(frame.type, { detail: frame.data })
+  )
+}
+
 function connectAgentHeldWorkflow() {
   const graph = new LGraph()
   const host = new HostDoc(WORKFLOW_ID, { nodes: [], links: [] }, CATALOG)
-  const agentSocket = createFakeAgentSocket()
-  const deliver = (frame: HostFrame) =>
-    agentSocket.receive(frame.type, frame.data)
+  const previousSocket = api.socket
+  const send = vi.fn<(frame: string) => void>()
+  api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
+  onTestFinished(() => {
+    api.socket = previousSocket
+  })
 
   let follower!: ReturnType<typeof useAgentCrdtFollower>
   const view = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID), {
-          transport: agentSocket.transport,
-          getGraph: () => graph
-        })
+        follower = useAgentCrdtFollower(
+          ref<string | null>(WORKFLOW_ID),
+          () => null,
+          ref(true),
+          () => graph
+        )
         return () => null
       }
     }),
@@ -116,12 +129,12 @@ function connectAgentHeldWorkflow() {
   }
 
   async function humanSends(node: LGraphNode) {
-    const framesBefore = agentSocket.send.mock.calls.length
+    const framesBefore = send.mock.calls.length
     graph.add(node)
     await vi.waitFor(() =>
-      expect(agentSocket.send.mock.calls.length).toBeGreaterThan(framesBefore)
+      expect(send.mock.calls.length).toBeGreaterThan(framesBefore)
     )
-    return agentSocket.send.mock.calls
+    return send.mock.calls
       .slice(framesBefore)
       .flatMap(([frame]) => sentWireOps(frame))
   }
@@ -131,23 +144,22 @@ function connectAgentHeldWorkflow() {
 
 function openInAnotherTab(host: HostDoc) {
   const graph = new LGraph()
-  const agentSocket = createFakeAgentSocket()
   const view = render(
     defineComponent({
       setup() {
-        useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID), {
-          transport: agentSocket.transport,
-          getGraph: () => graph
-        })
+        useAgentCrdtFollower(
+          ref<string | null>(WORKFLOW_ID),
+          () => null,
+          ref(true),
+          () => graph
+        )
         return () => null
       }
     }),
     { global: { plugins: [getActivePinia()!] } }
   )
   onTestFinished(() => view.unmount())
-  host
-    .initialSync()
-    .forEach((frame) => agentSocket.receive(frame.type, frame.data))
+  host.initialSync().forEach(deliver)
   return graph
 }
 
