@@ -38,6 +38,16 @@ function sentBody() {
 }
 
 describe('undoDraftItem', () => {
+  it('refuses template sets in the legacy page-only editor', async () => {
+    vi.mocked(fetch).mockClear()
+    const set = record({ kind: 'TEMPLATE_SET', slug: 'release-1' })
+    await expect(undoDraftItem(session(set), set.uid)).resolves.toEqual({
+      ok: false,
+      error: 'invalid'
+    })
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('saves the live value over the draft edit', async () => {
     const body = sentBody()
     const live = record({})

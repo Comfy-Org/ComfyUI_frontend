@@ -57,6 +57,10 @@ const model: ContentCatalogRecord = {
 }
 
 describe('content editor', () => {
+  it('does not invent a Hub detail path for a template set', () => {
+    expect(pageSlug('TEMPLATE_SET', 'Release 1')).toBe('')
+  })
+
   it('reads the fields the form edits', () => {
     const state = editorState(model)
     expect(state).toMatchObject({

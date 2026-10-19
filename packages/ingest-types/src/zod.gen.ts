@@ -2831,7 +2831,7 @@ export const zContentCatalogRecord = z.object({
   deleted: z.boolean(),
   edit_version: z.string(),
   enabled: z.boolean(),
-  kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
+  kind: z.enum(['MODEL', 'WORKFLOW', 'APP', 'TEMPLATE_SET']),
   revision: z.coerce
     .bigint()
     .gte(BigInt(1))
@@ -2941,6 +2941,14 @@ export const zCccWebsiteCardsPage = z.object({
     .max(4),
   total: z.int().gte(0).optional()
 })
+
+export const zCccPublicItemsPage = zContentCatalogProjection.and(
+  z.object({
+    has_more: z.boolean(),
+    next_cursor: z.string().optional(),
+    page_size: z.int().gte(1).lte(100)
+  })
+)
 
 /**
  * Flat type-versioned CCC JSON. Domain schemas constrain authored fields; server metadata and expected concurrency tokens are explicit and never caller-owned persistence fields.
@@ -6250,16 +6258,31 @@ export const zStageCccChangesHeaders = z.object({
 export const zStageCccChangesResponse = zCccjson
 
 export const zListContentCatalogItemsQuery = z.object({
-  q: z.string().max(200).optional(),
+  q: z.string().max(300).optional(),
   slug: z.string().optional(),
   kind: z.enum(['MODEL', 'WORKFLOW', 'APP']).optional(),
+  type: z.enum(['model', 'workflow', 'app', 'template_set']).optional(),
+  surface: z
+    .enum([
+      'hub',
+      'cloud_templates',
+      'local_templates',
+      'desktop_starters',
+      'nvidia_performance_tests'
+    ])
+    .optional(),
+  tag: z.string().max(200).optional(),
+  use_case: z.string().max(200).optional(),
+  sort: z.enum(['sort_order', 'title']).optional().default('sort_order'),
+  limit: z.int().gte(1).lte(100).optional().default(20),
+  cursor: z.string().max(4096).optional(),
   workflow_slug: z.string().min(1).max(300).optional()
 })
 
 /**
- * LIVE projection
+ * Bounded LIVE page with continuation metadata
  */
-export const zListContentCatalogItemsResponse = zContentCatalogProjection
+export const zListContentCatalogItemsResponse = zCccPublicItemsPage
 
 export const zGetContentCatalogItemPath = z.object({
   uid: z.string()

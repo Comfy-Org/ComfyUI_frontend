@@ -91,6 +91,7 @@ export async function undoDraftItem(
   const live = session.review.live.items.find((item) => item.uid === uid)
   const { kind, slug, enabled, visibility, visible_from, data } =
     live ?? current
+  if (kind === 'TEMPLATE_SET') return { ok: false, error: 'invalid' }
   return putItem(session, uid, {
     kind,
     slug,

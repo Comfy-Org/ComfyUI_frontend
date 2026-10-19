@@ -77,10 +77,11 @@ const text = (value: unknown) => (typeof value === 'string' ? value : '')
 const mediaKind = (value: unknown): MediaKind =>
   value === 'video' || value === 'audio' ? value : 'image'
 
-export const HUB_SECTION: Record<Kind, string> = {
+export const HUB_SECTION: Record<Kind, string | undefined> = {
   MODEL: 'models',
   WORKFLOW: 'workflows',
-  APP: 'apps'
+  APP: 'apps',
+  TEMPLATE_SET: undefined
 }
 
 export function slugify(value: string) {
@@ -93,7 +94,8 @@ export function slugify(value: string) {
 }
 
 export function pageSlug(kind: Kind, name: string) {
-  return `/hub/${HUB_SECTION[kind]}/${slugify(name)}`
+  const section = HUB_SECTION[kind]
+  return section ? `/hub/${section}/${slugify(name)}` : ''
 }
 
 /** The JSON schema the playground form is built from, if the item has one. */
@@ -259,6 +261,7 @@ function savedExample(example: EditorExample): Data {
 
 function sectionSlug(state: EditorState, base: Data) {
   if (!state.isNew) return base.slug
+  if (!HUB_SECTION[state.kind]) return ''
   const last = state.slug.split('/').pop() ?? ''
   return state.kind === 'MODEL' ? last : `${HUB_SECTION[state.kind]}/${last}`
 }

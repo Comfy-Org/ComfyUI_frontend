@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { createContext } from 'astro/middleware'
 import { describe, expect, it, vi } from 'vitest'
+import expectedRequests from './website-catalog-requests.json'
 
 import { AUTHORING_CSRF_COOKIE } from '@/lib/cms/authoring-session'
 import type { AuthoringSession } from '@/lib/cms/authoring-session'
@@ -23,9 +24,9 @@ import { POST as contentAPI } from '@/routes/admin/content-api'
  * Values that come from earlier responses are recorded as placeholders the Go
  * test fills from the live responses: {{draft_rev}}, {{live_rev}},
  * {{draft_generation}}, {{uid}}, {{revision_uid}}, {{selection_digest}} and
- * {{idempotency_key}}. Update the fixture with `vitest -u` and copy it to
+ * {{idempotency_key}}. Keep the captured JSON structure identical to
  * services/ingest/server/implementation/testdata/website-catalog-requests.json
- * in the Cloud repo.
+ * in the Cloud repo; whitespace formatting is not part of the wire contract.
  */
 
 const ORIGIN = 'http://catalog.example'
@@ -210,8 +211,6 @@ describe('website catalog requests (contract fixture)', () => {
         loadSiteCatalog(undefined, 'en', `/hub/workflows/${SLUG}`)
       )
     ]
-    await expect(
-      `${JSON.stringify({ requests }, null, 2)}\n`
-    ).toMatchFileSnapshot('./website-catalog-requests.json')
+    expect({ requests }).toEqual(expectedRequests)
   })
 })

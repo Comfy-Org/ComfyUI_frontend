@@ -41,6 +41,7 @@ const badge = computed(() => {
       </DialogDescription>
       <div class="grid justify-items-center py-2">
         <HubCardPreview
+          v-if="state.kind !== 'TEMPLATE_SET'"
           :kind="state.kind"
           :title="state.name || t('cmsAdmin.editor.card.untitled')"
           :description="state.summary"
