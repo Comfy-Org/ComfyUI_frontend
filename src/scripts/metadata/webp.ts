@@ -44,10 +44,10 @@ function parseExifData(exifData: Uint8Array) {
 }
 
 export function getFromWebpFile(file: File) {
-  return new Promise<Record<string, string>>((r) => {
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const webp = new Uint8Array(event.target?.result as ArrayBuffer)
+  return file
+    .arrayBuffer()
+    .then((buffer): Record<string, string> => {
+      const webp = new Uint8Array(buffer)
       const dataView = new DataView(webp.buffer)
 
       if (
@@ -55,8 +55,7 @@ export function getFromWebpFile(file: File) {
         dataView.getUint32(8) !== 0x57454250
       ) {
         console.error('Not a valid WEBP file')
-        r({})
-        return
+        return {}
       }
 
       let offset = 12
@@ -92,10 +91,7 @@ export function getFromWebpFile(file: File) {
         offset += 8 + chunk_length + (chunk_length % 2)
       }
 
-      r(txt_chunks)
-    }
-    reader.onerror = () => r({})
-    reader.onabort = () => r({})
-    reader.readAsArrayBuffer(file)
-  })
+      return txt_chunks
+    })
+    .catch((): Record<string, string> => ({}))
 }

@@ -102,6 +102,21 @@ function exifChunk(
 }
 
 describe('getWebpMetadata', () => {
+  it.for([
+    { part: 'RIFF header', length: 3 },
+    { part: 'chunk header', length: 16 },
+    { part: 'EXIF directory', length: 29 }
+  ])('returns empty for a truncated $part', async ({ length }) => {
+    const complete = wrapInWebp([
+      exifChunk([{ tag: 0, value: 'workflow:{"a":1}' }])
+    ])
+    const file = new File([complete.slice(0, length)], 'truncated.webp', {
+      type: 'image/webp'
+    })
+
+    expect(await getWebpMetadata(file)).toEqual({})
+  })
+
   it('returns empty when the file is not a valid WEBP', async () => {
     const file = new File([new Uint8Array(12)], 'fake.webp')
 
