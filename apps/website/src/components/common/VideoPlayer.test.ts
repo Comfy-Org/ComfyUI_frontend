@@ -1,9 +1,89 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import VideoPlayer from './VideoPlayer.vue'
 
 describe('VideoPlayer', () => {
+  it.for([false, true])(
+    'restarts a silent preview with sound and controls on activation (autoplay: %s)',
+    async (autoplay) => {
+      vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(
+        function (this: HTMLMediaElement) {
+          this.dispatchEvent(new Event('play'))
+          return Promise.resolve()
+        }
+      )
+      render(VideoPlayer, {
+        props: {
+          src: 'https://example.com/clip.mp4',
+          ariaLabel: 'Preview clip',
+          preview: true,
+          autoplay,
+          lazyAutoplay: true
+        }
+      })
+      await nextTick()
+      const video = screen.getByLabelText('Preview clip')
+      if (!(video instanceof HTMLVideoElement))
+        throw new Error('Expected the labelled video element')
+      expect(video.muted).toBe(true)
+      video.currentTime = 17
+
+      expect(screen.queryByTestId('player-control-bar')).toBeNull()
+      expect(screen.queryByRole('slider')).toBeNull()
+      await userEvent.click(screen.getByRole('button', { name: 'Play' }))
+
+      expect(video.currentTime).toBe(0)
+      expect(video.muted).toBe(false)
+      expect(video.loop).toBe(false)
+      expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+      expect(screen.getByRole('slider', { name: 'Seek' })).toBeTruthy()
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(screen.getByTestId('player-control-bar').className).not.toContain(
+        'opacity-0'
+      )
+    }
+  )
+
+  it('returns to the preview when a different clip replaces an activated video', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    const { rerender } = render(VideoPlayer, {
+      props: { src: 'https://example.com/first.mp4', preview: true }
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Play' }))
+    expect(screen.getByRole('slider', { name: 'Seek' })).toBeTruthy()
+
+    await rerender({ src: 'https://example.com/second.mp4' })
+
+    expect(screen.queryByRole('slider')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Play' })).toBeTruthy()
+  })
+
+  it.for([true, false])(
+    'keeps the playback controls visible only when requested (persistentControls: %s)',
+    async (persistentControls) => {
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+      vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(true)
+
+      render(VideoPlayer, {
+        props: { src: 'https://example.com/clip.mp4', persistentControls }
+      })
+
+      const pause = await screen.findByRole('button', { name: 'Pause' })
+      await vi.advanceTimersByTimeAsync(1000)
+      expect(pause.parentElement?.classList.contains('opacity-0')).toBe(
+        !persistentControls
+      )
+      expect(screen.getByRole('button', { name: 'Unmute' })).toBeTruthy()
+      expect(screen.getByRole('button', { name: 'Fullscreen' })).toBeTruthy()
+    }
+  )
+
   it('shows Unmute once a lazily-autoplaying video is forced muted to start playback', async () => {
     vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false)
     vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(false)
@@ -96,6 +176,79 @@ describe('VideoPlayer', () => {
     }
   )
 
+  // A pointer that hovers keeps the bar up for as long as it rests on the
+  // player. A finger cannot: the window after playback starts is the whole of
+  // the bar's visit, and 800ms was long enough to see the controls and too
+  // short to hit one.
+  it.for([
+    { hover: true, after: 1000, reachable: false },
+    { hover: false, after: 1000, reachable: true },
+    { hover: false, after: 5000, reachable: false }
+  ])(
+    'leaves the bar reachable $reachable $after ms into playback (hover: $hover)',
+    async ({ hover, after, reachable }) => {
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: query === '(hover: hover)' ? hover : false,
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {}
+      }))
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(
+        false
+      )
+      render(VideoPlayer, {
+        props: { src: 'https://example.com/clip.mp4', controlsOnHover: true }
+      })
+
+      // Playback starting is what summons the bar, and the only thing that does
+      // on a device with no pointer to rest here.
+      await vi.waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy()
+      )
+      vi.advanceTimersByTime(after)
+      await nextTick()
+
+      const bar = screen.getByTestId('player-control-bar')
+      expect(bar.className.includes('pointer-events-none')).toBe(!reachable)
+    }
+  )
+
+  it('toggles the muted state the video element reports, even when the control has not caught up', async () => {
+    render(VideoPlayer, {
+      props: {
+        src: 'https://example.com/clip.mp4',
+        ariaLabel: 'Clip',
+        persistentControls: true
+      }
+    })
+    const video = screen.getByLabelText('Clip')
+    if (!(video instanceof HTMLVideoElement))
+      throw new Error('Expected the labelled video element')
+    await nextTick()
+    let elementMuted = false
+    Object.defineProperty(video, 'muted', {
+      configurable: true,
+      get: () => elementMuted,
+      set: (value: boolean) => {
+        elementMuted = value
+      }
+    })
+
+    elementMuted = true
+    expect(
+      screen.getByRole('button', { name: 'Mute' }),
+      'the control still reads unmuted because no volumechange fired'
+    ).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Mute' }))
+
+    expect(elementMuted).toBe(false)
+    expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+  })
+
   it('shows play and mute for a paused, unmuted video', async () => {
     render(VideoPlayer, {
       props: { src: 'https://example.com/clip.mp4', muteOnly: true }
@@ -103,5 +256,26 @@ describe('VideoPlayer', () => {
 
     expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
+  })
+
+  it.for([{ muteOnly: true }, { persistentControls: true }])(
+    'omits the mute control for a clip with no audio track (%o)',
+    async (mode) => {
+      render(VideoPlayer, {
+        props: { src: 'https://example.com/clip.mp4', hasAudio: false, ...mode }
+      })
+
+      expect(await screen.findByRole('button', { name: 'Play' })).toBeTruthy()
+      expect(screen.queryByRole('button', { name: 'Mute' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Unmute' })).toBeNull()
+    }
+  )
+
+  it('shows the mute control in the control bar by default', async () => {
+    render(VideoPlayer, {
+      props: { src: 'https://example.com/clip.mp4', persistentControls: true }
+    })
+
+    expect(await screen.findByRole('button', { name: 'Mute' })).toBeTruthy()
   })
 })

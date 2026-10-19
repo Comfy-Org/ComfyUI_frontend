@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { Coins } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
-import { isUnpaid } from '../../../lib/workshop/cinematic-studio/reel'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { Take } from '@/lib/workshop/cinematic-studio/reel'
+import { isUnpaid } from '@/lib/workshop/cinematic-studio/reel'
+import type { Locale } from '@/i18n/translations'
 import CinematicCreditAction from './CinematicCreditAction.vue'
 
 const {
@@ -18,6 +18,7 @@ const {
   memberWorkspace?: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ retry: [ids: string[]] }>()
 
@@ -37,14 +38,15 @@ const skipped = computed(() => takes.filter(isUnpaid))
         aria-hidden="true"
       />
       {{
-        tc('cinematic.credits.skipped', locale)
-          .replace('{failed}', String(skipped.length))
-          .replace('{total}', String(takes.length))
+        t('cinematic.credits.skipped', {
+          failed: skipped.length,
+          total: takes.length
+        })
       }}
     </span>
     <CinematicCreditAction
       :member="memberWorkspace !== undefined"
-      :retry-label="tc('cinematic.credits.retrySkipped', locale)"
+      :retry-label="t('cinematic.credits.retrySkipped')"
       :locale
       @retry="
         emit(

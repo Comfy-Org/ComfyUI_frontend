@@ -15,7 +15,7 @@ export class WorkspaceApiError extends Error {
 
 export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
   {
-    list: async () => ({ workspaces: [] }),
+    list: async () => ({ workspaces: [], can_create_workspace: true }),
     getCurrentWorkspace: async () => ({
       id: 'workspace-1',
       name: 'Personal',
@@ -39,6 +39,11 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       created_at: '2026-01-01T00:00:00Z',
       joined_at: '2026-01-01T00:00:00Z'
     }),
+    listDeployments: async () => ({ items: [], builds_visible: true }),
+    pickDeployment: async () => {},
+    clearDeployment: async () => {},
+    setDefaultDeployment: async () => {},
+    clearDefaultDeployment: async () => {},
     delete: async () => {},
     leave: async () => {},
     listMembers: async () => ({
@@ -93,7 +98,20 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
           can_change_seats: false,
           can_downgrade_to_personal: false,
           can_invite_members: false,
+          can_manage_members: false,
+          can_delete_workspace: false,
+          can_leave_workspace: false,
+          can_manage_billing: false,
+          can_manage_partner_node_access: false,
+          can_view_pending_invites: false,
+          can_view_team_usage: false,
+          can_edit_workspace: false,
+          can_manage_auto_top_up: false,
+          can_manage_subscription: false,
+          can_run_workflows: false,
+          can_upgrade: false,
           can_reactivate: false,
+          can_revert_scheduled_change: false,
           can_subscribe_self_serve: false,
           can_top_up: false
         },
@@ -107,6 +125,24 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
         }
       }
     },
+    getBillingAutoReload: async () => ({
+      configured: false,
+      cycle_resets_at: null,
+      disabled_reason: null,
+      enabled: false,
+      last_failure_at: null,
+      last_failure_reason: null,
+      max_monthly_budget_cents: 0,
+      min_reload_credits: 0,
+      monthly_budget_cents: null,
+      paused_by_budget: false,
+      paused_by_decline: false,
+      reload_amount_cents: null,
+      reload_credits: null,
+      spent_this_cycle_cents: 0,
+      status: 'off',
+      threshold_credits: null
+    }),
     getBillingPlans: async () => ({ plans: [] }),
     listSavedPaymentMethods: async () => [],
     previewSubscribe: async (slug) => ({
@@ -139,14 +175,21 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       billing_op_id: 'op-1',
       cancel_at: '2026-02-01T00:00:00Z'
     }),
-    getChurnkeyAuth: async () => ({
-      auth_hash: 'test-hash',
-      customer_id: 'customer-1',
-      mode: 'test'
+    prepareRetentionFlow: async () => {
+      throw new WorkspaceApiError('unavailable', 503)
+    },
+    acceptRetentionOffer: async () => ({
+      billing_op_id: 'op-retention',
+      status: 'pending'
     }),
+    recordRetentionFlowEvent: async () => {},
     resubscribe: async () => ({
       billing_op_id: 'op-1',
       status: 'active'
+    }),
+    revertScheduledChange: async () => ({
+      billing_op_id: 'op-1',
+      status: 'reverted'
     }),
     getPaymentPortalUrl: async () => ({ url: '' }),
     createTopup: async (amount_cents) => ({
@@ -154,6 +197,9 @@ export const workspaceApi = vi.mockObject<typeof realWorkspaceApi>(
       billing_op_id: 'op-1',
       topup_id: 'op-1',
       status: 'completed'
+    }),
+    createTopupCheckout: async () => ({
+      checkout_url: 'https://checkout.stripe.com/c/pay/cs_mock'
     }),
     getBillingEvents: async () => ({
       events: [],

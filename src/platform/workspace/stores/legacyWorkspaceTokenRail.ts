@@ -1,3 +1,5 @@
+import { isSsoRequiredRefusal } from '@comfyorg/account-core/sso'
+import type { ErrorResponse } from '@comfyorg/ingest-types'
 import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import { delay } from 'es-toolkit'
 import type { Ref, ShallowRef } from 'vue'
@@ -6,6 +8,7 @@ import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { t } from '@/i18n'
+import { ensureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { isCloud } from '@/platform/distribution/types'
 import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
@@ -50,6 +53,7 @@ interface MintedToken {
 
 const PERMANENT_AUTH_ERROR_CODES = new Set([
   'ACCESS_DENIED',
+  'SSO_REQUIRED',
   'WORKSPACE_NOT_FOUND',
   'INVALID_FIREBASE_TOKEN',
   'NOT_AUTHENTICATED'
@@ -84,7 +88,7 @@ function tokenExchangeFailedError(error: string): WorkspaceAuthError {
 
 function tokenExchangeErrorForStatus(
   status: number,
-  message: string
+  body: ErrorResponse
 ): WorkspaceAuthError {
   if (status === 401) {
     return new WorkspaceAuthError(
@@ -95,7 +99,7 @@ function tokenExchangeErrorForStatus(
   if (status === 403) {
     return new WorkspaceAuthError(
       t('workspaceAuth.errors.accessDenied'),
-      'ACCESS_DENIED'
+      isSsoRequiredRefusal(status, body) ? 'SSO_REQUIRED' : 'ACCESS_DENIED'
     )
   }
   if (status === 404) {
@@ -104,7 +108,7 @@ function tokenExchangeErrorForStatus(
       'WORKSPACE_NOT_FOUND'
     )
   }
-  return tokenExchangeFailedError(message)
+  return tokenExchangeFailedError(body.message)
 }
 
 function parseMintedToken(rawData: unknown, ownerUid: string): MintedToken {
@@ -153,7 +157,10 @@ export interface LegacyWorkspaceTokenRailDeps {
   hasSignedInUser: () => boolean
   activeWorkspaceId: () => string | null
   switchWorkspace: (workspaceId: string) => Promise<void>
-  endWorkspaceSession: (revokedWorkspaceId?: string) => boolean
+  endWorkspaceSession: (
+    revokedWorkspaceId?: string,
+    refusalCode?: string
+  ) => boolean
   persistWorkspaceIdentity: (workspace: WorkspaceIdentity) => void
   clearSessionStorage: () => void
   surfacePermanentAuthError: (err: WorkspaceAuthError) => void
@@ -377,8 +384,10 @@ export function createLegacyWorkspaceTokenRail({
     })
 
     if (!response.ok) {
-      const { message } = await parseErrorResponse(response)
-      throw tokenExchangeErrorForStatus(response.status, message)
+      throw tokenExchangeErrorForStatus(
+        response.status,
+        await parseErrorResponse(response)
+      )
     }
 
     return parseMintedToken(await response.json(), ownerUid)
@@ -393,9 +402,7 @@ export function createLegacyWorkspaceTokenRail({
     error.value = null
 
     try {
-      const { useSessionCookie } =
-        await import('@/platform/auth/session/useSessionCookie')
-      await useSessionCookie().ensureSessionCookie()
+      await ensureSessionCookie()
       if (isStaleWorkspaceRequest(capturedRequestId, capturedOwnerUid)) return
 
       const { token, expiresAt, workspace, ownerUid } =
@@ -476,7 +483,9 @@ export function createLegacyWorkspaceTokenRail({
   ): err is WorkspaceAuthError {
     return (
       err instanceof WorkspaceAuthError &&
-      (err.code === 'ACCESS_DENIED' || err.code === 'WORKSPACE_NOT_FOUND')
+      (err.code === 'ACCESS_DENIED' ||
+        err.code === 'SSO_REQUIRED' ||
+        err.code === 'WORKSPACE_NOT_FOUND')
     )
   }
 
@@ -494,7 +503,8 @@ export function createLegacyWorkspaceTokenRail({
       invalidSelectionHandled = endWorkspaceSession(
         failedWorkspaceId && isWorkspaceSelectionInvalid(err)
           ? failedWorkspaceId
-          : undefined
+          : undefined,
+        err.code
       )
       if (hadContext) {
         surfacePermanentAuthError(err)
@@ -589,7 +599,8 @@ export function createLegacyWorkspaceTokenRail({
     if (isStaleWorkspaceRequest(capturedRequestId)) return
     console.error('Workspace access revoked or auth invalid:', err)
     endWorkspaceSession(
-      isWorkspaceSelectionInvalid(err) ? workspaceId : undefined
+      isWorkspaceSelectionInvalid(err) ? workspaceId : undefined,
+      err.code
     )
   }
 

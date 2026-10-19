@@ -40,7 +40,7 @@
             <button
               v-if="hasMultipleNodeTypes"
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
               :title="group.type"
               :aria-label="titleToggleAriaLabel"
               :aria-expanded="expanded"
@@ -51,7 +51,7 @@
             <button
               v-else-if="primaryLocatableNodeType"
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+              class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
               :title="group.type"
               @click="handleLocateNode(primaryLocatableNodeType)"
             >
@@ -59,7 +59,7 @@
             </button>
             <span
               v-else
-              class="min-w-0 truncate text-xs/relaxed font-normal text-base-foreground"
+              class="min-w-0 truncate text-xs/relaxed font-normal"
               :title="group.type"
             >
               {{ group.type }}
@@ -68,7 +68,7 @@
               v-if="hasMultipleNodeTypes"
               data-testid="swap-node-group-count"
               role="img"
-              class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-base-foreground"
+              class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-accent px-1 text-2xs font-semibold"
               :aria-label="t('g.nodesCount', group.nodeTypes.length)"
             >
               {{ group.nodeTypes.length }}
@@ -82,11 +82,13 @@
               'This node will be replaced by:'
             )
           }}
-          <span
-            class="inline-flex rounded-sm bg-modal-card-tag-background px-1.5 py-0.5 text-xs/none font-medium text-modal-card-tag-foreground"
+          <Badge
+            variant="square"
+            severity="muted"
+            class="text-xs/none text-foreground"
           >
             {{ replacementLabel }}
-          </span>
+          </Badge>
         </span>
       </span>
 
@@ -98,18 +100,18 @@
       >
         <i
           aria-hidden="true"
-          class="mr-1 icon-[lucide--repeat] size-4 shrink-0 text-base-foreground"
+          class="mr-1 icon-[lucide--repeat] size-4 shrink-0 text-foreground"
         />
-        <span class="min-w-0 truncate text-base-foreground">
+        <span class="min-w-0 truncate text-foreground">
           {{ t('nodeReplacement.replaceNode', 'Replace Node') }}
         </span>
       </Button>
 
       <Button
         v-if="primaryLocatableNodeType"
-        variant="textonly"
+        variant="muted-textonly"
         size="icon-sm"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
+        class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
         :aria-label="locateNodeLabel"
         @click="handleLocateNode(primaryLocatableNodeType)"
       >
@@ -125,27 +127,26 @@
           class="min-w-0"
         >
           <div class="flex min-w-0 items-center gap-2">
-            <span class="flex min-w-0 flex-1 items-center gap-1">
+            <span
+              class="flex min-w-0 flex-1 items-center gap-1 text-xs/relaxed text-muted-foreground"
+            >
               <button
                 v-if="isLocatableNodeType(nodeType)"
                 type="button"
-                class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset"
+                class="m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left font-normal wrap-break-word outline-none hover:text-foreground focus:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
                 @click="handleLocateNode(nodeType)"
               >
                 {{ getLabel(nodeType) }}
               </button>
-              <span
-                v-else
-                class="text-xs/relaxed wrap-break-word text-muted-foreground"
-              >
+              <span v-else class="wrap-break-word">
                 {{ getLabel(nodeType) }}
               </span>
             </span>
             <Button
               v-if="isLocatableNodeType(nodeType)"
-              variant="textonly"
+              variant="muted-textonly"
               size="icon-sm"
-              class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
+              class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
               :aria-label="locateNodeLabel"
               @click="handleLocateNode(nodeType)"
             >
@@ -159,6 +160,7 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
 import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -166,7 +168,7 @@ import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selec
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
-import type { MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
 const { group, highlighted } = defineProps<{

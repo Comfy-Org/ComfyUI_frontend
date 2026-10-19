@@ -1,14 +1,17 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import type { FloatingRenderLink } from '@/lib/litegraph/src/canvas/FloatingRenderLink'
-import type { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
-import type { MovingOutputLink } from '@/lib/litegraph/src/canvas/MovingOutputLink'
-import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
-import type { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
-import type { ToInputRenderLink } from '@/lib/litegraph/src/canvas/ToInputRenderLink'
-import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
+import type {
+  LGraphNode,
+  LLink,
+  Reroute,
+  FloatingRenderLink,
+  MovingInputLink,
+  MovingOutputLink,
+  ToInputFromIoNodeLink,
+  ToInputRenderLink,
+  SubgraphInputNode,
+  SubgraphOutputNode,
+  RenderLink
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 

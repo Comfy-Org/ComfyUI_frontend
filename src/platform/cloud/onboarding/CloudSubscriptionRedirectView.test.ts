@@ -37,8 +37,7 @@ vi.mock(
 )
 
 const legacyCheckoutMocks = vi.hoisted(() => ({
-  performSubscriptionCheckout: vi.fn(),
-  performTeamSubscriptionCheckout: vi.fn()
+  performSubscriptionCheckout: vi.fn()
 }))
 
 vi.mock(
@@ -48,22 +47,22 @@ vi.mock(
   })
 )
 
-vi.mock(
-  import('@/platform/cloud/subscription/utils/teamSubscriptionCheckoutUtil'),
-  () => ({
-    performTeamSubscriptionCheckout:
-      legacyCheckoutMocks.performTeamSubscriptionCheckout
-  })
-)
-
 const TEAM_CREDIT_STOPS = {
   default_stop_index: 0,
   stops: [
     {
       id: 'team_700',
       credits: 147700,
-      monthly: { list_price_cents: 70000, price_cents: 69000 },
-      yearly: { list_price_cents: 70000, price_cents: 63000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 70000,
+        price_cents: 69000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 70000,
+        price_cents: 63000
+      }
     }
   ]
 } satisfies TeamCreditStops
@@ -210,9 +209,6 @@ describe('CloudSubscriptionRedirectView', () => {
         billingCycle: 'yearly'
       }
     })
-    expect(
-      legacyCheckoutMocks.performTeamSubscriptionCheckout
-    ).not.toHaveBeenCalled()
   })
 
   test('opens the generic team pricing table when plan loading fails', async () => {
@@ -229,9 +225,6 @@ describe('CloudSubscriptionRedirectView', () => {
       initialCheckout: undefined
     })
     expect(mockRouterPush).not.toHaveBeenCalled()
-    expect(
-      legacyCheckoutMocks.performTeamSubscriptionCheckout
-    ).not.toHaveBeenCalled()
   })
 
   test('removes the pre-Vue splash loader on mount', async () => {

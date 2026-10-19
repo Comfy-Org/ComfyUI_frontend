@@ -21,7 +21,7 @@ const meta: Meta<typeof SecretListItem> = {
   decorators: [
     () => ({
       template: `
-        <div class="w-[480px] bg-base-background p-8">
+        <div class="w-[480px] bg-background p-8">
           <story />
         </div>
       `

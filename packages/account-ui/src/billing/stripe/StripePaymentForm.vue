@@ -1,8 +1,8 @@
 <template>
   <form class="flex min-h-0 flex-col gap-6 xl:flex-1" @submit.prevent="submit">
-    <div class="flex items-start justify-between gap-4">
+    <div v-if="!pageLayout" class="flex items-start justify-between gap-4">
       <div>
-        <h3 class="m-0 text-base font-semibold text-base-foreground">
+        <h3 :id="headingId" class="m-0 text-base font-semibold text-foreground">
           {{ copy.paymentMethod }}
         </h3>
         <p class="m-0 mt-1 max-w-md text-sm text-muted-foreground">
@@ -12,25 +12,36 @@
     </div>
     <div
       v-if="configurationError"
-      class="rounded-lg border border-destructive-background bg-destructive-background/10 px-3 py-2 text-sm text-destructive-background"
+      class="rounded-lg border border-destructive bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
       {{ configurationError }}
     </div>
     <!-- Only the form region scrolls; the header above and the pay action
          below hold their positions regardless of which method is expanded. -->
     <div
+      role="group"
+      :aria-labelledby="pageLayout ? undefined : headingId"
+      :aria-label="pageLayout ? copy.paymentMethod : undefined"
+      :inert="locked"
       class="flex flex-col gap-6 xl:min-h-0 xl:flex-1 xl:overflow-x-hidden xl:overflow-y-auto xl:pr-1"
     >
       <div ref="paymentElementTarget" />
       <div class="flex flex-col gap-3">
-        <h4 class="m-0 text-sm font-medium text-base-foreground">
+        <h4
+          :class="
+            cn(
+              'm-0 text-foreground',
+              pageLayout ? 'text-base font-normal' : 'text-sm font-medium'
+            )
+          "
+        >
           {{ copy.billingAddress }}
         </h4>
         <div ref="addressElementTarget" />
       </div>
       <div
         v-if="selectedMethodType === 'alipay'"
-        class="flex items-start gap-3 rounded-xl bg-base-background/60 px-4 py-3 text-xs text-muted-foreground"
+        class="flex items-start gap-3 rounded-xl bg-background/60 px-4 py-3 text-xs text-muted-foreground"
       >
         <i
           class="mt-0.5 icon-[lucide--shield-check] size-4 shrink-0 text-(--success-foreground)"
@@ -67,7 +78,9 @@ import type {
   StripePaymentElement
 } from '@stripe/stripe-js'
 import { loadStripe } from '@stripe/stripe-js/pure'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   StripePaymentCopy,
@@ -84,7 +97,9 @@ const {
   isLoading = false,
   verificationPending = false,
   canSubmit = true,
-  themeKey = ''
+  locked = false,
+  themeKey = '',
+  pageLayout = false
 } = defineProps<{
   publishableKey: string
   amountCents: number
@@ -98,17 +113,25 @@ const {
    *  primary, so the pay button steps back. */
   verificationPending?: boolean
   canSubmit?: boolean
+  /** Money is on its way: the elements are inert until the attempt resolves. */
+  locked?: boolean
   /** Changes whenever the host switches theme, so the mounted Elements
    *  re-read their appearance in place instead of keeping the colours
    *  resolved at creation. */
   themeKey?: string
+  /** The full-page checkout titles the column itself, so the form drops its
+   *  heading and subtitle and sets the address label in the body style. */
+  pageLayout?: boolean
 }>()
 
 const emit = defineEmits<{
-  confirm: [confirmationToken: string]
+  /** `paymentMethodType` is the token's method (`card`, `alipay`, …), so the host knows a redirect is coming. */
+  confirm: [confirmationToken: string, paymentMethodType: string]
   submittingChange: [submitting: boolean]
   phase: [phase: StripePaymentPhase]
 }>()
+
+const headingId = useId()
 
 let isUnmounted = false
 
@@ -297,10 +320,15 @@ onBeforeUnmount(() => {
   addressElement?.destroy()
 })
 
+interface MintedToken {
+  readonly id: string
+  readonly paymentMethodType: string
+}
+
 async function mintConfirmationToken(
   elements: StripeElements,
   client: Stripe
-): Promise<string | undefined> {
+): Promise<MintedToken | undefined> {
   // Validation boundary: submit() normally resolves with an error field, but
   // an unexpected rejection here is still a pre-token validation failure.
   let submitResult
@@ -319,7 +347,10 @@ async function mintConfirmationToken(
     failSubmit('token_creation', result.error)
     return undefined
   }
-  return result.confirmationToken.id
+  return {
+    id: result.confirmationToken.id,
+    paymentMethodType: result.confirmationToken.payment_method_preview.type
+  }
 }
 
 async function submit() {
@@ -336,7 +367,8 @@ async function submit() {
     // Same hazard as reportPhase, with money on it: the customer may have
     // closed this checkout while the token was minting, and a confirm the
     // host acts on would charge them for a flow they left.
-    if (confirmationToken && !isUnmounted) emit('confirm', confirmationToken)
+    if (confirmationToken && !isUnmounted)
+      emit('confirm', confirmationToken.id, confirmationToken.paymentMethodType)
   } catch {
     failSubmit('token_creation')
   } finally {
@@ -356,37 +388,37 @@ function resolveAppearance(themeRoot: HTMLElement): Appearance {
     variables: {
       // Selection (radio, selected label, accordion highlight) uses the
       // theme-aware foreground rather than brand blue.
-      colorPrimary: resolveThemeColor('--base-foreground'),
-      colorBackground: resolveThemeColor('--base-background'),
-      colorText: resolveThemeColor('--base-foreground'),
+      colorPrimary: resolveThemeColor('--foreground'),
+      colorBackground: resolveThemeColor('--background'),
+      colorText: resolveThemeColor('--foreground'),
       colorTextSecondary: resolveThemeColor('--muted-foreground'),
-      colorDanger: resolveThemeColor('--destructive-background'),
+      colorDanger: resolveThemeColor('--destructive'),
       // Same token as the pricing table's "Save 20%" pill, so all
       // deal/discount badges share one accent.
-      colorSuccess: resolveThemeColor('--primary-background'),
+      colorSuccess: resolveThemeColor('--primary'),
       fontFamily: getComputedStyle(themeRoot).fontFamily,
       borderRadius: '10px',
       spacingUnit: '5px'
     },
     rules: {
       '.AccordionItem': {
-        backgroundColor: resolveThemeColor('--base-background'),
+        backgroundColor: resolveThemeColor('--background'),
         // Transparent (not none) so rows keep their size when the
         // selected item paints its outline.
         border: '1px solid transparent',
         boxShadow: 'none'
       },
       '.AccordionItem--selected': {
-        borderColor: resolveThemeColor('--base-foreground')
+        borderColor: resolveThemeColor('--foreground')
       },
       '.Input': {
-        backgroundColor: resolveThemeColor('--input-surface'),
-        borderColor: resolveThemeColor('--border-default'),
+        backgroundColor: resolveThemeColor('--input'),
+        borderColor: resolveThemeColor('--border'),
         boxShadow: 'none'
       },
       '.Input:focus': {
-        borderColor: resolveThemeColor('--primary-background'),
-        boxShadow: `0 0 0 1px ${resolveThemeColor('--primary-background')}`
+        borderColor: resolveThemeColor('--primary'),
+        boxShadow: `0 0 0 1px ${resolveThemeColor('--primary')}`
       },
       '.Label': {
         fontWeight: '500'

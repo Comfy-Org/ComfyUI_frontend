@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+
 import type { UUID } from '@/utils/uuid'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
@@ -153,6 +155,19 @@ describe('useWidgetValueStore', () => {
       expect(reconciled.type).toBe('string')
       expect(reconciled.value).toBe('hello')
       expect(store.getWidget(seedA)?.type).toBe('string')
+    })
+
+    it('keeps the incumbent value on a same-type re-registration without announcing the init value', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 20))
+      const intents: GraphIntentEvent[] = []
+      const unsubscribe = onGraphIntent((event) => intents.push(event))
+
+      const registered = store.registerWidget(seedA, state('number', 10))!
+      unsubscribe()
+
+      expect(registered.value).toBe(20)
+      expect(intents).toEqual([])
     })
 
     it('does not accept caller-owned identity during re-registration', () => {
@@ -351,23 +366,28 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidgetVisibility(renamed)).toBe(component)
     })
 
-    it('reports subsequent changes with the new id', () => {
+    it('announces subsequent changes under the new name', () => {
       const store = useWidgetValueStore()
       const renamed = widgetId(graphA, toNodeId('node-1'), 'renamed')
-      const onValueChange = vi.fn()
+      const intents: GraphIntentEvent[] = []
       store.registerWidget(seedA, state('number', 1))
-      store.onValueChange(onValueChange)
+      const unsubscribe = onGraphIntent((event) => intents.push(event))
 
       const widget = store.renameWidget(seedA, renamed)!
       widget.value = 2
+      unsubscribe()
 
-      expect(onValueChange).toHaveBeenCalledOnce()
-      expect(onValueChange).toHaveBeenCalledWith({
-        widgetId: renamed,
-        value: 2,
-        oldValue: 1,
-        context: undefined
-      })
+      expect(intents).toEqual([
+        {
+          type: 'set_widget',
+          source: 'local',
+          graphId: graphA,
+          nodeId: toNodeId('node-1'),
+          name: 'renamed',
+          value: 2,
+          previous: 1
+        }
+      ])
     })
 
     it('rejects an occupied destination without changing either widget', () => {
@@ -428,76 +448,60 @@ describe('useWidgetValueStore', () => {
   })
 
   describe('value mutation', () => {
-    it('reports direct and contextual value changes exactly once', () => {
+    it('announces each effective write once, direct or through setValue', () => {
       const store = useWidgetValueStore()
       const widget = store.registerWidget(seedA, state('number', 100))!
-      const context: RemoteMutationContext = {
-        source: 'agent-remote',
-        actor: 'agent:test',
-        opId: 'op-1'
-      }
-      const onValueChange = vi.fn()
-      const unsubscribe = store.onValueChange(onValueChange)
+      const values: unknown[][] = []
+      const unsubscribe = onGraphIntent((event) => {
+        if (event.type === 'set_widget')
+          values.push([event.previous, event.value])
+      })
 
       widget.value = 200
-      store.setValue(seedA, 300, context)
+      store.setValue(seedA, 300)
       store.setValue(seedA, 300)
       unsubscribe()
       widget.value = 400
 
-      expect(onValueChange).toHaveBeenCalledTimes(2)
-      expect(onValueChange).toHaveBeenNthCalledWith(1, {
-        widgetId: seedA,
-        value: 200,
-        oldValue: 100,
-        context: undefined
-      })
-      expect(onValueChange).toHaveBeenNthCalledWith(2, {
-        widgetId: seedA,
-        value: 300,
-        oldValue: 200,
-        context
-      })
+      expect(values).toEqual([
+        [100, 200],
+        [200, 300]
+      ])
     })
 
-    it('does not leak mutation context into nested writes', () => {
+    it('announces a nested write from a listener after the outer one', () => {
       const store = useWidgetValueStore()
       const widget = store.registerWidget(seedA, state('number', 100))!
-      const context: RemoteMutationContext = {
-        source: 'agent-remote',
-        actor: 'agent:test',
-        opId: 'op-1'
-      }
-      const contexts: (RemoteMutationContext | undefined)[] = []
-      store.onValueChange((change) => {
-        contexts.push(change.context)
-        if (change.value === 200) widget.value = 201
+      const values: unknown[] = []
+      const unsubscribe = onGraphIntent((event) => {
+        if (event.type !== 'set_widget') return
+        values.push(event.value)
+        if (event.value === 200) widget.value = 201
       })
 
-      store.setValue(seedA, 200, context)
+      store.setValue(seedA, 200)
+      unsubscribe()
 
-      expect(contexts).toEqual([context, undefined])
+      expect(values).toEqual([200, 201])
     })
 
-    it('stops reporting replaced and deleted widget state', () => {
+    it('stops announcing replaced and deleted widget state', () => {
       const store = useWidgetValueStore()
       const replaced = store.registerWidget(seedA, state('number', 1))!
       const current = store.registerWidget(seedA, state('string', 'two'))!
-      const onValueChange = vi.fn()
-      store.onValueChange(onValueChange)
+      const values: unknown[][] = []
+      const unsubscribe = onGraphIntent((event) => {
+        if (event.type === 'set_widget')
+          values.push([event.previous, event.value])
+      })
 
       replaced.value = 3
       current.value = 'three'
       store.deleteWidget(seedA)
       current.value = 'four'
+      unsubscribe()
 
-      expect(onValueChange).toHaveBeenCalledOnce()
-      expect(onValueChange).toHaveBeenCalledWith({
-        widgetId: seedA,
-        value: 'three',
-        oldValue: 'two',
-        context: undefined
-      })
+      expect(values).toEqual([['two', 'three']])
     })
 
     it('setValue updates registered widgets and reports missing widgets', () => {
@@ -704,78 +708,6 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)?.value).toBe(7)
       expect(store.setValue(seedA, 8)).toBe(true)
       expect(store.getWidget(seedA)?.value).toBe(8)
-    })
-  })
-
-  describe('local-dirty-tracking suppression', () => {
-    it('a context-less write is locally dirty by default', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      registered.value = 2
-
-      expect(store.isLocallyDirty(seedA)).toBe(true)
-    })
-
-    it('withLocalDirtyTrackingSuppressed keeps a context-less write clean', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      store.withLocalDirtyTrackingSuppressed(() => {
-        registered.value = 2
-      })
-
-      expect(store.getWidget(seedA)?.value).toBe(2)
-      expect(store.isLocallyDirty(seedA)).toBe(false)
-    })
-
-    it('begin/end brackets an async window the same way', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      store.beginLocalDirtyTrackingSuppression()
-      registered.value = 2
-      store.endLocalDirtyTrackingSuppression()
-
-      expect(store.isLocallyDirty(seedA)).toBe(false)
-
-      // Once closed, an ordinary context-less write is dirty again.
-      registered.value = 3
-      expect(store.isLocallyDirty(seedA)).toBe(true)
-    })
-
-    it('nests: an inner suppression ending early does not lift the outer one', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      store.beginLocalDirtyTrackingSuppression()
-      store.withLocalDirtyTrackingSuppressed(() => {
-        registered.value = 2
-      })
-      // The inner bracket closed; the outer one, opened first, is still open.
-      registered.value = 3
-      expect(store.isLocallyDirty(seedA)).toBe(false)
-
-      store.endLocalDirtyTrackingSuppression()
-      registered.value = 4
-      expect(store.isLocallyDirty(seedA)).toBe(true)
-    })
-
-    it('endLocalDirtyTrackingSuppression never goes negative', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      // An unmatched end (e.g. a load whose beforeLoadGraph never ran) must
-      // not leave the counter negative, where a single legitimate begin
-      // later would fail to suppress anything.
-      store.endLocalDirtyTrackingSuppression()
-      store.beginLocalDirtyTrackingSuppression()
-      registered.value = 2
-      expect(store.isLocallyDirty(seedA)).toBe(false)
-
-      store.endLocalDirtyTrackingSuppression()
-      registered.value = 3
-      expect(store.isLocallyDirty(seedA)).toBe(true)
     })
   })
 })

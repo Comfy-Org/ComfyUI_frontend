@@ -12,6 +12,8 @@ import {
 } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
+import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
+import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 
 export class GlobalSettingsApiError extends Error {
@@ -29,6 +31,13 @@ function globalSettingsUrl(key?: GlobalSettingKey): string {
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
 }
 
+export async function getGlobalSettingsAuthHeader(): Promise<AuthHeader | null> {
+  const authStore = useAuthStore()
+  return isCloud
+    ? authStore.getWorkspaceAuthHeader()
+    : authStore.getUserAuthHeader()
+}
+
 async function responseBody(response: Response): Promise<unknown> {
   try {
     return await response.json()
@@ -38,6 +47,24 @@ async function responseBody(response: Response): Promise<unknown> {
       response.status
     )
   }
+}
+
+type GlobalSettingsAuth = AuthHeader | WebSessionSend
+
+function sendGlobalSetting(
+  url: string,
+  init: RequestInit,
+  auth: GlobalSettingsAuth,
+  headers: Record<string, string> = {}
+): Promise<Response> {
+  if (typeof auth === 'function') return auth(url, { ...init, headers })
+  return shouldRemintCloudRequest().then((remint) =>
+    fetchWithUnifiedRemint(
+      url,
+      { ...init, headers: { ...headers, ...auth } },
+      remint
+    )
+  )
 }
 
 async function storedSetting(response: Response): Promise<GlobalSetting> {
@@ -59,12 +86,12 @@ async function storedSetting(response: Response): Promise<GlobalSetting> {
 
 export async function getGlobalSetting(
   key: GlobalSettingKey,
-  authHeader: AuthHeader
+  auth: GlobalSettingsAuth
 ): Promise<GlobalSetting | undefined> {
-  const response = await fetchWithUnifiedRemint(
+  const response = await sendGlobalSetting(
     globalSettingsUrl(key),
-    { cache: 'no-store', headers: authHeader },
-    await shouldRemintCloudRequest()
+    { cache: 'no-store' },
+    auth
   )
   if (response.status === 404) {
     const error = zErrorResponse.safeParse(await responseBody(response))
@@ -75,16 +102,13 @@ export async function getGlobalSetting(
 
 export async function setGlobalSetting(
   setting: GlobalSettingValue,
-  authHeader: AuthHeader
+  auth: GlobalSettingsAuth
 ): Promise<GlobalSetting> {
-  const response = await fetchWithUnifiedRemint(
+  const response = await sendGlobalSetting(
     globalSettingsUrl(),
-    {
-      method: 'POST',
-      headers: { ...authHeader, 'Content-Type': 'application/json' },
-      body: JSON.stringify(setting)
-    },
-    await shouldRemintCloudRequest()
+    { method: 'POST', body: JSON.stringify(setting) },
+    auth,
+    { 'Content-Type': 'application/json' }
   )
   return storedSetting(response)
 }

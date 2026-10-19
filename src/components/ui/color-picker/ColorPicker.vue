@@ -14,10 +14,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
 
-const { alpha = true } = defineProps<{
+const { alpha = true, ariaLabel } = defineProps<{
   class?: string
   disabled?: boolean
   alpha?: boolean
+  ariaLabel?: string
 }>()
 
 const modelValue = defineModel<string>({ default: '#000000' })
@@ -78,10 +79,11 @@ const contentStyle = useModalLiftedZIndex(isOpen)
         <button
           type="button"
           :disabled="$props.disabled"
+          :aria-label="ariaLabel"
           :class="
             cn(
-              'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-secondary-background pr-2 outline-none hover:bg-tertiary-background disabled:cursor-not-allowed disabled:opacity-50',
-              isOpen && 'border-border-default',
+              'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-secondary pr-2 outline-none hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50',
+              isOpen && 'border-border',
               $props.class
             )
           "
@@ -103,7 +105,7 @@ const contentStyle = useModalLiftedZIndex(isOpen)
             </div>
           </div>
           <div
-            class="flex flex-1 items-center justify-between pl-1 text-xs text-base-foreground"
+            class="flex flex-1 items-center justify-between pl-1 text-xs text-foreground"
           >
             <template v-if="displayMode === 'hex'">
               <span>{{ displayHex }}</span>

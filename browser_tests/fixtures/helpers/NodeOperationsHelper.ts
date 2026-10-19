@@ -42,9 +42,11 @@ export class NodeOperationsHelper {
 
   async getSelectedNodeIds(): Promise<NodeId[]> {
     const selectedNodeIds = await this.page.evaluate(() => {
-      const selected = window.app?.canvas.selected_nodes
-      if (!selected) return []
-      return Object.keys(selected)
+      const canvas = window.app?.canvas
+      if (!canvas?.graph) return []
+      return canvas.graph.nodes
+        .filter((node) => canvas.selectedItems.has(node))
+        .map((node) => String(node.id))
     })
     return selectedNodeIds.map(toNodeId)
   }
@@ -180,6 +182,15 @@ export class NodeOperationsHelper {
     return this.page.evaluate(
       () => window.app!.graph.serialize() as ComfyWorkflowJSON
     )
+  }
+
+  async getSerializedGraphWithoutViewport() {
+    return this.page.evaluate(() => {
+      const data = window.app!.graph.serialize()
+      const extra = { ...data.extra }
+      delete extra.ds
+      return { ...data, extra }
+    })
   }
 
   async loadGraph(data: ComfyWorkflowJSON): Promise<void> {

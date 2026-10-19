@@ -4,7 +4,7 @@
     :data-position="position"
     :class="
       cn(
-        'pointer-events-auto absolute z-1000 flex max-h-96 w-96 flex-col rounded-lg border border-border-default bg-base-background shadow-interface',
+        'pointer-events-auto absolute z-1000 flex max-h-96 w-96 flex-col rounded-lg border bg-background shadow-md',
         position === 'bottom-left' && 'bottom-4 left-4',
         position === 'bottom-right' && 'right-4 bottom-4'
       )
@@ -14,17 +14,17 @@
       <div class="flex items-center gap-4">
         <div
           v-if="icon"
-          class="flex shrink-0 items-center justify-center rounded-lg bg-primary-background-hover p-3"
+          class="flex shrink-0 items-center justify-center rounded-lg bg-primary/90 p-3"
         >
           <i :class="cn('size-4 text-white', icon)" />
         </div>
-        <div class="flex flex-1 flex-col gap-1">
-          <div class="text-sm leading-[1.429] font-normal text-base-foreground">
+        <div class="flex flex-1 flex-col gap-1 font-normal">
+          <div class="text-sm leading-[1.429]">
             {{ title }}
           </div>
           <div
             v-if="subtitle"
-            class="text-sm leading-[1.21] font-normal text-muted-foreground"
+            class="text-sm leading-[1.21] text-muted-foreground"
           >
             {{ subtitle }}
           </div>

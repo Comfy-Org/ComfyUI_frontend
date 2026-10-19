@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import {
   buildFfQuery,
+  discoverFlagKeys,
   extractEnumValues,
   formatInitialFeatureFlags,
   parseFeatureFlagSpecs
 } from './featureFlags'
+import { findProjectRoot } from './recorder/runner'
 
 describe('buildFfQuery', () => {
   it('encodes repeatable ff parameters with JSON-typed values', () => {
@@ -81,5 +83,11 @@ export enum ServerFeatureFlag {
       'onboarding_tour_enabled',
       'asset_rename_enabled'
     ])
+  })
+})
+
+describe('discoverFlagKeys', () => {
+  it('reads the ServerFeatureFlag values from the repository', () => {
+    expect(discoverFlagKeys(findProjectRoot())).toContain('node_replacements')
   })
 })

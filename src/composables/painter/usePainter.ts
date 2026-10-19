@@ -13,13 +13,14 @@ import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
 import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@/extensions/core/maskeditor/types'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import { getErrorMessage } from '@/utils/errorUtil'
 
 type PainterTool = 'brush' | 'eraser'
 
@@ -38,7 +39,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   const { canvasEl, cursorEl, modelValue } = options
   const { t } = useI18n()
   const nodeOutputStore = useNodeOutputStore()
-  const toastStore = useToastStore()
+  const toast = useToast()
 
   const isDirty = ref(false)
 
@@ -631,9 +632,9 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     } catch (e) {
       const err = t('painter.uploadError', {
         status: 0,
-        statusText: e instanceof Error ? e.message : String(e)
+        statusText: getErrorMessage(e) ?? t('g.unknownError')
       })
-      toastStore.addAlert(err)
+      toast.warning(err)
       throw new Error(err, { cause: e })
     }
 
@@ -643,7 +644,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
         status: resp.status,
         statusText: bodyText || resp.statusText || 'unknown error'
       })
-      toastStore.addAlert(err)
+      toast.warning(err)
       throw new Error(err)
     }
 
@@ -653,16 +654,17 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     } catch (e) {
       const err = t('painter.uploadError', {
         status: resp.status,
-        statusText: e instanceof Error ? e.message : String(e)
+        statusText: getErrorMessage(e) ?? t('g.unknownError')
       })
-      toastStore.addAlert(err)
+      toast.warning(err)
       throw new Error(err, { cause: e })
     }
 
     if (!data.name) {
-      const detail = `Painter upload succeeded (${resp.status}) but response is missing 'name'`
-      toastStore.addAlert(detail)
-      throw new Error(detail)
+      toast.warning(t('painter.uploadMissingName'))
+      throw new Error(
+        `Painter upload succeeded (${resp.status}) but response is missing 'name'`
+      )
     }
 
     const result = `${data.name} [input]`

@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { translationsFor } from '@/i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DirectionGroup } from '../../../lib/workshop/cinematic-studio/catalog'
-import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { DirectionGroup } from '@/lib/workshop/cinematic-studio/catalog'
+import type { Locale } from '@/i18n/translations'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
 
 const {
@@ -15,6 +15,7 @@ const {
   selected: string
   locale?: Locale
 }>()
+const { t } = translationsFor(locale)
 
 const emit = defineEmits<{ choose: [id: string] }>()
 </script>
@@ -22,13 +23,13 @@ const emit = defineEmits<{ choose: [id: string] }>()
 <template>
   <div
     role="radiogroup"
-    :aria-label="tc(group.title, locale)"
+    :aria-label="t(group.title)"
     class="flex min-w-0 flex-col gap-1.5 rounded-xl border border-transparency-white-t8 p-2"
   >
     <h3
       class="py-2 text-center text-sm font-semibold text-primary-warm-white max-sm:hidden"
     >
-      {{ tc(group.title, locale) }}
+      {{ t(group.title) }}
     </h3>
     <button
       v-for="option in group.options"
@@ -46,11 +47,11 @@ const emit = defineEmits<{ choose: [id: string] }>()
       "
       @click="emit('choose', option.id)"
     >
-      <span class="truncate">{{ tc(option.label, locale) }}</span>
+      <span class="truncate">{{ t(option.label) }}</span>
       <CinematicOptionIcon
         :part="group.part"
         :option="option.id"
-        class="h-8 w-12 shrink-0"
+        :class="cn('h-8 w-13 shrink-0', selected !== option.id && 'opacity-60')"
       />
     </button>
   </div>

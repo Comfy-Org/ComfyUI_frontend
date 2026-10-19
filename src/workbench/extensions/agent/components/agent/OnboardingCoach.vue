@@ -13,7 +13,6 @@ import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
-import { TOOLTIP_TEXT_CLASS } from '@/composables/useTooltipConfig'
 import {
   SPOTLIGHT_PAD,
   clampSpotlight,
@@ -36,6 +35,7 @@ const { steps, storageKey } = defineProps<{
   steps: CoachStep[]
   storageKey?: string
 }>()
+const emit = defineEmits<{ finished: [] }>()
 
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
@@ -107,13 +107,16 @@ function reportStep(action: AgentOnboardingAction): void {
 }
 
 function onNext(): void {
+  const finished = isLast.value
   reportStep(isLast.value ? 'finish' : 'next')
   next()
+  if (finished) emit('finished')
 }
 
 function onSkip(): void {
   reportStep('skip')
   finish()
+  emit('finished')
 }
 
 const targetObserver = new MutationObserver(resolveTargets)
@@ -248,7 +251,7 @@ useEventListener(
         aria-hidden="true"
         data-testid="agent-coach-spotlight"
         :style="{ ...spotlightStyle }"
-        class="pointer-events-none absolute rounded-lg border-2 border-base-foreground shadow-[0_0_0_9999px_var(--color-coach-scrim)]"
+        class="pointer-events-none absolute rounded-lg border-2 border-foreground shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-black)_60%,transparent)]"
       />
       <div
         v-if="step.tooltip"
@@ -259,10 +262,10 @@ useEventListener(
       >
         <span
           aria-hidden="true"
-          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-node-component-tooltip-border"
+          class="size-0 border-y-4 border-r-4 border-y-transparent border-r-border"
         />
         <div
-          :class="cn(TOOLTIP_TEXT_CLASS, 'wrap-break-word whitespace-pre-line')"
+          class="rounded-md border bg-background px-3 py-2 text-xs/tight wrap-break-word whitespace-pre-line text-foreground shadow-md"
         >
           {{ step.tooltip }}
         </div>
@@ -281,10 +284,8 @@ useEventListener(
           }"
           :class="
             cn(
-              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-base-background p-4 font-inter text-base-foreground shadow-lg',
-              index < 2
-                ? 'border-secondary-background'
-                : 'border-alpha-smoke-500-20'
+              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-background p-4 text-foreground shadow-lg',
+              index < 2 ? 'border-secondary' : 'border-smoke-500/20'
             )
           "
         >

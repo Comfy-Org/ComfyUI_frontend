@@ -71,6 +71,20 @@ export const workflowSchema = z
 
 export type WorkshopWorkflowEntry = z.infer<typeof workflowSchema>
 
+/**
+ * A Workshop app: a custom page listed in the catalogue's Apps tab. It has no
+ * graph here; `app` names the page component that runs it.
+ */
+const appSchema = z
+  .object({
+    id: z.string().regex(/^apps\/[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    type: z.literal('APP'),
+    app: z.enum(['studio', 'reshoot'])
+  })
+  .strict()
+
+export type WorkshopAppEntry = z.infer<typeof appSchema>
+
 function validateInputSchema(entry: WorkshopWorkflowEntry): void {
   const { properties, required } = entry.inputSchema
   const { inputBindings } = entry.cloud
@@ -142,24 +156,48 @@ function validateReferences(entry: WorkshopWorkflowEntry): void {
   }
 }
 
-export function parseWorkflowCatalog(text: string): WorkshopWorkflowEntry[] {
-  const entries: WorkshopWorkflowEntry[] = []
+function isAppLine(value: unknown): boolean {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Reflect.get(value, 'type') === 'APP'
+  )
+}
+
+function parseCatalog(text: string) {
+  const workflows: WorkshopWorkflowEntry[] = []
+  const apps: WorkshopAppEntry[] = []
   const ids = new Set<string>()
   for (const [index, line] of text.split(/\r?\n/).entries()) {
     if (!line.trim()) continue
     try {
       const value: unknown = JSON.parse(line)
+      if (isAppLine(value)) {
+        const app = appSchema.parse(value)
+        if (ids.has(app.id)) throw new Error(`Duplicate ID: ${app.id}`)
+        ids.add(app.id)
+        apps.push(app)
+        continue
+      }
       const entry = workflowSchema.parse(value)
       if (ids.has(entry.id))
         throw new Error(`Duplicate workflow ID: ${entry.id}`)
       validateReferences(entry)
       ids.add(entry.id)
-      entries.push(entry)
+      workflows.push(entry)
     } catch (error) {
       throw new Error(`Invalid workflow catalog entry on line ${index + 1}`, {
         cause: error
       })
     }
   }
-  return entries
+  return { workflows, apps }
+}
+
+export function parseWorkflowCatalog(text: string): WorkshopWorkflowEntry[] {
+  return parseCatalog(text).workflows
+}
+
+export function parseAppCatalog(text: string): WorkshopAppEntry[] {
+  return parseCatalog(text).apps
 }

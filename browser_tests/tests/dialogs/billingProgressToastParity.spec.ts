@@ -53,14 +53,17 @@ const SUBSCRIPTION_PROCESSING =
 const SUBSCRIPTION_ACTION_REQUIRED =
   'Verify your payment to finish setting up your workspace'
 const TOPUP_PROCESSING = 'Processing payment — adding credits...'
+const ACTIVE_STANDARD_PLAN_NAME = 'Standard'
 
 function annualPlan(
   slug: string,
   tier: Plan['tier'],
   priceCents: number,
-  creditsCents: number
+  creditsCents: number,
+  decision: Pick<Plan, 'action' | 'denied_reason'>
 ): Plan {
   return {
+    ...decision,
     slug,
     tier,
     duration: 'ANNUAL',
@@ -80,13 +83,15 @@ const STANDARD_ANNUAL_PLAN = annualPlan(
   'standard-annual',
   'STANDARD',
   19_200,
-  4_200
+  4_200,
+  { action: 'none', denied_reason: 'same_plan' }
 )
 const CREATOR_ANNUAL_PLAN = annualPlan(
   'creator-annual',
   'CREATOR',
   33_600,
-  7_400
+  7_400,
+  { action: 'change' }
 )
 
 const PLAN_CATALOG = {
@@ -139,6 +144,12 @@ const PROCESSING_OPERATION = {
 const VERIFICATION_OPERATION = {
   ...PROCESSING_OPERATION,
   action_url: HOSTED_PAYMENT_URL
+} satisfies BillingOpStatusResponse
+
+/** A checkout whose hosted tab was closed before a card was entered. */
+const PARKED_OPERATION = {
+  ...PROCESSING_OPERATION,
+  phase: 'awaiting_payment_method'
 } satisfies BillingOpStatusResponse
 
 const SETTLED_OPERATION = {
@@ -248,6 +259,14 @@ async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
+/**
+ * Both rails arm the next read of an operation only after applying the last
+ * one, so the read after the first proves the first was handled.
+ */
+function operationRead(page: Page) {
+  return page.waitForRequest(`**/api/billing/ops/${OPERATION_ID}`)
+}
+
 async function confirmCreatorUpgrade(page: Page) {
   await page.goto(`${APP_URL}/?pricing=creator&cycle=yearly`)
   await cloudAppExpect(
@@ -263,23 +282,27 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
   for (const { name, rails } of RAIL_MATRIX) {
     test.describe(`on the ${name} rail`, () => {
       test('announces a processing subscribe and clears it once it settles', async ({
-        page
+        page,
+        toast
       }) => {
         const server = await setupToastParity(page, { rails })
 
         await confirmCreatorUpgrade(page)
-        const toast = page.getByText(SUBSCRIPTION_PROCESSING)
-        await expect(toast).toBeVisible()
+        const processingToast = toast.toastLoadings.filter({
+          hasText: SUBSCRIPTION_PROCESSING
+        })
+        await expect(processingToast).toBeVisible()
 
         server.operation = SETTLED_OPERATION
         await returnToTab(page)
 
         await expect(successHeading(page)).toBeVisible()
-        await expect(toast).toBeHidden()
+        await expect(processingToast).toBeHidden()
       })
 
       test('asks for verification while a subscribe waits on the hosted payment page', async ({
-        page
+        page,
+        toast
       }) => {
         await setupToastParity(page, {
           rails,
@@ -293,12 +316,75 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
 
         await confirmCreatorUpgrade(page)
 
-        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
-        await expect(page.getByText(SUBSCRIPTION_PROCESSING)).toBeHidden()
+        await expect(
+          toast.toastWarnings.filter({ hasText: SUBSCRIPTION_ACTION_REQUIRED })
+        ).toBeVisible()
+        await expect(toast.withText(SUBSCRIPTION_PROCESSING)).toBeHidden()
       })
 
+      test('stays quiet after a reload finds the subscribe parked on a payment method', async ({
+        page,
+        toast
+      }) => {
+        await setupToastParity(page, {
+          rails,
+          operation: PARKED_OPERATION,
+          status: {
+            ...ACTIVE_STANDARD,
+            pending_billing_op_id: OPERATION_ID,
+            pending_billing_op_type: 'subscription'
+          }
+        })
+
+        const firstRead = operationRead(page)
+        await page.goto(APP_URL)
+        await waitForCloudApp(page)
+        await firstRead
+        await operationRead(page)
+
+        await expect(toast.withText(SUBSCRIPTION_PROCESSING)).toHaveCount(0)
+        await expect(toast.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
+          0
+        )
+      })
+
+      for (const { parked, operation } of [
+        { parked: false, operation: PROCESSING_OPERATION },
+        { parked: true, operation: PARKED_OPERATION }
+      ]) {
+        test(`${parked ? 'hides' : 'shows'} the setting-up panel in Settings for a ${parked ? 'parked' : 'processing'} subscribe after a reload`, async ({
+          page
+        }) => {
+          await setupToastParity(page, {
+            rails,
+            operation,
+            status: {
+              ...ACTIVE_STANDARD,
+              pending_billing_op_id: OPERATION_ID,
+              pending_billing_op_type: 'subscription'
+            }
+          })
+
+          const adopted = page.waitForResponse(
+            `**/api/billing/ops/${OPERATION_ID}`
+          )
+          await page.goto(`${APP_URL}/?settings=plan-credits`)
+          await waitForCloudApp(page)
+          await adopted
+
+          const settings = page.getByRole('dialog')
+          await expect(
+            settings.getByText(ACTIVE_STANDARD_PLAN_NAME).first()
+          ).toBeVisible({ visible: parked })
+          await expect(settings.getByText(SUBSCRIPTION_PROCESSING)).toHaveCount(
+            parked ? 0 : 1
+          )
+        })
+      }
+
       test('asks again for verification after a reload finds the subscribe still waiting', async ({
-        page
+        page,
+        toast
       }) => {
         await setupToastParity(page, {
           rails,
@@ -311,18 +397,20 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           }
         })
 
+        const actionRequired = toast.withText(SUBSCRIPTION_ACTION_REQUIRED)
         await page.goto(APP_URL)
         await waitForCloudApp(page)
-        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
+        await expect(actionRequired).toBeVisible()
 
         await page.reload()
         await waitForCloudApp(page)
 
-        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toBeVisible()
+        await expect(actionRequired).toBeVisible()
       })
 
       test('announces a processing top-up and clears it once it settles', async ({
-        page
+        page,
+        toast
       }) => {
         const server = await setupToastParity(page, { rails })
         await page.goto(APP_URL)
@@ -334,27 +422,28 @@ test.describe('Billing progress toast parity', { tag: '@cloud' }, () => {
           .getByRole('button', { name: 'Add credits', exact: true })
           .click()
         await dialog.root.getByRole('button', { name: 'Pay $50.00' }).click()
-        const toast = page.getByText(TOPUP_PROCESSING)
-        await expect(toast).toBeVisible()
+        const processingToast = toast.toastLoadings.filter({
+          hasText: TOPUP_PROCESSING
+        })
+        await expect(processingToast).toBeVisible()
 
         server.operation = SETTLED_OPERATION
         await returnToTab(page)
 
-        await expect(toast).toBeHidden()
+        await expect(processingToast).toBeHidden()
       })
 
-      test('raises no progress toast for a cancel', async ({ page }) => {
+      test('raises no progress toast for a cancel', async ({ page, toast }) => {
         await setupToastParity(page, { rails, operation: SETTLED_OPERATION })
         await page.goto(APP_URL)
         await waitForCloudApp(page)
 
         const cancel = new CancelSubscriptionDialog(page)
         await cancel.open(ACTIVE_STANDARD.renewal_date)
-        await cancel.confirmCancelButton.click()
-        await expect(cancel.root).toBeHidden()
+        await cancel.confirmCancel()
 
-        await expect(page.getByText(/Processing payment/)).toHaveCount(0)
-        await expect(page.getByText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
+        await expect(toast.withText(/Processing payment/)).toHaveCount(0)
+        await expect(toast.withText(SUBSCRIPTION_ACTION_REQUIRED)).toHaveCount(
           0
         )
       })

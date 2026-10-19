@@ -1,6 +1,12 @@
 import fs from 'fs'
 
+import type {
+  AgentAskResolvedData,
+  AgentPendingAskUser
+} from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { AgentMessages } from '../../schemas/agentApiSchema'
 import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
@@ -16,6 +22,9 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
+import { createUndeliverableAskReporter } from './undeliverableAskReporter'
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const fixtureText = import.meta.glob(
   '../../schemas/__fixtures__/agent/*.jsonl',
@@ -56,6 +65,18 @@ function drive(events: AgentChatEvent[]): AssistantMessage {
   return emit.mock.calls.at(-1)?.[0] ?? message
 }
 
+function driveInFreshTurnsSharingOneReporter(events: AgentChatEvent[]): void {
+  const { report } = createUndeliverableAskReporter()
+  for (const event of events)
+    createAgentEventTransport(
+      createAssistantMessage(T),
+      vi.fn(),
+      undefined,
+      undefined,
+      report
+    ).ingest(event)
+}
+
 function thinking(delta: string): AgentChatEvent {
   return {
     type: 'agent_thinking',
@@ -66,7 +87,8 @@ function thinking(delta: string): AgentChatEvent {
 function toolCall(
   tool_name: string,
   status: 'running' | 'success' | 'error',
-  tool_call_id = `call-${tool_name}`
+  tool_call_id = `call-${tool_name}`,
+  skill?: string
 ): AgentChatEvent {
   return {
     type: 'agent_tool_call',
@@ -74,6 +96,7 @@ function toolCall(
       tool_call_id,
       tool_name,
       status,
+      skill,
       message_id: 'm',
       thread_id: 't'
     }
@@ -111,14 +134,17 @@ function activeTab(
   }
 }
 
-function runApproval(askId = 'turn-1:call-1'): AgentChatEvent {
+function runApproval(
+  askId = 'turn-1:call-1',
+  kind = 'run_approval'
+): AgentChatEvent {
   return zAgentWsEvent.parse({
     type: 'agent_ask',
     data: {
       thread_id: 't',
       message_id: 'm',
       ask_id: askId,
-      kind: 'run_approval',
+      kind,
       context: {
         workflow_id: 'workflow-1',
         workflow_name: 'Portrait workflow'
@@ -135,15 +161,43 @@ function runApproval(askId = 'turn-1:call-1'): AgentChatEvent {
   })
 }
 
-function askResolved(askId = 'turn-1:call-1'): AgentChatEvent {
+function askResolved(
+  askId = 'turn-1:call-1',
+  selected: AgentAskResolvedData['selected'] = ['run'],
+  status: AgentAskResolvedData['status'] = 'answered'
+): AgentChatEvent {
   return zAgentWsEvent.parse({
     type: 'agent_ask_resolved',
     data: {
       thread_id: 't',
       message_id: 'm',
       ask_id: askId,
-      status: 'answered',
-      selected: ['run']
+      status,
+      selected
+    }
+  })
+}
+
+function askUser(
+  askId = 'ask-1',
+  overrides: Partial<AgentPendingAskUser> = {}
+): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_ask',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      kind: 'ask_user',
+      prompt: 'Which style?',
+      options: [
+        { id: 'oil', label: 'Oil painting', description: 'Thick strokes' },
+        { id: 'ink', label: 'Ink sketch' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: true,
+      ...overrides
     }
   })
 }
@@ -415,6 +469,7 @@ describe('agentEventTransport text and tool parts', () => {
         type: 'tool',
         callId: 'call-1',
         name: 'run',
+        skill: undefined,
         state: 'done',
         ok: true,
         durationMs: undefined
@@ -469,7 +524,7 @@ describe('agentEventTransport text and tool parts', () => {
             id: 'audit-row-uuid-1',
             tool_call_id: 'call-1',
             tool_name: 'run',
-            status: 'running'
+            status: 'error'
           }
         ]
       }
@@ -491,6 +546,88 @@ describe('agentEventTransport text and tool parts', () => {
         durationMs: undefined
       }
     ])
+  })
+
+  it('preserves the skill name across the load lifecycle', () => {
+    const message = drive([
+      toolCall('load_skill', 'running', 'call-1', 'comfy-director'),
+      toolCall('load_skill', 'success', 'call-1')
+    ])
+
+    expect(toolParts(message)[0]).toMatchObject({
+      name: 'load_skill',
+      skill: 'comfy-director',
+      state: 'done'
+    })
+  })
+
+  it.for([null, ''] as const)(
+    'preserves the running skill when completion carries %j',
+    (skill) => {
+      const running = zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'running',
+          skill: 'comfy-director',
+          message_id: 'm',
+          thread_id: 't'
+        }
+      })
+      const completed = zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: 'call-1',
+          tool_name: 'load_skill',
+          status: 'success',
+          skill,
+          message_id: 'm',
+          thread_id: 't'
+        }
+      })
+
+      const message = drive([running, completed])
+
+      expect(toolParts(message)[0]).toMatchObject({
+        skill: 'comfy-director',
+        state: 'done',
+        ok: true
+      })
+    }
+  )
+
+  it('preserves a parsed running frame skill through an unnamed completion', () => {
+    const running = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'running',
+        skill: 'comfy-director',
+        message_id: 'm',
+        thread_id: 't'
+      }
+    })
+    const completed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'load_skill',
+        status: 'success',
+        message_id: 'm',
+        thread_id: 't'
+      }
+    })
+
+    const message = drive([running, completed])
+
+    expect(toolParts(message)[0]).toMatchObject({
+      name: 'load_skill',
+      skill: 'comfy-director',
+      state: 'done',
+      ok: true
+    })
   })
 })
 
@@ -529,6 +666,175 @@ describe('agentEventTransport run approval', () => {
       )
     ).toEqual(['ask-2'])
     expect(message.streaming).toBe(true)
+  })
+
+  it('reports an ask_user with nothing to choose as unrendered and says so', () => {
+    const message = drive([
+      askUser('ask-user-1', { options: [], allow_other: false })
+    ])
+
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'ask-user-1' }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          reason: 'unrendered-kind',
+          ask_kind: 'ask_user'
+        })
+      })
+    )
+  })
+
+  it('reports a contract kind this panel has no card for as unrendered', () => {
+    const message = drive([runApproval('paused-1', 'paused')])
+
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'paused-1' }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          reason: 'unrendered-kind',
+          ask_kind: 'paused'
+        })
+      })
+    )
+  })
+
+  it('reports an ask kind outside the contract once, as unknown', () => {
+    const message = drive([
+      runApproval('unknown-1', 'some_new_kind'),
+      runApproval('unknown-1', 'some_new_kind')
+    ])
+
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'unknown-1' }
+    ])
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: {
+          reason: 'unknown-kind',
+          ask_kind: 'unknown'
+        }
+      })
+    )
+  })
+
+  it('reports an unrenderable ask first shown from history when its frame is replayed', () => {
+    const message = createAssistantMessage(T)
+    message.parts.push({ type: 'askUnavailable', askId: 'unknown-1' })
+    const transport = createAgentEventTransport(message, vi.fn())
+
+    transport.ingest(runApproval('unknown-1', 'some_new_kind'))
+
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'unknown-1' }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'unknown-kind' })
+      })
+    )
+  })
+
+  it('bounds reported ask identities and evicts the oldest', () => {
+    const asks = Array.from({ length: 33 }, (_, index) =>
+      runApproval(`unknown-${index}`, 'unsupported')
+    )
+    driveInFreshTurnsSharingOneReporter([...asks, asks[0]])
+
+    expect(reportError).toHaveBeenCalledTimes(34)
+  })
+
+  it('drops the notice standing in for an unrenderable ask once it resolves', () => {
+    const message = drive([
+      runApproval('unknown-1', 'unsupported'),
+      askResolved('unknown-1', null, 'cancelled')
+    ])
+
+    expect(message.parts).toEqual([])
+  })
+})
+
+describe('agentEventTransport ask_user', () => {
+  it('renders the question at the decision point', () => {
+    const message = drive([delta('before'), askUser()])
+
+    expect(message.parts).toEqual([
+      { type: 'text', text: 'before', state: 'done' },
+      expect.objectContaining({ type: 'askUser', askId: 'ask-1' })
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('keeps a single card when the same ask is delivered twice', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(askUser('ask-1'))
+    transport.ingest(askUser('ask-1', { prompt: 'A replayed copy' }))
+
+    expect(
+      emit.mock.lastCall?.[0].parts.filter((part) => part.type === 'askUser')
+    ).toEqual([
+      expect.objectContaining({ askId: 'ask-1', prompt: 'Which style?' })
+    ])
+  })
+
+  it.for([
+    {
+      name: 'answered',
+      event: askResolved('ask-1', ['ink'], 'answered'),
+      resolution: { status: 'answered', selected: ['ink'] }
+    },
+    {
+      name: 'cancelled',
+      event: askResolved('ask-1', null, 'cancelled'),
+      resolution: { status: 'closed' }
+    }
+  ])(
+    'keeps the card read-only with its resolution when $name',
+    ({ event, resolution }) => {
+      const message = drive([askUser('ask-1'), askUser('ask-2'), event])
+
+      expect(message.parts).toMatchObject([
+        { askId: 'ask-1', resolution },
+        { askId: 'ask-2' }
+      ])
+      expect(message.parts[1]).not.toHaveProperty('resolution')
+    }
+  )
+
+  it('keeps a named resolution when a later frame names nothing', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(askUser('ask-1'))
+
+    transport.retireAskPart('ask-1', {
+      status: 'answered',
+      selected: [],
+      otherText: 'watercolor'
+    })
+    transport.ingest(askResolved('ask-1', [], 'answered'))
+
+    expect(emit.mock.lastCall?.[0].parts).toEqual([
+      expect.objectContaining({
+        type: 'askUser',
+        resolution: {
+          status: 'answered',
+          selected: [],
+          otherText: 'watercolor'
+        }
+      })
+    ])
   })
 })
 
@@ -575,6 +881,23 @@ describe('agentEventTransport settle lifecycle', () => {
       state: 'done'
     })
     expect(toolParts(message)).toHaveLength(0)
+  })
+
+  it('reports a late approval ask once after settle', () => {
+    const message = createAssistantMessage(T)
+    const transport = createAgentEventTransport(message, vi.fn())
+    transport.settle()
+
+    transport.ingest(runApproval('late-ask'))
+    transport.ingest(runApproval('late-ask'))
+
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'settled-turn' })
+      })
+    )
   })
 
   it('records an explicitly targeted node link when the agent switches workflow tabs', () => {

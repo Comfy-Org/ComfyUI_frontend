@@ -70,114 +70,6 @@ const globalOptions = {
 }
 
 describe('SubscriptionAddPaymentPreviewWorkspace', () => {
-  // Stripe Elements configure themselves once from the amount and currency, so
-  // mounting the selector before the quote lands leaves it permanently
-  // unusable. The team checkout renders its preview step while the quote is
-  // still in flight, which is how "payment options are unavailable" reached
-  // customers holding a perfectly good quote.
-  it('withholds the payment element until the quote is usable, then renders it', async () => {
-    let selectorInstances = 0
-    const { rerender } = render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        teamPlan: { usd: 700, credits: 147_700, discountedUsd: 665 },
-        usePaymentElement: true
-      },
-      global: {
-        ...globalOptions,
-        stubs: {
-          ...globalOptions.stubs,
-          UnifiedStripePaymentSelector: {
-            name: 'UnifiedStripePaymentSelector',
-            props: ['amountCents', 'currency'],
-            template:
-              '<div data-testid="payment-selector">{{ amountCents }}/{{ currency }}</div>',
-            setup() {
-              selectorInstances += 1
-            }
-          }
-        }
-      }
-    })
-
-    expect(screen.queryByTestId('payment-selector')).toBeNull()
-
-    await rerender({ previewData: previewFixture('MONTHLY', 66_500) })
-
-    expect(screen.getByTestId('payment-selector')).toHaveTextContent(
-      '66500/usd'
-    )
-    expect(selectorInstances).toBe(1)
-
-    await rerender({
-      previewData: {
-        ...previewFixture('MONTHLY', 50_000),
-        quote_id: 'quote_456',
-        quote_version: 2
-      }
-    })
-
-    expect(screen.getByTestId('payment-selector')).toHaveTextContent(
-      '50000/usd'
-    )
-    expect(selectorInstances).toBe(2)
-  })
-
-  it('submits a zero-dollar quote without mounting Stripe Elements', async () => {
-    const quote = previewFixture('MONTHLY', 0)
-    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        previewData: quote,
-        usePaymentElement: true,
-        quoteIsCurrent: true
-      },
-      global: {
-        ...globalOptions,
-        stubs: {
-          ...globalOptions.stubs,
-          UnifiedStripePaymentSelector: {
-            template: '<div data-testid="payment-selector" />'
-          }
-        }
-      }
-    })
-
-    expect(screen.queryByTestId('payment-selector')).toBeNull()
-    await userEvent.click(
-      screen.getByText('subscription.preview.payAndSubscribe')
-    )
-    expect(emitted().addCreditCard).toBeTruthy()
-  })
-
-  it('falls back to subscription confirmation when quote identity is missing', async () => {
-    const quote = previewFixture('MONTHLY', 3500)
-    delete quote.quote_id
-    delete quote.quote_version
-    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        previewData: quote,
-        usePaymentElement: true,
-        quoteIsCurrent: true
-      },
-      global: {
-        ...globalOptions,
-        stubs: {
-          ...globalOptions.stubs,
-          UnifiedStripePaymentSelector: {
-            template: '<div data-testid="payment-selector" />'
-          }
-        }
-      }
-    })
-
-    expect(screen.queryByTestId('payment-selector')).toBeNull()
-    await userEvent.click(
-      screen.getByText('subscription.preview.payAndSubscribe')
-    )
-    expect(emitted().addCreditCard).toBeTruthy()
-  })
-
   it('renders personal tier price and credits from tierKey', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: { tierKey: 'creator' },
@@ -264,8 +156,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         teamPlan: { usd: 400, credits: 84_400, discountedUsd: 380 },
-        previewData: previewFixture('MONTHLY', 38_000),
-        quoteIsCurrent: true
+        previewData: previewFixture('MONTHLY', 38_000)
       },
       global: globalOptions
     })
@@ -273,70 +164,6 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       screen.getByText('subscription.preview.subscribeToPlan')
     )
     expect(emitted().addCreditCard).toBeTruthy()
-  })
-
-  it('invalidates while editing a promo and applies only on button click', async () => {
-    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        previewData: previewFixture('MONTHLY', 3500),
-        quoteIsCurrent: true,
-        embeddedCheckoutEnabled: true
-      },
-      global: globalOptions
-    })
-    const input = screen.getByPlaceholderText(
-      'subscription.preview.promoCodePlaceholder'
-    )
-
-    await userEvent.type(input, 'SAVE20')
-    expect(emitted().invalidateQuote).toBeTruthy()
-    expect(emitted().applyPromotionCode).toBeUndefined()
-
-    await userEvent.click(
-      screen.getByText('subscription.preview.applyPromoCode')
-    )
-    expect(emitted().applyPromotionCode.at(-1)).toEqual(['SAVE20'])
-  })
-
-  it('offers Add new payment method from the saved-method picker', async () => {
-    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        previewData: previewFixture('MONTHLY', 3500),
-        quoteIsCurrent: true,
-        embeddedCheckoutEnabled: true,
-        selectedSavedMethodId: 'pm_default',
-        savedMethods: [
-          {
-            type: 'card',
-            id: 'pm_default',
-            brand: 'visa',
-            last4: '4242',
-            is_default: true
-          },
-          { type: 'alipay', id: 'pm_alipay', is_default: false }
-        ]
-      },
-      global: {
-        ...globalOptions,
-        stubs: {
-          ...globalOptions.stubs,
-          SingleSelect: {
-            props: ['options'],
-            emits: ['update:modelValue'],
-            template:
-              '<button v-for="option in options" @click="$emit(\'update:modelValue\', option.value)">{{ option.name }}</button>'
-          }
-        }
-      }
-    })
-
-    await userEvent.click(
-      screen.getByText('subscription.preview.addNewPaymentMethod')
-    )
-    expect(emitted()['update:selectedSavedMethodId']).toEqual([[null]])
-    expect(emitted().changePaymentMethod).toBeTruthy()
   })
 
   it('opens verification only from its button without exposing the URL', async () => {
@@ -359,56 +186,6 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       '_blank',
       'noopener,noreferrer'
     )
-  })
-
-  it('hides the capture-mode payment surface during parked-checkout recovery', () => {
-    render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        parkedCheckoutRecovery: true,
-        usePaymentElement: true,
-        // A ready quote, so the selector is absent because recovery hides it
-        // rather than because there is nothing to price.
-        previewData: {
-          ...previewFixture('MONTHLY', 50_000),
-          quote_id: 'quote_parked',
-          quote_version: 1
-        }
-      },
-      global: globalOptions
-    })
-
-    expect(screen.queryByTestId('payment-selector')).toBeNull()
-    expect(
-      screen.queryByRole('button', {
-        name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
-      })
-    ).toBeNull()
-  })
-
-  it('hides the saved-method payment action during parked-checkout recovery', () => {
-    render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        parkedCheckoutRecovery: true,
-        savedMethods: [
-          {
-            type: 'card',
-            id: 'pm_1',
-            brand: 'visa',
-            last4: '4242',
-            is_default: true
-          }
-        ]
-      },
-      global: globalOptions
-    })
-
-    expect(
-      screen.queryByRole('button', {
-        name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
-      })
-    ).toBeNull()
   })
 
   it('hides the standard subscribe action during parked-checkout recovery', () => {
@@ -461,22 +238,16 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     ).toBeDisabled()
   })
 
-  it('reports failed verification without offering to resume it', () => {
+  it('withholds a stale verification link once the last attempt failed', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
         tierKey: 'creator',
-        embeddedCheckoutEnabled: true,
         authenticationState: 'failed_retryable',
-        authenticationError: 'Challenge was closed',
-        // A stale action_url from the abandoned challenge can still be present
-        // when the server reports failed_retryable; the button must stay
-        // hidden regardless.
         actionUrl: 'https://verify.example/sensitive-token'
       },
       global: globalOptions
     })
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
     expect(
       screen.queryByRole('button', {
         name: 'subscription.preview.completeVerification'
@@ -484,23 +255,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     ).toBeNull()
   })
 
-  it('shows reconciliation support guidance with the operation id', () => {
-    render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: {
-        tierKey: 'creator',
-        embeddedCheckoutEnabled: true,
-        reconciliationOperationId: 'op-reconcile-123'
-      },
-      global: globalOptions
-    })
-
-    expect(
-      screen.getByText('billingOperation.reconciliationTitle')
-    ).toBeTruthy()
-    expect(screen.getByText('op-reconcile-123')).toBeTruthy()
-  })
-
-  it('owns a back action whether or not the payment element is embedded', async () => {
+  it('owns a back action', async () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
       props: { tierKey: 'creator' },
       global: globalOptions

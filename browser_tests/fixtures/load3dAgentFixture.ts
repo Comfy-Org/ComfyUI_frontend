@@ -3,7 +3,6 @@ import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   zComfyApiWorkflow,
@@ -15,6 +14,7 @@ import load3dWorkflow from '@e2e/assets/3d/load3d_node.json' with { type: 'json'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -22,7 +22,6 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 import { Load3DHelper } from '@e2e/tests/load3d/Load3DHelper'
 
 const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
-const SOCKET_SID = '5b0e2c9a-6f1d-4a83-9c27-3e4f5a6b7c8d'
 const NODE_ID = '1'
 const PANEL_MOUNT_TIMEOUT = 30_000
 
@@ -127,7 +126,7 @@ async function uploadedImageBytes(request: Request): Promise<Uint8Array> {
 
 /**
  * One Load3D node bound to an agent workflow, driven the way production is:
- * the panel opens the agent's tab, the follower subscribes over `/ws`, and the
+ * the panel opens the agent's tab, the follower subscribes over the agent socket, and the
  * fake host applies recorded `set_widget` ops that reach the node through the
  * doc frames the real client parses.
  */
@@ -144,12 +143,7 @@ class Load3dAgentHarness {
   private readonly uploadsByName = new Map<string, Request>()
 
   constructor(private readonly page: Page) {
-    this.hostSocket = new AgentFollowerHostSocket(
-      page,
-      WORKFLOW_ID,
-      this.host,
-      SOCKET_SID
-    )
+    this.hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, this.host)
     this.viewer = new Load3DHelper(page.locator(`[data-node-id="${NODE_ID}"]`))
   }
 
@@ -161,17 +155,13 @@ class Load3dAgentHarness {
       // Only the Vue node renderer projects follower edits onto the canvas.
       settings: {
         'Comfy.VueNodes.Enabled': true,
-        'Comfy.Graph.CanvasInfo': false
+        'Comfy.Graph.CanvasInfo': false,
+        'Comfy.Canvas.SelectionToolbox': true
       },
       // The node materializes from the black-box backend's Load3D definition.
       objectInfo: 'server'
     })
-    await this.page
-      .getByRole('button', {
-        name: enMessages.agent.entryButton,
-        exact: true
-      })
-      .click()
+    await new AgentPanel(this.page).open()
     await expect(this.page.locator('#agent-panel-root')).toBeVisible({
       timeout: PANEL_MOUNT_TIMEOUT
     })

@@ -11,6 +11,7 @@ const DECODED: BillingPlansData = {
       slug: 'creator_monthly',
       tier: 'CREATOR',
       duration: 'MONTHLY',
+      action: 'subscribe',
       availability: { available: true },
       credits_cents: 6900n,
       max_seats: 1n,
@@ -28,8 +29,16 @@ const DECODED: BillingPlansData = {
       {
         id: 'team_200',
         credits: 20_000n,
-        monthly: { list_price_cents: 20_000n, price_cents: 18_000n },
-        yearly: { list_price_cents: 200_000n, price_cents: 170_000n }
+        monthly: {
+          action: 'subscribe',
+          list_price_cents: 20_000n,
+          price_cents: 18_000n
+        },
+        yearly: {
+          action: 'subscribe',
+          list_price_cents: 200_000n,
+          price_cents: 170_000n
+        }
       }
     ]
   }
@@ -44,6 +53,7 @@ describe('projectBillingPlans', () => {
         slug: 'creator_monthly',
         tier: 'CREATOR',
         duration: 'MONTHLY',
+        action: 'subscribe',
         availability: { available: true },
         credits_cents: 6900,
         max_seats: 1,
@@ -61,8 +71,16 @@ describe('projectBillingPlans', () => {
         {
           id: 'team_200',
           credits: 20_000,
-          monthly: { list_price_cents: 20_000, price_cents: 18_000 },
-          yearly: { list_price_cents: 200_000, price_cents: 170_000 }
+          monthly: {
+            action: 'subscribe',
+            list_price_cents: 20_000,
+            price_cents: 18_000
+          },
+          yearly: {
+            action: 'subscribe',
+            list_price_cents: 200_000,
+            price_cents: 170_000
+          }
         }
       ]
     })
@@ -80,6 +98,26 @@ describe('projectBillingPlans', () => {
     expect(projected).toBeDefined()
     expect(projected && 'team_credit_stops' in projected).toBe(false)
     expect(projected?.plans).toHaveLength(1)
+  })
+
+  it('reads the raw credit grant back as a number when the server sends one', () => {
+    const withGrant: BillingPlansData = {
+      ...DECODED,
+      plans: [{ ...DECODED.plans[0], credits: 7_400n }]
+    }
+
+    expect(projectBillingPlans(withGrant)?.plans[0].credits).toBe(7_400)
+  })
+
+  it('refuses a catalog with a credit grant a number cannot hold exactly', () => {
+    const tooLarge: BillingPlansData = {
+      ...DECODED,
+      plans: [
+        { ...DECODED.plans[0], credits: BigInt(Number.MAX_SAFE_INTEGER) + 1n }
+      ]
+    }
+
+    expect(projectBillingPlans(tooLarge)).toBeUndefined()
   })
 
   it('refuses a catalog with a price a number cannot hold exactly', () => {

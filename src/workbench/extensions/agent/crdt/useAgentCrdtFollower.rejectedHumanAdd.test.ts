@@ -1,15 +1,13 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
-import type { GraphMutations } from './graphMutations'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 // The frame the sender actually put on the wire, narrowed the same way a
@@ -31,9 +29,7 @@ function sentOp(raw: string): { type: unknown; op_id: string } {
   return { type, op_id: op.op_id }
 }
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: vi.fn()
-}))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const WORKFLOW_ID = 'wf-1'
 
@@ -41,13 +37,9 @@ const WORKFLOW_ID = 'wf-1'
 // node from a custom-node pack) or a blueprint host with a promoted widget:
 // the class is absent from the pinned catalog, so its named widget values
 // cannot be projected and the add is rejected.
-it.fails('surfaces a human add_node the doc host rejected instead of swallowing the result', () => {
-  const previousSocket = api.socket
-  const send = vi.fn<(frame: string) => void>()
-  api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
-  onTestFinished(() => {
-    api.socket = previousSocket
-  })
+it('surfaces a human add_node the doc host rejected instead of swallowing the result', async () => {
+  const agentSocket = createFakeAgentSocket()
+  const { send } = agentSocket
   const store = useAgentPanelStore()
   store.enabled = true
   onTestFinished(() => {
@@ -57,10 +49,9 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(
-          ref<string | null>(WORKFLOW_ID),
-          fromPartial<GraphMutations>({})
-        )
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID), {
+          transport: agentSocket.transport
+        })
         return () => null
       }
     })
@@ -87,29 +78,26 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
       }
     }
   ])
+  // opCoalescer defers the flush to a microtask, so the frame is not on the
+  // mock until the queue drains.
+  await vi.waitFor(() => expect(send.mock.calls.length).toBeGreaterThan(1))
   const { type, op_id } = sentOp(send.mock.calls[1][0])
   expect(type).toBe('doc_ops')
 
-  // The transport listens on `api`; a frame from the socket is a CustomEvent there.
-  EventTarget.prototype.dispatchEvent.call(
-    api,
-    new CustomEvent('doc_ops_result', {
-      detail: {
-        v: 1,
-        workflow_id: WORKFLOW_ID,
-        ok: false,
-        applied: [],
-        skipped: [],
-        failed: {
-          index: 0,
-          op_id,
-          code: 'uncatalogued_widget_write',
-          message:
-            'add_node(Note): named widgets_values for a class absent from the pinned catalog cannot be projected'
-        }
-      }
-    })
-  )
+  agentSocket.receive('doc_ops_result', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: false,
+    applied: [],
+    skipped: [],
+    failed: {
+      index: 0,
+      op_id,
+      code: 'uncatalogued_widget_write',
+      message:
+        'add_node(Note): named widgets_values for a class absent from the pinned catalog cannot be projected'
+    }
+  })
 
   expect(reportError).toHaveBeenCalledWith(
     expect.any(Error),

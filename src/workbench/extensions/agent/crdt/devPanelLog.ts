@@ -28,6 +28,7 @@ export const DEV_EVENT_KINDS = [
   'doc_subscribed',
   'doc_update',
   'doc_ops_result',
+  'doc_ops_result_dropped',
   'human_ops_settled',
   'doc_reset',
   'doc_nodes_changed',
@@ -36,13 +37,16 @@ export const DEV_EVENT_KINDS = [
   'subscribe_retry',
   'subscribe_ack_timeout',
   'subscribe_refused_permanent',
+  'doc_reseed_sent',
+  'doc_reseed_result',
   'stale_probe',
   'catchup_probe',
   'rebind',
   'doc_gap',
   'doc_stale',
   'frame_send_failed',
-  'agent_node_adapters_materialized'
+  'agent_node_adapters_materialized',
+  'local_widget_write_held'
 ] as const
 
 export type DevEventKind = (typeof DEV_EVENT_KINDS)[number]
@@ -103,6 +107,7 @@ const STRUCTURAL_STRING_KEYS = new Set([
   'outcome',
   'phase',
   'prompt_id',
+  'reason',
   'removed',
   'scope',
   'seq',
@@ -111,6 +116,7 @@ const STRUCTURAL_STRING_KEYS = new Set([
   'source',
   'state',
   'status',
+  'subscribed_workflow_id',
   'tab',
   'tab_id',
   'target',
@@ -287,6 +293,7 @@ export function sanitizeDevEventDetail(detail: unknown): unknown {
     return sanitizeDetail(detail)
   } catch {
     reportError(new Error('Failed to sanitize CRDT dev event detail'), {
+      surface: 'agent',
       errorType: 'crdt_dev_event_sanitization_failed'
     })
     return REDACTED

@@ -26,7 +26,7 @@ test.describe(
       const lastTurn = agentConversation.conversation.turns.length - 1
 
       // What Run actually submits, independent of what the canvas paints:
-      // graphToPrompt() serializes the live LiteGraph nodes graphMutations
+      // graphToPrompt() serializes the live LiteGraph nodes the follower
       // patches, not the Vue-rendered widget rows expectCanvasReplayed reads.
       const ksamplerInputs = async (): Promise<
         ComfyApiWorkflow[string]['inputs']

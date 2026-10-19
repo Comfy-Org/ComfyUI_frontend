@@ -8,7 +8,7 @@
         'w-full gap-3'
       )
     "
-    label-class="relative top-[0.15em] inline-block"
+    label-class="inline-block"
     @google="emit('google')"
     @github="emit('github')"
   />

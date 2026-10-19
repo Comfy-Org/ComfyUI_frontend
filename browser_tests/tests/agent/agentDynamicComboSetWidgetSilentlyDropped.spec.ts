@@ -26,14 +26,14 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 /**
- * Regression: `setWidgetValue` in
- * `src/workbench/extensions/agent/crdt/liveWidgetProjection.ts` skips the
+ * Regression: the follower's widget write used to skip the
  * `widget.value = value` assignment whenever the preceding store write
  * already left `widget.value` reporting the new value. A `DynamicCombo`
  * widget's value getter (`dynamicComboWidget` in
  * `src/core/graph/widgets/dynamicWidgets.ts`) always does, so its setter —
- * which mounts the option's nested sub-widgets — never runs. See
- * `liveWidgetProjection.test.ts` for the unit-level regression.
+ * which mounts the option's nested sub-widgets — never ran.
+ *
+ * BE-16625: https://linear.app/comfyorg/issue/BE-16625/widget-catalog-arity-mismatch-extra-n-positional-overflow-is-a
  */
 
 const NODE_TYPE = 'TestMagnificSkinEnhancer'
@@ -112,13 +112,11 @@ const seed: WorkflowJSON = {
   version: 0.4
 }
 
-const SOCKET_SID = '9c8b7a6f-5e4d-4c3b-8a1f-0d9e8c7b6a5f'
-
 test.describe(
   'Agent set_widget on a dynamic-combo widget',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test('keeps applying visible edits after rejecting an unknown dotted widget', async ({
+    test('applies positional overflow after rejecting an unknown dotted widget', async ({
       page
     }) => {
       test.setTimeout(60_000)
@@ -128,12 +126,7 @@ test.describe(
       )
 
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-      const hostSocket = new AgentFollowerHostSocket(
-        page,
-        WORKFLOW_ID,
-        host,
-        SOCKET_SID
-      )
+      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
       await hostSocket.install()
 
       const threadList: AgentThreadListResponse = {
@@ -224,9 +217,7 @@ test.describe(
       })
 
       await test.step('send a turn so the session binds the workflow', async () => {
-        const composer = panel.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
+        const composer = agentPanel.composer
         await composer.fill('hello')
         await panel.getByRole('button', { name: enMessages.agent.send }).click()
         await expect(panel.getByText('hello').first()).toBeVisible()
@@ -285,6 +276,8 @@ test.describe(
         .getNodeLocator(String(NODE_ID))
         .getByRole('spinbutton', { name: 'mode.skin_detail' })
       await expect(skinDetailField).toBeVisible()
+      hostSocket.send(host.setDocumentWidget(NODE_ID, '_extra_1', 90))
+      await expect(skinDetailField).toHaveValue('90')
       await expect(
         vueNodes.getNodeLocator(String(NODE_ID)).getByText('faithful', {
           exact: true

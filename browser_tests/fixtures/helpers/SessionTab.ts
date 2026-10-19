@@ -1,9 +1,9 @@
-import type { Page, Request, Response, WebSocket } from '@playwright/test'
+import type { Page, Request, WebSocket } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { FIREBASE_AUTH_ORIGINS } from '@e2e/fixtures/utils/crossOriginSessionConfig'
 
-export const SESSION_PATH = '/api/auth/session'
+const SESSION_PATH = '/api/auth/session'
 const WORKSPACE_HEADER = 'x-comfy-workspace-id'
 
 function isFirebaseAuthRequest(url: URL): boolean {
@@ -15,7 +15,7 @@ function isFirebaseAuthRequest(url: URL): boolean {
 }
 
 function isSessionRequest(url: URL): boolean {
-  return url.pathname.startsWith('/api/auth/session')
+  return url.pathname.startsWith(SESSION_PATH)
 }
 
 /** Every matching request one tab makes, from the moment it opens. */
@@ -91,16 +91,6 @@ export class SessionTab {
     const response = await this.page.goto(this.url(path))
     expect(response?.ok(), `${this.origin}${path} loads`).toBe(true)
     return response
-  }
-
-  /** The next response to `method url`, query string ignored. */
-  waitForResponse(method: string, url: string): Promise<Response> {
-    return this.page.waitForResponse((response) => {
-      const { origin, pathname } = new URL(response.url())
-      return (
-        response.request().method() === method && `${origin}${pathname}` === url
-      )
-    })
   }
 
   /** The workspace the tab's next scoped API request runs in. */

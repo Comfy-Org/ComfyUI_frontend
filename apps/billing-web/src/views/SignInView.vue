@@ -10,7 +10,9 @@ import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
 
 import { safeReturnTo } from '@/auth/returnTo'
 import { useSignInController } from '@/auth/useSignInController'
+import { useSsoRequiredRefusal } from '@/auth/useSsoRequiredRefusal'
 import SessionFailureAction from '@/components/auth/SessionFailureAction.vue'
+import SessionRefusalNotice from '@/components/auth/SessionRefusalNotice.vue'
 import SignInEmailForm from '@/components/auth/SignInEmailForm.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'
@@ -29,12 +31,14 @@ const {
   leaving,
   errorMessage,
   sessionFailureCode,
-  available,
+  ssoOrganizationId,
+  identityStatus,
   signInWith,
   submitEmail,
   retryMint,
   retryAvailability
 } = useSignInController(() => {
+  if (route.name !== 'sign-in') return
   void router.replace(safeReturnTo(route.query.returnTo))
 }, billingWebSignInPort())
 
@@ -56,8 +60,22 @@ async function showEmail(show: boolean): Promise<void> {
 // `isSecureContext` is absent in some runtimes; only an explicit false is insecure.
 const secureContext = window.isSecureContext ?? true
 
+const sessionFailed = computed(
+  () => state.value.step === 'signedIn' && state.value.mintFailed === true
+)
+/** Signed in on the shared session, but refused this workspace: no sign-in to offer. */
+const sessionOnly = computed(
+  () => sessionFailed.value && identityStatus.value !== 'ready'
+)
+
+const form = computed(() => {
+  if (sessionOnly.value) return undefined
+  return showEmailForm.value ? 'email' : 'social'
+})
+
 const noticeKey = computed(() => {
-  if (!available.value) return 'auth.signIn.unavailable'
+  if (sessionOnly.value) return undefined
+  if (identityStatus.value === 'unavailable') return 'auth.signIn.unavailable'
   return secureContext ? undefined : 'auth.signIn.insecureContextWarning'
 })
 const progressKey = computed(() =>
@@ -65,27 +83,27 @@ const progressKey = computed(() =>
     ? 'auth.signIn.pending'
     : 'auth.signIn.signingIn'
 )
-const blocked = computed(() => busy.value || !available.value)
-const sessionFailed = computed(
-  () => state.value.step === 'signedIn' && state.value.mintFailed === true
-)
+const blocked = computed(() => busy.value || identityStatus.value !== 'ready')
 /**
  * Only a workspace the server named as inaccessible gets its own copy: a
  * malformed or expired Firebase token is not about the workspace at all, and
  * the generic retry prompt is the better line for it, not `hosted.failure`'s
  * catch-all "something went wrong".
  */
-const WORKSPACE_REFUSAL_CODES: readonly SessionErrorCode[] = [
-  'ACCESS_DENIED',
-  'WORKSPACE_NOT_FOUND'
-]
-const workspaceRefused = computed(() => {
+const WORKSPACE_REFUSAL_COPY: Readonly<
+  Partial<Record<SessionErrorCode, SessionErrorCode>>
+> = {
+  ACCESS_DENIED: 'ACCESS_DENIED',
+  SSO_REQUIRED: 'ACCESS_DENIED',
+  WORKSPACE_NOT_FOUND: 'WORKSPACE_NOT_FOUND'
+}
+const refusalCopy = computed(() => {
   const code = sessionFailureCode.value
-  return code !== undefined && WORKSPACE_REFUSAL_CODES.includes(code)
+  return code === undefined ? undefined : WORKSPACE_REFUSAL_COPY[code]
 })
 const sessionErrorMessage = computed(() =>
-  workspaceRefused.value
-    ? coded('failure', sessionFailureCode.value)
+  refusalCopy.value
+    ? coded('failure', refusalCopy.value)
     : t('auth.signIn.sessionError')
 )
 
@@ -96,7 +114,7 @@ const sessionErrorMessage = computed(() =>
  */
 const appReturnLink = computed(() => {
   const arrival = entry.value
-  if (!workspaceRefused.value || !arrival) return undefined
+  if (!refusalCopy.value || !arrival) return undefined
   const url = buildReturnUrl({
     target: arrival.returnTo,
     environment: BILLING_WEB_ENV,
@@ -111,21 +129,35 @@ const appReturnLink = computed(() => {
   }
 })
 
+const {
+  offered: ssoOffered,
+  email: ssoEmail,
+  leaving: leavingForSso,
+  signOutFailed,
+  continueWithSso
+} = useSsoRequiredRefusal({
+  code: sessionFailureCode,
+  organizationId: ssoOrganizationId,
+  returnTo: computed(() => new URL(route.fullPath, window.location.origin).href)
+})
+
+const leavingPage = computed(() => leaving.value || leavingForSso.value)
+
 const linkButtonClass =
-  'cursor-pointer self-center border-none bg-transparent p-0 text-sm text-muted-foreground underline transition-colors hover:text-base-foreground disabled:cursor-not-allowed disabled:opacity-50'
-const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
+  'cursor-pointer self-center border-none bg-transparent p-0 text-sm text-muted-foreground underline transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50'
+const alertClass = 'rounded-lg bg-background p-3 text-sm'
 </script>
 
 <template>
   <main
-    class="dark-theme fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
+    class="fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"
   >
     <section
-      v-if="!leaving"
-      class="mx-auto flex w-full max-w-md flex-col rounded-2xl border border-border-subtle bg-secondary-background p-8 shadow-2xl shadow-black/35"
+      v-if="!leavingPage"
+      class="mx-auto flex w-full max-w-md flex-col rounded-2xl border border-border/50 bg-secondary p-8 shadow-2xl shadow-black/35"
       :aria-busy="busy"
     >
-      <h1 class="m-0 text-2xl font-semibold text-base-foreground">
+      <h1 class="m-0 text-2xl font-semibold text-foreground">
         {{ t('auth.signIn.heading') }}
       </h1>
       <p class="mt-2 mb-0 text-sm text-muted-foreground">
@@ -135,12 +167,12 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
       <div
         v-if="noticeKey"
         role="alert"
-        :class="cn(alertClass, 'mt-6 text-warning-background')"
+        :class="cn(alertClass, 'mt-6 text-warning')"
       >
         {{ t(noticeKey) }}
       </div>
       <button
-        v-if="!available"
+        v-if="noticeKey === 'auth.signIn.unavailable'"
         type="button"
         :class="linkButtonClass"
         @click="retryAvailability"
@@ -149,13 +181,13 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
       </button>
 
       <div class="mt-8 flex flex-col gap-4">
-        <template v-if="!showEmailForm">
+        <template v-if="form === 'social'">
           <!-- `contents` keeps both provider buttons as items of this flex column. -->
           <div ref="providerGroup" class="contents">
             <SocialAuthButtons
               :google-label="t('auth.signIn.google')"
               :github-label="t('auth.signIn.github')"
-              button-class="flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-border-default bg-base-background font-medium text-base-foreground transition-colors hover:bg-secondary-background-hover focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+              button-class="flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-lg border border-border bg-background font-medium text-foreground transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="blocked"
               @google="signInWith('google')"
               @github="signInWith('github')"
@@ -171,7 +203,7 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
           </button>
         </template>
 
-        <template v-else>
+        <template v-else-if="form === 'email'">
           <SignInEmailForm
             ref="emailForm"
             :loading="busy"
@@ -198,18 +230,19 @@ const alertClass = 'rounded-lg bg-base-background p-3 text-sm'
         <div
           v-if="errorMessage"
           role="alert"
-          :class="cn(alertClass, 'text-destructive-background')"
+          :class="cn(alertClass, 'text-destructive')"
         >
           {{ errorMessage }}
         </div>
 
         <template v-if="sessionFailed">
-          <div
-            role="alert"
-            :class="cn(alertClass, 'text-destructive-background')"
-          >
-            {{ sessionErrorMessage }}
-          </div>
+          <SessionRefusalNotice
+            :sso-offered="ssoOffered"
+            :email="ssoEmail"
+            :sign-out-failed="signOutFailed"
+            :message="sessionErrorMessage"
+            @continue-with-sso="continueWithSso"
+          />
           <SessionFailureAction
             :class="linkButtonClass"
             :return-link="appReturnLink"

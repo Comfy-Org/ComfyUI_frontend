@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
+import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 
@@ -10,11 +11,19 @@ const {
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  context?: 'following' | 'mismatch'
+  context?: 'following' | 'mismatch' | 'unavailable'
 }>()
 
 const emit = defineEmits<{ showTarget: [] }>()
 const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
+const contextMessages = {
+  following: 'agent.targetFollowsVisibleWorkflow',
+  mismatch: 'agent.viewingDifferentWorkflow',
+  unavailable: 'agent.targetWorkflowUnavailable'
+} as const satisfies Record<NonNullable<typeof context>, string>
+const defaultNotice = computed(() =>
+  expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
+)
 </script>
 
 <template>
@@ -22,18 +31,16 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
     v-if="context || !dismissed"
     role="note"
     :aria-live="context ? 'polite' : undefined"
-    class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-base-background p-4 ring-1 ring-border-subtle before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted-background"
+    class="relative flex items-start gap-2 overflow-hidden rounded-lg bg-background p-4 ring-1 ring-border/50 before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-muted"
   >
     <span
       class="icon-[heroicons--information-circle-20-solid] size-5 shrink-0 text-muted-foreground"
     />
-    <p class="my-0 min-w-0 flex-1 text-sm text-base-foreground">
-      <template v-if="context === 'following'">
-        {{ $t('agent.targetFollowsVisibleWorkflow') }}
-      </template>
-      <template v-else-if="context === 'mismatch'">
-        {{ $t('agent.viewingDifferentWorkflow') }}
+    <p class="my-0 min-w-0 flex-1 text-sm">
+      <template v-if="context">
+        {{ $t(contextMessages[context]) }}
         <Button
+          v-if="context === 'mismatch'"
           type="button"
           variant="muted-textonly"
           size="sm"
@@ -54,7 +61,7 @@ const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
         </template>
       </i18n-t>
       <template v-else>
-        {{ $t(expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice') }}
+        {{ $t(defaultNotice) }}
       </template>
     </p>
     <Button

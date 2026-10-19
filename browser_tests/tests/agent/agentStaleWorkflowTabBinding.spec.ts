@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentMessage,
@@ -18,12 +17,13 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const BINDING_KEY = StorageKeys.agentWorkflowTabBindings('personal')
 const THREAD_KEY = StorageKeys.agentThread('personal')
 const DEFAULT_TAB_PATH = 'workflows/Unsaved Workflow.json'
@@ -75,42 +75,12 @@ test.describe(
         ] as const
       )
 
-      let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-        // Answers a doc_subscribe for the abandoned workflow with its real
-        // seeded content, the way the production doc host would.
-        ws.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== staleWorkflowId ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          ws.send(JSON.stringify(host.subscribed()))
-          ws.send(JSON.stringify(host.catchUp(state_vector_b64)))
-        })
-        // The follower only re-drives a pending subscribe on a status frame,
-        // which every real connect sends.
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: { status: { exec_info: { queue_remaining: 0 } } }
-          })
-        )
-      })
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        staleWorkflowId,
+        host
+      )
+      await hostSocket.install()
 
       const history: AgentMessage[] = [
         {
@@ -225,13 +195,18 @@ test.describe(
         .allTextContents()
 
       // A brand-new page on the surviving thread: nobody has sent anything.
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
-      const panel = page.locator('#agent-panel-root')
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
+      const panel = agentPanel.root
       await expect(panel).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         EARLIER_REQUEST
       ])
-      if (!socket) throw new Error('the app never opened /ws')
+      // The Cloud no longer lists the abandoned workflow, so the chat says so.
+      const unavailable = panel.getByText(
+        enMessages.agent.targetWorkflowUnavailable
+      )
+      await expect(unavailable).toBeVisible()
 
       // The user continues the thread in the fresh tab.
       const workflowPicker = panel.getByRole('button', {
@@ -242,6 +217,7 @@ test.describe(
         .getByRole('menuitemradio', { name: DEFAULT_TAB_NAME, exact: true })
         .click()
       await expect(workflowPicker).toHaveText(DEFAULT_TAB_NAME)
+      await expect(unavailable).toBeHidden()
       await panel.getByRole('textbox').fill('continue here')
       await panel
         .getByRole('button', { name: enMessages.agent.send, exact: true })
@@ -250,9 +226,6 @@ test.describe(
       expect(posted[0]).toMatchObject({
         workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
       })
-      await expect(
-        page.getByText(enMessages.agent.targetNavigationUnavailable)
-      ).toBeVisible()
 
       await testInfo.attach('stale-workflow-canvas', {
         body: await page.screenshot({

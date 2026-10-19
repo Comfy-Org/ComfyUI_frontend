@@ -13,6 +13,7 @@ import type {
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import {
   mockWorkspaceTokenMint,
@@ -136,6 +137,9 @@ async function mockCloudBoot(
   })
   await page.route('**/api/billing/plans', (r) =>
     r.fulfill(jsonRoute({ plans: [] }))
+  )
+  await page.route('**/api/billing/capabilities', (r) =>
+    r.fulfill(jsonRoute(createBillingCapabilities('ws-personal')))
   )
 
   return billingRequests
@@ -270,10 +274,6 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
   test('keeps the free-tier quota inside the top action bars', async ({
     page
   }) => {
-    test.fixme(
-      true,
-      'Activates after slice PR 16185 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16185'
-    )
     test.setTimeout(60_000)
 
     const freeTierRemoteConfig = {

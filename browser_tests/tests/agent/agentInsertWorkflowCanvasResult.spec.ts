@@ -5,8 +5,10 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import subgraphAsset from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import {
+  BLANK_WORKFLOW,
   agentTest,
   bootAgentApp,
+  loadIntoBootWorkflow,
   mockAgentTurnApi,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
@@ -186,13 +188,10 @@ test.describe(
 
     test('renders a promoted widget, a cross-node link, and a subgraph from one insert_workflow tool call', async ({
       page,
-      getWebSocket
+      getAgentSocket
     }, testInfo) => {
       test.setTimeout(60_000)
       await page.setViewportSize({ width: 1920, height: 1280 })
-      await page.addInitScript(() => {
-        localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-      })
       await bootAgentApp(page, true, {
         settings: { 'Comfy.VueNodes.Enabled': true },
         objectInfo: nodeDefs,
@@ -205,14 +204,15 @@ test.describe(
           await mockWorkflowPersistence(page, WORKFLOW_ID)
         }
       })
-      const socket = await getWebSocket()
-      const outboundFrames: string[] = []
-      socket.onMessage((message) => outboundFrames.push(String(message)))
+      await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
 
       // Drive the turn through the real, public Agent panel -- not a raw
       // CRDT call -- exactly as a user would trigger the tool.
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
+      const socket = await getAgentSocket()
+      const outboundFrames: string[] = []
+      socket.onMessage((message) => outboundFrames.push(String(message)))
       await agentPanel.selectWorkflow()
       await agentPanel.sendMessage(
         'Insert the CLIP-conditioned sampler subgraph onto this canvas'

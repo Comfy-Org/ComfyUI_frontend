@@ -3,7 +3,8 @@ import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -11,6 +12,8 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import TabLinkCard from './TabLinkCard.vue'
 import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
+
+const apiEvents: EventTarget = api
 
 vi.hoisted(() => {
   vi.stubGlobal(
@@ -24,7 +27,6 @@ vi.hoisted(() => {
 })
 
 const mocks = vi.hoisted(() => ({
-  api: new EventTarget(),
   navigate: vi.fn(),
   reportError: vi.fn()
 }))
@@ -33,7 +35,7 @@ vi.mock(import('../../../composables/agent/useAgentTargetNavigation'), () => ({
   useAgentTargetNavigation: () => ({ navigate: mocks.navigate })
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: mocks.api }))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
@@ -140,7 +142,7 @@ describe('TabLinkCard', () => {
     const link = screen.getByRole('button')
     expect(link).toHaveAccessibleDescription('1 node')
 
-    mocks.api.dispatchEvent(
+    apiEvents.dispatchEvent(
       new CustomEvent('graphChanged', { detail: { nodes: [{}, {}] } })
     )
 
@@ -165,7 +167,7 @@ describe('TabLinkCard', () => {
 
     mount('wf-1')
     const link = screen.getByRole('button')
-    mocks.api.dispatchEvent(
+    apiEvents.dispatchEvent(
       new CustomEvent('graphChanged', { detail: { nodes: [{}, {}, {}] } })
     )
 
@@ -174,7 +176,6 @@ describe('TabLinkCard', () => {
   })
 
   it('removes its graph listener when unmounted', () => {
-    const removeListener = vi.spyOn(mocks.api, 'removeEventListener')
     const tab = createMockLoadedWorkflow({
       path: 'flows/portrait.json',
       filename: 'portrait',
@@ -188,9 +189,11 @@ describe('TabLinkCard', () => {
     view.unmount()
 
     expect(
-      removeListener.mock.calls.some(([type]) => type === 'graphChanged')
+      vi
+        .mocked(api.removeEventListener)
+        .mock.calls.some(([type]) => type === 'graphChanged')
     ).toBe(true)
-    removeListener.mockRestore()
+    vi.mocked(api.removeEventListener).mockRestore()
   })
 
   it('renders no link when the workflow has no open tab to point at', () => {
@@ -256,11 +259,13 @@ describe('TabLinkCard', () => {
     })
     await userEvent.click(screen.getByRole('button'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual({
-      severity: 'warn',
-      detail: 'This workflow target is no longer available.',
-      life: 5000
-    })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'This workflow target is no longer available.',
+        duration: 5000
+      })
+    )
     expect(mocks.reportError).not.toHaveBeenCalled()
   })
 
@@ -281,6 +286,7 @@ describe('TabLinkCard', () => {
     await userEvent.click(screen.getByRole('button'))
 
     expect(mocks.reportError).toHaveBeenCalledWith(error, {
+      surface: 'agent',
       errorType: 'agent_target_navigation_failure'
     })
   })

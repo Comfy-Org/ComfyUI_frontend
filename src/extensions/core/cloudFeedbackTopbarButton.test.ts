@@ -38,7 +38,7 @@ describe('cloudFeedbackTopbarButton', () => {
 
     const buttons = getRegisteredButtons()
     expect(buttons).toHaveLength(1)
-    expect(buttons[0].icon).toBe('icon-[hugeicons--megaphone-03]')
+    expect(buttons[0].icon).toBe('icon-[lucide--megaphone] size-4')
     buttons[0].onClick()
 
     expect(openFeedbackDialog).toHaveBeenCalledWith('action-bar')

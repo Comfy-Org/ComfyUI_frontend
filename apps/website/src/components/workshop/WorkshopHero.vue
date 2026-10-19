@@ -4,13 +4,23 @@ import { useSlots } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import SplitReveal from './SplitReveal.vue'
+import {
+  workshopEyebrowClass,
+  workshopHeadingClass
+} from './workshopHeadingClasses'
 
 // The copy arrives resolved, so the hero belongs to whichever catalogue renders
 // it rather than to one section's translation table.
-const { eyebrow, heading, subtitle } = defineProps<{
+const {
+  eyebrow,
+  heading,
+  subtitle,
+  subtitleSpace = []
+} = defineProps<{
   eyebrow?: string
   heading: string
   subtitle?: string
+  subtitleSpace?: readonly string[]
 }>()
 
 const slots = useSlots()
@@ -29,21 +39,28 @@ const slots = useSlots()
     data-testid="workshop-hero"
   >
     <slot name="eyebrow">
-      <p
-        v-if="eyebrow"
-        class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase max-sm:mb-2"
-      >
+      <p v-if="eyebrow" :class="workshopEyebrowClass">
         <SplitReveal :text="eyebrow" />
       </p>
     </slot>
-    <h1 class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl">
+    <h1 :class="workshopHeadingClass">
       <SplitReveal :text="heading" :delay="90" />
     </h1>
     <div
       class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 sm:short:mt-3"
     >
-      <p v-if="subtitle" class="text-lg text-primary-comfy-canvas/70">
-        <SplitReveal :text="subtitle" :delay="260" :stagger="50" />
+      <p v-if="subtitle" class="grid text-lg text-primary-comfy-canvas/70">
+        <span
+          v-for="text in subtitleSpace"
+          :key="text"
+          class="invisible col-start-1 row-start-1"
+          aria-hidden="true"
+          data-testid="hero-subtitle-space"
+          >{{ text }}</span
+        >
+        <span class="col-start-1 row-start-1">
+          <SplitReveal :text="subtitle" :delay="260" :stagger="50" />
+        </span>
       </p>
       <slot name="aside" />
     </div>

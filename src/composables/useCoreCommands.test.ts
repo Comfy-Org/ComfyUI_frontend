@@ -1,9 +1,12 @@
 import { useDialogService } from '@/services/dialogService'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { i18n } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -12,11 +15,13 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
+import { LGraph } from '@/lib/litegraph/src/LGraph'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -25,16 +30,6 @@ import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 vi.mock(import('@/core/graph/subgraph/promotionUtils'), { spy: true })
-
-const mockRunMintPortsIntentionalClear = vi.hoisted(() =>
-  vi.fn(<T>(clear: () => T): T => clear())
-)
-vi.mock<unknown>(
-  import('@/workbench/extensions/agent/crdt/mintPortWiring'),
-  () => ({
-    runMintPortsIntentionalClear: mockRunMintPortsIntentionalClear
-  })
-)
 
 vi.mock<unknown>(
   import('@/components/sidebar/tabs/ModelLibrarySidebarTab.vue'),
@@ -91,17 +86,12 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    dispatchCustomEvent: vi.fn(),
-    apiURL: vi.fn(() => 'http://localhost:8188'),
-    addEventListener: vi.fn(),
-    addCustomEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    removeCustomEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockReturnValue('http://localhost:8188')
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+})
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -159,8 +149,7 @@ vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 const mockBillingState = vi.hoisted(() => ({
   canAccessSubscriptionFeatures: true,
-  subscriptionTier: null as string | null,
-  showSubscriptionDialog: vi.fn()
+  subscriptionTier: null as string | null
 }))
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: vi.fn(() => ({
@@ -175,10 +164,11 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
           ? { tier: mockBillingState.subscriptionTier }
           : null
       }
-    },
-    showSubscriptionDialog: mockBillingState.showSubscriptionDialog
+    }
   }))
 }))
+
+vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
 
 describe('useCoreCommands', () => {
   const createMockNode = (id: number, comfyClass: string): LGraphNode => {
@@ -251,7 +241,6 @@ describe('useCoreCommands', () => {
     useSettingStore().settingValues['Comfy.ConfirmClear'] = false
 
     global.confirm = vi.fn().mockReturnValue(true)
-    mockRunMintPortsIntentionalClear.mockClear()
   })
 
   describe('ClearWorkflow command', () => {
@@ -265,7 +254,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).toHaveBeenCalled()
       expect(app.rootGraph.clear).toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).toHaveBeenCalledOnce()
       expect(api.dispatchCustomEvent).toHaveBeenCalledWith('graphCleared')
     })
 
@@ -281,7 +269,6 @@ describe('useCoreCommands', () => {
 
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
-      expect(mockRunMintPortsIntentionalClear).not.toHaveBeenCalled()
 
       const subgraph = app.canvas.subgraph
       expect(subgraph.remove).toHaveBeenCalledTimes(2)
@@ -308,6 +295,43 @@ describe('useCoreCommands', () => {
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('PasteFromClipboardWithConnect command', () => {
+    // An unresolved key renders as its own path, and this one reads as valid
+    // English, so asserting the shipped string would pass either way. Only a
+    // value the catalog alone can supply separates a lookup from an echo.
+    it('resolves its label against the catalog rather than echoing a key', () => {
+      const menuLabels = 'menuLabels'
+      const key = 'Paste with Connect'
+      const messages = i18n.global.getLocaleMessage('en') as Record<
+        string,
+        Record<string, string>
+      >
+      const original = messages[menuLabels][key]
+      const previousLocale = i18n.global.locale.value
+
+      try {
+        i18n.global.locale.value = 'en'
+        i18n.global.mergeLocaleMessage('en', {
+          [menuLabels]: { [key]: 'Sentinel paste label' }
+        })
+
+        const command = useCoreCommands().find(
+          (cmd) => cmd.id === 'Comfy.Canvas.PasteFromClipboardWithConnect'
+        )!
+
+        const label =
+          typeof command.label === 'function' ? command.label() : command.label
+
+        expect(label).toBe('Sentinel paste label')
+      } finally {
+        i18n.global.mergeLocaleMessage('en', {
+          [menuLabels]: { [key]: original }
+        })
+        i18n.global.locale.value = previousLocale
+      }
     })
   })
 
@@ -353,9 +377,7 @@ describe('useCoreCommands', () => {
 
       await findCommand().function()
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
       expect(location.assign).not.toHaveBeenCalled()
       expect(location.reload).not.toHaveBeenCalled()
     })
@@ -459,6 +481,35 @@ describe('useCoreCommands', () => {
 
       expect(app.canvas.deleteSelected).toHaveBeenCalledOnce()
       expect(app.canvas.setDirty).toHaveBeenCalledWith(true, true)
+    })
+
+    it('should delete selected links when no items are selected', async () => {
+      const graph = new LGraph()
+      const source = createTestNode(graph, [], ['number'])
+      const target = createTestNode(graph, ['number'])
+      const link = source.connect(0, target, 0)
+      if (!link) throw new Error('connect failed')
+      const previousGraph = app.canvas.graph
+      Object.assign(app.canvas, {
+        graph,
+        selectedItems: new Set(),
+        emitBeforeChange: vi.fn(),
+        emitAfterChange: vi.fn()
+      })
+      useLinkSelectionStore().select({
+        links: [link],
+        marquee: { x: 0, y: 0, width: 10, height: 10 },
+        anchorX: 0
+      })
+
+      try {
+        await findCommand('Comfy.Canvas.DeleteSelectedItems').function()
+
+        expect(graph.getLink(link.id)).toBeUndefined()
+        expect(app.canvas.deleteSelected).not.toHaveBeenCalled()
+      } finally {
+        app.canvas.graph = previousGraph
+      }
     })
 
     it('should preserve selected items in selection-only mode', async () => {
@@ -746,7 +797,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).toHaveBeenCalledWith(num, 1, expect.anything())
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).not.toHaveBeenCalled()
       }
     )
 
@@ -755,10 +808,10 @@ describe('useCoreCommands', () => {
 
       await findCmd('Comfy.QueueSelectedOutputNodes').function()
 
-      expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(
+        useSubscriptionPaywall().showSubscriptionDialog
+      ).not.toHaveBeenCalled()
+      expect(useToast().error).toHaveBeenCalled()
     })
 
     it.for([
@@ -774,7 +827,9 @@ describe('useCoreCommands', () => {
         await findCmd(id).function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).toHaveBeenCalledWith({
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).toHaveBeenCalledWith({
           reason: 'subscribe_to_run'
         })
       }
@@ -790,10 +845,10 @@ describe('useCoreCommands', () => {
         await findCmd('Comfy.QueuePrompt').function()
 
         expect(app.queuePrompt).not.toHaveBeenCalled()
-        expect(mockBillingState.showSubscriptionDialog).not.toHaveBeenCalled()
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'warn' })
-        )
+        expect(
+          useSubscriptionPaywall().showSubscriptionDialog
+        ).not.toHaveBeenCalled()
+        expect(useToast().warning).toHaveBeenCalled()
       }
     )
 
@@ -877,11 +932,10 @@ describe('useCoreCommands', () => {
         asset,
         'asset_browser'
       )
-      expect(useToastStore().add).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
     })
 
     it('shows an error toast when the asset cannot start a drag', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
       mockStartModelNodeDrag.mockReturnValue({
         code: 'NO_PROVIDER',
         message: 'No node provider registered',
@@ -890,9 +944,7 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
     })
   })
 })

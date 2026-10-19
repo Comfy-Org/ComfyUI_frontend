@@ -5,32 +5,50 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { TestIds } from '@e2e/fixtures/selectors'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
-
 test.describe('Linear Agent UX scenarios', { tag: '@cloud' }, () => {
+  test('PM-1373 shows fewer cold-start suggestions below the compact panel breakpoint', async ({
+    agentPanel
+  }) => {
+    const compactCount = 3
+    await agentPanel.open()
+    const suggestions = agentPanel.suggestedPrompts
+    await expect(suggestions.nth(compactCount)).toBeAttached()
+    const total = await suggestions.count()
+    expect(
+      total,
+      'Starter prompt count must exceed the compact limit'
+    ).toBeGreaterThan(compactCount)
+
+    await test.step('Resize to 459px, just below the breakpoint', async () => {
+      await agentPanel.resizeTo(459)
+      await expect
+        .poll(() => agentPanel.suggestedPromptVisibility())
+        .toEqual([
+          ...Array.from({ length: compactCount }, () => true),
+          ...Array.from({ length: total - compactCount }, () => false)
+        ])
+    })
+
+    await test.step('Resize to 460px, the expanded breakpoint', async () => {
+      await agentPanel.resizeTo(460)
+      await expect
+        .poll(() => agentPanel.suggestedPromptVisibility())
+        .toEqual(Array.from({ length: total }, () => true))
+    })
+  })
+
   for (const width of [480, 640]) {
     test(`X-01 / PM-672 keeps controls usable at ${width}px panel width`, async ({
+      agentPanel,
       comfyPage
     }) => {
       const page = comfyPage.page
-      await page
-        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
-        .click()
+      await agentPanel.open()
       const panel = page.locator('#agent-panel-root')
 
-      const dock = page.getByTestId('docked-agent-panel')
-      const resizeHandle = page.getByTestId('agent-panel-resize-handle')
-      const handleBox = await resizeHandle.boundingBox()
-      if (!handleBox)
-        throw new Error('Agent panel resize handle is not visible')
-      const handleCenterX = handleBox.x + handleBox.width / 2
-      await page.mouse.move(handleCenterX, handleBox.y + 20)
-      await page.mouse.down()
-      await page.mouse.move(handleCenterX - (width - 420), handleBox.y + 20)
-      await page.mouse.up()
-      await expect(dock).toHaveCSS('width', `${width}px`)
+      await agentPanel.resizeTo(width, agentPanel.dockedPanel)
 
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = agentPanel.composer
       const send = panel.getByRole('button', { name: 'Send' })
       await composer.fill('Keep controls usable')
 

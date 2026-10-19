@@ -1,10 +1,19 @@
+import { fromPartial } from '@total-typescript/shoehorn'
+import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { AuthUserInfo } from '@/types/authTypes'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/billing/useBillingContext'))
+const billingContext = useBillingContext()
 const { loadDockedAgentPanel } = vi.hoisted(() => ({
   loadDockedAgentPanel: vi.fn(() => ({ name: 'DockedAgentPanel' }))
 }))
@@ -28,19 +37,120 @@ function getAsyncLoader(component: unknown): () => Promise<unknown> {
 describe('useAgentDockMount', () => {
   beforeEach(() => {
     localStorage.clear()
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>({
+          hasFunds: false,
+          agentHasFunds: false
+        })
+      )
+    })
   })
 
-  it('returns an inert mount on non-cloud distributions', () => {
-    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
-
-    const { docked, DockedAgentPanel } = useAgentDockMount()
-
-    expect(docked.value).toBe(false)
-    expect(DockedAgentPanel).toBeNull()
-  })
-
-  it('docks only once the gate enables and the panel opens on cloud', async () => {
+  it('re-arms exhaustion after funds recover while the panel is closed', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const subscription = ref({ hasFunds: false, agentHasFunds: false })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+    store.reportedExhaustionIdentity = 'account-a:workspace-a'
+
+    const { docked } = useAgentDockMount()
+    expect(docked.value).toBe(false)
+
+    subscription.value = { hasFunds: false, agentHasFunds: true }
+    await nextTick()
+
+    expect(store.reportedExhaustionIdentity).toBeNull()
+  })
+
+  it('re-arms the credit-transition notice after scoped funds refill while closed', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      true
+    )
+
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    }
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('anonymous:none')).toBe(
+      true
+    )
+  })
+
+  it('observes the scoped balance again after the billing identity changes', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() =>
+      fromPartial<AuthUserInfo>({ id: accountId.value })
+    )
+    const subscription = ref({
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: true
+    })
+    vi.mocked(useBillingContext).mockReturnValue({
+      ...billingContext,
+      subscription: computed(() =>
+        fromPartial<SubscriptionInfo>(subscription.value)
+      )
+    })
+    const store = useAgentPanelStore()
+
+    useAgentDockMount()
+
+    accountId.value = 'account-b'
+    await nextTick()
+    subscription.value = {
+      hasFunds: true,
+      agentHasFunds: true,
+      agentScopedHasFunds: false
+    }
+    await nextTick()
+
+    expect(store.claimCreditTransitionNoticeImpression('account-b:none')).toBe(
+      true
+    )
+  })
+
+  it('docks only once the gate enables and the panel opens, off cloud too', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
     const store = useAgentPanelStore()
 
     const { docked, DockedAgentPanel } = useAgentDockMount()

@@ -55,7 +55,6 @@
               "
             >
               <ActionBarButtons />
-              <!-- Support for legacy topbar elements attached by custom scripts, hidden if no elements present -->
               <div
                 ref="legacyCommandsContainerRef"
                 data-testid="legacy-topbar-container"
@@ -74,7 +73,8 @@
               <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
-                v-tooltip.bottom="customNodesManagerTooltipConfig"
+                :tooltip="t('menu.manageExtensions')"
+                tooltip-side="bottom"
                 variant="secondary"
                 size="icon"
                 :aria-label="t('menu.manageExtensions')"
@@ -83,12 +83,13 @@
                 <i class="icon-[comfy--extensions-blocks] size-4" />
                 <span
                   v-if="shouldShowRedDot"
-                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
               <Button
-                v-if="isCloud && flags.workflowSharingEnabled"
-                v-tooltip.bottom="shareTooltipConfig"
+                v-if="isCloud"
+                :tooltip="t('actionbar.shareTooltip')"
+                tooltip-side="bottom"
                 variant="secondary"
                 size="icon"
                 :aria-label="t('actionbar.shareTooltip')"
@@ -99,11 +100,12 @@
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
-                  v-tooltip.bottom="rightSidePanelTooltipConfig"
+                  :tooltip="t('rightSidePanel.togglePanel')"
+                  tooltip-side="bottom"
                   :class="
                     cn(
                       showErrorIndicatorOnPanelButton &&
-                        'outline-1 outline-destructive-background'
+                        'outline-1 outline-destructive'
                     )
                   "
                   variant="secondary"
@@ -113,7 +115,7 @@
                 >
                   <i class="icon-[lucide--panel-right] size-4" />
                 </Button>
-                <StatusBadge
+                <Badge
                   v-if="showErrorIndicatorOnPanelButton"
                   variant="dot"
                   severity="danger"
@@ -178,29 +180,28 @@ import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { isCloud } from '@/platform/distribution/types'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   openShareDialog,
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -209,13 +210,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
 const rightSidePanelStore = useRightSidePanelStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
-const isActionBarsHidden = computed(
-  () => agentNodeSelectionStore.isActionBarsHidden
-)
+const canvasStore = useCanvasStore()
+const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
 const managerSurveyDialog = useManagerSurveyDialog()
-const { flags } = useFeatureFlags()
 const { isLoggedIn } = useCurrentUser()
 const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
@@ -245,7 +243,7 @@ const hasDockedButtons = computed(() => {
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
   if (managerState.shouldShowExtensionsButton.value) return true
-  if (isCloud && flags.workflowSharingEnabled) return true
+  if (isCloud) return true
   if (!isRightSidePanelOpen.value) return true
   return false
 })
@@ -280,12 +278,6 @@ const inlineProgressSummaryTarget = computed(() => {
 const shouldHideInlineProgressSummary = computed(
   () => isQueueProgressOverlayEnabled.value && isQueueOverlayExpanded.value
 )
-const customNodesManagerTooltipConfig = computed(() =>
-  buildTooltipConfig(t('menu.manageExtensions'))
-)
-const shareTooltipConfig = computed(() =>
-  buildTooltipConfig(t('actionbar.shareTooltip'))
-)
 
 const shouldShowRedDot = computed((): boolean => {
   return shouldShowConflictRedDot.value
@@ -307,9 +299,6 @@ const showErrorIndicatorOnPanelButton = computed(
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
-const rightSidePanelTooltipConfig = computed(() =>
-  buildTooltipConfig(t('rightSidePanel.togglePanel'))
-)
 
 function openRightSidePanel() {
   useTelemetry()?.trackUiButtonClicked({
@@ -319,7 +308,6 @@ function openRightSidePanel() {
   rightSidePanelStore.togglePanel()
 }
 
-// Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()
 const hasLegacyContent = ref(false)
 let legacyContentCheckRafId: number | null = null
@@ -330,38 +318,33 @@ function checkLegacyContent() {
     hasLegacyContent.value = false
     return
   }
-  // Mirror the CSS: [&:not(:has(*>*:not(:empty)))]:hidden
   hasLegacyContent.value =
     el.querySelector(':scope > * > *:not(:empty)') !== null
 }
 
-function scheduleLegacyContentCheck() {
-  if (legacyContentCheckRafId !== null) return
-
-  legacyContentCheckRafId = requestAnimationFrame(() => {
-    legacyContentCheckRafId = null
-    checkLegacyContent()
-  })
-}
-
-useMutationObserver(legacyCommandsContainerRef, scheduleLegacyContentCheck, {
-  childList: true,
-  subtree: true
-})
+useMutationObserver(
+  legacyCommandsContainerRef,
+  () => {
+    if (legacyContentCheckRafId !== null) return
+    legacyContentCheckRafId = requestAnimationFrame(() => {
+      legacyContentCheckRafId = null
+      checkLegacyContent()
+    })
+  },
+  { childList: true, subtree: true }
+)
 
 onMounted(() => {
-  if (legacyCommandsContainerRef.value) {
-    app.menu.element.style.width = 'fit-content'
-    legacyCommandsContainerRef.value.appendChild(app.menu.element)
-    checkLegacyContent()
-  }
+  const container = legacyCommandsContainerRef.value
+  if (!container) return
+  app.menu.element.style.width = 'fit-content'
+  container.appendChild(app.menu.element)
+  checkLegacyContent()
 })
 
 onBeforeUnmount(() => {
   if (legacyContentCheckRafId === null) return
-
   cancelAnimationFrame(legacyContentCheckRafId)
-  legacyContentCheckRafId = null
 })
 
 const openCustomNodeManager = async () => {
@@ -370,7 +353,7 @@ const openCustomNodeManager = async () => {
     return
   }
   try {
-    await managerState.openManager({
+    await useManagerDialog().openManager({
       initialTab: ManagerTab.All,
       showToastOnLegacyError: false
     })

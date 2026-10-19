@@ -5,12 +5,17 @@
  */
 import type { User } from 'firebase/auth'
 import type { Ref } from 'vue'
-import { readonly, shallowRef } from 'vue'
+import { computed, readonly, shallowRef } from 'vue'
 
-import type { WebSessionUser } from '@comfyorg/account-core/webSession'
+import type {
+  WebSession,
+  WebSessionUser
+} from '@comfyorg/account-core/webSession'
+import { webSessionTelemetryHooks } from '@comfyorg/account-core/telemetry'
 import type { RememberedLogin } from '@comfyorg/account-core/webSessionIdentity'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 
+import { captureWebSessionEvent } from '@/scripts/posthog'
 import { workshopIdentity } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import type { WorkshopAccountSource } from './workshop-account-source'
@@ -38,12 +43,16 @@ const rememberedWorkshopLogin: RememberedLogin = {
   }
 }
 
-const sessionUser = shallowRef<WebSessionUser>()
+const webSession = shallowRef<WebSession>()
+
+export function useWorkshopWebSession(): Readonly<Ref<WebSession | undefined>> {
+  return readonly(webSession)
+}
 
 export function useWorkshopSessionAccount(): Readonly<
   Ref<WebSessionUser | undefined>
 > {
-  return readonly(sessionUser)
+  return computed(() => webSession.value?.user)
 }
 
 /** Boots the session and answers once; returns its teardown. */
@@ -57,17 +66,21 @@ export function bootWorkshopWebSession(
         globalThis.fetch(...args)
     },
     principal: { kind: 'account', rememberedLogin: rememberedWorkshopLogin },
-    origin: window.location.origin
+    origin: window.location.origin,
+    ...webSessionTelemetryHooks(captureWebSessionEvent)
   })
   identity.subscribe((state) => {
     if (state.phase === 'signed_in') {
-      sessionUser.value = state.session.user
+      webSession.value = state.session
       decide('session')
     } else if (state.phase === 'signed_out') {
-      sessionUser.value = undefined
+      webSession.value = undefined
       decide('firebase')
     }
   })
   identity.boot()
-  return () => identity.dispose()
+  return () => {
+    identity.dispose()
+    webSession.value = undefined
+  }
 }

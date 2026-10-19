@@ -13,35 +13,25 @@ import {
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * A hand-wired link on an autogrow node's spare slot survives a later agent
  * turn that reconnects a different slot in the same group.
  *
- * `updateNodeSlots` used to replace a node's whole `inputs` array with
- * whatever slice the CRDT payload carried for it
- * (`state.inputs.splice(0, state.inputs.length, ...slots.inputs)`). The
- * payload only ever reflects slots the doc itself knows about; an autogrow
- * group's spare slot is grown client-side
+ * An autogrow group's spare slot is grown client-side
  * (`src/core/graph/widgets/dynamicWidgets.ts`) and the doc never hears about
- * it until something wires a link into it over the CRDT layer. A slot's link
- * is tracked by array INDEX in `linkStore`, not by the slot object's name
- * (`src/lib/litegraph/src/node/slotLinks.ts`), so replacing the array with a
- * shorter, doc-only slice silently renamed whichever slot the user's hand-wired
- * link's index landed on next time the graph read it — the reported symptom:
- * a link the user wired by hand attributed itself to the wrong slot name once
- * the graph was serialized, and this could happen on any later agent turn that
- * touched the same node.
- *
- * Fixed in `nodeDataStore.ts`'s `updateNodeSlots`/`mergeSlotsByName` (used by
- * `graphMutations.ts`'s `connect` and link-detach paths): a sync now matches
- * incoming slots by name, patches the ones it recognizes in place, and
- * inserts unmatched ones instead of overwriting the array wholesale — so a
- * live slot the payload doesn't mention keeps its name, its index, and (via
- * `linkStore`) its link.
+ * it until something wires a link into it. A slot's link is tracked by array
+ * INDEX in `linkStore` (`src/lib/litegraph/src/node/slotLinks.ts`), so any
+ * remote apply that rewrites the node's `inputs` array from the doc's view
+ * alone renames whichever slot the hand-wired link's index lands on. The
+ * follower must therefore apply an agent `connect` through the node's own
+ * graph API and leave slots the doc does not mention untouched.
  */
 
 const GPT_IMAGE_NODE_TYPE = 'OpenAIGPTImageNodeV2'
@@ -61,7 +51,6 @@ const AGENT_RECONNECT_LINK_ID = 9004
 const WORKFLOW_ID = '6a1c9f3e-4d2b-4a7c-8e1f-3b5d7c9a1f6b'
 const THREAD_ID = 'c3d4e5f6-1a2b-4c3d-8e4f-5a6b7c8d9e0f'
 const MESSAGE_ID = 'a1b2c3d4-5e6f-4a1b-8c2d-3e4f5a6b7c8d'
-const SOCKET_SID = 'f1e2d3c4-b5a6-4978-8a9b-0c1d2e3f4a5b'
 
 // Trimmed `/object_info` entries: a plain IMAGE source, and an API node whose
 // only input is a `COMFY_AUTOGROW_V3` group named `model.images`, mirroring
@@ -225,7 +214,6 @@ async function setUpFixture(page: Page) {
     page,
     WORKFLOW_ID,
     host,
-    SOCKET_SID,
     'apply'
   )
   await hostSocket.install()
@@ -274,10 +262,8 @@ async function setUpFixture(page: Page) {
   const panel = page.locator('#agent-panel-root')
 
   await test.step('open the agent panel and target the workflow', async () => {
-    await page
-      .getByRole('button', { name: enMessages.agent.entryButton })
-      .click()
-    await expect(panel).toBeVisible()
+    await loadSeedIntoActiveTab(page, seed)
+    await new AgentPanel(page).open()
     await panel
       .getByRole('button', { name: enMessages.agent.switchWorkflow })
       .click()
@@ -288,7 +274,7 @@ async function setUpFixture(page: Page) {
 
   await test.step('first agent turn binds the workflow and materializes the graph', async () => {
     const composer = panel.getByRole('textbox', {
-      name: /^Describe ideas/
+      name: AGENT_COMPOSER_LABEL
     })
     await composer.fill('hello')
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
@@ -383,7 +369,7 @@ async function sendSecondTurnAndReconnectFirstSlot(
   ctx: AutogrowHandWiredLinkContext
 ): Promise<void> {
   const { panel, hostSocket, host } = ctx
-  const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   await composer.fill('use a different reference image')
   await panel.getByRole('button', { name: enMessages.agent.send }).click()
   await expect(

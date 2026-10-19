@@ -1,13 +1,13 @@
 <template>
   <div class="flex flex-col gap-2">
-    <span class="text-sm font-semibold text-base-foreground">
+    <span class="font-semibold text-foreground">
       {{ planName }}
     </span>
-    <div class="flex items-baseline gap-2">
-      <span class="text-2xl font-semibold text-base-foreground tabular-nums">
+    <div class="flex items-baseline gap-2 text-foreground">
+      <span class="text-2xl font-semibold tabular-nums">
         ${{ heroPrice }}
       </span>
-      <span class="text-base text-base-foreground">
+      <span class="text-base">
         {{ usdPerMonth }}
       </span>
     </div>
@@ -24,15 +24,15 @@
       {{ heading }}
     </span>
     <div class="flex items-center justify-between">
-      <span class="text-base-foreground">{{ refillLabel }}</span>
+      <span class="text-foreground">{{ refillLabel }}</span>
       <div class="flex items-center gap-1">
         <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
-        <span class="font-bold text-base-foreground tabular-nums">{{
+        <span class="font-bold text-foreground tabular-nums">{{
           refillCredits
         }}</span>
       </div>
     </div>
-    <span v-if="note" class="text-sm text-muted-foreground">
+    <span v-if="note" class="text-muted-foreground">
       {{ note }}
     </span>
   </div>

@@ -1,26 +1,22 @@
 <template>
   <div class="flex flex-col">
     <Button
-      v-tooltip.right="{
-        value: $t('load3d.switchCamera'),
-        showDelay: 300
-      }"
+      :tooltip="$t('load3d.switchCamera')"
+      tooltip-side="right"
       size="icon"
       variant="textonly"
       class="rounded-full"
       :aria-label="$t('load3d.switchCamera')"
       @click="switchCamera"
     >
-      <i class="pi pi-camera text-lg text-base-foreground" />
+      <i class="pi pi-camera text-lg text-foreground" />
     </Button>
     <Button
       v-if="hasCustomUp"
-      v-tooltip.right="{
-        value: useCustomUp
-          ? $t('load3d.useNaturalUp')
-          : $t('load3d.useCustomUp'),
-        showDelay: 300
-      }"
+      :tooltip="
+        useCustomUp ? $t('load3d.useNaturalUp') : $t('load3d.useCustomUp')
+      "
+      tooltip-side="right"
       size="icon"
       variant="textonly"
       class="rounded-full"
@@ -35,7 +31,7 @@
             useCustomUp
               ? 'icon-[lucide--compass]'
               : 'icon-[lucide--rotate-ccw]',
-            'size-5 text-base-foreground'
+            'size-5 text-foreground'
           )
         "
       />

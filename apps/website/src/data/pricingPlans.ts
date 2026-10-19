@@ -1,7 +1,7 @@
-import type { TranslationKey } from '../i18n/translations'
+import type { TranslationKey } from '@/i18n/translations'
 
-import { SHOW_FREE_TIER } from '../config/features'
-import { externalLinks } from '../config/routes'
+import { SHOW_FREE_TIER } from '@/config/features'
+import { externalLinks } from '@/config/routes'
 
 export type BillingCycle = 'monthly' | 'yearly'
 
@@ -9,6 +9,7 @@ export type PlanFeatureStatus = 'included' | 'excluded' | 'coming'
 
 interface PlanFeature {
   text: TranslationKey
+  params?: Record<string, string | number>
   status?: PlanFeatureStatus
   highlight?: boolean
 }
@@ -33,7 +34,7 @@ export interface PricingPlan {
   yearlyEstimateKey?: TranslationKey
   ctaKey: TranslationKey
   ctaHref: (cycle: BillingCycle) => string
-  features: PlanFeature[]
+  featureGroups: PlanFeatureGroup[]
   isPopular?: boolean
 }
 
@@ -57,9 +58,13 @@ const freePlan: PricingPlan = {
   estimateKey: 'pricing.plan.free.estimate',
   ctaKey: 'pricing.plan.free.cta',
   ctaHref: () => externalLinks.cloud,
-  features: [
-    { text: 'pricing.plan.free.feature1' },
-    { text: 'pricing.plan.free.feature2' }
+  featureGroups: [
+    {
+      features: [
+        { text: 'pricing.plan.free.feature1' },
+        { text: 'pricing.plan.free.feature2' }
+      ]
+    }
   ]
 }
 
@@ -79,12 +84,14 @@ const standardPricingPlans: PricingPlan[] = [
     yearlyEstimateKey: 'pricing.plan.standard.yearlyEstimate',
     ctaKey: 'pricing.plan.standard.cta',
     ctaHref: (cycle) => subscribeUrl('standard', cycle),
-    features: [
-      { text: 'pricing.feature.shortRuntime' },
-      { text: 'pricing.feature.apiConcurrency1' },
-      { text: 'pricing.feature.addCredits' },
-      { text: 'pricing.feature.importModels', status: 'excluded' },
-      { text: 'pricing.feature.longRuntime', status: 'excluded' }
+    featureGroups: [
+      {
+        titleKey: 'pricing.plan.standard.whatsIncluded',
+        features: [
+          { text: 'pricing.feature.shortRuntime' },
+          { text: 'pricing.feature.addCredits' }
+        ]
+      }
     ]
   },
   {
@@ -102,12 +109,11 @@ const standardPricingPlans: PricingPlan[] = [
     yearlyEstimateKey: 'pricing.plan.creator.yearlyEstimate',
     ctaKey: 'pricing.plan.creator.cta',
     ctaHref: (cycle) => subscribeUrl('creator', cycle),
-    features: [
-      { text: 'pricing.feature.shortRuntime' },
-      { text: 'pricing.feature.apiConcurrency3' },
-      { text: 'pricing.feature.addCredits' },
-      { text: 'pricing.feature.importModels' },
-      { text: 'pricing.feature.longRuntime', status: 'excluded' }
+    featureGroups: [
+      {
+        titleKey: 'pricing.plan.creator.everythingInStandardPlus',
+        features: [{ text: 'pricing.feature.importModels' }]
+      }
     ],
     isPopular: true
   },
@@ -126,12 +132,11 @@ const standardPricingPlans: PricingPlan[] = [
     yearlyEstimateKey: 'pricing.plan.pro.yearlyEstimate',
     ctaKey: 'pricing.plan.pro.cta',
     ctaHref: (cycle) => subscribeUrl('pro', cycle),
-    features: [
-      { text: 'pricing.feature.shortRuntime' },
-      { text: 'pricing.feature.apiConcurrency5' },
-      { text: 'pricing.feature.addCredits' },
-      { text: 'pricing.feature.importModels' },
-      { text: 'pricing.feature.longRuntime' }
+    featureGroups: [
+      {
+        titleKey: 'pricing.plan.pro.everythingInCreatorPlus',
+        features: [{ text: 'pricing.feature.longRuntime' }]
+      }
     ]
   }
 ]

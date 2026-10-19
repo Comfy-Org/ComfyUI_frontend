@@ -1,29 +1,33 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import { CalendarDays, MapPin } from '@lucide/vue'
 import { useResizeObserver } from '@vueuse/core'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { Locale } from '../../i18n/translations'
-import type { DirectoryRow } from '../../utils/eventsDirectory'
+import type { Locale } from '@/i18n/translations'
+import type { DirectoryRow } from '@/utils/eventsDirectory'
 
-import Badge from '../../components/ui/badge/Badge.vue'
-import { t } from '../../i18n/translations'
-import { resolveRel } from '../../utils/cta'
+import Badge from '@/components/ui/badge/Badge.vue'
+import { translationsFor } from '@/i18n/translations'
+import { resolveRel } from '@/utils/cta'
 import EventsDirectoryCta from './EventsDirectoryCta.vue'
 
 const {
   row,
   locale = 'en',
-  selected = false
+  selected = false,
+  titleClass
 } = defineProps<{
   row: DirectoryRow
   locale?: Locale
   /** The map view rings the row whose pin was clicked. */
   selected?: boolean
+  titleClass?: HTMLAttributes['class']
 }>()
+const { t } = translationsFor(locale)
 
 // One row markup for the list and the agenda, so the two views cannot drift.
 const metaClass = 'flex items-center gap-1 text-primary-comfy-canvas/70'
@@ -51,10 +55,7 @@ const descEl = ref<HTMLElement>()
 const clamped = ref(false)
 const expanded = ref(false)
 const expansionLabel = computed(() =>
-  t(
-    expanded.value ? 'events.directory.readLess' : 'events.directory.readMore',
-    locale
-  )
+  t(expanded.value ? 'events.directory.readLess' : 'events.directory.readMore')
 )
 // A clamped paragraph overflows its own box; re-measuring on resize keeps
 // the Read more affordance honest as the list column changes width. While
@@ -110,11 +111,11 @@ useResizeObserver(descEl, ([entry]) => {
           size="xxs"
           class="uppercase"
         >
-          {{ t('events.directory.pastBadge', locale) }}
+          {{ t('events.directory.pastBadge') }}
         </Badge>
       </div>
 
-      <h3 class="text-sm font-light text-primary-warm-white">
+      <h3 :class="cn('text-sm font-light text-primary-warm-white', titleClass)">
         {{ row.title }}
       </h3>
 

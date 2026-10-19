@@ -1,6 +1,9 @@
 <template>
   <div
     ref="scrollContainer"
+    :tabindex="hasJobRows ? 0 : -1"
+    :role="hasJobRows ? 'region' : undefined"
+    :aria-label="hasJobRows ? $t('g.jobs') : undefined"
     v-bind="$attrs"
     data-testid="job-assets-list"
     class="h-full overflow-y-auto pb-4"
@@ -10,14 +13,14 @@
       <template v-for="{ row, virtualItem } in virtualRows" :key="row.key">
         <div
           v-if="row.type === 'header'"
-          class="box-border px-3 pb-2 text-xs leading-none text-text-secondary"
+          class="px-3 pb-2 text-xs leading-none text-muted-foreground"
           :style="getVirtualRowStyle(virtualItem)"
         >
           {{ row.label }}
         </div>
         <div
           v-else-if="row.type === 'job'"
-          class="box-border px-3"
+          class="px-3"
           :style="getVirtualRowStyle(virtualItem)"
         >
           <div
@@ -29,8 +32,8 @@
             <AssetsListItem
               :class="
                 cn(
-                  'size-full shrink-0 cursor-default text-text-primary transition-colors hover:bg-secondary-background-hover',
-                  row.job.state === 'running' && 'bg-secondary-background'
+                  'size-full shrink-0 cursor-default text-foreground transition-colors hover:bg-accent',
+                  row.job.state === 'running' && 'bg-secondary'
                 )
               "
               :preview-url="getJobPreviewUrl(row.job)"
@@ -150,6 +153,9 @@ const hideTimer = ref<number | null>(null)
 const hideTimerJobId = ref<string | null>(null)
 const showTimer = ref<number | null>(null)
 const flatRows = computed(() => buildVirtualJobRows(displayedJobGroups))
+const hasJobRows = computed(() =>
+  flatRows.value.some((row) => row.type === 'job')
+)
 const virtualizer = useVirtualizer({
   get count(): number {
     return flatRows.value.length
