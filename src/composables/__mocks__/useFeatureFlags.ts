@@ -33,7 +33,6 @@ const defaultFlags: FeatureFlags = {
   localWebSsoEnabled: false,
   billingControlEnabled: false,
   memberCreditLimitsEnabled: false,
-  legacyBillingMigrationEnabled: false,
   billingSdkTopupEnabled: false,
   billingSdkTopupRailEnabled: false,
   billingSdkSubscriptionEnabled: false,
