@@ -6,7 +6,7 @@ import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { d, t } from '@/i18n'
+import { d, i18n, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -176,6 +176,7 @@ export const useCustomerEventsService = () => {
   function formatChargeCredits(microUsd: number) {
     const amount = formatCreditsFromUsd({
       usd: microUsd / 1_000_000,
+      locale: i18n.global.locale.value,
       numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
     })
     return `${amount} ${t('credits.credits')}`

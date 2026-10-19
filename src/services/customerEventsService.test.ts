@@ -22,7 +22,8 @@ const mockAxiosInstance = vi.hoisted(() => ({
 }))
 
 const mockI18n = vi.hoisted(() => ({
-  d: vi.fn()
+  d: vi.fn(),
+  locale: { value: 'en' }
 }))
 
 // Mock dependencies
@@ -33,9 +34,10 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   d: mockI18n.d,
-  t: (key: string) => key
+  t: (key: string) => key,
+  i18n: { global: { locale: mockI18n.locale } }
 }))
 
 vi.mock<unknown>(import('@/utils/typeGuardUtil'), () => ({
@@ -502,6 +504,37 @@ describe('useCustomerEventsService', () => {
         expect(service.getTooltipContent(event)).toBe(expected)
       }
     )
+
+    it('formats the charge in the app locale', () => {
+      mockI18n.locale.value = 'de'
+      try {
+        const event = {
+          event_id: 'agent-2',
+          event_type: 'agent_usage',
+          params: { charge_micro_usd: 10_000_000_000 },
+          createdAt: '2024-01-01T10:00:00Z'
+        }
+
+        expect(service.getTooltipContent(event)).toBe(
+          '<strong>credits.charge:</strong> 2.110.000 credits.credits'
+        )
+      } finally {
+        mockI18n.locale.value = 'en'
+      }
+    })
+
+    it('keeps other params next to the charge', () => {
+      const event = {
+        event_id: 'agent-3',
+        event_type: 'agent_usage',
+        params: { charge_micro_usd: 33_044, model: 'claude' },
+        createdAt: '2024-01-01T10:00:00Z'
+      }
+
+      expect(service.getTooltipContent(event)).toBe(
+        '<strong>credits.charge:</strong> 7 credits.credits<br><strong>Model:</strong> claude'
+      )
+    })
 
     it('should return empty string when no parameters', () => {
       const event = {
