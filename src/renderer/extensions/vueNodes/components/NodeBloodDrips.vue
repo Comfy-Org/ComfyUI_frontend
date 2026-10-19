@@ -38,11 +38,13 @@
 import { useId } from 'vue'
 
 const filterId = `node-blood-${useId()}`
-const drops = [
-  { left: 9, size: 9, delay: -0.4, duration: 3.2 },
-  { left: 31, size: 15, delay: -1.8, duration: 4.1 },
-  { left: 48, size: 7, delay: -0.9, duration: 2.8 },
-  { left: 72, size: 12, delay: -2.7, duration: 3.7 },
-  { left: 89, size: 10, delay: -3.2, duration: 4.6 }
-]
+const drops = Array.from({ length: 5 }, (_, index) => {
+  const duration = 2.8 + Math.random() * 2
+  return {
+    left: 5 + index * 18 + Math.random() * 10,
+    size: 7 + Math.random() * 8,
+    delay: -Math.random() * duration,
+    duration
+  }
+})
 </script>
