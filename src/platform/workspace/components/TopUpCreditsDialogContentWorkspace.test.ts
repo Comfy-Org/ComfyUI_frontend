@@ -632,6 +632,40 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: pay })).toBeEnabled()
   })
 
+  function renderBeforeBalanceArrives() {
+    const balance = ref<BalanceInfo | null>(null)
+    Object.assign(mockBillingContext(), { balance })
+    renderDialog()
+    return (suggestedTopupAmountCents: number) => {
+      balance.value = {
+        amountMicros: -10_000,
+        currency: 'usd',
+        effectiveBalanceMicros: -10_000,
+        effectiveBalanceAuthoritative: true,
+        suggestedTopupAmountCents
+      }
+    }
+  }
+
+  it('adopts a suggestion that arrives after the dialog opens', async () => {
+    const balanceArrives = renderBeforeBalanceArrives()
+
+    balanceArrives(11_400)
+    await clickAddCredits()
+
+    expect(screen.getByRole('button', { name: 'Pay $114.00' })).toBeEnabled()
+  })
+
+  it('keeps an amount the user chose when the suggestion arrives later', async () => {
+    const balanceArrives = renderBeforeBalanceArrives()
+
+    await userEvent.click(screen.getByRole('button', { name: '$25' }))
+    balanceArrives(11_400)
+    await clickAddCredits()
+
+    expect(screen.getByRole('button', { name: 'Pay $25.00' })).toBeEnabled()
+  })
+
   it('explains that the top-up covers a negative balance first', () => {
     renderWithBalance({
       amountMicros: -10_000,

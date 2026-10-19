@@ -493,13 +493,20 @@ function wholeDollarsOrNull(cents: number | null | undefined): number | null {
 }
 
 // State
-const suggestedAmount = wholeDollarsOrNull(
-  balance.value?.suggestedTopupAmountCents
+const suggestedAmount = computed(() =>
+  wholeDollarsOrNull(balance.value?.suggestedTopupAmountCents)
 )
 const selectedPreset = ref<number | null>(
-  suggestedAmount === null ? DEFAULT_AMOUNT : null
+  suggestedAmount.value === null ? DEFAULT_AMOUNT : null
 )
-const payAmount = ref(suggestedAmount ?? DEFAULT_AMOUNT)
+const payAmount = ref(suggestedAmount.value ?? DEFAULT_AMOUNT)
+const amountEditedByUser = ref(false)
+
+watch(suggestedAmount, (amount) => {
+  if (amount === null || amountEditedByUser.value) return
+  payAmount.value = amount
+  selectedPreset.value = null
+})
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
@@ -518,6 +525,7 @@ const creditsModel = computed({
   set: (newCredits: number) => {
     payAmount.value = Math.round(creditsToUsd(newCredits))
     selectedPreset.value = null
+    amountEditedByUser.value = true
   }
 })
 
@@ -594,11 +602,13 @@ function getCreditsStepAmount(currentCredits: number): number {
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
+  amountEditedByUser.value = true
 }
 
 function handlePresetClick(amount: number) {
   payAmount.value = amount
   selectedPreset.value = amount
+  amountEditedByUser.value = true
 }
 
 function handlePrimaryAction() {
