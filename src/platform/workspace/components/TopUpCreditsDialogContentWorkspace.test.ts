@@ -202,11 +202,16 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
   })
 
-  it('reopens the same checkout without creating another', async () => {
-    const create = checkoutOpensAt(checkoutUrl)
+  it('reopens checkout in a new tab with a fresh session', async () => {
+    const freshCheckoutUrl = 'https://checkout.stripe.com/c/pay/cs_fresh'
+    const create = vi
+      .spyOn(workspaceApi, 'createTopupCheckout')
+      .mockResolvedValueOnce({ checkout_url: checkoutUrl })
+      .mockResolvedValueOnce({ checkout_url: freshCheckoutUrl })
     const firstTab = checkoutTab()
     const secondTab = checkoutTab()
-    vi.spyOn(window, 'open')
+    const open = vi
+      .spyOn(window, 'open')
       .mockReturnValueOnce(firstTab as never)
       .mockReturnValueOnce(secondTab as never)
     renderDialog()
@@ -217,18 +222,37 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       screen.getByRole('button', { name: 'Reopen checkout' })
     )
 
-    expect(secondTab.location.href).toBe(checkoutUrl)
-    expect(create).toHaveBeenCalledOnce()
+    await waitFor(() => expect(secondTab.location.href).toBe(freshCheckoutUrl))
+    expect(create).toHaveBeenCalledTimes(2)
+    expect(open).toHaveBeenNthCalledWith(2, '', '_blank')
+    expect(firstTab.location.href).toBe(checkoutUrl)
     expect(await handOffHeading()).toBeInTheDocument()
   })
 
-  it('keeps the checkout to reopen when the browser blocks the tab', async () => {
-    checkoutOpensAt(checkoutUrl)
-    const tab = checkoutTab()
-    const open = vi
-      .spyOn(window, 'open')
-      .mockReturnValueOnce(null)
-      .mockReturnValueOnce(tab as never)
+  it('links to the fresh session when the reopened tab is blocked', async () => {
+    const freshCheckoutUrl = 'https://checkout.stripe.com/c/pay/cs_fresh'
+    vi.spyOn(workspaceApi, 'createTopupCheckout')
+      .mockResolvedValueOnce({ checkout_url: checkoutUrl })
+      .mockResolvedValueOnce({ checkout_url: freshCheckoutUrl })
+    vi.spyOn(window, 'open')
+      .mockReturnValueOnce(checkoutTab() as never)
+      .mockReturnValue(null)
+    renderDialog()
+    await continueToPayment()
+    await handOffHeading()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Reopen checkout' })
+    )
+
+    expect(
+      await screen.findByRole('link', { name: 'Open checkout' })
+    ).toHaveAttribute('href', freshCheckoutUrl)
+  })
+
+  it('offers the blocked checkout as a link that opens without a new session', async () => {
+    const create = checkoutOpensAt(checkoutUrl)
+    vi.spyOn(window, 'open').mockReturnValue(null)
     const appUrl = window.location.href
     renderDialog()
 
@@ -238,13 +262,41 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       await screen.findByRole('heading', { name: "Checkout didn't open" })
     ).toBeInTheDocument()
     expect(window.location.href).toBe(appUrl)
+    const link = screen.getByRole('link', { name: 'Open checkout' })
+    expect(link).toHaveAttribute('href', checkoutUrl)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noopener')
 
-    await userEvent.click(screen.getByRole('button', { name: 'Open checkout' }))
+    await userEvent.click(link)
 
-    expect(open).toHaveBeenCalledTimes(2)
-    expect(tab.location.href).toBe(checkoutUrl)
     expect(await handOffHeading()).toBeInTheDocument()
+    expect(create).toHaveBeenCalledOnce()
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+  })
+
+  it('stays on the hand-off screen and explains a reopen that could not start', async () => {
+    vi.spyOn(workspaceApi, 'createTopupCheckout')
+      .mockResolvedValueOnce({ checkout_url: checkoutUrl })
+      .mockRejectedValueOnce(
+        new WorkspaceApiError('Upstream failed', 503, 'REQUEST_FAILED')
+      )
+    const secondTab = checkoutTab()
+    vi.spyOn(window, 'open')
+      .mockReturnValueOnce(checkoutTab() as never)
+      .mockReturnValueOnce(secondTab as never)
+    renderDialog()
+    await continueToPayment()
+    await handOffHeading()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Reopen checkout' })
+    )
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "The payment page couldn't open. Nothing was charged. Try again."
+    )
+    expect(secondTab.close).toHaveBeenCalledOnce()
+    expect(await handOffHeading()).toBeInTheDocument()
   })
 
   it('stays on the amount step and explains a checkout that could not start', async () => {
@@ -376,6 +428,21 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'top-up-credits'
       })
+    })
+
+    it('reads the billing status once the customer follows the blocked checkout link', async () => {
+      vi.spyOn(window, 'open').mockReturnValue(null)
+      renderDialog()
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await continueToPayment(user)
+      const link = await screen.findByRole('link', { name: 'Open checkout' })
+      await vi.advanceTimersByTimeAsync(8_000)
+      expect(readCheckoutOperation).not.toHaveBeenCalled()
+
+      await user.click(link)
+      await vi.advanceTimersByTimeAsync(4_000)
+
+      expect(readCheckoutOperation).toHaveBeenCalledOnce()
     })
 
     it('does not read the billing status before a checkout opens', async () => {

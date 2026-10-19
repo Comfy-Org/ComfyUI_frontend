@@ -24,7 +24,7 @@
     </p>
 
     <div
-      v-if="state.kind === 'checkoutOpened'"
+      v-if="isHandOffStep"
       class="flex flex-col items-center gap-3 px-8 text-center"
     >
       <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
@@ -32,6 +32,13 @@
       </DialogTitle>
       <p class="m-0 text-sm text-balance text-muted-foreground">
         {{ $t('credits.topUp.checkoutOpenedBody') }}
+      </p>
+      <p
+        v-if="state.kind === 'checkoutOpened' && state.reopenFailed"
+        role="alert"
+        class="m-0 text-sm text-destructive"
+      >
+        {{ $t('credits.topUp.checkoutOpenFailed') }}
       </p>
     </div>
 
@@ -170,10 +177,7 @@
     </template>
 
     <div class="mt-auto flex flex-col gap-8 p-8">
-      <div
-        v-if="state.kind === 'checkoutOpened'"
-        class="flex flex-col items-center gap-4"
-      >
+      <div v-if="isHandOffStep" class="flex flex-col items-center gap-4">
         <Button
           variant="secondary"
           size="lg"
@@ -182,17 +186,27 @@
         >
           {{ $t('g.close') }}
         </Button>
-        <Button variant="link" size="md" @click="reopenCheckout">
+        <Button
+          variant="link"
+          size="md"
+          :disabled="!canTopUp"
+          :loading="state.kind === 'reopeningCheckout'"
+          @click="reopenCheckout"
+        >
           {{ $t('credits.topUp.reopenCheckout') }}
           <i class="icon-[lucide--external-link] size-4" />
         </Button>
       </div>
       <Button
         v-else-if="state.kind === 'checkoutBlocked'"
+        as="a"
+        :href="state.checkoutUrl"
+        target="_blank"
+        rel="noopener"
         variant="primary"
         size="lg"
         class="w-full"
-        @click="reopenCheckout"
+        @click="followBlockedCheckoutLink"
       >
         {{ $t('credits.topUp.openCheckout') }}
         <i class="icon-[lucide--external-link] size-4" />
@@ -331,6 +345,12 @@ const isAmountStep = computed(
   () => state.value.kind === 'amount' || state.value.kind === 'creatingCheckout'
 )
 
+const isHandOffStep = computed(
+  () =>
+    state.value.kind === 'checkoutOpened' ||
+    state.value.kind === 'reopeningCheckout'
+)
+
 function wholeDollarsOrNull(cents: number | null | undefined): number | null {
   if (cents == null) return null
   const dollars = cents / 100
@@ -418,11 +438,7 @@ function trackPaymentIntent() {
   })
 }
 
-async function continueToPayment() {
-  if (state.value.kind !== 'amount') return
-  if (!canContinue.value) return
-  trackPaymentIntent()
-  dispatch({ type: 'continueRequested' })
+async function createCheckoutInReservedTab() {
   const returnUrl = topupCheckoutReturnUrl()
   if (!returnUrl) {
     dispatch({ type: 'checkoutFailed' })
@@ -448,12 +464,23 @@ async function continueToPayment() {
   })
 }
 
-function reopenCheckout() {
-  const current = state.value
-  if (current.kind !== 'checkoutOpened' && current.kind !== 'checkoutBlocked')
-    return
-  const checkoutTab = reserveBillingTab()
-  if (checkoutTab) handOff(checkoutTab, current.checkoutUrl)
-  dispatch({ type: 'checkoutReopened', tabOpened: checkoutTab !== null })
+async function continueToPayment() {
+  if (state.value.kind !== 'amount') return
+  if (!canContinue.value) return
+  trackPaymentIntent()
+  dispatch({ type: 'continueRequested' })
+  await createCheckoutInReservedTab()
+}
+
+async function reopenCheckout() {
+  if (state.value.kind !== 'checkoutOpened') return
+  if (!canContinue.value) return
+  dispatch({ type: 'reopenRequested' })
+  await createCheckoutInReservedTab()
+}
+
+function followBlockedCheckoutLink() {
+  watchHostedTopupCheckout()
+  dispatch({ type: 'blockedCheckoutLinkOpened' })
 }
 </script>

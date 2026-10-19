@@ -6,6 +6,8 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { workspaceRailAuthFixture as test } from '@e2e/fixtures/workspaceRailAuthFixture'
 
 const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_fe3450'
+const FRESH_CHECKOUT_URL =
+  'https://checkout.stripe.com/c/pay/cs_test_fe3450_fresh'
 
 test.describe('Top-up through hosted checkout', () => {
   async function openTopUpDialog(page: Page) {
@@ -23,14 +25,21 @@ test.describe('Top-up through hosted checkout', () => {
     comfyPage
   }) => {
     const page = comfyPage.page
-    await page.route('**/api/billing/topup/checkout', (route) =>
-      route.fulfill({ json: { checkout_url: CHECKOUT_URL } })
-    )
-    await page
-      .context()
-      .route(CHECKOUT_URL, (route) =>
-        route.fulfill({ contentType: 'text/html', body: 'checkout' })
-      )
+    const sessions = [CHECKOUT_URL, FRESH_CHECKOUT_URL]
+    const checkoutRequests: Request[] = []
+    await page.route('**/api/billing/topup/checkout', (route) => {
+      checkoutRequests.push(route.request())
+      return route.fulfill({
+        json: { checkout_url: sessions[checkoutRequests.length - 1] }
+      })
+    })
+    for (const url of sessions) {
+      await page
+        .context()
+        .route(url, (route) =>
+          route.fulfill({ contentType: 'text/html', body: 'checkout' })
+        )
+    }
 
     const topUpDialog = await openTopUpDialog(page)
     const chargeRequests: Request[] = []
@@ -61,7 +70,8 @@ test.describe('Top-up through hosted checkout', () => {
     await topUpDialog.root
       .getByRole('button', { name: 'Reopen checkout' })
       .click()
-    await expect(await reopenedPage).toHaveURL(CHECKOUT_URL)
+    await expect(await reopenedPage).toHaveURL(FRESH_CHECKOUT_URL)
     await expect(topUpDialog.checkoutOpenedHeading).toBeVisible()
+    expect(checkoutRequests).toHaveLength(2)
   })
 })

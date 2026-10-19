@@ -140,6 +140,37 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
     expect(routes.chargeRequests).toHaveLength(0)
   })
 
+  test('links to the session it created when the browser blocks the tab', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const routes = await setupTopUp(page)
+    await page.addInitScript(() => {
+      window.open = () => null
+    })
+    await page
+      .context()
+      .route(CHECKOUT_URL, (route) =>
+        route.fulfill({ contentType: 'text/html', body: 'checkout' })
+      )
+
+    const dialog = await openTopUpAndContinue(page)
+
+    await expect(
+      dialog.root.getByRole('heading', { name: "Checkout didn't open" })
+    ).toBeVisible()
+    const link = dialog.root.getByRole('link', { name: 'Open checkout' })
+    await expect(link).toHaveAttribute('href', CHECKOUT_URL)
+    await expect(link).toHaveAttribute('target', '_blank')
+
+    const checkoutPage = page.context().waitForEvent('page')
+    await link.click()
+
+    await expect(await checkoutPage).toHaveURL(CHECKOUT_URL)
+    await expect(dialog.checkoutOpenedHeading).toBeVisible()
+    expect(routes.checkoutRequests).toHaveLength(1)
+  })
+
   test('keeps the amount step and explains a closed backend gate', async ({
     page
   }) => {

@@ -17,7 +17,15 @@ const amountAfterFailure: TopupCheckoutDialogState = {
   checkoutOpenFailed: true
 }
 const creating: TopupCheckoutDialogState = { kind: 'creatingCheckout' }
-const opened: TopupCheckoutDialogState = { kind: 'checkoutOpened', checkoutUrl }
+const opened: TopupCheckoutDialogState = {
+  kind: 'checkoutOpened',
+  reopenFailed: false
+}
+const openedAfterFailedReopen: TopupCheckoutDialogState = {
+  kind: 'checkoutOpened',
+  reopenFailed: true
+}
+const reopening: TopupCheckoutDialogState = { kind: 'reopeningCheckout' }
 const blocked: TopupCheckoutDialogState = {
   kind: 'checkoutBlocked',
   checkoutUrl
@@ -26,10 +34,6 @@ const blocked: TopupCheckoutDialogState = {
 const created = (tabOpened: boolean): TopupCheckoutDialogEvent => ({
   type: 'checkoutCreated',
   checkoutUrl,
-  tabOpened
-})
-const reopened = (tabOpened: boolean): TopupCheckoutDialogEvent => ({
-  type: 'checkoutReopened',
   tabOpened
 })
 
@@ -65,7 +69,7 @@ describe('transitionTopupCheckoutDialog', () => {
       to: opened
     },
     {
-      name: 'keeps the checkout to reopen when the browser blocked the tab',
+      name: 'keeps the new session to link to when the browser blocked the tab',
       from: creating,
       event: created(false),
       to: blocked
@@ -83,27 +87,57 @@ describe('transitionTopupCheckoutDialog', () => {
       to: amount
     },
     {
-      name: 'stays handed off when the checkout is reopened',
+      name: 'creates a fresh session when the customer reopens checkout',
       from: opened,
-      event: reopened(true),
+      event: { type: 'reopenRequested' },
+      to: reopening
+    },
+    {
+      name: 'retries a reopen that failed',
+      from: openedAfterFailedReopen,
+      event: { type: 'reopenRequested' },
+      to: reopening
+    },
+    {
+      name: 'ignores a second reopen while the fresh session is being created',
+      from: reopening,
+      event: { type: 'reopenRequested' },
+      to: reopening
+    },
+    {
+      name: 'stays handed off once the fresh session opens',
+      from: reopening,
+      event: created(true),
       to: opened
     },
     {
-      name: 'reports a blocked reopen',
-      from: opened,
-      event: reopened(false),
+      name: 'links to the fresh session when its tab was blocked',
+      from: reopening,
+      event: created(false),
       to: blocked
     },
     {
-      name: 'hands off once a blocked checkout opens',
+      name: 'stays handed off and says so when the fresh session failed',
+      from: reopening,
+      event: { type: 'checkoutFailed' },
+      to: openedAfterFailedReopen
+    },
+    {
+      name: 'hands off once the customer follows the blocked checkout link',
       from: blocked,
-      event: reopened(true),
+      event: { type: 'blockedCheckoutLinkOpened' },
       to: opened
     },
     {
-      name: 'has no checkout to reopen from the amount step',
+      name: 'has no blocked link to follow from the amount step',
       from: amount,
-      event: reopened(true),
+      event: { type: 'blockedCheckoutLinkOpened' },
+      to: amount
+    },
+    {
+      name: 'has no session to reopen from the amount step',
+      from: amount,
+      event: { type: 'reopenRequested' },
       to: amount
     },
     {
