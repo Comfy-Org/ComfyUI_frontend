@@ -207,6 +207,9 @@ catalogs:
     dotenv:
       specifier: ^16.4.5
       version: 16.6.1
+    es-toolkit:
+      specifier: ^1.39.9
+      version: 1.49.0
     eslint:
       specifier: ^10.10.0
       version: 10.10.0
@@ -1404,7 +1407,7 @@ importers:
   packages/layer-editor:
     dependencies:
       es-toolkit:
-        specifier: ^1.39.9
+        specifier: 'catalog:'
         version: 1.49.0
     devDependencies:
       '@vitest/coverage-v8':

@@ -13,12 +13,12 @@
     }
   },
   "scripts": {
-    "build": "node ../../node_modules/typescript/bin/tsc -b tsconfig.build.json",
+    "build": "tsc -b tsconfig.build.json",
     "prepack": "pnpm build",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
     "test": "vitest run --config ./vitest.config.ts",
-    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "zod": "catalog:",

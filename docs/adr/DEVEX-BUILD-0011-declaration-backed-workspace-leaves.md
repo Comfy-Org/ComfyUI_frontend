@@ -25,14 +25,23 @@ resolve emitted declarations through the package's `types` export condition whil
 runtime tools continue to resolve source. Build declarations before checking
 consumers, including on a fresh install.
 
-Run declaration builds through the explicitly resolved stock TypeScript compiler.
+Run declaration builds with stock TypeScript. Leaf packages declare TypeScript
+locally and use its `tsc` executable directly for builds and plain TypeScript checks.
 Keep native-bridge checks and declaration builds on separate build-info files.
-An ambiguous `tsc` executable is insufficient because both installed compilers
-provide that binary name.
+At the workspace root, select stock TypeScript explicitly because both installed
+compilers provide the `tsc` binary name.
 
 Extract existing behavior before narrowing interfaces. A domain record is an
 ownership classification, not a requirement to create another package. Prefer
 packages around shared document contracts over individual technical helpers.
+
+Use wildcard subpath exports for the layer-editor extraction for now, keeping
+explicit mappings for directory entry points. This avoids maintaining a file-by-file
+allowlist while preserving existing imports and declaration-backed type resolution.
+It deliberately allows imports of implementation and test files. In a follow-up,
+replace the wildcard with a small set of capability-level entry points, potentially
+using package-level `index.ts` barrels, and migrate consumers to those entry points.
+Compilation isolation comes first; a narrower public interface follows separately.
 
 ## Alternatives
 
