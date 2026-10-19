@@ -5,12 +5,21 @@ import {
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe(
-  'Numeric widget values saved as strings',
-  { tag: ['@canvas', '@widget'] },
+  'Typed widget values saved as strings',
+  {
+    tag: ['@canvas', '@screenshot', '@widget'],
+    annotation: {
+      type: 'issue',
+      description:
+        'https://linear.app/comfyorg/issue/PM-2173/templates-load-with-a-widget-type-bug-and-fail-validation-costing'
+    }
+  },
   () => {
-    test('load as numbers and are queued as numbers', async ({ comfyPage }) => {
+    test('load with declared types and queue numbers', async ({
+      comfyPage
+    }) => {
       await comfyPage.workflow.loadWorkflow(
-        'widgets/stringified_numeric_widget_values'
+        'widgets/stringified_typed_widget_values'
       )
 
       const latent = await comfyPage.nodeOps.getNodeRefById(5)
@@ -44,6 +53,30 @@ test.describe(
           '3': { inputs: { steps: 20, cfg: 7.5 } }
         }
       })
+    })
+
+    test('render and toggle a restored boolean value', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'widgets/stringified_typed_widget_values'
+      )
+
+      const booleanNode = await comfyPage.nodeOps.getNodeRefById(10)
+      const booleanWidget = await booleanNode.getWidgetByName('boolean_input')
+      await expect.poll(() => booleanWidget.getValue()).toBe(false)
+      await expect(comfyPage.page).toHaveScreenshot(
+        'stringified-boolean-widget.png',
+        { clip: { x: 56, y: 270, width: 300, height: 100 } }
+      )
+
+      await booleanWidget.click()
+
+      await expect.poll(() => booleanWidget.getValue()).toBe(true)
+      await expect(comfyPage.page).toHaveScreenshot(
+        'stringified-boolean-widget-toggled.png',
+        { clip: { x: 56, y: 270, width: 300, height: 100 } }
+      )
     })
   }
 )

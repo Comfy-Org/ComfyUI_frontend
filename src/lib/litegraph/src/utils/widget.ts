@@ -43,7 +43,7 @@ export function formatNumericWidgetValue(
 }
 
 function coerceNumericString(value: string): number | string {
-  if (!/^\s*[+-]?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?\s*$/i.test(value))
+  if (!/^\s*[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?\s*$/i.test(value))
     return value
   const parsed = Number(value)
   const representable = Number.isInteger(parsed)

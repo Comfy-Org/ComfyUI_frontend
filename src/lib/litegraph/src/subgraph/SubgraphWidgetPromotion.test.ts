@@ -1312,12 +1312,10 @@ describe('SubgraphWidgetPromotion', () => {
           'number',
           7
         )
-        subgraph.add(interiorNode)
-        subgraph.inputNode.slots[0].connect(
-          interiorNode.inputs[0],
+        const serialized = setupPromotedWidget(
+          subgraph,
           interiorNode
-        )
-        const serialized = createTestSubgraphNode(subgraph).serialize()
+        ).serialize()
         serialized.widgets_values = ['42']
 
         const reloaded = createTestSubgraphNode(subgraph)

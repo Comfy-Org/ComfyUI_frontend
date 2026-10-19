@@ -1,5 +1,5 @@
 {
-  "last_node_id": 9,
+  "last_node_id": 10,
   "last_link_id": 9,
   "nodes": [
     {
@@ -172,6 +172,21 @@
       "properties": {}
     },
     {
+      "id": 10,
+      "type": "DevToolsNodeWithBooleanInput",
+      "pos": [26, 300],
+      "size": [315, 58],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "DevToolsNodeWithBooleanInput"
+      },
+      "widgets_values": ["false"]
+    },
+    {
       "id": 4,
       "type": "CheckpointLoaderSimple",
       "pos": [26, 474],
@@ -225,6 +240,7 @@
   "groups": [],
   "config": {},
   "extra": {
+    "source": "https://linear.app/comfyorg/issue/PM-2173/templates-load-with-a-widget-type-bug-and-fail-validation-costing",
     "ds": {
       "offset": [0, 0],
       "scale": 1

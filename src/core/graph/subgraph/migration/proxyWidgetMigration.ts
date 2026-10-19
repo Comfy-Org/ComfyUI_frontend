@@ -396,7 +396,7 @@ function applyHostValueToInput(
   input: INodeInputSlot,
   entry: PendingEntry
 ): boolean {
-  if (!input.widgetId || entry.isHole) return Boolean(input.widgetId)
+  if (entry.isHole) return Boolean(input.widgetId)
   return setRestoredInputValue(input, entry.hostValue)
 }
 

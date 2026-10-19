@@ -510,7 +510,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         : widgetValues?.[valueIndex]
       const state = useWidgetValueStore().getWidget(input.widgetId)
       if (value !== undefined && state) {
-        state.value = coerceRestoredWidgetValue(state, value)
+        useWidgetValueStore().setValue(
+          input.widgetId,
+          coerceRestoredWidgetValue(state, value)
+        )
       }
       valueIndex += 1
     }

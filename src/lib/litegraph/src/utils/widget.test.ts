@@ -74,6 +74,14 @@ describe('coerceRestoredWidgetValue', () => {
     expect(coerceRestoredWidgetValue(widget, '16777215')).toBe(16777215)
   })
 
+  test('preserves structured values with unknown keys', () => {
+    const value = { future: { nested: true }, known: 'kept' }
+
+    expect(
+      coerceRestoredWidgetValue({ type: 'custom', options: {} }, value)
+    ).toBe(value)
+  })
+
   test.for<{
     name: string
     type: string
@@ -117,6 +125,12 @@ describe('coerceRestoredWidgetValue', () => {
       expected: '18446744073709551615'
     },
     {
+      name: 'the largest safe integer string',
+      type: 'number',
+      value: '9007199254740991',
+      expected: 9007199254740991
+    },
+    {
       name: 'an unsafe integer string without a precision',
       type: 'number',
       value: '18446744073709551615',
@@ -158,11 +172,17 @@ describe('coerceRestoredWidgetValue', () => {
       expected: ' '
     },
     {
-      name: 'a non-finite numeric string',
+      name: 'a non-decimal Infinity string',
       type: 'number',
       precision: 2,
       value: 'Infinity',
       expected: 'Infinity'
+    },
+    {
+      name: 'a decimal exponent that overflows to Infinity',
+      type: 'number',
+      value: '1e400',
+      expected: '1e400'
     },
     {
       name: 'a slider numeric string',
@@ -221,6 +241,12 @@ describe('coerceRestoredWidgetValue', () => {
       type: 'text',
       value: '1536',
       expected: '1536'
+    },
+    {
+      name: 'a numeric-looking string-backed color',
+      type: 'color',
+      value: '123456',
+      expected: '123456'
     }
   ])('restores $name as $expected', ({ type, precision, value, expected }) => {
     expect(

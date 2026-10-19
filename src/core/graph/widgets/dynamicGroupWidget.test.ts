@@ -835,14 +835,13 @@ describe('DynamicGroup widgets', () => {
     const { node } = setup()
     const saved = node.serialize()
     saved.widgets_values = ['first', '1000000000', 'last']
-    const add = vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
+    vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
       throw new Error('Unexpected row allocation')
     })
 
     expect(() => node.configure(saved)).toThrow(
       'Invalid saved row count for DynamicGroup'
     )
-    expect(add).not.toHaveBeenCalled()
   })
 
   it('preserves saved values in an error node when the group definition is invalid', () => {
