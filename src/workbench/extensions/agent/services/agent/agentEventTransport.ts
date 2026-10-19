@@ -62,6 +62,11 @@ export interface CanvasSyncEvidence {
 const MAX_OBSERVED_CANVAS_WORKFLOWS = 8
 const MAX_OBSERVED_CANVAS_OPS_PER_WORKFLOW = 512
 
+interface PendingCanvasSync {
+  timer: ReturnType<typeof setTimeout>
+  correlation?: { workflowId: string; opIds: ReadonlySet<string> }
+}
+
 /**
  * PM-1575: tool names whose execution can plausibly land a CRDT `doc_update`
  * -- the only case `resolveToolCallState` below has anything to wait on. Most
@@ -170,13 +175,7 @@ export function createAgentEventTransport(
   // Tool parts whose frame reported done but whose displayed state is held at
   // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
   // part that never gets a `notifyCanvasCaughtUp` call still settles.
-  const pendingCanvasSync = new Map<
-    ToolPart,
-    {
-      timer: ReturnType<typeof setTimeout>
-      correlation?: { workflowId: string; opIds: ReadonlySet<string> }
-    }
-  >()
+  const pendingCanvasSync = new Map<ToolPart, PendingCanvasSync>()
   const observedCanvasOps = new Map<string, Set<string>>()
   // PM-1575: the outcome count as of the last time some tool part actually
   // claimed a canvas catch-up (see `claimCanvasSyncOutcome` below), starting
@@ -264,18 +263,21 @@ export function createAgentEventTransport(
     }
   }
 
+  function shouldSettlePendingCanvasSync(
+    pending: PendingCanvasSync,
+    evidence: CanvasSyncEvidence | undefined
+  ): boolean {
+    if (pending.correlation === undefined)
+      return evidence === undefined || evidence.isLive
+    return evidence !== undefined && correlationObserved(pending.correlation)
+  }
+
   function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
     if (evidence !== undefined) rememberCanvasEvidence(evidence)
 
     let changed = false
     for (const [part, pending] of pendingCanvasSync) {
-      if (
-        (pending.correlation === undefined &&
-          (evidence === undefined || evidence.isLive)) ||
-        (pending.correlation !== undefined &&
-          evidence !== undefined &&
-          correlationObserved(pending.correlation))
-      ) {
+      if (shouldSettlePendingCanvasSync(pending, evidence)) {
         settlePendingCanvasSync(part)
         changed = true
       }
