@@ -85,6 +85,18 @@
       </p>
     </div>
 
+    <div
+      v-if="step === 'defaultCardBlocked'"
+      class="flex flex-col items-center gap-3 px-8 text-center"
+    >
+      <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
+        {{ $t('credits.topUp.defaultCardBlockedTitle') }}
+      </DialogTitle>
+      <p class="m-0 text-sm text-balance text-muted-foreground">
+        {{ $t('credits.topUp.defaultCardBlockedBody') }}
+      </p>
+    </div>
+
     <template v-if="step === 'verifying'">
       <div class="flex flex-col items-center gap-3 px-8 text-center">
         <i class="icon-[lucide--shield-alert] size-10 text-warning" />
@@ -253,13 +265,31 @@
         </Button>
       </div>
       <Button
-        v-else-if="step === 'checkoutBlocked'"
+        v-else-if="step === 'checkoutBlocked' && blockedCheckoutUrl"
+        as="a"
+        :href="blockedCheckoutUrl"
+        target="_blank"
+        rel="noopener"
         variant="primary"
         size="lg"
-        class="w-full"
-        @click="openBlockedCheckout"
+        class="w-full no-underline"
+        @click="watchCheckoutCompletion"
       >
         {{ $t('credits.topUp.openCheckout') }}
+        <i class="icon-[lucide--external-link] size-4" />
+      </Button>
+      <Button
+        v-else-if="step === 'defaultCardBlocked' && blockedDefaultCardUrl"
+        as="a"
+        :href="blockedDefaultCardUrl"
+        target="_blank"
+        rel="noopener"
+        variant="primary"
+        size="lg"
+        class="w-full no-underline"
+        @click="followBlockedDefaultCardLink"
+      >
+        {{ $t('credits.topUp.openPaymentPage') }}
         <i class="icon-[lucide--external-link] size-4" />
       </Button>
       <div v-else class="flex flex-col gap-2">
@@ -512,9 +542,10 @@ const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
 const blockedCheckoutUrl = ref<string | null>(null)
-const step = ref<'amount' | 'confirm' | 'verifying' | 'checkoutBlocked'>(
-  topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
-)
+const blockedDefaultCardUrl = ref<string | null>(null)
+const step = ref<
+  'amount' | 'confirm' | 'verifying' | 'checkoutBlocked' | 'defaultCardBlocked'
+>(topupOperation.value && canTopUp.value ? 'verifying' : 'amount')
 
 // Computed
 const pricingUrl = computed(() =>
@@ -801,6 +832,10 @@ onUnmounted(() => {
 
 function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
   checkoutTab.navigate(checkoutUrl)
+  watchCheckoutCompletion()
+}
+
+function watchCheckoutCompletion() {
   usePendingTopup().startPendingTopup()
   watchForTopupBalanceUpdate({
     source: {
@@ -843,12 +878,6 @@ function refreshOnDefaultCardReturn() {
 async function setDefaultCard() {
   if (paymentLocked.value) return
   const portalTab = reserveBillingTab()
-  if (!portalTab) {
-    toast.warning(t('g.warning'), {
-      description: t('subscription.billingTabBlocked')
-    })
-    return
-  }
   openingDefaultCardPortal.value = true
   try {
     const { url } = await workspaceApi.getPaymentPortalUrl(
@@ -856,10 +885,15 @@ async function setDefaultCard() {
       'payment_method_update'
     )
     if (unmounted) {
-      portalTab.close()
+      portalTab?.close()
       return
     }
     if (!url) return reportDefaultCardPortalFailure(portalTab)
+    if (!portalTab) {
+      blockedDefaultCardUrl.value = url
+      step.value = 'defaultCardBlocked'
+      return
+    }
     portalTab.navigate(url)
     refreshOnDefaultCardReturn()
   } catch {
@@ -869,8 +903,13 @@ async function setDefaultCard() {
   }
 }
 
-function reportDefaultCardPortalFailure(portalTab: BillingTab) {
-  portalTab.close()
+function followBlockedDefaultCardLink() {
+  step.value = 'confirm'
+  refreshOnDefaultCardReturn()
+}
+
+function reportDefaultCardPortalFailure(portalTab: BillingTab | null) {
+  portalTab?.close()
   if (unmounted) return
   toast.error(t('credits.topUp.setDefaultCardError'), {
     description: t('credits.topUp.unknownError')
@@ -911,12 +950,6 @@ async function continueToCheckout() {
   } finally {
     loading.value = false
   }
-}
-
-function openBlockedCheckout() {
-  const checkoutUrl = blockedCheckoutUrl.value
-  const checkoutTab = checkoutUrl ? reserveBillingTab() : null
-  if (checkoutUrl && checkoutTab) handOffToCheckout(checkoutTab, checkoutUrl)
 }
 
 /**
