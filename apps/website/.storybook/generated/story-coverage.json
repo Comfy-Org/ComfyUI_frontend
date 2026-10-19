@@ -1,15 +1,15 @@
 {
   "schemaVersion": 2,
-  "componentCount": 528,
-  "documentedComponentCount": 72,
-  "missingStoryCount": 456,
+  "componentCount": 592,
+  "documentedComponentCount": 73,
+  "missingStoryCount": 519,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 3,
-    "page-local": 271,
+    "page-local": 332,
     "reusable-candidate": 24,
-    "template-local": 125
+    "template-local": 127
   },
   "classifications": [
     {
@@ -83,12 +83,22 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/blocks/BuildConfiguratorChipGroup.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/components/blocks/PlayOverlay.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
       "source": "src/components/booking-confirmation/ResourceList.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/campaign/VfxProofHero.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -489,6 +499,11 @@
     },
     {
       "source": "src/components/hub/HubWorkflowCard.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/hub/HubWorkflowThumbnail.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -1223,6 +1238,11 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/workshop/WorkshopAccount.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/components/workshop/WorkshopAppCard.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -1318,6 +1338,226 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/workshop/app-editor/AppEditorShell.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorAlert.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorBusy.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorChip.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorCollapsible.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorColorPicker.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorCompare.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorCompareToggle.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorDivider.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorDock.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorDownload.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorDropZone.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorEmpty.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorFloatingPanel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorFrame.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorHint.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorHistory.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorIconButton.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorMenuButton.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorNumberField.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorOutput.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorPanelRow.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorPicker.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorPickerRow.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorPopover.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorResult.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorResultDock.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorRun.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorRunCancel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorSeedField.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorSegmented.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorSelect.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorSlider.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorSourceTile.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorSplitLine.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorSwitch.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorTextArea.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorTile.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorTiles.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorTool.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorTray.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorUploadSlot.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorUploadTile.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/app-editor/EditorZoom.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/components/workshop/cinematic-studio/AppRepoLink.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -1339,11 +1579,6 @@
     },
     {
       "source": "src/components/workshop/cinematic-studio/CinematicCheckBadge.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/cinematic-studio/CinematicColorPicker.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -1468,11 +1703,6 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/workshop/cinematic-studio/CinematicPopover.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/workshop/cinematic-studio/CinematicReferenceButton.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -1578,11 +1808,6 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/workshop/cinematic-studio/reshoot/ReshootBarField.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/workshop/cinematic-studio/reshoot/ReshootDisclosure.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -1668,6 +1893,86 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
+      "source": "src/components/workshop/openjutsu/OpenjutsuCompare.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuEmptyStage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuPage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuPanel.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuPlayer.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuResultDock.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuRun.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuSeedField.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuStage.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuStudio.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuTakeStatus.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuTakes.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuVideoInput.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/openjutsu/OpenjutsuVideoSlot.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/video-trim/VideoTrimDialog.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
+      "source": "src/components/workshop/video-trim/VideoTrimTrack.vue",
+      "disposition": "page-local",
+      "reason": "Feature or page-specific section; not an independent design-system primitive."
+    },
+    {
       "source": "src/templates/affiliate/AudienceSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
@@ -1734,6 +2039,11 @@
     },
     {
       "source": "src/templates/brand/BrandVoiceSection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/challenge/HowToEnterSection.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
@@ -1814,6 +2124,11 @@
     },
     {
       "source": "src/templates/cloud-nodes/WhySection.vue",
+      "disposition": "template-local",
+      "reason": "Template-specific section; compose from cataloged blocks before promoting."
+    },
+    {
+      "source": "src/templates/drops/LaunchesHeroLogo.vue",
       "disposition": "template-local",
       "reason": "Template-specific section; compose from cataloged blocks before promoting."
     },
@@ -2308,8 +2623,10 @@
     "src/components/auth/AuthSignInPanel.vue",
     "src/components/auth/AuthSpinnerIcon.vue",
     "src/components/auth/AuthToast.vue",
+    "src/components/blocks/BuildConfiguratorChipGroup.vue",
     "src/components/blocks/PlayOverlay.vue",
     "src/components/booking-confirmation/ResourceList.vue",
+    "src/components/campaign/VfxProofHero.vue",
     "src/components/careers/HeroSection.vue",
     "src/components/careers/RolesSection.vue",
     "src/components/careers/TeamPhotosSection.vue",
@@ -2390,6 +2707,7 @@
     "src/components/hub/HubTypeBadge.vue",
     "src/components/hub/HubUseCaseNav.vue",
     "src/components/hub/HubWorkflowCard.vue",
+    "src/components/hub/HubWorkflowThumbnail.vue",
     "src/components/hub/IconApps.vue",
     "src/components/hub/IconModel.vue",
     "src/components/hub/IconWorkflow.vue",
@@ -2536,6 +2854,7 @@
     "src/components/workshop/WorkflowPreview.vue",
     "src/components/workshop/WorkflowResults.vue",
     "src/components/workshop/WorkflowRunControls.vue",
+    "src/components/workshop/WorkshopAccount.vue",
     "src/components/workshop/WorkshopAppCard.vue",
     "src/components/workshop/WorkshopCardMark.vue",
     "src/components/workshop/WorkshopCardMedia.vue",
@@ -2555,12 +2874,55 @@
     "src/components/workshop/WorkshopSearchPanel.vue",
     "src/components/workshop/WorkshopSections.vue",
     "src/components/workshop/WorkshopSortMenu.vue",
+    "src/components/workshop/app-editor/AppEditorShell.vue",
+    "src/components/workshop/app-editor/EditorAlert.vue",
+    "src/components/workshop/app-editor/EditorBusy.vue",
+    "src/components/workshop/app-editor/EditorChip.vue",
+    "src/components/workshop/app-editor/EditorCollapsible.vue",
+    "src/components/workshop/app-editor/EditorColorPicker.vue",
+    "src/components/workshop/app-editor/EditorCompare.vue",
+    "src/components/workshop/app-editor/EditorCompareToggle.vue",
+    "src/components/workshop/app-editor/EditorDivider.vue",
+    "src/components/workshop/app-editor/EditorDock.vue",
+    "src/components/workshop/app-editor/EditorDownload.vue",
+    "src/components/workshop/app-editor/EditorDropZone.vue",
+    "src/components/workshop/app-editor/EditorEmpty.vue",
+    "src/components/workshop/app-editor/EditorFloatingPanel.vue",
+    "src/components/workshop/app-editor/EditorFrame.vue",
+    "src/components/workshop/app-editor/EditorHint.vue",
+    "src/components/workshop/app-editor/EditorHistory.vue",
+    "src/components/workshop/app-editor/EditorIconButton.vue",
+    "src/components/workshop/app-editor/EditorMenuButton.vue",
+    "src/components/workshop/app-editor/EditorNumberField.vue",
+    "src/components/workshop/app-editor/EditorOutput.vue",
+    "src/components/workshop/app-editor/EditorPanelRow.vue",
+    "src/components/workshop/app-editor/EditorPicker.vue",
+    "src/components/workshop/app-editor/EditorPickerRow.vue",
+    "src/components/workshop/app-editor/EditorPopover.vue",
+    "src/components/workshop/app-editor/EditorResult.vue",
+    "src/components/workshop/app-editor/EditorResultDock.vue",
+    "src/components/workshop/app-editor/EditorRun.vue",
+    "src/components/workshop/app-editor/EditorRunCancel.vue",
+    "src/components/workshop/app-editor/EditorSeedField.vue",
+    "src/components/workshop/app-editor/EditorSegmented.vue",
+    "src/components/workshop/app-editor/EditorSelect.vue",
+    "src/components/workshop/app-editor/EditorSlider.vue",
+    "src/components/workshop/app-editor/EditorSourceTile.vue",
+    "src/components/workshop/app-editor/EditorSplitLine.vue",
+    "src/components/workshop/app-editor/EditorSwitch.vue",
+    "src/components/workshop/app-editor/EditorTextArea.vue",
+    "src/components/workshop/app-editor/EditorTile.vue",
+    "src/components/workshop/app-editor/EditorTiles.vue",
+    "src/components/workshop/app-editor/EditorTool.vue",
+    "src/components/workshop/app-editor/EditorTray.vue",
+    "src/components/workshop/app-editor/EditorUploadSlot.vue",
+    "src/components/workshop/app-editor/EditorUploadTile.vue",
+    "src/components/workshop/app-editor/EditorZoom.vue",
     "src/components/workshop/cinematic-studio/AppRepoLink.vue",
     "src/components/workshop/cinematic-studio/AppsBackLink.vue",
     "src/components/workshop/cinematic-studio/CinematicAppCard.vue",
     "src/components/workshop/cinematic-studio/CinematicAppsHub.vue",
     "src/components/workshop/cinematic-studio/CinematicCheckBadge.vue",
-    "src/components/workshop/cinematic-studio/CinematicColorPicker.vue",
     "src/components/workshop/cinematic-studio/CinematicColors.vue",
     "src/components/workshop/cinematic-studio/CinematicComposer.vue",
     "src/components/workshop/cinematic-studio/CinematicCostLabel.vue",
@@ -2585,7 +2947,6 @@
     "src/components/workshop/cinematic-studio/CinematicPicker.vue",
     "src/components/workshop/cinematic-studio/CinematicPickerLists.vue",
     "src/components/workshop/cinematic-studio/CinematicPickerTabs.vue",
-    "src/components/workshop/cinematic-studio/CinematicPopover.vue",
     "src/components/workshop/cinematic-studio/CinematicReferenceButton.vue",
     "src/components/workshop/cinematic-studio/CinematicReferenceMenu.vue",
     "src/components/workshop/cinematic-studio/CinematicScenarioMenu.vue",
@@ -2607,7 +2968,6 @@
     "src/components/workshop/cinematic-studio/CinematicVideoControls.vue",
     "src/components/workshop/cinematic-studio/CinematicVideoSegments.vue",
     "src/components/workshop/cinematic-studio/reshoot/ReshootAimRig.vue",
-    "src/components/workshop/cinematic-studio/reshoot/ReshootBarField.vue",
     "src/components/workshop/cinematic-studio/reshoot/ReshootDisclosure.vue",
     "src/components/workshop/cinematic-studio/reshoot/ReshootExamples.vue",
     "src/components/workshop/cinematic-studio/reshoot/ReshootFormat.vue",
@@ -2625,6 +2985,22 @@
     "src/components/workshop/cinematic-studio/reshoot/ReshootViewport.vue",
     "src/components/workshop/cinematic-studio/reshoot/ReshootWarp.vue",
     "src/components/workshop/cinematic-studio/reshoot/ReshootZone.vue",
+    "src/components/workshop/openjutsu/OpenjutsuCompare.vue",
+    "src/components/workshop/openjutsu/OpenjutsuEmptyStage.vue",
+    "src/components/workshop/openjutsu/OpenjutsuPage.vue",
+    "src/components/workshop/openjutsu/OpenjutsuPanel.vue",
+    "src/components/workshop/openjutsu/OpenjutsuPlayer.vue",
+    "src/components/workshop/openjutsu/OpenjutsuResultDock.vue",
+    "src/components/workshop/openjutsu/OpenjutsuRun.vue",
+    "src/components/workshop/openjutsu/OpenjutsuSeedField.vue",
+    "src/components/workshop/openjutsu/OpenjutsuStage.vue",
+    "src/components/workshop/openjutsu/OpenjutsuStudio.vue",
+    "src/components/workshop/openjutsu/OpenjutsuTakeStatus.vue",
+    "src/components/workshop/openjutsu/OpenjutsuTakes.vue",
+    "src/components/workshop/openjutsu/OpenjutsuVideoInput.vue",
+    "src/components/workshop/openjutsu/OpenjutsuVideoSlot.vue",
+    "src/components/workshop/video-trim/VideoTrimDialog.vue",
+    "src/components/workshop/video-trim/VideoTrimTrack.vue",
     "src/templates/affiliate/AudienceSection.vue",
     "src/templates/affiliate/BenefitsSection.vue",
     "src/templates/affiliate/BrandAssetsSection.vue",
@@ -2639,6 +3015,7 @@
     "src/templates/brand/BrandQuestionsSection.vue",
     "src/templates/brand/BrandTrademarkSection.vue",
     "src/templates/brand/BrandVoiceSection.vue",
+    "src/templates/challenge/HowToEnterSection.vue",
     "src/templates/cli/AgentsSection.vue",
     "src/templates/cli/ComfyCliTerminal.vue",
     "src/templates/cli/FAQSection.vue",
@@ -2655,6 +3032,7 @@
     "src/templates/cloud-nodes/ModelsSection.vue",
     "src/templates/cloud-nodes/SetupSection.vue",
     "src/templates/cloud-nodes/WhySection.vue",
+    "src/templates/drops/LaunchesHeroLogo.vue",
     "src/templates/events/EventVideoDialog.vue",
     "src/templates/events/EventsAgendaView.vue",
     "src/templates/events/EventsCardsView.vue",

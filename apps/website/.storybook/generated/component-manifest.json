@@ -11,8 +11,8 @@
     ],
     "unknownPattern": "Treat as a gap; do not invent a local substitute."
   },
-  "componentCount": 72,
-  "storyCount": 247,
+  "componentCount": 73,
+  "storyCount": 250,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -1210,6 +1210,41 @@
       ]
     },
     {
+      "component": "PrizeTiers01",
+      "source": "src/components/blocks/PrizeTiers01.vue",
+      "storyFile": "src/components/blocks/PrizeTiers01.stories.ts",
+      "title": "Website/Blocks/PrizeTiers01",
+      "status": "documented",
+      "category": "blocks",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/blocks/PrizeTiers01.vue"
+      },
+      "agent": {
+        "importPath": "@/components/blocks/PrizeTiers01",
+        "storybookPath": "/?path=/story/website-blocks-prizetiers01--default",
+        "docsPath": "/?path=/docs/website-blocks-prizetiers01--docs",
+        "states": ["Default", "WithCallToAction"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": false
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-blocks-prizetiers01--default"
+        },
+        {
+          "exportName": "WithCallToAction",
+          "storyId": "website-blocks-prizetiers01--with-call-to-action"
+        }
+      ]
+    },
+    {
       "component": "ReasonsSplit01",
       "source": "src/components/blocks/ReasonsSplit01.vue",
       "storyFile": "src/components/blocks/ReasonsSplit01.stories.ts",
@@ -1376,7 +1411,7 @@
         "importPath": "@/components/blocks/StepsGrid01",
         "storybookPath": "/?path=/story/website-blocks-stepsgrid01--even-step-count",
         "docsPath": "/?path=/docs/website-blocks-stepsgrid01--docs",
-        "states": ["EvenStepCount", "OddStepCount"],
+        "states": ["EvenStepCount", "OddStepCount", "Timeline"],
         "hasInteractionTest": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
@@ -1389,6 +1424,10 @@
         {
           "exportName": "OddStepCount",
           "storyId": "website-blocks-stepsgrid01--odd-step-count"
+        },
+        {
+          "exportName": "Timeline",
+          "storyId": "website-blocks-stepsgrid01--timeline"
         }
       ]
     },
