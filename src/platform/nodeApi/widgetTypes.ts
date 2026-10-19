@@ -20,7 +20,7 @@
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ComfyWidgetConstructor } from '@/scripts/widgets'
+import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { useWidgetStore } from '@/stores/widgetStore'
 
 import { ComfyApiError } from './errors'

@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/LGraph'
-import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { createWorkflowApi } from './workflowHandle'
 

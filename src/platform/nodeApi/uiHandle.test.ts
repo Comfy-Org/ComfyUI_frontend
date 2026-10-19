@@ -286,10 +286,6 @@ describe('comfy.ui.showMenu', () => {
 })
 
 describe('comfy.ui.prompt', () => {
-  beforeEach(() => {
-    hostPrompt.mockReset()
-  })
-
   it('reports a cancel as undefined, not null', async () => {
     // The host spells cancelled `null`; every other absent value in this API is
     // `undefined`, and two spellings of absent is a bug waiting to happen.

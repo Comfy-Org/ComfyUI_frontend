@@ -28,9 +28,11 @@ function run(listener: () => void): void {
   try {
     listener()
   } catch (error) {
-    // One pack's failed startup must not abort the packs queued behind it.
     console.error('[nodeApi] lifecycle listener threw', error)
-    reportError(error, { errorType: 'node_api_lifecycle_listener_failure' })
+    reportError(error, {
+      errorType: 'node_api_lifecycle_listener_failure',
+      surface: 'platform'
+    })
   }
 }
 

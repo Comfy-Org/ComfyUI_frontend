@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 import type { ComfyApi } from '@/scripts/api'
@@ -27,8 +27,6 @@ const snapshot = {
 }
 
 describe('system monitor API', () => {
-  beforeEach(() => vi.mocked(api.fetchApi).mockReset())
-
   it('returns the exact bounded host projection', async () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       new Response(JSON.stringify(snapshot), { status: 200 })

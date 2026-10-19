@@ -210,7 +210,7 @@ export async function mayRun(): Promise<boolean> {
     try {
       return await check()
     } catch (error) {
-      reportError(error, { errorType: 'queue_guard_threw' })
+      reportError(error, { errorType: 'queue_guard_threw', surface: 'graph' })
       return true
     }
   })
@@ -223,7 +223,7 @@ export async function mayRun(): Promise<boolean> {
           new ComfyApiError(
             `A queue guard did not settle within ${GUARD_TIMEOUT_MS}ms.`
           ),
-          { errorType: 'queue_guard_timeout' }
+          { errorType: 'queue_guard_timeout', surface: 'graph' }
         )
         resolve([true])
       }, GUARD_TIMEOUT_MS)
@@ -308,7 +308,7 @@ function normalizeRejection(
             Object.freeze({
               type: error.type,
               message: error.message,
-              details: error.details,
+              details: error.details ?? '',
               ...(error.extra_info?.input_name === undefined
                 ? {}
                 : { inputName: error.extra_info.input_name })
