@@ -48,9 +48,11 @@ export async function startStoryTurn(
   harness: MultiAutogrowRealignHarness,
   text: string
 ): Promise<void> {
-  await harness.panel
-    .getByRole('textbox', { name: /^Describe ideas/ })
-    .fill(text)
+  // `harness.agentPanel.composer`, not a hand-rolled locator: the composer's
+  // accessible name is the `agent.placeholder` /
+  // `agent.placeholderWithoutSkills` pair, and `AGENT_COMPOSER_LABEL` tracks
+  // both. A literal here silently matches nothing and the fill times out.
+  await harness.agentPanel.composer.fill(text)
   await harness.panel
     .getByRole('button', { name: enMessages.agent.send })
     .click()
