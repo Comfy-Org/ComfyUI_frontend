@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 
 import { version } from 'typescript'
 
-const root = fileURLToPath(new URL('../', import.meta.url))
+const root = fileURLToPath(new URL('../../../', import.meta.url))
 const require = createRequire(import.meta.url)
 const compiler = require.resolve('typescript/bin/tsc')
 const cache = path.join(root, 'node_modules/.cache')
