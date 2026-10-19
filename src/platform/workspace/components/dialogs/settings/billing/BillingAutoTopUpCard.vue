@@ -7,7 +7,7 @@
     <Skeleton v-if="state.kind === 'loading'" class="h-16 w-full" />
     <p
       v-else-if="state.kind === 'unavailable'"
-      class="m-0 flex items-center gap-1 rounded-lg border border-interface-stroke p-4 text-sm text-muted-foreground"
+      class="m-0 flex items-center gap-1 rounded-lg border border-border p-4 text-sm text-muted-foreground"
       role="alert"
     >
       {{ $t('workspacePanel.billingTab.autoTopUp.unavailable') }}
@@ -26,7 +26,7 @@
     >
       <div class="flex min-w-0 flex-col gap-1">
         <h3
-          class="m-0 flex items-center gap-2 text-sm font-semibold text-base-foreground"
+          class="m-0 flex items-center gap-2 text-sm font-semibold text-foreground"
         >
           {{ $t('workspacePanel.billingTab.autoTopUp.title') }}
           <span
@@ -100,7 +100,7 @@ interface Line {
 }
 
 const NEUTRAL = {
-  border: 'border-interface-stroke',
+  border: 'border-border',
   text: 'text-muted-foreground'
 } as const
 
