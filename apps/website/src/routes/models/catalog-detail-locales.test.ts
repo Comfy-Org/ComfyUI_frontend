@@ -11,8 +11,8 @@ import { hreflangAlternates } from '@/lib/hreflang'
 import { entries } from '@website/scripts/export-cms-seed'
 
 const SITE = new URL('https://comfy.org')
-const record = entries.find((entry) => entry.kind === 'WORKFLOW')
-if (!record?.slug) throw new Error('Expected a workflow seed record')
+const record = entries.find((entry) => entry.kind === 'MODEL')
+if (!record?.slug) throw new Error('Expected a model seed record')
 const slug = record.slug
 
 function serveCatalog() {

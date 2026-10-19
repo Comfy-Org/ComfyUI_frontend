@@ -1,5 +1,6 @@
 import type { APIContext } from 'astro'
 
+import { isIndexableModelPage } from '@/config/indexing'
 import { modelDeveloper } from '@/config/model-vendors'
 import { modelsPageDataSchema } from '@/config/models-page-data'
 import type { ModelsPageData } from '@/config/models-page-data'
@@ -100,14 +101,19 @@ export function catalogDetailHead(
 }
 
 /**
- * Staff sessions can see unpublished Draft content, and a missing or
- * unavailable record has nothing to index: keep those views out of search.
+ * Staff sessions can see unpublished Draft content, a missing or unavailable
+ * record has nothing to index, and an unlaunched page stays noindex as it does
+ * on the static Hub.
  */
 export function catalogDetailNoindex(
   locals: Pick<APIContext['locals'], 'catalogAuthoring' | 'site'>,
   load: CatalogDetailLoad
 ): boolean {
-  return Boolean(locals.catalogAuthoring ?? locals.site) || load.status !== 'ok'
+  return (
+    Boolean(locals.catalogAuthoring ?? locals.site) ||
+    load.status !== 'ok' ||
+    !isIndexableModelPage(load.page.model.href)
+  )
 }
 
 export function catalogDetailFailure(

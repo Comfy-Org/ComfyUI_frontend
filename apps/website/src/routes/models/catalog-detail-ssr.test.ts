@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
@@ -43,15 +43,19 @@ describe('catalog detail pages in server HTML (SEO audit)', () => {
     expect(records.some((entry) => entry.kind === 'MODEL')).toBe(true)
   })
 
-  it.for(records.map((entry) => [entry.kind, entry.slug] as const))(
-    'server-renders %s %s with its title, h1, description, canonical and JSON-LD',
-    async ([, slug]) => {
+  it.for(
+    records.map(
+      (entry) => [entry.kind, entry.slug, entry.kind === 'WORKFLOW'] as const
+    )
+  )(
+    'server-renders %s %s with its title, h1, description, canonical and JSON-LD (noindex: %s)',
+    async ([, slug, noindex]) => {
       serveCatalog()
       const pathname = `${slug}/`
       const load = await loadCatalogDetailPage({}, pathname, 'en')
       if (load.status !== 'ok') throw new Error(`record ${slug} ${load.status}`)
       const { page } = load
-      expect(catalogDetailNoindex({}, load)).toBe(false)
+      expect(catalogDetailNoindex({}, load)).toBe(noindex)
 
       const head = catalogDetailHead(page, pathname, SITE, 'en', 'en')
       expect(head.title).toContain(page.model.name)
@@ -134,6 +138,26 @@ describe('catalog detail pages in server HTML (SEO audit)', () => {
       const load = await loadCatalogDetailPage({}, pathname, 'en')
       expect(load.status).toBe(status)
       expect(catalogDetailFailure(load)).toBeUndefined()
+    }
+  )
+
+  it.for([
+    { locale: 'en', prefix: '' },
+    { locale: 'zh-CN', prefix: '/zh-CN' },
+    { locale: 'ja', prefix: '/ja' }
+  ] as const)(
+    'keeps an unlaunched workflow page out of the index in $locale',
+    async ({ locale, prefix }) => {
+      serveCatalog()
+      const workflow = records.find((entry) => entry.kind === 'WORKFLOW')
+      assert.exists(workflow)
+      const load = await loadCatalogDetailPage(
+        {},
+        `${prefix}${workflow.slug}/`,
+        locale
+      )
+      expect(load.status).toBe('ok')
+      expect(catalogDetailNoindex({}, load)).toBe(true)
     }
   )
 
