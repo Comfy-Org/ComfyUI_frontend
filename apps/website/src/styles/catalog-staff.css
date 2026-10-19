@@ -3,6 +3,8 @@
 @reference './global.css';
 
 @source '../components/cms';
+@source '../components/ui/popover';
+@source '../components/ui/switch';
 @source '../routes/admin';
 @source '../lib/cms';
 

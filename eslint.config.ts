@@ -275,6 +275,8 @@ const tailwindConfigs = defineConfig([
     // separately loaded staff stylesheet (it @references global.css).
     files: [
       'apps/website/src/components/cms/**/*.{astro,ts,mts,vue}',
+      'apps/website/src/components/ui/popover/PopoverContent.vue',
+      'apps/website/src/components/ui/switch/Switch.vue',
       'apps/website/src/routes/admin/**/*.{astro,ts,mts,vue}',
       'apps/website/src/lib/cms/**/*.{ts,mts}'
     ],
