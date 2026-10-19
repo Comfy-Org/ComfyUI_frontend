@@ -12,10 +12,9 @@ const ctas = mcpCtas(locale)
 </script>
 
 <template>
-  <!-- 5rem/6.75rem = HeaderMain's rendered height (py-5 / lg:py-8) so the hero fills the viewport below the sticky nav -->
   <HeroSplit01
     :locale="locale"
-    class="min-h-[calc(100svh-5rem)] lg:min-h-[calc(100svh-6.75rem)]"
+    class="min-h-[calc(100svh-5rem)] lg:min-h-0 lg:items-start lg:pt-14"
     badge-text="MCP"
     :title="t('mcp.hero.heading')"
     :subtitle="t('mcp.hero.subtitle')"
