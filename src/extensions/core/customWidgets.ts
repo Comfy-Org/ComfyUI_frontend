@@ -3,7 +3,7 @@ import { computed, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ExecutableLGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -35,8 +35,8 @@ type LinkedInputResolver = {
 }
 
 function hasLinkedInputResolver(
-  node: ExecutableLGraphNode | LGraphNode
-): node is (ExecutableLGraphNode | LGraphNode) & LinkedInputResolver {
+  node: LinkedInputResolver | LGraphNode
+): node is LinkedInputResolver {
   return (
     typeof (node as Partial<LinkedInputResolver>).resolveInput === 'function'
   )
@@ -56,7 +56,7 @@ function hasLinkedInputResolver(
 function resolveChoiceValue(
   interiorNode: LGraphNode,
   comboWidget: IBaseWidget,
-  resolverNode: ExecutableLGraphNode | LGraphNode = interiorNode
+  resolverNode: LinkedInputResolver | LGraphNode = interiorNode
 ) {
   const choiceInputIndex = interiorNode.inputs.findIndex(
     (input) => input.widget?.name === comboWidget.name
@@ -149,7 +149,7 @@ function onCustomComboCreated(this: LGraphNode) {
     options: {},
     y: 0,
     serializeValue: (
-      resolverNode?: ExecutableLGraphNode | LGraphNode,
+      resolverNode?: LinkedInputResolver | LGraphNode,
       _index?: number
     ) =>
       widgets
