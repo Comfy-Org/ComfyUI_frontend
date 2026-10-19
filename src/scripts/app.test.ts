@@ -110,7 +110,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
-import type { RootGraphId } from '@/types/graphScopeId'
 import { toRootGraphId } from '@/types/graphScopeId'
 import {
   createTestRootGraph,
@@ -265,13 +264,6 @@ function markLoaded(workflow: ComfyWorkflow): LoadedComfyWorkflow {
   workflow.content = '{}'
   workflow.originalContent = '{}'
   return workflow as LoadedComfyWorkflow
-}
-
-function publishActiveBinding(rootGraphId: RootGraphId): void {
-  const lifecycle = useDocumentLifecycleStore()
-  const active = useWorkflowStore().activeWorkflow
-  lifecycle.beginTransition(active ? toDocumentUid(active.instanceId) : null)
-  lifecycle.activate(rootGraphId)
 }
 
 function createWorkflowGraphData(): ComfyWorkflowJSON {
@@ -590,7 +582,7 @@ describe('ComfyApp', () => {
       )
       useWorkflowStore().activeWorkflow = outgoing
       const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId('outgoing-root'))
+      useDocumentLifecycleStore().activate(toRootGraphId('outgoing-root'))
       const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
         lifecycle.activeRootGraphId(toDocumentUid(outgoing.instanceId))
       )
@@ -622,7 +614,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId('active-root'))
+      useDocumentLifecycleStore().activate(toRootGraphId('active-root'))
       const midLoad = sampleLifecycleAt(
         'beforeConfigureGraph',
         () => lifecycle.activeRootGraphId(uid) === toRootGraphId(graph.id)
@@ -650,7 +642,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId('same-root'))
+      useDocumentLifecycleStore().activate(toRootGraphId('same-root'))
       const midLoad = sampleLifecycleAt('beforeConfigureGraph', () =>
         lifecycle.activeRootGraphId(uid)
       )
@@ -692,7 +684,7 @@ describe('ComfyApp', () => {
       vi.mocked(workflowStore.isActive).mockReturnValue(true)
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId('reloaded-root'))
+      useDocumentLifecycleStore().activate(toRootGraphId('reloaded-root'))
       const midLoad = sampleLifecycleAt(
         'beforeConfigureGraph',
         () => lifecycle.activeRootGraphId(uid) === toRootGraphId(graph.id)
@@ -745,7 +737,7 @@ describe('ComfyApp', () => {
         useWorkflowStore().activeWorkflow = workflow
         const uid = toDocumentUid(workflow.instanceId)
         const lifecycle = useDocumentLifecycleStore()
-        publishActiveBinding(toRootGraphId('doomed-root'))
+        useDocumentLifecycleStore().activate(toRootGraphId('doomed-root'))
         failLoad(graph)
 
         const result = await app.loadGraphData(
@@ -776,7 +768,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = workflow
       const uid = toDocumentUid(workflow.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId('survivor-root'))
+      useDocumentLifecycleStore().activate(toRootGraphId('survivor-root'))
       mockExtensionService.invokeExtensionsAsync.mockImplementation(
         async (name: string) => {
           if (name === 'beforeConfigureGraph')
@@ -811,7 +803,7 @@ describe('ComfyApp', () => {
       const uid = toDocumentUid(workflow.instanceId)
       const idBeforeClear = graph.id
       const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId(idBeforeClear))
+      useDocumentLifecycleStore().activate(toRootGraphId(idBeforeClear))
 
       app.clean()
 
@@ -3585,7 +3577,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = previous
       const previousUid = toDocumentUid(previous.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId(graph.id))
+      useDocumentLifecycleStore().activate(toRootGraphId(graph.id))
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         parameters: 'positive\nNegative prompt: negative\nSteps: 20'
       })
@@ -3622,7 +3614,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = previous
       const previousUid = toDocumentUid(previous.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId(graph.id))
+      useDocumentLifecycleStore().activate(toRootGraphId(graph.id))
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
         parameters: 'positive\nNegative prompt: negative\nSteps: 20'
       })
@@ -3995,7 +3987,7 @@ describe('ComfyApp', () => {
       useWorkflowStore().activeWorkflow = previous
       const previousUid = toDocumentUid(previous.instanceId)
       const lifecycle = useDocumentLifecycleStore()
-      publishActiveBinding(toRootGraphId(graph.id))
+      useDocumentLifecycleStore().activate(toRootGraphId(graph.id))
 
       await app.loadApiJson({}, 'api-import')
 

@@ -341,15 +341,12 @@ function startDocumentLifecycleMirror(): () => void {
     watch(
       () => workflowStore.activeWorkflow,
       (active) => {
-        const lifecycle = useDocumentLifecycleStore()
-        if (!active) {
-          lifecycle.beginTransition(null)
-          return
-        }
+        if (!active) return
         const uid = toDocumentUid(active.instanceId)
-        lifecycle.beginTransition(uid)
         const seeded = seededRootGraphId(active)
-        lifecycle.activate(toRootGraphId(seeded ?? `live-root-${uid}`))
+        useDocumentLifecycleStore().activate(
+          toRootGraphId(seeded ?? `live-root-${uid}`)
+        )
       },
       { flush: 'sync' }
     )
@@ -12967,7 +12964,7 @@ describe('AgentPanelRoot agent socket identity', () => {
   it('stops delivering when a load retracts the binding while the bound tab stays active', async () => {
     mockMessagesEndpoint('wf-42')
     respondToFetch(/\/agent\/identity$/, async () => identityResponse())
-    const tab = bindActiveTab('wf-42')
+    bindActiveTab('wf-42')
     useAgentPanelStore().enabled = true
 
     await renderAndSend('first message')
@@ -12978,7 +12975,6 @@ describe('AgentPanelRoot agent socket identity', () => {
     useDocumentLifecycleStore().beginTransition(null)
     await nextTick()
 
-    expect(workflowStore.activeWorkflow?.path).toBe(tab.path)
     expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
   })
 

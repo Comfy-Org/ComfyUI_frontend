@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { RootGraphId } from '@/types/graphScopeId'
 import { toRootGraphId } from '@/types/graphScopeId'
 
 import type { DocumentUid } from './documentLifecycleStore'
@@ -28,13 +27,6 @@ describe('useDocumentLifecycleStore', () => {
     }
   }
 
-  function publish(rootGraphId: RootGraphId): void {
-    const store = useDocumentLifecycleStore()
-    const active = useWorkflowStore().activeWorkflow
-    store.beginTransition(active ? toDocumentUid(active.instanceId) : null)
-    store.activate(rootGraphId)
-  }
-
   let a: TestDocument
   let b: TestDocument
 
@@ -48,7 +40,7 @@ describe('useDocumentLifecycleStore', () => {
   it('hands the binding over on a document switch', () => {
     const store = useDocumentLifecycleStore()
     a.present()
-    publish(toRootGraphId('graph-a'))
+    store.activate(toRootGraphId('graph-a'))
 
     store.beginTransition(b.uid)
     b.present()
@@ -61,7 +53,7 @@ describe('useDocumentLifecycleStore', () => {
   it('moves the binding when a tab is activated without a graph load', () => {
     const store = useDocumentLifecycleStore()
     a.present()
-    publish(toRootGraphId('graph-a'))
+    store.activate(toRootGraphId('graph-a'))
 
     b.present()
 
@@ -72,7 +64,7 @@ describe('useDocumentLifecycleStore', () => {
   it('keeps the binding through a same-document reload and refreshes its root graph id', () => {
     const store = useDocumentLifecycleStore()
     a.present()
-    publish(toRootGraphId('graph-a'))
+    store.activate(toRootGraphId('graph-a'))
 
     store.beginTransition(a.uid)
     expect(store.activeRootGraphId(a.uid)).toBe(toRootGraphId('graph-a'))
@@ -86,7 +78,7 @@ describe('useDocumentLifecycleStore', () => {
   it('fails closed when a replacement load never publishes', () => {
     const store = useDocumentLifecycleStore()
     a.present()
-    publish(toRootGraphId('graph-a'))
+    store.activate(toRootGraphId('graph-a'))
 
     store.beginTransition(b.uid)
 
@@ -98,7 +90,7 @@ describe('useDocumentLifecycleStore', () => {
   it('fails closed when a same-document reload fails after clearing the graph', () => {
     const store = useDocumentLifecycleStore()
     a.present()
-    publish(toRootGraphId('graph-a'))
+    store.activate(toRootGraphId('graph-a'))
 
     store.beginTransition(a.uid)
     store.invalidate()
@@ -108,7 +100,7 @@ describe('useDocumentLifecycleStore', () => {
 
   it('reports nothing active for a workflow carrying no session uid', () => {
     const store = useDocumentLifecycleStore()
-    publish(toRootGraphId('graph-a'))
+    store.activate(toRootGraphId('graph-a'))
 
     expect(store.activeRootGraphId(undefined)).toBeNull()
   })
@@ -116,7 +108,7 @@ describe('useDocumentLifecycleStore', () => {
   it('follows an in-place root graph rotation without changing document', () => {
     const store = useDocumentLifecycleStore()
     a.present()
-    publish(toRootGraphId('graph-a'))
+    store.activate(toRootGraphId('graph-a'))
 
     store.rebindActiveRootGraph(toRootGraphId('graph-a-rotated'))
 
@@ -128,7 +120,7 @@ describe('useDocumentLifecycleStore', () => {
   it('ignores a root graph rotation while no document is bound', () => {
     const store = useDocumentLifecycleStore()
     a.present()
-    publish(toRootGraphId('graph-a'))
+    store.activate(toRootGraphId('graph-a'))
     store.beginTransition(b.uid)
 
     store.rebindActiveRootGraph(toRootGraphId('graph-orphan'))
