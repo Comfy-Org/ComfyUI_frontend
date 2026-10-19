@@ -1,0 +1,122 @@
+name: 'Website: Campaign Links'
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/website-campaign-links.yaml'
+      - 'apps/website/scripts/campaign-links*'
+      - 'apps/website/scripts/README.md'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Preview URLs, check duplicates, or create drafts
+        type: choice
+        options: [preview, check, create-drafts]
+        default: preview
+      vertical:
+        description: Vertical
+        type: choice
+        options:
+          [all, vfx, advertising, film-animation, architectural-visualization]
+      track:
+        description: Campaign track
+        type: choice
+        options: [all, comfy-led, agency-led]
+      version:
+        description: Page version
+        type: choice
+        options: [all, v1, v2]
+      source:
+        description: Traffic source (blank uses script default)
+        type: string
+      creative:
+        description: Creative identifier (blank uses script default)
+        type: string
+      audience:
+        description: Audience or ad group (optional utm_term)
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: campaign-links-${{ github.event_name == 'pull_request' && github.ref || 'manager' }}
+  cancel-in-progress: false
+
+env:
+  MODE: ${{ inputs.mode || 'preview' }}
+  CAMPAIGN_VERTICAL: ${{ inputs.vertical }}
+  CAMPAIGN_TRACK: ${{ inputs.track }}
+  CAMPAIGN_VERSION: ${{ inputs.version }}
+  CAMPAIGN_SOURCE: ${{ inputs.source }}
+  CAMPAIGN_CREATIVE: ${{ inputs.creative }}
+  CAMPAIGN_AUDIENCE: ${{ inputs.audience }}
+
+jobs:
+  preview:
+    if: github.event_name == 'pull_request' || inputs.mode == 'preview'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+      - name: Generate campaign links
+        run: node apps/website/scripts/campaign-links.ts --mode "$MODE" --output "$RUNNER_TEMP/campaign-links.json"
+      - name: Attach link report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: campaign-links-${{ github.run_id }}
+          path: ${{ runner.temp }}/campaign-links.json
+          if-no-files-found: warn
+      - name: Show link report
+        if: always()
+        run: |
+          echo '### Campaign link report' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$RUNNER_TEMP/campaign-links.json" ]; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat "$RUNNER_TEMP/campaign-links.json" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No report was written. Check the failed generation step before rerunning.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+  manager:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.mode != 'preview'
+    runs-on: ubuntu-latest
+    environment: campaign-links
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          package-manager-cache: false
+      - name: Generate campaign links
+        env:
+          UTM_MANAGER_TOKEN: ${{ secrets.UTM_MANAGER_ENV_TOKEN }}
+        run: node apps/website/scripts/campaign-links.ts --mode "$MODE" --output "$RUNNER_TEMP/campaign-links.json"
+      - name: Attach link report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: campaign-links-${{ github.run_id }}
+          path: ${{ runner.temp }}/campaign-links.json
+          if-no-files-found: warn
+      - name: Show link report
+        if: always()
+        run: |
+          echo '### Campaign link report' >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$RUNNER_TEMP/campaign-links.json" ]; then
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat "$RUNNER_TEMP/campaign-links.json" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'No report was written. Check the failed generation step before rerunning.' >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -7,17 +7,83 @@ const managerOrigin = 'https://utm-link-manager.pages.dev'
 class CampaignLinkError extends Error {}
 
 export function campaignFailureMessage(error: unknown) {
-  return error instanceof CampaignLinkError
-    ? error.message
-    : 'Campaign link run failed. Check authentication and the manager before rerunning.'
+  if (error instanceof CampaignLinkError) return error.message
+  const kind = error instanceof Error ? error.name : typeof error
+  return `Campaign link run failed (${kind}). Check the inputs and the run log before rerunning.`
 }
 
-const verticals = [
-  ['vfx', 'VFX', 'vfx'],
-  ['advertising', 'Advertising', 'advertising'],
-  ['film-animation', 'Film and animation', 'film_animation'],
-  ['architectural-visualization', 'Architectural visualization', 'archviz']
+const destinations = [
+  {
+    vertical: 'vfx',
+    label: 'VFX',
+    track: 'comfy-led',
+    version: 'v2',
+    campaign: 'comfy_vfx',
+    baseUrl: 'https://comfy.org/solutions/vfx/'
+  },
+  {
+    vertical: 'vfx',
+    label: 'VFX',
+    track: 'agency-led',
+    version: 'v1',
+    campaign: 'agency_vfx',
+    baseUrl: 'https://comfy.org/agency-led/vfx/'
+  },
+  {
+    vertical: 'vfx',
+    label: 'VFX',
+    track: 'agency-led',
+    version: 'v2',
+    campaign: 'agency_vfx',
+    baseUrl: 'https://comfy.org/agency-led/vfx/v2/'
+  },
+  {
+    vertical: 'advertising',
+    label: 'Advertising',
+    track: 'agency-led',
+    version: 'v1',
+    campaign: 'agency_advertising',
+    baseUrl: 'https://comfy.org/agency-led/advertising/'
+  },
+  {
+    vertical: 'film-animation',
+    label: 'Film and animation',
+    track: 'agency-led',
+    version: 'v1',
+    campaign: 'agency_film_animation',
+    baseUrl: 'https://comfy.org/agency-led/film-animation/'
+  },
+  {
+    vertical: 'architectural-visualization',
+    label: 'Architectural visualization',
+    track: 'agency-led',
+    version: 'v1',
+    campaign: 'agency_archviz',
+    baseUrl: 'https://comfy.org/agency-led/architectural-visualization/'
+  }
 ] as const
+
+type Destination = (typeof destinations)[number]
+export type CampaignMode = 'preview' | 'check' | 'create-drafts'
+type CampaignFilters = {
+  vertical?: 'all' | Destination['vertical']
+  track?: 'all' | Destination['track']
+  version?: 'all' | Destination['version']
+  source?: string
+  creative?: string
+  audience?: string
+}
+
+function parseChoice<const T extends string>(
+  value: string | undefined,
+  choices: readonly T[],
+  message: string
+): T | undefined {
+  if (!value) return undefined
+  const match = choices.find((choice) => choice === value)
+  if (!match) throw new CampaignLinkError(message)
+  return match
+}
 
 export function buildCampaignLinks({
   vertical = 'all',
@@ -26,13 +92,7 @@ export function buildCampaignLinks({
   source = 'linkedin',
   creative = 'sizzle_video_01',
   audience = ''
-} = {}) {
-  if (!['all', ...verticals.map(([route]) => route)].includes(vertical))
-    throw new CampaignLinkError('Unknown vertical')
-  if (!['all', 'comfy-led', 'agency-led'].includes(track))
-    throw new CampaignLinkError('Unknown campaign type')
-  if (!['all', 'v1', 'v2'].includes(version))
-    throw new CampaignLinkError('Unknown page version')
+}: CampaignFilters = {}) {
   for (const value of [source, creative, audience]) {
     if (!/^[a-z0-9_]*$/.test(value))
       throw new CampaignLinkError(
@@ -42,61 +102,39 @@ export function buildCampaignLinks({
   if (!source || !creative)
     throw new CampaignLinkError('Source and creative are required')
 
-  return verticals
-    .filter(([route]) => vertical === 'all' || vertical === route)
-    .flatMap(([route, label, campaignSlug]) =>
-      ['comfy-led', 'agency-led']
-        .filter((type) => track === 'all' || track === type)
-        .flatMap((type) =>
-          (route === 'vfx' ? ['v1', 'v2'] : ['v1'])
-            .filter(
-              (pageVersion) =>
-                (version === 'all' || version === pageVersion) &&
-                (type !== 'comfy-led' ||
-                  route !== 'vfx' ||
-                  pageVersion === 'v2')
-            )
-            .map((pageVersion) => {
-              const campaign = `${type === 'comfy-led' ? 'comfy' : 'agency'}_${campaignSlug}`
-              const prefix = type === 'agency-led' ? 'agency-led/' : ''
-              const suffix = pageVersion === 'v2' ? '/v2' : ''
-              const baseUrl =
-                type === 'comfy-led' && route === 'vfx'
-                  ? 'https://comfy.org/solutions/vfx/'
-                  : `https://comfy.org/${prefix}${route}${suffix}/`
-              const url = new URL(baseUrl)
-              url.search = new URLSearchParams({
-                utm_source: source,
-                utm_medium: 'ads',
-                utm_campaign: campaign,
-                utm_content: creative,
-                ...(audience && { utm_term: audience })
-              }).toString()
-              const fullUrl = url.href
-              return {
-                id: `campaign-${createHash('sha256').update(canonicalUrl(fullUrl)).digest('hex').slice(0, 24)}`,
-                title: `${label} · ${type} · ${pageVersion} · ${creative}`,
-                baseUrl,
-                fullUrl,
-                source,
-                medium: 'ads',
-                campaign,
-                content: creative,
-                contentTag: creative,
-                nicheTag: '',
-                term: audience,
-                shortAlias: '',
-                shortLink: '',
-                useCustomAlias: false,
-                status: 'pending',
-                isDeleted: false,
-                createdAt: new Date().toISOString(),
-                custom_fields: {},
-                note: 'Draft campaign link. Page launch approvals still required.'
-              }
-            })
-        )
+  return destinations
+    .filter(
+      (page) =>
+        (vertical === 'all' || vertical === page.vertical) &&
+        (track === 'all' || track === page.track) &&
+        (version === 'all' || version === page.version)
     )
+    .map((page) => {
+      const url = new URL(page.baseUrl)
+      url.search = new URLSearchParams({
+        utm_source: source,
+        utm_medium: 'ads',
+        utm_campaign: page.campaign,
+        utm_content: creative,
+        ...(audience && { utm_term: audience })
+      }).toString()
+      const fullUrl = url.href
+      return {
+        id: `campaign-${createHash('sha256').update(canonicalUrl(fullUrl)).digest('hex').slice(0, 24)}`,
+        title: `${page.label} · ${page.track} · ${page.version} · ${creative}`,
+        baseUrl: page.baseUrl,
+        fullUrl,
+        source,
+        medium: 'ads',
+        campaign: page.campaign,
+        content: creative,
+        contentTag: creative,
+        nicheTag: '',
+        term: audience,
+        custom_fields: {},
+        note: 'Draft campaign link. Page launch approvals still required.'
+      }
+    })
 }
 
 type CampaignLink = ReturnType<typeof buildCampaignLinks>[number]
@@ -120,13 +158,11 @@ function parseRegisteredLinks(value: unknown) {
     if (
       typeof item !== 'object' ||
       item === null ||
-      !('id' in item) ||
-      typeof item.id !== 'string' ||
       !('fullUrl' in item) ||
       typeof item.fullUrl !== 'string'
     )
       throw new CampaignLinkError('UTM Manager returned an invalid link record')
-    return { id: item.id, fullUrl: item.fullUrl }
+    return { fullUrl: item.fullUrl }
   })
 }
 
@@ -189,20 +225,19 @@ export async function syncCampaignLinks(
   requested: CampaignLink[],
   {
     token,
-    apply = false,
-    request = fetch
+    mode = 'check'
   }: {
     token: string
-    apply?: boolean
-    request?: typeof fetch
+    mode?: Exclude<CampaignMode, 'preview'>
   }
 ) {
   if (!token.trim())
     throw new CampaignLinkError(
       'UTM Manager automation credential is not configured'
     )
-  async function api(path: string, method = 'GET', body?: unknown) {
-    const response = await request(`${managerOrigin}/api${path}`, {
+  async function api(path: string, body?: unknown): Promise<unknown> {
+    const method = body === undefined ? 'GET' : 'POST'
+    const response = await fetch(`${managerOrigin}/api${path}`, {
       method,
       headers: {
         Authorization: `Bearer ${token}`,
@@ -216,98 +251,113 @@ export async function syncCampaignLinks(
       throw new CampaignLinkError(
         `UTM Manager ${method} ${path} failed (${response.status})`
       )
-    const result: unknown = await response.json()
-    return result
+    return response.json()
   }
   const registered = parseRegisteredLinks(await api('/links'))
   const known = new Set(registered.map(({ fullUrl }) => canonicalUrl(fullUrl)))
-  const unique = [
-    ...new Map(
-      requested.map((link) => [canonicalUrl(link.fullUrl), link])
-    ).values()
-  ]
-  const missing = unique.filter(
+  const missing = requested.filter(
     ({ fullUrl }) => !known.has(canonicalUrl(fullUrl))
   )
   const validation = missing.length
-    ? parseValidation(
-        await api('/links/validate', 'POST', { links: missing }),
-        missing
-      )
+    ? parseValidation(await api('/links/validate', { links: missing }), missing)
     : []
   const requiresReview = validation.some(
-    ({ errors, warnings, existingMatches }) =>
-      errors.length > 0 || warnings.length > 0 || existingMatches > 0
+    ({ errors, existingMatches }) => errors.length > 0 || existingMatches > 0
   )
-  if (apply && missing.length && !requiresReview) {
-    await api('/links-batch', 'POST', { action: 'create', links: missing })
+  const creating = mode === 'create-drafts' && !requiresReview
+  const creationFailures: { fullUrl: string; message: string }[] = []
+  const savedUrls = new Set<string>()
+  if (creating && missing.length) {
+    for (const link of missing) {
+      try {
+        await api('/links-batch', { action: 'create', links: [link] })
+      } catch (error) {
+        creationFailures.push({
+          fullUrl: link.fullUrl,
+          message: campaignFailureMessage(error)
+        })
+      }
+    }
     const saved = parseRegisteredLinks(await api('/links'))
-    const savedUrls = new Set(saved.map(({ fullUrl }) => canonicalUrl(fullUrl)))
-    if (missing.some(({ fullUrl }) => !savedUrls.has(canonicalUrl(fullUrl))))
-      throw new CampaignLinkError(
-        'Some drafts could not be verified. Check the manager before rerunning.'
-      )
+    for (const { fullUrl } of saved) savedUrls.add(canonicalUrl(fullUrl))
   }
+  const unverified = missing.filter(
+    ({ fullUrl }) => !savedUrls.has(canonicalUrl(fullUrl))
+  )
   return {
-    mode: apply ? 'create-drafts' : 'check',
-    requested: unique.length,
-    skipped: unique.length - missing.length,
-    created: apply && !requiresReview ? missing.length : 0,
-    missing:
-      apply && !requiresReview ? [] : missing.map(({ fullUrl }) => fullUrl),
-    requiresReview,
+    requested: requested.length,
+    skipped: requested.length - missing.length,
+    created: creating ? missing.length - unverified.length : 0,
+    missing: unverified.map(({ fullUrl }) => fullUrl),
+    requiresReview: requiresReview || (creating && unverified.length > 0),
     validation,
-    links: unique.map(({ title, fullUrl, campaign }) => ({
-      title,
-      fullUrl,
-      campaign
-    }))
+    creationFailures
   }
 }
 
 function linksFromEnvironment() {
   return buildCampaignLinks({
-    vertical: process.env.CAMPAIGN_VERTICAL || 'all',
-    track: process.env.CAMPAIGN_TRACK || 'all',
-    version: process.env.CAMPAIGN_VERSION || 'all',
-    source: process.env.CAMPAIGN_SOURCE || 'linkedin',
-    creative: process.env.CAMPAIGN_CREATIVE || 'sizzle_video_01',
-    audience: process.env.CAMPAIGN_AUDIENCE || ''
+    vertical: parseChoice(
+      process.env.CAMPAIGN_VERTICAL,
+      ['all', ...destinations.map((page) => page.vertical)],
+      'Unknown vertical'
+    ),
+    track: parseChoice(
+      process.env.CAMPAIGN_TRACK,
+      ['all', ...destinations.map((page) => page.track)],
+      'Unknown campaign track'
+    ),
+    version: parseChoice(
+      process.env.CAMPAIGN_VERSION,
+      ['all', ...destinations.map((page) => page.version)],
+      'Unknown page version'
+    ),
+    source: process.env.CAMPAIGN_SOURCE || undefined,
+    creative: process.env.CAMPAIGN_CREATIVE || undefined,
+    audience: process.env.CAMPAIGN_AUDIENCE || undefined
   })
 }
 
-async function main() {
+export async function runCampaignLinks(mode: CampaignMode) {
+  const requested = linksFromEnvironment()
+  if (!requested.length)
+    throw new CampaignLinkError('No destinations match these campaign filters')
+  const links = requested.map(({ title, fullUrl, campaign }) => ({
+    title,
+    fullUrl,
+    campaign
+  }))
+  return mode === 'preview'
+    ? { mode, duplicateCheck: 'not-run', links }
+    : {
+        mode,
+        links,
+        ...(await syncCampaignLinks(requested, {
+          token: process.env.UTM_MANAGER_TOKEN || '',
+          mode
+        }))
+      }
+}
+
+export async function main(args = process.argv.slice(2)) {
   const { values } = parseArgs({
+    args,
     options: {
       mode: { type: 'string', default: 'preview' },
       output: { type: 'string' }
     }
   })
-  if (!['preview', 'check', 'create-drafts'].includes(values.mode))
-    throw new CampaignLinkError('Mode must be preview, check or create-drafts')
-  const links = linksFromEnvironment()
-  if (!links.length)
-    throw new CampaignLinkError(
-      'No pages match these filters; Comfy VFX requires v2, and v2 is available for VFX only'
-    )
-  const report =
-    values.mode === 'preview'
-      ? {
-          mode: 'preview',
-          duplicateCheck: 'not-run',
-          links: links.map(({ title, fullUrl, campaign }) => ({
-            title,
-            fullUrl,
-            campaign
-          }))
-        }
-      : await syncCampaignLinks(links, {
-          token: process.env.UTM_MANAGER_TOKEN || '',
-          apply: values.mode === 'create-drafts'
-        })
+  const mode =
+    parseChoice(
+      values.mode,
+      ['preview', 'check', 'create-drafts'],
+      'Mode must be preview, check or create-drafts'
+    ) ?? 'preview'
+  const report = await runCampaignLinks(mode)
   const output = JSON.stringify(report, null, 2) + '\n'
   if (values.output) await writeFile(values.output, output)
   process.stdout.write(output)
+  if ('requiresReview' in report && report.requiresReview) process.exitCode = 1
 }
 
 if (

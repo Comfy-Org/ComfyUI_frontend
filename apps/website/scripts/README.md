@@ -155,3 +155,83 @@ well-sized resolution and let CSS scale it down on smaller viewports.
 The script generates multiple widths so you can pick a different one
 per page (e.g. 1280w for a hero, 640w for a thumbnail), or wire up
 JavaScript-based selection later if metrics demand it.
+
+## `campaign-links.ts`
+
+The **Website: Campaign Links** GitHub Actions workflow runs in the cloud on
+manual dispatch. The destination table in `campaign-links.ts` defines six draft
+links: Comfy VFX v2 at `/solutions/vfx/` and five agency-led destinations (VFX v1
+and v2, advertising, film and animation, and architectural visualization).
+Unbuilt Comfy advertising, film and animation, and architectural visualization
+pages, retired Comfy VFX v1, and Black Math are excluded. A destination is not a
+launch approval: verify the page and partner assets before publishing its draft.
+
+Run a local preview from the repository root:
+
+```sh
+pnpm --filter @comfyorg/website campaign-links --mode preview
+```
+
+Choose a vertical, campaign track, page version, traffic source, creative and
+optional audience in Actions. The script owns the defaults: all destinations,
+LinkedIn (`linkedin`), and creative `sizzle_video_01`. The creative becomes
+`utm_content`; the audience becomes `utm_term`. Campaigns use the existing
+`comfy_` or `agency_` prefixes and medium `ads`. Confirm these values match the
+actual ad and audience before creating drafts.
+
+- **preview** produces a downloadable URL report without contacting the manager.
+- **check** reads the manager and validates missing URLs without creating them.
+- **create-drafts** validates all missing URLs before writing. Errors or newly
+  detected duplicates hold creation and set `requiresReview: true`; warnings
+  remain visible in the report and do not block creation. Held runs fail so that
+  a green run cannot be mistaken for completed creation. Reports and artifacts
+  are still attached when generation returns a held or partial result.
+
+Creation sends one link per `/links-batch` request and continues past an
+individual failure. Read-back verifies every missing URL; the report counts only
+verified creations, lists unsaved URLs and per-link failures, and fails the run
+if anything remains unverified. A timeout can happen after a link was saved:
+inspect the report and manager before rerunning, rather than changing the token
+solely because a request timed out. If read-back itself fails, no verified
+creation report is available; check the manager before rerunning.
+
+Duplicate detection sorts full-URL query parameters. The manager hides
+soft-deleted rows. A soft-deleted record, or one whose URL was edited while
+retaining its old deterministic ID, can therefore collide during creation.
+Earlier and later links may already be saved; restore or remove the conflicting
+record in the manager before rerunning. Runs never edit or reactivate records,
+publish Bitly links, launch ads, or change landing pages. The manager owns draft
+status, timestamps, alias settings and creator attribution.
+
+Authenticated `check` and `create-drafts` jobs use the `campaign-links` GitHub
+Actions environment and run only from `main`. PR and preview jobs have no manager
+credential. A repository administrator must complete this setup before use:
+
+1. Create the `campaign-links` environment with a custom deployment branch rule
+   allowing the **branch** `main` only (no tag rule). Required reviewers can be
+   added if a human approval is wanted before authenticated runs.
+2. Create a scoped API token in the manager's API Tokens page with `links:read`
+   and `links:draft:create` only. Set its creator label to
+   `Campaign Links automation`.
+3. Add that token as the environment secret **`UTM_MANAGER_ENV_TOKEN`**. This
+   deliberately differs from the old repository secret name, so an unconfigured
+   environment cannot fall back to the repository credential.
+4. Remove the old repository-level **`UTM_MANAGER_TOKEN`** secret and revoke its
+   old manager token after the replacement is configured. GitHub cannot reveal
+   encrypted secret values for an automated move. Do not copy a browser session
+   or use the legacy shared token.
+5. Merge this workflow onto `main`, run **check**, review its report, then run
+   **create-drafts** when the missing links are correct. No schedule is enabled.
+
+The shared manager concurrency group serializes manual runs. PR previews use
+separate groups and cannot cancel a queued manager run. GitHub can replace an
+older pending manual run when another is queued; check for a cancelled run
+before assuming it created drafts.
+
+The [UTM Manager skill](https://utm-link-manager.pages.dev/skills/utm-link-manager/SKILL.md)
+documents the API contract. This CLI intentionally uses only `node:` built-ins
+and manual boundary validation, so the workflow can run with the repository's
+`.nvmrc` without installing the website dependency tree. New runtime dependencies
+such as Zod would require changing that no-install design. Unexpected errors
+report their kind without leaking paths, provider responses or tokens. Campaign
+names must match the ad platform or be mapped in PostHog for spend attribution.
