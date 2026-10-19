@@ -1206,6 +1206,71 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 
+  it('holds a multi-op call until its final op applies after the terminal frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('apply_ops', 'success', 'call-ops', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-a', 'op-b']
+      })
+    )
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-a'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-b',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('holds a multi-op call whose earlier evidence covered only some ops', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-a'],
+      isLive: true
+    })
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-b',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    transport.ingest(
+      toolCall('apply_ops', 'success', 'call-ops', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-a', 'op-b']
+      })
+    )
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
   // A failed tool call never mutates anything, so there is no forthcoming
   // doc_update for it to wait on -- gating it the same as a success would
   // strand it at the spinner glyph until STALE_AFTER_MS (30s), and, for a
