@@ -103,6 +103,31 @@ describe('useWidgetSelectActions', () => {
       )
     })
 
+    it('rejects an untyped extensionless file on a video widget', async () => {
+      const modelValue = ref<string | undefined>('existing.mp4')
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue,
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: ['existing.mp4'] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined,
+        videoOnly: () => true
+      })
+
+      await handleFilesUpdate([new File(['video'], 'extensionless')])
+
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(modelValue.value).toBe('existing.mp4')
+      expect(useToast().warning).toHaveBeenCalledWith(
+        enMessages.g.videoFilenameExtensionRequired
+      )
+    })
+
     it('uploads file and updates modelValue', async () => {
       vi.mocked(api.fetchApi).mockResolvedValue(
         fromPartial<Response>({

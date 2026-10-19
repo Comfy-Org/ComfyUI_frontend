@@ -18,7 +18,10 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
-import { isExtensionlessVideo } from '@/utils/mediaUploadUtil'
+import {
+  isExtensionlessVideo,
+  isExtensionlessVideoUpload
+} from '@/utils/mediaUploadUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
 const BYTES_PER_MB = 1024 * 1024
@@ -63,6 +66,8 @@ interface UseWidgetSelectActionsOptions {
   uploadFolder: MaybeRefOrGetter<ResultItemType | undefined>
   uploadSubfolder: MaybeRefOrGetter<string | undefined>
   locatorId?: MaybeRefOrGetter<NodeLocatorId | undefined>
+  /** Set when the widget only accepts video uploads. */
+  videoOnly?: MaybeRefOrGetter<boolean>
 }
 
 export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
@@ -163,7 +168,10 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   const handleFilesUpdate = wrapWithErrorHandlingAsync(
     async (files: File[]) => {
       if (files.length === 0) return
-      if (files.some(isExtensionlessVideo)) {
+      const isRejectedVideo = toValue(options.videoOnly)
+        ? isExtensionlessVideoUpload
+        : isExtensionlessVideo
+      if (files.some(isRejectedVideo)) {
         toast.warning(t('g.videoFilenameExtensionRequired'))
         return
       }

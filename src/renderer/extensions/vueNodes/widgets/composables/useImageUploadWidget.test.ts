@@ -178,6 +178,18 @@ describe('useImageUploadWidget', () => {
     expect(useToast().warning).not.toHaveBeenCalled()
   })
 
+  it('claims an extensionless video the browser gave no MIME type', () => {
+    const { node } = createUploadNode()
+    constructVideo(node)
+
+    expect(
+      mocks.capturedUploadOptions?.onReject?.([new File([], 'extensionless')])
+    ).toBe(true)
+    expect(useToast().warning).toHaveBeenCalledWith(
+      'g.videoFilenameExtensionRequired'
+    )
+  })
+
   it('previews the combo value once the initial frame runs', () => {
     const { node } = createUploadNode('beach.jpg')
     const frame = vi.fn()
