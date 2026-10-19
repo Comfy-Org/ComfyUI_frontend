@@ -2,7 +2,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 
-export type HostedTopupCheckoutOutcome =
+type HostedTopupCheckoutOutcome =
   | { readonly status: 'created'; readonly checkoutUrl: string }
   | { readonly status: 'failed'; readonly error: unknown }
 
