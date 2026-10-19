@@ -4,7 +4,7 @@ import { buildHubWorkflowsManifest } from '@/config/hub-workflows-manifest'
 import { hubWorkflowsRouting } from '@/config/hub-workflows-routing'
 import { workflowModels } from '@/config/workshop-workflow-content'
 import { catalogUnavailable, cmsEnabled } from '@/lib/cms/catalog'
-import { loadSiteCatalogList } from '@/lib/cms/catalog-list'
+import { loadEverySiteCatalogCard } from '@/lib/cms/catalog-list-all'
 
 /**
  * comfy-router#46 fetches this from the website origin directly, not through
@@ -21,27 +21,10 @@ function addDestinations(
     if (model.href) destinations.add(`${model.href.replace(/\/$/, '')}/`)
 }
 async function catalogDestinations() {
+  const catalog = await loadEverySiteCatalogCard(undefined, 'en', 'workflows')
+  if (!catalog.ok) return catalogUnavailable()
   const destinations = new Set<string>()
-  const visited = new Set<string>()
-  const params = new URLSearchParams()
-  for (let page = 1; ; page++) {
-    if (page > 1000) return catalogUnavailable()
-    const catalog = await loadSiteCatalogList(
-      undefined,
-      'en',
-      'workflows',
-      params
-    )
-    if (!catalog.ok || (page > 1 && catalog.pages.workflows.reset))
-      return catalogUnavailable()
-    addDestinations(destinations, catalog.models)
-    const next = catalog.pages.workflows.nextCursor
-    if (!catalog.pages.workflows.hasNext) break
-    if (!next || visited.has(next)) return catalogUnavailable()
-    visited.add(next)
-    params.set('cursor', next)
-    params.set('p', String(page + 1))
-  }
+  addDestinations(destinations, catalog.models)
   return destinations
 }
 async function catalogManifest() {

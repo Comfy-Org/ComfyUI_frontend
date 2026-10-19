@@ -1,9 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
-import type { WorkshopModel } from '@/config/models-catalogue'
 import StaffContentActions from '@/components/cms/StaffContentActions.astro'
 import { challengeBannerConfig } from '@/config/banner'
-import { workshopModels } from '@/config/workshop-browse-content'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import CccModelsPage from '@/components/workshop/CccModelsPage.vue'
 import CatalogNavigation from '@/components/workshop/CatalogNavigation.astro'
@@ -13,6 +11,7 @@ import { modelsHubJsonLd } from '@/utils/modelJsonLd'
 import { modelsHubMeta } from './models-hub-meta'
 import { HUB_SECTION_COPY } from './hub-section-copy'
 import { modelsByProvider } from './models-directory'
+import { modelsHubIndexModels } from './models-hub-index'
 import { cmsEnabled, catalogUnavailable } from '@/lib/cms/catalog'
 import { loadSiteCatalogList } from '@/lib/cms/catalog-list'
 
@@ -24,11 +23,14 @@ const catalog = cmsEnabled()
       Astro.url.searchParams
     )
   : undefined
-const failure = catalog && !catalog.ok ? catalogUnavailable() : undefined
+const index = await modelsHubIndexModels(
+  Astro.locals.catalogAuthoring ?? Astro.locals.site,
+  Astro.locals.catalogLocale
+)
+const failure =
+  (catalog && !catalog.ok) || !index.ok ? catalogUnavailable() : undefined
 if (failure) return failure
-const liveModels: readonly WorkshopModel[] = catalog?.ok
-  ? catalog.models.filter((model) => (model.type ?? 'MODEL') === 'MODEL')
-  : workshopModels
+const liveModels = index.ok ? index.models : []
 
 const { title, description } = modelsHubMeta(liveModels)
 const directory = modelsByProvider(
