@@ -77,7 +77,10 @@ export interface DocOpMinterDeps {
   docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
   /**
    * False until the bound document has caught up, unless this tab already
-   * sent the root host's `add_node` into the same document.
+   * sent the root host's `add_node` into the same document. Every resubscribe
+   * (stale probe, reconnect, gap resync, ack-timeout retry) makes it false
+   * again until its catch-up lands, so a false answer holds the write (see
+   * {@link PROMOTED_WRITE_CATCH_UP_DEADLINE_MS}) rather than refusing it.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
   onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
@@ -109,6 +112,18 @@ type IntentOf<T extends GraphIntentEvent['type']> = Extract<
   GraphIntentEvent,
   { type: T }
 >
+
+interface HeldPromotedWrite {
+  event: IntentOf<'set_widget'>
+  /** The bound root graph the write was made against. */
+  rootGraphId: string
+  /** `Date.now()` when the write was first held. */
+  heldSince: number
+}
+
+function heldWriteKey(event: IntentOf<'set_widget'>): string {
+  return `${nodeKey(event.graphId, event.nodeId)}:${event.name}`
+}
 
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
@@ -417,6 +432,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   const pendingAdds = new Map<string, LGraphNode>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
+  // PM-2003: promoted-host writes made while the bound document is catching
+  // up, keyed per widget so a later write to the same widget supersedes the
+  // held one. Map order is first-hold order, which is the mint order.
+  const heldPromotedWrites = new Map<string, HeldPromotedWrite>()
+  let heldRetryTimer: ReturnType<typeof setTimeout> | null = null
   let flushScheduled = false
   let detached = false
 
@@ -510,6 +530,14 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function mintSetWidget(event: IntentOf<'set_widget'>): void {
+    heldPromotedWrites.delete(heldWriteKey(event))
+    routeSetWidget(event, null)
+  }
+
+  function routeSetWidget(
+    event: IntentOf<'set_widget'>,
+    held: HeldPromotedWrite | null
+  ): void {
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
@@ -532,11 +560,60 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       return
     }
     if ('reason' in routed) {
-      reportRefusal(rootGraphId, event, routed)
-      deps.onWidgetWriteRefused(event.nodeId, event.name)
+      if (routed.reason === 'doc_not_synced') {
+        const heldSince = held?.heldSince ?? Date.now()
+        if (Date.now() - heldSince < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS) {
+          holdPromotedWrite({ event, rootGraphId, heldSince })
+          return
+        }
+      }
+      refuseWidgetWrite(rootGraphId, event, routed)
       return
     }
     schedule({ kind: 'op', operation: routed })
+  }
+
+  function refuseWidgetWrite(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>,
+    refusal: PromotedWriteRefusal
+  ): void {
+    reportRefusal(rootGraphId, event, refusal)
+    deps.onWidgetWriteRefused(event.nodeId, event.name)
+  }
+
+  function holdPromotedWrite(held: HeldPromotedWrite): void {
+    heldPromotedWrites.set(heldWriteKey(held.event), held)
+    if (heldRetryTimer !== null) return
+    heldRetryTimer = setTimeout(
+      retryHeldPromotedWrites,
+      PROMOTED_WRITE_RETRY_MS
+    )
+  }
+
+  /**
+   * Re-routes every held write through the same checks a fresh write takes,
+   * so one that waited is judged against the caught-up document's layout. A
+   * write whose bound workflow changed while it waited never reaches the new
+   * document; it is refused like any write the document could not take.
+   */
+  function retryHeldPromotedWrites(): void {
+    heldRetryTimer = null
+    if (detached) return
+    const held = [...heldPromotedWrites.values()]
+    heldPromotedWrites.clear()
+    if (!deps.isEnabled()) return
+    const graph = deps.getGraph()
+    for (const entry of held) {
+      const rootGraphId = graph ? (deps.boundRootGraphId() ?? graph.id) : null
+      if (rootGraphId !== entry.rootGraphId) {
+        refuseWidgetWrite(entry.rootGraphId, entry.event, {
+          reason: 'doc_not_synced'
+        })
+        continue
+      }
+      routeSetWidget(entry.event, entry)
+    }
   }
 
   function reportRefusal(
@@ -769,6 +846,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       detached = true
       pending = []
       pendingAdds.clear()
+      heldPromotedWrites.clear()
+      if (heldRetryTimer !== null) clearTimeout(heldRetryTimer)
+      heldRetryTimer = null
       detachIntents()
       unregisterDocBoundProbe()
     }
