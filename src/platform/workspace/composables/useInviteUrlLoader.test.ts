@@ -463,92 +463,123 @@ describe('useInviteUrlLoader', () => {
         sso: true,
         provider: 'saml.workos',
         firebase: false,
-        outcome: 'shows the SSO toast'
+        outcome: 'shows the SSO toast',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: true,
+        expectedSignInToast: false
       },
       {
         name: 'an OIDC SSO session',
         sso: true,
         provider: 'oidc.workos',
         firebase: false,
-        outcome: 'shows the SSO toast'
+        outcome: 'shows the SSO toast',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: true,
+        expectedSignInToast: false
       },
       {
         name: 'an SSO session beside its Firebase login',
         sso: true,
         provider: 'saml.workos',
         firebase: true,
-        outcome: 'accepts the invite'
+        outcome: 'accepts the invite',
+        expectedAcceptInviteCalls: 1,
+        expectedSsoToast: false,
+        expectedSignInToast: false
       },
       {
         name: 'a Google session beside its Firebase login',
         sso: true,
         provider: 'google.com',
         firebase: true,
-        outcome: 'accepts the invite'
+        outcome: 'accepts the invite',
+        expectedAcceptInviteCalls: 1,
+        expectedSsoToast: false,
+        expectedSignInToast: false
       },
       {
         name: 'a Google session',
         sso: true,
         provider: 'google.com',
         firebase: false,
-        outcome: 'offers a sign-in'
+        outcome: 'offers a sign-in',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: false,
+        expectedSignInToast: true
       },
       {
         name: 'an SSO session with sso_enabled off',
         sso: false,
         provider: 'saml.workos',
         firebase: false,
-        outcome: 'offers a sign-in'
+        outcome: 'offers a sign-in',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: false,
+        expectedSignInToast: true
       },
       {
         name: 'an API-key login with no web session',
         sso: true,
         provider: null,
         firebase: false,
-        outcome: 'offers a sign-in'
+        outcome: 'offers a sign-in',
+        expectedAcceptInviteCalls: 0,
+        expectedSsoToast: false,
+        expectedSignInToast: true
       }
-    ])('$name $outcome', async ({ sso, provider, firebase, outcome }) => {
-      vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
-      const authStore = useAuthStore()
-      authStore.currentUser = firebase
-        ? fromPartial<User>({ uid: 'session-user' })
-        : null
-      Object.assign(authStore, {
-        sessionUser:
-          provider === null
-            ? null
-            : fakeWebSessionUser({
-                id: 'session-user',
-                signInProvider: provider
-              })
-      })
-      mockRouteQuery.value = { invite: 'valid-token' }
-      vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
-        workspaceId: 'ws-123',
-        workspaceName: 'Test Workspace'
-      })
+    ])(
+      '$name $outcome',
+      async ({
+        sso,
+        provider,
+        firebase,
+        expectedAcceptInviteCalls,
+        expectedSsoToast,
+        expectedSignInToast
+      }) => {
+        vi.mocked(useFeatureFlags().flags).ssoEnabled = sso
+        const authStore = useAuthStore()
+        authStore.currentUser = firebase
+          ? fromPartial<User>({ uid: 'session-user' })
+          : null
+        Object.assign(authStore, {
+          sessionUser:
+            provider === null
+              ? null
+              : fakeWebSessionUser({
+                  id: 'session-user',
+                  signInProvider: provider
+                })
+        })
+        mockRouteQuery.value = { invite: 'valid-token' }
+        vi.mocked(useTeamWorkspaceStore().acceptInvite).mockResolvedValue({
+          workspaceId: 'ws-123',
+          workspaceName: 'Test Workspace'
+        })
 
-      const { loadInviteFromUrl } = useInviteUrlLoader()
-      await loadInviteFromUrl()
+        const { loadInviteFromUrl } = useInviteUrlLoader()
+        await loadInviteFromUrl()
 
-      expect(
-        vi.mocked(useTeamWorkspaceStore().acceptInvite).mock.calls.length
-      ).toBe(outcome === 'accepts the invite' ? 1 : 0)
-      expect(
-        useToast().toasts.some(
-          ({ title }) => title === 'Ask your admin to add you'
+        expect(
+          vi.mocked(useTeamWorkspaceStore().acceptInvite).mock.calls.length
+        ).toBe(expectedAcceptInviteCalls)
+        expect(
+          useToast().toasts.some(
+            ({ title }) => title === 'Ask your admin to add you'
+          )
+        ).toBe(expectedSsoToast)
+        expect(
+          useToast().toasts.some(
+            ({ title }) => title === enMessages.workspace.inviteNeedsSignIn
+          )
+        ).toBe(expectedSignInToast)
+        expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+        expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+          'invite'
         )
-      ).toBe(outcome === 'shows the SSO toast')
-      expect(
-        useToast().toasts.some(
-          ({ title }) => title === enMessages.workspace.inviteNeedsSignIn
-        )
-      ).toBe(outcome === 'offers a sign-in')
-      expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
-      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-        'invite'
-      )
-    })
+      }
+    )
 
     it.for<{
       name: string
