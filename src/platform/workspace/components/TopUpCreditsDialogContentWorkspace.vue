@@ -272,7 +272,7 @@
         rel="noopener"
         variant="primary"
         size="lg"
-        class="w-full"
+        class="w-full no-underline"
         @click="watchCheckoutCompletion"
       >
         {{ $t('credits.topUp.openCheckout') }}
@@ -286,7 +286,7 @@
         rel="noopener"
         variant="primary"
         size="lg"
-        class="w-full"
+        class="w-full no-underline"
         @click="followBlockedDefaultCardLink"
       >
         {{ $t('credits.topUp.openPaymentPage') }}
