@@ -37,7 +37,6 @@ function addVirtualNode(
   }
 }
 
-/** An agent `add_node` for each frontend-only note class, outside any recording. */
 export const VIRTUAL_NODE_ADDS: RecordedGraphOperation[] = [
   addVirtualNode(NOTE_ID, 'Note', [1400, 100], NOTE_TEXT),
   addVirtualNode(MARKDOWN_ID, 'MarkdownNote', [1400, 400], MARKDOWN_TEXT)
