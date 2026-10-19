@@ -64,7 +64,13 @@ test.describe(
         heading = MARKDOWN_HEADING
       ) => {
         await expect(noteText()).toHaveValue(note)
-        await expect(markdownText()).toContainText(heading)
+        await expect(
+          markdownText().getByRole('heading', {
+            name: heading,
+            level: 1,
+            exact: true
+          })
+        ).toBeVisible()
         await expect(markdownText()).toContainText(MARKDOWN_BODY)
         await expect(markdownText()).not.toContainText(note)
       }
