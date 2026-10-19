@@ -284,10 +284,6 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/crdtDebugReport.apiLogs.test.ts",
-      "role": "infrastructure"
-    },
-    {
       "path": "src/workbench/extensions/agent/crdt/crdtDebugReport.test.ts",
       "role": "infrastructure"
     },
