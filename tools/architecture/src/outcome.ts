@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 export type Outcome<T> =
   | { ok: true; value: T }
@@ -23,10 +23,14 @@ export function attempt<T>(action: string, run: () => T): Outcome<T> {
 }
 
 export const readText = (root: string, filename: string) =>
-  attempt(`read ${filename}`, () => readFileSync(join(root, filename), 'utf8'))
+  attempt(`read ${filename}`, () =>
+    readFileSync(resolve(root, filename), 'utf8')
+  )
 
-const writeText = (root: string, filename: string, text: string) =>
-  attempt(`write ${filename}`, () => writeFileSync(join(root, filename), text))
+export const writeText = (root: string, filename: string, text: string) =>
+  attempt(`write ${filename}`, () =>
+    writeFileSync(resolve(root, filename), text)
+  )
 
 export const listDirectory = (
   root: string,
@@ -34,7 +38,7 @@ export const listDirectory = (
   recursive: boolean
 ) =>
   attempt(`list ${directory}`, () =>
-    readdirSync(join(root, directory), { recursive }).map((entry) =>
+    readdirSync(resolve(root, directory), { recursive }).map((entry) =>
       String(entry).replaceAll('\\', '/')
     )
   )
