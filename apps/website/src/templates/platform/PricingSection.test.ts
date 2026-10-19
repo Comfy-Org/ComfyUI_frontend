@@ -25,11 +25,11 @@ describe('PricingSection', () => {
     for (const gpu of ['RTX PRO 6000', 'H100 SXM', 'H200 SXM', 'B200']) {
       expect(screen.getAllByText(gpu)).toHaveLength(2)
     }
-    for (const price of ['$4.54/hr', '$6.23/hr', '$7.71/hr', '$11.23/hr']) {
+    for (const price of ['$3.49/hr', '$6.23/hr', '$7.71/hr', '$11.23/hr']) {
       expect(screen.getAllByText(price)).toHaveLength(2)
     }
     for (const credits of [
-      '957.94/hr',
+      '736.39/hr',
       '1314.53/hr',
       '1626.81/hr',
       '2369.53/hr'

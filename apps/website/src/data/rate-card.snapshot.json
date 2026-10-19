@@ -4,8 +4,8 @@
       "gpuClass": "rtx-pro-6000-server",
       "label": "RTX PRO 6000",
       "vramGb": 96,
-      "pricePerHourUsd": 4.54,
-      "creditsPerHour": 957.94
+      "pricePerHourUsd": 3.49,
+      "creditsPerHour": 736.39
     },
     {
       "gpuClass": "h100-sxm",
