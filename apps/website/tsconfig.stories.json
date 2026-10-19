@@ -22,7 +22,7 @@
     "src/components/common/**/*.stories.ts",
     "src/components/ui/**/*.stories.ts",
     "src/components/product/**/*.stories.ts",
-    "src/components/workshop/PlaygroundOutput.stories.ts",
+    "src/components/workshop/**/*.stories.ts",
     "src/templates/**/*.stories.ts",
     "src/storybook/**/*.stories.ts",
     "src/env.d.ts",

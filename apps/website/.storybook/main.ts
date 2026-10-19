@@ -18,8 +18,7 @@ const isNamedPlugin = (plugin: unknown): plugin is { name: string } =>
 const config: StorybookConfig = {
   stories: [
     '../src/storybook/*.mdx',
-    '../src/components/workshop/PlaygroundOutput.stories.ts',
-    '../src/{components/{blocks,common,ui,product},templates,storybook}/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+    '../src/{components/{blocks,common,ui,product,workshop},templates,storybook}/**/*.stories.@(js|jsx|mjs|ts|tsx)'
   ],
   addons: [
     '@storybook/addon-docs',
