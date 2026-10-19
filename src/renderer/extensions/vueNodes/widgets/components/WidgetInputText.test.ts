@@ -182,7 +182,7 @@ describe('WidgetInputText Value Binding', () => {
   describe('Locked Field Hover Styling', () => {
     // Tests assert on the Tailwind class name directly because that's the
     // mechanism being guarded — a rename would need a baseline update anyway.
-    const HOVER_CLASS = 'hover:bg-component-node-widget-background-hovered'
+    const HOVER_CLASS = 'hover:bg-muted'
 
     it('omits the generic hover background class when the field is locked (read-only)', () => {
       const widget = createInputTextWidget('locked value', {

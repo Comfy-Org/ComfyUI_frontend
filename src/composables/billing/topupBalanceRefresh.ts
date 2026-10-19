@@ -35,16 +35,17 @@ const customerBalanceSource: TopupBalanceSource = {
  * Watch for the user returning from a Stripe top-up and refresh the balance.
  * Safe to call repeatedly: a new call replaces any watch still pending.
  */
-export function watchForTopupBalanceUpdate(
-  source: TopupBalanceSource = customerBalanceSource
-): void {
+export function watchForTopupBalanceUpdate({
+  source = customerBalanceSource,
+  onBalanceIncreased
+}: {
+  source?: TopupBalanceSource
+  onBalanceIncreased?: () => Promise<unknown>
+} = {}): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return
 
   stopActiveWatch?.()
 
-  // Null until a balance is known: treating "not loaded yet" as 0 would let the
-  // first read of the *pre-purchase* balance count as the increase we are
-  // waiting for, stopping the watch on the stale amount.
   let baselineMicros: number | null = source.current()
 
   const timeouts = new Set<ReturnType<typeof setTimeout>>()
@@ -70,7 +71,6 @@ export function watchForTopupBalanceUpdate(
       timeouts.add(timeout)
     })
 
-  /** Fetch the balance; true once it has risen above the arming baseline. */
   const refresh = async (): Promise<boolean> => {
     try {
       const amountMicros = (await source.fetch()) ?? 0
@@ -80,10 +80,16 @@ export function watchForTopupBalanceUpdate(
       }
       return amountMicros > baselineMicros
     } catch (error) {
-      // A failed poll is not actionable: the next attempt (or the panel's own
-      // fetch) covers it, and the purchase itself already succeeded.
       console.warn('[Billing] Top-up balance refresh failed', error)
       return false
+    }
+  }
+
+  const refreshDependents = async () => {
+    try {
+      await onBalanceIncreased?.()
+    } catch (error) {
+      console.warn('[Billing] Top-up dependent refresh failed', error)
     }
   }
 
@@ -92,10 +98,6 @@ export function watchForTopupBalanceUpdate(
     running = true
     runs += 1
 
-    // Past the run cap a return still refreshes once — the return after the
-    // actual payment must fetch no matter how often the user glanced back
-    // beforehand. Only the retry schedule is withheld; the lifetime timer is
-    // the sole terminal condition.
     const gaps = runs > MAX_SCHEDULED_RUNS ? [0] : RETRY_GAPS_MS
     const isStopped = () => stopped
 
@@ -103,6 +105,7 @@ export function watchForTopupBalanceUpdate(
       await wait(gap)
       if (isStopped()) return
       if (await refresh()) {
+        await refreshDependents()
         stop()
         return
       }

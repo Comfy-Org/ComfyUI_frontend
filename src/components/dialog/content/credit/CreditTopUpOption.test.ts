@@ -45,10 +45,7 @@ describe('CreditTopUpOption', () => {
     const { container } = renderOption({ selected: false })
     // oxlint-disable-next-line testing-library/no-node-access
     const rootDiv = container.firstElementChild as HTMLElement
-    expect(rootDiv).toHaveClass(
-      'bg-node-component-disabled',
-      'border-transparent'
-    )
+    expect(rootDiv).toHaveClass('bg-muted/30', 'border-transparent')
   })
 
   it('emits select event when clicked', async () => {
