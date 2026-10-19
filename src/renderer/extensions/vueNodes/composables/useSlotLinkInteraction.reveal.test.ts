@@ -206,6 +206,29 @@ describe('hidden link visibility during slot drags', () => {
     expect(isLinkRevealed(f.graphScope.rootGraphId, f.link.id)).toBe(false)
   })
 
+  it('clears the drag reveal when the connector resets before release', async () => {
+    const f = createFixture()
+    f.slot(f.source).down()
+    f.canvas.linkConnector.reset()
+    await Promise.resolve()
+
+    expect(isLinkRevealed(f.graphScope.rootGraphId, f.link.id)).toBe(false)
+  })
+
+  it('keeps the drag reveal when an extension cancels the connector reset', async () => {
+    const f = createFixture()
+    f.slot(f.source).down()
+    f.canvas.linkConnector.events.addEventListener(
+      'reset',
+      (event) => event.preventDefault(),
+      { once: true }
+    )
+    f.canvas.linkConnector.reset()
+    await Promise.resolve()
+
+    expect(isLinkRevealed(f.graphScope.rootGraphId, f.link.id)).toBe(true)
+  })
+
   it('clears the drag reveal when the graph is reset', () => {
     const f = createFixture()
     f.slot(f.source).down()
