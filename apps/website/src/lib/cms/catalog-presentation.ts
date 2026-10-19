@@ -364,6 +364,14 @@ function staticThumbnail(urls: Document, types: Document) {
     : undefined
 }
 
+function heroKind(urls: Document, types: Document, staticOnly: boolean) {
+  if (staticOnly) return 'image'
+  return mediaKind(
+    types,
+    typeof urls['$.hero'] === 'string' ? '$.hero' : '$.thumbnail'
+  )
+}
+
 function heroPresentation(d: Document, preserved: Document) {
   const urls = objectPresentation(d.website_media)
   const types = objectPresentation(d.website_media_types)
@@ -371,13 +379,11 @@ function heroPresentation(d: Document, preserved: Document) {
   const staticThumb = staticThumbnail(urls, types)
   const hero = typeof originalHero === 'string' ? originalHero : staticThumb
   if (typeof hero !== 'string') return {}
-  const kind =
-    typeof originalHero !== 'string' && staticThumb
-      ? 'image'
-      : mediaKind(
-          types,
-          typeof urls['$.hero'] === 'string' ? '$.hero' : '$.thumbnail'
-        )
+  const kind = heroKind(
+    urls,
+    types,
+    typeof originalHero !== 'string' && Boolean(staticThumb)
+  )
   const poster = heroPoster(urls, staticThumb)
   const thumbnailUrl = kind === 'audio' ? poster.poster : hero
   return {

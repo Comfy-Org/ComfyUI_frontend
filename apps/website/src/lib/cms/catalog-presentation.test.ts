@@ -330,6 +330,49 @@ describe('native CONTENT presentation', () => {
     )
     expect(view).toMatchObject({ models: expected })
   })
+  it.for([
+    {
+      case: 'a legacy thumbnail field without a hero',
+      media: { '$.thumbnail': '/catalog-media/thumb/clip' },
+      types: { '$.thumbnail': 'video/webm' },
+      thumbnail: { url: '/catalog-media/thumb/clip', kind: 'video' },
+      thumbnailUrl: '/catalog-media/thumb/clip'
+    },
+    {
+      case: 'only an exact still',
+      media: { '$.static_thumb': '/catalog-media/still/frame' },
+      types: { '$.static_thumb': 'image/webp' },
+      thumbnail: { url: '/catalog-media/still/frame', kind: 'image' },
+      thumbnailUrl: '/catalog-media/still/frame'
+    },
+    {
+      case: 'an audio hero with a poster',
+      media: {
+        '$.hero': '/catalog-media/hero/song',
+        '$.hero_poster': '/catalog-media/poster/cover'
+      },
+      types: { '$.hero': 'audio/mpeg' },
+      thumbnail: {
+        url: '/catalog-media/hero/song',
+        kind: 'audio',
+        poster: '/catalog-media/poster/cover'
+      },
+      thumbnailUrl: '/catalog-media/poster/cover'
+    }
+  ])(
+    'presents the hero from $case',
+    ({ media, types, thumbnail, thumbnailUrl }) => {
+      const view = catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          website_media: media,
+          website_media_types: types
+        }
+      })
+      expect(view).toMatchObject({ thumbnail, thumbnailUrl })
+    }
+  )
   it('classifies audio heroes and examples as audio', () => {
     const view = catalogPresentation({
       ...record,
