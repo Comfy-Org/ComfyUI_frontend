@@ -63,9 +63,13 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && hashFiles('tools/architecture/src/cli.ts') != '' }}
         # PR heads branched before --report existed reject it; drop the fallback once those have rebased.
         run: |
-          if grep -q -- '--report' tools/architecture/src/cli.ts; then
-            pnpm architecture:check --report "$RUNNER_TEMP/architecture-findings.md"
+          findings="$RUNNER_TEMP/architecture-findings.md"
+          probe=$(GITHUB_ACTIONS= pnpm --silent architecture:check --report= 2>&1 || true)
+          if grep -q -- '--report requires a file path' <<< "$probe"; then
+            pnpm architecture:check --report "$findings"
           else
+            echo "::warning::This PR head's architecture CLI predates --report; rebase onto main to get findings in the PR report."
+            echo 'Findings are in the workflow run log and annotations; this PR head predates `--report`.' > "$findings"
             pnpm architecture:check
           fi
 
