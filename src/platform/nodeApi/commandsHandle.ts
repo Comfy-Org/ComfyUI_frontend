@@ -12,7 +12,7 @@
  */
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 import { ComfyApiError } from './errors'
@@ -126,11 +126,11 @@ export function createCommandsApi(): CommandsHandle {
     },
 
     notify(def: NotifyDef) {
-      useToastStore().add({
-        severity: def.severity ?? 'info',
-        summary: def.summary,
-        detail: def.detail,
-        life: def.life
+      const severity =
+        def.severity === 'warn' ? 'warning' : (def.severity ?? 'info')
+      useToast()[severity](def.summary, {
+        description: def.detail,
+        ...(def.life === undefined ? {} : { duration: def.life })
       })
     },
 
