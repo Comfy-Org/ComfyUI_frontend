@@ -8,7 +8,7 @@ import type {
   SubgraphOutputNode
 } from '@/lib/litegraph/src/types/entityRegistry'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
-import { isEqual } from 'es-toolkit'
+import { cloneDeep, isEqual } from 'es-toolkit'
 import { toValue } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -1491,17 +1491,11 @@ export class LGraphNode
     }
 
     if (this.constructor === LGraphNode && state.lastSerialization) {
-      const serialised = {
+      return {
         ...LiteGraph.cloneObject(state.lastSerialization),
         mode: o.mode,
         pos: o.pos
       }
-      finalizeWidgetValuesForm(
-        this,
-        serialised,
-        serializableWidgetOrder(this.widgets ?? [])
-      )
-      return serialised
     }
 
     o.inputs = state.inputs.map((input, i) =>
@@ -1524,7 +1518,7 @@ export class LGraphNode
     const widgetOrderBeforeHook =
       coreSerialization?.order ?? serializableWidgetOrder(widgets ?? [])
     if (coreSerialization) {
-      o.widgets_values = coreSerialization.widgets_values
+      o.widgets_values = cloneDeep(coreSerialization.widgets_values)
       o.widgets_values_named = coreSerialization.widgets_values_named
     }
 

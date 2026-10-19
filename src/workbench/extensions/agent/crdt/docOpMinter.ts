@@ -93,6 +93,10 @@ export interface DocOpMinter {
   detach(): void
 }
 
+function isNonArrayObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
 type IntentOf<T extends GraphIntentEvent['type']> = Extract<
   GraphIntentEvent,
   { type: T }
@@ -133,7 +137,10 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
-  return named && !node.isVirtualNode
+  const hasDeclaredObjectForm =
+    snapshot.widgets_values_form !== undefined &&
+    isNonArrayObject(snapshot.widgets_values)
+  return named && !node.isVirtualNode && !hasDeclaredObjectForm
     ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
     : snapshot
 }

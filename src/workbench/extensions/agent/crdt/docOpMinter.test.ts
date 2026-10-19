@@ -1561,6 +1561,28 @@ describe('attachDocOpMinter', () => {
     expect(wireNodeSnapshot(source)?.widgets_values).toEqual({})
   })
 
+  it('preserves declared object-shaped widget values in an add-node snapshot', () => {
+    const node = new LGraphNode('Custom serializer')
+    node.serialize_widgets = true
+    node.addWidget('text', 'prompt', 'hello', () => {})
+    graph.add(node)
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'widgets_values', {
+        prompt: 'hello',
+        extensionResidue: 'kept'
+      })
+      data.widgets_values_form = { order: ['prompt'] }
+    }
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values: {
+        prompt: 'hello',
+        extensionResidue: 'kept'
+      },
+      widgets_values_form: { order: ['prompt'] }
+    })
+  })
+
   it('omits doc-internal incarnation storage from an imported missing-node snapshot', () => {
     const node = new LGraphNode('Missing ImageScaleToTotalPixels')
     const imported: ISerialisedNode = {

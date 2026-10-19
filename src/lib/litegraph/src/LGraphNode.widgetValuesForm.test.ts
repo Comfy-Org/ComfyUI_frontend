@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -62,6 +63,27 @@ describe('widget values form serialization', () => {
     expect(node.serialize()).not.toHaveProperty('widgets_values_form')
   })
 
+  it('suppresses an inferred form when a hook appends a value in place', () => {
+    const node = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
+    node.onSerialize = (data) => {
+      data.widgets_values?.push('extra')
+    }
+
+    expect(node.serialize()).not.toHaveProperty('widgets_values_form')
+  })
+
+  it('suppresses an inferred form when a hook reorders values in place', () => {
+    const node = nodeWithWidgets([
+      { name: 'prompt', value: 'hello' },
+      { name: 'seed', value: '7' }
+    ])
+    node.onSerialize = (data) => {
+      data.widgets_values?.reverse()
+    }
+
+    expect(node.serialize()).not.toHaveProperty('widgets_values_form')
+  })
+
   it('suppresses an inferred form when widget serialization is disabled', () => {
     const node = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
     node.serialize_widgets = false
@@ -112,14 +134,17 @@ describe('widget values form serialization', () => {
     })
   })
 
-  it('rejects a form whose order disagrees with array values', () => {
-    const node = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
+  it('rejects a form whose length disagrees with array values', () => {
+    const node = nodeWithWidgets([
+      { name: 'prompt', value: 'hello' },
+      { name: 'seed', value: '7' }
+    ])
     node.onSerialize = (data) => {
-      data.widgets_values_form = { order: ['prompt', 'missing'] }
+      data.widgets_values_form = { order: ['prompt'] }
     }
 
     expect(() => node.serialize()).toThrow(
-      '[Assertion failed]: Widget values form entries must name serializable widgets'
+      '[Assertion failed]: Widget values form length must match array-shaped values'
     )
   })
 
@@ -135,9 +160,9 @@ describe('widget values form serialization', () => {
     )
   })
 
-  it('rejects a saved form on a missing-node shell', () => {
+  it('preserves a saved form on a missing-node shell', () => {
     const node = nodeWithWidgets([{ name: 'UNKNOWN', value: 'hello' }])
-    node.last_serialization = {
+    const saved: ISerialisedNode = {
       id: node.id,
       type: 'MissingNode',
       pos: [0, 0],
@@ -148,10 +173,13 @@ describe('widget values form serialization', () => {
       widgets_values: ['hello'],
       widgets_values_form: { order: ['prompt'] }
     }
+    node.last_serialization = saved
 
-    expect(() => node.serialize()).toThrow(
-      '[Assertion failed]: Widget values form entries must name serializable widgets'
-    )
+    const serialised = node.serialize()
+    expect(serialised.widgets_values).toEqual(['hello'])
+    expect(serialised.widgets_values_form).toEqual({ order: ['prompt'] })
+    expect(serialised.widgets_values).not.toBe(saved.widgets_values)
+    expect(serialised.widgets_values_form).not.toBe(saved.widgets_values_form)
   })
 
   it('does not retain a base form after subgraph serialization replaces values', () => {
