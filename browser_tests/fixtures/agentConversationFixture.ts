@@ -391,7 +391,6 @@ export class AgentConversationHarness {
     )
   }
 
-  /** Makes the host refuse every later subscribe, so no catch-up is sent. */
   refuseHostSubscribes(reason = 'overloaded'): void {
     this.hostSocket.refuseSubscribes(reason)
   }
