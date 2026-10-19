@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { inspectSource } from './expected-failure-ratchet'
+import { compareBaseline, inspectSource } from './expected-failure-ratchet'
 
 describe('expected failure inventory', () => {
   it('ignores test-shaped calls in production source files', () => {
@@ -197,5 +197,71 @@ describe('expected failure inventory', () => {
         title: 'known defect'
       }
     ])
+  })
+})
+
+describe('expected failure baseline comparison', () => {
+  const pin = (id: string) => ({
+    id,
+    kind: 'vitest' as const,
+    file: 'src/example.test.ts',
+    line: 1,
+    title: id
+  })
+  const entry = (
+    id: string,
+    classification: 'live-defect' | 'infrastructure-assertion' = 'live-defect'
+  ) => ({ id, classification })
+
+  it.for([
+    {
+      name: 'matches an exact baseline at the ceiling',
+      inventory: [pin('a'), pin('b')],
+      entries: [entry('a'), entry('b', 'infrastructure-assertion')],
+      ceiling: 1,
+      errors: []
+    },
+    {
+      name: 'rejects an unclassified pin',
+      inventory: [pin('a'), pin('new')],
+      entries: [entry('a')],
+      ceiling: 1,
+      errors: ['Unclassified expected failure: src/example.test.ts:1 — new']
+    },
+    {
+      name: 'rejects a resolved pin left in the baseline',
+      inventory: [pin('a')],
+      entries: [entry('a'), entry('fixed', 'infrastructure-assertion')],
+      ceiling: 1,
+      errors: ['Resolved or renamed expected failure still in baseline: fixed']
+    },
+    {
+      name: 'rejects a ceiling above the live-defect count',
+      inventory: [pin('a')],
+      entries: [entry('a')],
+      ceiling: 2,
+      errors: [
+        'Live-defect count 1 must equal LIVE_DEFECT_CEILING (2); lower the ceiling when a pin is fixed.'
+      ]
+    },
+    {
+      name: 'rejects a ceiling below the live-defect count',
+      inventory: [pin('a'), pin('b')],
+      entries: [entry('a'), entry('b')],
+      ceiling: 1,
+      errors: [
+        'Live-defect count 2 must equal LIVE_DEFECT_CEILING (1); lower the ceiling when a pin is fixed.'
+      ]
+    }
+  ])('$name', ({ inventory, entries, ceiling, errors }) => {
+    expect(compareBaseline(inventory, { entries }, ceiling).errors).toEqual(
+      errors
+    )
+  })
+
+  it('rejects duplicate baseline IDs', () => {
+    expect(() =>
+      compareBaseline([pin('a')], { entries: [entry('a'), entry('a')] }, 2)
+    ).toThrow('duplicate IDs')
   })
 })

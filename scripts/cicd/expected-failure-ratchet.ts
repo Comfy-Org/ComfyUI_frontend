@@ -353,49 +353,62 @@ function validateBaseline(value: unknown): BaselineEntry[] {
   return entries
 }
 
+export function compareBaseline(
+  inventory: ExpectedFailure[],
+  baselineValue: unknown,
+  ceiling = LIVE_DEFECT_CEILING
+): { errors: string[]; liveDefects: number; infrastructure: number } {
+  const baseline = validateBaseline(baselineValue)
+  const actualIds = new Set(inventory.map(({ id }) => id))
+  const baselineIds = new Set(baseline.map(({ id }) => id))
+  const liveDefects = baseline.filter(
+    ({ classification }) => classification === 'live-defect'
+  ).length
+  const errors = [
+    ...inventory
+      .filter(({ id }) => !baselineIds.has(id))
+      .map(
+        (entry) =>
+          `Unclassified expected failure: ${entry.file}:${entry.line} — ${entry.id}`
+      ),
+    ...baseline
+      .filter(({ id }) => !actualIds.has(id))
+      .map(
+        ({ id }) =>
+          `Resolved or renamed expected failure still in baseline: ${id}`
+      )
+  ]
+  if (liveDefects !== ceiling) {
+    errors.push(
+      `Live-defect count ${liveDefects} must equal LIVE_DEFECT_CEILING (${ceiling}); lower the ceiling when a pin is fixed.`
+    )
+  }
+  return {
+    errors,
+    liveDefects,
+    infrastructure: baseline.length - liveDefects
+  }
+}
+
 async function run() {
   const inventory = await buildInventory()
   const baselinePath = path.join(
     process.cwd(),
     'scripts/cicd/expected-failure-baseline.json'
   )
-  const baseline = validateBaseline(
+  const { errors, liveDefects, infrastructure } = compareBaseline(
+    inventory,
     JSON.parse(await readFile(baselinePath, 'utf8')) as unknown
   )
-  const actualIds = new Set(inventory.map(({ id }) => id))
-  const baselineIds = new Set(baseline.map(({ id }) => id))
-  const added = inventory.filter(({ id }) => !baselineIds.has(id))
-  const removed = baseline.filter(({ id }) => !actualIds.has(id))
-  const liveDefects = baseline.filter(
-    ({ classification }) => classification === 'live-defect'
-  ).length
 
-  if (
-    added.length === 0 &&
-    removed.length === 0 &&
-    liveDefects === LIVE_DEFECT_CEILING
-  ) {
+  if (errors.length === 0) {
     console.log(
-      `Expected-failure baseline matches: ${liveDefects} live defects, ${baseline.length - liveDefects} infrastructure assertions.`
+      `Expected-failure baseline matches: ${liveDefects} live defects, ${infrastructure} infrastructure assertions.`
     )
     return
   }
 
-  for (const entry of added) {
-    console.error(
-      `Unclassified expected failure: ${entry.file}:${entry.line} — ${entry.id}`
-    )
-  }
-  for (const entry of removed) {
-    console.error(
-      `Resolved or renamed expected failure still in baseline: ${entry.id}`
-    )
-  }
-  if (liveDefects !== LIVE_DEFECT_CEILING) {
-    console.error(
-      `Live-defect count ${liveDefects} must equal LIVE_DEFECT_CEILING (${LIVE_DEFECT_CEILING}); lower the ceiling when a pin is fixed.`
-    )
-  }
+  for (const error of errors) console.error(error)
   console.error(
     'Update scripts/cicd/expected-failure-baseline.json: remove resolved entries and classify each addition as "live-defect" or "infrastructure-assertion".'
   )
