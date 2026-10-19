@@ -20,6 +20,11 @@ import { test } from './__fixtures__/testExtensions'
 
 vi.mock(import('@/utils/colorUtil'), { spy: true })
 
+const mockReportError = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 function createMockContext() {
   return {
     beginPath: vi.fn(),
@@ -468,7 +473,13 @@ describe('group layout in layoutStore', () => {
 })
 
 describe('geometry an extension cannot clobber', () => {
-  test('a JSON round-trip written back onto a detached group keeps its geometry working', () => {
+  function attachedGroup(graph: LGraph, id: number) {
+    const group = new LGraphGroup('group', toGroupId(id))
+    graph.add(group)
+    return group
+  }
+
+  test('a JSON round-trip written back onto a graphless copy keeps geometry working', () => {
     const graph = new LGraph()
     const group = new LGraphGroup('group', toGroupId(810))
     group.pos = [100, 100]
@@ -501,6 +512,11 @@ describe('geometry an extension cannot clobber', () => {
     const copy: Record<string, unknown> = JSON.parse(JSON.stringify(group))
     delete copy.graph
     Object.assign(group, copy)
+
+    // The copy carries _nodes as plain serialized data; it must be refused
+    // rather than leaving detached objects in the live collection.
+    expect(group.nodes).toEqual([])
+
     group.recomputeInsideNodes()
     group.move(10, 20)
 
@@ -510,19 +526,37 @@ describe('geometry an extension cannot clobber', () => {
     expect([...node.pos]).toEqual([160, 170])
   })
 
-  test('a non-collection written over _children or _nodes is ignored', () => {
+  test.for([
+    ['a plain array', '_nodes', [{ id: 1, title: 'plain' }]],
+    ['an empty object', '_children', {}],
+    ['an array', '_children', []],
+    ['a plain object', '_nodes', {}]
+  ] as const)(
+    'assigning %s to %s keeps the live collection',
+    ([, property, assigned], { expect }) => {
+      const graph = new LGraph()
+      const group = attachedGroup(graph, 820)
+      const children = group.children
+      const nodes = group.nodes
+
+      expect(() => Object.assign(group, { [property]: assigned })).not.toThrow()
+
+      expect(group.children).toBe(children)
+      expect(group.nodes).toBe(nodes)
+      expect(mockReportError).toHaveBeenCalledOnce()
+    }
+  )
+
+  test('a real array of nodes still replaces _nodes', () => {
     const graph = new LGraph()
-    const group = new LGraphGroup('group', toGroupId(820))
-    graph.add(group)
-    const children = group.children
-    const nodes = group.nodes
+    const group = attachedGroup(graph, 821)
+    const node = new LGraphNode('inside')
+    graph.add(node)
 
-    expect(() =>
-      Object.assign(group, { _children: [], _nodes: {} })
-    ).not.toThrow()
+    Object.assign(group, { _nodes: [node] })
 
-    expect(group.children).toBe(children)
-    expect(group.nodes).toBe(nodes)
+    expect(group.nodes).toEqual([node])
+    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   test.for([
@@ -534,15 +568,49 @@ describe('geometry an extension cannot clobber', () => {
     'assigning a plain array to %s updates the buffer instead of replacing it',
     ([property, assigned, expected], { expect }) => {
       const graph = new LGraph()
-      const group = new LGraphGroup('group', toGroupId(811))
-      graph.add(group)
+      const group = attachedGroup(graph, 811)
+      const before: unknown = group[property]
 
       Object.assign(group, { [property]: assigned })
 
+      // The layout store only moves when the write went through setBounds, and
+      // identity only holds when the buffer was copied into, not replaced.
+      expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+        id: group.id,
+        position: { x: expected[0], y: expected[1] },
+        size: { width: expected[2], height: expected[3] }
+      })
+      expect(group[property]).toBe(before)
       expect([...group.boundingRect]).toEqual(expected)
       expect(group.serialize().bounding).toEqual(expected)
+      expect(mockReportError).not.toHaveBeenCalled()
     }
   )
+
+  test("assigning another group's mutation view is copied, not refused", () => {
+    const graph = new LGraph()
+    const source = attachedGroup(graph, 822)
+    source.pos = [31, 32]
+    source.size = [330, 340]
+    const target = attachedGroup(graph, 823)
+    const targetView = target._bounding
+
+    Object.assign(target, { _bounding: source._bounding })
+
+    expect([...target.boundingRect]).toEqual([31, 32, 330, 340])
+    expect(target._bounding).toBe(targetView)
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
+
+  test('assigning a typed array is copied, not refused', () => {
+    const graph = new LGraph()
+    const group = attachedGroup(graph, 824)
+
+    Object.assign(group, { bounds: Float64Array.from([7, 8, 90, 100]) })
+
+    expect([...group.boundingRect]).toEqual([7, 8, 90, 100])
+    expect(mockReportError).not.toHaveBeenCalled()
+  })
 
   test.for([
     ['null', 'bounds', null],
@@ -558,14 +626,19 @@ describe('geometry an extension cannot clobber', () => {
   ] as const)(
     'assigning %s to %s leaves the geometry untouched',
     ([, property, assigned], { expect }) => {
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       const graph = new LGraph()
-      const group = new LGraphGroup('group', toGroupId(812))
-      graph.add(group)
+      const group = attachedGroup(graph, 812)
+      const view = group[property]
 
       expect(() => Object.assign(group, { [property]: assigned })).not.toThrow()
 
+      // Identity proves the property was never replaced; pos/size read the
+      // views rather than bounds, so a clobbered view shows up here.
+      expect(group[property]).toBe(view)
+      expect([...group.pos]).toEqual([10, 10])
+      expect([...group.size]).toEqual([140, 80])
       expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
+      expect(mockReportError).toHaveBeenCalledOnce()
     }
   )
 
@@ -589,24 +662,27 @@ describe('geometry an extension cannot clobber', () => {
     }
   )
 
-  test('a foreign assignment names itself in the console', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  test('a refused write is reported once per group, not once per process', () => {
     const graph = new LGraph()
-    const group = new LGraphGroup('group', toGroupId(816))
-    graph.add(group)
+    const first = attachedGroup(graph, 816)
+    const second = attachedGroup(graph, 817)
 
-    Object.assign(group, { bounds: { 0: 1, 1: 2, 2: 300, 3: 400 } })
-    Object.assign(group, { _bounding: { 0: 5, 1: 6, 2: 70, 3: 80 } })
+    Object.assign(first, { bounds: 'nonsense' })
+    Object.assign(first, { _bounding: 'nonsense again' })
+    Object.assign(second, { _pos: 'nonsense' })
 
-    expect(warn).toHaveBeenCalledTimes(1)
-    expect(warn.mock.calls[0][0]).toContain('bounds')
+    expect(mockReportError).toHaveBeenCalledTimes(2)
+    expect(mockReportError.mock.calls[0][1]).toMatchObject({
+      errorType: 'error_assigning_group_geometry',
+      context: { key: 'bounds' }
+    })
   })
 
-  test('geometry still reads through a reactive proxy', () => {
+  test('geometry reads and writes through a reactive proxy', () => {
     const graph = new LGraph()
-    const group = new LGraphGroup('group', toGroupId(814))
-    graph.add(group)
+    const group = attachedGroup(graph, 814)
     const reactiveGroup = reactive(group)
+    const view = group._bounding
 
     group.pos = [60, 70]
 
@@ -616,6 +692,11 @@ describe('geometry an extension cannot clobber', () => {
 
     Object.assign(reactiveGroup, { _bounding: [1, 2, 300, 400] })
 
-    expect([...group.boundingRect]).toEqual([1, 2, 300, 400])
+    expect(group._bounding).toBe(view)
+    expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
+      id: group.id,
+      position: { x: 1, y: 2 },
+      size: { width: 300, height: 400 }
+    })
   })
 })

@@ -5,6 +5,7 @@ import type {
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -17,6 +18,10 @@ import { canvasClass } from './canvas/canvasClassAccess'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import { createMutationView } from './infrastructure/createMutationView'
+import {
+  defineAbsorbingBuffer,
+  defineGuardedCollection
+} from './infrastructure/externalWriteGuards'
 import type {
   ColorOption,
   IColorable,
@@ -124,74 +129,63 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   })
 
   constructor(title?: string, id?: GroupId) {
-    // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = toGroupId(id ?? -1)
     this.title = title || 'Group'
     const { pale_blue } = canvasClass.node_colors
     this.color = pale_blue.groupcolor
 
     let reported = false
-    const reportForeignShape = (key: string) => {
+    const onRefused = (key: string, value: unknown) => {
       if (reported) return
       reported = true
-      console.warn(
-        `[LGraphGroup] ${key} was assigned a non-array value; kept the existing buffer`
+      reportError(
+        new Error(
+          `LGraphGroup.${key} was assigned a ${typeof value} the group cannot use; it kept its own value`
+        ),
+        {
+          surface: 'graph',
+          errorType: 'error_assigning_group_geometry',
+          context: { key }
+        }
       )
-    }
-
-    const copyAssignmentsIntoBuffer = (
-      key: 'bounds' | '_pos' | '_size' | '_bounding',
-      arity: number,
-      write: (coords: number[]) => void
-    ) => {
-      const buffer = this[key]
-      Object.defineProperty(this, key, {
-        get: () => buffer,
-        set: (value: ArrayLike<unknown> | null | undefined) => {
-          if (!Array.isArray(value) && !ArrayBuffer.isView(value))
-            reportForeignShape(key)
-
-          const coords: number[] = []
-          for (let index = 0; index < arity; index++) {
-            const coord = value?.[index]
-            if (typeof coord !== 'number' || !Number.isFinite(coord)) return
-            coords.push(coord)
-          }
-          write(coords)
-        },
-        enumerable: true,
-        configurable: true
-      })
     }
 
     const writeRect = (coords: number[]) =>
       this.setBounds(coords[0], coords[1], coords[2], coords[3])
-    copyAssignmentsIntoBuffer('bounds', 4, writeRect)
-    copyAssignmentsIntoBuffer('_bounding', 4, writeRect)
-    copyAssignmentsIntoBuffer('_pos', 2, (coords) => {
-      this.pos = [coords[0], coords[1]]
-    })
-    copyAssignmentsIntoBuffer('_size', 2, (coords) => {
-      this.setBounds(this._pos[0], this._pos[1], coords[0], coords[1])
-    })
+    defineAbsorbingBuffer(this, 'bounds', 4, writeRect, onRefused)
+    defineAbsorbingBuffer(this, '_bounding', 4, writeRect, onRefused)
+    defineAbsorbingBuffer(
+      this,
+      '_pos',
+      2,
+      (coords) => {
+        this.pos = [coords[0], coords[1]]
+      },
+      onRefused
+    )
+    defineAbsorbingBuffer(
+      this,
+      '_size',
+      2,
+      (coords) => {
+        this.setBounds(this._pos[0], this._pos[1], coords[0], coords[1])
+      },
+      onRefused
+    )
 
-    const keepCollection = (
-      key: '_nodes' | '_children',
-      accepts: (value: unknown) => boolean
-    ) => {
-      let current = this[key]
-      Object.defineProperty(this, key, {
-        get: () => current,
-        set: (value: unknown) => {
-          if (accepts(value)) current = value as typeof current
-        },
-        enumerable: true,
-        configurable: true
-      })
-    }
-
-    keepCollection('_nodes', Array.isArray)
-    keepCollection('_children', (value) => value instanceof Set)
+    defineGuardedCollection(
+      this,
+      '_nodes',
+      (value): value is LGraphNode[] =>
+        Array.isArray(value) && value.every((n) => n instanceof LGraphNode),
+      onRefused
+    )
+    defineGuardedCollection(
+      this,
+      '_children',
+      (value): value is Set<Positionable> => value instanceof Set,
+      onRefused
+    )
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */
