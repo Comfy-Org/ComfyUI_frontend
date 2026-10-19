@@ -83,7 +83,11 @@ function jobDetail(workflow: unknown): JobDetail {
   }
 }
 
-/** The job row's "More" menu, opened the way a user opens it. */
+/**
+ * The job row's "More" menu, opened the way a user opens it. Mirrors
+ * `QueuePanel.addOutputToCurrentWorkflow`, which is the house idiom for this
+ * menu, rather than re-deriving the interaction.
+ */
 async function openJobMenu(
   queuePanel: QueuePanel,
   jobId: string
@@ -96,8 +100,26 @@ async function openJobMenu(
   await more.click()
 }
 
+/**
+ * `menuitem`, not `button`: the entries come from `useJobMenu`'s
+ * `jobMenuEntries` as PrimeVue `MenuItem`s, so they carry the `menuitem` role
+ * — which is also how `QueuePanel.addOutputToCurrentWorkflow` locates its
+ * sibling entry. Querying `button` here matched nothing and timed the test
+ * out instead of failing on the behaviour.
+ */
 function openAsWorkflowItem(page: Page): Locator {
-  return page.getByRole('button', { name: OPEN_AS_WORKFLOW, exact: true })
+  return page.getByRole('menuitem', { name: OPEN_AS_WORKFLOW, exact: true })
+}
+
+/**
+ * Asserts the entry before clicking it, so a renamed label or changed role
+ * fails on the locator at the expect timeout instead of silently consuming
+ * the whole 180s test budget inside `click`'s auto-wait.
+ */
+async function clickOpenAsWorkflow(page: Page): Promise<void> {
+  const item = openAsWorkflowItem(page)
+  await expect(item).toBeVisible()
+  await item.click()
 }
 
 /**
@@ -155,7 +177,7 @@ test.describe(
       const queuePanel = new QueuePanel(page)
       await queuePanel.open()
       await openJobMenu(queuePanel, SERVER_RUN_JOB_ID)
-      await openAsWorkflowItem(page).click()
+      await clickOpenAsWorkflow(page)
 
       await test.step('a new tab holds the job’s graph', async () => {
         await expect(topbar.tabs).toHaveCount(tabsBefore + 1)
@@ -222,7 +244,7 @@ test.describe(
       const queuePanel = new QueuePanel(page)
       await queuePanel.open()
       await openJobMenu(queuePanel, SERVER_RUN_JOB_ID)
-      await openAsWorkflowItem(page).click()
+      await clickOpenAsWorkflow(page)
 
       // Nothing opened — that part is not the defect on its own, and it is
       // asserted outside the expected-failure window so a tab that DOES open
