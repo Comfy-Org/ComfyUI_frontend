@@ -44,12 +44,37 @@ describe('useRegistrySearch through the real search gateway', () => {
       expect(search.firstPage.value).toEqual({ status: 'failed', query })
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({
-          message: expect.stringContaining('Network Error')
+          message: expect.stringContaining('Network Error'),
+          errors: [
+            expect.objectContaining({ message: 'Algolia unreachable' }),
+            expect.objectContaining({
+              message: expect.stringContaining('Network Error')
+            })
+          ]
         }),
         expect.objectContaining({ errorType: 'error_searching_registry_packs' })
       )
     }
   )
+
+  it('serves registry results when Algolia returns a malformed response', async () => {
+    vi.mocked(algoliasearch, { partial: true }).mockReturnValue({
+      search: vi.fn().mockResolvedValue({ results: [] })
+    })
+    registryAdapter.mockImplementation(async (config) => ({
+      data: { nodes: [{ id: 'registry-pack' }] },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config
+    }))
+
+    const search = await searchFor('malformed')
+
+    expect(search.firstPage.value).toMatchObject({ status: 'loaded' })
+    expect(toValue(search.items)).toEqual([{ id: 'registry-pack' }])
+    expect(reportError).not.toHaveBeenCalled()
+  })
 
   it('asks the registry again after a failed search instead of reusing the failure', async () => {
     goOffline()

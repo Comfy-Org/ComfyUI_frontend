@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { useRegistrySearchGateway } from '@/services/gateway/registrySearchGateway'
 import { useAlgoliaSearchProvider } from '@/services/providers/algoliaSearchProvider'
@@ -118,14 +118,20 @@ describe('useRegistrySearchGateway', () => {
       ).resolves.toEqual(succeeded(registryResult))
     })
 
-    it('fails the search when all providers fail', async () => {
+    it('fails the search with every provider error when all providers fail', async () => {
+      const algoliaError = new Error('Algolia failed')
+      const registryError = new Error('Registry failed')
       const mockAlgoliaProvider = {
-        searchPacks: vi.fn().mockResolvedValue(failed('Algolia failed')),
+        searchPacks: vi
+          .fn()
+          .mockResolvedValue({ ok: false, cause: algoliaError }),
         clearSearchCache: vi.fn()
       }
 
       const mockRegistryProvider = {
-        searchPacks: vi.fn().mockResolvedValue(failed('Registry failed')),
+        searchPacks: vi
+          .fn()
+          .mockResolvedValue({ ok: false, cause: registryError }),
         clearSearchCache: vi.fn()
       }
 
@@ -136,11 +142,17 @@ describe('useRegistrySearchGateway', () => {
 
       const gateway = useRegistrySearchGateway()
 
-      await expect(
-        gateway.searchPacks('test', { pageSize: 10, pageNumber: 0 })
-      ).resolves.toEqual(
-        failedWith('All search providers failed. Last error: Registry failed')
-      )
+      const outcome = await gateway.searchPacks('test', {
+        pageSize: 10,
+        pageNumber: 0
+      })
+
+      assert(!outcome.ok, 'expected the search to fail')
+      expect(outcome.cause).toBeInstanceOf(AggregateError)
+      expect(outcome.cause).toMatchObject({
+        message: 'All search providers failed. Last error: Registry failed',
+        errors: [algoliaError, registryError]
+      })
     })
   })
 

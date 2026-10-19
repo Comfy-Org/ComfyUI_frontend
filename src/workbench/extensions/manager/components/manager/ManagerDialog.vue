@@ -432,7 +432,6 @@ const {
   sortField
 )
 
-// Tab helpers for template
 const isUpdateAvailableTab = computed(
   () => selectedTab.value?.id === ManagerTab.UpdateAvailable
 )
@@ -443,7 +442,6 @@ const isUnresolvedTab = computed(
   () => selectedTab.value?.id === ManagerTab.Unresolved
 )
 
-// Map of tab IDs to their empty state i18n key suffixes
 const tabEmptyStateKeys: Record<string, string> = {
   [ManagerTab.AllInstalled]: 'allInstalled',
   [ManagerTab.UpdateAvailable]: 'updateAvailable',

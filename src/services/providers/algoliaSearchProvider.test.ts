@@ -314,17 +314,71 @@ describe('useAlgoliaSearchProvider', () => {
       ).resolves.toEqual({ ok: false, cause: algoliaError })
     })
 
-    it('throws a bug in mapping the response instead of failing over', async () => {
-      mockSearchClient.search.mockResolvedValue({ results: [] })
+    it.for([
+      { name: 'no results', response: { results: [] }, path: 'at index 0' },
+      {
+        name: 'pack hits that are not a list',
+        response: { results: [{ hits: null }] },
+        path: 'at "[0].hits"'
+      },
+      {
+        name: 'a pack hit without an id',
+        response: { results: [{ hits: [{ name: 'Pack' }] }] },
+        path: 'at "[0].hits[0]"'
+      },
+      {
+        name: 'a page count that is not a number',
+        response: { results: [{ hits: [], nbPages: '2' }] },
+        path: 'at "[0].nbPages"'
+      },
+      {
+        name: 'a suggestion without a query',
+        response: { results: [{ hits: [] }, { hits: [{ popularity: 1 }] }] },
+        path: 'at "[1].hits[0].query"'
+      }
+    ])(
+      'fails the search when the response has $name',
+      async ({ response, path }) => {
+        mockSearchClient.search.mockResolvedValue(response)
+
+        const provider = useAlgoliaSearchProvider()
+        const outcome = await provider.searchPacks('euler-discrete-scheduler', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+
+        assert(!outcome.ok, 'expected the search to fail')
+        expect(outcome.cause).toBeInstanceOf(Error)
+        expect(String(outcome.cause)).toContain(
+          'Malformed Algolia search response'
+        )
+        expect(String(outcome.cause)).toContain(path)
+      }
+    )
+
+    it('degrades to the raw results when the rewrite response is malformed', async () => {
+      mockSearchClient.search
+        .mockResolvedValueOnce({ results: [{ hits: [], nbPages: 0 }] })
+        .mockResolvedValueOnce({ results: [{ hits: [{ name: 'Pack' }] }] })
 
       const provider = useAlgoliaSearchProvider()
-
-      await expect(
+      const result = await searchResult(
         provider.searchPacks('euler-discrete-scheduler', {
           pageSize: 10,
           pageNumber: 0
         })
-      ).rejects.toThrow(TypeError)
+      )
+
+      expect(result.nodePacks).toEqual([])
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          message: expect.stringContaining('Malformed Algolia search response')
+        }),
+        expect.objectContaining({
+          errorType: 'error_searching_algolia_fallbacks',
+          tags: { outcome: 'degraded' }
+        })
+      )
     })
 
     it('preserves raw results and suggestions when the rewrite request fails', async () => {
@@ -589,6 +643,32 @@ describe('useAlgoliaSearchProvider', () => {
       ])
       expect(result.rawResultsEmpty).toBe(true)
       expect(registrySearchPacks).not.toHaveBeenCalled()
+    })
+
+    it('fails over to the registry when the Algolia response is malformed', async () => {
+      const registryResult: SearchPacksResult = {
+        nodePacks: [{ id: 'registry-pack', name: 'Registry Pack' }],
+        querySuggestions: []
+      }
+      const registrySearchPacks = vi
+        .fn()
+        .mockResolvedValue({ ok: true, result: registryResult })
+      vi.mocked(useComfyRegistrySearchProvider).mockReturnValue({
+        searchPacks: registrySearchPacks,
+        clearSearchCache: vi.fn()
+      })
+      mockSearchClient.search.mockResolvedValue({ results: [] })
+
+      const gateway = useRegistrySearchGateway()
+      const result = await searchResult(
+        gateway.searchPacks('euler-discrete-scheduler', {
+          pageSize: 10,
+          pageNumber: 0
+        })
+      )
+
+      expect(result).toBe(registryResult)
+      expect(registrySearchPacks).toHaveBeenCalledOnce()
     })
 
     it('sends no fallback queries when searching node names', async () => {

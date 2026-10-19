@@ -134,7 +134,7 @@ export const useRegistrySearchGateway = (): RegistrySearchGateway => {
     query: string,
     params: SearchNodePacksParams
   ): Promise<SearchPacksOutcome> => {
-    let lastError: Error | null = null
+    const providerErrors: Error[] = []
     const listKey = toListKey(query, params)
     const skipped = providersOtherThanListProvider(listKey, params.pageNumber)
 
@@ -152,8 +152,9 @@ export const useRegistrySearchGateway = (): RegistrySearchGateway => {
         }
         return outcome
       }
-      lastError = toError(outcome.cause)
-      recordFailure(providerState, lastError)
+      const error = toError(outcome.cause)
+      providerErrors.push(error)
+      recordFailure(providerState, error)
       console.warn(
         `${providerState.name} search provider failed (${providerState.consecutiveFailures} failures):`,
         outcome.cause
@@ -161,10 +162,14 @@ export const useRegistrySearchGateway = (): RegistrySearchGateway => {
       updateActiveProviderOnFailure()
     }
 
+    const lastError = providerErrors.at(-1)
     return {
       ok: false,
-      cause: new Error(
-        `All search providers failed. Last error: ${lastError?.message || 'No available search providers'}`
+      cause: new AggregateError(
+        providerErrors,
+        lastError
+          ? `All search providers failed. Last error: ${lastError.message}`
+          : 'No available search providers'
       )
     }
   }

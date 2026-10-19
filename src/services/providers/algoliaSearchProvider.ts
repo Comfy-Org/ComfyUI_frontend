@@ -6,6 +6,8 @@ import type {
 import { liteClient as algoliasearch } from 'algoliasearch/dist/lite/builds/browser'
 import { uniqBy } from 'es-toolkit'
 import { memoize } from 'es-toolkit/compat'
+import { z } from 'zod'
+import { fromZodError } from 'zod-validation-error'
 
 import {
   MIN_CHARS_FOR_SUGGESTIONS_ALGOLIA,
@@ -43,6 +45,28 @@ const toRewriteParams = (
     REWRITE_ANALYTICS_TAG
   ]
 })
+
+const zPackSearchResult = z.looseObject({
+  hits: z.array(
+    z
+      .looseObject({
+        id: z.string().nullish(),
+        objectID: z.string().optional()
+      })
+      .refine((hit) => (hit.id ?? hit.objectID) !== undefined, {
+        message: 'expected an id or objectID'
+      })
+  ),
+  nbPages: z.number().optional()
+})
+
+const zSuggestionSearchResult = z.looseObject({
+  hits: z.array(z.looseObject({ query: z.string(), popularity: z.number() }))
+})
+
+const zPackSearchResults = z.tuple([zPackSearchResult], zSuggestionSearchResult)
+
+const zFallbackSearchResults = z.array(zPackSearchResult)
 
 const searchPacksCache = new QuickLRU<string, SearchPacksResult>({
   maxSize: SEARCH_CACHE_MAX_SIZE
@@ -116,23 +140,42 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
   > => {
     const { pageSize, pageNumber } = params
 
+    async function searchRawQuery<T>(
+      requests: SearchQuery[],
+      resultsSchema: z.ZodType
+    ): Promise<
+      { ok: true; results: SearchResponse<T>[] } | { ok: false; cause: unknown }
+    > {
+      let response: { results: unknown }
+      try {
+        response = await searchClient.search<T>({ requests, strategy: 'none' })
+      } catch (cause) {
+        return { ok: false, cause }
+      }
+      const parsed = resultsSchema.safeParse(response.results)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          cause: fromZodError(parsed.error, {
+            prefix: 'Malformed Algolia search response'
+          })
+        }
+      }
+      return { ok: true, results: response.results as SearchResponse<T>[] }
+    }
+
     async function searchFallbacks(
       fallbackQueries: string[]
     ): Promise<AlgoliaNodePack[] | undefined> {
       if (fallbackQueries.length === 0) return []
-      try {
-        const { results } = await searchClient.search<AlgoliaNodePack>({
-          requests: fallbackQueries.map((fallbackQuery) =>
-            buildPackSearchRequest(fallbackQuery, toRewriteParams(params))
-          ),
-          strategy: 'none'
-        })
-        const hits = (results as SearchResponse<AlgoliaNodePack>[]).flatMap(
-          (result) => result.hits
-        )
-        return uniqBy(hits, (hit) => hit.objectID).slice(0, pageSize)
-      } catch (error) {
-        reportError(error, {
+      const response = await searchRawQuery<AlgoliaNodePack>(
+        fallbackQueries.map((fallbackQuery) =>
+          buildPackSearchRequest(fallbackQuery, toRewriteParams(params))
+        ),
+        zFallbackSearchResults
+      )
+      if (!response.ok) {
+        reportError(response.cause, {
           errorType: 'error_searching_algolia_fallbacks',
           surface: 'platform',
           level: 'warning',
@@ -140,20 +183,8 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
         })
         return undefined
       }
-    }
-
-    async function searchRawQuery(requests: SearchQuery[]) {
-      try {
-        const { results } = await searchClient.search<
-          AlgoliaNodePack | NodesIndexSuggestion
-        >({
-          requests,
-          strategy: 'none'
-        })
-        return { ok: true as const, results }
-      } catch (cause) {
-        return { ok: false as const, cause }
-      }
+      const hits = response.results.flatMap((result) => result.hits)
+      return uniqBy(hits, (hit) => hit.objectID).slice(0, pageSize)
     }
 
     const shouldQuerySuggestions =
@@ -166,7 +197,9 @@ export const useAlgoliaSearchProvider = (): NodePackSearchProvider => {
       })
     }
 
-    const response = await searchRawQuery(requests)
+    const response = await searchRawQuery<
+      AlgoliaNodePack | NodesIndexSuggestion
+    >(requests, zPackSearchResults)
     if (!response.ok) return response
     const { results } = response
 
