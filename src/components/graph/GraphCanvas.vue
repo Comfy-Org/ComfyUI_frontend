@@ -7,7 +7,7 @@
       <div
         v-if="workflowTabsPosition === 'Topbar'"
         data-testid="topbar-workflow-tabs"
-        class="workflow-tabs-container pointer-events-auto relative flex h-(--workflow-tabs-height) w-full items-center border-b border-interface-stroke/50 bg-comfy-menu-bg shadow-interface"
+        class="workflow-tabs-container pointer-events-auto relative flex h-(--workflow-tabs-height) w-full items-center border-b border-border/50 bg-background shadow-md"
       >
         <WorkflowTabs />
       </div>
@@ -125,6 +125,7 @@ let activeStartup: symbol | undefined
 </script>
 
 <script setup lang="ts">
+import { LIGHT_THEME_NODE_LIGHTNESS } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { until, useEventListener } from '@vueuse/core'
 import {
   computed,
@@ -372,9 +373,10 @@ watchEffect(() => {
   LiteGraph.nodeOpacity = settingStore.get('Comfy.Node.Opacity')
 })
 watchEffect(() => {
-  LiteGraph.nodeLightness = colorPaletteStore.completedActivePalette.light_theme
-    ? 0.5
-    : undefined
+  LiteGraph.nodeLightness =
+    colorPaletteStore.colorScheme === 'light'
+      ? LIGHT_THEME_NODE_LIGHTNESS
+      : undefined
 })
 
 watchEffect(() => {

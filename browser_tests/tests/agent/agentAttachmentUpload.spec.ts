@@ -31,7 +31,7 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
       const panel = page.locator('#agent-panel-root')
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = agentPanel.composer
       const send = panel.getByRole('button', { name: 'Send', exact: true })
       await composer.fill('Keep this draft')
       await expect(send).toBeEnabled()

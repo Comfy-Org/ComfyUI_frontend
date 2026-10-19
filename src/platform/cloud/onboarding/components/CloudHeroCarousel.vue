@@ -61,7 +61,7 @@
               class="absolute inset-x-0 bottom-0 flex items-center gap-4 p-5 xl:p-6 2xl:p-8"
             >
               <span
-                class="flex size-12 shrink-0 items-center justify-center rounded-3xl bg-transparency-white-t8 backdrop-blur-[6px] xl:size-16"
+                class="flex size-12 shrink-0 items-center justify-center rounded-3xl bg-white/8 backdrop-blur-[6px] xl:size-16"
               >
                 <i
                   :class="cn(PROVIDER_ICON[slide.provider], 'size-6 xl:size-8')"
@@ -82,7 +82,7 @@
         class="flex w-full shrink-0 items-center gap-4 xl:gap-6"
       >
         <div
-          class="h-2 min-w-0 flex-1 overflow-clip rounded-full bg-transparency-white-t20 backdrop-blur-[30px]"
+          class="h-2 min-w-0 flex-1 overflow-clip rounded-full bg-white/20 backdrop-blur-[30px]"
         >
           <div
             ref="progressFillEl"

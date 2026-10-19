@@ -72,6 +72,9 @@ catalogs:
     '@lucide/vue':
       specifier: ^1.17.0
       version: 1.24.0
+    '@microsoft/api-extractor':
+      specifier: 7.58.9
+      version: 7.58.9
     '@pinia/testing':
       specifier: ^2.0.1
       version: 2.0.1
@@ -708,6 +711,9 @@ importers:
       '@intlify/eslint-plugin-vue-i18n':
         specifier: 'catalog:'
         version: 4.5.1(eslint@10.10.0(jiti@2.7.0))(jsonc-eslint-parser@3.1.0)(vue-eslint-parser@10.4.1(eslint@10.10.0(jiti@2.7.0)))(yaml-eslint-parser@2.1.0)
+      '@microsoft/api-extractor':
+        specifier: 'catalog:'
+        version: 7.58.9(@types/node@25.9.5)
       '@pinia/testing':
         specifier: 'catalog:'
         version: 2.0.1(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))
@@ -11817,7 +11823,6 @@ snapshots:
       '@rushstack/node-core-library': 5.23.1(@types/node@25.9.5)
     transitivePeerDependencies:
       - '@types/node'
-    optional: true
 
   '@microsoft/api-extractor@7.58.9(@types/node@25.9.5)':
     dependencies:
@@ -11836,7 +11841,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - '@types/node'
-    optional: true
 
   '@microsoft/tsdoc-config@0.18.1':
     dependencies:
@@ -11844,10 +11848,8 @@ snapshots:
       ajv: 8.20.0
       jju: 1.4.0
       resolve: 1.22.12
-    optional: true
 
-  '@microsoft/tsdoc@0.16.0':
-    optional: true
+  '@microsoft/tsdoc@0.16.0': {}
 
   '@mixpanel/rrdom@2.0.0-alpha.18.5':
     dependencies:
@@ -12430,18 +12432,15 @@ snapshots:
       semver: 7.7.4
     optionalDependencies:
       '@types/node': 25.9.5
-    optional: true
 
   '@rushstack/problem-matcher@0.2.1(@types/node@25.9.5)':
     optionalDependencies:
       '@types/node': 25.9.5
-    optional: true
 
   '@rushstack/rig-package@0.7.3':
     dependencies:
       jju: 1.4.0
       resolve: 1.22.12
-    optional: true
 
   '@rushstack/terminal@0.24.0(@types/node@25.9.5)':
     dependencies:
@@ -12450,7 +12449,6 @@ snapshots:
       supports-color: 8.1.1
     optionalDependencies:
       '@types/node': 25.9.5
-    optional: true
 
   '@rushstack/ts-command-line@5.3.10(@types/node@25.9.5)':
     dependencies:
@@ -12460,7 +12458,6 @@ snapshots:
       string-argv: 0.3.2
     transitivePeerDependencies:
       - '@types/node'
-    optional: true
 
   '@segment/analytics.js-video-plugins@0.2.1':
     dependencies:
@@ -13048,8 +13045,7 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@types/argparse@1.0.38':
-    optional: true
+  '@types/argparse@1.0.38': {}
 
   '@types/aria-query@5.0.4': {}
 
@@ -13948,7 +13944,6 @@ snapshots:
   argparse@1.0.10:
     dependencies:
       sprintf-js: 1.0.3
-    optional: true
 
   argparse@2.0.1: {}
 
@@ -15665,8 +15660,7 @@ snapshots:
 
   import-fresh@4.0.0: {}
 
-  import-lazy@4.0.0:
-    optional: true
+  import-lazy@4.0.0: {}
 
   import-meta-resolve@4.2.0: {}
 
@@ -15877,8 +15871,7 @@ snapshots:
 
   jiti@2.7.0: {}
 
-  jju@1.4.0:
-    optional: true
+  jju@1.4.0: {}
 
   joi@18.2.3:
     dependencies:
@@ -18061,8 +18054,7 @@ snapshots:
 
   speakingurl@14.0.1: {}
 
-  sprintf-js@1.0.3:
-    optional: true
+  sprintf-js@1.0.3: {}
 
   sqids@0.3.0: {}
 
@@ -18248,7 +18240,6 @@ snapshots:
   supports-color@8.1.1:
     dependencies:
       has-flag: 4.0.0
-    optional: true
 
   supports-hyperlinks@4.5.0:
     dependencies:

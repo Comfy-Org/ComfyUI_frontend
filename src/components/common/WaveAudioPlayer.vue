@@ -19,9 +19,9 @@
     >
       <i
         v-if="!isPlaying"
-        class="ml-0.5 icon-[lucide--play] size-3 text-base-foreground"
+        class="ml-0.5 icon-[lucide--play] size-3 text-foreground"
       />
-      <i v-else class="icon-[lucide--pause] size-3 text-base-foreground" />
+      <i v-else class="icon-[lucide--pause] size-3 text-foreground" />
     </Button>
 
     <div
@@ -45,7 +45,7 @@
             loading
               ? 'bg-muted-foreground/20'
               : index <= playedBarIndex
-                ? 'bg-base-foreground'
+                ? 'bg-foreground'
                 : 'bg-muted-foreground/40'
           )
         "
@@ -70,7 +70,7 @@
         :class="
           cn(
             'min-h-0.5 flex-1 rounded-full',
-            loading ? 'bg-muted-foreground/20' : 'bg-base-foreground'
+            loading ? 'bg-muted-foreground/20' : 'bg-foreground'
           )
         "
         :style="{ height: (bar.height / 100) * height + 'px' }"
@@ -85,7 +85,7 @@
         @click="handleProgressClick"
       >
         <div
-          class="absolute top-0 left-0 h-full rounded-full bg-base-foreground"
+          class="absolute top-0 left-0 h-full rounded-full bg-foreground"
           :style="{ width: progressRatio + '%' }"
         />
       </div>
@@ -109,7 +109,7 @@
           :disabled="loading || failed"
           @click="seekToStart"
         >
-          <i class="icon-[lucide--skip-back] size-4 text-base-foreground" />
+          <i class="icon-[lucide--skip-back] size-4 text-foreground" />
         </Button>
         <Button
           variant="textonly"
@@ -122,9 +122,9 @@
         >
           <i
             v-if="!isPlaying"
-            class="ml-0.5 icon-[lucide--play] size-5 text-base-foreground"
+            class="ml-0.5 icon-[lucide--play] size-5 text-foreground"
           />
-          <i v-else class="icon-[lucide--pause] size-5 text-base-foreground" />
+          <i v-else class="icon-[lucide--pause] size-5 text-foreground" />
         </Button>
         <Button
           variant="textonly"
@@ -134,7 +134,7 @@
           :disabled="loading || failed"
           @click="seekToEnd"
         >
-          <i class="icon-[lucide--skip-forward] size-4 text-base-foreground" />
+          <i class="icon-[lucide--skip-forward] size-4 text-foreground" />
         </Button>
       </div>
 
@@ -147,7 +147,7 @@
           :disabled="loading || failed"
           @click="toggleMute"
         >
-          <i :class="cn(volumeIcon, 'size-4 text-base-foreground')" />
+          <i :class="cn(volumeIcon, 'size-4 text-foreground')" />
         </Button>
         <Slider
           :model-value="[volume * 100]"

@@ -5,46 +5,40 @@
     class="absolute right-0 bottom-[62px] z-1300 flex w-[250px] justify-center border-0! bg-inherit!"
   >
     <div
-      class="w-4/5 rounded-lg border border-interface-stroke bg-interface-panel-surface p-2 text-text-primary shadow-lg select-none"
+      class="w-4/5 rounded-lg border bg-background p-2 text-foreground shadow-lg select-none"
       :style="filteredMinimapStyles"
       @click.stop
     >
       <div class="flex flex-col gap-1">
         <div
-          class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-accent"
           data-testid="zoom-in-action"
           @mousedown="startRepeat('Comfy.Canvas.ZoomIn')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
         >
           <span class="font-medium">{{ $t('graphCanvasMenu.zoomIn') }}</span>
-          <span class="text-[9px] text-text-primary">{{
-            zoomInCommandText
-          }}</span>
+          <span class="text-[9px]">{{ zoomInCommandText }}</span>
         </div>
 
         <div
-          class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-accent"
           data-testid="zoom-out-action"
           @mousedown="startRepeat('Comfy.Canvas.ZoomOut')"
           @mouseup="stopRepeat"
           @mouseleave="stopRepeat"
         >
           <span class="font-medium">{{ $t('graphCanvasMenu.zoomOut') }}</span>
-          <span class="text-[9px] text-text-primary">{{
-            zoomOutCommandText
-          }}</span>
+          <span class="text-[9px]">{{ zoomOutCommandText }}</span>
         </div>
 
         <div
-          class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-node-component-surface-hovered"
+          class="flex cursor-pointer items-center justify-between rounded-sm px-3 py-2 text-sm hover:bg-accent"
           data-testid="zoom-to-fit-action"
           @click="executeCommand('Comfy.Canvas.FitView')"
         >
           <span class="font-medium">{{ $t('zoomControls.zoomToFit') }}</span>
-          <span class="text-[9px] text-text-primary">{{
-            zoomToFitCommandText
-          }}</span>
+          <span class="text-[9px]">{{ zoomToFitCommandText }}</span>
         </div>
 
         <NumberField
@@ -57,7 +51,7 @@
         >
           <NumberFieldDecrement />
           <NumberFieldInput :aria-label="$t('zoomControls.zoomPercentage')" />
-          <span class="shrink-0 text-sm text-text-primary">%</span>
+          <span class="shrink-0 text-sm">%</span>
           <NumberFieldIncrement />
         </NumberField>
       </div>

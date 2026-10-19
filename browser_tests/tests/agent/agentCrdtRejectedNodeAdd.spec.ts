@@ -48,7 +48,6 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
  */
 
 const WORKFLOW_ID = 'f18210000-0000-4000-8000-000000000001'
-const SOCKET_SID = 'f18210000-0000-4000-8000-000000000002'
 const MESSAGE_ID = 'f18210000-0000-4000-8000-000000000003'
 const THREAD_ID = 'f18210000-0000-4000-8000-000000000004'
 
@@ -273,18 +272,10 @@ test.describe(
       toast
     }) => {
       const host = new HostDoc(WORKFLOW_ID, hostSeed, catalog)
-      // `hold` parks the page's own `doc_ops` batch instead of judging it on
-      // arrival, so the added node is OBSERVABLE on the canvas before the
-      // verdict lands. Judging it at send time is what made #18210's version
-      // of this case race its own assertion ("the synchronous rejection can
-      // remove the node before it is observable"); releasing the held batch
-      // takes the identical path - relay gate, real applier, verdict frame -
-      // so nothing about the rejection itself is weakened by waiting.
       const hostSocket = new AgentFollowerHostSocket(
         page,
         WORKFLOW_ID,
         host,
-        SOCKET_SID,
         'hold'
       )
       await hostSocket.install()
@@ -312,17 +303,10 @@ test.describe(
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       await agentPanel.selectWorkflow()
-      // The session binds the workflow when a turn is ACCEPTED
-      // (`useAgentSession`'s `boundAtAck`), and the follower subscribes to the
-      // bound workflow — so a person only has the Agent watching this canvas
-      // after they have said something to it. One turn is what puts the
-      // follower in the state the rest of this case is about.
       await agentPanel.sendMessage('Have a look at this workflow')
       await hostSocket.waitForSubscribe()
       const seedNode = vueNodes.getNodeLocator(SEED_NODE_ID)
       await expect(seedNode).toBeVisible()
-      // After the panel has taken its side of the window, so the pinned
-      // transform is the one the add is aimed at.
       await pinCanvasTransform(page)
       const addAt = await emptyCanvasPointBelow(page, seedNode)
 
@@ -346,12 +330,6 @@ test.describe(
         })
 
       await test.step('the host refuses the add', async () => {
-        // `heldClientOps()` flattens every held batch, but
-        // `releaseHeldClientOps()` judges only the OLDEST one. So the poll
-        // above proves the add is held somewhere, not that it is the batch
-        // about to be judged — and `.not.toEqual([])` would be satisfied by
-        // any other batch queued ahead of it (a catch-up mint, or the
-        // placement click). Assert the released batch IS the add.
         const released = hostSocket.releaseHeldClientOps()
         expect(released.map((op) => op.op)).toContain('add_node')
         await expect
@@ -368,32 +346,16 @@ test.describe(
           )
       })
 
-      // Asserted BEFORE the canvas assertions below: the notice is created
-      // with `life: NOTICE_LIFE_MS` (10s) and its expiry clock starts when
-      // the verdict is handled, so putting three default-5s-timeout canvas
-      // assertions in front of it lets a slow run watch PrimeVue remove the
-      // toast and then fail on a message that really was shown.
       await test.step('the person is told the edit was refused', async () => {
-        // `toastErrors` is not filtered on `:visible` and `toContainText`
-        // passes on any node in the collection, so either alone would accept
-        // a message nobody saw. Filter to the copy and require it on screen.
-        // The graph-edit copy, not the widget-write copy: the op the host
-        // named is an `add_node`, and `rejectedOpNotice` reserves the
-        // widget-write wording for a refused `set_widget`.
-        const rejectionToast = toast.toastErrors.filter({
-          hasText: enMessages.agent.editRejected.generic
-        })
+        const rejectionToast = toast.withText(
+          `${enMessages.agent.editRejected.generic} Rejected: ${ADDED_CLASS} (uncatalogued_widget_write)`
+        )
         await expect(rejectionToast).toBeVisible({ timeout: 10_000 })
       })
 
       await test.step('the refused node is gone from the canvas and the seed node is still there', async () => {
         await expect(vueNodes.getNodeLocator(addedNodeId)).toBeHidden()
         await expect.poll(() => nodeIdsOfType(page, ADDED_CLASS)).toEqual([])
-        // Narrower than "and nothing else": this checks the seed node
-        // survived the revert, not that every widget value on it is
-        // untouched. A revert that moved it or reset `seed`/`steps` would
-        // still pass, and covering that needs a serialized-shape oracle this
-        // case does not carry.
         await expect(vueNodes.getNodeLocator(SEED_NODE_ID)).toBeVisible()
       })
     })
