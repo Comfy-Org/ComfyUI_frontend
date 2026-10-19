@@ -437,3 +437,13 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     )
   }
 }
+
+type RegisteredExecutableLGraphNode = ExecutableLGraphNode
+type RegisteredExecutionId = ExecutionId
+
+declare module '../types/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    ExecutableLGraphNode: RegisteredExecutableLGraphNode
+    ExecutionId: RegisteredExecutionId
+  }
+}

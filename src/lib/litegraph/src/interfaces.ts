@@ -1,5 +1,3 @@
-import type { InputSpec } from '@/schemas/nodeDefSchema'
-import type { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import type { GroupId } from '@/types/groupId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -267,19 +265,6 @@ export interface INodeFlags {
   keepAllLinksOnBypass?: boolean
   /** Node is in ghost placement mode (semi-transparent, following cursor) */
   ghost?: boolean
-}
-
-/**
- * A widget that is linked to a slot.
- *
- * This is set by the ComfyUI_frontend logic. See
- * https://github.com/Comfy-Org/ComfyUI_frontend/blob/b80e0e1a3c74040f328c4e344326c969c97f67e0/src/extensions/core/widgetInputs.ts#L659
- */
-export interface IWidgetLocator {
-  name: string
-  type?: string
-  [CONFIG]?: InputSpec
-  [GET_CONFIG]?: () => InputSpec | undefined
 }
 
 export interface DefaultConnectionColors {

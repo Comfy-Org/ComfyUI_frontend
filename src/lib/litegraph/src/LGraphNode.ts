@@ -1,4 +1,6 @@
 import type {
+  ExecutableLGraphNode,
+  ExecutionId,
   LGraph,
   Subgraph,
   LGraphCanvas,
@@ -155,10 +157,6 @@ import {
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
-import type {
-  ExecutableLGraphNode,
-  ExecutionId
-} from './subgraph/ExecutableNodeDTO'
 import type { NodeLike } from './types/NodeLike'
 import type { CanvasPointerEvent } from './types/events'
 import {

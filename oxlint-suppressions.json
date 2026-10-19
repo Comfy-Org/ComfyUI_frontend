@@ -1428,7 +1428,12 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 36
+      "count": 37
+    }
+  },
+  "src/types/litegraph.ts": {
+    "comfy/no-reexports": {
+      "count": 29
     }
   },
   "src/types/nodeState.ts": {

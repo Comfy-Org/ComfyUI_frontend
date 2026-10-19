@@ -1,4 +1,5 @@
 import type {
+  ExecutableLGraphNode,
   LGraphCanvas,
   LGraphNode
 } from '@/lib/litegraph/src/types/entityRegistry'
@@ -14,6 +15,7 @@ import type {
   WidgetVisibilityComponent
 } from '@/types/widgetVisibility'
 import type { ColorFormat } from '@/utils/colorUtil'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 
 import type {
   CanvasColour,
@@ -23,10 +25,25 @@ import type {
   Size
 } from '../interfaces'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { ExecutableLGraphNode } from '../subgraph/ExecutableNodeDTO'
 import type { CanvasPointerEvent } from './events'
 
 export type { NodeBindable } from '../utils/type'
+
+export const CONFIG = Symbol()
+export const GET_CONFIG = Symbol()
+
+/**
+ * A widget that is linked to a slot.
+ *
+ * This is set by the ComfyUI_frontend logic. See
+ * https://github.com/Comfy-Org/ComfyUI_frontend/blob/b80e0e1a3c74040f328c4e344326c969c97f67e0/src/extensions/core/widgetInputs.ts#L659
+ */
+export interface IWidgetLocator {
+  name: string
+  type?: string
+  [CONFIG]?: InputSpec
+  [GET_CONFIG]?: () => InputSpec | undefined
+}
 
 export interface IWidgetOptions<TValues = unknown> {
   on?: string

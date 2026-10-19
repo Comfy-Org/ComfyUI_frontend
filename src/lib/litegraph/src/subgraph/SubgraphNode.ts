@@ -18,7 +18,7 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type { IWidgetLocator, ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import type {
   ISubgraphInput,
   INodeInputSlot
@@ -36,6 +36,7 @@ import type {
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   IBaseWidget,
+  IWidgetLocator,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
