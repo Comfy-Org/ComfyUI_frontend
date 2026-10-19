@@ -18,6 +18,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import {
   AGENT_SUBGRAPH_HOST_ID,
+  AGENT_SUBGRAPH_INITIAL_TEXT,
   AGENT_SUBGRAPH_INITIAL_SEED,
   agentSubgraphNodeDefs
 } from '@e2e/fixtures/data/agentSubgraphFollower'
@@ -26,6 +27,7 @@ import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 const WORKFLOW_ID = 'c2003000-0000-4000-8000-000000000001'
 const MESSAGE_ID = 'c2003000-0000-4000-8000-000000000002'
 const THREAD_ID = 'c2003000-0000-4000-8000-000000000003'
+const AGENT_SUBGRAPH_READY_SEED = 42
 
 const catalog: WidgetCatalog = {
   types: {
@@ -114,25 +116,35 @@ async function attachAgent(
     await agentPanel.open()
     await agentPanel.selectWorkflow()
     await agentPanel.sendMessage('Have a look at this workflow')
-    // `waitForSubscribe` is the attachment gate: it resolves only once the
-    // follower has issued its subscribe over the host socket.
     await hostSocket.waitForSubscribe()
   })
 
-  // Baseline, NOT a readiness gate — stated explicitly because the seed read
-  // alone reads like one and is not: `loadSeedIntoActiveTab` already put
-  // `AGENT_SUBGRAPH_INITIAL_SEED` on the canvas before the agent attached, so
-  // polling the canvas for it would pass whether or not the follower ever
-  // subscribed. What this does buy is a stated starting point on BOTH
-  // replicas, so "the randomized seed reached the shared document" later is a
-  // change rather than a coincidence, and it fails loudly if the host doc
-  // carries no named `seed` widget at all — which `projectedHostValues`
-  // silently depends on.
-  await test.step('both replicas start on the known seed', async () => {
+  await test.step('a host-side seed edit reaches the canvas', async () => {
     await expect
       .poll(() => promotedSeed(page))
       .toBe(AGENT_SUBGRAPH_INITIAL_SEED)
     expect(projectedHostValues(host)).toContain(AGENT_SUBGRAPH_INITIAL_SEED)
+    hostSocket.send(
+      host.apply([
+        {
+          op: 'set_widget',
+          node_id: AGENT_SUBGRAPH_HOST_ID,
+          widget: 'seed',
+          value: AGENT_SUBGRAPH_READY_SEED,
+          old: AGENT_SUBGRAPH_INITIAL_SEED,
+          promoted: {
+            instance_path: [AGENT_SUBGRAPH_HOST_ID],
+            value_index: 1,
+            host_widgets_values: [
+              AGENT_SUBGRAPH_INITIAL_TEXT,
+              AGENT_SUBGRAPH_INITIAL_SEED
+            ]
+          }
+        }
+      ])
+    )
+    await expect.poll(() => promotedSeed(page)).toBe(AGENT_SUBGRAPH_READY_SEED)
+    expect(projectedHostValues(host)).toContain(AGENT_SUBGRAPH_READY_SEED)
   })
 
   return { host, hostSocket, submitted }
@@ -175,19 +187,13 @@ async function pressRunAndRandomizeSeed(
     await expect(async () => {
       const seed = await promotedSeed(page)
       expect(seed).toEqual(expect.any(Number))
-      expect(seed).not.toBe(AGENT_SUBGRAPH_INITIAL_SEED)
+      expect(seed).not.toBe(AGENT_SUBGRAPH_READY_SEED)
       randomizedSeed = Number(seed)
     }).toPass({ timeout: 5_000 })
     return randomizedSeed
   })
 }
 
-/**
- * The already-synced case, where nothing has to be caught up. The
- * re-subscribing case below deliberately does NOT reuse this: it needs its
- * catch-up to sit outside an expected-failure window, and threading that
- * through as a callback is exactly what made the pin vacuous.
- */
 async function expectRandomizedSeedSaved(
   { host }: AttachedAgent,
   randomizedSeed: number,
@@ -241,25 +247,12 @@ test.describe(
 
       const randomizedSeed = await pressRunAndRandomizeSeed(page, rig)
 
-      // Answering the withheld re-subscribe is scenario mechanics, not the
-      // defect, so it runs OUTSIDE the expected-failure window below. Wrapped
-      // inside it — which is what `expectRandomizedSeedSaved`'s `catchUp`
-      // callback used to do — a missing state vector, a `subscribed()` or
-      // `catchUp()` that threw, or a socket that never reconnected would all
-      // have been absorbed as "the expected PM-2003 failure", and the test
-      // would have reported a pass while proving nothing.
       await test.step('the withheld re-subscribe is answered', () => {
         expect(withheldStateVector).not.toBeNull()
         rig.hostSocket.send(rig.host.subscribed())
         rig.hostSocket.send(rig.host.catchUp(withheldStateVector!))
       })
 
-      // From here on, and only from here on, failure is the known defect:
-      // the promoted write is refused rather than deferred, so the
-      // widget-write rejection toast appears and the randomized seed never
-      // reaches the shared document. Both assertions below are consequences
-      // of that one refusal, which is why the window covers both and nothing
-      // else.
       test.fail(
         true,
         'PM-2003: a promoted write made between a resubscribe and its ack is refused with the widget-write toast (docOpMinter doc_not_synced) instead of being deferred'
