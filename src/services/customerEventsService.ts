@@ -9,6 +9,7 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d, i18n, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
+import { escapeHtml } from '@/utils/htmlEscape'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
 export enum EventType {
@@ -192,8 +193,8 @@ export const useCustomerEventsService = () => {
         if (microUsd !== undefined) {
           return `<strong>${t('credits.charge')}:</strong> ${formatChargeCredits(microUsd)}`
         }
-        const formattedKey = formatJsonKey(key)
-        const formattedValue = formatJsonValue(value)
+        const formattedKey = escapeHtml(formatJsonKey(key))
+        const formattedValue = escapeHtml(String(formatJsonValue(value)))
         return `<strong>${formattedKey}:</strong> ${formattedValue}`
       })
       .join('<br>')
