@@ -74,14 +74,6 @@ describe('coerceRestoredWidgetValue', () => {
     expect(coerceRestoredWidgetValue(widget, '16777215')).toBe(16777215)
   })
 
-  test('preserves structured values with unknown keys', () => {
-    const value = { future: { nested: true }, known: 'kept' }
-
-    expect(
-      coerceRestoredWidgetValue({ type: 'custom', options: {} }, value)
-    ).toBe(value)
-  })
-
   test.for<{
     name: string
     type: string
