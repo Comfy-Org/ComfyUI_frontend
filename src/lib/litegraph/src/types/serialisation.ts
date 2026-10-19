@@ -116,6 +116,7 @@ export interface ISerialisedNode {
    */
   widgets_values?: TWidgetValue[]
   widgets_values_named?: Record<string, TWidgetValue>
+  widgets_values_form?: { order: string[] }
   extensions?: ExtensionPayload
 }
 

@@ -8,8 +8,10 @@ import type {
   SubgraphOutputNode
 } from '@/lib/litegraph/src/types/entityRegistry'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/types/nodeConstructor'
+import { isEqual } from 'es-toolkit'
 import { toValue } from 'vue'
 
+import { assert } from '@/base/assert'
 import {
   createNodeShellState,
   setTrackedNodeState
@@ -177,6 +179,7 @@ import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
+import { reportMissingWidgetSerializationForm } from './widgetSerializationFormReporter'
 
 // #region Types
 
@@ -220,13 +223,29 @@ function cloneWidgetValueTwice(
   return [JSON.parse(json), JSON.parse(json)]
 }
 
-function serialiseWidgetValues(widgets: IBaseWidget[]) {
+interface CoreWidgetSerialization {
+  order: string[]
+  widgets_values: TWidgetValue[]
+  widgets_values_named: Record<string, TWidgetValue>
+}
+
+function serializableWidgetOrder(widgets: readonly IBaseWidget[]): string[] {
+  return widgets
+    .filter((widget) => widget.serialize !== false)
+    .map((widget) => widget.name)
+}
+
+function serialiseWidgetValues(
+  widgets: IBaseWidget[]
+): CoreWidgetSerialization {
   const positional: TWidgetValue[] = []
   const named: Record<string, TWidgetValue> = {}
+  const order: string[] = []
   for (const widget of widgets) {
     if (widget.serialize === false) continue
     const [positionalValue, namedValue] = cloneWidgetValueTwice(widget.value)
     positional.push(positionalValue)
+    order.push(widget.name)
     Object.defineProperty(named, widget.name, {
       value: namedValue,
       writable: true,
@@ -234,7 +253,138 @@ function serialiseWidgetValues(widgets: IBaseWidget[]) {
       configurable: true
     })
   }
-  return { widgets_values: positional, widgets_values_named: named }
+  return { order, widgets_values: positional, widgets_values_named: named }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
+    return false
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
+}
+
+const reportedMissingWidgetForms = new WeakSet<object>()
+
+function reportMissingWidgetForm(node: LGraphNode): void {
+  if (reportedMissingWidgetForms.has(node)) return
+  reportedMissingWidgetForms.add(node)
+  reportMissingWidgetSerializationForm({
+    nodeId: String(node.id),
+    nodeType: node.type
+  })
+}
+
+function assertWidgetValuesForm(
+  condition: boolean,
+  message: string,
+  node: LGraphNode
+): boolean {
+  assert(condition, message, {
+    nodeId: String(node.id),
+    nodeType: node.type
+  })
+  return condition
+}
+
+function validateWidgetValuesForm(
+  node: LGraphNode,
+  serialised: ISerialisedNode,
+  widgetOrderBeforeHook: readonly string[]
+): boolean {
+  const form = serialised.widgets_values_form
+  if (form === undefined) return true
+
+  const closedForm =
+    isPlainRecord(form) &&
+    Object.keys(form).length === 1 &&
+    Array.isArray(form.order) &&
+    form.order.length > 0 &&
+    form.order.every((name) => typeof name === 'string' && name.length > 0)
+  assertWidgetValuesForm(
+    closedForm,
+    'Widget values form must be closed to a non-empty order',
+    node
+  )
+  if (!closedForm) return false
+
+  const currentOrder = serializableWidgetOrder(node.widgets ?? [])
+  const values = serialised.widgets_values as unknown
+  const hasSupportedValues = Array.isArray(values) || isPlainRecord(values)
+  assertWidgetValuesForm(
+    hasSupportedValues,
+    'Widget values form must describe array- or object-shaped values',
+    node
+  )
+  const namesSerializableWidgets = form.order.every((name) =>
+    (node.widgets ?? []).some(
+      (widget) => widget.name === name && widget.serialize !== false
+    )
+  )
+  assertWidgetValuesForm(
+    namesSerializableWidgets,
+    'Widget values form entries must name serializable widgets',
+    node
+  )
+
+  const arrayLengthAgrees =
+    !Array.isArray(values) || form.order.length === values.length
+  assertWidgetValuesForm(
+    arrayLengthAgrees,
+    'Widget values form length must match array-shaped values',
+    node
+  )
+
+  const objectKeysAgree =
+    !isPlainRecord(values) ||
+    (new Set(form.order).size === form.order.length &&
+      form.order.every((name) => Object.hasOwn(values, name)))
+  assertWidgetValuesForm(
+    objectKeysAgree,
+    'Widget values form order must be a unique subset of object-shaped values',
+    node
+  )
+
+  const widgetOrderSurvived =
+    isEqual(widgetOrderBeforeHook, currentOrder) &&
+    isEqual(form.order, currentOrder)
+  assertWidgetValuesForm(
+    widgetOrderSurvived,
+    'Widget values form order must survive serialization unchanged',
+    node
+  )
+
+  return (
+    hasSupportedValues &&
+    namesSerializableWidgets &&
+    arrayLengthAgrees &&
+    objectKeysAgree &&
+    widgetOrderSurvived
+  )
+}
+
+function finalizeWidgetValuesForm(
+  node: LGraphNode,
+  serialised: ISerialisedNode,
+  widgetOrderBeforeHook: readonly string[],
+  coreSerialization?: CoreWidgetSerialization
+): void {
+  const values = serialised.widgets_values as unknown
+  if (
+    serialised.widgets_values_form === undefined &&
+    coreSerialization &&
+    coreSerialization.order.length > 0 &&
+    Array.isArray(values) &&
+    isEqual(values, coreSerialization.widgets_values) &&
+    isEqual(widgetOrderBeforeHook, serializableWidgetOrder(node.widgets ?? []))
+  ) {
+    serialised.widgets_values_form = { order: [...coreSerialization.order] }
+  }
+
+  if (!validateWidgetValuesForm(node, serialised, widgetOrderBeforeHook))
+    delete serialised.widgets_values_form
+
+  if (serialised.widgets_values_form === undefined && isPlainRecord(values))
+    reportMissingWidgetForm(node)
 }
 
 function configureCanonicalField(
@@ -243,6 +393,7 @@ function configureCanonicalField(
   incoming: unknown
 ): void {
   if (incoming == null) return
+  if (key === 'widgets_values_form') return
   if (typeof incoming !== 'object') {
     target[key] = incoming
     return
@@ -1328,7 +1479,6 @@ export class LGraphNode
   }
 
   serializeFromStoreState(state: NodeState): ISerialisedNode {
-    // create serialization object
     const o: ISerialisedNode = {
       id: serializeNodeId(state.id),
       type: state.type,
@@ -1340,13 +1490,19 @@ export class LGraphNode
       showAdvanced: state.showAdvanced
     }
 
-    // special case for when there were errors
-    if (this.constructor === LGraphNode && state.lastSerialization)
-      return {
+    if (this.constructor === LGraphNode && state.lastSerialization) {
+      const serialised = {
         ...LiteGraph.cloneObject(state.lastSerialization),
         mode: o.mode,
         pos: o.pos
       }
+      finalizeWidgetValuesForm(
+        this,
+        serialised,
+        serializableWidgetOrder(this.widgets ?? [])
+      )
+      return serialised
+    }
 
     o.inputs = state.inputs.map((input, i) =>
       inputAsSerialisable(input, this, i)
@@ -1361,8 +1517,16 @@ export class LGraphNode
     o.properties = LiteGraph.cloneObject(state.properties)
 
     const { widgets } = this
-    if (widgets?.length && this.serialize_widgets)
-      Object.assign(o, serialiseWidgetValues(widgets))
+    const coreSerialization =
+      widgets?.length && this.serialize_widgets
+        ? serialiseWidgetValues(widgets)
+        : undefined
+    const widgetOrderBeforeHook =
+      coreSerialization?.order ?? serializableWidgetOrder(widgets ?? [])
+    if (coreSerialization) {
+      o.widgets_values = coreSerialization.widgets_values
+      o.widgets_values_named = coreSerialization.widgets_values_named
+    }
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type
 
@@ -1386,6 +1550,13 @@ export class LGraphNode
       console.warn(
         "node onSerialize shouldn't return anything, data should be stored in the object pass in the first parameter"
       )
+
+    finalizeWidgetValuesForm(
+      this,
+      serialised,
+      widgetOrderBeforeHook,
+      coreSerialization
+    )
 
     return serialised
   }

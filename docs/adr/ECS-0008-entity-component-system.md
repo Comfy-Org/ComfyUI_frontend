@@ -65,6 +65,40 @@ Entity registration collision and recovery policy is defined by
 Node ID reminting policy is defined by
 [ADR MINT](CRDT-MINT-0018-merge-identity-for-node-transfers.md).
 
+### Amendment (2026-10-18): widget identity at the serialization boundary
+
+The process-local widget identity and the durable workflow identity remain
+deliberately different. ECS/store code addresses a widget by the derived
+`WidgetId`; workflow JSON declares the ordered widget names for one serialized
+node as `widgets_values_form: { order: string[] }`. A portable workflow must
+not persist process-local entity IDs or require the registry that created them.
+
+`LGraphNode.serializeFromStoreState` emits this form only after extension
+serialization, and only when the final `widgets_values` array is deeply equal
+to the array core produced from the same serializable widgets before the hook.
+This is a proof obligation rather than a best-effort derivation: a declared
+form is authoritative to readers, so a wrong form is worse than no form.
+Widget-level `serialize === false` is the exclusion predicate;
+`widget.options.serialize` governs API prompt generation and does not alter the
+saved workflow layout.
+
+Custom serializers that replace values with an object must explicitly declare
+their form. Post-hook assertions require every declared name to identify a
+serializable live widget, require array length or object-key coverage to agree,
+and reject a widget order changed during serialization. An object-shaped value
+without a declaration emits the production error
+`error_serializing_widget_values_form_missing_declaration`. Missing-node shells
+cannot acquire a newly derived form, and `SubgraphNode` removes the base form
+when its final writer replaces the base widget values.
+
+The form is a canonical serialization field, not extension state and not an
+own property restored onto `LGraphNode`. The existing Agent minter carries the
+serialized field through the normal human graph-intent path; this amendment
+adds no Agent-only mutation or reconciliation path. The semantic-op,
+host-authority, follower-read-only, provenance, and presentation-only overlay
+rules remain those in
+[ADR-CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md).
+
 ## Context
 
 The litegraph layer is built on deeply coupled OOP classes (`LGraphNode`, `LLink`, `Subgraph`, `BaseWidget`, `Reroute`, `LGraphGroup`, `SlotBase`). Each entity directly references its container and children — nodes hold widget arrays, widgets back-reference their node, links reference origin/target node IDs, subgraphs extend the graph class, and so on.

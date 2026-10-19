@@ -124,6 +124,10 @@
       "role": "domain"
     },
     {
+      "path": "src/lib/litegraph/src/LGraphNode.widgetValuesForm.test.ts",
+      "role": "domain"
+    },
+    {
       "path": "src/lib/litegraph/src/LGraphNode.titleButtons.test.ts",
       "role": "domain"
     },
@@ -281,6 +285,10 @@
     },
     {
       "path": "src/lib/litegraph/src/utils/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/widgetSerializationFormReporter.ts",
       "role": "domain"
     },
     {

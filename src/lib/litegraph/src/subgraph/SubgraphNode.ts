@@ -1048,6 +1048,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     } else {
       delete serialized.widgets_values
     }
+    delete serialized.widgets_values_form
 
     return serialized
   }
