@@ -294,6 +294,16 @@ describe('main', () => {
     )
   })
 
+  it('writes a relative --report path inside the repository root', () => {
+    const root = createRepository({}, { 'src/brandNew.ts': '' })
+    runArchitecture(root, 'update')
+    const { exitCode } = runMain(['--check', '--report', 'report.md'], root)
+    expect(exitCode).toBe(0)
+    expect(readFileSync(join(root, 'report.md'), 'utf8')).toContain(
+      '- src/brandNew.ts is not claimed by any domain'
+    )
+  })
+
   it('writes the errors to --report when the check fails', () => {
     const root = createRepository({ allowedDependencies: ['media'] })
     const reportDirectory = mkdtempSync(join(tmpdir(), 'architecture-report-'))
