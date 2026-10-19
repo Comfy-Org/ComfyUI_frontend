@@ -99,8 +99,6 @@ function mount(isMaximized = false) {
   })
 }
 
-// The deadline cases need a real Composer (they drive focus through it) and a
-// detached target, so neither `mount` nor `mountHistory` fits -- both stub it.
 function mountTargetlessPanel() {
   const pinia = getActivePinia()
   assert.exists(pinia)
@@ -502,10 +500,7 @@ describe('AgentPanel', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows the targetless run notice shortly after composer focus', async () => {
-    // `shouldAdvanceTime` is true project-wide (vite.config.mts), which leaks
-    // 20-60ms of real time per click into the fake clock and makes the 499/500
-    // boundary below flap. Pin the clock so only explicit advances move it.
+  it('shows the targetless run notice 500ms after the first composer focus, and a refocus does not restart that deadline', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     mountTargetlessPanel()
@@ -516,8 +511,6 @@ describe('AgentPanel', () => {
 
     await user.click(screen.getByRole('textbox'))
     await vi.advanceTimersByTimeAsync(300)
-    // Refocusing must not restart the deadline, so the notice is still due at
-    // 500ms after the *first* focus rather than 500ms after this one.
     await user.click(document.body)
     await user.click(screen.getByRole('textbox'))
     await vi.advanceTimersByTimeAsync(199)

@@ -286,8 +286,6 @@ const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
   )
 const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
 
-// Pending-or-ready is what "already engaged" means: nothing stops the timer, so
-// the first focus owns the deadline and later focus events must not restart it.
 function onComposerFocus(): void {
   if (runNoticeTimerPending.value || runNoticeReady.value) return
   startRunNoticeTimer()
