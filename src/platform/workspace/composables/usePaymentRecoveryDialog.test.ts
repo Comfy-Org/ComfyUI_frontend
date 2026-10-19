@@ -1,4 +1,5 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import type { BillingPortalOutcome } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -46,12 +47,12 @@ describe('usePaymentRecoveryDialog', () => {
     }
   )
 
-  it.for<{ outcome: BillingPortalOutcome; notified: boolean }>([
-    { outcome: { ok: true }, notified: true },
-    { outcome: { ok: false, reason: 'blocked' }, notified: false }
+  it.for<{ outcome: BillingPortalOutcome; calls: number }>([
+    { outcome: { ok: true }, calls: 1 },
+    { outcome: { ok: false, reason: 'blocked' }, calls: 0 }
   ])(
     'notifies the opener only when the portal opens from the dialog ($outcome.ok)',
-    async ({ outcome, notified }) => {
+    async ({ outcome, calls }) => {
       vi.mocked(useBillingContext().manageSubscription).mockResolvedValueOnce(
         outcome
       )
@@ -64,7 +65,7 @@ describe('usePaymentRecoveryDialog', () => {
       assert(typeof args.props.onUpdatePayment === 'function')
       await args.props.onUpdatePayment()
 
-      expect(onPortalOpened).toHaveBeenCalledTimes(notified ? 1 : 0)
+      expect(onPortalOpened).toHaveBeenCalledTimes(calls)
     }
   )
 
@@ -86,10 +87,20 @@ describe('usePaymentRecoveryDialog', () => {
     }
   )
 
-  it('refreshes the payment recovery fact from the capabilities read', async () => {
-    await usePaymentRecoveryDialog().refreshCapabilities()
+  it('clears the recovery lock once refreshed capabilities drop the fact', async () => {
+    const capabilities = useBillingCapabilities()
+    const available = ref(true)
+    capabilities.paymentRecoveryAvailable =
+      paymentRecoveryAvailableFact(available)
+    vi.mocked(capabilities.refresh).mockImplementationOnce(async () => {
+      available.value = false
+    })
+    const recovery = usePaymentRecoveryDialog()
+    expect(recovery.paymentRecoveryLock.value).toBe('owner')
 
-    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+    await recovery.refreshCapabilities()
+
+    expect(recovery.paymentRecoveryLock.value).toBeNull()
   })
 
   it('closes the recovery dialog once the billing portal opens', async () => {
