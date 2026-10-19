@@ -162,31 +162,51 @@ describe('refreshRemoteConfig', () => {
       expect(init?.signal).toBeInstanceOf(AbortSignal)
     })
 
-    it('discards a failed response from a superseded refresh', async () => {
-      let resolveFirst: ((response: Response) => void) | undefined
-      vi.mocked(api.fetchApi)
-        .mockImplementationOnce(
-          (_route, options) =>
-            new Promise<Response>((resolve) => {
-              options?.onAuthHeader?.(true)
-              resolveFirst = resolve
-            })
+    it.for([200, 401])(
+      'discards a superseded response with status %s without changing cached flags',
+      async (status) => {
+        const latestConfig = {
+          subscription_required: true,
+          billing_control_enabled: false,
+          v1_payment_recovery: false
+        }
+        let resolveFirst: ((response: Response) => void) | undefined
+        vi.mocked(api.fetchApi)
+          .mockImplementationOnce(
+            (_route, options) =>
+              new Promise<Response>((resolve) => {
+                options?.onAuthHeader?.(true)
+                resolveFirst = resolve
+              })
+          )
+          .mockImplementationOnce(async (_route, options) => {
+            options?.onAuthHeader?.(true)
+            return mockSuccessResponse(latestConfig)
+          })
+
+        const firstRefresh = refreshRemoteConfig({ useAuth: true })
+        await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
+        await refreshRemoteConfig({ useAuth: true })
+        expect(cachedBillingControlEnabled.value).toBe(false)
+        expect(cachedV1PaymentRecovery.value).toBe(false)
+        resolveFirst?.(
+          new Response(
+            JSON.stringify({
+              billing_control_enabled: true,
+              v1_payment_recovery: true
+            }),
+            { status }
+          )
         )
-        .mockImplementationOnce(async (_route, options) => {
-          options?.onAuthHeader?.(true)
-          return mockSuccessResponse({ subscription_required: true })
-        })
+        await firstRefresh
 
-      const firstRefresh = refreshRemoteConfig({ useAuth: true })
-      await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledTimes(1))
-      await refreshRemoteConfig({ useAuth: true })
-      resolveFirst?.(mockErrorResponse(401, 'Unauthorized'))
-      await firstRefresh
-
-      expect(remoteConfig.value).toEqual({ subscription_required: true })
-      expect(remoteConfigState.value).toBe('authenticated')
-      expect(remoteConfigErrorStatus.value).toBeNull()
-    })
+        expect(remoteConfig.value).toEqual(latestConfig)
+        expect(remoteConfigState.value).toBe('authenticated')
+        expect(remoteConfigErrorStatus.value).toBeNull()
+        expect(cachedBillingControlEnabled.value).toBe(false)
+        expect(cachedV1PaymentRecovery.value).toBe(false)
+      }
+    )
 
     it('preserves shared state when the caller cancels the refresh', async () => {
       const existingConfig = { subscription_required: true }
