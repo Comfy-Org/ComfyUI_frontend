@@ -205,6 +205,11 @@ import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import { updateControlWidgetLabel } from '@/core/graph/widgets/valueControlWidgets'
+import { installComfyApi } from '@/platform/nodeApi/comfyApi'
+import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
+import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
+import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { loadExtensions } from '@/services/extensionLoader'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
@@ -591,6 +596,16 @@ onMounted(async () => {
         i18nError.value
       )
     }
+
+    installNodeMoveBridge()
+    installNodeChangeBridge()
+    provideGraphLoadingState(() => ChangeTracker.isLoadingGraph)
+    installComfyApi(() => canvasStore.currentGraph, {
+      openWorkflow: async (data) => {
+        await comfyApp.loadGraphData(data as ComfyWorkflowJSON)
+      },
+      refreshDefinitions: () => comfyApp.refreshComboInNodes()
+    })
 
     await bootstrapTracer.settle('bootstrap/extensions-load', loadExtensions)
 

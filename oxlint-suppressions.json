@@ -1236,9 +1236,6 @@
     }
   },
   "src/scripts/app.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    },
     "comfy/no-positional-boolean-params": {
       "count": 2
     },

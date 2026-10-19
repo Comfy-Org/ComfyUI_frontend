@@ -98,7 +98,6 @@ import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
-import { resetComfyApi } from '@/platform/nodeApi/comfyApi'
 import {
   onWorkflowLoaded,
   resetAppReadyForTest
@@ -365,42 +364,6 @@ describe('ComfyApp', () => {
 
   it('registers the exported singleton for useApp', () => {
     expect(useApp()).toBe(singletonApp)
-  })
-
-  describe('setup', () => {
-    it('lets an extension subscribe to movement while its module loads', async () => {
-      const previousComfy = window.comfy
-      delete window.comfy
-      for (const id of [
-        'comfyui-body-top',
-        'comfyui-body-left',
-        'comfyui-body-right',
-        'comfyui-body-bottom',
-        'graph-canvas-container'
-      ]) {
-        const element = document.createElement('div')
-        element.id = id
-        document.body.append(element)
-      }
-      const stopAfterExtensionLoad = new Error('Stop after extension load')
-      mockExtensionService.loadExtensions.mockImplementationOnce(async () => {
-        const comfy = window.comfy
-        if (!comfy) throw new Error('Expected the Node API to be installed')
-        const stop = comfy.onNodeMoved(() => {})
-        stop()
-        throw stopAfterExtensionLoad
-      })
-
-      try {
-        await expect(app.setup(document.createElement('canvas'))).rejects.toBe(
-          stopAfterExtensionLoad
-        )
-      } finally {
-        resetComfyApi()
-        if (previousComfy === undefined) delete window.comfy
-        else window.comfy = previousComfy
-      }
-    })
   })
 
   describe('loadGraphData', () => {
@@ -845,6 +808,30 @@ describe('ComfyApp', () => {
         'onGraphLoadError',
         expect.objectContaining({ name: 'AbortError' })
       )
+    })
+
+    it('keeps a replacement started by a workflow-loaded listener', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const firstData = createWorkflowGraphData()
+      firstData.extra = { ...firstData.extra, graphLoadMarker: 'first' }
+      const replacementData = {
+        ...firstData,
+        extra: { ...firstData.extra, graphLoadMarker: 'replacement' }
+      }
+      let replacement: ReturnType<ComfyApp['loadGraphData']> | undefined
+      const workflowLoaded = vi.fn(() => {
+        if (replacement) return
+        replacement = app.loadGraphData(replacementData, false)
+      })
+      onTestFinished(onWorkflowLoaded(workflowLoaded))
+
+      await expect(app.loadGraphData(firstData, false)).resolves.toBe(true)
+      expect(replacement).toBeDefined()
+      expect(await replacement).toBe(true)
+
+      expect(workflowLoaded).toHaveBeenCalledTimes(2)
+      expect(app.rootGraph.extra.graphLoadMarker).toBe('replacement')
     })
 
     it('does not assign a newer workflow graph to an Undo load waiting after configuration', async () => {
@@ -1878,7 +1865,6 @@ describe('ComfyApp', () => {
     it('reports accepted jobs whose metadata cannot be stored', async () => {
       prepareEmptyPromptQueue()
       const error = new Error('metadata unavailable')
-      vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.spyOn(useExecutionStore(), 'storeJob').mockImplementationOnce(() => {
         throw error
       })
@@ -1888,7 +1874,8 @@ describe('ComfyApp', () => {
 
       await expect(app.queuePrompt(0)).resolves.toBe(true)
 
-      expect(vi.mocked(reportError)).toHaveBeenCalledExactlyOnceWith(error, {
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+        surface: 'graph',
         errorType: 'queue_job_metadata_store_failed'
       })
     })

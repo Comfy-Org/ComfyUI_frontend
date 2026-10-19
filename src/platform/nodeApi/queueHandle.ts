@@ -35,8 +35,6 @@ import type { NodeHandle } from './nodeHandle'
 import { registerQueueGuard } from './queueGuard'
 import type { Unsubscribe } from './widgetHandle'
 
-export { mayRun } from './queueGuard'
-
 /** @knipIgnoreUnusedButUsedByCustomNodes */
 export interface RunOptions {
   /**

@@ -127,8 +127,7 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { markAppReady, notifyWorkflowLoaded } from '@/platform/nodeApi/appReady'
 import {
   deliverPreview,
-  notifyDefsRefreshed,
-  provideGraphLoadingState
+  notifyDefsRefreshed
 } from '@/platform/nodeApi/defsRegistry'
 import { mayRun } from '@/platform/nodeApi/queueGuard'
 import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
@@ -445,12 +444,12 @@ export class ComfyApp implements IComfyApp {
   }
 
   private configuringGraphLevel: number = 0
-  private disposeUnplacedLinkBridge?: () => void
   private graphLoadSequence = 0
   private graphLoadQueue: Promise<void> = Promise.resolve()
   private pendingCamera:
     | { id: number; workflow: string | null | ComfyWorkflow }
     | undefined
+  private disposeUnplacedLinkBridge?: () => void
   get configuringGraph() {
     return this.configuringGraphLevel > 0
   }
@@ -1637,8 +1636,12 @@ export class ComfyApp implements IComfyApp {
         await cancelReplacedLoad()
         return undefined
       }
-      notifyWorkflowLoaded()
       ChangeTracker.isLoadingGraph = false
+      notifyWorkflowLoaded()
+      if (!isCurrentGraphLoad()) {
+        await cancelReplacedLoad()
+        return undefined
+      }
       // Capture the workflow this load activated before the asset-scan awaits
       // below can hand control back and let the user switch to another one.
       activatedWorkflow = useWorkflowStore().activeWorkflow ?? undefined
@@ -2007,6 +2010,7 @@ export class ComfyApp implements IComfyApp {
                 error
               })
               reportError(error, {
+                surface: 'graph',
                 errorType: 'queue_job_metadata_store_failed'
               })
             }
@@ -2323,9 +2327,12 @@ export class ComfyApp implements IComfyApp {
             break
           default: {
             const unexpectedOutcome: never = outcome
-            throw new Error(
-              `Unhandled A1111 import outcome: ${unexpectedOutcome}`
-            )
+            reportError(new Error('Unhandled A1111 import outcome'), {
+              surface: 'graph',
+              errorType: 'a1111_import_unhandled_outcome',
+              context: { outcome: unexpectedOutcome }
+            })
+            return
           }
         }
         // Intentionally no beforeConfigureGraph: A1111 has no mutable
@@ -2844,6 +2851,7 @@ export class ComfyApp implements IComfyApp {
   clientPosToCanvasPos(pos: Vector2): Vector2 {
     if (!this.positionConversion) {
       reportError(new Error('Canvas position conversion unavailable'), {
+        surface: 'graph',
         errorType: 'canvas_position_conversion_unavailable',
         context: { direction: 'client_to_canvas' }
       })
@@ -2855,6 +2863,7 @@ export class ComfyApp implements IComfyApp {
   canvasPosToClientPos(pos: Vector2): Vector2 {
     if (!this.positionConversion) {
       reportError(new Error('Canvas position conversion unavailable'), {
+        surface: 'graph',
         errorType: 'canvas_position_conversion_unavailable',
         context: { direction: 'canvas_to_client' }
       })
