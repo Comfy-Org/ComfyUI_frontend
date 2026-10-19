@@ -85,7 +85,7 @@ const nodeId = computed(() =>
           cn(
             menuItemClass,
             'w-full cursor-pointer aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
-            active && 'bg-secondary-background-hover'
+            active && 'bg-accent'
           )
         "
         @mouseenter="emit('highlight')"
@@ -112,7 +112,7 @@ const nodeId = computed(() =>
           @release-focus="emit('descriptionReleaseFocus')"
           @dismiss="emit('descriptionDismiss')"
         />
-        <span v-if="unsavedWorkflow" class="text-xs text-muted-foreground">{{
+        <span v-if="unsavedWorkflow" class="text-muted-foreground">{{
           $t('agent.unsavedWorkflow')
         }}</span>
         <Badge

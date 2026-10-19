@@ -209,7 +209,7 @@ function stopPreview(event: Event): void {
         :class="
           cn(
             'block overflow-hidden rounded-lg',
-            multi && 'aspect-square bg-secondary-background-hover',
+            multi && 'aspect-square bg-accent',
             !multi && asset.kind === '3D' && 'justify-self-end'
           )
         "
@@ -247,9 +247,7 @@ function stopPreview(event: Event): void {
           :class="
             cn(
               'flex items-center justify-center',
-              multi
-                ? 'size-full'
-                : 'aspect-square w-40 bg-secondary-background-hover'
+              multi ? 'size-full' : 'aspect-square w-40 bg-accent'
             )
           "
         >

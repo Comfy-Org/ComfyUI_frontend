@@ -39,7 +39,7 @@
   background: linear-gradient(
     115deg,
     transparent 42%,
-    var(--color-base-foreground) 50%,
+    var(--color-foreground) 50%,
     transparent 58%
   );
   background-size: 200% auto;

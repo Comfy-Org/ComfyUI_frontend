@@ -28,7 +28,7 @@
         />
         <span v-if="!compact">{{ gizmosLabel }}</span>
       </Button>
-      <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
+      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
       <Button
         v-for="option in transformGizmoOptions"
         :key="option.value"
@@ -59,7 +59,7 @@
         size="icon"
         :tooltip="lookThroughLabel"
         type="button"
-        :class="cn(lookingThrough && 'bg-button-active-surface')"
+        :class="cn(lookingThrough && 'bg-muted')"
         :aria-pressed="lookingThrough"
         :aria-label="lookThroughLabel"
         @click="toggleLookThrough"

@@ -110,7 +110,7 @@ function onKeydown(event: KeyboardEvent) {
         stroke="currentColor"
         stroke-width="3"
         stroke-dasharray="75 25"
-        class="text-secondary-background"
+        class="text-secondary"
       />
       <circle
         data-testid="knob-value"
@@ -124,7 +124,7 @@ function onKeydown(event: KeyboardEvent) {
         stroke-linecap="round"
         stroke-dasharray="75 100"
         :stroke-dashoffset="dashOffset"
-        class="text-primary-background"
+        class="text-primary"
       />
     </svg>
   </div>

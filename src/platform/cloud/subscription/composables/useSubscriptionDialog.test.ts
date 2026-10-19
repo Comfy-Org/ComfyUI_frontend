@@ -1163,10 +1163,12 @@ describe('useSubscriptionDialog', () => {
                 id: 'team_700',
                 credits: 147_700,
                 monthly: {
+                  action: 'subscribe',
                   list_price_cents: 70_000,
                   price_cents: 66_500
                 },
                 yearly: {
+                  action: 'subscribe',
                   list_price_cents: 70_000,
                   price_cents: 63_000
                 }

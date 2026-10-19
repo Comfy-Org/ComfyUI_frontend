@@ -13,7 +13,7 @@ onMounted(() => emit('shown'))
   <Message severity="warning" role="status" aria-live="polite">
     <template #icon>
       <span
-        class="icon-[heroicons--information-circle-20-solid] block size-5 text-warning-foreground"
+        class="icon-[heroicons--information-circle-20-solid] block size-5 text-warning"
       />
     </template>
     <div class="flex items-start gap-2">

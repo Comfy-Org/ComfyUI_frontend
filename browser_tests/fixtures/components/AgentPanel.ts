@@ -10,6 +10,7 @@ import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 type AgentAttachmentOutcome =
@@ -67,7 +68,9 @@ export class AgentPanel {
           exact: true
         })
       )
-    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.composer = this.root.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     this.composerStack = this.root.getByTestId('agent-composer-stack')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')

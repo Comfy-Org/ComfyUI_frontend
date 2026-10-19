@@ -131,7 +131,7 @@ function onProseClick(event: MouseEvent): void {
       />
       <SanitizedHtml
         v-else
-        class="comfy-markdown-content text-base-foreground [--comfy-textarea-font-size:var(--text-sm)] [&_img]:cursor-pointer"
+        class="comfy-markdown-content text-foreground [--comfy-textarea-font-size:var(--text-sm)] [&_img]:cursor-pointer"
         :html="segment.html"
         @click="onProseClick"
       />

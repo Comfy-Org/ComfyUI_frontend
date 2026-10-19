@@ -386,7 +386,7 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-base-foreground w-full flex-1 cursor-text p-3 font-inter text-sm/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
+        'text-foreground w-full flex-1 cursor-text p-3 font-inter text-sm/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
     decorations(state) {
       if (state.selection.empty) {
@@ -524,7 +524,7 @@ onMounted(() => {
         const reference = promptNodeReference(node, 0)
         if (reference?.kind !== 'skill') return { dom }
         dom.className =
-          'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground'
+          'rounded-sm [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-foreground'
         return componentNodeView(
           dom,
           h(ComposerSkillReference, { skill: reference })
@@ -594,6 +594,11 @@ function selection() {
     start: promptTextOffset(view.state.doc, view.state.selection.from),
     end: promptTextOffset(view.state.doc, view.state.selection.to)
   }
+}
+
+function insertText(text: string): void {
+  if (!view) return
+  view.dispatch(view.state.tr.insertText(text))
 }
 
 function replaceText(from: number, to: number, text: string): void {
@@ -688,6 +693,7 @@ defineExpose({
       : { textOffset: 0, referenceIndex: 0 },
   focus: () => view?.focus(),
   selection,
+  insertText,
   replaceText,
   selectSkill,
   captureInsertion

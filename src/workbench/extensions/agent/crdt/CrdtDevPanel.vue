@@ -769,19 +769,17 @@ function fmtTime(at: number): string {
       <Badge
         variant="dot"
         :severity="status.connected ? 'success' : 'danger'"
-        :class="status.connected && 'bg-success-background'"
+        :class="status.connected && 'bg-success'"
       />
       {{ chipLabel }}
     </Button>
 
     <section
       v-else
-      class="flex min-h-0 grow flex-col overflow-hidden border-y border-component-node-border bg-base-background text-base-foreground"
+      class="flex min-h-0 grow flex-col overflow-hidden border-y bg-background text-foreground"
       data-testid="crdt-dev-panel"
     >
-      <header
-        class="flex h-10 shrink-0 items-center gap-2 border-b border-component-node-border px-2"
-      >
+      <header class="flex h-10 shrink-0 items-center gap-2 border-b px-2">
         <span class="font-bold">{{ t(`${i18nKey}.title`) }}</span>
         <Label class="ml-auto text-muted-foreground">
           {{ t(`${i18nKey}.verbosity`) }}
@@ -821,7 +819,7 @@ function fmtTime(at: number): string {
       <ToggleGroup
         :model-value="tab"
         type="single"
-        class="shrink-0 border-b border-component-node-border p-1"
+        class="shrink-0 border-b p-1"
         :aria-label="t(`${i18nKey}.tabs`)"
         @update:model-value="selectTab"
       >
@@ -939,7 +937,7 @@ function fmtTime(at: number): string {
             <div
               v-for="row in visibleLogRows"
               :key="row.event.seq"
-              class="border-b border-component-node-border pb-1"
+              class="border-b pb-1"
             >
               <Button
                 variant="muted-textonly"
@@ -1040,7 +1038,7 @@ function fmtTime(at: number): string {
               <li
                 v-for="entry in simulation.entries"
                 :key="entry.index"
-                class="border-l-2 border-component-node-border pl-2"
+                class="border-l-2 pl-2"
               >
                 <div class="flex flex-wrap items-baseline gap-1">
                   <span class="text-muted-foreground"
@@ -1143,9 +1141,7 @@ function fmtTime(at: number): string {
         </template>
       </div>
 
-      <footer
-        class="flex min-h-0 flex-col gap-2 overflow-y-auto border-t border-component-node-border p-2"
-      >
+      <footer class="flex min-h-0 flex-col gap-2 overflow-y-auto border-t p-2">
         <FieldDescription class="m-0">
           {{ t('agent.diagnosticReport.includedSources') }}
         </FieldDescription>

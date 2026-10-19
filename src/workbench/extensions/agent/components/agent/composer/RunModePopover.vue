@@ -110,7 +110,7 @@ const options: {
         :tooltip="triggerTooltip"
         variant="muted-textonly"
         size="md"
-        :class="cn('gap-1', open && 'bg-secondary-background-hover')"
+        :class="cn('gap-1', open && 'bg-accent')"
       >
         <span>{{ triggerLabel }}</span>
         <span
@@ -120,7 +120,7 @@ const options: {
       </Button>
     </template>
     <div class="flex flex-col gap-0.5 px-3 py-1.5">
-      <div aria-hidden="true" class="text-sm/5 text-base-foreground">
+      <div aria-hidden="true" class="text-sm/5 text-foreground">
         {{ t('agent.runPermissions') }}
       </div>
       <div

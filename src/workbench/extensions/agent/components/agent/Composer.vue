@@ -353,6 +353,17 @@ const emptyMentionLabel = computed(() =>
       )
 )
 
+function openReferenceMenu(): void {
+  const editor = editorRef.value
+  if (!editor) return
+  const { start } = editor.selection()
+  const needsSeparator =
+    start > 0 && !/\s/.test(composer.draft.value[start - 1] ?? '')
+  editor.insertText(needsSeparator ? ' @' : '@')
+  editor.focus()
+  syncMention()
+}
+
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
@@ -505,7 +516,7 @@ defineExpose({
     id="agent-composer"
     ref="composerContainerRef"
     data-testid="agent-composer"
-    class="relative flex min-w-0 flex-col rounded-lg border border-border-subtle bg-base-background"
+    class="relative flex min-w-0 flex-col rounded-lg border border-border/50 bg-background"
   >
     <div
       v-if="mentionVisible"
@@ -558,7 +569,7 @@ defineExpose({
 
     <div
       v-if="$slots.header"
-      class="flex h-11 shrink-0 items-center rounded-t-lg bg-base-background px-2"
+      class="flex h-11 shrink-0 items-center rounded-t-lg bg-background px-2"
     >
       <slot name="header" />
     </div>
@@ -567,7 +578,7 @@ defineExpose({
 
     <div
       data-testid="composer-input-box"
-      class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border-subtle bg-secondary-background transition-colors focus-within:border-muted-foreground"
+      class="relative -m-px flex max-h-[50dvh] min-h-28 min-w-0 flex-col rounded-lg border border-border/50 bg-secondary transition-colors focus-within:border-muted-foreground"
     >
       <slot name="insideInput" />
       <AssetTray
@@ -654,18 +665,30 @@ defineExpose({
       </div>
 
       <div class="flex shrink-0 items-center justify-between px-3 py-2">
-        <ComposerAddMenu
-          :can-attach
-          :can-open-assets
-          :node-reference-disabled-reason
-          :workflows="eligibleWorkflows"
-          :workflow-selecting
-          :select-workflow="selectWorkflow"
-          @select-nodes="onSelectNodes"
-          @attach="emit('attach')"
-          @open-assets="emit('openAssets')"
-          @request-workflow-references="emit('requestWorkflowReferences')"
-        />
+        <div class="flex items-center gap-1">
+          <ComposerAddMenu
+            :can-attach
+            :can-open-assets
+            :node-reference-disabled-reason
+            :workflows="eligibleWorkflows"
+            :workflow-selecting
+            :select-workflow="selectWorkflow"
+            @select-nodes="onSelectNodes"
+            @attach="emit('attach')"
+            @open-assets="emit('openAssets')"
+            @request-workflow-references="emit('requestWorkflowReferences')"
+          />
+          <Button
+            :tooltip="t('agent.reference')"
+            type="button"
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="t('agent.reference')"
+            @click="openReferenceMenu"
+          >
+            <span class="text-base/4 font-medium">@</span>
+          </Button>
+        </div>
 
         <div class="flex items-center gap-1">
           <RunModePopover />
@@ -678,7 +701,7 @@ defineExpose({
             :aria-disabled="primaryActionAriaDisabled"
             :aria-description="sendBlockedReason"
             :disabled="primaryActionDisabled"
-            class="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-base-foreground"
+            class="aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:hover:bg-foreground"
             @click="onPrimaryAction"
           >
             <i-lucide:square v-if="running" class="size-4" />

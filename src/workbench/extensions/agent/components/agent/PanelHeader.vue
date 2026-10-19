@@ -29,9 +29,7 @@ const sizeToggleLabel = computed(() =>
 </script>
 
 <template>
-  <header
-    class="flex h-12 shrink-0 items-center gap-2 border-b border-component-node-border px-4"
-  >
+  <header class="flex h-12 shrink-0 items-center gap-2 border-b px-4">
     <div class="flex items-center gap-1">
       <h1
         id="agent-panel-title"

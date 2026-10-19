@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { createReusableTemplate, useResizeObserver } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@/components/common/Video.vue'
@@ -8,6 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import DialogFooter from '@/components/ui/dialog/DialogFooter.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Message from '@/components/ui/message/Message.vue'
+import { applyDarkPaletteTheme } from '@/utils/colorPaletteTheme'
 
 const {
   title,
@@ -47,6 +48,10 @@ useResizeObserver(containerRef, ([entry]) => {
   isWide.value = entry.contentRect.width >= CONTAINER_XL_MIN_WIDTH
 })
 
+onMounted(() => {
+  if (containerRef.value) applyDarkPaletteTheme(containerRef.value.style)
+})
+
 function choose(action: 'accept' | 'reject'): void {
   if (action === 'accept') emit('accept')
   else emit('reject')
@@ -75,7 +80,7 @@ function choose(action: 'accept' | 'reject'): void {
   >
     <div
       data-testid="agent-consent-card"
-      class="max-h-[85dvh] overflow-y-auto rounded-2xl border border-border-default bg-base-background shadow-lg"
+      class="max-h-[85dvh] overflow-y-auto rounded-2xl border border-border bg-background shadow-lg"
     >
       <div class="p-2">
         <Video
@@ -90,7 +95,7 @@ function choose(action: 'accept' | 'reject'): void {
         >
           <template #fallback>
             <div
-              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary-background text-xs text-muted-foreground"
+              class="grid aspect-video w-full place-items-center rounded-lg bg-secondary text-xs text-muted-foreground"
             >
               {{ $t('agent.consent.videoPlaceholder') }}
             </div>

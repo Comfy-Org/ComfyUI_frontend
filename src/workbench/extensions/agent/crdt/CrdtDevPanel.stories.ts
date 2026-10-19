@@ -6,6 +6,7 @@ import type { AgentCrdtStatus } from './agentCrdtStatus'
 const status: AgentCrdtStatus = {
   enabled: true,
   connected: true,
+  terminal: null,
   workflowId: 'workflow-debug-42',
   updatesApplied: 17,
   lastFrameType: 'doc_update',
@@ -29,7 +30,7 @@ const meta = {
   decorators: [
     () => ({
       template:
-        '<div class="flex h-[720px] w-[420px] flex-col justify-end bg-base-background py-4"><story /></div>'
+        '<div class="flex h-[720px] w-[420px] flex-col justify-end bg-background py-4"><story /></div>'
     })
   ]
 } satisfies Meta<typeof CrdtDevPanel>

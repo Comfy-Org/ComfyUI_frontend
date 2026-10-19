@@ -136,7 +136,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           <span
             v-else
             data-testid="workflow-selector-icon"
-            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-base-foreground"
+            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-foreground"
           />
           <span class="min-w-0 truncate">{{
             current?.name ?? t('agent.selectWorkflowForAgent')
@@ -146,7 +146,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
             data-testid="unsaved-dot"
             class="flex size-4 shrink-0 items-center justify-center"
           >
-            <Badge variant="dot" class="bg-base-foreground" />
+            <Badge variant="dot" class="bg-foreground" />
           </span>
         </Button>
       </template>
@@ -213,14 +213,14 @@ function onSearchKeydown(event: KeyboardEvent): void {
               :aria-label="t('g.agentModified')"
               class="flex size-4 shrink-0 items-center justify-center"
             >
-              <Badge variant="dot" class="bg-primary-background" />
+              <Badge variant="dot" class="bg-primary" />
             </span>
             <span
               v-else-if="tab.isPersisted === false || tab.modified"
               data-testid="unsaved-dot"
               class="flex size-4 shrink-0 items-center justify-center"
             >
-              <Badge variant="dot" class="bg-base-foreground" />
+              <Badge variant="dot" class="bg-foreground" />
             </span>
             <span
               class="ml-auto flex size-4 shrink-0 items-center justify-center"

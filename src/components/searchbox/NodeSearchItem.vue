@@ -1,6 +1,6 @@
 <template>
   <div
-    class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden px-2 py-0"
+    class="option-container flex w-full items-center justify-between overflow-hidden px-2 py-0"
   >
     <div class="option-display-name flex flex-col font-semibold">
       <div>
@@ -11,7 +11,7 @@
           <HighlightedText
             :text="nodeDef.display_name"
             :query="currentQuery"
-            highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary-background px-0.5 font-bold text-base-foreground"
+            highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary px-0.5 font-bold text-foreground"
           />
         </span>
         <span>&nbsp;</span>
@@ -20,7 +20,7 @@
             <HighlightedText
               :text="nodeDef.name"
               :query="currentQuery"
-              highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary-background px-0.5 font-bold text-base-foreground"
+              highlight-class="-my-0.5 mx-0.5 rounded-sm bg-primary px-0.5 font-bold text-foreground"
             />
           </span>
         </Badge>

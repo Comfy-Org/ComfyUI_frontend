@@ -7,7 +7,7 @@
     <div class="flex flex-1 flex-col gap-4 p-4">
       <div class="flex flex-col gap-2">
         <DialogDescription as-child>
-          <label :for="inputId" class="text-sm text-muted-foreground">
+          <label :for="inputId">
             {{ $t('builderToolbar.filename') }}
           </label>
         </DialogDescription>
@@ -16,7 +16,7 @@
           v-model="filename"
           autofocus
           type="text"
-          class="flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary-background pl-4 text-sm text-base-foreground focus-visible:ring-border-default"
+          class="flex h-10 min-h-8 items-center self-stretch rounded-lg border-none bg-secondary pl-4 text-sm focus-visible:ring-ring"
           @keydown.enter="
             filename.trim() && emit('save', filename.trim(), openAsApp)
           "

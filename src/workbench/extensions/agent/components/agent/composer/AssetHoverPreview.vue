@@ -153,7 +153,7 @@ function onInteractOutside(event: Event): void {
           :alt="name"
           class="max-h-80 w-full object-contain"
         />
-        <div class="px-3 py-2 text-sm wrap-anywhere text-base-foreground">
+        <div class="px-3 py-2 text-sm wrap-anywhere text-foreground">
           {{ name }}
         </div>
       </div>

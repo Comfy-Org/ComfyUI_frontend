@@ -22,7 +22,7 @@ const { t } = useI18n()
       <Button
         variant="muted-textonly"
         size="md"
-        class="group w-full justify-start text-sm leading-none font-normal hover:text-base-foreground"
+        class="group w-full justify-start text-sm leading-none font-normal hover:text-foreground"
       >
         <span class="text-left">{{ t('agent.worked') }}</span>
         <span

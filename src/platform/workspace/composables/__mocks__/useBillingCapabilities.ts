@@ -6,9 +6,16 @@ import type { useBillingCapabilities as realUseBillingCapabilities } from '../us
 
 const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canTopUp: computed(() => true),
+  topUpDenial: computed(() => undefined),
+  canManageBilling: computed(() =>
+    receiveServerFact('can_manage_billing', true)
+  ),
   canSubscribeSelfServe: computed(() => false),
   canCancel: computed(() => false),
   canReactivate: computed(() => false),
+  canRevertScheduledChange: computed(() =>
+    receiveServerFact('can_revert_scheduled_change', false)
+  ),
   canChangeSeats: computed(() => false),
   canManageMembers: computed(() =>
     receiveServerFact('can_manage_members', false)
@@ -20,7 +27,18 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_delete_workspace', false)
   ),
   deleteWorkspaceDenial: computed(() => undefined),
+  canLeaveWorkspace: computed(() =>
+    receiveServerFact('can_leave_workspace', false)
+  ),
+  leaveWorkspaceDenial: computed(() => undefined),
+  canManageSubscription: computed(() =>
+    receiveServerFact('can_manage_subscription', false)
+  ),
   canDowngradeToPersonal: computed(() => false),
+  canManageAutoTopUp: computed(() =>
+    receiveServerFact('can_manage_auto_top_up', false)
+  ),
+  autoTopUpSetup: computed(() => null),
   isReady: computed(() => true),
   hasResolvedCapabilities: computed(() => true),
   snapshotAuthoritative: computed(() => true),
@@ -29,6 +47,10 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
 }
 
 const capabilities = { ...defaults }
+
+export function canManageBillingFact(granted: boolean) {
+  return computed(() => receiveServerFact('can_manage_billing', granted))
+}
 
 export const useBillingCapabilities = vi.fn(() => {
   onTestFinished(() => {

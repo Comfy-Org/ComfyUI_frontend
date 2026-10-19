@@ -9,6 +9,7 @@ import {
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
+import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -202,8 +203,6 @@ export const useAuthActions = () => {
       )
     }
 
-    // Mark the pending top-up directly, not via telemetry, so the balance
-    // refresh on return still fires when telemetry consent is off.
     const pendingTopup = usePendingTopup()
     pendingTopup.startPendingTopup()
     if (!openBillingUrl(response.checkout_url)) {
@@ -212,7 +211,9 @@ export const useAuthActions = () => {
         t('subscription.preview.paymentPopupBlocked')
       )
     }
-    watchForTopupBalanceUpdate()
+    watchForTopupBalanceUpdate({
+      onBalanceIncreased: () => refreshBilling('account')
+    })
   }
 
   const purchaseCredits = wrapWithErrorHandlingAsync(
