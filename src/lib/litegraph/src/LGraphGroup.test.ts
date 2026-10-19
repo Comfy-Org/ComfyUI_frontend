@@ -523,7 +523,18 @@ describe('geometry an extension cannot clobber', () => {
     ['an empty object', '_children', {}],
     ['an array', '_children', []],
     ['a plain object', '_nodes', {}],
-    ['a Set of unmovable items', '_children', new Set([{ id: 1 }])]
+    ['a Set of unmovable items', '_children', new Set([{ id: 1 }])],
+    [
+      'a Set whose member throws on inspection',
+      '_children',
+      new Set([
+        {
+          get move(): never {
+            throw new Error('hostile member')
+          }
+        }
+      ])
+    ]
   ] as const)(
     'assigning %s to %s keeps the live collection',
     ([, property, assigned], { expect }) => {

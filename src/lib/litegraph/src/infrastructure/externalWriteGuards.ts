@@ -53,6 +53,17 @@ export function defineAbsorbingBuffer(
  * Redefines `key` so only a value {@link accepts} recognises can replace the
  * current collection.
  */
+function acceptsWithoutThrowing<TAccepted>(
+  accepts: (value: unknown) => value is TAccepted,
+  value: unknown
+): value is TAccepted {
+  try {
+    return accepts(value)
+  } catch {
+    return false
+  }
+}
+
 export function defineGuardedCollection<
   TTarget extends object,
   TKey extends keyof TTarget & string
@@ -66,7 +77,7 @@ export function defineGuardedCollection<
   Object.defineProperty(target, key, {
     get: () => current,
     set: (value: unknown) => {
-      if (accepts(value)) current = value
+      if (acceptsWithoutThrowing(accepts, value)) current = value
       else onRefused(key, value)
     },
     enumerable: true,
