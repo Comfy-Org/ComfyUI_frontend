@@ -177,13 +177,11 @@ export class AgentFollowerHostSocket {
     this.comfySocket.send(JSON.stringify(frame))
   }
 
-  /** Drops the app's `/ws` socket; the app reconnects on its own. */
   async dropExecutionSocket(): Promise<void> {
     if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
     await this.comfySocket.close()
   }
 
-  /** Every `/ws` connection the app has opened, including reconnects. */
   executionConnectionCount(): number {
     return this.comfyConnections
   }

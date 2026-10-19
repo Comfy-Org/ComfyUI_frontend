@@ -897,14 +897,19 @@ export const useExecutionStore = defineStore('execution', () => {
   function forgetFinishedJobs(jobIds: Iterable<JobId>) {
     for (const jobId of jobIds) {
       if (jobId === activeJobId.value || !(jobId in queuedJobs.value)) continue
-      const progress = { ...nodeProgressStatesByJob.value }
-      delete progress[jobId]
-      nodeProgressStatesByJob.value = progress
-      useJobPreviewStore().clearPreview(jobId)
-      jobIdToWorkflow.delete(jobId)
-      void jobReset.trigger(queuedJobs.value[jobId])
-      delete queuedJobs.value[jobId]
+      forgetJob(jobId)
     }
+  }
+
+  function forgetJob(jobId: JobId) {
+    const progress = { ...nodeProgressStatesByJob.value }
+    delete progress[jobId]
+    nodeProgressStatesByJob.value = progress
+    useJobPreviewStore().clearPreview(jobId)
+    jobIdToWorkflow.delete(jobId)
+    if (jobId in queuedJobs.value)
+      void jobReset.trigger(queuedJobs.value[jobId])
+    delete queuedJobs.value[jobId]
   }
 
   function isJobInitializing(jobId: JobId | number | undefined): boolean {
@@ -922,16 +927,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
     const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
-    if (jobId) {
-      const map = { ...nodeProgressStatesByJob.value }
-      delete map[jobId]
-      nodeProgressStatesByJob.value = map
-      useJobPreviewStore().clearPreview(jobId)
-      jobIdToWorkflow.delete(jobId)
-      if (jobId in queuedJobs.value)
-        void jobReset.trigger(queuedJobs.value[jobId])
-    }
-    if (jobId) delete queuedJobs.value[jobId]
+    if (jobId) forgetJob(jobId)
     activeJobId.value = null
     _executingNodeProgress.value = null
     executionErrorStore.clearPromptError(runErrorKey)

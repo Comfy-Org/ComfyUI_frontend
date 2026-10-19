@@ -128,11 +128,6 @@ export class AgentExecutionHelper {
     this.status(0)
   }
 
-  /**
-   * The server-side half of a completion: the output is fetchable, the job's
-   * history row carries it and `/api/jobs/{id}` returns it in full, but no
-   * execution frame is sent.
-   */
   async recordCompletedJob(
     jobId: string,
     { nodeId, filename }: { nodeId: string; filename: string }

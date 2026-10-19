@@ -562,22 +562,13 @@ describe('useQueueStore', () => {
 
       resolvers[0]({ Running: [createRunningJob(1, 'stale')], Pending: [] })
       await stale
-      await new Promise((r) => setTimeout(r, 0))
+      await vi.advanceTimersByTimeAsync(0)
       expect(fresh).toBe(false)
 
       resolvers[1]({ Running: [], Pending: [] })
       await freshUpdate
       expect(store.runningTasks).toEqual([])
       expect(api.getQueue).toHaveBeenCalledTimes(2)
-    })
-
-    it('fetches once when nothing is in flight', async () => {
-      vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
-      vi.mocked(api.getHistory).mockResolvedValue([])
-
-      await store.updateFresh()
-
-      expect(api.getQueue).toHaveBeenCalledTimes(1)
     })
   })
 

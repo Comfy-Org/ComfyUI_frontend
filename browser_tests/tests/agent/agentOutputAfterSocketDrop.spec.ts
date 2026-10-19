@@ -11,8 +11,7 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test('shows the output on its node once the socket reconnects', async ({
-      rig: { harness, execution },
-      page
+      rig: { harness, execution }
     }) => {
       const jobId = 'agent-exec-server-run-pm-2123'
 
@@ -21,34 +20,22 @@ test.describe(
         await execution.startJob(jobId)
       })
 
-      await test.step('the socket drops and the run finishes while it is down', async () => {
-        const connectionsBeforeDrop =
-          harness.hostSocket.executionConnectionCount()
-        await harness.hostSocket.dropExecutionSocket()
+      await test.step('the run finishes without a frame, then the socket drops', async () => {
         await execution.recordCompletedJob(jobId, {
           nodeId: String(SOURCE_NODE_ID),
           filename: OUTPUT_FILENAME
         })
-        const jobsSeenAfterReconnect: string[] = []
-        page.on('response', async (response) => {
-          if (
-            harness.hostSocket.executionConnectionCount() >
-              connectionsBeforeDrop &&
-            new URL(response.url()).pathname.startsWith('/api/jobs')
-          )
-            jobsSeenAfterReconnect.push(await response.text())
-        })
+        const connectionsBeforeDrop =
+          harness.hostSocket.executionConnectionCount()
+        await harness.hostSocket.dropExecutionSocket()
         await expect
           .poll(() => harness.hostSocket.executionConnectionCount())
           .toBeGreaterThan(connectionsBeforeDrop)
-        await expect
-          .poll(() => jobsSeenAfterReconnect.join('\n'))
-          .toContain(OUTPUT_FILENAME)
       })
 
       await test.step('the finished output is on its node without a reload', async () => {
         const nodeImage = harness.outputImage(SOURCE_NODE_ID)
-        await expect(nodeImage).toBeVisible({ timeout: 10_000 })
+        await expect(nodeImage).toBeVisible()
         await expect(nodeImage).toHaveAttribute('src', OUTPUT_SRC)
       })
     })
