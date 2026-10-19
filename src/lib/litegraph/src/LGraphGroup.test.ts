@@ -522,7 +522,8 @@ describe('geometry an extension cannot clobber', () => {
     ['a plain array', '_nodes', [{ id: 1, title: 'plain' }]],
     ['an empty object', '_children', {}],
     ['an array', '_children', []],
-    ['a plain object', '_nodes', {}]
+    ['a plain object', '_nodes', {}],
+    ['a Set of unmovable items', '_children', new Set([{ id: 1 }])]
   ] as const)(
     'assigning %s to %s keeps the live collection',
     ([, property, assigned], { expect }) => {

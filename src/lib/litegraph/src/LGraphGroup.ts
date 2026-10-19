@@ -134,11 +134,11 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.color = pale_blue.groupcolor
 
     let reported = false
-    const onRefused = (key: string, value: unknown) => {
+    function onRefused(key: string, value: unknown) {
       if (reported) return
       reported = true
       console.warn(
-        `[LGraphGroup] rejected ${key} assignment of a ${typeof value}; kept the existing value`
+        `[LGraphGroup] rejected ${key} assignment (${typeof value}); kept the existing value`
       )
     }
 
@@ -175,7 +175,12 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     defineGuardedCollection(
       this,
       '_children',
-      (value): value is Set<Positionable> => value instanceof Set,
+      (value): value is Set<Positionable> =>
+        value instanceof Set &&
+        [...value].every(
+          (item: unknown) =>
+            typeof (item as Positionable | undefined)?.move === 'function'
+        ),
       onRefused
     )
   }
