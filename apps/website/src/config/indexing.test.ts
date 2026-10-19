@@ -178,9 +178,27 @@ describe('indexing policy', () => {
   ])(
     'head for pageNoindex=$pageNoindex indexableBuild=$indexableBuild',
     ({ pageNoindex, indexableBuild, ...expected }) => {
-      expect(headIndexing({ pageNoindex, indexableBuild })).toEqual(expected)
+      expect(
+        headIndexing({ pageNoindex, indexableBuild, prerendered: true })
+      ).toEqual(expected)
     }
   )
+
+  it('links no markdown twin from an on-demand page, which never gets one', () => {
+    expect(
+      headIndexing({
+        pageNoindex: false,
+        indexableBuild: true,
+        prerendered: false
+      })
+    ).toEqual({
+      robotsNoindex: false,
+      emitCanonical: true,
+      emitAlternates: true,
+      emitStructuredData: true,
+      emitMarkdownTwinLink: false
+    })
+  })
 
   it.for(MODELS_PAGES_BY_KIND)(
     'keeps every Models page but the hub out of the sitemap with nothing launched (%s)',

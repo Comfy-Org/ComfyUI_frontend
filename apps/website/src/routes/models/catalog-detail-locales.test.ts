@@ -11,30 +11,50 @@ import { hreflangAlternates } from '@/lib/hreflang'
 import { entries } from '@website/scripts/export-cms-seed'
 
 const SITE = new URL('https://comfy.org')
-const record = entries.find((entry) => entry.kind === 'MODEL')
-if (!record?.slug) throw new Error('Expected a model seed record')
-const slug = record.slug
+const seed = entries.find((entry) => entry.kind === 'MODEL')
+if (!seed?.slug) throw new Error('Expected a model seed record')
+const record = seed
+const slug = seed.slug
 
-function serveCatalog() {
+function reviewedTranslations() {
+  return Object.fromEntries(
+    PREFIXED_CATALOG_LOCALES.map((locale) => [
+      locale,
+      { title: `${locale} title`, review_state: 'reviewed' }
+    ])
+  )
+}
+
+function serveCatalog(data: Record<string, unknown> = record.data) {
   vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
-  vi.mocked(fetch).mockImplementation((input) => {
-    const url = new URL(String(input))
-    const item = entries.find(
-      (entry) => entry.slug === url.searchParams.get('workflow_slug')
-    )
-    return Promise.resolve(
-      Response.json({
-        revision_id: 1,
-        generation: 0,
-        items: item
-          ? [{ ...item, revision: 1, deleted: false, edit_version: item.uid }]
-          : []
-      })
-    )
+  vi.mocked(fetch).mockResolvedValue(
+    Response.json({
+      revision_id: 1,
+      generation: 0,
+      items: [
+        {
+          ...record,
+          data,
+          revision: 1,
+          deleted: false,
+          edit_version: record.uid
+        }
+      ]
+    })
+  )
+}
+
+function serveTranslatedCatalog() {
+  serveCatalog({
+    type: 'model',
+    title: 'Source title',
+    description: 'Source description',
+    compatibility: { website: record.data },
+    translations: reviewedTranslations()
   })
 }
 
-// The CMS Hub serves every catalog locale. A localized detail page renders on
+// The CMS Hub serves every catalog locale. A translated detail page renders on
 // the server, keeps its locale in the canonical, and the layout pairs that
 // canonical with every other catalog locale (what BaseLayout emits in CMS
 // mode for an indexable public page).
@@ -42,7 +62,7 @@ describe('localized catalog detail pages', () => {
   it.for(PREFIXED_CATALOG_LOCALES)(
     'server-loads %s with a self canonical and alternates for every locale',
     async (locale) => {
-      serveCatalog()
+      serveTranslatedCatalog()
       const prefix = locale === 'zh-CN' ? '/zh-CN' : `/${locale}`
       const pathname = `${prefix}${slug}/`
       const load = await loadCatalogDetailPage({}, pathname, locale)
@@ -51,6 +71,7 @@ describe('localized catalog detail pages', () => {
 
       const head = catalogDetailHead(load.page, pathname, SITE, locale, locale)
       expect(head.canonicalPath).toBe(`${prefix}${load.page.model.href}`)
+      expect(load.page.model.name).toBe(`${locale} title`)
 
       const href = load.page.model.href
       expect(
@@ -65,4 +86,22 @@ describe('localized catalog detail pages', () => {
       ])
     }
   )
+
+  it.for(PREFIXED_CATALOG_LOCALES)(
+    'keeps %s out of the index when the record has no reviewed translation',
+    async (locale) => {
+      serveCatalog()
+      const prefix = locale === 'zh-CN' ? '/zh-CN' : `/${locale}`
+      const load = await loadCatalogDetailPage({}, `${prefix}${slug}/`, locale)
+      expect(load.status).toBe('ok')
+      expect(catalogDetailNoindex({}, load)).toBe(true)
+    }
+  )
+
+  it('indexes the English page of a record with no translations', async () => {
+    serveCatalog()
+    const load = await loadCatalogDetailPage({}, `${slug}/`, 'en')
+    expect(load.status).toBe('ok')
+    expect(catalogDetailNoindex({}, load)).toBe(false)
+  })
 })

@@ -102,7 +102,8 @@ const canonicalURL = new URL(url)
 const shouldNoindex = noindex || isNoindexPathname(Astro.url.pathname)
 const head = headIndexing({
   pageNoindex: shouldNoindex,
-  indexableBuild: isIndexableBuild()
+  indexableBuild: isIndexableBuild(),
+  prerendered: Astro.isPrerendered
 })
 const alternateOptions = { localizedHub: cmsEnabled() }
 const languageAlternates = localeAlternates(

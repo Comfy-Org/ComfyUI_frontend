@@ -54,11 +54,14 @@ export function isIndexableBuild(): boolean {
 interface HeadIndexingInput {
   pageNoindex: boolean
   indexableBuild: boolean
+  /** Markdown twins are written only for prerendered pages. */
+  prerendered: boolean
 }
 
 export function headIndexing({
   pageNoindex,
-  indexableBuild
+  indexableBuild,
+  prerendered
 }: HeadIndexingInput) {
   const robotsNoindex = pageNoindex || !indexableBuild
   return {
@@ -66,7 +69,7 @@ export function headIndexing({
     emitCanonical: indexableBuild,
     emitAlternates: !robotsNoindex,
     emitStructuredData: !pageNoindex,
-    emitMarkdownTwinLink: !pageNoindex
+    emitMarkdownTwinLink: !pageNoindex && prerendered
   }
 }
 

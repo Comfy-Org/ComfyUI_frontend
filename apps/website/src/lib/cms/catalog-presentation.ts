@@ -54,6 +54,25 @@ function localizedDocument(d: Document, locale: string, preview: boolean) {
   return preview || translated.review_state === 'reviewed' ? translated : {}
 }
 
+/** Whether a public page in `locale` shows the record in that language. */
+export function catalogLocaleTranslated(
+  record: ContentCatalogRecord,
+  locale: string
+): boolean {
+  if (!['model', 'workflow', 'app'].includes(String(record.data.type)))
+    return locale === 'en'
+  const source =
+    typeof record.data.source_locale === 'string'
+      ? record.data.source_locale
+      : 'en'
+  if (locale === source) return true
+  const doc = jsonObject.safeParse(record.data)
+  return (
+    doc.success &&
+    localizedDocument(doc.data, locale, false).review_state === 'reviewed'
+  )
+}
+
 function displayText(d: Document, local: Document, key: string, fallback = '') {
   if (typeof local[key] === 'string') return local[key]
   return typeof d[key] === 'string' ? d[key] : fallback

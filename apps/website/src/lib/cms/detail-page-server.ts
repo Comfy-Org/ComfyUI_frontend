@@ -10,12 +10,13 @@ import { modelOgImage, prepareModelPage } from '@/routes/models/model-page'
 import { pageContext } from '@/utils/jsonLd'
 import { modelPageJsonLd } from '@/utils/modelJsonLd'
 import { catalogUnavailable, loadSiteCatalog } from './catalog'
+import { catalogLocaleTranslated } from './catalog-presentation'
 import { catalogDetailPath } from './detail-route'
 
 type DetailLocale = Parameters<typeof prepareModelPage>[1]
 
 export type CatalogDetailLoad =
-  | { status: 'ok'; page: ModelsPageData }
+  | { status: 'ok'; page: ModelsPageData; translated: boolean }
   | { status: 'missing' | 'unavailable' }
 
 /**
@@ -60,7 +61,14 @@ export async function loadCatalogDetailPage(
     parsed.data.model.href.replace(/\/$/, '') !== canonical
   )
     return { status: 'unavailable' }
-  return { status: 'ok', page: parsed.data }
+  return {
+    status: 'ok',
+    page: parsed.data,
+    translated: catalogLocaleTranslated(
+      catalog.projection.items[0],
+      locale ?? 'en'
+    )
+  }
 }
 
 /** The locale prefix a Hub detail page is served under ('' for English). */
@@ -102,8 +110,9 @@ export function catalogDetailHead(
 
 /**
  * Staff sessions can see unpublished Draft content, a missing or unavailable
- * record has nothing to index, and an unlaunched page stays noindex as it does
- * on the static Hub.
+ * record has nothing to index, an unlaunched page stays noindex as it does on
+ * the static Hub, and a locale page without a reviewed translation duplicates
+ * the source-language page.
  */
 export function catalogDetailNoindex(
   locals: Pick<APIContext['locals'], 'catalogAuthoring' | 'site'>,
@@ -112,6 +121,7 @@ export function catalogDetailNoindex(
   return (
     Boolean(locals.catalogAuthoring ?? locals.site) ||
     load.status !== 'ok' ||
+    !load.translated ||
     !isIndexableModelPage(load.page.model.href)
   )
 }
