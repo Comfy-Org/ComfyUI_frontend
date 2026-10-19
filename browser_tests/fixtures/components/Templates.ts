@@ -21,7 +21,6 @@ export interface OpenedTemplate {
 
 export interface ClickedTemplate {
   id: string
-  requested: Promise<void>
   opened: Promise<OpenedTemplate>
 }
 
@@ -52,8 +51,9 @@ export class ComfyTemplates {
     return (await this.clickFirstTemplate()).opened
   }
 
-  /** Clicks the first Browse Templates card; `hold` delays its template JSON response until it resolves. */
-  async clickFirstTemplate(hold?: Promise<void>): Promise<ClickedTemplate> {
+  async clickFirstTemplate(
+    holdResponseUntil?: Promise<void>
+  ): Promise<ClickedTemplate> {
     await this.page.evaluate(() =>
       window.app!.extensionManager.command.execute('Comfy.BrowseTemplates')
     )
@@ -63,25 +63,26 @@ export class ComfyTemplates {
     const testId = await first.getAttribute('data-testid')
     const id = testId?.slice(TestIds.templates.workflowCard('').length)
     if (!testId || !id) throw new Error(`template card has no id: ${testId}`)
-    const isTemplateFile = (url: string) => {
+    function isTemplateFile(url: string) {
       const { pathname } = new URL(url)
       return pathname.includes('templates/') && pathname.endsWith(`/${id}.json`)
     }
-    if (hold)
+    if (holdResponseUntil)
       await this.page.route(
         (url) => isTemplateFile(url.href),
         async (route) => {
-          await hold
+          await holdResponseUntil
           await route.fallback()
         }
       )
-    const requested = this.page
-      .waitForRequest((request) => isTemplateFile(request.url()))
-      .then(() => undefined)
+    const requested = this.page.waitForRequest((request) =>
+      isTemplateFile(request.url())
+    )
     const fetched = this.page.waitForResponse((response) =>
       isTemplateFile(response.url())
     )
     await this.content.getByTestId(testId).click()
+    await requested
     const opened = fetched.then(async (response) => {
       if (!response.ok())
         throw new Error(`template ${id} returned ${response.status()}`)
@@ -92,7 +93,7 @@ export class ComfyTemplates {
         .sort()
       return { id, rootNodes }
     })
-    return { id, requested, opened }
+    return { id, opened }
   }
 
   async loadingTemplateId(): Promise<string | null | undefined> {

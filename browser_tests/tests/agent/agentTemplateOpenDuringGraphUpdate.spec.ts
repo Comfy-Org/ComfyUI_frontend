@@ -33,7 +33,6 @@ test.describe(
                 page.getByTestId('agent-graph-activity-bar')
               ).toBeVisible()
               clicked = await templates.clickFirstTemplate(templateHeld)
-              await clicked.requested
             })
           }
           if (graphOpsSeen === 3) {
@@ -46,7 +45,6 @@ test.describe(
         },
         waitForGraphOpsDelivery: () => graphOpsSeen === 2
       })
-      releaseTemplate()
       if (!clicked) throw new Error('the template was never clicked')
       const template = await clicked.opened
 
