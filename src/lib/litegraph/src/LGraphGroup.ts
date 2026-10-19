@@ -144,7 +144,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
         ),
         {
           surface: 'graph',
-          errorType: 'error_assigning_group_geometry',
+          errorType: 'error_assigning_group_field',
           context: { key }
         }
       )

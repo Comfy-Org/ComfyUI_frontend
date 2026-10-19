@@ -514,8 +514,6 @@ describe('geometry an extension cannot clobber', () => {
     delete copy.graph
     Object.assign(group, copy)
 
-    // Populated before the copy, so this proves the live node survived rather
-    // than being replaced by the plain serialized data the copy carries.
     expect(group.nodes).toEqual([node])
     expect(() => group.addNodes([node])).not.toThrow()
 
@@ -572,8 +570,6 @@ describe('geometry an extension cannot clobber', () => {
 
       Object.assign(group, { [property]: assigned })
 
-      // The layout store only moves when the write went through setBounds, and
-      // identity only holds when the buffer was copied into, not replaced.
       expect(layoutStore.getGroupLayout(graph.rootGraph.id, group.id)).toEqual({
         id: group.id,
         position: { x: expected[0], y: expected[1] },
@@ -621,7 +617,19 @@ describe('geometry an extension cannot clobber', () => {
     ['a boolean coordinate', '_bounding', [true, 2, 300, 400]],
     ['a NaN coordinate', '_size', [NaN, 400]],
     ['an infinite coordinate', 'bounds', [1, 2, Infinity, 400]],
-    ['too few coordinates', '_bounding', [1, 2]]
+    ['too few coordinates', '_bounding', [1, 2]],
+    [
+      'a throwing coordinate getter',
+      '_bounding',
+      {
+        0: 1,
+        get 1() {
+          throw new Error('Unreadable coordinate')
+        },
+        2: 300,
+        3: 400
+      }
+    ]
   ] as const)(
     'assigning %s to %s leaves the geometry untouched',
     ([, property, assigned], { expect }) => {
@@ -631,8 +639,6 @@ describe('geometry an extension cannot clobber', () => {
 
       expect(() => Object.assign(group, { [property]: assigned })).not.toThrow()
 
-      // Identity proves the property was never replaced; pos/size read the
-      // views rather than bounds, so a clobbered view shows up here.
       expect(group[property]).toBe(view)
       expect([...group.pos]).toEqual([10, 10])
       expect([...group.size]).toEqual([140, 80])
@@ -672,7 +678,7 @@ describe('geometry an extension cannot clobber', () => {
 
     expect(mockReportError).toHaveBeenCalledTimes(2)
     expect(mockReportError.mock.calls[0][1]).toMatchObject({
-      errorType: 'error_assigning_group_geometry',
+      errorType: 'error_assigning_group_field',
       context: { key: 'bounds' }
     })
   })

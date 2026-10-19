@@ -1,22 +1,20 @@
-/**
- * Guards for fields that outside code assigns to directly.
- *
- * Extensions copy an entity by enumerating its own keys - a JSON round-trip, a
- * deep clone with no typed-array branch - and write the copy back. That
- * replaces a `Rectangle` with `{"0":x,"1":y}` and a `Set` with `{}`, after
- * which every later read throws. These guards keep the original object and
- * take the assigned value's contents instead, so such a write degrades to a
- * no-op rather than breaking the entity.
- */
-
-/** Reports a write that was refused, so the caller can be identified. */
 export type RefusedWriteReporter = (key: string, value: unknown) => void
 
 function readCoordinates(value: unknown, arity: number): number[] | undefined {
-  const source = value as ArrayLike<unknown> | null | undefined
+  if (
+    value === null ||
+    (typeof value !== 'object' && typeof value !== 'function')
+  )
+    return undefined
+
   const coords: number[] = []
   for (let index = 0; index < arity; index++) {
-    const coord = source?.[index]
+    let coord: unknown
+    try {
+      coord = Reflect.get(value, index)
+    } catch {
+      return undefined
+    }
     if (typeof coord !== 'number' || !Number.isFinite(coord)) return undefined
     coords.push(coord)
   }
