@@ -2452,6 +2452,8 @@
           "src/lib/litegraph/src/utils/mathParser.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.test.ts",
           "src/lib/litegraph/src/utils/namedValuesShadowDiff.ts",
+          "src/lib/litegraph/src/utils/restoredWidgetValue.test.ts",
+          "src/lib/litegraph/src/utils/restoredWidgetValue.ts",
           "src/lib/litegraph/src/widgetConnectionSuppression.test.ts",
           "src/lib/litegraph/src/widgetValueNullContract.test.ts",
           "src/types/widgetId.test.ts",

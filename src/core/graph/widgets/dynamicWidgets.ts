@@ -155,7 +155,7 @@ function dynamicComboWidget(
           ? useWidgetValueStore().getRestoredWidgetValue(
               graphId,
               node.id,
-              name,
+              addedWidget,
               positionalIndex
             )
           : undefined

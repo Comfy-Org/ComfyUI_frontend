@@ -174,7 +174,6 @@ import {
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
-import { coerceRestoredWidgetValue } from './utils/widget'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
@@ -1276,7 +1275,7 @@ export class LGraphNode
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
             this.id,
-            widget.name,
+            widget,
             getWidgetRestorationSlot(
               this,
               widget,
@@ -1284,8 +1283,7 @@ export class LGraphNode
               restoration.positional.length
             )
           )
-          if (restored)
-            widget.value = coerceRestoredWidgetValue(widget, restored.value)
+          if (restored) widget.value = restored.value
         }
       }
       if (this.pinned) this.resizable = false
@@ -2358,11 +2356,10 @@ export class LGraphNode
     const restored = useWidgetValueStore().getRestoredWidgetValue(
       this.graph?.rootGraph.id ?? zeroUuid,
       this.id,
-      widget.name,
+      widget,
       positionalIndex
     )
-    if (restored)
-      widget.value = coerceRestoredWidgetValue(widget, restored.value)
+    if (restored) widget.value = restored.value
 
     return widget
   }
