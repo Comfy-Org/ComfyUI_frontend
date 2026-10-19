@@ -13,9 +13,9 @@ import {
   setLoad3dOutputCache,
   useLoad3d as useLoad3dImpl
 } from '@/composables/useLoad3d'
-import Load3d from '@/extensions/core/load3d/Load3d'
+import Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import type { Size } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -27,11 +27,11 @@ import { api } from '@/scripts/api'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createMockCanvasPointerEvent } from '@/utils/__tests__/canvasTestUtils'
 
-vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
+vi.mock(import('@comfyorg/viewport3d/load3d/Load3d'), () => ({
   default: vi.fn()
 }))
 
-vi.mock(import('@/extensions/core/load3d/createLoad3d'), () => ({
+vi.mock(import('@comfyorg/viewport3d/load3d/createLoad3d'), () => ({
   createLoad3d: vi.fn()
 }))
 

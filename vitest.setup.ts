@@ -69,21 +69,6 @@ afterEach(() => {
   clearRegisteredLiteGraphTypes()
 })
 
-// Mock @sparkjsdev/spark which uses WASM that doesn't work in Node.js
-vi.mock('@sparkjsdev/spark', async () => {
-  const three = await import('three')
-  return {
-    SplatMesh: class SplatMesh {
-      constructor() {}
-    },
-    SparkRenderer: class SparkRenderer extends three.Object3D {
-      constructor() {
-        super()
-      }
-    }
-  }
-})
-
 // Modules below `@/scripts/app` reach the singleton through `useApp()`. Route
 // it to whatever `@/scripts/app` resolves to in the current test file (the
 // real module, `__mocks__/app`, or an inline factory). The import is started

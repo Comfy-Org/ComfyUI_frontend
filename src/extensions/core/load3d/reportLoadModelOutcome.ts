@@ -1,7 +1,7 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
 
-import type { LoadModelOutcome } from './interfaces'
+import type { LoadModelOutcome } from '@comfyorg/viewport3d/load3d/interfaces'
 
 /**
  * Warns the user about a failed model load. `silentOnNotFound` hides the

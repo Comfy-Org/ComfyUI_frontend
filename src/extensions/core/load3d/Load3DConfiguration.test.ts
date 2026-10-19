@@ -2,7 +2,7 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
@@ -14,7 +14,7 @@ import type {
   ModelConfig,
   SceneConfig,
   StoredModelConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import type {
   IBaseWidget,
   INumericWidget
@@ -29,7 +29,7 @@ import type { Settings } from '@/platform/settings/types'
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
+vi.mock(import('@comfyorg/viewport3d/load3d/Load3d'), () => ({
   default: fromAny(class {})
 }))
 

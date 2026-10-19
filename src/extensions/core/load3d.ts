@@ -19,13 +19,13 @@ import type {
   CameraState,
   LoadFolder,
   Model3DInfo
-} from '@/extensions/core/load3d/interfaces'
-import type Load3d from '@/extensions/core/load3d/Load3d'
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import {
   LOAD3D_NONE_MODEL,
   SUPPORTED_EXTENSIONS_ACCEPT
-} from '@/extensions/core/load3d/constants'
+} from '@comfyorg/viewport3d/load3d/constants'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'

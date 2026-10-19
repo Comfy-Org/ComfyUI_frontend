@@ -7,7 +7,7 @@ import {
 } from '@/platform/assets/utils/assetPreviewUtil'
 import { reportError } from '@/platform/telemetry/reportError'
 import { redactTelemetryError } from '@/platform/telemetry/redactTelemetryUrls'
-import type { SharedRendererHandle } from '@/renderer/three/sharedWebGLRenderer'
+import type { SharedRendererHandle } from '@comfyorg/viewport3d/three/sharedWebGLRenderer'
 
 let queue: Promise<unknown> = Promise.resolve()
 const MODEL_LOAD_TIMEOUT_MS = 15_000
@@ -126,7 +126,7 @@ function renderThumbnailJob(
   const deadline = new AbortController()
   const operation = (async () => {
     const { acquireSharedRenderer } =
-      await import('@/renderer/three/sharedWebGLRenderer')
+      await import('@comfyorg/viewport3d/three/sharedWebGLRenderer')
     deadline.signal.throwIfAborted()
     rendererKeepAlive ??= acquireSharedRenderer()
     return renderThumbnailInner(modelUrl, assetName, deadline.signal)
@@ -198,7 +198,8 @@ async function renderThumbnailInner(
   assetName: string,
   signal: AbortSignal
 ): Promise<string> {
-  const { createLoad3d } = await import('@/extensions/core/load3d/createLoad3d')
+  const { createLoad3d } =
+    await import('@comfyorg/viewport3d/load3d/createLoad3d')
   signal.throwIfAborted()
 
   const load3d = createLoad3d(document.createElement('div'), load3dHost, {

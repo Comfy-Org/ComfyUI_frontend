@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type * as THREE from 'three'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
-import type { createLoad3d as createLoad3dContract } from '@/extensions/core/load3d/createLoad3d'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
+import type { createLoad3d as createLoad3dContract } from '@comfyorg/viewport3d/load3d/createLoad3d'
 import { reportError } from '@/platform/telemetry/reportError'
 import { generateModelThumbnail } from './modelThumbnail'
 
@@ -19,7 +19,7 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
 }))
 
 const createLoad3d = vi.hoisted(() => vi.fn<typeof createLoad3dContract>())
-vi.mock(import('@/extensions/core/load3d/createLoad3d'), () => ({
+vi.mock(import('@comfyorg/viewport3d/load3d/createLoad3d'), () => ({
   createLoad3d
 }))
 
@@ -27,9 +27,9 @@ vi.mock(import('@/platform/telemetry/reportError'))
 const reportErrorMock = vi.mocked(reportError)
 
 const releaseSharedRenderer = vi.hoisted(() => vi.fn())
-vi.mock(import('@/renderer/three/sharedWebGLRenderer'), { spy: true })
+vi.mock(import('@comfyorg/viewport3d/three/sharedWebGLRenderer'), { spy: true })
 
-import { acquireSharedRenderer } from '@/renderer/three/sharedWebGLRenderer'
+import { acquireSharedRenderer } from '@comfyorg/viewport3d/three/sharedWebGLRenderer'
 
 function mockInstance(overrides: Partial<ThumbnailLoad3d> = {}): Load3d {
   return fromPartial<Load3d>({

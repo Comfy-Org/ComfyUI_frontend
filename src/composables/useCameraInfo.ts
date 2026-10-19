@@ -5,10 +5,10 @@ import {
   createSceneHoverHandlers,
   useViewportNodeWiring
 } from '@/composables/useViewportNodeWiring'
-import { CameraInfoViewport } from '@/extensions/core/cameraInfo/CameraInfoViewport'
-import type { TransformGizmoMode } from '@/extensions/core/cameraInfo/CameraInfoViewport'
-import { DEFAULT_CAMERA_INFO_STATE } from '@/extensions/core/cameraInfo/types'
-import type { CameraInfoState } from '@/extensions/core/cameraInfo/types'
+import { CameraInfoViewport } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
+import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
+import { DEFAULT_CAMERA_INFO_STATE } from '@comfyorg/viewport3d/cameraInfo/types'
+import type { CameraInfoState } from '@comfyorg/viewport3d/cameraInfo/types'
 import {
   readStateFromWidgets,
   writeWidgetValue
