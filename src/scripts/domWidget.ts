@@ -21,11 +21,6 @@ import type {
 } from '@/types/domWidget'
 import { generateUUID } from '@/utils/formatUtil'
 
-/**
- * Custom nodes sometimes supply a non-function `getValue`/`setValue` (e.g. a
- * value instead of a getter). Optional chaining only skips nullish values, so
- * guard on the type to avoid `TypeError: this.options.getValue is not a function`.
- */
 function readDomWidgetValue<V extends object | string>(
   options: DOMWidgetOptions<V>
 ): V {

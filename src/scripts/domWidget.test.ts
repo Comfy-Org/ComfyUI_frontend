@@ -164,7 +164,6 @@ describe('DOM widget value accessors with a non-function getValue/setValue', () 
       element: document.createElement('div'),
       options: {}
     })
-    // Custom nodes have been seen passing values instead of functions
     Reflect.set(widget.options, 'getValue', 'stale')
     Reflect.set(widget.options, 'setValue', 'stale')
     return widget
