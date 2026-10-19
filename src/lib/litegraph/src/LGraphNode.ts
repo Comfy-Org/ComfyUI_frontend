@@ -299,6 +299,7 @@ function validateWidgetValuesForm(
     Object.keys(form).length === 1 &&
     Array.isArray(form.order) &&
     form.order.length > 0 &&
+    new Set(form.order).size === form.order.length &&
     form.order.every((name) => typeof name === 'string' && name.length > 0)
   assertWidgetValuesForm(
     closedForm,

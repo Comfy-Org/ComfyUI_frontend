@@ -148,6 +148,20 @@ describe('widget values form serialization', () => {
     )
   })
 
+  it('rejects duplicate names in a declared form', () => {
+    const node = nodeWithWidgets([
+      { name: 'prompt', value: 'first' },
+      { name: 'second_prompt', value: 'second' }
+    ])
+    node.onSerialize = (data) => {
+      data.widgets_values_form = { order: ['prompt', 'prompt'] }
+    }
+
+    expect(() => node.serialize()).toThrow(
+      '[Assertion failed]: Widget values form must be closed to a non-empty order'
+    )
+  })
+
   it('rejects a form after a hook deletes the values it describes', () => {
     const node = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
     node.onSerialize = (data) => {
