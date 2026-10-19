@@ -33,7 +33,8 @@ test.describe(
       expect(requestBody).toMatchObject({
         prompt: {
           '5': { inputs: { width: 512, height: 768 } },
-          '3': { inputs: { steps: 20, cfg: 7.5 } }
+          '3': { inputs: { steps: 20, cfg: 7.5 } },
+          '10': { inputs: { boolean_input: false } }
         }
       })
     })
