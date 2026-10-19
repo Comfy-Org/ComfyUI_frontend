@@ -98,7 +98,7 @@ for (const mode of renderModes) {
           if (mode.vueNodesEnabled) {
             await expect(
               comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-            ).toHaveClass(/outline-node-component-outline/)
+            ).toHaveClass(/outline-foreground/)
           }
         })
 
@@ -113,7 +113,7 @@ for (const mode of renderModes) {
           if (mode.vueNodesEnabled) {
             await expect(
               comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-            ).not.toHaveClass(/outline-node-component-outline/)
+            ).not.toHaveClass(/outline-foreground/)
           }
         })
       })
