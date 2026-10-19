@@ -1,4 +1,5 @@
 import { nodesMap } from '@comfyorg/comfy-multi-player'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -93,7 +94,7 @@ describe('AgentCrdtProjection frame node delta', () => {
   })
 
   it('retains a failed projection until a clean retry applies it', () => {
-    const graph = {} as NonNullable<ProjectionGraph>
+    const graph = fromPartial<NonNullable<ProjectionGraph>>({})
     const applyChanges = vi
       .spyOn(LiveGraphApplier.prototype, 'applyChanges')
       .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
@@ -125,7 +126,7 @@ describe('AgentCrdtProjection frame node delta', () => {
   })
 
   it('re-derives a retained delete against the document before replaying it', () => {
-    const graph = {} as NonNullable<ProjectionGraph>
+    const graph = fromPartial<NonNullable<ProjectionGraph>>({})
     const applyChanges = vi
       .spyOn(LiveGraphApplier.prototype, 'applyChanges')
       .mockReturnValueOnce({ createdNodeIds: [], failureCount: 0 })
@@ -156,6 +157,59 @@ describe('AgentCrdtProjection frame node delta', () => {
       failureCount: 0
     })
     expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(false)
-    expect(applyChanges.mock.calls[3][1].nodes.get('3')).not.toBe('delete')
+    expect(applyChanges.mock.calls[3][1].nodes.get('3')).toBe('update')
+  })
+
+  it('re-derives a retained add for a node the document has dropped', () => {
+    const graph = fromPartial<NonNullable<ProjectionGraph>>({})
+    const applyChanges = vi
+      .spyOn(LiveGraphApplier.prototype, 'applyChanges')
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
+      .mockReturnValue({ createdNodeIds: [], failureCount: 0 })
+    const { host, follower, projection } = setup(graph)
+
+    nodesMap(host).set('3', new Y.Map([['type', 'KSampler']]))
+    const addition = frame(1, host)
+    follower.applyRemoteUpdate(addition.update)
+
+    expect(projection.applyFrame(addition)).toMatchObject({ failureCount: 1 })
+    expect(applyChanges.mock.calls[0][1].nodes.get('3')).toBe('add')
+
+    const since = Y.encodeStateVector(host)
+    nodesMap(host).delete('3')
+    const removal = frame(2, host, since)
+    follower.applyRemoteUpdate(removal.update)
+    projection.applyFrame(removal)
+
+    expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
+      failureCount: 0
+    })
+    expect(applyChanges.mock.calls[2][1].nodes.get('3')).toBe('delete')
+  })
+
+  it('keeps a later failed frame retained when an earlier one retries cleanly', () => {
+    const graph = fromPartial<NonNullable<ProjectionGraph>>({})
+    vi.spyOn(LiveGraphApplier.prototype, 'applyChanges')
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 0 })
+      .mockReturnValueOnce({ createdNodeIds: [], failureCount: 1 })
+    const { host, follower, projection } = setup(graph)
+
+    nodesMap(host).set('3', new Y.Map([['type', 'KSampler']]))
+    const first = frame(1, host)
+    follower.applyRemoteUpdate(first.update)
+    projection.applyFrame(first)
+
+    const since = Y.encodeStateVector(host)
+    nodesMap(host).set('4', new Y.Map([['type', 'Note']]))
+    const second = frame(2, host, since)
+    follower.applyRemoteUpdate(second.update)
+    projection.applyFrame(second)
+
+    expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
+      failureCount: 1
+    })
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(true)
   })
 })
