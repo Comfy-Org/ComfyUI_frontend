@@ -631,13 +631,13 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const graph = bound ? deps.getGraph() : null
     for (const entry of held) {
       if (graph) retryHeldWrite(graph, entry)
-      else waitOrGiveUp(entry, bound)
+      else waitOrGiveUp(entry)
     }
   }
 
-  function waitOrGiveUp(entry: HeldPromotedWrite, bound: boolean): void {
+  function waitOrGiveUp(entry: HeldPromotedWrite): void {
     if (!heldTooLong(entry)) holdPromotedWrite(entry)
-    else if (bound)
+    else
       refuseWidgetWrite(entry.rootGraphId, entry.event, {
         reason: 'doc_not_synced'
       })

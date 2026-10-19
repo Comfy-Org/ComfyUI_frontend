@@ -1281,7 +1281,7 @@ describe('attachDocOpMinter', () => {
       doc.destroy()
     })
 
-    it('is dropped silently when the document is unbound before it catches up', async () => {
+    it('is refused when a transient document unbind outlasts the catch-up deadline', async () => {
       const { host, doc } = seedPromotedHost()
       mayWrite = false
 
@@ -1291,7 +1291,13 @@ describe('attachDocOpMinter', () => {
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(0)
+      expect(refusals).toBe(1)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_promoted_widget_doc_not_synced'
+        })
+      )
       expect(vi.getTimerCount()).toBe(0)
       doc.destroy()
     })
