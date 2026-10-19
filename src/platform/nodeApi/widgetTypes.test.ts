@@ -10,10 +10,8 @@ import '@/scripts/domWidget'
 import { useWidgetStore } from '@/stores/widgetStore'
 
 import { createGraphApi } from './graphHandle'
-import {
-  constructDeclaredWidget,
-  createWidgetTypeRegistrar
-} from './widgetTypes'
+import { constructDeclaredWidget } from './declaredWidgetTypes'
+import { createWidgetTypeRegistrar } from './widgetTypes'
 
 describe('pack-declared widget types', () => {
   let graph: LGraph

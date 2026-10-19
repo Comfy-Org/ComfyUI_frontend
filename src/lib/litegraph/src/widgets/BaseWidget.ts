@@ -88,10 +88,6 @@ export interface WidgetEventOptions {
   canvas: LGraphCanvas
 }
 
-export function extensionValue<T>(value: T): T | null | undefined {
-  return value
-}
-
 export interface BaseWidget extends IBaseWidget {}
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>

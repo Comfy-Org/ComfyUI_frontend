@@ -1,5 +1,7 @@
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
