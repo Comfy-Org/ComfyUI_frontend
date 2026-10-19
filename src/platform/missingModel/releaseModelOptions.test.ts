@@ -188,32 +188,45 @@ describe('cloudReleaseModelOptions', () => {
     distribution.isCloud = false
   })
 
-  it.for([
+  it.for<{
+    runsOn: string
+    isCloud: boolean
+    hint: string | null | undefined
+    url: string
+    gives: typeof releaseModelOptions | undefined
+  }>([
     {
-      runsOn: 'Comfy Cloud with a deployment hint',
+      runsOn: 'Comfy Cloud, last booted on a deployment',
       isCloud: true,
-      hint: true,
+      hint: 'dep-2',
       url: '/',
       gives: releaseModelOptions
     },
     {
-      runsOn: 'Comfy Cloud from a deployment link',
+      runsOn: 'Comfy Cloud with no hint',
       isCloud: true,
-      hint: false,
+      hint: undefined,
+      url: '/',
+      gives: releaseModelOptions
+    },
+    {
+      runsOn: 'Comfy Cloud from a deployment link, last booted on Comfy Cloud',
+      isCloud: true,
+      hint: null,
       url: '/?deployment=dep-2',
       gives: releaseModelOptions
     },
     {
-      runsOn: 'Comfy Cloud with no hint or link',
+      runsOn: 'Comfy Cloud, last booted on Comfy Cloud, with no link',
       isCloud: true,
-      hint: false,
+      hint: null,
       url: '/',
       gives: undefined
     },
     {
       runsOn: 'Local',
       isCloud: false,
-      hint: true,
+      hint: 'dep-2',
       url: '/',
       gives: undefined
     }
@@ -221,7 +234,7 @@ describe('cloudReleaseModelOptions', () => {
     'waits on the listing only where the page may be on a deployment: $runsOn',
     ({ isCloud, hint, url, gives }) => {
       distribution.isCloud = isCloud
-      setDeploymentHint('ws-1', hint ? 'dep-2' : null)
+      if (hint !== undefined) setDeploymentHint('ws-1', hint)
       window.history.replaceState(null, '', url)
       onTestFinished(() => window.history.replaceState(null, '', '/'))
 

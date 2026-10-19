@@ -24,8 +24,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
-  hasDeploymentHint,
-  hasDeploymentLink
+  hasDeploymentLink,
+  readDeploymentHint
 } from '@/platform/workspace/deploymentHint'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -67,7 +67,7 @@ vi.mock<unknown>(
 vi.mock(import('firebase/auth'))
 
 vi.mock(import('@/platform/workspace/deploymentHint'), () => ({
-  hasDeploymentHint: vi.fn(() => true),
+  readDeploymentHint: vi.fn<typeof readDeploymentHint>(() => 'deployment'),
   hasDeploymentLink: vi.fn(() => false),
   setDeploymentHint: vi.fn()
 }))
@@ -674,7 +674,7 @@ describe('deployment model options at startup', () => {
     onTestFinished(() => {
       distribution.isCloud = false
     })
-    vi.mocked(hasDeploymentHint).mockReturnValue(true)
+    vi.mocked(readDeploymentHint).mockReturnValue('deployment')
     vi.mocked(hasDeploymentLink).mockReturnValue(false)
   })
 
@@ -682,9 +682,9 @@ describe('deployment model options at startup', () => {
     { listing: 'never answers', answer: () => new Promise<void>(() => {}) },
     { listing: 'fails', answer: () => Promise.resolve() }
   ])(
-    'mounts the canvas at once, with no lookup toast, when the listing $listing and this browser has no deployment hint',
+    'mounts the canvas at once, with no lookup toast, when the listing $listing and this browser last booted on Comfy Cloud',
     async ({ answer }) => {
-      vi.mocked(hasDeploymentHint).mockReturnValue(false)
+      vi.mocked(readDeploymentHint).mockReturnValue('cloud')
       const store = useDeploymentPickStore()
       vi.spyOn(store, 'loadOnce').mockReturnValue(answer())
 
@@ -697,26 +697,40 @@ describe('deployment model options at startup', () => {
     }
   )
 
-  it('waits for the listing when the page opened from a deployment link, with no hint', async () => {
-    vi.mocked(hasDeploymentHint).mockReturnValue(false)
-    vi.mocked(hasDeploymentLink).mockReturnValue(true)
-    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
-      new Promise(() => {})
-    )
+  it.for([
+    {
+      why: 'the page opened from a deployment link, though this browser last booted on Comfy Cloud',
+      hint: 'cloud' as const,
+      link: true
+    },
+    {
+      why: 'this browser has no hint for the workspace',
+      hint: 'unknown' as const,
+      link: false
+    }
+  ])(
+    'waits for the listing, then shows the lookup toast, when $why',
+    async ({ hint, link }) => {
+      vi.mocked(readDeploymentHint).mockReturnValue(hint)
+      vi.mocked(hasDeploymentLink).mockReturnValue(link)
+      vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+        new Promise(() => {})
+      )
 
-    await mountGraphCanvas()
-    expect(app.setup).not.toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      await mountGraphCanvas()
+      expect(app.setup).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
 
-    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
-    expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          title: 'deploymentSwitcher.lookupUnavailable'
-        })
-      ])
-    )
-  })
+      await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+      expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'deploymentSwitcher.lookupUnavailable'
+          })
+        ])
+      )
+    }
+  )
 
   it('waits for the deployment before constructing workflow widgets', async () => {
     let finishListing = () => {}

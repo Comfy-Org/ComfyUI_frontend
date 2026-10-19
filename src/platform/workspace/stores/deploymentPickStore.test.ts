@@ -9,7 +9,7 @@ import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploym
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
 import {
-  hasDeploymentHint,
+  readDeploymentHint,
   setDeploymentHint
 } from '@/platform/workspace/deploymentHint'
 
@@ -1390,69 +1390,83 @@ describe('useDeploymentPickStore', () => {
   })
 
   describe("this browser's deployment hint", () => {
+    type HintState = ReturnType<typeof readDeploymentHint>
+
+    function seedHint(hint: HintState) {
+      if (hint === 'deployment') setDeploymentHint('ws-1', 'dep-1')
+      else if (hint === 'cloud') setDeploymentHint('ws-1', null)
+    }
+
     beforeEach(() => {
       localStorage.clear()
     })
 
-    it.for([
+    it.for<{
+      answer: string
+      hintBefore: HintState
+      respond: () => void
+      hintAfter: HintState
+    }>([
       {
         answer: 'a listing on a deployment',
-        hintBefore: false,
+        hintBefore: 'unknown',
         respond: () =>
           mockWorkspaceApi.listDeployments.mockResolvedValue(listing),
-        hintAfter: true
+        hintAfter: 'deployment'
       },
       {
-        answer: 'a listing on Comfy Cloud',
-        hintBefore: true,
+        answer: 'a listing on Comfy Cloud, after a boot on a deployment',
+        hintBefore: 'deployment',
         respond: () =>
           mockWorkspaceApi.listDeployments.mockResolvedValue({
             ...listing,
             picked_deployment_id: null,
             pick_source: null
           }),
-        hintAfter: false
+        hintAfter: 'cloud'
+      },
+      {
+        answer: 'a listing on Comfy Cloud, with no hint',
+        hintBefore: 'unknown',
+        respond: () =>
+          mockWorkspaceApi.listDeployments.mockResolvedValue({
+            ...listing,
+            picked_deployment_id: null,
+            pick_source: null
+          }),
+        hintAfter: 'cloud'
       },
       {
         answer: 'a 403',
-        hintBefore: true,
+        hintBefore: 'deployment',
         respond: () =>
           mockWorkspaceApi.listDeployments.mockRejectedValue(
             new WorkspaceApiError('Outside rollout', 403)
           ),
-        hintAfter: false
+        hintAfter: 'cloud'
       },
       {
         answer: 'a 404',
-        hintBefore: true,
+        hintBefore: 'unknown',
         respond: () =>
           mockWorkspaceApi.listDeployments.mockRejectedValue(
             new WorkspaceApiError('Not found', 404)
           ),
-        hintAfter: false
+        hintAfter: 'cloud'
       },
-      {
-        answer: 'a transient failure, with a hint',
-        hintBefore: true,
+      ...(['deployment', 'cloud', 'unknown'] as const).map((hint) => ({
+        answer: `a transient failure, with the hint at ${hint}`,
+        hintBefore: hint,
         respond: () =>
           mockWorkspaceApi.listDeployments.mockRejectedValue(
             new WorkspaceApiError('Service unavailable', 503)
           ),
-        hintAfter: true
-      },
-      {
-        answer: 'a transient failure, without a hint',
-        hintBefore: false,
-        respond: () =>
-          mockWorkspaceApi.listDeployments.mockRejectedValue(
-            new WorkspaceApiError('Network Error')
-          ),
-        hintAfter: false
-      }
+        hintAfter: hint
+      }))
     ])(
       'keeps the hint in step with the boot listing: $answer',
       async ({ hintBefore, respond, hintAfter }) => {
-        setDeploymentHint('ws-1', hintBefore ? 'dep-1' : null)
+        seedHint(hintBefore)
         respond()
         const store = useDeploymentPickStore()
 
@@ -1460,7 +1474,7 @@ describe('useDeploymentPickStore', () => {
         await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
         await boot
 
-        expect(hasDeploymentHint('ws-1')).toBe(hintAfter)
+        expect(readDeploymentHint('ws-1')).toBe(hintAfter)
       }
     )
 
@@ -1469,46 +1483,95 @@ describe('useDeploymentPickStore', () => {
 
       await useDeploymentPickStore().load()
 
-      expect(hasDeploymentHint('ws-1')).toBe(true)
-      expect(hasDeploymentHint('ws-2')).toBe(false)
+      expect(readDeploymentHint('ws-1')).toBe('deployment')
+      expect(readDeploymentHint('ws-2')).toBe('unknown')
     })
 
-    it.for([
+    it.for<{
+      action: string
+      listed: WorkspaceDeploymentList
+      hintBefore: HintState
+      act: (
+        store: ReturnType<typeof useDeploymentPickStore>
+      ) => Promise<unknown>
+      hintAfter: HintState
+    }>([
       {
         action: 'picking a deployment',
-        hintBefore: false,
-        act: (store: ReturnType<typeof useDeploymentPickStore>) =>
-          store.pick('dep-1'),
-        hintAfter: true
+        listed: listing,
+        hintBefore: 'cloud',
+        act: (store) => store.pick('dep-1'),
+        hintAfter: 'deployment'
       },
       {
         action: 'picking Comfy Cloud',
-        hintBefore: true,
-        act: (store: ReturnType<typeof useDeploymentPickStore>) =>
-          store.pick(null),
-        hintAfter: false
+        listed: listing,
+        hintBefore: 'deployment',
+        act: (store) => store.pick(null),
+        hintAfter: 'cloud'
       },
       {
         action: 'picking from a link',
-        hintBefore: false,
-        act: (store: ReturnType<typeof useDeploymentPickStore>) =>
-          store.pickFromLink('dep-1'),
-        hintAfter: true
+        listed: listing,
+        hintBefore: 'cloud',
+        act: (store) => store.pickFromLink('dep-1'),
+        hintAfter: 'deployment'
+      },
+      {
+        action: 'following a workspace with a default',
+        listed: { ...listing, default_deployment_id: 'dep-1' },
+        hintBefore: 'cloud',
+        act: (store) => store.followWorkspace(),
+        hintAfter: 'deployment'
+      },
+      {
+        action: 'following a workspace with no default',
+        listed: listing,
+        hintBefore: 'deployment',
+        act: (store) => store.followWorkspace(),
+        hintAfter: 'cloud'
+      },
+      {
+        action: 'setting a default while following the workspace',
+        listed: {
+          ...listing,
+          picked_deployment_id: undefined,
+          pick_source: undefined
+        },
+        hintBefore: 'cloud',
+        act: (store) => store.setDefault('dep-1'),
+        hintAfter: 'deployment'
+      },
+      {
+        action: 'clearing the default while following the workspace',
+        listed: {
+          ...listing,
+          pick_source: 'workspace_default',
+          default_deployment_id: 'dep-2'
+        },
+        hintBefore: 'deployment',
+        act: (store) => store.setDefault(null),
+        hintAfter: 'cloud'
       }
     ])(
       'sets the hint for the next boot before reloading: $action',
-      async ({ hintBefore, act, hintAfter }) => {
-        mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+      async ({ listed, hintBefore, act, hintAfter }) => {
+        mockWorkspaceApi.listDeployments.mockResolvedValue(listed)
         mockWorkspaceApi.pickDeployment.mockResolvedValue(undefined)
         mockWorkspaceApi.clearDeployment.mockResolvedValue(undefined)
+        mockWorkspaceApi.setDefaultDeployment.mockResolvedValue(undefined)
+        mockWorkspaceApi.clearDefaultDeployment.mockResolvedValue(undefined)
         const store = useDeploymentPickStore()
         await store.load()
-        setDeploymentHint('ws-1', hintBefore ? 'dep-1' : null)
+        seedHint(hintBefore)
+        reload.mockImplementation(() =>
+          expect(readDeploymentHint('ws-1')).toBe(hintAfter)
+        )
 
         await act(store)
 
         expect(reload).toHaveBeenCalledOnce()
-        expect(hasDeploymentHint('ws-1')).toBe(hintAfter)
+        expect(readDeploymentHint('ws-1')).toBe(hintAfter)
       }
     )
 

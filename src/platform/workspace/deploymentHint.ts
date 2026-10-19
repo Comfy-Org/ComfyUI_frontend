@@ -2,17 +2,31 @@ import { getPreservedQueryParam } from '@/platform/navigation/preservedQueryMana
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
+/** The hint's value for Comfy Cloud; any other value is a deployment id. */
+const COMFY_CLOUD = 'cloud'
+
 function hintKey(workspaceId: string): string {
   return `${WORKSPACE_STORAGE_KEYS.DEPLOYMENT_HINT_PREFIX}${workspaceId}`
 }
 
-/** True when this browser last ran on a deployment in the workspace. */
-export function hasDeploymentHint(workspaceId: string | null): boolean {
-  if (workspaceId === null) return false
+/**
+ * What this browser's next boot in the workspace runs on, as its last
+ * listing or its own switch recorded it: `deployment`, `cloud`, or
+ * `unknown` when nothing is recorded (a new profile, cleared storage, a
+ * browser that has not booted since this shipped) or localStorage cannot
+ * be read. The server decides from a cookie the page cannot read, so
+ * `unknown` may be either.
+ */
+export function readDeploymentHint(
+  workspaceId: string | null
+): 'deployment' | 'cloud' | 'unknown' {
+  if (workspaceId === null) return 'unknown'
   try {
-    return localStorage.getItem(hintKey(workspaceId)) !== null
+    const hint = localStorage.getItem(hintKey(workspaceId))
+    if (hint === null) return 'unknown'
+    return hint === COMFY_CLOUD ? 'cloud' : 'deployment'
   } catch {
-    return false
+    return 'unknown'
   }
 }
 
@@ -22,8 +36,7 @@ export function setDeploymentHint(
   deploymentId: string | null
 ): void {
   try {
-    if (deploymentId === null) localStorage.removeItem(hintKey(workspaceId))
-    else localStorage.setItem(hintKey(workspaceId), deploymentId)
+    localStorage.setItem(hintKey(workspaceId), deploymentId ?? COMFY_CLOUD)
   } catch {
     console.warn('Failed to persist the deployment hint')
   }

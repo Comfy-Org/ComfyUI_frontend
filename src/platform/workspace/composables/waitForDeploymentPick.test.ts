@@ -4,6 +4,7 @@ import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
 import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
@@ -34,6 +35,30 @@ const failures = [
   { failure: 'a 401', error: new WorkspaceApiError('Unauthorized', 401) }
 ]
 
+function listingOn(
+  deploymentId: string,
+  pickSource: 'workspace_default' | 'browser'
+): WorkspaceDeploymentList {
+  return {
+    builds_visible: true,
+    picked_deployment_id: deploymentId,
+    pick_source: pickSource,
+    default_deployment_id:
+      pickSource === 'workspace_default' ? deploymentId : undefined,
+    items: [
+      {
+        deployment_id: deploymentId,
+        release_id: 'r-2',
+        build_id: 'b-1',
+        build_name: 'Studio Build',
+        release_version: 2,
+        status: 'ready',
+        created_at: '2026-10-01T00:00:00Z'
+      }
+    ]
+  }
+}
+
 function openedAt(url: string) {
   window.history.replaceState(null, '', url)
   onTestFinished(() => window.history.replaceState(null, '', '/'))
@@ -55,8 +80,9 @@ describe('waitForDeploymentPick', () => {
   })
 
   it.for(failures)(
-    'boots on Comfy Cloud at once, reporting but not waiting on $failure, without a hint',
+    'boots on Comfy Cloud at once, reporting but not waiting on $failure, when this browser last booted on Comfy Cloud',
     async ({ error }) => {
+      setDeploymentHint('ws-1', null)
       mockWorkspaceApi.listDeployments.mockRejectedValue(error)
       const store = useDeploymentPickStore()
       const boot = store.loadOnce()
@@ -77,7 +103,8 @@ describe('waitForDeploymentPick', () => {
     }
   )
 
-  it('boots on Comfy Cloud at once when the listing never answers, without a hint', async () => {
+  it('boots on Comfy Cloud at once, without asking for the listing, when this browser last booted on Comfy Cloud', async () => {
+    setDeploymentHint('ws-1', null)
     mockWorkspaceApi.listDeployments.mockReturnValue(new Promise(() => {}))
 
     const confirmed = settledAt(waitForDeploymentPick())
@@ -85,12 +112,49 @@ describe('waitForDeploymentPick', () => {
 
     expect(confirmed.value).toBe(true)
     expect(useDeploymentPickStore().bootDeployment).toBeNull()
+    expect(mockWorkspaceApi.listDeployments).not.toHaveBeenCalled()
   })
 
   it.for([
+    { pickSource: 'workspace_default' as const },
+    { pickSource: 'browser' as const }
+  ])(
+    'waits with no hint and boots on the deployment the listing names: picked by $pickSource',
+    async ({ pickSource }) => {
+      mockWorkspaceApi.listDeployments.mockImplementation(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(() => resolve(listingOn('dep-2', pickSource)), 50)
+          )
+      )
+      const store = useDeploymentPickStore()
+
+      const confirmed = settledAt(waitForDeploymentPick())
+      await vi.advanceTimersByTimeAsync(0)
+      expect(confirmed.value).toBeUndefined()
+      await vi.advanceTimersByTimeAsync(50)
+
+      expect(confirmed.value).toBe(true)
+      expect(store.bootDeployment?.deployment_id).toBe('dep-2')
+      expect(store.changeSinceBoot).toBeNull()
+    }
+  )
+
+  it.for([
     {
-      why: 'this workspace has a hint',
+      why: 'this browser last booted on a deployment',
       arrange: () => setDeploymentHint('ws-1', 'dep-1')
+    },
+    {
+      why: 'this browser has no hint for the workspace',
+      arrange: () => {}
+    },
+    {
+      why: 'the page opened from a deployment link, after a boot on Comfy Cloud',
+      arrange: () => {
+        setDeploymentHint('ws-1', null)
+        openedAt('/?workspace=ws-1&deployment=dep-1')
+      }
     },
     {
       why: 'the page opened from a deployment link',
@@ -127,6 +191,7 @@ describe('waitForDeploymentPick', () => {
   )
 
   it("does not wait on another workspace's hint", async () => {
+    setDeploymentHint('ws-1', null)
     setDeploymentHint('ws-other', 'dep-1')
     mockWorkspaceApi.listDeployments.mockReturnValue(new Promise(() => {}))
 
@@ -136,10 +201,13 @@ describe('waitForDeploymentPick', () => {
     expect(confirmed.value).toBe(true)
   })
 
-  it('treats a throwing localStorage as no hint', async () => {
-    setDeploymentHint('ws-1', 'dep-1')
+  it('waits when localStorage throws, as with no hint', async () => {
+    setDeploymentHint('ws-1', null)
     vi.stubGlobal('localStorage', {
       getItem: () => {
+        throw new DOMException('denied', 'SecurityError')
+      },
+      setItem: () => {
         throw new DOMException('denied', 'SecurityError')
       }
     })
@@ -147,7 +215,9 @@ describe('waitForDeploymentPick', () => {
 
     const confirmed = settledAt(waitForDeploymentPick())
     await vi.advanceTimersByTimeAsync(0)
+    expect(confirmed.value).toBeUndefined()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
 
-    expect(confirmed.value).toBe(true)
+    expect(confirmed.value).toBe(false)
   })
 })

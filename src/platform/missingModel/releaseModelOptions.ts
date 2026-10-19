@@ -32,9 +32,9 @@ export const releaseModelOptions: ReleaseModelOptions = async (
 }
 
 /**
- * `releaseModelOptions` where the page may boot on a deployment (Comfy
- * Cloud, `couldBootOnDeployment`), undefined elsewhere so a scan never
- * waits on the listing.
+ * `releaseModelOptions` on Comfy Cloud unless this page is known to boot on
+ * Comfy Cloud's own models (`couldBootOnDeployment`), undefined elsewhere
+ * so a scan never waits on the listing.
  */
 export function cloudReleaseModelOptions(): ReleaseModelOptions | undefined {
   return isCloud && couldBootOnDeployment() ? releaseModelOptions : undefined
