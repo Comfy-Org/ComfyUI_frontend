@@ -262,6 +262,12 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
+  it('does not fetch the balance without workspace context', () => {
+    renderComponent('personal', true)
+
+    expect(useBillingContext().fetchBalance).not.toHaveBeenCalled()
+  })
+
   it('keeps account actions available without workspace context', () => {
     renderComponent('personal', true)
 
