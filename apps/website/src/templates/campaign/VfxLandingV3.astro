@@ -167,19 +167,13 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
 
 <script>
   import { mountVfxCampaign } from '@/scripts/vfx-campaign'
-  import { mountVfxPreviews } from '@/scripts/vfx-previews'
 
   let cleanup: (() => void) | undefined
   document.addEventListener('astro:page-load', () => {
     cleanup?.()
     const root = document.querySelector<HTMLElement>('[data-vfx-v3]')
     if (!root) return
-    const stopCampaign = mountVfxCampaign(root)
-    const stopPreviews = mountVfxPreviews(root)
-    cleanup = () => {
-      stopCampaign()
-      stopPreviews()
-    }
+    cleanup = mountVfxCampaign(root)
   })
   document.addEventListener('astro:before-swap', () => cleanup?.())
 </script>

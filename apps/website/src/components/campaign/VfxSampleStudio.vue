@@ -90,24 +90,28 @@ useEventListener(
       selected.value = event.detail
   }
 )
+function workflowDetail(event: Event): object | undefined {
+  if (!(event instanceof CustomEvent)) return undefined
+  const detail: unknown = event.detail
+  return typeof detail === 'object' && detail !== null ? detail : undefined
+}
+
+function updateMode(value: unknown) {
+  if (value === 'settings' || value === 'workflow') mode.value = value
+}
+
+function updateTime(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) time.value = value
+}
+
 useEventListener(
   () => root.value?.closest('vfx-workflow-showcase'),
   'workflow-studio-mode',
   (event: Event) => {
-    if (!(event instanceof CustomEvent)) return
-    const detail: unknown = event.detail
-    if (typeof detail !== 'object' || detail === null) return
-    if (
-      'mode' in detail &&
-      (detail.mode === 'settings' || detail.mode === 'workflow')
-    )
-      mode.value = detail.mode
-    if (
-      'time' in detail &&
-      typeof detail.time === 'number' &&
-      Number.isFinite(detail.time)
-    )
-      time.value = detail.time
+    const detail = workflowDetail(event)
+    if (!detail) return
+    updateMode('mode' in detail ? detail.mode : undefined)
+    updateTime('time' in detail ? detail.time : undefined)
     paused.value = prefersReducedMotion()
   }
 )
@@ -115,16 +119,8 @@ useEventListener(
   () => root.value?.closest('vfx-workflow-showcase'),
   'workflow-time-change',
   (event: Event) => {
-    if (!(event instanceof CustomEvent)) return
-    const detail: unknown = event.detail
-    if (
-      typeof detail === 'object' &&
-      detail !== null &&
-      'time' in detail &&
-      typeof detail.time === 'number' &&
-      Number.isFinite(detail.time)
-    )
-      time.value = detail.time
+    const detail = workflowDetail(event)
+    if (detail) updateTime('time' in detail ? detail.time : undefined)
   }
 )
 </script>

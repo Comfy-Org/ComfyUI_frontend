@@ -38,42 +38,58 @@ class VfxWorkflowShowcase extends HTMLElement {
     scaled.style.transform = `scale(${this.scale})`
     this.draw()
   }
+  private alignOutput(node: HTMLElement) {
+    const heading = node.querySelector<HTMLElement>('.wf-node-heading')
+    const output = node.querySelector<HTMLElement>('.vfx-port-out')
+    if (!heading || !output) return
+    output.style.top = `${heading.offsetTop + heading.offsetHeight / 2}px`
+  }
+  private portBounds(node: HTMLElement, selector: string) {
+    return node.querySelector(selector)?.getBoundingClientRect()
+  }
+  private connectionPath(group: Element, index: number) {
+    const existing = group.children.item(index)
+    if (existing) return existing
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+    group.append(path)
+    return path
+  }
+  private drawConnection(
+    group: Element,
+    bounds: DOMRect,
+    scale: number,
+    target: HTMLElement,
+    index: number
+  ) {
+    const output = this.portBounds(this.steps[index], '.vfx-port-out')
+    const input = this.portBounds(target, '.vfx-port-in')
+    if (!output || !input) return
+    const x = (output.left + output.width / 2 - bounds.left) / scale
+    const y = (output.top + output.height / 2 - bounds.top) / scale
+    const tx = (input.left + input.width / 2 - bounds.left) / scale
+    const ty = (input.top + input.height / 2 - bounds.top) / scale
+    const bend = Math.max(40, (tx - x) * 0.55)
+    this.connectionPath(group, index).setAttribute(
+      'd',
+      `M ${x} ${y} C ${x + bend} ${y}, ${tx - bend} ${ty}, ${tx} ${ty}`
+    )
+  }
   private draw() {
     const group = this.querySelector('svg g')
     const stage = this.stage
     if (!group || !stage) return
+    this.drawStage(group, stage)
+  }
+  private drawStage(group: Element, stage: HTMLElement) {
     const bounds = stage.getBoundingClientRect()
     const scale = bounds.width / stage.offsetWidth
     if (!scale) return
-    for (const node of this.steps) {
-      const heading = node.querySelector<HTMLElement>('.wf-node-heading')
-      const output = node.querySelector<HTMLElement>('.vfx-port-out')
-      if (heading && output)
-        output.style.top = `${heading.offsetTop + heading.offsetHeight / 2}px`
-    }
-    this.steps.slice(1).forEach((target, index) => {
-      const output = this.steps[index]
-        .querySelector('.vfx-port-out')
-        ?.getBoundingClientRect()
-      const input = target
-        .querySelector('.vfx-port-in')
-        ?.getBoundingClientRect()
-      if (!output || !input) return
-      const x = (output.left + output.width / 2 - bounds.left) / scale
-      const y = (output.top + output.height / 2 - bounds.top) / scale
-      const tx = (input.left + input.width / 2 - bounds.left) / scale
-      const ty = (input.top + input.height / 2 - bounds.top) / scale
-      let path = group.children.item(index)
-      if (!path) {
-        path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
-        group.append(path)
-      }
-      const bend = Math.max(40, (tx - x) * 0.55)
-      path.setAttribute(
-        'd',
-        `M ${x} ${y} C ${x + bend} ${y}, ${tx - bend} ${ty}, ${tx} ${ty}`
+    this.steps.forEach((node) => this.alignOutput(node))
+    this.steps
+      .slice(1)
+      .forEach((target, index) =>
+        this.drawConnection(group, bounds, scale, target, index)
       )
-    })
   }
   private hideConnections() {
     this.querySelectorAll<SVGPathElement>('.vfx-connections path').forEach(
@@ -148,16 +164,16 @@ class VfxWorkflowShowcase extends HTMLElement {
       )
   }
 
+  private draggableTarget(target: EventTarget | null) {
+    if (!(target instanceof Element)) return false
+    if (!target.closest('.vfx-canvas-window')) return false
+    return !target.closest(
+      'button, input, [role="slider"], a, [data-testid="video-compare-surface"]'
+    )
+  }
   private down = (event: PointerEvent) => {
     this.pointerFocusing = true
-    if (event.button !== 0 || !(event.target instanceof Element)) return
-    if (!event.target.closest('.vfx-canvas-window')) return
-    if (
-      event.target.closest(
-        'button, input, [role="slider"], a, [data-testid="video-compare-surface"]'
-      )
-    )
-      return
+    if (event.button !== 0 || !this.draggableTarget(event.target)) return
     this.finish()
     this.drag = { id: event.pointerId, start: event.clientX, pan: this.pan }
     this.setPointerCapture(event.pointerId)
@@ -172,12 +188,11 @@ class VfxWorkflowShowcase extends HTMLElement {
     if (this.hasPointerCapture(event.pointerId))
       this.releasePointerCapture(event.pointerId)
   }
-  private focusNode = (event: FocusEvent) => {
-    if (!(event.target instanceof Element)) return
-    const node = event.target.closest<HTMLElement>('[data-canvas-step]')
-    if (!node) return
+  private resetCanvasScroll() {
     const viewport = this.querySelector('.vfx-canvas-window')
     if (viewport) viewport.scrollLeft = 0
+  }
+  private revealFocusedNode(node: HTMLElement) {
     if (this.pointerFocusing) return
     this.finish()
     const left = node.offsetLeft + this.pan
@@ -186,17 +201,35 @@ class VfxWorkflowShowcase extends HTMLElement {
         -(node.offsetLeft + node.offsetWidth / 2 - this.viewportWidth / 2)
       )
   }
-  private select = (event: Event) => {
+  private focusNode = (event: FocusEvent) => {
     if (!(event.target instanceof Element)) return
-    const button = event.target.closest<HTMLElement>('[data-workflow-variant]')
-    if (!button || !this.contains(button)) return
-    this.finish()
-    this.querySelectorAll('[data-workflow-variant]').forEach((node) =>
-      node.setAttribute('aria-pressed', String(node === button))
+    const node = event.target.closest<HTMLElement>('[data-canvas-step]')
+    if (!node) return
+    this.resetCanvasScroll()
+    this.revealFocusedNode(node)
+  }
+  private variantButton(target: EventTarget | null) {
+    if (!(target instanceof Element)) return null
+    const button = target.closest<HTMLElement>('[data-workflow-variant]')
+    if (!button) return null
+    return this.contains(button) ? button : null
+  }
+  private markVariant(match: HTMLElement) {
+    this.querySelectorAll('[data-workflow-variant]').forEach((button) =>
+      button.setAttribute('aria-pressed', String(button === match))
     )
+  }
+  private updateKeyframe(id: string | undefined) {
+    if (this.dataset.vfxDemo === 'sequence') return
     const image = this.querySelector<HTMLImageElement>('.vfx-keyframe-node img')
-    if (image && this.dataset.vfxDemo !== 'sequence')
-      image.src = `${vfxMediaRoot}/${button.dataset.workflowVariant}.jpg`
+    if (image) image.src = `${vfxMediaRoot}/${id}.jpg`
+  }
+  private select = (event: Event) => {
+    const button = this.variantButton(event.target)
+    if (!button) return
+    this.finish()
+    this.markVariant(button)
+    this.updateKeyframe(button.dataset.workflowVariant)
     this.dataset.selectedVariant = button.dataset.workflowVariant
     this.dispatchEvent(
       new CustomEvent('workflow-variant-change', {
@@ -205,60 +238,71 @@ class VfxWorkflowShowcase extends HTMLElement {
     )
     if (!this.hasAttribute('data-workspace')) this.move(-this.panLimit)
   }
+  private updateOutputImage(id: string, label: string) {
+    const image = this.querySelector<HTMLImageElement>('.vfx-main-node img')
+    if (!image) return
+    image.src = `${vfxMediaRoot}/${id}.jpg`
+    image.alt = label
+  }
+  private playVisible(video: HTMLVideoElement) {
+    if (!this.visibleMedia.has(video) || this.reduced.matches) return
+    video.muted = true
+    void video.play().catch(() => undefined)
+  }
+  private updateOutputVideo(id: string, label: string) {
+    const video = this.querySelector<HTMLVideoElement>('.vfx-main-node video')
+    if (!video) return
+    video.dataset.playbackTime = String(video.currentTime)
+    video.dataset.src = `${vfxMediaRoot}/${id}.mp4`
+    video.poster = `${vfxMediaRoot}/${id}.jpg`
+    video.setAttribute('aria-label', label)
+    video.src = video.dataset.src
+    this.playVisible(video)
+  }
+  private updateOutput(id: string, label: string) {
+    const heading = this.querySelector('.vfx-main-node .ppformula-text-center')
+    if (heading) heading.textContent = label
+    this.updateOutputImage(id, label)
+    this.updateOutputVideo(id, label)
+  }
   private syncVariant = (event: Event) => {
     if (!(event instanceof CustomEvent) || typeof event.detail !== 'string')
       return
-    const id = event.detail
+    this.applyVariant(event.detail)
+  }
+  private applyVariant(id: string) {
     const match = this.querySelector<HTMLElement>(
       `[data-workflow-variant="${CSS.escape(id)}"]`
     )
     if (!match) return
-    this.querySelectorAll<HTMLElement>('[data-workflow-variant]').forEach(
-      (button) => button.setAttribute('aria-pressed', String(button === match))
-    )
-    const image = this.querySelector<HTMLImageElement>('.vfx-keyframe-node img')
-    if (image && this.dataset.vfxDemo !== 'sequence')
-      image.src = `${vfxMediaRoot}/${id}.jpg`
+    this.markVariant(match)
+    this.updateKeyframe(id)
     this.dataset.selectedVariant = id
-    const label = match.getAttribute('aria-label') ?? id
-    const heading = this.querySelector('.vfx-main-node .ppformula-text-center')
-    if (heading) heading.textContent = label
-    const outputImage =
-      this.querySelector<HTMLImageElement>('.vfx-main-node img')
-    if (outputImage) {
-      outputImage.src = `${vfxMediaRoot}/${id}.jpg`
-      outputImage.alt = label
-    }
-    const video = this.querySelector<HTMLVideoElement>('.vfx-main-node video')
-    if (video) {
-      video.dataset.playbackTime = String(video.currentTime)
-      video.dataset.src = `${vfxMediaRoot}/${id}.mp4`
-      video.poster = `${vfxMediaRoot}/${id}.jpg`
-      video.setAttribute('aria-label', label)
-      video.src = video.dataset.src
-      if (this.visibleMedia.has(video) && !this.reduced.matches)
-        void video.play().catch(() => undefined)
-    }
+    this.updateOutput(id, match.getAttribute('aria-label') ?? id)
   }
-  private restoreTime = (event: Event) => {
-    if (!(event instanceof CustomEvent)) return
-    const time: unknown = event.detail?.time
-    const video = this.querySelector<HTMLVideoElement>('.vfx-main-node video')
-    if (!video || typeof time !== 'number' || !Number.isFinite(time)) return
+  private seekWhenReady(video: HTMLVideoElement, time: number) {
     video.dataset.playbackTime = String(time)
     if (video.readyState >= HTMLMediaElement.HAVE_METADATA)
       this.mediaReady(video)
   }
-  private mediaReady(video: HTMLVideoElement) {
+  private restoreTime = (event: Event) => {
+    if (!(event instanceof CustomEvent)) return
+    this.restoreOutputTime(event.detail?.time)
+  }
+  private restoreOutputTime(time: unknown) {
+    if (typeof time !== 'number' || !Number.isFinite(time)) return
+    const video = this.querySelector<HTMLVideoElement>('.vfx-main-node video')
+    if (video) this.seekWhenReady(video, time)
+  }
+  private seekPendingTime(video: HTMLVideoElement) {
     const time = Number(video.dataset.playbackTime)
-    if (Number.isFinite(time) && Number.isFinite(video.duration)) {
-      video.currentTime = Math.min(time, Math.max(0, video.duration - 0.05))
-      delete video.dataset.playbackTime
-    }
-    if (this.visibleMedia.has(video) && !this.reduced.matches) {
-      video.muted = true
-      void video.play().catch(() => undefined)
-    }
+    if (!Number.isFinite(time) || !Number.isFinite(video.duration)) return
+    video.currentTime = Math.min(time, Math.max(0, video.duration - 0.05))
+    delete video.dataset.playbackTime
+  }
+  private mediaReady(video: HTMLVideoElement) {
+    this.seekPendingTime(video)
+    this.playVisible(video)
   }
   private loaded = (event: Event) => {
     if (
@@ -274,26 +318,48 @@ class VfxWorkflowShowcase extends HTMLElement {
     if (trigger) this.showWorkspace(trigger)
     else if (event.target.closest('[data-back-workflow]')) this.closeWorkspace()
   }
+  private panFromKey(key: string) {
+    return new Map([
+      ['Home', 0],
+      ['End', -this.panLimit],
+      ['ArrowLeft', this.pan + 80],
+      ['ArrowRight', this.pan - 80]
+    ]).get(key)
+  }
+  private navigateCanvas(event: KeyboardEvent) {
+    if (!(event.target instanceof Element)) return
+    if (!event.target.matches('.vfx-canvas-window')) return
+    const pan = this.panFromKey(event.key)
+    if (pan === undefined) return
+    event.preventDefault()
+    this.finish()
+    this.move(pan)
+  }
   private escape = (event: KeyboardEvent) => {
     if (event.key === 'Escape' && this.hasAttribute('data-workspace')) {
       event.preventDefault()
       this.closeWorkspace()
       return
     }
-    if (
-      !(event.target instanceof Element) ||
-      !event.target.matches('.vfx-canvas-window')
+    this.navigateCanvas(event)
+  }
+  private initializeStandalone(studio: HTMLElement, time: number) {
+    const video = studio.querySelector<HTMLVideoElement>(
+      '[data-vfx-sequence-player] video'
     )
-      return
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-    event.preventDefault()
-    this.finish()
-    this.move(
-      event.key === 'Home'
-        ? 0
-        : event.key === 'End'
-          ? -this.panLimit
-          : this.pan + (event.key === 'ArrowLeft' ? 80 : -80)
+    if (video) this.seekWhenReady(video, time)
+  }
+  private focusStudio(studio: HTMLElement) {
+    const back = studio.querySelector<HTMLElement>('[data-back-workflow]')
+    back?.focus({ preventScroll: true })
+    const top = studio.getBoundingClientRect().top
+    if (top < 120 || top > 180)
+      studio.scrollIntoView({ block: 'start', behavior: 'instant' })
+  }
+  private outputTime(showcase: HTMLElement) {
+    return (
+      showcase.querySelector<HTMLVideoElement>('.vfx-main-node video')
+        ?.currentTime ?? 0
     )
   }
   private showWorkspace(trigger: HTMLElement) {
@@ -302,9 +368,7 @@ class VfxWorkflowShowcase extends HTMLElement {
     if (!showcase || !studio || this.saved) return
     this.reveal?.kill()
     this.finish()
-    const time =
-      showcase.querySelector<HTMLVideoElement>('.vfx-main-node video')
-        ?.currentTime ?? 0
+    const time = this.outputTime(showcase)
     this.saved = { pan: this.pan, scroll: window.scrollY, time, trigger }
     showcase
       .querySelectorAll<HTMLVideoElement>('video[data-src]')
@@ -314,14 +378,7 @@ class VfxWorkflowShowcase extends HTMLElement {
         detail: { mode: trigger.dataset.openStudio, time }
       })
     )
-    const standalone = studio.querySelector<HTMLVideoElement>(
-      '[data-vfx-sequence-player] video'
-    )
-    if (standalone) {
-      standalone.dataset.playbackTime = String(time)
-      if (standalone.readyState >= HTMLMediaElement.HAVE_METADATA)
-        this.mediaReady(standalone)
-    }
+    this.initializeStandalone(studio, time)
     showcase.hidden = true
     showcase.inert = true
     studio.hidden = false
@@ -329,25 +386,21 @@ class VfxWorkflowShowcase extends HTMLElement {
     this.dataset.workspace = ''
     trigger.setAttribute('aria-expanded', 'true')
     this.slide(studio, 64)
-    const back = studio.querySelector<HTMLElement>('[data-back-workflow]')
-    back?.focus({ preventScroll: true })
-    if (
-      studio.getBoundingClientRect().top < 120 ||
-      studio.getBoundingClientRect().top > 180
-    ) {
-      studio.scrollIntoView({ block: 'start', behavior: 'instant' })
-    }
+    this.focusStudio(studio)
+  }
+  private studioTime(studio: HTMLElement, fallback: number) {
+    const playbackTime = Number(
+      studio.querySelector<HTMLElement>('[data-playback-time]')?.dataset
+        .playbackTime
+    )
+    return Number.isFinite(playbackTime) ? playbackTime : fallback
   }
   private closeWorkspace() {
     const showcase = this.querySelector<HTMLElement>('.vfx-showcase-view')
     const studio = this.querySelector<HTMLElement>('.vfx-studio-view')
     const saved = this.saved
     if (!showcase || !studio || !saved) return
-    const playbackTime = Number(
-      studio.querySelector<HTMLElement>('[data-playback-time]')?.dataset
-        .playbackTime
-    )
-    const time = Number.isFinite(playbackTime) ? playbackTime : saved.time
+    const time = this.studioTime(studio, saved.time)
     studio
       .querySelectorAll<HTMLVideoElement>('video')
       .forEach((video) => video.pause())
@@ -383,22 +436,27 @@ class VfxWorkflowShowcase extends HTMLElement {
         video.pause()
       )
   }
+  private observeVisibility(entry: IntersectionObserverEntry) {
+    if (!(entry.target instanceof HTMLVideoElement)) return
+    const video = entry.target
+    if (entry.isIntersecting) this.visibleMedia.add(video)
+    else this.visibleMedia.delete(video)
+    this.updateVisibleMedia(video, entry.isIntersecting)
+  }
+  private updateVisibleMedia(video: HTMLVideoElement, visible: boolean) {
+    if (!visible || this.reduced.matches) {
+      video.pause()
+      return
+    }
+    this.loadMedia(video)
+    this.mediaReady(video)
+  }
+  private loadMedia(video: HTMLVideoElement) {
+    if (!video.src && video.dataset.src) video.src = video.dataset.src
+  }
   connectedCallback() {
     this.mediaObserver = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!(entry.target instanceof HTMLVideoElement)) continue
-          const video = entry.target
-          if (entry.isIntersecting) this.visibleMedia.add(video)
-          else this.visibleMedia.delete(video)
-          if (!entry.isIntersecting || this.reduced.matches) {
-            video.pause()
-            continue
-          }
-          if (!video.src && video.dataset.src) video.src = video.dataset.src
-          this.mediaReady(video)
-        }
-      },
+      (entries) => entries.forEach((entry) => this.observeVisibility(entry)),
       { threshold: 0.1 }
     )
     const observed = new WeakSet<HTMLVideoElement>()
