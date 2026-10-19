@@ -594,3 +594,46 @@ jobs:
             echo "::error::Backport branches were pushed but PR creation failed: ${PR_CREATE_FAILED}"
           fi
           exit 1
+
+  # Only needs-backport starts the job above; release labels alone do not.
+  warn-missing-needs-backport:
+    if: >
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.merged == true &&
+      !contains(github.event.pull_request.labels.*.name, 'needs-backport')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Comment when release labels lack needs-backport
+        env:
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN || secrets.GH_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          RELEASE_LABELS=$(jq -r '.pull_request.labels[].name
+            | select(test("^(core|cloud)/[0-9]+\\.[0-9]+$"))' "$GITHUB_EVENT_PATH")
+          if [ -z "${RELEASE_LABELS}" ]; then
+            echo "No release labels on PR #${PR_NUMBER}; nothing to backport."
+            exit 0
+          fi
+
+          MARKER='<!-- pr-backport:missing-needs-backport -->'
+          COMMENTS=$(gh api --paginate \
+            "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" --jq '.[].body')
+          if printf '%s\n' "${COMMENTS}" | grep -Fq "${MARKER}"; then
+            echo "Already warned PR #${PR_NUMBER} about the missing needs-backport label."
+            exit 0
+          fi
+
+          LABEL_LIST=$(printf '%s\n' "${RELEASE_LABELS}" | sed 's/.*/`&`/' | paste -sd ' ' -)
+          BODY="${MARKER}
+          **Backport did not run.** This PR has release labels (${LABEL_LIST}) but no \`needs-backport\` label, which is what starts the PR Backport workflow.
+
+          To backport, add the \`needs-backport\` label. If the backport is intentionally on hold, ignore this comment."
+
+          gh api --silent --method POST \
+            "repos/${GH_REPO}/issues/${PR_NUMBER}/comments" -f "body=${BODY}"
