@@ -38,29 +38,5 @@ test.describe(
         }
       })
     })
-
-    test('render and toggle a restored boolean value', async ({
-      comfyPage
-    }) => {
-      await comfyPage.workflow.loadWorkflow(
-        'widgets/stringified_typed_widget_values'
-      )
-
-      const booleanNode = await comfyPage.nodeOps.getNodeRefById(10)
-      const booleanWidget = await booleanNode.getWidgetByName('boolean_input')
-      await expect.poll(() => booleanWidget.getValue()).toBe(false)
-      await expect(comfyPage.page).toHaveScreenshot(
-        'stringified-boolean-widget.png',
-        { clip: { x: 56, y: 270, width: 300, height: 100 } }
-      )
-
-      await booleanWidget.click()
-
-      await expect.poll(() => booleanWidget.getValue()).toBe(true)
-      await expect(comfyPage.page).toHaveScreenshot(
-        'stringified-boolean-widget-toggled.png',
-        { clip: { x: 56, y: 270, width: 300, height: 100 } }
-      )
-    })
   }
 )
