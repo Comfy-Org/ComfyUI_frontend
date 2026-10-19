@@ -673,7 +673,7 @@ describe('collectCrdtDebugReport', () => {
           ...createAssistantMessage(toTurnId('turn-older')),
           parts: [
             ...Array.from(
-              { length: 5_000 },
+              { length: 500 },
               (): MessagePart => ({
                 type: 'thinking',
                 text: '',
@@ -688,7 +688,7 @@ describe('collectCrdtDebugReport', () => {
           ...createAssistantMessage(toTurnId('turn-latest')),
           parts: toolCalls('latest', 2).map((call) => ({
             ...call,
-            name: 'x'.repeat(25_000)
+            name: 'x'.repeat(28_500)
           }))
         }
       ]
@@ -697,6 +697,11 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain(
       '- Agent tool calls: truncated (2/3 retained calls)'
     )
+    const [calls] = toolSectionJson(report)
+    expect(calls).toEqual([
+      expect.objectContaining({ callId: 'latest-call-0' }),
+      expect.objectContaining({ callId: 'latest-call-1' })
+    ])
   })
 
   it('bounds the thinking block without dropping tool calls', async () => {
@@ -730,7 +735,50 @@ describe('collectCrdtDebugReport', () => {
       ?.split('\n\n## ')[0]
     assert.exists(section)
     expect(section.length).toBeLessThanOrEqual(60_000)
-    expect(section).toContain('earlier characters trimmed')
+    expect(section).toMatch(/keeps only its last \d+ durations/)
+    const [, thinking] = toolSectionJson(report)
+    expect(thinking).toEqual([
+      expect.objectContaining({
+        turnId: 'turn-latest',
+        thinkingTotalMs: 20_000
+      })
+    ])
+  })
+
+  it('drops older turns from the thinking block before trimming the latest turn', async () => {
+    const thinkingParts = (count: number) =>
+      Array.from(
+        { length: count },
+        (): MessagePart => ({
+          type: 'thinking',
+          text: '',
+          state: 'done',
+          durationMs: 1
+        })
+      )
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      events: [],
+      agentMessages: [
+        {
+          ...createAssistantMessage(toTurnId('turn-older')),
+          parts: [...thinkingParts(2_000), ...toolCalls('older', 1)]
+        },
+        {
+          ...createAssistantMessage(toTurnId('turn-latest')),
+          parts: [...thinkingParts(2), ...toolCalls('latest', 1)]
+        }
+      ]
+    })
+
+    expect(report).toContain('Older turns omitted to fit the size limit: 1.')
+    expect(toolSectionJson(report)[1]).toEqual([
+      {
+        turnId: 'turn-latest',
+        thinkingDurationsMs: [1, 1],
+        thinkingTotalMs: 2
+      }
+    ])
   })
 
   it('redacts credential-shaped tool metadata', async () => {

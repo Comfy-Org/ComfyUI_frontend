@@ -602,19 +602,55 @@ function collectTurnThinking(
     })
 }
 
+function fitTurnThinking(turns: readonly RetainedTurnThinking[]) {
+  const fits = (candidate: readonly RetainedTurnThinking[]) =>
+    json(redactSecrets(candidate)).length <= MAX_THINKING_CHARS
+  if (fits(turns)) return { turns, omittedTurns: 0 }
+  const firstFittingTurn = turns.findIndex((_, index) =>
+    fits(turns.slice(index))
+  )
+  if (firstFittingTurn !== -1) {
+    return {
+      turns: turns.slice(firstFittingTurn),
+      omittedTurns: firstFittingTurn
+    }
+  }
+  const latest = turns[turns.length - 1]
+  const withLastDurations = (count: number) => ({
+    ...latest,
+    thinkingDurationsMs: latest.thinkingDurationsMs.slice(
+      latest.thinkingDurationsMs.length - count
+    )
+  })
+  let low = 0
+  let high = latest.thinkingDurationsMs.length
+  while (low < high) {
+    const mid = Math.ceil((low + high) / 2)
+    if (fits([withLastDurations(mid)])) low = mid
+    else high = mid - 1
+  }
+  return {
+    turns: [withLastDurations(low)],
+    omittedTurns: turns.length - 1,
+    omittedDurations: latest.thinkingDurationsMs.length - low
+  }
+}
+
 function thinkingTrailer(
   messages: readonly AssistantMessage[],
   calls: readonly RetainedToolCall[]
 ) {
+  const fitted = fitTurnThinking(collectTurnThinking(messages, calls))
+  const omissions = [
+    fitted.omittedTurns > 0 &&
+      `Older turns omitted to fit the size limit: ${fitted.omittedTurns}.`,
+    fitted.omittedDurations !== undefined &&
+      `The latest turn keeps only its last ${fitted.turns[0].thinkingDurationsMs.length} durations; earlier durations omitted but still counted in thinkingTotalMs: ${fitted.omittedDurations}.`
+  ].filter((line) => line !== false)
   return [
     'Model thinking time per retained turn, measured in this tab: one entry per thinking part, null where no timing was observed.',
-    fence(
-      'json',
-      truncate(
-        json(redactSecrets(collectTurnThinking(messages, calls))),
-        MAX_THINKING_CHARS
-      )
-    )
+    ...omissions,
+    fence('json', json(redactSecrets(fitted.turns)))
   ].join('\n\n')
 }
 
