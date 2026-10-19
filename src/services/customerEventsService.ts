@@ -2,6 +2,7 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref, watch } from 'vue'
 
+import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
 import { webSessionResourceHeader } from '@/platform/auth/session/webSessionFetch'
 import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
@@ -162,11 +163,31 @@ export const useCustomerEventsService = () => {
     return Object.keys(otherParams).length > 0
   }
 
+  function toFiniteNumber(raw: unknown) {
+    const value = typeof raw === 'string' && raw.trim() ? Number(raw) : raw
+    return typeof value === 'number' && Number.isFinite(value)
+      ? value
+      : undefined
+  }
+
+  function formatChargeCredits(microUsd: number) {
+    const amount = formatCreditsFromUsd({
+      usd: microUsd / 1_000_000,
+      numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
+    })
+    return `${amount} ${t('credits.credits')}`
+  }
+
   function getTooltipContent(event: AuditLog) {
     const { ...params } = event.params || {}
 
     return Object.entries(params)
       .map(([key, value]) => {
+        const microUsd =
+          key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
+        if (microUsd !== undefined) {
+          return `<strong>${t('credits.charge')}:</strong> ${formatChargeCredits(microUsd)}`
+        }
         const formattedKey = formatJsonKey(key)
         const formattedValue = formatJsonValue(value)
         return `<strong>${formattedKey}:</strong> ${formattedValue}`
