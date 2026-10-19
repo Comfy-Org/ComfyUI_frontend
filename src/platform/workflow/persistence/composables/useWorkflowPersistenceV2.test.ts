@@ -6,12 +6,16 @@ import { createApp, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { api } from '@/scripts/api'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import '@/scripts/changeTracker'
 import { StorageKeys } from '../base/storageKeys'
 import * as storageIO from '../base/storageIO'
 import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
+
+const apiEvents: EventTarget = api
 
 vi.mock(
   import('@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'),
@@ -40,6 +44,17 @@ vi.mock(
     useTemplateUrlLoader: () => ({
       loadTemplateFromUrl: vi.fn()
     })
+  })
+)
+
+const folderWorkflowsUrlLoader = vi.hoisted(() => ({
+  openFolderWorkflowsFromUrl: vi.fn(async () => false)
+}))
+
+vi.mock(
+  import('@/platform/workflow/management/composables/useFolderWorkflowsUrlLoader'),
+  () => ({
+    useFolderWorkflowsUrlLoader: () => folderWorkflowsUrlLoader
   })
 )
 
@@ -97,26 +112,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-type GraphChangedHandler = (() => void) | null
-
 const mocks = vi.hoisted(() => {
   const state = {
-    graphChangedHandler: null as GraphChangedHandler,
     currentGraph: {} as Record<string, unknown>
   }
   const serializeMock = vi.fn(() => state.currentGraph)
   const loadGraphDataMock = vi.fn()
-  const apiMock = {
-    clientId: 'test-client',
-    initialClientId: 'test-client',
-    addEventListener: vi.fn((event: string, handler: () => void) => {
-      if (event === 'graphChanged') {
-        state.graphChangedHandler = handler
-      }
-    }),
-    removeEventListener: vi.fn()
-  }
-  return { state, serializeMock, loadGraphDataMock, apiMock }
+  return { state, serializeMock, loadGraphDataMock }
 })
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -132,9 +134,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: mocks.apiMock
-}))
+vi.mock(import('@/scripts/api'))
 
 type WorkflowPersistence = ReturnType<typeof useWorkflowPersistenceV2>
 
@@ -150,19 +150,10 @@ describe('useWorkflowPersistenceV2', () => {
 
   beforeEach(() => {
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
-    mocks.state.graphChangedHandler = null
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
-    mocks.apiMock.clientId = 'test-client'
-    mocks.apiMock.initialClientId = 'test-client'
-    mocks.apiMock.addEventListener.mockImplementation(
-      (event: string, handler: () => void) => {
-        if (event === 'graphChanged') {
-          mocks.state.graphChangedHandler = handler
-        }
-      }
-    )
-    mocks.apiMock.removeEventListener.mockImplementation(() => {})
+    api.clientId = 'test-client'
+    api.initialClientId = 'test-client'
     routeMocks.query = {}
     preservedQueryMocks.payloads = {}
     distributionMocks.isCloud = false
@@ -560,7 +551,7 @@ describe('useWorkflowPersistenceV2', () => {
       await nextTick()
 
       mocks.state.currentGraph = { nodes: [{ id: 1, type: 'KSampler' }] }
-      mocks.state.graphChangedHandler?.()
+      apiEvents.dispatchEvent(new Event('graphChanged'))
       await vi.runAllTimersAsync()
 
       await expect(
@@ -653,6 +644,58 @@ describe('useWorkflowPersistenceV2', () => {
     )
   })
 
+  describe('a link that names a workflows folder', () => {
+    it('opens the folder instead of restoring the last workflow', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const lastWorkflow = workflowStore.createTemporary('Last.json')
+      writeActivePath(lastWorkflow.path)
+      folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl.mockResolvedValue(
+        true
+      )
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+
+      await expect(initializeWorkflow()).resolves.toBe('restored')
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+      expect(mocks.loadGraphDataMock).not.toHaveBeenCalled()
+    })
+
+    it('keeps the saved tabs open behind the folder without bringing the last one to front', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const workflowA = workflowStore.createTemporary('WorkflowA.json')
+      const workflowB = workflowStore.createTemporary('WorkflowB.json')
+      writeTabState([workflowA.path, workflowB.path], 1)
+      folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl.mockResolvedValue(
+        true
+      )
+
+      const { initializeWorkflow, restoreWorkflowTabsState } =
+        mountWorkflowPersistence()
+      await initializeWorkflow()
+      await restoreWorkflowTabsState()
+
+      expect(workflowStore.openWorkflows).toEqual([workflowA, workflowB])
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
+
+    it('restores the last workflow as before when the folder opened nothing', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+      const lastWorkflow = workflowStore.createTemporary('Last.json')
+      writeActivePath(lastWorkflow.path)
+      folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl.mockResolvedValue(
+        false
+      )
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(openWorkflowMock).toHaveBeenCalledWith(lastWorkflow)
+    })
+  })
+
   it('flushes a pending workflow edit when the page is unloaded', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('Draft.json').load()
@@ -664,7 +707,7 @@ describe('useWorkflowPersistenceV2', () => {
       nodes: [],
       extra: { marker: 'final-edit' }
     }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
 
     const payloadKey = StorageKeys.draftPayload(workflow.path, 'personal')
     expect(localStorage.getItem(payloadKey)).toBeNull()
@@ -685,11 +728,11 @@ describe('useWorkflowPersistenceV2', () => {
     mountWorkflowPersistence()
 
     mocks.state.currentGraph = { nodes: [] }
-    const graphChangedHandler = mocks.state.graphChangedHandler
-    if (!graphChangedHandler) {
-      throw new Error('Graph change handler was not registered')
-    }
-    graphChangedHandler()
+    expect(api.addEventListener).toHaveBeenCalledWith(
+      'graphChanged',
+      expect.any(Function)
+    )
+    apiEvents.dispatchEvent(new Event('graphChanged'))
 
     const mounted = mountedApps.pop()
     if (!mounted) throw new Error('Failed to find mounted persistence app')
@@ -724,7 +767,7 @@ describe('useWorkflowPersistenceV2', () => {
       nodes: [],
       extra: { marker: 'workspace-a-final-edit' }
     }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
 
     const sourcePayloadKey = StorageKeys.draftPayload(
       workflow.path,
@@ -745,7 +788,7 @@ describe('useWorkflowPersistenceV2', () => {
       nodes: [],
       extra: { marker: 'late-source-write' }
     }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     const sourcePayload = JSON.parse(localStorage.getItem(sourcePayloadKey)!)
@@ -864,7 +907,7 @@ describe('useWorkflowPersistenceV2', () => {
     workflowStore.activeWorkflow = workflow
     mountWorkflowPersistence()
     mocks.state.currentGraph = { marker: 'stale-source-edit' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
 
     const onLogout = vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]
     const onUserResolved = vi.mocked(useCurrentUser().onUserResolved).mock
@@ -900,7 +943,7 @@ describe('useWorkflowPersistenceV2', () => {
     await nextTick()
 
     mocks.state.currentGraph = { marker: 'destination-edit' }
-    mocks.state.graphChangedHandler?.()
+    apiEvents.dispatchEvent(new Event('graphChanged'))
     await vi.runAllTimersAsync()
 
     expect(localStorage.getItem(sourcePayloadKey)).toBeNull()

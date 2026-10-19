@@ -141,6 +141,7 @@ const suggestedPromptAttribution: AgentStarterPromptAttribution = {
   promptId: 'slot_1',
   promptIndex: 0,
   promptCount: 5,
+  visiblePromptCount: 5,
   promptTextHash: 'a62d17a3',
   locale: 'en'
 }

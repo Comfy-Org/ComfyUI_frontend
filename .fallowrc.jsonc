@@ -181,6 +181,7 @@
   },
 
   "rules": {
+    "boundary-violation": "warn",
     "dev-dependencies-in-production": "error"
   }
 }

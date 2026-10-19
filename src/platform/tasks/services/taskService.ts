@@ -1,22 +1,12 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
-import { zTaskResponse as zGeneratedTaskResponse } from '@comfyorg/ingest-types/zod'
-
+import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
+import { zTaskResponse } from '@/platform/tasks/services/taskSchema'
 import { api } from '@/scripts/api'
 import { toError } from '@/utils/errorUtil'
 
 const TASKS_ENDPOINT = '/tasks'
-
-const zTaskStatus = z.union([
-  zGeneratedTaskResponse.shape.status,
-  z.literal('cancelled')
-])
-
-const zTaskResponse = zGeneratedTaskResponse.extend({
-  // Cloud commit 13d6f5f9 adds cancellation before generated types can sync.
-  status: zTaskStatus
-})
 
 /**
  * Result payload of a `task:download_file` task.
@@ -39,8 +29,6 @@ const zDownloadFileResult = z.object({
   error: z.string().optional()
 })
 
-export type TaskResponse = z.infer<typeof zTaskResponse>
-export type TaskStatus = TaskResponse['status']
 export type TaskResult<T> = { ok: true; value: T } | { ok: false; error: Error }
 export type DownloadFileResult = z.infer<typeof zDownloadFileResult>
 

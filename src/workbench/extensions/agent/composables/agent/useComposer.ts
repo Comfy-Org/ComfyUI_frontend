@@ -73,6 +73,7 @@ export function useComposer(options: UseComposerOptions) {
       prompt_id: starterPrompt.promptId,
       prompt_index: starterPrompt.promptIndex,
       prompt_count: starterPrompt.promptCount,
+      visible_prompt_count: starterPrompt.visiblePromptCount,
       prompt_text_hash: starterPrompt.promptTextHash,
       locale: starterPrompt.locale,
       click_id: clickId,

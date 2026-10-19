@@ -14,6 +14,7 @@
 import type {
   NodeId as WireNodeId,
   PromotedHostWrite,
+  WidgetValuesForm,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
 
@@ -30,6 +31,8 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -77,7 +80,7 @@ export interface DocOpMinterDeps {
    * sent the root host's `add_node` into the same document.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
-  onWidgetWriteRefused(): void
+  onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
 }
 
 type PromotedWriteRefusal =
@@ -104,10 +107,10 @@ type PendingOp =
 
 /**
  * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
- * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
- * sidecar projection accepts only the pinned catalog's `widget_order` names;
- * control widgets like a `button` serialize a named entry but are not in
- * `widget_order`, and any extra key is an opaque server-side 500).
+ * own `widgets_values_named` minus non-value widgets. A node whose value
+ * widgets the definition fully describes is checked against the pinned
+ * catalog's `widget_order`; any other node also declares its own
+ * `widgets_values_form` so the host accepts names the catalog lacks.
  *
  * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
  * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
@@ -127,15 +130,48 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   }
   const wireSerialized = { ...serialized }
   Reflect.deleteProperty(wireSerialized, '__incarnation')
+  Reflect.deleteProperty(wireSerialized, 'widgets_values_form')
   const {
     widgets_values_named: named,
     flags: { ghost: _ghost, ...flags },
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
-  return named && !node.isVirtualNode
-    ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
-    : snapshot
+  if (!named || node.isVirtualNode) return snapshot
+  const values = valueWidgetsOnly(node, named)
+  const form = undescribedWidgetForm(node, values)
+  return form
+    ? { ...snapshot, widgets_values: values, widgets_values_form: form }
+    : { ...snapshot, widgets_values: values }
+}
+
+function undescribedWidgetForm(
+  node: LGraphNode,
+  values: Record<string, unknown>
+): WidgetValuesForm | undefined {
+  const order = Object.keys(values)
+  if (order.length === 0) return undefined
+  const definition = useNodeDefStore().fromLGraphNode(node)
+  if (!definition) return undefined
+  const linked = new Set(
+    (node.widgets ?? []).flatMap((widget) =>
+      (widget.linkedWidgets ?? []).map((companion) => companion.name)
+    )
+  )
+  const widgetStore = useWidgetStore()
+  const isInput = (name: string) =>
+    Object.hasOwn(definition.inputs, name) &&
+    definition.inputs[name].forceInput !== true
+  const isWidgetInput = (name: string) => {
+    if (!isInput(name)) return false
+    const spec = definition.inputs[name]
+    return widgetStore.widgets.has(spec.widgetType ?? spec.type)
+  }
+  const described = (name: string) =>
+    isWidgetInput(name) ||
+    (name.includes('.') && isInput(name.split('.', 1)[0])) ||
+    linked.has(name)
+  return order.every(described) ? undefined : { order }
 }
 
 function valueWidgetsOnly(
@@ -274,7 +310,7 @@ function routedWidgetOperation(
   event: IntentOf<'set_widget'>,
   node: LGraphNode | null,
   deps: Pick<DocOpMinterDeps, 'docPromotedWidgets' | 'mayWritePromotedHost'>
-): GraphOperation | PromotedWriteRefusal | null {
+): GraphOperation | PromotedWriteRefusal | { unresolvedGraphId: string } {
   const operation = {
     op: 'set_widget',
     node_id: event.nodeId,
@@ -289,13 +325,8 @@ function routedWidgetOperation(
     return 'reason' in promoted ? promoted : { ...operation, promoted }
   }
   const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
-  if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-    console.error(
-      '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-      nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
-    )
-    return null
-  }
+  if (subgraphNodePath === null || subgraphNodePath.length === 0)
+    return { unresolvedGraphId: owningGraphId }
   const [head, ...rest] = subgraphNodePath
   return {
     ...operation,
@@ -357,6 +388,21 @@ export function docInputIndex(
   return index === -1 ? undefined : index
 }
 
+function growForMissingSlot(
+  target: LGraphNode | null | undefined,
+  input: INodeInputSlot | undefined
+): { name: string; type: string; widget?: string } | undefined {
+  if (!target || !input) return undefined
+  const widgetBacked = !!input.widget && !target.isSubgraphNode()
+  if (!widgetBacked && !liveAutogrowGroupOf(target, input.name))
+    return undefined
+  return {
+    name: input.name,
+    type: String(input.type),
+    ...(input.widget ? { widget: input.widget.name } : {})
+  }
+}
+
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
@@ -379,9 +425,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (node.graph !== graph) return null
     const snapshot = wireNodeSnapshot(node)
     if (!snapshot) {
-      console.error(
-        '[agent-crdt] add_node mint dropped: no snapshot for node',
-        node.id
+      reportOnce(
+        `snapshot:${nodeKey(graph.id, node.id)}`,
+        'Agent node add has no snapshot',
+        'agent_crdt_node_snapshot_missing',
+        { graphId: graph.id, nodeId: node.id }
       )
       return null
     }
@@ -463,10 +511,20 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (!isValueWidgetWrite(owner, event)) return
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
-    if (routed === null) return
+    if ('unresolvedGraphId' in routed) {
+      const graphId = routed.unresolvedGraphId
+      reportOnce(
+        `owner:${nodeKey(graphId, event.nodeId)}`,
+        'Agent widget write has an unresolvable owner',
+        'agent_crdt_widget_owner_unresolved',
+        { graphId, nodeId: event.nodeId },
+        reportedRefusals
+      )
+      return
+    }
     if ('reason' in routed) {
       reportRefusal(rootGraphId, event, routed)
-      deps.onWidgetWriteRefused()
+      deps.onWidgetWriteRefused(event.nodeId, event.name)
       return
     }
     schedule({ kind: 'op', operation: routed })
@@ -592,18 +650,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       schedule({ kind: 'op', operation: { ...connect, to_slot: toSlot } })
       return
     }
-    if (target && input && liveAutogrowGroupOf(target, input.name)) {
+    const grow = growForMissingSlot(target, input)
+    if (grow) {
       schedule({
         kind: 'op',
-        operation: {
-          ...connect,
-          to_slot: null,
-          grow: {
-            name: input.name,
-            type: String(input.type),
-            ...(input.widget ? { widget: input.widget.name } : {})
-          }
-        }
+        operation: { ...connect, to_slot: null, grow }
       })
       return
     }

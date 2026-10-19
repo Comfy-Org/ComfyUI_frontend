@@ -1,12 +1,15 @@
+import type {
+  LGraphNode,
+  LLink,
+  SubgraphInput
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { LinkId } from '@/types/linkId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { SlotIndex } from '@/types/slotId'
 import type { WidgetId } from '@/types/widgetId'
 
-import type { LGraphNode } from '../LGraphNode'
-import type { LLink } from '../LLink'
 import type { IWidgetLocator, ISlotType, INodeSlot, Point } from '../interfaces'
-import type { SubgraphInput } from '../subgraph/SubgraphInput'
+
 import type { LinkDirection } from './globalEnums'
 import type { IBaseWidget } from './widgets'
 

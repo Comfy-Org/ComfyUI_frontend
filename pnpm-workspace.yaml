@@ -164,8 +164,8 @@ catalog:
   '@datadog/browser-logs': 6.33.0
   '@comfyorg/comfy-multi-player': 0.3.10
   typescript-native-bridge: 6.0.3-bridge.17.tsgo.7.0.2
-  '@microsoft/api-extractor': 7.58.9
   dependency-cruiser: ^18.5.0
+  '@microsoft/api-extractor': 7.58.9
 
 cleanupUnusedCatalogs: true
 
