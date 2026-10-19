@@ -1,4 +1,6 @@
+import { nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
+import type * as Y from 'yjs'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
@@ -62,6 +64,28 @@ function docNodeDelta(changes: FrameChanges): DocNodeDelta {
     else if (change === 'delete') removed.push(id)
   }
   return { added, removed }
+}
+
+/**
+ * One retained frame's node directions, re-read from the document: a node the
+ * document still holds is upserted, one it no longer holds is deleted. Only
+ * the nodes the frame already named are visited, so a replay never reaches
+ * past what that frame touched.
+ *
+ * Direction is the only part of a frame that can go stale while it waits for a
+ * retry — every other register is read from the document at apply time. A
+ * retained `delete` for a node a newer frame restored would otherwise remove
+ * it again, and the clean retry would then clear the staleness that was the
+ * only remaining sign the canvas and the document disagree.
+ */
+function changesAgainstDoc(doc: Y.Doc, changes: FrameChanges): FrameChanges {
+  const docNodes = nodesMap(doc)
+  const nodes = new Map<string, NodeChange>()
+  for (const [id, change] of changes.nodes) {
+    if (!docNodes.has(id)) nodes.set(id, 'delete')
+    else nodes.set(id, change === 'delete' ? 'update' : change)
+  }
+  return { ...changes, nodes }
 }
 
 function pendingNodeDelta(target: BoundTarget, changes: FrameChanges) {
@@ -182,30 +206,43 @@ export class AgentCrdtProjection {
     )
   }
 
-  retryFailed(
-    workflowId: string
-  ): Extract<FrameOutcome, { applied: true }> | null {
+  /**
+   * Replays retained frames whose projection failed, oldest first, stopping at
+   * the first one that fails again. Each is re-derived against the document
+   * before it is replayed; see {@link changesAgainstDoc}.
+   *
+   * No caller reads a node delta from a retry, so none is reported: the
+   * document node entries a retry touches were already reported by the frame
+   * that first delivered them.
+   */
+  retryFailed(workflowId: string): {
+    applied: true
+    createdNodeIds: NodeId[]
+    failureCount: number
+  } | null {
     const target = this.targets.get(workflowId)
     if (!target || target.failedProjections.length === 0 || !this.getGraph())
       return null
     const createdNodeIds: NodeId[] = []
-    const nodes = { added: [] as string[], removed: [] as string[] }
     while (target.failedProjections.length > 0) {
       const failed = target.failedProjections[0]
       const outcome = this.project(
         workflowId,
         target,
-        failed.changes,
+        changesAgainstDoc(target.follower.doc, failed.changes),
         failed.context,
         failed.mode
       )
       createdNodeIds.push(...outcome.createdNodeIds)
-      nodes.added.push(...outcome.nodes.added)
-      nodes.removed.push(...outcome.nodes.removed)
-      if (outcome.failureCount > 0) return { ...outcome, nodes, createdNodeIds }
+      if (outcome.failureCount > 0)
+        return {
+          applied: true,
+          createdNodeIds,
+          failureCount: outcome.failureCount
+        }
       target.failedProjections.shift()
     }
-    return { applied: true, nodes, createdNodeIds, failureCount: 0 }
+    return { applied: true, createdNodeIds, failureCount: 0 }
   }
 
   hasPendingFailure(workflowId: string): boolean {
