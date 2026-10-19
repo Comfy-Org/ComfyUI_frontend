@@ -78,7 +78,7 @@ const clients: Record<CliClientId, CliClient> = {
     }
   },
   ci: {
-    name: 'CI / Headless',
+    name: t('cli.setup.clients.ci.name'),
     kind: 'shell',
     shell: {
       title: t('cli.setup.shell.ci.title'),

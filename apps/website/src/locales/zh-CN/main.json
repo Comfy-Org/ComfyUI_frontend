@@ -908,6 +908,9 @@
       "clients": {
         "terminal": {
           "name": "终端"
+        },
+        "ci": {
+          "name": "CI / 无头模式"
         }
       },
       "connections": {

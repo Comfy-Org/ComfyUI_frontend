@@ -346,6 +346,7 @@ it('uses Chinese setup copy and local agent commands', async () => {
   const user = userEvent.setup()
   const { t } = translationsFor('zh-CN')
   render(CliAgentConcept, { props: { locale: 'zh-CN' } })
+  expect(screen.getByRole('tab', { name: 'CI / 无头模式' })).toBeVisible()
   await user.click(
     screen.getByRole('button', {
       name: t('cli.experience.setup', { client: 'Claude Code' })

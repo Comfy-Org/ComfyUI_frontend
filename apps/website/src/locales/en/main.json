@@ -2200,6 +2200,9 @@
       "clients": {
         "terminal": {
           "name": "Terminal"
+        },
+        "ci": {
+          "name": "CI / Headless"
         }
       },
       "shell": {
