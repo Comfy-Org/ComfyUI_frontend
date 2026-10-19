@@ -540,13 +540,6 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return true
   }
 
-  function mintSetWidget(
-    event: IntentOf<'set_widget'>,
-    held: HeldPromotedWrite | null = null
-  ): void {
-    routeSetWidget(event, held)
-  }
-
   function routeSetWidget(
     event: IntentOf<'set_widget'>,
     held: HeldPromotedWrite | null
@@ -851,7 +844,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (event.type === 'set_widget')
       heldPromotedWrites.delete(heldWriteKey(event))
     if (!deps.isEnabled() || !deps.isDocBound()) return
-    if (event.type === 'set_widget') mintSetWidget(event, held)
+    if (event.type === 'set_widget') routeSetWidget(event, held)
     else mintIntent(event)
   }
 
@@ -873,7 +866,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         mintClear(event)
         return
       case 'set_widget':
-        mintSetWidget(event)
+        routeSetWidget(event, null)
         return
       case 'set_node_field':
         mintSetNodeField(event)

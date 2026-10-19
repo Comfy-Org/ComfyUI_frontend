@@ -222,6 +222,7 @@ describe('attachDocOpMinter', () => {
   let docPromotedWidgets: DocOpMinterDeps['docPromotedWidgets']
   let mayWrite: boolean
   let refusals: Array<[string, string]>
+  let seededPromotedDocs: Set<ReturnType<typeof mint>>
 
   beforeEach(() => {
     graph = new LGraph()
@@ -235,6 +236,7 @@ describe('attachDocOpMinter', () => {
     docPromotedWidgets = () => null
     mayWrite = true
     refusals = []
+    seededPromotedDocs = new Set()
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
@@ -249,7 +251,12 @@ describe('attachDocOpMinter', () => {
     })
   })
 
-  afterEach(() => minter.detach())
+  afterEach(() => {
+    minter.detach()
+    for (const doc of seededPromotedDocs) {
+      if (!doc.isDestroyed) doc.destroy()
+    }
+  })
 
   describe('mints one op per graph command', () => {
     it.for([
@@ -775,6 +782,7 @@ describe('attachDocOpMinter', () => {
       hostNode.widgets_values = hostWidgetValues
     }
     const doc = mint(serialized, CATALOG)
+    seededPromotedDocs.add(doc)
     docPromotedWidgets = (nodeId) => readDocPromotedWidgets(doc, String(nodeId))
     return { host, doc }
   }
