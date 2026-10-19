@@ -50,8 +50,14 @@
   "Comfy_Canvas_DeleteSelectedItems": {
     "label": "Ausgewählte Elemente löschen"
   },
+  "Comfy_Canvas_DeleteSelectedLinks": {
+    "label": "Ausgewählte Verbindungen löschen"
+  },
   "Comfy_Canvas_FitView": {
     "label": "Ansicht an ausgewählte Nodes anpassen"
+  },
+  "Comfy_Canvas_HideSelectedLinks": {
+    "label": "Ausgewählte Verbindungen ausblenden"
   },
   "Comfy_Canvas_Lock": {
     "label": "Canvas sperren"

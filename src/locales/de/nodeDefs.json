@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Rezepte:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-Token-Padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Empfohlen) oder t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL oder Music3 Qwen/RVQ",
+    "description": "Rezepte:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-Token-Padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Empfohlen) oder t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL oder Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "CLIP laden",
     "inputs": {
       "clip_name": {
@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Konvertiert Text in Sprache. Unterstützt Emotionshinweise im Text ([happy], [whispering] bei s2.1-pro; (happy) bei s1) und Dialoge mit mehreren Sprechern über {'@'}Voice1/{'@'}Voice2-Tags mit mehreren verbundenen Stimmen.",
+    "description": "Wandelt Text in Sprache um. Unterstützt Emotionshinweise im Text ([happy], [whispering] bei s2.1-pro; (happy) bei s1), natürlichsprachliche [directions] und `<whisper>...</whisper>`-Wort-Tags bei drama-3 sowie Dialoge mit mehreren Sprechern über {'@'}Voice1/{'@'}Voice2-Tags mit mehreren verbundenen Stimmen.",
     "display_name": "Fish Audio Text zu Sprache",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5893,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "Erzeugt mit FLUX 3 ein Bild aus einem Prompt oder bearbeitet und kombiniert bis zu 10 Referenzbilder. Verweisen Sie im Prompt auf die Referenzen als Bild 1, Bild 2 usw.",
-    "display_name": "Flux 3 Bild",
+    "description": "Generiert mit FLUX 3 Image ein Bild aus einem Prompt oder bearbeitet und kombiniert bis zu 10 Referenzbilder. Verweisen Sie im Prompt auf die Referenzen als Bild 1, Bild 2 usw.",
+    "display_name": "FLUX 3 Bild",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5984,6 +5984,26 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3LayoutPrompt": {
+    "description": "Fügt die Boxen aus Create Bounding Boxes als Layout-Tabelle an einen FLUX 3 Image-Prompt an.",
+    "display_name": "FLUX 3 Image-Layout-Prompt",
+    "inputs": {
+      "element": {
+        "name": "Element",
+        "tooltip": "Prompt-Elemente aus dem Node Create Bounding Boxes. Farbpaletten werden nicht verwendet; beschreiben Sie Farben in der Beschreibung."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Der Prompt-Text. Zitieren Sie Box N als <obj_N>, um Wörter daran zu binden."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Prompt",
         "tooltip": null
       }
     }
@@ -7223,6 +7243,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "Gibt die Länge, die Anzahl der Audiokanäle und die Batch-Größe eines Audio-latent zurück.",
+    "display_name": "Audio-Latent-Größe abrufen",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Das zu prüfende Audio- oder Audio/Video-latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Länge",
+        "tooltip": "Die Länge des Audio-latent."
+      },
+      "1": {
+        "name": "Audiokanäle",
+        "tooltip": "Die Anzahl der Audiokanäle. Latents ohne Audiokanal-Dimension haben einen Kanal."
+      },
+      "2": {
+        "name": "Batch-Größe",
+        "tooltip": "Die Anzahl der Latents im Batch."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Extrahiert IC-LoRA-Parameter aus den safetensors-Metadaten eines mit LoRA geladenen Modells und gibt sie für LTXVAddGuide aus (z. B. reference_downscale_factor).",
     "display_name": "IC-LoRA-Parameter abrufen",
@@ -7275,6 +7319,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "Gibt Breite, Höhe, Frame-Anzahl und Batch-Größe eines Bild- oder Video-latent zurück.",
+    "display_name": "Bild-/Video-Latent-Größe abrufen",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "Das zu prüfende Bild- oder Video-latent."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Breite",
+        "tooltip": "Die Breite des latent."
+      },
+      "1": {
+        "name": "Höhe",
+        "tooltip": "Die Höhe des latent."
+      },
+      "2": {
+        "name": "Frames",
+        "tooltip": "Die Frame-Anzahl des latent. Bild-Latents haben einen Frame."
+      },
+      "3": {
+        "name": "Batch-Größe",
+        "tooltip": "Die Anzahl der Latents im Batch."
       }
     }
   },
@@ -8106,6 +8178,33 @@
       },
       "1": {
         "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Gestaltet ein Video mit neuen Charakteren, Orten oder Stilen aus Referenzbildern neu, während Bewegung, Kamerabewegung und Timing erhalten bleiben.",
+    "display_name": "Higgsfield Genjutsu Bewegungsübertragung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9362,28 @@
       },
       "rotation": {
         "name": "rotation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "Erweitert die sRGB-Helligkeit zu Rec.2020 HLG HDR. Speichern Sie das Ergebnis mit ausgewähltem HDR-Farbraum. Alpha bleibt erhalten.",
+    "display_name": "SDR in HDR konvertieren",
+    "inputs": {
+      "algorithm": {
+        "name": "Algorithmus",
+        "tooltip": "Rationale Erweiterung im Lottes-Stil, gemischt mit einer kalibrierten monotonen Log-Gain-Kurve."
+      },
+      "algorithm_target_luminance": {
+        "name": "Zielhelligkeit"
+      },
+      "image": {
+        "name": "Bild",
+        "tooltip": "SDR-Bild(er) in sRGB."
       }
     },
     "outputs": {
@@ -10563,6 +10684,41 @@
     "outputs": {
       "0": {
         "name": "style_reference",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Bearbeiten Sie Bilder mit Krea 3 oder generieren Sie ein neues Bild aus Text, wenn kein Bild verbunden ist.",
+    "display_name": "Krea 3 Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_precise_edit": {
+        "name": "präzise_Bearbeitung"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_thinking_mode": {
+        "name": "Denkmodus"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13318,38 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "Erstellt aus dem Prompt und den Boxen aus Create Bounding Boxes einen MOSS-Image-Layout-Prompt.",
+    "display_name": "MOSS-Image-Layout-Prompt",
+    "inputs": {
+      "character_boxes": {
+        "name": "character_boxes",
+        "tooltip": "Nummern der Objektboxen, die als Charaktere statt als Objekte gekennzeichnet werden sollen, wie in der Vorschau von Create Bounding Boxes markiert, z. B. „1, 3“."
+      },
+      "element": {
+        "name": "Element",
+        "tooltip": "Prompt-Elemente aus dem Node Create Bounding Boxes. Die Beschreibung ist die Beschriftung der Box; Textboxen rendern außerdem ihren Text."
+      },
+      "height": {
+        "name": "Höhe",
+        "tooltip": "Höhe des generierten Bildes; die Boxen werden in dessen Pixeln platziert."
+      },
+      "prompt": {
+        "name": "Prompt",
+        "tooltip": "Beschreibung des gesamten Bildes."
+      },
+      "width": {
+        "name": "Breite",
+        "tooltip": "Breite des generierten Bildes; die Boxen werden in dessen Pixeln platziert."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Prompt",
         "tooltip": null
       }
     }
@@ -18889,7 +19077,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern Details und verbrauchen mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
+        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern die Details und kosten mehr Tokens."
       },
       "seed": {
         "name": "Seed",
@@ -18977,7 +19165,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern Details und verbrauchen mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
+        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern die Details und kosten mehr Tokens."
       },
       "reference_images": {
         "name": "Referenzbilder",
@@ -19836,6 +20024,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "Kodiert Referenzbilder und fügt deren latents dem positiven und optionalen negativen Conditioning für Bearbeitungsmodelle hinzu.",
+    "display_name": "Referenz-Multi-Latent festlegen",
+    "inputs": {
+      "images": {
+        "name": "Bilder"
+      },
+      "negative": {
+        "name": "negativ"
+      },
+      "positive": {
+        "name": "positiv"
+      },
+      "resolution": {
+        "name": "Auflösung"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Referenzbilder werden ignoriert, wenn kein VAE verbunden ist."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positiv",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativ",
+        "tooltip": "Gibt die positive Ausgabe zurück, wenn keine negative Konditionierung verbunden ist."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "Erstes Referenz-Latent, mit 0.0 multipliziert, oder ein quadratisches leeres Latent bei der ausgewählten Auflösung."
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "Dieser Node legt das Referenzaudio für ace step 1.5 fest",
     "display_name": "Referenzaudio festlegen",
@@ -19950,7 +20174,7 @@
     "inputs": {
       "band": {
         "name": "band",
-        "tooltip": "Schmalbandbreite in Voxel-Einheiten. Im UDF-Modus wird auch die Oberfläche verschoben."
+        "tooltip": "Schmalbandbreite in Voxel-Einheiten. Im udf-Modus wird auch die Oberfläche verschoben; im solid-Modus ist sie der Schließradius: Kanten werden bei dieser Größe abgerundet und Lücken überbrückt, die Oberfläche liegt einen halben Voxel weiter außen."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19977,7 +20201,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: robust gegenüber unordentlichen/non-manifold Eingaben. sdf: saubere einzelne Oberfläche mit QEF (Quadratic Error Function)-Wiederherstellung scharfer Merkmale, benötigt jedoch konsistente Orientierung."
+        "tooltip": "udf: robust gegenüber unordentlichen/nicht-manifold Eingaben. sdf: saubere einzelne Oberfläche mit Wiederherstellung scharfer Merkmale durch QEF (Quadratic Error Function), benötigt jedoch eine konsistente Wicklungsrichtung. solid: ein wasserdichter Körper aus unordentlichen Eingaben: Ein globaler Innen-/Außen-Graph-Cut (CelloCut) entfernt doppelte Hüllen und schließt kleine Löcher. Langsamer."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
