@@ -26,14 +26,12 @@ function validRange(headers: Headers, preview: boolean) {
     !headers.has('Range') || (preview && headers.get('Range') === 'bytes=0-')
   )
 }
-function allowedMediaType(
-  type: string | null,
-  preview: boolean
-): type is string {
+function allowedMediaType(type: string | null): type is string {
   return Boolean(
     type &&
-    (/^(image\/(png|jpeg|webp)|application\/json)(;|$)/.test(type) ||
-      (preview && /^video\/(mp4|webm)(;|$)/.test(type)))
+    /^(image\/(png|jpeg|webp)|video\/(mp4|webm)|application\/json)(;|$)/.test(
+      type
+    )
   )
 }
 export const GET: APIRoute = async (context) => {
@@ -62,7 +60,7 @@ export const GET: APIRoute = async (context) => {
     )
     if (!response.ok) return deny()
     const type = response.headers.get('Content-Type')
-    if (!allowedMediaType(type, preview)) {
+    if (!allowedMediaType(type)) {
       await response.body?.cancel()
       return deny()
     }

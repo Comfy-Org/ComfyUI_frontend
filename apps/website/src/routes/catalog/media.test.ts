@@ -72,17 +72,28 @@ describe('same-origin catalog byte proxy', () => {
       expect(fetch).not.toHaveBeenCalled()
     }
   )
-  it('never enables public video delivery by adding Preview support', async () => {
-    vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
-    vi.mocked(globalThis.fetch).mockImplementation(
-      vi
-        .fn<typeof globalThis.fetch>()
-        .mockResolvedValue(
-          new Response('video', { headers: { 'Content-Type': 'video/mp4' } })
-        )
-    )
-    expect((await GET(context(false))).status).toBe(404)
-  })
+  it.for([
+    { type: 'video/mp4', status: 200 },
+    { type: 'video/webm', status: 200 },
+    { type: 'application/octet-stream', status: 404 }
+  ])(
+    'serves public Live media of type $type with $status',
+    async ({ type, status }) => {
+      vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
+      vi.mocked(globalThis.fetch).mockImplementation(
+        vi
+          .fn<typeof globalThis.fetch>()
+          .mockResolvedValue(
+            new Response('bytes', { headers: { 'Content-Type': type } })
+          )
+      )
+      const response = await GET(context(false, false))
+      expect(response.status).toBe(status)
+      expect(response.headers.get('Content-Type')).toBe(
+        status === 200 ? type : null
+      )
+    }
+  )
   it('streams authorized exact Preview bytes without redirect or public caching', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://127.0.0.1:8109')
     const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
