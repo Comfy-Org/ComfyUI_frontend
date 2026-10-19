@@ -181,6 +181,7 @@ import {
 import { reportNamedValuesShadowDiff } from './utils/namedValuesShadowDiffTelemetry'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
+import { coerceRestoredWidgetValue } from './utils/widget'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
@@ -1295,7 +1296,6 @@ export class LGraphNode
     for (const j in info) {
       if (!isNodeCanonicalField(j)) continue
       if (j == 'properties') {
-        // i don't want to clone properties, I want to reuse the old container
         for (const k in info.properties) {
           this.properties[k] = info.properties[k]
           this.onPropertyChanged?.(k, info.properties[k])
@@ -1306,9 +1306,6 @@ export class LGraphNode
       if (j === 'type') continue
 
       if (j === 'id') {
-        // Once registered, the owning graph owns the id — it may have
-        // renumbered this node to resolve a collision that the serialised id
-        // would reinstate.
         if (this._graphScope) continue
         const id = toNodeId(info.id)
         if (id !== UNASSIGNED_NODE_ID) this.id = id
@@ -1349,7 +1346,6 @@ export class LGraphNode
       this.onOutputAdded?.(output)
     }
 
-    // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
 
     realignGroupWidgetChildLinks(this, info)
@@ -1398,10 +1394,10 @@ export class LGraphNode
               restoration.positional.length
             )
           )
-          if (restored) widget.value = restored.value
+          if (restored)
+            widget.value = coerceRestoredWidgetValue(widget, restored.value)
         }
       }
-      // Sync the state of this.resizable.
       if (this.pinned) this.resizable = false
 
       if (this.widgets_up) {
@@ -2460,9 +2456,6 @@ export class LGraphNode
 
     if (!this.widgets.includes(widget)) return widget
 
-    // Only register with store if node has a valid ID (is already in a graph).
-    // If the node isn't in a graph yet (id === -1), registration happens
-    // when the node is added via LGraph.add() -> node.onAdded.
     if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
@@ -2478,7 +2471,8 @@ export class LGraphNode
       widget.name,
       positionalIndex
     )
-    if (restored) widget.value = restored.value
+    if (restored)
+      widget.value = coerceRestoredWidgetValue(widget, restored.value)
 
     return widget
   }
