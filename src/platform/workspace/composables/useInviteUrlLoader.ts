@@ -11,7 +11,6 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
-import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -49,7 +48,6 @@ export function useInviteUrlLoader() {
     useWorkspaceDialogs()
   const workspaceStore = useTeamWorkspaceStore()
   const authStore = useAuthStore()
-  const dialogService = useDialogService()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
 
   /**
@@ -81,18 +79,9 @@ export function useInviteUrlLoader() {
 
   /**
    * The accept endpoint takes only a Firebase login, which a tab signed in by
-   * its web session alone lacks. Signing in again returns here with the token.
+   * its web session alone lacks. Signing in again returns to the invite URL.
    */
-  const askToSignInAgain = async () => {
-    const confirmed = await dialogService.confirm({
-      title: t('auth.reauthRequired.title'),
-      message: t('auth.reauthRequired.message')
-    })
-    if (!confirmed) {
-      cleanupUrlParams()
-      clearPreservedQuery(INVITE_NAMESPACE)
-      return
-    }
+  const offerSignInAgain = () => {
     const { href } = router.resolve({
       name: 'cloud-login',
       query: {
@@ -100,7 +89,13 @@ export function useInviteUrlLoader() {
         previousFullPath: encodeURIComponent(route.fullPath)
       }
     })
-    window.location.assign(href)
+    toast.info(t('auth.reauthRequired.title'), {
+      description: t('auth.reauthRequired.message'),
+      action: {
+        label: t('auth.reauthRequired.confirm'),
+        onClick: () => window.location.assign(href)
+      }
+    })
   }
 
   /**
@@ -132,7 +127,9 @@ export function useInviteUrlLoader() {
     }
 
     if (authStore.currentUser === null) {
-      await askToSignInAgain()
+      offerSignInAgain()
+      cleanupUrlParams()
+      clearPreservedQuery(INVITE_NAMESPACE)
       return
     }
 

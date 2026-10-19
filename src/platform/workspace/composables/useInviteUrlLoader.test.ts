@@ -3,7 +3,6 @@ import type { User } from 'firebase/auth'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
-import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 
@@ -60,7 +59,6 @@ vi.mock<unknown>(import('vue-router'), () => ({
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/services/dialogService'))
 vi.mock(import('firebase/auth'))
 
 const apps: App<Element>[] = []
@@ -96,7 +94,8 @@ function useInviteUrlLoader(): ReturnType<typeof createInviteUrlLoader> {
           auth: {
             reauthRequired: {
               title: 'Re-authentication Required',
-              message: 'This action requires you to sign in again.'
+              message: 'This action requires you to sign in again.',
+              confirm: 'Sign In Again'
             }
           },
           g: { unknownError: 'Unknown error' }
@@ -522,57 +521,44 @@ describe('useInviteUrlLoader', () => {
           ({ title }) => title === 'Ask your admin to add you'
         )
       ).toBe(outcome === 'ssoUnavailable')
-      expect(vi.mocked(useDialogService().confirm).mock.calls.length).toBe(
-        outcome === 'signsInAgain' ? 1 : 0
-      )
+      expect(
+        useToast().toasts.some(
+          ({ title }) => title === 'Re-authentication Required'
+        )
+      ).toBe(outcome === 'signsInAgain')
       expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
       expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
         'invite'
       )
     })
 
-    describe('without a Firebase login', () => {
-      beforeEach(() => {
-        vi.stubGlobal('location', { assign: vi.fn() })
-        useAuthStore().currentUser = null
-        mockRouteQuery.value = { invite: 'valid-token' }
+    it('offers a session-only tab a sign-in that returns to the invite', async () => {
+      vi.stubGlobal('location', { assign: vi.fn() })
+      useAuthStore().currentUser = null
+      mockRouteQuery.value = { invite: 'valid-token' }
+
+      await useInviteUrlLoader().loadInviteFromUrl()
+
+      expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
+      expect(mockRouterResolve).toHaveBeenCalledWith({
+        name: 'cloud-login',
+        query: {
+          switchAccount: 'true',
+          previousFullPath: encodeURIComponent('/?invite=valid-token')
+        }
       })
-
-      it('signs in again and returns to the invite, keeping the token', async () => {
-        vi.mocked(useDialogService().confirm).mockResolvedValue(true)
-
-        await useInviteUrlLoader().loadInviteFromUrl()
-
-        expect(useDialogService().confirm).toHaveBeenCalledWith({
-          title: 'Re-authentication Required',
-          message: 'This action requires you to sign in again.'
-        })
-        expect(mockRouterResolve).toHaveBeenCalledWith({
-          name: 'cloud-login',
-          query: {
-            switchAccount: 'true',
-            previousFullPath: encodeURIComponent('/?invite=valid-token')
-          }
-        })
-        expect(location.assign).toHaveBeenCalledWith('/cloud/login?resolved')
-        expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
-        expect(useToast().toasts).toEqual([])
-        expect(preservedQueryMocks.clearPreservedQuery).not.toHaveBeenCalled()
+      const [toast] = useToast().toasts
+      expect(toast).toMatchObject({
+        kind: 'info',
+        title: 'Re-authentication Required',
+        description: 'This action requires you to sign in again.',
+        action: { label: 'Sign In Again' }
       })
+      expect(location.assign).not.toHaveBeenCalled()
 
-      it('drops the invite without an error when sign-in is declined', async () => {
-        vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+      await toast.action?.onClick()
 
-        await useInviteUrlLoader().loadInviteFromUrl()
-
-        expect(location.assign).not.toHaveBeenCalled()
-        expect(useTeamWorkspaceStore().acceptInvite).not.toHaveBeenCalled()
-        expect(useToast().toasts).toEqual([])
-        expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
-        expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
-          'invite'
-        )
-      })
+      expect(location.assign).toHaveBeenCalledWith('/cloud/login?resolved')
     })
   })
 })
