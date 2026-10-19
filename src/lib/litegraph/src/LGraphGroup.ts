@@ -5,7 +5,6 @@ import type {
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { setGroupBoundsLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { reportError } from '@/platform/telemetry/reportError'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -138,15 +137,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     const onRefused = (key: string, value: unknown) => {
       if (reported) return
       reported = true
-      reportError(
-        new Error(
-          `LGraphGroup.${key} was assigned a ${typeof value} the group cannot use; it kept its own value`
-        ),
-        {
-          surface: 'graph',
-          errorType: 'error_assigning_group_field',
-          context: { key }
-        }
+      console.warn(
+        `[LGraphGroup] rejected ${key} assignment of a ${typeof value}; kept the existing value`
       )
     }
 

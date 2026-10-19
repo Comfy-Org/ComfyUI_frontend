@@ -20,11 +20,6 @@ import { test } from './__fixtures__/testExtensions'
 
 vi.mock(import('@/utils/colorUtil'), { spy: true })
 
-const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: mockReportError
-}))
-
 function createMockContext() {
   return {
     beginPath: vi.fn(),
@@ -540,7 +535,7 @@ describe('geometry an extension cannot clobber', () => {
 
       expect(group.children).toBe(children)
       expect(group.nodes).toBe(nodes)
-      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(console.warn).toHaveBeenCalledOnce()
     }
   )
 
@@ -553,7 +548,7 @@ describe('geometry an extension cannot clobber', () => {
     Object.assign(group, { _nodes: [node] })
 
     expect(group.nodes).toEqual([node])
-    expect(mockReportError).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   test.for([
@@ -578,7 +573,7 @@ describe('geometry an extension cannot clobber', () => {
       expect(group[property]).toBe(before)
       expect([...group.boundingRect]).toEqual(expected)
       expect(group.serialize().bounding).toEqual(expected)
-      expect(mockReportError).not.toHaveBeenCalled()
+      expect(console.warn).not.toHaveBeenCalled()
     }
   )
 
@@ -594,7 +589,7 @@ describe('geometry an extension cannot clobber', () => {
 
     expect([...target.boundingRect]).toEqual([31, 32, 330, 340])
     expect(target._bounding).toBe(targetView)
-    expect(mockReportError).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   test('assigning a typed array is copied, not refused', () => {
@@ -604,7 +599,7 @@ describe('geometry an extension cannot clobber', () => {
     Object.assign(group, { bounds: Float64Array.from([7, 8, 90, 100]) })
 
     expect([...group.boundingRect]).toEqual([7, 8, 90, 100])
-    expect(mockReportError).not.toHaveBeenCalled()
+    expect(console.warn).not.toHaveBeenCalled()
   })
 
   test.for([
@@ -643,7 +638,7 @@ describe('geometry an extension cannot clobber', () => {
       expect([...group.pos]).toEqual([10, 10])
       expect([...group.size]).toEqual([140, 80])
       expect([...group.boundingRect]).toEqual([10, 10, 140, 80])
-      expect(mockReportError).toHaveBeenCalledOnce()
+      expect(console.warn).toHaveBeenCalledOnce()
     }
   )
 
@@ -676,11 +671,8 @@ describe('geometry an extension cannot clobber', () => {
     Object.assign(first, { _bounding: 'nonsense again' })
     Object.assign(second, { _pos: 'nonsense' })
 
-    expect(mockReportError).toHaveBeenCalledTimes(2)
-    expect(mockReportError.mock.calls[0][1]).toMatchObject({
-      errorType: 'error_assigning_group_field',
-      context: { key: 'bounds' }
-    })
+    expect(console.warn).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(console.warn).mock.calls[0][0]).toContain('bounds')
   })
 
   test('geometry reads and writes through a reactive proxy', () => {
