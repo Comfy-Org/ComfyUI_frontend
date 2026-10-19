@@ -139,9 +139,11 @@ async function expectNoRejectionToast(toast: ToastHelper): Promise<void> {
       })
     )
   const quietWindowStartedAt = Date.now()
+  let rejectionSeen = false
   await expect
     .soft(async () => {
-      await expect(rejectionToast).toHaveCount(0, { timeout: 0 })
+      if ((await rejectionToast.count()) > 0) rejectionSeen = true
+      expect(rejectionSeen).toBe(false)
       expect(Date.now() - quietWindowStartedAt).toBeGreaterThanOrEqual(2_000)
     })
     .toPass({ timeout: 4_000, intervals: [100, 250, 500] })

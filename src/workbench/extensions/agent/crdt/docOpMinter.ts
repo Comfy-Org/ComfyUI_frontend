@@ -540,8 +540,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return true
   }
 
-  function mintSetWidget(event: IntentOf<'set_widget'>): void {
-    routeSetWidget(event, null)
+  function mintSetWidget(
+    event: IntentOf<'set_widget'>,
+    held: HeldPromotedWrite | null = null
+  ): void {
+    routeSetWidget(event, held)
   }
 
   function routeSetWidget(
@@ -602,47 +605,60 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   function holdPromotedWrite(held: HeldPromotedWrite): void {
     heldPromotedWrites.set(heldWriteKey(held.event), held)
     if (heldRetryTimer !== null) return
+    scheduleHeldPromotedWriteRetry()
+  }
+
+  function scheduleHeldPromotedWriteRetry(): void {
     heldRetryTimer = setTimeout(
       retryHeldPromotedWrites,
       PROMOTED_WRITE_RETRY_MS
     )
   }
 
-  /**
-   * Re-routes every held write through the same checks a fresh write takes,
-   * so one that waited is judged against the caught-up document's layout.
-   * A write is dropped when the panel no longer mints, or when the canvas no
-   * longer shows its value (the catch-up or a later edit replaced it). A
-   * write whose bound workflow changed while it waited is refused.
-   */
+  function refuseInvalidHeldPromotedWrites(rootGraphId: RootGraphId): void {
+    for (const [key, entry] of heldPromotedWrites) {
+      if (
+        rootGraphId === entry.rootGraphId &&
+        performance.now() - entry.heldSince <
+          PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
+      )
+        continue
+      heldPromotedWrites.delete(key)
+      refuseWidgetWrite(entry.rootGraphId, entry.event, {
+        reason: 'doc_not_synced'
+      })
+    }
+  }
+
+  function replayHeldPromotedWrites(graph: LGraph): void {
+    const held = [...heldPromotedWrites.values()]
+    heldPromotedWrites.clear()
+    for (const entry of held) {
+      if (!canvasStillShows(graph, entry.event)) continue
+      routeSetWidget(entry.event, entry)
+    }
+  }
+
   function retryHeldPromotedWrites(): void {
     heldRetryTimer = null
     if (detached) return
-    if (!deps.isEnabled() || !deps.isDocBound()) {
+    const rootGraphId = deps.boundRootGraphId()
+    if (!deps.isEnabled() || rootGraphId === null) {
       heldPromotedWrites.clear()
+      return
+    }
+    refuseInvalidHeldPromotedWrites(rootGraphId)
+    if (heldPromotedWrites.size === 0) return
+    if (!deps.isDocBound()) {
+      scheduleHeldPromotedWriteRetry()
       return
     }
     const graph = deps.getGraph()
     if (!graph) {
-      heldRetryTimer = setTimeout(
-        retryHeldPromotedWrites,
-        PROMOTED_WRITE_RETRY_MS
-      )
+      scheduleHeldPromotedWriteRetry()
       return
     }
-    const held = [...heldPromotedWrites.values()]
-    heldPromotedWrites.clear()
-    const rootGraphId = deps.boundRootGraphId() ?? graph.id
-    for (const entry of held) {
-      if (rootGraphId !== entry.rootGraphId) {
-        refuseWidgetWrite(entry.rootGraphId, entry.event, {
-          reason: 'doc_not_synced'
-        })
-        continue
-      }
-      if (!canvasStillShows(graph, entry.event)) continue
-      routeSetWidget(entry.event, entry)
-    }
+    replayHeldPromotedWrites(graph)
   }
 
   function reportRefusal(
@@ -828,10 +844,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
+    const held =
+      event.type === 'set_widget'
+        ? (heldPromotedWrites.get(heldWriteKey(event)) ?? null)
+        : null
     if (event.type === 'set_widget')
       heldPromotedWrites.delete(heldWriteKey(event))
     if (!deps.isEnabled() || !deps.isDocBound()) return
-    mintIntent(event)
+    if (event.type === 'set_widget') mintSetWidget(event, held)
+    else mintIntent(event)
   }
 
   function mintIntent(event: GraphIntentEvent): void {

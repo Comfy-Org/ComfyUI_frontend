@@ -211,7 +211,9 @@ beforeEach(() => {
 
 describe('attachDocOpMinter', () => {
   let graph: LGraph
+  let currentGraph: LGraph | null
   let rootGraphId: RootGraphId
+  let boundRootGraphId: RootGraphId | null
   let minted: GraphOperation[]
   let minter: DocOpMinter
   let enabled: boolean
@@ -223,7 +225,9 @@ describe('attachDocOpMinter', () => {
 
   beforeEach(() => {
     graph = new LGraph()
+    currentGraph = graph
     rootGraphId = toRootGraphId(graph.id)
+    boundRootGraphId = rootGraphId
     minted = []
     enabled = true
     bound = true
@@ -235,8 +239,8 @@ describe('attachDocOpMinter', () => {
       isEnabled: () => enabled,
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
-      getGraph: () => graph,
-      boundRootGraphId: () => rootGraphId,
+      getGraph: () => currentGraph,
+      boundRootGraphId: () => boundRootGraphId,
       docInputNames: (nodeId) => docInputNames(nodeId),
       docPromotedWidgets: (nodeId) => docPromotedWidgets(nodeId),
       mayWritePromotedHost: () => mayWrite,
@@ -418,6 +422,7 @@ describe('attachDocOpMinter', () => {
     const { source, sink } = seedGraph(seeded)
     const workflow = { ...seeded.serialize(), id: createUuidv4() }
     rootGraphId = toRootGraphId(workflow.id)
+    boundRootGraphId = rootGraphId
 
     graph.configure(workflow)
     await afterFlush()
@@ -1109,6 +1114,25 @@ describe('attachDocOpMinter', () => {
       doc.destroy()
     })
 
+    it('does not restart the deadline when the held widget changes again', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'first'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(
+        PROMOTED_WRITE_CATCH_UP_DEADLINE_MS - PROMOTED_WRITE_RETRY_MS / 2
+      )
+      host.widgets[1].value = 'second'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toBe(1)
+      expect(vi.getTimerCount()).toBe(0)
+      doc.destroy()
+    })
+
     it('is superseded by a newer write to the same widget made after catch-up', async () => {
       const { host, doc } = seedPromotedHost()
       mayWrite = false
@@ -1203,6 +1227,7 @@ describe('attachDocOpMinter', () => {
       host.widgets[1].value = 'for the old workflow'
       await afterFlush()
       rootGraphId = toRootGraphId(createUuidv4())
+      boundRootGraphId = rootGraphId
       mayWrite = true
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
 
@@ -1270,11 +1295,32 @@ describe('attachDocOpMinter', () => {
       host.widgets[1].value = 'for a closed chat'
       await afterFlush()
       bound = false
+      boundRootGraphId = null
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
 
       expect(minted).toEqual([])
       expect(refusals).toBe(0)
       expect(vi.getTimerCount()).toBe(0)
+      doc.destroy()
+    })
+
+    it('keeps waiting through a transient document subscription gap', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'during a reconnect'
+      await afterFlush()
+      bound = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      expect(refusals).toBe(0)
+      bound = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['during a reconnect'])
+      expect(refusals).toBe(0)
       doc.destroy()
     })
 
@@ -1285,17 +1331,32 @@ describe('attachDocOpMinter', () => {
 
       host.widgets[1].value = 'during a load'
       await afterFlush()
-      graph = null as unknown as LGraph
+      currentGraph = null
       mayWrite = true
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
       expect(refusals).toBe(0)
-      graph = liveGraph
+      currentGraph = liveGraph
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
 
       expect(
         minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
       ).toEqual(['during a load'])
       expect(refusals).toBe(0)
+      doc.destroy()
+    })
+
+    it('refuses after the deadline while the graph stays unavailable', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'during a long load'
+      await afterFlush()
+      currentGraph = null
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toBe(1)
+      expect(vi.getTimerCount()).toBe(0)
       doc.destroy()
     })
 
@@ -1403,7 +1464,9 @@ describe('attachDocOpMinter', () => {
     await afterFlush()
 
     graph = new LGraph()
+    currentGraph = graph
     rootGraphId = toRootGraphId(graph.id)
+    boundRootGraphId = rootGraphId
     const second = seedPromotedHost()
     docPromotedWidgets = () => ({
       valueCount: 2,
@@ -1894,6 +1957,7 @@ describe('attachDocOpMinter', () => {
     assert.exists(stored)
     stored.serialize = false
     rootGraphId = toRootGraphId(previousGraph.id)
+    boundRootGraphId = rootGraphId
 
     emitGraphIntent({
       type: 'set_widget',
