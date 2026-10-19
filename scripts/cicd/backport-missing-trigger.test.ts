@@ -82,12 +82,13 @@ function createPr({
   )
   const initialCount = existingComments.length
 
-  const botComments = () =>
-    readFileSync(comments, 'utf8')
+  function botComments() {
+    return readFileSync(comments, 'utf8')
       .split('\n')
       .filter(Boolean)
       .slice(initialCount)
       .map((line) => (JSON.parse(line) as { body: string }).body)
+  }
 
   return {
     runWarning: () =>
