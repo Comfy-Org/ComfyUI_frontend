@@ -190,6 +190,12 @@ function useBillingCapabilitiesInternal() {
   const autoTopUpSetup = computed(
     () => resolvedResponse.value?.auto_top_up_setup ?? null
   )
+  const paymentRecoveryAvailable = computed(() =>
+    receiveServerFact(
+      'payment_recovery_available',
+      resolvedResponse.value?.payment_recovery_available ?? false
+    )
+  )
   const isReady = computed(() => {
     const state = readState.value
     if (state.status === 'idle' || state.status === 'pending') return false
@@ -532,6 +538,7 @@ function useBillingCapabilitiesInternal() {
     canDowngradeToPersonal,
     canManageAutoTopUp,
     autoTopUpSetup,
+    paymentRecoveryAvailable,
     isReady,
     hasResolvedCapabilities,
     snapshotAuthoritative,

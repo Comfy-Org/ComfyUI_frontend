@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { BillingPortalOutcome } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -39,6 +39,28 @@ describe('usePaymentRecoveryDialog', () => {
         },
         dialogComponentProps: { headless: true }
       })
+    }
+  )
+
+  it.for<{ outcome: BillingPortalOutcome; notified: boolean }>([
+    { outcome: { ok: true }, notified: true },
+    { outcome: { ok: false, reason: 'blocked' }, notified: false }
+  ])(
+    'notifies the opener only when the portal opens from the dialog ($outcome.ok)',
+    async ({ outcome, notified }) => {
+      vi.mocked(useBillingContext().manageSubscription).mockResolvedValueOnce(
+        outcome
+      )
+      const onPortalOpened = vi.fn()
+
+      usePaymentRecoveryDialog().showPaymentRecoveryDialog(onPortalOpened)
+      const [args] = vi.mocked(useDialogService().showLayoutDialog).mock
+        .calls[0]
+      assert('onUpdatePayment' in args.props)
+      assert(typeof args.props.onUpdatePayment === 'function')
+      await args.props.onUpdatePayment()
+
+      expect(onPortalOpened).toHaveBeenCalledTimes(notified ? 1 : 0)
     }
   )
 

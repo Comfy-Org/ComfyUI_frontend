@@ -394,6 +394,25 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canManageBilling.value).toBe(true)
   })
 
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: false }
+  ])(
+    'renders payment_recovery_available $served as $expected',
+    async ({ served, expected }) => {
+      const response = capabilitiesResponse(true, 'workspace-1', true)
+      response.payment_recovery_available = served
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.paymentRecoveryAvailable.value).toBe(expected)
+    }
+  )
+
   it('grants delete only when the server does', async () => {
     vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
       capabilitiesResponse(

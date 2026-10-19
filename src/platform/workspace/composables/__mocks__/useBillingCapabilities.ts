@@ -1,5 +1,6 @@
 import { onTestFinished, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { useBillingCapabilities as realUseBillingCapabilities } from '../useBillingCapabilities'
@@ -39,6 +40,9 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_manage_auto_top_up', false)
   ),
   autoTopUpSetup: computed(() => null),
+  paymentRecoveryAvailable: computed(() =>
+    receiveServerFact('payment_recovery_available', false)
+  ),
   isReady: computed(() => true),
   hasResolvedCapabilities: computed(() => true),
   snapshotAuthoritative: computed(() => true),
@@ -50,6 +54,14 @@ const capabilities = { ...defaults }
 
 export function canManageBillingFact(granted: boolean) {
   return computed(() => receiveServerFact('can_manage_billing', granted))
+}
+
+export function paymentRecoveryAvailableFact(
+  available: MaybeRefOrGetter<boolean>
+) {
+  return computed(() =>
+    receiveServerFact('payment_recovery_available', toValue(available))
+  )
 }
 
 export const useBillingCapabilities = vi.fn(() => {

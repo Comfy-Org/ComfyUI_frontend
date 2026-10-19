@@ -70,7 +70,13 @@ export function usePaymentRecoveryDialog() {
     return paymentPortalRequest.value
   }
 
-  function showPaymentRecoveryDialog() {
+  async function updatePaymentFromDialog(onPortalOpened?: () => void) {
+    const outcome = await updatePayment()
+    if (outcome.ok) onPortalOpened?.()
+  }
+
+  /** `onPortalOpened` runs each time the billing portal opens from this dialog. */
+  function showPaymentRecoveryDialog(onPortalOpened?: () => void) {
     return dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: SubscriptionPausedDialog,
@@ -79,7 +85,7 @@ export function usePaymentRecoveryDialog() {
         status: 'payment_failed',
         isUpdatingPayment: isUpdatingPayment.value,
         onClose: closePaymentRecoveryDialog,
-        onUpdatePayment: updatePayment
+        onUpdatePayment: () => updatePaymentFromDialog(onPortalOpened)
       },
       dialogComponentProps: {
         headless: true
