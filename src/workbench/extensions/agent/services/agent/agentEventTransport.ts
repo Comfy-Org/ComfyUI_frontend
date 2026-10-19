@@ -56,6 +56,7 @@ type AgentMessageDraftEvent = Extract<
 export interface CanvasSyncEvidence {
   workflowId: string
   opIds: readonly string[]
+  isLive: boolean
 }
 
 const MAX_OBSERVED_CANVAS_WORKFLOWS = 8
@@ -176,10 +177,6 @@ export function createAgentEventTransport(
       correlation?: { workflowId: string; opIds: ReadonlySet<string> }
     }
   >()
-  // Exact op ids can arrive before their terminal tool frame because the doc
-  // and chat events use different channels. Retain this turn's applied ids so
-  // the later terminal frame can settle immediately instead of waiting for a
-  // second update or the timeout.
   const observedCanvasOps = new Map<string, Set<string>>()
   // PM-1575: the outcome count as of the last time some tool part actually
   // claimed a canvas catch-up (see `claimCanvasSyncOutcome` below), starting
@@ -272,11 +269,12 @@ export function createAgentEventTransport(
 
     let changed = false
     for (const [part, pending] of pendingCanvasSync) {
-      // Frames from an older cloud deployment carry no correlation. Preserve
-      // their existing any-applied-update fallback during the rolling rollout.
       if (
-        pending.correlation === undefined ||
-        (evidence !== undefined && correlationObserved(pending.correlation))
+        (pending.correlation === undefined &&
+          (evidence === undefined || evidence.isLive)) ||
+        (pending.correlation !== undefined &&
+          evidence !== undefined &&
+          correlationObserved(pending.correlation))
       ) {
         settlePendingCanvasSync(part)
         changed = true

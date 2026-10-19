@@ -1189,11 +1189,13 @@ describe('useAgentCrdtFollower', () => {
 
     expect(onAppliedUpdate).toHaveBeenNthCalledWith(1, {
       workflowId: 'wf-1',
-      opIds: ['op-1', 'op-2']
+      opIds: ['op-1', 'op-2'],
+      isLive: true
     })
     expect(onAppliedUpdate).toHaveBeenNthCalledWith(2, {
       workflowId: 'wf-1',
-      opIds: ['op-catch-up']
+      opIds: ['op-catch-up'],
+      isLive: false
     })
     unmount()
   })

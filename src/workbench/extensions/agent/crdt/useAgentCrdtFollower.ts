@@ -56,6 +56,7 @@ export { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 interface ProjectionFrameId {
   opIds?: readonly string[]
   seq: number
+  isLive?: boolean
 }
 
 const NOTHING_APPLIED: FrameOutcome = {
@@ -193,6 +194,7 @@ interface AgentCrdtFollowerEvents {
   onAppliedUpdate?: (event: {
     workflowId: string
     opIds: readonly string[]
+    isLive: boolean
   }) => void
   onMaterialized?: (event: {
     workflowId: string
@@ -224,7 +226,8 @@ function notifyAppliedUpdate(
   if (!outcome.applied || outcome.failureCount > 0) return
   events.onAppliedUpdate?.({
     workflowId: update.workflowId,
-    opIds: update.opIds ?? []
+    opIds: update.opIds ?? [],
+    isLive: !update.catchUp
   })
 }
 
@@ -535,7 +538,11 @@ function startAgentCrdtFollower(
   }
   const retainPendingFrame = (update: ClassifiedDocUpdate): void => {
     const frames = pendingProjectionFrames.get(update.workflowId)
-    const frame = { opIds: update.opIds, seq: update.seq }
+    const frame = {
+      opIds: update.opIds,
+      seq: update.seq,
+      isLive: !update.catchUp
+    }
     if (frames) frames.push(frame)
     else pendingProjectionFrames.set(update.workflowId, [frame])
   }
@@ -578,7 +585,8 @@ function startAgentCrdtFollower(
       for (const frame of pendingFrames) {
         events.onAppliedUpdate?.({
           workflowId,
-          opIds: frame.opIds ?? []
+          opIds: frame.opIds ?? [],
+          isLive: frame.isLive ?? true
         })
       }
     }

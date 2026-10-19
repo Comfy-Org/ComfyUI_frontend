@@ -968,8 +968,8 @@ const {
   getGraph: () =>
     canvasStore.canvas && app.isGraphReady ? app.rootGraph : null,
   events: {
-    onAppliedUpdate({ workflowId, opIds }) {
-      conversationStore.notifyCanvasCaughtUp({ workflowId, opIds })
+    onAppliedUpdate({ workflowId, opIds, isLive }) {
+      conversationStore.notifyCanvasCaughtUp({ workflowId, opIds, isLive })
     },
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
@@ -1046,9 +1046,7 @@ const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 // effect has actually reached the canvas -- the CRDT doc_update travels a
 // separate, unrelated listener (see agentEventTransport.ts's file header).
 // Gate the transport's tool-call "done" affordance on canvas catch-up only
-// while the CRDT follower is actually active. `onAppliedUpdate` above carries
-// each applied frame's workflow/op ids into the conversation transport, which
-// releases only the tool call whose exact effects materialized.
+// while the CRDT follower is actually active.
 //
 // `agentPanelStore.enabled` alone is NOT that signal: it is the product
 // feature flag ("is the agent panel available at all"), which is on in any

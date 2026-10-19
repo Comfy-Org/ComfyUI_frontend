@@ -1106,6 +1106,27 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 
+  it('does not release an uncorrelated tool call for a catch-up frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('add_node', 'success'))
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-catch-up'],
+      isLive: false
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-live'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+  })
+
   it('releases only the held call whose workflow and op ids materialized', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
@@ -1126,7 +1147,8 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
 
     transport.notifyCanvasCaughtUp({
       workflowId: 'wf-b',
-      opIds: ['op-add']
+      opIds: ['op-add'],
+      isLive: true
     })
     expect(toolParts(message).map(({ state }) => state)).toEqual([
       'streaming',
@@ -1135,7 +1157,8 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
 
     transport.notifyCanvasCaughtUp({
       workflowId: 'wf-a',
-      opIds: ['op-add']
+      opIds: ['op-add'],
+      isLive: true
     })
     expect(toolParts(message).map(({ state }) => state)).toEqual([
       'done',
@@ -1150,7 +1173,8 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
 
     transport.notifyCanvasCaughtUp({
       workflowId: 'wf-a',
-      opIds: ['op-add']
+      opIds: ['op-add'],
+      isLive: true
     })
     transport.ingest(
       toolCall('add_node', 'success', 'call-add', undefined, {

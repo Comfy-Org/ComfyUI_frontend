@@ -62,12 +62,19 @@ import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
  * affordance fires; canvas does not reflect it for a long, but bounded,
  * interval) rather than claiming a specific backend root cause.
  *
- * PM-1637 replaces the original broad "some update landed" heuristic with
- * exact evidence from the terminal tool frame: workflow_id plus op_ids. The
- * transport holds the row until the follower reports that every named op was
- * applied for that workflow. Unrelated updates no longer release the row;
- * legacy terminal frames without correlation retain the bounded heuristic
- * during rolling deploys.
+ * The fix (client-side decoupling only -- the backend propagation delay
+ * itself is out of scope): `createAgentEventTransport` now takes an optional
+ * `shouldAwaitCanvasSync` gate. While it returns true, a tool call's `state`
+ * is held at `'streaming'` when its frame reports done, instead of flipping
+ * straight to `'done'`, until either `notifyCanvasCaughtUp()` is called or
+ * `STALE_AFTER_MS` elapses (the same bound `agentCrdtDocLifecycle.ts`'s own
+ * passive heartbeat uses). `AgentPanelRoot.vue` wires the gate to
+ * `agentPanelStore.enabled` and calls `notifyCanvasCaughtUp()` whenever
+ * `useAgentCrdtFollower`'s `outcomes.applied` counter increases for the bound
+ * workflow -- mirroring, not reusing, PM-1355's own catch-up-confirmation
+ * primitive, since that one lives inside `AgentCrdtDocLifecycle` and answers
+ * "is THIS subscribe's own catch-up frame overdue", not "has some later
+ * update since landed", which is the question this bug needed answered.
  */
 
 const WORKFLOW_ID = 'c1d2e3f4-5a6b-4c7d-8e9f-0a1b2c3d4e5f'

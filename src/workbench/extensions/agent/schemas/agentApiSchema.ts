@@ -240,10 +240,6 @@ const zAgentThinkingData = z
   })
   .passthrough()
 
-// Correlation is advisory: a malformed optional field must not drop the
-// terminal tool frame and strand its visible row. The producer validates these
-// fields strictly; this reader degrades malformed or skewed values to the
-// established uncorrelated fallback during independent cloud/frontend deploys.
 const zCanvasCorrelationWorkflowId = z
   .string()
   .min(1)
