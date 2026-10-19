@@ -11,13 +11,17 @@ import { useQueueStore } from '@/stores/queueStore'
 
 type TaskOutput = TaskItemImpl['outputs']
 
-interface JobOutcome {
-  state: 'ended' | 'live' | 'unknown'
-  outputs?: TaskOutput
-}
+type JobOutcome =
+  | { state: 'ended'; outputs?: TaskOutput }
+  | { state: 'live' }
+  | { state: 'unknown' }
 
-const LIVE_STATUSES = new Set(['pending', 'in_progress'])
-const ENDED_STATUSES = new Set(['completed', 'failed', 'cancelled'])
+const LIVE_STATUSES = new Set<JobDetail['status']>(['pending', 'in_progress'])
+const ENDED_STATUSES = new Set<JobDetail['status']>([
+  'completed',
+  'failed',
+  'cancelled'
+])
 
 const DETAIL_TIMEOUT_MS = 5_000
 const DETAIL_RETRY_DELAY_MS = 1_000
@@ -25,9 +29,7 @@ const DETAIL_CONCURRENCY = 4
 const MAX_UNREADABLE_REFRESHES = 3
 
 /**
- * After a WebSocket reconnect, refresh the queue, replay the outputs of
- * followed runs that completed while the socket was down, and clear the
- * runs that ended. Returns the handler for the `reconnected` api event.
+ * Returns the handler for the `reconnected` api event.
  */
 export function useReconnectQueueRefresh() {
   const queueStore = useQueueStore()
@@ -46,9 +48,14 @@ export function useReconnectQueueRefresh() {
 
   async function fetchDetail(jobId: JobId): Promise<JobDetail | undefined> {
     await detailRequests.acquire()
+    const request = new AbortController()
     try {
-      return await withTimeout(() => api.getJobDetail(jobId), DETAIL_TIMEOUT_MS)
+      return await withTimeout(
+        () => api.getJobDetail(jobId, request.signal),
+        DETAIL_TIMEOUT_MS
+      )
     } catch {
+      request.abort()
       return undefined
     } finally {
       detailRequests.release()
@@ -60,7 +67,10 @@ export function useReconnectQueueRefresh() {
     historyTask: TaskItemImpl | undefined
   ): JobOutcome {
     if (detail?.outputs) return { state: 'ended', outputs: detail.outputs }
-    if (historyTask?.outputsCount === 1) {
+    if (
+      historyTask?.outputsCount === 1 &&
+      historyTask.job.preview_output?.mediaType !== 'text'
+    ) {
       return { state: 'ended', outputs: historyTask.outputs }
     }
     return { state: detail ? 'ended' : 'unknown' }
@@ -137,12 +147,8 @@ export function useReconnectQueueRefresh() {
     outputs: TaskOutput,
     openGraphTakenByOtherRun: boolean
   ) {
-    try {
-      if (!ranOnOpenWorkflow(jobId)) keepWithBackgroundWorkflow(jobId, outputs)
-      else if (!openGraphTakenByOtherRun) replayOnOpenGraph(jobId, outputs)
-    } catch (error) {
-      console.error(`Failed to restore outputs of job ${jobId}`, error)
-    }
+    if (!ranOnOpenWorkflow(jobId)) keepWithBackgroundWorkflow(jobId, outputs)
+    else if (!openGraphTakenByOtherRun) replayOnOpenGraph(jobId, outputs)
   }
 
   function giveUpOnUnreadable(jobId: JobId): boolean {
@@ -201,19 +207,19 @@ export function useReconnectQueueRefresh() {
 
     const ended: JobId[] = []
     leftQueue.forEach((jobId, i) => {
-      const { state, outputs } = outcomes[i]
-      if (state === 'live') {
+      const outcome = outcomes[i]
+      if (outcome.state === 'live') {
         unreadableRefreshes.delete(jobId)
         return
       }
-      if (state === 'unknown') {
+      if (outcome.state === 'unknown') {
         if (giveUpOnUnreadable(jobId)) ended.push(jobId)
         return
       }
       unreadableRefreshes.delete(jobId)
       ended.push(jobId)
-      if (outputs && stillFollowed(jobId)) {
-        restoreOutputs(jobId, outputs, openGraphTakenByOtherRun)
+      if (outcome.outputs && stillFollowed(jobId)) {
+        restoreOutputs(jobId, outcome.outputs, openGraphTakenByOtherRun)
       }
     })
 
