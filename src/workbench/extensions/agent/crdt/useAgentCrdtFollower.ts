@@ -216,6 +216,18 @@ interface AgentCrdtFollowerEvents {
   onSyncError?: (message?: string, code?: string) => void
 }
 
+function notifyAppliedUpdate(
+  update: ClassifiedDocUpdate,
+  outcome: FrameOutcome,
+  events: AgentCrdtFollowerEvents
+): void {
+  if (!outcome.applied || update.catchUp) return
+  events.onAppliedUpdate?.({
+    workflowId: update.workflowId,
+    opIds: update.opIds ?? []
+  })
+}
+
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
 // logError, which re-throws in dev/test builds (this app registers no
 // app.config.errorHandler) and aborts the rest of unmountComponent - leaving
@@ -669,12 +681,7 @@ function startAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const outcome = applyFrame(update)
-    if (outcome.applied && !update.catchUp) {
-      events.onAppliedUpdate?.({
-        workflowId: update.workflowId,
-        opIds: update.opIds ?? []
-      })
-    }
+    notifyAppliedUpdate(update, outcome, events)
     const nodes = outcome.nodes
     const created = outcome.applied ? outcome.createdNodeIds : []
     reportFrameProjection(update, outcome)
