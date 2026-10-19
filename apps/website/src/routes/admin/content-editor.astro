@@ -4,15 +4,30 @@ import CatalogEditorPage from '@/components/cms/editor/CatalogEditorPage.vue'
 import { loadEditorData } from '@/lib/cms/editor-server'
 import { resolveLocale } from '@/config/locales'
 const id = Astro.params.uid
-const data = await loadEditorData(Astro.locals.catalogAuthoring, id, Astro.url.searchParams.get('type'))
+const data = await loadEditorData(
+  Astro.locals.catalogAuthoring,
+  id,
+  Astro.url.searchParams.get('type')
+)
 if (!data.ok) return data.response
 const t = Astro.locals.t
 ---
-<BaseLayout title={t(id ? 'cmsEditor.editTitle' : 'cmsEditor.newTitle')} bare noindex>
-    <CatalogEditorPage
-      editor={{ initial: data.initial, snapshot: data.snapshot, type: data.type, draft: data.draft, csrf: data.csrf }}
-      liveRevision={data.liveRevision}
-      locale={resolveLocale(Astro.currentLocale)}
-      client:load
-    />
+
+<BaseLayout
+  title={t(id ? 'cmsEditor.editTitle' : 'cmsEditor.newTitle')}
+  bare
+  noindex
+>
+  <CatalogEditorPage
+    editor={{
+      initial: data.initial,
+      snapshot: data.snapshot,
+      type: data.type,
+      draft: data.draft,
+      csrf: data.csrf
+    }}
+    liveRevision={data.liveRevision}
+    locale={resolveLocale(Astro.currentLocale)}
+    client:load
+  />
 </BaseLayout>

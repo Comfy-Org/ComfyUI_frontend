@@ -5,20 +5,50 @@ import { DEMO_LOGIN_CSRF, demoEnabled } from '@/lib/cms/catalog-demo'
 import { editorHeaders } from '@/lib/cms/editor-server'
 if (!demoEnabled()) return new Response('Not found', { status: 404 })
 const csrf = newCSRF()
-Astro.cookies.set(DEMO_LOGIN_CSRF, csrf, { ...cookieOptions(Astro), maxAge: 600 })
-for (const [name, value] of Object.entries(editorHeaders)) Astro.response.headers.set(name, value)
+Astro.cookies.set(DEMO_LOGIN_CSRF, csrf, {
+  ...cookieOptions(Astro),
+  maxAge: 600
+})
+for (const [name, value] of Object.entries(editorHeaders))
+  Astro.response.headers.set(name, value)
 ---
+
 <BaseLayout title="Catalog demo sign-in" minimal noindex>
   <section class="mx-auto max-w-xl px-6 py-20">
-    <div class="rounded-3xl border border-white/10 bg-primary-comfy-ink-light p-8">
+    <div
+      class="rounded-3xl border border-white/10 bg-primary-comfy-ink-light p-8"
+    >
       <h1 class="mb-4 text-3xl">Catalog demo sign-in</h1>
-      <p class="mb-6 text-primary-comfy-canvas">{Astro.locals.t('cccDemo.signInInstructions')}</p>
-      <form method="post" action="/admin/catalog-demo-session" data-astro-reload class="grid gap-4">
+      <p class="mb-6 text-primary-comfy-canvas">
+        {Astro.locals.t('cccDemo.signInInstructions')}
+      </p>
+      <form
+        method="post"
+        action="/admin/catalog-demo-session"
+        data-astro-reload
+        class="grid gap-4"
+      >
         <input type="hidden" name="csrf" value={csrf} />
         <label class="grid gap-2">Invitation code
-          <input name="code" type="password" required maxlength="64" autocomplete="one-time-code" data-1p-ignore data-private data-dd-privacy="mask" spellcheck="false" autocapitalize="none" class="rounded-lg border border-white/20 bg-site-bg-soft p-3" />
+          <input
+            name="code"
+            type="password"
+            required
+            maxlength="64"
+            autocomplete="one-time-code"
+            data-1p-ignore
+            data-private
+            data-dd-privacy="mask"
+            spellcheck="false"
+            autocapitalize="none"
+            class="rounded-lg border border-white/20 bg-site-bg-soft p-3"
+          />
         </label>
-        <button class="rounded-full bg-primary-comfy-yellow px-6 py-3 text-primary-comfy-ink">Open administration</button>
+        <button
+          class="rounded-full bg-primary-comfy-yellow px-6 py-3 text-primary-comfy-ink"
+        >
+          Open administration
+        </button>
       </form>
     </div>
   </section>
