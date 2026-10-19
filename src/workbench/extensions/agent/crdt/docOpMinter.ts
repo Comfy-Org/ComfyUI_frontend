@@ -17,6 +17,7 @@ import type {
   WidgetValuesForm,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
+import { isEqual } from 'es-toolkit'
 
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
@@ -45,6 +46,7 @@ import {
   traverseSubgraphPath
 } from '@/utils/graphTraversalUtil'
 
+import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 
@@ -88,10 +90,10 @@ export interface DocOpMinterDeps {
 
 /**
  * How long a promoted-host write waits for the bound document to catch up
- * before it is refused. Matches the subscribe ack timeout: a catch-up that
- * takes longer than that is already a failed subscribe.
+ * before it is refused: two subscribe ack timeouts, so a catch-up that lands
+ * after one ack-timeout retry still carries the write.
  */
-export const PROMOTED_WRITE_CATCH_UP_DEADLINE_MS = 15_000
+export const PROMOTED_WRITE_CATCH_UP_DEADLINE_MS = 2 * SUBSCRIBE_ACK_TIMEOUT_MS
 /** How often a held promoted-host write rechecks the catch-up gate. */
 export const PROMOTED_WRITE_RETRY_MS = 100
 
@@ -115,9 +117,7 @@ type IntentOf<T extends GraphIntentEvent['type']> = Extract<
 
 interface HeldPromotedWrite {
   event: IntentOf<'set_widget'>
-  /** The bound root graph the write was made against. */
   rootGraphId: string
-  /** `Date.now()` when the write was first held. */
   heldSince: number
 }
 
@@ -427,14 +427,25 @@ function growForMissingSlot(
   }
 }
 
+function canvasStillShows(
+  graph: LGraph,
+  event: IntentOf<'set_widget'>
+): boolean {
+  const eventGraph = reachableIntentGraph(graph, event.graphId)
+  const host = eventGraph ? findNodeInHierarchy(eventGraph, event.nodeId) : null
+  const input = host?.inputs.find((slot) => slot.name === event.name)
+  if (!input?.widgetId) return false
+  return isEqual(
+    useWidgetValueStore().getWidget(input.widgetId)?.value,
+    event.value
+  )
+}
+
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
-  // PM-2003: promoted-host writes made while the bound document is catching
-  // up, keyed per widget so a later write to the same widget supersedes the
-  // held one. Map order is first-hold order, which is the mint order.
   const heldPromotedWrites = new Map<string, HeldPromotedWrite>()
   let heldRetryTimer: ReturnType<typeof setTimeout> | null = null
   let flushScheduled = false
@@ -530,7 +541,6 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   }
 
   function mintSetWidget(event: IntentOf<'set_widget'>): void {
-    heldPromotedWrites.delete(heldWriteKey(event))
     routeSetWidget(event, null)
   }
 
@@ -561,8 +571,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
     if ('reason' in routed) {
       if (routed.reason === 'doc_not_synced') {
-        const heldSince = held?.heldSince ?? Date.now()
-        if (Date.now() - heldSince < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS) {
+        const heldSince = held?.heldSince ?? performance.now()
+        if (
+          performance.now() - heldSince <
+          PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
+        ) {
           holdPromotedWrite({ event, rootGraphId, heldSince })
           return
         }
@@ -593,25 +606,37 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   /**
    * Re-routes every held write through the same checks a fresh write takes,
-   * so one that waited is judged against the caught-up document's layout. A
-   * write whose bound workflow changed while it waited never reaches the new
-   * document; it is refused like any write the document could not take.
+   * so one that waited is judged against the caught-up document's layout.
+   * A write is dropped when the panel no longer mints, or when the canvas no
+   * longer shows its value (the catch-up or a later edit replaced it). A
+   * write whose bound workflow changed while it waited is refused.
    */
   function retryHeldPromotedWrites(): void {
     heldRetryTimer = null
     if (detached) return
+    if (!deps.isEnabled() || !deps.isDocBound()) {
+      heldPromotedWrites.clear()
+      return
+    }
+    const graph = deps.getGraph()
+    if (!graph) {
+      heldRetryTimer = setTimeout(
+        retryHeldPromotedWrites,
+        PROMOTED_WRITE_RETRY_MS
+      )
+      return
+    }
     const held = [...heldPromotedWrites.values()]
     heldPromotedWrites.clear()
-    if (!deps.isEnabled()) return
-    const graph = deps.getGraph()
+    const rootGraphId = deps.boundRootGraphId() ?? graph.id
     for (const entry of held) {
-      const rootGraphId = graph ? (deps.boundRootGraphId() ?? graph.id) : null
       if (rootGraphId !== entry.rootGraphId) {
         refuseWidgetWrite(entry.rootGraphId, entry.event, {
           reason: 'doc_not_synced'
         })
         continue
       }
+      if (!canvasStillShows(graph, entry.event)) continue
       routeSetWidget(entry.event, entry)
     }
   }
@@ -799,6 +824,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
+    if (event.type === 'set_widget')
+      heldPromotedWrites.delete(heldWriteKey(event))
     if (!deps.isEnabled() || !deps.isDocBound()) return
     mintIntent(event)
   }

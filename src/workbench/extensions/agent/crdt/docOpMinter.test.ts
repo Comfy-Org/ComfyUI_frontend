@@ -1058,13 +1058,7 @@ describe('attachDocOpMinter', () => {
     }
   )
 
-  describe('a promoted write made while the document is catching up', () => {
-    // PM-2003: every resubscribe (the 30 s stale probe, a reconnect, a gap
-    // resync, an ack-timeout retry) reopens the catch-up gate until its
-    // catch-up lands. Run randomizing a promoted seed inside that window used
-    // to be refused with the rejected-edit toast and the new seed was lost.
-    // The suite's fake clock also follows real time; the deadline test needs
-    // a clock that moves only when the test moves it.
+  describe('PM-2003: a promoted write made while the document is catching up', () => {
     beforeEach(() => {
       vi.useFakeTimers({ shouldAdvanceTime: false })
     })
@@ -1214,6 +1208,94 @@ describe('attachDocOpMinter', () => {
 
       expect(minted).toEqual([])
       expect(refusals).toBe(1)
+      doc.destroy()
+    })
+
+    it('still lands when the catch-up arrives after one ack-timeout retry', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'slow relay'
+      await afterFlush()
+      await vi.advanceTimersByTimeAsync(15_500)
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['slow relay'])
+      expect(refusals).toBe(0)
+      doc.destroy()
+    })
+
+    it('is superseded by a newer write made while the document is unbound', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'older'
+      await afterFlush()
+      bound = false
+      host.widgets[1].value = 'newer'
+      await afterFlush()
+      bound = true
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toBe(0)
+      doc.destroy()
+    })
+
+    it('is dropped when the catch-up replaced the value on the canvas', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'human value'
+      await afterFlush()
+      withGraphIntentSource('agent-remote', () => {
+        host.widgets[1].value = 'agent value'
+      })
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toBe(0)
+      doc.destroy()
+    })
+
+    it('is dropped silently when the document is unbound before it catches up', async () => {
+      const { host, doc } = seedPromotedHost()
+      mayWrite = false
+
+      host.widgets[1].value = 'for a closed chat'
+      await afterFlush()
+      bound = false
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
+
+      expect(minted).toEqual([])
+      expect(refusals).toBe(0)
+      expect(vi.getTimerCount()).toBe(0)
+      doc.destroy()
+    })
+
+    it('keeps waiting while the graph is briefly unavailable', async () => {
+      const { host, doc } = seedPromotedHost()
+      const liveGraph = graph
+      mayWrite = false
+
+      host.widgets[1].value = 'during a load'
+      await afterFlush()
+      graph = null as unknown as LGraph
+      mayWrite = true
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      expect(refusals).toBe(0)
+      graph = liveGraph
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+
+      expect(
+        minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
+      ).toEqual(['during a load'])
+      expect(refusals).toBe(0)
       doc.destroy()
     })
 
