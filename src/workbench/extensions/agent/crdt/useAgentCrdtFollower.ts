@@ -375,7 +375,6 @@ function startAgentCrdtFollower(
 ) {
   const connected = ref(false)
   let catchUpAwaitingProjectionFor: string | null = null
-  /** The two causes a bound canvas can be behind the document for. */
   const syncCanvasMayBeStale = ref(false)
   const projectionFailureFor = ref<string | null>(null)
   const canvasMayBeStale = computed(
