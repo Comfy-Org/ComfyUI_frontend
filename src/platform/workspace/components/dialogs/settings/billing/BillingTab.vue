@@ -35,6 +35,11 @@
         @retry="retryBalance"
         @add-credits="addCredits"
       />
+      <template v-if="flags.autoTopUpEnabled">
+        <template v-if="capabilities.canManageAutoTopUp.value">
+          <BillingAutoTopUpCard v-if="capabilities.canTopUp.value" />
+        </template>
+      </template>
     </template>
 
     <section
@@ -66,10 +71,12 @@ import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
+import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
 import {
@@ -84,6 +91,7 @@ import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
+const { flags } = useFeatureFlags()
 const { workspaceRole } = useWorkspaceUI()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
