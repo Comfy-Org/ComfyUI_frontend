@@ -23,8 +23,7 @@ describe('FormItem', () => {
             locale: 'en',
             messages: { en: enMessages }
           })
-        ],
-        directives: { tooltip: {} }
+        ]
       }
     })
 
@@ -75,8 +74,7 @@ describe('FormItem', () => {
               locale: 'en',
               messages: { en: enMessages }
             })
-          ],
-          directives: { tooltip: {} }
+          ]
         }
       })
 
@@ -141,8 +139,7 @@ describe('FormItem', () => {
                 locale: 'en',
                 messages: { en: enMessages }
               })
-            ],
-            directives: { tooltip: {} }
+            ]
           }
         }
       )
@@ -175,8 +172,7 @@ describe('FormItem', () => {
             locale: 'en',
             messages: { en: enMessages }
           })
-        ],
-        directives: { tooltip: {} }
+        ]
       }
     })
 

@@ -120,7 +120,7 @@ const route = useRoute()
 const authActions = useAuthActions()
 const telemetry = useTelemetry()
 const { flags } = useFeatureFlags()
-const { trySso } = useSsoSignIn()
+const { trySso } = useSsoSignIn('cloud_signup')
 
 const { status: regionStatus } = useRegionGate()
 const { isFreeTierEnabled } = useFreeTierOnboarding()
@@ -146,7 +146,7 @@ const signUpForm = ref<InstanceType<typeof SignUpForm> | null>(null)
 
 const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   authError.value = ''
-  if (flags.ssoEnabled && (await trySso(values.email))) return
+  if (flags.ssoEnabled && (await trySso(values.email, 'email-sign-in'))) return
   if (
     await authActions.signUpWithEmail(
       values.email,

@@ -136,7 +136,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           <span
             v-else
             data-testid="workflow-selector-icon"
-            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-base-foreground"
+            class="icon-[comfy--workflow] size-4 shrink-0 text-muted-foreground group-hover:text-foreground"
           />
           <span class="min-w-0 truncate">{{
             current?.name ?? t('agent.selectWorkflowForAgent')
@@ -146,7 +146,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
             data-testid="unsaved-dot"
             class="flex size-3.5 shrink-0 items-center justify-center"
           >
-            <span class="size-[7px] rounded-full bg-base-foreground" />
+            <span class="size-[7px] rounded-full bg-foreground" />
           </span>
         </Button>
       </DropdownMenuTrigger>
@@ -165,7 +165,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
             :disabled="selectingTabPath !== null"
             type="text"
             :placeholder="t('agent.searchWorkflows')"
-            class="mb-1 h-8 bg-base-background px-2.5 py-1"
+            class="mb-1 h-8 bg-background px-2.5 py-1"
             @keydown="onSearchKeydown"
           />
           <DropdownMenuRadioGroup
@@ -222,14 +222,14 @@ function onSearchKeydown(event: KeyboardEvent): void {
                   :aria-label="t('g.agentModified')"
                   class="flex size-4 shrink-0 items-center justify-center"
                 >
-                  <span class="size-2 rounded-full bg-primary-background" />
+                  <span class="size-2 rounded-full bg-primary" />
                 </span>
                 <span
                   v-else-if="tab.isPersisted === false || tab.modified"
                   data-testid="unsaved-dot"
                   class="flex size-4 shrink-0 items-center justify-center"
                 >
-                  <span class="size-2 rounded-full bg-base-foreground" />
+                  <span class="size-2 rounded-full bg-foreground" />
                 </span>
                 <span
                   class="ml-auto flex size-4 shrink-0 items-center justify-center"

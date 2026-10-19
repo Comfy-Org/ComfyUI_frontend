@@ -8,11 +8,12 @@ import type { SignInState } from '@/auth/signInState'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import { createBillingRouter } from '@/router'
+import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
 import { trackedBillingEvents } from '@/test/trackedBillingEvents'
 import SignInView from '@/views/SignInView.vue'
 
 const h = vi.hoisted(() => ({
-  available: true,
+  identityStatus: 'ready' as 'resolving' | 'ready' | 'unavailable',
   initialState: undefined as SignInState | undefined,
   sessionFailureCode: undefined as SessionErrorCode | undefined,
   ssoOrganizationId: undefined as string | undefined,
@@ -39,7 +40,7 @@ vi.mock(import('@/auth/useSignInController'), async () => {
         errorMessage: computed(() => ''),
         sessionFailureCode: computed(() => h.sessionFailureCode),
         ssoOrganizationId: computed(() => h.ssoOrganizationId),
-        available: computed(() => h.available),
+        identityStatus: computed(() => h.identityStatus),
         signInWith: h.signInWith,
         submitEmail: h.submitEmail,
         retryMint: h.retryMint,
@@ -78,7 +79,7 @@ const REFUSED_ENTRY =
   '/v1/subscription?product=comfyui&return_to=comfyui_credits&workspace=ws_refused'
 
 beforeEach(() => {
-  h.available = true
+  h.identityStatus = 'ready'
   h.retryAvailability.mockClear()
   h.retryMint.mockClear()
   h.initialState = undefined
@@ -154,8 +155,21 @@ describe('SignInView', () => {
     expect(h.submitEmail).not.toHaveBeenCalled()
   })
 
+  it('neither warns nor offers a way in while the identity is still resolving', async () => {
+    h.identityStatus = 'resolving'
+    await renderSignIn()
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Try again' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Sign in with Google' })
+    ).toBeDisabled()
+  })
+
   it('offers no way in when the deployment has no identity configuration', async () => {
-    h.available = false
+    h.identityStatus = 'unavailable'
     await renderSignIn()
 
     expect(screen.getByRole('alert')).toHaveTextContent(
@@ -173,7 +187,7 @@ describe('SignInView', () => {
   })
 
   it('offers a retry when sign-in is unavailable', async () => {
-    h.available = false
+    h.identityStatus = 'unavailable'
     await renderSignIn()
 
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
@@ -267,7 +281,7 @@ describe('SignInView', () => {
   )
 
   it('offers no sign-in when the shared session holds but the workspace is refused (SO4)', async () => {
-    h.available = false
+    h.identityStatus = 'unavailable'
     h.initialState = { step: 'signedIn', origin: 'restored', mintFailed: true }
     h.sessionFailureCode = 'ACCESS_DENIED'
     await renderSignIn()
@@ -284,7 +298,7 @@ describe('SignInView', () => {
   })
 
   it('keeps a restored shared-session failure on its retry, never on sign-in', async () => {
-    h.available = false
+    h.identityStatus = 'unavailable'
     h.initialState = { step: 'signedIn', origin: 'restored', mintFailed: true }
     h.sessionFailureCode = 'TOKEN_EXCHANGE_FAILED'
     await renderSignIn()
@@ -433,6 +447,37 @@ describe('SignInView', () => {
       }
     )
 
+    it('reports the notice once and the click as the same attempt', async () => {
+      const trackSso = vi
+        .spyOn(billingWebTelemetry, 'trackSsoEvent')
+        .mockImplementation(() => undefined)
+      vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+      await renderSignIn(REFUSED_ENTRY)
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Continue with SSO' })
+      )
+
+      const [[shown], [continued], ...rest] = trackSso.mock.calls
+      expect(shown).toEqual({
+        name: 'app:sso_required_shown',
+        properties: {
+          surface: 'billing_web',
+          trigger: 'session_refused',
+          presentation: 'notice',
+          flow_id: expect.any(String)
+        }
+      })
+      expect(continued).toEqual({
+        name: 'app:sso_continue_clicked',
+        properties: {
+          surface: 'billing_web',
+          flow_id: shown.properties.flow_id
+        }
+      })
+      expect(rest).toEqual([])
+    })
+
     it('offers nothing it cannot start when neither an organization nor an email is known', async () => {
       h.accountEmail = null
       await renderSignIn(REFUSED_ENTRY)
@@ -470,6 +515,7 @@ describe('SignInView', () => {
   })
 
   it('keeps the workspace refusal for SSO_REQUIRED while sso_enabled is off', async () => {
+    const trackSso = vi.spyOn(billingWebTelemetry, 'trackSsoEvent')
     h.sessionFailureCode = 'SSO_REQUIRED'
     h.ssoOrganizationId = 'org_acme'
     h.initialState = {
@@ -486,5 +532,6 @@ describe('SignInView', () => {
     expect(
       screen.queryByRole('button', { name: 'Continue with SSO' })
     ).toBeNull()
+    expect(trackSso).not.toHaveBeenCalled()
   })
 })

@@ -1,5 +1,5 @@
 <template>
-  <Dialog v-model:open="visible" :modal="false">
+  <Dialog v-model:open="visible">
     <DialogPortal>
       <DialogOverlay />
       <DialogContent size="md" :aria-labelledby="titleId">
@@ -35,7 +35,7 @@
               </ToggleGroupItem>
             </ToggleGroup>
           </div>
-          <hr class="border-t border-border-subtle" />
+          <hr class="border-t border-border/50" />
           <div class="flex flex-col gap-2">
             <label for="customization-color" class="text-sm font-medium">
               {{ $t('g.color') }}

@@ -52,19 +52,13 @@
     </FieldGroup>
 
     <Spinner v-if="loading" class="mx-auto size-8" />
-    <Button
-      v-else
-      type="submit"
-      class="h-10 font-medium"
-      :disabled="!meta.valid"
-    >
+    <Button v-else type="submit" class="h-10" :disabled="!meta.valid">
       {{ t('auth.login.loginButton') }}
     </Button>
   </form>
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
 import { useThrottleFn } from '@vueuse/core'
 import { Field as VeeField, useForm, useIsFieldValid } from 'vee-validate'
 import { computed } from 'vue'
@@ -84,6 +78,7 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
+import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authStore = useAuthStore()
 const authActions = useAuthActions()

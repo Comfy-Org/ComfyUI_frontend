@@ -64,9 +64,6 @@ export function useShareDialog() {
       component: ShareWorkflowDialogContent,
       props: {
         onClose: hide
-      },
-      dialogComponentProps: {
-        contentClass: 'rounded-2xl overflow-hidden'
       }
     })
   }

@@ -1,0 +1,57 @@
+name: Stage Rewritten Snapshots
+description: >
+  After a Playwright run with --update-snapshots, collects every modified or
+  new file under a `*-snapshots/` directory inside the Playwright config
+  directory into a staging directory, laid out relative to that directory,
+  in the shape snapshot-update-commit.yaml merges back.
+
+inputs:
+  config-dir:
+    description: Directory Playwright runs from, relative to the workspace
+    required: false
+    default: .
+
+outputs:
+  has-changes:
+    description: '`true` when at least one snapshot was rewritten'
+    value: ${{ steps.stage.outputs.has-changes }}
+  path:
+    description: Staging directory to upload
+    value: ${{ steps.stage.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Stage rewritten snapshot files
+      id: stage
+      shell: bash
+      env:
+        CONFIG_DIR: ${{ inputs.config-dir }}
+        STAGING_DIR: ${{ runner.temp }}/rewritten-snapshots
+      run: |
+        set -euo pipefail
+
+        git config --global --add safe.directory "$(pwd)"
+        cd "$CONFIG_DIR"
+
+        all_changes=$(git diff --name-only --relative -- . && git ls-files --others --exclude-standard -- .)
+        changed_files=$(printf '%s\n' "$all_changes" | sort -u | grep -E -- '-snapshots/' || true)
+
+        if [ -z "$changed_files" ]; then
+          echo "No snapshot changes"
+          echo "has-changes=false" >> "$GITHUB_OUTPUT"
+          exit 0
+        fi
+
+        count=$(printf '%s\n' "$changed_files" | wc -l)
+        echo "${count} rewritten snapshot(s):"
+        echo "$changed_files"
+
+        while IFS= read -r file; do
+          [ -f "$file" ] || continue
+          mkdir -p "${STAGING_DIR}/$(dirname "$file")"
+          cp "$file" "${STAGING_DIR}/${file}"
+        done <<< "$changed_files"
+
+        echo "has-changes=true" >> "$GITHUB_OUTPUT"
+        echo "path=${STAGING_DIR}" >> "$GITHUB_OUTPUT"

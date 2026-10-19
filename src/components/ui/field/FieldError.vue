@@ -24,7 +24,7 @@ const messages = computed(() => {
     v-if="$slots.default || messages.length"
     role="alert"
     data-slot="field-error"
-    :class="cn('text-sm font-normal text-destructive-background', className)"
+    :class="cn('text-sm font-normal text-destructive', className)"
   >
     <slot v-if="$slots.default" />
     <template v-else-if="messages.length === 1">{{ messages[0] }}</template>

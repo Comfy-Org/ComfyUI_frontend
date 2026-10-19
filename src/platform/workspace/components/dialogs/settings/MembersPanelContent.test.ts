@@ -31,14 +31,13 @@ const {
   mockMaxSeats,
   mockIsInPersonalWorkspace,
   mockHasTeamPlan,
-  mockHasLapsedTeamPlan,
   mockIsPlanLoading,
   mockIsOnTeamPlan,
   mockHasMultipleMembers,
   mockShowSearch,
   mockShowViewTabs,
   mockShowInviteButton,
-  mockIsInviteDisabled,
+  mockShowWorkspaceMenu,
   mockActiveView,
   mockSearchQuery,
   mockMembersLoaded,
@@ -61,7 +60,7 @@ const {
     mockShowSearch: ref(true),
     mockShowViewTabs: ref(true),
     mockShowInviteButton: ref(true),
-    mockIsInviteDisabled: ref(false),
+    mockShowWorkspaceMenu: ref(true),
     mockIsPlanEnded: ref(false),
     mockIsSalesManagedPlan: ref(false),
     mockIsEnterprisePlanStrict: ref(false),
@@ -70,7 +69,6 @@ const {
     mockMaxSeats: ref<number | null>(20),
     mockIsInPersonalWorkspace: ref(false),
     mockHasTeamPlan: ref(true),
-    mockHasLapsedTeamPlan: ref(false),
     mockIsPlanLoading: ref(false),
     mockIsOnTeamPlan: ref(true),
     mockActiveView: ref<'active' | 'pending'>('active'),
@@ -116,16 +114,14 @@ vi.mock<unknown>(
       ),
       isPlanLoading: mockIsPlanLoading,
       isOnTeamPlan: mockIsOnTeamPlan,
-      hasLapsedTeamPlan: mockHasLapsedTeamPlan,
       hasMultipleMembers: mockHasMultipleMembers,
       showSearch: mockShowSearch,
       showViewTabs: mockShowViewTabs,
       showInviteButton: mockShowInviteButton,
-      isInviteDisabled: mockIsInviteDisabled,
+      showWorkspaceMenu: mockShowWorkspaceMenu,
       isPlanEnded: mockIsPlanEnded,
       isSalesManagedPlan: mockIsSalesManagedPlan,
       isEnterprisePlan: mockIsEnterprisePlanStrict,
-      inviteTooltip: computed(() => null),
       handleInviteMember: mockHandleInviteMember,
       personalWorkspaceMember: computed(() => ({
         id: 'self',
@@ -212,8 +208,7 @@ function renderComponent() {
           name: 'WorkspaceMenuButton',
           template: '<button aria-label="workspace-menu-stub" />'
         }
-      },
-      directives: { tooltip: () => {} }
+      }
     }
   })
 }
@@ -246,7 +241,6 @@ function createInvite(
 
 describe('MembersPanelContent', () => {
   beforeEach(() => {
-    mockDistribution.isCloud = true
     mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
     mockTotalMembers.value = null
@@ -257,14 +251,13 @@ describe('MembersPanelContent', () => {
     mockMaxSeats.value = 20
     mockIsInPersonalWorkspace.value = false
     mockHasTeamPlan.value = true
-    mockHasLapsedTeamPlan.value = false
     mockIsPlanLoading.value = false
     mockIsOnTeamPlan.value = true
     mockHasMultipleMembers.value = true
     mockShowSearch.value = true
     mockShowViewTabs.value = true
     mockShowInviteButton.value = true
-    mockIsInviteDisabled.value = false
+    mockShowWorkspaceMenu.value = true
     mockIsPlanEnded.value = false
     mockIsSalesManagedPlan.value = false
     mockIsEnterprisePlanStrict.value = false
@@ -305,7 +298,6 @@ describe('MembersPanelContent', () => {
       mockHasMultipleMembers.value = false
       mockShowSearch.value = false
       mockShowViewTabs.value = false
-      mockIsInviteDisabled.value = true
       mockUiConfig.value.showMembersList = false
       mockUiConfig.value.showSearch = false
       mockUiConfig.value.showPendingTab = false
@@ -391,8 +383,8 @@ describe('MembersPanelContent', () => {
       expect(screen.getByLabelText('workspace-menu-stub')).toBeTruthy()
     })
 
-    it('hides the workspace menu without canAccessWorkspaceMenu', () => {
-      mockPermissions.value.canAccessWorkspaceMenu = false
+    it('leaves the workspace menu to the settings header when told to', () => {
+      mockShowWorkspaceMenu.value = false
 
       renderComponent()
 
@@ -437,16 +429,6 @@ describe('MembersPanelContent', () => {
         ).not.toBeInTheDocument()
       }
     )
-
-    it('preserves loaded desktop rows when workspace visibility defaults are false', () => {
-      mockDistribution.isCloud = false
-      mockPermissions.value.canViewOtherMembers = false
-      mockFilteredMembers.value = [createMember({ name: 'Alice' })]
-
-      renderComponent()
-
-      expect(screen.getByText('Alice')).toBeInTheDocument()
-    })
 
     it('keeps rendering members while seat capacity is unresolved', () => {
       mockMaxSeats.value = null
@@ -647,7 +629,6 @@ describe('MembersPanelContent', () => {
 
     it('does not show a reactivate action for a lapsed Team plan', () => {
       mockHasTeamPlan.value = true
-      mockHasLapsedTeamPlan.value = true
       mockIsOnTeamPlan.value = false
       renderComponent()
 
@@ -1028,15 +1009,6 @@ describe('MembersPanelContent', () => {
       expect(
         screen.queryByRole('button', { name: 'workspacePanel.inviteMember' })
       ).toBeNull()
-    })
-
-    it('disables the invite button when gated', () => {
-      mockIsInviteDisabled.value = true
-      renderComponent()
-      const button = screen.getByRole('button', {
-        name: 'workspacePanel.inviteMember'
-      })
-      expect((button as HTMLButtonElement).disabled).toBe(true)
     })
 
     it('hides the Active tab when there is no Pending tab to switch to', () => {

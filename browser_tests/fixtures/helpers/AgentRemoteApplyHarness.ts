@@ -25,7 +25,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 const WORKFLOW_ID = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
 const THREAD_ID = '5c4b3a29-8d7e-4f60-9a1b-2c3d4e5f6a7b'
 const MESSAGE_ID = '9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a'
-const SOCKET_SID = '3a2b1c0d-9e8f-4a7b-8c6d-5e4f3a2b1c0d'
 
 /**
  * Drives one agent turn that edits the canvas, with the doc host under the
@@ -53,12 +52,7 @@ export class AgentRemoteApplyHarness {
   readonly workSummary: Locator
 
   constructor(private readonly page: Page) {
-    this.hostSocket = new AgentFollowerHostSocket(
-      page,
-      WORKFLOW_ID,
-      this.host,
-      SOCKET_SID
-    )
+    this.hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, this.host)
     this.agentPanel = new AgentPanel(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.panel = this.agentPanel.root

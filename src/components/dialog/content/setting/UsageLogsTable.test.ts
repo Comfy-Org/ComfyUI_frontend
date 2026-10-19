@@ -1,5 +1,4 @@
 import { getActivePinia } from 'pinia'
-import PrimeVue from 'primevue/config'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 
@@ -121,7 +120,7 @@ describe('UsageLogsTable', () => {
   function renderComponent() {
     return render(UsageLogsTable, {
       global: {
-        plugins: [PrimeVue, testI18n, getActivePinia()!]
+        plugins: [testI18n, getActivePinia()!]
       }
     })
   }
@@ -308,6 +307,35 @@ describe('UsageLogsTable', () => {
         'key(amount): value(1000)\nkey(transaction_id): value(txn-123)'
       )
     })
+
+    it.for([
+      { charge: 33_044, expected: 'Charge: 7 Credits' },
+      { charge: '36209', expected: 'Charge: 8 Credits' },
+      { charge: 10_000_000_000, expected: 'Charge: 2,110,000 Credits' },
+      { charge: 0, expected: 'Charge: 0 Credits' },
+      { charge: 'n/a', expected: 'charge_micro_usd: n/a' }
+    ])(
+      'shows charge_micro_usd $charge as $expected',
+      async ({ charge, expected }) => {
+        vi.mocked(useCustomerEventsService().getMyEvents).mockResolvedValue(
+          makeEventsResponse([
+            {
+              event_id: 'agent-1',
+              event_type: 'agent_usage',
+              params: { charge_micro_usd: charge },
+              createdAt: '2024-01-03T10:00:00Z'
+            }
+          ])
+        )
+        await renderLoaded()
+
+        await userEvent.hover(
+          screen.getByRole('button', { name: 'Additional Info' })
+        )
+
+        expect((await screen.findByRole('tooltip')).textContent).toBe(expected)
+      }
+    )
 
     it('does not render info buttons when no additional info', async () => {
       vi.mocked(useCustomerEventsService().hasAdditionalInfo).mockReturnValue(

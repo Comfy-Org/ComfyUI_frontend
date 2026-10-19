@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { clamp } from 'es-toolkit/compat'
 import type { TgpuRoot } from 'typegpu'
 
@@ -70,7 +70,10 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   const isPanning = ref<boolean>(false)
   const brushPreviewGradientVisible = ref<boolean>(false)
 
-  const canvasHistory = useCanvasHistory(20)
+  const canvasHistory = useCanvasHistory(
+    reactive({ maskCanvas, maskCtx, rgbCanvas, rgbCtx, imgCanvas, imgCtx }),
+    20
+  )
 
   const tgpuRoot = ref<TgpuRoot | null>(null)
 

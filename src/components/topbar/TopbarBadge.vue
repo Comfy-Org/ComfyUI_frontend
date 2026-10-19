@@ -35,7 +35,7 @@
     </PopoverTrigger>
     <PopoverContent
       align="start"
-      class="w-auto max-w-xs min-w-40 border-border-default bg-base-background p-3"
+      class="w-auto max-w-xs min-w-40 p-3"
       @open-auto-focus.prevent="badgeContent?.focus()"
     >
       <div
@@ -100,7 +100,7 @@ const {
   displayMode = 'full',
   reverseOrder,
   noPadding,
-  backgroundColor = 'var(--comfy-menu-bg)'
+  backgroundColor = 'var(--background)'
 } = defineProps<{
   badge: TopbarBadge
   displayMode?: 'full' | 'compact' | 'icon-only'
@@ -138,17 +138,17 @@ const triggerShowsLabel = computed(() =>
 )
 
 const labelClasses =
-  'shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground'
+  'shrink-0 rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground'
 
 const textClasses = computed(() => {
   switch (variant.value) {
     case 'error':
-      return 'text-danger-100'
+      return 'text-destructive'
     case 'warning':
-      return 'text-warning-background'
+      return 'text-warning'
     case 'info':
     default:
-      return 'text-text-primary'
+      return 'text-foreground'
   }
 })
 
@@ -174,12 +174,12 @@ const badgeIconClass = computed(() =>
 const dotClasses = computed(() => {
   switch (variant.value) {
     case 'error':
-      return 'bg-danger-100'
+      return 'bg-destructive'
     case 'warning':
-      return 'bg-gold-600'
+      return 'bg-warning'
     case 'info':
     default:
-      return 'bg-text-secondary'
+      return 'bg-muted-foreground'
   }
 })
 </script>

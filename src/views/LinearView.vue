@@ -140,11 +140,11 @@ function dragDrop(e: DragEvent) {
   <MobileDisplay v-if="mobileDisplay" />
   <div v-else class="absolute flex size-full flex-col" @dragover.prevent>
     <div
-      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-interface-stroke/50 shadow-interface"
+      class="workflow-tabs-container pointer-events-auto h-(--workflow-tabs-height) w-full border-b border-border/50 shadow-md"
     >
       <WorkflowTabs />
     </div>
-    <div class="flex min-h-0 flex-1 flex-row bg-secondary-background">
+    <div class="flex min-h-0 flex-1 bg-secondary">
       <div
         ref="workspace"
         data-testid="linear-workspace-column"
@@ -162,7 +162,7 @@ function dragDrop(e: DragEvent) {
           hide-workspace-toggles
         />
         <SplitterGroup
-          class="h-full min-w-0 flex-1 border-none bg-secondary-background"
+          class="h-full min-w-0 flex-1 border-none bg-secondary"
           @keydown.capture="onResizeStart"
           @keyup="onResizeEnd"
           @focusout="onResizeEnd"
@@ -175,13 +175,13 @@ function dragDrop(e: DragEvent) {
             :order="1"
             :default-size="panelPercentages[0]"
             :min-size="sidePanelMinSize(showLeftBuilder)"
-            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+            class="arrange-panel min-w-78 overflow-hidden bg-background outline-none"
           >
             <AppBuilder v-if="showLeftBuilder" />
             <div
               v-else-if="sidebarOnLeft && activeTab"
               v-coachmark="assetsPanelCoach"
-              class="size-full overflow-x-hidden border-r border-border-subtle"
+              class="size-full overflow-x-hidden border-r border-border/50"
             >
               <ExtensionSlot :extension="activeTab" />
             </div>
@@ -234,7 +234,7 @@ function dragDrop(e: DragEvent) {
             :order="3"
             :default-size="panelPercentages[2]"
             :min-size="sidePanelMinSize(showRightBuilder)"
-            class="arrange-panel min-w-78 overflow-hidden bg-comfy-menu-bg outline-none"
+            class="arrange-panel min-w-78 overflow-hidden bg-background outline-none"
           >
             <AppBuilder v-if="showRightBuilder" />
             <LinearControls
@@ -245,7 +245,7 @@ function dragDrop(e: DragEvent) {
             <div
               v-else-if="activeTab"
               v-coachmark="assetsPanelCoach"
-              class="h-full overflow-x-hidden border-l border-border-subtle"
+              class="h-full overflow-x-hidden border-l border-border/50"
             >
               <ExtensionSlot :extension="activeTab" />
             </div>
