@@ -268,7 +268,7 @@ async function importHostedFile(file: File) {
     return await currentExtensionHost()?.importFile?.(file)
   } catch (error) {
     reportError(error, {
-      surface: 'extensions',
+      surface: 'platform',
       errorType: 'failure_importing_extension_file'
     })
     return undefined

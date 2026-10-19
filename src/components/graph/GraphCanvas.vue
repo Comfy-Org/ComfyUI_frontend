@@ -197,6 +197,8 @@ import { provideGraphLoadingState } from '@/platform/nodeApi/defsRegistry'
 import { installNodeChangeBridge } from '@/renderer/core/canvas/nodeChangeBridge'
 import { installNodeMoveBridge } from '@/renderer/core/layout/nodeMoveBridge'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { installSecureNodesHost } from '@/services/secureNodesBootstrap'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import {
@@ -609,6 +611,19 @@ onMounted(async () => {
         await comfyApp.loadGraphData(data as ComfyWorkflowJSON)
       },
       refreshDefinitions: () => comfyApp.refreshComboInNodes()
+    })
+
+    await installSecureNodesHost({
+      workflowSnapshot: () => {
+        if (!comfyApp.isGraphReady) {
+          reportError(new Error('Workflow snapshot requested before setup'), {
+            errorType: 'secure_nodes_workflow_not_ready',
+            surface: 'graph'
+          })
+          return null
+        }
+        return comfyApp.rootGraph.serialize()
+      }
     })
 
     await bootstrapTracer.settle('bootstrap/extensions-load', () =>
