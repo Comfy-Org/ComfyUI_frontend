@@ -241,7 +241,7 @@
 <script setup lang="ts">
 import { TOPUP_AMOUNT_PRESETS_USD } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef, watch } from 'vue'
 
 import {
   centsToCredits,
@@ -357,13 +357,20 @@ function wholeDollarsOrNull(cents: number | null | undefined): number | null {
   return Number.isInteger(dollars) ? dollars : null
 }
 
-const suggestedAmount = wholeDollarsOrNull(
-  balance.value?.suggestedTopupAmountCents
+const suggestedAmount = computed(() =>
+  wholeDollarsOrNull(balance.value?.suggestedTopupAmountCents)
 )
 const selectedPreset = ref<number | null>(
-  suggestedAmount === null ? DEFAULT_AMOUNT : null
+  suggestedAmount.value === null ? DEFAULT_AMOUNT : null
 )
-const payAmount = ref(suggestedAmount ?? DEFAULT_AMOUNT)
+const payAmount = ref(suggestedAmount.value ?? DEFAULT_AMOUNT)
+const amountEditedByUser = ref(false)
+
+watch(suggestedAmount, (amount) => {
+  if (amount === null || amountEditedByUser.value) return
+  payAmount.value = amount
+  selectedPreset.value = null
+})
 
 const pricingUrl = computed(() =>
   buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true })
@@ -374,6 +381,7 @@ const creditsModel = computed({
   set: (newCredits: number) => {
     payAmount.value = Math.round(creditsToUsd(newCredits))
     selectedPreset.value = null
+    amountEditedByUser.value = true
   }
 })
 
@@ -412,11 +420,13 @@ function getCreditsStepAmount(currentCredits: number): number {
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
+  amountEditedByUser.value = true
 }
 
 function handlePresetClick(amount: number) {
   payAmount.value = amount
   selectedPreset.value = amount
+  amountEditedByUser.value = true
 }
 
 function closeDialog() {
