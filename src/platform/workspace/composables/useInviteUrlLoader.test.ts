@@ -48,7 +48,9 @@ const mockRouterReplace = vi.hoisted(() =>
   })
 )
 const mockRouterResolve = vi.hoisted(() =>
-  vi.fn(() => ({ href: '/cloud/login?resolved' }))
+  vi.fn(({ query }: { query: Record<string, string> }) => ({
+    href: `/cloud/login?${new URLSearchParams(query)}`
+  }))
 )
 
 vi.mock<unknown>(import('vue-router'), () => ({
@@ -595,7 +597,9 @@ describe('useInviteUrlLoader', () => {
         assert(toast.action)
         await toast.action.onClick()
 
-        expect(location.assign).toHaveBeenCalledWith('/cloud/login?resolved')
+        expect(location.assign).toHaveBeenCalledWith(
+          '/cloud/login?switchAccount=true&previousFullPath=%252F%253Finvite%253Dvalid-token'
+        )
       }
     )
   })
