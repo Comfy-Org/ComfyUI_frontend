@@ -209,14 +209,14 @@ onBeforeUnmount(() => {
               v-for="(log, index) in activeTabData.logs"
               :key="log.taskId"
               open
-              class="group/log mt-2 rounded-lg border border-interface-stroke bg-interface-panel-surface shadow-interface"
+              class="group/log mt-2 rounded-lg border bg-background shadow-md"
             >
               <summary
                 class="flex w-full cursor-pointer list-none items-center justify-between px-4 py-2 [&::-webkit-details-marker]:hidden"
               >
                 <span class="flex flex-col text-sm/normal font-medium">
                   <span>{{ log.taskName }}</span>
-                  <span class="text-muted">
+                  <span class="text-muted-foreground">
                     {{
                       comfyManagerStore.isTaskFailed(log.taskId)
                         ? t('g.failed')
@@ -251,7 +251,7 @@ onBeforeUnmount(() => {
                   <div
                     v-for="(logLine, logIndex) in log.logs"
                     :key="logIndex"
-                    class="text-muted"
+                    class="text-muted-foreground"
                   >
                     <pre class="wrap-break-word whitespace-pre-wrap">{{
                       logLine
@@ -288,7 +288,7 @@ onBeforeUnmount(() => {
             </template>
             <span
               v-else-if="comfyManagerStore.failedTasksIds.length"
-              class="text-error"
+              class="text-destructive"
               >{{ t('g.failed') }}</span
             >
             <span v-else>{{ t('g.completed') }}</span>
@@ -313,7 +313,7 @@ onBeforeUnmount(() => {
             <Button
               v-if="!isInProgress && !isRestartCompleted && hasSuccessfulTasks"
               variant="secondary"
-              class="mr-4 rounded-full border-2 border-base-foreground px-3 text-base-foreground hover:bg-secondary-background-hover"
+              class="mr-4 rounded-full border-2 border-foreground px-3"
               @click="handleRestart"
             >
               {{ t('manager.applyChanges') }}

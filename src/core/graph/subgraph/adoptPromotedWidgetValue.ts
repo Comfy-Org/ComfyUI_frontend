@@ -1,5 +1,6 @@
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 

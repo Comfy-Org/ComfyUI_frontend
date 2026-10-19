@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Button from 'primevue/button'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import Button from '@/components/ui/button/Button.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -163,9 +163,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div
-    class="flex size-full items-center justify-center bg-comfy-menu-secondary"
-  >
+  <div class="flex size-full items-center justify-center bg-secondary">
     <div class="flex flex-col items-center gap-4">
       <img
         src="/assets/images/comfy-logo-single.svg"
@@ -174,7 +172,7 @@ onMounted(() => {
       />
       <p
         v-if="planLabel"
-        class="font-inter text-base/normal font-normal text-base-foreground"
+        class="font-inter text-base/normal font-normal text-foreground"
       >
         {{
           t('subscription.subscribeTo', {
@@ -183,13 +181,9 @@ onMounted(() => {
         }}
       </p>
       <Spinner v-if="planLabel" class="size-8" />
-      <Button
-        v-if="planLabel"
-        as="a"
-        href="/"
-        link
-        :label="t('cloudOnboarding.skipToCloudApp')"
-      />
+      <Button v-if="planLabel" as="a" href="/" variant="link">
+        {{ t('cloudOnboarding.skipToCloudApp') }}
+      </Button>
     </div>
   </div>
 </template>

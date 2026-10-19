@@ -27,6 +27,10 @@ import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import {
+  AGENT_FRAME_HANDLED_EVENT,
+  announceHandledAgentFrames
+} from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type {
   ClientDocFrame,
@@ -62,7 +66,6 @@ const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
-const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const VUE_NODES_TAG = '@vue-nodes'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const CANCEL_TIMEOUT = 10_000
@@ -200,7 +203,6 @@ interface ReplayResponseOptions {
   waitForGraphOpsDelivery?: (ops: readonly RecordedGraphOperation[]) => boolean
 }
 
-// Runs one recorded prompt/response through the real panel over a routed /ws socket.
 export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
@@ -235,7 +237,6 @@ export class AgentConversationHarness {
       page,
       workflow.id,
       this.host,
-      SOCKET_SID,
       humanOpsHost
     )
     this.seenIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
@@ -293,15 +294,18 @@ export class AgentConversationHarness {
   async boot(
     agentFlag: boolean,
     vueNodes: boolean,
-    bootAssets: ListAssetsResponse
+    bootAssets: ListAssetsResponse,
+    telemetryEnabled: boolean
   ): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
+    await announceHandledAgentFrames(this.page)
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
     await bootAgentApp(this.page, agentFlag, {
       vueNodes,
+      features: { enable_telemetry: telemetryEnabled },
       settings: {
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.NodeSearchBoxImpl': 'default',
@@ -1204,27 +1208,33 @@ export class AgentConversationHarness {
 
     const receipt = crypto.randomUUID()
     await this.page.evaluate(
-      ({ receipt, workflowId, seq }) => {
-        const api = window.app!.api
+      ({ receipt, workflowId, seq, handledEvent }) => {
         const attribute = 'data-agent-crdt-update-receipt'
         const cleanupType = `agent-crdt-update-cleanup-${receipt}`
-        const removeReceiptListener = () => {
-          api.removeCustomEventListener('doc_update', recordReceipt)
+        function removeReceiptListener() {
+          document.removeEventListener(handledEvent, recordReceipt)
           document.removeEventListener(cleanupType, removeReceiptListener)
         }
-        const recordReceipt = (event: CustomEvent<unknown>) => {
-          if (typeof event.detail !== 'object' || event.detail === null) return
-          if (
-            !('workflow_id' in event.detail) ||
-            event.detail.workflow_id !== workflowId ||
-            !('seq' in event.detail) ||
-            event.detail.seq !== seq
+        function isRecord(value: unknown): value is Record<string, unknown> {
+          return typeof value === 'object' && value !== null
+        }
+        function isThisUpdate(detail: unknown): boolean {
+          if (typeof detail !== 'string') return false
+          const frame: unknown = JSON.parse(detail)
+          if (!isRecord(frame) || frame.type !== 'doc_update') return false
+          return (
+            isRecord(frame.data) &&
+            frame.data.workflow_id === workflowId &&
+            frame.data.seq === seq
           )
+        }
+        function recordReceipt(event: Event) {
+          if (!(event instanceof CustomEvent) || !isThisUpdate(event.detail))
             return
           document.documentElement.setAttribute(attribute, receipt)
           removeReceiptListener()
         }
-        api.addCustomEventListener('doc_update', recordReceipt)
+        document.addEventListener(handledEvent, recordReceipt)
         document.addEventListener(cleanupType, removeReceiptListener, {
           once: true
         })
@@ -1232,7 +1242,8 @@ export class AgentConversationHarness {
       {
         receipt,
         workflowId: parsedFrame.data.workflowId,
-        seq: parsedFrame.data.seq
+        seq: parsedFrame.data.seq,
+        handledEvent: AGENT_FRAME_HANDLED_EVENT
       }
     )
     try {
@@ -1275,6 +1286,8 @@ interface ConversationFixtures {
   // Assets the boot mock serves for every /api/assets query, so combo widgets
   // loaded with the seed already see them.
   bootAssets: ListAssetsResponse
+  // Opt in only for cases that assert telemetry through hostTelemetryFixture.
+  telemetryEnabled: boolean
   comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
@@ -1288,6 +1301,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
   bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
+  telemetryEnabled: [false, { option: true }],
   comfyPage: async ({ page, request }, use) => {
     await use(new ComfyPage(page, request))
   },
@@ -1308,7 +1322,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       extraNodeDefs,
       humanOpsHost,
-      bootAssets
+      bootAssets,
+      telemetryEnabled
     },
     use,
     testInfo
@@ -1329,7 +1344,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       extraNodeDefs,
       humanOpsHost
     )
-    await harness.boot(agentFlagEnabled, vueNodes, bootAssets)
+    await harness.boot(agentFlagEnabled, vueNodes, bootAssets, telemetryEnabled)
     await use(harness)
   }
 })

@@ -158,33 +158,6 @@ describe('useFeatureFlags', () => {
     })
   })
 
-  describe('embeddedCheckoutEnabled', () => {
-    it.for([
-      ['missing', undefined, false],
-      ['false', false, false],
-      ['malformed', 'true', false],
-      ['true', true, true]
-    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
-      vi.mocked(api.getServerFeature).mockReturnValue(value)
-
-      const { flags } = useFeatureFlags()
-
-      expect(flags.embeddedCheckoutEnabled).toBe(expected)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
-        false
-      )
-    })
-
-    it('is false when feature lookup throws', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(() => {
-        throw new Error('feature service unavailable')
-      })
-
-      expect(useFeatureFlags().flags.embeddedCheckoutEnabled).toBe(false)
-    })
-  })
-
   describe('hostedBillingDestination', () => {
     afterEach(() => {
       remoteConfig.value = {}
@@ -399,6 +372,54 @@ describe('useFeatureFlags', () => {
       })
 
       expect(useFeatureFlags().flags.ssoEnabled).toBe(false)
+    })
+  })
+
+  describe.for([
+    { flag: 'unifiedBillingSettingsEnabled' as const },
+    { flag: 'autoTopUpEnabled' as const }
+  ])('$flag', ({ flag }) => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      {
+        case: 'missing on cloud',
+        cloud: true,
+        value: undefined,
+        expected: false
+      },
+      { case: 'false on cloud', cloud: true, value: false, expected: false },
+      {
+        case: 'malformed on cloud',
+        cloud: true,
+        value: 'true',
+        expected: false
+      },
+      { case: 'true on cloud', cloud: true, value: true, expected: true },
+      { case: 'true off cloud', cloud: false, value: true, expected: false }
+    ])('is $expected when $case', ({ cloud, value, expected }) => {
+      vi.mocked(distributionTypes).isCloud = cloud
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags[flag]).toBe(expected)
+    })
+
+    it('is false on cloud when feature lookup throws', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('feature service unavailable')
+      })
+
+      expect(useFeatureFlags().flags[flag]).toBe(false)
+    })
+
+    it('honours a session override on cloud', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(getSessionOverride).mockReturnValue(true)
+
+      expect(useFeatureFlags().flags[flag]).toBe(true)
     })
   })
 
@@ -915,6 +936,36 @@ describe('useFeatureFlags', () => {
         true
       )
     })
+
+    it.for([
+      { served: true, override: undefined, reported: true },
+      { served: undefined, override: undefined, reported: false },
+      { served: false, override: true, reported: true }
+    ])(
+      'reports unified_web_session as $reported when the server serves $served and the session override is $override',
+      ({ served, override, reported }) => {
+        vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+          flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION
+            ? override
+            : undefined
+        )
+        vi.mocked(distributionTypes).isCloud = true
+        remoteConfigState.value = 'authenticated'
+        authenticatedRemoteConfigState.value = 'authenticated'
+        remoteConfig.value = { unified_web_session: served }
+        vi.mocked(api.getServerFeature).mockImplementation(
+          (_path, defaultValue) => defaultValue
+        )
+
+        const stop = startFeatureFlagTelemetry()
+        onTestFinished(stop)
+
+        expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
+          ServerFeatureFlag.UNIFIED_WEB_SESSION,
+          reported
+        )
+      }
+    )
 
     it('does not report when getters are only read', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)

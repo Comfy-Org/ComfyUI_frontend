@@ -21,6 +21,7 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
@@ -29,7 +30,8 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+/** The cloud workflow id a turn ack binds the posting tab to. */
+export const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
 const TURN_ACCEPTED: AgentTurnAccepted = {
   message_id: TURN_ID,
@@ -180,14 +182,14 @@ const FUNDS_UNAVAILABLE = zAgentAdmissionError.parse({
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
 
-export const THINKING_EVENT: AgentWsEvent = {
-  type: 'agent_thinking',
-  data: {
-    delta: THINKING_TEXT,
-    message_id: TURN_ID,
-    thread_id: THREAD_ID
+export function thinkingEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_thinking',
+    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
   }
 }
+
+export const THINKING_EVENT = thinkingEvent(THINKING_TEXT)
 
 export const TOOL_CALL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
@@ -231,6 +233,17 @@ export const OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
   }
 }
 
+export const RUNNING_OPEN_TAB_TOOL_EVENT: AgentWsEvent = {
+  type: 'agent_tool_call',
+  data: {
+    tool_call_id: 'call-new-tab',
+    tool_name: 'new_tab',
+    status: 'running',
+    message_id: TURN_ID,
+    thread_id: THREAD_ID
+  }
+}
+
 export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
   type: 'agent_tool_call',
   data: {
@@ -246,12 +259,12 @@ export const RESIZE_IMAGE_TOOL_EVENT: AgentWsEvent = {
 const MESSAGE_DELTA_TEXT =
   'The graph is **fully ready** to go — prompt set to the red fox in the snow.'
 
-export const MESSAGE_DELTA_EVENT: AgentWsEvent = {
-  type: 'agent_message_delta',
-  data: {
-    delta: MESSAGE_DELTA_TEXT,
-    message_id: TURN_ID,
-    thread_id: THREAD_ID
+export const MESSAGE_DELTA_EVENT = agentMessageDeltaEvent(MESSAGE_DELTA_TEXT)
+
+export function agentMessageDeltaEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_message_delta',
+    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
   }
 }
 
@@ -350,6 +363,7 @@ async function mockAgentBoot(
   )
 
   await mockBilling(page)
+  await mockAgentIdentity(page)
   await page.route('**/api/billing/status', (route) =>
     agentBilling.fulfillStatus(route)
   )

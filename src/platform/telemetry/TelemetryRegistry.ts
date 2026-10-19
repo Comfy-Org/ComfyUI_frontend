@@ -20,6 +20,7 @@ import type {
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
+  AgentGraphProjectionMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -93,7 +94,9 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
-  WorkspaceInviteMetadata
+  WorkspaceInviteMetadata,
+  WorkspaceScopeMismatchMetadata,
+  WorkspaceTelemetryContext
 } from './types'
 
 /**
@@ -230,6 +233,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackBillingEvent(event: BillingTelemetryEvent): void {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  setWorkspaceContext(context: WorkspaceTelemetryContext | undefined): void {
+    this.dispatch((provider) => provider.setWorkspaceContext?.(context))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWorkspaceScopeMismatch(metadata: WorkspaceScopeMismatchMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackWorkspaceScopeMismatch?.(metadata)
+    )
   }
 
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
@@ -494,6 +509,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.dispatch((provider) => provider.trackAgentGraphProjection?.(metadata))
   }
 
   // fallow-ignore-next-line unused-class-member

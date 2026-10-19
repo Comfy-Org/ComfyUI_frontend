@@ -218,11 +218,7 @@ export function getMainNavigation(
               href: routes.platformRouter,
               badge: 'new'
             },
-            { label: t('nav.builds'), href: routes.platformBuilder },
-            {
-              label: t('nav.managedBuilds'),
-              href: routes.managedBuilds
-            }
+            { label: t('nav.builds'), href: routes.platformBuilder }
           ]
         },
         {
@@ -263,6 +259,10 @@ export function getMainNavigation(
             {
               label: t('nav.comfyEnterprise'),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds'),
+              href: routes.managedBuilds
             },
             {
               label: t('nav.fdct'),

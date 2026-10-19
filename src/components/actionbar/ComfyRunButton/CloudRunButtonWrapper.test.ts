@@ -6,7 +6,10 @@ import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
-import type { SubscriptionInfo } from '@/composables/billing/types'
+import type {
+  BillingPortalOutcome,
+  SubscriptionInfo
+} from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -443,6 +446,23 @@ describe('CloudRunButtonWrapper', () => {
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 
+  it('keeps recovery open when the billing context reports the portal did not open', async () => {
+    vi.mocked(useBillingContext().manageSubscription).mockResolvedValueOnce({
+      ok: false,
+      reason: 'blocked'
+    })
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'paused'
+    renderWrapper()
+
+    await userEvent.click(screen.getByTestId('queue-button'))
+    await getPaymentRecoveryDialog().onUpdatePayment()
+
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    window.dispatchEvent(new Event('focus'))
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+  })
+
   it('refreshes billing once on focus after returning from the portal', async () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
@@ -473,10 +493,10 @@ describe('CloudRunButtonWrapper', () => {
   })
 
   it('reuses a pending portal request across rapid clicks and reopen', async () => {
-    let resolvePortal!: () => void
+    let resolvePortal!: (outcome: BillingPortalOutcome) => void
     vi.mocked(useBillingContext().manageSubscription).mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<BillingPortalOutcome>((resolve) => {
           resolvePortal = resolve
         })
     )
@@ -502,7 +522,7 @@ describe('CloudRunButtonWrapper', () => {
     expect(repeatedRequest).toBe(firstRequest)
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
 
-    resolvePortal()
+    resolvePortal({ ok: true })
     await firstRequest
     expect(useDialogStore().updateDialog).toHaveBeenLastCalledWith({
       key: 'subscription-paused',
@@ -511,10 +531,10 @@ describe('CloudRunButtonWrapper', () => {
   })
 
   it('does not update a replacement dialog after unmount', async () => {
-    let resolvePortal!: () => void
+    let resolvePortal!: (outcome: BillingPortalOutcome) => void
     vi.mocked(useBillingContext().manageSubscription).mockImplementationOnce(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<BillingPortalOutcome>((resolve) => {
           resolvePortal = resolve
         })
     )
@@ -529,7 +549,7 @@ describe('CloudRunButtonWrapper', () => {
     const portalRequest = dialogProps.onUpdatePayment()
     unmount()
 
-    resolvePortal()
+    resolvePortal({ ok: true })
     await portalRequest
     expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     expect(useDialogStore().updateDialog).toHaveBeenCalledTimes(1)

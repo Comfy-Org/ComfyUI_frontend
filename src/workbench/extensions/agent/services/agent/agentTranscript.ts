@@ -8,15 +8,20 @@ import type { SkillReference } from '../../types/skillReference'
 import { parseSkillReferenceText } from '../../utils/skillReferenceText'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
-import { createAssistantMessage } from './agentMessageParts'
+import {
+  createAssistantMessage,
+  isOpenAskPart,
+  toAskOrNoticePart
+} from './agentMessageParts'
 
 type AttachmentKind = 'image' | 'video' | 'audio'
 
 /**
- * A file attached to a user turn. `ref` is the uploaded input-namespace
- * filename that resolves the preview. `name` is the label shown to the user;
- * it falls back to `ref` for legacy/unresolved rows and otherwise comes from
- * the persisted asset `display_name`.
+ * A file attached to a user turn. `previewUrl` and `mediaUrl` are captured
+ * when the turn is sent and are not rehydrated; without them, `ref`, the
+ * uploaded input-namespace filename, resolves the file. `name` is the label
+ * shown to the user; it falls back to `ref` for legacy/unresolved rows and
+ * otherwise comes from the persisted asset `display_name`.
  *
  * `id` and `kind` are the server's own resolution of that name, replayed off
  * the row's `attachment_refs`. `kind` is what lets a rehydrated attachment be
@@ -27,6 +32,7 @@ type AttachmentKind = 'image' | 'video' | 'audio'
 export interface UserAttachment {
   name: string
   previewUrl?: string
+  mediaUrl?: string
   ref?: string
   id?: string
   kind?: AttachmentKind
@@ -420,36 +426,6 @@ function appendAssistantContent(
     message.parts = [...message.parts, { type: 'text', text, state: 'done' }]
 }
 
-/**
- * A row's `pending_ask` carries a `run_approval` context only while that row
- * is still mid-ask; this reads it into the flat shape the `runApproval` part
- * renders, or `undefined` once the ask is resolved or absent.
- */
-function pendingRunApproval(
-  row: AgentMessages[number]
-): { askId: string; workflowId?: string; workflowName?: string } | undefined {
-  const ask = row.pending_ask
-  if (ask?.kind !== 'run_approval') return undefined
-  return {
-    askId: ask.ask_id,
-    workflowId: ask.context?.workflow_id || undefined,
-    workflowName: ask.context?.workflow_name || undefined
-  }
-}
-
-/**
- * Applies one persisted assistant row onto its running message: appends any
- * parsed tool-call parts and text part, then, for a row the server still
- * reports as `streaming`, attaches a `runApproval` part when that row is also
- * mid-ask. Returns the `pending` entry for a live row, or `undefined` for a
- * terminal one; `normalizeAgentTranscript` owns `message.streaming` itself.
- *
- * PM-1776/PM-1682: `row.status` is the only authority on whether the turn is
- * still running. Reading a live row as finished unless it carried a
- * `pending_ask` left every client that hydrates mid-turn — a reopened panel,
- * a refreshed tab — showing a completed transcript and offering Send for a
- * thread the server answers with 409.
- */
 function applyAssistantRow(
   row: AgentMessages[number],
   message: AssistantMessage,
@@ -461,8 +437,7 @@ function applyAssistantRow(
 
   if (!isLive) return undefined
 
-  const runApproval = pendingRunApproval(row)
-  if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
+  if (row.pending_ask) message.parts.push(toAskOrNoticePart(row.pending_ask))
   return { messageId: toTurnId(row.id), message }
 }
 
@@ -545,18 +520,9 @@ function recordAssistantRow(
   return rowPending
 }
 
-/**
- * Strips the liveness a row's `streaming` status granted a message that turns
- * out not to be getting a transport. The parts matter as much as the flag,
- * and both kinds this row could have been granted are settled here because a
- * transport is the only thing that could have settled either: a still-running
- * tool call is clamped, and a `runApproval` ask is dropped the way
- * `agent_ask_resolved` drops it -- left in place it renders an enabled card
- * whose answer would be posted against a turn that is no longer active.
- */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
-  message.parts = message.parts.filter((part) => part.type !== 'runApproval')
+  message.parts = message.parts.filter((part) => !isOpenAskPart(part))
   for (const part of message.parts) {
     if (part.type !== 'tool' || part.state !== 'streaming') continue
     part.state = 'done'
