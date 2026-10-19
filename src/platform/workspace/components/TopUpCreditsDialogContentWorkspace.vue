@@ -368,6 +368,7 @@ const amountEditedByUser = ref(false)
 
 watch(suggestedAmount, (amount) => {
   if (amount === null || amountEditedByUser.value) return
+  if (state.value.kind !== 'amount') return
   payAmount.value = amount
   selectedPreset.value = null
 })

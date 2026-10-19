@@ -697,6 +697,27 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(create).toHaveBeenCalledWith(2_500, window.location.href)
   })
 
+  it('keeps the amount handed to checkout when the suggestion arrives afterwards', async () => {
+    const create = checkoutOpensAt(checkoutUrl)
+    vi.spyOn(window, 'open')
+      .mockReturnValueOnce(checkoutTab() as never)
+      .mockReturnValueOnce(checkoutTab() as never)
+    const balanceArrives = renderBeforeBalanceArrives()
+    await continueToPayment()
+    await handOffHeading()
+
+    balanceArrives(11_400)
+    await nextTick()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Reopen checkout' })
+    )
+
+    await waitFor(() => expect(create).toHaveBeenCalledTimes(2))
+    expect(create.mock.calls.map(([amountCents]) => amountCents)).toEqual([
+      5_000, 5_000
+    ])
+  })
+
   it('explains that the top-up covers a negative balance first', () => {
     renderWithBalance({
       amountMicros: -10_000,
