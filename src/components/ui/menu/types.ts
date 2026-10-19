@@ -62,6 +62,8 @@ export interface MenuItemAction extends MenuItemMetadata {
   checked?: boolean | (() => boolean)
   pressAndHoldInterval?: number
   variant?: 'destructive'
+  /** Keeps a disabled item in keyboard focus order, marked `aria-disabled`, so its tooltip stays reachable. */
+  focusableWhenDisabled?: boolean
 }
 
 export type MenuItem =

@@ -1,7 +1,7 @@
 import type { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeProperty } from '@/types/nodeProperty'
 
 /**
  * @param property - Raw node property value.

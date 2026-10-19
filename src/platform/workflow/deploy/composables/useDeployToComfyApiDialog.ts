@@ -21,7 +21,6 @@ export function useDeployToComfyApiDialog() {
       key: DIALOG_KEY,
       component: DeployToComfyApiCard,
       props: {
-        titleId: DIALOG_KEY,
         videoSources: VIDEO_SOURCES,
         posterSrc: POSTER_SRC,
         onDone: hide,

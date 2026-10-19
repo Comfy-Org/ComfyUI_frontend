@@ -4,7 +4,12 @@ import { describe, expect, it, vi } from 'vitest'
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import type { LocalWebAuthEnvironment } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
-import { createMemoryTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
+import type { LocalWebTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
+import {
+  LOCAL_WEB_TOKENS_KEY,
+  createMemoryTokenStore,
+  createStorageTokenStore
+} from '@/platform/auth/localWeb/localWebTokenStore'
 
 const ISSUER = 'https://cloud.example.test'
 const NOW = 1_700_000_000_000
@@ -54,10 +59,18 @@ function memoryStorage() {
   }
 }
 
-function setup(pageUrl = 'http://127.0.0.1:8188/?workflow=a') {
+function setup(
+  pageUrl = 'http://127.0.0.1:8188/?workflow=a',
+  {
+    tokens = createMemoryTokenStore(),
+    withRefreshLock = <T>(task: () => Promise<T>) => task()
+  }: {
+    tokens?: LocalWebTokenStore
+    withRefreshLock?: LocalWebAuthEnvironment['withRefreshLock']
+  } = {}
+) {
   const page = { url: pageUrl }
   const storage = memoryStorage()
-  const tokens = createMemoryTokenStore()
   const clock = { now: NOW }
   const env = {
     issuer: ISSUER,
@@ -68,6 +81,7 @@ function setup(pageUrl = 'http://127.0.0.1:8188/?workflow=a') {
     }),
     sessionStorage: storage,
     tokens,
+    withRefreshLock,
     fetchImpl: vi.fn<typeof fetch>(async () =>
       tokenResponse(WS1_TOKEN, 'refresh-1')
     ),
@@ -249,6 +263,25 @@ describe('completeSignIn', () => {
     }
   )
 
+  it('reports a sign-in it could not persist and stays signed out', async () => {
+    const tokens = { ...createMemoryTokenStore(), write: () => false }
+    const { bridge, storage, states } = setup(
+      'http://127.0.0.1:8188/?code=code-1&state=state-1',
+      { tokens }
+    )
+    storage.setItem(
+      PENDING_KEY,
+      JSON.stringify({ verifier: 'verifier-1', state: 'state-1' })
+    )
+
+    await expect(bridge.completeSignIn()).resolves.toEqual({
+      kind: 'failed',
+      reason: 'storage-unavailable'
+    })
+    expect(states).toEqual([])
+    await expect(bridge.getState()).resolves.toEqual({ status: 'signed_out' })
+  })
+
   it('never exchanges a code whose state did not match', async () => {
     const { bridge, env, storage } = setup(
       'http://127.0.0.1:8188/?code=code-1&state=forged'
@@ -351,5 +384,100 @@ describe('signOut', () => {
 
     await expect(read).resolves.toBeNull()
     expect(tokens.read()).toBeUndefined()
+  })
+})
+
+function serialLock(): LocalWebAuthEnvironment['withRefreshLock'] {
+  let tail: Promise<unknown> = Promise.resolve()
+  return <T>(task: () => Promise<T>): Promise<T> => {
+    const run = tail.then(task)
+    tail = run.catch(() => undefined)
+    return run
+  }
+}
+
+describe('across tabs sharing stored tokens', () => {
+  function tabs() {
+    const shared = memoryStorage()
+    const events = new EventTarget()
+    const withRefreshLock = serialLock()
+    const open = () =>
+      setup(undefined, {
+        tokens: createStorageTokenStore(shared, events),
+        withRefreshLock
+      })
+    const first = open()
+    first.tokens.write({
+      accessToken: WS1_TOKEN,
+      refreshToken: 'refresh-1',
+      expiresAt: NOW + 30_000,
+      scope: 'comfy-cloud:user:read'
+    })
+    return { first, second: open(), events }
+  }
+
+  it('stays signed in after a reload without asking the token endpoint', async () => {
+    const { second } = tabs()
+
+    await expect(second.bridge.getState()).resolves.toMatchObject({
+      status: 'signed_in'
+    })
+    second.clock.now = NOW - 120_000
+    await expect(second.bridge.getWorkspaceToken('ws-1')).resolves.toBe(
+      WS1_TOKEN
+    )
+    expect(second.env.fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('uses the refresh another tab already made instead of spending the rotated-away refresh token', async () => {
+    const { first, second } = tabs()
+    const renewed = accessToken({ sub: 'user-1', workspace_id: 'ws-1', n: 2 })
+    first.env.fetchImpl.mockImplementation(async () =>
+      tokenResponse(renewed, 'refresh-2')
+    )
+    second.env.fetchImpl.mockImplementation(async () =>
+      oauthError('invalid_grant')
+    )
+
+    const tokens = await Promise.all([
+      first.bridge.getWorkspaceToken('ws-1'),
+      second.bridge.getWorkspaceToken('ws-1')
+    ])
+
+    expect(tokens).toEqual([renewed, renewed])
+    expect(first.env.fetchImpl).toHaveBeenCalledOnce()
+    expect(second.env.fetchImpl).not.toHaveBeenCalled()
+    expect(second.tokens.read()?.refreshToken).toBe('refresh-2')
+  })
+
+  it('signs out only after another tab finishes its refresh, so the refresh cannot restore the tokens', async () => {
+    const { first, second } = tabs()
+    let answer: (response: Response) => void = () => {}
+    first.env.fetchImpl.mockImplementation(
+      () => new Promise((resolve) => (answer = resolve))
+    )
+    const refresh = first.bridge.getWorkspaceToken('ws-1')
+    await vi.waitFor(() => expect(first.env.fetchImpl).toHaveBeenCalledOnce())
+
+    const signOut = second.bridge.signOut()
+    await Promise.resolve()
+    expect(second.tokens.read()?.refreshToken).toBe('refresh-1')
+
+    answer(tokenResponse(WS1_TOKEN, 'refresh-2'))
+    await refresh
+    await expect(signOut).resolves.toEqual({ status: 'signed_out' })
+    expect(first.tokens.read()).toBeUndefined()
+  })
+
+  it('tells listeners when another tab signs out', async () => {
+    const { first, second, events } = tabs()
+
+    await first.bridge.signOut()
+    events.dispatchEvent(
+      Object.assign(new Event('storage'), { key: LOCAL_WEB_TOKENS_KEY })
+    )
+
+    expect(second.states).toEqual([{ status: 'signed_out' }])
+    await expect(second.bridge.getWorkspaceToken('ws-1')).resolves.toBeNull()
   })
 })

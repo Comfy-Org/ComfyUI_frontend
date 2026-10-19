@@ -8,7 +8,7 @@ import {
   zUploadImageResponse,
   zWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 import type {
   AuthRejectionStatus,
@@ -26,12 +26,14 @@ import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 
 import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
+import { withAgentAuth } from './agentAuth'
 
 import {
   RENDERED_ASK_KINDS,
   zAgentAnswerReceipt,
   zAgentCancelAccepted,
   zAgentError,
+  zAgentIdentity,
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
@@ -80,6 +82,7 @@ const ANSWER_ASK_TIMEOUT_MS = 15_000
 type AgentApiOperation =
   | 'answer_thread_ask'
   | 'cancel_thread_message'
+  | 'get_agent_identity'
   | 'get_cloud_workflow'
   | 'get_run_mode'
   | 'get_thread_messages'
@@ -87,6 +90,7 @@ type AgentApiOperation =
   | 'list_threads'
   | 'post_thread_message'
   | 'put_run_mode'
+  | 'refresh_credential'
   | 'upload_image'
 
 type ReportedAuthScheme = AuthScheme | 'unreported'
@@ -143,12 +147,15 @@ export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
   readonly retryAfterSeconds?: number
+  /** The {@link AgentApiOperation} that raised this error. */
+  readonly operation?: string
 
   constructor(
     message: string,
     status: number,
     body: unknown,
-    retryAfterSeconds?: number
+    retryAfterSeconds?: number,
+    operation?: string
   ) {
     super(
       message.trim().length > 0
@@ -159,6 +166,7 @@ export class AgentApiError extends Error {
     this.status = status
     this.body = body
     this.retryAfterSeconds = retryAfterSeconds
+    this.operation = operation
   }
 }
 
@@ -498,7 +506,8 @@ export function createAgentRestClient() {
       message,
       response.status,
       body,
-      retryAfterSeconds
+      retryAfterSeconds,
+      operation
     )
     if (
       isAuthRejectionStatus(response.status) &&
@@ -527,15 +536,18 @@ export function createAgentRestClient() {
   ): Promise<T> {
     let authScheme: ReportedAuthScheme = 'unreported'
     let credential: ReportedAuthCredential = 'unreported'
-    const response = await api.fetchApi(route, {
-      ...init,
-      onAuthScheme: (scheme) => {
-        authScheme = scheme
-      },
-      onAuthCredential: (kind) => {
-        credential = kind
-      }
-    })
+    const response = await api.fetchApi(
+      route,
+      await withAgentAuth({
+        ...init,
+        onAuthScheme: (scheme) => {
+          authScheme = scheme
+        },
+        onAuthCredential: (kind) => {
+          credential = kind
+        }
+      })
+    )
     if (!response.ok) {
       throw await toApiError(response, operation, authScheme, credential)
     }
@@ -602,6 +614,16 @@ export function createAgentRestClient() {
       zAgentThreads
     )
     return page.threads
+  }
+
+  async function getIdentity(): Promise<{ userId: string }> {
+    const identity = await request(
+      'get_agent_identity',
+      '/agent/identity',
+      { method: 'GET' },
+      zAgentIdentity
+    )
+    return { userId: identity.user_id }
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -685,6 +707,15 @@ export function createAgentRestClient() {
     )
   }
 
+  async function refreshCredential(): Promise<void> {
+    await request(
+      'refresh_credential',
+      '/agent/threads?limit=1',
+      { method: 'GET' },
+      z.unknown()
+    )
+  }
+
   async function uploadImage(
     image: Blob,
     filename: string,
@@ -709,12 +740,14 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getIdentity,
     getRunMode,
     putRunMode,
     listCloudWorkflows,
     getCloudWorkflow,
     cancelMessage,
     answerAsk,
+    refreshCredential,
     uploadImage
   }
 }

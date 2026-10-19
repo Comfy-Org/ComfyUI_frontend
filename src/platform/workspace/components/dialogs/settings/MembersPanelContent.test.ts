@@ -37,6 +37,7 @@ const {
   mockShowSearch,
   mockShowViewTabs,
   mockShowInviteButton,
+  mockShowWorkspaceMenu,
   mockActiveView,
   mockSearchQuery,
   mockMembersLoaded,
@@ -59,6 +60,7 @@ const {
     mockShowSearch: ref(true),
     mockShowViewTabs: ref(true),
     mockShowInviteButton: ref(true),
+    mockShowWorkspaceMenu: ref(true),
     mockIsPlanEnded: ref(false),
     mockIsSalesManagedPlan: ref(false),
     mockIsEnterprisePlanStrict: ref(false),
@@ -116,6 +118,7 @@ vi.mock<unknown>(
       showSearch: mockShowSearch,
       showViewTabs: mockShowViewTabs,
       showInviteButton: mockShowInviteButton,
+      showWorkspaceMenu: mockShowWorkspaceMenu,
       isPlanEnded: mockIsPlanEnded,
       isSalesManagedPlan: mockIsSalesManagedPlan,
       isEnterprisePlan: mockIsEnterprisePlanStrict,
@@ -254,6 +257,7 @@ describe('MembersPanelContent', () => {
     mockShowSearch.value = true
     mockShowViewTabs.value = true
     mockShowInviteButton.value = true
+    mockShowWorkspaceMenu.value = true
     mockIsPlanEnded.value = false
     mockIsSalesManagedPlan.value = false
     mockIsEnterprisePlanStrict.value = false
@@ -379,8 +383,8 @@ describe('MembersPanelContent', () => {
       expect(screen.getByLabelText('workspace-menu-stub')).toBeTruthy()
     })
 
-    it('hides the workspace menu without canAccessWorkspaceMenu', () => {
-      mockPermissions.value.canAccessWorkspaceMenu = false
+    it('leaves the workspace menu to the settings header when told to', () => {
+      mockShowWorkspaceMenu.value = false
 
       renderComponent()
 

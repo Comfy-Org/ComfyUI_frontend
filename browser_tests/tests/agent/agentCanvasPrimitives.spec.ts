@@ -16,8 +16,8 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
     await node.click('title')
 
     await expect
-      .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
-      .toBe(1)
+      .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+      .toEqual([node.id])
     await expect
       .poll(() => comfyPage.nodeOps.getSerializedGraph())
       .toEqual(before)
@@ -31,8 +31,6 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
     if (!node) return
     const nodeTitle = await node.getProperty<string>('title')
 
-    // Push the node away from the centre first, otherwise the assertions below
-    // hold even if centerOnNode() does nothing at all.
     await comfyPage.canvasOps.pan({ x: 400, y: 250 })
     const view = await comfyPage.canvas.boundingBox()
     if (!view) throw new Error('Canvas bounding box not available')
@@ -64,7 +62,6 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
     if (!node) return
     await node.click('title')
 
-    // Zoom past the point where the graph fits, so the fit has work to do.
     await comfyPage.canvasOps.setScale(3)
     expect(
       await comfyPage.canvasOps.getNodesOutsideViewportCount(),
@@ -88,9 +85,17 @@ test.describe('Agent canvas primitives', { tag: '@agent' }, () => {
 
     await node.centerOnNode()
     const before = await comfyPage.canvasOps.getNodeGeometry(node.id)
+    const otherNodes = async () =>
+      (await comfyPage.nodeOps.getSerializedGraph()).nodes.filter(
+        (other) => String(other.id) !== node.id
+      )
+    const otherNodesBefore = await otherNodes()
     await node.dragBy({ x: 40, y: 20 })
     const after = await comfyPage.canvasOps.getNodeGeometry(node.id)
 
     comfyPage.canvasOps.expectSlotsTrackedNode(after, before)
+    expect(await otherNodes(), 'only the dragged node moved').toEqual(
+      otherNodesBefore
+    )
   })
 })

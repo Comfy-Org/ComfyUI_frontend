@@ -130,8 +130,7 @@ describe('useAgentConsent', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockReset()
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
     vi.mocked(api.fetchApi).mockReset()
@@ -449,12 +448,11 @@ describe('useAgentConsent', () => {
     expect(telemetry.trackAgentConsentOfferExited).toHaveBeenCalledTimes(2)
   })
 
-  it('configures the first-use card as an accessible dismissable dialog', async () => {
+  it('configures the first-use card as a dismissable dialog', async () => {
     const request = useAgentConsent().withConsent('button_click', vi.fn())
 
     const dialog = await waitForConsentDialog()
 
-    expect(dialog.contentProps.titleId).toBe('agent-consent')
     expect(dialog.dialogComponentProps.dismissOnPointerDownOutside).toBe(true)
 
     ;(dialog.contentProps.onReject as () => void)()
@@ -628,7 +626,7 @@ describe('useAgentConsent', () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
-    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValueOnce(null)
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValueOnce(null)
 
     ;(dialog.contentProps.onAccept as () => void)()
     await vi.waitFor(() =>

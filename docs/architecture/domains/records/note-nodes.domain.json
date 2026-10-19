@@ -3,26 +3,29 @@
   "capability": "Note nodes",
   "description": "Plain-text and Markdown workflow annotations, their node registration, editable Markdown widget, and LiteGraph widget adapters. Shared Markdown rendering and sanitization remain outside this capability.",
   "modules": [
-    { "path": "src/extensions/core/noteNode.ts", "role": "integration" },
+    {
+      "path": "src/extensions/core/noteNode.ts",
+      "role": "integration"
+    },
     {
       "path": "src/lib/litegraph/src/widgets/MarkdownWidget.ts",
       "role": "integration"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.test.ts",
-      "role": "integration"
+      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.test.ts",
+      "role": "presentation"
     },
     {
       "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue",
       "role": "presentation"
     },
     {
-      "path": "src/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.test.ts",
-      "role": "presentation"
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/renderer/extensions/vueNodes/widgets/composables/useMarkdownWidget.ts",
+      "role": "integration"
     }
   ],
   "publicEntryPoints": [],

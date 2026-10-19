@@ -579,7 +579,7 @@
   },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 54
+      "count": 55
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -617,6 +617,16 @@
   },
   "src/lib/litegraph/src/subgraph/SubgraphOutput.ts": {
     "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "src/lib/litegraph/src/types/widgets.ts": {
+    "comfy/no-reexports": {
       "count": 1
     }
   },
@@ -940,11 +950,6 @@
       "count": 1
     }
   },
-  "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.stripe.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -997,12 +1002,12 @@
   },
   "src/platform/workspace/composables/useSubscriptionCheckout.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 3
+      "count": 2
     }
   },
   "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 3
     }
   },
   "src/platform/workspace/composables/useTeamPlan.test.ts": {
@@ -1018,11 +1023,6 @@
   "src/platform/workspace/composables/useWorkspaceUI.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 4
-    }
-  },
-  "src/platform/workspace/stores/billingOperationStore.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
     }
   },
   "src/platform/workspace/stores/teamWorkspaceStore.test.ts": {
@@ -1052,7 +1052,7 @@
   },
   "src/renderer/core/canvas/litegraph/selectionAdapter.ts": {
     "comfy/no-positional-boolean-params": {
-      "count": 3
+      "count": 2
     }
   },
   "src/renderer/core/canvas/litegraph/slotCalculations.ts": {
@@ -1426,6 +1426,16 @@
       "count": 36
     }
   },
+  "src/types/nodeState.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "src/types/simplifiedWidget.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
   "src/types/slotId.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -1528,7 +1538,7 @@
   },
   "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts": {
     "comfy/no-reexports": {
-      "count": 3
+      "count": 2
     }
   },
   "src/workbench/extensions/agent/services/agent/agentEventTransport.test.ts": {

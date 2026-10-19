@@ -42,7 +42,7 @@ const contentStyle = useModalLiftedZIndex(rootContext.open)
       :style="contentStyle"
       :class="
         cn(
-          'z-1700 w-72 rounded-md border bg-base-background p-4 text-base-foreground shadow-md outline-none',
+          'z-1700 w-72 rounded-md border bg-background p-4 text-foreground shadow-md outline-none',
           'data-[state=closed]:animate-out data-[state=open]:animate-in',
           'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
           'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',

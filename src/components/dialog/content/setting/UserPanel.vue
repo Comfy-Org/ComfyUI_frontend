@@ -2,7 +2,7 @@
   <div class="user-settings-container h-full">
     <div class="flex h-full flex-col">
       <h2 class="mb-2 text-2xl font-bold">{{ $t('userSettings.title') }}</h2>
-      <div class="mt-4 mb-3 border-t border-interface-stroke" />
+      <div class="mt-4 mb-3 border-t" />
 
       <!-- Normal User Panel -->
       <div v-if="isLoggedIn" class="flex flex-col gap-2">
@@ -76,7 +76,7 @@
 
       <!-- Login Section -->
       <div v-else class="flex flex-col gap-4">
-        <p class="text-smoke-600">
+        <p class="text-muted-foreground">
           {{ $t('auth.login.title') }}
         </p>
 

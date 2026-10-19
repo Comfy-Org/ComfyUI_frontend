@@ -12,10 +12,15 @@ import type { z } from 'zod'
 import type { BillingResult, BillingTransport } from './billingContracts.js'
 import type { BillingScope, BillingScopeSource } from './billingScope.js'
 import { createScopedReader } from './scopedReader.js'
+import { wireCents } from './wireCents.js'
 
 export const CREDITS_ROUTE = '/billing/balance'
 
-export type BillingBalance = z.infer<typeof zBillingBalanceResponse>
+const BillingBalanceSchema = zBillingBalanceResponse.extend({
+  suggested_topup_amount_cents: wireCents.nullish()
+})
+
+export type BillingBalance = z.infer<typeof BillingBalanceSchema>
 
 export type CreditsScope = BillingScope
 
@@ -65,7 +70,7 @@ export function createCreditsReader(
     transport,
     scopeSource,
     route: CREDITS_ROUTE,
-    parse: (body) => zBillingBalanceResponse.safeParse(body),
+    parse: (body) => BillingBalanceSchema.safeParse(body),
     project: ({ data }, scope) => ({
       status: 'ok',
       value: { balance: data, scope, readAt: now() }

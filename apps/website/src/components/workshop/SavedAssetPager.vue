@@ -27,7 +27,7 @@ const dotClass = (active: boolean) =>
     'size-2 cursor-pointer rounded-full transition-colors',
     active
       ? 'bg-primary-comfy-yellow'
-      : 'bg-transparency-white-t20 hover:bg-transparency-white-t40'
+      : 'bg-transparency-white-t20 hover:bg-white/40'
   )
 </script>
 

@@ -1,4 +1,5 @@
-import type { LGraph } from './LGraph'
+import type { LGraph } from '@/lib/litegraph/src/types/entityRegistry'
+
 import type {
   ISerialisedGroup,
   ISerialisedNode,
