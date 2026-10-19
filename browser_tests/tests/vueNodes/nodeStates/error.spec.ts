@@ -21,9 +21,9 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-const ERROR_CLASS = /ring-destructive-background/
-const WARNING_CLASS = /ring-warning-background/
-const SLOT_ERROR_CLASS = /before:ring-error/
+const ERROR_CLASS = /ring-destructive/
+const WARNING_CLASS = /ring-warning/
+const SLOT_ERROR_CLASS = /before:ring-destructive/
 const UNKNOWN_NODE_ID = '1'
 const INNER_EXECUTION_ID = '2:1'
 const KSAMPLER_MODEL_INPUT_NAME = 'model'

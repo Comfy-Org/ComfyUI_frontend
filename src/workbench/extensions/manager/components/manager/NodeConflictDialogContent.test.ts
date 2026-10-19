@@ -162,7 +162,7 @@ describe('NodeConflictDialogContent', () => {
 
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const sections = container.querySelectorAll(
-        '.w-full.flex.flex-col.bg-base-background'
+        '.w-full.flex.flex-col.bg-background'
       )
 
       // Import Failed Extensions section

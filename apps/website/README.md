@@ -660,6 +660,18 @@ the hosted script once, and renders the documented embed container.
 - `pnpm ashby:refresh-snapshot` — refresh the committed careers snapshot
 - `pnpm cloud-nodes:refresh-snapshot` — refresh the committed cloud nodes snapshot
 
+### Flux 3 Image launch draft
+
+Run the website dev server and open `/flux-3-image/` or
+`/zh-CN/flux-3-image/` to edit the launch draft. The routes are available locally and in Vercel PR previews; production builds
+exclude the pages. Their copy lives under `flux3Image` in the standard
+`src/locales/<locale>/main.json` catalogs. Preview pages stay noindex
+and out of sitemap and generated Markdown/LLM catalogs.
+The page reuses the Qwen image launch layout with a video hero placeholder and
+clearly labeled reference samples. Replace the hero footage, sample outputs,
+workflow/docs destinations, pricing, and FAQ placeholders before launch. The intended launch URL is `https://comfy.org/flux-3-image/`. No production
+route, navigation entry, or launch date is enabled by this draft.
+
 ### Comfy VFX campaign
 
 `/solutions/vfx/` and `/zh-CN/solutions/vfx/` render the latest V2 design. This change publishes no agency-led or other vertical campaign routes. V1 remains saved on `codex/vfx-landing`.

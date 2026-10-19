@@ -90,6 +90,7 @@ import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayou
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useDeploymentPickAtBoot } from '@/platform/workspace/composables/useDeploymentPickAtBoot'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -187,15 +188,12 @@ const telemetry = useTelemetry()
 const authStore = useAuthStore()
 let hasTrackedLogin = false
 
+// Learn which developer-platform deployment this page booted on (FE-2434).
+if (isCloud) void useDeploymentPickAtBoot()
+
 watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
-    const DARK_THEME_CLASS = 'dark-theme'
-    if (newTheme.light_theme) {
-      document.documentElement.classList.remove(DARK_THEME_CLASS)
-    } else {
-      document.documentElement.classList.add(DARK_THEME_CLASS)
-    }
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',

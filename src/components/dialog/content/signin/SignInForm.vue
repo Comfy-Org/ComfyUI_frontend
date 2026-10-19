@@ -52,12 +52,7 @@
     </FieldGroup>
 
     <Spinner v-if="loading" class="mx-auto size-8" />
-    <Button
-      v-else
-      type="submit"
-      class="h-10 font-medium"
-      :disabled="!meta.valid"
-    >
+    <Button v-else type="submit" class="h-10" :disabled="!meta.valid">
       {{ t('auth.login.loginButton') }}
     </Button>
   </form>

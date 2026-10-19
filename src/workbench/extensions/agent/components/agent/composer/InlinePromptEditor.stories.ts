@@ -44,7 +44,7 @@ const meta: Meta<typeof InlinePromptEditor> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope w-100 rounded-lg bg-secondary-background p-3"><story /></div>'
+        '<div class="agent-scope w-100 rounded-lg bg-secondary p-3"><story /></div>'
     })
   ],
   args: {

@@ -8,11 +8,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/composables/useImageCrop.ts",
+      "path": "src/composables/useImageCrop.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/useImageCrop.test.ts",
+      "path": "src/composables/useImageCrop.ts",
       "role": "application"
     },
     {

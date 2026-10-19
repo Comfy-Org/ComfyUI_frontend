@@ -1,13 +1,15 @@
-import type { ContextMenu } from './ContextMenu'
-import type { LGraphNode } from './LGraphNode'
+import type {
+  ContextMenu,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import { LiteGraphGlobal } from './LiteGraphGlobal'
-import type { Point, Size } from './interfaces'
+import type { Point } from './interfaces'
 import type { ConnectingLink } from './types/slots'
 import type { IContextMenuOptions } from './types/contextMenu'
 import { registerLiteGraphInstance } from './litegraphInstance'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'
-import type { RenderShape, TitleMode } from './types/globalEnums'
 
 // Must remain above LiteGraphGlobal (circular dependency due to abstract factory behaviour in `configure`)
 export { Subgraph } from './subgraph/Subgraph'
@@ -52,29 +54,6 @@ export interface LinkReleaseContextExtended {
 }
 
 export interface LiteGraphCanvasEvent extends CustomEvent<CanvasEventDetail> {}
-
-export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
-  new (title: string, type?: string): T
-
-  title?: string
-  desc?: string
-  priority?: number
-  type?: string // TODO: to be, or not to be--that is the question
-  size?: Size
-  min_height?: number
-  slot_start_y?: number
-  widgets_info?: Record<string, unknown>
-  collapsable?: boolean
-  color?: string
-  bgcolor?: string
-  shape?: RenderShape
-  title_mode?: TitleMode
-  title_color?: string
-  title_text_color?: string
-  keepAllLinksOnBypass: boolean
-  resizeHandleSize?: number
-  resizeEdgeSize?: number
-}
 
 // End backwards compat
 
@@ -180,3 +159,10 @@ export { MovingInputLink } from './canvas/MovingInputLink'
 export { ToInputRenderLink } from './canvas/ToInputRenderLink'
 export { LiteGraphGlobal } from './LiteGraphGlobal'
 export type { CreateNodeOptions } from './LiteGraphGlobal'
+
+type RegisteredLinkReleaseContextExtended = LinkReleaseContextExtended
+
+declare module './types/entityRegistry' {
+  interface LinkReleaseContextExtended extends RegisteredLinkReleaseContextExtended {}
+}
+export type { LGraphNodeConstructor } from './types/nodeConstructor'

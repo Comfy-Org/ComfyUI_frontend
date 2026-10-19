@@ -10,7 +10,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--extensions-blocks]" />
-      <h2 class="text-base text-base-foreground">{{ $t('manager.title') }}</h2>
+      <h2 class="text-base text-foreground">{{ $t('manager.title') }}</h2>
     </template>
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavId" :nav-items="navItems" />
@@ -57,20 +57,15 @@
         v-if="shouldShowManagerBanner"
         class="relative mx-6 mt-3 mb-4 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
       >
-        <i
-          class="icon-[lucide--triangle-alert] text-lg text-warning-background"
-        />
-        <div class="flex flex-1 flex-col gap-2">
-          <p class="m-0 text-sm font-bold">
+        <i class="icon-[lucide--triangle-alert] text-lg text-warning" />
+        <div class="flex flex-1 flex-col gap-2 text-sm">
+          <p class="m-0 font-bold">
             {{ $t('manager.conflicts.warningBanner.title') }}
           </p>
           <p class="m-0 text-xs">
             {{ $t('manager.conflicts.warningBanner.message') }}
           </p>
-          <p
-            class="m-0 cursor-pointer text-sm font-bold"
-            @click="onClickWarningLink"
-          >
+          <p class="m-0 cursor-pointer font-bold" @click="onClickWarningLink">
             {{ $t('manager.conflicts.warningBanner.button') }}
           </p>
         </div>
@@ -80,9 +75,20 @@
           size="icon"
           @click="dismissWarningBanner"
         >
-          <i class="pi pi-times text-xs text-base-foreground"></i>
+          <i class="pi pi-times text-xs text-foreground"></i>
         </Button>
       </div>
+
+      <Message
+        :visible="isUnmatchedLegacyManagerSearch"
+        severity="info"
+        class="mx-6 mb-4 w-auto"
+      >
+        <template #icon>
+          <i class="icon-[lucide--info] size-4" />
+        </template>
+        {{ $t('manager.legacyManagerSearchTip') }}
+      </Message>
 
       <!-- Sort Options -->
       <div v-if="isSortable" class="flex justify-end px-6 pb-4">
@@ -165,6 +171,7 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -188,10 +195,10 @@ import { useManagerDisplayPacks } from '@/workbench/extensions/manager/composabl
 import { useManagerStatePersistence } from '@/workbench/extensions/manager/composables/useManagerStatePersistence'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import { useLegacySearchTip } from '@/workbench/extensions/manager/composables/useLegacySearchTip'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { isLegacyManagerQuery } from '@/workbench/extensions/manager/utils/legacyManagerQuery'
 import { PACK_SORTABLE_FIELDS } from '@/workbench/extensions/manager/utils/nodePackSort'
 
 const { initialTab, initialPackId, onClose } = defineProps<{
@@ -359,9 +366,12 @@ const isSearchBacked = computed(() => {
     (searchQuery.value !== '' && tab !== ManagerTab.Unresolved)
   )
 })
+const openingSearchQuery = searchQuery.value.trim()
+const debouncedSearchQuery = refDebounced(searchQuery, SEARCH_DEBOUNCE_MS)
 const packs = useRegistrySearch({
-  query: refDebounced(searchQuery, SEARCH_DEBOUNCE_MS),
-  searchMode
+  query: debouncedSearchQuery,
+  searchMode,
+  isTypedQuery: () => debouncedSearchQuery.value.trim() !== openingSearchQuery
 })
 const searchResults = computed(() => [...toValue(packs.items)])
 const isSearchLoading = computed(
@@ -370,10 +380,6 @@ const isSearchLoading = computed(
 const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
 const sortOptions = PACK_SORTABLE_FIELDS
-const { isLegacyManagerSearch } = useLegacySearchTip(
-  searchQuery,
-  isNewManagerUI
-)
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
@@ -455,13 +461,7 @@ const emptyStateTitle = computed(() => {
 
 const emptyStateMessage = computed(() => {
   if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
-  if (searchQuery.value) {
-    const baseMessage = t('manager.tryDifferentSearch')
-    if (isLegacyManagerSearch.value) {
-      return `${baseMessage}\n\n${t('manager.legacyManagerSearchTip')}`
-    }
-    return baseMessage
-  }
+  if (searchQuery.value) return t('manager.tryDifferentSearch')
 
   const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
@@ -484,6 +484,26 @@ const isLoading = computed(() => {
   if (isSearchLoading.value) return searchResults.value.length === 0
   if (isTabLoading.value) return true
   return isInitialLoad.value
+})
+
+const isSettledWithNoPacks = computed(
+  () =>
+    displayPacks.value.length === 0 &&
+    !isLoading.value &&
+    !isManagerErrorRelevant.value &&
+    !hasMorePacks.value
+)
+
+const isUnmatchedLegacyManagerSearch = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    isNewManagerUI.value &&
+    isSearchBacked.value &&
+    firstPage?.query === searchQuery.value.trim() &&
+    isLegacyManagerQuery(firstPage.query) &&
+    !displayPacks.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
+    (firstPage.rawResultsEmpty || isSettledWithNoPacks.value)
+  )
 })
 
 const resultsWithKeys = computed(
