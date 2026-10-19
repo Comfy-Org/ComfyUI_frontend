@@ -300,6 +300,27 @@ describe('native CONTENT presentation', () => {
       ])
     }
   )
+  it('classifies audio heroes and examples as audio', () => {
+    const view = catalogPresentation({
+      ...record,
+      data: {
+        ...record.data,
+        website_media: {
+          '$.hero': '/catalog-media/hero/song',
+          '$.examples[0].media': '/catalog-media/example/song'
+        },
+        website_media_types: {
+          '$.hero': 'audio/mpeg',
+          '$.examples[0].media': 'audio/wav'
+        }
+      }
+    })
+    expect(view).toMatchObject({
+      thumbnail: { kind: 'audio' },
+      examples: [{ mediaKind: 'audio' }]
+    })
+    expect(view).not.toHaveProperty('thumbnailUrl')
+  })
   it('does not reuse old video presentation when the selected file becomes an image', () => {
     const view = catalogPresentation({
       ...record,

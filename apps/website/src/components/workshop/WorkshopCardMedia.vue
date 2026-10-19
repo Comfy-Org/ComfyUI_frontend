@@ -38,7 +38,7 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
     preload="metadata"
   />
   <img
-    v-else-if="model.thumbnail"
+    v-else-if="model.thumbnail && model.thumbnail.kind !== 'audio'"
     :src="model.thumbnail.url"
     alt=""
     class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"

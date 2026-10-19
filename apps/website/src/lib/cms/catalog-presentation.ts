@@ -139,6 +139,7 @@ function mediaKind(types: Document, field: string) {
   if (mime === 'video/mp4' || mime === 'video/webm') return 'video'
   if (mime === 'image/png' || mime === 'image/jpeg' || mime === 'image/webp')
     return 'image'
+  if (typeof mime === 'string' && mime.startsWith('audio/')) return 'audio'
   return undefined
 }
 
@@ -378,8 +379,9 @@ function heroPresentation(d: Document, preserved: Document) {
           typeof urls['$.hero'] === 'string' ? '$.hero' : '$.thumbnail'
         )
   const poster = heroPoster(urls, staticThumb)
+  const thumbnailUrl = kind === 'audio' ? poster.poster : hero
   return {
-    thumbnailUrl: hero,
+    ...(thumbnailUrl ? { thumbnailUrl } : {}),
     thumbnail: {
       url: hero,
       kind: kind ?? preserved.thumbnailKind ?? 'image',

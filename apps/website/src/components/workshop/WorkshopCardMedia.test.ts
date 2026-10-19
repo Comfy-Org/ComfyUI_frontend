@@ -27,4 +27,16 @@ describe('Hub browsing thumbnails', () => {
       expect(html).not.toContain('/original/full-resolution')
     }
   )
+  it('shows the placeholder instead of an image for an audio card with no still', async () => {
+    const html = await renderToString(
+      createSSRApp(WorkshopCardMedia, {
+        model: {
+          name: 'Card',
+          thumbnail: { url: '/catalog-media/hero/song', kind: 'audio' }
+        }
+      })
+    )
+    expect(html).not.toContain('/catalog-media/hero/song')
+    expect(html).toContain('data-testid="model-media-placeholder"')
+  })
 })
