@@ -1,3 +1,5 @@
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
+
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 
 export const NOTE_ID = 9001
@@ -15,7 +17,7 @@ function addVirtualNode(
   type: 'Note' | 'MarkdownNote',
   pos: [number, number],
   text: string
-): RecordedGraphOperation {
+): Extract<GraphOperation, { op: 'add_node' }> {
   return {
     op: 'add_node',
     node_id: id,
