@@ -70,69 +70,60 @@ function assertWidgetValuesForm(
   return condition
 }
 
-function validateWidgetValuesForm(
-  node: LGraphNode,
-  serialised: ISerialisedNode,
-  widgetOrderBeforeHook: readonly string[]
-): boolean {
-  const form = serialised.widgets_values_form
-  if (form === undefined) return true
-
-  const closedForm =
+function isClosedForm(form: unknown): form is { order: string[] } {
+  return (
     isPlainRecord(form) &&
     Object.keys(form).length === 1 &&
     Array.isArray(form.order) &&
     form.order.length > 0 &&
     new Set(form.order).size === form.order.length &&
     form.order.every((name) => typeof name === 'string' && name.length > 0)
+  )
+}
+
+function validateWidgetValuesForm(
+  node: LGraphNode,
+  serialised: ISerialisedNode,
+  widgetOrderBeforeHook: readonly string[]
+): boolean {
+  const form: unknown = serialised.widgets_values_form
+  if (form === undefined) return true
+  const closed = isClosedForm(form)
   assertWidgetValuesForm(
-    closedForm,
+    closed,
     'Widget values form must be closed to a non-empty order',
     node
   )
-  if (!closedForm) return false
+  if (!closed) return false
 
-  const currentOrder = serializableWidgetOrder(node.widgets ?? [])
+  const { order } = form
   const values: unknown = serialised.widgets_values
-  const hasSupportedValues = Array.isArray(values) || isPlainRecord(values)
-  assertWidgetValuesForm(
-    hasSupportedValues,
-    'Widget values form must describe array- or object-shaped values',
-    node
-  )
-
-  const arrayLengthAgrees =
-    !Array.isArray(values) || form.order.length === values.length
-  assertWidgetValuesForm(
-    arrayLengthAgrees,
-    'Widget values form length must match array-shaped values',
-    node
-  )
-
-  const objectKeysAgree =
-    !isPlainRecord(values) ||
-    form.order.every((name) => Object.hasOwn(values, name))
-  assertWidgetValuesForm(
-    objectKeysAgree,
-    'Widget values form order must be a unique subset of object-shaped values',
-    node
-  )
-
-  const widgetOrderSurvived =
-    isEqual(widgetOrderBeforeHook, currentOrder) &&
-    isEqual(form.order, currentOrder)
-  assertWidgetValuesForm(
-    widgetOrderSurvived,
-    'Widget values form order must survive serialization unchanged',
-    node
-  )
-
-  return (
-    hasSupportedValues &&
-    arrayLengthAgrees &&
-    objectKeysAgree &&
-    widgetOrderSurvived
-  )
+  const currentOrder = serializableWidgetOrder(node.widgets ?? [])
+  const checks: [boolean, string][] = [
+    [
+      Array.isArray(values) || isPlainRecord(values),
+      'Widget values form must describe array- or object-shaped values'
+    ],
+    [
+      !Array.isArray(values) || order.length === values.length,
+      'Widget values form length must match array-shaped values'
+    ],
+    [
+      !isPlainRecord(values) ||
+        order.every((name) => Object.hasOwn(values, name)),
+      'Widget values form order must be a unique subset of object-shaped values'
+    ],
+    [
+      isEqual(widgetOrderBeforeHook, currentOrder) &&
+        isEqual(order, currentOrder),
+      'Widget values form order must survive serialization unchanged'
+    ]
+  ]
+  return checks
+    .map(([condition, message]) =>
+      assertWidgetValuesForm(condition, message, node)
+    )
+    .every(Boolean)
 }
 
 export function finalizeWidgetValuesForm(
