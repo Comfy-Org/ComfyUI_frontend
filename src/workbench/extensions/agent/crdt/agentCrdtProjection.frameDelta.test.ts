@@ -121,10 +121,6 @@ describe('AgentCrdtProjection frame node delta', () => {
     expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(false)
     expect(projection.retryFailed(WORKFLOW_ID)).toBeNull()
     expect(applyChanges).toHaveBeenCalledTimes(3)
-    // The retained frame's registers, not a fresh (and by now empty) take from
-    // the collector. Equality rather than identity because a replay re-reads
-    // its node directions from the document; here the document still holds
-    // node 3, so `add` survives unchanged.
     expect(applyChanges.mock.calls[2][1]).toEqual(applyChanges.mock.calls[0][1])
   })
 

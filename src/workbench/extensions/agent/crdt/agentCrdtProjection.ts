@@ -66,18 +66,6 @@ function docNodeDelta(changes: FrameChanges): DocNodeDelta {
   return { added, removed }
 }
 
-/**
- * One retained frame's node directions, re-read from the document: a node the
- * document still holds is upserted, one it no longer holds is deleted. Only
- * the nodes the frame already named are visited, so a replay never reaches
- * past what that frame touched.
- *
- * Direction is the only part of a frame that can go stale while it waits for a
- * retry — every other register is read from the document at apply time. A
- * retained `delete` for a node a newer frame restored would otherwise remove
- * it again, and the clean retry would then clear the staleness that was the
- * only remaining sign the canvas and the document disagree.
- */
 function changesAgainstDoc(doc: Y.Doc, changes: FrameChanges): FrameChanges {
   const docNodes = nodesMap(doc)
   const nodes = new Map<string, NodeChange>()
@@ -206,15 +194,7 @@ export class AgentCrdtProjection {
     )
   }
 
-  /**
-   * Replays retained frames whose projection failed, oldest first, stopping at
-   * the first one that fails again. Each is re-derived against the document
-   * before it is replayed; see {@link changesAgainstDoc}.
-   *
-   * No caller reads a node delta from a retry, so none is reported: the
-   * document node entries a retry touches were already reported by the frame
-   * that first delivered them.
-   */
+  /** Replays failed frames oldest first until one fails again. */
   retryFailed(workflowId: string): {
     applied: true
     createdNodeIds: NodeId[]
