@@ -75,6 +75,7 @@ catalog:
   cva: 1.0.0-beta.4
   dompurify: 3.4.13
   dotenv: ^16.4.5
+  es-toolkit: ^1.39.9
   eslint: ^10.10.0
   eslint-config-prettier: ^10.1.8
   eslint-import-resolver-typescript: ^4.4.5

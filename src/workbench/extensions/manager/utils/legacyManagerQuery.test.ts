@@ -19,10 +19,12 @@ describe('isLegacyManagerQuery', () => {
     'comfyui-manager/',
     'ltdrdata/ComfyUI-Manager/',
     'ltdrdata/ComfyUI-Manager//',
+    'ltdrdata/ComfyUI-Manager /',
     'ltdrdata/comfyui_manager',
     'ltdrdata/ComfyUI-Manager',
     'Comfy-Org/comfyui-manager',
     'ltdrdata/comfyui-manager.git',
+    'ltdrdata/ComfyUI-Manager.git /',
     'https://github.com/ltdrdata/ComfyUI-Manager',
     'https://github.com/Comfy-Org/ComfyUI-Manager.git',
     'github.com/ltdrdata/ComfyUI-Manager/tree/main'
