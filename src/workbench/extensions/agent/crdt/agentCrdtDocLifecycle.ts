@@ -2,8 +2,8 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
-import type { PermanentDocSubscribeRefusalCode } from './docFrameClient'
-import { PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES } from './docFrameClient'
+import type { PermanentDocSubscribeRefusalCode } from './docFrameCodes'
+import { PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES } from './docFrameCodes'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab

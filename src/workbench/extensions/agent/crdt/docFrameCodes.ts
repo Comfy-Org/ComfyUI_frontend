@@ -9,6 +9,14 @@ export const SERVER_DOC_FRAME_TYPES = [
 
 export type ServerDocFrameType = (typeof SERVER_DOC_FRAME_TYPES)[number]
 
+export const PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES = [
+  'schema_version_mismatch',
+  'catalog_mismatch',
+  'unsupported'
+] as const
+export type PermanentDocSubscribeRefusalCode =
+  (typeof PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES)[number]
+
 export const STALE_SCHEMA_RESEED_REQUIRED = 'stale_schema_reseed_required'
 export const RESEED_CONFLICT = 'conflict'
 
