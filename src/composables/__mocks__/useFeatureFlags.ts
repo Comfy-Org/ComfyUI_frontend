@@ -41,7 +41,6 @@ const defaultFlags: FeatureFlags = {
   autoTopUpEnabled: false,
   billingSdkSubscriptionRailEnabled: false,
   v1PaymentRecovery: false,
-  freeTierJobAllowanceEnabled: false,
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
   onboardingTourEnabled: false,
