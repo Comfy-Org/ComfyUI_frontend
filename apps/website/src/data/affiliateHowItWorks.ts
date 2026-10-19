@@ -37,9 +37,9 @@ export const affiliateHowItWorksSteps: readonly HowItWorksStep[] = [
       'zh-CN': '赚取'
     },
     description: {
-      en: '30% recurring commission for 3 months on every Comfy Cloud subscriber you refer. Tracked in real-time. Paid monthly.',
+      en: '25% recurring commission for 6 months on every Comfy Cloud subscriber you refer. Tracked in real-time. Paid monthly.',
       'zh-CN':
-        '每位您推荐的 Comfy Cloud 订阅者，可获连续 3 个月 30% 的经常性佣金。实时追踪，每月结算。'
+        '每位您推荐的 Comfy Cloud 订阅者，可获连续 6 个月 25% 的经常性佣金。实时追踪，每月结算。'
     }
   }
 ] as const

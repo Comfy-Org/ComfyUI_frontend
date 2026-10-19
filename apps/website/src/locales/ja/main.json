@@ -79,12 +79,12 @@
     },
     "hero": {
       "apply": "今すぐ申し込む",
-      "feature1": "3か月間、30%の継続コミッション",
-      "feature2": "60日間のCookie有効期間",
+      "feature1": "6か月間、25%の継続コミッション",
+      "feature2": "90日間のCookie有効期間",
       "feature3": "最低支払額$100",
       "feature4": "毎月の支払い",
-      "headingHighlight": "30%を獲得",
-      "headingMuted": "3か月間の継続コミッション。",
+      "headingHighlight": "25%を獲得",
+      "headingMuted": "6か月間の継続コミッション。",
       "imageAlt": "Comfyアフィリエイトプログラム",
       "label": "アフィリエイト"
     },
@@ -92,7 +92,7 @@
       "heading": "仕組み"
     },
     "page": {
-      "description": "紹介したComfy Cloudサブスクリプションごとに、3か月間30%の継続コミッションを獲得できます。Comfyパートナーへの参加をお申し込みください。",
+      "description": "紹介したComfy Cloudサブスクリプションごとに、6か月間25%の継続コミッションを獲得できます。Comfyパートナーへの参加をお申し込みください。",
       "title": "Comfy.org アフィリエイトプログラム - パートナーになる"
     }
   },

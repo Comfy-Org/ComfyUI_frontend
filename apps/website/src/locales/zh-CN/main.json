@@ -79,12 +79,12 @@
     },
     "hero": {
       "apply": "立即申请",
-      "feature1": "30% 持续佣金，连续 3 个月",
-      "feature2": "60 天 Cookie 窗口",
+      "feature1": "25% 持续佣金，连续 6 个月",
+      "feature2": "90 天 Cookie 窗口",
       "feature3": "$100 起付",
       "feature4": "每月结算",
-      "headingHighlight": "赚取 30%",
-      "headingMuted": "持续返佣 3 个月。",
+      "headingHighlight": "赚取 25%",
+      "headingMuted": "持续返佣 6 个月。",
       "imageAlt": "Comfy 联盟计划",
       "label": "联盟"
     },
@@ -92,7 +92,7 @@
       "heading": "运作方式"
     },
     "page": {
-      "description": "为您推荐的每个 Comfy Cloud 订阅赚取 30% 持续佣金，连续 3 个月。立即申请成为 Comfy 合作伙伴。",
+      "description": "为您推荐的每个 Comfy Cloud 订阅赚取 25% 持续佣金，连续 6 个月。立即申请成为 Comfy 合作伙伴。",
       "title": "Comfy.org 联盟计划 - 成为合作伙伴"
     }
   },
