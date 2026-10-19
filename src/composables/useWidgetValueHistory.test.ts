@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@/types/nodeId'
@@ -127,6 +127,48 @@ describe(useWidgetValueHistory, () => {
     expect(value.value).toBe(1)
     expect(history.canUndo.value).toBe(false)
     expect(history.canRedo.value).toBe(true)
+  })
+
+  it('settles the baseline on the value the widget actually applied', async () => {
+    const value = ref(1.4)
+    const history = useWidgetValueHistory({
+      scope: () => defaultScope,
+      read: () => value.value,
+      apply: (next) => {
+        value.value = Math.round(Number(next))
+      }
+    })
+    value.value = 3
+    history.commit()
+
+    history.undo()
+    await nextTick()
+    history.commit()
+
+    expect(value.value).toBe(1)
+    expect(history.canUndo.value).toBe(false)
+  })
+
+  it('shares the baseline between instances of the same widget', () => {
+    const value = ref(1)
+    const options = {
+      scope: () => defaultScope,
+      read: () => value.value,
+      apply: (next: unknown) => {
+        value.value = Number(next)
+      }
+    }
+    const canvas = useWidgetValueHistory(options)
+    const appMode = useWidgetValueHistory(options)
+    value.value = 2
+    appMode.commit()
+    value.value = 3
+    canvas.commit()
+
+    canvas.undo()
+    expect(value.value).toBe(2)
+    canvas.undo()
+    expect(value.value).toBe(1)
   })
 
   it('keeps no history while the widget has no scope', () => {

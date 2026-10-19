@@ -66,6 +66,17 @@ describe(useWidgetHistoryStore, () => {
     expect(store.canUndo(scope)).toBe(true)
   })
 
+  it('keeps the shared baseline across steps until the widget is forgotten', () => {
+    const store = useWidgetHistoryStore()
+    store.setBaseline(scope, 'shown')
+    store.record(scope, 'before')
+    store.undo(scope, 'after')
+
+    expect(store.baselineOf(scope)).toEqual({ value: 'shown' })
+    store.forget(scope)
+    expect(store.baselineOf(scope)).toBeUndefined()
+  })
+
   it.for(['undo', 'redo'] as const)(
     'returns nothing to %s for an untouched widget',
     (direction) => {

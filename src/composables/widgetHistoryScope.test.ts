@@ -27,7 +27,8 @@ describe(widgetHistoryScope, () => {
     })
   })
 
-  it('keys a subgraph widget by its subgraph', () => {
+  it('keys a subgraph widget by its subgraph while the canvas shows another graph', () => {
+    app.canvas.graph = fromPartial({ id: CANVAS_GRAPH_ID })
     app.rootGraph.subgraphs.set(
       SUBGRAPH_ID,
       fromPartial<Subgraph>({ id: SUBGRAPH_ID })

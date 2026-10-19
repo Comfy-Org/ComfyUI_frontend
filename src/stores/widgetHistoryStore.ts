@@ -26,6 +26,7 @@ interface WidgetHistory {
   readonly past: readonly unknown[]
   readonly future: readonly unknown[]
   readonly mergeKey?: string
+  readonly baseline?: HistoryStep
 }
 
 interface HistoryStep {
@@ -47,6 +48,7 @@ function recordStep(
     return history
   }
   return {
+    ...history,
     past: [...history.past, cloneDeep(previous)].slice(-WIDGET_HISTORY_LIMIT),
     future: [],
     mergeKey
@@ -83,10 +85,13 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     scope: WidgetHistoryScope,
     current: unknown
   ): HistoryStep | undefined {
-    const { past, future } = historyOf(scope)
+    const history = historyOf(scope)
+    const { past, future } = history
     if (!past.length) return undefined
     const value = past.at(-1)
     save(scope, {
+      ...history,
+      mergeKey: undefined,
       past: past.slice(0, -1),
       future: [...future, cloneDeep(current)]
     })
@@ -97,14 +102,25 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     scope: WidgetHistoryScope,
     current: unknown
   ): HistoryStep | undefined {
-    const { past, future } = historyOf(scope)
+    const history = historyOf(scope)
+    const { past, future } = history
     if (!future.length) return undefined
     const value = future.at(-1)
     save(scope, {
+      ...history,
+      mergeKey: undefined,
       past: [...past, cloneDeep(current)],
       future: future.slice(0, -1)
     })
     return { value: cloneDeep(value) }
+  }
+
+  function baselineOf(scope: WidgetHistoryScope): HistoryStep | undefined {
+    return historyOf(scope).baseline
+  }
+
+  function setBaseline(scope: WidgetHistoryScope, value: unknown): void {
+    save(scope, { ...historyOf(scope), baseline: { value: cloneDeep(value) } })
   }
 
   function canUndo(scope: WidgetHistoryScope): boolean {
@@ -146,6 +162,8 @@ export const useWidgetHistoryStore = defineStore('widgetHistory', () => {
     record,
     undo,
     redo,
+    baselineOf,
+    setBaseline,
     canUndo,
     canRedo,
     retainLive,
