@@ -14,8 +14,16 @@ vi.hoisted(() => {
   }
 })
 
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
 import { i18n } from '@/i18n'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { ComposerAttachment } from '../../types/composerAttachment'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
@@ -24,6 +32,8 @@ import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
 setupInlinePromptEditorDom()
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 function createHistoryGroups() {
   return {
@@ -44,9 +54,24 @@ function mountHistory(
       historyGroups: {
         ...createHistoryGroups(),
         today: [
-          { id: 'first', title: 'First chat', updatedAt: 1 },
-          { id: 'second', title: 'Second chat', updatedAt: 2 },
-          { id: 'previous', title: 'Previous chat', updatedAt: 3 }
+          {
+            id: 'first',
+            title: 'First chat',
+            updatedAt: 1,
+            titleSource: 'server'
+          },
+          {
+            id: 'second',
+            title: 'Second chat',
+            updatedAt: 2,
+            titleSource: 'server'
+          },
+          {
+            id: 'previous',
+            title: 'Previous chat',
+            updatedAt: 3,
+            titleSource: 'server'
+          }
         ]
       },
       selectHistory
@@ -116,6 +141,7 @@ const suggestedPromptAttribution: AgentStarterPromptAttribution = {
   promptId: 'slot_1',
   promptIndex: 0,
   promptCount: 5,
+  visiblePromptCount: 5,
   promptTextHash: 'a62d17a3',
   locale: 'en'
 }
@@ -237,6 +263,7 @@ const eventPanelHeaderStub = defineComponent({
 
 describe('AgentPanel', () => {
   beforeEach(() => {
+    distribution.isCloud = false
     vi.useRealTimers()
     localStorage.clear()
     attachmentCalls.add.length = 0
@@ -244,6 +271,29 @@ describe('AgentPanel', () => {
     attachmentCalls.remove.length = 0
     draftCalls.insert.length = 0
     draftCalls.replaceDraft.length = 0
+  })
+
+  it('renders and forwards the treatment starter prompt exposure', () => {
+    distribution.isCloud = true
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        starterPromptAssignment: 'test',
+        attributeStarterPromptExperiment: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { WorkflowSelectorChip: true }
+      }
+    })
+
+    expect(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
+      })
+    ).toBeVisible()
+    expect(emitted('starterPromptRendered')).toEqual([['test']])
   })
 
   it('keeps a failed opening in history and lets the user retry that row', async () => {
@@ -475,7 +525,6 @@ describe('AgentPanel', () => {
       props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
         plugins: [pinia, i18n],
-        directives: { tooltip: {} },
         stubs: {
           WorkflowSelectorChip: true
         }
@@ -528,7 +577,6 @@ describe('AgentPanel', () => {
         },
         global: {
           plugins: [pinia, i18n],
-          directives: { tooltip: {} },
           stubs: { WorkflowSelectorChip: true }
         }
       })

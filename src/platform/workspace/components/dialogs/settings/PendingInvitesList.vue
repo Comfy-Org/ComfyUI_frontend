@@ -5,7 +5,7 @@
       :key="invite.id"
       :class="
         cn(
-          'grid w-full items-center border-b border-interface-stroke/30 p-2 last:border-0',
+          'grid w-full items-center border-b border-border/30 p-2 last:border-0',
           gridCols
         )
       "
@@ -16,17 +16,17 @@
         "
       >
         <div
-          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary-background"
+          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-secondary"
         >
           <span class="text-sm text-muted-foreground">
             {{ getInviteInitial(invite.email) }}
           </span>
         </div>
-        <div class="flex min-w-0 flex-1 flex-col gap-1">
-          <span class="text-sm text-base-foreground">
+        <div class="flex min-w-0 flex-1 flex-col gap-1 text-sm">
+          <span class="text-foreground">
             {{ getInviteDisplayName(invite.email) }}
           </span>
-          <span class="text-sm text-muted-foreground">
+          <span class="text-muted-foreground">
             {{ invite.email }}
           </span>
         </div>
@@ -38,9 +38,7 @@
         :class="
           cn(
             'text-sm',
-            isExpired(invite)
-              ? 'text-warning-background'
-              : 'text-muted-foreground'
+            isExpired(invite) ? 'text-warning' : 'text-muted-foreground'
           )
         "
       >
@@ -53,59 +51,16 @@
         }}
       </span>
       <div class="flex items-center justify-end">
-        <MoreButton
-          v-slot="{ close }"
-          variant="muted-textonly"
-          :aria-label="$t('g.moreOptions')"
-        >
-          <Button
-            v-if="invite.token"
-            variant="textonly"
-            size="unset"
-            :class="menuItemClass"
-            @click="
-              () => {
-                close()
-                void copyInviteLink(invite)
-              }
-            "
-          >
-            <i class="icon-[lucide--link] size-4" />
-            <span>{{
-              $t('workspacePanel.members.actions.copyInviteLink')
-            }}</span>
-          </Button>
-          <Button
-            variant="textonly"
-            size="unset"
-            :class="menuItemClass"
-            @click="
-              () => {
-                close()
-                $emit('resend', invite)
-              }
-            "
-          >
-            <!-- fallow-ignore-next-line css-token-drift -->
-            <i class="icon-[lucide--mail-plus] size-4" />
-            <span>{{ $t('workspacePanel.members.actions.resendInvite') }}</span>
-          </Button>
-          <Button
-            variant="textonly"
-            size="unset"
-            :class="menuItemClass"
-            @click="
-              () => {
-                close()
-                $emit('revoke', invite)
-              }
-            "
-          >
-            <!-- fallow-ignore-next-line css-token-drift -->
-            <i class="icon-[lucide--mail-x] size-4" />
-            <span>{{ $t('workspacePanel.members.actions.cancelInvite') }}</span>
-          </Button>
-        </MoreButton>
+        <Menu :items="getInviteMenuItems(invite)" align="end">
+          <template #trigger>
+            <Button
+              size="icon"
+              variant="muted-textonly"
+              :aria-label="$t('g.moreOptions')"
+              icon="icon-[lucide--ellipsis]"
+            />
+          </template>
+        </Menu>
       </div>
     </div>
     <div
@@ -126,9 +81,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import MoreButton from '@/components/button/MoreButton.vue'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import Button from '@/components/ui/button/Button.vue'
+import Menu from '@/components/ui/menu/Menu.vue'
+import type { MenuItem } from '@/components/ui/menu/types'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   buildInviteLink,
@@ -136,9 +92,7 @@ import {
 } from '@/platform/workspace/utils/inviteLinks'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
-
-const toastStore = useToastStore()
+const toast = useToast()
 
 const { searchQuery = '', loaded = false } = defineProps<{
   invites: WorkspacePendingInvite[]
@@ -147,7 +101,7 @@ const { searchQuery = '', loaded = false } = defineProps<{
   loaded?: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   resend: [invite: WorkspacePendingInvite]
   revoke: [invite: WorkspacePendingInvite]
 }>()
@@ -175,16 +129,32 @@ function isExpired(invite: WorkspacePendingInvite): boolean {
 async function copyInviteLink(invite: WorkspacePendingInvite) {
   if (!invite.token) return
   if (await copyTextSilently(buildInviteLink(invite.token))) {
-    toastStore.add({
-      severity: 'success',
-      summary: t('workspacePanel.inviteLinks.copiedToast'),
-      life: 3000
+    toast.success(t('workspacePanel.inviteLinks.copiedToast'), {
+      duration: 3000
     })
   } else {
-    toastStore.add({
-      severity: 'error',
-      summary: t('workspacePanel.inviteLinks.copyFailedToast')
-    })
+    toast.error(t('workspacePanel.inviteLinks.copyFailedToast'))
   }
+}
+
+function getInviteMenuItems(invite: WorkspacePendingInvite): MenuItem[] {
+  return [
+    {
+      label: () => t('workspacePanel.members.actions.copyInviteLink'),
+      icon: 'icon-[lucide--link]',
+      visible: Boolean(invite.token),
+      command: () => copyInviteLink(invite)
+    },
+    {
+      label: () => t('workspacePanel.members.actions.resendInvite'),
+      icon: 'icon-[lucide--mail-plus]',
+      command: () => emit('resend', invite)
+    },
+    {
+      label: () => t('workspacePanel.members.actions.cancelInvite'),
+      icon: 'icon-[lucide--mail-x]',
+      command: () => emit('revoke', invite)
+    }
+  ]
 }
 </script>

@@ -18,7 +18,7 @@ import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 
-import { wireNodeSnapshot } from './docOpMinter'
+import { docInputIndex, wireNodeSnapshot } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 
 export interface RestoreOpMinterDeps {
@@ -29,6 +29,8 @@ export interface RestoreOpMinterDeps {
   getGraph(): LGraph | null
   /** True while the active workflow's ChangeTracker replays an undo/redo. */
   isRestoringState(): boolean
+  /** Input names in the bound document's stable order. */
+  docInputNames(nodeId: string): readonly (string | undefined)[] | null
 }
 
 export interface RestoreOpMinter {
@@ -139,23 +141,38 @@ function changedWidgetOperations(
 
 function addedLinkOperations(
   before: RestoreSnapshot,
-  after: RestoreSnapshot
+  after: RestoreSnapshot,
+  deps: RestoreOpMinterDeps
 ): GraphOperation[] {
-  return [...after.links].flatMap(([id, link]) =>
-    before.links.has(id)
-      ? []
-      : [
-          {
-            op: 'connect',
-            link_id: link.id,
-            from_node: link.origin_id,
-            from_slot: link.origin_slot,
-            to_node: link.target_id,
-            to_slot: link.target_slot,
-            link_type: String(link.type)
-          }
-        ]
-  )
+  return [...after.links].flatMap(([id, link]) => {
+    if (before.links.has(id)) return []
+    const targetId = String(link.target_id)
+    const targetAdded = !before.nodes.has(targetId)
+    const serializedInput =
+      after.nodes.get(targetId)?.inputs?.[link.target_slot]
+    const input =
+      serializedInput &&
+      typeof serializedInput === 'object' &&
+      'name' in serializedInput &&
+      typeof serializedInput.name === 'string'
+        ? { name: serializedInput.name }
+        : undefined
+    const toSlot = targetAdded
+      ? link.target_slot
+      : docInputIndex(deps.docInputNames(targetId), input, link.target_slot)
+    if (toSlot === undefined) return []
+    return [
+      {
+        op: 'connect',
+        link_id: link.id,
+        from_node: link.origin_id,
+        from_slot: link.origin_slot,
+        to_node: link.target_id,
+        to_slot: toSlot,
+        link_type: String(link.type)
+      }
+    ]
+  })
 }
 
 function reportDetachedLinks(
@@ -184,7 +201,8 @@ function reportDetachedLinks(
  */
 function diffRestore(
   before: RestoreSnapshot,
-  after: RestoreSnapshot
+  after: RestoreSnapshot,
+  deps: RestoreOpMinterDeps
 ): GraphOperation[] {
   const unserializable = [
     ...new Set([
@@ -204,7 +222,7 @@ function diffRestore(
     ...removedNodeOperations(before, after),
     ...addedNodeOperations(before, after),
     ...changedWidgetOperations(before, after),
-    ...addedLinkOperations(before, after)
+    ...addedLinkOperations(before, after, deps)
   ]
 }
 
@@ -227,7 +245,7 @@ export function attachRestoreOpMinter(
       if (!before) return
       const graph = deps.getGraph()
       if (!graph) return
-      const operations = diffRestore(before, snapshotGraph(graph))
+      const operations = diffRestore(before, snapshotGraph(graph), deps)
       if (operations.length > 0) deps.enqueue(operations)
     },
     onGraphLoadError() {

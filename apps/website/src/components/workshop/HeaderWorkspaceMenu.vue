@@ -12,12 +12,12 @@ import {
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { WorkshopSession } from '../../config/workshop-session-state'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import { workspaceInitialsOf } from '../../lib/workshop/initials'
-import { submenuOffset } from '../../lib/workshop/submenu-offset'
-import type { WorkspaceWithRole } from '../../lib/workshop/workspaces'
+import type { WorkshopSession } from '@/config/workshop-session-state'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { workspaceInitialsOf } from '@/lib/workshop/initials'
+import { submenuOffset } from '@/lib/workshop/submenu-offset'
+import type { WorkspaceWithRole } from '@/lib/workshop/workspaces'
 
 const {
   session,

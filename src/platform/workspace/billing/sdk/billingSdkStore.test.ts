@@ -1,14 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { onBillingRefresh } from '@/platform/workspace/billing/billingRefresh'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -45,8 +44,6 @@ vi.mock(import('./createBillingSdk'), () => ({
   createBillingSdk: mockCreateBillingSdk
 }))
 
-vi.mock(import('@/composables/billing/useBillingContext'))
-
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
@@ -55,30 +52,28 @@ vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true,
+  isDesktop: false
+}))
 
 vi.mock(import('firebase/auth'))
 
-const mockLoadStripe = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@stripe/stripe-js/pure'), () => ({
-  loadStripe: mockLoadStripe
-}))
-
 let harness: ReturnType<typeof fakeBillingSdk>
 let options: BillingSdkOptions
+const refreshed = vi.fn()
 
 beforeEach(() => {
   stubAccountIdentityPort()
-  vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
   vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
-  vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
-  remoteConfig.value = {}
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
     options = sdkOptions
     return harness.sdk
   })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  vi.spyOn(window, 'open').mockReturnValue(window)
+  return onBillingRefresh(refreshed)
 })
 
 afterEach(() => {
@@ -186,51 +181,54 @@ describe('useBillingSdkStore', () => {
 
   it('keeps the progress toast in step with the verification the server asks for', () => {
     useBillingSdkStore()
-    const toasts = useToastStore()
+    const toast = useToast()
 
     harness.publish(pendingTopup())
-    expect(toasts.messagesToAdd).toEqual([
+    expect(toast.toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        summary: 'Processing payment — adding credits...'
+        duration: Number.POSITIVE_INFINITY,
+        kind: 'loading',
+        title: 'Processing payment — adding credits...'
       })
     ])
 
     harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
-    expect(toasts.messagesToRemove).toEqual([
-      expect.objectContaining({ severity: 'info' })
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({
+        duration: Number.POSITIVE_INFINITY,
+        kind: 'warning',
+        title: 'Verify your payment to add your credits'
+      })
     ])
-    expect(toasts.messagesToAdd.at(-1)).toMatchObject({
-      severity: 'warn',
-      summary: 'Verify your payment to add your credits'
-    })
 
     harness.publish(settledTopup('succeeded'))
-    expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
+    expect(toast.toasts).toEqual([])
   })
 
   it('keeps a subscribe in step with its progress toast, as the poller did', () => {
     useBillingSdkStore()
-    const toasts = useToastStore()
+    const toast = useToast()
 
     harness.publish(pendingSubscription())
-    expect(toasts.messagesToAdd).toEqual([
+    expect(toast.toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        summary: 'Processing payment — setting up your workspace...'
+        kind: 'loading',
+        title: 'Processing payment — setting up your workspace...'
       })
     ])
 
     harness.publish(
       pendingSubscription({ actionUrl: 'https://verify.example/op-1' })
     )
-    expect(toasts.messagesToAdd.at(-1)).toMatchObject({
-      severity: 'warn',
-      summary: 'Verify your payment to finish setting up your workspace'
-    })
+    expect(toast.toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      })
+    ])
 
     harness.publish(settledOperation('succeeded', 'subscription'))
-    expect(toasts.messagesToRemove.at(-1)).toMatchObject({ severity: 'warn' })
+    expect(toast.toasts).toEqual([])
   })
 
   it.for([
@@ -243,17 +241,17 @@ describe('useBillingSdkStore', () => {
     'raises no progress toast for a $kind parked on a payment method until the server serves a link',
     ({ kind, actionRequired }) => {
       useBillingSdkStore()
-      const toasts = useToastStore()
+      const toast = useToast()
       const parked = { kind, serverPhase: 'awaiting_payment_method' } as const
 
       harness.publish(pendingTopup(parked))
-      expect(toasts.messagesToAdd).toEqual([])
+      expect(toast.toasts).toEqual([])
 
       harness.publish(
         pendingTopup({ ...parked, actionUrl: 'https://verify.example/op-1' })
       )
-      expect(toasts.messagesToAdd).toEqual([
-        expect.objectContaining({ severity: 'warn', summary: actionRequired })
+      expect(toast.toasts).toEqual([
+        expect.objectContaining({ kind: 'warning', title: actionRequired })
       ])
     }
   )
@@ -263,45 +261,7 @@ describe('useBillingSdkStore', () => {
 
     harness.publish(pendingTopup({ kind: 'cancel' }))
 
-    expect(useToastStore().messagesToAdd).toEqual([])
-  })
-
-  it('drives a required in-page challenge once per operation', () => {
-    useBillingSdkStore()
-    const challenged = pendingTopup({
-      presentation: 'embedded',
-      challenge: { clientSecret: 'pi_secret', status: 'required' }
-    })
-
-    harness.publish(challenged)
-    harness.publish(challenged)
-
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
-  })
-
-  it('refuses to retry a challenge while embedded checkout is off', async () => {
-    await expect(
-      useBillingSdkStore().retryPaymentAuthentication('op-1')
-    ).resolves.toBe(false)
-    expect(harness.sdk.driveChallenge).not.toHaveBeenCalled()
-  })
-
-  it('retries the in-page challenge on request and reports whether it completed', async () => {
-    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
-    const store = useBillingSdkStore()
-    vi.mocked(harness.sdk.driveChallenge).mockResolvedValueOnce('failed')
-
-    await expect(store.retryPaymentAuthentication('op-1')).resolves.toBe(false)
-    await expect(store.retryPaymentAuthentication('op-1')).resolves.toBe(true)
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledTimes(2)
-
-    harness.publish(
-      pendingTopup({
-        presentation: 'embedded',
-        challenge: { clientSecret: 'pi_secret', status: 'required' }
-      })
-    )
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledTimes(2)
+    expect(useToast().toasts).toEqual([])
   })
 
   it('reports the source of the journey a reattached operation is bound to', () => {
@@ -346,16 +306,16 @@ describe('useBillingSdkStore', () => {
     await vi.waitFor(() =>
       expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     )
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['account']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
     expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'top-up-credits'
     })
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'success',
-        summary: 'Credits added successfully'
+        kind: 'success',
+        title: 'Credits added successfully',
+        duration: 5000
       })
     )
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
@@ -395,8 +355,8 @@ describe('useBillingSdkStore', () => {
 
     expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     expect(useSettingsDialog().show).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(refreshed).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('reports the decline of a reattached top-up with its coded reason', () => {
@@ -405,11 +365,12 @@ describe('useBillingSdkStore', () => {
     options.onTelemetry(startedEvent(true))
     harness.publish(failedTopup('expired_card'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Top-up failed',
-        detail: 'This card has expired. Use a different payment method.'
+        kind: 'error',
+        title: 'Top-up failed',
+        description: 'This card has expired. Use a different payment method.',
+        duration: 7000
       })
     )
   })
@@ -419,82 +380,13 @@ describe('useBillingSdkStore', () => {
 
     harness.publish(settledTopup('timed_out'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Top-up verification timed out'
+        kind: 'error',
+        title: 'Top-up verification timed out',
+        duration: Number.POSITIVE_INFINITY
       })
     )
-  })
-
-  it.for([
-    { outcome: 'rejects', load: () => Promise.reject(new Error('blocked')) },
-    { outcome: 'yields nothing', load: () => Promise.resolve(null) }
-  ])(
-    'offers no challenge port when the payment provider script $outcome',
-    async ({ load }) => {
-      vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_challenge')
-      mockLoadStripe.mockImplementation(load)
-      useBillingSdkStore()
-
-      await expect(options.challengePort()).resolves.toBeUndefined()
-    }
-  )
-
-  it('prefers the server-configured publishable key over the build-time one', async () => {
-    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
-    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
-    mockLoadStripe.mockResolvedValue({})
-    useBillingSdkStore()
-
-    await options.challengePort()
-
-    expect(mockLoadStripe).toHaveBeenCalledWith('pk_server')
-  })
-
-  it('falls back to the build-time key when the server has none configured', async () => {
-    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
-    remoteConfig.value = {}
-    mockLoadStripe.mockResolvedValue({})
-    useBillingSdkStore()
-
-    await options.challengePort()
-
-    expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
-  })
-
-  it.for(['', 42] as const)(
-    'treats a malformed server key (%j) as absent',
-    async (malformed) => {
-      vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
-      remoteConfig.value = {
-        stripe_publishable_key: malformed as unknown as string
-      }
-      mockLoadStripe.mockResolvedValue({})
-      useBillingSdkStore()
-
-      await options.challengePort()
-
-      expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
-    }
-  )
-
-  it('reports checkout unavailable when neither source configures a key', () => {
-    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
-    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
-    remoteConfig.value = {}
-    useBillingSdkStore()
-
-    expect(options.embeddedCheckoutAvailable()).toBe(false)
-  })
-
-  it('reports checkout available on the server key alone, with no build-time key', () => {
-    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
-    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
-    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
-    useBillingSdkStore()
-
-    expect(options.embeddedCheckoutAvailable()).toBe(true)
   })
 
   it('polls every pending operation when the tab returns', () => {
@@ -588,8 +480,7 @@ describe('useBillingSdkStore subscription commands', () => {
       status: 'ok',
       value: { operationObserved: true }
     })
-    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['account']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -600,9 +491,7 @@ describe('useBillingSdkStore subscription commands', () => {
       status: 'ok',
       value: { operationObserved: true }
     })
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['subscription']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -632,7 +521,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(harness.sdk.commands.openPaymentPortal).not.toHaveBeenCalled()
     expect(harness.sdk.commands.subscribe).not.toHaveBeenCalled()
     expect(harness.sdk.commands.previewSubscribe).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
   })
 
   it('reconciles the subscription after a plan change settles', async () => {
@@ -654,9 +543,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(harness.sdk.commands.subscribe).toHaveBeenCalledWith({
       plan_slug: 'pro-yearly'
     })
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['subscription']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -680,31 +567,13 @@ describe('useBillingSdkStore subscription commands', () => {
     )
 
     expect(openPage).not.toHaveBeenCalled()
-    expect(
-      useToastStore().messagesToAdd.filter(
-        (message) => message.group !== 'billing-operation'
-      )
-    ).toEqual([])
-    expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
-  })
-
-  it('drives no in-page challenge for a subscribe it reattached to', async () => {
-    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
-    const store = useBillingSdkStore()
-
-    reattachedSubscribe()
-    harness.publish(
-      pendingSubscription({
-        presentation: 'embedded',
-        actionUrl: 'https://pay.example/invoice',
-        challenge: { clientSecret: 'pi_secret', status: 'required' }
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
       })
-    )
-    await nextTick()
-
-    expect(harness.sdk.driveChallenge).not.toHaveBeenCalled()
-    expect(openPage).not.toHaveBeenCalled()
-    expect(store.subscriptionActionUrl).toBe('https://pay.example/invoice')
+    ])
+    expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
 
   it('finishes a reattached subscribe the way the poller did', async () => {
@@ -714,16 +583,12 @@ describe('useBillingSdkStore subscription commands', () => {
     harness.publish(settledOperation('succeeded', 'subscription'))
 
     await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toContainEqual(
-        expect.objectContaining({
-          severity: 'success',
-          summary: 'Subscription updated successfully'
-        })
+      expect(useToast().success).toHaveBeenCalledWith(
+        'Subscription updated successfully',
+        { duration: 5000 }
       )
     )
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).toHaveBeenCalledOnce()
+    expect(refreshed.mock.calls).toEqual([['subscription']])
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
@@ -733,11 +598,9 @@ describe('useBillingSdkStore subscription commands', () => {
     reattachedSubscribe()
     harness.publish(failedOperation('subscription'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'Subscription update failed'
-      })
+    expect(useToast().error).toHaveBeenCalledWith(
+      'Subscription update failed',
+      expect.objectContaining({ duration: 7000 })
     )
   })
 
@@ -747,15 +610,10 @@ describe('useBillingSdkStore subscription commands', () => {
     reattachedSubscribe()
     harness.publish(settledOperation('timed_out', 'subscription'))
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'Subscription verification timed out'
-      })
+    expect(useToast().error).toHaveBeenCalledWith(
+      'Subscription verification timed out'
     )
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
   })
 
   it('leaves a subscribe it issued to the checkout that issued it', async () => {
@@ -764,10 +622,8 @@ describe('useBillingSdkStore subscription commands', () => {
     harness.publish(settledOperation('succeeded', 'subscription'))
     await nextTick()
 
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(refreshed).not.toHaveBeenCalled()
+    expect(useToast().toasts).toEqual([])
   })
 
   it('hands back the quote without refreshing anything', async () => {
@@ -779,16 +635,12 @@ describe('useBillingSdkStore subscription commands', () => {
     await expect(
       useBillingSdkStore().previewSubscribe({ planSlug: 'pro-yearly' })
     ).resolves.toEqual({ status: 'ok', value: QUOTE })
-    expect(
-      useBillingContext().reconcileSubscriptionSuccess
-    ).not.toHaveBeenCalled()
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
   })
 
   it('warns once and keeps a blocked payment page reachable however long it polls', () => {
     const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
     const store = useBillingSdkStore()
-    const toasts = useToastStore()
 
     harness.publish(
       pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
@@ -811,50 +663,19 @@ describe('useBillingSdkStore subscription commands', () => {
       'https://pay.example/op-1',
       '_blank'
     )
-    expect(
-      toasts.messagesToAdd.filter(
-        (message) => message.group !== 'billing-operation'
-      )
-    ).toEqual([expect.objectContaining({ severity: 'warn' })])
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'warning',
+        title: 'Verify your payment to finish setting up your workspace'
+      }),
+      expect.objectContaining({
+        description:
+          "Couldn't open the payment page — please allow popups and try again.",
+        kind: 'warning',
+        title: 'Warning'
+      })
+    ])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
-  })
-
-  it('opens no payment page while this tab drives the in-page challenge', () => {
-    const openPage = vi.spyOn(window, 'open').mockReturnValue(null)
-    useBillingSdkStore()
-
-    harness.publish(
-      pendingSubscription({
-        presentation: 'embedded',
-        actionUrl: 'https://pay.example/invoice',
-        challenge: { clientSecret: 'pi_secret', status: 'required' }
-      })
-    )
-
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
-    expect(openPage).not.toHaveBeenCalled()
-    expect(
-      useToastStore().messagesToAdd.filter(
-        (message) => message.group !== 'billing-operation'
-      )
-    ).toEqual([])
-  })
-
-  it('opens the hosted page for an embedded operation that carries no in-page challenge', () => {
-    const openPage = vi.spyOn(window, 'open').mockReturnValue({} as Window)
-    useBillingSdkStore()
-
-    harness.publish(
-      pendingSubscription({
-        presentation: 'embedded',
-        actionUrl: 'https://pay.example/invoice'
-      })
-    )
-
-    expect(openPage).toHaveBeenCalledExactlyOnceWith(
-      'https://pay.example/invoice',
-      '_blank'
-    )
   })
 
   it.for([
@@ -932,20 +753,6 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(store.subscriptionActionUrl).toBeNull()
   })
 
-  it('drives the in-page challenge a subscribe raises, as it does for a top-up', async () => {
-    useBillingSdkStore()
-
-    harness.publish(
-      pendingSubscription({
-        presentation: 'embedded',
-        challenge: { clientSecret: 'cs_1', status: 'required' }
-      })
-    )
-    await nextTick()
-
-    expect(harness.sdk.driveChallenge).toHaveBeenCalledExactlyOnceWith('op-1')
-  })
-
   it('hands back the portal URL without refreshing anything', async () => {
     vi.mocked(harness.sdk.commands.openPaymentPortal).mockResolvedValue({
       status: 'ok',
@@ -961,7 +768,7 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(harness.sdk.commands.openPaymentPortal).toHaveBeenCalledWith({
       returnUrl: 'https://app.example/'
     })
-    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(refreshed).not.toHaveBeenCalled()
   })
 
   it('drops the saved cards it holds when it hands the portal URL out', async () => {

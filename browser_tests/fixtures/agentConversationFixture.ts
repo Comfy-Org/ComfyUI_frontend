@@ -1,10 +1,8 @@
 import type { Locator, Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
-import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { ApplyOutcome, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { z } from 'zod'
-
-import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -29,6 +27,10 @@ import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
+import {
+  AGENT_FRAME_HANDLED_EVENT,
+  announceHandledAgentFrames
+} from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import type {
   ClientDocFrame,
@@ -44,13 +46,17 @@ import type {
   RecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
-import { agentHumanAddBlueprint } from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
+import {
+  agentHumanAddBlueprint,
+  agentNestedSubgraphDefinition
+} from '@e2e/fixtures/data/agent/agentHumanAddBlueprints'
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
@@ -60,21 +66,12 @@ const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
-const SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 const VUE_NODES_TAG = '@vue-nodes'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const CANCEL_TIMEOUT = 10_000
 
 const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
-// The composer names itself with the rendered message, escapes resolved; the
-// app's own i18n module is a Vite build, so the fixture renders the message
-// with the same library over the same locale file.
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 // Matches "Worked", "Worked for 3 seconds" and "Worked for 1m 2s" (agent.worked*).
 const SUMMARY_LABEL = new RegExp(`^${enMessages.agent.worked}( for .+)?$`)
 const FAILED_GLYPH = /lucide--circle-x/
@@ -206,7 +203,6 @@ interface ReplayResponseOptions {
   waitForGraphOpsDelivery?: (ops: readonly RecordedGraphOperation[]) => boolean
 }
 
-// Runs one recorded prompt/response through the real panel over a routed /ws socket.
 export class AgentConversationHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
@@ -241,7 +237,6 @@ export class AgentConversationHarness {
       page,
       workflow.id,
       this.host,
-      SOCKET_SID,
       humanOpsHost
     )
     this.seenIds = new Set(workflow.seed.nodes.map((node) => String(node.id)))
@@ -254,7 +249,9 @@ export class AgentConversationHarness {
     this.expectations = expectations ?? []
     this.panel = page.locator('#agent-panel-root')
     this.streams = this.panel.getByTestId('markdown-stream')
-    this.composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    this.composer = this.panel.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     this.summaries = this.panel.getByRole('button', { name: SUMMARY_LABEL })
     this.vueNodes = new VueNodeHelpers(page)
     this.topbar = new Topbar(page)
@@ -297,15 +294,18 @@ export class AgentConversationHarness {
   async boot(
     agentFlag: boolean,
     vueNodes: boolean,
-    bootAssets: ListAssetsResponse
+    bootAssets: ListAssetsResponse,
+    telemetryEnabled: boolean
   ): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
+    await announceHandledAgentFrames(this.page)
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
     await bootAgentApp(this.page, agentFlag, {
       vueNodes,
+      features: { enable_telemetry: telemetryEnabled },
       settings: {
         'Comfy.Graph.CanvasInfo': false,
         'Comfy.NodeSearchBoxImpl': 'default',
@@ -858,6 +858,12 @@ export class AgentConversationHarness {
     )
   }
 
+  pushNestedDefinition(): void {
+    this.hostSocket.send(
+      this.host.seedDefinition(agentNestedSubgraphDefinition())
+    )
+  }
+
   // A frontend-only node added the way a person actually adds one: the node
   // search box, double-clicked open, typed into, Enter — not a direct
   // LiteGraph.createNode call. The non-Agent baseline
@@ -1017,6 +1023,18 @@ export class AgentConversationHarness {
 
   hostNodePositions(): (number[] | undefined)[] {
     return this.host.projection().nodes.map((node) => node.pos)
+  }
+
+  /**
+   * The workflow node the host document holds for `nodeId`, as the library
+   * projects it — the same snapshot a catch-up, a resubscribe or an agent op
+   * that copies an existing node would carry. Undefined when the document has
+   * no such node.
+   */
+  hostNode(nodeId: string): WorkflowJSON['nodes'][number] | undefined {
+    return this.host
+      .projection()
+      .nodes.find((node) => String(node.id) === nodeId)
   }
 
   async reloadWithoutLocalWorkflow(): Promise<void> {
@@ -1190,27 +1208,33 @@ export class AgentConversationHarness {
 
     const receipt = crypto.randomUUID()
     await this.page.evaluate(
-      ({ receipt, workflowId, seq }) => {
-        const api = window.app!.api
+      ({ receipt, workflowId, seq, handledEvent }) => {
         const attribute = 'data-agent-crdt-update-receipt'
         const cleanupType = `agent-crdt-update-cleanup-${receipt}`
-        const removeReceiptListener = () => {
-          api.removeCustomEventListener('doc_update', recordReceipt)
+        function removeReceiptListener() {
+          document.removeEventListener(handledEvent, recordReceipt)
           document.removeEventListener(cleanupType, removeReceiptListener)
         }
-        const recordReceipt = (event: CustomEvent<unknown>) => {
-          if (typeof event.detail !== 'object' || event.detail === null) return
-          if (
-            !('workflow_id' in event.detail) ||
-            event.detail.workflow_id !== workflowId ||
-            !('seq' in event.detail) ||
-            event.detail.seq !== seq
+        function isRecord(value: unknown): value is Record<string, unknown> {
+          return typeof value === 'object' && value !== null
+        }
+        function isThisUpdate(detail: unknown): boolean {
+          if (typeof detail !== 'string') return false
+          const frame: unknown = JSON.parse(detail)
+          if (!isRecord(frame) || frame.type !== 'doc_update') return false
+          return (
+            isRecord(frame.data) &&
+            frame.data.workflow_id === workflowId &&
+            frame.data.seq === seq
           )
+        }
+        function recordReceipt(event: Event) {
+          if (!(event instanceof CustomEvent) || !isThisUpdate(event.detail))
             return
           document.documentElement.setAttribute(attribute, receipt)
           removeReceiptListener()
         }
-        api.addCustomEventListener('doc_update', recordReceipt)
+        document.addEventListener(handledEvent, recordReceipt)
         document.addEventListener(cleanupType, removeReceiptListener, {
           once: true
         })
@@ -1218,7 +1242,8 @@ export class AgentConversationHarness {
       {
         receipt,
         workflowId: parsedFrame.data.workflowId,
-        seq: parsedFrame.data.seq
+        seq: parsedFrame.data.seq,
+        handledEvent: AGENT_FRAME_HANDLED_EVENT
       }
     )
     try {
@@ -1261,6 +1286,8 @@ interface ConversationFixtures {
   // Assets the boot mock serves for every /api/assets query, so combo widgets
   // loaded with the seed already see them.
   bootAssets: ListAssetsResponse
+  // Opt in only for cases that assert telemetry through hostTelemetryFixture.
+  telemetryEnabled: boolean
   comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
@@ -1274,6 +1301,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
   bootAssets: [{ assets: [], total: 0, has_more: false }, { option: true }],
+  telemetryEnabled: [false, { option: true }],
   comfyPage: async ({ page, request }, use) => {
     await use(new ComfyPage(page, request))
   },
@@ -1294,7 +1322,8 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       replayTiming,
       extraNodeDefs,
       humanOpsHost,
-      bootAssets
+      bootAssets,
+      telemetryEnabled
     },
     use,
     testInfo
@@ -1315,7 +1344,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       extraNodeDefs,
       humanOpsHost
     )
-    await harness.boot(agentFlagEnabled, vueNodes, bootAssets)
+    await harness.boot(agentFlagEnabled, vueNodes, bootAssets, telemetryEnabled)
     await use(harness)
   }
 })

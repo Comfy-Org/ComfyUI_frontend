@@ -41,7 +41,6 @@ const PREVIEW_READY: CheckoutJourneyPhaseEvent = { phase: 'preview_ready' }
 const SUBMITTED: CheckoutJourneyPhaseEvent = { phase: 'submitted' }
 
 beforeEach(() => {
-  vi.mocked(useTelemetry()!.trackCheckoutJourneyEvent).mockClear()
   sessionStorage.clear()
   clearCheckoutJourney()
 })

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../../i18n/translations'
+import type { Locale } from '@/i18n/translations'
 
-import { SHOW_FREE_TIER } from '../../../config/features'
-import { getRoutes } from '../../../config/routes'
-import { translationsFor } from '../../../i18n/translations'
+import { SHOW_FREE_TIER } from '@/config/features'
+import { getRoutes } from '@/config/routes'
+import { translationsFor } from '@/i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)

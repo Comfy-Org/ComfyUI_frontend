@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { stubIntersectionObserver } from '../../test/fakeIntersectionObserver'
+import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import type * as CameraWidgetModule from './camera/CameraWidget'
 import HeroGraphSection from './HeroGraphSection.vue'
 

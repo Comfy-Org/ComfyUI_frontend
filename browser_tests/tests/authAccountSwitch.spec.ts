@@ -6,6 +6,7 @@ import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspa
 import type { Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { CurrentUserPopover } from '@e2e/fixtures/components/CurrentUserPopover'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
   CLOUD_REMOTE_CONFIG,
@@ -335,14 +336,13 @@ test.describe('Cloud account switch', { tag: '@cloud' }, () => {
         .fill('password')
       await page.getByRole('button', { name: 'Sign in' }).click()
 
+      const popover = new CurrentUserPopover(page)
+      await expect(popover.trigger).toBeVisible()
+      await popover.open()
       await expect(
-        page.getByRole('button', { name: 'Current user' })
+        popover.root.getByText(ACCOUNT_B.email, { exact: true })
       ).toBeVisible()
-      await page.getByRole('button', { name: 'Current user' }).click()
-      await expect(
-        page.getByText(ACCOUNT_B.email, { exact: true })
-      ).toBeVisible()
-      await page.keyboard.press('Escape')
+      await popover.close()
       await expect
         .poll(() => workspaceMintOwners, { timeout: 15_000 })
         .toContain(ACCOUNT_B.id)

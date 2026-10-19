@@ -181,6 +181,17 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it('forwards Agent credit transition notice interactions', () => {
+    new HostTelemetrySink().trackAgentCreditTransitionNotice({
+      action: 'shown'
+    })
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE,
+      { action: 'shown' }
+    )
+  })
+
   it('forwards canonical billing events with their derived name and payload, claiming no surface', () => {
     new HostTelemetrySink().trackBillingEvent({
       operation: 'operation',
@@ -327,6 +338,7 @@ describe('HostTelemetrySink', () => {
           prompt_id: 'slot_4',
           prompt_index: 3,
           prompt_count: 5,
+          visible_prompt_count: 3,
           prompt_text_hash: 'deadbeef',
           locale: 'en',
           click_id: 'click-1',
@@ -336,11 +348,20 @@ describe('HostTelemetrySink', () => {
         prompt_id: 'slot_4',
         prompt_index: 3,
         prompt_count: 5,
+        visible_prompt_count: 3,
         prompt_text_hash: 'deadbeef',
         locale: 'en',
         click_id: 'click-1',
         draft_was_empty: false
       }
+    },
+    {
+      name: TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentStarterPromptExposure({
+          '$feature/agent-starter-prompt-set': 'test'
+        }),
+      properties: { '$feature/agent-starter-prompt-set': 'test' }
     },
     {
       name: TelemetryEvents.AGENT_FREE_USE_NOTICE,

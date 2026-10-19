@@ -5,6 +5,7 @@ import type {
   CapabilityDenialReason,
   PaymentReasonKey,
   PendingBillingOperation,
+  SubscriptionPreview,
   TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
 import { isGrantLanding } from '@comfyorg/account-core/billing'
@@ -90,13 +91,16 @@ type PaymentCancel = 'canceling' | CancelRefusalCode
  * lifecycle publishes meanwhile is known to be this page's own and is kept
  * here. `redirectMethod` names a method that authenticates on its own site
  * (Alipay and every other non-card type), which the server answers with a
- * hosted step instead of a challenge.
+ * hosted step instead of a challenge. `quote` is the quote the Pay was
+ * priced on, kept because a stale-quote answer re-prices the page after the
+ * money may already have settled.
  */
 export type Attempt =
   | { readonly kind: 'idle' }
   | {
       readonly kind: 'sent'
       readonly redirectMethod?: string
+      readonly quote?: SubscriptionPreview
       readonly operation?: PendingBillingOperation
       readonly cancel?: PaymentCancel
     }
@@ -115,23 +119,13 @@ type Capture = {
 
 /**
  * Who a settled payment belongs to, which decides what its screen may claim.
- * `started`: this page's own Pay, so it names the plan it quoted. `returned`:
- * this tab's own Pay, settled after a reload or a provider's page took the
- * quote away, so it names the plan the server now lists. `followed`: money
+ * `started`: this page's own Pay, which may name the plan it quoted when the
+ * server reports none for the operation. `returned`: this tab's own Pay,
+ * settled after a reload or a provider's page took the quote away. `followed`: money
  * this page did not send, watched settle from a screen that promised to
  * update. `settled`: found already through on arrival or on a re-read.
  */
 type Attribution = 'started' | 'returned' | 'followed' | 'settled'
-
-/**
- * The plan a settled payment bought, as the server's catalog lists it: the
- * one its receipt names, or for a returned payment without one, the plan the
- * status now reports.
- */
-export type SettledPlan = Pick<
-  BillingPlansData['plans'][number],
-  'tier' | 'duration' | 'price_cents'
->
 
 /**
  * The full-page checkout, one state at a time. `resolving` renders the
@@ -192,7 +186,8 @@ export type CheckoutPage =
       readonly kind: 'terminal'
       readonly operation?: TerminalBillingOperation
       readonly attribution: Attribution
-      readonly plan?: SettledPlan
+      /** The quote this page's own Pay was priced on, on a `started` terminal. */
+      readonly quote?: SubscriptionPreview
     }
 
 /** A verdict an operation reached on its own, for the card above Pay. */
@@ -226,8 +221,6 @@ export type CheckoutPageEvent =
    * whose free-text reason is never read, or a coded 4xx refusal (`server`).
    */
   | { readonly type: 'notAllowed'; readonly server?: ServerRefusal }
-  /** The server's catalog named the plan a settled payment bought. */
-  | { readonly type: 'settledPlanRead'; readonly plan: SettledPlan }
   /** Try again on a checkout that could not load. */
   | { readonly type: 'retried' }
   | ({
@@ -255,7 +248,11 @@ export type CheckoutPageEvent =
   /** Pay clicked while the keep-subscription consent was still unticked. */
   | { readonly type: 'consentMissing' }
   /** `redirectMethod` is the chosen method's type when it pays on its own site. */
-  | { readonly type: 'paySubmitted'; readonly redirectMethod?: string }
+  | {
+      readonly type: 'paySubmitted'
+      readonly redirectMethod?: string
+      readonly quote?: SubscriptionPreview
+    }
   | {
       readonly type: 'payFailed'
       readonly outcome: Exclude<InlineOutcome, { kind: 'reconciling' }>
@@ -453,10 +450,6 @@ export function reduceCheckoutPage(
   if (isStopEvent(event))
     return page.kind === 'resolving' ? stoppedOn(page, event) : page
   switch (event.type) {
-    case 'settledPlanRead':
-      return page.kind === 'terminal' && page.attribution !== 'started'
-        ? { ...page, plan: event.plan }
-        : page
     case 'requoteFailed':
       return leavingCapture(page, {
         kind: 'unavailable',
@@ -777,7 +770,8 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
           kind: 'sent',
           ...(event.redirectMethod === undefined
             ? {}
-            : { redirectMethod: event.redirectMethod })
+            : { redirectMethod: event.redirectMethod }),
+          ...(event.quote === undefined ? {} : { quote: event.quote })
         }
       }))
     case 'payFailed':
@@ -794,7 +788,7 @@ function reduceAttempt(page: CheckoutPage, event: AttemptEvent): CheckoutPage {
       }))
     case 'paySettled':
       return page.kind === 'capture'
-        ? { kind: 'terminal', attribution: 'started' }
+        ? { kind: 'terminal', attribution: 'started', ...quoteOf(page.attempt) }
         : page
     case 'requoted':
       return withCapture(page, ({ outcome: _replaced, ...capture }) => ({
@@ -873,26 +867,6 @@ export function awaitingServer(page: CheckoutPage): boolean {
     page.operation !== undefined &&
     isGrantLanding(page.operation)
   )
-}
-
-/**
- * Where a settled page reads the plan its payment bought, keyed so a caller
- * reads it once: the slug its receipt names, or for this tab's own payment
- * returned without one, the status. A page that priced the payment itself
- * names the plan from its quote and needs neither.
- */
-export function settledPlanSource(
-  page: CheckoutPage
-): { readonly key: string; readonly receiptSlug?: string } | undefined {
-  if (page.kind !== 'terminal' || page.attribution === 'started')
-    return undefined
-  const receiptSlug =
-    page.operation?.phase === 'succeeded'
-      ? page.operation.receipt?.plan?.slug
-      : undefined
-  if (receiptSlug !== undefined)
-    return { key: `receipt:${receiptSlug}`, receiptSlug }
-  return page.attribution === 'returned' ? { key: 'status' } : undefined
 }
 
 /** The server parked the operation for a human and cannot say whether money moved. */
@@ -1063,6 +1037,12 @@ function attributionOf(
  * that sent it, so this form stays plain, and one parked on a card releases
  * a Pay held for the re-read.
  */
+function quoteOf(attempt: Attempt) {
+  return attempt.kind === 'sent' && attempt.quote !== undefined
+    ? { quote: attempt.quote }
+    : {}
+}
+
 function followedInCapture(
   page: Capture,
   operation: BillingOperationState,
@@ -1070,11 +1050,14 @@ function followedInCapture(
 ): CheckoutPage {
   const started = page.attempt.kind === 'sent'
   if (operation.phase === 'succeeded')
-    return {
-      kind: 'terminal',
-      operation,
-      attribution: started ? 'started' : 'settled'
-    }
+    return started
+      ? {
+          kind: 'terminal',
+          operation,
+          attribution: 'started',
+          ...quoteOf(page.attempt)
+        }
+      : { kind: 'terminal', operation, attribution: 'settled' }
   if (outcomeUnknown(operation))
     return unconfirmed(operation, started ? {} : { sibling: true })
   if (page.attempt.kind === 'sent')

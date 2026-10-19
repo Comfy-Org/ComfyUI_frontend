@@ -61,7 +61,7 @@ test.describe(
         .getByTestId(TestIds.subgraphEditor.widgetActionsMenuButton)
         .click()
       await comfyPage.page
-        .getByTestId(TestIds.menu.moreMenuContent)
+        .getByRole('menu')
         .getByText('Favorite', { exact: true })
         .click()
 

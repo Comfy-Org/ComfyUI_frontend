@@ -10,7 +10,15 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import * as Y from 'yjs'
 
 import {
@@ -29,6 +37,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
@@ -94,6 +103,16 @@ interface FixtureOptions {
   secondDefinition?: boolean
   /** Serialize the root `source` node with the interior node's id (7). */
   rootIdCollidesWithInterior?: boolean
+  /** Strip definition interiors so `value` is declared but not promoted. */
+  unpromotedDefinition?: boolean
+  /** Serialize the host with this positional widget array. */
+  hostWidgetValues?: WidgetValue[]
+  /** Reverse serialized inputs without changing their cardinality. */
+  reverseHostInputs?: boolean
+  /** Promote the extra input through a second interior widget. */
+  promoteExtra?: boolean
+  /** Mark the first delivered frame as a document-lineage replacement. */
+  replaceOnFirstFrame?: boolean
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
@@ -117,6 +136,13 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   subgraph.add(interior)
   const valueSlot = subgraph.inputNode.slots[options.extraInput ? 1 : 0]
   valueSlot.connect(interior.inputs[0], interior)
+  if (options.promoteExtra) {
+    const extraInterior = LiteGraph.createNode('promoted-widget')
+    assert.exists(extraInterior)
+    extraInterior.id = toNodeId(9)
+    subgraph.add(extraInterior)
+    subgraph.inputNode.slots[0].connect(extraInterior.inputs[0], extraInterior)
+  }
 
   if (options.secondDefinition) {
     const second = createTestSubgraph({
@@ -150,13 +176,35 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   return reshapeSerialized(graph.serialize(), options)
 }
 
+type SerializedGraph = ReturnType<LGraph['serialize']>
+
+function reshapeHost(
+  hostNode: SerializedGraph['nodes'][number],
+  options: FixtureOptions
+): void {
+  if (options.stripHostInputs) hostNode.inputs = []
+  if (options.emptyHostWidgets) hostNode.widgets_values = []
+  if (options.hostWidgetValues) {
+    hostNode.widgets_values = options.hostWidgetValues
+  }
+  if (options.reverseHostInputs) hostNode.inputs?.reverse()
+}
+
+/** Leaves each definition declaring `value` with no interior to promote it. */
+function stripDefinitionInteriors(serialized: SerializedGraph): void {
+  for (const definition of serialized.definitions?.subgraphs ?? []) {
+    definition.nodes = []
+    definition.links = []
+  }
+}
+
 function reshapeSerialized(
-  serialized: ReturnType<LGraph['serialize']>,
+  serialized: SerializedGraph,
   options: FixtureOptions
 ): WorkflowJSON {
   const hostNode = serialized.nodes.find((n) => n.id === 1)
-  if (options.stripHostInputs && hostNode) hostNode.inputs = []
-  if (options.emptyHostWidgets && hostNode) hostNode.widgets_values = []
+  if (hostNode) reshapeHost(hostNode, options)
+  if (options.unpromotedDefinition) stripDefinitionInteriors(serialized)
   // litegraph remaps a root id that collides with an interior, so the
   // collision only exists in the serialized shape a document can carry.
   const sourceNode = serialized.nodes.find((n) => n.id === 2)
@@ -173,18 +221,20 @@ function startFollower(options: FixtureOptions = {}) {
   const follower = new FollowerDoc()
   const adapter = new AgentCrdtProjection(() => graph)
   adapter.bind('workflow', follower)
+  if (options.replaceOnFirstFrame) adapter.replaceOnNextFrame('workflow')
   const update = Y.encodeStateAsUpdate(hostDoc)
   follower.applyRemoteUpdate(update)
   expect(
     adapter.applyFrame({ workflowId: 'workflow', seq: 1, update })
-  ).not.toBeNull()
+  ).toMatchObject({ applied: true })
   const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
   expect(instance).toBeInstanceOf(SubgraphNode)
-  expect(instance.widgets[0]?.value).toBe(
-    options.emptyHostWidgets ? INTERIOR_DEFAULT_VALUE : HOST_INITIAL_VALUE
-  )
   expect(instance.inputs.map((i) => i.name)).toEqual(
-    options.extraInput ? ['extra', 'value'] : ['value']
+    options.reverseHostInputs
+      ? ['value', 'extra']
+      : options.extraInput
+        ? ['extra', 'value']
+        : ['value']
   )
   onTestFinished(disableSubgraphNodeCreation)
   return {
@@ -216,7 +266,7 @@ function deliver(
       actor: 'agent:test',
       opIds: [id]
     })
-  ).not.toBeNull()
+  ).toMatchObject({ applied: true })
 }
 
 /**
@@ -235,7 +285,7 @@ function forwardRaw(
   state.follower.applyRemoteUpdate(update)
   expect(
     state.adapter.applyFrame({ workflowId: 'workflow', seq: seq + 1, update })
-  ).not.toBeNull()
+  ).toMatchObject({ applied: true })
 }
 
 beforeEach(() => {
@@ -281,6 +331,45 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(widgetId).toBeDefined()
     expect(state.instance.widgets[0]?.value).toBe(42)
     expect(useWidgetValueStore().getWidget(widgetId!)?.value).toBe(42)
+  })
+
+  it('S1z runs the host widget hooks on an accepted promoted write', () => {
+    const state = startFollower()
+    const widget = state.instance.widgets[0]
+    const callback = vi.fn()
+    const changed = vi.fn()
+    widget.callback = callback
+    state.instance.onWidgetChanged = changed
+
+    deliver(state, hostSetWidget(42), 1)
+
+    expect(callback).toHaveBeenCalledWith(42, undefined, state.instance)
+    expect(changed).toHaveBeenCalledWith(
+      'value',
+      42,
+      HOST_INITIAL_VALUE,
+      widget
+    )
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('S1r rolls a host widget back when its change hook throws', () => {
+    const state = startFollower()
+    state.instance.onWidgetChanged = () => {
+      throw new Error('extension hook exploded')
+    }
+
+    deliver(state, hostSetWidget(42), 1)
+
+    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
+    expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'extension hook exploded' }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_apply_failed'
+      })
+    )
   })
 
   it('S1b keeps the promoted widget when cmp retires the empty named map in the same transaction', () => {
@@ -843,7 +932,11 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
       expect.objectContaining({
         surface: 'agent',
         errorType: 'agent_graph_host_widgets_mismatch',
-        context: expect.objectContaining({ expected: 1, actual: 0 })
+        context: expect.objectContaining({
+          expected: 1,
+          actual: 0,
+          mode: 'merge'
+        })
       })
     )
   })
@@ -872,6 +965,152 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     forwardRaw(state, retypeNode3AsHost, 1)
 
     expectNode3RebuiltAsHost(state)
+  })
+
+  it('S1u reports drift on a catch-up frame when the definition promotes nothing', () => {
+    const state = startFollower({ unpromotedDefinition: true })
+
+    expect(state.instance.inputs.map((i) => i.widgetId)).toEqual([undefined])
+    expect(state.instance.widgets).toEqual([])
+    expect(storedHostWidgets(state)).toEqual([])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('carries 1 opaque widget values')
+      }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 0,
+          actual: 1,
+          mode: 'merge'
+        })
+      })
+    )
+  })
+
+  it('S1v keeps host defaults on a catch-up frame when the opaque array is longer', () => {
+    const state = startFollower({ hostWidgetValues: [99, 77] })
+
+    expect(state.instance.widgets.map((w) => w.name)).toEqual(['value'])
+    expect(state.instance.widgets[0]?.value).toBe(INTERIOR_DEFAULT_VALUE)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('carries 2 opaque widget values')
+      }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 1,
+          actual: 2,
+          mode: 'merge'
+        })
+      })
+    )
+  })
+
+  it('S1x keeps host defaults when configure restores a different promoted order', () => {
+    const state = startFollower({
+      extraInput: true,
+      promoteExtra: true,
+      hostWidgetValues: [99, 77],
+      reverseHostInputs: true
+    })
+
+    expect(state.instance.inputs.map((input) => input.name)).toEqual([
+      'value',
+      'extra'
+    ])
+    expect(state.instance.widgets.map((widget) => widget.value)).toEqual([
+      INTERIOR_DEFAULT_VALUE,
+      INTERIOR_DEFAULT_VALUE
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 2,
+          actual: 2,
+          mode: 'merge'
+        })
+      })
+    )
+  })
+
+  it('S1y keeps host defaults on load when the opaque array is shorter', () => {
+    const state = startFollower({
+      extraInput: true,
+      promoteExtra: true,
+      hostWidgetValues: [99],
+      replaceOnFirstFrame: true
+    })
+
+    expect(state.instance.widgets.map((widget) => widget.name)).toEqual([
+      'extra',
+      'value'
+    ])
+    expect(state.instance.widgets.map((widget) => widget.value)).toEqual([
+      INTERIOR_DEFAULT_VALUE,
+      INTERIOR_DEFAULT_VALUE
+    ])
+    expect(storedHostWidgets(state)).toEqual([
+      ['extra', INTERIOR_DEFAULT_VALUE],
+      ['value', INTERIOR_DEFAULT_VALUE]
+    ])
+    const promotedIds = state.instance.inputs.map((input) => input.widgetId)
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining(
+          'carries 1 opaque widget values for 2 promoted widgets'
+        )
+      }),
+      expect.objectContaining({
+        surface: 'agent',
+        errorType: 'agent_graph_host_widgets_mismatch',
+        context: expect.objectContaining({
+          expected: 2,
+          actual: 1,
+          mode: 'replace',
+          beforeConfigurePromotedIds: promotedIds,
+          afterConfigurePromotedIds: promotedIds
+        })
+      })
+    )
+  })
+
+  it('S1w reports replace and merge drift once each', () => {
+    const state = startFollower({
+      hostWidgetValues: [99, 77],
+      replaceOnFirstFrame: true
+    })
+
+    forwardRaw(
+      state,
+      (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [99, 77]),
+      1
+    )
+    forwardRaw(
+      state,
+      (nodes) => nodes.get('1')!.set(OPAQUE_WIDGETS_KEY, [99, 77]),
+      2
+    )
+
+    expect(reportError).toHaveBeenCalledTimes(2)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ mode: 'replace' })
+      })
+    )
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ mode: 'merge' })
+      })
+    )
   })
 
   it('S1s rebuilds a retyped node through the reconcile path after a rebind', () => {

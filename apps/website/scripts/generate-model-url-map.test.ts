@@ -1,6 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { join } from 'node:path'
 
 import {
   ModuleKind,
@@ -10,14 +9,15 @@ import {
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 
-import { modelAliasUrls, modelPageUrls } from '../src/config/model-urls'
-import { siteRedirects } from '../src/config/redirects'
+import { websiteRoot } from '@website/paths'
+import { modelAliasUrls, modelPageUrls } from '@/config/model-urls'
+import { siteRedirects } from '@/config/redirects'
 import {
   routerModelSlugAliases,
   workshopModels
-} from '../src/config/workshop-browse-content'
-import { modelsBuildRoutes } from '../src/integrations/workshop-release-gate'
-import { PROVIDER_NAMES } from '../src/lib/workshop/provider-name'
+} from '@/config/workshop-browse-content'
+import { modelsBuildRoutes } from '@/integrations/workshop-release-gate'
+import { PROVIDER_NAMES } from '@/lib/workshop/provider-name'
 import {
   MODEL_URL_SLUG,
   MODEL_URL_TABLE,
@@ -29,11 +29,10 @@ import {
   renderModelUrlsModule
 } from './generate-model-url-map'
 
-const appDir = join(dirname(fileURLToPath(import.meta.url)), '..')
 const newSlugs = modelPageUrls.map((page) => page.newSlug)
 
 function sitePathPatterns(): string[] {
-  const pagesDir = join(appDir, 'src/pages')
+  const pagesDir = join(websiteRoot, 'src/pages')
   const pages = readdirSync(pagesDir, { recursive: true, encoding: 'utf8' })
     .map((file) => file.replaceAll('\\', '/'))
     .filter((file) => /\.(astro|ts|mdx?)$/.test(file))
@@ -45,7 +44,7 @@ function sitePathPatterns(): string[] {
     )
   const vercel = z
     .object({ redirects: z.array(z.object({ source: z.string() })) })
-    .parse(JSON.parse(readFileSync(join(appDir, 'vercel.json'), 'utf8')))
+    .parse(JSON.parse(readFileSync(join(websiteRoot, 'vercel.json'), 'utf8')))
   return [
     ...pages,
     ...modelsBuildRoutes(true).map((route) => route.pattern),
@@ -143,7 +142,7 @@ describe('model URL map', () => {
         matchesRoute(pattern, `/hub/models/${slug}/`)
       )
     )
-    expect(patterns).toContain('/p/supported-models/[slug]')
+    expect(patterns).toContain('/hub/models/local/[slug]')
     expect(collisions).toEqual([])
   })
 })

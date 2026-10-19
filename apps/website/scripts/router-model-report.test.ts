@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { RouterModelReportUpdate } from './router-model-report'
 import { openRouterModelReport } from './router-model-report'
 
-vi.mock(import('../src/config/workshop-model-availability'), () => ({
+vi.mock(import('@/config/workshop-model-availability'), () => ({
   workshopModelAvailability: new Map([
     ['test-disabled', { disabled: true, reason: 'Provider rejects defaults' }],
     ['test-enabled', { disabled: false, reason: 'Fixed and retested' }]

@@ -2,13 +2,13 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import type { WorkflowCreditsGate } from '../../lib/workshop/workflow-credits-gate'
+import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits'
+import { useWorkshopSession } from '@/config/workshop-session-state'
+import type { WorkflowCreditsGate } from '@/lib/workshop/workflow-credits-gate'
 import WorkflowCreditsGuard from './WorkflowCreditsGuard.vue'
 
-vi.mock(import('../../config/workshop-session-state'))
-vi.mock(import('../../config/workshop-credits'))
+vi.mock(import('@/config/workshop-session-state'))
+vi.mock(import('@/config/workshop-credits'))
 
 function renderGuard(gate: WorkflowCreditsGate) {
   render(WorkflowCreditsGuard, {

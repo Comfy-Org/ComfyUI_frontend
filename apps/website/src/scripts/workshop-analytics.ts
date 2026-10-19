@@ -1,15 +1,15 @@
-import type { Modality, WorkshopModel } from '../config/models-catalogue'
-import type { SnippetLanguage } from '../config/models-snippets'
-import type { RunFailure, RunOutput } from '../config/workshop-run'
+import type { Modality, WorkshopModel } from '@/config/models-catalogue'
+import type { SnippetLanguage } from '@/config/models-snippets'
+import type { RunFailure, RunOutput } from '@/config/workshop-run'
 import type {
   FieldErrorCode,
   FieldErrors,
   FieldSchema
-} from '../config/workshop-playground'
-import type { WorkshopFailureStage } from '../config/workshop-router-errors'
-import { WorkshopRouterError } from '../config/workshop-router-errors'
-import type { WorkshopWorkflowError } from '../config/workshop-workflow-api'
-import type { WorkflowExecutionFailure } from '../config/workshop-workflow-response'
+} from '@/config/workshop-playground'
+import type { WorkshopFailureStage } from '@/config/workshop-router-errors'
+import { WorkshopRouterError } from '@/config/workshop-router-errors'
+import type { WorkshopWorkflowError } from '@/config/workshop-workflow-api'
+import type { WorkflowExecutionFailure } from '@/config/workshop-workflow-response'
 import type { WorkshopExceptionAnalytics } from './workshop-exception'
 import { workshopExceptionAnalytics } from './workshop-exception'
 
@@ -39,6 +39,22 @@ export interface WorkshopRunAnalytics extends WorkshopModelAnalytics {
   user_id: string
   workspace_id: string
 }
+
+export type HubSurface = 'models' | 'workflows' | 'apps'
+
+export type HubItemKind = 'model' | 'workflow' | 'app'
+
+/** Where a card sits, so featured placement can be told from organic demand. */
+export type HubItemSource =
+  | 'featured_banner'
+  | 'use_case_row'
+  | 'other_formats_row'
+  | 'unplaced_grid'
+  | 'category_row'
+  | 'app_row'
+  | 'results_grid'
+
+export type HubFilter = 'catalogue' | 'use_case' | 'category' | 'model' | 'sort'
 
 export type WorkshopCheckoutFailureStage = 'balance' | 'credential' | 'checkout'
 
@@ -166,6 +182,46 @@ export type WorkshopAnalyticsEvent =
   | {
       name: 'tab_switched'
       properties: WorkshopModelAnalytics & { tab: WorkshopTabName }
+    }
+  | {
+      name: 'hub_search_performed'
+      properties: {
+        surface: HubSurface
+        query: string
+        query_length: number
+        results_count: number
+      }
+    }
+  | {
+      name: 'hub_filter_changed'
+      properties: {
+        surface: HubSurface
+        filter: HubFilter
+        value: string
+        previous_value: string
+      }
+    }
+  | {
+      name: 'hub_item_clicked'
+      properties: {
+        surface: HubSurface
+        kind: HubItemKind
+        slug: string
+        source: HubItemSource
+        position: number
+        row?: string
+        query?: string
+      }
+    }
+  | {
+      name: 'hub_row_viewed'
+      properties: {
+        surface: HubSurface
+        source: HubItemSource
+        row?: string
+        item_count: number
+        row_slugs: string[]
+      }
     }
   | {
       name: 'github_clicked'

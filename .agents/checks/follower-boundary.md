@@ -99,6 +99,12 @@ Flag:
   `[base_version, actor, op_id]` stamp.
 - **Full-document replace as the mutation primitive** — re-sending or reloading the whole
   doc per edit instead of applying ops/updates incrementally.
+  One exception (FOLLOWER amendment 2026-09-26): one `doc_reseed` per
+  `stale_schema_reseed_required` refusal, sent only through
+  `LayoutFollowerBridge.reseed`, which asserts that refusal. A successful or
+  conflicting reseed must block another answer until subscribe confirmation,
+  reconnect, or retarget. Flag any other caller or frame that sends a whole graph
+  upstream.
 - **A second applier implementation** — op-to-doc / conflict-resolution logic reimplemented
   in the frontend instead of importing the single shared `@comfyorg/comfy-multi-player`
   package (pinned by SHA). `LiveGraphApplier` is a doc-to-graph adapter, not an applier;
@@ -109,26 +115,34 @@ Flag:
 - **Branch-pinned catalog/vocabulary citation** — referencing the widget catalog by moving
   branch instead of a pinned SHA.
 
-## Priority 4: distribution seam — one boundary, unified auth
+## Priority 4: distribution seam — one socket, one credential branch
 
-Per FOLLOWER the follower APPLY path is distribution-agnostic; surface differences
-(endpoint, ingest-vs-direct route, auth) live behind one small distribution-resolved
-boundary keyed on `DISTRIBUTION`.
+Per the FOLLOWER amendment (2026-10-12) the follower APPLY path is
+distribution-agnostic. Cloud ingest and the local agent serve the same contract:
+agent events and document frames share `/api/agent/events`, whose path comes from
+`api.apiURL`. The only distribution branch is the credential choice in `agentAuth.ts`.
 
 Flag:
 
 - **`DISTRIBUTION` / `isCloud` / `isDesktop` checks scattered through follower core** —
-  distribution conditionals inside the CRDT apply seam, `DocFrameClient`, or rendering.
-  They belong only in the agent connection/configuration boundary.
-- **Auth reduced to `isCloud`** — resolving credentials by distribution instead of
-  delegating to the unified chain `authStore.getAuthHeader()`. Local and Desktop are
-  authenticated product surfaces, not "anonymous / model-key-only".
+  distribution conditionals inside the CRDT apply seam, `DocFrameClient`, the agent
+  socket transport, or rendering. They belong only in the credential branch in
+  `agentAuth.ts`.
+- **A credential path other than the one `isCloud` branch** — in the cloud, agent REST
+  requests authenticate through `fetchApi` alone and the socket takes
+  `api.socketAuthParams()` (no socket when no one is signed in); adding the user's own
+  header there moves a request out of its workspace. Off-cloud, REST requests carry
+  `getUserAuthHeader()` and the socket carries the same credential as `?token=`. Flag
+  credential resolution outside `agentAuth.ts`, or any branch that leaves Local or
+  Desktop unauthenticated: they are authenticated product surfaces, not
+  "anonymous / model-key-only".
 - **Dev/Vite behavior treated as Local product behavior** — Vite proxy or dev credentials
-  placed in the Local or Desktop path. Dev-only wiring stays in Vite/dev config.
-- **A hardcoded agent base URL** — an agent HTTP/WS endpoint string literal instead of a
-  centralized distribution-resolved resolver (the `AGENT_BASE_URL`-style seam). Today the
-  follower rides the centralized `api.socket`; a new direct-to-agent connection must
-  resolve its endpoint through the seam, not a literal.
+  placed in the Local or Desktop path. Dev-only wiring stays in Vite/dev config; the
+  browser learns only the build-time flag `VITE_DEV_AGENT_PROXY_CREDENTIAL`, never the
+  token.
+- **A hardcoded agent base URL or a second agent socket** — an agent HTTP/WS endpoint
+  string literal instead of `api.apiURL`, or a transport other than
+  `/api/agent/events` (such as agent traffic on `/ws` or a separate local-agent socket).
 
 ## Enforcement expectation
 

@@ -56,8 +56,8 @@ test.describe(
       await b.title.click({ modifiers: ['Shift'] })
 
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
-      await expect(a.root).toHaveClass(/outline-node-component-outline/)
-      await expect(b.root).toHaveClass(/outline-node-component-outline/)
+      await expect(a.root).toHaveClass(/outline-foreground/)
+      await expect(b.root).toHaveClass(/outline-foreground/)
       await expect(comfyPage.selectionToolbox).toBeVisible()
     })
 
@@ -97,13 +97,13 @@ test.describe(
     }) => {
       const a = await comfyPage.vueNodes.getFixtureByTitle('Node A')
       await a.title.click()
-      await expect(a.root).toHaveClass(/outline-node-component-outline/)
+      await expect(a.root).toHaveClass(/outline-foreground/)
       await expect(comfyPage.selectionToolbox).toBeVisible()
 
       await comfyPage.page.evaluate(() => window.app!.canvas.selectItems([]))
 
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
-      await expect(a.root).not.toHaveClass(/outline-node-component-outline/)
+      await expect(a.root).not.toHaveClass(/outline-foreground/)
       await expect(comfyPage.selectionToolbox).toBeHidden()
     })
 
@@ -116,7 +116,7 @@ test.describe(
       await a.title.click()
       await marqueeAround(comfyPage, pair)
       await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
-      await expect(a.root).not.toHaveClass(/outline-node-component-outline/)
+      await expect(a.root).not.toHaveClass(/outline-foreground/)
       await expect(comfyPage.selectionToolbox).toBeVisible()
     })
 
@@ -205,7 +205,7 @@ test.describe(
         await comfyPage.nextFrame()
         await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(2)
         await expect(comfyPage.vueNodes.getNodeLocator('1')).not.toHaveClass(
-          /outline-node-component-outline/
+          /outline-foreground/
         )
         await expect(comfyPage.selectionToolbox).toBeVisible()
 
@@ -215,10 +215,6 @@ test.describe(
         await comfyPage.nextFrame()
         await shift.disposeAsync()
 
-        test.fail(
-          true,
-          'FE-2040 / #7454: toggling a group off leaves its cascaded children selected'
-        )
         await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
         await expect(comfyPage.selectionToolbox).toBeHidden()
       })
@@ -232,7 +228,7 @@ test.describe(
         await comfyPage.page.mouse.click(title.x, title.y, { button: 'right' })
         await comfyPage.nextFrame()
 
-        await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeVisible()
         await expect(
           comfyPage.contextMenu.menuItem('Fit Group To Nodes')
         ).toBeVisible()
@@ -246,9 +242,7 @@ test.describe(
           )
           .toEqual([1])
 
-        await expect(
-          comfyPage.contextMenu.primeVueMenu.getByRole('menubar')
-        ).toBeFocused()
+        await expect(comfyPage.contextMenu.ariaMenu).toBeFocused()
         await comfyPage.page.keyboard.press('Escape')
         await comfyPage.contextMenu.waitForHidden()
       })

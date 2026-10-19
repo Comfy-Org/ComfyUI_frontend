@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { getRoutes } from '../../config/routes'
-import type { CustomerVideoStory } from '../../data/customerVideos'
-import { formatDuration } from '../../data/customerVideos'
-import type { Locale } from '../../i18n/translations'
-import { translationsFor } from '../../i18n/translations'
-import SectionLabel from '../common/SectionLabel.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import Button from '../ui/button/Button.vue'
+import { getRoutes } from '@/config/routes'
+import type { CustomerVideoStory } from '@/data/customerVideos'
+import { formatDuration } from '@/data/customerVideos'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import SectionLabel from '@/components/common/SectionLabel.vue'
+import VideoPlayer from '@/components/common/VideoPlayer.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const {
   story,

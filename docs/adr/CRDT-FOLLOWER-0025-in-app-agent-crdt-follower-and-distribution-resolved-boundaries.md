@@ -16,6 +16,10 @@ on it were deleted. The distribution-boundary decision, the one-way follower
 invariant, the human write path, and the product gate map are unchanged and
 carried forward below.
 
+Amended 2026-10-12: one agent socket and one credential policy on every
+backend replace the distribution-resolved connection module. See
+"Amendment (2026-10-12)"; the passages it supersedes are marked.
+
 ## Context
 
 The In-App Agent runs server-side and needs to read a user's live workflow and
@@ -41,7 +45,8 @@ Only the boundaries around it differ: the transport endpoint (Cloud reaches
 the agent through same-origin ingest; Local and Desktop connect directly to
 the agent binary) and authentication (every surface uses the unified chain in
 `authStore.getAuthHeader()`; Cloud ingest additionally enforces M2M
-server-side). The model provider is never a distribution fork.
+server-side). The model provider is never a distribution fork. (Superseded
+2026-10-12: every surface reaches the agent same-origin; see the amendment.)
 
 ### What went wrong with writing the stores first
 
@@ -174,7 +179,10 @@ one applier, and it is not in the frontend.
 - **Whole-graph replace as the mutation primitive.** Clobbers concurrent agent
   edits mid-turn and kills op-log replay.
 
-**Distribution boundaries.** Keep one branch and one follower implementation,
+**Distribution boundaries.** _Superseded 2026-10-12 except for its first and
+last rules: one follower with no distribution checks in its apply path or
+rendering, and Local and Desktop stay authenticated surfaces (the amendment's
+one `isCloud` credential branch replaces delegating to `authStore.getAuthHeader()`)._ Keep one branch and one follower implementation,
 with surface differences isolated behind a small distribution-resolved boundary
 (rejecting both separate per-surface branches and distribution checks scattered
 through the follower core). Introduce a narrow agent connection/configuration
@@ -188,10 +196,12 @@ reduce auth to `isCloud` (Local and Desktop are authenticated product
 surfaces). Dev-only Vite proxy/credential behavior stays in Vite config and is
 never treated as Local product behavior.
 
-Today the follower uses the centralized ComfyUI `api` transport (`api.socket`
+_Superseded 2026-10-12._ Today the follower uses the centralized ComfyUI `api` transport (`api.socket`
 in `src/scripts/api.ts`), which is already distribution-resolved, so no
 `AGENT_BASE_URL` is wired yet; this ADR records the module as the shape to
 introduce when the follower stops using `api.socket`.
+
+_Superseded 2026-10-12 (the diagram shows the original module):_
 
 ```text
                          compile-time __DISTRIBUTION__
@@ -268,7 +278,8 @@ guard.
   Interior (`path`) widget writes are not held. A page reload still replays the
   whole document over an empty graph, so a field outside the op vocabulary
   (node color) reverts there.
-- The largest distribution risk is unchanged: accidental cloud coupling in the
+- _Superseded 2026-10-12 (see the amendment's remaining risk)._ The largest
+  distribution risk is unchanged: accidental cloud coupling in the
   same-origin `/ws` transport. Boundary tests plus at least one
   browser-observable E2E per shipping topology are required.
 
@@ -290,6 +301,26 @@ path:
    never encoded as a Yjs update or merged into the shared doc.
 4. **Echo-attribution guard** — the own-actor drop at the follower entry plus
    `agent-remote` provenance on everything the applier writes.
+
+## Amendment (2026-09-26): re-minting a document the host refuses as stale-schema
+
+One narrow exception applies to "the follower never sends the whole graph." If
+the host cannot read a stored document because it uses an older schema, and the
+subscribe advertised `supports_reseed`, the host refuses with
+`stale_schema_reseed_required`. The follower may answer each refusal once with a
+`doc_reseed` frame containing the bound tab's serialized canvas (the same
+content a prompt posts as its draft).
+
+This is recovery rather than a whole-graph edit: the host rechecks the document,
+compare-and-swaps the exact refused sequence, remains the only Yjs writer, and
+announces a new lineage for ordinary catch-up. The on-screen canvas is required
+because the server projection can lag human edits. `LayoutFollowerBridge.reseed`
+enforces that the refusal matches the current workflow and can be answered only
+once. A retryable reseed result permits another answer only to a fresh refusal
+produced by the bounded subscribe backoff. After a successful or conflicting
+reseed resets the lineage, another refusal cannot be answered until the
+replacement subscription is confirmed, the transport reconnects, or the user
+retargets. All other whole-graph sends remain rejected.
 
 ## Product gate and developer diagnostics (amended 2026-09-12)
 
@@ -337,6 +368,52 @@ dropped as own echoes.
 
 This frontend gate is not a server authorization boundary. No Local or Desktop
 transport is claimed operational solely because its feature gate is enabled.
+
+## Amendment (2026-10-12): one agent socket on every backend
+
+This supersedes the "Today the follower uses `api.socket`" paragraph and the
+`/ws` risk bullet above. The follower no longer uses `api.socket`. Cloud ingest
+and the local agent now serve the same contract, so the connection module
+described above is not needed:
+
+- **One socket.** Agent events and document frames share
+  `/api/agent/events`. Its path comes from `api.apiURL`, as every agent REST
+  path does. The transport has no distribution branch.
+- **Identity from the backend.** Ops carry `human:<user_id>:<tab>` with the id
+  from `GET /api/agent/identity`. The Firebase uid is not the backend user id
+  for identity-mapped accounts.
+- **Credential, one `isCloud` branch.** In the cloud, agent REST requests
+  authenticate through `fetchApi` alone, and the socket takes the auth params
+  `/ws` uses (`api.socketAuthParams`: the session cookie with `workspace_id`,
+  or the cloud token; no socket when no one is signed in). Ingest prefers a
+  header credential over the session cookie, so adding the user's own header
+  there would move a request out of its workspace. Off-cloud, `fetchApi`
+  attaches nothing, so REST requests carry the user's personal auth header
+  (`getUserAuthHeader`) and the socket carries the same credential as
+  `?token=`; a running turn re-sends it. Whether off-cloud agent calls should
+  bill the active team workspace, as `queuePrompt` does with
+  `getWorkspaceAuthToken`, is still open.
+- **Development exception.** In development mode, a signed-out send skips the
+  sign-in dialog only when the dev proxy injects `DEV_AGENT_COMFY_TOKEN`. Vite
+  tells the browser so with the build-time flag
+  `VITE_DEV_AGENT_PROXY_CREDENTIAL`; the token itself stays in the proxy.
+
+Rejected: the distribution-resolved connection module above, an
+`AGENT_BASE_URL` resolving same-origin ingest in the cloud and the agent
+binary directly on Local and Desktop. Both backends now serve the same paths
+behind the ComfyUI origin, so the module would have nothing to resolve. Also
+rejected: keeping `/ws` in the cloud and adding a second socket for the local
+agent, which keeps two transports in the follower.
+
+Accepted cost: Local and Desktop product wiring is still unshipped (the panel
+mounts only in cloud bundles and the standalone harness), and Global Settings
+still picks its URL and header on `isCloud`.
+
+The remaining risk is the agent socket itself. The Playwright agent suites
+serve chat and document frames on `/api/agent/events` from a fake host
+(`AgentFollowerHostSocket`); none runs against ingest or the local agent in
+CI, and the `@agent-harness` smoke needs the local harness. At least one
+browser-observable E2E per shipping topology is still required.
 
 ## Notes
 

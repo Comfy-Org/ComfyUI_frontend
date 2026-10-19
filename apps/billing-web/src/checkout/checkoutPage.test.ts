@@ -12,7 +12,6 @@ import type {
   PaymentTab,
   RailView,
   SavedArrival,
-  SettledPlan,
   SubmitPhase,
   WaitingOn
 } from '@/checkout/checkoutPage'
@@ -27,7 +26,6 @@ import {
   railAcceptsPay,
   railView,
   reduceCheckoutPage,
-  settledPlanSource,
   submitPhaseOf,
   waitingOn
 } from '@/checkout/checkoutPage'
@@ -35,6 +33,7 @@ import {
   failedOperation,
   hostedPendingOperation,
   pendingOperation,
+  previewOf,
   succeededOperation
 } from '@/test/fakeBillingClient'
 
@@ -1158,17 +1157,11 @@ describe("reduceCheckoutPage over this tab's own operation", () => {
     ...operation,
     awaitedHere: true
   })
-  const PRO: SettledPlan = {
-    tier: 'PRO',
-    duration: 'MONTHLY',
-    price_cents: 5000n
-  }
   const RETURNED: CheckoutPage = {
     kind: 'terminal',
     operation: awaited(succeededOperation()),
     attribution: 'returned'
   }
-  const RECEIPT_PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
   const withReceipt = (receipt: BillingOperationReceipt) => ({
     ...succeededOperation(),
     receipt
@@ -1234,42 +1227,6 @@ describe("reduceCheckoutPage over this tab's own operation", () => {
       expected: { kind: 'waiting', operation: receivedOperation() }
     },
     {
-      name: "Success over its own returned payment takes the server's plan",
-      events: [
-        reconciled(awaited(succeededOperation())),
-        { type: 'settledPlanRead', plan: PRO }
-      ],
-      expected: { ...RETURNED, plan: PRO }
-    },
-    {
-      name: "a plan read over this page's own Pay changes nothing",
-      events: [
-        ...live,
-        submitted,
-        changed(succeededOperation()),
-        { type: 'settledPlanRead', plan: PRO }
-      ],
-      expected: {
-        kind: 'terminal',
-        operation: succeededOperation(),
-        attribution: 'started'
-      }
-    },
-    {
-      name: 'Already completed takes the plan the catalog lists for its receipt',
-      events: [
-        reconciled(withReceipt({ plan: RECEIPT_PLAN })),
-        notAllowed,
-        { type: 'settledPlanRead', plan: PRO }
-      ],
-      expected: {
-        kind: 'terminal',
-        operation: withReceipt({ plan: RECEIPT_PLAN }),
-        attribution: 'settled',
-        plan: PRO
-      }
-    },
-    {
       name: 'a success whose credits were landing takes the read that reports them',
       events: [
         reconciled(awaited(withReceipt({ amountChargedCents: 3250 }))),
@@ -1298,7 +1255,6 @@ describe("reduceCheckoutPage over this tab's own operation", () => {
 })
 
 describe('settled payments the page reads on its own', () => {
-  const PLAN = { slug: 'pro_monthly', duration: 'MONTHLY' } as const
   const settled = (receipt?: BillingOperationReceipt) => ({
     ...succeededOperation('op_1'),
     ...(receipt === undefined ? {} : { receipt })
@@ -1335,47 +1291,6 @@ describe('settled payments the page reads on its own', () => {
     }
   ])('re-reads $name: $awaiting', ({ page, awaiting }) => {
     expect(awaitingServer(page)).toBe(awaiting)
-  })
-
-  it.for<{
-    name: string
-    page: CheckoutPage
-    source: ReturnType<typeof settledPlanSource>
-  }>([
-    {
-      name: 'the plan a settled receipt names',
-      page: {
-        kind: 'terminal',
-        operation: settled({ plan: PLAN }),
-        attribution: 'settled'
-      },
-      source: { key: 'receipt:pro_monthly', receiptSlug: 'pro_monthly' }
-    },
-    {
-      name: "the status's plan for a returned payment with no receipt plan",
-      page: {
-        kind: 'terminal',
-        operation: settled(),
-        attribution: 'returned'
-      },
-      source: { key: 'status' }
-    },
-    {
-      name: 'nothing for a settled payment with no receipt plan',
-      page: { kind: 'terminal', operation: settled(), attribution: 'settled' },
-      source: undefined
-    },
-    {
-      name: "nothing for this page's own Pay, which its quote names",
-      page: {
-        kind: 'terminal',
-        operation: settled({ plan: PLAN }),
-        attribution: 'started'
-      },
-      source: undefined
-    }
-  ])('reads $name', ({ page, source }) => {
-    expect(settledPlanSource(page)).toEqual(source)
   })
 })
 
@@ -2134,5 +2049,38 @@ describe('reduceCheckoutPage through Cancel payment', () => {
     expect(railAcceptsPay(replay([...challenged, cancel, canceledHere]))).toBe(
       true
     )
+  })
+})
+
+describe('reduceCheckoutPage keeps the quote its own Pay was priced on', () => {
+  const paid = previewOf({ quote_id: 'q_paid', is_immediate: false })
+  const pricedPay: CheckoutPageEvent = { type: 'paySubmitted', quote: paid }
+  const staleAnswer: CheckoutPageEvent = {
+    type: 'requoted',
+    reactivation: false,
+    priceUpdated: true
+  }
+
+  it.for<{ name: string; settles: CheckoutPageEvent[] }>([
+    { name: 'settled on the spot', settles: [settledOnTheSpot] },
+    {
+      name: 'settled through its operation, then answered stale',
+      settles: [changed(succeededOperation('op_mine')), staleAnswer]
+    }
+  ])('$name', ({ settles }) => {
+    const page = replay([quoted(0), pricedPay, ...settles])
+
+    expect(page).toMatchObject({
+      kind: 'terminal',
+      attribution: 'started',
+      quote: paid
+    })
+  })
+
+  it('a success it did not send carries no quote', () => {
+    const page = replay([quoted(0), changed(succeededOperation('op_theirs'))])
+
+    expect(page).toMatchObject({ kind: 'terminal', attribution: 'settled' })
+    expect(page).not.toHaveProperty('quote')
   })
 })

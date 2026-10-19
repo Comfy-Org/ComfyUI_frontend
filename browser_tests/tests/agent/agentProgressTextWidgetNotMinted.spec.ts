@@ -8,7 +8,6 @@ import {
   progressTextFrame
 } from '@e2e/fixtures/agentNonValueWidgetRig'
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
-import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 
 /**
  * `$$node-text-preview` is a `serialize: false` widget written by binary
@@ -20,7 +19,6 @@ const NODE_ID = 501
 const WORKFLOW_ID = 'c4e2d5b3-0000-4000-8000-000000000060'
 const MESSAGE_ID = 'c4e2d5b3-0000-4000-8000-000000000061'
 const THREAD_ID = 'c4e2d5b3-0000-4000-8000-000000000062'
-const SOCKET_SID = 'c4e2d5b3-0000-4000-8000-000000000063'
 
 const PREVIEW_WIDGET = '$$node-text-preview'
 const SEED_VALUE = 111111
@@ -79,7 +77,6 @@ const rigConfig = {
   nodeDefs: { [NODE_TYPE]: nodeDef },
   samplerNodeId: NODE_ID,
   seed,
-  socketSid: SOCKET_SID,
   threadId: THREAD_ID,
   visibleNodeId: NODE_ID,
   workflowId: WORKFLOW_ID
@@ -90,7 +87,8 @@ test.describe(
   { tag: ['@cloud', '@agent', '@vue-nodes', '@widget'] },
   () => {
     test('streaming execution progress mints nothing and never tells the user an edit was rejected', async ({
-      page
+      page,
+      toast
     }) => {
       test.setTimeout(60_000)
       const rig = await AgentNonValueWidgetRig.boot(page, rigConfig)
@@ -125,7 +123,7 @@ test.describe(
       })
 
       await test.step('no rejection toast, hand edit still on screen', async () => {
-        const rejectionToast = new ToastHelper(page).toastErrors.filter({
+        const rejectionToast = toast.toastErrors.filter({
           hasText: 'Widget edit was rejected and was not saved'
         })
         await expect(rejectionToast).toHaveCount(0)

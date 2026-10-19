@@ -6,17 +6,48 @@ import type {
 
 import Badge from './Badge.vue'
 
-const meta = {
+const meta: Meta<ComponentPropsAndSlots<typeof Badge>> = {
   title: 'Components/Badge',
   component: Badge,
   tags: ['autodocs'],
   args: { default: 'Badge', variant: 'tag', severity: 'secondary' },
+  argTypes: {
+    variant: {
+      control: 'select',
+      options: [
+        'tag',
+        'chip',
+        'badge',
+        'compact',
+        'label',
+        'circle',
+        'outline',
+        'square',
+        'pill',
+        'dot'
+      ]
+    },
+    severity: {
+      control: 'select',
+      options: [
+        'default',
+        'contrast',
+        'primary',
+        'secondary',
+        'muted',
+        'danger',
+        'info',
+        'success',
+        'warning'
+      ]
+    }
+  },
   render: (args) => ({
     components: { Badge },
     setup: () => ({ args }),
     template: '<Badge v-bind="args">{{ args.default }}</Badge>'
   })
-} satisfies Meta<ComponentPropsAndSlots<typeof Badge>>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -27,6 +58,9 @@ export const RemovableChip: Story = {
 }
 export const Count: Story = { args: { variant: 'badge', default: '12' } }
 export const Dot: Story = { args: { variant: 'dot', default: '' } }
+export const Compact: Story = {
+  args: { variant: 'compact', default: 'Downloaded' }
+}
 export const Severities: Story = {
   render: () => ({
     components: { Badge },

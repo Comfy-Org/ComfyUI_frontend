@@ -32,8 +32,7 @@ async function openMenu({ vueNodesEnabled = false } = {}) {
 
   render(ComfyMenuButton, {
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 
@@ -42,7 +41,7 @@ async function openMenu({ vueNodesEnabled = false } = {}) {
   return {
     user,
     settingStore,
-    row: screen.getByTestId('nodes-2-toggle-item'),
+    row: screen.getByRole('menuitemcheckbox', { name: NODES_2_LABEL }),
     label: screen.getByText(NODES_2_LABEL)
   }
 }

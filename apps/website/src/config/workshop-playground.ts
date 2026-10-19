@@ -1,5 +1,5 @@
-import type { Locale } from '../i18n/translations'
-import { t, translationsFor } from '../i18n/translations'
+import type { Locale } from '@/i18n/translations'
+import { t, translationsFor } from '@/i18n/translations'
 import { fieldsForDefinition } from './workshop-form-definition'
 import { workshopExampleFiles } from './workshop-example-file'
 import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
@@ -662,6 +662,10 @@ export function exampleValues(
 
 export function isVideoUrl(url: string): boolean {
   return /\.(mp4|webm|mov)(?:[?#]|$)/i.test(url)
+}
+
+export function isAudioUrl(url: string): boolean {
+  return /\.(mp3|wav|ogg|m4a|flac)(?:[?#]|$)/i.test(url)
 }
 
 /** A video address that makes Safari paint a frame before playback. */

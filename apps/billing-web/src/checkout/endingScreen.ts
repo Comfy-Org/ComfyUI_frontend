@@ -1,6 +1,7 @@
 import type {
   BillingOperationReceipt,
-  CapabilityDenialReason
+  CapabilityDenialReason,
+  SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 import { isGrantLanding } from '@comfyorg/account-core/billing'
 
@@ -39,17 +40,53 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   subscription_status_unrecognized: 'unknown',
   subscription_change_in_progress: 'change_unnamed',
   not_a_member: 'unknown',
+  not_original_owner: 'unknown',
+  creator_only_provisioning: 'unknown',
+  payment_past_due: 'unknown',
+  free_plan: 'unknown',
+  no_subscription: 'unknown',
+  subscription_ended: 'unknown',
+  billing_operation_in_progress: 'unknown',
+  billing_operation_parked: 'unknown',
+  cancellation_scheduled: 'unknown',
+  cancellation_not_scheduled: 'unknown',
+  workspace_sso_attached: 'unknown',
+  personal_workspace: 'unknown',
+  plan_not_ended: 'unknown',
+  membership_managed_by_directory: 'unknown',
+  personal_workspace_creator: 'unknown',
+  workspace_creator: 'unknown',
+  only_owner: 'unknown',
+  billing_state_unknown: 'unknown',
+  free_tier_exhausted: 'unknown',
+  invite_capacity_reached: 'unknown',
+  manual_block: 'unknown',
+  no_funds: 'unknown',
+  no_revertible_scheduled_change: 'unknown',
+  no_upgrade_available: 'unknown',
+  partner_governance_not_entitled: 'unknown',
+  plan_ending: 'unknown',
+  project_cap_exceeded: 'unknown',
+  rollout_disabled: 'unknown',
+  sales_managed: 'sales_managed',
+  sales_managed_plan: 'unknown',
+  subscription_inactive: 'unknown',
+  usage_attribution_unavailable: 'unknown',
+  user_cap_exceeded: 'unknown',
+  workspace_cap_exceeded: 'unknown',
   unspecified: 'unknown'
 }
 
 /**
  * The full-page screen a checkout ends on, and the code support can act on.
- * `success` names the plan its quote priced: this page's own Pay sent it.
+ * `success` names the plan the server reports for the operation, or, for this
+ * page's own Pay settled without that report, the plan its quote priced.
  * `completed` is money this page watched settle without sending it;
  * `already_completed` was through before the page could offer a form. Those
  * two name a plan only from the `receipt` the server reported for the
  * operation. `received` with a receipt is a charge the server confirmed
- * whose credits are still landing.
+ * whose credits are still landing. `scheduled` is this page's own Pay on a
+ * quote the server priced to take effect later, so nothing has changed yet.
  */
 export type EndingScreen =
   | {
@@ -57,6 +94,11 @@ export type EndingScreen =
       /** A top-up bought credits, so its Success names no plan. */
       readonly purchase?: 'credits'
       readonly receipt?: BillingOperationReceipt
+    }
+  | {
+      readonly kind: 'scheduled'
+      readonly change: ScheduledChange
+      readonly kept: ScheduledChange['plan']
     }
   | {
       readonly kind: 'completed'
@@ -185,14 +227,40 @@ function successEnding(operation: SettledOperation | undefined): EndingScreen {
   }
 }
 
+const tierAndDuration = ({
+  tier,
+  duration
+}: SubscriptionPreview['new_plan']): ScheduledChange['plan'] => ({
+  tier,
+  duration
+})
+
+/** A quote that takes effect later names the plan it starts and the one kept until then. */
+function scheduledEnding(
+  quoted: SubscriptionPreview | undefined
+): EndingScreen | undefined {
+  const kept = quoted?.current_plan
+  if (quoted === undefined || quoted.is_immediate || kept === undefined)
+    return undefined
+  return {
+    kind: 'scheduled',
+    change: {
+      plan: tierAndDuration(quoted.new_plan),
+      effectiveAt: quoted.effective_at
+    },
+    kept: tierAndDuration(kept)
+  }
+}
+
 function terminalEnding(
   page: Extract<CheckoutPage, { kind: 'terminal' }>
 ): EndingScreen {
   const { operation } = page
   if (operation !== undefined && isGrantLanding(operation))
     return { kind: 'received', code: operation.id, ...receiptOf(operation) }
-  if (page.attribution === 'started' || page.attribution === 'returned')
-    return successEnding(operation)
+  if (page.attribution === 'started')
+    return scheduledEnding(page.quote) ?? successEnding(operation)
+  if (page.attribution === 'returned') return successEnding(operation)
   const kind = TERMINAL_KIND[page.attribution]
   return operation === undefined
     ? { kind }
@@ -261,6 +329,8 @@ export function endingReceipt(screen: EndingScreen): EndingReceipt {
       const rows = receipt === undefined ? [] : settledRows(receipt)
       return { namesPlan: false, rows, rowsReplaceCode: rows.length > 0 }
     }
+    case 'scheduled':
+      return { namesPlan: true, rows: [], rowsReplaceCode: false }
     case 'received':
       return {
         namesPlan: false,

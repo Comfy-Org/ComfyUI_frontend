@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { translationsFor } from '../../../../i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import InfoTooltip from '@/components/ui/tooltip/InfoTooltip.vue'
-import type { DepthState } from '../../../../composables/useReshoot'
-import type { StudioGate } from '../../../../lib/workshop/cinematic-studio/gate'
+import type { DepthState } from '@/composables/useReshoot'
+import type { StudioGate } from '@/lib/workshop/cinematic-studio/gate'
 import type {
   CameraKey,
   ReshootAspect,
   ReshootCamera,
   ReshootSize
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { clipFits } from '../../../../lib/workshop/cinematic-studio/reshoot'
-import { fileSecondsOf } from '../../../../lib/workshop/cinematic-studio/reshoot-clip'
-import type { Locale } from '../../../../i18n/translations'
-import CinematicGenerateAction from '../CinematicGenerateAction.vue'
+} from '@/lib/workshop/cinematic-studio/reshoot'
+import { clipFits } from '@/lib/workshop/cinematic-studio/reshoot'
+import { fileSecondsOf } from '@/lib/workshop/cinematic-studio/reshoot-clip'
+import type { Locale } from '@/i18n/translations'
+import CinematicGenerateAction from '@/components/workshop/cinematic-studio/CinematicGenerateAction.vue'
 import ReshootAimRig from './ReshootAimRig.vue'
 import ReshootDisclosure from './ReshootDisclosure.vue'
 import ReshootFormat from './ReshootFormat.vue'
