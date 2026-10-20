@@ -3,6 +3,7 @@ import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
@@ -187,7 +188,7 @@ class ManageTemplates extends ComfyDialog {
                   gridTemplateColumns: '1fr auto',
                   border: '1px dashed transparent',
                   gap: '5px',
-                  backgroundColor: 'var(--comfy-menu-bg)'
+                  backgroundColor: 'var(--background)'
                 },
                 ondragstart: (e: DragEvent) => {
                   const row = e.currentTarget
@@ -284,7 +285,7 @@ class ManageTemplates extends ComfyDialog {
                         el.style.transitionDuration = '0s'
                         this.saveVisualCue = setTimeout(function () {
                           el.style.transitionDuration = '.7s'
-                          el.style.backgroundColor = 'var(--comfy-input-bg)'
+                          el.style.backgroundColor = 'var(--input)'
                         }, 15)
                       },
                       onkeypress: (e: KeyboardEvent) => {
@@ -292,7 +293,7 @@ class ManageTemplates extends ComfyDialog {
                         if (!(el instanceof HTMLInputElement)) return
                         if (this.saveVisualCue) clearTimeout(this.saveVisualCue)
                         el.style.transitionDuration = '0s'
-                        el.style.backgroundColor = 'var(--comfy-input-bg)'
+                        el.style.backgroundColor = 'var(--input)'
                       },
                       $: (el) => {
                         if (el instanceof HTMLInputElement) nameInput = el
@@ -373,7 +374,7 @@ const ext: ComfyExtension = {
     items.push(null)
     items.push({
       content: `Save Selected as Template`,
-      disabled: !Object.keys(app.canvas.selected_nodes).length,
+      disabled: !selectedCanvasNodes(app.canvas).length,
       callback: async () => {
         const name = await useDialogService().prompt({
           title: t('nodeTemplates.saveAsTemplate'),

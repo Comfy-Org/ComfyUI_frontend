@@ -91,7 +91,9 @@ describe('ColorPickerButton', () => {
     await user.tab()
 
     expect(screen.getByRole('button', { name: 'No Color' })).toHaveFocus()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('No Color')
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'No Color'
+    )
   })
 
   it('clears the color when the active swatch is selected again', async () => {

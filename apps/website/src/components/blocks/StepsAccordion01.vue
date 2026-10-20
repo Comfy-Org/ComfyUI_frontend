@@ -68,6 +68,7 @@ const {
         >
           {{ cta.label }}
         </Button>
+        <slot name="actions" />
       </div>
 
       <Accordion

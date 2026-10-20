@@ -38,6 +38,15 @@ export const zWorkspaceSummary = z.object({
 })
 
 /**
+ * Per-member action guidance for the authenticated actor; render each field as received rather than deriving it from roles.
+ */
+export const zWorkspaceMemberCapabilities = z.object({
+  can_change_role: z.boolean(),
+  can_remove: z.boolean(),
+  can_set_credit_limit: z.boolean()
+})
+
+/**
  * One live deployment of the workspace, as the editor's switcher shows it.
  */
 export const zWorkspaceDeployment = z.object({
@@ -62,6 +71,13 @@ export const zWorkspaceDeploymentList = z.object({
   items: z.array(zWorkspaceDeployment),
   pick_source: z.enum(['browser', 'workspace_default']).optional(),
   picked_deployment_id: z.string().optional()
+})
+
+/**
+ * Present only for can_delete_workspace denied with plan_ending when all live subscription rows carry a known future cancel_at. This is guidance, not a promise that deletion will succeed at that time; writes recheck.
+ */
+export const zWorkspaceDeletionDenialParams = z.object({
+  effective_at: z.iso.datetime().optional()
 })
 
 /**
@@ -173,43 +189,6 @@ export const zWorkflowPublishInfo = z.object({
   publish_time: z.iso.datetime().nullish(),
   share_id: z.string(),
   workflow_id: z.string()
-})
-
-/**
- * The workflow to read.
- */
-export const zWorkflowPacksRequest = z.object({
-  workflow: z.record(z.string(), z.unknown())
-})
-
-/**
- * One node class of the workflow that Cloud cannot confirm a pack provides, and why.
- */
-export const zWorkflowMissingNode = z.object({
-  class_type: z.string(),
-  pack: z.string().optional(),
-  reason: z.enum(['github', 'unknown', 'unchecked', 'stamped']),
-  repository: z.string().optional()
-})
-
-/**
- * One node pack the workflow needs, as it would be installed.
- */
-export const zWorkflowPack = z.object({
-  id: z.string().optional(),
-  name: z.string(),
-  repository: z.string().optional(),
-  version: z.string().optional()
-})
-
-/**
- * What a workflow needs. A node class built into ComfyUI, or served by a partner provider, is in none of the lists: there is nothing to install for it.
- */
-export const zWorkflowPacks = z.object({
-  format: z.enum(['api', 'ui']),
-  matched_packs: z.array(zWorkflowPack),
-  missing_nodes: z.array(zWorkflowMissingNode),
-  stamped_packs: z.array(zWorkflowPack)
 })
 
 /**
@@ -339,16 +318,22 @@ export const zUsageSummary = z.object({
  * Present, with empty groups, buckets and breakdown, when the requested grouping is not served for this workspace. Render as unavailable, not as zero spend.
  */
 export const zUsageNotAvailable = z.object({
-  reason: z.enum(['no_attribution_source'])
+  reason: z.enum(['no_attribution_source', 'filter_needs_ledger'])
 })
 
 export const zUsageGroupLabel = z.object({
+  cost_kind: z.enum(['gpu', 'storage']).optional(),
+  deployment_id: z.string().optional(),
+  deployment_name: z.string().optional(),
   display_name: z.string().optional(),
+  email: z.string().optional(),
+  former_member: z.boolean().optional(),
   key: z.string(),
   key_name: z.string().optional(),
   key_prefix: z.string().optional(),
   kind: z.enum(['api_key', 'session', 'deployment']).optional(),
   owner_display_name: z.string().optional(),
+  owner_email: z.string().optional(),
   owner_user_id: z.string().optional()
 })
 
@@ -362,10 +347,21 @@ export const zUsageBucket = z.object({
 export const zUsageBreakdownRow = z.object({
   cost_micros: z.number(),
   group_key: z.string(),
+  run_count: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
   share: z.number()
 })
 
 export const zUsageTimeSeries = z.object({
+  as_of: z.iso.datetime().optional(),
+  attribution_since: z.iso.datetime().optional(),
   breakdown: z.array(zUsageBreakdownRow),
   buckets: z.array(zUsageBucket),
   ending_before: z.iso.datetime(),
@@ -381,6 +377,7 @@ export const zUsageTimeSeries = z.object({
   group_labels: z.array(zUsageGroupLabel).optional(),
   groups: z.array(z.string()),
   not_available: zUsageNotAvailable.optional(),
+  served_from: z.enum(['ledger']).optional(),
   starting_on: z.iso.datetime(),
   summary: zUsageSummary
 })
@@ -458,7 +455,7 @@ export const zTopupQuoteResponse = z.object({
 })
 
 /**
- * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
+ * One persisted tool call attached to an assistant message's content.tool_calls (services/agent/internal/persist.ToolCallSummary), so a chat reload can render the tool-call history a turn produced. Display data only — raw arguments/results are never projected here. The optional produced_asset field is a strict exception containing only the server-recorded id/hash from a successful asset-producing media call. Only terminal rows (status ok/error) are ever surfaced; a row a dead turn left in pending/running has no wire-status mapping and is dropped rather than shown as a perpetual-progress chip.
  * This object is projected at read time by services/agent/internal/persist.ToolCallsForThread from agent_tool_calls; it is never stored in agent_messages.content, so there is no legacy persisted shape. Because of that projection the contract holds for every row ever served: tool_call_id is always present (it falls back to id for rows written before the column existed), status is always one of the enum values (the audit-table word "ok" is translated by ToolCallWireStatus), and duration_ms is always an integer when present. Clients (the frontend's zPersistedToolCallSummary) must not relax these fields to parse "historical" rows — a row that fails this schema is a server bug (BE-20134).
  */
 export const zToolCallSummary = z.object({
@@ -467,16 +464,58 @@ export const zToolCallSummary = z.object({
   finished_at: z.iso.datetime().optional(),
   id: z.string(),
   job_id: z.string().optional(),
+  produced_asset: z
+    .object({
+      hash: z.string(),
+      id: z.string()
+    })
+    .optional(),
   started_at: z.iso.datetime().optional(),
   status: z.enum(['success', 'error']),
   tool_call_id: z.string(),
   tool_name: z.string()
 })
 
+export const zPlanActionDeniedReasonParams = z.object({
+  effective_at: z.iso.datetime().optional()
+})
+
+/**
+ * Why action is none. Permission refusals precede sales management, parked and running operations, a scheduled successor, transition restrictions, and seats. Scheduled successors include effective_at in denied_reason_params. Unknown or unavailable state fails closed with billing_state_unknown. Absent for an actionable choice.
+ */
+export const zPlanActionDeniedReason = z.enum([
+  'not_a_member',
+  'not_workspace_owner',
+  'not_original_owner',
+  'sales_managed',
+  'billing_operation_parked',
+  'billing_operation_in_progress',
+  'subscription_change_in_progress',
+  'annual_to_monthly_unsupported',
+  'same_plan',
+  'incompatible_transition',
+  'exceeds_max_seats',
+  'billing_state_unknown'
+])
+
+/**
+ * Action for this exact plan and billing interval. Render as received. Subscribe starts or resumes checkout, change changes the plan now, reactivate removes a scheduled cancellation, downgrade schedules a reduction at the billing boundary, and none disables the choice. This is presentation guidance, not authorization; writes recheck policy.
+ */
+export const zPlanAction = z.enum([
+  'subscribe',
+  'change',
+  'reactivate',
+  'downgrade',
+  'none'
+])
+
 /**
  * Pre/post-discount price for a team credit stop, in cents.
  */
 export const zTeamCreditStopPrice = z.object({
+  action: zPlanAction,
+  denied_reason: zPlanActionDeniedReason.optional(),
+  denied_reason_params: zPlanActionDeniedReasonParams.optional(),
   list_price_cents: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -635,6 +674,19 @@ export const zSystemStatsResponse = z.object({
     workflow_templates_version: z.string().optional()
   })
 })
+
+/**
+ * Server-owned subscription presentation state. A future scheduled plan change remains active, with its target in scheduled_change. Paused means a recoverable renewal collection failure; past_due requires direct subscription payment evidence, never an unattributed workspace or top-up failure. Activating means the initial subscription is awaiting payment. This is not an authorization or workflow admission decision; use capabilities.
+ */
+export const zSubscriptionState = z.enum([
+  'never_subscribed',
+  'active',
+  'cancel_scheduled',
+  'past_due',
+  'paused',
+  'activating',
+  'ended'
+])
 
 /**
  * Billing period (uppercase to match comfy-api)
@@ -1356,14 +1408,26 @@ export const zPreviewSubscribeRequest = z.object({
 })
 
 /**
- * Reason why a plan is unavailable
+ * Why a plan is unavailable. Present exactly when available is false and
+ * absent when it is true. Only the first reason that applies is reported,
+ * in the order below. Render the value as received; do not recompute it.
+ * same_plan: (a) Why can this plan not be picked? (b) It is the plan the workspace is already on. (c) Absent means the plan is not the current one. (d) Not a refusal of a different plan; see incompatible_transition. (e) The plan slug equals the slug of the workspace's active subscription.
+ * incompatible_transition: (a) Why is this plan closed for the workspace's current plan? (b) The transition rules never allow it: the Free plan, which is provisioned only through free-tier eligibility, or a switch into the Founders plan. (c) Absent means no such rule applies. (d) Not a temporary state, and not billing_operation_in_progress, billing_operation_parked or annual_to_monthly_unsupported. (e) The target is the Free plan, or the transition matrix refuses the pair for a reason other than annual_to_monthly_unsupported.
+ * billing_operation_in_progress: (a) Why can no other plan be picked for now? (b) A subscription-changing billing operation is running for the workspace's active subscription. It settles on its own, so a client may say that plans will be available again shortly. (c) Absent means no such operation is running. (d) Not billing_operation_parked, which does not clear on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is running and none is parked.
+ * billing_operation_parked: (a) Why can no other plan be picked until support steps in? (b) A subscription-changing billing operation is parked for reconciliation for the workspace's active subscription: it is either paid but credits not granted, or a replacement subscription that could not finish superseding the old one. It does not clear on its own, so a client must route the user to support and never imply a wait. (c) Absent means no operation is parked. (d) Not billing_operation_in_progress, which settles on its own, not a successor already scheduled for a future billing boundary, and not a seat problem. (e) The workspace has a non-scheduled active subscription and a subscription-changing billing operation is parked; reported instead of billing_operation_in_progress when both exist.
+ * annual_to_monthly_unsupported: (a) Why can a monthly plan not be chosen from an annual plan? (b) The annual commitment binds, so a move to a higher-tier monthly plan is not supported before the term ends. (c) Absent means the transition is not an annual to higher-tier monthly move. (d) Not a downgrade, which is allowed and scheduled, and not incompatible_transition. (e) The transition matrix refuses the pair with its annual-to-monthly tier upgrade rule.
+ * exceeds_max_seats: (a) Why is this plan closed to a workspace with many people? (b) The occupied seats exceed the plan's seat limit, counted as the subscribe request counts them: a team plan counts members plus unexpired pending invitations, any other plan counts members alone. (c) Absent means the occupied seats fit the plan. (d) Not a pending-invitation count for non-team plans, where an invitation does not occupy a seat. (e) For a team plan, members + pending invitations is greater than the seat limit; for any other plan, members is greater than the seat limit; a positive workspace override replaces the plan default in both cases.
+ * requires_team and requires_personal are part of this enum but are not reported today.
  */
 export const zPlanAvailabilityReason = z.enum([
   'same_plan',
   'incompatible_transition',
+  'billing_operation_in_progress',
+  'billing_operation_parked',
+  'annual_to_monthly_unsupported',
+  'exceeds_max_seats',
   'requires_team',
-  'requires_personal',
-  'exceeds_max_seats'
+  'requires_personal'
 ])
 
 /**
@@ -1378,6 +1442,7 @@ export const zPlanAvailability = z.object({
  * Billing plan details including pricing, limits, and features.
  */
 export const zPlan = z.object({
+  action: zPlanAction,
   availability: zPlanAvailability,
   credits: z.coerce
     .bigint()
@@ -1396,6 +1461,8 @@ export const zPlan = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  denied_reason: zPlanActionDeniedReason.optional(),
+  denied_reason_params: zPlanActionDeniedReasonParams.optional(),
   duration: zSubscriptionDuration,
   max_seats: z.coerce
     .bigint()
@@ -1447,6 +1514,7 @@ export const zPaymentPortalResponse = z.object({
  * Request body for generating a payment portal session URL.
  */
 export const zPaymentPortalRequest = z.object({
+  flow_type: z.enum(['', 'payment_method_update']).optional(),
   return_url: z.string().optional()
 })
 
@@ -1643,6 +1711,7 @@ export const zModelFile = z.object({
  * Workspace member with profile and role information.
  */
 export const zMember = z.object({
+  capabilities: zWorkspaceMemberCapabilities.optional(),
   email: z.string(),
   id: z.string(),
   is_original_owner: z.boolean(),
@@ -1792,6 +1861,17 @@ export const zExecutionError = z.object({
 })
 
 /**
+ * The deployment a job ran on and the Release it ran, as they were when the job was sent: deployment_id and release_id stay the same after the deployment is updated to another Release or deleted. build_name and release_version are read from comfy-builder when the job is read, so a renamed Build shows its new name within a few minutes.
+ */
+export const zJobDeployment = z.object({
+  build_name: z.string().optional(),
+  deployment_id: z.string(),
+  name: z.string().optional(),
+  release_id: z.string(),
+  release_version: z.int().optional()
+})
+
+/**
  * Lightweight job data for list views (workflow and full outputs excluded)
  */
 export const zJobEntry = z.object({
@@ -1803,6 +1883,7 @@ export const zJobEntry = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  deployment: zJobDeployment.optional(),
   execution_end_time: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -1822,6 +1903,7 @@ export const zJobEntry = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     })
     .optional(),
+  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
   id: z.uuid(),
   outputs_count: z.int().optional(),
   preview_output: z.record(z.string(), z.unknown()).optional(),
@@ -1921,6 +2003,7 @@ export const zJobDetailResponse = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  deployment: zJobDeployment.optional(),
   execution_end_time: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -1942,6 +2025,7 @@ export const zJobDetailResponse = z.object({
     })
     .optional(),
   execution_status: z.record(z.string(), z.unknown()).optional(),
+  executor: z.enum(['cloud_inference', 'platform_gateway']).optional(),
   id: z.uuid(),
   outputs: z.record(z.string(), z.unknown()).optional(),
   outputs_count: z.int().optional(),
@@ -2232,6 +2316,57 @@ export const zHubAssetUploadUrlRequest = z.object({
 })
 
 /**
+ * Durable discovery record only. Fetch the session endpoint for current payment and credit-fulfillment state; a summary proves neither. An unavailable session remains discoverable without hiding other rows.
+ *
+ */
+export const zHostedTopupCheckoutSummary = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  created_at: z.iso.datetime(),
+  session_id: z.string()
+})
+
+export const zHostedTopupCheckoutList = z.object({
+  checkouts: z.array(zHostedTopupCheckoutSummary),
+  next_cursor: z.string().nullable()
+})
+
+export const zHostedTopupCheckout = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  payment_amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
+  session_id: z.string(),
+  state: z.enum([
+    'open',
+    'payment_processing',
+    'credits_applying',
+    'fulfilled',
+    'expired',
+    'failed'
+  ])
+})
+
+/**
  * History entry with prompt_id and execution data
  */
 export const zHistoryEntry = z.object({
@@ -2438,6 +2573,7 @@ export const zExchangeTokenResponse = z.object({
  *
  */
 export const zExchangeTokenRequest = z.object({
+  resource: z.enum(['partner-node']).optional(),
   workspace_id: z.string().optional()
 })
 
@@ -2493,6 +2629,31 @@ export const zDesktopLoginCodeCreateRequest = z.object({
     .regex(/^[A-Za-z0-9._-]+$/)
     .optional(),
   platform: z.string().min(1).max(32)
+})
+
+export const zDeploymentNodeCompatibility = z.object({
+  deployment_id: z.string(),
+  missing_node_types: z.array(z.string()),
+  unknown: z.boolean()
+})
+
+/**
+ * The node types of the workflow open in the editor.
+ */
+export const zDeploymentCompatibilityRequest = z.object({
+  node_types: z.array(z.string())
+})
+
+export const zCloudNodeCompatibility = z.object({
+  missing_node_types: z.array(z.string())
+})
+
+/**
+ * Which of the posted node types each of the workspace's deployments, and Comfy Cloud, does not have.
+ */
+export const zDeploymentCompatibility = z.object({
+  cloud: zCloudNodeCompatibility,
+  deployments: z.array(zDeploymentNodeCompatibility)
 })
 
 /**
@@ -2754,6 +2915,7 @@ export const zBillingStatusResponse = z.object({
   scoped_effective_has_funds: z.record(z.string(), z.boolean()).optional(),
   scoped_has_funds: z.record(z.string(), z.boolean()).optional(),
   subscription_duration: zSubscriptionDuration.optional(),
+  subscription_state: zSubscriptionState.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
   team_credit_stop: zTeamCreditStopSummary.nullable()
@@ -2933,9 +3095,15 @@ export const zBillingOpCancelResponse = z.object({
  * A single history event. The cloud history-events store is the single source of truth for both billing events (charges, credits, adjustments) and user-facing usage events.
  */
 export const zBillingEvent = z.object({
+  api_key_name: z.string().optional(),
+  api_key_prefix: z.string().optional(),
   createdAt: z.iso.datetime(),
   event_id: z.string(),
   event_type: z.string(),
+  member_display_name: z.string().optional(),
+  member_email: z.string().optional(),
+  member_former: z.boolean().optional(),
+  member_user_id: z.string().optional(),
   params: z.record(z.string(), z.unknown()).optional()
 })
 
@@ -3011,12 +3179,24 @@ export const zBillingCapabilityRolloutDefaults = z.object({
  * names the policy branch that decided, not customer-facing wording: the
  * client owns the message.
  *
+ * How to read this: render each capability from `capabilities` as received, and
+ * use a reason only to explain a capability that is false. Never recombine
+ * capabilities or reasons into a new decision, and never derive a reason from
+ * tier, role, status or plan slug. A missing reason is not a grant. A refused
+ * capability usually has a key here naming the branch that refused it. A false
+ * capability with no matching key is an unexplained refusal: no recognised
+ * explanation, still false. A true capability never has a key.
+ * Within a key the values are listed in the order the resolver reaches them,
+ * and the first one reached is the one reported. Capabilities are UI guidance,
+ * not authorization: the write endpoints decide.
+ *
  * The invariant runs one way only. **Presence implies refusal**: a key is
  * present only alongside `capabilities.<key> == false`, reconciled before
  * the response is built, so a reason never accompanies a granted
- * capability. **Absence implies nothing** -- it means no recognised
- * explanation, not that the capability was granted. Consult
- * `capabilities`, which stays authoritative for what the client may offer.
+ * capability. **Absence implies nothing**: on a false capability it
+ * means no recognised explanation, and on a true capability it is the
+ * expected state. Consult `capabilities`, which stays authoritative for what
+ * the client may offer.
  *
  * A key is absent for a refused capability whenever this service is
  * talking to a billing-api that predates the field, and whenever it drops
@@ -3030,42 +3210,288 @@ export const zBillingCapabilityRolloutDefaults = z.object({
  *
  */
 export const zBillingCapabilityDenials = z.object({
+  can_cancel: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'not_original_owner',
+      'free_plan',
+      'no_subscription',
+      'tier_not_self_serve',
+      'billing_operation_in_progress',
+      'billing_operation_parked',
+      'cancellation_scheduled',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized'
+    ])
+    .optional(),
+  can_change_seats: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'no_subscription',
+      'tier_not_self_serve',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized'
+    ])
+    .optional(),
+  can_delete_workspace: z
+    .enum([
+      'not_a_member',
+      'sales_managed_plan',
+      'not_workspace_owner',
+      'not_original_owner',
+      'workspace_sso_attached',
+      'personal_workspace',
+      'billing_operation_in_progress',
+      'billing_operation_parked',
+      'plan_not_ended',
+      'plan_ending'
+    ])
+    .optional(),
+  can_downgrade_to_personal: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'not_original_owner',
+      'no_subscription',
+      'tier_not_self_serve',
+      'subscription_change_in_progress',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized',
+      'rollout_disabled'
+    ])
+    .optional(),
+  can_edit_workspace: z
+    .enum(['not_a_member', 'not_workspace_owner'])
+    .optional(),
+  can_invite_members: z
+    .enum(['not_a_member', 'not_workspace_owner', 'invite_capacity_reached'])
+    .optional(),
+  can_leave_workspace: z
+    .enum([
+      'not_a_member',
+      'membership_managed_by_directory',
+      'personal_workspace_creator',
+      'workspace_creator',
+      'only_owner'
+    ])
+    .optional(),
+  can_manage_auto_top_up: z
+    .enum(['not_a_member', 'not_workspace_owner'])
+    .optional(),
+  can_manage_billing: z
+    .enum(['not_a_member', 'not_workspace_owner', 'creator_only_provisioning'])
+    .optional(),
+  can_manage_members: z
+    .enum(['not_a_member', 'not_workspace_owner'])
+    .optional(),
+  can_manage_partner_node_access: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'partner_governance_not_entitled'
+    ])
+    .optional(),
+  can_manage_subscription: z
+    .enum(['not_a_member', 'not_workspace_owner'])
+    .optional(),
+  can_reactivate: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'not_original_owner',
+      'no_subscription',
+      'tier_not_self_serve',
+      'billing_operation_in_progress',
+      'billing_operation_parked',
+      'cancellation_not_scheduled',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized'
+    ])
+    .optional(),
+  can_revert_scheduled_change: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'not_original_owner',
+      'tier_not_self_serve',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized',
+      'no_revertible_scheduled_change'
+    ])
+    .optional(),
+  can_run_workflows: z
+    .enum([
+      'manual_block',
+      'subscription_inactive',
+      'no_funds',
+      'workspace_cap_exceeded',
+      'project_cap_exceeded',
+      'user_cap_exceeded',
+      'free_tier_exhausted'
+    ])
+    .optional(),
   can_subscribe_self_serve: z
     .enum([
       'not_a_member',
       'not_workspace_owner',
+      'not_original_owner',
+      'creator_only_provisioning',
       'tier_not_self_serve',
-      'subscription_not_started',
       'subscription_change_in_progress',
+      'subscription_not_started',
       'subscription_status_unrecognized'
     ])
+    .optional(),
+  can_top_up: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'payment_past_due',
+      'tier_not_self_serve',
+      'subscription_status_unrecognized',
+      'free_plan',
+      'no_subscription',
+      'subscription_ended'
+    ])
+    .optional(),
+  can_upgrade: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'not_original_owner',
+      'creator_only_provisioning',
+      'tier_not_self_serve',
+      'subscription_change_in_progress',
+      'subscription_not_started',
+      'subscription_status_unrecognized',
+      'billing_state_unknown',
+      'no_subscription',
+      'subscription_ended',
+      'payment_past_due',
+      'billing_operation_parked',
+      'billing_operation_in_progress',
+      'sales_managed',
+      'no_upgrade_available'
+    ])
+    .optional(),
+  can_view_own_usage: z
+    .enum(['not_a_member', 'usage_attribution_unavailable'])
+    .optional(),
+  can_view_pending_invites: z
+    .enum(['not_a_member', 'not_workspace_owner'])
+    .optional(),
+  can_view_team_usage: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'usage_attribution_unavailable'
+    ])
     .optional()
+})
+
+/**
+ * Optional facts for the matching denied_reasons key; absent facts are unknown and must not be inferred from other fields.
+ */
+export const zBillingCapabilityDenialParams = z.object({
+  can_delete_workspace: zWorkspaceDeletionDenialParams.optional()
 })
 
 /**
  * Conservative UI guidance. These values do not authorize billing writes;
  * each write endpoint independently enforces its permission policy.
  *
+ * Each field answers one UI question for the authenticated user in the
+ * authenticated workspace. Render each as received and never combine fields
+ * into a new decision. False without a matching key in denied_reasons means no
+ * recognised explanation, not necessarily a refusal. A field is never
+ * per-surface: one value serves every screen. The plan-lifecycle fields
+ * (can_subscribe_self_serve, can_cancel, can_reactivate,
+ * can_revert_scheduled_change) require the workspace's creator only when the
+ * rollout mode is not `owner`; every other owner-level field stays open to
+ * every owner.
+ *
+ * When the deployment has billing disabled, this endpoint answers without
+ * consulting billing-api: can_top_up is true; can_manage_members,
+ * can_invite_members, can_manage_subscription and can_manage_auto_top_up
+ * follow the owner role. Other billing-action fields are false. These role
+ * facts do not promise that billing endpoints are available.
+ *
  */
 export const zBillingCapabilities = z.object({
   can_cancel: z.boolean(),
   can_change_seats: z.boolean(),
+  can_delete_workspace: z.boolean(),
   can_downgrade_to_personal: z.boolean(),
+  can_edit_workspace: z.boolean(),
   can_invite_members: z.boolean(),
+  can_leave_workspace: z.boolean(),
+  can_manage_auto_top_up: z.boolean(),
+  can_manage_billing: z.boolean(),
   can_manage_members: z.boolean(),
+  can_manage_partner_node_access: z.boolean(),
+  can_manage_subscription: z.boolean(),
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
+  can_run_workflows: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
-  can_top_up: z.boolean()
+  can_top_up: z.boolean(),
+  can_upgrade: z.boolean(),
+  can_view_own_usage: z.boolean().optional(),
+  can_view_pending_invites: z.boolean(),
+  can_view_team_usage: z.boolean()
+})
+
+/**
+ * Recorded account setup guidance, separate from owner authority in
+ * can_manage_auto_top_up. Frozen keeps the owner's card visible but prevents
+ * enabling/editing; unavailable hides it. Owner read/disable authority remains.
+ * Ready does not authorize a charge or guarantee an off-session payment method.
+ * This fact ignores saved consent and monthly budget. An absent fact is unknown.
+ *
+ */
+export const zAutoTopUpSetup = z.object({
+  reason: z
+    .enum([
+      'workspace_deleted',
+      'workspace_blocked',
+      'billing_not_provisioned',
+      'billing_rail_not_supported',
+      'billing_status_unrecognized',
+      'payment_past_due',
+      'billing_paused',
+      'billing_awaiting_payment_method',
+      'billing_payment_pending',
+      'subscription_tier_unrecognized',
+      'subscription_status_unrecognized',
+      'subscription_state_unknown',
+      'billing_operation_parked',
+      'default_payment_method_missing',
+      'creator_only_provisioning'
+    ])
+    .optional(),
+  state: z.enum(['ready', 'frozen', 'unavailable'])
 })
 
 /**
  * Effective billing UI guidance for one authenticated user and workspace.
  */
 export const zBillingCapabilitiesResponse = z.object({
+  auto_top_up_setup: zAutoTopUpSetup.optional(),
   capabilities: zBillingCapabilities,
+  denied_reason_params: zBillingCapabilityDenialParams.optional(),
   denied_reasons: zBillingCapabilityDenials.optional(),
   expires_at: z.iso.datetime(),
+  payment_recovery_available: z.boolean().optional(),
+  plan_kind: z.enum(['none', 'self_serve', 'sales_managed']).optional(),
+  recovery_route: z.enum(['none', 'resubscribe', 'contact_sales']).optional(),
   resolved_for: zBillingCapabilityScope,
   revision: z.coerce
     .bigint()
@@ -3089,10 +3515,139 @@ export const zBillingBalanceResponse = z.object({
   effective_balance_authoritative: z.boolean().optional(),
   effective_balance_cents: z.number().optional(),
   effective_balance_micros: z.number().optional(),
+  low_balance: z.boolean().optional(),
   pending_charges_cents: z.number().optional(),
   pending_charges_micros: z.number().optional(),
   prepaid_balance_cents: z.number().optional(),
-  prepaid_balance_micros: z.number().optional()
+  prepaid_balance_micros: z.number().optional(),
+  suggested_topup_amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullish()
+})
+
+/**
+ * Every field is required. On every save, disabled included,
+ * threshold_credits and reload_credits must be positive whole credits
+ * and a non-null monthly_budget_cents must be positive. When enabled is
+ * true, monthly_budget_cents must also be non-null and at most
+ * max_monthly_budget_cents, reload_credits must be at least
+ * min_reload_credits and greater than threshold_credits, and one reload
+ * must cost no more than the budget. A save with enabled false accepts a
+ * null budget and skips the enabled-only rules.
+ *
+ */
+export const zAutoReloadSettingsRequest = z.object({
+  enabled: z.boolean(),
+  monthly_budget_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
+  reload_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  threshold_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
+ * billing-api's automatic top-up settings, server prices and automatic
+ * spend this cycle, passed through unchanged. Credits are whole credits;
+ * amounts are US cents. When `configured` is false, `enabled` is false
+ * and the other setting fields are null.
+ *
+ */
+export const zAutoReloadSettings = z.object({
+  configured: z.boolean(),
+  cycle_resets_at: z.iso.datetime().nullable(),
+  disabled_reason: z.string().nullable(),
+  enabled: z.boolean(),
+  last_failure_at: z.iso.datetime().nullable(),
+  last_failure_reason: z.string().nullable(),
+  max_monthly_budget_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  min_reload_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  monthly_budget_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
+  paused_by_budget: z.boolean(),
+  paused_by_decline: z.boolean(),
+  reload_amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
+  reload_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable(),
+  spent_this_cycle_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  status: z.enum(['failed', 'off', 'on_hold', 'paused_by_budget', 'on']),
+  threshold_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullable()
 })
 
 export const zAuthenticateResponse = z.object({
@@ -3180,7 +3735,27 @@ export const zAssetCreated = zAsset.and(
 )
 
 /**
- * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, draft_patch, agent_message_done).
+ * Attachment extensions whose content the model can see: the raster formats Go's image
+ * package decodes, plus HEIC/HEIF stills (iPhone photos), which view_asset converts to JPEG
+ * first. view_asset always re-encodes to PNG or JPEG, so the provider's own four-type image
+ * allowlist is satisfied by construction rather than by matching this list.
+ *
+ */
+export const zAgentViewableAttachmentExtension = z.enum([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.tif',
+  '.tiff',
+  '.heic',
+  '.heif'
+])
+
+/**
+ * Acknowledgement that a turn was accepted. The agent runs asynchronously; output streams over the WebSocket (agent_message_delta, agent_tool_call, agent_message_done); canvas edits arrive as doc_update frames.
  */
 export const zAgentTurnAccepted = z.object({
   message_id: z.string(),
@@ -3282,6 +3857,85 @@ export const zAgentRunApprovalContext = z.object({
 })
 
 /**
+ * Attachment extensions that are accepted so a user can keep them beside a workflow, and
+ * nothing more — the agent can neither read the contents nor wire the file in.
+ *
+ * .avif is the only one: it is an image the turn cannot decode (no registry entry, so
+ * view_asset would fail) and it is not text, so read_asset would return mojibake. It stays
+ * accepted because it was attachable before the policy existed.
+ *
+ */
+export const zAgentRetainedAttachmentExtension = z.enum(['.avif'])
+
+/**
+ * Attachment extensions the agent cannot open but wires into a load node by filename. The 3D
+ * models go into Load3D's model_file widget and are exactly the set Load3D accepts
+ * (comfy_extras/nodes_load_3d.py); .usdz is absent from both lists, so it is not an exclusion
+ * this tier makes. .exr goes into LoadImage's image widget: ComfyUI core v0.40.0 registers it
+ * as an image type, but it is HDR, so view_asset cannot decode it and it is not on the view
+ * tier.
+ *
+ */
+export const zAgentReferenceAttachmentExtension = z.enum([
+  '.glb',
+  '.obj',
+  '.fbx',
+  '.gltf',
+  '.stl',
+  '.ply',
+  '.spz',
+  '.splat',
+  '.ksplat',
+  '.exr'
+])
+
+/**
+ * Attachment extensions whose contents the agent reads verbatim, with read_asset. The bytes
+ * are decoded as UTF-8 and returned as text, bounded and truncation-marked.
+ *
+ * This tier describes CONTENT ACCESS only and says nothing about whether the file can be
+ * wired into a graph. Those are separate questions, so a format becoming a node input later
+ * does not move it out of this tier.
+ *
+ * .svg is here rather than with the images because it is XML: view_asset cannot decode it,
+ * but its markup is exactly what a caller would want read.
+ *
+ */
+export const zAgentReadableAttachmentExtension = z.enum([
+  '.md',
+  '.markdown',
+  '.txt',
+  '.json',
+  '.csv',
+  '.yaml',
+  '.yml',
+  '.xml',
+  '.log',
+  '.svg'
+])
+
+/**
+ * Attachment extensions the agent can only describe from metadata. A subset of the containers
+ * ingest sorts into a load node's video/audio lists: that categoriser also accepts .wmv, .flv,
+ * .aac and .wma, which the agreed attachment list rejects.
+ *
+ */
+export const zAgentProbeableAttachmentExtension = z.enum([
+  '.mp4',
+  '.webm',
+  '.mov',
+  '.m4v',
+  '.avi',
+  '.mkv',
+  '.mp3',
+  '.wav',
+  '.ogg',
+  '.opus',
+  '.flac',
+  '.m4a'
+])
+
+/**
  * Which card renders an ask. `ask_user` is the generic prompt raised by the ask_user tool. `run_approval` is the run consent card raised when the caller's ask_approval run mode gates a run: exactly the Run and Cancel options, never free text. `paused` is the admission pause card: one Resume option, never free text. `delete_approval` is the delete consent card for nodes the user made: exactly the Delete and Keep options, never free text. The same value is the agent_ask event's `kind`, the message list's `pending_ask.kind`, and an entry of `ask_kinds` on the message POST.
  */
 export const zAgentAskKind = z.enum([
@@ -3296,7 +3950,7 @@ export const zAgentAskKind = z.enum([
  */
 export const zAgentPostMessageRequest = z.object({
   ask_kinds: z.array(zAgentAskKind).optional(),
-  attachments: z.array(z.string()).optional(),
+  attachments: z.array(z.string().max(256)).max(25).optional(),
   client_id: z.string().optional(),
   client_message_id: z.string().max(128).optional(),
   content: z.string(),
@@ -3484,7 +4138,7 @@ export const zAgentError = z.object({
 })
 
 /**
- * Authoritative snapshot of a workflow's agent draft — the replay-on-reconnect baseline for the draft_patch stream.
+ * Authoritative snapshot of a workflow's agent draft — a snapshot for recovery and tooling.
  */
 export const zAgentDraftSnapshot = z.object({
   content: z.record(z.string(), z.unknown()),
@@ -3506,6 +4160,75 @@ export const zAgentCancelUnconfirmed = z.object({
 export const zAgentCancelAccepted = z.object({
   status: z.enum(['cancelling'])
 })
+
+/**
+ * Every extension the agent accepts as an attachment, grouped by what it can actually DO with
+ * one. The grouping is the point: the tiers differ sharply, and a client that renders them as
+ * one flat "supported files" list tells the user something false (PM-1855).
+ *
+ * - `view`: the model sees the content. view_asset decodes the still (converting HEIC/HEIF to
+ * JPEG first) and re-encodes it as PNG/JPEG into the turn, so the model reasons about actual
+ * pixels.
+ * - `probe`: metadata only. probe_media reports duration, resolution, frame rate and codecs;
+ * nothing in the model's input can carry a clip, so the CONTENT stays unreadable. Seeing a
+ * video means cutting a frame out with process_media and viewing that.
+ * - `reference`: the agent knows what the file is, with its kind and id, and wires its
+ * filename into the load node that takes it: a 3D model into a Load3D node's model_file
+ * widget, an .exr into a LoadImage node's image widget. No tool opens the file itself: the
+ * cloud turn registers neither a shell nor a file-read tool, by design, as it is a shared
+ * multi-tenant pod, and view_asset cannot decode an EXR.
+ * - `read`: the agent reads the contents verbatim with read_asset — UTF-8 decoded, bounded
+ * and truncation-marked. The tier describes CONTENT ACCESS only; whether the file can also
+ * be wired into a graph is a separate axis, so a format gaining an upload-backed node input
+ * later stays in this tier.
+ * - `retain`: the file is attached and nothing more — neither readable nor wirable. Only
+ * .avif, which the turn cannot decode as an image and is not text.
+ *
+ * The union of the five arrays is the accepted list. Anything absent is rejected.
+ *
+ */
+export const zAgentAttachmentPolicy = z.object({
+  probe: z.array(zAgentProbeableAttachmentExtension),
+  read: z.array(zAgentReadableAttachmentExtension),
+  reference: z.array(zAgentReferenceAttachmentExtension),
+  retain: z.array(zAgentRetainedAttachmentExtension),
+  view: z.array(zAgentViewableAttachmentExtension)
+})
+
+/**
+ * 422 body when a posted attachment's extension is outside the accepted list. It carries the
+ * policy rather than only an error string so a client never has to hardcode the list to
+ * explain the refusal — the same reason the list is expressed as enums the frontend generates
+ * its types from.
+ *
+ */
+export const zAgentAttachmentRejected = z.object({
+  accepted: zAgentAttachmentPolicy,
+  error: z.string(),
+  rejected: z.array(z.string()),
+  rejected_count: z.int(),
+  type: z.enum(['ATTACHMENT_TYPE_NOT_ACCEPTED'])
+})
+
+export const zAgentAttachmentBoundsExceeded = z.object({
+  error: z.string(),
+  limits: z.object({
+    max_item_length: z.int(),
+    max_items: z.int()
+  }),
+  overlong_ref: z.string(),
+  received_count: z.int(),
+  type: z.enum(['ATTACHMENT_BOUNDS_EXCEEDED'])
+})
+
+export const zAgentAttachmentError = z.discriminatedUnion('type', [
+  zAgentAttachmentRejected.extend({
+    type: z.literal('ATTACHMENT_TYPE_NOT_ACCEPTED')
+  }),
+  zAgentAttachmentBoundsExceeded.extend({
+    type: z.literal('ATTACHMENT_BOUNDS_EXCEEDED')
+  })
+])
 
 /**
  * How an ask left pending, as stored on the ask row. `answered` means an answer was committed and delivered to the turn; `cancelled` means the turn ended, was stopped, or could not take the answer; `expired` means the ask timed out. There is no "unknown" status: when an answer request fails with a 5xx the client does not know the outcome and should wait for agent_ask_resolved or refetch the thread.
@@ -4173,6 +4896,23 @@ export const zExchangeTokenBody = zExchangeTokenRequest
 export const zExchangeTokenResponse2 = zExchangeTokenResponse
 
 /**
+ * The sessions are revoked
+ */
+export const zRevokePartnerNodeSessionsResponse = z.void()
+
+/**
+ * Success
+ */
+export const zGetBillingAutoReloadResponse = zAutoReloadSettings
+
+export const zPutBillingAutoReloadBody = zAutoReloadSettingsRequest
+
+/**
+ * The saved settings and current accounting
+ */
+export const zPutBillingAutoReloadResponse = zAutoReloadSettings
+
+/**
  * Credit balance
  */
 export const zGetBillingBalanceResponse = zBillingBalanceResponse
@@ -4206,6 +4946,7 @@ export const zGetBillingEventsQuery = z.object({
   limit: z.int().gte(1).lte(100).optional().default(20),
   scope: z.enum(['self', 'workspace', 'user']).optional().default('self'),
   user_id: z.string().optional(),
+  spend_source: z.string().max(200).optional(),
   filter: z.string().optional(),
   start_date: z.iso.datetime().optional(),
   end_date: z.iso.datetime().optional()
@@ -4324,6 +5065,24 @@ export const zCreateTopupCheckoutBody = zCreateTopupCheckoutRequest
  */
 export const zCreateTopupCheckoutResponse2 = zCreateTopupCheckoutResponse
 
+export const zListTopupCheckoutsQuery = z.object({
+  cursor: z.string().optional()
+})
+
+/**
+ * Durable discovery summaries; Cache-Control no-store.
+ */
+export const zListTopupCheckoutsResponse = zHostedTopupCheckoutList
+
+export const zGetTopupCheckoutPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Current checkout facts; Cache-Control no-store.
+ */
+export const zGetTopupCheckoutResponse = zHostedTopupCheckout
+
 export const zCreateTopupQuoteBody = zCreateTopupQuoteRequest
 
 /**
@@ -4336,6 +5095,10 @@ export const zGetBillingUsageTimeSeriesQuery = z.object({
     .enum(['model', 'endpoint', 'product', 'product_line', 'person', 'source'])
     .optional()
     .default('model'),
+  filter_product_line: z.string().max(200).optional(),
+  filter_model: z.string().max(200).optional(),
+  filter_person: z.string().max(200).optional(),
+  filter_source: z.string().max(200).optional(),
   granularity: z.enum(['hour', 'day', 'month']).optional().default('month'),
   starting_on: z.iso.datetime().optional(),
   ending_before: z.iso.datetime().optional(),
@@ -4346,6 +5109,11 @@ export const zGetBillingUsageTimeSeriesQuery = z.object({
  * Workspace usage
  */
 export const zGetBillingUsageTimeSeriesResponse = zUsageTimeSeries
+
+/**
+ * Default workflow JSON
+ */
+export const zGetDefaultWorkflowResponse = z.record(z.string(), z.unknown())
 
 /**
  * Embedding names
@@ -4385,6 +5153,11 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  agent: z
+    .object({
+      state: z.enum(['ready'])
+    })
+    .optional(),
   'agent-free-use-message-placement': z
     .enum([
       'control',
@@ -5452,16 +6225,18 @@ export const zListWorkspaceDeploymentsPath = z.object({
  */
 export const zListWorkspaceDeploymentsResponse = zWorkspaceDeploymentList
 
-export const zResolveWorkspaceWorkflowPacksBody = zWorkflowPacksRequest
+export const zCheckWorkspaceDeploymentCompatibilityBody =
+  zDeploymentCompatibilityRequest
 
-export const zResolveWorkspaceWorkflowPacksPath = z.object({
+export const zCheckWorkspaceDeploymentCompatibilityPath = z.object({
   id: z.string()
 })
 
 /**
- * The workflow was read; what it needs, and what nothing provides
+ * The missing node types per deployment, newest first, and for Comfy Cloud
  */
-export const zResolveWorkspaceWorkflowPacksResponse = zWorkflowPacks
+export const zCheckWorkspaceDeploymentCompatibilityResponse =
+  zDeploymentCompatibility
 
 /**
  * The credential's workspace

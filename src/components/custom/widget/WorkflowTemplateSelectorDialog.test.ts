@@ -168,7 +168,9 @@ describe('template tags', () => {
       target: await screen.findByRole('button', { name: 'Video, Audio' })
     })
 
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Video, Audio')
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'Video, Audio'
+    )
     expect(useWorkflowTemplatesStore().loadingTemplateId).toBeNull()
   })
 })

@@ -128,14 +128,15 @@ function installIngest() {
   return requests
 }
 
-const workspaceHeader = (workspace: string): Record<string, string> =>
-  workspace === 'ws-team' ? { 'x-comfy-workspace-id': workspace } : {}
+const workspaceHeader = (workspace: string): Record<string, string> => ({
+  'x-comfy-workspace-id': workspace
+})
 
 const sessionRequest = (path: string, workspace: string): IngestRequest => ({
   method: 'GET',
   path,
   headers: { 'x-comfy-client': COMFY_CLIENT, ...workspaceHeader(workspace) },
-  credentials: 'include'
+  credentials: 'same-origin'
 })
 
 describe('remote widgets on the shared web session', () => {

@@ -65,7 +65,7 @@ import MenuItems from '@/components/ui/menu/MenuItems.vue'
 import { menuContentClass } from '@/components/ui/menu/menuStyles'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { InjectKeyContextMenuNode } from '@/types/treeExplorerTypes'
@@ -121,7 +121,7 @@ const menuItems = computed<MenuItem[]>(() => [
     label: t('g.delete'),
     icon: 'icon-[lucide--trash-2]',
     visible: isCurrentNodeUserBlueprint.value,
-    class: 'text-destructive-background',
+    class: 'text-destructive',
     command: handleDeleteBlueprint
   }
 ])

@@ -1,16 +1,22 @@
 import type { ExchangeTokenRequest } from '@comfyorg/ingest-types'
-import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zErrorResponse,
+  zExchangeTokenResponse
+} from '@comfyorg/ingest-types/zod'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
 const PARTNER_NODE_RESOURCE = 'partner-node'
 
 /**
- * Ingest route that revokes every partner-node session of the browser login
- * the presented partner-node token belongs to. The token is the credential,
- * so revoke still works after Firebase sign-out; an expired token is accepted.
+ * Ingest route that revokes partner-node sessions. A sign-in credential
+ * revokes every session of that login, including ones an earlier page load
+ * minted; a partner-node token (even expired) revokes only its own session.
  */
 const PARTNER_NODE_REVOKE_ROUTE = '/auth/token/revoke'
+
+/** An ingest that predates sign-in revoke refuses the sign-in with this code. */
+const SIGN_IN_REVOKE_UNSUPPORTED = 'auth_type_not_allowed'
 
 /** A cached token is reused only while it has at least this much life left. */
 export const PARTNER_NODE_REUSE_MIN_REMAINING_MS = 60 * 60 * 1000
@@ -51,6 +57,11 @@ type MintFailureReason =
   | 'malformed'
   | 'workspace_mismatch'
   | 'expired'
+
+type RevokeOutcome =
+  | { ok: true }
+  | { ok: false; reason: 'network' }
+  | { ok: false; reason: 'http'; status: number; code?: string }
 
 type MintOutcome =
   | { ok: true; token: string; expiresAt: number }
@@ -108,28 +119,51 @@ export function createPartnerNodeTokenSource({
     return { ok: true, token: parsed.data.token, expiresAt }
   }
 
-  async function revokeWith(token: string): Promise<boolean> {
+  async function requestRevoke(bearer: string): Promise<RevokeOutcome> {
+    let response: Response
     try {
-      const response = await fetch(apiUrl(PARTNER_NODE_REVOKE_ROUTE), {
+      response = await fetch(apiUrl(PARTNER_NODE_REVOKE_ROUTE), {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      if (response.ok) return true
-      reportError(new Error('Partner-node session revoke refused'), {
-        surface: 'auth',
-        errorType: 'failure_revoking_partner_node_sessions',
-        level: 'warning',
-        tags: { status: response.status }
+        headers: { Authorization: `Bearer ${bearer}` }
       })
     } catch {
-      reportError(new Error('Partner-node session revoke failed'), {
-        surface: 'auth',
-        errorType: 'failure_revoking_partner_node_sessions',
-        level: 'warning',
-        tags: { reason: 'network' }
-      })
+      return { ok: false, reason: 'network' }
     }
-    return false
+    if (response.ok) return { ok: true }
+    const body: unknown = await response.json().catch(() => undefined)
+    const code = zErrorResponse.safeParse(body).data?.code
+    return { ok: false, reason: 'http', status: response.status, code }
+  }
+
+  function reportRevokeFailure(
+    outcome: Exclude<RevokeOutcome, { ok: true }>
+  ): void {
+    reportError(new Error('Partner-node session revoke failed'), {
+      surface: 'auth',
+      errorType: 'failure_revoking_partner_node_sessions',
+      level: 'warning',
+      tags:
+        outcome.reason === 'http'
+          ? { reason: outcome.reason, status: outcome.status }
+          : { reason: outcome.reason }
+    })
+  }
+
+  async function revokeWith(token: string): Promise<void> {
+    const outcome = await requestRevoke(token)
+    if (!outcome.ok) reportRevokeFailure(outcome)
+  }
+
+  /** Forgets every minted token, returning one held token per account. */
+  function forgetAll(): string[] {
+    generation += 1
+    inFlight.clear()
+    const tokenPerOwner = new Map<string, string>()
+    for (const { ownerUid, token } of minted.values()) {
+      tokenPerOwner.set(ownerUid, token)
+    }
+    minted.clear()
+    return [...tokenPerOwner.values()]
   }
 
   function reusableToken(key: string): string | undefined {
@@ -184,19 +218,33 @@ export function createPartnerNodeTokenSource({
   }
 
   /**
-   * Forgets every minted token and revokes the browser login's partner-node
-   * sessions, one call per signed-in account that minted any.
+   * Forgets every minted token and revokes with the ones this page load still
+   * holds. Used when the sign-in credential is already gone.
    */
   async function revokeAll(): Promise<void> {
-    generation += 1
-    inFlight.clear()
-    const tokenPerOwner = new Map<string, string>()
-    for (const { ownerUid, token } of minted.values()) {
-      tokenPerOwner.set(ownerUid, token)
-    }
-    minted.clear()
-    await Promise.all([...tokenPerOwner.values()].map(revokeWith))
+    await Promise.all(forgetAll().map(revokeWith))
   }
 
-  return { tokenFor, revokeAll }
+  /**
+   * Forgets every minted token and revokes every partner-node session of the
+   * login `credential` signed in, whichever page load minted them. Falls back
+   * to the held tokens when there is no credential or the ingest does not
+   * take a sign-in on this route yet.
+   */
+  async function revokeLogin(credential: string | undefined): Promise<void> {
+    const held = forgetAll()
+    if (credential) {
+      const outcome = await requestRevoke(credential)
+      if (outcome.ok) return
+      const signInUnsupported =
+        outcome.reason === 'http' && outcome.code === SIGN_IN_REVOKE_UNSUPPORTED
+      if (!signInUnsupported) {
+        reportRevokeFailure(outcome)
+        return
+      }
+    }
+    await Promise.all(held.map(revokeWith))
+  }
+
+  return { tokenFor, revokeAll, revokeLogin }
 }

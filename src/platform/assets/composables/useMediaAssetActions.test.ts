@@ -129,20 +129,18 @@ vi.mock<unknown>(import('../services/assetService'), () => ({
 
 const mockTrackExport = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    deleteItem: vi.fn(),
-    fetchApi: vi.fn(() => Promise.resolve(new Response())),
-    apiURL: vi.fn((path: string) => `http://localhost:8188/api${path}`),
-    internalURL: vi.fn((path: string) => `http://localhost:8188${path}`),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn(
-      (_path: string, defaultValue?: unknown) => defaultValue
-    ),
-    user: 'test-user'
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.fetchApi).mockImplementation(async () => new Response())
+  vi.mocked(api.apiURL).mockImplementation(
+    (path) => `http://localhost:8188/api${path}`
+  )
+  vi.mocked(api.internalURL).mockImplementation(
+    (path) => `http://localhost:8188${path}`
+  )
+  api.user = 'test-user'
+})
 
 const mockAppGraph = vi.hoisted(() => ({
   value: { nodes: [] as unknown[] }

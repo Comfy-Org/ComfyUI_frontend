@@ -1,5 +1,6 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePreservedQueryDeepLink } from '@/platform/navigation/composables/usePreservedQueryDeepLink'
@@ -35,6 +36,8 @@ function isDirectoryManagedRefusal(error: unknown): boolean {
  */
 export function useInviteUrlLoader() {
   const { t } = useI18n()
+  const route = useRoute()
+  const router = useRouter()
   const toast = useToast()
   const { switchWorkspace } = useWorkspaceSwitch()
   const { showInviteLinkInvalidDialog, showInviteWrongAccountDialog } =
@@ -44,27 +47,37 @@ export function useInviteUrlLoader() {
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
   const deepLink = usePreservedQueryDeepLink(INVITE_NAMESPACE)
 
-  /**
-   * Loads and accepts workspace invite from URL query parameters if present.
-   * Handles errors internally and shows appropriate user feedback.
-   *
-   * Flow:
-   * 1. Restore preserved query (for post-login redirect)
-   * 2. Check for invite token in route.query
-   * 3. Accept the invite via API (backend validates token)
-   * 4. Show toast notification
-   * 5. Clean up URL and preserved query
-   */
+  const offerSignInAgain = () => {
+    const { href } = router.resolve({
+      name: 'cloud-login',
+      query: {
+        switchAccount: 'true',
+        previousFullPath: encodeURIComponent(route.fullPath)
+      }
+    })
+    toast.info(t('workspace.inviteNeedsSignIn'), {
+      description: t('workspace.inviteNeedsSignInDetail'),
+      action: {
+        label: t('workspace.inviteSignIn'),
+        onClick: () => window.location.assign(href)
+      }
+    })
+  }
+
   const loadInviteFromUrl = async () => {
     const inviteParam = await deepLink.hydrateAndRead()
     if (!inviteParam || typeof inviteParam !== 'string') {
       return
     }
 
-    if (authStore.signedInWithSso && authStore.currentUser === null) {
-      toast.info(t('workspace.inviteSsoUnavailable'), {
-        description: t('workspace.inviteSsoUnavailableDetail')
-      })
+    if (authStore.currentUser === null) {
+      if (authStore.signedInWithSso) {
+        toast.info(t('workspace.inviteSsoUnavailable'), {
+          description: t('workspace.inviteSsoUnavailableDetail')
+        })
+      } else {
+        offerSignInAgain()
+      }
       deepLink.strip()
       return
     }
@@ -92,9 +105,6 @@ export function useInviteUrlLoader() {
     } catch (error) {
       await presentAcceptFailure(error, inviteParam)
     } finally {
-      // showDialog resolves immediately, so this clears the preserved token
-      // while a landing dialog is still open — Switch account re-stashes it
-      // itself before signing out.
       deepLink.strip()
     }
   }

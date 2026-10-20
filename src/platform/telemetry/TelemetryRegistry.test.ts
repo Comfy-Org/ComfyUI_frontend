@@ -8,8 +8,11 @@ import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
@@ -330,6 +333,7 @@ describe('TelemetryRegistry', () => {
       prompt_index: 0,
       prompt_count: 5,
       prompt_text_hash: 'deadbeef',
+      visible_prompt_count: 5,
       locale: 'en',
       click_id: 'click-1',
       draft_was_empty: true
@@ -370,11 +374,43 @@ describe('TelemetryRegistry', () => {
       turn_accepted: false,
       ui_treatment: 'inline_notice'
     } satisfies AgentErrorMetadata
+    const freeUseExposureMetadata = {
+      placement: 'above-input',
+      '$feature/agent-free-use-message-placement': 'above-input'
+    } satisfies AgentFreeUseExposureMetadata
+    const freeUseNoticeMetadata = {
+      action: 'shown',
+      placement: 'above-input'
+    } satisfies AgentFreeUseNoticeMetadata
+    const creditTransitionNoticeMetadata = {
+      action: 'shown'
+    } satisfies AgentCreditTransitionNoticeMetadata
+
     const cases = [
       {
         method: 'trackAgentError',
         expected: { ...errorMetadata },
         invoke: (registry) => registry.trackAgentError(errorMetadata)
+      },
+      {
+        method: 'trackAgentFreeUseExposure',
+        expected: { ...freeUseExposureMetadata },
+        invoke: (registry) =>
+          registry.trackAgentFreeUseExposure(freeUseExposureMetadata)
+      },
+      {
+        method: 'trackAgentFreeUseNotice',
+        expected: { ...freeUseNoticeMetadata },
+        invoke: (registry) =>
+          registry.trackAgentFreeUseNotice(freeUseNoticeMetadata)
+      },
+      {
+        method: 'trackAgentCreditTransitionNotice',
+        expected: { ...creditTransitionNoticeMetadata },
+        invoke: (registry) =>
+          registry.trackAgentCreditTransitionNotice(
+            creditTransitionNoticeMetadata
+          )
       },
       {
         method: 'trackAgentMessageFeedback',
@@ -464,6 +500,28 @@ describe('TelemetryRegistry', () => {
         expected: { ...workflowAppliedMetadata },
         invoke: (registry) =>
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
+      },
+      {
+        method: 'trackAgentGraphProjection',
+        expected: {
+          op_id: 'op-1',
+          op_count: 2,
+          sequence: 7,
+          stage: 'applied',
+          added_count: 0,
+          removed_count: 2,
+          apply_failure_count: 0
+        },
+        invoke: (registry) =>
+          registry.trackAgentGraphProjection({
+            op_id: 'op-1',
+            op_count: 2,
+            sequence: 7,
+            stage: 'applied',
+            added_count: 0,
+            removed_count: 2,
+            apply_failure_count: 0
+          })
       },
       {
         method: 'trackAgentStopClicked',
