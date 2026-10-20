@@ -16,6 +16,7 @@ import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type { PermanentDocSubscribeRefusalCode } from '@/workbench/extensions/agent/crdt/docFrameCodes'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
@@ -56,7 +57,9 @@ const PERMANENTLY_REFUSED_SUBSCRIBE = {
     ok: false,
     code: 'schema_version_mismatch'
   }
-} satisfies DocSubscribedFrame
+} satisfies DocSubscribedFrame & {
+  data: { ok: false; code: PermanentDocSubscribeRefusalCode }
+}
 
 export function refuseDocSubscribePermanently(ws: WebSocketRoute): void {
   ws.send(JSON.stringify(PERMANENTLY_REFUSED_SUBSCRIBE))
