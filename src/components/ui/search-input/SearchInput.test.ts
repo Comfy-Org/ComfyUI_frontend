@@ -2,7 +2,6 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import SearchInput from './SearchInput.vue'
 
@@ -15,19 +14,6 @@ vi.mock(import('@vueuse/core'), () => ({
     })
   })
 }))
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        clear: 'Clear',
-        searchPlaceholder: 'Search...'
-      }
-    }
-  }
-})
 
 describe('SearchInput', () => {
   it('renders caller labels without an i18n plugin', () => {
@@ -48,7 +34,6 @@ describe('SearchInput', () => {
   function renderComponent(props = {}) {
     const result = render(SearchInput, {
       global: {
-        plugins: [i18n],
         stubs: {
           ComboboxRoot: {
             template: '<div><slot /></div>'

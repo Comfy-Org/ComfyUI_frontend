@@ -1,7 +1,6 @@
 <template>
   <PaginationRoot
     v-model:page="page"
-    :aria-label="accessibleLabel"
     :total
     :items-per-page
     :sibling-count="1"
@@ -99,7 +98,6 @@ import SelectValue from '@/components/ui/select/SelectValue.vue'
 
 const { total, itemsPerPageOptions } = defineProps<{
   total: number
-  accessibleLabel: string
   itemsPerPageLabel: string
   previousLabel: string
   nextLabel: string

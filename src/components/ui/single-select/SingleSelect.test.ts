@@ -3,25 +3,10 @@ import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import SingleSelect from './SingleSelect.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        singleSelectDropdown: 'Single-select dropdown',
-        search: 'Search',
-        noResultsFound: 'No results found'
-      }
-    }
-  }
-})
 
 const options = [
   { name: 'Option A', value: 'a' },
@@ -66,8 +51,7 @@ function renderInParent(
   }
 
   const { unmount } = render(Parent, {
-    container: document.body.appendChild(document.createElement('div')),
-    global: { plugins: [i18n] }
+    container: document.body.appendChild(document.createElement('div'))
   })
 
   return { unmount, parentEscapeCount }
@@ -255,8 +239,7 @@ describe('SingleSelect', () => {
         searchLabel: 'Search',
         emptyText: 'No results found'
       },
-      attrs: { class: 'bg-transparent' },
-      global: { plugins: [i18n] }
+      attrs: { class: 'bg-transparent' }
     })
 
     const trigger = screen.getByRole('combobox')

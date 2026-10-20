@@ -9,7 +9,6 @@ const meta = {
   tags: ['autodocs'],
   args: {
     total: 240,
-    accessibleLabel: 'Results pages',
     itemsPerPageLabel: 'Items per page',
     previousLabel: 'Previous',
     nextLabel: 'Next',

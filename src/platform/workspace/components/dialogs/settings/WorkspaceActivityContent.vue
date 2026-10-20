@@ -178,7 +178,6 @@
       </div>
       <Pagination
         v-model:page="page"
-        :accessible-label="$t('g.pageNumber', { page: '' })"
         :items-per-page-label="$t('g.itemsPerPage')"
         :previous-label="$t('g.previous')"
         :next-label="$t('g.next')"

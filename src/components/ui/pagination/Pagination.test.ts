@@ -18,7 +18,6 @@ describe('Pagination', () => {
           v-model:page="page"
           v-model:items-per-page="itemsPerPage"
           :total="240"
-          accessible-label="Results pages"
           items-per-page-label="Items per page"
           previous-label="Previous"
           next-label="Next"

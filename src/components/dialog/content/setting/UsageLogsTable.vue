@@ -79,7 +79,6 @@
       </Table>
       <Pagination
         v-if="pagination.total > pagination.limit"
-        :accessible-label="$t('g.pageNumber', { page: '' })"
         :items-per-page-label="$t('g.itemsPerPage')"
         :previous-label="$t('g.previous')"
         :next-label="$t('g.next')"

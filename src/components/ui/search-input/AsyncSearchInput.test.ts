@@ -3,22 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { createI18n } from 'vue-i18n'
 
 import AsyncSearchInput from './AsyncSearchInput.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        searchPlaceholder: 'Search {subject}',
-        clear: 'Clear'
-      }
-    }
-  }
-})
 
 type Searcher = NonNullable<ComponentProps<typeof AsyncSearchInput>['searcher']>
 
@@ -43,7 +29,7 @@ function renderSearch(
       @enter="onEnter"
     />`
   })
-  const utils = render(Harness, { global: { plugins: [i18n] } })
+  const utils = render(Harness)
   return { ...utils, query, key }
 }
 
@@ -173,7 +159,7 @@ describe('AsyncSearchInput', () => {
         setup: () => ({ autofocus }),
         template: `<AsyncSearchInput accessible-label="Search" clear-label="Clear" :autofocus="autofocus" />`
       })
-      return render(Harness, { global: { plugins: [i18n] } })
+      return render(Harness)
     }
 
     it('focuses the input on mount when autofocus is set', async () => {

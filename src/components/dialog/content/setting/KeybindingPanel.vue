@@ -80,7 +80,6 @@
       v-if="filteredCommands.length > commandsPerPageOptions[0]"
       v-model:page="currentPage"
       v-model:items-per-page="commandsPerPage"
-      :accessible-label="$t('g.pageNumber', { page: '' })"
       :items-per-page-label="$t('g.itemsPerPage')"
       :previous-label="$t('g.previous')"
       :next-label="$t('g.next')"
