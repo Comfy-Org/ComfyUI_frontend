@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { vfxMediaRoot, vfxRedSkyMedia, vfxVariantMedia } from './vfxMedia'
+import { vfxMediaRoot, vfxVariantMedia } from './vfxMedia'
 
 describe('VFX variant media', () => {
   it('replaces only Blue hour with the approved red-sky video and poster', () => {
-    expect(vfxVariantMedia('relight_blue', 'mp4')).toBe(vfxRedSkyMedia.video)
-    expect(vfxVariantMedia('relight_blue', 'jpg')).toBe(vfxRedSkyMedia.poster)
+    expect(vfxVariantMedia('relight_blue', 'mp4')).toBe(
+      'https://media.comfy.org/website/vfx/v3/2026-10-20-red-sky-2f96a729/relight-red-sky-meteors-2f96a729.mp4'
+    )
+    expect(vfxVariantMedia('relight_blue', 'jpg')).toBe(
+      'https://media.comfy.org/website/vfx/v3/2026-10-20-red-sky-2f96a729/relight-red-sky-meteors-2f96a729-og.jpg'
+    )
   })
   it.for([
     'diner',
