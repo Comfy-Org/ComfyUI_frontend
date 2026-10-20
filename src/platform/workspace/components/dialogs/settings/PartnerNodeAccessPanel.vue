@@ -356,18 +356,18 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { storeToRefs } from 'pinia'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Menu from '@/components/ui/menu/Menu.vue'
-import Button from '@/components/ui/button/Button.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import Button from '@comfyorg/design-system/button/Button'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import Switch from '@comfyorg/design-system/switch/Switch'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'

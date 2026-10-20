@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
-import SearchInput from './SearchInput.vue'
+import SearchInput from '@comfyorg/design-system/search-input/SearchInput'
 
 vi.mock(import('@vueuse/core'), () => ({
   watchDebounced: vi.fn((source, cb, opts) => {

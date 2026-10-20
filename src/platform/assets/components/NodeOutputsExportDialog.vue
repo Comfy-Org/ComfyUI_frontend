@@ -57,7 +57,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Checkbox from '@comfyorg/design-system/checkbox/Checkbox'
 
 interface ExportItem {

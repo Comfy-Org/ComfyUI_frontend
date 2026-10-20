@@ -5,7 +5,7 @@ import type {
 } from '@storybook/vue3-vite'
 import { ref, toRefs } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Popover from '@/components/ui/Popover.vue'
 
 import ScrubableNumberInput from './ScrubableNumberInput.vue'

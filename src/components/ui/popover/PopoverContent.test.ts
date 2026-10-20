@@ -4,7 +4,7 @@ import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 
-import PopoverContent from './PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 describe('PopoverContent', () => {
   it('reopens after a later overlay in document order', async () => {

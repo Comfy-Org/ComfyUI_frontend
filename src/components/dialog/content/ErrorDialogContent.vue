@@ -68,7 +68,7 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'

@@ -20,7 +20,7 @@ const filename = path.join(
   '../../src/components/LintFixture.vue'
 )
 const buttonImport =
-  "<script setup>\nimport Button from '@/components/ui/button/Button.vue'\n</script>\n"
+  "<script setup>\nimport Button from '@comfyorg/design-system/button/Button'\n</script>\n"
 const inputImport =
   "<script setup>\nimport Input from '@comfyorg/design-system/input/Input'\n</script>\n"
 

@@ -55,11 +55,11 @@
 
 <script setup lang="ts">
 import Card from '@comfyorg/design-system/card/Card'
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 
 import { getProviderLabel, getProviderLogo } from '@/platform/secrets/providers'

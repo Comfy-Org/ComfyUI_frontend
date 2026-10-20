@@ -3,7 +3,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useLocalStorage } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   AgentFreeUseNoticeMetadata,

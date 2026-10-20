@@ -3,12 +3,12 @@ import { render, screen } from '@testing-library/vue'
 import { expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
-import DialogClose from './DialogClose.vue'
-import DialogMaximize from './DialogMaximize.vue'
-import DialogPanel from './DialogPanel.vue'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
+import DialogMaximize from '@comfyorg/design-system/dialog/DialogMaximize'
+import DialogPanel from '@comfyorg/design-system/dialog/DialogPanel'
 
 it.for([
   { name: 'default button', content: '' },

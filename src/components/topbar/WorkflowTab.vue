@@ -128,8 +128,8 @@ import {
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import MenuItems from '@/components/ui/menu/MenuItems.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import MenuItems from '@comfyorg/design-system/menu/MenuItems'
 import { menuContentClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 import TabsTrigger from '@comfyorg/design-system/tabs/TabsTrigger'
 import {

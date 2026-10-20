@@ -82,9 +82,9 @@ import {
   formPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Popover from '@comfyorg/design-system/popover/Popover'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import Slider from '@comfyorg/design-system/slider/Slider'
 import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 

@@ -10,9 +10,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
-import MenuContent from '@/components/ui/menu/MenuContent.vue'
+import MenuContent from '@comfyorg/design-system/menu/MenuContent'
 import MenuRadioItem from '@comfyorg/design-system/menu/MenuRadioItem'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 

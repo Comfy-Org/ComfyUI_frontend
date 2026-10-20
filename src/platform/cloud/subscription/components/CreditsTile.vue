@@ -209,7 +209,7 @@ import { useI18n } from 'vue-i18n'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 import { formatCredits } from '@/base/credits/comfyCredits'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'

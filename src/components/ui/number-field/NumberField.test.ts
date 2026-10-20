@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
-import NumberFieldDecrement from './NumberFieldDecrement.vue'
-import NumberFieldIncrement from './NumberFieldIncrement.vue'
+import NumberFieldDecrement from '@comfyorg/design-system/number-field/NumberFieldDecrement'
+import NumberFieldIncrement from '@comfyorg/design-system/number-field/NumberFieldIncrement'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 
 function renderNumberField(rootAttrs: string, initialValue: number | null) {

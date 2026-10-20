@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
 import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
-import HoverCardContent from './HoverCardContent.vue'
+import HoverCardContent from '@comfyorg/design-system/hover-card/HoverCardContent'
 import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'
 
 async function hoverOpen() {

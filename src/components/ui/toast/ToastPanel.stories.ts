@@ -2,11 +2,11 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import ProgressToastItem from '@/components/toast/ProgressToastItem.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import ToastDock from './ToastDock.vue'
+import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
 
 interface PanelStoryArgs {

@@ -3,7 +3,7 @@ import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
 
 import type { AskUserPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'

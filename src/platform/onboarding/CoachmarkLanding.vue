@@ -68,13 +68,13 @@ import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
 import DialogDescription from '@comfyorg/design-system/dialog/DialogDescription'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const { title, message, image, primaryLabel, skipLabel, waitingForTarget } =
   defineProps<{

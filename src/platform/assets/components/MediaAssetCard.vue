@@ -157,7 +157,7 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
 import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
 import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,

@@ -1,16 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import Menu from '@/components/ui/menu/Menu.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
 import Popover from '@/components/ui/Popover.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
-import ToastDock from '@/components/ui/toast/ToastDock.vue'
+import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
+import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 
 const meta: Meta = {
   title: 'Components/Dialog/Overlay ordering',

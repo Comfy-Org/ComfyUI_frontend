@@ -20,7 +20,7 @@
 import { useI18n } from 'vue-i18n'
 
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useLoad3dService } from '@/services/load3dService'

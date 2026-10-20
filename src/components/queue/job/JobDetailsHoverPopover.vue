@@ -33,7 +33,7 @@ import { computed } from 'vue'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
 import Popover from '@comfyorg/design-system/popover/Popover'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 const {
   open,

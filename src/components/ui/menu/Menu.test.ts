@@ -4,8 +4,8 @@ import { DropdownMenuItem } from 'reka-ui'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 
-import Menu from './Menu.vue'
-import ContextMenu from './ContextMenu.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
 
 describe('Menu', () => {
   it('renders item badges in nested menus', async () => {

@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
-import HoverCardContent from '@/components/ui/hover-card/HoverCardContent.vue'
+import HoverCardContent from '@comfyorg/design-system/hover-card/HoverCardContent'
 import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'
 
 const { description, unavailable = false } = defineProps<{

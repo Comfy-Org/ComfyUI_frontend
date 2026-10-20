@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import Message from './Message.vue'
+import Message from '@comfyorg/design-system/message/Message'
 
 describe('Message', () => {
   it.for(['error', 'warning', 'info'] as const)(

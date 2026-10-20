@@ -72,7 +72,7 @@ import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import ModelInfoField from '@comfyorg/design-system/field/ModelInfoField'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import PasswordInput from './PasswordInput.vue'
+import PasswordInput from '@comfyorg/design-system/input/PasswordInput'
 
 it('reveals and hides the password', async () => {
   const user = userEvent.setup()

@@ -90,9 +90,9 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Message from '@comfyorg/design-system/message/Message'
 import AppPagination from '@/components/common/AppPagination.vue'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import Table from '@comfyorg/design-system/table/Table'

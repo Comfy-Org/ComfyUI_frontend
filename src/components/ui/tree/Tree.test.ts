@@ -5,7 +5,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import Tree from '@comfyorg/design-system/tree/Tree'
-import TreeItem from './TreeItem.vue'
+import TreeItem from '@comfyorg/design-system/tree/TreeItem'
 
 interface Item {
   key: string

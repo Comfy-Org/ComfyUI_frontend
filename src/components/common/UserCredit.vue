@@ -29,7 +29,7 @@ import { useI18n } from 'vue-i18n'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { useAuthStore } from '@/stores/authStore'
 
 const { textClass, showCreditsOnly } = defineProps<{

@@ -93,7 +93,7 @@ import { refAutoReset } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import InviteMembersForm from '@/platform/workspace/components/InviteMembersForm.vue'
 import InviteLinkList from '@/platform/workspace/components/dialogs/InviteLinkList.vue'
 import type { InviteLinkRow } from '@/platform/workspace/components/dialogs/InviteLinkList.vue'

@@ -5,8 +5,8 @@ import { FocusScope } from 'reka-ui'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import MultiSelect from './MultiSelect.vue'
-import type { MultiSelectProps } from './types'
+import MultiSelect from '@comfyorg/design-system/multi-select/MultiSelect'
+import type { MultiSelectProps } from '@comfyorg/design-system/lib/multi-select/types'
 
 const options = [
   { name: 'Option A', value: 'a' },

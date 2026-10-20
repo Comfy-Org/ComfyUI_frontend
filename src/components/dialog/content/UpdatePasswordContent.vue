@@ -17,7 +17,7 @@ import { useForm } from 'vee-validate'
 import { ref } from 'vue'
 
 import PasswordFields from '@/components/dialog/content/signin/PasswordFields.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useUpdatePassword } from '@/composables/auth/useUpdatePassword'
 import { updatePasswordSchema } from '@/schemas/signInSchema'
 import { toTypedSchema } from '@/utils/zodTypedSchema'

@@ -103,7 +103,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import DeploymentSwitcherOwnerFooter from '@/platform/workspace/components/DeploymentSwitcherOwnerFooter.vue'
 import DeploymentSwitcherList from '@/platform/workspace/components/DeploymentSwitcherList.vue'
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'

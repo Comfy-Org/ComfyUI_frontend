@@ -6,7 +6,7 @@ import { defineComponent, ref } from 'vue'
 import { DialogPortal } from 'reka-ui'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from './TooltipContent.vue'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 

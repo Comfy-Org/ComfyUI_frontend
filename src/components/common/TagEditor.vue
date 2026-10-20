@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
 import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
 import TagsInputItem from '@comfyorg/design-system/tags-input/TagsInputItem'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
+import TagsInputItemDelete from '@comfyorg/design-system/tags-input/TagsInputItemDelete'
 import TagsInputItemText from '@comfyorg/design-system/tags-input/TagsInputItemText'
 
 const { placeholder, itemClass, ...rootProps } = defineProps<

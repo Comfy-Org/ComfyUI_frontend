@@ -76,7 +76,7 @@ import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import TagEditor from '@/components/common/TagEditor.vue'
 import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
 import { useTelemetry } from '@/platform/telemetry'

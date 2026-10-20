@@ -29,7 +29,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 // 'upgrade': personal workspace pitching the Team plan (no title — a pitch,
 // not a state change). 'reactivate' / 'contactSales': the plan has ended

@@ -370,7 +370,7 @@
       "checks": [
         "src/components/ui/multi-select/MultiSelect.test.ts",
         "src/components/ui/single-select/SingleSelect.test.ts",
-        "src/components/ui/select/useSelectSearch.test.ts",
+        "packages/design-system/src/components/select/useSelectSearch.test.ts",
         "src/components/ui/search-input/SearchInput.test.ts",
         "src/components/ui/search-input/AsyncSearchInput.test.ts",
         "src/components/ui/search-input/SearchAutocomplete.test.ts",
@@ -398,7 +398,7 @@
       "name": "Toast queue replaces entries by id and renders them in the dock",
       "checks": [
         "src/components/ui/toast/toastStore.test.ts",
-        "src/components/ui/toast/Toaster.test.ts",
+        "src/components/common/AppToaster.test.ts",
         "src/components/ui/toast/ToastDock.test.ts",
         "src/components/ui/toast/ToastPanel.test.ts"
       ]
@@ -407,7 +407,7 @@
       "name": "Data and media display primitives preserve sorting, paging, virtualization, and media fallbacks",
       "checks": [
         "src/components/ui/table/TableSortHead.test.ts",
-        "src/components/ui/table/tableUtils.test.ts",
+        "packages/design-system/src/components/table/tableUtils.test.ts",
         "src/components/ui/pagination/Pagination.test.ts",
         "src/components/ui/tree/Tree.test.ts",
         "src/components/ui/chart/Chart.test.ts",

@@ -112,7 +112,7 @@ import GizmoControls from '@/components/load3d/controls/viewer/ViewerGizmoContro
 import LightControls from '@/components/load3d/controls/viewer/ViewerLightControls.vue'
 import ModelControls from '@/components/load3d/controls/viewer/ViewerModelControls.vue'
 import SceneControls from '@/components/load3d/controls/viewer/ViewerSceneControls.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useLoad3dDrag } from '@/composables/useLoad3dDrag'
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'

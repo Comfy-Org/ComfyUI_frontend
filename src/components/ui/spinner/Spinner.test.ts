@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import Spinner from './Spinner.vue'
+import Spinner from '@comfyorg/design-system/spinner/Spinner'
 
 describe('Spinner', () => {
   it('names indeterminate progress with the supplied label and updates it', async () => {

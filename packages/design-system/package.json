@@ -26,11 +26,22 @@
   "type": "module",
   "exports": {
     "./*": "./src/components/*.vue",
-    "./lib/select/types": "./src/components/select/types.ts",
-    "./lib/menu/menuStyles": "./src/components/menu/menuStyles.ts",
+    "./lib/composables/useAttrsClass": "./src/components/composables/useAttrsClass.ts",
+    "./lib/composables/usePopoverSizing": "./src/components/composables/usePopoverSizing.ts",
     "./lib/dialog/dialog.variants": "./src/components/dialog/dialog.variants.ts",
+    "./lib/dialog/types": "./src/components/dialog/types.ts",
     "./lib/input-group/inputGroup.variants": "./src/components/input-group/inputGroup.variants.ts",
+    "./lib/menu/menuAnchor": "./src/components/menu/menuAnchor.ts",
+    "./lib/menu/menuStyles": "./src/components/menu/menuStyles.ts",
+    "./lib/menu/types": "./src/components/menu/types.ts",
+    "./lib/message/message.variants": "./src/components/message/message.variants.ts",
+    "./lib/multi-select/types": "./src/components/multi-select/types.ts",
+    "./lib/select/types": "./src/components/select/types.ts",
+    "./lib/select/useSelectSearch": "./src/components/select/useSelectSearch.ts",
+    "./lib/single-select/types": "./src/components/single-select/types.ts",
+    "./lib/table/tableUtils": "./src/components/table/tableUtils.ts",
     "./lib/tooltip/tooltipConfig": "./src/components/tooltip/tooltipConfig.ts",
+    "./lib/tree/treeStyles": "./src/components/tree/treeStyles.ts",
     "./components.css": "./dist/components.css",
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
@@ -57,25 +68,69 @@
         "types": "./dist/*.vue.d.ts",
         "import": "./dist/*.vue.js"
       },
-      "./lib/select/types": {
-        "types": "./dist/select/types.d.ts",
-        "import": "./dist/select/types.js"
+      "./lib/composables/useAttrsClass": {
+        "types": "./dist/composables/useAttrsClass.d.ts",
+        "import": "./dist/composables/useAttrsClass.js"
       },
-      "./lib/menu/menuStyles": {
-        "types": "./dist/menu/menuStyles.d.ts",
-        "import": "./dist/menu/menuStyles.js"
+      "./lib/composables/usePopoverSizing": {
+        "types": "./dist/composables/usePopoverSizing.d.ts",
+        "import": "./dist/composables/usePopoverSizing.js"
       },
       "./lib/dialog/dialog.variants": {
         "types": "./dist/dialog/dialog.variants.d.ts",
         "import": "./dist/dialog/dialog.variants.js"
       },
+      "./lib/dialog/types": {
+        "types": "./dist/dialog/types.d.ts",
+        "import": "./dist/dialog/types.js"
+      },
       "./lib/input-group/inputGroup.variants": {
         "types": "./dist/input-group/inputGroup.variants.d.ts",
         "import": "./dist/input-group/inputGroup.variants.js"
       },
+      "./lib/menu/menuAnchor": {
+        "types": "./dist/menu/menuAnchor.d.ts",
+        "import": "./dist/menu/menuAnchor.js"
+      },
+      "./lib/menu/menuStyles": {
+        "types": "./dist/menu/menuStyles.d.ts",
+        "import": "./dist/menu/menuStyles.js"
+      },
+      "./lib/menu/types": {
+        "types": "./dist/menu/types.d.ts",
+        "import": "./dist/menu/types.js"
+      },
+      "./lib/message/message.variants": {
+        "types": "./dist/message/message.variants.d.ts",
+        "import": "./dist/message/message.variants.js"
+      },
+      "./lib/multi-select/types": {
+        "types": "./dist/multi-select/types.d.ts",
+        "import": "./dist/multi-select/types.js"
+      },
+      "./lib/select/types": {
+        "types": "./dist/select/types.d.ts",
+        "import": "./dist/select/types.js"
+      },
+      "./lib/select/useSelectSearch": {
+        "types": "./dist/select/useSelectSearch.d.ts",
+        "import": "./dist/select/useSelectSearch.js"
+      },
+      "./lib/single-select/types": {
+        "types": "./dist/single-select/types.d.ts",
+        "import": "./dist/single-select/types.js"
+      },
+      "./lib/table/tableUtils": {
+        "types": "./dist/table/tableUtils.d.ts",
+        "import": "./dist/table/tableUtils.js"
+      },
       "./lib/tooltip/tooltipConfig": {
         "types": "./dist/tooltip/tooltipConfig.d.ts",
         "import": "./dist/tooltip/tooltipConfig.js"
+      },
+      "./lib/tree/treeStyles": {
+        "types": "./dist/tree/treeStyles.d.ts",
+        "import": "./dist/tree/treeStyles.js"
       },
       "./components.css": "./dist/components.css",
       "./css/*": "./src/css/*",
@@ -113,10 +168,12 @@
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
     "@vueuse/core": "catalog:",
+    "@vueuse/integrations": "catalog:",
     "chart.js": "^4.5.0",
     "cva": "catalog:",
     "dompurify": "catalog:",
     "es-toolkit": "^1.39.9",
+    "fuse.js": "7.0.0",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {

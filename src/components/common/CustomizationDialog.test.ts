@@ -30,7 +30,7 @@ vi.mock<unknown>(
 vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogTitle'), () => ({
   default: { name: 'DialogTitle', template: '<div><slot /></div>' }
 }))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogClose.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogClose'), () => ({
   default: { name: 'DialogClose', template: '<button />' }
 }))
 

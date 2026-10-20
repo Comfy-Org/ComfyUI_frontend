@@ -4,7 +4,7 @@ import { ConfigProvider } from 'reka-ui'
 import { describe, expect, it } from 'vitest'
 
 import Popover from '@/components/ui/Popover.vue'
-import ToastDock from './ToastDock.vue'
+import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 
 describe('ToastDock', () => {
   it('keeps descendant popovers in the toast tier and inherits provider direction', async () => {

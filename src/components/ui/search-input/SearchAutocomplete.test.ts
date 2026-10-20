@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import SearchAutocomplete from './SearchAutocomplete.vue'
+import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
 
 describe('SearchAutocomplete', () => {
   it('renders caller labels without an i18n plugin', () => {

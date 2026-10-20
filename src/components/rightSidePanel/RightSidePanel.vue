@@ -6,7 +6,7 @@ import { useI18n } from 'vue-i18n'
 import EditableText from '@comfyorg/design-system/common/EditableText'
 import Tab from '@comfyorg/design-system/tab/Tab'
 import TabList from '@comfyorg/design-system/tab/TabList'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useGraphHierarchy } from '@/composables/graph/useGraphHierarchy'
 import { app } from '@/scripts/app'
 import {

@@ -151,11 +151,11 @@ import { RovingFocusItem } from 'reka-ui'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import TableCell from '@comfyorg/design-system/table/TableCell'
 import TableRow from '@comfyorg/design-system/table/TableRow'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import type { ComfyCommandImpl } from '@/stores/commandStore'

@@ -125,7 +125,6 @@
     "algoliasearch": "catalog:",
     "axios": "catalog:",
     "chart.js": "^4.5.0",
-    "cva": "catalog:",
     "dompurify": "catalog:",
     "dotenv": "catalog:",
     "es-toolkit": "^1.39.9",

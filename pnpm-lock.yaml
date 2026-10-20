@@ -599,9 +599,6 @@ importers:
       chart.js:
         specifier: ^4.5.0
         version: 4.5.1
-      cva:
-        specifier: 'catalog:'
-        version: 1.0.0-beta.4(typescript@6.0.3)
       dompurify:
         specifier: 'catalog:'
         version: 3.4.13
@@ -1378,6 +1375,9 @@ importers:
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.42(typescript@6.0.3))
+      '@vueuse/integrations':
+        specifier: 'catalog:'
+        version: 14.4.0(axios@1.18.1)(fuse.js@7.0.0)(vue@3.5.42(typescript@6.0.3))
       chart.js:
         specifier: ^4.5.0
         version: 4.5.1
@@ -1390,6 +1390,9 @@ importers:
       es-toolkit:
         specifier: ^1.39.9
         version: 1.49.0
+      fuse.js:
+        specifier: 7.0.0
+        version: 7.0.0
       tw-animate-css:
         specifier: 'catalog:'
         version: 1.4.0

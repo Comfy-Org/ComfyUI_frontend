@@ -105,11 +105,11 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
 import DialogFooter from '@comfyorg/design-system/dialog/DialogFooter'
 import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
-import DialogMaximize from '@/components/ui/dialog/DialogMaximize.vue'
+import DialogMaximize from '@comfyorg/design-system/dialog/DialogMaximize'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'

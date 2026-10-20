@@ -67,9 +67,9 @@
 import { computed, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
 import DialogDescription from '@comfyorg/design-system/dialog/DialogDescription'
 import DialogFooter from '@comfyorg/design-system/dialog/DialogFooter'

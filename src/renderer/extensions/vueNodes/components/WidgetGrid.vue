@@ -88,7 +88,7 @@
 import { computed, nextTick, useTemplateRef, watch } from 'vue'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'

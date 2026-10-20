@@ -99,7 +99,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Message from '@comfyorg/design-system/message/Message'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'

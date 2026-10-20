@@ -40,7 +40,7 @@
 <script setup lang="ts">
 import { VisuallyHidden } from 'reka-ui'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'

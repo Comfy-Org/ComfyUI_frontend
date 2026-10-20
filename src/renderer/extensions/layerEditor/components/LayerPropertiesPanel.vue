@@ -191,7 +191,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { AcceptableValue } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -199,7 +199,7 @@ import { useI18n } from 'vue-i18n'
 import PropertyNumberField from '@comfyorg/design-system/number-field/PropertyNumberField'
 import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Select from '@comfyorg/design-system/select/Select'
-import SelectContent from '@/components/ui/select/SelectContent.vue'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'

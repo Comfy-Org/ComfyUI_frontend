@@ -23,4 +23,4 @@ After adding, create `ComponentName.stories.ts` with a `Default` story, an `argT
 
 ## Tooltips
 
-- Read `tooltip/README.md` before adding a tooltip: one app-level provider, `Button` `tooltip`/`tooltip-side` props, and the fragment-root and `as-child` nesting rules
+- Read `packages/design-system/src/components/tooltip/README.md` before adding a tooltip: one app-level provider, `Button` `tooltip`/`tooltip-side` props, and the fragment-root and `as-child` nesting rules

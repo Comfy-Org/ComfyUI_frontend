@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import SearchAutocomplete from './SearchAutocomplete.vue'
+import SearchAutocomplete from '@comfyorg/design-system/search-input/SearchAutocomplete'
 
 function findContentElement(): HTMLElement | null {
   return document.querySelector('[data-dismissable-layer]')

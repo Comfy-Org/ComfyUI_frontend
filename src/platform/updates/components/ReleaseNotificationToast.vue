@@ -53,7 +53,7 @@ import { useI18n } from 'vue-i18n'
 
 import NotificationPopup from '@/components/common/NotificationPopup.vue'
 import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useCommandStore } from '@/stores/commandStore'

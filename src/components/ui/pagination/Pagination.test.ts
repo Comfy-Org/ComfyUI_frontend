@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import Pagination from './Pagination.vue'
+import Pagination from '@comfyorg/design-system/pagination/Pagination'
 
 describe('Pagination', () => {
   it('returns to the first page when the page size changes', async () => {

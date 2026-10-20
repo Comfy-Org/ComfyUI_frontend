@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { getMenuAnchorPosition } from './menuAnchor'
+import { getMenuAnchorPosition } from '@comfyorg/design-system/lib/menu/menuAnchor'
 
 describe('getMenuAnchorPosition', () => {
   it.for([

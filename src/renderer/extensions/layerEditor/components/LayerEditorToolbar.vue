@@ -96,7 +96,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Popover from '@comfyorg/design-system/popover/Popover'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuContentClass,
   menuButtonClass

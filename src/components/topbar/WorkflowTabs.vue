@@ -74,7 +74,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import TopbarActions from '@/components/TopbarActions.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Tabs from '@comfyorg/design-system/tabs/Tabs'
 import TabsList from '@comfyorg/design-system/tabs/TabsList'
 import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'

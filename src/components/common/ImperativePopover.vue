@@ -6,7 +6,7 @@ import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
 
 import Popover from '@comfyorg/design-system/popover/Popover'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({ inheritAttrs: false })

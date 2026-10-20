@@ -3,7 +3,7 @@ import Card from '@comfyorg/design-system/card/Card'
 import { computed, inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 import type { RunApprovalPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { agentBoundWorkflowIdKey } from '@/workbench/extensions/agent/components/agent/agentBoundWorkflowId'

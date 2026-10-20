@@ -13,7 +13,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { isCloud } from '@/platform/distribution/types'

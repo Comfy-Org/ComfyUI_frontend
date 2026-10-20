@@ -213,9 +213,9 @@ import RecordMenuControl from '@/components/load3d/menubar/RecordMenuControl.vue
 import SceneMenuGroup from '@/components/load3d/menubar/SceneMenuGroup.vue'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Popover from '@comfyorg/design-system/popover/Popover'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuButtonClass,
   selectedMenuButtonClass

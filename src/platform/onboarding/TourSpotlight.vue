@@ -159,7 +159,7 @@ import { FocusScope } from 'reka-ui'
 import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 import CoachmarkCard from '@comfyorg/design-system/card/CoachmarkCard'
 import {

@@ -37,7 +37,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import BillingPlanLifecycle from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanLifecycle.vue'
 import { formatPlanDate } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import type {

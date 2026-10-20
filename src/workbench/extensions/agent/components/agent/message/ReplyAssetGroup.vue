@@ -9,7 +9,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import { LOAD3D_VIEWER_DIALOG_PROPS } from '@/components/load3d/load3dViewerDialog'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import {
   findOutputAsset,
   findServerPreviewUrl,

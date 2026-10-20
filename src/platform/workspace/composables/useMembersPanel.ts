@@ -1,4 +1,4 @@
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import { storeToRefs } from 'pinia'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'

@@ -63,7 +63,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { ref, watch } from 'vue'
 
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'

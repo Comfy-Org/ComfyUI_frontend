@@ -4,7 +4,7 @@ import type { StyleValue } from 'vue'
 import { nextTick, ref } from 'vue'
 
 import Select from '@comfyorg/design-system/select/Select'
-import SelectContent from './SelectContent.vue'
+import SelectContent from '@comfyorg/design-system/select/SelectContent'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 

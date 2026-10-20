@@ -46,7 +46,7 @@ import Input from '@comfyorg/design-system/input/Input'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import Switch from '@comfyorg/design-system/switch/Switch'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { FormItem } from '@/platform/settings/types'
 

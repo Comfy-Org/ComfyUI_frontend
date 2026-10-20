@@ -32,7 +32,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import InputGroup from '@comfyorg/design-system/input-group/InputGroup'
 import InputGroupAddon from '@comfyorg/design-system/input-group/InputGroupAddon'
-import InputGroupButton from '@/components/ui/input-group/InputGroupButton.vue'
+import InputGroupButton from '@comfyorg/design-system/input-group/InputGroupButton'
 import InputGroupInput from '@comfyorg/design-system/input-group/InputGroupInput'
 import { isValidUrl } from '@/utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'

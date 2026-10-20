@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 
-import Button from './Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 describe('Button', () => {
   it('renders slot content inside a button by default', () => {

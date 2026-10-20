@@ -3,8 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import type { TableSortDirection } from './tableUtils'
-import TableSortHead from './TableSortHead.vue'
+import type { TableSortDirection } from '@comfyorg/design-system/lib/table/tableUtils'
+import TableSortHead from '@comfyorg/design-system/table/TableSortHead'
 
 function renderHead(initial: TableSortDirection | null) {
   const direction = ref(initial)

@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
 import Popover from '@/components/ui/Popover.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useCommandStore } from '@/stores/commandStore'
 import { useQueueStore } from '@/stores/queueStore'
 

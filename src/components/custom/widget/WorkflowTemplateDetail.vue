@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import WorkflowTemplateDescription from '@/components/custom/widget/WorkflowTemplateDescription.vue'
 import WorkflowTemplateDetailGroup from '@/components/custom/widget/WorkflowTemplateDetailGroup.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type {
   TemplateDetailGroup,
   TemplateModelSetup

@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
-import Badge from './Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 
 describe('Badge', () => {
   it('requires a remove label only when removable', () => {

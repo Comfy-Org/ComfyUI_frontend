@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Tabs from '@comfyorg/design-system/tabs/Tabs'
 import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
 import TabsList from '@comfyorg/design-system/tabs/TabsList'

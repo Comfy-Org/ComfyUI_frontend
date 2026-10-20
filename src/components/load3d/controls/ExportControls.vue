@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
 
 const { sourceFormat = null } = defineProps<{

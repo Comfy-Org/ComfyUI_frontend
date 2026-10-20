@@ -11,7 +11,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { toggleNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 
 const handleClick = (event: Event) => {

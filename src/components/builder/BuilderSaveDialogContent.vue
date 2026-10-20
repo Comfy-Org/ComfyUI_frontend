@@ -55,7 +55,7 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import DialogDescription from '@comfyorg/design-system/dialog/DialogDescription'
 import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 

@@ -1,4 +1,4 @@
-import type { MenuItemAction } from '@/components/ui/menu/types'
+import type { MenuItemAction } from '@comfyorg/design-system/lib/menu/types'
 
 export type WorkflowMenuItem = WorkflowMenuSeparator | WorkflowMenuAction
 

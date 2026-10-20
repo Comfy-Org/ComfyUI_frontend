@@ -11,7 +11,7 @@ import {
 } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 const open = defineModel<boolean>({ default: false })
 

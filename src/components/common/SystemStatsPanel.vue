@@ -67,7 +67,7 @@ import {
   getColumnDisplayValue,
   systemStatsColumns
 } from '@/components/common/systemStatsColumns'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Tabs from '@comfyorg/design-system/tabs/Tabs'
 import TabsContent from '@comfyorg/design-system/tabs/TabsContent'
 import TabsList from '@comfyorg/design-system/tabs/TabsList'

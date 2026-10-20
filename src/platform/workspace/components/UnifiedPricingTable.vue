@@ -420,7 +420,7 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
 import Card from '@comfyorg/design-system/card/Card'
 import {
@@ -432,7 +432,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'

@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { computed } from 'vue'
 
 import TextTicker from '@comfyorg/design-system/common/TextTicker'

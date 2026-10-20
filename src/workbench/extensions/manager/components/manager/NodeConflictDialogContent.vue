@@ -160,7 +160,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import type {
   ConflictDetail,

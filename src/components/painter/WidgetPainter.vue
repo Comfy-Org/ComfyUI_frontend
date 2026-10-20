@@ -280,7 +280,7 @@
 import { useElementSize } from '@vueuse/core'
 import { computed, useTemplateRef } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Slider from '@comfyorg/design-system/slider/Slider'
 import { PAINTER_TOOLS, usePainter } from '@/composables/painter/usePainter'
 import type { NodeId } from '@/types/nodeId'

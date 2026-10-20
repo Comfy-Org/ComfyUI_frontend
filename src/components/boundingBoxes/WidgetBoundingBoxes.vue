@@ -160,7 +160,7 @@ import { useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import PaletteSwatchRow from '@/components/palette/PaletteSwatchRow.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'

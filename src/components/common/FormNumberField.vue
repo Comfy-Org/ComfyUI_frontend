@@ -23,8 +23,8 @@
 import type { HTMLAttributes } from 'vue'
 
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
+import NumberFieldDecrement from '@comfyorg/design-system/number-field/NumberFieldDecrement'
+import NumberFieldIncrement from '@comfyorg/design-system/number-field/NumberFieldIncrement'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 
 const { class: className = 'w-32' } = defineProps<{

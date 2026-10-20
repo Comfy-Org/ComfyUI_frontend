@@ -41,7 +41,7 @@ import { computed, ref, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Popover from '@/components/common/ImperativePopover.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackVersionSelectorPopover from '@/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'

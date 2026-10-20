@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Slider from '@comfyorg/design-system/slider/Slider'
 import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
-import type { MultiSelectProps } from '@/components/ui/multi-select/types'
+import MultiSelect from '@comfyorg/design-system/multi-select/MultiSelect'
+import type { MultiSelectProps } from '@comfyorg/design-system/lib/multi-select/types'
 import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 
 type TranslatedProps =

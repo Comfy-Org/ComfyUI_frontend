@@ -6,7 +6,7 @@ import { h, nextTick } from 'vue'
 import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
 import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
 import TagsInputItem from '@comfyorg/design-system/tags-input/TagsInputItem'
-import TagsInputItemDelete from './TagsInputItemDelete.vue'
+import TagsInputItemDelete from '@comfyorg/design-system/tags-input/TagsInputItemDelete'
 import TagsInputItemText from '@comfyorg/design-system/tags-input/TagsInputItemText'
 
 describe('TagsInput', () => {

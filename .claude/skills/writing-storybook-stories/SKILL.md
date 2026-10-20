@@ -51,14 +51,14 @@ A file whose exports differ by one prop value each is the pattern to fix, not co
 
 Do not invent titles from scratch when a close sibling story already exists. Match the nearest domain pattern.
 
-| Component area                                          | Typical title pattern             |
-| ------------------------------------------------------- | --------------------------------- |
-| `src/components/ui/button/Button.vue`                   | `Components/Button/Button`        |
-| `src/components/ui/input/Input.vue`                     | `Components/Input`                |
-| `src/components/ui/search-input/SearchInput.vue`        | `Components/Input/SearchInput`    |
-| `src/components/common/SearchBox.vue`                   | `Components/Input/SearchBox`      |
-| `src/renderer/extensions/vueNodes/widgets/components/*` | `Widgets/<WidgetName>`            |
-| `src/platform/assets/components/*`                      | `Platform/Assets/<ComponentName>` |
+| Component area                                                       | Typical title pattern             |
+| -------------------------------------------------------------------- | --------------------------------- |
+| `packages/design-system/src/components/button/Button.vue`            | `Components/Button/Button`        |
+| `src/components/ui/input/Input.vue`                                  | `Components/Input`                |
+| `packages/design-system/src/components/search-input/SearchInput.vue` | `Components/Input/SearchInput`    |
+| `src/components/common/SearchBox.vue`                                | `Components/Input/SearchBox`      |
+| `src/renderer/extensions/vueNodes/widgets/components/*`              | `Widgets/<WidgetName>`            |
+| `src/platform/assets/components/*`                                   | `Platform/Assets/<ComponentName>` |
 
 If multiple patterns seem plausible, follow the closest sibling story in the same folder tree.
 

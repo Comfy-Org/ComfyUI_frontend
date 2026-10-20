@@ -62,7 +62,7 @@ import { computed, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import Field from '@comfyorg/design-system/field/Field'
 import FieldDescription from '@comfyorg/design-system/field/FieldDescription'

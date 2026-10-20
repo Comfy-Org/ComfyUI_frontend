@@ -4,8 +4,8 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import SingleSelect from './SingleSelect.vue'
-import type { SingleSelectProps } from './types'
+import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
+import type { SingleSelectProps } from '@comfyorg/design-system/lib/single-select/types'
 
 const options = [
   { name: 'Option A', value: 'a' },

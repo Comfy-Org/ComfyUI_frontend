@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
 import type {
   JobGroup,
   JobListItem,

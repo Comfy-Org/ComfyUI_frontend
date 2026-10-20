@@ -76,7 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Input from '@comfyorg/design-system/input/Input'
 import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
 import TagEditor from '@/components/common/TagEditor.vue'

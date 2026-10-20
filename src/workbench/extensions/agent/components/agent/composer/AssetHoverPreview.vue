@@ -10,7 +10,7 @@ import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import AssetMediaPreview from './AssetMediaPreview.vue'
 
 import Popover from '@comfyorg/design-system/popover/Popover'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 

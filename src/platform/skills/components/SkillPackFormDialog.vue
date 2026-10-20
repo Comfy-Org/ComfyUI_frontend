@@ -139,9 +139,9 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Dialog from '@comfyorg/design-system/dialog/Dialog'
-import DialogClose from '@/components/ui/dialog/DialogClose.vue'
+import DialogClose from '@comfyorg/design-system/dialog/DialogClose'
 import DialogContent from '@comfyorg/design-system/dialog/DialogContent'
 import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'

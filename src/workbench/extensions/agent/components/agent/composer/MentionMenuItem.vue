@@ -2,7 +2,7 @@
 import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import type { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
 import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'

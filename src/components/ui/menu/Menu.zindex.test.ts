@@ -2,9 +2,9 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { MenuItem } from '@/components/ui/menu/types'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 
-import Menu from './Menu.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
 
 function renderMenu(items: MenuItem[] = [{ label: 'Item A' }]) {
   return render(Menu, {

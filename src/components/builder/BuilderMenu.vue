@@ -26,8 +26,11 @@ import { computed, ref } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem, MenuItemCommandEvent } from '@/components/ui/menu/types'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type {
+  MenuItem,
+  MenuItemCommandEvent
+} from '@comfyorg/design-system/lib/menu/types'
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'

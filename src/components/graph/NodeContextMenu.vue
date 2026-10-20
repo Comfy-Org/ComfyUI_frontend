@@ -34,15 +34,15 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
-import { getMenuAnchorPosition } from '@/components/ui/menu/menuAnchor'
+import ContextMenu from '@comfyorg/design-system/menu/ContextMenu'
+import { getMenuAnchorPosition } from '@comfyorg/design-system/lib/menu/menuAnchor'
 import type {
   MenuItem,
   MenuItemAction,
   MenuItemRadioGroup,
   MenuItemSeparator,
   MenuItemSubmenu
-} from '@/components/ui/menu/types'
+} from '@comfyorg/design-system/lib/menu/types'
 import {
   registerNodeOptionsInstance,
   useMoreOptionsMenu

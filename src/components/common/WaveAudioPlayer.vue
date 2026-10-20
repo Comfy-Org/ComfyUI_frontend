@@ -175,7 +175,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import Slider from '@comfyorg/design-system/slider/Slider'
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'

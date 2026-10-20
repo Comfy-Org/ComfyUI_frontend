@@ -191,7 +191,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
-import HoverCardContent from '@/components/ui/hover-card/HoverCardContent.vue'
+import HoverCardContent from '@comfyorg/design-system/hover-card/HoverCardContent'
 import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'
 import AppPagination from '@/components/common/AppPagination.vue'
 import Table from '@comfyorg/design-system/table/Table'
