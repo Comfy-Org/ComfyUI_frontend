@@ -397,7 +397,7 @@ test.describe('Publish dialog - layout', () => {
         })
         await comfyPage.page.mouse.move(0, 0)
 
-        await expect(comfyPage.page).toHaveScreenshot(
+        await expect(publishDialog.root).toHaveScreenshot(
           `publish-dialog-${name}.png`
         )
       }

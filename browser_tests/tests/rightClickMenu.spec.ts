@@ -27,9 +27,9 @@ async function emptyLatentMenuRegion(comfyPage: ComfyPage) {
 }
 
 async function expectCanvasMenuScreenshot(comfyPage: ComfyPage) {
-  await expect(comfyPage.page).toHaveScreenshot('right-click-menu.png', {
-    clip: await screenshotRegion([comfyPage.contextMenu.litegraphContextMenu])
-  })
+  await expect(comfyPage.contextMenu.litegraphContextMenu).toHaveScreenshot(
+    'right-click-menu.png'
+  )
 }
 
 async function expectNodeMenuScreenshot(comfyPage: ComfyPage, name: string) {
