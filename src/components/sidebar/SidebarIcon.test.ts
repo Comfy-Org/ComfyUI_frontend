@@ -82,7 +82,9 @@ describe('SidebarIcon', () => {
 
     await waitFor(
       () => {
-        expect(screen.getByRole('tooltip')).toHaveTextContent(labelText)
+        expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+          labelText
+        )
       },
       { timeout: 1000 }
     )
