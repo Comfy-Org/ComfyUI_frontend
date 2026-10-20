@@ -44,7 +44,9 @@ export function useSharedWorkflowUrlLoader() {
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const deepLink = usePreservedQueryDeepLink(SHARE_NAMESPACE)
 
-  const clearShareIntent = () => deepLink.strip()
+  function clearShareIntent() {
+    deepLink.strip()
+  }
 
   function showOpenSharedWorkflowDialog(
     shareId: string
