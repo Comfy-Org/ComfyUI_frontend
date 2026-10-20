@@ -693,6 +693,7 @@ describe('installDesktopLoginRedemption', () => {
         await import('@/platform/auth/session/webSessionFetch')
       const scope = fromPartial<WebSessionRequestScope>({
         epoch: 1,
+        workspaceId: 'stale-workspace',
         session: { user: { id: 'comfy-user' } }
       })
       const send = vi.fn(async () => okResponse())
@@ -710,7 +711,7 @@ describe('installDesktopLoginRedemption', () => {
           body: JSON.stringify({ code }),
           signal: expect.any(AbortSignal)
         },
-        scope
+        { session: scope.session, epoch: scope.epoch }
       )
       expect(mockUserGetIdToken).not.toHaveBeenCalled()
       expect(stashedCode()).toBeUndefined()
@@ -742,6 +743,73 @@ describe('installDesktopLoginRedemption', () => {
     await trigger()
     expect(send).not.toHaveBeenCalled()
     expect(stashedCode()).toBe(code)
+  })
+  it.for(['sso_required', 'csrf_invalid', 'workspace_access_denied'])(
+    'retries an account handoff after a recoverable %s refusal',
+    async (refusal) => {
+      const { trigger, seedStash, stashedCode } = await setup()
+      const { provideWebSessionRequests } =
+        await import('@/platform/auth/session/webSessionFetch')
+      const scope = fromPartial<WebSessionRequestScope>({
+        epoch: 1,
+        session: { user: { id: 'comfy-user' } }
+      })
+      const send = vi
+        .fn()
+        .mockResolvedValueOnce(
+          Response.json(
+            { code: refusal, message: 'Sign in again' },
+            { status: 403 }
+          )
+        )
+        .mockResolvedValueOnce(okResponse())
+      provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({ scope: async () => scope, send })
+      )
+      const code = `dls_${'A'.repeat(43)}`
+      seedStash(code)
+      await trigger()
+      expect(stashedCode()).toBe(code)
+      await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
+      expect(send).toHaveBeenCalledTimes(2)
+      expect(stashedCode()).toBeUndefined()
+    }
+  )
+
+  it('does not force Firebase for a pending account code', async () => {
+    const { seedStash } = await setup()
+    const { hasPendingDesktopLoginCode } =
+      await import('./desktopLoginRedemption')
+    seedStash(`dls_${'A'.repeat(43)}`)
+    expect(hasPendingDesktopLoginCode()).toBe(true)
+    expect(hasPendingDesktopLoginCode(true)).toBe(false)
+    seedStash(VALID_CODE)
+    expect(hasPendingDesktopLoginCode(true)).toBe(true)
+  })
+
+  it('reports an unavailable account session for a signed-in Firebase user', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    seedStash(`dls_${'A'.repeat(43)}`)
+    await trigger()
+    expect(stashedCode()).toBeUndefined()
+    expect(useToast().toasts.at(-1)?.title).toBe('desktopLogin.failedSummary')
+  })
+
+  it('releases the drain when session initialization stalls', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: () => new Promise(() => {}) })
+    )
+    seedStash(`dls_${'A'.repeat(43)}`)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(10_000)
+    seedStash(VALID_CODE)
+    respondToFetch(REDEEM_URL, okResponse)
+    await trigger()
+    expect(stashedCode()).toBeUndefined()
+    expect(fetch).toHaveBeenCalledOnce()
   })
 })
 vi.mock(import('firebase/auth'))

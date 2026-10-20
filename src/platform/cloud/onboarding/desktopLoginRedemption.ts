@@ -1,4 +1,6 @@
 import { watch } from 'vue'
+import { classifyWebSessionFailure } from '@comfyorg/account-core/webSession'
+import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
@@ -18,8 +20,6 @@ import { useAuthStore } from '@/stores/authStore'
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN
 const DESKTOP_LOGIN_CODE_KEY = 'desktop_login_code'
 
-// The backend issues "dlc_" + 43 base64url chars; bounds are loose so the
-// backend stays the authority on exact code length.
 const DESKTOP_LOGIN_CODE_PATTERN = /^dl[cs]_[A-Za-z0-9_-]{20,256}$/
 
 // Statuses that mean the desktop app must start a fresh sign-in, so the code
@@ -199,7 +199,36 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
-  finishRedemption(code, state, response)
+  await finishRedemption(code, state, response)
+}
+
+async function accountScope(requests: WebSessionRequests) {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    return await Promise.race([
+      requests.scope().then(
+        (scope) => ({ ok: true, scope }) as const,
+        () => ({ ok: false }) as const
+      ),
+      new Promise<{ ok: false }>((resolve) => {
+        timer = setTimeout(() => resolve({ ok: false }), REDEEM_TIMEOUT_MS)
+      })
+    ])
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+function unavailableAccountSession(
+  code: string,
+  state: CodeRedemptionState
+): void {
+  if (!useAuthStore().currentUser && !webSessionUser.value) return
+  settle(code, state)
+  useToast().error(t('desktopLogin.failedSummary'), {
+    description: t('desktopLogin.failedDetail'),
+    duration: 6000
+  })
 }
 
 async function redeemAccountCode(
@@ -208,15 +237,36 @@ async function redeemAccountCode(
 ): Promise<void> {
   if (onAuthHandoffRoute()) return
   const requests = webSessionRequests()
-  const scope = await requests?.scope()
-  if (!requests || !scope) return
+  if (!requests) {
+    unavailableAccountSession(code, state)
+    return
+  }
+  const initial = await accountScope(requests)
+  if (!initial.ok) {
+    state.attempts++
+    handleTransientFailure(code, state, 'account session unavailable')
+    return
+  }
+  const scope = initial.scope
+  if (!scope) {
+    unavailableAccountSession(code, state)
+    return
+  }
+  if (onAuthHandoffRoute()) return
   if (!(await confirmRedemption(state, scope.session.user.id))) {
     settle(code, state)
     return
   }
-  const current = await requests.scope()
+  const latest = await accountScope(requests)
+  if (!latest.ok) {
+    state.attempts++
+    handleTransientFailure(code, state, 'account session unavailable')
+    return
+  }
+  const current = latest.scope
   if (
     !current ||
+    onAuthHandoffRoute() ||
     current.epoch !== scope.epoch ||
     current.session.user.id !== state.approvedUserUid
   )
@@ -232,20 +282,20 @@ async function redeemAccountCode(
         body: JSON.stringify({ code }),
         signal: AbortSignal.timeout(REDEEM_TIMEOUT_MS)
       },
-      current
+      { session: current.session, epoch: current.epoch }
     )
   } catch {
     handleTransientFailure(code, state, 'account session request failed')
     return
   }
-  finishRedemption(code, state, response)
+  await finishRedemption(code, state, response)
 }
 
-function finishRedemption(
+async function finishRedemption(
   code: string,
   state: CodeRedemptionState,
   response: Response
-): void {
+): Promise<void> {
   if (response.ok) {
     settle(code, state)
     useToast().success(t('desktopLogin.successSummary'), {
@@ -255,6 +305,21 @@ function finishRedemption(
     return
   }
 
+  if (code.startsWith('dls_') && response.status === 403) {
+    const body: unknown = await response
+      .clone()
+      .json()
+      .catch(() => undefined)
+    const refusal = classifyWebSessionFailure(response.status, body).code
+    if (
+      refusal === 'SSO_REQUIRED' ||
+      refusal === 'WORKSPACE_ACCESS_DENIED' ||
+      refusal === 'CSRF_STALE'
+    ) {
+      handleTransientFailure(code, state, 'account session refused')
+      return
+    }
+  }
   if (TERMINAL_REDEEM_STATUSES.has(response.status)) {
     settle(code, state)
     useToast().error(t('desktopLogin.expiredSummary'), {
@@ -268,9 +333,13 @@ function finishRedemption(
   handleTransientFailure(code, state, `status ${response.status}`)
 }
 
-export function hasPendingDesktopLoginCode(): boolean {
+export function hasPendingDesktopLoginCode(legacyOnly = false): boolean {
   const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)
-  return code !== undefined && DESKTOP_LOGIN_CODE_PATTERN.test(code)
+  return (
+    code !== undefined &&
+    DESKTOP_LOGIN_CODE_PATTERN.test(code) &&
+    (!legacyOnly || code.startsWith('dlc_'))
+  )
 }
 
 async function redeemPendingDesktopLoginCode(): Promise<void> {
@@ -303,8 +372,9 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
 function installAuthWatcherOnce(): void {
   if (authWatcherInstalled) return
   authWatcherInstalled = true
+  const auth = useAuthStore()
   watch(
-    () => [useAuthStore().currentUser, webSessionUser.value],
+    () => [auth.currentUser, webSessionUser.value],
     () => {
       void redeemPendingDesktopLoginCode()
     }
