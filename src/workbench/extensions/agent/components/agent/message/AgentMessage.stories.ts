@@ -4,12 +4,12 @@ import { defineComponent, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 
-import type { TurnId } from '../../../schemas/agentApiSchema'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AssistantMessage,
   MessagePart
-} from '../../../services/agent/agentMessageParts'
-import '../../../agentPanel.css'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import AgentMessage from './AgentMessage.vue'
 
@@ -69,7 +69,7 @@ const meta: Meta<typeof AgentMessage> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-secondary-background w-100 p-4"><story /></div>'
+        '<div class="agent-scope bg-secondary w-100 p-4"><story /></div>'
     })
   ]
 }

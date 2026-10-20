@@ -1,0 +1,13 @@
+{
+  "name": "@comfyorg/published-package-build",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Vite library build shared by the workspace packages published to npm",
+  "type": "module",
+  "exports": "./src/publishedPackageBuild.ts",
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "catalog:"
+  }
+}

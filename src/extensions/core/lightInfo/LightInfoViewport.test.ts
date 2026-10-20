@@ -75,6 +75,7 @@ function setup(
   options: {
     onLightsChange?: (lights: LightInfoEntry[]) => void
     onSelectLight?: (index: number) => void
+    onEditEnd?: () => void
   } = {}
 ) {
   const stub = makeViewportStub()
@@ -263,6 +264,18 @@ describe('LightInfoViewport orbit handle drag', () => {
     }
   )
 
+  it('reports the end of an edit once an orbit handle drag ends', () => {
+    const onEditEnd = vi.fn()
+    const { stub } = setup([sideLight], { onEditEnd })
+
+    pointer(stub, 'pointerdown', YAW_HANDLE)
+    pointer(stub, 'pointermove', { x: 0, y: 0, z: 1.5 })
+    expect(onEditEnd).not.toHaveBeenCalled()
+
+    pointer(stub, 'pointerup', YAW_HANDLE)
+    expect(onEditEnd).toHaveBeenCalledOnce()
+  })
+
   it('suspends orbit controls for the duration of a handle drag', () => {
     const { stub } = setup([sideLight])
 
@@ -392,6 +405,20 @@ describe('LightInfoViewport transform gizmos', () => {
       expect(stub.controlsManager.controls.enabled).toBe(enabled)
     }
   )
+})
+
+describe('LightInfoViewport gizmo edit end', () => {
+  it('reports the end of an edit once a gizmo drag ends', () => {
+    const onEditEnd = vi.fn()
+    const { viewport } = setup([pointLight], { onEditEnd })
+    const controls = gizmoControls(viewport.positionHandle)
+
+    controls.dispatchEvent({ type: 'dragging-changed', value: true })
+    expect(onEditEnd).not.toHaveBeenCalled()
+
+    controls.dispatchEvent({ type: 'dragging-changed', value: false })
+    expect(onEditEnd).toHaveBeenCalledOnce()
+  })
 })
 
 describe('LightInfoViewport camera', () => {

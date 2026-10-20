@@ -12,15 +12,13 @@
       <FocusScope class="contents" @mount-auto-focus.prevent>
         <div v-if="showSearchBox" class="px-2 pt-2 pb-0">
           <div
-            class="flex items-center gap-2 rounded-lg border border-border-default px-3 py-1.5"
+            class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm"
           >
-            <i
-              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
-            />
+            <i class="icon-[lucide--search] shrink-0 text-muted-foreground" />
             <ComboboxInput
               v-model="searchQuery"
               :placeholder="searchPlaceholder ?? t('g.search')"
-              class="w-full border-none bg-transparent text-sm outline-none"
+              class="w-full border-none bg-transparent outline-none"
             />
           </div>
         </div>
@@ -62,11 +60,11 @@
             :class="cn('group', selectItemVariants({ layout: 'multi' }))"
           >
             <div
-              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary group-data-[state=unchecked]:bg-secondary [&>span]:flex"
             >
               <ComboboxItemIndicator>
                 <i
-                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+                  class="icon-[lucide--check] text-xs font-bold text-foreground"
                 />
               </ComboboxItemIndicator>
             </div>
@@ -166,8 +164,8 @@ const actionsClass = computed(() =>
   cn(
     'flex shrink-0 items-center justify-between',
     actionsPlacement === 'header'
-      ? 'mt-2 border-b border-border-default px-2 pb-4'
-      : '-mx-2 mt-2 border-t border-border-default px-4 pt-3 pb-1'
+      ? 'mt-2 border-b px-2 pb-4'
+      : '-mx-2 mt-2 border-t px-4 pt-3 pb-1'
   )
 )
 const searchResults = useSelectSearch(searchQuery, () => options)

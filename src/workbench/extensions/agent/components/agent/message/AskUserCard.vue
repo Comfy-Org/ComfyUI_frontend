@@ -6,8 +6,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 
-import type { AskUserPart } from '../../../services/agent/agentMessageParts'
-import { choosableCount } from '../../../services/agent/agentMessageParts'
+import type { AskUserPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { choosableCount } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import AskUserAnswer from './AskUserAnswer.vue'
 import AskUserCheckboxOptions from './AskUserCheckboxOptions.vue'
 import AskUserRadioOptions from './AskUserRadioOptions.vue'
@@ -146,12 +146,12 @@ function submit(): void {
   <div
     role="group"
     :aria-label="t('agent.askUser.card')"
-    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-component-node-border bg-secondary-background p-4 shadow-interface"
+    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
       <p
         :id="promptId"
-        class="m-0 font-medium wrap-break-word whitespace-pre-line"
+        class="m-0 font-medium wrap-break-word whitespace-pre-line text-foreground"
       >
         {{ part.prompt }}
       </p>
@@ -190,7 +190,7 @@ function submit(): void {
       />
 
       <div v-if="part.allowOther" class="flex flex-col gap-1 px-2 text-sm/5">
-        <label :for="otherId">
+        <label :for="otherId" class="text-foreground">
           {{ t('agent.askUser.other') }}
         </label>
         <Input
@@ -200,7 +200,7 @@ function submit(): void {
           :placeholder="t('agent.askUser.otherPlaceholder')"
           :disabled="otherDisabled"
           :aria-describedby="otherDescribedBy"
-          class="h-8 bg-component-node-background px-3"
+          class="h-8 bg-card px-3"
           @keydown.enter="onOtherEnter"
           @compositionstart="composing = true"
           @compositionend="onCompositionEnd"

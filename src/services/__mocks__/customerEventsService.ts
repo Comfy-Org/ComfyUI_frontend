@@ -4,8 +4,8 @@ import { ref } from 'vue'
 import {
   hasParamsBeyondDetailsColumn,
   presentTooltipParamKeys
-} from '../customerEventParams'
-import type * as real from '../customerEventsService'
+} from '@/services/customerEventParams'
+import type * as real from '@/services/customerEventsService'
 
 type CustomerEventsService = ReturnType<typeof real.useCustomerEventsService>
 

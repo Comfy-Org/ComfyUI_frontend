@@ -154,7 +154,7 @@ test(
     await page.route(`**/view?filename=${BARE_DIGEST}&type=input`, (route) =>
       route.fulfill({ path: assetPath('image64x64.webp') })
     )
-    await page.route('**/api/agent/threads', (route) => {
+    await page.route('**/api/agent/threads?*', (route) => {
       const listed = [
         { id: attachmentThreadId, title: 'Attachment thread' },
         { id: otherThreadId, title: 'Other thread' }

@@ -4,7 +4,7 @@ import {
   getCompositorInputsFingerprint,
   setCompositorPreviewOverride
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
-import type { SceneNode } from '@/renderer/extensions/layerEditor/engine/node'
+import type { SceneNode } from '@comfyorg/layer-editor/node'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 export interface CompositorLayerStateSession {

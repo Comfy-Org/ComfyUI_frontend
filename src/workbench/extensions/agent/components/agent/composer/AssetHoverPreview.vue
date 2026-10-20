@@ -13,7 +13,7 @@ import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { AssetPreviewMode } from '../../../types/assetPreview'
+import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 
 const { name, previewUrl, mediaUrl, mediaKind } = defineProps<{
   name: string
@@ -111,7 +111,7 @@ function onInteractOutside(event: Event): void {
         aria-haspopup="dialog"
         :aria-expanded="open"
         :aria-controls="open ? contentId : undefined"
-        class="relative flex size-full cursor-pointer items-center justify-center overflow-hidden rounded-md hover:bg-secondary-background-hover focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="relative flex size-full cursor-pointer items-center justify-center overflow-hidden rounded-md hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         @click="activate"
       >
         <slot />
@@ -127,7 +127,7 @@ function onInteractOutside(event: Event): void {
       :style="contentStyle"
       :class="
         cn(
-          'z-1700 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border-subtle bg-secondary-background p-0',
+          'z-1700 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border/50 bg-secondary p-0',
           playableKind === 'audio' ? 'w-86' : 'w-80'
         )
       "
@@ -153,7 +153,7 @@ function onInteractOutside(event: Event): void {
           :alt="name"
           class="max-h-80 w-full object-contain"
         />
-        <div class="px-3 py-2 text-sm wrap-anywhere text-base-foreground">
+        <div class="px-3 py-2 text-sm wrap-anywhere text-foreground">
           {{ name }}
         </div>
       </div>

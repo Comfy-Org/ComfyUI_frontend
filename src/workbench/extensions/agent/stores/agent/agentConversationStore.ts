@@ -2,17 +2,20 @@ import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { toTurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentMessages,
+  TurnId
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentChatEvent,
   AgentEventTransport
-} from '../../services/agent/agentEventTransport'
-import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
+} from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
   AskUserResolution,
   AssistantMessage
-} from '../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
   createAssistantMessage,
@@ -20,19 +23,19 @@ import {
   isPendingAskPart,
   retireAskParts,
   settleResolution
-} from '../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   normalizeAgentTranscript,
   settleLiveMessage
-} from '../../services/agent/agentTranscript'
-import { createUndeliverableAskReporter } from '../../services/agent/undeliverableAskReporter'
+} from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import { createUndeliverableAskReporter } from '@/workbench/extensions/agent/services/agent/undeliverableAskReporter'
 import type {
   NormalizedAgentTranscript,
   UserAttachment
-} from '../../services/agent/agentTranscript'
-import type { WorkflowReference } from '../../types/workflowReference'
-import type { SkillReference } from '../../types/skillReference'
-import { parseSkillReferenceText } from '../../utils/skillReferenceText'
+} from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
 
 export type { UserAttachment }
 

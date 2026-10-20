@@ -68,8 +68,8 @@ const ENDINGS: Readonly<
 }
 
 const ICON: Readonly<Record<Tone, string>> = {
-  done: 'icon-[lucide--circle-check-big] text-success-background',
-  waiting: 'icon-[lucide--clock] text-warning-background',
+  done: 'icon-[lucide--circle-check-big] text-success',
+  waiting: 'icon-[lucide--clock] text-warning',
   refused: 'icon-[lucide--circle-alert] text-muted-foreground'
 }
 
@@ -231,7 +231,7 @@ function act() {
 
     <dl
       v-if="receiptRows.length > 0"
-      class="m-0 flex w-full flex-col gap-2 rounded-lg bg-secondary-background p-4 text-left text-sm"
+      class="m-0 flex w-full flex-col gap-2 rounded-lg bg-secondary p-4 text-left text-sm"
       data-testid="checkout-ending-receipt"
     >
       <div
@@ -240,9 +240,7 @@ function act() {
         class="flex items-baseline justify-between gap-4"
       >
         <dt class="text-muted-foreground">{{ row.label }}</dt>
-        <dd
-          class="m-0 flex items-center gap-1.5 text-base-foreground tabular-nums"
-        >
+        <dd class="m-0 flex items-center gap-1.5 text-foreground tabular-nums">
           <i
             v-if="row.kind === 'added'"
             class="icon-[lucide--coins] size-4 shrink-0"
@@ -272,10 +270,10 @@ function act() {
         type="button"
         :class="
           cn(
-            'h-10 w-full cursor-pointer rounded-lg px-4 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-base-background focus-visible:outline-none',
+            'h-10 w-full cursor-pointer rounded-lg px-4 text-sm font-semibold focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none',
             primary === 'close'
-              ? 'bg-secondary-background text-base-foreground hover:bg-secondary-background-hover'
-              : 'bg-base-foreground text-base-background hover:opacity-90'
+              ? 'bg-secondary text-foreground hover:bg-accent'
+              : 'bg-foreground text-background hover:opacity-90'
           )
         "
         @click="act"

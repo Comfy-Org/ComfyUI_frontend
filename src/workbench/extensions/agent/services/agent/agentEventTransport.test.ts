@@ -8,11 +8,14 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { AgentMessages } from '../../schemas/agentApiSchema'
-import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  toTurnId,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
-import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
 import type {
