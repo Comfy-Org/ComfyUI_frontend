@@ -13,6 +13,17 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 type SortOption = 'newest' | 'oldest' | 'az' | 'za' | 'longest' | 'fastest'
 
+const TIMESTAMP_WITHOUT_OFFSET = /T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/
+
+/**
+ * Parse an asset timestamp. The local server sends UTC without an offset
+ * (e.g. "2026-10-14T10:45:13.916843"), which `Date` would read as local time.
+ */
+const parseAssetTimestamp = (timestamp: string): number =>
+  new Date(
+    TIMESTAMP_WITHOUT_OFFSET.test(timestamp) ? `${timestamp}Z` : timestamp
+  ).getTime()
+
 /**
  * Get timestamp from asset (either create_time or created_at)
  */
@@ -21,7 +32,7 @@ const getAssetTime = (asset: AssetItem): number => {
   return typeof createTime === 'number'
     ? createTime
     : asset.created_at
-      ? new Date(asset.created_at).getTime()
+      ? parseAssetTimestamp(asset.created_at)
       : 0
 }
 

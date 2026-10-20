@@ -58,6 +58,8 @@
         v-model:view-mode="viewMode"
         v-model:date-filter="dateFilter"
         v-model:media-type-filters="mediaTypeFilters"
+        :show-filters="flags.assetsEnabled"
+        :show-sort-options="flags.assetsEnabled"
         :show-generation-time-sort="activeTab === 'output'"
       />
     </template>

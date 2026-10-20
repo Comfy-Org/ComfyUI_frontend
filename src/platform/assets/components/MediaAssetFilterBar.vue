@@ -10,7 +10,7 @@
         "
       />
       <template #actions>
-        <Menu v-if="isCloud" :modal="false">
+        <Menu v-if="showFilters" :modal="false">
           <template #trigger>
             <Button
               :tooltip="$t('assetBrowser.filterBy')"
@@ -31,7 +31,7 @@
             <MediaAssetSettingsMenu
               v-model:view-mode="viewMode"
               v-model:sort-by="sortBy"
-              :show-sort-options="isCloud"
+              :show-sort-options
               :show-generation-time-sort
             />
           </template>
@@ -78,7 +78,6 @@ import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import { isCloud } from '@/platform/distribution/types'
 import {
   dateFilterOptions,
   mediaTypeFilterOptions
@@ -91,7 +90,13 @@ import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
 import type { MediaAssetViewMode } from './mediaAssetViewOptions'
 
-const { showGenerationTimeSort = false } = defineProps<{
+const {
+  showFilters = false,
+  showSortOptions = false,
+  showGenerationTimeSort = false
+} = defineProps<{
+  showFilters?: boolean
+  showSortOptions?: boolean
   showGenerationTimeSort?: boolean
 }>()
 
