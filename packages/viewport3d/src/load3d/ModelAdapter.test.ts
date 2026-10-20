@@ -23,12 +23,9 @@ describe('fetchModelData', () => {
   const fetchApi = vi.fn<Load3dHost['fetchApi']>()
 
   it('returns the arrayBuffer on a successful response', async () => {
-    const buf = new ArrayBuffer(8)
-    fetchApi.mockResolvedValue({
-      ok: true,
-      status: 200,
-      arrayBuffer: vi.fn().mockResolvedValue(buf)
-    } as unknown as Response)
+    fetchApi.mockResolvedValue(
+      new Response(new Uint8Array([1, 2, 3]), { status: 200 })
+    )
 
     const result = await fetchModelData(
       fetchApi,
@@ -36,14 +33,11 @@ describe('fetchModelData', () => {
       'model.glb'
     )
 
-    expect(result).toBe(buf)
+    expect([...new Uint8Array(result)]).toEqual([1, 2, 3])
   })
 
   it('throws with status code when the response is not ok', async () => {
-    fetchApi.mockResolvedValue({
-      ok: false,
-      status: 404
-    } as unknown as Response)
+    fetchApi.mockResolvedValue(new Response(null, { status: 404 }))
 
     await expect(
       fetchModelData(
@@ -55,10 +49,7 @@ describe('fetchModelData', () => {
   })
 
   it('strips the leading api/ prefix and encodes the filename', async () => {
-    fetchApi.mockResolvedValue({
-      ok: true,
-      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
-    } as unknown as Response)
+    fetchApi.mockResolvedValue(new Response(new ArrayBuffer(0)))
 
     await fetchModelData(
       fetchApi,
@@ -72,10 +63,7 @@ describe('fetchModelData', () => {
   })
 
   it('prepends a single slash when the path has no api/ prefix', async () => {
-    fetchApi.mockResolvedValue({
-      ok: true,
-      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
-    } as unknown as Response)
+    fetchApi.mockResolvedValue(new Response(new ArrayBuffer(0)))
 
     await fetchModelData(fetchApi, 'custom?filename=', 'scene.splat')
 
