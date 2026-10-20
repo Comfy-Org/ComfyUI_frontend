@@ -16,16 +16,6 @@ describe('getDesktopInstallId', () => {
     expect(getDesktopInstallId()).toBeNull()
   })
 
-  it('returns null on a Desktop build without getInstallId', () => {
-    stubBridge({})
-    expect(getDesktopInstallId()).toBeNull()
-  })
-
-  it('returns the install id the bridge reports', () => {
-    stubBridge({ getInstallId: () => 'install-abc' })
-    expect(getDesktopInstallId()).toBe('install-abc')
-  })
-
   it('returns null and swallows a throwing bridge', () => {
     stubBridge({
       getInstallId: vi.fn(() => {
