@@ -184,6 +184,7 @@ import {
   serializableWidgetOrder
 } from './widgets/widgetValuesForm'
 import type { CoreWidgetSerialization } from './widgets/widgetValuesForm'
+import { cloneWidgetValueTwice } from './utils/cloneWidgetValue'
 
 // #region Types
 
@@ -214,17 +215,6 @@ function legacyArrayItem<T>(items: readonly T[], index: number): T | undefined {
 
 function legacyValue<T>(value: T): T | undefined {
   return value
-}
-
-function cloneWidgetValueTwice(
-  value: TWidgetValue
-): [TWidgetValue, TWidgetValue] {
-  if (value == null || typeof value !== 'object') {
-    const primitive = value ?? null
-    return [primitive, primitive]
-  }
-  const json = JSON.stringify(value)
-  return [JSON.parse(json), JSON.parse(json)]
 }
 
 function serialiseWidgetValues(

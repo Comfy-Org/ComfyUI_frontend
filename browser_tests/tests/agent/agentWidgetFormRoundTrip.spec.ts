@@ -51,8 +51,24 @@ test.describe(
           return nodeId
         })
 
+      const savedValue = 'saved before tab switch'
+
+      await test.step('save a non-default widget value', async () => {
+        const textField = agentConversation.vueNodes
+          .getNodeLocator(nodeId)
+          .getByLabel('text', { exact: true })
+        await textField.fill(savedValue)
+        await textField.press('Tab')
+
+        const outcomes = await agentConversation.waitForHumanOps(2)
+        expect(outcomes[1]?.outcome).toBe('applied')
+        await expect
+          .poll(() => agentConversation.hostWidgetValue(nodeId, 'text'))
+          .toBe(savedValue)
+      })
+
       await test.step('restore the widget after returning to the tab', async () => {
-        await agentConversation.switchAwayAndBack(nodeId, 'text')
+        await agentConversation.switchAwayAndBack(nodeId, 'text', savedValue)
       })
     })
   }

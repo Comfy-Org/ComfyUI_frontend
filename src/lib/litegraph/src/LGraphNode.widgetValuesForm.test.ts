@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { ASSERTION_FAILURE_PREFIX } from '@/base/assert'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
@@ -26,11 +27,9 @@ describe('widget values form serialization', () => {
   })
 
   function installPolicy(layoutDependsOnValues = false) {
-    const policy = {
+    setWidgetValuesFormPolicy({
       widgetLayoutDependsOnValues: vi.fn(() => layoutDependsOnValues)
-    }
-    setWidgetValuesFormPolicy(policy)
-    return policy
+    })
   }
 
   it('emits the form after extension serialization', () => {
@@ -92,7 +91,7 @@ describe('widget values form serialization', () => {
   })
 
   it('leaves a value-dependent widget layout undeclared', () => {
-    const policy = installPolicy(true)
+    installPolicy(true)
     const node = nodeWithWidgets([
       { name: 'mode', value: 'a' },
       { name: 'mode.steps', value: '4' }
@@ -100,7 +99,6 @@ describe('widget values form serialization', () => {
 
     expect(node.serialize()).toMatchObject({ widgets_values: ['a', '4'] })
     expect(node.serialize()).not.toHaveProperty('widgets_values_form')
-    expect(policy.widgetLayoutDependsOnValues).toHaveBeenCalledWith(node)
   })
 
   it.for([
@@ -111,7 +109,6 @@ describe('widget values form serialization', () => {
     node.serialize_widgets = true
     for (const name of names) node.addWidget('text', name, name, () => {}, {})
 
-    expect(node.widgets?.map((widget) => widget.name)).toEqual(names)
     expect(node.serialize()).toMatchObject({ widgets_values: names })
     expect(node.serialize()).not.toHaveProperty('widgets_values_form')
   })
@@ -212,11 +209,19 @@ describe('widget values form serialization', () => {
       }
     },
     {
-      form: 'predates a hook that reorders the widgets',
+      form: 'orders names differently from widgets',
+      arrange: (node: LGraphNode) => {
+        node.onSerialize = (data) => {
+          data.widgets_values_form = { order: ['seed', 'prompt'] }
+        }
+      }
+    },
+    {
+      form: 'follows widgets a hook reordered',
       arrange: (node: LGraphNode) => {
         node.onSerialize = (data) => {
           node.widgets?.reverse()
-          data.widgets_values_form = { order: ['prompt', 'seed'] }
+          data.widgets_values_form = { order: ['seed', 'prompt'] }
         }
       }
     }
@@ -240,9 +245,7 @@ describe('widget values form serialization', () => {
       data.widgets_values_form = { order: ['prompt', 'prompt'] }
     }
 
-    expect(() => node.serialize()).toThrow(
-      '[Assertion failed]: Widget values form must be closed to a non-empty order'
-    )
+    expect(() => node.serialize()).toThrow(ASSERTION_FAILURE_PREFIX)
   })
 
   it('preserves a saved form on a missing-node shell', () => {

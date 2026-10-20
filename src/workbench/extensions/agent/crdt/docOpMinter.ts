@@ -30,6 +30,7 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { cloneWidgetValue } from '@/lib/litegraph/src/utils/cloneWidgetValue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
@@ -98,11 +99,6 @@ function isNonArrayObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function serializedWidgetValue(value: unknown): unknown {
-  if (value == null || typeof value !== 'object') return value ?? null
-  return JSON.parse(JSON.stringify(value))
-}
-
 type IntentOf<T extends GraphIntentEvent['type']> = Extract<
   GraphIntentEvent,
   { type: T }
@@ -131,18 +127,18 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   if (!named || node.isVirtualNode) return snapshot
   const declaredForm = snapshot.widgets_values_form
   const declaredValues = snapshot.widgets_values
+  if (declaredForm && isNonArrayObject(declaredValues)) return snapshot
   const namedValues = declaredForm?.order.map((name) => named[name])
   const liveValues = declaredForm?.order.map((name) =>
-    serializedWidgetValue(
+    cloneWidgetValue(
       node.widgets?.find((widget) => widget.name === name)?.value
     )
   )
   const hasCustomDeclaredValues =
     declaredForm !== undefined &&
-    (isNonArrayObject(declaredValues) ||
-      (Array.isArray(declaredValues) &&
-        !isEqual(declaredValues, namedValues) &&
-        !isEqual(declaredValues, liveValues)))
+    Array.isArray(declaredValues) &&
+    !isEqual(declaredValues, namedValues) &&
+    !isEqual(declaredValues, liveValues)
   if (hasCustomDeclaredValues) return snapshot
 
   const values = valueWidgetsOnly(node, named)

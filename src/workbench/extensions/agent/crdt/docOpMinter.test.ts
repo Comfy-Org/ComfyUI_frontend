@@ -1589,6 +1589,25 @@ describe('attachDocOpMinter', () => {
     })
   })
 
+  it('preserves declared object values before reading live widget values', () => {
+    const node = new LGraphNode('Custom serializer')
+    node.serialize_widgets = true
+    const widget = node.addWidget('text', 'prompt', 'hello', () => {})
+    graph.add(node)
+    const circular: Record<string, unknown> = {}
+    circular.self = circular
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'widgets_values', { prompt: 'saved' })
+      data.widgets_values_form = { order: ['prompt'] }
+      Reflect.set(widget, 'value', circular)
+    }
+
+    expect(wireNodeSnapshot(node)).toMatchObject({
+      widgets_values: { prompt: 'saved' },
+      widgets_values_form: { order: ['prompt'] }
+    })
+  })
+
   it('preserves a changed array when its serializer declares the form', () => {
     const node = new LGraphNode('Custom array serializer')
     node.serialize_widgets = true

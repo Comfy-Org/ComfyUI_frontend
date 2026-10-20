@@ -94,7 +94,7 @@ function validateWidgetValuesForm(
     [
       !isPlainRecord(values) ||
         order.every((name) => Object.hasOwn(values, name)),
-      'Widget values form order must be a unique subset of object-shaped values'
+      'Widget values form order must name keys in object-shaped values'
     ],
     [
       isEqual(widgetOrderBeforeHook, currentOrder) &&
@@ -119,9 +119,7 @@ export function finalizeWidgetValuesForm(
   if (
     serialised.widgets_values_form === undefined &&
     coreSerialization &&
-    coreSerialization.order.length > 0 &&
-    coreSerialization.order.every((name) => name.length > 0) &&
-    new Set(coreSerialization.order).size === coreSerialization.order.length &&
+    isClosedForm({ order: coreSerialization.order }) &&
     Array.isArray(values) &&
     isEqual(values, coreSerialization.widgets_values) &&
     isEqual(
