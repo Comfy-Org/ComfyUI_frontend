@@ -20,7 +20,7 @@ export const GET: APIRoute = async ({ params, locals, url }) => {
   const { target, locale } = request
   const catalog = cmsEnabled()
     ? await loadSiteCatalog(
-        locals.catalogAuthoring ?? locals.site,
+        locals.catalogAuthoring,
         locale,
         target ?? params.slug,
         !target

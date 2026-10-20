@@ -1,12 +1,11 @@
 import type { WorkshopModel } from '@/config/models-catalogue'
 import { workshopModels } from '@/config/workshop-browse-content'
-import type { SiteSession } from '@/lib/cms/admin'
 import type { AuthoringSession } from '@/lib/cms/authoring-session'
 import { loadEverySiteCatalogCard } from '@/lib/cms/catalog-list-all'
 import { cmsEnabled } from '@/lib/cms/cms-enabled'
 
 export async function modelsHubIndexModels(
-  session: SiteSession | AuthoringSession | undefined,
+  session: AuthoringSession | undefined,
   locale: string | undefined
 ) {
   const staticModels: readonly WorkshopModel[] = workshopModels

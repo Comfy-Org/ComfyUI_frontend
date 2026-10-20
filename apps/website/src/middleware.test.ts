@@ -5,15 +5,9 @@ import {
   AUTHORING_COOKIE,
   AUTHORING_CSRF_COOKIE
 } from '@/lib/cms/authoring-session'
-import {
-  CONTEXT_COOKIE,
-  CSRF_COOKIE,
-  SESSION_COOKIE,
-  cookieOptions,
-  verifySiteSession
-} from '@/lib/cms/admin'
+import { CONTEXT_COOKIE } from '@/lib/cms/admin'
 
-vi.mock(import('@/lib/cms/admin'), { spy: true })
+const LEGACY_SESSION_COOKIE = 'comfy_site_session'
 
 const authoringContext = {
   actor_uid: '00000000-0000-4000-8000-000000000004',
@@ -37,9 +31,10 @@ function contextFor(path: string, method = 'GET') {
     defaultLocale: 'en',
     clientAddress: '127.0.0.1'
   })
-  context.cookies.set(SESSION_COOKIE, 'expired-test-session', { path: '/' })
+  context.cookies.set(LEGACY_SESSION_COOKIE, 'expired-test-session', {
+    path: '/'
+  })
   context.cookies.set(CONTEXT_COOKIE, 'test-preview', { path: '/' })
-  context.cookies.set(CSRF_COOKIE, 'test-csrf', { path: '/' })
   return context
 }
 
@@ -69,12 +64,10 @@ describe('separate catalog editor authority', () => {
       )
       expect(response?.status).toBe(200)
       expect(context.locals.catalogAuthoring?.can_edit).toBe(true)
-      expect(context.locals.site).toBeUndefined()
-      expect(context.cookies.get(SESSION_COOKIE)?.value).toBe(
+      expect(context.cookies.get(LEGACY_SESSION_COOKIE)?.value).toBe(
         'expired-test-session'
       )
       expect(response?.headers.get('Cache-Control')).toBe('private, no-store')
-      expect(verifySiteSession).not.toHaveBeenCalled()
     }
   )
 
@@ -104,38 +97,30 @@ describe('separate catalog editor authority', () => {
     expect(response?.status).toBe(200)
     expect(context.locals.catalogAuthoring).toBeUndefined()
     expect(fetcher).not.toHaveBeenCalled()
-    expect(verifySiteSession).not.toHaveBeenCalled()
+  })
+
+  it('sends catalog staff from the admin root to the catalog', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://catalog.example')
+    vi.stubEnv('VERCEL_ENV', 'preview')
+    vi.mocked(fetch).mockImplementation(
+      vi.fn(async () => Response.json(authoringContext))
+    )
+    const context = contextFor('/admin/')
+    context.cookies.set(AUTHORING_COOKIE, 'private-local-fixture')
+    context.cookies.set(AUTHORING_CSRF_COOKIE, 'a'.repeat(64))
+    const next = vi.fn(async () => new Response('Must not run'))
+    const response = await onRequest(context, next)
+    expect(response?.status).toBe(303)
+    expect(response?.headers.get('Location')).toBe('/admin/catalog')
+    expect(response?.headers.get('Cache-Control')).toBe('private, no-store')
+    expect(next).not.toHaveBeenCalled()
   })
 })
 
-describe('expired staff sessions', () => {
-  it.for([false, true])(
-    'local entry respects forwarded=%s',
-    async (forwarded) => {
-      vi.stubEnv('DEV', true)
-      vi.stubEnv('VERCEL_ENV', '')
-      vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
-      vi.stubEnv(
-        'SITE_CATALOG_LOCAL_CREDENTIAL_FILE',
-        '/private/local-credential.json'
-      )
-      const context = createContext({
-        request: new Request('http://127.0.0.1:4329/hub/models/', {
-          headers: forwarded ? { 'X-Forwarded-For': '203.0.113.1' } : {}
-        }),
-        defaultLocale: 'en',
-        clientAddress: '127.0.0.1'
-      })
-      await onRequest(context, () => Promise.resolve(new Response('Hub')))
-      expect(context.locals.siteLocalAccess).toBe(!forwarded)
-      expect(context.locals.site).toBeUndefined()
-    }
-  )
-
+describe('admin entry without a catalog session', () => {
   it.for([
     ['/admin/local-access', 'GET'],
-    ['/admin/local-session', 'POST'],
-    ['/admin/session', 'POST']
+    ['/admin/local-session', 'POST']
   ])(
     'allows recovery at %s %s without trusting the stale session',
     async ([path, method]) => {
@@ -146,23 +131,22 @@ describe('expired staff sessions', () => {
       )
       const response = await onRequest(context, next)
       expect(response?.status).toBe(200)
-      expect(context.locals.site).toBeUndefined()
-      expect(verifySiteSession).not.toHaveBeenCalled()
       expect(next).toHaveBeenCalledOnce()
     }
   )
 
-  it('denies protected content and clears all stale session cookies', async () => {
+  it.for([
+    ['/admin/changes/', 'GET'],
+    ['/admin/sign-in', 'GET'],
+    ['/admin/testers', 'GET'],
+    ['/admin/session', 'POST'],
+    ['/admin/actions', 'POST']
+  ])('hides the removed admin screen %s %s', async ([path, method]) => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
-    vi.mocked(verifySiteSession).mockResolvedValue(undefined)
-    const context = contextFor('/admin/changes/')
     const next = vi.fn(() => Promise.resolve(new Response('Protected content')))
-    const response = await onRequest(context, next)
-    expect(response?.status).toBe(403)
+    const response = await onRequest(contextFor(path, method), next)
+    expect(response?.status).toBe(404)
     expect(next).not.toHaveBeenCalled()
-    expect(context.locals.site).toBeUndefined()
-    for (const name of [SESSION_COOKIE, CONTEXT_COOKIE, CSRF_COOKIE])
-      expect(context.cookies.has(name)).toBe(false)
   })
 
   it.for([
@@ -179,21 +163,19 @@ describe('expired staff sessions', () => {
     const response = await onRequest(context, next)
     expect(response?.status).toBe(200)
     expect(next).toHaveBeenCalledOnce()
-    expect(verifySiteSession).not.toHaveBeenCalled()
-    expect(context.locals.site).toBeUndefined()
     expect(context.cookies.get(CONTEXT_COOKIE)?.value).toBe('test-preview')
     expect(response?.headers.get('Cache-Control')).toBe('private, no-store')
   })
 
   it.for([
-    ['/api/v1/catalog/docs', 'POST'],
-    ['/api/v1/catalog/state', 'GET'],
-    ['/api/v1/catalog/docs-not-public', 'GET']
+    ['/api/v1/catalog/docs?preview=DRAFT', 'POST'],
+    ['/api/v1/catalog/state?preview=DRAFT', 'GET'],
+    ['/api/v1/catalog/docs-not-public?now=2030-01-01', 'GET'],
+    ['/hub/models/?preview_at=2030-01-01', 'GET']
   ])(
-    'does not broaden documentation exemption to %s %s',
+    'refuses a preview request without a catalog session at %s %s',
     async ([path, method]) => {
       vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
-      vi.mocked(verifySiteSession).mockResolvedValue(undefined)
       const next = vi.fn(() => Promise.resolve(new Response('Private')))
       const response = await onRequest(contextFor(path, method), next)
       expect(response?.status).toBe(403)
@@ -201,58 +183,18 @@ describe('expired staff sessions', () => {
     }
   )
 
-  it.for([
-    {
-      dev: true,
-      hosted: '',
-      helper: '/private/local-credential.json',
-      hours: 168
-    },
-    {
-      dev: true,
-      hosted: 'preview',
-      helper: '/private/local-credential.json',
-      hours: 8
-    },
-    {
-      dev: false,
-      hosted: '',
-      helper: '/private/local-credential.json',
-      hours: 8
-    },
-    { dev: true, hosted: '', helper: '', hours: 8 }
-  ])(
-    'bounds session lifetime for $hours-hour mode',
-    ({ dev, hosted, helper, hours }) => {
-      vi.stubEnv('DEV', dev)
-      vi.stubEnv('VERCEL_ENV', hosted)
-      vi.stubEnv('SITE_CATALOG_LOCAL_CREDENTIAL_FILE', helper)
-      expect(cookieOptions(contextFor('/admin/')).maxAge).toBe(hours * 60 * 60)
-    }
-  )
-
-  function noSession(demo: string) {
+  it('keeps the admin hidden from visitors without a session', async () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
-    vi.stubEnv('SITE_CATALOG_DEMO', demo)
     vi.stubEnv('VERCEL_ENV', 'preview')
-    return createContext({
-      request: new Request('http://127.0.0.1:4329/admin'),
-      defaultLocale: 'en',
-      clientAddress: '127.0.0.1'
-    })
-  }
-
-  it('sends a demo visitor without a session to the demo entry', async () => {
     const next = vi.fn(() => Promise.resolve(new Response('Admin')))
-    const response = await onRequest(noSession('1'), next)
-    expect(response?.status).toBe(303)
-    expect(response?.headers.get('Location')).toBe('/admin/local-access')
-    expect(next).not.toHaveBeenCalled()
-  })
-
-  it('keeps the admin hidden from visitors without a session outside the demo', async () => {
-    const next = vi.fn(() => Promise.resolve(new Response('Admin')))
-    const response = await onRequest(noSession(''), next)
+    const response = await onRequest(
+      createContext({
+        request: new Request('http://127.0.0.1:4329/admin'),
+        defaultLocale: 'en',
+        clientAddress: '127.0.0.1'
+      }),
+      next
+    )
     expect(response?.status).toBe(404)
     expect(next).not.toHaveBeenCalled()
   })
@@ -282,11 +224,10 @@ describe('provider bypass on the complete CMS middleware chain', () => {
       expect(response?.headers.has('X-Comfy-Content-Source')).toBe(false)
       expect(response?.headers.has('X-Robots-Tag')).toBe(false)
       expect(response?.headers.has('Location')).toBe(false)
-      expect(context.cookies.get(SESSION_COOKIE)?.value).toBe(
+      expect(context.cookies.get(LEGACY_SESSION_COOKIE)?.value).toBe(
         'expired-test-session'
       )
       expect(fetcher).not.toHaveBeenCalled()
-      expect(verifySiteSession).not.toHaveBeenCalled()
     }
   )
   it.for(['/admin/content/new', '/admin/catalog-api/staging'])(
@@ -348,13 +289,6 @@ describe('provider bypass on the complete CMS middleware chain', () => {
 })
 
 describe('robots header on CMS responses', () => {
-  const review = {
-    draft: { revision_id: 2, generation: 1, items: [] },
-    live: { revision_id: 1, generation: 1, items: [] },
-    can_edit: true,
-    can_apply: false,
-    history: []
-  }
   function anonymous(path: string) {
     return createContext({
       request: new Request(`http://127.0.0.1:4329${path}`),
@@ -384,10 +318,14 @@ describe('robots header on CMS responses', () => {
     vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
     vi.stubEnv('VERCEL_ENV', '')
     vi.stubEnv('WEBSITE_INDEXABLE', '1')
-    vi.mocked(verifySiteSession).mockResolvedValue(review)
+    vi.mocked(fetch).mockImplementation(
+      vi.fn(async () => Response.json(authoringContext))
+    )
     const context = contextFor('/hub/workflows/example/')
+    context.cookies.set(AUTHORING_COOKIE, 'private-local-fixture')
+    context.cookies.set(AUTHORING_CSRF_COOKIE, 'a'.repeat(64))
     const response = await onRequest(context, page)
-    expect(context.locals.site).toBeDefined()
+    expect(context.locals.catalogAuthoring).toBeDefined()
     expect(response?.headers.get('X-Robots-Tag')).toBe('noindex, nofollow')
   })
 })

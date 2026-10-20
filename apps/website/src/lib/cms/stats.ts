@@ -18,7 +18,7 @@ export function itemStats(data: Record<string, unknown>): ItemStats {
   }
 }
 
-export type SortKey = 'name' | keyof ItemStats
+type SortKey = 'name' | keyof ItemStats
 export interface SortOrder {
   key: SortKey
   descending: boolean

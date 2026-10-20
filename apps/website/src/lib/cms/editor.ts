@@ -2,12 +2,12 @@ import type { ContentCatalogRecord } from '@comfyorg/ingest-types'
 import type { ItemStats } from './stats'
 import { itemStats } from './stats'
 
-export type Placement = 'basic' | 'advanced' | 'hidden'
+type Placement = 'basic' | 'advanced' | 'hidden'
 export type MediaKind = 'image' | 'video' | 'audio'
 type Kind = ContentCatalogRecord['kind']
 type Data = Record<string, unknown>
 
-export interface EditorExample {
+interface EditorExample {
   title: string
   description: string
   prompt: string
@@ -16,7 +16,7 @@ export interface EditorExample {
   raw: Data
 }
 
-export interface EditorParameter {
+interface EditorParameter {
   name: string
   type: string
   description: string
@@ -27,7 +27,7 @@ export interface EditorParameter {
 }
 
 /** The Hub's use-case filters, in the order the catalogue shows them. */
-export const EDITOR_USE_CASES = [
+const EDITOR_USE_CASES = [
   'generate-images',
   'edit-images',
   'generate-videos',
@@ -37,9 +37,9 @@ export const EDITOR_USE_CASES = [
   '3d',
   'audio'
 ] as const
-export type EditorUseCase = (typeof EDITOR_USE_CASES)[number]
+type EditorUseCase = (typeof EDITOR_USE_CASES)[number]
 
-export interface EditorFaq {
+interface EditorFaq {
   question: string
   answer: string
 }
@@ -77,14 +77,14 @@ const text = (value: unknown) => (typeof value === 'string' ? value : '')
 const mediaKind = (value: unknown): MediaKind =>
   value === 'video' || value === 'audio' ? value : 'image'
 
-export const HUB_SECTION: Record<Kind, string | undefined> = {
+const HUB_SECTION: Record<Kind, string | undefined> = {
   MODEL: 'models',
   WORKFLOW: 'workflows',
   APP: 'apps',
   TEMPLATE_SET: undefined
 }
 
-export function slugify(value: string) {
+function slugify(value: string) {
   return value
     .normalize('NFKD')
     .toLowerCase()

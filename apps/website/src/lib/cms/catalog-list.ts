@@ -8,7 +8,6 @@ import { USE_CASES } from '@/config/models-catalogue'
 import type { UseCase, SortOrder } from '@/config/models-catalogue'
 import { modelSchema } from '@/config/models-catalogue-data'
 import { workflowCategoryLabel } from '@/lib/workshop/workflow-category-label'
-import type { SiteSession } from './admin'
 import type { AuthoringSession } from './authoring-session'
 import { readCatalogCards } from './catalog-cards-response'
 import { catalogPresentation } from './catalog-presentation'
@@ -140,7 +139,7 @@ function listFacets(
 }
 
 export async function loadSiteCatalogList(
-  session: SiteSession | AuthoringSession | undefined,
+  session: AuthoringSession | undefined,
   locale = 'en',
   section: CatalogListSection = 'models',
   params = new URLSearchParams()
@@ -184,7 +183,7 @@ export async function loadSiteCatalogList(
 function cardsURL(
   origin: string,
   query: ListCccWebsiteCardsQuery,
-  session?: SiteSession | AuthoringSession
+  session?: AuthoringSession
 ) {
   const url = new URL(
     session ? '/admin/api/site/catalog/cards' : '/api/v1/catalog/cards',
@@ -211,7 +210,7 @@ function appendCardQuery(
 async function fetchCards(
   origin: string,
   query: ListCccWebsiteCardsQuery,
-  session?: SiteSession | AuthoringSession
+  session?: AuthoringSession
 ) {
   const url = cardsURL(origin, query, session)
   const options: RequestInit = {

@@ -159,27 +159,15 @@ carried into the table without guessing from extensionless Preview URLs.
 Author/tag/server filters remain available in a folded advanced section.
 Drawer dismissal restores keyboard focus to the row.
 
-Mar's old projection-shaped editor is retained as `LegacyContentEditor` with
-separate legacy field adapters, not substituted for the canonical authoring
-controller or its exact media pins. Her isolated sample-data sandbox remains
-behind the explicit non-production `SITE_CATALOG_DEMO` build flag; real catalog
-sessions and uploads never use it. A verified canonical session at `/admin/`
-redirects to the real Draft console. No production consumer is activated.
-
-Legacy site-session exchange (`POST /admin/session`) and verification are
-available only in the explicit in-memory demo or the existing development-only
-local tester configuration. Normal catalog use never probes the retired
-`/admin/api/site/review` endpoint or creates a legacy site cookie. Catalog
-authoring continues through its separate, freshly verified session contract.
-
-The legacy `/admin/actions` mutation handler and projection-shaped admin pages
-are sample-data-only: without `SITE_CATALOG_DEMO=1` outside production they
-return 404 before any write. Preview cookie controls remain separate. Real
+The legacy site-session admin is removed: `/admin/sign-in`, `/admin/session`,
+`/admin/testers`, `/admin/actions`, the projection-shaped admin pages and
+`LegacyContentEditor`. Cloud does not serve the site API routes they called
+(review, staging, items, submissions, publish and revert under
+`/admin/api/site/`). A verified catalog session at `/admin/` redirects to the Draft console,
+and `/admin/local-access` signs in only the loopback catalog fixture. Real
 publication uses `/admin/catalog-api/publish`, forwarding one checked selection
-and the same idempotency key to the catalog transaction; it never follows that
-write with legacy Hub approvals. A backend 409 remains a conflict, not success.
-This isolates the old multi-command design flow rather than attempting a
-non-atomic retry across the legacy Hub and catalog stores.
+and the same idempotency key to the catalog transaction. A backend 409 remains
+a conflict, not success.
 
 `scripts/check-mar-admin.ts` mounts the actual merged components with labeled
 local visual fixtures. It checks desktop/mobile English and Chinese layouts,

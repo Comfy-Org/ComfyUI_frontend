@@ -98,7 +98,7 @@ export interface PreviewChange {
   launch?: string
 }
 
-export const pageOf = (slug: string) => slug.replace(/\/?$/, '/')
+const pageOf = (slug: string) => slug.replace(/\/?$/, '/')
 
 export function previewChanges(
   changes: DraftPageChange[],

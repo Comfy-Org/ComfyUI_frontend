@@ -17,14 +17,14 @@ import { loadSiteCatalogList } from '@/lib/cms/catalog-list'
 
 const catalog = cmsEnabled()
   ? await loadSiteCatalogList(
-      Astro.locals.catalogAuthoring ?? Astro.locals.site,
+      Astro.locals.catalogAuthoring,
       Astro.locals.catalogLocale,
       'models',
       Astro.url.searchParams
     )
   : undefined
 const index = await modelsHubIndexModels(
-  Astro.locals.catalogAuthoring ?? Astro.locals.site,
+  Astro.locals.catalogAuthoring,
   Astro.locals.catalogLocale
 )
 const failure =

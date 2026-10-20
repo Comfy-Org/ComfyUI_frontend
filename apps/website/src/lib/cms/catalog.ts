@@ -2,7 +2,6 @@ import { zContentCatalogProjection } from '@comfyorg/ingest-types/zod'
 
 import { modelSchema } from '@/config/models-catalogue-data'
 import { detailSchema } from '@/config/models-page-data'
-import type { SiteSession } from './admin'
 import type { AuthoringSession } from './authoring-session'
 import { catalogPresentation } from './catalog-presentation'
 import { normalizeProjection } from './catalog-contract'
@@ -15,7 +14,7 @@ export { cmsEnabled }
 async function fetchDetail(
   origin: string,
   workflowSlug: string,
-  session?: SiteSession | AuthoringSession
+  session?: AuthoringSession
 ) {
   try {
     const url = detailURL(origin, workflowSlug, session)
@@ -38,7 +37,7 @@ async function fetchDetail(
 function detailURL(
   origin: string,
   workflowSlug: string,
-  session?: SiteSession | AuthoringSession
+  session?: AuthoringSession
 ) {
   const url = new URL(
     session ? '/admin/api/site/catalog' : '/api/v1/catalog/items',
@@ -77,7 +76,7 @@ function parseDetail(data: unknown, locale: string, preview: boolean) {
   }
 }
 export async function loadSiteCatalog(
-  session?: SiteSession | AuthoringSession,
+  session?: AuthoringSession,
   locale = 'en',
   workflowSlug?: string,
   includeRelated = true

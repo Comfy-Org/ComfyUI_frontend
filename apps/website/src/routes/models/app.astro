@@ -28,7 +28,7 @@ interface Props {
 
 const catalog = cmsEnabled()
   ? await loadSiteCatalog(
-      Astro.locals.catalogAuthoring ?? Astro.locals.site,
+      Astro.locals.catalogAuthoring,
       Astro.locals.catalogLocale,
       withoutCatalogLocalePrefix(Astro.url.pathname).replace(/\/$/, '')
     )

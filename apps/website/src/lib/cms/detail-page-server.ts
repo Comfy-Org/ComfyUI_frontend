@@ -26,7 +26,7 @@ export type CatalogDetailLoad =
  * session (Draft for verified staff, LIVE otherwise) the JSON route uses.
  */
 export async function loadCatalogDetailPage(
-  locals: Pick<APIContext['locals'], 'catalogAuthoring' | 'site'>,
+  locals: Pick<APIContext['locals'], 'catalogAuthoring'>,
   pathname: string,
   locale: DetailLocale
 ): Promise<CatalogDetailLoad> {
@@ -35,7 +35,7 @@ export async function loadCatalogDetailPage(
     .slice(hubLocalePrefix(pathname).length)
     .replace(/\/$/, '')
   const catalog = await loadSiteCatalog(
-    locals.catalogAuthoring ?? locals.site,
+    locals.catalogAuthoring,
     locale,
     canonical,
     false
@@ -115,11 +115,11 @@ export function catalogDetailHead(
  * the source-language page.
  */
 export function catalogDetailNoindex(
-  locals: Pick<APIContext['locals'], 'catalogAuthoring' | 'site'>,
+  locals: Pick<APIContext['locals'], 'catalogAuthoring'>,
   load: CatalogDetailLoad
 ): boolean {
   return (
-    Boolean(locals.catalogAuthoring ?? locals.site) ||
+    Boolean(locals.catalogAuthoring) ||
     load.status !== 'ok' ||
     !load.translated ||
     !isIndexableModelPage(load.page.model.href)

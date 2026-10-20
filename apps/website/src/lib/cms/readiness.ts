@@ -12,7 +12,7 @@ const filled = (value: unknown) =>
   typeof value === 'string' && value.trim() !== ''
 
 /** The site renders every draft item, so one it can't read breaks the whole preview. */
-export function pageRenders(record: Renderable) {
+function pageRenders(record: Renderable) {
   if (record.data.href !== `${record.slug}/`) return false
   if (!modelSchema.safeParse(record.data).success) return false
   return record.kind === 'APP' || detailSchema.safeParse(record.data).success

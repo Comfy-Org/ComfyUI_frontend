@@ -117,14 +117,8 @@ function installCmsRoutes(
 ) {
   if (!cmsEnabled()) return
   for (const [pattern, file] of [
-    ['/admin/sign-in', 'sign-in.astro'],
-    ['/admin/tester-session', 'tester-session.ts'],
-    ['/admin/testers', 'testers.astro'],
-    ['/admin/[...page]', 'index.astro'],
-    ['/admin/session', 'session.ts'],
     ['/admin/local-access', 'local-access.astro'],
     ['/admin/local-session', 'local-access.ts'],
-    ['/admin/actions', 'actions.ts'],
     ['/admin/content/new', 'content-editor.astro'],
     ['/admin/content/[uid]/edit', 'content-editor.astro'],
     ['/admin/content/[uid]/view', 'content-view.astro'],

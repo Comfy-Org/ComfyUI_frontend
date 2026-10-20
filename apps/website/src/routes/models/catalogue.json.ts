@@ -25,7 +25,7 @@ async function catalogResponse(context?: APIContext) {
   if (request instanceof Response) return request
   const { params, locale, section } = request
   const catalog = await loadSiteCatalogList(
-    context?.locals.catalogAuthoring ?? context?.locals.site,
+    context?.locals.catalogAuthoring,
     locale ?? context?.locals.catalogLocale,
     section,
     params

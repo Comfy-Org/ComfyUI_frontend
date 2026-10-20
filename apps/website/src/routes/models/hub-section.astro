@@ -23,7 +23,7 @@ if (!section)
   throw new Error(`No hub section is built at ${Astro.routePattern}`)
 const catalog = cmsEnabled()
   ? await loadSiteCatalogList(
-      Astro.locals.catalogAuthoring ?? Astro.locals.site,
+      Astro.locals.catalogAuthoring,
       Astro.locals.catalogLocale,
       section,
       Astro.url.searchParams

@@ -1,5 +1,4 @@
 import type { WorkshopModel } from '@/config/models-catalogue'
-import type { SiteSession } from './admin'
 import type { AuthoringSession } from './authoring-session'
 import { loadSiteCatalogList } from './catalog-list'
 import type { CatalogListSection } from './catalog-list'
@@ -8,7 +7,7 @@ const MAX_PAGES = 1000
 
 /** Every card of one section, read cursor by cursor from one snapshot. */
 export async function loadEverySiteCatalogCard(
-  session: SiteSession | AuthoringSession | undefined,
+  session: AuthoringSession | undefined,
   locale: string | undefined,
   section: CatalogListSection
 ) {
