@@ -28,7 +28,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
+          'size-full resize-none pr-4 font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
           'overflow-hidden hover:overflow-auto focus:overflow-auto'
         )
@@ -48,7 +48,7 @@
     >
       <div
         aria-hidden="true"
-        class="absolute inset-0 -z-10 scrollbar-gutter-stable overflow-hidden pr-3"
+        class="absolute inset-0 -z-10 scrollbar-gutter-stable overflow-hidden pr-4"
       >
         <div
           :class="
