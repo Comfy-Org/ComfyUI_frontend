@@ -253,9 +253,10 @@ function modelLinks(
   const localizedLabels = objectPresentation(d.website_model_labels_localized)[
     locale
   ]
-  const labels = Array.isArray(localizedLabels)
-    ? localizedLabels.map(objectPresentation)
-    : []
+  const labels = [
+    ...(Array.isArray(localizedLabels) ? localizedLabels : []),
+    ...(Array.isArray(d.website_model_labels) ? d.website_model_labels : [])
+  ].map(objectPresentation)
   return d.model_uids.flatMap((uid) => {
     if (typeof uid !== 'string' || !uid.trim()) return []
     const resource = resources.find(

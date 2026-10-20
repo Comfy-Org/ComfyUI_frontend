@@ -567,6 +567,59 @@ describe('native CONTENT presentation', () => {
     })
   })
 
+  it.for([
+    {
+      case: 'only the unlocalized labels',
+      locale: 'en',
+      localized: undefined,
+      expected: { name: 'Flux.1 Dev', href: '/hub/models/flux-1-dev/' }
+    },
+    {
+      case: 'localized labels for another locale only',
+      locale: 'zh-CN',
+      localized: { ja: [{ uid: 'linked-model', title: 'Flux 日本語' }] },
+      expected: { name: 'Flux.1 Dev', href: '/zh-CN/hub/models/flux-1-dev/' }
+    },
+    {
+      case: 'localized labels for the page locale',
+      locale: 'ja',
+      localized: {
+        ja: [
+          {
+            uid: 'linked-model',
+            title: 'Flux 日本語',
+            href: '/hub/models/flux-1-dev'
+          }
+        ]
+      },
+      expected: { name: 'Flux 日本語', href: '/ja/hub/models/flux-1-dev/' }
+    }
+  ])(
+    'links a model on a detail read from $case',
+    ({ locale, localized, expected }) => {
+      const detail = {
+        ...record,
+        data: {
+          ...record.data,
+          model_uids: ['linked-model'],
+          website_model_labels: [
+            {
+              uid: 'linked-model',
+              title: 'Flux.1 Dev',
+              href: '/hub/models/flux-1-dev/'
+            }
+          ],
+          ...(localized ? { website_model_labels_localized: localized } : {})
+        }
+      }
+      expect(
+        catalogPresentation(detail, locale, false, [detail])
+      ).toMatchObject({
+        catalogDetails: { models: [{ uid: 'linked-model', ...expected }] }
+      })
+    }
+  )
+
   it('omits empty text and incomplete FAQ pairs, retaining zero and false', () => {
     const empty = {
       ...record,
