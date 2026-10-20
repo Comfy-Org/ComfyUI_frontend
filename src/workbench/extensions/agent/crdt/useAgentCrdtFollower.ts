@@ -18,6 +18,7 @@ import type { AgentGraphProjectionStage } from '@/platform/telemetry/types'
 import { api } from '@/scripts/api'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import {
@@ -402,8 +403,11 @@ function startAgentCrdtFollower(
       connected.value = false
     }
   )
-  const ownActor = (): string =>
-    `human:${userId() ?? 'anonymous'}:${api.clientId ?? ''}`
+  // Wire identity: the host rebuilds the expected actor from the frame's tab,
+  // so both must stay fixed for this follower's lifetime. `api.clientId` is
+  // reassigned on every reconnect and is for diagnostics only.
+  const tabId = createUuidv4()
+  const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
@@ -504,9 +508,7 @@ function startAgentCrdtFollower(
     // Send REALITY, not this composable's intent: the sender re-reads it before
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
-    get tab() {
-      return api.clientId ?? ''
-    },
+    tab: tabId,
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: settleHumanOps
@@ -1024,7 +1026,7 @@ function startAgentCrdtFollower(
   const debugSnapshot = (): CrdtDebugSnapshot =>
     readCrdtSnapshot(bridge.follower.doc, {
       status: status.value,
-      tabId: api.clientId ?? null,
+      tabId,
       lastSeq: bridge.lastSequence,
       schemaError: bridge.lastSchemaError?.message ?? null
     })

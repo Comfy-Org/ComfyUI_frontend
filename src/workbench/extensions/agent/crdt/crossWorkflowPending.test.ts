@@ -84,6 +84,7 @@ const apiState = vi.hoisted(() => {
   return {
     target,
     api: {
+      clientId: undefined as string | undefined,
       socket: { readyState: 1, send: vi.fn() },
       addCustomEventListener: vi.fn(),
       removeCustomEventListener: vi.fn(),
@@ -198,6 +199,7 @@ beforeEach(() => {
   clientState.sent = []
   clientState.sendOps.mockClear()
   devLogState.recordDevEvent.mockClear()
+  apiState.api.clientId = undefined
   vi.useFakeTimers()
 })
 
@@ -467,6 +469,39 @@ describe('a human edit made while the document connection is down', () => {
       op: 'delete_node',
       node_id: 'edited-during-outage'
     })
+  })
+
+  // The host refuses a batch whose actor is not human:<user>:<frame tab>.
+  // Cloud reassigns api.clientId on every reconnect, so wire identity must not
+  // follow it.
+  it('keeps the minted actor paired with the wire tab when the session id changes before a retry', async () => {
+    apiState.api.clientId = 'sid-before-reconnect'
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersToNextTimer()
+    const firstTab = clientState.attempts[0].tab
+
+    apiState.api.clientId = 'sid-after-reconnect'
+    clientState.transportUp = true
+    vi.advanceTimersToNextTimer()
+
+    expect(clientState.sent).toHaveLength(1)
+    const [retried] = clientState.sent
+    expect(retried.tab).toBe(firstTab)
+    expect(retried.ops[0].actor).toBe(`human:anonymous:${retried.tab}`)
+  })
+
+  it('sends a valid wire identity before the first session id arrives', async () => {
+    const { enqueue } = mountFollower('wf-a')
+
+    await enqueue([deleteNode('edited-before-status')])
+
+    expect(clientState.sent).toHaveLength(1)
+    const [sent] = clientState.sent
+    expect(sent.tab).not.toBe('')
+    expect(sent.ops[0].actor).toBe(`human:anonymous:${sent.tab}`)
   })
 
   it('does not resend an acknowledged retry on a later reconnect', async () => {

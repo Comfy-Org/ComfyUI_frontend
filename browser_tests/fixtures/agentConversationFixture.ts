@@ -804,6 +804,12 @@ export class AgentConversationHarness {
     return this.hostSocket.subscribeCount()
   }
 
+  // Closes the routed /ws from the host side; the app reconnects on its own and
+  // receives a fresh session id, as it does on Cloud.
+  async dropConnection(): Promise<void> {
+    await this.hostSocket.disconnect()
+  }
+
   async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {
     await this.hostSocket.disconnect()
     for (const entry of this.conversation.turns[turn].response) {

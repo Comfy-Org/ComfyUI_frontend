@@ -61,6 +61,7 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
       type: 'doc_ops',
       data: {
         workflow_id: WORKFLOW_ID,
+        tab: 'tab-1',
         // Missing `op_id`: fails the envelope check `parseWireOps` runs.
         ops: [{ op: 'add_node' }]
       }
@@ -96,6 +97,7 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
       type: 'doc_ops',
       data: {
         workflow_id: WORKFLOW_ID,
+        tab: 'tab-1',
         ops: [
           {
             op: 'add_node',
@@ -137,6 +139,51 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
   })
 
   it.for([
+    { label: 'a missing tab', tab: undefined, actor: 'human:test-user:tab-1' },
+    {
+      label: 'an actor minted for another tab',
+      tab: 'tab-2',
+      actor: 'human:test-user:tab-1'
+    }
+  ])(
+    'refuses a doc_ops batch with $label before applyWire runs',
+    async ({ tab, actor }) => {
+      const host = new HostDoc(
+        WORKFLOW_ID,
+        { nodes: [], links: [] },
+        { types: {} }
+      )
+      const { page, emitClientFrame, sentFrames } = fakeRoutedPage()
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        WORKFLOW_ID,
+        host,
+        'sid-1',
+        'apply'
+      )
+      await hostSocket.install()
+
+      emitClientFrame({
+        type: 'doc_ops',
+        data: {
+          workflow_id: WORKFLOW_ID,
+          tab,
+          ops: [{ ...validOp('a'.repeat(32), 1), actor, stamp: [1, actor] }]
+        }
+      })
+
+      expect(hostSocket.humanOpOutcomes()).toEqual([])
+      expect(sentFrames().at(-1)).toEqual({
+        type: 'doc_ops_result',
+        data: expect.objectContaining({
+          ok: false,
+          code: tab === undefined ? 'invalid_frame' : 'forbidden'
+        })
+      })
+    }
+  )
+
+  it.for([
     { label: 'an omitted ops field', ops: undefined },
     { label: 'an empty ops batch', ops: [] },
     {
@@ -163,7 +210,7 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
 
       emitClientFrame({
         type: 'doc_ops',
-        data: { workflow_id: WORKFLOW_ID, ops }
+        data: { workflow_id: WORKFLOW_ID, tab: 'tab-1', ops }
       })
 
       expect(hostSocket.humanOpOutcomes()).toEqual([])
