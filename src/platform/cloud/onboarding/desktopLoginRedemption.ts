@@ -151,6 +151,13 @@ async function redeemCode(code: string): Promise<void> {
     await redeemAccountCode(code, state)
     return
   }
+  await redeemFirebaseCode(code, state)
+}
+
+async function redeemFirebaseCode(
+  code: string,
+  state: CodeRedemptionState
+): Promise<void> {
   if (settledForSsoSession(code, state)) return
 
   const user = useAuthStore().currentUser
