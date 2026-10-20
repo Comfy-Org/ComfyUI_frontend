@@ -6,7 +6,8 @@ import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
-  AgentEventTransport
+  AgentEventTransport,
+  CanvasSyncEvidence
 } from '../../services/agent/agentEventTransport'
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
 import type {
@@ -253,7 +254,7 @@ export const useAgentConversationStore = defineStore(
     // that already exist -- passing the variable itself would freeze each
     // transport onto whichever function this variable held at its own
     // creation time.
-    let canvasSyncGate: () => boolean = () => false
+    let canvasSyncGate: (_workflowId?: string) => boolean = () => false
     // PM-1575: mirrors canvasSyncGate above, for the monotonic doc-update
     // outcome counter a transport compares its per-tool-call baseline
     // against (agentEventTransport.ts's canvasSyncBaseline). Same
@@ -510,7 +511,7 @@ export const useAgentConversationStore = defineStore(
         transport: createAgentEventTransport(
           message,
           replaceActive,
-          () => canvasSyncGate(),
+          (workflowId) => canvasSyncGate(workflowId),
           () => canvasSyncOutcomeCount(),
           reportUndeliverableAskData
         )
@@ -644,7 +645,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function setCanvasSyncGate(
-      gate: () => boolean,
+      gate: (_workflowId?: string) => boolean,
       outcomeCount: () => number = () => 0
     ): void {
       canvasSyncGate = gate
@@ -658,15 +659,15 @@ export const useAgentConversationStore = defineStore(
      * catch-up can settle to 'done'. A no-op on a transport with nothing
      * pending.
      */
-    function notifyCanvasCaughtUp(): void {
-      activeSlot.value?.transport.notifyCanvasCaughtUp()
+    function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
+      activeSlot.value?.transport.notifyCanvasCaughtUp(evidence)
       for (const settledTransport of settledActiveTransports) {
-        settledTransport.notifyCanvasCaughtUp()
+        settledTransport.notifyCanvasCaughtUp(evidence)
         if (!settledTransport.hasPendingCanvasSync())
           settledActiveTransports.delete(settledTransport)
       }
       for (const entry of backgroundTurns.values())
-        entry.transport.notifyCanvasCaughtUp()
+        entry.transport.notifyCanvasCaughtUp(evidence)
     }
 
     function abortActiveTurn(): void {
@@ -1147,7 +1148,7 @@ export const useAgentConversationStore = defineStore(
           transport: createAgentEventTransport(
             pending.message,
             replaceActive,
-            () => canvasSyncGate(),
+            (workflowId) => canvasSyncGate(workflowId),
             () => canvasSyncOutcomeCount(),
             reportUndeliverableAskData
           )
