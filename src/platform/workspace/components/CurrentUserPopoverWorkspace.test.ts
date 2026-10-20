@@ -251,7 +251,7 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     await user.tab()
     expect(screen.getByTestId('workspace-switcher-trigger')).toHaveFocus()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
       'Team Workspace'
     )
 
@@ -327,7 +327,9 @@ describe('CurrentUserPopoverWorkspace', () => {
     await user.hover(screen.getByTestId('workspace-switcher-trigger'))
 
     await waitFor(() => {
-      expect(screen.getByRole('tooltip')).toHaveTextContent('Team Workspace')
+      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+        'Team Workspace'
+      )
     })
   })
 
