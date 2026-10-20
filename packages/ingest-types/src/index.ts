@@ -436,6 +436,8 @@ export type {
   DocOpsResultFrame,
   DocResetData,
   DocResetFrame,
+  DocSubscribedData,
+  DocSubscribedFrame,
   DocUpdateData,
   DocUpdateFrame,
   DownloadExportData,
