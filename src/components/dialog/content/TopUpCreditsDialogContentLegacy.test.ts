@@ -99,7 +99,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     vi.spyOn(window, 'open').mockImplementation(() => window)
   })
 
-  it('explains the Cloud plan requirement before continuing to payment', () => {
+  it('explains the Cloud plan requirement before continuing to payment', async () => {
     useBillingContext().canAccessSubscriptionFeatures = computed(() => false)
     renderDialog({ source: 'deep_link' })
 
@@ -111,6 +111,12 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     expect(
       screen.getByRole('button', { name: 'Continue to payment' })
     ).toBeEnabled()
+    await clickBuyCredits()
+
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+      key: 'top-up-credits'
+    })
     expect(useAuthStore().initiateCreditPurchase).not.toHaveBeenCalled()
   })
 
