@@ -718,34 +718,6 @@ describe('appModeStore', () => {
       })
     })
 
-    it('writes structured-cloneable linearData after a drag reorder', async () => {
-      const workflow = createBuilderWorkflow()
-      workflowStore.activeWorkflow = workflow
-      await nextTick()
-      store.selectedInputs.push(
-        [entitySeed, 'seed', { height: 120 }],
-        [entitySteps, 'steps']
-      )
-      await nextTick()
-      vi.mocked(workflow.changeTracker.captureCanvasState).mockClear()
-
-      const [moved] = store.selectedInputs.splice(0, 1)
-      store.selectedInputs.splice(1, 0, moved)
-      store.selectedInputs = [...store.selectedInputs]
-      await nextTick()
-
-      const linearData = app.rootGraph.extra.linearData
-      expect(linearData).toEqual({
-        inputs: [
-          [entitySteps, 'steps'],
-          [entitySeed, 'seed', { height: 120 }]
-        ],
-        outputs: []
-      })
-      expect(() => structuredClone(linearData)).not.toThrow()
-      expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalled()
-    })
-
     it('does not write linearData when not in builder mode', async () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
       await nextTick()

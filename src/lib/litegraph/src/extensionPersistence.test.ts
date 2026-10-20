@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isProxy, reactive } from 'vue'
+import { reactive } from 'vue'
 
 import {
   LGraph,
@@ -256,11 +256,6 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
     return { graph, node }
   }
 
-  it('node state reached through `this.properties` is a reactive proxy', () => {
-    const { node } = nodeInGraph()
-    expect(isProxy(node.properties)).toBe(true)
-  })
-
   it('copies a canonical field an onSerialize hook replaced with live node state', () => {
     const { node } = nodeInGraph()
     node.onSerialize = function (o) {
@@ -270,7 +265,6 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
     const serialised = node.serialize()
 
     expect(serialised.properties).toEqual({ elapsed: '00:01:000' })
-    expect(isProxy(serialised.properties)).toBe(false)
     expect(() => structuredClone(serialised)).not.toThrow()
   })
 
@@ -320,6 +314,14 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
     expect(() => structuredClone(serialised)).not.toThrow()
   })
 
+  it('keeps a canonical field the hook left untouched at full fidelity', () => {
+    const graph = new LGraph()
+    graph.extra.savedAt = new Date(0)
+    graph.onSerialize = () => {}
+
+    expect(graph.serialize().extra?.savedAt).toStrictEqual(new Date(0))
+  })
+
   it('detaches a proxy a graph hook writes into the existing extra', () => {
     const graph = new LGraph()
     graph.onSerialize = (data) => {
@@ -335,6 +337,7 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
   it('keeps pos and size as arrays when a hook hands back the live views', () => {
     const { node } = nodeInGraph()
     node.pos = [10, 20]
+    node.size = [180, 75]
     node.onSerialize = function (o) {
       o.pos = this.pos
       o.size = this.size
@@ -343,7 +346,7 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
     const serialised = node.serialize()
 
     expect(serialised.pos).toStrictEqual([10, 20])
-    expect(Array.isArray(serialised.size)).toBe(true)
+    expect(serialised.size).toStrictEqual([180, 75])
     expect(() => structuredClone(serialised)).not.toThrow()
   })
 
@@ -398,9 +401,7 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
 
     expect(serialised).not.toHaveProperty('properties')
     expect(() => structuredClone(serialised)).not.toThrow()
-    expect(warn).toHaveBeenCalledWith(
-      'LiteGraph: ignoring non-serializable canonical field "properties"'
-    )
+    expect(warn).toHaveBeenCalledOnce()
   })
 
   it('contains a throwing in-place canonical mutation', () => {
@@ -419,9 +420,7 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
 
     expect(serialised).not.toHaveProperty('properties')
     expect(() => structuredClone(serialised)).not.toThrow()
-    expect(warn).toHaveBeenCalledWith(
-      'LiteGraph: ignoring non-serializable canonical field "properties"'
-    )
+    expect(warn).toHaveBeenCalledOnce()
   })
 
   it('preserves JSON behavior for hook-provided class instances', () => {

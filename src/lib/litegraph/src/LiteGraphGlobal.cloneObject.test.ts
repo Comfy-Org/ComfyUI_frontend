@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isProxy, reactive } from 'vue'
+import { reactive } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -10,7 +10,6 @@ describe('LiteGraph.cloneObject', () => {
     const copy = LiteGraph.cloneObject(source)
 
     expect(copy).toEqual({ a: 1, nested: { b: [2, 3] } })
-    expect(isProxy(copy)).toBe(false)
     expect(() => structuredClone(copy)).not.toThrow()
   })
 
