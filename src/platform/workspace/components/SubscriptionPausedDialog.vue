@@ -1,5 +1,10 @@
 <template>
-  <AppDialogPanel size="compact" class="w-90 max-w-full" @close="onClose">
+  <AppDialogPanel
+    size="compact"
+    class="w-90 max-w-full"
+    data-testid="subscription-paused-dialog"
+    @close="onClose"
+  >
     <template #title>
       {{ $t(titleKey) }}
     </template>

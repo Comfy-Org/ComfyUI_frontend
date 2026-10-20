@@ -31,11 +31,8 @@ describe('ManagerSurveyDialog', () => {
   })
 
   it('keeps its fixed width in every state', () => {
-    // oxlint-disable-next-line testing-library/no-container
-    const { container } = renderDialog()
-    // oxlint-disable-next-line testing-library/no-node-access -- the panel root has no role; its width is the behavior under test
-    const panel = container.firstElementChild
-    // tailwind-merge keeps `w-full` next to `w-lg`; Tailwind emits `w-lg` later, so it wins
+    renderDialog()
+    const panel = screen.getByTestId('manager-survey-dialog')
     expect(panel).toHaveClass('w-lg', 'max-w-full')
     expect(panel).not.toHaveClass('max-w-lg')
   })

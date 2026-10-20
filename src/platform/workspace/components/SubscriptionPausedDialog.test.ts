@@ -40,19 +40,17 @@ function renderDialog(
 ) {
   const onClose = vi.fn()
   const onUpdatePayment = vi.fn()
-  const { container } = render(SubscriptionPausedDialog, {
+  render(SubscriptionPausedDialog, {
     props: { canManage, status, isUpdatingPayment, onClose, onUpdatePayment },
     global: { plugins: [i18n] }
   })
-  return { container, onClose, onUpdatePayment }
+  return { onClose, onUpdatePayment }
 }
 
 describe('SubscriptionPausedDialog', () => {
   it('keeps its fixed compact width inside a fit-content dialog', () => {
-    // oxlint-disable-next-line testing-library/no-container
-    const { container } = renderDialog(true)
-    // oxlint-disable-next-line testing-library/no-node-access -- the panel root has no role; its width is the behavior under test
-    const panel = container.firstElementChild
+    renderDialog(true)
+    const panel = screen.getByTestId('subscription-paused-dialog')
     expect(panel).toHaveClass('w-90', 'max-w-full')
     expect(panel).not.toHaveClass('w-full')
   })

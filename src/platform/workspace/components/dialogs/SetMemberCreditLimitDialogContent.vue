@@ -2,6 +2,7 @@
   <AppDialogPanel
     body-class="flex flex-col gap-6 text-sm"
     class="w-lg max-w-full"
+    data-testid="set-member-credit-limit-dialog"
     @close="onClose"
   >
     <template #title>
