@@ -44,14 +44,15 @@ export async function waitForCanvasViewToSettle(page: Page): Promise<void> {
 export class CanvasHelper {
   constructor(
     private page: Page,
-    private canvas: Locator,
-    private resetViewButton: Locator
+    private canvas: Locator
   ) {}
 
   async resetView(): Promise<void> {
-    if (await this.resetViewButton.isVisible()) {
-      await this.resetViewButton.click()
-    }
+    await this.page.evaluate(async () => {
+      const { setting, command } = window.app!.extensionManager
+      if (setting.get('Comfy.UseNewMenu') === 'Disabled')
+        await command.execute('Comfy.Canvas.ResetView')
+    })
     await this.page.mouse.move(10, 10)
     await nextFrame(this.page)
   }

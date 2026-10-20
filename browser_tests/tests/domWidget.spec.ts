@@ -31,6 +31,7 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
     'Position update when entering focus mode',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      await comfyPage.setFocusMode(false)
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
       await expect(comfyPage.menu.sideToolbar).toBeHidden()

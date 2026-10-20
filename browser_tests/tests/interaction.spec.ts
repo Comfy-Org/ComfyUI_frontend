@@ -18,12 +18,7 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 async function graphItemsRegion(comfyPage: ComfyPage) {
-  const region = await screenshotRegion([graphItems(comfyPage.page, 'all')])
-  const legacyMenu = await comfyPage.page.locator('.comfy-menu').boundingBox()
-  if (!legacyMenu || region.x + region.width <= legacyMenu.x) return region
-  const width = Math.floor(legacyMenu.x) - region.x
-  if (width <= 0) throw new Error('Graph items are hidden behind the menu')
-  return { ...region, width }
+  return screenshotRegion([graphItems(comfyPage.page, 'all')])
 }
 
 async function textEncodeNodesRegion(comfyPage: ComfyPage) {
@@ -42,14 +37,6 @@ async function clipLinksRegion(
     ...extraPoints
   ])
 }
-
-test.beforeEach(async ({ comfyPage, initialSettings }) => {
-  // Wait for the legacy menu to appear and canvas to settle after layout shift.
-  if (initialSettings['Comfy.UseNewMenu'] === 'Disabled') {
-    await comfyPage.page.locator('.comfy-menu').waitFor({ state: 'visible' })
-  }
-  await comfyPage.nextFrame()
-})
 
 test.describe('Item Interaction', { tag: ['@node'] }, () => {
   test(
@@ -975,7 +962,6 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
   })
 
   test('@mobile Can pan with touch', async ({ comfyPage }) => {
-    await comfyPage.closeMenu()
     await comfyPage.canvasOps.moveMouseToEmptyArea()
     await comfyPage.canvasOps.panWithTouch({ x: 200, y: 200 })
     await expect(comfyPage.canvas).toHaveScreenshot('panned-touch.png')
@@ -1257,10 +1243,11 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
 })
 
 test.describe('Load duplicate workflow', () => {
+  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
+
   test('A workflow can be loaded multiple times in a row', async ({
     comfyPage
   }) => {
-    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     await comfyPage.menu.workflowsTab.open()
     await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')

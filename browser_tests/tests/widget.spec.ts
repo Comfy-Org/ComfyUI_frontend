@@ -25,7 +25,6 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
       'load-checkpoint-resized-min-width.png',
       { clip: await screenshotRegion([loadCheckpoint]) }
     )
-    await comfyPage.closeMenu()
     await comfyPage.nodeOps.resizeNode(
       DefaultGraphPositions.ksampler.pos,
       DefaultGraphPositions.ksampler.size,

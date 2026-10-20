@@ -195,7 +195,6 @@ export class ComfyPage {
   public readonly widgetTextBox: Locator
 
   // Buttons
-  public readonly resetViewButton: Locator
   public readonly queueButton: Locator // Run button in Legacy UI
   public readonly runButton: Locator // Run button (renamed "Queue" -> "Run")
 
@@ -255,7 +254,6 @@ export class ComfyPage {
     this.canvas = page.locator('#graph-canvas')
     this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
-    this.resetViewButton = page.getByRole('button', { name: 'Reset View' })
     this.queueButton = page.getByRole('button', { name: 'Queue Prompt' })
     this.runButton = page.getByTestId(TestIds.topbar.queueButton)
     this.workflowUploadInput = page.locator('#comfy-file-input')
@@ -273,7 +271,7 @@ export class ComfyPage {
     this.vueNodes = new VueNodeHelpers(page)
     this.appMode = new AppModeHelper(this)
     this.subgraph = new SubgraphHelper(this)
-    this.canvasOps = new CanvasHelper(page, this.canvas, this.resetViewButton)
+    this.canvasOps = new CanvasHelper(page, this.canvas)
     this.nodeOps = new NodeOperationsHelper(this)
     this.settings = new SettingsHelper(page)
     this.keyboard = new KeyboardHelper(page, this.canvas)
@@ -365,11 +363,13 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
+    closeLegacyMenu = false,
     initialLocalStorage = {},
     mockReleases = true,
     url
   }: {
     clearStorage?: boolean
+    closeLegacyMenu?: boolean
     initialLocalStorage?: Record<string, string>
     mockReleases?: boolean
     url?: string
@@ -408,6 +408,7 @@ export class ComfyPage {
 
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.waitForAppReady()
+    if (closeLegacyMenu) await this.closeMenu()
   }
 
   /**
@@ -731,6 +732,7 @@ export const comfyPageFixture = base.extend<{
       }
 
       await comfyPage.setup({
+        closeLegacyMenu: initialSettings['Comfy.UseNewMenu'] === 'Disabled',
         initialLocalStorage,
         url: initialUrl,
         mockReleases
