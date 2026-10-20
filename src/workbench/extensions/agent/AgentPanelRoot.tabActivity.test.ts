@@ -5,6 +5,7 @@ import type {
   AgentThreadListResponse,
   AgentThreadSummary
 } from '@comfyorg/ingest-types'
+import type { User } from 'firebase/auth'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,14 +23,19 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useAuthStore } from '@/stores/authStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
+import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import type { AgentMessages } from './schemas/agentApiSchema'
 import { zAgentMessages } from './schemas/agentApiSchema'
+import { createAgentEventSource } from './services/agent/agentEventSource'
+import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { registerWorkflowTabActivityTracker } from './services/agent/workflowTabActivityTracker'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
@@ -50,10 +56,6 @@ const ws = vi.hoisted(() => {
     },
     remove(type: string, listener: Listener): void {
       listeners.get(type)?.delete(listener)
-    },
-    emit(type: string, data?: unknown): void {
-      const event = new CustomEvent(type, { detail: data })
-      for (const listener of listeners.get(type) ?? []) listener(event)
     },
     clear(): void {
       listeners.clear()
@@ -119,10 +121,13 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
 })
+vi.mock(import('./services/agent/agentEventSource'), { spy: true })
+vi.mock(import('./services/agent/agentIdentity'), { spy: true })
 
 const runningTab = 'workflows/current.json'
 const otherTab = 'workflows/other.json'
 
+let agentSocket: ReturnType<typeof createFakeAgentSocket>
 let workflowStore: ReturnType<typeof useWorkflowStore>
 let stopTracker: () => void
 let transcripts: Partial<Record<string, AgentMessages>> = {}
@@ -229,7 +234,7 @@ async function openChat(title: string, threadId: string): Promise<void> {
 }
 
 function emitRunApproval(): void {
-  ws.emit('agent_ask', {
+  agentSocket.receive('agent_ask', {
     thread_id: 'th-1',
     message_id: 'm-1',
     ask_id: 'm-1:call-1',
@@ -246,7 +251,10 @@ function emitRunApproval(): void {
 }
 
 function emitDone(): void {
-  ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+  agentSocket.receive('agent_message_done', {
+    message_id: 'm-1',
+    thread_id: 'th-1'
+  })
 }
 
 function userRow(threadId: string, workflowId?: string) {
@@ -284,6 +292,17 @@ function tabActivity() {
 beforeEach(() => {
   vi.useRealTimers()
   ws.clear()
+  agentSocket = createFakeAgentSocket()
+  vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
+  vi.mocked(resolveAgentIdentity).mockReturnValue({
+    state: ref<AgentIdentityState>({ status: 'resolved', userId: 'account-a' }),
+    reset: vi.fn(),
+    stop: () => {}
+  })
+  useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
+  vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
+    Authorization: 'Bearer id-token'
+  })
   localStorage.clear()
   localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
   transcripts = {}
@@ -426,7 +445,10 @@ describe('AgentPanelRoot tab activity across chats', () => {
     expect([...tabActivity().unseenModifiedPaths]).toEqual([runningTab])
     expect(useAgentConversationStore().threadId).toBe('th-3')
 
-    ws.emit('agent_message_done', { message_id: 'm-2', thread_id: 'th-2' })
+    agentSocket.receive('agent_message_done', {
+      message_id: 'm-2',
+      thread_id: 'th-2'
+    })
     await nextTick()
 
     expect([...tabActivity().editingPaths]).toEqual([])
@@ -461,7 +483,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
       if (chat === 'background') await openChat('Other chat', 'th-2')
       expect([...tabActivity().editingPaths]).toEqual([runningTab])
 
-      ws.emit(
+      agentSocket.receive(
         'agent_message_done',
         frame === 'done'
           ? { message_id: 'm-1', thread_id: 'th-1' }
@@ -526,7 +548,10 @@ describe('AgentPanelRoot tab activity across chats', () => {
         })
     )
 
-    ws.emit('agent_active_tab', { workflow_id: 'wf-other', thread_id: 'th-1' })
+    agentSocket.receive('agent_active_tab', {
+      workflow_id: 'wf-other',
+      thread_id: 'th-1'
+    })
     await vi.waitFor(() =>
       expect(useWorkflowService().openWorkflow).toHaveBeenCalled()
     )
@@ -577,7 +602,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
       if (switchAfter) await openChat('Other chat', 'th-2')
       expect([...tabActivity().awaitingApprovalPaths]).toEqual([runningTab])
 
-      ws.emit('agent_ask_resolved', {
+      agentSocket.receive('agent_ask_resolved', {
         thread_id: 'th-1',
         message_id: 'm-1',
         ask_id: 'm-1:call-1',
@@ -699,7 +724,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
     await screen.findByRole('button', { name: 'Send' })
     await send('second')
 
-    ws.emit('agent_active_tab', {
+    agentSocket.receive('agent_active_tab', {
       workflow_id: 'wf-other',
       thread_id: 'th-1',
       message_id: 'm-1'

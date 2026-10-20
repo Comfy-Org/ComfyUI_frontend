@@ -4,9 +4,9 @@
       <button
         :class="
           cn(
-            'absolute top-[calc(var(--workflow-tabs-height)+16px)] left-4 z-1000 inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border-none py-2 pr-2 pl-3 shadow-interface transition-colors',
-            'bg-secondary-background hover:bg-secondary-background-hover',
-            'data-[state=open]:bg-secondary-background-hover'
+            'absolute top-[calc(var(--workflow-tabs-height)+16px)] left-4 z-1000 inline-flex h-10 cursor-pointer items-center gap-2.5 rounded-lg border-none py-2 pr-2 pl-3 shadow-md transition-colors',
+            'bg-secondary hover:bg-accent',
+            'data-[state=open]:bg-muted'
           )
         "
         :aria-label="t('linearMode.appModeToolbar.appBuilder')"

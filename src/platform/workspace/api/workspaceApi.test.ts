@@ -635,6 +635,12 @@ describe('workspaceApi', () => {
           can_change_seats: true,
           can_invite_members: true,
           can_manage_members: true,
+          can_delete_workspace: false,
+          can_leave_workspace: false,
+          can_manage_billing: false,
+          can_manage_partner_node_access: false,
+          can_view_pending_invites: false,
+          can_view_team_usage: false,
           can_downgrade_to_personal: false
         }
       }
@@ -647,6 +653,19 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.get).toHaveBeenCalledWith(
         '/api/billing/capabilities',
         { headers: AUTH_HEADER, timeout: 10_000, signal: controller.signal }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('getBillingAutoReload() sends GET /billing/auto-reload with a 10 second timeout', async () => {
+      const data = { status: 'off' }
+      mockAxiosInstance.get.mockResolvedValue({ data })
+
+      const result = await workspaceApi.getBillingAutoReload()
+
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/auto-reload',
+        { headers: AUTH_HEADER, timeout: 10_000 }
       )
       expect(result).toEqual(data)
     })
@@ -1012,9 +1031,29 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/payment-portal',
         { return_url: 'https://app.com/settings' },
-        { headers: AUTH_HEADER }
+        { headers: AUTH_HEADER, timeout: 30_000 }
       )
       expect(result).toEqual(data)
+    })
+
+    it('getPaymentPortalUrl() asks for the payment-method update flow when named', async () => {
+      mockAxiosInstance.post.mockResolvedValue({
+        data: { url: 'https://stripe.com/portal' }
+      })
+
+      await workspaceApi.getPaymentPortalUrl(
+        'https://app.com/settings',
+        'payment_method_update'
+      )
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/payment-portal',
+        {
+          return_url: 'https://app.com/settings',
+          flow_type: 'payment_method_update'
+        },
+        { headers: AUTH_HEADER, timeout: 30_000 }
+      )
     })
 
     it('createTopup() sends POST with amount_cents and idempotency_key', async () => {

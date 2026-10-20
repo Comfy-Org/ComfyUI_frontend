@@ -23,7 +23,7 @@
         <Button
           variant="primary"
           :size
-          class="shrink-0 rounded-l-none border-0 border-l border-solid border-border-subtle px-3"
+          class="shrink-0 rounded-l-none border-0 border-l border-solid border-border/50 px-3"
           :disabled="isUpdating || !enabledPacks.length"
           :aria-label="$t('manager.updateOptions')"
         >

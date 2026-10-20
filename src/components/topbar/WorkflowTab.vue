@@ -28,7 +28,7 @@
             <i
               v-else-if="workflowOption.workflow.initialMode === 'app'"
               data-testid="workflow-mode-icon"
-              class="icon-[lucide--panels-top-left] bg-primary-background"
+              class="icon-[lucide--panels-top-left] bg-primary"
             />
           </template>
           <WorkflowAgentTargetIndicator
@@ -51,20 +51,20 @@
               v-if="isAgentAwaitingApproval"
               role="img"
               :aria-label="t('g.agentNeedsApproval')"
-              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-warning-background"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-warning"
             />
             <i
               v-else-if="isAgentEditing"
               role="img"
               :aria-label="t('g.agentWorking')"
-              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 motion-safe:animate-spin"
+              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-muted-foreground motion-safe:animate-spin"
             />
             <span
               v-else-if="showUnseenAgentDot"
               role="img"
               :aria-label="t('g.agentModified')"
               data-testid="agent-modified-indicator"
-              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary"
             />
             <i
               v-else-if="workflowStatus"
@@ -83,7 +83,7 @@
               :class="
                 cn(
                   'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
-                  isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
+                  isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
                 )
               "
             />
@@ -92,7 +92,7 @@
         <Button
           :class="
             cn(
-              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-smoke-800 group-focus-within/tab:visible',
+              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-muted-foreground group-focus-within/tab:visible',
               closeButtonVisibility,
               revealsCloseOnHover && 'group-hover/tab:visible'
             )
@@ -244,9 +244,9 @@ const showModeIcon = computed(() => !compact || isActiveTab.value)
 
 const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
   running:
-    'text-base-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
-  completed: 'icon-[lucide--circle-check] text-success-background',
-  failed: 'icon-[lucide--octagon-alert] text-destructive-background'
+    'text-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
+  completed: 'icon-[lucide--circle-check] text-success',
+  failed: 'icon-[lucide--octagon-alert] text-destructive'
 }
 
 const tabActivity = useWorkflowTabActivityStore()

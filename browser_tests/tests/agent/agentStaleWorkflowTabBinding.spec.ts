@@ -1,5 +1,4 @@
 import { expect } from '@playwright/test'
-import type { WebSocketRoute } from '@playwright/test'
 
 import type {
   AgentMessage,
@@ -18,6 +17,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
@@ -72,38 +72,12 @@ test.describe(
         ] as const
       )
 
-      let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(/\/ws/, (ws) => {
-        socket = ws
-        ws.onMessage((raw) => {
-          const frame: unknown = JSON.parse(raw.toString())
-          if (typeof frame !== 'object' || frame === null) return
-          const { type, data } = frame as { type?: unknown; data?: unknown }
-          if (
-            type !== 'doc_subscribe' ||
-            typeof data !== 'object' ||
-            data === null
-          )
-            return
-          const { workflow_id, state_vector_b64 } = data as {
-            workflow_id?: unknown
-            state_vector_b64?: unknown
-          }
-          if (
-            workflow_id !== staleWorkflowId ||
-            typeof state_vector_b64 !== 'string'
-          )
-            return
-          ws.send(JSON.stringify(host.subscribed()))
-          ws.send(JSON.stringify(host.catchUp(state_vector_b64)))
-        })
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: { status: { exec_info: { queue_remaining: 0 } } }
-          })
-        )
-      })
+      const hostSocket = new AgentFollowerHostSocket(
+        page,
+        staleWorkflowId,
+        host
+      )
+      await hostSocket.install()
 
       const history: AgentMessage[] = [
         {
@@ -223,7 +197,6 @@ test.describe(
         enMessages.agent.targetWorkflowUnavailable
       )
       await expect(unavailable).toBeVisible()
-      if (!socket) throw new Error('the app never opened /ws')
 
       const workflowPicker = panel.getByRole('button', {
         name: enMessages.agent.switchWorkflow

@@ -157,6 +157,147 @@ describe('toAskPart ask_user', () => {
   })
 })
 
+describe('toAskPart delete_approval', () => {
+  const deleteApproval = (ask: Partial<AskInput> = {}): AskInput =>
+    askUser({
+      kind: 'delete_approval',
+      prompt: 'Delete 2 nodes?',
+      options: [
+        { id: 'delete', label: 'Delete' },
+        { id: 'keep', label: 'Keep' }
+      ],
+      context: {
+        action: 'delete_nodes',
+        nodes: [
+          { id: '12', type: 'KSampler', title: 'Hero sampler' },
+          { id: '13', type: 'VAEDecode', title: '  ' },
+          { id: '12', type: 'KSampler', title: 'A repeat' }
+        ]
+      },
+      ...ask
+    })
+
+  it('lists each node once, title before type', () => {
+    expect(toAskPart(deleteApproval())).toEqual({
+      type: 'deleteApproval',
+      askId: 'turn-1:call-1',
+      prompt: 'Delete 2 nodes?',
+      nodes: [
+        { id: '12', name: 'Hero sampler' },
+        { id: '13', name: 'VAEDecode' }
+      ],
+      hiddenNodeCount: 0
+    })
+  })
+
+  it('counts the nodes the host left out of the list as not listed', () => {
+    expect(
+      toAskPart(
+        deleteApproval({
+          context: {
+            action: 'delete_nodes',
+            nodes: [{ id: '12', type: 'KSampler' }],
+            hidden_node_count: 20
+          }
+        })
+      )
+    ).toMatchObject({ hiddenNodeCount: 20 })
+  })
+
+  it.for([
+    { name: 'no context', context: undefined },
+    { name: 'no nodes', context: { action: 'delete_nodes' } },
+    {
+      name: 'nodes not an array',
+      context: { action: 'delete_nodes', nodes: 'oops' }
+    },
+    { name: 'an empty list', context: { action: 'delete_nodes', nodes: [] } },
+    {
+      name: 'a blank id',
+      context: { action: 'delete_nodes', nodes: [{ id: '12' }, { id: '  ' }] }
+    },
+    {
+      name: 'an unreadable entry next to a readable one',
+      context: {
+        action: 'delete_nodes',
+        nodes: [{ id: '12' }, { type: 'NoId' }]
+      }
+    }
+  ])('falls back to the notice with $name in context', ({ context }) => {
+    expect(toAskOrNoticePart(deleteApproval({ context }))).toEqual({
+      type: 'askUnavailable',
+      askId: 'turn-1:call-1'
+    })
+  })
+
+  it('clips a long node name but never its id', () => {
+    const prefix = 'n'.repeat(200)
+    const part = toAskPart(
+      deleteApproval({
+        context: {
+          action: 'delete_nodes',
+          nodes: [
+            {
+              id: `${prefix}-a`,
+              title: 'x'.repeat(210)
+            },
+            { id: `${prefix}-b` }
+          ]
+        }
+      })
+    )
+    assert(part?.type === 'deleteApproval')
+    expect(part.nodes.map(({ id }) => id)).toEqual([
+      `${prefix}-a`,
+      `${prefix}-b`
+    ])
+    expect(part.nodes[0].name).toBe(`${'x'.repeat(199)}\u2026`)
+  })
+
+  it.for([
+    {
+      name: 'other option ids',
+      ask: {
+        options: [
+          { id: 'yes', label: 'Yes' },
+          { id: 'no', label: 'No' }
+        ]
+      }
+    },
+    {
+      name: 'a third option',
+      ask: {
+        options: [
+          { id: 'delete', label: 'Delete' },
+          { id: 'keep', label: 'Keep' },
+          { id: 'delete_all', label: 'Delete all' }
+        ]
+      }
+    },
+    {
+      name: 'only one of the two',
+      ask: { options: [{ id: 'delete', label: 'Delete' }] }
+    },
+    { name: 'free text', ask: { allow_other: true } },
+    { name: 'a multi-choice', ask: { max_selections: 2 } }
+  ])('renders nothing for $name', ({ ask }) => {
+    expect(toAskPart(deleteApproval(ask))).toBeUndefined()
+  })
+
+  it('stays on screen read-only with its resolution once retired', () => {
+    const card = toAskPart(deleteApproval())
+    assert(card)
+    expect(
+      retireAskParts([card], card.askId, {
+        status: 'answered',
+        selected: ['keep']
+      })
+    ).toEqual([
+      { ...card, resolution: { status: 'answered', selected: ['keep'] } }
+    ])
+  })
+})
+
 describe('toAskOrNoticePart', () => {
   it('stands a notice in for an ask it cannot render', () => {
     expect(toAskOrNoticePart(askUser({ kind: 'paused' }))).toEqual({

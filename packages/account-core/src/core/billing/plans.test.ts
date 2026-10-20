@@ -24,6 +24,7 @@ function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
 }
 
 const PLAN = {
+  action: 'subscribe',
   availability: { available: true },
   credits_cents: 2000,
   duration: 'MONTHLY',

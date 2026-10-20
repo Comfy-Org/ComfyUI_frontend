@@ -177,7 +177,7 @@ describe('WorkflowTab - workflow status indicator', () => {
 
     expect(screen.queryByRole('img')).toBeNull()
     expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'bg-smoke-800'
+      'bg-muted-foreground'
     )
   })
 
@@ -189,7 +189,7 @@ describe('WorkflowTab - workflow status indicator', () => {
     })
 
     expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'bg-smoke-800'
+      'bg-muted-foreground'
     )
   })
 
@@ -281,7 +281,7 @@ describe('WorkflowTab - agent activity indicators', () => {
 
     expect(screen.getByTestId('agent-modified-indicator')).toHaveClass(
       'size-2',
-      'bg-primary-background'
+      'bg-primary'
     )
     expect(
       screen.queryByRole('img', { name: statusAriaLabels.running })

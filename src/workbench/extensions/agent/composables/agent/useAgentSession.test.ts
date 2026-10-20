@@ -6,7 +6,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { effectScope, nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
@@ -28,7 +28,6 @@ import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
-  AgentThreadSummary,
   AgentTurnAccepted,
   TurnId
 } from '../../schemas/agentApiSchema'
@@ -56,7 +55,9 @@ import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
 vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
+vi.mock(import('../../services/agent/agentAuth'))
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
@@ -71,8 +72,12 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         workflow_id: 'wf-1'
       })
     ),
+    getIdentity: vi.fn(async () => ({ userId: 'user-test' })),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
-    listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    listThreads: vi.fn<AgentRestClient['listThreads']>(async () => ({
+      status: 'complete',
+      threads: []
+    })),
     getRunMode: vi.fn(
       async (): Promise<AgentRunModePreference> => ({
         mode: 'auto',
@@ -106,6 +111,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
         selected: []
       })
     ),
+    refreshCredential: vi.fn(async () => {}),
     uploadImage: vi.fn(
       async (): Promise<UploadImageResponse> => ({
         name: 'n',
@@ -608,6 +614,31 @@ describe('useAgentSession (v1 composition root)', () => {
       ['first_open'],
       ['new_chat_button']
     ])
+  })
+
+  it('reports an agent event for a hydrating thread before the hydrate settles', async () => {
+    const onAgentEvent = vi.fn()
+    const rest = fakeRest({ getMessages: vi.fn(hangingGetMessages) })
+    const { source, emit } = fakeEvents()
+    useAgentConversationStore().setThreadId('th-1')
+    const session = useAgentSession({ rest, events: source, onAgentEvent })
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    const restartSucceeded = wire({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-restart',
+        tool_name: 'restart_comfyui',
+        status: 'success',
+        duration_ms: 900,
+        thread_id: 'th-1',
+        message_id: 'msg-1'
+      }
+    })
+
+    emit(restartSucceeded)
+
+    expect(onAgentEvent).toHaveBeenCalledExactlyOnceWith(restartSucceeded)
   })
 
   it.for(['success', 'failure', 'new-chat', 'newer-chat', 'cancelled'])(
@@ -5763,7 +5794,34 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(false)
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       surface: 'agent',
-      errorType: 'agent_send_message_failed'
+      errorType: 'agent_send_message_failed',
+      tags: { status: 500, operation: undefined, retryAfterSeconds: undefined }
+    })
+  })
+
+  it('tags a send failure with its status and operation so a thin alert stays diagnosable (PM-2103)', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(
+        new AgentApiError('', 503, undefined, undefined, 'post_thread_message')
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('boom again')).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed',
+      tags: {
+        status: 503,
+        operation: 'post_thread_message',
+        retryAfterSeconds: undefined
+      }
     })
   })
 
@@ -5818,7 +5876,8 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(await session.sendMessage('use this attachment')).toBe(false)
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       surface: 'agent',
-      errorType: 'agent_send_message_failed'
+      errorType: 'agent_send_message_failed',
+      tags: { status: 422, operation: undefined, retryAfterSeconds: undefined }
     })
   })
 
@@ -7003,7 +7062,8 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
       surface: 'agent',
-      errorType: 'agent_send_message_failed'
+      errorType: 'agent_send_message_failed',
+      tags: { status: 500, operation: undefined, retryAfterSeconds: undefined }
     })
   })
 
@@ -7424,5 +7484,101 @@ describe('app:agent_error telemetry (TEL-8)', () => {
 
     expect(telemetry.trackAgentError).not.toHaveBeenCalled()
     expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+  })
+})
+
+describe('useAgentSession credential refresh', () => {
+  const REFRESH_INTERVAL_MS = 4 * 60 * 1000
+
+  function startSession(
+    refreshCredential: AgentRestClient['refreshCredential'],
+    refreshCredentialDuringTurns = true
+  ) {
+    const { source, emit } = fakeEvents()
+    const scope = effectScope()
+    const session = scope.run(() =>
+      useAgentSession({
+        rest: fakeRest({ refreshCredential }),
+        events: source,
+        refreshCredentialDuringTurns
+      })
+    )
+    assert.exists(session)
+    session.start()
+    return { scope, session, emit }
+  }
+
+  it('re-sends the credential every interval while a turn runs and stops when it ends', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session, emit } = startSession(refreshCredential)
+
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS)
+    expect(refreshCredential).not.toHaveBeenCalled()
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+
+    emit(done('msg-1'))
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
+  it('keeps refreshing for a turn a thread switch moved to the background', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session, emit } = startSession(refreshCredential)
+
+    await session.sendMessage('build it')
+    session.newChat()
+    expect(useAgentConversationStore().isStreaming).toBe(false)
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+
+    emit(done('msg-1'))
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
+  it('does not refresh when the host does not ask for it, as in the cloud', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session } = startSession(refreshCredential, false)
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+
+    expect(refreshCredential).not.toHaveBeenCalled()
+    scope.stop()
+  })
+
+  it('reports a credential refresh that fails', async () => {
+    const failure = new Error('refresh failed')
+    const refreshCredential = vi.fn(async () => {
+      throw failure
+    })
+    const { scope, session } = startSession(refreshCredential)
+
+    await session.sendMessage('build it')
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS)
+
+    expect(reportError).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({
+        errorType: 'failure_refreshing_agent_credential'
+      })
+    )
+    scope.stop()
+  })
+
+  it('stops refreshing when the panel scope is disposed mid-turn', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { scope, session } = startSession(refreshCredential)
+    await session.sendMessage('build it')
+
+    scope.stop()
+    await vi.advanceTimersByTimeAsync(REFRESH_INTERVAL_MS * 2)
+
+    expect(refreshCredential).not.toHaveBeenCalled()
   })
 })

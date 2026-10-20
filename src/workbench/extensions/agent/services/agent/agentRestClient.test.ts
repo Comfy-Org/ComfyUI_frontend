@@ -2,7 +2,7 @@ import type {
   AgentThreadListResponse,
   PaginationInfo
 } from '@comfyorg/ingest-types'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   markErrorReported,
@@ -12,6 +12,8 @@ import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
+import { withAgentAuth } from './agentAuth'
+
 import type {
   AgentThreadSummary,
   CloudWorkflowEntry
@@ -19,6 +21,7 @@ import type {
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('./agentAuth'))
 
 import {
   AgentApiError,
@@ -314,6 +317,25 @@ describe('agentRestClient route + method', () => {
     expect(listing.complete).toBe(false)
   })
 
+  it('preserves workflow-list rejection after a successful first page', async () => {
+    respond(
+      jsonResponse(200, {
+        data: [{ id: 'wf-1', name: 'one' }],
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: 2,
+          has_more: true,
+          next_cursor: 'page-2'
+        }
+      })
+    )
+    const cause = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(cause)
+
+    await expect(makeClient().listCloudWorkflows()).rejects.toBe(cause)
+  })
+
   it('includes saved workflows beyond the fifth page', async () => {
     for (let page = 0; page < 6; page++) {
       respond(
@@ -370,13 +392,16 @@ describe('listThreads pagination', () => {
     )
     respond(threadPage(['th-3'], { has_more: false }))
 
-    const threads = await makeClient().listThreads()
+    const result = await makeClient().listThreads()
 
     expect(vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)).toEqual([
       '/agent/threads?limit=100',
       '/agent/threads?limit=100&after=next%20page'
     ])
-    expect(threads.map(({ id }) => id)).toEqual(['th-1', 'th-2', 'th-3'])
+    expect(result).toMatchObject({
+      status: 'complete',
+      threads: [{ id: 'th-1' }, { id: 'th-2' }, { id: 'th-3' }]
+    })
   })
 
   it.for([
@@ -392,12 +417,12 @@ describe('listThreads pagination', () => {
       ]
     }
   ])(
-    'rejects with $reason when paging stops before the last page',
+    'returns $reason without partial threads when paging stops before the last page',
     async ({ reason, pages }) => {
       pages().forEach(respond)
 
-      await expect(makeClient().listThreads()).rejects.toMatchObject({
-        name: 'AgentThreadListIncompleteError',
+      await expect(makeClient().listThreads()).resolves.toEqual({
+        status: 'incomplete',
         reason
       })
     }
@@ -415,14 +440,91 @@ describe('listThreads pagination', () => {
     ).toEqual([signal, signal])
   })
 
-  it('rejects instead of returning a partial list when a later page fails', async () => {
+  it('returns a failure without partial threads when a later page fails', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
     respond(jsonResponse(503, { error: 'unavailable' }))
 
-    await expect(makeClient().listThreads()).rejects.toMatchObject({
-      name: 'AgentApiError',
-      status: 503
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'failed',
+      cause: expect.objectContaining({ name: 'AgentApiError', status: 503 })
     })
+  })
+  it.for([
+    {
+      name: 'invalid JSON',
+      response: () => new Response('{'),
+      error: 'AgentResponseUnreadableError'
+    },
+    {
+      name: 'invalid schema',
+      response: () => jsonResponse(200, {}),
+      error: 'ZodError'
+    }
+  ])('returns a failure for $name', async ({ response, error }) => {
+    respond(response())
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'failed',
+      cause: expect.objectContaining({ name: error })
+    })
+  })
+
+  it('returns the transport failure as data', async () => {
+    const cause = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(cause)
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'failed',
+      cause
+    })
+  })
+
+  it('does not start a cancelled listing', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    respond(threadPage([], { has_more: false }))
+
+    await expect(
+      makeClient().listThreads({ signal: controller.signal })
+    ).resolves.toEqual({
+      status: 'aborted'
+    })
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
+  it('does not request another page after cancellation during a page read', async () => {
+    const controller = new AbortController()
+    vi.mocked(api.fetchApi).mockImplementationOnce(async () => {
+      controller.abort()
+      return threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' })
+    })
+    respond(threadPage([], { has_more: false }))
+
+    await expect(
+      makeClient().listThreads({ signal: controller.signal })
+    ).resolves.toEqual({
+      status: 'aborted'
+    })
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('getIdentity', () => {
+  it('reads the identity the agent authenticated this client as', async () => {
+    respond(
+      jsonResponse(200, { workspace_id: 'w-local', user_id: 'local-user' })
+    )
+
+    const identity = await makeClient().getIdentity()
+
+    expect(identity).toEqual({ userId: 'local-user' })
+    expect(lastCall().route).toBe('/agent/identity')
+  })
+
+  it('rejects a malformed identity rather than returning a partial one', async () => {
+    respond(jsonResponse(200, { workspace_id: 'w-local', user_id: '' }))
+
+    await expect(makeClient().getIdentity()).rejects.toThrow()
   })
 })
 
@@ -479,12 +581,26 @@ describe('postMessage wire body', () => {
     const parsed = JSON.parse(init.body as string) as Record<string, unknown>
     expect(parsed).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
       attachments: ['a1']
     })
     expect(contentType(init)).toBe('application/json')
+  })
+
+  it('sends current_tab_unbound when the turn comes from a tab with no workflow', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'add a node',
+      currentTabUnbound: true
+    })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'add a node',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      current_tab_unbound: true
+    })
   })
 
   it('omits absent optionals rather than sending them as undefined keys', async () => {
@@ -493,7 +609,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'just text',
-      ask_kinds: ['run_approval', 'ask_user']
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval']
     })
   })
 
@@ -510,7 +626,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
     })
   })
@@ -533,7 +649,7 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
-      ask_kinds: ['run_approval', 'ask_user'],
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
     })
   })
@@ -605,14 +721,20 @@ describe('success response parsing', () => {
       },
       path: ['pagination', 'limit']
     }
-  ])('rejects $name from the agent service', async ({ response, path }) => {
-    respond(jsonResponse(200, response))
+  ])(
+    'returns a schema failure for $name from the agent service',
+    async ({ response, path }) => {
+      respond(jsonResponse(200, response))
 
-    await expect(makeClient().listThreads()).rejects.toMatchObject({
-      name: 'ZodError',
-      issues: expect.arrayContaining([expect.objectContaining({ path })])
-    })
-  })
+      await expect(makeClient().listThreads()).resolves.toEqual({
+        status: 'failed',
+        cause: expect.objectContaining({
+          name: 'ZodError',
+          issues: expect.arrayContaining([expect.objectContaining({ path })])
+        })
+      })
+    }
+  )
 })
 
 describe('error mapping', () => {
@@ -743,6 +865,18 @@ describe('error mapping', () => {
     expect((error as AgentApiError).message).toBe(
       'Agent request failed (HTTP 503)'
     )
+  })
+
+  it('carries its operation so a non-auth status can still be tagged downstream (PM-2103)', async () => {
+    respond(new Response('', { status: 503 }))
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'try it' })
+      .catch((caught: unknown) => caught)
+
+    if (!(error instanceof AgentApiError)) throw error
+    expect(error.operation).toBe('post_thread_message')
+    expect(error.status).toBe(503)
   })
 
   it('throws zod when a success body violates the response schema (anti-drift)', async () => {
@@ -1153,7 +1287,10 @@ describe('error mapping', () => {
       vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
       respond(response)
 
-      await expect(makeClient().listThreads()).rejects.toBe(cause)
+      await expect(makeClient().listThreads()).resolves.toEqual({
+        status: 'failed',
+        cause
+      })
     }
   )
 })
@@ -1317,6 +1454,64 @@ describe('Retry-After contract', () => {
     )
     expect(await retryAfterSeconds('Friday, 31-Dec-00 00:00:00 GMT')).toBe(
       expected
+    )
+  })
+})
+
+const emptyThreadPage = {
+  threads: [],
+  pagination: { offset: 0, limit: 1, total: 0, has_more: false }
+}
+
+describe('user auth on agent requests', () => {
+  beforeEach(() => {
+    vi.mocked(withAgentAuth).mockImplementation(async (init) => {
+      const headers = new Headers(init.headers)
+      headers.set('Authorization', 'Bearer id-token')
+      return { ...init, headers }
+    })
+  })
+
+  const calls: [
+    string,
+    (client: AgentRestClient) => Promise<unknown>,
+    unknown
+  ][] = [
+    [
+      'POST messages',
+      (c) => c.postMessage('new', { content: 'hi' }),
+      turnAccepted
+    ],
+    ['GET messages', (c) => c.getMessages('t1'), []],
+    [
+      'POST answer',
+      (c) => c.answerAsk('t1', 'ask-1', { selected: ['allow'] }),
+      { status: 'answered' }
+    ],
+    ['the credential refresh', (c) => c.refreshCredential(), emptyThreadPage]
+  ]
+
+  it.for(calls)(
+    'sends the user auth header with %s',
+    async ([, call, body]) => {
+      respond(jsonResponse(200, body))
+
+      await call(makeClient())
+
+      expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
+        'Bearer id-token'
+      )
+    }
+  )
+
+  it('sends no auth header for a signed-out user', async () => {
+    vi.mocked(withAgentAuth).mockImplementation(async (init) => init)
+    respond(jsonResponse(200, []))
+
+    await makeClient().getMessages('t1')
+
+    expect(new Headers(lastCall().init.headers).has('Authorization')).toBe(
+      false
     )
   })
 })

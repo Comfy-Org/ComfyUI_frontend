@@ -226,6 +226,7 @@ describe('WorkflowTabs agent entry button', () => {
   beforeEach(() => {
     useAgentPanelStore().enabled = true
     api.serverFeatureFlagsSettled.value = false
+    api.serverFeatureFlags.value = {}
   })
 
   it('does not render the entry button in the legacy tab bar even with the flag on', () => {
@@ -261,6 +262,70 @@ describe('WorkflowTabs agent entry button', () => {
     renderComponent()
 
     expect(screen.getByTestId('agent-entry-separator')).toBeInTheDocument()
+  })
+
+  it("shows ComfyUI's agent starting, then failed with its reason, inert until ready", async () => {
+    const store = useAgentPanelStore()
+    store.enabled = false
+    api.serverFeatureFlags.value = {
+      agent: { state: 'starting', reason: null }
+    }
+    const { user } = renderComponent()
+
+    const starting = screen.getByRole('button', {
+      name: enMessages.agent.entryStarting
+    })
+    expect(starting).toHaveAttribute('aria-disabled', 'true')
+    expect(starting).not.toHaveAttribute('title')
+    await user.click(starting)
+    expect(withConsent).not.toHaveBeenCalled()
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'failed', reason: 'not_found' }
+    }
+    await nextTick()
+    const failed = screen.getByRole('button', {
+      name: enMessages.agent.entryFailed
+    })
+    expect(failed).toHaveAttribute('aria-disabled', 'true')
+    await user.click(failed)
+    expect(withConsent).not.toHaveBeenCalled()
+    expect(failed).toHaveAttribute(
+      'title',
+      'ComfyUI could not start the agent: not_found'
+    )
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'starting', reason: 'crashed' }
+    }
+    await nextTick()
+    expect(
+      screen.getByRole('button', { name: enMessages.agent.entryStarting })
+    ).toHaveAttribute('title', 'ComfyUI is starting the agent: crashed')
+
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready', reason: null }
+    }
+    store.enabled = true
+    await nextTick()
+    const ready = screen.getByRole('button', {
+      name: enMessages.agent.entryButton
+    })
+    expect(ready).not.toHaveAttribute('aria-disabled')
+    await user.click(ready)
+    expect(withConsent).toHaveBeenCalledOnce()
+  })
+
+  it('hides the entry button when the agent is ready but the panel extension is off', () => {
+    useAgentPanelStore().enabled = false
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready', reason: null }
+    }
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
+    ).toBeNull()
   })
 
   // Two entry controls once shipped side by side after a merge, which broke

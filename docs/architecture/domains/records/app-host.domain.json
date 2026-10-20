@@ -4,40 +4,68 @@
   "description": "Shared technical module for app composition and startup: entrypoints, router, i18n, bootstrap state, GraphView, configuration, and desktop host wiring. Feature implementations remain in their own records.",
   "modules": [
     {
-      "path": "src/stores/bootstrapStore.ts",
+      "path": "src/App.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/App.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/__mocks__/**",
       "role": "application"
     },
     {
-      "path": "src/stores/bootstrapStore.test.ts",
-      "role": "application"
+      "path": "src/bootstrap.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/GraphCanvas.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/GraphCanvas.vue",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useExternalLink.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useExternalLink.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/composables/useUrlActionLoaders.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useUrlActionLoaders.ts",
+      "role": "integration"
     },
     {
       "path": "src/config.ts",
       "role": "domain"
     },
     {
-      "path": "src/constants/coreMenuCommands.ts",
+      "path": "src/config/comfyApi.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/comfyApi.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/config/viteSeo.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/constants/**",
       "role": "domain"
     },
     {
-      "path": "src/constants/splitterConstants.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/constants/uvMirrors.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/locales/localeConfig.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/vite-env.d.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/__mocks__/i18n.ts",
-      "role": "application"
+      "path": "src/extensions/core/electronAdapter.ts",
+      "role": "integration"
     },
     {
       "path": "src/i18n.catalog.test.ts",
@@ -56,71 +84,11 @@
       "role": "application"
     },
     {
-      "path": "src/config/comfyApi.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/config/comfyApi.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/config/viteSeo.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/bootstrap.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/electronAdapter.ts",
-      "role": "integration"
+      "path": "src/locales/**",
+      "role": "domain"
     },
     {
       "path": "src/main.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/router.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/App.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/App.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/views/GraphView.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/views/GraphView.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/views/layouts/LayoutDefault.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/views/templates/BaseViewTemplate.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/graph/GraphCanvas.vue",
-      "role": "integration"
-    },
-    {
-      "path": "src/components/graph/GraphCanvas.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/useUrlActionLoaders.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/useUrlActionLoaders.test.ts",
       "role": "integration"
     },
     {
@@ -128,20 +96,32 @@
       "role": "infrastructure"
     },
     {
-      "path": "src/utils/envUtil.ts",
-      "role": "infrastructure"
+      "path": "src/router.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/stores/bootstrapStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/bootstrapStore.ts",
+      "role": "application"
     },
     {
       "path": "src/utils/electronMirrorCheck.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/composables/useExternalLink.ts",
+      "path": "src/utils/envUtil.ts",
       "role": "infrastructure"
     },
     {
-      "path": "src/composables/useExternalLink.test.ts",
-      "role": "infrastructure"
+      "path": "src/views/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/vite-env.d.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

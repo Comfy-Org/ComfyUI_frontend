@@ -121,7 +121,7 @@ const menuItems = computed<MenuItem[]>(() => [
     label: t('g.delete'),
     icon: 'icon-[lucide--trash-2]',
     visible: isCurrentNodeUserBlueprint.value,
-    class: 'text-destructive-background',
+    class: 'text-destructive',
     command: handleDeleteBlueprint
   }
 ])

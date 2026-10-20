@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { useKeyboard } from '@/composables/maskeditor/useKeyboard'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
@@ -17,6 +18,14 @@ const dispatchKeyUp = (key: string): void => {
 
 describe('useKeyboard', () => {
   let keyboard: ReturnType<typeof useKeyboard>
+  let container: HTMLDivElement
+  let externalTarget: HTMLElement | undefined
+
+  const mountOutsideEditor = <T extends HTMLElement>(element: T): T => {
+    document.body.appendChild(element)
+    externalTarget = element
+    return element
+  }
 
   beforeEach(() => {
     vi.spyOn(useMaskEditorStore().canvasHistory, 'undo').mockImplementation(
@@ -25,8 +34,16 @@ describe('useKeyboard', () => {
     vi.spyOn(useMaskEditorStore().canvasHistory, 'redo').mockImplementation(
       () => {}
     )
-    keyboard = useKeyboard()
+    container = document.createElement('div')
+    document.body.appendChild(container)
+    keyboard = useKeyboard(ref(container))
     keyboard.addListeners()
+  })
+
+  afterEach(() => {
+    externalTarget?.remove()
+    externalTarget = undefined
+    container.remove()
   })
 
   afterEach(() => {
@@ -75,9 +92,16 @@ describe('useKeyboard', () => {
       expect(keyboard.isKeyDown('a')).toBe(false)
     })
 
-    it('should prevent default and blur the active element on space', () => {
+    it('should prevent default on space when nothing text-like is focused', () => {
+      const event = dispatchKeyDown({ key: ' ' })
+
+      expect(event.defaultPrevented).toBe(true)
+      expect(keyboard.isKeyDown(' ')).toBe(true)
+    })
+
+    it('should blur a text entry target that is focus-trapped inside the editor', () => {
       const input = document.createElement('input')
-      document.body.appendChild(input)
+      container.appendChild(input)
       input.focus()
       const blurSpy = vi.spyOn(input, 'blur')
 
@@ -85,7 +109,32 @@ describe('useKeyboard', () => {
 
       expect(event.defaultPrevented).toBe(true)
       expect(blurSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not prevent default or blur a text entry target outside the editor (PM-2081)', () => {
+      const input = mountOutsideEditor(document.createElement('input'))
+      input.focus()
+      const blurSpy = vi.spyOn(input, 'blur')
+
+      const event = dispatchKeyDown({ key: ' ' })
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(blurSpy).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(input)
       expect(keyboard.isKeyDown(' ')).toBe(true)
+    })
+
+    it('should not prevent default or blur a contenteditable target outside the editor (PM-2081)', () => {
+      const editable = mountOutsideEditor(document.createElement('div'))
+      editable.contentEditable = 'true'
+      editable.focus()
+      const blurSpy = vi.spyOn(editable, 'blur')
+
+      const event = dispatchKeyDown({ key: ' ' })
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(blurSpy).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(editable)
     })
 
     it('should not throw when activeElement is null', () => {

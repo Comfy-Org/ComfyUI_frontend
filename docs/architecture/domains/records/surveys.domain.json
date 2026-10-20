@@ -4,71 +4,11 @@
   "description": "Feature-usage-triggered and error-panel Typeform surveys: the survey registry, eligibility and usage tracking persisted to localStorage, the nightly survey popover and controller, the error-panel survey call to action, and the Typeform embed and dialog. User-initiated feedback is the support-feedback record; the cloud onboarding survey is the cloud record.",
   "modules": [
     {
-      "path": "src/platform/surveys/appModeFeedback.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/surveys/surveyRegistry.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/surveys/surveyRegistry.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/surveys/openTypeformDialog.ts",
+      "path": "src/platform/surveys/**",
       "role": "application"
     },
     {
-      "path": "src/platform/surveys/openTypeformDialog.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useErrorSurveyPopoverState.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useErrorSurveyPopoverState.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useErrorSurveyTracking.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useErrorSurveyTracking.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useFeatureUsageTracker.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useFeatureUsageTracker.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useSurveyEligibility.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useSurveyEligibility.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useSurveyFeatureTracking.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useSurveyFeatureTracking.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/surveys/useTypeformEmbed.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/useTypeformEmbed.test.ts",
+      "path": "src/platform/surveys/ErrorPanelSurveyCta.test.ts",
       "role": "presentation"
     },
     {
@@ -76,15 +16,7 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/surveys/ErrorPanelSurveyCta.test.ts",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/surveys/NightlySurveyController.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/surveys/NightlySurveyPopover.vue",
       "role": "presentation"
     },
     {
@@ -92,7 +24,15 @@
       "role": "presentation"
     },
     {
+      "path": "src/platform/surveys/NightlySurveyPopover.vue",
+      "role": "presentation"
+    },
+    {
       "path": "src/platform/surveys/TypeformDialogContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/TypeformEmbed.test.ts",
       "role": "presentation"
     },
     {
@@ -100,7 +40,23 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/surveys/TypeformEmbed.test.ts",
+      "path": "src/platform/surveys/appModeFeedback.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/surveys/surveyRegistry.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/surveys/surveyRegistry.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/surveys/useTypeformEmbed.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/platform/surveys/useTypeformEmbed.ts",
       "role": "presentation"
     }
   ],

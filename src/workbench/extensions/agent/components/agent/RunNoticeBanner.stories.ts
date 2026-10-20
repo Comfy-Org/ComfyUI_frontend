@@ -13,7 +13,7 @@ function withFreshDismissal() {
   localStorage.removeItem(DISMISSED_STORAGE_KEY)
   return {
     template:
-      '<div class="agent-scope w-[388px] bg-secondary-background p-4"><story /></div>'
+      '<div class="agent-scope w-[388px] bg-secondary p-4"><story /></div>'
   }
 }
 

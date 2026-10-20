@@ -52,6 +52,7 @@ interface HarnessOptions {
   track?: HTMLElement | null
   contentInsetX?: number
   handleCenterOffsetX?: number
+  onEditEnd?: () => void
 }
 
 interface Harness {
@@ -87,7 +88,8 @@ const mountRangeEditor = (opts: HarnessOptions = {}): Harness => {
         valueMax,
         showMidpoint,
         contentInsetX,
-        handleCenterOffsetX
+        handleCenterOffsetX,
+        onEditEnd: opts.onEditEnd
       })
       return () => null
     }
@@ -337,6 +339,23 @@ describe('useRangeEditor', () => {
     )
 
     expect(harness.modelValue.value).toEqual(afterUp)
+  })
+
+  it('reports the end of an edit once when a drag finishes', () => {
+    const onEditEnd = vi.fn()
+    harness = mountRangeEditor({ onEditEnd })
+
+    harness.api.startDrag(
+      'min',
+      createPointerEvent('pointerdown', { clientX: 20 })
+    )
+    harness.trackRef.value!.dispatchEvent(
+      createPointerEvent('pointermove', { clientX: 40 })
+    )
+    expect(onEditEnd).not.toHaveBeenCalled()
+
+    harness.trackRef.value!.dispatchEvent(createPointerEvent('pointerup'))
+    expect(onEditEnd).toHaveBeenCalledOnce()
   })
 
   it('releases the prior drag when starting a new one', () => {

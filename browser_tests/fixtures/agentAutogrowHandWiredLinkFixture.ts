@@ -19,6 +19,7 @@ import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 /**
  * A hand-wired link on an autogrow node's spare slot survives a later agent
@@ -51,7 +52,6 @@ const AGENT_RECONNECT_LINK_ID = 9004
 const WORKFLOW_ID = '6a1c9f3e-4d2b-4a7c-8e1f-3b5d7c9a1f6b'
 const THREAD_ID = 'c3d4e5f6-1a2b-4c3d-8e4f-5a6b7c8d9e0f'
 const MESSAGE_ID = 'a1b2c3d4-5e6f-4a1b-8c2d-3e4f5a6b7c8d'
-const SOCKET_SID = 'f1e2d3c4-b5a6-4978-8a9b-0c1d2e3f4a5b'
 
 // Trimmed `/object_info` entries: a plain IMAGE source, and an API node whose
 // only input is a `COMFY_AUTOGROW_V3` group named `model.images`, mirroring
@@ -207,7 +207,6 @@ async function setUpFixture(page: Page) {
     page,
     WORKFLOW_ID,
     host,
-    SOCKET_SID,
     'apply'
   )
   await hostSocket.install()
@@ -258,7 +257,7 @@ async function setUpFixture(page: Page) {
 
   await test.step('first agent turn binds the workflow and materializes the graph', async () => {
     const composer = panel.getByRole('textbox', {
-      name: /^Describe ideas/
+      name: AGENT_COMPOSER_LABEL
     })
     await composer.fill('hello')
     await panel.getByRole('button', { name: enMessages.agent.send }).click()
@@ -345,7 +344,7 @@ async function sendSecondTurnAndReconnectFirstSlot(
   ctx: AutogrowHandWiredLinkContext
 ): Promise<void> {
   const { panel, hostSocket, host } = ctx
-  const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   await composer.fill('use a different reference image')
   await panel.getByRole('button', { name: enMessages.agent.send }).click()
   await expect(

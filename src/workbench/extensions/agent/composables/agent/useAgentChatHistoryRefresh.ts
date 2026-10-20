@@ -1,0 +1,92 @@
+import { onScopeDispose } from 'vue'
+
+import type { AgentThreadSummary } from '../../schemas/agentApiSchema'
+import type {
+  AgentRestClient,
+  ThreadListing
+} from '../../services/agent/agentRestClient'
+import type {
+  ChatSession,
+  useAgentChatHistoryStore
+} from '../../stores/agent/agentChatHistoryStore'
+
+type HistoryRefreshFailure = Extract<
+  ThreadListing,
+  { status: 'incomplete' | 'failed' }
+>
+
+type HistoryFailureTreatment = 'error_overlay' | 'none'
+
+type HistoryRefreshDeps = {
+  listThreads: AgentRestClient['listThreads']
+  history: Pick<ReturnType<typeof useAgentChatHistoryStore>, 'replaceAll'>
+  untitledChat: () => string
+  onFailure: (
+    failure: HistoryRefreshFailure,
+    uiTreatment: HistoryFailureTreatment
+  ) => void
+}
+
+export function useAgentChatHistoryRefresh({
+  listThreads,
+  history,
+  untitledChat,
+  onFailure
+}: HistoryRefreshDeps) {
+  let latestStartedRefresh = 0
+  let latestAppliedRefresh = 0
+  let latestSurfacedRefresh = 0
+  const controller = new AbortController()
+
+  onScopeDispose(() => controller.abort())
+
+  function toChatSession(thread: AgentThreadSummary): ChatSession {
+    const lastActivityAt = [
+      thread.last_message_at,
+      thread.updated_at,
+      thread.created_at
+    ]
+      .map((stamp) => Date.parse(stamp))
+      .find((time) => !Number.isNaN(time))
+    return {
+      id: thread.id,
+      title: thread.title || thread.preview || untitledChat(),
+      updatedAt: lastActivityAt ?? Date.now(),
+      lastActivityAt,
+      titleSource: thread.title ? 'server' : 'fallback',
+      workflowId: thread.workflow_id || undefined
+    }
+  }
+
+  function ownsFailure(
+    generation: number,
+    uiTreatment: HistoryFailureTreatment
+  ): boolean {
+    const failureOwner =
+      uiTreatment === 'error_overlay'
+        ? latestSurfacedRefresh
+        : latestStartedRefresh
+    return generation === failureOwner && generation > latestAppliedRefresh
+  }
+
+  async function refreshHistory(
+    uiTreatment: HistoryFailureTreatment = 'error_overlay'
+  ): Promise<void> {
+    if (controller.signal.aborted) return
+    const { signal } = controller
+    const generation = ++latestStartedRefresh
+    if (uiTreatment === 'error_overlay') latestSurfacedRefresh = generation
+    const result = await listThreads({ signal })
+    if (signal.aborted || result.status === 'aborted') return
+    if (result.status !== 'complete') {
+      if (ownsFailure(generation, uiTreatment)) onFailure(result, uiTreatment)
+      return
+    }
+    if (generation < latestAppliedRefresh) return
+    const sessions = result.threads.map(toChatSession)
+    history.replaceAll(sessions)
+    latestAppliedRefresh = generation
+  }
+
+  return { refreshHistory }
+}

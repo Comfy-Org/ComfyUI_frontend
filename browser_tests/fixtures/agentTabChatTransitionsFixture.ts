@@ -15,6 +15,7 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
@@ -66,7 +67,7 @@ class TabChatTransitions {
   readonly skillName = SKILL_NAME
   readonly posted: { threadId: string; body: AgentPostMessageRequest }[] = []
   readonly unexpectedMutations: string[] = []
-  private socket: WebSocketRoute | undefined
+  private agentSocket: WebSocketRoute | undefined
   private held:
     | {
         threadId: string
@@ -101,8 +102,10 @@ class TabChatTransitions {
         return route.fulfill({ status: 404, json: {} })
       }
     )
+    await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
+      this.agentSocket = socket
+    })
     await this.page.routeWebSocket(/\/ws(?:\?|$)/, (socket) => {
-      this.socket = socket
       socket.send(
         JSON.stringify({
           type: 'status',
@@ -267,14 +270,14 @@ class TabChatTransitions {
     const assistant = this.transcripts[threadId].findLast(
       (message) => message.role === 'assistant'
     )
-    if (!assistant || !this.socket)
-      throw new Error('No accepted turn and connected fixture socket')
+    if (!assistant || !this.agentSocket)
+      throw new Error('No accepted turn and connected fixture agent socket')
     assistant.status = 'complete'
     const event: AgentWsEvent = {
       type: 'agent_message_done',
       data: { message_id: assistant.id, thread_id: threadId }
     }
-    this.socket.send(JSON.stringify(event))
+    this.agentSocket.send(JSON.stringify(event))
   }
 
   async dispose(): Promise<void> {

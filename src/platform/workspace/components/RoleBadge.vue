@@ -1,6 +1,6 @@
 <template>
   <span
-    class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
+    class="rounded-full bg-foreground px-1 py-0.5 text-2xs font-bold text-background uppercase"
   >
     {{ roleBadgeLabel }}
   </span>
