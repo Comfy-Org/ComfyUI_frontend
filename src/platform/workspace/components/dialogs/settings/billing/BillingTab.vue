@@ -1,9 +1,10 @@
 <template>
   <div class="flex flex-col gap-6" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
-    <BillingTopupCheckoutBanner
+    <BillingCheckoutBanner
       v-if="capabilities.canManageBilling.value"
       :can-top-up="capabilities.canTopUp.value"
+      :can-subscribe-self-serve="capabilities.canSubscribeSelfServe.value"
       @add-credits="addCredits"
     />
     <div
@@ -82,8 +83,8 @@ import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/util
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
+import BillingCheckoutBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingCheckoutBanner.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
-import BillingTopupCheckoutBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingTopupCheckoutBanner.vue'
 import {
   deriveBillingTabLoad,
   planRowAction

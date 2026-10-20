@@ -1,3 +1,8 @@
+import type {
+  BillingOpReceiptPlan,
+  BillingOpStatusResponse,
+  BillingStatusResponse
+} from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
@@ -605,9 +610,7 @@ describe('BillingTab', () => {
         servedCheckouts(checkout(state))
         arrange()
 
-        const banner = await screen.findByTestId(
-          'billing-topup-checkout-banner'
-        )
+        const banner = await screen.findByTestId('billing-checkout-banner')
         expect(banner).toHaveTextContent(text)
         expect(
           within(banner)
@@ -628,9 +631,7 @@ describe('BillingTab', () => {
         )
         arrange()
 
-        const banner = await screen.findByTestId(
-          'billing-topup-checkout-banner'
-        )
+        const banner = await screen.findByTestId('billing-checkout-banner')
         expect(banner).toHaveTextContent(title)
         expect(banner).toHaveTextContent(
           'No credits were added. Try again or use a different payment method.'
@@ -646,7 +647,7 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('failed'))
       arrange({ canTopUp: false })
 
-      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      const banner = await screen.findByTestId('billing-checkout-banner')
       expect(
         within(banner).queryByRole('button', { name: 'Add credits' })
       ).not.toBeInTheDocument()
@@ -656,27 +657,27 @@ describe('BillingTab', () => {
       servedCheckouts(checkout('failed'), checkout('payment_processing'))
       arrange()
 
-      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      const banner = await screen.findByTestId('billing-checkout-banner')
       await userEvent.click(
         within(banner).getByRole('button', { name: 'Dismiss' })
       )
 
-      expect(
-        screen.getByTestId('billing-topup-checkout-banner')
-      ).toHaveTextContent('Payment processing')
+      expect(screen.getByTestId('billing-checkout-banner')).toHaveTextContent(
+        'Payment processing'
+      )
     })
 
     it('clears the credits banner on its own once the server reports fulfilled', async () => {
       servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
       arrange()
-      await screen.findByTestId('billing-topup-checkout-banner')
+      await screen.findByTestId('billing-checkout-banner')
 
       servedCheckouts(checkout('fulfilled', { session_id: 'cs_1' }))
       await vi.advanceTimersByTimeAsync(5_000)
 
       await vi.waitFor(() =>
         expect(
-          screen.queryByTestId('billing-topup-checkout-banner')
+          screen.queryByTestId('billing-checkout-banner')
         ).not.toBeInTheDocument()
       )
     })
@@ -707,7 +708,7 @@ describe('BillingTab', () => {
       arrange()
 
       expect(
-        await screen.findByTestId('billing-topup-checkout-banner')
+        await screen.findByTestId('billing-checkout-banner')
       ).toHaveTextContent('Payment processing')
       expect(reportError).toHaveBeenCalledWith(
         unavailable,
@@ -727,7 +728,7 @@ describe('BillingTab', () => {
         )
       )
       expect(
-        screen.queryByTestId('billing-topup-checkout-banner')
+        screen.queryByTestId('billing-checkout-banner')
       ).not.toBeInTheDocument()
     })
 
@@ -737,8 +738,224 @@ describe('BillingTab', () => {
 
       expect(workspaceApi.listTopupCheckouts).not.toHaveBeenCalled()
       expect(
-        screen.queryByTestId('billing-topup-checkout-banner')
+        screen.queryByTestId('billing-checkout-banner')
       ).not.toBeInTheDocument()
+    })
+  })
+
+  describe('Plan checkout banner', () => {
+    const creatorPlan: BillingOpReceiptPlan = {
+      slug: 'creator-monthly',
+      duration: 'MONTHLY',
+      tier: 'CREATOR'
+    }
+
+    function servedOperation(overrides: Partial<BillingOpStatusResponse>) {
+      const operation: BillingOpStatusResponse = {
+        id: 'op-parked',
+        started_at: '2026-10-20T00:00:00Z',
+        status: 'pending',
+        plan: creatorPlan,
+        ...overrides
+      }
+      vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue(
+        fromPartial<BillingStatusResponse>({
+          pending_billing_op_id: operation.id,
+          pending_billing_op_type: 'subscription'
+        })
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue(operation)
+      return operation
+    }
+
+    const parked = { phase: 'awaiting_payment_method' } as const
+
+    function reservedTab() {
+      const tab = fromPartial<Window>({
+        location: fromPartial<Location>({ href: '' }),
+        close: vi.fn()
+      })
+      vi.spyOn(window, 'open').mockReturnValue(tab)
+      return tab
+    }
+
+    it.for([
+      {
+        served: parked,
+        text: 'You have an unfinished checkoutFinish paying for your Creator plan.',
+        action: 'Continue payment'
+      },
+      {
+        served: { phase: 'in_progress', authentication_state: 'processing' },
+        text: 'Payment processingYour bank is confirming the payment. Your Creator plan starts once it clears.',
+        action: null
+      },
+      {
+        served: {
+          status: 'failed',
+          decline_reason: 'card_declined',
+          retryable: true
+        },
+        text: "Your Creator plan didn't startThe payment didn't go through. Try again or use a different payment method.",
+        action: 'Try again'
+      }
+    ] as const)(
+      'renders "$text" from the served operation',
+      async ({ served, text, action }) => {
+        servedOperation(served)
+        arrange()
+
+        const banner = await screen.findByTestId('billing-checkout-banner')
+        expect(banner).toHaveTextContent(text)
+        expect(
+          within(banner)
+            .getAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(action ? ['Dismiss', action] : ['Dismiss'])
+      }
+    )
+
+    it('reopens the parked checkout in a reserved tab', async () => {
+      servedOperation(parked)
+      const tab = reservedTab()
+      vi.mocked(workspaceApi.subscribe).mockResolvedValue({
+        billing_op_id: 'op-parked',
+        status: 'needs_payment_method',
+        payment_method_url: 'https://checkout.stripe.test/fresh'
+      })
+      const { fetchStatus } = arrange()
+
+      const banner = await screen.findByTestId('billing-checkout-banner')
+      await userEvent.click(
+        within(banner).getByRole('button', { name: 'Continue payment' })
+      )
+
+      expect(workspaceApi.subscribe).toHaveBeenCalledWith(
+        'creator-monthly',
+        expect.objectContaining({ teamCreditStopId: undefined })
+      )
+      await vi.waitFor(() =>
+        expect(tab.location.href).toBe('https://checkout.stripe.test/fresh')
+      )
+      expect(fetchStatus).toHaveBeenCalled()
+    })
+
+    it('turns Continue payment into a real link to the fresh session when the tab is blocked', async () => {
+      servedOperation(parked)
+      vi.spyOn(window, 'open').mockReturnValue(null)
+      vi.mocked(workspaceApi.subscribe).mockResolvedValue({
+        billing_op_id: 'op-parked',
+        status: 'needs_payment_method',
+        payment_method_url: 'https://checkout.stripe.test/fresh'
+      })
+      arrange()
+
+      const banner = await screen.findByTestId('billing-checkout-banner')
+      await userEvent.click(
+        within(banner).getByRole('button', { name: 'Continue payment' })
+      )
+
+      const link = await within(banner).findByRole('link', {
+        name: 'Continue payment'
+      })
+      expect(link).toHaveAttribute('href', 'https://checkout.stripe.test/fresh')
+      expect(link).toHaveAttribute('target', '_blank')
+      expect(link).toHaveAttribute('rel', 'noopener')
+      expect(workspaceApi.subscribe).toHaveBeenCalledOnce()
+    })
+
+    it('says checkout did not open when the resubmit is refused', async () => {
+      servedOperation(parked)
+      const tab = reservedTab()
+      const refused = new WorkspaceApiError('Busy', 409)
+      vi.mocked(workspaceApi.subscribe).mockRejectedValue(refused)
+      arrange()
+
+      const banner = await screen.findByTestId('billing-checkout-banner')
+      await userEvent.click(
+        within(banner).getByRole('button', { name: 'Continue payment' })
+      )
+
+      expect(await within(banner).findByRole('alert')).toHaveTextContent(
+        "We couldn't open checkout. Try again."
+      )
+      expect(tab.close).toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(
+        refused,
+        expect.objectContaining({
+          errorType: 'subscription_checkout_reopen_failed'
+        })
+      )
+    })
+
+    it('offers no checkout action when the server withholds can_subscribe_self_serve', async () => {
+      servedOperation(parked)
+      arrange({ canSubscribeSelfServe: false })
+
+      const banner = await screen.findByTestId('billing-checkout-banner')
+      expect(
+        within(banner).queryByRole('button', { name: 'Continue payment' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('shows a credits payment in flight above an unfinished plan checkout', async () => {
+      servedOperation(parked)
+      vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+        checkouts: [
+          {
+            session_id: 'cs_bank',
+            amount_cents: 2500,
+            created_at: '2026-10-20T00:00:00Z'
+          }
+        ],
+        next_cursor: null
+      })
+      vi.mocked(workspaceApi.getTopupCheckout).mockResolvedValue({
+        session_id: 'cs_bank',
+        amount_cents: 2500,
+        payment_amount_cents: 2500,
+        state: 'payment_processing'
+      })
+      arrange()
+
+      await vi.waitFor(() =>
+        expect(screen.getByTestId('billing-checkout-banner')).toHaveTextContent(
+          'Credits are added once it clears'
+        )
+      )
+      await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+      expect(screen.getByTestId('billing-checkout-banner')).toHaveTextContent(
+        'You have an unfinished checkout'
+      )
+    })
+
+    it('shows the failure of an operation it watched once status stops listing it', async () => {
+      servedOperation(parked)
+      arrange()
+      await screen.findByText('You have an unfinished checkout')
+
+      vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue(
+        fromPartial<BillingStatusResponse>({})
+      )
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-parked',
+        started_at: '2026-10-20T00:00:00Z',
+        status: 'failed',
+        decline_reason: 'insufficient_funds',
+        plan: creatorPlan
+      })
+      const visibility = vi.spyOn(document, 'visibilityState', 'get')
+      visibility.mockReturnValue('hidden')
+      document.dispatchEvent(new Event('visibilitychange'))
+      visibility.mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+
+      expect(
+        await screen.findByText("Your Creator plan didn't start")
+      ).toBeInTheDocument()
+      expect(workspaceApi.getBillingOpStatus).toHaveBeenLastCalledWith(
+        'op-parked'
+      )
     })
   })
 

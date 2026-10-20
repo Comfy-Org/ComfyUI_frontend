@@ -3673,6 +3673,19 @@
           "title": "Your {amount} top-up didn't go through",
           "titleNoAmount": "Your top-up didn't go through"
         },
+        "plan": {
+          "continuePayment": "Continue payment",
+          "failedBody": "The payment didn't go through. Try again or use a different payment method.",
+          "failedTitle": "Your {plan} plan didn't start",
+          "failedTitleNoPlan": "Your plan didn't start",
+          "openFailed": "We couldn't open checkout. Try again.",
+          "processingBody": "Your bank is confirming the payment. Your {plan} plan starts once it clears.",
+          "processingBodyNoPlan": "Your bank is confirming the payment. Your plan starts once it clears.",
+          "tryAgain": "Try again",
+          "unfinishedBody": "Finish paying for your {plan} plan.",
+          "unfinishedBodyNoPlan": "Finish paying for your plan.",
+          "unfinishedTitle": "You have an unfinished checkout"
+        },
         "processing": {
           "body": "Your bank is confirming the payment. Credits are added once it clears, so you don't need to pay again.",
           "title": "Payment processing"
