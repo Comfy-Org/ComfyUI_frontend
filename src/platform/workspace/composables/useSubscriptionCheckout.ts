@@ -1102,8 +1102,7 @@ export function useSubscriptionCheckout(
       if (await refreshExpiredProrationQuote(error, planSlug)) return
       showSubscribeError(error)
     } finally {
-      isSubscribing.value = false
-      finishCheckoutMutation(mutationToken)
+      releaseSubmit(mutationToken)
     }
   }
 
@@ -1452,21 +1451,21 @@ export function useSubscriptionCheckout(
   // checkout parked on the customer does not do until they act on it.
   function releaseSubmitOnceParked(mutationToken: number): () => void {
     if (!subscriptionRail) return () => {}
-    const before = subscriptionRail.subscriptionActionOperation
-    return watch(
+    const stop = watch(
       () => subscriptionRail.subscriptionActionOperation,
       (operation) => {
-        if (
-          !operation ||
-          (operation.opId === before?.opId &&
-            operation.actionUrl === before.actionUrl)
-        ) {
-          return
-        }
-        isSubscribing.value = false
-        finishCheckoutMutation(mutationToken)
+        if (!operation) return
+        stop()
+        releaseSubmit(mutationToken)
       }
     )
+    return stop
+  }
+
+  function releaseSubmit(mutationToken: number) {
+    if (checkoutMutationOwner !== mutationToken) return
+    isSubscribing.value = false
+    finishCheckoutMutation(mutationToken)
   }
 
   async function handleTeamSubscription(confirmReactivation = false) {
@@ -1583,8 +1582,7 @@ export function useSubscriptionCheckout(
         return
       showSubscribeError(error)
     } finally {
-      isSubscribing.value = false
-      finishCheckoutMutation(mutationToken)
+      releaseSubmit(mutationToken)
     }
   }
 
