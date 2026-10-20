@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
@@ -11,7 +11,10 @@ import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type {
+  HostedTopupCheckout,
+  Plan
+} from '@/platform/workspace/api/workspaceApi'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
@@ -551,6 +554,192 @@ describe('BillingTab', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
 
     expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalled()
+  })
+
+  describe('Top-up checkout banner', () => {
+    function servedCheckouts(...checkouts: HostedTopupCheckout[]) {
+      vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+        checkouts: checkouts.map(({ session_id, amount_cents }) => ({
+          session_id,
+          amount_cents,
+          created_at: '2026-10-20T00:00:00Z'
+        })),
+        next_cursor: null
+      })
+      vi.mocked(workspaceApi.getTopupCheckout).mockImplementation(
+        async (sessionId) => {
+          const served = checkouts.find(
+            ({ session_id }) => session_id === sessionId
+          )
+          if (!served) throw new WorkspaceApiError('Not found', 404)
+          return served
+        }
+      )
+    }
+
+    function checkout(
+      state: HostedTopupCheckout['state'],
+      overrides: Partial<HostedTopupCheckout> = {}
+    ): HostedTopupCheckout {
+      return {
+        session_id: `cs_${state}`,
+        amount_cents: 2500,
+        payment_amount_cents: 2500,
+        state,
+        ...overrides
+      }
+    }
+
+    it.for([
+      {
+        state: 'payment_processing',
+        text: "Payment processingYour bank is confirming the payment. Credits are added once it clears, so you don't need to pay again."
+      },
+      {
+        state: 'credits_applying',
+        text: "Payment receivedYour credits are being added. You won't be charged again."
+      }
+    ] as const)(
+      'renders a $state checkout as received, with only Dismiss',
+      async ({ state, text }) => {
+        servedCheckouts(checkout(state))
+        arrange()
+
+        const banner = await screen.findByTestId(
+          'billing-topup-checkout-banner'
+        )
+        expect(banner).toHaveTextContent(text)
+        expect(
+          within(banner)
+            .getAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(['Dismiss'])
+      }
+    )
+
+    it.for([
+      { paymentAmountCents: 2500, title: "Your $25 top-up didn't go through" },
+      { paymentAmountCents: null, title: "Your top-up didn't go through" }
+    ])(
+      'titles a failed top-up "$title" from payment_amount_cents $paymentAmountCents and offers Add credits',
+      async ({ paymentAmountCents, title }) => {
+        servedCheckouts(
+          checkout('failed', { payment_amount_cents: paymentAmountCents })
+        )
+        arrange()
+
+        const banner = await screen.findByTestId(
+          'billing-topup-checkout-banner'
+        )
+        expect(banner).toHaveTextContent(title)
+        expect(banner).toHaveTextContent(
+          'No credits were added. Try again or use a different payment method.'
+        )
+        await userEvent.click(
+          within(banner).getByRole('button', { name: 'Add credits' })
+        )
+        expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalled()
+      }
+    )
+
+    it('offers no Add credits on a failed top-up when the server withholds can_top_up', async () => {
+      servedCheckouts(checkout('failed'))
+      arrange({ canTopUp: false })
+
+      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      expect(
+        within(banner).queryByRole('button', { name: 'Add credits' })
+      ).not.toBeInTheDocument()
+    })
+
+    it('reveals the processing payment once the failed top-up is dismissed', async () => {
+      servedCheckouts(checkout('failed'), checkout('payment_processing'))
+      arrange()
+
+      const banner = await screen.findByTestId('billing-topup-checkout-banner')
+      await userEvent.click(
+        within(banner).getByRole('button', { name: 'Dismiss' })
+      )
+
+      expect(
+        screen.getByTestId('billing-topup-checkout-banner')
+      ).toHaveTextContent('Payment processing')
+    })
+
+    it('clears the credits banner on its own once the server reports fulfilled', async () => {
+      servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
+      arrange()
+      await screen.findByTestId('billing-topup-checkout-banner')
+
+      servedCheckouts(checkout('fulfilled', { session_id: 'cs_1' }))
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByTestId('billing-topup-checkout-banner')
+        ).not.toBeInTheDocument()
+      )
+    })
+
+    it('keeps other checkouts visible when one session read fails', async () => {
+      const unavailable = new WorkspaceApiError('Bad gateway', 502)
+      vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+        checkouts: [
+          {
+            session_id: 'cs_unreadable',
+            amount_cents: 500,
+            created_at: '2026-10-20T00:00:00Z'
+          },
+          {
+            session_id: 'cs_payment_processing',
+            amount_cents: 2500,
+            created_at: '2026-10-19T00:00:00Z'
+          }
+        ],
+        next_cursor: null
+      })
+      vi.mocked(workspaceApi.getTopupCheckout).mockImplementation(
+        async (sessionId) => {
+          if (sessionId === 'cs_unreadable') throw unavailable
+          return checkout('payment_processing')
+        }
+      )
+      arrange()
+
+      expect(
+        await screen.findByTestId('billing-topup-checkout-banner')
+      ).toHaveTextContent('Payment processing')
+      expect(reportError).toHaveBeenCalledWith(
+        unavailable,
+        expect.objectContaining({ errorType: 'topup_checkout_read_failed' })
+      )
+    })
+
+    it('reports a failed checkout list and shows no banner', async () => {
+      const unavailable = new WorkspaceApiError('Unavailable', 503)
+      vi.mocked(workspaceApi.listTopupCheckouts).mockRejectedValue(unavailable)
+      arrange()
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(
+          unavailable,
+          expect.objectContaining({ errorType: 'topup_checkout_read_failed' })
+        )
+      )
+      expect(
+        screen.queryByTestId('billing-topup-checkout-banner')
+      ).not.toBeInTheDocument()
+    })
+
+    it('never reads checkouts for a member without can_manage_billing', () => {
+      servedCheckouts(checkout('payment_processing'))
+      arrange({ canManageBilling: false })
+
+      expect(workspaceApi.listTopupCheckouts).not.toHaveBeenCalled()
+      expect(
+        screen.queryByTestId('billing-topup-checkout-banner')
+      ).not.toBeInTheDocument()
+    })
   })
 
   describe('Auto top-up card', () => {

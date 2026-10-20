@@ -3662,6 +3662,22 @@
           "title": "Your plan"
         }
       },
+      "topupCheckout": {
+        "creditsApplying": {
+          "body": "Your credits are being added. You won't be charged again.",
+          "title": "Payment received"
+        },
+        "dismiss": "Dismiss",
+        "failed": {
+          "body": "No credits were added. Try again or use a different payment method.",
+          "title": "Your {amount} top-up didn't go through",
+          "titleNoAmount": "Your top-up didn't go through"
+        },
+        "processing": {
+          "body": "Your bank is confirming the payment. Credits are added once it clears, so you don't need to pay again.",
+          "title": "Payment processing"
+        }
+      },
       "tryAgain": "Try again"
     },
     "activity": {

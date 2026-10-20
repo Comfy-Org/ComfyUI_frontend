@@ -1,6 +1,11 @@
 <template>
   <div class="flex flex-col gap-6" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
+    <BillingTopupCheckoutBanner
+      v-if="capabilities.canManageBilling.value"
+      :can-top-up="capabilities.canTopUp.value"
+      @add-credits="addCredits"
+    />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -78,6 +83,7 @@ import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/setting
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
+import BillingTopupCheckoutBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingTopupCheckoutBanner.vue'
 import {
   deriveBillingTabLoad,
   planRowAction
