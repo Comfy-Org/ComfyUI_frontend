@@ -3,6 +3,7 @@ import { ComfyApp, app as singletonApp } from './app'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -97,6 +98,10 @@ import { setTelemetryRegistry } from '@/platform/telemetry'
 import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
 import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  onWorkflowLoaded,
+  resetAppReadyForTest
+} from '@/platform/nodeApi/appReady'
 
 import { PromptExecutionError, api } from '@/scripts/api'
 import { useApp } from '@/scripts/appRegistry'
@@ -132,6 +137,7 @@ const {
   mockValidateWorkflow
 } = vi.hoisted(() => ({
   mockExtensionService: {
+    loadExtensions: vi.fn(),
     invokeExtensions: vi.fn(),
     invokeExtensionsAsync: vi.fn()
   },
@@ -300,6 +306,7 @@ describe('ComfyApp', () => {
     vi.mocked(useWorkflowService).mockReturnValue(
       fromPartial<WorkflowService>(mockWorkflowService)
     )
+    resetAppReadyForTest()
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas
@@ -331,8 +338,11 @@ describe('ComfyApp', () => {
     vi.mocked(
       useTeamWorkspaceStore().waitForWorkspaceSwitch
     ).mockResolvedValue()
+    vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue()
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+    mockExtensionService.loadExtensions.mockResolvedValue(undefined)
+    vi.mocked(useSubgraphStore().fetchSubgraphs).mockResolvedValue()
     vi.mocked(extractFilesFromDragEvent).mockResolvedValue([])
     mockImportA1111.mockResolvedValue('imported')
     mockWorkflowService.afterLoadNewGraph.mockResolvedValue()
@@ -800,6 +810,30 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('keeps a replacement started by a workflow-loaded listener', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const firstData = createWorkflowGraphData()
+      firstData.extra = { ...firstData.extra, graphLoadMarker: 'first' }
+      const replacementData = {
+        ...firstData,
+        extra: { ...firstData.extra, graphLoadMarker: 'replacement' }
+      }
+      let replacement: ReturnType<ComfyApp['loadGraphData']> | undefined
+      const workflowLoaded = vi.fn(() => {
+        if (replacement) return
+        replacement = app.loadGraphData(replacementData, false)
+      })
+      onTestFinished(onWorkflowLoaded(workflowLoaded))
+
+      await expect(app.loadGraphData(firstData, false)).resolves.toBe(true)
+      expect(replacement).toBeDefined()
+      expect(await replacement).toBe(true)
+
+      expect(workflowLoaded).toHaveBeenCalledTimes(2)
+      expect(app.rootGraph.extra.graphLoadMarker).toBe('replacement')
+    })
+
     it('does not assign a newer workflow graph to an Undo load waiting after configuration', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -1165,15 +1199,24 @@ describe('ComfyApp', () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
       Reflect.set(singletonApp, 'rootGraphInternal', graph)
+      const workflowLoaded = vi.fn()
+      const stop = onWorkflowLoaded(workflowLoaded)
 
-      await app.loadApiJson({}, 'empty.json')
+      try {
+        await app.loadApiJson({}, 'empty.json')
 
-      expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(false)
-      expect(
-        mockExtensionService.invokeExtensionsAsync.mock.calls.map(
-          ([hook]) => hook
+        expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledWith(
+          false
         )
-      ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+        expect(
+          mockExtensionService.invokeExtensionsAsync.mock.calls.map(
+            ([hook]) => hook
+          )
+        ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
+        expect(workflowLoaded).toHaveBeenCalledOnce()
+      } finally {
+        stop()
+      }
     })
   })
 
@@ -1434,6 +1477,10 @@ describe('ComfyApp', () => {
       expect(useAuthStore().getWorkspaceAuthToken).not.toHaveBeenCalled()
       expect(app.graphToPrompt).not.toHaveBeenCalled()
       expect(queuePrompt).not.toHaveBeenCalled()
+      expect(api.dispatchCustomEvent).not.toHaveBeenCalledWith(
+        'promptQueueing',
+        expect.anything()
+      )
       expect(showDialog).toHaveBeenCalledOnce()
     })
 
@@ -1767,6 +1814,72 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('publishes accepted submissions and closes the queue attempt', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: {
+          '1': {
+            class_type: 'PreviewAny',
+            inputs: {},
+            _meta: { title: 'PreviewAny' }
+          }
+        },
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'queuePrompt')
+        .mockResolvedValueOnce({ prompt_id: 'job-1' })
+        .mockResolvedValueOnce({ prompt_id: 'job-2' })
+
+      await expect(app.queuePrompt(-1, 2)).resolves.toBe(true)
+
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith('promptQueued', {
+        number: -1,
+        batchCount: 2,
+        requestId: expect.any(Number),
+        promptIds: ['job-1', 'job-2'],
+        submissions: [
+          { promptId: 'job-1', nodeCount: 1 },
+          { promptId: 'job-2', nodeCount: 1 }
+        ],
+        rejectedCount: 0
+      })
+      expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+        'promptQueueAttemptEnded',
+        {
+          requestId: expect.any(Number),
+          queued: 2,
+          rejected: 0
+        }
+      )
+      const eventTypes = vi
+        .mocked(api.dispatchCustomEvent)
+        .mock.calls.map(([type]) => type)
+      expect(
+        eventTypes.filter(
+          (type) =>
+            type === 'promptQueued' || type === 'promptQueueAttemptEnded'
+        )
+      ).toEqual(['promptQueued', 'promptQueueAttemptEnded'])
+    })
+
+    it('reports accepted jobs whose metadata cannot be stored', async () => {
+      prepareEmptyPromptQueue()
+      const error = new Error('metadata unavailable')
+      vi.spyOn(useExecutionStore(), 'storeJob').mockImplementationOnce(() => {
+        throw error
+      })
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1'
+      })
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
+        surface: 'graph',
+        errorType: 'queue_job_metadata_store_failed'
+      })
+    })
+
     it('attributes a queued job to the mode used when submission started', async () => {
       prepareEmptyPromptQueue()
       const workflow = useWorkflowStore().activeWorkflow
@@ -1825,7 +1938,7 @@ describe('ComfyApp', () => {
       })
 
       try {
-        await app.queuePrompt(0)
+        await expect(app.queuePrompt(0)).resolves.toBe(false)
 
         expect(trackExecutionOutcome).toHaveBeenCalledExactlyOnceWith({
           startTime: 42,
@@ -1844,6 +1957,26 @@ describe('ComfyApp', () => {
             subgraph_count: 0
           }
         })
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith('promptRejected', {
+          response: { error: 'Prompt rejected' }
+        })
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'promptQueueAttemptEnded',
+          {
+            requestId: expect.any(Number),
+            queued: 0,
+            rejected: 1
+          }
+        )
+        const eventTypes = vi
+          .mocked(api.dispatchCustomEvent)
+          .mock.calls.map(([type]) => type)
+        expect(
+          eventTypes.filter(
+            (type) =>
+              type === 'promptRejected' || type === 'promptQueueAttemptEnded'
+          )
+        ).toEqual(['promptRejected', 'promptQueueAttemptEnded'])
       } finally {
         now.mockRestore()
         setTelemetryRegistry(null)
@@ -1954,6 +2087,14 @@ describe('ComfyApp', () => {
           failureReason: 'prompt_build_failed',
           trigger_source: 'unknown'
         })
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'promptQueueAttemptEnded',
+          {
+            requestId: expect.any(Number),
+            queued: 0,
+            rejected: 0
+          }
+        )
       } finally {
         now.mockRestore()
         setTelemetryRegistry(null)
@@ -3244,6 +3385,24 @@ describe('ComfyApp', () => {
     })
   })
   describe('A1111 import', () => {
+    it('notifies packs after a successful import', async () => {
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
+        parameters: 'positive\nNegative prompt: negative\nSteps: 20'
+      })
+      const workflowLoaded = vi.fn()
+      const stop = onWorkflowLoaded(workflowLoaded)
+
+      try {
+        await app.handleFile(createTestFile('a1111.png', 'image/png'))
+
+        expect(workflowLoaded).toHaveBeenCalledOnce()
+      } finally {
+        stop()
+      }
+    })
+
     it('clears missing node packs, which its graph swap skips clean() for', async () => {
       const graph = new LGraph()
       Reflect.set(app, 'rootGraphInternal', graph)
