@@ -11,8 +11,8 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
-import type { AttachmentValidationError } from '../../../types/composerAttachment'
-import type { AssetPreviewMode } from '../../../types/assetPreview'
+import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 import AssetHoverPreview from './AssetHoverPreview.vue'
 import AssetThumbnail from './AssetThumbnail.vue'
 

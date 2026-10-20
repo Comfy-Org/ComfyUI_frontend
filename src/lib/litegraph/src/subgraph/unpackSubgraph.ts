@@ -4,12 +4,12 @@ import { createUuidv4 } from '@/utils/uuid'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
-import type { Point } from '../interfaces'
-import type { INodeInputSlot } from '../types/slots'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 
-import { LGraphNode } from '../LGraphNode'
-import { LiteGraph } from '../litegraphInstance'
-import type { ISerialisedNode } from '../types/serialisation'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 
 export type UnpackedTargetInput =
   | {

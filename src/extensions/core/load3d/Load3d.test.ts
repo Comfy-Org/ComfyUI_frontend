@@ -31,7 +31,7 @@ const {
   detectFormatFromURLMock: vi.fn()
 }))
 
-vi.mock(import('three/examples/jsm/utils/SkeletonUtils.js'), () => ({
+vi.mock(import('three/examples/jsm/utils/SkeletonUtils'), () => ({
   clone: cloneSkinnedMock
 }))
 

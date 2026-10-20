@@ -151,9 +151,9 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
-import { useSkillPackForm } from '../composables/useSkillPackForm'
-import type { SkillPack } from '../types'
-import { MAX_NAME_LENGTH } from '../types'
+import { useSkillPackForm } from '@/platform/skills/composables/useSkillPackForm'
+import type { SkillPack } from '@/platform/skills/types'
+import { MAX_NAME_LENGTH } from '@/platform/skills/types'
 
 const { pack } = defineProps<{
   pack?: SkillPack

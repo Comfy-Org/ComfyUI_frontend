@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 
-import type { RasterData } from '../node'
+import type { RasterData } from '#/node'
 import { fillBitmap, fillKind } from './fill'
 import { groupKind } from './group'
 import { registerBuiltinKinds } from './index'

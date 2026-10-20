@@ -116,13 +116,13 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
-} from '../../types'
+} from '@/platform/telemetry/types'
 import {
   CANCELLATION_STAGE_EVENTS,
   OnboardingTourEvents,
   TelemetryEvents
-} from '../../types'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+} from '@/platform/telemetry/types'
+import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'
 

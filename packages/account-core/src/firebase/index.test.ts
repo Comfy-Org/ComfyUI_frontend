@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Auth, User, UserCredential } from 'firebase/auth'
 
-import type { FirebaseIdentityConfig } from './index.js'
+import type { FirebaseIdentityConfig } from './index'
 
 const sdk = vi.hoisted(() => {
   const unsubscribe = vi.fn()
@@ -87,7 +87,7 @@ const watch = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('./popupWatch.js'), () => ({
+vi.mock<unknown>(import('./popupWatch'), () => ({
   watchedPopupRedirectResolver: watch.resolver,
   runWatchedPopup: (
     _provider: object,
@@ -125,7 +125,7 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
 }))
 
 async function makeIdentity() {
-  const { createFirebaseIdentity } = await import('./index.js')
+  const { createFirebaseIdentity } = await import('./index')
   return createFirebaseIdentity({ options: { apiKey: 'test' } })
 }
 
@@ -139,7 +139,7 @@ const indexedDbStore = { type: 'LOCAL', store: 'indexedDB' } as const
 const sessionStore = { type: 'SESSION', store: 'sessionStorage' } as const
 
 async function makeHostBoundIdentity() {
-  const { createFirebaseIdentity } = await import('./index.js')
+  const { createFirebaseIdentity } = await import('./index')
   return createFirebaseIdentity({ auth: hostAuth })
 }
 
@@ -177,7 +177,7 @@ beforeEach(() => {
 
 describe('createFirebaseIdentity over package-initialized Firebase', () => {
   it('initializes the app under the explicit default name, so a persisted session keyed by [DEFAULT] is restored', async () => {
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test' },
       appName: '[DEFAULT]'
@@ -194,7 +194,7 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
   it('reuses an app another entry already created under that name', async () => {
     const existingApp = { name: '[DEFAULT]', options: { apiKey: 'test' } }
     app.existing.push(existingApp)
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test' },
       appName: '[DEFAULT]'
@@ -209,7 +209,7 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
   it("applies the host persistence to an app another script already created, so its Auth is not left on platform defaults or silently on that script's dependencies", async () => {
     const existingApp = { name: '[DEFAULT]', options: { apiKey: 'test' } }
     app.existing.push(existingApp)
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test' },
       appName: '[DEFAULT]',
@@ -231,7 +231,7 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
     const options = vi.fn(() => {
       throw new Error('remote config not loaded')
     })
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     const identity = createFirebaseIdentity({ options, appName: '[DEFAULT]' })
 
     expect(() => identity.initialize()).toThrow('remote config not loaded')
@@ -243,7 +243,7 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
       name: '[DEFAULT]',
       options: { apiKey: 'other', projectId: 'other-project' }
     })
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test', projectId: 'this-project' },
       appName: '[DEFAULT]'
@@ -263,7 +263,7 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
   ])(
     'initializes Auth with $shape as the host listed it plus the popup resolver, since initializeAuth wires none and popup sign-in would throw auth/argument-error',
     async ({ persistence }) => {
-      const { createFirebaseIdentity } = await import('./index.js')
+      const { createFirebaseIdentity } = await import('./index')
       const identity = createFirebaseIdentity({
         options: { apiKey: 'test' },
         persistence
@@ -293,7 +293,7 @@ describe('createFirebaseIdentity over package-initialized Firebase', () => {
 
   it('reads an options thunk only when the app first resolves, and once', async () => {
     const options = vi.fn(() => ({ apiKey: 'from-thunk' }))
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     const identity = createFirebaseIdentity({ options })
 
     expect(options).not.toHaveBeenCalled()
@@ -331,7 +331,7 @@ describe('popup sign-in with the popup watched', () => {
   }
 
   async function watchedIdentity() {
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     return createFirebaseIdentity({
       options: { apiKey: 'test' },
       watchPopupSignIn: true
@@ -364,7 +364,7 @@ describe('popup sign-in with the popup watched', () => {
   })
 
   it('keeps the host persistence when it chose one', async () => {
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test' },
       persistence: [localStore],
@@ -398,7 +398,7 @@ describe('popup sign-in with the popup watched', () => {
         code: 'auth/already-initialized'
       })
     })
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     const identity = createFirebaseIdentity({
       options: { apiKey: 'test' },
       persistence: [localStore],
@@ -590,7 +590,7 @@ describe('popup sign-in with the popup watched', () => {
 
   it('watches popups on a host-owned Auth the host created with the watched resolver', async () => {
     const { createFirebaseIdentity, watchedPopupRedirectResolver } =
-      await import('./index.js')
+      await import('./index')
     expect(watchedPopupRedirectResolver).toBe(watch.resolver)
     pendingPopup()
     const identity = createFirebaseIdentity({
@@ -812,7 +812,7 @@ describe('sign-in and sign-out delegation', () => {
 
   it('updates the password of the signed-in user through the SDK', async () => {
     const user = { uid: 'u1' } as Partial<User> as User
-    const { createFirebaseIdentity } = await import('./index.js')
+    const { createFirebaseIdentity } = await import('./index')
     const identity = createFirebaseIdentity({
       auth: { ...hostAuth, currentUser: user } as Partial<Auth> as Auth
     })
@@ -928,7 +928,7 @@ describe('resolveFirebaseIdentity', () => {
     respondToFetch(FEATURES_URL, () =>
       Response.json({ firebase_config: VALID_CONFIG })
     )
-    const { resolveFirebaseIdentity } = await import('./index.js')
+    const { resolveFirebaseIdentity } = await import('./index')
 
     const identity = await resolveFirebaseIdentity({
       cloudBaseUrl: 'https://cloud.example',
@@ -961,7 +961,7 @@ describe('resolveFirebaseIdentity', () => {
     'settles no identity, never a rejection, on %s',
     async ([label, respond]) => {
       respondToFetch(FEATURES_URL, respond)
-      const { resolveFirebaseIdentity } = await import('./index.js')
+      const { resolveFirebaseIdentity } = await import('./index')
 
       await expect(
         resolveFirebaseIdentity({
@@ -981,7 +981,7 @@ describe('resolveFirebaseIdentity', () => {
           })
         })
     )
-    const { resolveFirebaseIdentity } = await import('./index.js')
+    const { resolveFirebaseIdentity } = await import('./index')
 
     const result = resolveFirebaseIdentity({
       cloudBaseUrl: 'https://cloud.example',
@@ -1003,7 +1003,7 @@ describe('resolveFirebaseIdentity', () => {
     respondToFetch(FEATURES_URL, () =>
       Response.json({ firebase_config: VALID_CONFIG })
     )
-    const { resolveFirebaseIdentity } = await import('./index.js')
+    const { resolveFirebaseIdentity } = await import('./index')
 
     await expect(
       resolveFirebaseIdentity({
@@ -1017,7 +1017,7 @@ describe('resolveFirebaseIdentity', () => {
     respondToFetch(FEATURES_URL, () =>
       Response.json({ firebase_config: VALID_CONFIG })
     )
-    const { resolveFirebaseIdentity } = await import('./index.js')
+    const { resolveFirebaseIdentity } = await import('./index')
     const options = {
       cloudBaseUrl: 'https://cloud.example',
       appName: 'memo-app'
@@ -1039,7 +1039,7 @@ describe('resolveFirebaseIdentity', () => {
     respondToFetch('https://two.example/api/features', () =>
       Response.json({ firebase_config: { ...VALID_CONFIG, projectId: 'two' } })
     )
-    const { resolveFirebaseIdentity } = await import('./index.js')
+    const { resolveFirebaseIdentity } = await import('./index')
 
     const [fromOne, fromTwo] = await Promise.all([
       resolveFirebaseIdentity({
@@ -1061,7 +1061,7 @@ describe('resolveFirebaseIdentity', () => {
       Response.json({ firebase_config: VALID_CONFIG })
     )
     respondToFetch(FEATURES_URL, () => new Response('not json'), { times: 1 })
-    const { resolveFirebaseIdentity } = await import('./index.js')
+    const { resolveFirebaseIdentity } = await import('./index')
     const options = {
       cloudBaseUrl: 'https://cloud.example',
       appName: 'evict-on-failure'
@@ -1078,7 +1078,7 @@ describe('resolveFirebaseIdentity', () => {
   it('shares one in-flight fetch even when it will end in failure', async () => {
     const response = deferred<Response>()
     vi.mocked(fetch).mockReturnValueOnce(response.promise)
-    const { resolveFirebaseIdentity } = await import('./index.js')
+    const { resolveFirebaseIdentity } = await import('./index')
     const options = {
       cloudBaseUrl: 'https://cloud.example',
       appName: 'concurrent-failure'
@@ -1098,7 +1098,7 @@ describe('resolveFirebaseIdentity', () => {
     respondToFetch(FEATURES_URL, () =>
       Response.json({ firebase_config: VALID_CONFIG })
     )
-    const { resolveFirebaseIdentity } = await import('./index.js')
+    const { resolveFirebaseIdentity } = await import('./index')
     const options = {
       cloudBaseUrl: 'https://cloud.example',
       appName: 'stays-cached'
@@ -1119,7 +1119,7 @@ describe('resolveStripePublishableKey', () => {
     respondToFetch(FEATURES_URL, () =>
       Response.json({ stripe_publishable_key: 'pk_live_123' })
     )
-    const { resolveStripePublishableKey } = await import('./index.js')
+    const { resolveStripePublishableKey } = await import('./index')
 
     await expect(
       resolveStripePublishableKey({ cloudBaseUrl: 'https://cloud.example' })
@@ -1128,7 +1128,7 @@ describe('resolveStripePublishableKey', () => {
 
   it('settles undefined, never a rejection, when the server has no key configured', async () => {
     respondToFetch(FEATURES_URL, () => Response.json({}))
-    const { resolveStripePublishableKey } = await import('./index.js')
+    const { resolveStripePublishableKey } = await import('./index')
 
     await expect(
       resolveStripePublishableKey({ cloudBaseUrl: 'https://cloud.example' })
@@ -1148,7 +1148,7 @@ describe('resolveStripePublishableKey', () => {
       })
     )
     const { resolveFirebaseIdentity, resolveStripePublishableKey } =
-      await import('./index.js')
+      await import('./index')
     const options = {
       cloudBaseUrl: 'https://shared.example',
       timeoutMs: 4000
@@ -1177,7 +1177,7 @@ describe('resolveStripePublishableKey', () => {
     )
     respondToFetch(FEATURES_URL, () => new Response('not json'), { times: 1 })
     const { resolveFirebaseIdentity, resolveStripePublishableKey } =
-      await import('./index.js')
+      await import('./index')
     const options = { cloudBaseUrl: 'https://cloud.example' }
 
     const failedKey = await resolveStripePublishableKey(options)
@@ -1196,7 +1196,7 @@ describe('resolveStripePublishableKey', () => {
       Response.json({ stripe_publishable_key: 'pk_live_123' })
     )
     respondToFetch(FEATURES_URL, () => new Response('not json'), { times: 1 })
-    const { resolveStripePublishableKey } = await import('./index.js')
+    const { resolveStripePublishableKey } = await import('./index')
     const options = { cloudBaseUrl: 'https://cloud.example' }
 
     const first = await resolveStripePublishableKey(options)
@@ -1210,7 +1210,7 @@ describe('resolveStripePublishableKey', () => {
   it('shares one in-flight fetch across concurrent callers on the same pair', async () => {
     const response = deferred<Response>()
     vi.mocked(fetch).mockReturnValueOnce(response.promise)
-    const { resolveStripePublishableKey } = await import('./index.js')
+    const { resolveStripePublishableKey } = await import('./index')
     const options = { cloudBaseUrl: 'https://cloud.example' }
 
     const callA = resolveStripePublishableKey(options)
@@ -1227,7 +1227,7 @@ describe('resolveStripePublishableKey', () => {
     respondToFetch(FEATURES_URL, () =>
       Response.json({ stripe_publishable_key: 'pk_live_123' })
     )
-    const { resolveStripePublishableKey } = await import('./index.js')
+    const { resolveStripePublishableKey } = await import('./index')
     const options = { cloudBaseUrl: 'https://cloud.example' }
 
     const first = await resolveStripePublishableKey(options)
@@ -1253,7 +1253,7 @@ describe.for([
       respondToFetch('https://probe.example/api/features', () =>
         Response.json(body)
       )
-      const index = await import('./index.js')
+      const index = await import('./index')
       const options = { cloudBaseUrl: 'https://probe.example', timeoutMs: 4000 }
 
       const [, flag] = await Promise.all([
@@ -1278,7 +1278,7 @@ describe('resolveCloudTelemetryConfig', () => {
       })
     )
     const { resolveStripePublishableKey, resolveCloudTelemetryConfig } =
-      await import('./index.js')
+      await import('./index')
     const options = {
       cloudBaseUrl: 'https://telemetry.example',
       timeoutMs: 4000

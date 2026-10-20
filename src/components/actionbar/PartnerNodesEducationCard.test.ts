@@ -306,6 +306,8 @@ describe('PartnerNodesEducationCard', () => {
       target: screen.getByRole('button', { name: copy.tooltip })
     })
 
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(copy.tooltip)
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      copy.tooltip
+    )
   })
 })

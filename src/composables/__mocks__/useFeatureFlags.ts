@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { computed, reactive, watchEffect } from 'vue'
 
-import type { useFeatureFlags as realUseFeatureFlags } from '../useFeatureFlags'
+import type { useFeatureFlags as realUseFeatureFlags } from '@/composables/useFeatureFlags'
 
 export const startFeatureFlagTelemetry = vi.fn(() => watchEffect(() => {}))
 
