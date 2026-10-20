@@ -352,13 +352,18 @@
       "role": "presentation"
     }
   ],
-  "publicEntryPoints": [
-    "src/platform/auth/session/webSessionFetch.ts",
-    "src/platform/auth/session/webSessionUser.ts"
-  ],
+  "publicEntryPoints": ["src/platform/auth/session/webSessionFetch.ts"],
   "allowedDependencies": ["error-reporting"],
   "allowedConsumers": ["agent", "settings", "cloud"],
   "characterizationScenarios": [
+    {
+      "name": "Shared-session requests preserve account identity and enforce scope at send time",
+      "checks": [
+        "src/platform/auth/session/webSessionFetch.test.ts",
+        "src/platform/auth/webSessionFlagOn.test.ts",
+        "src/platform/cloud/onboarding/desktopLoginRedemption.test.ts"
+      ]
+    },
     {
       "name": "Firebase identity drives sign-in, sign-out, current-user projection, and auth headers",
       "checks": [

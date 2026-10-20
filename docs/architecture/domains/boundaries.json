@@ -2,10 +2,6 @@
   "boundaries": {
     "zones": [
       {
-        "name": "authentication/application/public",
-        "patterns": ["src/platform/auth/session/webSessionUser.ts"]
-      },
-      {
         "name": "authentication/infrastructure/public",
         "patterns": ["src/platform/auth/session/webSessionFetch.ts"]
       },
@@ -4130,26 +4126,8 @@
     ],
     "rules": [
       {
-        "from": "authentication/application/public",
-        "allow": [
-          "authentication/application/public",
-          "authentication/infrastructure/public",
-          "error-reporting/application/public",
-          "authentication/domain",
-          "authentication/application",
-          "authentication/infrastructure",
-          "error-reporting/domain",
-          "error-reporting/application",
-          "error-reporting/infrastructure",
-          "authentication/infrastructure/outer-1",
-          "error-reporting/application/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "authentication/infrastructure/public",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "authentication/domain",
@@ -4191,7 +4169,6 @@
       {
         "from": "agent/application",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "agent/domain",
@@ -4225,7 +4202,6 @@
       {
         "from": "agent/infrastructure",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "agent/domain",
@@ -4259,7 +4235,6 @@
       {
         "from": "agent/presentation",
         "allow": [
-          "authentication/application/public",
           "error-reporting/application/public",
           "agent/domain",
           "agent/application",
@@ -4293,7 +4268,6 @@
       {
         "from": "agent/integration",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "agent/domain",
@@ -4490,7 +4464,6 @@
       {
         "from": "authentication/application",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "authentication/domain",
@@ -4507,7 +4480,6 @@
       {
         "from": "authentication/infrastructure",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "authentication/domain",
@@ -4524,7 +4496,6 @@
       {
         "from": "authentication/presentation",
         "allow": [
-          "authentication/application/public",
           "error-reporting/application/public",
           "authentication/domain",
           "authentication/application",
@@ -4538,7 +4509,6 @@
       {
         "from": "authentication/integration",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "authentication/domain",
@@ -4808,7 +4778,6 @@
       {
         "from": "cloud/application",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -4827,7 +4796,6 @@
       {
         "from": "cloud/infrastructure",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -4846,7 +4814,6 @@
       {
         "from": "cloud/presentation",
         "allow": [
-          "authentication/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
@@ -4863,7 +4830,6 @@
       {
         "from": "cloud/integration",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -6255,7 +6221,6 @@
       {
         "from": "settings/application",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -6273,7 +6238,6 @@
       {
         "from": "settings/infrastructure",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -6291,7 +6255,6 @@
       {
         "from": "settings/presentation",
         "allow": [
-          "authentication/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
@@ -6308,7 +6271,6 @@
       {
         "from": "settings/integration",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -6993,7 +6955,6 @@
       {
         "from": "agent/integration/outer-1",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "agent/domain",
@@ -7105,7 +7066,6 @@
       {
         "from": "authentication/infrastructure/outer-1",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "authentication/domain",
@@ -7251,7 +7211,6 @@
       {
         "from": "cloud/application/outer-1",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -7270,7 +7229,6 @@
       {
         "from": "cloud/infrastructure/outer-1",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -7622,7 +7580,6 @@
       {
         "from": "settings/application/outer-1",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -7890,7 +7847,6 @@
       {
         "from": "cloud/presentation/outer-2",
         "allow": [
-          "authentication/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
@@ -7990,7 +7946,6 @@
       {
         "from": "cloud/application/outer-3",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
@@ -8017,7 +7972,6 @@
       {
         "from": "unclassified",
         "allow": [
-          "authentication/application/public",
           "authentication/infrastructure/public",
           "error-reporting/application/public",
           "agent/domain",
