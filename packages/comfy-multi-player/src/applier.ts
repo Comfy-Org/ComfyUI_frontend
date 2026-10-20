@@ -108,6 +108,8 @@ import {
   formFinalOccurrence,
   formIndexOf,
   storedWidgetFormOf,
+  type StoredWidgetForm,
+  WIDGET_FORM_KEY,
 } from "./widget-form.js";
 import { linkHasMissingEndpoint, remapInsertedWorkflowIds } from "./remap.js";
 import { sha256Hex } from "./digest.js";
@@ -152,7 +154,14 @@ import {
   type WireOp,
 } from "./types.js";
 import { addInteriorLinkOrder, removeInteriorLinkOrder } from "./interior-link-order.js";
-import { optionOwnedWidgets, projectedLength, widgetLayoutForWidgets, widgetOrderForValues, widgetOrderForWidgets } from "./dynamic-combos.js";
+import {
+  optionOwnedWidgets,
+  projectedLength,
+  widgetLayoutForWidgets,
+  widgetOrderForProducerOrder,
+  widgetOrderForValues,
+  widgetOrderForWidgets,
+} from "./dynamic-combos.js";
 import { NODE_INCARNATION_KEY, WRITABLE_NODE_FIELDS } from "./types.js";
 
 /**
@@ -1453,21 +1462,17 @@ function validateWidgetName(
   node?: Y.Map<unknown>,
   occurrence = 0,
 ): void {
-  // A24: a self-described node answers this question itself, from the ordered
-  // identity its producer declared, and the catalog is not consulted at all —
-  // with or without one. That is the whole unlock: a class the catalog cannot
-  // describe is name-addressable when the node carries its own mapping. The
-  // declaration is still CLOSED, so a name or occurrence it does not list is
-  // `unknown_widget` exactly as a missing `widget_order` entry would be.
+  // A24: a self-described node answers from the ordered identity its producer
+  // declared. A25 adds one bounded catalog overlay for ARRAY forms, so those
+  // writes require the pinned catalog even when the current name is already
+  // declared: without it the applier cannot know whether the name is a
+  // selector whose winning write must refresh the realized order. Every pinned
+  // dynamic-combo option child is legal independent of the current selection,
+  // so child-before-selector and selector-before-child agree. Object/custom-
+  // serializer forms remain closed and catalog-free.
   const form = node ? storedWidgetFormOf(node) : null;
-  if (form) {
-    if (!formDeclares(form, widget, occurrence)) {
-      const at = occurrence === 0 ? "" : ` occurrence ${String(occurrence)}`;
-      throw new OpRejectedError(
-        "unknown_widget",
-        `widget '${widget}'${at} is not declared by ${nodeType} node ${String(node?.get("id"))}'s widgets_values_form; declared: ${form.order.join(", ")}`,
-      );
-    }
+  if (form && node) {
+    validateDeclaredWidgetName(catalog, nodeType, widget, occurrence, node, form);
     return;
   }
   if (!catalog) return;
@@ -1490,6 +1495,32 @@ function validateWidgetName(
       `widget '${widget}' not found on ${nodeType}; available: ${order.join(", ") || "(none — all inputs are links)"}`,
     );
   }
+}
+
+function validateDeclaredWidgetName(
+  catalog: WidgetCatalog | undefined,
+  nodeType: string,
+  widget: string,
+  occurrence: number,
+  node: Y.Map<unknown>,
+  form: StoredWidgetForm,
+): void {
+  if (form.shape === "array" && catalog === undefined) {
+    throw new OpRejectedError(
+      "catalog_required",
+      `widget '${widget}' on ${nodeType} node ${String(node.get("id"))}: an array widgets_values_form requires the pinned catalog to determine whether the write changes a dynamic-combo order`,
+    );
+  }
+  const entry = catalogEntry(catalog, nodeType);
+  const catalogOwnsDynamicName = form.shape === "array"
+    && occurrence === 0
+    && optionOwnedWidgets(entry).has(widget);
+  if (formDeclares(form, widget, occurrence) || catalogOwnsDynamicName) return;
+  const at = occurrence === 0 ? "" : ` occurrence ${String(occurrence)}`;
+  throw new OpRejectedError(
+    "unknown_widget",
+    `widget '${widget}'${at} is neither declared by ${nodeType} node ${String(node.get("id"))}'s widgets_values_form nor owned by its pinned dynamic-combo catalog; declared: ${form.order.join(", ")}`,
+  );
 }
 
 /**
@@ -1551,6 +1582,36 @@ function widgetsOf(node: Y.Map<unknown>): Y.Map<unknown> {
     mset(node, "widgets", widgets);
   }
   return widgets as Y.Map<unknown>;
+}
+
+/**
+ * Write one widget register and, for a self-described ARRAY form, refresh the
+ * realized order when the winning write targets a dynamic-combo selector.
+ *
+ * The producer's order is the stable anchor. It may contain the previous
+ * selection's catalog-owned children; `widgetOrderForProducerOrder` removes
+ * all such children before expanding the winning selector values, so arrival
+ * order cannot leave stale option slots in the form. Object/custom-serializer
+ * forms stay closed and are never reshaped by catalog metadata.
+ */
+function writeWidgetValue(
+  node: Y.Map<unknown>,
+  catalog: WidgetCatalog | undefined,
+  widget: string,
+  occurrence: number,
+  value: unknown,
+): void {
+  const widgets = widgetsOf(node);
+  mset(widgets, widgetStorageKey(widget, occurrence), structuredClone(value));
+
+  const form = storedWidgetFormOf(node);
+  if (!form || form.shape !== "array") return;
+  const entry = catalogEntry(catalog, String(node.get("type") ?? ""));
+  if (!entry?.dynamic_combos || !Object.hasOwn(entry.dynamic_combos, widget)) return;
+
+  const order = widgetOrderForProducerOrder(entry, form.order, widgets);
+  if (order.length === form.order.length && order.every((name, index) => name === form.order[index])) return;
+  mset(node, WIDGET_FORM_KEY, { ...structuredClone(form), order: [...order] });
 }
 
 /**
@@ -1829,7 +1890,10 @@ function hostWriteStorage(node: Y.Map<unknown>, catalog: WidgetCatalog | undefin
 /**
  * A promoted host write carries TWO addresses for one target — the widget
  * NAME and `promoted.value_index` — and on a self-described node (A24) both
- * resolve. Refuse a disagreement rather than silently preferring one.
+ * must resolve to the current form. Refuse a missing name or a disagreement
+ * rather than silently preferring one. An unselected dynamic child remains a
+ * legal name-addressed write, but it has no current positional host address
+ * and therefore cannot be a promoted write until selection exposes it.
  *
  * This is the rule `promotedHostWrite` already applies one field over, where
  * `promoted.instance_path` must join to `node_id`: a payload naming a
@@ -1855,11 +1919,14 @@ function requirePromotedFormAgreement(
   const form = storedWidgetFormOf(node);
   if (!form) return;
   const declared = formIndexOf(form, widget, occurrence);
-  if (declared < 0 || declared === valueIndex) return;
+  if (declared === valueIndex) return;
   const at = occurrence === 0 ? "" : ` occurrence ${String(occurrence)}`;
+  const position = declared < 0
+    ? "has no position in its current widgets_values_form"
+    : `is at ${String(declared)} in its current widgets_values_form`;
   throw new OpRejectedError(
     "malformed_op",
-    `set_widget: promoted.value_index ${String(valueIndex)} names a different slot than widget '${widget}'${at}, which node ${String(node.get("id"))}'s widgets_values_form puts at ${String(declared)}`,
+    `set_widget: promoted.value_index ${String(valueIndex)} cannot address widget '${widget}'${at}, which ${position} on node ${String(node.get("id"))}`,
   );
 }
 
@@ -1898,7 +1965,7 @@ function applyPromotedHostWrite(
         const occurrence = op.widget_occurrence ?? 0;
         requirePromotedFormAgreement(target, op.widget, occurrence, promoted.valueIndex);
         validateWidgetName(catalog, String(target.get("type") ?? ""), op.widget, target, occurrence);
-        mset(widgetsOf(target), widgetStorageKey(op.widget, occurrence), structuredClone(op.value));
+        writeWidgetValue(target, catalog, op.widget, occurrence, op.value);
         updateOrderedWidgetValue(target, op.widget, occurrence, op.value);
         updateNamedWidgetValue(target, catalog, op.widget, occurrence, op.value);
       }
@@ -2028,7 +2095,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
         );
       }
     }
-    mset(widgetsOf(target), widgetStorageKey(widget, occurrence), structuredClone(op.value));
+    writeWidgetValue(target, catalog, widget, occurrence, op.value);
     updateOrderedWidgetValue(target, widget, occurrence, op.value);
     updateNamedWidgetValue(target, catalog, widget, occurrence, op.value);
     mset(stamps, targetKey, key);
@@ -2044,7 +2111,7 @@ function applySetWidget(doc: Y.Doc, op: SetWidgetOp, catalog?: WidgetCatalog): S
   validateWidgetName(catalog, String(node.get("type") ?? ""), op.widget, node, occurrence);
   // Top-level writes may extend past the current positional length — comfy-cli
   // pads with None; here the name-keyed map makes padding a projection concern.
-  mset(widgetsOf(node), widgetStorageKey(op.widget, occurrence), structuredClone(op.value));
+  writeWidgetValue(node, catalog, op.widget, occurrence, op.value);
   updateOrderedWidgetValue(node, op.widget, occurrence, op.value);
   updateNamedWidgetValue(node, catalog, op.widget, occurrence, op.value);
   mset(stamps, targetKey, key);

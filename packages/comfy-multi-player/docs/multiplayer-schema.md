@@ -178,15 +178,19 @@ addressable.
   storage, and a promoted host `set_widget` (carrying `promoted.value_index`) is
   a whole-value replace of it: one index written, never decomposed by name.
 
-- Fifth consequence, pinned (Amendment A24): the catalog is per-CLASS and
+- Fifth consequence, pinned (Amendments A24 and A25): the catalog is per-CLASS and
   cannot describe two shapes that are per-INSTANCE — a node with two
   same-named serializable widgets, and a node whose custom serializer emits an
   OBJECT whose non-widget keys must survive. A node may therefore DECLARE its
   own ordered widget identity in `widgets_values_form`, and a node that does is
   decomposed, addressed and projected through that declaration instead of
-  through `widget_order`, with no catalog lookup on any leg. A declaration is
-  not a guess, so this does not relax KA-12; an undeclared node is unaffected.
-  See Amendment A24.
+  through `widget_order`. An OBJECT/custom-serializer form stays closed and
+  catalog-independent. An ARRAY form is the producer's realized order and may
+  compose with pinned `dynamic_combos`: catalog-owned option children remain
+  legal independent of arrival order, and a winning selector write replaces
+  only those children in the stored realized order. A declaration is not a
+  guess, so this does not relax KA-12; an undeclared node is unaffected. See
+  Amendments A24 and A25.
 
 Note the residual conflict semantics: a name-keyed Y.Map fixes the
 *structural* corruption, but Y.Map's native conflict pick is client-based,
@@ -2373,10 +2377,12 @@ A node carrying the field is **self-described**, and for it:
   the verbatim residue of keys `order` does not name (`extra`). The residue is
   one whole plain value under one key — whole-value LWW, never merged
   element-wise, the same justification A2 gives `__widgets_opaque`;
-- `set_widget` resolves `(widget, widget_occurrence)` against `order` and does
-  **not consult the catalog at all**, so neither `opaque_widgets` nor
-  `uncatalogued_widget_write` can arise. A name or occurrence `order` does not
-  list is `unknown_widget`, exactly as a missing `widget_order` entry would be;
+- `set_widget` resolves `(widget, widget_occurrence)` against `order`, so
+  neither `opaque_widgets` nor `uncatalogued_widget_write` can arise. A name
+  or occurrence `order` does not list is `unknown_widget`, exactly as a
+  missing `widget_order` entry would be. Amendment A25 narrows that closed-list
+  statement for ARRAY forms only: a pinned dynamic-combo option child is also
+  legal and a winning selector persists the recomputed realized order;
 - `project()` rebuilds `widgets_values` in the shape the producer serialized —
   an array of `order.length`, or the object in its original key order with each
   declared widget taking its live value and every other key its verbatim
@@ -2418,11 +2424,12 @@ and `add_node` converts to `invalid_node_payload`.
 
 ### This does not relax KA-12
 
-A self-described node skips the catalog because it does not need it: the
-name↔position mapping arrived WITH the node, from the only party that knows
-it. KA-12 exists to stop this package guessing a mapping it was never given,
-and a declaration is not a guess. An undeclared node is entirely unaffected —
-same catalog, same `widget_order`, same `opaque_widgets` and
+The producer supplies the node-local name↔position mapping, so a declaration
+is not a guess. An object form remains closed and catalog-free. Amendment A25
+lets an array form compose only with names and option trees supplied by the
+pinned catalog, and persists the realized result; it does not infer a name
+from positional state. An undeclared node is entirely unaffected — same
+catalog, same `widget_order`, same `opaque_widgets` and
 `uncatalogued_widget_write` refusals — and `meta.catalog_version` still pins
 the catalog every other node projects against.
 
@@ -2495,3 +2502,84 @@ on that path and the retention on every other — rather than papered over.
 map directly, maintains neither passthrough register (A23's gap), and does not
 consult a declared order either. Pre-existing, one op over, and not addressed
 here.
+
+## Amendment A25 — 2026-10-20 — portable node-local dynamic-order overlay (no schema change)
+
+### Problem
+
+A24 treated every declared form as a forever-closed list and returned from
+`validateWidgetName` before consulting `dynamic_combos`. That is correct for
+an OBJECT/custom serializer, whose declared keys are the complete contract,
+but wrong for an ARRAY. The array declaration is an observation of the live
+instance's realized producer order. A dynamic-combo selector can later choose
+another catalog-owned option whose children were not present in that
+observation. Rejecting those children makes the form producer compensate for
+host catalog semantics and makes a child-before-selector arrival reject where
+selector-before-child applies, violating KA-4.
+
+### Rule
+
+For an ARRAY form only, `widgets_values_form.order` is the current realized
+producer order plus a pinned catalog overlay:
+
+1. Names already in the form remain ordinary `(name, occurrence)` targets.
+   Applying any ARRAY-form write without the pinned catalog is
+   `catalog_required` before mutation: even a name already in the form could
+   be a selector whose winning value must refresh the realized order, and the
+   applier cannot distinguish that case without the catalog. OBJECT forms
+   remain catalog-free.
+2. A name owned by any option of any pinned `dynamic_combos` selector is also
+   a legal occurrence-zero target, whether or not that option is selected.
+   The value is stored immediately and is projected only when its option is
+   selected. Validation therefore does not depend on op arrival order. A
+   promoted host write additionally requires that the name already occupy its
+   claimed `promoted.value_index` in the current form; an unselected child has
+   no positional host address and is rejected rather than accepting an
+   arbitrary index.
+3. After a selector write wins its LWW register, the applier recomputes the
+   realized form order from the stored selector values. It removes every
+   catalog-owned dynamic child from the previous realized order, walks the
+   remaining producer-local names in their original order, and expands each
+   selected catalog tree immediately after its selector. Nested selectors use
+   the same rule. Unrelated producer-local names never move.
+4. OBJECT forms remain closed. A catalog-owned name absent from an object
+   declaration is `unknown_widget`; no object residue is reclassified or
+   reordered.
+5. A name owned by neither the form nor the pinned dynamic catalog is still
+   rejected before mutation. The rejected `op_id` remains unconsumed.
+
+The overlay changes only the existing `__widgets_form.order` plain value and
+the existing identity-keyed `widgets` map. It introduces no new root, per-node
+key, workflow field, or op shape. Projection remains catalog-free: it reads
+the realized order already persisted by the winning selector write.
+
+### Schema compatibility decision
+
+`SCHEMA_VERSION` remains 5. This is based on an executable mixed-version
+test, not on A24's opt-in precedent alone:
+`test/node-local-order-overlay.test.ts` writes every H1 transition with the
+current applier (seeded option A, hidden option-B child, realized option B,
+and realized option A again) and projects that same Y.Doc with the published
+`@comfyorg/comfy-multi-player@0.3.10` reader. The old and new projections are
+identical at every transition, and both readers report schema 5. The old
+reader already understands the only persisted shapes H1 uses: identity-keyed
+widget values and a whole-value `__widgets_form` carrying `shape` and `order`.
+It lacks the new APPLY rule, but it does not mis-project a state the new writer
+persists, so KA-11 does not require a layout bump or migration.
+
+### Guarded by
+
+- `fixtures/golden-vectors/node-local-order-overlay.json`, referenced from
+  `fixtures/golden-vectors/conformance.json`, is the language-neutral vector:
+  producer-local stable order, option-B child and selector ops in both arrival
+  orders, exact expected realized order, and an unrelated-name rejection.
+- `test/node-local-order-overlay.test.ts` proves both orders converge, every
+  accepted and LWW-dropped `op_id` is consumed, replay is byte-identical,
+  compaction preserves visible and hidden option registers for later
+  reselection, catalog-less selector writes and promoted name/index
+  disagreements reject before mutation, unrelated-name and object-form
+  rejection batches abort a trailing valid op with every rejected `op_id`
+  unconsumed, and the real 0.3.10 reader compatibility above.
+- Reverting the array-form catalog overlay in `validateWidgetName` makes the
+  named child-first vector fail `unknown_widget`; reverting selector-order
+  refresh makes the selector-first vector project the stale option-A layout.
