@@ -14,6 +14,12 @@ import { DEFAULT_OG_IMAGE } from '@/utils/jsonLd'
 import { vfxRedSkyMedia, vfxMediaRoot } from '@/data/vfxMedia'
 
 test.beforeEach(async ({ context }) => {
+  await context.route(vfxRedSkyMedia.video, (route) =>
+    route.fulfill({
+      path: join(websiteRoot, 'e2e/assets/vfx-playback.mp4'),
+      headers: { 'Accept-Ranges': 'bytes', 'Content-Type': 'video/mp4' }
+    })
+  )
   await context.route(`${vfxMediaRoot}/*.mp4`, (route) =>
     route.fulfill({
       path: join(websiteRoot, 'e2e/assets/vfx-playback.mp4'),
@@ -1251,6 +1257,71 @@ for (const { path, image, dimensions } of [
     await expect(page.locator('meta[property="og:image:type"]')).toHaveCount(0)
     await expect(page.locator('meta[property="og:image:width"]')).toHaveCount(
       dimensions
+    )
+  })
+}
+
+for (const { path, redSky, daylight, openStudio } of [
+  {
+    path: '/solutions/vfx/v3/',
+    redSky: 'Red sky',
+    daylight: 'Daylight',
+    openStudio: 'OPEN STUDIO'
+  },
+  {
+    path: '/zh-CN/solutions/vfx/v3/',
+    redSky: '红色天空',
+    daylight: '白天',
+    openStudio: '打开工作室'
+  }
+]) {
+  test(`${path} replaces only Blue hour across hero, canvas and Studio`, async ({
+    page
+  }) => {
+    await page.goto(path)
+    const hero = page.locator('[data-vfx-demo="hero"]')
+    await hero.getByRole('button', { name: redSky, exact: true }).click()
+    const after = hero.getByTestId('video-compare-after')
+    await expect(after).toHaveAttribute('src', vfxRedSkyMedia.video)
+    await expect(after).toHaveAttribute('poster', vfxRedSkyMedia.poster)
+    await expect(hero.getByTestId('video-compare-before')).toHaveAttribute(
+      'src',
+      `${vfxMediaRoot}/diner.mp4`
+    )
+    await hero.getByRole('button', { name: daylight, exact: true }).click()
+    await expect(after).toHaveAttribute(
+      'src',
+      `${vfxMediaRoot}/relight_day.mp4`
+    )
+    const section = page.locator('[data-vfx-demo="relight"]')
+    await waitForShowcase(section)
+    const choice = section.getByRole('button', { name: redSky, exact: true })
+    await expect(choice.locator('img')).toHaveAttribute(
+      'src',
+      vfxRedSkyMedia.poster
+    )
+    await choice.click()
+    const output = section.locator('.vfx-main-node video')
+    await expect(output).toHaveAttribute('src', vfxRedSkyMedia.video)
+    await expect(output).toHaveAttribute('poster', vfxRedSkyMedia.poster)
+    await expect(section.locator('.vfx-keyframe-node img')).toHaveAttribute(
+      'src',
+      vfxRedSkyMedia.poster
+    )
+    await section.getByRole('button', { name: openStudio, exact: true }).click()
+    const studio = section.locator('.vfx-studio-view')
+    await expect(studio.getByTestId('video-compare-after')).toHaveAttribute(
+      'src',
+      vfxRedSkyMedia.video
+    )
+    await expect(studio.getByTestId('video-compare-before')).toHaveAttribute(
+      'src',
+      `${vfxMediaRoot}/diner.mp4`
+    )
+    await studio.getByRole('button', { name: daylight, exact: true }).click()
+    await expect(studio.getByTestId('video-compare-after')).toHaveAttribute(
+      'src',
+      `${vfxMediaRoot}/relight_day.mp4`
     )
   })
 }

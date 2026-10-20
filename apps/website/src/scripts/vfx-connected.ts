@@ -1,4 +1,4 @@
-import { vfxMediaRoot } from '@/data/vfxMedia'
+import { vfxVariantMedia } from '@/data/vfxMedia'
 import { gsap, ScrollTrigger } from './gsapSetup'
 
 class VfxWorkflowShowcase extends HTMLElement {
@@ -231,7 +231,7 @@ class VfxWorkflowShowcase extends HTMLElement {
   private updateKeyframe(id: string | undefined) {
     if (this.dataset.vfxDemo === 'sequence') return
     const image = this.querySelector<HTMLImageElement>('.vfx-keyframe-node img')
-    if (image) image.src = `${vfxMediaRoot}/${id}.jpg`
+    if (image) image.src = vfxVariantMedia(id, 'jpg')
   }
   private select = (event: Event) => {
     const button = this.variantButton(event.target)
@@ -250,7 +250,7 @@ class VfxWorkflowShowcase extends HTMLElement {
   private updateOutputImage(id: string, label: string) {
     const image = this.querySelector<HTMLImageElement>('.vfx-main-node img')
     if (!image) return
-    image.src = `${vfxMediaRoot}/${id}.jpg`
+    image.src = vfxVariantMedia(id, 'jpg')
     image.alt = label
   }
   private playVisible(video: HTMLVideoElement) {
@@ -271,8 +271,8 @@ class VfxWorkflowShowcase extends HTMLElement {
       !video.dataset.playbackTime
     )
       video.dataset.playbackTime = String(video.currentTime)
-    video.dataset.src = `${vfxMediaRoot}/${id}.mp4`
-    video.poster = `${vfxMediaRoot}/${id}.jpg`
+    video.dataset.src = vfxVariantMedia(id, 'mp4')
+    video.poster = vfxVariantMedia(id, 'jpg')
     video.setAttribute('aria-label', label)
     video.src = video.dataset.src
     this.playVisible(video)

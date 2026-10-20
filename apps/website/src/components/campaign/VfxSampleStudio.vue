@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { vfxMediaRoot } from '@/data/vfxMedia'
+import { vfxMediaRoot, vfxVariantMedia } from '@/data/vfxMedia'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
@@ -175,8 +175,8 @@ useEventListener(
             v-if="demo === 'sequence'"
             :key="active.id"
             data-vfx-sequence-player
-            :src="`${vfxMediaRoot}/${active.id}.mp4`"
-            :poster="`${vfxMediaRoot}/${active.id}.jpg`"
+            :src="vfxVariantMedia(active.id, 'mp4')"
+            :poster="vfxVariantMedia(active.id, 'jpg')"
             :aria-label="active.label"
             :locale="locale"
             fit="contain"
@@ -194,9 +194,11 @@ useEventListener(
             :media-kind="mediaKind"
             fit="contain"
             :before-src="`${vfxMediaRoot}/${source}.${mediaKind === 'video' ? 'mp4' : 'jpg'}`"
-            :after-src="`${vfxMediaRoot}/${active.id}.${mediaKind === 'video' ? 'mp4' : 'jpg'}`"
+            :after-src="
+              vfxVariantMedia(active.id, mediaKind === 'video' ? 'mp4' : 'jpg')
+            "
             :before-poster-src="`${vfxMediaRoot}/${source}.jpg`"
-            :after-poster-src="`${vfxMediaRoot}/${active.id}.jpg`"
+            :after-poster-src="vfxVariantMedia(active.id, 'jpg')"
             :before-label="t('vfxV3.originalFootage')"
             :after-label="active.label"
             :slider-label="t('modelLaunch.beforeAfter.sliderLabel')"
@@ -246,7 +248,7 @@ useEventListener(
                   @click="selectVariant(variant.id)"
                 >
                   <img
-                    :src="`${vfxMediaRoot}/${variant.id}.jpg`"
+                    :src="vfxVariantMedia(variant.id, 'jpg')"
                     alt=""
                     width="160"
                     height="90"
