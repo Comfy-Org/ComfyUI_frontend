@@ -104,7 +104,7 @@
           :search-label="$t('g.search')"
           :search-placeholder="$t('g.search')"
           :empty-text="$t('g.noResultsFound')"
-          :accessible-label="$t('g.sort') || $t('g.singleSelectDropdown')"
+          :accessible-label="sortAccessibleLabel"
           :label="$t('g.sort')"
           :options="availableSortOptions"
           class="w-48"
@@ -223,6 +223,9 @@ const { initialTab, initialPackId, onClose } = defineProps<{
 provide(OnCloseKey, onClose)
 
 const { t } = useI18n()
+const sortAccessibleLabel = computed(
+  () => t('g.sort') || t('g.singleSelectDropdown')
+)
 const { buildDocsUrl } = useExternalLink()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
