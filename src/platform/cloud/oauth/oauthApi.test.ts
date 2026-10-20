@@ -378,8 +378,28 @@ describe('submitOAuthConsentDecision', () => {
 })
 
 describe('account grant contract', () => {
+  it.for([undefined, null, 42, '', ' '])(
+    'rejects an account challenge with redirect URI %j',
+    async (redirectUri) => {
+      vi.mocked(fetch).mockResolvedValue(
+        okResponse({
+          ...validChallenge,
+          grant_mode: 'account',
+          redirect_uri: redirectUri
+        })
+      )
+      await expect(fetchOAuthConsentChallenge('request')).rejects.toThrow(
+        'OAuth consent challenge is invalid'
+      )
+    }
+  )
+
   it('preserves the server-approved account mode', async () => {
-    const account = { ...validChallenge, grant_mode: 'account' }
+    const account = {
+      ...validChallenge,
+      grant_mode: 'account',
+      redirect_uri: 'http://127.0.0.1:50632/cb'
+    }
     vi.mocked(fetch).mockResolvedValue(okResponse(account))
     expect(await fetchOAuthConsentChallenge('request')).toEqual(account)
   })

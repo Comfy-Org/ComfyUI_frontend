@@ -100,6 +100,9 @@ function assertChallenge(
     typeof challenge.oauth_request_id !== 'string' ||
     typeof challenge.csrf_token !== 'string' ||
     typeof challenge.client_display_name !== 'string' ||
+    (challenge.grant_mode === 'account' &&
+      (typeof challenge.redirect_uri !== 'string' ||
+        !challenge.redirect_uri.trim())) ||
     !zOAuthConsentChallenge.pick({ grant_mode: true }).safeParse(challenge)
       .success ||
     !Array.isArray(challenge.scopes) ||
