@@ -124,6 +124,41 @@ describe('serialised widget registers', () => {
   })
 
   describe('register independence', () => {
+    it('stores custom saved values independently for a special widget name', () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('test')
+      node.serialize_widgets = true
+      graph.add(node)
+      const live = { transient: true }
+      const saved = { file: { name: 'retained.png' } }
+      const widget = node.addWidget(
+        'custom',
+        '__proto__',
+        live,
+        () => undefined,
+        {}
+      )
+      const initialLiveValue = widget.value
+      widget.serializeWorkflowValue = () => saved
+
+      const serialized = node.serialize()
+      const positional = serialized.widgets_values?.[0]
+      const named = serialized.widgets_values_named?.['__proto__']
+
+      expect(positional).toEqual(saved)
+      expect(named).toEqual(saved)
+      expect(positional).not.toBe(saved)
+      expect(named).not.toBe(positional)
+      expect(Object.hasOwn(serialized.widgets_values_named!, '__proto__')).toBe(
+        true
+      )
+      expect(Object.getPrototypeOf(serialized.widgets_values_named!)).toBe(
+        Object.prototype
+      )
+      expect(widget.value).toBe(initialLiveValue)
+      expect(widget.value).toEqual(live)
+    })
+
     it('gives each register its own clone of an object value', () => {
       const serialised = serialisedNode([
         { name: 'config', value: { nested: { depth: 1 } } }
