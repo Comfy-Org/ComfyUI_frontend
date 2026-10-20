@@ -73,24 +73,8 @@ deliberately different. ECS/store code addresses a widget by the derived
 node as `widgets_values_form: { order: string[] }`. A portable workflow must
 not persist process-local entity IDs or require the registry that created them.
 
-Core serialization declares this form only when it can prove the final
-`widgets_values` array is the one core produced from the live serializable
-widgets. A declared form is authoritative to readers, so a wrong form is worse
-than no form. Serializers that replace the values must declare their own form;
-the serializer reports object-shaped values that arrive without one.
-
-A declared form is closed, so core does not declare one for a node whose
-definition makes its widget set depend on its values (dynamic combos, dynamic
-groups, autogrow). Readers derive those layouts from the definition, which
-follows a later selection change; a form captured before that change would not.
-
-The form is a canonical serialization field, not extension state and not an
-own property restored onto `LGraphNode`. The existing Agent minter carries the
-serialized field through the normal human graph-intent path; this amendment
-adds no Agent-only mutation or reconciliation path. The semantic-op,
-host-authority, follower-read-only, provenance, and presentation-only overlay
-rules remain those in
-[ADR-CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md).
+The form's serialization contract is defined by
+[ADR-WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md).
 
 ## Context
 
