@@ -6,9 +6,9 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 
-import type { AgentMessages } from '../../../schemas/agentApiSchema'
-import { toTurnId } from '../../../schemas/agentApiSchema'
-import { normalizeAgentTranscript } from '../../../services/agent/agentTranscript'
+import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { normalizeAgentTranscript } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 
 import UserMessage from './UserMessage.vue'
 
@@ -303,7 +303,7 @@ describe('UserMessage', () => {
     await user.hover(screen.getByText('make it cinematic'))
     const copyButton = screen.getByRole('button', { name: t('agent.copy') })
     await user.hover(copyButton)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
       t('agent.copy')
     )
     await user.click(copyButton)
@@ -360,7 +360,9 @@ describe('UserMessage', () => {
 
     const editButton = screen.getByRole('button', { name: t('g.edit') })
     await user.hover(editButton)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(t('g.edit'))
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      t('g.edit')
+    )
     await user.click(editButton)
 
     expect(emitted().edit).toEqual([[{ text: prompt, workflowReferences: [] }]])

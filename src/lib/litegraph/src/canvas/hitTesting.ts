@@ -4,9 +4,9 @@ import type {
 } from '@/lib/litegraph/src/types/entityRegistry'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
-import type { LinkSegment } from '../interfaces'
+import type { LinkSegment } from '@/lib/litegraph/src/interfaces'
 
-import { Reroute } from '../Reroute'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
 
 /**
  * Resolves the reroute under a canvas-space point, preferring the layout store

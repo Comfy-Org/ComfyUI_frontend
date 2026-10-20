@@ -27,7 +27,7 @@ import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 import { mergeIfValid } from './widgetInputs'
 
 /**

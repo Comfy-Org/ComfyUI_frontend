@@ -55,11 +55,6 @@ vi.mock<unknown>(
           }
         }
       },
-      uiConfig: computed(() => ({
-        showEditWorkspaceMenuItem: false,
-        workspaceMenuAction: null,
-        workspaceMenuDisabledTooltip: null
-      })),
       canAccessSubscriptionFeatures: computed(
         () => state.canAccessSubscriptionFeatures
       ),
@@ -117,6 +112,9 @@ afterEach(() => {
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
+    useBillingCapabilities().canEditWorkspace = computed(() =>
+      receiveServerFact('can_edit_workspace', false)
+    )
     state.billingStatus = 'paid'
 
     state.canManageSubscriptionLifecycle = false

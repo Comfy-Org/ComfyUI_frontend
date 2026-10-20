@@ -4,8 +4,8 @@ import { effectScope } from 'vue'
 import type {
   AgentRestClient,
   ThreadListing
-} from '../../services/agent/agentRestClient'
-import { useAgentChatHistoryStore } from '../../stores/agent/agentChatHistoryStore'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentChatHistoryRefresh } from './useAgentChatHistoryRefresh'
 
 function completedListing(id: string): ThreadListing {
@@ -19,8 +19,8 @@ function completedListing(id: string): ThreadListing {
         workflow_id: '',
         status: 'active',
         message_count: 1,
-        created_at: '2026-10-01T00:00:00Z',
-        updated_at: '2026-10-01T00:00:00Z',
+        created_at: '2026-09-01T00:00:00Z',
+        updated_at: '2026-09-20T00:00:00Z',
         last_message_at: '2026-10-01T00:00:00Z'
       }
     ]
@@ -126,7 +126,16 @@ describe('useAgentChatHistoryRefresh', () => {
     older.resolve(completedListing('older'))
     await olderRefresh
 
-    expect(history.sessions.map(({ id }) => id)).toEqual(['older'])
+    expect(history.sessions).toEqual([
+      {
+        id: 'older',
+        title: 'older',
+        titleSource: 'server',
+        updatedAt: 1790812800000,
+        lastActivityAt: 1790812800000,
+        workflowId: undefined
+      }
+    ])
     expect(onFailure).toHaveBeenCalledExactlyOnceWith(
       requestFailure,
       'error_overlay'

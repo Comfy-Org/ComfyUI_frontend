@@ -6,11 +6,17 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { reportError } from '@/platform/telemetry/reportError'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
-import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
-import type { AssistantMessage } from '../../services/agent/agentMessageParts'
-import { askIdOf } from '../../services/agent/agentMessageParts'
+import type {
+  AgentMessages,
+  TurnId
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  zAgentMessages,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { AgentChatEvent } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import type { AssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import type { TurnTab } from './agentConversationStore'
 import { useAgentConversationStore } from './agentConversationStore'

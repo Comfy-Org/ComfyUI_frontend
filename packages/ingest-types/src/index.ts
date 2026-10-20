@@ -1373,4 +1373,4 @@ export type {
   WorkspaceMemberCapabilities,
   WorkspaceSummary,
   WorkspaceWithRole
-} from './types.gen.js'
+} from './types.gen'

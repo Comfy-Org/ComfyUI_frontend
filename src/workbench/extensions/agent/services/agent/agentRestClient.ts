@@ -26,7 +26,7 @@ import {
 import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 
-import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
+import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/attachmentMessages'
 import { withAgentAuth } from './agentAuth'
 
 import {
@@ -41,7 +41,7 @@ import {
   zAgentTurnAccepted,
   zAttachmentRejection,
   zCloudWorkflowIndex
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentAnswerReceipt,
   AgentCancelAccepted,
@@ -50,7 +50,7 @@ import type {
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const LIST_PAGE_SIZE = 100
 

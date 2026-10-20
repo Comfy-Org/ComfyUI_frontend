@@ -1,4 +1,4 @@
-import type { RectTarget } from '../coachmarkRegistry'
+import type { RectTarget } from '@/platform/onboarding/coachmarkRegistry'
 
 /** An element with a non-zero measured rect, so it counts as laid out. */
 export function laidOut(rect = new DOMRect(10, 10, 80, 30)): HTMLElement {

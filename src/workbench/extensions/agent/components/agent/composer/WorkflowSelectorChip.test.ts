@@ -12,8 +12,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
-import { toTurnId } from '../../../schemas/agentApiSchema'
-import { useAgentConversationStore } from '../../../stores/agent/agentConversationStore'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import WorkflowSelectorChip from './WorkflowSelectorChip.vue'
 
 const i18n = createI18n({
