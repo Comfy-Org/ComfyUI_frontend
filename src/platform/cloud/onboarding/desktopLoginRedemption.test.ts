@@ -795,6 +795,22 @@ describe('installDesktopLoginRedemption', () => {
     expect(useToast().toasts.at(-1)?.title).toBe('desktopLogin.failedSummary')
   })
 
+  it('keeps an account code while sign-in has not completed', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    mockAuthStore.currentUser = null
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: () => new Promise(() => {}) })
+    )
+    const code = `dls_${'A'.repeat(43)}`
+    seedStash(code)
+    await trigger()
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(stashedCode()).toBe(code)
+    expect(useToast().toasts).toEqual([])
+  })
+
   it('releases the drain when session initialization stalls', async () => {
     const { trigger, seedStash, stashedCode } = await setup()
     const { provideWebSessionRequests } =
