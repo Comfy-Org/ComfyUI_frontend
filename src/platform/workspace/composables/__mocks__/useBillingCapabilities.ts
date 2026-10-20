@@ -3,7 +3,7 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import type { useBillingCapabilities as realUseBillingCapabilities } from '../useBillingCapabilities'
+import type { useBillingCapabilities as realUseBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   canTopUp: computed(() => true),

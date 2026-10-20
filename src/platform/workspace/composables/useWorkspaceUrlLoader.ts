@@ -14,7 +14,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
 import { useWorkspaceSwitch } from './useWorkspaceSwitch'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKSPACE
 

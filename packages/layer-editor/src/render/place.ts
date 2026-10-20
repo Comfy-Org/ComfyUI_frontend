@@ -1,4 +1,4 @@
-import type { Rect, Transform } from '../node'
+import type { Rect, Transform } from '#/node'
 
 export type Bitmap = HTMLCanvasElement | ImageBitmap | OffscreenCanvas
 

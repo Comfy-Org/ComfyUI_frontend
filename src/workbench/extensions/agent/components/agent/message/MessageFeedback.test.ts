@@ -6,7 +6,7 @@ import { i18n } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { api } from '@/scripts/api'
 
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
 vi.mock(import('@/platform/telemetry/reportError'))

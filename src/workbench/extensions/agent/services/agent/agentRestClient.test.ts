@@ -10,7 +10,7 @@ import { api } from '@/scripts/api'
 
 import { withAgentAuth } from './agentAuth'
 
-import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))

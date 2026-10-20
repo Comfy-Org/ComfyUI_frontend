@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { useAuthDialogs as realUseAuthDialogs } from '../useAuthDialogs'
+import type { useAuthDialogs as realUseAuthDialogs } from '@/composables/auth/useAuthDialogs'
 
 type AuthDialogs = ReturnType<typeof realUseAuthDialogs>
 

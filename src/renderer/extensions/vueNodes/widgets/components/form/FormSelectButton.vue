@@ -40,7 +40,7 @@
 >
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { WidgetInputBaseClass } from '../layout'
+import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/components/layout'
 
 type ModelValue = T extends object ? T['value'] : T
 

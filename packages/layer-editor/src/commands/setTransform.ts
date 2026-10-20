@@ -1,6 +1,6 @@
-import { Dirty } from '../history'
-import type { Command, Direction } from '../history'
-import type { Transform } from '../node'
+import { Dirty } from '#/history'
+import type { Command, Direction } from '#/history'
+import type { Transform } from '#/node'
 
 export interface TransformSlot {
   transform: Transform

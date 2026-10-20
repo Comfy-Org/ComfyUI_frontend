@@ -72,7 +72,7 @@ import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const CurrentUserPopoverWorkspace = defineAsyncComponent(
   () =>
-    import('../../platform/workspace/components/CurrentUserPopoverWorkspace.vue')
+    import('@/platform/workspace/components/CurrentUserPopoverWorkspace.vue')
 )
 
 const { showArrow = true, compact = false } = defineProps<{
