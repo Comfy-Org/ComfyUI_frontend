@@ -7,11 +7,12 @@ import AgencyLogoDraft from './AgencyLogoDraft.vue'
 import AgencyMediaDraft from './AgencyMediaDraft.vue'
 import type { AgencyDraft, AgencyDraftLabels } from './draftTypes'
 
-defineProps<{
+const { heroVideoSrc = 'https://media.comfy.org/website/agency-partnership/wip-2026-10-20/hero/comfy-agency-partners-hero-34s-v019.mp4' } = defineProps<{
   agencies: readonly AgencyDraft[]
   labels: AgencyDraftLabels
   title: string
   subtitle: string
+  heroVideoSrc?: string
 }>()
 </script>
 
@@ -26,6 +27,16 @@ defineProps<{
       labels.explore
     }}</Button>
   </HeroCentered01>
+  <div v-if="heroVideoSrc" class="mx-auto max-w-9xl px-6 pt-8">
+    <video
+      :src="heroVideoSrc"
+      :aria-label="title"
+      controls
+      playsinline
+      preload="metadata"
+      class="aspect-video w-full rounded-3xl bg-primary-comfy-ink object-contain"
+    />
+  </div>
   <section id="agencies" class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader align="start">{{ labels.roster }}</SectionHeader>
     <div class="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">

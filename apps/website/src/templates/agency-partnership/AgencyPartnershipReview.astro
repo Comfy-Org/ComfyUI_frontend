@@ -11,6 +11,7 @@ type Props =
       labels: AgencyDraftLabels
       title: string
       subtitle: string
+      heroVideoSrc?: string
     }
   | {
       mode: 'agency'
@@ -30,6 +31,7 @@ const props = Astro.props
       labels={props.labels}
       title={props.title}
       subtitle={props.subtitle}
+      heroVideoSrc={props.heroVideoSrc}
     />
   ) : (
     <AgencyDetailDraft

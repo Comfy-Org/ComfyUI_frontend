@@ -751,6 +751,13 @@
       "bytes": 188437,
       "sha256": "7db6cd84105cc31959cd5709b4d6fd9b555bfdc89c978980ed952bf2fd2c16fb",
       "ok": true
+    },
+    {
+      "path": "hero/comfy-agency-partners-hero-34s-v019.mp4",
+      "ok": true,
+      "bytes": 54452272,
+      "sha256": "bad1f9e2cfa2b500bfbe32e7daed37aac7927f5f0ffdcb6e65ab2f1d3ff603ce",
+      "contentType": "video/mp4"
     }
   ]
 }

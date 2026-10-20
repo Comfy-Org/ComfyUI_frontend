@@ -38,3 +38,7 @@ Earlier live Chrome checks at 1440×900 and 390×844 confirmed six logo identiti
 Some work headings retain raw filenames. Final design, copy, localization, responsive production integration, Native Foreign work supply and release clearances remain for June/campaign owner. Prior review notes flag Brick reel attribution, Native Baywatch embargo, Black Math sign-off and Silverside claims clearance; reconfirm those before publishing pages. Do not treat this handoff as release approval.
 
 Google Cloud browser reauthentication completed and token retrieval succeeded without displaying tokens. The standard default configuration persists between tasks; no temporary configuration override was set. The generic earlier reauth failure does not prove whether organization session limits or invalidated refresh credentials caused it. If daily sign-in recurs, the Workspace administrator can confirm Cloud session length. No security settings were changed.
+
+## Main announcement hero update
+
+The overview only now includes `comfy-agency-partners-hero-34s-v019.mp4` as the announcement placeholder, with native playback controls and no autoplay. `overviewHero.src` in the data points to the exact uploaded MP4. `AgencyOverviewDraft` defaults to that hosted video and accepts an optional `heroVideoSrc` override; `AgencyPartnershipReview` forwards it for overview mode only. The portable preview displays it above the agency directory. Individual agency components and their galleries are unchanged. The source video is preserved without re-encoding.

@@ -1196,5 +1196,10 @@
     "existingWebsiteRoot": "website/",
     "visibility": "Treat as public; existing anonymous object reads verified; bucket IAM read denied",
     "prefix": "website/agency-partnership/wip-2026-10-20/"
+  },
+  "overviewHero": {
+    "src": "https://media.comfy.org/website/agency-partnership/wip-2026-10-20/hero/comfy-agency-partners-hero-34s-v019.mp4",
+    "status": "WIP announcement placeholder",
+    "filename": "comfy-agency-partners-hero-34s-v019.mp4"
   }
 }
