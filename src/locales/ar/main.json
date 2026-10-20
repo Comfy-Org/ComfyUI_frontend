@@ -5472,6 +5472,10 @@
   "templates": {
     "logoProviderSeparator": " و "
   },
+  "textEditor": {
+    "expand": "توسيع",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "تعذر تحميل سير العمل لأن تثبيت ComfyUI هذا يفتقد إلى العقد الأساسية. تحقق من أن الواجهة الخلفية بدأت بشكل صحيح.",
     "a1111EmbeddingsUnavailable": "تعذر تحميل التضمينات من الخادم. تم استيراد سير العمل، لكن تُركت أسماء التضمينات كنص عادي.",
