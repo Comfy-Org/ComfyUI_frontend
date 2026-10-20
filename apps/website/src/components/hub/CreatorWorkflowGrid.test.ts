@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { HubTemplate } from '@/lib/hub/types'
@@ -36,7 +36,9 @@ describe('CreatorWorkflowGrid', () => {
     expect(screen.getAllByTestId('hub-card')).toHaveLength(2)
 
     await user.click(screen.getByRole('button', { name: 'Load more' }))
-    expect(await screen.findAllByTestId('hub-card')).toHaveLength(4)
+    await waitFor(() =>
+      expect(screen.getAllByTestId('hub-card')).toHaveLength(4)
+    )
 
     await user.click(screen.getByRole('button', { name: 'Load more' }))
     expect(screen.getAllByTestId('hub-card')).toHaveLength(5)
@@ -45,9 +47,16 @@ describe('CreatorWorkflowGrid', () => {
     expect(fetch).toHaveBeenCalledWith('/hub/creators/purz.json')
   })
 
-  it('keeps the button when the remaining workflows fail to load', async () => {
+  it('keeps the button after a failed load and fetches again on the next click', async () => {
     const user = userEvent.setup()
-    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 404 }))
+    let failLoad: (response: Response) => void = () => {}
+    vi.mocked(fetch)
+      .mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          failLoad = resolve
+        })
+      )
+      .mockResolvedValueOnce(Response.json(templates('rest', 3)))
     render(CreatorWorkflowGrid, {
       props: {
         templates: templates('first', 2),
@@ -55,10 +64,23 @@ describe('CreatorWorkflowGrid', () => {
         moreUrl: '/hub/creators/purz.json'
       }
     })
+    const button = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'Load more'
+    })
 
-    await user.click(screen.getByRole('button', { name: 'Load more' }))
+    await user.click(button)
+    await waitFor(() => expect(button.disabled).toBe(true))
+    await user.click(button)
+    failLoad(new Response(null, { status: 404 }))
+    await waitFor(() => expect(button.disabled).toBe(false))
 
     expect(screen.getAllByTestId('hub-card')).toHaveLength(2)
-    expect(screen.getByRole('button', { name: 'Load more' })).toBeTruthy()
+    expect(fetch).toHaveBeenCalledOnce()
+
+    await user.click(button)
+    await waitFor(() =>
+      expect(screen.getAllByTestId('hub-card')).toHaveLength(4)
+    )
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 })

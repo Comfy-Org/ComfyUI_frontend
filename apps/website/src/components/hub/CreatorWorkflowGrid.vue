@@ -35,10 +35,18 @@ async function fetchRest() {
   return true
 }
 
+const loading = ref(false)
+
 async function loadMore() {
-  const needsRest = templates.length + rest.value.length < total
-  if (needsRest && !(await fetchRest())) return
-  displayCount.value += templates.length
+  if (loading.value) return
+  loading.value = true
+  try {
+    const needsRest = templates.length + rest.value.length < total
+    if (needsRest && !(await fetchRest())) return
+    displayCount.value += templates.length
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -61,6 +69,7 @@ async function loadMore() {
     <LoadMoreButton
       v-if="displayCount < total"
       :label="t('workshop.hub.loadMore')"
+      :disabled="loading"
       @click="loadMore"
     />
   </div>
