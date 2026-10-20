@@ -2016,9 +2016,11 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
   it.for([
     {
       case: 'an extension widget the definition does not describe',
-      definition: nodeDef('Display Int', {
-        input: ['INT', { forceInput: true }]
-      }),
+      definitions: [
+        nodeDef('Display Int', {
+          input: ['INT', { forceInput: true }]
+        })
+      ],
       type: 'Display Int',
       build: (n: LGraphNode) => {
         n.addInput('input', 'INT')
@@ -2030,7 +2032,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     },
     {
       case: 'widgets the definition fully describes',
-      definition: nodeDef('Described', { steps: ['INT', {}] }),
+      definitions: [nodeDef('Described', { steps: ['INT', {}] })],
       type: 'Described',
       build: (n: LGraphNode) => {
         n.addWidget('number', 'steps', 20, () => {})
@@ -2040,7 +2042,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     },
     {
       case: 'a companion linked to a described widget',
-      definition: nodeDef('Seeded', { seed: ['INT', {}] }),
+      definitions: [nodeDef('Seeded', { seed: ['INT', {}] })],
       type: 'Seeded',
       build: (n: LGraphNode) => {
         const seed = n.addWidget('number', 'seed', 1, () => {})
@@ -2058,7 +2060,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     },
     {
       case: 'a class with no definition',
-      definition: undefined,
+      definitions: [],
       type: 'Undefined Class',
       build: (n: LGraphNode) => {
         n.addWidget('text', 'output', '', () => {})
@@ -2068,7 +2070,7 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     },
     {
       case: 'integer-like widget names',
-      definition: undefined,
+      definitions: [],
       type: 'Integer Names',
       build: (n: LGraphNode) => {
         n.addWidget('text', '2', 'two', () => {})
@@ -2079,8 +2081,8 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
     }
   ])(
     'declares the live widget order for $case',
-    ({ definition, type, build, values, order }) => {
-      if (definition) useNodeDefStore().addNodeDef(definition)
+    ({ definitions, type, build, values, order }) => {
+      useNodeDefStore().updateNodeDefs(definitions)
       const node = nodeWith(type, build)
 
       expect(wireNodeSnapshot(node)).toMatchObject({
@@ -2134,6 +2136,18 @@ describe('wireNodeSnapshot widget form (schema A24)', () => {
       build: (n: LGraphNode) => {
         n.addWidget('text', 'prompt', 'a', () => {})
         n.addWidget('text', 'prompt', 'b', () => {})
+      }
+    },
+    {
+      case: 'a stored value whose widget its serializer removed',
+      definition: nodeDef('Dynamic', {}),
+      build: (n: LGraphNode) => {
+        n.addWidget('text', 'prompt', 'a', () => {})
+        n.addWidget('text', 'extra', 'b', () => {})
+        new LGraph().add(n)
+        n.onSerialize = () => {
+          n.widgets?.pop()
+        }
       }
     }
   ])('declares no form for a node with $case', ({ definition, build }) => {
