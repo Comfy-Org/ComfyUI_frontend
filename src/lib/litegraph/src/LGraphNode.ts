@@ -810,24 +810,18 @@ export class LGraphNode
    */
   declare isVirtualNode?: boolean
   /**
-   * @deprecated primitive node.
-   * Used by virtual nodes (primitives) to insert their values into the graph prior to queueing.
-   * Externally used by
-   * - https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/bbda5e52ad580c13ceaa53136d9c2bed9137bd2e/web/js/presetText.js#L160-L182
-   * - https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite/blob/4c7858ddd5126f7293dc3c9f6e0fc4c263cde079/web/js/VHS.core.js#L1889-L1889
+   * @deprecated Lets virtual nodes such as primitives write their values into
+   * the graph before queueing.
    */
   applyToGraph?(extraLinks?: LLink[]): void
 
   declare animatedImages?: boolean
   declare imgs?: HTMLImageElement[]
   declare images?: ResultItem[]
-  /** Container for the node's video preview */
   declare videoContainer?: HTMLElement
   /** Whether the node's preview media is loading */
   declare isLoading?: boolean
-  /** Whether a file is being uploaded to this node */
   declare isUploading?: boolean
-  /** The content type of the node's preview media */
   declare previewMediaType?: 'image' | 'video' | 'audio' | 'model'
   /** If true, output images are stored but not rendered below the node */
   declare hideOutputImages?: boolean
@@ -838,9 +832,7 @@ export class LGraphNode
   declare imageRects?: Rect[]
   declare overIndex?: number | null
   declare pointerDown?: { index: number | null; pos: Point } | null
-  /**
-   * @deprecated No longer needed as we use {@link useImagePreviewWidget}
-   */
+  /** @deprecated Image previews size themselves. */
   setSizeForImage?(force?: boolean): void
   /** @deprecated Unused */
   declare inputHeight?: unknown
@@ -855,10 +847,7 @@ export class LGraphNode
   /** Used internally for sizing the node during creation */
   declare _initialMinSize?: { width: number; height: number }
 
-  /**
-   * widgets_values is set to LGraphNode by `LGraphNode.configure`, but it is not
-   * used by litegraph internally. We should remove the dependency on it later.
-   */
+  /** Raw widget values from the last `configure`; litegraph does not read it. */
   declare widgets_values?: TWidgetValue[]
 
   isSubgraphNode(): this is SubgraphNode {
@@ -1044,15 +1033,11 @@ export class LGraphNode
    */
   onAfterGraphConfigured?(): void
   onGraphConfigured?(): void
-  /**
-   * Callback fired when node execution completes.
-   * Output contains known media properties (images, audio, video) plus
-   * arbitrary node-specific outputs (text, ui, custom properties).
-   */
+  /** Called with the node's execution output, which may carry custom keys. */
   onExecuted?(output: NodeExecutionOutput): void
   onExecutionStart?(): unknown
-  /** Flattens a subgraph node into its executable inner nodes. */
   refreshComboInNode?(defs?: Record<string, ComfyNodeDef>): void
+  /** Flattens a subgraph node into its executable inner nodes. */
   getInnerNodes?(
     nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
     subgraphNodePath?: readonly SerializedNodeId[],
@@ -1060,19 +1045,9 @@ export class LGraphNode
     subgraphs?: Set<LGraphNode>
   ): ExecutableLGraphNode[]
   recreate?(): Promise<LGraphNode>
-  /**
-   * Callback invoked when the node is dragged over from an external source, i.e.
-   * a file or another HTML element.
-   * @param e The drag event
-   * @returns {boolean} True if the drag event should be handled by this node, false otherwise
-   */
+  /** Returns true if this node handles an external drag (file or element). */
   onDragOver?(e: DragEvent): boolean
-  /**
-   * Callback invoked when the node is dropped from an external source, i.e.
-   * a file or another HTML element.
-   * @param e The drag event
-   * @returns {boolean} True if the drag event should be handled by this node, false otherwise
-   */
+  /** Returns true if this node handled an external drop (file or element). */
   onDragDrop?(e: DragEvent): Promise<boolean> | boolean
   convertWidgetToInput?(): boolean
   /** Callback for pasting an image file into the node */

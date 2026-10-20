@@ -65,11 +65,7 @@ export interface INodeOutputSlot extends INodeSlot {
    */
   links?: LinkId[] | null
   _data?: unknown
-  /**
-   * Only used by the Primitive node. Primitive node is using the widget property
-   * to store/access the widget config.
-   * We should remove this hacky solution once we have a proper solution.
-   */
+  /** Widget config stored on its output by the Primitive node. */
   widget?: IWidgetLocator
 }
 
