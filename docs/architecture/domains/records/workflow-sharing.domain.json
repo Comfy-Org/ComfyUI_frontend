@@ -41,7 +41,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["navigation"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {
