@@ -33,7 +33,10 @@ describe('rasterKind', () => {
       contentId: 'pix',
       mask: { id: 'm', role: 'mask', contentId: 'maskpix', enabled: true }
     })
-    expect(rasterKind.contentIds(node).sort()).toEqual(['maskpix', 'pix'])
+    expect(rasterKind.contentIds(node)).toEqual(
+      expect.arrayContaining(['maskpix', 'pix'])
+    )
+    expect(rasterKind.contentIds(node)).toHaveLength(2)
   })
 
   it('hitTest respects the transform box', () => {
@@ -96,7 +99,8 @@ describe('groupKind', () => {
         rasterKind.create({ contentId: 'b' })
       ]
     })
-    expect(groupKind.contentIds(g).sort()).toEqual(['a', 'b'])
+    expect(groupKind.contentIds(g)).toEqual(expect.arrayContaining(['a', 'b']))
+    expect(groupKind.contentIds(g)).toHaveLength(2)
   })
 
   it('bbox is the union of child boxes', () => {

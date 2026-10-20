@@ -4,6 +4,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { BalanceInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   failedTopup,
@@ -22,7 +23,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -88,11 +89,6 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
     clearPendingTopup: mockClearPendingTopup,
     startPendingTopup: mockStartPendingTopup
   })
-}))
-
-vi.mock(import('@/base/credits/comfyCredits'), () => ({
-  creditsToUsd: (credits: number) => credits,
-  usdToCredits: (usd: number) => usd
 }))
 
 const i18n = createI18n({
@@ -603,6 +599,115 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
   })
 
+  function renderWithBalance(overrides: Partial<BalanceInfo>) {
+    const balance: BalanceInfo = {
+      amountMicros: 10_000,
+      currency: 'usd',
+      effectiveBalanceMicros: 10_000,
+      effectiveBalanceAuthoritative: true,
+      suggestedTopupAmountCents: null,
+      ...overrides
+    }
+    Object.assign(mockBillingContext(), { balance: computed(() => balance) })
+    renderDialog()
+  }
+
+  it.for([
+    { name: 'the server suggestion', suggested: 11_400, pay: 'Pay $114.00' },
+    {
+      name: 'the default without a suggestion',
+      suggested: null,
+      pay: 'Pay $50.00'
+    },
+    {
+      name: 'the default for a suggestion that is not whole dollars',
+      suggested: 11_450,
+      pay: 'Pay $50.00'
+    }
+  ])('opens at $name', async ({ suggested, pay }) => {
+    renderWithBalance({ suggestedTopupAmountCents: suggested })
+
+    await clickAddCredits()
+
+    expect(screen.getByRole('button', { name: pay })).toBeEnabled()
+  })
+
+  function renderBeforeBalanceArrives() {
+    const balance = ref<BalanceInfo | null>(null)
+    Object.assign(mockBillingContext(), { balance })
+    renderDialog()
+    return (suggestedTopupAmountCents: number) => {
+      balance.value = {
+        amountMicros: -10_000,
+        currency: 'usd',
+        effectiveBalanceMicros: -10_000,
+        effectiveBalanceAuthoritative: true,
+        suggestedTopupAmountCents
+      }
+    }
+  }
+
+  it('adopts a suggestion that arrives after the dialog opens', async () => {
+    const balanceArrives = renderBeforeBalanceArrives()
+
+    balanceArrives(11_400)
+    await clickAddCredits()
+
+    expect(screen.getByRole('button', { name: 'Pay $114.00' })).toBeEnabled()
+  })
+
+  it('keeps an amount the user chose when the suggestion arrives later', async () => {
+    const balanceArrives = renderBeforeBalanceArrives()
+
+    await userEvent.click(screen.getByRole('button', { name: '$25' }))
+    balanceArrives(11_400)
+    await clickAddCredits()
+
+    expect(screen.getByRole('button', { name: 'Pay $25.00' })).toBeEnabled()
+  })
+
+  it('keeps the confirmed amount when the suggestion arrives after confirming', async () => {
+    const balanceArrives = renderBeforeBalanceArrives()
+
+    await clickAddCredits()
+    balanceArrives(11_400)
+    await nextTick()
+
+    expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
+  })
+
+  it('explains that the top-up covers a negative balance first', () => {
+    renderWithBalance({
+      amountMicros: -10_000,
+      effectiveBalanceMicros: -10_000,
+      suggestedTopupAmountCents: 11_400
+    })
+
+    expect(
+      screen.getByText(
+        'Your balance is −21,100 credits. This top-up covers that first.'
+      )
+    ).toBeInTheDocument()
+  })
+
+  it.for<{ name: string; balance: Partial<BalanceInfo> }>([
+    { name: 'a positive balance', balance: {} },
+    {
+      name: 'a balance the server could not read',
+      balance: {
+        amountMicros: -10_000,
+        effectiveBalanceMicros: -10_000,
+        effectiveBalanceAuthoritative: false
+      }
+    }
+  ])('says nothing about the balance for $name', ({ balance }) => {
+    renderWithBalance(balance)
+
+    expect(
+      screen.queryByText(/This top-up covers that first/)
+    ).not.toBeInTheDocument()
+  })
+
   describe('without a default payment method', () => {
     const checkoutUrl = 'https://checkout.stripe.com/c/pay/cs_test'
 
@@ -805,31 +910,85 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       }
     })
 
-    it('keeps the app in place when the browser blocks the checkout tab and reopens it on request', async () => {
+    const portalUrl = 'https://billing.stripe.com/p/session/flow_test'
+
+    function blockNewTabs() {
+      return vi.spyOn(window, 'open').mockReturnValue(null)
+    }
+
+    function stopBrowserFollowingLinks() {
+      const holdNavigation = (event: Event) => event.preventDefault()
+      document.addEventListener('click', holdNavigation)
+      onTestFinished(() =>
+        document.removeEventListener('click', holdNavigation)
+      )
+    }
+
+    it.for([
+      {
+        page: 'checkout',
+        url: checkoutUrl,
+        heading: "Checkout didn't open",
+        link: 'Open checkout',
+        trigger: 'Continue to checkout',
+        session: () =>
+          vi
+            .spyOn(workspaceApi, 'createTopupCheckout')
+            .mockResolvedValue({ checkout_url: checkoutUrl })
+      },
+      {
+        page: 'card settings',
+        url: portalUrl,
+        heading: "Payment page didn't open",
+        link: 'Open payment page',
+        trigger: 'Set a default card',
+        session: () =>
+          vi
+            .spyOn(workspaceApi, 'getPaymentPortalUrl')
+            .mockResolvedValue({ url: portalUrl })
+      }
+    ])(
+      'links to the blocked $page session without opening another one',
+      async ({ url, heading, link, trigger, session }) => {
+        refuseForNoPaymentMethod()
+        const createSession = session()
+        const open = blockNewTabs()
+        stopBrowserFollowingLinks()
+        const appUrl = window.location.href
+        await payAndGetRefused()
+
+        await userEvent.click(screen.getByRole('button', { name: trigger }))
+
+        expect(
+          await screen.findByRole('heading', { name: heading })
+        ).toBeInTheDocument()
+        const sessionLink = screen.getByRole('link', { name: link })
+        expect(sessionLink).toHaveAttribute('href', url)
+        expect(sessionLink).toHaveAttribute('target', '_blank')
+        expect(sessionLink).toHaveAttribute('rel', 'noopener')
+        expect(window.location.href).toBe(appUrl)
+
+        await userEvent.click(sessionLink)
+
+        expect(createSession).toHaveBeenCalledOnce()
+        expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
+      }
+    )
+
+    it('watches for the purchase once the customer follows the blocked checkout link', async () => {
       refuseForNoPaymentMethod()
       checkoutOpensAt(checkoutUrl)
-      const tab = { opener: window, location: { href: '' }, close: vi.fn() }
-      const open = vi
-        .spyOn(window, 'open')
-        .mockReturnValueOnce(null)
-        .mockReturnValueOnce(tab as never)
-      const appUrl = window.location.href
-
+      blockNewTabs()
+      stopBrowserFollowingLinks()
       await userEvent.click((await payAndGetRefused()).continueButton)
-
-      expect(
-        await screen.findByRole('heading', { name: "Checkout didn't open" })
-      ).toBeInTheDocument()
-      expect(window.location.href).toBe(appUrl)
+      const checkoutLink = await screen.findByRole('link', {
+        name: 'Open checkout'
+      })
       expect(mockStartPendingTopup).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
 
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Open checkout' })
-      )
+      await userEvent.click(checkoutLink)
 
-      expect(open).toHaveBeenCalledTimes(2)
-      expect(tab.location.href).toBe(checkoutUrl)
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'top-up-credits'
@@ -878,8 +1037,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
 
     describe('setting a default card', () => {
-      const portalUrl = 'https://billing.stripe.com/p/session/flow_test'
-
       function portalOpensAt(url: string) {
         return vi
           .spyOn(workspaceApi, 'getPaymentPortalUrl')
@@ -1069,20 +1226,64 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(useToast().error).not.toHaveBeenCalled()
       })
 
-      it('asks for pop-ups instead of minting a portal session when the tab is blocked', async () => {
+      it('returns to Pay once a customer who followed the blocked portal link comes back with a default card', async () => {
         refuseForNoPaymentMethod()
-        const getPortal = portalOpensAt(portalUrl)
-        vi.spyOn(window, 'open').mockReturnValue(null)
+        vi.spyOn(workspaceApi, 'listSavedPaymentMethods').mockResolvedValue(
+          savedCards(true)
+        )
+        portalOpensAt(portalUrl)
+        blockNewTabs()
+        stopBrowserFollowingLinks()
         await payAndGetRefused()
-
         await clickSetDefaultCard()
 
-        expect(useToast().warning).toHaveBeenCalledWith('Warning', {
-          description:
-            "Couldn't open the billing page. Allow pop-ups for this site and try again."
-        })
-        expect(getPortal).not.toHaveBeenCalled()
+        await userEvent.click(
+          await screen.findByRole('link', { name: 'Open payment page' })
+        )
+        window.dispatchEvent(new Event('focus'))
+
+        expect(
+          await screen.findByRole('button', { name: 'Pay $50.00' })
+        ).toBeEnabled()
+        expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       })
+
+      it.for([
+        {
+          failure: 'a rejected request',
+          arrange: () =>
+            vi
+              .spyOn(workspaceApi, 'getPaymentPortalUrl')
+              .mockRejectedValue(new WorkspaceApiError('Portal down', 502))
+        },
+        {
+          failure: 'an empty portal URL',
+          arrange: () => portalOpensAt('')
+        }
+      ])(
+        'explains $failure instead of linking when the portal tab is blocked',
+        async ({ arrange }) => {
+          refuseForNoPaymentMethod()
+          arrange()
+          blockNewTabs()
+          await payAndGetRefused()
+
+          await clickSetDefaultCard()
+
+          await waitFor(() =>
+            expect(useToast().error).toHaveBeenCalledWith(
+              "Couldn't open card settings",
+              { description: 'An unknown error occurred' }
+            )
+          )
+          expect(
+            screen.queryByRole('link', { name: 'Open payment page' })
+          ).not.toBeInTheDocument()
+          expect(
+            screen.getByRole('button', { name: 'Set a default card' })
+          ).toBeEnabled()
+        }
+      )
     })
 
     it('does not offer checkout for any other refusal', async () => {

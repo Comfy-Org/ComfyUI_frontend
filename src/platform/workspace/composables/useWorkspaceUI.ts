@@ -13,7 +13,6 @@ import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
 type BillingCapabilities = ReturnType<typeof useBillingCapabilities>
 
 interface ServedPermissionFacts {
-  canLeaveWorkspace: BillingCapabilities['canLeaveWorkspace']['value']
   canManageSubscription: BillingCapabilities['canManageSubscription']['value']
   canDowngradeToPersonal: BillingCapabilities['canDowngradeToPersonal']['value']
 }
@@ -22,8 +21,6 @@ interface ServedPermissionFacts {
 interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
-  canLeaveWorkspace: boolean
-  canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
   canDowngradeToPersonal: boolean
@@ -39,7 +36,6 @@ interface WorkspaceUIConfig {
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
-  showEditWorkspaceMenuItem: boolean
   workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
 }
@@ -47,11 +43,7 @@ interface WorkspaceUIConfig {
 function getPermissions(
   type: WorkspaceType,
   role: WorkspaceRole,
-  {
-    canLeaveWorkspace,
-    canManageSubscription,
-    canDowngradeToPersonal
-  }: ServedPermissionFacts
+  { canManageSubscription, canDowngradeToPersonal }: ServedPermissionFacts
 ): WorkspacePermissions {
   const billingPermissions = {
     canManageSubscription,
@@ -63,8 +55,6 @@ function getPermissions(
     return {
       canViewOtherMembers: true,
       canViewPendingInvites: false,
-      canLeaveWorkspace,
-      canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
     }
   }
@@ -73,8 +63,6 @@ function getPermissions(
     return {
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canLeaveWorkspace,
-      canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
     }
   }
@@ -82,8 +70,6 @@ function getPermissions(
   return {
     canViewOtherMembers: true,
     canViewPendingInvites: true,
-    canLeaveWorkspace,
-    canAccessWorkspaceMenu: true,
     ...billingPermissions
   }
 }
@@ -102,7 +88,6 @@ function getUIConfig(
       membersGridCols: 'grid-cols-[1fr_auto]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[1fr_auto]',
-      showEditWorkspaceMenuItem: false,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
@@ -118,7 +103,6 @@ function getUIConfig(
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
@@ -133,7 +117,6 @@ function getUIConfig(
     membersGridCols: 'grid-cols-[50%_40%_10%]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[50%_40%_10%]',
-    showEditWorkspaceMenuItem: true,
     workspaceMenuAction: 'delete',
     workspaceMenuDisabledTooltip:
       'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
@@ -175,14 +158,12 @@ function useWorkspaceUIInternal() {
     canReactivate,
     canSubscribeSelfServe,
     snapshotAuthoritative,
-    canLeaveWorkspace,
     canManageSubscription,
     canDowngradeToPersonal
   } = useBillingCapabilities()
 
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(workspaceType.value, workspaceRole.value, {
-      canLeaveWorkspace: canLeaveWorkspace.value,
       canManageSubscription: canManageSubscription.value,
       canDowngradeToPersonal: canDowngradeToPersonal.value
     })

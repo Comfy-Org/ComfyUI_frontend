@@ -43,11 +43,9 @@
           showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
         )
       "
-      @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace
         v-if="showWorkspacePopover"
-        ref="workspacePopoverContent"
         :account-actions-only="initState !== 'ready'"
         @close="closePopover"
       />
@@ -111,15 +109,7 @@ const workspaceName = computed(() => {
 })
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
-const workspacePopoverContent = ref<{
-  refreshBalance: () => void
-} | null>(null)
-
 const closePopover = () => {
   popover.value?.hide()
-}
-
-const onPopoverShow = () => {
-  workspacePopoverContent.value?.refreshBalance()
 }
 </script>
