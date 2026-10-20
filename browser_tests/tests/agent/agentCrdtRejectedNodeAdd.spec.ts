@@ -200,11 +200,6 @@ const canvasSeed: ComfyWorkflowJSON = {
   version: 0.4
 }
 
-/**
- * Replaces the added node's `widgets_values` with a plain object and no
- * form, the shape VideoHelperSuite's `onSerialize` produces. Core leaves such
- * a payload undeclared, so the host has no order for it and refuses the add.
- */
 async function installLegacyObjectSerializer(
   page: Page,
   nodeType: string
