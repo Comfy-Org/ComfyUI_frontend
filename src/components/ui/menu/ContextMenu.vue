@@ -130,7 +130,7 @@ defineExpose({ hide, show, toggle, visible })
         />
       </DropdownMenuTrigger>
     </Teleport>
-    <DropdownMenuPortal v-if="visible">
+    <DropdownMenuPortal :key="Number(visible)">
       <DropdownMenuContent
         :id="providedId ?? generatedId"
         :reference

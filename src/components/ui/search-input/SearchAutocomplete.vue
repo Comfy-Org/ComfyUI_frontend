@@ -73,7 +73,7 @@
       />
     </ComboboxAnchor>
 
-    <ComboboxPortal v-if="isOpen">
+    <ComboboxPortal :key="Number(isOpen)">
       <ComboboxContent
         v-if="suggestions.length > 0"
         position="popper"

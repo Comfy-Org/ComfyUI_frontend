@@ -40,7 +40,7 @@ const open = defineModel<boolean>('open', { default: false })
     <DropdownMenuTrigger as-child>
       <slot name="trigger" :open />
     </DropdownMenuTrigger>
-    <DropdownMenuPortal v-if="open" :to>
+    <DropdownMenuPortal :key="Number(open)" :to>
       <MenuContent
         :align
         :collision-padding

@@ -104,7 +104,7 @@
         </Button>
       </div>
     </ContextMenuTrigger>
-    <ContextMenuPortal v-if="menuOpen">
+    <ContextMenuPortal :key="Number(menuOpen)">
       <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
         <MenuItems :items="contextMenuItems" />
       </ContextMenuContent>

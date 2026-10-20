@@ -32,7 +32,7 @@
             </PopoverTrigger>
           </template>
         </i18n-t>
-        <PopoverPortal v-if="open">
+        <PopoverPortal :key="Number(open)">
           <PopoverContent
             side="top"
             :side-offset="5"

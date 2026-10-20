@@ -65,7 +65,7 @@
         </div>
       </ComboboxAnchor>
 
-      <ComboboxPortal v-if="isOpen">
+      <ComboboxPortal :key="Number(isOpen)">
         <ComboboxContent
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"

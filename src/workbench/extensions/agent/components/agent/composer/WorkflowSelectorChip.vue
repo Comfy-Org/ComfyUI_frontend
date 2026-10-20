@@ -150,7 +150,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuPortal v-if="open">
+      <DropdownMenuPortal :key="Number(open)">
         <MenuContent
           side="top"
           align="start"

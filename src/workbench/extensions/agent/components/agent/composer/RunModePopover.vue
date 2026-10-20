@@ -113,7 +113,7 @@ const options: {
         />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuPortal v-if="open">
+    <DropdownMenuPortal :key="Number(open)">
       <DropdownMenuContent
         side="top"
         align="end"

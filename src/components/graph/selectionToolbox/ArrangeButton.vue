@@ -12,7 +12,7 @@
         </div>
       </Button>
     </PopoverTrigger>
-    <PopoverPortal v-if="isOpen">
+    <PopoverPortal :key="Number(isOpen)">
       <PopoverContent
         side="bottom"
         :side-offset="5"

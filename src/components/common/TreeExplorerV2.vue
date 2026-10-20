@@ -40,7 +40,7 @@
         </TreeVirtualizer>
       </TreeRoot>
     </ContextMenuTrigger>
-    <ContextMenuPortal v-if="menuOpen">
+    <ContextMenuPortal :key="Number(menuOpen)">
       <ContextMenuContent :class="menuContentClass">
         <MenuItems :items="menuItems" />
       </ContextMenuContent>

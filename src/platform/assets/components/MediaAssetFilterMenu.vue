@@ -82,7 +82,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <DropdownMenuPortal v-if="open">
+    <DropdownMenuPortal :key="Number(open)">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"
@@ -120,7 +120,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <DropdownMenuPortal v-if="open">
+    <DropdownMenuPortal :key="Number(open)">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"

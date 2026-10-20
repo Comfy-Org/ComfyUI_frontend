@@ -28,7 +28,7 @@ const open = ref(false)
     <PopoverTrigger as-child>
       <slot name="button" />
     </PopoverTrigger>
-    <PopoverPortal v-if="open" :to>
+    <PopoverPortal :key="Number(open)" :to>
       <PopoverContent
         side="bottom"
         :side-offset="5"

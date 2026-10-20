@@ -24,7 +24,7 @@ const { open } = injectHoverCardRootContext()
 </script>
 
 <template>
-  <HoverCardPortal v-if="open || rest.forceMount">
+  <HoverCardPortal :key="Number(rest.forceMount || open)">
     <HoverCardContent
       v-bind="forwarded"
       :side

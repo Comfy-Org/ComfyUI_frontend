@@ -120,7 +120,7 @@ const isOpen = ref(false)
         </button>
       </slot>
     </PopoverTrigger>
-    <PopoverPortal v-if="isOpen">
+    <PopoverPortal :key="Number(isOpen)">
       <PopoverContent
         side="bottom"
         align="start"

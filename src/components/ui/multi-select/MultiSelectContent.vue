@@ -1,5 +1,5 @@
 <template>
-  <ComboboxPortal v-if="open">
+  <ComboboxPortal :key="Number(open)">
     <ComboboxContent
       position="popper"
       :side-offset="8"

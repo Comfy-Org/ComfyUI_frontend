@@ -34,7 +34,7 @@ const rootContext = injectPopoverRootContext()
 </script>
 
 <template>
-  <PopoverPortal v-if="rootContext.open.value || restProps.forceMount">
+  <PopoverPortal :key="Number(restProps.forceMount || rootContext.open.value)">
     <PopoverContent
       v-bind="{ ...forwarded, ...$attrs }"
       :class="

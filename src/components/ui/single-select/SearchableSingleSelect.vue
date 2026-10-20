@@ -45,7 +45,7 @@
       </ComboboxTrigger>
     </ComboboxAnchor>
 
-    <ComboboxPortal v-if="isOpen">
+    <ComboboxPortal :key="Number(isOpen)">
       <ComboboxContent
         position="popper"
         :side-offset="8"

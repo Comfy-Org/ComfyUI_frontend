@@ -28,7 +28,7 @@ const disabled = computed(
     >
       <slot />
     </MenuSubTrigger>
-    <DropdownMenuPortal v-if="open">
+    <DropdownMenuPortal :key="Number(open)">
       <MenuSubContent
         :data-menu-owner="ownerId"
         :side-offset="2"
