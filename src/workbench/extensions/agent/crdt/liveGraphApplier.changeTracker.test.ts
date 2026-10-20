@@ -22,7 +22,6 @@ import type { ComfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { toNodeId } from '@/types/nodeId'
 import { toRootGraphId } from '@/types/graphScopeId'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import { useLitegraphService } from '@/services/litegraphService'
 
 import { followedDoc } from './__fixtures__/followedDoc'
@@ -84,7 +83,6 @@ class DynamicGroupTest extends LGraphNode {
   }
 }
 
-/** A DynamicGroup on a node that `beforeEach` gives a DynamicCombo input, so its document entries can be positional aliases. */
 class DynamicGroupOverflowTest extends LGraphNode {
   constructor() {
     super('DynamicGroupOverflowTest')
@@ -143,6 +141,52 @@ function op(body: OpBody): Op {
   return { ...envelope, ...body }
 }
 
+function restoredAboveMaxDoc() {
+  const local = new LGraph()
+  const node = LiteGraph.createNode('DynamicGroupTest')
+  assert.exists(node)
+  local.add(node)
+  node.configure({
+    ...node.serialize(),
+    widgets_values: ['head', 4, 0.1, 0.2, 0.3, 0.4, 'tail']
+  })
+  const snapshot = wireNodeSnapshot(node)
+  assert.exists(snapshot)
+  const catalog: WidgetCatalog = {
+    types: {
+      DynamicGroupTest: {
+        widget_order: [
+          'before',
+          'rows',
+          'rows.0.strength',
+          'rows.1.strength',
+          'rows.2.strength',
+          'rows.3.strength',
+          'after'
+        ]
+      }
+    }
+  }
+  const { doc, collector } = followedDoc({ nodes: [], links: [] }, catalog)
+  collector.take()
+  const add = mintWireOps(
+    [
+      {
+        op: 'add_node',
+        node_id: node.id,
+        class_type: snapshot.type,
+        pos: [0, 0],
+        node: snapshot
+      }
+    ],
+    { actor: 'human:user:tab', baseVersion: 1 }
+  )
+  expect(
+    applyOps(doc, add, catalog).outcomes.map(({ outcome }) => outcome)
+  ).toEqual(['applied'])
+  return { doc, collector, node }
+}
+
 async function workflowJson(graph: LGraph): Promise<ComfyWorkflowJSON> {
   const state = await validateComfyWorkflow(graph.serialize(), (error) => {
     throw new Error(error)
@@ -167,12 +211,12 @@ beforeEach(() => {
     NonNullable<LGraphNode['constructor']['nodeData']>
   >({
     inputs: {
-      mode: transformInputSpecV1ToV2(
-        ['COMFY_DYNAMICCOMBO_V3', { options: [] }],
-        {
-          name: 'mode'
-        }
-      )
+      mode: {
+        type: 'COMFY_DYNAMICCOMBO_V3',
+        name: 'mode',
+        isOptional: false,
+        options: []
+      }
     }
   })
   ChangeTracker.isLoadingGraph = false
@@ -361,71 +405,48 @@ describe('LiveGraphApplier with the real change tracker', () => {
     )
   })
 
-  it.for([
-    { label: 'no other entries', extra: {}, failures: 0 },
-    { label: 'a stray positional key', extra: { _extra_9: 1 }, failures: 1 }
-  ])(
-    'creates a restored DynamicGroup holding more rows than its max on a follower with $label',
-    ({ extra, failures }) => {
-      const local = new LGraph()
-      const node = LiteGraph.createNode('DynamicGroupTest')
-      assert.exists(node)
-      local.add(node)
-      node.configure({
-        ...node.serialize(),
-        widgets_values: ['head', 4, 0.1, 0.2, 0.3, 0.4, 'tail']
-      })
-      const snapshot = wireNodeSnapshot(node)
-      assert.exists(snapshot)
-      const catalog: WidgetCatalog = {
-        types: {
-          DynamicGroupTest: {
-            widget_order: [
-              'before',
-              'rows',
-              'rows.0.strength',
-              'rows.1.strength',
-              'rows.2.strength',
-              'rows.3.strength',
-              'after'
-            ]
-          }
-        }
-      }
-      const { doc, collector } = followedDoc({ nodes: [], links: [] }, catalog)
-      collector.take()
-      const add = mintWireOps(
-        [
-          {
-            op: 'add_node',
-            node_id: node.id,
-            class_type: snapshot.type,
-            pos: [0, 0],
-            node: snapshot
-          }
-        ],
-        { actor: 'human:user:tab', baseVersion: 1 }
-      )
-      expect(
-        applyOps(doc, add, catalog).outcomes.map(({ outcome }) => outcome)
-      ).toEqual(['applied'])
-      doc.transact(() => {
-        const widgets = nodesMap(doc).get(String(node.id))?.get('widgets')
-        assert.instanceOf(widgets, Y.Map)
-        for (const [name, value] of Object.entries(extra))
-          widgets.set(name, value)
-      })
-      const follower = new LGraph()
-      const applier = new LiveGraphApplier({ getGraph: () => follower })
+  it('creates a restored DynamicGroup holding more rows than its max on a follower', () => {
+    const { doc, collector, node } = restoredAboveMaxDoc()
+    const follower = new LGraph()
+    const applier = new LiveGraphApplier({ getGraph: () => follower })
 
-      const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
 
-      expect(result.failureCount).toBe(failures)
-      expect(follower.getNodeById(node.id)?.serialize().widgets_values).toEqual(
-        ['head', 4, 0.1, 0.2, 0.3, 0.4, 'tail']
-      )
-    }
-  )
+    expect(result.failureCount).toBe(0)
+    expect(follower.getNodeById(node.id)?.serialize().widgets_values).toEqual([
+      'head',
+      4,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      'tail'
+    ])
+  })
+
+  it('creates a restored above-max DynamicGroup next to a stray positional key', () => {
+    const { doc, collector, node } = restoredAboveMaxDoc()
+    doc.transact(() => {
+      const widgets = nodesMap(doc).get(String(node.id))?.get('widgets')
+      assert.instanceOf(widgets, Y.Map)
+      widgets.set('_extra_9', 1)
+    })
+    const follower = new LGraph()
+    const applier = new LiveGraphApplier({ getGraph: () => follower })
+
+    const result = applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(result.failureCount).toBe(1)
+    expect(follower.getNodeById(node.id)?.serialize().widgets_values).toEqual([
+      'head',
+      4,
+      0.1,
+      0.2,
+      0.3,
+      0.4,
+      'tail'
+    ])
+  })
 
   it('creates a DynamicGroup whose row count the document stores under a positional alias', () => {
     const { doc, collector } = followedDoc(
@@ -492,8 +513,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
     }
   )
 
-  // #21297: a node with a DynamicCombo keeps the positional `configure` path on create.
-  it('still fails to create a restored above-max DynamicGroup on a node with a DynamicCombo', () => {
+  it('still fails to create a restored above-max DynamicGroup on a node with a DynamicCombo (#21297)', () => {
     const { doc, collector } = followedDoc(
       {
         nodes: [

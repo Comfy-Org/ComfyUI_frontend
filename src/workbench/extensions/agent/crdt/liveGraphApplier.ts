@@ -495,13 +495,6 @@ function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
   return rows.size
 }
 
-/**
- * DynamicGroup controllers whose row count applies after `configure`, once the
- * document's row values can back it: counts stored by name on a node without
- * overflow aliases. On a node with a dynamic combo, aliases can address slots
- * the rows would shift, so the count keeps the positional `configure` path.
- * TODO(#21297): route those counts through the remote row-count guard too.
- */
 function deferredRowCounts(
   node: LGraphNode,
   constructed: readonly IBaseWidget[],
@@ -526,10 +519,9 @@ function deferredRowCounts(
 
 /**
  * Document entries for widgets that only exist after `configure`: aliases past
- * the constructed list, names the constructor did not build but the node now
- * serializes, and deferred row counts. `constructed` is the serializable list
- * from before `configure`; a name that still matches nothing is dropped without
- * a report.
+ * the constructed list, and names the constructor did not build but the node
+ * now serializes. `constructed` is the serializable list from before
+ * `configure`; a name that still matches nothing is dropped without a report.
  */
 function mountedWidgetValues(
   node: LGraphNode,
