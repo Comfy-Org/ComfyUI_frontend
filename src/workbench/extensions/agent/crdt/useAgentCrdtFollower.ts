@@ -100,6 +100,7 @@ interface AgentCrdtOutcomeCounters {
 interface ProjectionFrameId {
   opIds?: readonly string[]
   seq: number
+  isLive?: boolean
 }
 
 const NOTHING_APPLIED: FrameOutcome = {
@@ -109,6 +110,10 @@ const NOTHING_APPLIED: FrameOutcome = {
 
 function isAgentFrame(actor: string | undefined): boolean {
   return actor === undefined || actor.startsWith('agent:')
+}
+
+function projectionAppliedCleanly(outcome: FrameOutcome): boolean {
+  return outcome.applied && outcome.failureCount === 0
 }
 
 function reportAgentProjection(
@@ -248,6 +253,11 @@ function opsResultDropReason(
 }
 
 export interface AgentCrdtFollowerEvents {
+  onAppliedUpdate?: (event: {
+    workflowId: string
+    opIds: readonly string[]
+    isLive: boolean
+  }) => void
   onMaterialized?: (event: {
     workflowId: string
     actor: string | undefined
@@ -268,6 +278,19 @@ export interface AgentCrdtFollowerEvents {
    * single message for every permanent reason.
    */
   onSyncError?: (message?: string, code?: string) => void
+}
+
+function notifyAppliedUpdate(
+  update: ClassifiedDocUpdate,
+  outcome: FrameOutcome,
+  events: AgentCrdtFollowerEvents
+): void {
+  if (!outcome.applied || outcome.failureCount > 0) return
+  events.onAppliedUpdate?.({
+    workflowId: update.workflowId,
+    opIds: update.opIds ?? [],
+    isLive: !update.catchUp
+  })
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -560,7 +583,11 @@ function startAgentCrdtFollower(
   }
   const retainPendingFrame = (update: ClassifiedDocUpdate): void => {
     const frames = pendingProjectionFrames.get(update.workflowId)
-    const frame = { opIds: update.opIds, seq: update.seq }
+    const frame = {
+      opIds: update.opIds,
+      seq: update.seq,
+      isLive: !update.catchUp
+    }
     if (frames) frames.push(frame)
     else pendingProjectionFrames.set(update.workflowId, [frame])
   }
@@ -573,6 +600,29 @@ function startAgentCrdtFollower(
     pendingProjectionFrames.delete(workflowId)
     for (const frame of frames ?? [])
       reportAgentProjection(frame, stage, outcome)
+  }
+  const notifyPendingFramesApplied = (
+    workflowId: string,
+    frames: readonly ProjectionFrameId[]
+  ): void => {
+    for (const frame of frames) {
+      events.onAppliedUpdate?.({
+        workflowId,
+        opIds: frame.opIds ?? [],
+        isLive: frame.isLive ?? true
+      })
+    }
+  }
+  const flushPendingFrames = (
+    workflowId: string,
+    outcome: FrameOutcome
+  ): void => {
+    if (projectionAppliedCleanly(outcome))
+      notifyPendingFramesApplied(
+        workflowId,
+        pendingProjectionFrames.get(workflowId) ?? []
+      )
+    reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }
   const reportFrameProjection = (
     update: ClassifiedDocUpdate,
@@ -591,13 +641,20 @@ function startAgentCrdtFollower(
       if (isAgentFrame(update.actor)) retainPendingFrame(update)
       return
     }
-    if (stage === 'applied')
-      reportPendingFrames(update.workflowId, 'applied_deferred', outcome)
+    if (stage === 'applied') flushPendingFrames(update.workflowId, outcome)
     else reportPendingFrames(update.workflowId, 'discarded', NOTHING_APPLIED)
   }
   const applyCollected = (workflowId: string): void => {
+    const pendingFrames = pendingProjectionFrames.get(workflowId) ?? []
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
+    // Release note: upstream routes this through `settleCollectedProjection`,
+    // whose other half drives the projection-staleness latch (`main`'s
+    // `markProjectionStale` / `clearProjectionStaleness`). That latch does not
+    // exist on this release branch, so only the applied-frame notification is
+    // carried and the clean-apply test is inlined.
+    if (outcome.failureCount === 0)
+      notifyPendingFramesApplied(workflowId, pendingFrames)
     reportMaterialized(workflowId, outcome.createdNodeIds)
     reportPendingFrames(workflowId, 'applied_deferred', outcome)
   }
@@ -702,6 +759,7 @@ function startAgentCrdtFollower(
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
     const outcome = applyFrame(update)
+    notifyAppliedUpdate(update, outcome, events)
     const nodes = outcome.nodes
     const created = outcome.applied ? outcome.createdNodeIds : []
     reportFrameProjection(update, outcome)
