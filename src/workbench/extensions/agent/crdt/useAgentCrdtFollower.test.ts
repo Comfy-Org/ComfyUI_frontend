@@ -1601,6 +1601,37 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('reports exact workflow/op evidence after live and catch-up frames apply', () => {
+    const onAppliedUpdate = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onAppliedUpdate
+    })
+
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 7,
+      opIds: ['op-1', 'op-2']
+    })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 8,
+      opIds: ['op-catch-up'],
+      catchUp: true
+    })
+
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(1, {
+      workflowId: 'wf-1',
+      opIds: ['op-1', 'op-2'],
+      isLive: true
+    })
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(2, {
+      workflowId: 'wf-1',
+      opIds: ['op-catch-up'],
+      isLive: false
+    })
+    unmount()
+  })
+
   describe('s5-metrics-1: per-outcome counters', () => {
     it('counts received and applied for a frame that passes the filter', () => {
       const { unmount, status } = mountFollower('wf-1')
@@ -2041,6 +2072,51 @@ describe('useAgentCrdtFollower', () => {
           apply_failure_count: 2
         }
       ])
+      unmount()
+    })
+
+    it.for([
+      {
+        name: 'reports deferred op evidence once a later live frame applies it cleanly',
+        failureCount: 0,
+        expected: [
+          { workflowId: 'wf-1', opIds: ['op-b'], isLive: true },
+          { workflowId: 'wf-1', opIds: ['op-a'], isLive: true }
+        ]
+      },
+      {
+        name: 'withholds deferred op evidence when the later live frame fails to apply',
+        failureCount: 1,
+        expected: []
+      }
+    ])('$name', ({ failureCount, expected }) => {
+      const graph = shallowRef<LGraph | null>(null)
+      const onAppliedUpdate = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onAppliedUpdate
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn-a',
+        opIds: ['op-a']
+      })
+
+      graph.value = fakeGraph
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['3'], removed: [] }, failureCount)
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'agent:thread:turn-b',
+        opIds: ['op-b']
+      })
+
+      expect(onAppliedUpdate.mock.calls.flat()).toEqual(expected)
       unmount()
     })
 

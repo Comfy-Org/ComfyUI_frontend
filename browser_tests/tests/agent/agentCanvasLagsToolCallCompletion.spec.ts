@@ -82,6 +82,8 @@ const WORKFLOW_ID = 'c1d2e3f4-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
 const THREAD_ID = 'f0e1d2c3-b4a5-4968-8172-6354a3b2c1d0'
 const MESSAGE_ID = '1e2d3c4b-5a69-4788-9061-52f3e4d5c6b7'
 const ADDED_NODE_ID = 4242
+const UNRELATED_NODE_ID = 4241
+const SECOND_NODE_ID = 4243
 const NODE_TEXT = 'added while the doc broadcast lags'
 
 const CATALOG: WidgetCatalog = {
@@ -95,10 +97,14 @@ async function driveThroughToolCallDone(
   page: Page,
   order:
     | 'toolCallBeforeDocUpdate'
-    | 'docUpdateBeforeToolCall' = 'toolCallBeforeDocUpdate'
+    | 'docUpdateBeforeToolCall' = 'toolCallBeforeDocUpdate',
+  includeUnrelatedUpdate = false,
+  includeSecondOpUpdate = false
 ): Promise<{
   vueNodes: VueNodeHelpers
+  sendUnrelatedDocUpdate: () => void
   sendDelayedDocUpdate: () => void
+  sendSecondOpDocUpdate: () => void
 }> {
   const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
   const vueNodes = new VueNodeHelpers(page)
@@ -203,6 +209,29 @@ async function driveThroughToolCallDone(
     }
   })
 
+  const unrelatedUpdate = includeUnrelatedUpdate
+    ? host.apply([
+        {
+          op: 'add_node',
+          pos: [250, 0],
+          node: {
+            id: UNRELATED_NODE_ID,
+            pos: [250, 0],
+            mode: 0,
+            size: [200, 100],
+            type: 'MarkdownNote',
+            flags: {},
+            order: 0,
+            inputs: [],
+            outputs: [],
+            properties: {},
+            widgets_values: ['unrelated document operation']
+          },
+          node_id: UNRELATED_NODE_ID,
+          class_type: 'MarkdownNote'
+        }
+      ])
+    : null
   const update = host.apply([
     {
       op: 'add_node',
@@ -224,7 +253,41 @@ async function driveThroughToolCallDone(
       class_type: 'MarkdownNote'
     }
   ])
+  const secondOpUpdate = includeSecondOpUpdate
+    ? host.apply([
+        {
+          op: 'add_node',
+          pos: [0, 250],
+          node: {
+            id: SECOND_NODE_ID,
+            pos: [0, 250],
+            mode: 0,
+            size: [200, 100],
+            type: 'MarkdownNote',
+            flags: {},
+            order: 0,
+            inputs: [],
+            outputs: [],
+            properties: {},
+            widgets_values: ['second operation of the same tool call']
+          },
+          node_id: SECOND_NODE_ID,
+          class_type: 'MarkdownNote'
+        }
+      ])
+    : null
   expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
+  const matchingOpIds = [update, secondOpUpdate].flatMap((hostUpdate) => {
+    if (hostUpdate === null) return []
+    const opIds = hostUpdate.data.op_ids
+    if (
+      !Array.isArray(opIds) ||
+      !opIds.every((opId): opId is string => typeof opId === 'string')
+    ) {
+      throw new Error('host update did not carry string op_ids')
+    }
+    return opIds
+  })
 
   if (order === 'docUpdateBeforeToolCall') hostSocket.send(update)
   hostSocket.send({
@@ -234,6 +297,8 @@ async function driveThroughToolCallDone(
       tool_name: 'add_node',
       status: 'success',
       duration_ms: 90,
+      workflow_id: WORKFLOW_ID,
+      op_ids: matchingOpIds,
       thread_id: THREAD_ID,
       message_id: MESSAGE_ID
     }
@@ -256,8 +321,14 @@ async function driveThroughToolCallDone(
 
   return {
     vueNodes,
+    sendUnrelatedDocUpdate: () => {
+      if (unrelatedUpdate) hostSocket.send(unrelatedUpdate)
+    },
     sendDelayedDocUpdate: () => {
       if (order !== 'docUpdateBeforeToolCall') hostSocket.send(update)
+    },
+    sendSecondOpDocUpdate: () => {
+      if (secondOpUpdate) hostSocket.send(secondOpUpdate)
     }
   }
 }
@@ -307,6 +378,75 @@ test.describe(
         0
       )
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+    })
+
+    test('an unrelated doc_update does not settle the correlated tool call', async ({
+      page
+    }) => {
+      const { vueNodes, sendUnrelatedDocUpdate, sendDelayedDocUpdate } =
+        await driveThroughToolCallDone(page, 'toolCallBeforeDocUpdate', true)
+
+      const panel = page.locator('#agent-panel-root')
+      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      await workSummary.click()
+      await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
+
+      const addNodeRow = panel
+        .getByRole('listitem')
+        .filter({ hasText: 'Add node' })
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+
+      sendUnrelatedDocUpdate()
+      await expect(
+        vueNodes.getNodeLocator(String(UNRELATED_NODE_ID))
+      ).toBeVisible()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
+        0
+      )
+
+      sendDelayedDocUpdate()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toHaveCount(
+        0
+      )
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+    })
+
+    test('a multi-op tool call stays syncing until its final op reaches the canvas', async ({
+      page
+    }) => {
+      const { vueNodes, sendDelayedDocUpdate, sendSecondOpDocUpdate } =
+        await driveThroughToolCallDone(
+          page,
+          'toolCallBeforeDocUpdate',
+          false,
+          true
+        )
+
+      const panel = page.locator('#agent-panel-root')
+      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      await workSummary.click()
+      await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
+
+      const addNodeRow = panel
+        .getByRole('listitem')
+        .filter({ hasText: 'Add node' })
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+
+      sendDelayedDocUpdate()
+      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toBeVisible()
+      await expect(vueNodes.getNodeLocator(String(SECOND_NODE_ID))).toHaveCount(
+        0
+      )
+
+      sendSecondOpDocUpdate()
+      await expect(
+        vueNodes.getNodeLocator(String(SECOND_NODE_ID))
+      ).toBeVisible()
+      await expect(addNodeRow.locator('[class*="loader-circle"]')).toHaveCount(
+        0
+      )
     })
 
     test('the node does eventually land once the delayed doc_update actually arrives', async ({
