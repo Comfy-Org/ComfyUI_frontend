@@ -200,7 +200,7 @@ describe('CurrentUserPopoverLegacy', () => {
         name: /We've unified payments across Comfy/
       })
       await user.hover(helpButton)
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
         enMessages.credits.unified.tooltip.replace(/\s+/g, ' ')
       )
     })
@@ -241,6 +241,22 @@ describe('CurrentUserPopoverLegacy', () => {
     )
     expect(onClose).toHaveBeenCalledTimes(1)
   })
+
+  it.for([
+    { canTopUp: true, canSubscribeSelfServe: false, visible: true },
+    { canTopUp: false, canSubscribeSelfServe: true, visible: false }
+  ])(
+    'renders add-credits from can_top_up alone ($canTopUp, subscribe $canSubscribeSelfServe)',
+    ({ canTopUp, canSubscribeSelfServe, visible }) => {
+      useBillingCapabilities().canTopUp = computed(() => canTopUp)
+      useBillingCapabilities().canSubscribeSelfServe = computed(
+        () => canSubscribeSelfServe
+      )
+      renderComponent()
+
+      expect(screen.queryByTestId('add-credits-button') !== null).toBe(visible)
+    }
+  )
 
   it('opens top-up dialog and emits close event when top-up button is clicked', async () => {
     const { user, onClose } = renderComponent()

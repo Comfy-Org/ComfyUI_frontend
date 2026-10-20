@@ -10,7 +10,7 @@ import {
   isInactiveWorkflowNodeMode,
   isNodeAndAncestorsActive
 } from '@/platform/workflow/core/utils/modelRequirements'
-import type { MissingModelCandidate, MissingModelViewModel } from './types'
+import type { MissingModelCandidate } from './types'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -30,6 +30,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
@@ -45,6 +46,19 @@ export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
 type DeferredVerification = (
   signal?: AbortSignal
 ) => Promise<boolean | undefined>
+
+/**
+ * On a developer-platform deployment (FE-2434) the editor's node catalog is
+ * the deployment's Release, so a loader's model options there are models the
+ * deployment has. Resolves those options for a loader input, or undefined
+ * when the editor runs on Comfy Cloud, when that is not known yet, or once
+ * `signal` aborts.
+ */
+export type ReleaseModelOptions = (
+  nodeType: string,
+  widgetName: string,
+  signal?: AbortSignal
+) => Promise<readonly (string | number)[] | undefined>
 
 const pendingVerifications = new WeakMap<
   MissingModelCandidate,
@@ -154,7 +168,8 @@ export function isModelFileName(name: string): boolean {
 export function scanAllModelCandidates(
   rootGraph: LGraph,
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-  getDirectory?: (nodeType: string) => string | undefined
+  getDirectory?: (nodeType: string) => string | undefined,
+  releaseModelOptions?: ReleaseModelOptions
 ): MissingModelCandidate[] {
   const allNodes = collectAllNodes(rootGraph)
   const candidates: MissingModelCandidate[] = []
@@ -167,7 +182,8 @@ export function scanAllModelCandidates(
         rootGraph,
         node,
         isAssetSupported,
-        getDirectory
+        getDirectory,
+        releaseModelOptions
       )
     )
   }
@@ -180,7 +196,8 @@ export function scanNodeModelCandidates(
   rootGraph: LGraph,
   node: LGraphNode,
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-  getDirectory?: (nodeType: string) => string | undefined
+  getDirectory?: (nodeType: string) => string | undefined,
+  releaseModelOptions?: ReleaseModelOptions
 ): MissingModelCandidate[] {
   const isSubgraphNode =
     typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
@@ -206,9 +223,14 @@ export function scanNodeModelCandidates(
     let candidate: MissingModelCandidate | null = null
 
     if (isAssetScanTarget(target)) {
-      candidate = scanAssetWidget(target, getDirectory)
+      candidate = scanAssetWidget(target, getDirectory, releaseModelOptions)
     } else if (isComboScanTarget(target)) {
-      candidate = scanComboWidget(target, isAssetSupported, getDirectory)
+      candidate = scanComboWidget(
+        target,
+        isAssetSupported,
+        getDirectory,
+        releaseModelOptions
+      )
     }
 
     if (!candidate) continue
@@ -298,15 +320,38 @@ function isComboScanTarget(
   return isComboWidget(target.definitionWidget)
 }
 
+/**
+ * Verification then takes a model the deployment's Release lists for this
+ * loader as present, whatever Cloud's model library holds. A model the
+ * Release does not list, and every model on Comfy Cloud, falls through to
+ * the library check.
+ */
+function deferToReleaseOptions(
+  candidate: MissingModelCandidate,
+  target: ModelWidgetScanTarget,
+  releaseModelOptions: ReleaseModelOptions | undefined
+): void {
+  if (!releaseModelOptions) return
+  pendingVerifications.set(candidate, async (signal) => {
+    const options = await releaseModelOptions(
+      target.nodeType,
+      target.definitionWidgetName,
+      signal
+    )
+    return options?.includes(candidate.name) ? false : undefined
+  })
+}
+
 function scanAssetWidget(
   target: ModelWidgetScanTarget & { definitionWidget: IAssetWidget },
-  getDirectory: ((nodeType: string) => string | undefined) | undefined
+  getDirectory: ((nodeType: string) => string | undefined) | undefined,
+  releaseModelOptions: ReleaseModelOptions | undefined
 ): MissingModelCandidate | null {
   const value = target.valueWidget.value
   if (typeof value !== 'string' || !value.trim()) return null
   if (!isModelFileName(value)) return null
 
-  return {
+  const candidate: MissingModelCandidate = {
     nodeId: target.executionId,
     ...(target.sourceExecutionId && {
       sourceExecutionId: target.sourceExecutionId
@@ -318,12 +363,15 @@ function scanAssetWidget(
     directory: getDirectory?.(target.nodeType),
     isMissing: undefined
   }
+  deferToReleaseOptions(candidate, target, releaseModelOptions)
+  return candidate
 }
 
 function scanComboWidget(
   target: ModelWidgetScanTarget & { definitionWidget: IComboWidget },
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-  getDirectory: ((nodeType: string) => string | undefined) | undefined
+  getDirectory: ((nodeType: string) => string | undefined) | undefined,
+  releaseModelOptions: ReleaseModelOptions | undefined
 ): MissingModelCandidate | null {
   const value = target.valueWidget.value
   if (typeof value !== 'string' || !value.trim()) return null
@@ -345,7 +393,10 @@ function scanComboWidget(
     directory: getDirectory?.(target.nodeType),
     isMissing: undefined
   }
-  if (nodeIsAssetSupported) return candidate
+  if (nodeIsAssetSupported) {
+    deferToReleaseOptions(candidate, target, releaseModelOptions)
+    return candidate
+  }
 
   const isAbsentFromOptions = () =>
     !resolveComboValues(target.definitionWidget).includes(value)
@@ -454,15 +505,9 @@ function collectEmbeddedModels(
   return result
 }
 
-interface AssetVerifier {
-  updateModelsForNodeType: (nodeType: string) => Promise<void>
-  getAssets: (nodeType: string) => AssetItem[] | undefined
-}
-
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
-  signal?: AbortSignal,
-  assetsStore?: AssetVerifier
+  signal?: AbortSignal
 ): Promise<void> {
   if (signal?.aborted) return
 
@@ -487,8 +532,7 @@ export async function verifyAssetSupportedCandidates(
     pendingCandidates.map((candidate) => candidate.nodeType)
   )
 
-  const store =
-    assetsStore ?? (await import('@/stores/assetsStore')).useAssetsStore()
+  const store = useAssetsStore()
 
   const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
@@ -512,7 +556,7 @@ export async function verifyAssetSupportedCandidates(
     if (!c.isAssetSupported || c.isMissing !== undefined) continue
     if (failedNodeTypes.has(c.nodeType)) continue
 
-    const assets = store.getAssets(c.nodeType) ?? []
+    const assets = store.getAssets(c.nodeType)
     c.isMissing = !isAssetInstalled(c, assets)
   }
 }
@@ -535,30 +579,4 @@ function isAssetInstalled(
     const f = normalizePath(getAssetFilename(a))
     return f === normalizedName || f.endsWith('/' + normalizedName)
   })
-}
-
-export function groupCandidatesByName(
-  candidates: MissingModelCandidate[]
-): MissingModelViewModel[] {
-  const map = new Map<string, MissingModelViewModel>()
-  for (const c of candidates) {
-    const existing = map.get(c.name)
-    if (existing) {
-      if (c.nodeId) {
-        existing.referencingNodes.push({
-          nodeId: c.nodeId,
-          widgetName: c.widgetName
-        })
-      }
-    } else {
-      map.set(c.name, {
-        name: c.name,
-        representative: c,
-        referencingNodes: c.nodeId
-          ? [{ nodeId: c.nodeId, widgetName: c.widgetName }]
-          : []
-      })
-    }
-  }
-  return Array.from(map.values())
 }

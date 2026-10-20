@@ -93,7 +93,6 @@ function renderTabWithRealBase() {
   const result = render(AppsSidebarTab, {
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: {
         SidebarTabTemplate: {
           template:

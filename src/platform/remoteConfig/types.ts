@@ -119,7 +119,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
   free_tier_credits?: number
-  free_tier_job_allowance_enabled?: boolean
   new_free_tier_subscriptions?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
@@ -130,14 +129,13 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   unified_web_session?: boolean
   sso_enabled?: boolean
   local_web_sso?: boolean
-  // Wire key carries the server's own spelling; see ServerFeatureFlag.
-  embedded_checked_enabled?: boolean
   billing_sdk_topup_enabled?: boolean
   billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
   member_credit_limits_enabled?: boolean
-  legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean
+  unified_billing_settings?: boolean
+  auto_top_up_enabled?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
   /** Absent when the backend has no key configured, not an empty string; always sanitize with the reader before trusting it. */

@@ -4,8 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
-import * as secretsApi from '../api/secretsApi'
-import type { SecretCredentialOption, SecretProviderInfo } from '../types'
+import * as secretsApi from '@/platform/secrets/api/secretsApi'
+import type {
+  SecretCredentialOption,
+  SecretProviderInfo
+} from '@/platform/secrets/types'
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 

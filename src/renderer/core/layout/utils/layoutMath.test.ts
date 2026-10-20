@@ -8,7 +8,8 @@ import {
   REROUTE_RADIUS,
   boundsIntersect,
   calculateBounds,
-  pointInBounds
+  pointInBounds,
+  polylineIntersectsBounds
 } from '@/renderer/core/layout/utils/layoutMath'
 
 describe('layoutMath utils', () => {
@@ -120,6 +121,65 @@ describe('layoutMath utils', () => {
         width: -Infinity,
         height: -Infinity
       })
+    })
+  })
+
+  describe('polylineIntersectsBounds', () => {
+    const bounds = { x: 0, y: 0, width: 10, height: 10 }
+
+    it.for([
+      {
+        name: 'fully inside',
+        points: [
+          { x: 2, y: 2 },
+          { x: 8, y: 8 }
+        ],
+        expected: true
+      },
+      {
+        name: 'crossing with both ends outside',
+        points: [
+          { x: -5, y: 5 },
+          { x: 15, y: 5 }
+        ],
+        expected: true
+      },
+      {
+        name: 'second segment crossing',
+        points: [
+          { x: 20, y: 20 },
+          { x: 20, y: 5 },
+          { x: -5, y: 5 }
+        ],
+        expected: true
+      },
+      {
+        name: 'passing the corner diagonally',
+        points: [
+          { x: 5, y: 20 },
+          { x: 20, y: 5 }
+        ],
+        expected: false
+      },
+      {
+        name: 'parallel outside an edge',
+        points: [
+          { x: -5, y: 11 },
+          { x: 15, y: 11 }
+        ],
+        expected: false
+      },
+      { name: 'empty', points: [], expected: false },
+      {
+        name: 'non-finite',
+        points: [
+          { x: Number.NaN, y: 5 },
+          { x: 5, y: 5 }
+        ],
+        expected: false
+      }
+    ])('$name -> $expected', ({ points, expected }) => {
+      expect(polylineIntersectsBounds(points, bounds)).toBe(expected)
     })
   })
 })

@@ -3,7 +3,7 @@ import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partn
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -221,6 +221,33 @@ describe('useSettingUI', () => {
       expect(defaultCategory.value).toMatchObject({
         key: 'workspace',
         label: 'PlanCredits'
+      })
+    })
+
+    it('swaps Plan & Credits for Billing on cloud when unified billing settings is on', () => {
+      env.state.isCloud = true
+      const flags = vi.mocked(useFeatureFlags().flags)
+      flags.unifiedBillingSettingsEnabled = true
+      onTestFinished(() => {
+        flags.unifiedBillingSettingsEnabled = false
+      })
+      const { defaultCategory, findPanelByKey, navGroups } =
+        useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Billing' },
+        { id: 'workspace-members', label: 'Members' }
+      ])
+      expect(findPanelByKey('workspace')?.props).toBeUndefined()
+      expect(findPanelByKey('workspace')?.component).not.toBe(
+        findPanelByKey('workspace-members')?.component
+      )
+      expect(defaultCategory.value).toMatchObject({
+        key: 'workspace',
+        label: 'Billing'
       })
     })
 

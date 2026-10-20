@@ -70,7 +70,7 @@
       "
       @update:model-value="onOtherChange"
     />
-    <p v-if="errorMessage" class="text-xs text-destructive-background">
+    <p v-if="errorMessage" class="text-xs text-destructive">
       {{ errorMessage }}
     </p>
   </fieldset>
@@ -89,7 +89,7 @@
       :class="inputClass"
       @update:model-value="onTextChange"
     />
-    <p v-if="errorMessage" class="text-xs text-destructive-background">
+    <p v-if="errorMessage" class="text-xs text-destructive">
       {{ errorMessage }}
     </p>
   </div>

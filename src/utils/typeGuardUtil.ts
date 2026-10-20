@@ -1,9 +1,9 @@
 import type {
-  INodeSlot,
   LGraph,
   LGraphNode,
   Subgraph
-} from '@/lib/litegraph/src/litegraph'
+} from '@/lib/litegraph/src/types/entityRegistry'
+import type { INodeSlot } from '@/lib/litegraph/src/interfaces'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 
 /**

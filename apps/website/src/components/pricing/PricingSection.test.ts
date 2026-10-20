@@ -119,3 +119,51 @@ describe('PricingSection credit allotment copy', () => {
     expect(screen.getByText('Everything in Creator, plus:')).toBeTruthy()
   })
 })
+
+describe('PricingSection Comfy API limits', () => {
+  it.for([
+    {
+      plan: 'Pro',
+      builds: '10 builds',
+      workers: 'Up to 10 workers per deployment'
+    },
+    {
+      plan: 'Team',
+      builds: '40 builds',
+      workers: 'Up to 20 workers per deployment'
+    }
+  ])('lists the $plan plan limits in its card', ({ builds, workers }) => {
+    render(PricingSection)
+
+    expect(screen.getByText(builds)).toBeTruthy()
+    expect(screen.getByText(workers)).toBeTruthy()
+  })
+
+  it('gives every plan card, Team included, a Comfy API group', () => {
+    render(PricingSection)
+
+    expect(screen.getAllByText('Comfy API')).toHaveLength(
+      pricingPlans.length + 1
+    )
+  })
+})
+
+describe('PricingSection Comfy Agent limits', () => {
+  it('lists the Agent limits above the Comfy API limits in each card', () => {
+    render(PricingSection)
+
+    expect(
+      screen
+        .getAllByText(/^Comfy (Agent|API)$/)
+        .map((title) => title.textContent)
+    ).toEqual(
+      Array.from({ length: pricingPlans.length + 1 }, () => [
+        'Comfy Agent',
+        'Comfy API'
+      ]).flat()
+    )
+    expect(
+      screen.getByText('16 concurrent agent sessions per workspace')
+    ).toBeTruthy()
+  })
+})

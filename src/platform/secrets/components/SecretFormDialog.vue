@@ -1,7 +1,7 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index data-reka-nested-dialog-overlay />
+      <DialogOverlay v-reka-z-index />
       <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
@@ -24,7 +24,6 @@
             <Select v-model="form.provider" :disabled="mode === 'edit'">
               <SelectTrigger
                 id="secret-provider"
-                class="w-full"
                 autofocus
                 :invalid="!!errors.provider"
               >
@@ -60,7 +59,7 @@
               {{ $t('secrets.credentialType') }}
             </FieldLabel>
             <Select v-model="credentialType">
-              <SelectTrigger id="secret-credential-type" class="w-full">
+              <SelectTrigger id="secret-credential-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent disable-portal>
@@ -188,8 +187,11 @@ import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
-import { useSecretForm } from '../composables/useSecretForm'
-import type { SecretMetadata, SecretProviderInfo } from '../types'
+import { useSecretForm } from '@/platform/secrets/composables/useSecretForm'
+import type {
+  SecretMetadata,
+  SecretProviderInfo
+} from '@/platform/secrets/types'
 
 const {
   secret,

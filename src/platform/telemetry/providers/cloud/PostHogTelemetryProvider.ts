@@ -38,8 +38,12 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
+  AgentFreeUseExposureMetadata,
+  AgentFreeUseNoticeMetadata,
+  AgentGraphProjectionMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentMessageSentMetadata,
@@ -112,13 +116,13 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
-} from '../../types'
+} from '@/platform/telemetry/types'
 import {
   CANCELLATION_STAGE_EVENTS,
   OnboardingTourEvents,
   TelemetryEvents
-} from '../../types'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+} from '@/platform/telemetry/types'
+import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 const EXECUTION_EVENT_SOURCE = 'web-sdk'
 
@@ -568,6 +572,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
   }
 
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE, metadata)
+  }
+
   trackRunButton(properties: RunButtonProperties): void {
     this.lastTriggerSource = properties.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
@@ -857,6 +867,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.AGENT_STARTER_PROMPT_EXPOSURE, metadata)
   }
 
+  trackAgentFreeUseNotice(metadata: AgentFreeUseNoticeMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_FREE_USE_NOTICE, metadata)
+  }
+
+  trackAgentFreeUseExposure(metadata: AgentFreeUseExposureMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_FREE_USE_EXPOSURE, metadata)
+  }
+
   trackAgentNodeTagged(metadata: AgentNodeTaggedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_NODE_TAGGED, metadata)
   }
@@ -869,6 +887,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_GRAPH_PROJECTION, metadata)
   }
 
   // fallow-ignore-next-line unused-class-member

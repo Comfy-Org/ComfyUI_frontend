@@ -1,18 +1,16 @@
 <template>
-  <div
-    class="flex min-w-[460px] flex-col rounded-2xl border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
-  >
+  <Card class="flex min-w-[460px] flex-col shadow-md">
     <!-- Header -->
     <div class="flex items-center justify-between p-8">
-      <h2 class="m-0 text-lg font-bold text-base-foreground">
+      <DialogTitle class="m-0 text-lg font-bold">
         {{
           isInsufficientCredits
             ? $t('credits.topUp.addMoreCreditsToRun')
             : $t('credits.topUp.addMoreCredits')
         }}
-      </h2>
+      </DialogTitle>
       <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="() => handleClose()"
       >
@@ -24,6 +22,10 @@
       class="m-0 px-8 text-sm text-muted-foreground"
     >
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
+    </p>
+
+    <p class="m-0 px-8 pb-4 text-sm text-muted-foreground">
+      {{ $t('credits.topUp.purchaseDisclosure') }}
     </p>
 
     <!-- Preset amount buttons -->
@@ -41,8 +43,8 @@
           :aria-pressed="selectedPreset === amount"
           :class="
             cn(
-              'h-10 w-full text-base font-medium focus-visible:ring-border-default',
-              selectedPreset === amount && 'bg-secondary-background-selected'
+              'h-10 w-full text-base focus-visible:ring-ring',
+              selectedPreset === amount && 'bg-muted'
             )
           "
           @click="handlePresetClick(amount)"
@@ -70,9 +72,7 @@
           @update:model-value="handlePayAmountChange"
         >
           <NumberFieldDecrement />
-          <span class="shrink-0 text-base font-semibold text-base-foreground"
-            >$</span
-          >
+          <span class="shrink-0 text-base font-semibold">$</span>
           <NumberFieldInput
             :aria-label="$t('credits.topUp.youPay')"
             class="text-lg font-medium"
@@ -94,7 +94,7 @@
           :format-options="{ maximumFractionDigits: 0 }"
         >
           <NumberFieldDecrement />
-          <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
+          <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
           <NumberFieldInput
             :aria-label="$t('credits.topUp.youGet')"
             class="text-lg font-medium"
@@ -108,7 +108,7 @@
 
     <p
       v-if="isBelowMin"
-      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-red-500"
+      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
     >
       <i class="icon-[lucide--coins] size-4" />
       {{
@@ -119,7 +119,7 @@
     </p>
     <p
       v-if="showCeilingWarning"
-      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-gold-500"
+      class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-warning"
     >
       <i class="icon-[lucide--coins] size-4" />
       {{
@@ -142,7 +142,6 @@
         :loading="loading"
         variant="primary"
         size="lg"
-        class="h-10 justify-center"
         @click="handleBuy"
       >
         {{ $t('credits.topUp.buyCredits') }}
@@ -151,17 +150,18 @@
         <a
           :href="pricingUrl"
           target="_blank"
-          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+          class="flex items-center gap-1 text-sm text-muted-foreground no-underline transition-colors hover:text-foreground"
         >
           {{ $t('credits.topUp.viewPricing') }}
           <i class="icon-[lucide--external-link] size-4" />
         </a>
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script setup lang="ts">
+import Card from '@/components/ui/card/Card.vue'
 import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
@@ -171,12 +171,14 @@ import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
 import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
@@ -270,7 +272,7 @@ async function handleBuy() {
   loading.value = true
   try {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
-    if (authActions.canPurchaseCredits()) {
+    if (useBillingContext().canAccessSubscriptionFeatures.value) {
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'started',
@@ -279,8 +281,8 @@ async function handleBuy() {
         amount_cents: payAmount.value * 100,
         amount_preset: getTopupAmountPreset(selectedPreset.value)
       })
+      await authActions.purchaseCreditsDirect(payAmount.value)
     }
-    await authActions.purchaseCreditsDirect(payAmount.value)
 
     // Close top-up dialog (keep tracking) and open Plan & Credits to show the
     // updated balance. The destination is the V1 panel for every session: the

@@ -12,7 +12,7 @@ const meta: Meta<typeof ProgressToastItem> = {
   },
   decorators: [
     () => ({
-      template: '<div class="w-[400px] bg-base-background p-4"><story /></div>'
+      template: '<div class="w-[400px] bg-background p-4"><story /></div>'
     })
   ]
 }

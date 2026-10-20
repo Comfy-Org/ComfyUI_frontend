@@ -232,6 +232,7 @@ export interface ModelManagerInterface {
   init(): void
   dispose(): void
   clearModel(): void
+  disposeCurrentModel(): void
   reset(): void
   setupModel(model: THREE.Object3D): Promise<void>
   addModelToScene(model: THREE.Object3D): void
@@ -248,6 +249,8 @@ export interface ModelManagerInterface {
 }
 
 export interface LoadModelOptions {
+  /** Cancels network work when the caller abandons the load. */
+  signal?: AbortSignal
   /**
    * When true, suppress the user-facing toast for file-not-found
    * (HTTP 404) errors. Other errors (parse failures, network drops)
@@ -256,6 +259,12 @@ export interface LoadModelOptions {
    * (e.g. shared workflows on a fresh machine).
    */
   silentOnNotFound?: boolean
+  /**
+   * When true, raise no toast and reject instead of returning `'empty'` or
+   * `'failed'`. Use for offscreen renders such as thumbnail generation, whose
+   * caller reports the failure itself.
+   */
+  silent?: boolean
 }
 
 export interface SceneOverlay {
@@ -266,6 +275,20 @@ export interface SceneOverlay {
   dispose(): void
 }
 
+/**
+ * Outcome of a `loadModel` call. Check it before running post-load steps
+ * (camera restore, widget commit, capability capture):
+ * - `'loaded'`: a model was fetched, parsed, and set up.
+ * - `'cancelled'`: a newer `loadModel` or `dispose()` superseded this load;
+ *   the manager may already be torn down.
+ * - `'empty'`: for a normal call, the URL had no filename, no adapter claimed
+ *   the file, or the adapter produced no model.
+ * - `'failed'`: for a normal call, fetching, parsing, or model setup threw.
+ *
+ * With `{ silent: true }`, the `'empty'` and `'failed'` cases reject instead.
+ */
+export type LoadModelOutcome = 'loaded' | 'cancelled' | 'empty' | 'failed'
+
 export interface LoaderManagerInterface {
   init(): void
   dispose(): void
@@ -273,5 +296,5 @@ export interface LoaderManagerInterface {
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
-  ): Promise<void>
+  ): Promise<LoadModelOutcome>
 }
