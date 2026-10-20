@@ -424,6 +424,30 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
+    it('keeps the requested switch target when the first switch fails transiently', async () => {
+      mockLocalStorage.getItem.mockReturnValue(mockPersonalWorkspace.id)
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+        mockTeamWorkspace.id
+      )
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+      })
+      vi.mocked(useWorkspaceAuthStore().switchWorkspace).mockRejectedValueOnce(
+        new Error('Network error')
+      )
+
+      const store = useTeamWorkspaceStore()
+      const initialized = store.initialize()
+      await vi.advanceTimersByTimeAsync(1000)
+      await initialized
+
+      expect(useWorkspaceAuthStore().switchWorkspace).toHaveBeenLastCalledWith(
+        mockTeamWorkspace.id
+      )
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
     it.for([
       {
         name: 'lands in the default workspace the server names',

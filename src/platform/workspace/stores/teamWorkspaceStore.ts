@@ -405,6 +405,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     const workspaceAuthStore = useWorkspaceAuthStore()
     const isApiKeySession = useCurrentUserAccess().isApiKeyLogin.value
+    const switchTargetId = takeSwitchTargetId()
     const tabWorkspaceId = getTabWorkspaceId()
 
     let sessionRevokedRetries = 0
@@ -491,7 +492,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           !!id && workspaces.value.some((w) => w.id === id)
         let targetWorkspaceId: string | null =
           [
-            takeSwitchTargetId(),
+            switchTargetId,
             tabWorkspaceId,
             response.default_workspace_id,
             getLastWorkspaceId()
