@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { authToast, dismissAllAuthToasts } from '@/config/auth-toast-state'
@@ -8,7 +8,8 @@ import AuthToast from './AuthToast.vue'
 beforeEach(dismissAllAuthToasts)
 
 function shownToasts() {
-  return screen.queryAllByRole('alert')
+  const notifications = screen.queryByRole('region', { name: /^Notifications/ })
+  return notifications ? within(notifications).queryAllByRole('listitem') : []
 }
 
 describe('AuthToast', () => {
