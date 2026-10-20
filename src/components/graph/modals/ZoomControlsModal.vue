@@ -2,7 +2,7 @@
   <div
     v-if="visible"
     ref="modalRoot"
-    class="absolute right-0 bottom-[62px] z-1300 flex w-[250px] justify-center border-0! bg-inherit!"
+    class="absolute right-0 bottom-[62px] z-floating-panel flex w-[250px] justify-center border-0! bg-inherit!"
   >
     <div
       class="w-4/5 rounded-lg border bg-background p-2 text-foreground shadow-lg select-none"

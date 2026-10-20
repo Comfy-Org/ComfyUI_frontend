@@ -2,7 +2,7 @@
   <div
     ref="containerRef"
     data-testid="mask-editor-root"
-    class="relative flex size-full flex-col overflow-hidden"
+    class="relative isolate flex size-full flex-col overflow-hidden"
     @contextmenu.prevent
     @dragstart="handleDragStart"
     @keydown.stop

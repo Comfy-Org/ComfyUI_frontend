@@ -1,5 +1,5 @@
 <template>
-  <div class="comfyui-body grid size-full overflow-hidden">
+  <div class="comfyui-body isolate grid size-full overflow-hidden">
     <div id="comfyui-body-top" class="comfyui-body-top" />
     <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
     <div id="comfyui-body-left" class="comfyui-body-left" />
@@ -475,15 +475,9 @@ const onGraphReady = () => {
 
 .comfyui-body-top {
   order: -5;
-  /* Span across all columns */
   grid-column: 1/-1;
-  /* Position at the first row */
   grid-row: 1;
-  /* Top menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  /* Top menu bar z-index needs to be higher than bottom menu bar z-index as by default
-  pysssss's image feed is located at body-bottom, and it can overlap with the queue button, which
-  is located in body-top. */
-  z-index: 1001;
+  z-index: var(--z-index-toolbar-menu);
   display: flex;
   flex-direction: column;
 }
@@ -517,11 +511,9 @@ const onGraphReady = () => {
 
 .comfyui-body-bottom {
   order: 4;
-  /* Span across all columns */
   grid-column: 1/-1;
   grid-row: 3;
-  /* Bottom menu bar dropdown needs to be above of graph canvas splitter overlay which is z-index: 999 */
-  z-index: 1000;
+  z-index: var(--z-index-toolbar);
   display: flex;
   flex-direction: column;
 }

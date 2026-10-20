@@ -40,7 +40,7 @@ export function useNodePreviewAndDrag(
     top: '0px',
     left: '0px',
     pointerEvents: 'none',
-    zIndex: 1000
+    zIndex: 'var(--z-index-toolbar)'
   })
 
   function calculatePreviewPosition(rect: DOMRect) {
@@ -78,7 +78,7 @@ export function useNodePreviewAndDrag(
       top: `${top}px`,
       left: `${left}px`,
       pointerEvents: 'none',
-      zIndex: 1000,
+      zIndex: 'var(--z-index-toolbar)',
       opacity: 0
     }
     isHovered.value = true

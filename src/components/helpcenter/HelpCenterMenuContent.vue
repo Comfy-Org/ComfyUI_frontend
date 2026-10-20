@@ -49,12 +49,11 @@
       </div>
     </div>
 
-    <!-- More Submenu -->
-    <Teleport to="body">
+    <Teleport :to="config.teleportTo ?? 'body'">
       <div
         v-if="isSubmenuVisible"
         ref="submenuRef"
-        class="more-submenu"
+        class="more-submenu z-overlay"
         :style="submenuStyle"
         @mouseenter="onSubmenuHover"
         @mouseleave="onSubmenuLeave"
@@ -155,7 +154,15 @@
 
 <script setup lang="ts">
 import { useToast } from '@/components/ui/toast/toastStore'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { injectConfigProviderContext } from 'reka-ui'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref
+} from 'vue'
 import type { CSSProperties, Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -202,11 +209,11 @@ const TIME_UNITS = {
 
 const SUBMENU_CONFIG = {
   DELAY_MS: 100,
-  OFFSET_PX: 8,
-  Z_INDEX: 10001
+  OFFSET_PX: 8
 } as const
 
 // Composables
+const config = reactive(injectConfigProviderContext(null) ?? {})
 const { t } = useI18n()
 const toast = useToast()
 const { staticUrls, buildDocsUrl } = useExternalLink()
@@ -473,39 +480,28 @@ const clearHoverTimeout = (): void => {
 
 const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   const rect = button.getBoundingClientRect()
-  const submenuWidth = 210 // Width defined in CSS
+  const submenuWidth = 210
 
-  // Get actual submenu height if available, otherwise estimate based on visible item count
   const visibleItemCount =
     moreMenuItem.value?.items?.filter((item) => item.visible !== false)
       .length || 0
-  const estimatedHeight = visibleItemCount * 48 + 16 // ~48px per item + padding
+  const estimatedHeight = visibleItemCount * 48 + 16
   const submenuHeight = submenuRef.value?.offsetHeight || estimatedHeight
 
-  // Get viewport dimensions
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
 
-  // Calculate basic position (aligned with button)
   let top = rect.top
   let left = rect.right + SUBMENU_CONFIG.OFFSET_PX
 
-  // Check if submenu would overflow viewport on the right
   if (left + submenuWidth > viewportWidth) {
-    // Position submenu to the left of the button instead
     left = rect.left - submenuWidth - SUBMENU_CONFIG.OFFSET_PX
   }
 
-  // Check if submenu would overflow viewport at the bottom
   if (top + submenuHeight > viewportHeight) {
-    // Position submenu above the button, aligned to bottom
-    top = Math.max(
-      SUBMENU_CONFIG.OFFSET_PX, // Minimum distance from top of viewport
-      rect.bottom - submenuHeight
-    )
+    top = Math.max(SUBMENU_CONFIG.OFFSET_PX, rect.bottom - submenuHeight)
   }
 
-  // Ensure submenu doesn't go above viewport
   if (top < SUBMENU_CONFIG.OFFSET_PX) {
     top = SUBMENU_CONFIG.OFFSET_PX
   }
@@ -515,8 +511,7 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   return {
     position: 'fixed',
     top: `${top}px`,
-    left: `${left}px`,
-    zIndex: SUBMENU_CONFIG.Z_INDEX
+    left: `${left}px`
   }
 }
 

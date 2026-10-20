@@ -43,8 +43,15 @@
 @custom-variant touch (@media (hover: none));
 
 @theme {
-  --z-index-overlay: 1700;
+  --z-index-canvas-chrome: 999;
+  --z-index-toolbar: 1000;
+  --z-index-toolbar-menu: 1001;
+  --z-index-panel: 1100;
+  --z-index-canvas-controls: 1200;
+  --z-index-floating-panel: 1300;
+  --z-index-education: 1500;
   --z-index-onboarding: 1600;
+  --z-index-overlay: 1700;
   --z-index-tour: 1800;
   --z-index-toast: 9999;
   --z-index-blocking: 10000;

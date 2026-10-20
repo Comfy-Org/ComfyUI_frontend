@@ -2,6 +2,7 @@
   <div
     id="maskEditor_brush"
     data-testid="brush-cursor"
+    class="z-20"
     :style="{
       position: 'absolute',
       opacity: brushOpacity,
@@ -10,8 +11,7 @@
       left: `${brushLeft}px`,
       top: `${brushTop}px`,
       borderRadius: borderRadius,
-      pointerEvents: 'none',
-      zIndex: 1000
+      pointerEvents: 'none'
     }"
   >
     <div
