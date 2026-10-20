@@ -141,7 +141,12 @@ export function useWorkflowPersistenceV2() {
   const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(
     flushPendingPersistence
   )
-  window.addEventListener('pagehide', flushPendingPersistence)
+  function persistBeforePageHide() {
+    debouncedPersist.cancel()
+    persistCurrentWorkflow()
+  }
+
+  window.addEventListener('pagehide', persistBeforePageHide)
 
   onUserLogout(() => {
     if (!isCloud) return
@@ -314,7 +319,7 @@ export function useWorkflowPersistenceV2() {
   // Clean up event listener when component unmounts
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
-    window.removeEventListener('pagehide', flushPendingPersistence)
+    window.removeEventListener('pagehide', persistBeforePageHide)
     unregisterPersistenceFlush()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
