@@ -16,7 +16,6 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { clone } from '@/scripts/utils'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -248,7 +247,13 @@ export const useAppModeStore = defineStore('appMode', () => {
       extra.linearData = {
         inputs: data.inputs.map(
           ([id, name, config]): LinearInput =>
-            config ? [id, name, clone(config)] : [id, name]
+            config
+              ? [
+                  id,
+                  name,
+                  JSON.parse(JSON.stringify(config)) as InputWidgetConfig
+                ]
+              : [id, name]
         ),
         outputs: [...data.outputs]
       }
