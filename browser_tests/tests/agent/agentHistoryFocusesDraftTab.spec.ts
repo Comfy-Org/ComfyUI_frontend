@@ -148,7 +148,7 @@ test.describe(
 
       await bootAgentApp(page, agentFlagEnabled, {
         beforeNavigate: async (page) => {
-          await page.route('**/api/agent/threads', (route) =>
+          await page.route('**/api/agent/threads?*', (route) =>
             route.fulfill(jsonRoute(threads))
           )
           await page.route('**/api/agent/threads/*/messages', (route) => {
