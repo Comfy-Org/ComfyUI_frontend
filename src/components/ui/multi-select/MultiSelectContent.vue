@@ -12,15 +12,14 @@
       <FocusScope class="contents" @mount-auto-focus.prevent>
         <div v-if="showSearchBox" class="px-2 pt-2 pb-0">
           <div
-            class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
+            class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm"
           >
-            <i
-              class="icon-[lucide--search] shrink-0 text-sm text-muted-foreground"
-            />
+            <i class="icon-[lucide--search] shrink-0 text-muted-foreground" />
             <ComboboxInput
               v-model="searchQuery"
-              :placeholder="searchPlaceholder ?? t('g.search')"
-              class="w-full border-none bg-transparent text-sm outline-none"
+              :placeholder="searchPlaceholder"
+              :aria-label="searchLabel"
+              class="w-full border-none bg-transparent outline-none"
             />
           </div>
         </div>
@@ -30,10 +29,10 @@
           :class="actionsClass"
         >
           <span
-            v-if="showSelectedCount"
+            v-if="formatSelectedCount"
             class="px-1 text-sm text-muted-foreground"
           >
-            {{ t('g.itemsSelected', { count: selectedItems.length }) }}
+            {{ formatSelectedCount(selectedItems.length) }}
           </span>
           <Button
             v-if="showClearButton"
@@ -41,7 +40,7 @@
             size="md"
             @click.stop="selectedItems = []"
           >
-            {{ t('g.clearAll') }}
+            {{ clearAllLabel }}
           </Button>
         </div>
 
@@ -62,18 +61,18 @@
             :class="cn('group', selectItemVariants({ layout: 'multi' }))"
           >
             <div
-              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary-background group-data-[state=unchecked]:bg-secondary-background [&>span]:flex"
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200 group-data-[state=checked]:bg-primary group-data-[state=unchecked]:bg-secondary [&>span]:flex"
             >
               <ComboboxItemIndicator>
                 <i
-                  class="icon-[lucide--check] text-xs font-bold text-base-foreground"
+                  class="icon-[lucide--check] text-xs font-bold text-foreground"
                 />
               </ComboboxItemIndicator>
             </div>
             <span>{{ opt.name }}</span>
           </ComboboxItem>
           <ComboboxEmpty :class="selectEmptyMessageClass">
-            {{ t('g.noResultsFound') }}
+            {{ emptyText }}
           </ComboboxEmpty>
         </ComboboxViewport>
 
@@ -82,10 +81,10 @@
           :class="actionsClass"
         >
           <span
-            v-if="showSelectedCount"
+            v-if="formatSelectedCount"
             class="px-1 text-sm text-muted-foreground"
           >
-            {{ t('g.itemsSelected', { count: selectedItems.length }) }}
+            {{ formatSelectedCount(selectedItems.length) }}
           </span>
           <Button
             v-if="showClearButton"
@@ -93,7 +92,7 @@
             size="md"
             @click.stop="selectedItems = []"
           >
-            {{ t('g.clearAll') }}
+            {{ clearAllLabel }}
           </Button>
         </div>
       </FocusScope>
@@ -115,7 +114,6 @@ import {
 } from 'reka-ui'
 import { computed } from 'vue'
 import type { StyleValue } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { SelectOption } from '@/components/ui/select/types'
@@ -131,8 +129,11 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   options,
+  searchLabel,
+  emptyText,
+  clearAllLabel,
+  formatSelectedCount,
   showSearchBox,
-  showSelectedCount,
   showClearButton,
   actionsPlacement,
   searchPlaceholder,
@@ -141,9 +142,12 @@ const {
   contentStyle,
   liftedContentStyle
 } = defineProps<{
+  searchLabel?: string
+  emptyText: string
+  clearAllLabel?: string
+  formatSelectedCount?: (count: number) => string
   options: SelectOption[]
   showSearchBox: boolean
-  showSelectedCount: boolean
   showClearButton: boolean
   actionsPlacement: 'header' | 'footer'
   searchPlaceholder?: string
@@ -160,14 +164,15 @@ const emit = defineEmits<{
 const selectedItems = defineModel<SelectOption[]>({ required: true })
 const searchQuery = defineModel<string>('searchQuery', { required: true })
 
-const { t } = useI18n()
-const hasActions = computed(() => showSelectedCount || showClearButton)
+const hasActions = computed(
+  () => Boolean(formatSelectedCount) || showClearButton
+)
 const actionsClass = computed(() =>
   cn(
     'flex shrink-0 items-center justify-between',
     actionsPlacement === 'header'
-      ? 'mt-2 border-b border-border-default px-2 pb-4'
-      : '-mx-2 mt-2 border-t border-border-default px-4 pt-3 pb-1'
+      ? 'mt-2 border-b px-2 pb-4'
+      : '-mx-2 mt-2 border-t px-4 pt-3 pb-1'
   )
 )
 const searchResults = useSelectSearch(searchQuery, () => options)

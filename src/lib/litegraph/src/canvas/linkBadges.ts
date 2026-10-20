@@ -1,14 +1,20 @@
+import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
 import { textOnColor } from '@/utils/colorUtil'
 
-import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from '../interfaces'
-import { LGraphBadge } from '../LGraphBadge'
-import type { LLink } from '../LLink'
+import type {
+  HasBoundingRect,
+  Point,
+  ReadOnlyRect,
+  Rect
+} from '@/lib/litegraph/src/interfaces'
+import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
+
 import type { LinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { compareNodeIds } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import { overlapBounding } from '../measure'
-import { slotTypeKey } from '../utils/type'
+import { overlapBounding } from '@/lib/litegraph/src/measure'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
 export const BADGE_GAP = 14
 const BADGE_HEIGHT = 18
@@ -135,7 +141,8 @@ function makeBadge(text: string, color: string): LGraphBadge {
     fgColor: textOnColor(color),
     fontSize: BADGE_FONT_SIZE,
     height: BADGE_HEIGHT,
-    cornerRadius: BADGE_HEIGHT / 2
+    cornerRadius: BADGE_HEIGHT / 2,
+    centerOnCapHeight: true
   })
 }
 
@@ -399,6 +406,21 @@ function drawConnector(
   ctx.restore()
 }
 
+function scaledAround(
+  ctx: CanvasRenderingContext2D,
+  [x, y]: Point,
+  scale: number,
+  draw: () => void
+): void {
+  if (scale === 1) return draw()
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(scale, scale)
+  ctx.translate(-x, -y)
+  draw()
+  ctx.restore()
+}
+
 function drawStackLayers(
   ctx: CanvasRenderingContext2D,
   { layers, width, color }: BadgeEndpoint,
@@ -425,7 +447,8 @@ function drawStackLayers(
 
 function drawBadgeEndpoint(
   ctx: CanvasRenderingContext2D,
-  endpoint: BadgeEndpoint
+  endpoint: BadgeEndpoint,
+  scale: number
 ): void {
   const { side, socket, hitArea, width, badge, color } = endpoint
   const [left, top] = hitArea.boundingRect
@@ -433,22 +456,32 @@ function drawBadgeEndpoint(
     side === 'output'
       ? left + BADGE_CONNECT_INSET
       : left + width - BADGE_CONNECT_INSET
-  drawConnector(ctx, socket, [connectorX, top + BADGE_HEIGHT / 2], color)
-  drawStackLayers(ctx, endpoint, left, top)
-  badge.draw(ctx, left, top)
+  scaledAround(ctx, socket, scale, () => {
+    drawConnector(ctx, socket, [connectorX, top + BADGE_HEIGHT / 2], color)
+    drawStackLayers(ctx, endpoint, left, top)
+    badge.draw(ctx, left, top)
+  })
 }
 
-/** Draws the badges from the host's last layout that touch the visible area. */
+function endpointScale(
+  { hitArea }: BadgeEndpoint,
+  labelScale: (linkId: LinkId) => number
+): number {
+  return hitArea.linkIds.map(labelScale).find((scale) => scale !== 1) ?? 1
+}
+
+/** Draws the badges from the host's last layout that touch the visible area, each at its links' label scale. */
 export function drawHiddenLinkBadges(
   ctx: CanvasRenderingContext2D,
   host: object,
-  visibleArea: ReadOnlyRect
+  visibleArea: ReadOnlyRect,
+  labelScale: (linkId: LinkId) => number = () => 1
 ): void {
   const drawnStackKeys = new Set<string>()
   for (const endpoint of endpointsByHost.get(host) ?? []) {
     const bounds = getConnectorBounds(endpoint.socket, endpoint.hitArea)
     if (!overlapBounding(bounds, visibleArea)) continue
-    drawBadgeEndpoint(ctx, endpoint)
+    drawBadgeEndpoint(ctx, endpoint, endpointScale(endpoint, labelScale))
     const stackKey = endpoint.hitArea.stackKey ?? endpoint.memberOfStack
     if (stackKey) drawnStackKeys.add(stackKey)
   }

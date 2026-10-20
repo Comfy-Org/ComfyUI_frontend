@@ -54,7 +54,7 @@ const emit = defineEmits<{
 }>()
 
 const ids = { invalid: useId(), pending: useId(), seats: useId() }
-const ERROR = 'm-0 text-xs text-destructive-background'
+const ERROR = 'm-0 text-xs text-destructive'
 
 const hints = computed(() => [
   ...(invalidCount > 0
@@ -72,7 +72,7 @@ const hints = computed(() => [
         {
           id: ids.pending,
           role: undefined,
-          class: 'm-0 text-xs text-warning-background',
+          class: 'm-0 text-xs text-warning',
           text:
             alreadyInvitedCount === 1
               ? copy.pendingInviteSingle

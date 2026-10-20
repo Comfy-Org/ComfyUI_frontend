@@ -37,7 +37,11 @@ vi.mock(import('./useLightInfo'), async () => {
     addLight: vi.fn(),
     removeSelectedLight: vi.fn(),
     updateSelectedLight: vi.fn(),
-    setSelectedLightType: vi.fn()
+    setSelectedLightType: vi.fn(),
+    canUndo: computed(() => false),
+    canRedo: computed(() => false),
+    undo: vi.fn(),
+    redo: vi.fn()
   }
   return {
     useLightInfo: vi.fn(() => {
@@ -303,7 +307,9 @@ describe('LightInfo toolbar', () => {
 
       await user.hover(screen.getByRole('button', { name: button }))
 
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(button)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        button
+      )
     }
   )
 

@@ -2,7 +2,7 @@
   <div class="flex size-full min-h-32 flex-col overflow-hidden">
     <div
       v-if="showBatchNav"
-      class="flex shrink-0 justify-between px-2 py-1 text-xs"
+      class="flex shrink-0 justify-between px-2 py-1"
       data-testid="batch-nav"
     >
       <BatchNavigation
@@ -27,7 +27,7 @@
       v-if="beforeImage || afterImage"
       ref="containerRef"
       data-testid="image-compare-viewport"
-      class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node-component-surface py-4"
+      class="relative min-h-0 flex-1 overflow-hidden rounded-lg bg-node py-4"
     >
       <img
         v-if="afterImage"

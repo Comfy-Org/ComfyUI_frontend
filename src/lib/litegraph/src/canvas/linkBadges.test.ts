@@ -25,7 +25,9 @@ const VISIBLE_AREA: ReadOnlyRect = [0, 0, 1000, 1000]
 
 function createContext(): CanvasRenderingContext2D {
   return createMockCanvasRenderingContext2D({
-    measureText: vi.fn().mockReturnValue({ width: 50 })
+    measureText: vi
+      .fn()
+      .mockReturnValue({ width: 50, actualBoundingBoxAscent: 8 })
   })
 }
 
@@ -277,7 +279,7 @@ describe('link badge frame layout', () => {
     drawHiddenLinkBadges(ctx, host, [414, 113, 10, 18])
 
     expect(queryLinkBadgeAtPoint(host, 420, 122)).toBe(toLinkId(2))
-    expect(ctx.fillText).toHaveBeenCalledWith('MODEL', 420, 123)
+    expect(ctx.fillText).toHaveBeenCalledWith('MODEL', 420, 126)
     expect(ctx.fillText).toHaveBeenCalledTimes(1)
   })
 
@@ -456,11 +458,28 @@ describe('hidden link badge stacks', () => {
     return { ctx, layouts }
   }
 
+  it('pops a stack pill around its socket while a member is newly hidden', () => {
+    const host = {}
+    const ctx = createContext()
+    layoutHiddenLinkBadges(host, ctx, fanOut([undefined, undefined]))
+    const poppingLinkId = toLinkId(2)
+
+    drawHiddenLinkBadges(ctx, host, VISIBLE_AREA, (linkId) =>
+      linkId === poppingLinkId ? 0.9 : 1
+    )
+
+    expect(ctx.translate).toHaveBeenCalledWith(100, 100)
+    expect(ctx.translate).toHaveBeenCalledWith(400, 200)
+    expect(ctx.translate).not.toHaveBeenCalledWith(400, 100)
+    expect(ctx.scale).toHaveBeenCalledTimes(2)
+    expect(ctx.scale).toHaveBeenCalledWith(0.9, 0.9)
+  })
+
   it('collapses unlabelled links from one socket into one counted pill', () => {
     const host = {}
     const { ctx, layouts } = layoutFanOut(host, [undefined, undefined, ''])
 
-    expect(ctx.fillText).toHaveBeenCalledWith('MODEL ×3', 120, 101)
+    expect(ctx.fillText).toHaveBeenCalledWith('MODEL ×3', 120, 104)
     expect(
       vi.mocked(ctx.fillText).mock.calls.filter(([, x]) => x < 250)
     ).toHaveLength(1)
@@ -557,7 +576,7 @@ describe('hidden link badge stacks', () => {
     )
     drawHiddenLinkBadges(ctx, host, VISIBLE_AREA)
 
-    expect(ctx.fillText).toHaveBeenCalledWith('* ×2', 120, 101)
+    expect(ctx.fillText).toHaveBeenCalledWith('* ×2', 120, 104)
   })
 
   it('reports no collapse when the expanded stack is not laid out', () => {

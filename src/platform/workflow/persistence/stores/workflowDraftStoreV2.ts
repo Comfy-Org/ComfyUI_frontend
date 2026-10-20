@@ -11,8 +11,8 @@ import { ref } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useApp } from '@/scripts/appInstance'
 
-import type { DraftIndexV2 } from '../base/draftTypes'
-import { MAX_DRAFTS } from '../base/draftTypes'
+import type { DraftIndexV2 } from '@/platform/workflow/persistence/base/draftTypes'
+import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   createEmptyIndex,
   getEntryByPath,
@@ -22,9 +22,9 @@ import {
   removeOrphanedEntries,
   touchOrder,
   upsertEntry
-} from '../base/draftCacheV2'
-import { hashPath } from '../base/hashUtil'
-import { getWorkspaceId } from '../base/storageKeys'
+} from '@/platform/workflow/persistence/base/draftCacheV2'
+import { hashPath } from '@/platform/workflow/persistence/base/hashUtil'
+import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
 import {
   deleteOrphanPayloads,
   deletePayload,
@@ -36,7 +36,7 @@ import {
   readPayload,
   writeIndex,
   writePayload
-} from '../base/storageIO'
+} from '@/platform/workflow/persistence/base/storageIO'
 
 interface DraftMeta {
   name: string

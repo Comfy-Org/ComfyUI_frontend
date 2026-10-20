@@ -1,11 +1,9 @@
 <template>
-  <div
-    class="flex flex-col gap-2 rounded-sm bg-node-component-surface p-2 text-xs"
-  >
+  <div class="flex flex-col gap-2 rounded-sm bg-node p-2">
     <ToggleGroup
       type="single"
       :model-value="light.type"
-      class="w-full min-w-0 rounded-md bg-component-node-widget-background p-1"
+      class="w-full min-w-0 rounded-md bg-input p-1"
       @update:model-value="onTypeChange"
     >
       <ToggleGroupItem
@@ -29,10 +27,10 @@
       "
     >
       <label :class="FIELD_LABEL_CLASS">{{ $t('lightInfo.color') }}</label>
-      <ColorPicker
+      <AppColorPicker
         :model-value="light.color"
         :alpha="false"
-        :aria-label="$t('lightInfo.color')"
+        :accessible-label="$t('lightInfo.color')"
         @update:model-value="(color) => emit('update', { color })"
       />
       <label :class="FIELD_LABEL_CLASS">
@@ -64,7 +62,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
@@ -93,8 +91,7 @@ interface NumberFieldSpec {
   step: number
 }
 
-const FIELD_LABEL_CLASS =
-  'content-center truncate text-node-component-slot-text'
+const FIELD_LABEL_CLASS = 'content-center truncate'
 
 const { light, compact } = defineProps<{
   light: LightInfoEntry

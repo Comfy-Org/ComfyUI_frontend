@@ -2,7 +2,7 @@
   <div :class="cn('h-full p-8', props.class)">
     <div class="flex flex-col items-center bg-(--surface-ground) text-center">
       <i v-if="icon" :class="cn(icon, 'mb-4 text-5xl')" />
-      <h3 v-if="title" class="mb-2 text-base-foreground">{{ title }}</h3>
+      <h3 v-if="title" class="mb-2 text-foreground">{{ title }}</h3>
       <p :class="cn('mb-4 text-center whitespace-pre-line', textClass)">
         {{ message }}
       </p>

@@ -20,6 +20,10 @@ import {
   isLinkRevealed,
   setRevealedLinks
 } from '@/lib/litegraph/src/canvas/linkRevealState'
+import {
+  clearRootLinkHideTransitions,
+  startLinkHideTransitions
+} from '@/lib/litegraph/src/canvas/linkHideTransition'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -38,7 +42,9 @@ function createMockCtx(): CanvasRenderingContext2D {
     scale: vi.fn(),
     drawImage: vi.fn(),
     fillText: vi.fn(),
-    measureText: vi.fn().mockReturnValue({ width: 50 }),
+    measureText: vi
+      .fn()
+      .mockReturnValue({ width: 50, actualBoundingBoxAscent: 8 }),
     closePath: vi.fn(),
     rect: vi.fn(),
     clip: vi.fn(),
@@ -627,6 +633,7 @@ describe('drawConnections hidden links', () => {
   afterEach(() => {
     LiteGraph.vueNodesMode = false
     clearRootLinkReveals(graphScopeOf(graph).rootGraphId)
+    clearRootLinkHideTransitions(graphScopeOf(graph).rootGraphId)
   })
 
   function createHiddenLink(sourceId?: string): LLink {
@@ -1236,6 +1243,51 @@ describe('drawConnections hidden links', () => {
       expect(
         renderLink.mock.calls.filter(([, , end]) => end === lastReroute.pos)
       ).toHaveLength(1)
+    }
+  )
+
+  it.for([
+    { name: 'hiding link first', hidingIndex: 0 },
+    { name: 'visible link first', hidingIndex: 1 }
+  ])(
+    'snaps a hiding link back without taking a shared reroute: $name',
+    ({ hidingIndex }) => {
+      const firstLink = createHiddenLink()
+      const source = graph.getNodeById(firstLink.origin_id)
+      if (!source) throw new Error('Missing source node')
+      const reroute = graph.createReroute([230, 170], firstLink)
+      if (!reroute) throw new Error('Missing reroute')
+      const target = new LGraphNode('Target')
+      target.pos = [500, 250]
+      target.addInput('in', 'STRING')
+      graph.add(target)
+      const secondLink = createTestLink(graph, source, 0, target, 0)
+      secondLink.parentId = reroute.id
+      const links = [firstLink, secondLink]
+      const hiding = links[hidingIndex]
+      const visible = links[1 - hidingIndex]
+      const scope = graphScopeOf(graph)
+      useLinkPresentationStore().patch(scope, visible.id, { hidden: false })
+      useLinkPresentationStore().patch(scope, hiding.id, { hidden: true })
+      startLinkHideTransitions(
+        scope.rootGraphId,
+        [hiding.id],
+        performance.now()
+      )
+      const drawReroute = vi.spyOn(reroute, 'draw')
+      const ctx = createMockCtx()
+
+      canvas.drawConnections(ctx)
+
+      expect(canvas.renderedPaths.has(visible)).toBe(true)
+      expect(canvas.renderedPaths.has(reroute)).toBe(true)
+      expect(canvas.renderedPaths.has(hiding)).toBe(false)
+      expect(drawReroute).toHaveBeenCalledOnce()
+      expect(ctx.bezierCurveTo).toHaveBeenCalledTimes(6)
+      expect(queryLinkBadgeAtPoint(canvas, ...outputBadgePoint(hiding))).toBe(
+        hiding.id
+      )
+      expect(canvas.dirty_bgcanvas).toBe(true)
     }
   )
 })

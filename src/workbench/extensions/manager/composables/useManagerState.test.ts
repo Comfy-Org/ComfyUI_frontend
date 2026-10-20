@@ -19,13 +19,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getClientFeatureFlags: vi.fn(),
-    getServerFeature: vi.fn(),
-    getSystemStats: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 /**
  * Helper to build a minimal systemStats argv-only fixture.

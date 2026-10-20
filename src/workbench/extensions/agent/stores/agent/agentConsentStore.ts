@@ -9,17 +9,16 @@ import {
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   getGlobalSetting,
+  getGlobalSettingsAuthHeader,
   setGlobalSetting
 } from '@/platform/settings/globalSettingsApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAuthStore } from '@/stores/authStore'
 
 class AgentConsentAuthenticationError extends Error {
   override name = 'AgentConsentAuthenticationError'
 }
 
 export const useAgentConsentStore = defineStore('agentConsent', () => {
-  const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
   const { resolvedUserInfo } = useCurrentUser()
   const loadedIdentity = ref<string | null>(null)
@@ -95,7 +94,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
 
   async function requireAuth(sessionId: number, identity: string) {
     const send = webSessionRequests() ? await webSessionSend() : undefined
-    const auth = send ?? (await authStore.getWorkspaceAuthHeader())
+    const auth = send ?? (await getGlobalSettingsAuthHeader())
     if (!stillOwns(sessionId, identity)) return null
     if (!auth) {
       throw new AgentConsentAuthenticationError(

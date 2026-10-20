@@ -25,7 +25,8 @@ const testTooltipProviderProps = shallowReactive({
   delayDuration: 0,
   skipDelayDuration: 300,
   disableClosingTrigger: undefined,
-  disabled: undefined
+  disabled: undefined,
+  content: undefined
 })
 
 const appShellTooltipProvider: Plugin = {

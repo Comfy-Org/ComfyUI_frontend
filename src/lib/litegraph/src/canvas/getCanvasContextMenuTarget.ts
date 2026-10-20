@@ -1,9 +1,12 @@
-import type { LGraphCanvas } from '../LGraphCanvas'
-import type { LGraphGroup } from '../LGraphGroup'
-import { LLink } from '../LLink'
-import { Reroute } from '../Reroute'
-import type { LinkSegment } from '../interfaces'
-import { LinkRenderType } from '../types/globalEnums'
+import type {
+  LGraphCanvas,
+  LGraphGroup
+} from '@/lib/litegraph/src/types/entityRegistry'
+
+import { LLink } from '@/lib/litegraph/src/LLink'
+import { Reroute } from '@/lib/litegraph/src/Reroute'
+import type { LinkSegment } from '@/lib/litegraph/src/interfaces'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 

@@ -9,15 +9,14 @@
       :aria-label="tooltipText"
       @click="toggleSlider"
     >
-      <i :class="cn('pi', icon, 'text-lg text-base-foreground')" />
+      <i :class="cn('pi', icon, 'text-lg text-foreground')" />
     </Button>
     <div
       v-show="showSlider"
-      class="absolute top-0 left-12 w-[150px] rounded-lg bg-interface-menu-surface p-4 shadow-lg"
+      class="absolute top-0 left-12 w-[150px] rounded-lg bg-popover p-4 shadow-lg"
     >
       <Slider
         :model-value="sliderValue"
-        class="w-full"
         :min="min"
         :max="max"
         :step="step"

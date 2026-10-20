@@ -1,15 +1,21 @@
+import type {
+  LGraph,
+  LLink,
+  Reroute
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { st, t } from '@/i18n'
-import type { IContextMenuValue } from '../types/contextMenu'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
-import type { LGraph } from '../LGraph'
-import { Subgraph } from '../subgraph/Subgraph'
-import type { LLink } from '../LLink'
-import type { Reroute } from '../Reroute'
-import type { CanvasPointerEvent } from '../types/events'
+import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import {
+  cancelLinkHideTransition,
+  startLinkHideTransitions
+} from '@/lib/litegraph/src/canvas/linkHideTransition'
 
 export interface LinkMutationHost {
   emitBeforeChange(): void
@@ -41,9 +47,7 @@ export function hideLink(
   scope: GraphScope,
   linkId: LinkId
 ): void {
-  mutateLink(host, () =>
-    useLinkPresentationStore().patch(scope, linkId, { hidden: true })
-  )
+  hideLinks(host, scope, [linkId])
 }
 
 export function hideLinks(
@@ -53,7 +57,25 @@ export function hideLinks(
 ): void {
   mutateLink(host, () => {
     const store = useLinkPresentationStore()
-    for (const linkId of linkIds) store.patch(scope, linkId, { hidden: true })
+    const newlyHidden: LinkId[] = []
+    for (const linkId of linkIds) {
+      if (store.getPresentation(scope, linkId)?.hidden === true) continue
+      store.patch(scope, linkId, { hidden: true })
+      if (store.getPresentation(scope, linkId)?.hidden === true)
+        newlyHidden.push(linkId)
+    }
+    startLinkHideTransitions(scope.rootGraphId, newlyHidden, performance.now())
+  })
+}
+
+export function showLinks(
+  host: LinkMutationHost,
+  scope: GraphScope,
+  linkIds: Iterable<LinkId>
+): void {
+  mutateLink(host, () => {
+    const store = useLinkPresentationStore()
+    for (const linkId of linkIds) store.patch(scope, linkId, { hidden: false })
   })
 }
 
@@ -74,17 +96,6 @@ export function deleteLinks(
         graph.removeLink(link.id)
       }
     }
-  })
-}
-
-export function showLinks(
-  host: LinkMutationHost,
-  scope: GraphScope,
-  linkIds: Iterable<LinkId>
-): void {
-  mutateLink(host, () => {
-    const store = useLinkPresentationStore()
-    for (const linkId of linkIds) store.patch(scope, linkId, { hidden: false })
   })
 }
 
@@ -112,9 +123,10 @@ export function showLink(
   scope: GraphScope,
   linkId: LinkId
 ): void {
-  mutateLink(host, () =>
+  mutateLink(host, () => {
+    cancelLinkHideTransition(scope.rootGraphId, linkId)
     useLinkPresentationStore().patch(scope, linkId, { hidden: false })
-  )
+  })
 }
 
 export function renameLink(

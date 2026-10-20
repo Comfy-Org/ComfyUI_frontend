@@ -1,15 +1,26 @@
-import type { LGraph } from '../LGraph'
-import type { LGraphCanvas } from '../LGraphCanvas'
-import type { LGraphGroup } from '../LGraphGroup'
-import type { LGraphNode } from '../LGraphNode'
-import type { LLink } from '../LLink'
-import type { Reroute } from '../Reroute'
-import type { LinkSegment, Point, Positionable } from '../interfaces'
-import { isInRectangle } from '../measure'
-import type { SubgraphInputNode } from '../subgraph/SubgraphInputNode'
-import type { SubgraphOutputNode } from '../subgraph/SubgraphOutputNode'
-import { LinkMarkerShape, LinkRenderType } from '../types/globalEnums'
-import type { CanvasPointerEvent } from '../types/events'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInputNode,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+
+import type {
+  LinkSegment,
+  Point,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
+import { isInRectangle } from '@/lib/litegraph/src/measure'
+
+import {
+  LinkMarkerShape,
+  LinkRenderType
+} from '@/lib/litegraph/src/types/globalEnums'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint

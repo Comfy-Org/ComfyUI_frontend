@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-[490px] flex-col border-t border-border-default">
+  <div class="flex w-[490px] flex-col border-t">
     <div class="flex size-full flex-col gap-4 p-4">
       <!-- Error Details -->
       <div v-if="importFailedPackages.length > 0" class="flex flex-col gap-3">
@@ -14,7 +14,7 @@
           <!-- Error Message -->
           <div
             v-if="pkg.traceback || pkg.errorMessage"
-            class="rounded-md bg-secondary-background p-4 font-mono text-xs"
+            class="rounded-md bg-secondary p-4 font-mono text-xs"
           >
             {{ pkg.traceback || pkg.errorMessage }}
           </div>

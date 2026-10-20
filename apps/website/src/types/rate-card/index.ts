@@ -8,4 +8,4 @@ export type {
   RateCard,
   RateCardGpu,
   StorageRate
-} from './types.gen.js'
+} from './types.gen'

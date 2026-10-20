@@ -40,7 +40,6 @@ const TYPED_VALUE = 'typed by the user'
 const WORKFLOW_ID = '2d9f5a71-4c3b-4e8d-9a06-7b1c2d3e4f50'
 const THREAD_ID = '3e0a6b82-5d4c-4f9e-8b17-8c2d3e4f5a61'
 const MESSAGE_ID = '4f1b7c93-6e5d-4a0f-9c28-9d3e4f5a6b72'
-const SOCKET_SID = '5a2c8d04-7f6e-4b10-8d39-0e4f5a6b7c83'
 
 const nodeDef: ComfyNodeDef = {
   name: NODE_TYPE,
@@ -189,7 +188,6 @@ test.describe(
         page,
         WORKFLOW_ID,
         host,
-        SOCKET_SID,
         // The human's own edit must reach the document through the real
         // applier, not be held: the last step asserts what the document kept.
         'apply'
