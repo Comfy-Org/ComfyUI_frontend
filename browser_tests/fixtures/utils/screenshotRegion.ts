@@ -15,6 +15,16 @@ type RegionTarget = Locator | ClientBounded | Rect | Position
 async function clientRectOf(target: RegionTarget): Promise<Rect> {
   if ('getClientBounding' in target) return target.getClientBounding()
   if ('boundingBox' in target) {
+    await target.evaluate((element) =>
+      Promise.allSettled(
+        element
+          .getAnimations()
+          .filter(
+            ({ effect }) => effect?.getComputedTiming().endTime !== Infinity
+          )
+          .map(({ finished }) => finished)
+      )
+    )
     const box = await target.boundingBox()
     if (!box) throw new Error(`Cannot frame a hidden locator: ${target}`)
     return box
