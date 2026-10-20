@@ -46,7 +46,7 @@ export function showTextEditor({
       }
     },
     dialogComponentProps: {
-      size: 'md',
+      size: 'lg',
       maximizable: true,
       onRemoved: () => {
         isOpen = false
