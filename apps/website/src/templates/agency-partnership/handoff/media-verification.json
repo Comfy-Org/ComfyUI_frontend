@@ -1,0 +1,756 @@
+{
+  "deliveryRoot": "https://media.comfy.org/website/agency-partnership/wip-2026-10-20/",
+  "objects": [
+    {
+      "path": "media-all/contender-all-03-960.mp4",
+      "bytes": 1483228,
+      "sha256": "01eb79fd4e18055ebbea88a1643baed374b80ab4498b3bb89c759b66b220ff33",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-08-960.mp4",
+      "bytes": 315875,
+      "sha256": "994032319f8522a2122a286d29ee4a90b9b4bd65f61b398a629cfe0b53e97c01",
+      "ok": true
+    },
+    {
+      "path": "media-all/asteria-all-02-960.mp4",
+      "ok": true,
+      "bytes": 53498419,
+      "sha256": "f01e621a02600f3f3d92d94a10d971e77af1613323c1ba8cac355fc8ea3f0041",
+      "verifiedUrl": "https://media.comfy.org/website/agency-partnership/wip-2026-10-20/media-all/asteria-all-02-960.mp4?v=f01e621a0260"
+    },
+    {
+      "path": "media-all/black-math-all-39-960.mp4",
+      "bytes": 391619,
+      "sha256": "2d696c9f061e953f70fd23ebb1d5594d76c6e61f5a8ed99b2d7130b41e18fa81",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-29-960.mp4",
+      "bytes": 698140,
+      "sha256": "8fc1d03139d4074cabc82fc5453e6fdc6d09464534cde96e89cb2876b6cc410d",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-09.jpg",
+      "bytes": 16118,
+      "sha256": "4fdcd108dafbf1c17b2fde2e7a564ae5ffb3722f4365a8fbece308c62047f39e",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-11-960.mp4",
+      "bytes": 1505193,
+      "sha256": "7ba9abf2ee63366ae1c90b8a4a9589f98c7045a80de4734dc8f809aea210e66b",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-06-960.mp4",
+      "bytes": 862656,
+      "sha256": "1421055cfabf8c9bc4bd575c70527bbee7daefe46de71035baeeafd560f4adde",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-16-960.mp4",
+      "bytes": 30206,
+      "sha256": "a8ed1663f76596a4f6031b2ced084c227d05ffdcb8b62c1d5faa18561ef874c4",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-01-960.mp4",
+      "bytes": 5286584,
+      "sha256": "2d44d983c68e7903ffbd8cdc2ec22cbd65a2747682524d7f7d0ff2a9c22a0f99",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-08.jpg",
+      "bytes": 47038,
+      "sha256": "6e786d351fc124f664a8d65d8eede5b56be600947732d0a9dcec7a30e24f44a7",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-28-960.mp4",
+      "bytes": 150568,
+      "sha256": "000153c728f51c34543df7a32123131d73b799fd65d67c1f674688ee5d74d641",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-38-960.mp4",
+      "bytes": 430712,
+      "sha256": "f0f72e5c7a1f4f0976e76a59f199bda951efb2193080355103092093a1e4c2c8",
+      "ok": true
+    },
+    {
+      "path": "media-all/asteria-all-03-960.mp4",
+      "bytes": 11422811,
+      "sha256": "abc8490dc280429a184a5b1b3b6cb24ae8ed1fdff67db0dc6e7f38129c021287",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-09.jpg",
+      "bytes": 30719,
+      "sha256": "12a0956ffcd8d47e923d0a4a51e591560122cfba1b3d802cfb3bde937bbbf9d7",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-10-960.mp4",
+      "bytes": 325575,
+      "sha256": "8dcec82e3e04098e8f1532952e0938bdccca0a59998be3452dbe0c18e27dc3ee",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-07-960.mp4",
+      "bytes": 1547691,
+      "sha256": "3b020d696b88189e60d774cff76a7753fa7cf55bb1e37f8d07389835894f86ff",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-08.jpg",
+      "bytes": 31572,
+      "sha256": "251f83374a3c1235ebc4676b81ea06aa60cdb78c05a41d7df76f8a43b3b6af10",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-02-960.mp4",
+      "bytes": 1328749,
+      "sha256": "4b1b7dd484472ed5f728781700c8c086922a2f4c38a3d47d16af834a4d0c5151",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-09-960.mp4",
+      "bytes": 511818,
+      "sha256": "6155188054e69e9306fa7ec186c94436dd205bdff5dc4de0ad52962816432f50",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-25.jpg",
+      "bytes": 74767,
+      "sha256": "1fa858cd3cdd061cfc67152757bd10289dd55253dc3ca9a8ee406c9afa2e5e82",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-31.png",
+      "bytes": 1667960,
+      "sha256": "f310e75d7d2214dd5b746e853fe443f447d248d1ea3aa643755c5454e18650a0",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-19.png",
+      "bytes": 1025454,
+      "sha256": "2163b3a282827ba92745d4fd832d6086a6ada15eef2426916b556d5fae149d69",
+      "ok": true
+    },
+    {
+      "path": "media-all/asteria-all-01-960.mp4",
+      "bytes": 1764006,
+      "sha256": "ae1ca243472da8a00055370cc4cafd877790f5066ac065147fe0ed8ee5910460",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-18.png",
+      "bytes": 282503,
+      "sha256": "0913a39d10712922332f8b27ab57a6ed8a9982f28b3d5b3cb08170d0e3cf053c",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-24.png",
+      "bytes": 3346,
+      "sha256": "7b1bddb2392179a14f6abb84916709e5d1a841545e8c1a81c606424abe63e53b",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-30.png",
+      "bytes": 897541,
+      "sha256": "08b3b1c8c3b05ac239ca54f770fa85d66d13b7ebffd9e5ac76b6650fd3e0e01a",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-09-960.mp4",
+      "bytes": 4426148,
+      "sha256": "67e00b53aeca8a7d8878c60ad44ebafb0f0c583a367e04976a639a0986b4183f",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-05-960.mp4",
+      "bytes": 1038871,
+      "sha256": "9cace7f854dd607418e00361ec98becab023c63d718cfd56409eea856a8b31b4",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-12-960.mp4",
+      "bytes": 1113978,
+      "sha256": "0ae89f677005efba0a76fca14c7b752472617fc71e07f547aedadbdab8d69f2f",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-02-960.mp4",
+      "bytes": 4477637,
+      "sha256": "6e2cf6e260704a4a35cd535d39e8225d2396f6dddcf20234b35700094cc0941f",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-15-960.mp4",
+      "bytes": 38678,
+      "sha256": "99bdd15b3ddee20b37b1d751c34ce51bc6a8993520227dc05f00832ad0cfd30a",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-26.jpg",
+      "bytes": 20435,
+      "sha256": "c7e6b82f9c4479f6cb0f87c5866191b4a3bde368d5c32780a05982bd4525c607",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-32.png",
+      "bytes": 1695730,
+      "sha256": "1e6708b7ddbe53186d31926791cbb5cbecbe7f78e3ca83b299e09363d7899658",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-33.png",
+      "bytes": 844462,
+      "sha256": "e213ca7a9c2229017f8cd29e4277efd52c54d44750414136f555f2e7efe46c1f",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-27.jpg",
+      "bytes": 36327,
+      "sha256": "e11f4e114da60a21a30ddc10f7eaa64c29234c76dd62e5480aa3f9945b19c345",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-10-960.mp4",
+      "bytes": 2504612,
+      "sha256": "b83c2fc5b900da054c12e28f37df72bf66c4c973a0d99fd66f45269dd539f12a",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-37.jpg",
+      "bytes": 71089,
+      "sha256": "8ddd27889b4e43e8a337d63e7073ab2f418a7c1977552ee4863cbe45662ff2bf",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-23.png",
+      "bytes": 269041,
+      "sha256": "2251ef25a3b816544eba5d57e3e24d088ce59ac836639c952a034b9d5ea30dd5",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-36.png",
+      "bytes": 1060843,
+      "sha256": "fb1a32d396de9a3db2aec16beff99b06cadd62b542ae8844f9d186c233456f01",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-22.png",
+      "bytes": 904787,
+      "sha256": "915b609506705048bcb44d759c6377d6c62fad5dc726e123be4d022d08e8642c",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-11-960.mp4",
+      "bytes": 3529424,
+      "sha256": "6715eb1f91695c9297a157591a9ed7d24a11bce06a0d6b697bc0162b09f7d435",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-01-960.mp4",
+      "bytes": 9596018,
+      "sha256": "7131fecbde8fc9fd4f2d3931d4f452a237205f16f1efdd1e7bb9e00643702846",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-08.jpg",
+      "bytes": 20353,
+      "sha256": "56e9548bd17c9a5f0d0e805d305e7e36cfb453780d268e62ba98362f15ec85bb",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-34.png",
+      "bytes": 1719975,
+      "sha256": "28d1aae9019ec151bc974b9feef5139093f8a14adc0d291ebc74dad890621433",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-20.png",
+      "bytes": 904953,
+      "sha256": "5fa94c7e56eacaa8911d3f5037c6b7f4ec3dbca695ad6b3881b7b580be2c7880",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-21.png",
+      "bytes": 18429,
+      "sha256": "0187e4a0910023fac34335f0d0369974b6885455d5c3e3a05c271f9f784da1c3",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-35.png",
+      "bytes": 1463896,
+      "sha256": "df6f5cdc83b360034472419b4dc81786918321bac2c9bfde8b391fcfc85b7ed9",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-08-960.mp4",
+      "bytes": 223479,
+      "sha256": "3220cf6f36c730c6cca7f90d859bddd30dc3953a1b50fb9cb5be1ea43c179921",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-09.jpg",
+      "bytes": 38587,
+      "sha256": "972d0de4720625807802750ef9dcf134fb66adc0520a9fb090e0f1bb520038e2",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-03-960.mp4",
+      "bytes": 1466804,
+      "sha256": "dabaea5da80774ea644c825b92c0da306e4b8191c59c26124b09cfbeb61a95a1",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-14-960.mp4",
+      "bytes": 36912,
+      "sha256": "b7a1dd0a8d167c0d1cdb30f6225ada6feabe1a297d2317be1984e08701a7cde4",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-04-960.mp4",
+      "bytes": 863463,
+      "sha256": "bbeca26d83deb9bb086beb2dcdd21c8fc58f08dbd3338fc7840c495623629994",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-01-960.mp4",
+      "bytes": 315102,
+      "sha256": "59ab18ff5c915c94a210da004211856901fc6f330d8149f938c1f36e039d397d",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-11-960.mp4",
+      "bytes": 234305,
+      "sha256": "ea4dca33c9d06d086acc7f136f12a76b7790e417d7d985f24637d4a821c446de",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-06-960.mp4",
+      "bytes": 8304388,
+      "sha256": "ee1cfa895f766a5f19e4354dfe76063be383d76597fd90fd43ba8cc80b1e5a7e",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-04.jpg",
+      "bytes": 27394,
+      "sha256": "fbad5b6f6812042fba575048d496dfd6a13b4a21c1362e0024d56b9110f97f45",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-10.jpg",
+      "bytes": 87514,
+      "sha256": "fad28d9950ebde75c857efc8f09c1dfa9695cb3b9fad1ec81a8c37f83c43b29f",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-38.jpg",
+      "bytes": 38570,
+      "sha256": "3c2246a2e571e3e04d4c904f7e09da6d753741b8ddd369b8fd4d3648e958e3ab",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-39.jpg",
+      "bytes": 25997,
+      "sha256": "fc24b20fb547e82dfd17a28e97be481b3c7943721e768f3426599167a6ea3ebc",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-11.jpg",
+      "bytes": 34179,
+      "sha256": "37d0a5d0587032988a0a436dda75d410af1efaed19b8646fd5705d647fcf13d0",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-05.jpg",
+      "bytes": 35091,
+      "sha256": "d2aea9409acec83c4ea5f279681d1923179d584cea985217a1bc5de47eb41f78",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-08-960.mp4",
+      "bytes": 547841,
+      "sha256": "a6dfb98b205c969d541b6a633b452c0f0e89294ccb3fb9f85ef3bd9aa66539bd",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-04-960.mp4",
+      "bytes": 1703817,
+      "sha256": "0667a5178fc2061cba5cba2e7f51f31ea9d6207edf053234df8daf351d68e3e7",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-13.jpg",
+      "bytes": 41843,
+      "sha256": "31a78ad7da364f8bbec5dfe86007717b04df324f0efcb0fe465e793cc9407758",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-07.jpg",
+      "bytes": 53488,
+      "sha256": "64d1e8386c96f286e91668891f018af55462ab0e1c8239ec37e53abfe0f4a91b",
+      "ok": true
+    },
+    {
+      "path": "media-all/asteria-all-04.jpg",
+      "bytes": 28985,
+      "sha256": "6651e8fb78a5c0d8e4f7f27d34e646fc53e1a88505e226a4e5964834aac649c0",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-06.jpg",
+      "bytes": 34865,
+      "sha256": "c6c53179eb109f644ce0f40777420564e89ce1ab52d6ca2869848ee741cb312e",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-12.jpg",
+      "bytes": 41050,
+      "sha256": "f2a76946ff3c54785a8a983778a80f951cec6c0611eeae629c2633c5e16e7dc8",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-27-960.mp4",
+      "bytes": 281759,
+      "sha256": "486576d61684bd8e2e8254c4472bdd86da2d75607c35fe116823efaf0bb08b4f",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-37-960.mp4",
+      "bytes": 1756275,
+      "sha256": "9541987a8aa743c206deb47d6436ef4c99f30422f98dbd455232ee90752e45f5",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-09-960.mp4",
+      "bytes": 224592,
+      "sha256": "499004467ec0ed9f44713ab1e1ae30742323fa1ec66c0bab90b3490d18f8625b",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-16.jpg",
+      "bytes": 17018,
+      "sha256": "697c97d24e61f738accc7c8832337057c9e46f7cb6e564732c32125363546992",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-02.jpg",
+      "bytes": 102559,
+      "sha256": "ebe233cb5c92c1250277b21956de6113825f6e2dacc97cafeeaa56567fc35cba",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-05-960.mp4",
+      "bytes": 969439,
+      "sha256": "732ce8c94d48d101a87fe4aa044453a1e706a483550ba45e39991644f59e745f",
+      "ok": true
+    },
+    {
+      "path": "media-all/asteria-all-01.jpg",
+      "bytes": 27839,
+      "sha256": "1177748476f09c8fdafa2926faa9a91472933aa2c78db30535504323f3ed5910",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-17.png",
+      "bytes": 317872,
+      "sha256": "b8ed1866974ab71b8e47b3043e0bba2588d3e0e22602ba3b6a3fabafa4dc7920",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-26-960.mp4",
+      "bytes": 193049,
+      "sha256": "36906835b7ebb36587eb15030df99f96afa1fd0bfc31faa1a55e81be78d014b2",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-03.jpg",
+      "bytes": 68058,
+      "sha256": "ce038644de68976fa3b6bffa00bf2a60f77e48b99e0bad25d000c495f4481d07",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-29.jpg",
+      "bytes": 35816,
+      "sha256": "59cc4e69ccec05abd6c695c88a6204ee6dc57936f2cf064238f00dacabe9afe8",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-01.jpg",
+      "bytes": 46655,
+      "sha256": "a5d9540e78741a08aa200fefdc55c797d79bc00ad2a75cf391dcd3bef16e9dbf",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-15.jpg",
+      "bytes": 25105,
+      "sha256": "7415318a4e0ca17082c0d7c44397cb0df159db8b0553fb2266919cc993a8000a",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-10-960.mp4",
+      "bytes": 1072762,
+      "sha256": "a04c758c55660e387a2ff38e27545aeea819ddac83a04b5d9c0ac782417db3e6",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-07-960.mp4",
+      "bytes": 504639,
+      "sha256": "80112a0f579d1cba4d538c37f3d4810e268c1ddc4095ce987fe144fefc4744e2",
+      "ok": true
+    },
+    {
+      "path": "media-all/asteria-all-02.jpg",
+      "bytes": 49365,
+      "sha256": "129a8e9141d1fccde8def5429411a9d09d6d2459d64f1f52127b6dda8ebddd76",
+      "ok": true
+    },
+    {
+      "path": "media-all/asteria-all-03.jpg",
+      "bytes": 42887,
+      "sha256": "85243051ce2977c17a1d3128d2147bc40288d34fc622fe0a175b86cb17659032",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-14.jpg",
+      "bytes": 22910,
+      "sha256": "c2e47a2020d8fb8822018c3f7c3a0af0bd21b21813b7b09a65f6183d1b66732b",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-28.jpg",
+      "bytes": 27980,
+      "sha256": "286991b3db26edc88f91feb9dd6ccb2e0b421f5421d7d4df81411c50e86d5b6f",
+      "ok": true
+    },
+    {
+      "path": "media-all/asteria-all-04-960.mp4",
+      "bytes": 10952074,
+      "sha256": "b179c887f1139508bffaf86d40d3db426700fd38be97c06ceaf354361cd0046c",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-07-960.mp4",
+      "bytes": 394372,
+      "sha256": "23e2051b773995d09ccd1ab95c608caac58a8a2291d20a619844c1380d39ad17",
+      "ok": true
+    },
+    {
+      "path": "media-all/brick-visual-all-01.jpg",
+      "bytes": 33424,
+      "sha256": "f1cebccf3b6988c108a8f17a2884eb4c22acd848bb8171c898c62412982f6647",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-12.jpg",
+      "bytes": 32091,
+      "sha256": "95929ffbd19af2879a232e1aeb4e6af88fde2349f11a8842ff88170a99fdf1e8",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-06.jpg",
+      "bytes": 14440,
+      "sha256": "6eb12e18338536320bfdf8cddd69f74f819137e1a75d9f4064c946d9ef01846e",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-03.jpg",
+      "bytes": 13492,
+      "sha256": "20ed3541e487cfb94437029ecd3e51dc8487976c6764957dfaad409fa8371406",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-02.jpg",
+      "bytes": 16310,
+      "sha256": "4c1f6f8efb240ddf4da3d226c83ece8021bf6a3492e28ec819e4adb36b00bd20",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-07.jpg",
+      "bytes": 29912,
+      "sha256": "b85611a1ac861866ccbf06a53db8067460810d2e5b758afe8fff2b859b091cb0",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-02-960.mp4",
+      "bytes": 389709,
+      "sha256": "6e1eeca99526c576102de1637457fed1680a336e9d70a1e10b51b1165ef87d49",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-05-960.mp4",
+      "bytes": 500820,
+      "sha256": "ca501a444fa6197b74ce513d6cd8dda146b7e7af2ce5542680c9a86499f122e3",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-12-960.mp4",
+      "bytes": 354734,
+      "sha256": "c65ca8a1c23469660984043dba9955108b73d60065aab2ef913b74934a603beb",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-05.jpg",
+      "bytes": 25998,
+      "sha256": "28c0ec0afe1680cbd76047d5c8f05fbb26ec0c66c973bd4a337459b52b393651",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-11.jpg",
+      "bytes": 41144,
+      "sha256": "b289c5b5de6a47d4350e6d480a6a1a371e2c035f3292fc81f9f288fb09729f72",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-01.jpg",
+      "bytes": 46349,
+      "sha256": "05aebeb55494305fb7af91c4dcec082aa9dc879bc5320417d8f4ea24c0dd062e",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-10.jpg",
+      "bytes": 32091,
+      "sha256": "ab90dfa44cbf3f086cb0677053088dd2b51885bfb2054022924da2b28cf27f84",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-04.jpg",
+      "bytes": 43980,
+      "sha256": "a8ad63f9c58c12dea75e5588daff65b784d237127c980aa3e6b2ffa141f4987c",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-04-960.mp4",
+      "bytes": 1305965,
+      "sha256": "e1269841119348b6b7d915e6ae605da6f4e926918bc204b30e707966d6407be9",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-13-960.mp4",
+      "bytes": 960963,
+      "sha256": "1cee24c0290c5d1ec4bd39b2534cbd09c854c7ec5ae9dd4fb17073c03ca89b25",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-03-960.mp4",
+      "bytes": 631610,
+      "sha256": "2130cdee23d4bea396fc56a9318b9cf5c41d81f09b7299895d5efa24fbf69656",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-05.jpg",
+      "bytes": 40085,
+      "sha256": "3163285fca5a63c39994149c2a90ea589ac4a9cb54142bf179025ace02a5acdd",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-11.jpg",
+      "bytes": 46849,
+      "sha256": "902b7c884f04abf2d5e9d84ee368cae45c04d9688d83833645ebc8f5319b24bf",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-10.jpg",
+      "bytes": 82285,
+      "sha256": "64791d8214601abf39db4dbeca6e6857fe11ee08e2b881006642e795bf96d296",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-04.jpg",
+      "bytes": 27754,
+      "sha256": "fee627a52cb049b4b91b253a0aeba7c5284064c71cb45c2432ba405edfaa1ce1",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-01.jpg",
+      "bytes": 31982,
+      "sha256": "18a8a3a1145aeaf91e254288cb96383fe4c9e08db9e4da1d7b894217bb513477",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-06-960.mp4",
+      "bytes": 2081428,
+      "sha256": "b523617a24218e2fd61c93d496e0285999207dce83edb9ac4f91cb4208c1dde8",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-03.jpg",
+      "bytes": 27493,
+      "sha256": "c7a15baa6abdb84484ebb39cd5a393e1813e8c08bdb4797cde2869861d18f4f0",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-06.jpg",
+      "bytes": 18426,
+      "sha256": "233d1fbf7f07351ac3bc2498bb627d35b1fab72be179af8c2bda68502579b22e",
+      "ok": true
+    },
+    {
+      "path": "media-all/brick-visual-all-01-960.mp4",
+      "bytes": 5817289,
+      "sha256": "4bbc75f6d9b4badfdc142e17b21a0483a324bede9121742b66775b52ee0dc867",
+      "ok": true
+    },
+    {
+      "path": "media-all/contender-all-07.jpg",
+      "bytes": 49165,
+      "sha256": "963d8de476495470d713e751f14794b7e994a22fcca899a9751a8157e4fbc823",
+      "ok": true
+    },
+    {
+      "path": "media-all/silverside-all-02.jpg",
+      "bytes": 32152,
+      "sha256": "6e09a97f72e5f6d4fdc37353fc7c83aa8a494271a13002f2ac10cbdb9408942a",
+      "ok": true
+    },
+    {
+      "path": "media-all/black-math-all-25-960.mp4",
+      "bytes": 1046932,
+      "sha256": "99372e91d6f17a956720087d1c001863583ab16b9d801bd126e0b4bc35f70657",
+      "ok": true
+    },
+    {
+      "path": "logos/silverside.svg",
+      "bytes": 4255,
+      "sha256": "70cd9467d622d483e03f29c855fbe60b28dd7d66256669e29d9f8ddedd6990f8",
+      "ok": true
+    },
+    {
+      "path": "logos/native-foreign.png",
+      "bytes": 40246,
+      "sha256": "c15eb16c4b54d1e89afe61ba5075ad9a394e877b9567c06610b7afa22c2301f7",
+      "ok": true
+    },
+    {
+      "path": "logos/black-math.svg",
+      "bytes": 3754,
+      "sha256": "734e33d7d85cafbaf6c23bdc6b97a20a0f4895c8c6b2557a86113bab72f19b3b",
+      "ok": true
+    },
+    {
+      "path": "logos/asteria.png",
+      "bytes": 8849,
+      "sha256": "a47d64b50626475850aad08b7ddcf764663d692ed497768829693f641f56a39a",
+      "ok": true
+    },
+    {
+      "path": "logos/contender.svg",
+      "bytes": 4052,
+      "sha256": "982258ea8dfcee9ba2d2768a7077bbe0033be046840e15900208d8e41a143687",
+      "ok": true
+    },
+    {
+      "path": "logos/brick-visual.png",
+      "bytes": 188437,
+      "sha256": "7db6cd84105cc31959cd5709b4d6fd9b555bfdc89c978980ed952bf2fd2c16fb",
+      "ok": true
+    }
+  ]
+}
