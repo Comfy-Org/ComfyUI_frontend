@@ -1,3 +1,4 @@
+import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
@@ -160,6 +161,22 @@ function setLastWorkspaceId(workspaceId: string): void {
     localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, workspaceId)
   } catch {
     console.warn('Failed to persist last workspace ID to localStorage')
+  }
+}
+
+/** The workspace this tab was on before a reload; other tabs cannot change it. */
+function getTabWorkspaceId(): string | null {
+  try {
+    const stored = sessionStorage.getItem(
+      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
+    )
+    if (!stored) return null
+    const parsed = zWorkspaceWithRole
+      .pick({ id: true })
+      .safeParse(JSON.parse(stored))
+    return parsed.success ? parsed.data.id : null
+  } catch {
+    return null
   }
 }
 
@@ -419,6 +436,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         await ensureSessionCookie()
         if (isStaleIdentity(generation)) return
 
+        const tabWorkspaceId = getTabWorkspaceId()
         const hasValidSession = workspaceAuthStore.initializeFromSession()
 
         if (hasValidSession && workspaceAuthStore.currentWorkspace) {
@@ -474,6 +492,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         let targetWorkspaceId: string | null =
           [
             takeSwitchTargetId(),
+            tabWorkspaceId,
             response.default_workspace_id,
             getLastWorkspaceId()
           ].find(listed) ?? null

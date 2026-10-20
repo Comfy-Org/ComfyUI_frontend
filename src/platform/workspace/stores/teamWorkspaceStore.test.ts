@@ -333,25 +333,69 @@ describe('useTeamWorkspaceStore', () => {
         defaultId: 'ws-not-listed',
         lastUsed: null,
         expected: mockPersonalWorkspace.id
+      },
+      {
+        name: "keeps this tab's workspace over another tab's last switch",
+        defaultId: undefined,
+        lastUsed: mockPersonalWorkspace.id,
+        tabWorkspace: mockTeamWorkspace,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: "keeps this tab's workspace over the server's default",
+        defaultId: mockPersonalWorkspace.id,
+        lastUsed: null,
+        tabWorkspace: mockTeamWorkspace,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: "keeps a switch's target over this tab's workspace",
+        defaultId: undefined,
+        lastUsed: null,
+        switchTarget: mockPersonalWorkspace.id,
+        tabWorkspace: mockTeamWorkspace,
+        expected: mockPersonalWorkspace.id
+      },
+      {
+        name: "ignores this tab's workspace when it is no longer listed",
+        defaultId: undefined,
+        lastUsed: mockTeamWorkspace.id,
+        tabWorkspace: { ...mockTeamWorkspace, id: 'ws-left' },
+        expected: mockTeamWorkspace.id
       }
-    ])('$name', async ({ defaultId, lastUsed, switchTarget, expected }) => {
-      mockLocalStorage.getItem.mockReturnValue(lastUsed)
-      if (switchTarget) {
-        sessionStorage.setItem(
-          WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
-          switchTarget
-        )
+    ])(
+      '$name',
+      async ({ defaultId, lastUsed, switchTarget, tabWorkspace, expected }) => {
+        mockLocalStorage.getItem.mockReturnValue(lastUsed)
+        if (switchTarget) {
+          sessionStorage.setItem(
+            WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+            switchTarget
+          )
+        }
+        if (tabWorkspace) {
+          sessionStorage.setItem(
+            WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+            JSON.stringify(tabWorkspace)
+          )
+        }
+        vi.mocked(
+          useWorkspaceAuthStore().initializeFromSession
+        ).mockImplementation(() => {
+          sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+          return false
+        })
+        mockWorkspaceApi.list.mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+          ...(defaultId && { default_workspace_id: defaultId })
+        })
+
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+
+        expect(store.activeWorkspaceId).toBe(expected)
       }
-      mockWorkspaceApi.list.mockResolvedValue({
-        workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
-        ...(defaultId && { default_workspace_id: defaultId })
-      })
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      expect(store.activeWorkspaceId).toBe(expected)
-    })
+    )
 
     it.for([
       {
