@@ -4,6 +4,8 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
+const INSERTED_NODE_COUNT = 3
+
 test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
   test.afterEach(async ({ comfyPage }) => {
     await comfyPage.workflow.setupWorkflowsDirectory({})
@@ -30,6 +32,9 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     await workflowsTab.tabButton.click()
     await workflowsTab.root.waitFor({ state: 'hidden' })
     await comfyPage.setFocusMode(true)
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBe(INSERTED_NODE_COUNT)
 
     await expectRegionScreenshot(
       comfyPage.page,
