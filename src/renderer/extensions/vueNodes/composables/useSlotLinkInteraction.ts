@@ -157,7 +157,6 @@ export function useSlotLinkInteraction({
   const pointerSession = createPointerSession()
   let activeAdapter: LinkConnectorAdapter | null = null
   let autoPan: AutoPanController | null = null
-  let dragRevealListener: AbortController | null = null
 
   // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
@@ -343,8 +342,6 @@ export function useSlotLinkInteraction({
     activeAdapter = null
     raf.cancel()
     dragContext.dispose()
-    dragRevealListener?.abort()
-    dragRevealListener = null
     dragReveal.unrevealLinks()
     clearCompatible()
   }
@@ -748,7 +745,6 @@ export function useSlotLinkInteraction({
     if (!wasConnecting && activeAdapter.linkConnector.isConnecting) {
       dragReveal.revealLinks()
       const { linkConnector } = activeAdapter
-      dragRevealListener = new AbortController()
       // Escape on the canvas resets the connector without ending this
       // pointer session. Check after dispatch, since a listener may veto it.
       linkConnector.events.addEventListener(
@@ -757,7 +753,7 @@ export function useSlotLinkInteraction({
           queueMicrotask(() => {
             if (!linkConnector.isConnecting) dragReveal.unrevealLinks()
           }),
-        { signal: dragRevealListener.signal }
+        { once: true }
       )
     }
 

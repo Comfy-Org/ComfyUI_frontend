@@ -9,7 +9,7 @@ interface ActiveReveal {
 const revealsByKind = {
   hover: new Map<RootGraphId, ActiveReveal>(),
   drag: new Map<RootGraphId, ActiveReveal>()
-}
+} as const
 
 export type LinkRevealKind = keyof typeof revealsByKind
 
