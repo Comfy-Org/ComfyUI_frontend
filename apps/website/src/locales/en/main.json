@@ -6026,7 +6026,7 @@
       "heroDescription": "Remove objects, build mattes, restyle footage, and upscale shots in workflows you can inspect and extend. Run ComfyUI locally or connect it to your production pipeline.",
       "primaryCta": "EXPLORE VFX WORKFLOWS",
       "contactHeading": "Bring Comfy into your studio pipeline.",
-      "contactButton": "TALK TO COMFY"
+      "contactButton": "TALK TO COMFY TEAM"
     },
     "shared": {
       "secondaryCta": "SEE THE APPROACH"
@@ -6173,7 +6173,7 @@
     "badge": "VFX",
     "heading": "One shot. More possibilities.",
     "description": "Change the light, replace an object, extend the frame. Build repeatable VFX workflows with Comfy, then bring them into your studio’s pipeline.",
-    "sales": "TALK TO SALES",
+    "sales": "TALK TO COMFY TEAM",
     "browse": "Explore the workflows",
     "workflow": "View workflow",
     "sequenceHeading": "One take. A new point of view.",
@@ -6249,8 +6249,9 @@
       "mode": "Studio view",
       "settings": "SETTINGS",
       "workflow": "WORKFLOW",
-      "sampleOnly": "Sample studio. Explore the supplied outputs and prepare a workflow request. Upload and generation are not connected.",
-      "upload": "UPLOAD FOOTAGE",
+      "sampleOnly": "Sample studio. Explore the supplied outputs and prepare a workflow request.",
+      "upload": "SIGN UP TO TRY FREE",
+      "uploadHint": "Sign up to try Comfy Cloud with your own footage.",
       "shot": "Describe the shot",
       "adjust": "ADJUST KEY FRAME",
       "generate": "RUN WORKFLOW",

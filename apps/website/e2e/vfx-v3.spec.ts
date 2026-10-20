@@ -58,7 +58,7 @@ for (const {
   {
     path: '/solutions/vfx/v3/',
     heading: 'One shot. More possibilities.',
-    sales: 'TALK TO SALES',
+    sales: 'TALK TO COMFY TEAM',
     contact: '/contact/',
     rain: 'Rain',
     taxi: 'London taxi',
@@ -69,7 +69,7 @@ for (const {
   {
     path: '/zh-CN/solutions/vfx/v3/',
     heading: '一个镜头，更多可能。',
-    sales: '联系销售',
+    sales: '联系 COMFY 团队',
     contact: '/zh-CN/contact/',
     rain: '雨天',
     taxi: '伦敦出租车',
@@ -615,7 +615,12 @@ for (const {
     await expect(
       studio.getByRole('button', { name: option, exact: true })
     ).toHaveAttribute('aria-pressed', 'true')
-    await expect(studio.locator('button[disabled]')).toHaveCount(3)
+    await expect(
+      studio.getByRole('button', { name: /^(ADJUST KEY FRAME|调整关键帧)$/ })
+    ).toBeDisabled()
+    await expect(
+      studio.getByRole('button', { name: /^(RUN WORKFLOW|运行工作流)$/ })
+    ).toBeDisabled()
     await returnButton.click()
     await expect(trigger).toBeFocused()
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
@@ -639,7 +644,7 @@ for (const {
   })
 }
 
-test('verified workflow links stay external and unresolved workflows cannot navigate', async ({
+test('verified workflow links stay external and use the supplied destinations', async ({
   page
 }) => {
   await page.goto('/solutions/vfx/v3/')
@@ -654,10 +659,10 @@ test('verified workflow links stay external and unresolved workflows cannot navi
   await expect(relight).toHaveAttribute('target', '_blank')
   await expect(
     page.locator('[data-vfx-demo="swap"] [data-try-workflow]')
-  ).toBeDisabled()
+  ).toHaveAttribute('href', 'https://cloud.comfy.org/?share=28fa6219c110')
   await expect(
     page.locator('[data-vfx-demo="reframe"] [data-try-workflow]')
-  ).toBeDisabled()
+  ).toHaveAttribute('href', 'https://cloud.comfy.org/?share=ccfd0e7d75c3')
 })
 
 for (const { demo, width, axis, leading, trailing } of [
@@ -948,7 +953,9 @@ for (const {
     await expect(
       studio.getByRole('button', { name: /ADJUST KEY FRAME|调整关键帧/ })
     ).toHaveCount(0)
-    await expect(studio.locator('button[disabled]')).toHaveCount(2)
+    await expect(
+      studio.getByRole('button', { name: /^(RUN WORKFLOW|运行工作流)$/ })
+    ).toBeDisabled()
     await studio.getByRole('button', { name: orbit, exact: true }).click()
     await expect(studio.locator('video')).toHaveAttribute(
       'src',
@@ -1323,5 +1330,60 @@ for (const { path, redSky, daylight, openStudio } of [
       'src',
       `${vfxMediaRoot}/relight_day.mp4`
     )
+  })
+}
+
+for (const { path, demo, share, open, workflow, expose } of [
+  {
+    path: '/solutions/vfx/v3/',
+    demo: 'swap',
+    share: '28fa6219c110',
+    open: 'OPEN STUDIO',
+    workflow: 'WORKFLOW',
+    expose: 'EXPOSE WORKFLOW ↗'
+  },
+  {
+    path: '/solutions/vfx/v3/',
+    demo: 'reframe',
+    share: 'ccfd0e7d75c3',
+    open: 'OPEN STUDIO',
+    workflow: 'WORKFLOW',
+    expose: 'EXPOSE WORKFLOW ↗'
+  },
+  {
+    path: '/zh-CN/solutions/vfx/v3/',
+    demo: 'swap',
+    share: '28fa6219c110',
+    open: '打开工作室',
+    workflow: '工作流',
+    expose: '查看工作流 ↗'
+  },
+  {
+    path: '/zh-CN/solutions/vfx/v3/',
+    demo: 'reframe',
+    share: 'ccfd0e7d75c3',
+    open: '打开工作室',
+    workflow: '工作流',
+    expose: '查看工作流 ↗'
+  }
+]) {
+  test(`${path} ${demo} uses its supplied workflow in the page and Studio`, async ({
+    page
+  }) => {
+    await page.goto(
+      `${path}?utm_source=linkedin&utm_campaign=vfx&utm_content=v3`
+    )
+    const section = page.locator(`[data-vfx-demo="${demo}"]`)
+    const expected = `https://cloud.comfy.org/?share=${share}&utm_source=linkedin&utm_campaign=vfx&utm_content=v3`
+    const cta = section.locator('[data-try-workflow]')
+    await expect(cta).toHaveAttribute('href', expected)
+    await expect(cta).toHaveAttribute('target', '_blank')
+    await waitForShowcase(section)
+    await section.getByRole('button', { name: open, exact: true }).click()
+    const studio = section.locator('[data-vfx-studio]')
+    await studio.getByRole('tab', { name: workflow, exact: true }).click()
+    await expect(
+      studio.getByRole('link', { name: expose, exact: true })
+    ).toHaveAttribute('href', expected)
   })
 }
