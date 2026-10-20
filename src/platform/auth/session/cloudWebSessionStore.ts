@@ -42,6 +42,10 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
+import {
+  endSsoFlow,
+  trackSsoSignInCompleted
+} from '@/platform/auth/sso/ssoTelemetry'
 import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import {
   clearInteractiveSignIn,
@@ -50,6 +54,7 @@ import {
 } from '@/platform/auth/session/interactiveSignInMarker'
 import {
   forgetSsoHint,
+  isSsoSession,
   rememberSignedInSession
 } from '@/platform/auth/session/ssoReentryStorage'
 import type { WebSessionRequestScope } from '@/platform/auth/session/webSessionFetch'
@@ -145,10 +150,9 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
   })
 }
 
-function teamWorkspaceId(): string | undefined {
+function selectedWorkspaceId(): string | undefined {
   const { currentWorkspace, deniedWorkspaceId } = useWorkspaceAuthStore()
-  if (currentWorkspace?.type === 'team') return currentWorkspace.id
-  return deniedWorkspaceId ?? undefined
+  return currentWorkspace?.id ?? deniedWorkspaceId ?? undefined
 }
 
 function sessionOptions(): WebSessionOptions {
@@ -217,7 +221,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   watch(
     () =>
       signedInUser.value?.id &&
-      JSON.stringify([signedInUser.value.id, teamWorkspaceId()]),
+      JSON.stringify([signedInUser.value.id, selectedWorkspaceId()]),
     (socketScope) => {
       if (socketScope) void api.reconnectSocket()
     }
@@ -314,7 +318,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     })
     releaseRequests = provideWebSessionRequests({
       scope: requestScope,
-      workspaceId: () => (currentSession() ? teamWorkspaceId() : undefined),
+      workspaceId: () => (currentSession() ? selectedWorkspaceId() : undefined),
       send: (url, init, scope) => send(url, init, scope, authorize),
       workspaceToken: async (scope) =>
         settleScopedToken(scope, await mint.mint(scope.workspaceId)),
@@ -342,7 +346,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
             })
           }
           if (failure.code === 'SSO_REQUIRED') {
-            presentSsoRequired({ email: session.user.email })
+            presentSsoRequired('session_refused', { email: session.user.email })
           }
           throw new WebSessionTokenError(
             error,
@@ -363,6 +367,9 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signedOutHere = false
       if (useFeatureFlags().flags.ssoEnabled) {
         rememberSignedInSession(next.session.user)
+        if (isSsoSession(next.session.user)) {
+          trackSsoSignInCompleted()
+        }
       }
     } else if (next.phase === 'signed_out' && next.outcome === 'revoked') {
       forgetSsoHint()
@@ -379,6 +386,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
   /** Only after an interactive sign-in; a token refresh never calls this. */
   function signedInInteractively(user: User): void {
     const getProof = () => user.getIdToken()
+    endSsoFlow()
     if (isCloud) markInteractiveSignIn(user.uid)
     if (identity) creating = createSession(identity, getProof)
     else if (!decided) pendingSignIn = { uid: user.uid, getProof }
@@ -453,7 +461,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     await decidedForRequests
     const session = currentSession()
     if (!identity || !session) return undefined
-    const workspaceId = teamWorkspaceId()
+    const workspaceId = selectedWorkspaceId()
     return {
       session,
       epoch: identity.getEpoch(),
@@ -482,7 +490,7 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       workspaceDenied: (workspaceId) =>
         useWorkspaceAuthStore().dropDeniedWorkspace(workspaceId),
       ssoRequired: ({ session }) =>
-        presentSsoRequired({ email: session.user.email })
+        presentSsoRequired('session_refused', { email: session.user.email })
     })
   }
 

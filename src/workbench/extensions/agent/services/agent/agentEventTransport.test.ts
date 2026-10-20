@@ -1,14 +1,21 @@
 import fs from 'fs'
 
+import type {
+  AgentAskResolvedData,
+  AgentPendingAskUser
+} from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
-import type { AgentMessages } from '../../schemas/agentApiSchema'
-import { toTurnId, zAgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  toTurnId,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
-import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 import type { AgentChatEvent } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
 import type {
@@ -18,6 +25,7 @@ import type {
   ToolPart
 } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
+import { createUndeliverableAskReporter } from './undeliverableAskReporter'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 
@@ -60,6 +68,18 @@ function drive(events: AgentChatEvent[]): AssistantMessage {
   return emit.mock.calls.at(-1)?.[0] ?? message
 }
 
+function driveInFreshTurnsSharingOneReporter(events: AgentChatEvent[]): void {
+  const { report } = createUndeliverableAskReporter()
+  for (const event of events)
+    createAgentEventTransport(
+      createAssistantMessage(T),
+      vi.fn(),
+      undefined,
+      undefined,
+      report
+    ).ingest(event)
+}
+
 function thinking(delta: string): AgentChatEvent {
   return {
     type: 'agent_thinking',
@@ -71,7 +91,8 @@ function toolCall(
   tool_name: string,
   status: 'running' | 'success' | 'error',
   tool_call_id = `call-${tool_name}`,
-  skill?: string
+  skill?: string,
+  correlation?: { workflow_id: string; op_ids: string[] }
 ): AgentChatEvent {
   return {
     type: 'agent_tool_call',
@@ -80,6 +101,7 @@ function toolCall(
       tool_name,
       status,
       skill,
+      ...correlation,
       message_id: 'm',
       thread_id: 't'
     }
@@ -144,15 +166,43 @@ function runApproval(
   })
 }
 
-function askResolved(askId = 'turn-1:call-1'): AgentChatEvent {
+function askResolved(
+  askId = 'turn-1:call-1',
+  selected: AgentAskResolvedData['selected'] = ['run'],
+  status: AgentAskResolvedData['status'] = 'answered'
+): AgentChatEvent {
   return zAgentWsEvent.parse({
     type: 'agent_ask_resolved',
     data: {
       thread_id: 't',
       message_id: 'm',
       ask_id: askId,
-      status: 'answered',
-      selected: ['run']
+      status,
+      selected
+    }
+  })
+}
+
+function askUser(
+  askId = 'ask-1',
+  overrides: Partial<AgentPendingAskUser> = {}
+): AgentChatEvent {
+  return zAgentWsEvent.parse({
+    type: 'agent_ask',
+    data: {
+      thread_id: 't',
+      message_id: 'm',
+      ask_id: askId,
+      kind: 'ask_user',
+      prompt: 'Which style?',
+      options: [
+        { id: 'oil', label: 'Oil painting', description: 'Thick strokes' },
+        { id: 'ink', label: 'Ink sketch' }
+      ],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: true,
+      ...overrides
     }
   })
 }
@@ -623,9 +673,14 @@ describe('agentEventTransport run approval', () => {
     expect(message.streaming).toBe(true)
   })
 
-  it('reports ask_user as a generated kind without a client renderer', () => {
-    drive([runApproval('ask-user-1', 'ask_user')])
+  it('reports an ask_user with nothing to choose as unrendered and says so', () => {
+    const message = drive([
+      askUser('ask-user-1', { options: [], allow_other: false })
+    ])
 
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'ask-user-1' }
+    ])
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
@@ -637,21 +692,58 @@ describe('agentEventTransport run approval', () => {
     )
   })
 
-  it('reports an unknown ask kind once with a bounded tag', () => {
-    const unknownKind = 'x'.repeat(100)
-    drive([
-      runApproval('unknown-1', unknownKind),
-      runApproval('unknown-1', unknownKind)
+  it('reports a contract kind this panel has no card for as unrendered', () => {
+    const message = drive([runApproval('paused-1', 'paused')])
+
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'paused-1' }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({
+          reason: 'unrendered-kind',
+          ask_kind: 'paused'
+        })
+      })
+    )
+  })
+
+  it('reports an ask kind outside the contract once, as unknown', () => {
+    const message = drive([
+      runApproval('unknown-1', 'some_new_kind'),
+      runApproval('unknown-1', 'some_new_kind')
     ])
 
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'unknown-1' }
+    ])
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
         tags: {
           reason: 'unknown-kind',
-          ask_kind: 'x'.repeat(64)
+          ask_kind: 'unknown'
         }
+      })
+    )
+  })
+
+  it('reports an unrenderable ask first shown from history when its frame is replayed', () => {
+    const message = createAssistantMessage(T)
+    message.parts.push({ type: 'askUnavailable', askId: 'unknown-1' })
+    const transport = createAgentEventTransport(message, vi.fn())
+
+    transport.ingest(runApproval('unknown-1', 'some_new_kind'))
+
+    expect(message.parts).toEqual([
+      { type: 'askUnavailable', askId: 'unknown-1' }
+    ])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        tags: expect.objectContaining({ reason: 'unknown-kind' })
       })
     )
   })
@@ -660,9 +752,94 @@ describe('agentEventTransport run approval', () => {
     const asks = Array.from({ length: 33 }, (_, index) =>
       runApproval(`unknown-${index}`, 'unsupported')
     )
-    drive([...asks, asks[0]])
+    driveInFreshTurnsSharingOneReporter([...asks, asks[0]])
 
     expect(reportError).toHaveBeenCalledTimes(34)
+  })
+
+  it('drops the notice standing in for an unrenderable ask once it resolves', () => {
+    const message = drive([
+      runApproval('unknown-1', 'unsupported'),
+      askResolved('unknown-1', null, 'cancelled')
+    ])
+
+    expect(message.parts).toEqual([])
+  })
+})
+
+describe('agentEventTransport ask_user', () => {
+  it('renders the question at the decision point', () => {
+    const message = drive([delta('before'), askUser()])
+
+    expect(message.parts).toEqual([
+      { type: 'text', text: 'before', state: 'done' },
+      expect.objectContaining({ type: 'askUser', askId: 'ask-1' })
+    ])
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('keeps a single card when the same ask is delivered twice', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(askUser('ask-1'))
+    transport.ingest(askUser('ask-1', { prompt: 'A replayed copy' }))
+
+    expect(
+      emit.mock.lastCall?.[0].parts.filter((part) => part.type === 'askUser')
+    ).toEqual([
+      expect.objectContaining({ askId: 'ask-1', prompt: 'Which style?' })
+    ])
+  })
+
+  it.for([
+    {
+      name: 'answered',
+      event: askResolved('ask-1', ['ink'], 'answered'),
+      resolution: { status: 'answered', selected: ['ink'] }
+    },
+    {
+      name: 'cancelled',
+      event: askResolved('ask-1', null, 'cancelled'),
+      resolution: { status: 'closed' }
+    }
+  ])(
+    'keeps the card read-only with its resolution when $name',
+    ({ event, resolution }) => {
+      const message = drive([askUser('ask-1'), askUser('ask-2'), event])
+
+      expect(message.parts).toMatchObject([
+        { askId: 'ask-1', resolution },
+        { askId: 'ask-2' }
+      ])
+      expect(message.parts[1]).not.toHaveProperty('resolution')
+    }
+  )
+
+  it('keeps a named resolution when a later frame names nothing', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(askUser('ask-1'))
+
+    transport.retireAskPart('ask-1', {
+      status: 'answered',
+      selected: [],
+      otherText: 'watercolor'
+    })
+    transport.ingest(askResolved('ask-1', [], 'answered'))
+
+    expect(emit.mock.lastCall?.[0].parts).toEqual([
+      expect.objectContaining({
+        type: 'askUser',
+        resolution: {
+          status: 'answered',
+          selected: [],
+          otherText: 'watercolor'
+        }
+      })
+    ])
   })
 })
 
@@ -932,6 +1109,171 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 
+  it('does not release an uncorrelated tool call for a catch-up frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('add_node', 'success'))
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-catch-up'],
+      isLive: false
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-live'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+  })
+
+  it('releases only the held call whose workflow and op ids materialized', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-add']
+      })
+    )
+    transport.ingest(
+      toolCall('connect', 'success', 'call-connect', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-connect']
+      })
+    )
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-b',
+      opIds: ['op-add'],
+      isLive: true
+    })
+    expect(toolParts(message).map(({ state }) => state)).toEqual([
+      'streaming',
+      'streaming'
+    ])
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-add'],
+      isLive: true
+    })
+    expect(toolParts(message).map(({ state }) => state)).toEqual([
+      'done',
+      'streaming'
+    ])
+  })
+
+  it('releases a correlated call when matching catch-up evidence materializes', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-add']
+      })
+    )
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-add'],
+      isLive: false
+    })
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+  })
+
+  it('remembers exact op evidence that arrives before the terminal tool frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-add'],
+      isLive: true
+    })
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-add']
+      })
+    )
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('holds a multi-op call until its final op applies after the terminal frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('apply_ops', 'success', 'call-ops', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-a', 'op-b']
+      })
+    )
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-a'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-b',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('holds a multi-op call whose earlier evidence covered only some ops', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-a'],
+      isLive: true
+    })
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-b',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    transport.ingest(
+      toolCall('apply_ops', 'success', 'call-ops', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-a', 'op-b']
+      })
+    )
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
   // A failed tool call never mutates anything, so there is no forthcoming
   // doc_update for it to wait on -- gating it the same as a success would
   // strand it at the spinner glyph until STALE_AFTER_MS (30s), and, for a
@@ -953,6 +1295,25 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const transport = createAgentEventTransport(message, emit, () => false)
 
     transport.ingest(toolCall('add_node', 'success'))
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('does not hold correlated work for a workflow the follower cannot observe', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      (workflowId) => workflowId !== 'background-workflow'
+    )
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-background', undefined, {
+        workflow_id: 'background-workflow',
+        op_ids: ['op-background']
+      })
+    )
 
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })

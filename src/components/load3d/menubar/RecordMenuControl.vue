@@ -9,13 +9,13 @@
     :aria-label="t('load3d.menuBar.stopRecording')"
     @click="emit('stopRecording')"
   >
-    <span class="size-2 animate-pulse rounded-full bg-red-500" />
+    <span class="size-2 animate-pulse rounded-full bg-destructive" />
     <span v-if="!compact">{{ t('load3d.menuBar.recording') }}</span>
   </Button>
 
   <div
     v-else-if="hasRecording"
-    class="flex shrink-0 items-center gap-0.5 rounded-lg bg-button-active-surface py-0.5 pr-0.5 pl-1 text-sm text-base-foreground"
+    class="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted py-0.5 pr-0.5 pl-1 text-sm text-foreground"
   >
     <Popover v-model:open="menuOpen">
       <PopoverTrigger as-child>

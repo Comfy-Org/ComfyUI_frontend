@@ -2,7 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { isMediaUploadComboInput } from '@/schemas/nodeDefSchema'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 
 // Adds an upload button to the nodes
 

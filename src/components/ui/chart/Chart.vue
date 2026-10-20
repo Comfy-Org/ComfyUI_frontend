@@ -1,5 +1,5 @@
 <template>
-  <div :class="cn('rounded-lg bg-secondary-background p-6', className)">
+  <div :class="cn('rounded-lg bg-secondary p-6', className)">
     <div class="relative">
       <canvas ref="canvasRef" :aria-label="label" role="img" />
     </div>

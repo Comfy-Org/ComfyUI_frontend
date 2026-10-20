@@ -33,7 +33,7 @@ export const Kinds: Story = {
       return { toast }
     },
     template: `
-      <div class="flex h-screen items-start gap-2 bg-base-background p-8">
+      <div class="flex h-screen items-start gap-2 bg-background p-8">
         <Button @click="toast.info('Saved', { duration: 3000 })">Timed info</Button>
         <Button variant="destructive" @click="toast.dismissAll()">Dismiss all</Button>
         <Toaster />

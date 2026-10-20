@@ -22,6 +22,32 @@ function animation(
 }
 
 describe('workflow motion', () => {
+  it('moves directly from the selected purple keyframe to the motion reference', () => {
+    const motion = createWorkflowMotion(productWorkflow)
+    const frames = animation(motion, motion.scene.userCursor.name)
+    const purple = productWorkflow.nodes.find(
+      (node) => node.id === 'keyframe-purple'
+    )?.selectionPoint
+    const reference = productWorkflow.nodes.find(
+      (node) => node.id === 'motionref'
+    )?.clickPoint
+    assert.isDefined(purple)
+    assert.isDefined(reference)
+    const position = (point: { x: number; y: number }) =>
+      `left:${(point.x / productWorkflow.width) * 100}cqw;top:${(point.y / productWorkflow.width) * 100}cqw;`
+    const selectionIndex = frames.findIndex(
+      (frame) =>
+        frame.value.includes(position(purple)) &&
+        frame.value.includes('scale(0.82)')
+    )
+    expect(selectionIndex).toBeGreaterThanOrEqual(0)
+    const nextMove = frames
+      .slice(selectionIndex + 1)
+      .find((frame) => !frame.value.includes(position(purple)))
+
+    expect(nextMove?.value).toContain(position(reference))
+  })
+
   it.for([
     { type: 'pause', duration: -0.01 },
     { type: 'pause', duration: NaN },
@@ -32,7 +58,11 @@ describe('workflow motion', () => {
     'rejects invalid $type duration',
     (step) => {
       expect(() =>
-        createWorkflowMotion({ ...productWorkflow, steps: [step] })
+        createWorkflowMotion({
+          ...productWorkflow,
+          holdDuration: 10,
+          steps: [step]
+        })
       ).toThrow('Workflow duration')
     }
   )
@@ -48,7 +78,11 @@ describe('workflow motion', () => {
     'accepts the minimum $step.type duration',
     ({ step, duration }) => {
       expect(
-        createWorkflowMotion({ ...productWorkflow, steps: [step] }).duration
+        createWorkflowMotion({
+          ...productWorkflow,
+          holdDuration: 10,
+          steps: [step]
+        }).duration
       ).toBeCloseTo(duration)
     }
   )

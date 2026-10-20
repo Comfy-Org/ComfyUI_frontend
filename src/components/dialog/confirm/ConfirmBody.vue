@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex flex-col border-t border-border-default p-4 text-sm/5 wrap-break-word text-muted-foreground"
+    class="flex flex-col border-t p-4 text-sm/5 wrap-break-word text-muted-foreground"
   >
     <p
       v-if="promptTextReal"

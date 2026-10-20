@@ -3,8 +3,6 @@ import { reactive } from 'vue'
 
 import { clone } from '@/scripts/utils'
 
-// clone() falls back to JSON when structuredClone rejects its input; several
-// call sites depend on that to absorb proxies from custom nodes and Vue state.
 describe('clone', () => {
   it('returns a structured-cloneable copy of a reactive proxy', () => {
     const copy = clone(reactive({ a: 1, nested: { b: [2, 3] } }))

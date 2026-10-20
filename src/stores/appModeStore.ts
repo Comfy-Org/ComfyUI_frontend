@@ -13,7 +13,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import type { ComfyApp } from '@/types/comfy'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { clone } from '@/scripts/utils'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
@@ -83,6 +84,7 @@ export const useAppModeStore = defineStore('appMode', () => {
     // Nodes are not reactive, so trigger recomputation when workflow changes
     void workflowStore.activeWorkflow
     void mode.value
+    const app = useApp()
     return app.isGraphReady && app.rootGraph.nodes.length > 0
   })
 
@@ -92,6 +94,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   } {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
+    const app = useApp()
     const rootGraph = app.isGraphReady ? app.rootGraph : undefined
     if (!rootGraph) {
       return {
@@ -126,7 +129,7 @@ export const useAppModeStore = defineStore('appMode', () => {
 
   function upgradeAndValidateInput(
     input: LinearInput,
-    rootGraph: NonNullable<typeof app.rootGraph>
+    rootGraph: ComfyApp['rootGraph']
   ): LinearInput | null {
     const [storedId, widgetName, config] = input
 
@@ -191,6 +194,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   ) {
     if (ChangeTracker.isLoadingGraph) return
 
+    const app = useApp()
     if (!app.isGraphReady || !app.rootGraph.nodes.length) return
 
     const hadConfig = !!(data?.inputs?.length || data?.outputs?.length)
@@ -223,7 +227,10 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   useEventListener(
-    () => (app.isGraphReady ? app.rootGraph.events : undefined),
+    () => {
+      const app = useApp()
+      return app.isGraphReady ? app.rootGraph.events : undefined
+    },
     'configured',
     resetSelectedToWorkflow
   )
@@ -235,11 +242,9 @@ export const useAppModeStore = defineStore('appMode', () => {
         : null,
     (data) => {
       if (!data || ChangeTracker.isLoadingGraph) return
-      if (!app.isGraphReady) return
-      const graph = app.rootGraph
+      if (!useApp().isGraphReady) return
+      const graph = useApp().rootGraph
       const extra = graph.extra
-      // Plain copies only: spreading the reactive selections yields proxied
-      // tuples, which break structuredClone of the serialized graph.
       extra.linearData = {
         inputs: data.inputs.map(
           ([id, name, config]): LinearInput =>

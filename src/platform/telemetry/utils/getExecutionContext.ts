@@ -1,12 +1,12 @@
 import { TOOLKIT_NODES } from '@/constants/essentialsNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
-import type { ExecutionContext } from '../types'
+import type { ExecutionContext } from '@/platform/telemetry/types'
 
 type NodeMetrics = {
   custom_node_count: number
@@ -27,7 +27,7 @@ export function getExecutionContext(): ExecutionContext {
   const activeWorkflow = workflowStore.activeWorkflow
 
   const nodeCounts = reduceAllNodes<NodeMetrics>(
-    app.rootGraph,
+    useApp().rootGraph,
     (metrics, node) => {
       const nodeDef = nodeDefStore.fromLGraphNode(node)
       const isCustomNode =

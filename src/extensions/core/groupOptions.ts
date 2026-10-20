@@ -5,7 +5,7 @@ import type { LGraphNode, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 
 function setNodeMode(node: LGraphNode, mode: LGraphEventMode) {
   node.mode = mode

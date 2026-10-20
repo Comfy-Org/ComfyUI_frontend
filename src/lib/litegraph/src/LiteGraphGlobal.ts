@@ -5,7 +5,7 @@ import { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from './LGraphNode'
+import type { NodeProperty } from '@/types/nodeProperty'
 import { LLink } from './LLink'
 import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
@@ -1023,4 +1023,12 @@ export class LiteGraphGlobal {
       }
     }
   }
+}
+
+type RegisteredSlotTypeDefaultNodeOpts = SlotTypeDefaultNodeOpts
+type RegisteredLiteGraphGlobal = LiteGraphGlobal
+
+declare module './types/entityRegistry' {
+  interface SlotTypeDefaultNodeOpts extends RegisteredSlotTypeDefaultNodeOpts {}
+  interface LiteGraphGlobal extends RegisteredLiteGraphGlobal {}
 }

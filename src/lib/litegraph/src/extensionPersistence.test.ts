@@ -248,8 +248,6 @@ describe('LGraphNode extension payload fallbacks', () => {
 })
 
 describe('serialize output stays structured-cloneable when hooks hand back live state', () => {
-  // frontend#18165 (CRT Nodes "Fancy Timer"): `onSerialize(o) { o.properties = this.properties }`.
-  // Since the ECS store, node state — and so `this.properties` — is a reactive proxy.
   function nodeInGraph() {
     const graph = new LGraph()
     const node = new LGraphNode('TestNode')
@@ -444,7 +442,6 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
     })
   })
 
-  // frontend#8898: object widget values held by Vue reactivity broke structuredClone.
   it('serializes a reactive object widget value as plain data', () => {
     const { node } = nodeInGraph()
     node.serialize_widgets = true

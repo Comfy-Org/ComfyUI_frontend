@@ -66,6 +66,15 @@ describe('TopbarSubscribeButton', () => {
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
 
+  it('names its click for RUM independently of the button label', () => {
+    mockIsCloud.value = true
+    renderComponent()
+    expect(screen.getByRole('button')).toHaveAttribute(
+      'data-dd-action-name',
+      'billing.subscribe.topbar'
+    )
+  })
+
   it('hides on non-cloud distribution', () => {
     mockIsCloud.value = false
     renderComponent()

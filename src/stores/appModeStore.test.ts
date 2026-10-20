@@ -729,7 +729,6 @@ describe('appModeStore', () => {
       await nextTick()
       vi.mocked(workflow.changeTracker.captureCanvasState).mockClear()
 
-      // Mirrors DraggableList: splice the reactive list, then reassign a spread.
       const [moved] = store.selectedInputs.splice(0, 1)
       store.selectedInputs.splice(1, 0, moved)
       store.selectedInputs = [...store.selectedInputs]

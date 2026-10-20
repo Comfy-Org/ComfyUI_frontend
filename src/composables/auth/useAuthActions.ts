@@ -1,5 +1,4 @@
 import { FirebaseError } from 'firebase/app'
-import { AuthErrorCodes } from 'firebase/auth'
 import { ref } from 'vue'
 
 import {
@@ -9,10 +8,9 @@ import {
 } from '@comfyorg/account-core/firebaseAuthError'
 import type { AuthErrorCopy } from '@comfyorg/account-core/firebaseAuthError'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
+import { refreshBilling } from '@/platform/workspace/billing/billingRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { ErrorRecoveryStrategy } from '@/composables/useErrorHandling'
 import { st, t } from '@/i18n'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { presentSsoRequired } from '@/platform/auth/sso/ssoRequired'
@@ -28,7 +26,6 @@ import {
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
-import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
 import { SsoRequiredAuthError, useAuthStore } from '@/stores/authStore'
 import type {
@@ -36,6 +33,7 @@ import type {
   SocialSignInOptions
 } from '@/stores/authStore'
 import { usdToMicros } from '@/utils/formatUtil'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 /**
  * The app's own auth.errors table, read through vue-i18n at resolution time.
@@ -76,7 +74,7 @@ export const useAuthActions = () => {
 
   /** Sends an account its SSO organization refused to SSO instead of a failure toast. */
   const presentSsoRefusal = (error: SsoRequiredAuthError): boolean => {
-    const presented = presentSsoRequired({
+    const presented = presentSsoRequired('customer_create', {
       email: authStore.userEmail ?? undefined,
       organizationId: error.organizationId
     })
@@ -185,10 +183,6 @@ export const useAuthActions = () => {
     reportAuthFlowError('password_reset')
   )
 
-  /** Whether `purchaseCreditsDirect` goes on to open a checkout. */
-  const canPurchaseCredits = (): boolean =>
-    useBillingContext().canAccessSubscriptionFeatures.value
-
   /**
    * Raw (unwrapped) credit purchase. Exposed separately from `purchaseCredits`
    * so callers that need to observe a rejection directly (e.g. to fire failure
@@ -196,8 +190,6 @@ export const useAuthActions = () => {
    * resolves instead of re-throwing on failure.
    */
   const purchaseCreditsDirect = async (amount: number): Promise<void> => {
-    if (!canPurchaseCredits()) return
-
     const response = await authStore.initiateCreditPurchase({
       amount_micros: usdToMicros(amount),
       currency: 'usd'
@@ -211,17 +203,17 @@ export const useAuthActions = () => {
       )
     }
 
-    // Mark the pending top-up directly, not via telemetry, so the balance
-    // refresh on return still fires when telemetry consent is off.
     const pendingTopup = usePendingTopup()
     pendingTopup.startPendingTopup()
-    if (!window.open(response.checkout_url, '_blank')) {
+    if (!openBillingUrl(response.checkout_url)) {
       pendingTopup.clearPendingTopup()
       throw new PaymentPopupBlockedError(
         t('subscription.preview.paymentPopupBlocked')
       )
     }
-    watchForTopupBalanceUpdate()
+    watchForTopupBalanceUpdate({
+      onBalanceIncreased: () => refreshBilling('account')
+    })
   }
 
   const purchaseCredits = wrapWithErrorHandlingAsync(
@@ -286,66 +278,11 @@ export const useAuthActions = () => {
     reportAuthFlowError('email_sign_up')
   )
 
-  /**
-   * Recovery strategy for Firebase auth/requires-recent-login errors.
-   * Prompts user to reauthenticate and retries the operation after successful login.
-   */
-  const createReauthenticationRecovery = <
-    TArgs extends unknown[],
-    TReturn
-  >(): ErrorRecoveryStrategy<TArgs, TReturn> => {
-    const dialogService = useDialogService()
-
-    return {
-      shouldHandle: (error: unknown) =>
-        error instanceof FirebaseError &&
-        error.code === AuthErrorCodes.CREDENTIAL_TOO_OLD_LOGIN_AGAIN,
-
-      recover: async (
-        _error: unknown,
-        retry: (...args: TArgs) => Promise<TReturn> | TReturn,
-        args: TArgs
-      ) => {
-        const confirmed = await dialogService.confirm({
-          title: t('auth.reauthRequired.title'),
-          message: t('auth.reauthRequired.message'),
-          type: 'default'
-        })
-
-        if (!confirmed) {
-          return
-        }
-
-        await authStore.logout()
-
-        const signedIn = await useAuthDialogs().showSignInDialog()
-
-        if (signedIn) {
-          await retry(...args)
-        }
-      }
-    }
-  }
-
-  const updatePassword = wrapWithErrorHandlingAsync(
-    async (newPassword: string) => {
-      await authStore.updatePassword(newPassword)
-      toast.success(t('auth.passwordUpdate.success'), {
-        description: t('auth.passwordUpdate.successDetail'),
-        duration: 5000
-      })
-    },
-    reportError,
-    undefined,
-    [createReauthenticationRecovery<[string], void>()]
-  )
-
   return {
     logout,
     sendPasswordReset,
     purchaseCredits,
     purchaseCreditsDirect,
-    canPurchaseCredits,
     accessBillingPortal,
     accessBillingPortalDirect,
     fetchBalance,
@@ -353,7 +290,6 @@ export const useAuthActions = () => {
     signInWithGithub,
     signInWithEmail,
     signUpWithEmail,
-    updatePassword,
     accessError,
     reportError
   }

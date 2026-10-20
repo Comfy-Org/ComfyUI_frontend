@@ -3,9 +3,6 @@ import { isProxy, reactive } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-// litegraph.js#1158 / frontend#4696 proposed swapping this JSON clone for
-// structuredClone. Review rejected it because custom nodes hand in proxies;
-// these tests pin that tolerance.
 describe('LiteGraph.cloneObject', () => {
   it('clones a reactive proxy into plain data', () => {
     const source = reactive({ a: 1, nested: { b: [2, 3] } })
