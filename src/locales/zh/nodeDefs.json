@@ -850,7 +850,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "编辑后图像的结构化描述，用于后续通过 Bria FIBO Image Edit 进行编辑。"
+        "tooltip": "编辑后图像的结构化描述，用于通过 Bria FIBO 2.0 Image Edit 进行后续编辑。"
       }
     }
   },
@@ -876,7 +876,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "编辑后图像的结构化描述，用于后续通过 Bria FIBO Image Edit 进行编辑。"
+        "tooltip": "编辑后图像的结构化描述，用于通过 Bria FIBO 2.0 Image Edit 进行后续编辑。"
       }
     }
   },
@@ -1003,8 +1003,8 @@
     }
   },
   "BriaImageEditNode": {
-    "description": "使用 Bria 最新模型编辑图像",
-    "display_name": "Bria FIBO 图像编辑",
+    "description": "使用 Bria FIBO 2.0 编辑图像。",
+    "display_name": "Bria FIBO 2.0 图像编辑",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1052,6 +1052,49 @@
       "1": {
         "name": "structured_prompt",
         "tooltip": null
+      }
+    }
+  },
+  "BriaImageGenerate": {
+    "description": "使用 Bria FIBO 2.0 根据文本提示词、参考图像或结构化提示词生成图像。",
+    "display_name": "Bria FIBO 2.0 图像生成",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "16:10 及其后的比例需要 1MP，并且 prompt 和 structured_prompt 中必须且只能提供一个。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "用于参考的图像。结果是在所选宽高比下生成的新图像，并非对该图像的编辑。"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "内容审核设置"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "来自先前 Bria FIBO 结果的 JSON 结构化提示词。使用相同的 seed 可重现该图像；可修改 JSON 或添加 prompt 以进一步优化。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "生成图像的结构化描述，可使用此节点重现或优化该图像。"
       }
     }
   },
@@ -1107,7 +1150,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "编辑后图像的结构化描述，用于后续通过 Bria FIBO Image Edit 进行编辑。"
+        "tooltip": "编辑后图像的结构化描述，用于通过 Bria FIBO 2.0 Image Edit 进行后续编辑。"
       }
     }
   },
@@ -1236,7 +1279,7 @@
       },
       "1": {
         "name": "结构化提示词",
-        "tooltip": "已编辑图像的结构化描述，用于通过 Bria FIBO Image Edit 进行后续编辑。"
+        "tooltip": "编辑后图像的结构化描述，用于通过 Bria FIBO 2.0 Image Edit 进行后续编辑。"
       }
     }
   },
@@ -1262,7 +1305,7 @@
       },
       "1": {
         "name": "结构化提示词",
-        "tooltip": "已编辑图像的结构化描述，用于通过 Bria FIBO Image Edit 进行后续编辑。"
+        "tooltip": "编辑后图像的结构化描述，用于通过 Bria FIBO 2.0 Image Edit 进行后续编辑。"
       }
     }
   },
@@ -1284,7 +1327,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "编辑后图像的结构化描述，用于通过 Bria FIBO Image Edit 进行后续编辑。"
+        "tooltip": "编辑后图像的结构化描述，用于通过 Bria FIBO 2.0 Image Edit 进行后续编辑。"
       }
     }
   },
@@ -2956,6 +2999,24 @@
       },
       "model_scale_factor": {
         "name": "缩放系数"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "使用 Clarity AI 的 Crystal Video Upscaler 放大视频。这是一款高保真放大器，能忠实保留源视频内容。输出限制为每帧 900 万像素（例如 4000x2250），较长的视频片段将以较低分辨率返回。超过 30 fps 的片段费用为 2x，超过 60 fps 的为 3x，依此类推。",
+    "display_name": "Clarity AI Crystal 视频放大",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "要使用的模型。"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -6008,6 +6069,98 @@
       }
     }
   },
+  "Flux3MaxImageToVideoNode": {
+    "description": "使用 FLUX 3 Max 为 1 到 10 张图像制作动画。每张图像都会成为视频片段的一帧：一张图像作为开场，两张图像分别成为首帧和末帧，更多图像则分布在片段中，或固定在你选择的时间点。",
+    "display_name": "FLUX 3 Max 图像转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "输出宽高比。对于文本提示词，'auto' 为 16:9；否则遵循第一张图像的宽高比。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "片段时长（秒）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "生成同步音频。关闭时生成的视频没有音轨。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "1 到 10 张图像，按播放顺序排列。"
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "“分布在整个片段中”会将第一张图像置于开头、最后一张置于结尾，其余图像均匀分布在中间；“在指定时间点”会将每张图像固定在你选择的秒数。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "场景应如何运动和发声。"
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "模型在生成前对提示词进行推理和扩展的程度。'high' 耗时更长；价格相同。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "输出分辨率。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果均不具确定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "通过 FLUX 3 Max 根据文本提示词生成带同步音频的视频。",
+    "display_name": "FLUX 3 Max 文本转视频",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "输出宽高比。对于文本提示词，'auto' 为 16:9；否则遵循第一张图像。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "duration": {
+        "name": "时长",
+        "tooltip": "片段时长（秒）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "生成同步音频。关闭时生成的视频没有音轨。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "用自然语言描述你想要的内容。为了获得分层音频，请分别描述环境声、音乐和语音。"
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "模型在生成前对提示词进行推理和扩展的程度。'high' 耗时更长；价格相同。"
+      },
+      "resolution": {
+        "name": "分辨率",
+        "tooltip": "输出分辨率。"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "种子控制节点是否应重新运行；无论种子为何，结果均不具确定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "通过 FLUX 3 根据文本 prompt 生成带同步音频的视频。",
     "display_name": "Flux 3 文本转视频",
@@ -6087,7 +6240,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "要续接的片段。"
+        "tooltip": "要续接的片段。面积超过 3840x2160 像素的片段将被缩小以适应限制。"
       }
     },
     "outputs": {
@@ -8110,6 +8263,67 @@
       "video": {
         "name": "视频",
         "tooltip": "需要翻译语音的视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceCloneNode": {
+    "description": "使用 HeyGen Voice 1.0 从单个说话者的录音中克隆声音。将 voice_id 连接到 HeyGen Voice 1.0 Text to Speech，或连接到 HeyGen Avatar Video 和 HeyGen Talking Photo 中的 custom_voice_id。",
+    "display_name": "HeyGen Voice 1.0 即时克隆",
+    "inputs": {
+      "audio": {
+        "name": "音频",
+        "tooltip": "单个说话者的录音。请使用至少 10 秒的清晰语音；仅使用前 3 分钟。"
+      },
+      "fixed": {
+        "name": "生成后控制"
+      },
+      "language": {
+        "name": "语言",
+        "tooltip": "录音中使用的语言。"
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "种子",
+        "tooltip": "更改种子以再次克隆录音；每次克隆得到的声音都会略有不同。"
+      },
+      "similarity": {
+        "name": "相似度",
+        "tooltip": "声音与录音的贴合程度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "使用通过 HeyGen Voice 1.0 即时克隆创建的声音朗读文本。",
+    "display_name": "HeyGen Voice 1.0 文本转语音",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "heygen-voice-1-turbo 速度更快，成本仅为一半。"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "language"
+      },
+      "model_text": {
+        "name": "text"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
       }
     },
     "outputs": {
@@ -13282,6 +13496,51 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "为通过 LoRA 加载器加载的 MOSS-Image 颜色/深度控制适配器添加颜色区域和深度图。",
+    "display_name": "MOSS-Image 颜色/深度控制",
+    "inputs": {
+      "color_map": {
+        "name": "color_map",
+        "tooltip": "输出尺寸下每个区域使用一种纯色。颜色仅用作区域 ID。"
+      },
+      "depth_map": {
+        "name": "depth_map",
+        "tooltip": "输出尺寸的深度图，近处为白色。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "控制结束生效时的采样百分比。提前结束会保留布局和深度，同时其余步骤会放松形状。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "控制开始生效时的采样百分比。"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "调整映射图对图像 token 的影响程度。0.0 等同于不使用映射图，1.0 为训练时的强度。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -20138,7 +20397,7 @@
     "inputs": {
       "band": {
         "name": "带宽",
-        "tooltip": "以体素为单位的窄带宽度。在 UDF 模式下也会偏移表面。"
+        "tooltip": "以体素为单位的窄带宽度。在 udf 模式下还会偏移表面；在 solid 模式下它是闭合半径：会按此尺寸对折痕进行倒圆并桥接间隙，表面位于外侧半个体素处。"
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -20165,7 +20424,7 @@
       },
       "sign_mode": {
         "name": "符号模式",
-        "tooltip": "udf：可稳健处理杂乱或非流形输入。sdf：使用 QEF（二次误差函数）恢复锐利特征的干净单一表面，但需要一致的绕向。"
+        "tooltip": "udf：对杂乱/非流形输入具有鲁棒性。sdf：使用 QEF（Quadratic Error Function）恢复锐利特征的干净单一表面，但需要一致的绕向。solid：从杂乱输入生成一个水密实体：全局内外图割（CelloCut）会移除双层壳并封闭小孔。速度较慢。"
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"

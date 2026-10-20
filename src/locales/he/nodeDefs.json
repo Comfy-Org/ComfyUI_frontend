@@ -850,7 +850,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -876,7 +876,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1003,8 +1003,8 @@
     }
   },
   "BriaImageEditNode": {
-    "description": "עריכת תמונות באמצעות המודל העדכני של Bria",
-    "display_name": "Bria FIBO עריכת תמונה",
+    "description": "עריכת תמונות באמצעות Bria FIBO 2.0.",
+    "display_name": "Bria FIBO 2.0 Image Edit",
     "inputs": {
       "control_after_generate": {
         "name": "שליטה לאחר יצירה"
@@ -1052,6 +1052,49 @@
       "1": {
         "name": "הנחיה מובנית",
         "tooltip": null
+      }
+    }
+  },
+  "BriaImageGenerate": {
+    "description": "יצירת תמונה מפרומפט טקסט, מתמונת ייחוס או מפרומפט מובנה באמצעות Bria FIBO 2.0.",
+    "display_name": "Bria FIBO 2.0 Image Generate",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "16:10 והיחסים שאחריו דורשים 1MP ובדיוק אחד מתוך prompt או structured_prompt."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונת ייחוס שעליה ניתן להתבסס. התוצאה היא תמונה חדשה ביחס הממדים הנבחר, ולא עריכה של תמונה זו."
+      },
+      "moderation": {
+        "name": "ניהול תוכן",
+        "tooltip": "הגדרות ניהול תוכן"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "פרומפט מובנה מסוג JSON מתוצאה קודמת של Bria FIBO. עם אותו seed הוא ישחזר את התמונה; ניתן לשנות את ה-JSON או להוסיף פרומפט כדי לחדד אותה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "תיאור מובנה של התמונה שנוצרה, לשחזור או לחידוד שלה באמצעות צומת זה."
       }
     }
   },
@@ -1107,7 +1150,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1236,7 +1279,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1262,7 +1305,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה הערוכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1284,7 +1327,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO Image Edit."
+        "tooltip": "תיאור מובנה של התמונה שנערכה, לעריכת המשך באמצעות Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -2953,6 +2996,24 @@
       },
       "model_creativity": {
         "name": "יצירתיות"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "הגדלת רזולוציה של וידאו באמצעות Crystal Video Upscaler של Clarity AI, מגדיל רזולוציה באיכות גבוהה שנשאר נאמן למקור. הפלט מוגבל ל-9 מגה-פיקסלים לכל פריים (לדוגמה 4000x2250), וקטעים ארוכים מוחזרים ברזולוציה נמוכה יותר. קטעים מעל 30 fps עולים פי 2, מעל 60 fps פי 3, וכן הלאה.",
+    "display_name": "הגדלת רזולוציית וידאו Crystal של Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו יש להשתמש."
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -6008,6 +6069,98 @@
       }
     }
   },
+  "Flux3MaxImageToVideoNode": {
+    "description": "הנפשה של 1 עד 10 תמונות באמצעות FLUX 3 Max. כל תמונה הופכת לפריים בקטע: תמונה אחת פותחת אותו, שתיים הופכות לפריים הראשון והאחרון שלו, ותמונות נוספות מפוזרות לאורכו או מוצמדות לזמנים שתבחרו.",
+    "display_name": "FLUX 3 Max מתמונה לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "יחס הממדים של הפלט. 'auto' הוא 16:9 עבור פרומפטים טקסטואליים, ובמקרים אחרים פועל לפי התמונה הראשונה."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "משך הקליפ בשניות."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "יצירת שמע מסונכרן. כאשר האפשרות כבויה, מופק סרטון ללא רצועת שמע."
+      },
+      "keyframes": {
+        "name": "מסגרות מפתח",
+        "tooltip": "1 עד 10 תמונות, לפי סדר הנגינה."
+      },
+      "placement": {
+        "name": "מיקום",
+        "tooltip": "„פיזור לאורך הקטע” מציב את התמונה הראשונה בהתחלה, את האחרונה בסוף ואת השאר באופן שווה ביניהן; „בזמנים” מצמיד כל תמונה לשנייה שתבחרו."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "האופן שבו הסצנה אמורה לנוע ולהישמע."
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "מידת החשיבה של המודל והרחבת הפרומפט לפני היצירה. 'high' נמשך זמן רב יותר; המחיר זהה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "רזולוציית הפלט."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "יוצר סרטון עם שמע מסונכרן מפרומפט טקסט באמצעות FLUX 3 Max.",
+    "display_name": "FLUX 3 Max טקסט לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "יחס הממדים של הפלט. 'auto' הוא 16:9 עבור פרומפטים טקסטואליים, ובמקרים אחרים פועל לפי התמונה הראשונה."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "משך הקליפ בשניות."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "יצירת שמע מסונכרן. כאשר האפשרות כבויה, מופק סרטון ללא רצועת שמע."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "מה שברצונך לקבל, בשפה פשוטה. לתיאור שמע בשכבות, תארו בנפרד צלילי סביבה, מוזיקה ודיבור."
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "מידת החשיבה של המודל והרחבת הפרומפט לפני היצירה. 'high' נמשך זמן רב יותר; המחיר זהה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "רזולוציית הפלט."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ה-seed קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "יוצר וידאו עם אודיו מסונכרן מתוך פרומפט טקסט באמצעות FLUX 3.",
     "display_name": "Flux 3 טקסט לוידאו",
@@ -6087,7 +6240,7 @@
       },
       "video": {
         "name": "וידאו",
-        "tooltip": "הקליפ להמשך."
+        "tooltip": "הקליפ להמשך. קליפים ששטחם עולה על 3840x2160 פיקסלים מוקטנים כדי להתאים."
       }
     },
     "outputs": {
@@ -8110,6 +8263,67 @@
       "video": {
         "name": "וידאו",
         "tooltip": "וידאו עם דיבור לתרגום."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceCloneNode": {
+    "description": "שכפול קול מהקלטה של דובר אחד באמצעות HeyGen Voice 1.0. חברו את voice_id אל HeyGen Voice 1.0 Text to Speech, או אל custom_voice_id ב-HeyGen Avatar Video וב-HeyGen Talking Photo.",
+    "display_name": "HeyGen Voice 1.0 שכפול מיידי",
+    "inputs": {
+      "audio": {
+        "name": "שמע",
+        "tooltip": "הקלטה של דובר אחד. יש להשתמש בלפחות 10 שניות של דיבור ברור; ייעשה שימוש רק ב-3 הדקות הראשונות."
+      },
+      "fixed": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "language": {
+        "name": "שפה",
+        "tooltip": "השפה המדוברת בהקלטה."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "שנו את ה-seed כדי לשכפל את ההקלטה שוב; כל שכפול הוא קול שונה במקצת."
+      },
+      "similarity": {
+        "name": "דמיון",
+        "tooltip": "מידת ההתאמה של הקול להקלטה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "הקראת טקסט בקול ששובט באמצעות HeyGen Voice 1.0 Instant Clone.",
+    "display_name": "HeyGen Voice 1.0 טקסט לדיבור",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "heygen-voice-1-turbo מהיר יותר ועולה חצי מהמחיר."
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "language"
+      },
+      "model_text": {
+        "name": "text"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
       }
     },
     "outputs": {
@@ -13282,6 +13496,51 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "מוסיף את אזורי הצבע ומפות העומק עבור מתאם בקרת צבע/עומק של MOSS-Image שנטען באמצעות טוען LoRA.",
+    "display_name": "בקרת צבע/עומק של MOSS-Image",
+    "inputs": {
+      "color_map": {
+        "name": "color_map",
+        "tooltip": "צבע שטוח אחד לכל אזור, בגודל הפלט. הצבעים הם מזהי אזורים בלבד."
+      },
+      "depth_map": {
+        "name": "depth_map",
+        "tooltip": "מפת עומק בגודל הפלט; אזורים קרובים הם לבנים."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "אחוז הדגימה שבו הבקרה מסתיימת. סיום מוקדם שומר על הפריסה והעומק, בעוד ששאר השלבים מרככים את הצורות."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "אחוז הדגימה שבו הבקרה מתחילה."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "מגדיל או מקטין את תרומת המפות לאסימוני התמונה. 0.0 זהה להיעדר מפות, ו־1.0 היא עוצמת האימון."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -20138,7 +20397,7 @@
     "inputs": {
       "band": {
         "name": "רצועה",
-        "tooltip": "רוחב הרצועה הצרה ביחידות ווקסל. במצב UDF הוא גם מסיט את המשטח."
+        "tooltip": "רוחב הרצועה הצרה ביחידות ווקסל. במצב udf הוא גם מסיט את המשטח; במצב solid זהו רדיוס הסגירה: קפלים מעוגלים ורווחים מגושרים בגודל זה, והמשטח ממוקם חצי ווקסל החוצה."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -20165,7 +20424,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: עמיד לקלט מבולגן/לא־מניפולדי. sdf: משטח יחיד ונקי עם שחזור מאפיינים חדים באמצעות QEF (Quadratic Error Function), אך דורש כיוון ליפוף עקבי."
+        "tooltip": "udf: עמיד לקלט מבולגן/שאינו יריעה. sdf: משטח יחיד ונקי עם שחזור מאפיינים חדים באמצעות QEF (Quadratic Error Function), אך דורש ליפוף עקבי. solid: גוף אטום יחיד מקלט מבולגן: חיתוך גרף גלובלי של פנים/חוץ (CelloCut) מסיר מעטפות כפולות וסוגר חורים קטנים. איטי יותר."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"

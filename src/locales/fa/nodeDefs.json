@@ -850,7 +850,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO ۲.۰ Image Edit."
       }
     }
   },
@@ -876,7 +876,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO ۲.۰ Image Edit."
       }
     }
   },
@@ -1003,8 +1003,8 @@
     }
   },
   "BriaImageEditNode": {
-    "description": "ویرایش تصاویر با استفاده از جدیدترین مدل Bria",
-    "display_name": "ویرایش تصویر Bria",
+    "description": "تصاویر را با استفاده از Bria FIBO ۲.۰ ویرایش کنید.",
+    "display_name": "Bria FIBO ۲.۰ ویرایش تصویر",
     "inputs": {
       "control_after_generate": {
         "name": "کنترل پس از تولید"
@@ -1052,6 +1052,49 @@
       "1": {
         "name": "پرامپت ساختاریافته",
         "tooltip": null
+      }
+    }
+  },
+  "BriaImageGenerate": {
+    "description": "با استفاده از Bria FIBO ۲.۰، تصویری را از یک پرامپت متنی، یک تصویر مرجع یا یک پرامپت ساخت‌یافته تولید کنید.",
+    "display_name": "Bria FIBO ۲.۰ تولید تصویر",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "نسبت ۱۶:۱۰ و نسبت‌های پس از آن به ۱MP و دقیقاً یکی از prompt یا structured_prompt نیاز دارند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر مرجع برای الهام‌گیری. نتیجه تصویری جدید با نسبت ابعاد انتخاب‌شده است، نه ویرایش این تصویر."
+      },
+      "moderation": {
+        "name": "نظارت",
+        "tooltip": "تنظیمات نظارت"
+      },
+      "prompt": {
+        "name": "پرامپت"
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "پرامپت ساخت‌یافتهٔ JSON از یک نتیجهٔ پیشین Bria FIBO. با همان seed، همان تصویر را بازسازی می‌کند؛ برای بهبود آن، JSON را تغییر دهید یا یک پرامپت اضافه کنید."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "توضیح ساخت‌یافتهٔ تصویر تولیدشده، برای بازسازی یا بهبود آن با این node."
       }
     }
   },
@@ -1107,7 +1150,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "توضیح ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO ۲.۰ Image Edit."
       }
     }
   },
@@ -1236,7 +1279,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO ۲.۰ Image Edit."
       }
     }
   },
@@ -1262,7 +1305,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO ۲.۰ Image Edit."
       }
     }
   },
@@ -1284,7 +1327,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "توصیف ساختاریافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO Image Edit."
+        "tooltip": "توضیح ساخت‌یافتهٔ تصویر ویرایش‌شده، برای ویرایش بعدی با Bria FIBO ۲.۰ Image Edit."
       }
     }
   },
@@ -2956,6 +2999,24 @@
       },
       "model_scale_factor": {
         "name": "ضریب_مقیاس"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "یک ویدئو را با Crystal Video Upscaler از Clarity AI، یک ارتقادهندهٔ وضوح با وفاداری بالا که به منبع وفادار می‌ماند، ارتقای وضوح دهید. خروجی به ۹ مگاپیکسل در هر فریم محدود است (برای مثال ۴۰۰۰x۲۲۵۰) و کلیپ‌های طولانی با وضوح پایین‌تری بازمی‌گردند. کلیپ‌های بالای ۳۰ fps، 2x هزینه دارند؛ بالای ۶۰ fps، 3x؛ و به همین ترتیب.",
+    "display_name": "ارتقای وضوح ویدئوی Crystal از Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده."
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
       }
     },
     "outputs": {
@@ -6008,6 +6069,98 @@
       }
     }
   },
+  "Flux3MaxImageToVideoNode": {
+    "description": "با FLUX ۳ Max، ۱ تا ۱۰ تصویر را متحرک می‌کند. هر تصویر به یک فریم از کلیپ تبدیل می‌شود: یک تصویر کلیپ را آغاز می‌کند، دو تصویر به فریم اول و آخر آن تبدیل می‌شوند و تصاویر بیشتر در سراسر آن پخش می‌شوند یا به زمان‌های انتخابی شما پین می‌شوند.",
+    "display_name": "FLUX ۳ Max تصویر به ویدئو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "نسبت ابعاد خروجی. «خودکار» برای پرامپت‌های متنی ۱۶:۹ است و در غیر این صورت از تصویر اول پیروی می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت‌زمان",
+        "tooltip": "مدت کلیپ بر حسب ثانیه."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "صدای همگام‌سازی‌شده تولید می‌کند. حالت خاموش ویدیویی بدون ترک صوتی تولید می‌کند."
+      },
+      "keyframes": {
+        "name": "فریم‌های کلیدی",
+        "tooltip": "۱ تا ۱۰ تصویر، به ترتیب پخش."
+      },
+      "placement": {
+        "name": "جای‌گذاری",
+        "tooltip": "«پخش در سراسر کلیپ» تصویر اول را در ابتدا، تصویر آخر را در انتها و بقیه را به‌طور یکنواخت میان آن‌ها قرار می‌دهد؛ «در زمان‌ها» هر تصویر را به ثانیه‌ای که انتخاب می‌کنید پین می‌کند."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "نحوهٔ حرکت و صدای صحنه."
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "میزان استدلال مدل دربارهٔ پرامپت و بسط آن پیش از تولید. «high» زمان بیشتری می‌برد؛ قیمت یکسان است."
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح تصویر خروجی."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "از طریق FLUX ۳ Max، از یک پرامپت متنی ویدیویی با صدای همگام‌سازی‌شده تولید می‌کند.",
+    "display_name": "FLUX ۳ Max متن به ویدیو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "نسبت ابعاد خروجی. «auto» برای پرامپت‌های متنی ۱۶:۹ است و در غیر این صورت از نخستین تصویر پیروی می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "duration": {
+        "name": "مدت",
+        "tooltip": "مدت کلیپ بر حسب ثانیه."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "صدای همگام‌سازی‌شده تولید می‌کند. حالت خاموش ویدیویی بدون ترک صوتی تولید می‌کند."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "آنچه می‌خواهید، به زبان ساده. برای صدای لایه‌ای، صدای محیط، موسیقی و گفتار را جداگانه توصیف کنید."
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "میزان استدلال مدل دربارهٔ پرامپت و بسط آن پیش از تولید. «high» زمان بیشتری می‌برد؛ قیمت یکسان است."
+      },
+      "resolution": {
+        "name": "وضوح تصویر",
+        "tooltip": "وضوح تصویر خروجی."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "تولید ویدیو با صدای همگام از طریق پرامپت متنی با استفاده از FLUX 3.",
     "display_name": "تبدیل متن به ویدیو Flux 3",
@@ -6087,7 +6240,7 @@
       },
       "video": {
         "name": "ویدیو",
-        "tooltip": "کلیپی که باید ادامه یابد."
+        "tooltip": "کلیپی که باید ادامه داده شود. کلیپ‌هایی با مساحت بیش از ۳۸۴۰×۲۱۶۰ پیکسل برای تطبیق کوچک‌مقیاس می‌شوند."
       }
     },
     "outputs": {
@@ -8110,6 +8263,67 @@
       "video": {
         "name": "ویدیو",
         "tooltip": "ویدیویی با گفتار برای ترجمه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceCloneNode": {
+    "description": "با HeyGen Voice ۱.۰، صدای یک گوینده را از یک ضبط شبیه‌سازی می‌کند. voice_id را به HeyGen Voice ۱.۰ Text to Speech، یا به custom_voice_id در HeyGen Avatar Video و HeyGen Talking Photo متصل کنید.",
+    "display_name": "HeyGen Voice ۱.۰ Instant Clone",
+    "inputs": {
+      "audio": {
+        "name": "صدا",
+        "tooltip": "ضبطِ یک گوینده. دست‌کم ۱۰ ثانیه گفتار واضح استفاده کنید؛ فقط ۳ دقیقهٔ نخست استفاده می‌شود."
+      },
+      "fixed": {
+        "name": "کنترل پس از تولید"
+      },
+      "language": {
+        "name": "زبان",
+        "tooltip": "زبان گفتارشده در ضبط."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "برای شبیه‌سازی دوبارهٔ ضبط، seed را تغییر دهید؛ هر شبیه‌سازی صدایی اندکی متفاوت دارد."
+      },
+      "similarity": {
+        "name": "شباهت",
+        "tooltip": "میزان شباهت صدا به ضبط."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شناسه صدا",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "متن را با صدایی که با HeyGen Voice ۱٫۰ Instant Clone شبیه‌سازی شده است، بیان می‌کند.",
+    "display_name": "تبدیل متن به گفتار HeyGen Voice ۱٫۰",
+    "inputs": {
+      "model": {
+        "name": "مدل",
+        "tooltip": "heygen-voice-1-turbo سریع‌تر است و نصف هزینه دارد."
+      },
+      "model_expressiveness_boost": {
+        "name": "تقویت بیان‌پذیری"
+      },
+      "model_language": {
+        "name": "زبان"
+      },
+      "model_text": {
+        "name": "متن"
+      },
+      "model_voice_id": {
+        "name": "شناسه صدا"
       }
     },
     "outputs": {
@@ -13282,6 +13496,51 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "ناحیهٔ رنگ و نقشه‌های عمق را برای یک آداپتور کنترل رنگ/عمق MOSS-Image که با بارگذارندهٔ LoRA بارگذاری شده است، اضافه می‌کند.",
+    "display_name": "کنترل رنگ/عمق MOSS-Image",
+    "inputs": {
+      "color_map": {
+        "name": "نقشه رنگ",
+        "tooltip": "برای هر ناحیه، یک رنگ تخت در اندازهٔ خروجی. رنگ‌ها فقط شناسه‌های ناحیه هستند."
+      },
+      "depth_map": {
+        "name": "نقشه عمق",
+        "tooltip": "نقشهٔ عمق در اندازهٔ خروجی؛ بخش نزدیک سفید است."
+      },
+      "end_percent": {
+        "name": "درصد پایان",
+        "tooltip": "درصد نمونه‌برداری که کنترل در آن پایان می‌یابد. پایان زودهنگام، چیدمان و عمق را حفظ می‌کند، در حالی که باقی مراحل شکل‌ها را آزادتر می‌کنند."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "positive": {
+        "name": "مثبت"
+      },
+      "start_percent": {
+        "name": "درصد شروع",
+        "tooltip": "درصد نمونه‌برداری که کنترل از آن شروع می‌شود."
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "میزان تأثیر نقشه‌ها بر توکن‌های تصویر را مقیاس‌بندی می‌کند. ۰٫۰ همانِ بدون نقشه است و ۱٫۰ شدت آموزش‌دیده است."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
         "tooltip": null
       }
     }
@@ -20138,7 +20397,7 @@
     "inputs": {
       "band": {
         "name": "باند",
-        "tooltip": "پهنای باند باریک بر حسب واحدهای voxel. در حالت UDF، سطح را نیز جابه‌جا می‌کند."
+        "tooltip": "عرض باند باریک بر حسب واحد وکسل. در حالت udf سطح را نیز جابه‌جا می‌کند؛ در حالت solid شعاع بستن است: چین‌ها در این اندازه گرد می‌شوند و شکاف‌ها پل زده می‌شوند و سطح نیم وکسل به بیرون قرار می‌گیرد."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -20165,7 +20424,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: در برابر ورودی نامرتب/غیرمنیفلد مقاوم است. sdf: سطح تکی تمیز با بازیابی ویژگی‌های تیز QEF (Quadratic Error Function)، اما به جهت‌گیری سازگار نیاز دارد."
+        "tooltip": "udf: در برابر ورودی نامرتب/غیرمنیفلد مقاوم است. sdf: یک سطح تمیز با بازیابی ویژگی‌های تیز با QEF (تابع خطای درجه‌دوم)، اما به جهت‌گیری سازگار نیاز دارد. solid: یک حجم آب‌بند از ورودی نامرتب؛ یک برش گراف سراسری داخل/خارج (CelloCut) پوسته‌های دوتایی را حذف می‌کند و سوراخ‌های کوچک را می‌بندد. کندتر است."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"

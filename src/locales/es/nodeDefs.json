@@ -850,7 +850,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Descripción estructurada de la imagen editada para una edición posterior con Bria FIBO Image Edit."
+        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -876,7 +876,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Descripción estructurada de la imagen editada para una edición posterior con Bria FIBO Image Edit."
+        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1003,8 +1003,8 @@
     }
   },
   "BriaImageEditNode": {
-    "description": "Edita imágenes usando el modelo más reciente de Bria",
-    "display_name": "Edición de Imagen Bria",
+    "description": "Edita imágenes con Bria FIBO 2.0.",
+    "display_name": "Bria FIBO 2.0 Image Edit",
     "inputs": {
       "control_after_generate": {
         "name": "control después de generar"
@@ -1052,6 +1052,49 @@
       "1": {
         "name": "instrucción_estructurada",
         "tooltip": null
+      }
+    }
+  },
+  "BriaImageGenerate": {
+    "description": "Genera una imagen a partir de un prompt de texto, una imagen de referencia o un prompt estructurado con Bria FIBO 2.0.",
+    "display_name": "Bria FIBO 2.0 Image Generate",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "16:10 y las proporciones posteriores requieren 1 MP y exactamente uno de prompt o structured_prompt."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Imagen de referencia en la que basarse. El resultado es una imagen nueva con la proporción seleccionada, no una edición de esta."
+      },
+      "moderation": {
+        "name": "moderación",
+        "tooltip": "Ajustes de moderación"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "Prompt estructurado en JSON de un resultado anterior de Bria FIBO. Con la misma semilla, recrea esa imagen; cambia el JSON o añade un prompt para refinarla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Descripción estructurada de la imagen generada, para recrearla o refinarla con este nodo."
       }
     }
   },
@@ -1107,7 +1150,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Descripción estructurada de la imagen editada para una edición posterior con Bria FIBO Image Edit."
+        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1236,7 +1279,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO Image Edit."
+        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1262,7 +1305,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO Image Edit."
+        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -1284,7 +1327,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Descripción estructurada de la imagen editada para una edición posterior con Bria FIBO Image Edit."
+        "tooltip": "Descripción estructurada de la imagen editada, para una edición posterior con Bria FIBO 2.0 Image Edit."
       }
     }
   },
@@ -2953,6 +2996,24 @@
       },
       "model_creativity": {
         "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "Aumenta la resolución de un video con Crystal Video Upscaler de Clarity AI, un escalador de alta fidelidad que se mantiene fiel al original. La salida está limitada a 9 megapíxeles por fotograma (por ejemplo, 4000x2250), y los clips largos se entregan con una resolución menor. Los clips de más de 30 fps cuestan 2x, los de más de 60 fps 3x, y así sucesivamente.",
+    "display_name": "Mejora de resolución de video Crystal de Clarity AI",
+    "inputs": {
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo que se usará."
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -6008,6 +6069,98 @@
       }
     }
   },
+  "Flux3MaxImageToVideoNode": {
+    "description": "Anima de 1 a 10 imágenes con FLUX 3 Max. Cada imagen se convierte en un fotograma del clip: una imagen lo inicia, dos se convierten en su primer y último fotograma, y más imágenes se distribuyen a lo largo de él o se fijan en los momentos que elijas.",
+    "display_name": "FLUX 3 Max de imagen a video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Proporción de aspecto de salida. 'auto' es 16:9 para prompts de texto y, de lo contrario, sigue la primera imagen."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "duration": {
+        "name": "duración",
+        "tooltip": "Duración del clip en segundos."
+      },
+      "generate_audio": {
+        "name": "generar_audio",
+        "tooltip": "Genera audio sincronizado. Desactivado produce un vídeo sin pista de audio."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "De 1 a 10 imágenes, en orden de reproducción."
+      },
+      "placement": {
+        "name": "ubicación",
+        "tooltip": "'distribuir a lo largo del clip' coloca la primera imagen al inicio, la última al final y el resto uniformemente entre ambas; 'en momentos concretos' fija cada imagen a un segundo que elijas."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Cómo debe moverse y sonar la escena."
+      },
+      "reasoning_level": {
+        "name": "nivel_de_razonamiento",
+        "tooltip": "Cuánto razona el modelo sobre el prompt y lo amplía antes de generar. 'high' tarda más; el precio es el mismo."
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "Resolución de salida."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados no son deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "Genera un vídeo con audio sincronizado a partir de un prompt de texto mediante FLUX 3 Max.",
+    "display_name": "FLUX 3 Max de texto a vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "relación_de_aspecto",
+        "tooltip": "Relación de aspecto de salida. 'auto' es 16:9 para prompts de texto y, de lo contrario, sigue la primera imagen."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "duration": {
+        "name": "duración",
+        "tooltip": "Duración del clip en segundos."
+      },
+      "generate_audio": {
+        "name": "generar_audio",
+        "tooltip": "Genera audio sincronizado. Desactivado produce un vídeo sin pista de audio."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Lo que quieres, en lenguaje natural. Describe por separado el sonido ambiente, la música y el habla para obtener audio por capas."
+      },
+      "reasoning_level": {
+        "name": "nivel_de_razonamiento",
+        "tooltip": "Cuánto razona el modelo sobre el prompt y lo amplía antes de generar. 'high' tarda más; el precio es el mismo."
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "Resolución de salida."
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados no son deterministas independientemente de la semilla."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "Genera un video con audio sincronizado a partir de un prompt de texto mediante FLUX 3.",
     "display_name": "Flux 3 Texto a Video",
@@ -6087,7 +6240,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "El clip a continuar."
+        "tooltip": "El clip que se va a continuar. Los clips con un área superior a 3840x2160 píxeles se reducen para ajustarse."
       }
     },
     "outputs": {
@@ -8110,6 +8263,67 @@
       "video": {
         "name": "video",
         "tooltip": "Video con voz para traducir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceCloneNode": {
+    "description": "Clona una voz a partir de una grabación de un solo hablante con HeyGen Voice 1.0. Conecta voice_id a HeyGen Voice 1.0 Text to Speech, o a custom_voice_id en HeyGen Avatar Video y HeyGen Talking Photo.",
+    "display_name": "Clonación instantánea de voz HeyGen Voice 1.0",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Grabación de un solo hablante. Usa al menos 10 segundos de habla clara; solo se usan los primeros 3 minutos."
+      },
+      "fixed": {
+        "name": "control después de generar"
+      },
+      "language": {
+        "name": "idioma",
+        "tooltip": "Idioma hablado en la grabación."
+      },
+      "remove_background_noise": {
+        "name": "eliminar_ruido_de_fondo"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Cambia la semilla para clonar de nuevo la grabación; cada clon es una voz ligeramente distinta."
+      },
+      "similarity": {
+        "name": "similitud",
+        "tooltip": "Qué tanto se parece la voz a la grabación."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "Pronuncia texto con una voz clonada con HeyGen Voice 1.0 Instant Clone.",
+    "display_name": "Texto a voz de HeyGen Voice 1.0",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "heygen-voice-1-turbo es más rápido y cuesta la mitad."
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "language"
+      },
+      "model_text": {
+        "name": "text"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
       }
     },
     "outputs": {
@@ -13282,6 +13496,51 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "Añade la región de color y los mapas de profundidad para un adaptador de control de color/profundidad de MOSS-Image cargado con un cargador de LoRA.",
+    "display_name": "Control de color/profundidad de MOSS-Image",
+    "inputs": {
+      "color_map": {
+        "name": "color_map",
+        "tooltip": "Un color plano por región, en el tamaño de salida. Los colores solo son identificadores de región."
+      },
+      "depth_map": {
+        "name": "depth_map",
+        "tooltip": "Mapa de profundidad en el tamaño de salida; lo cercano es blanco."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "Porcentaje de muestreo en el que termina el control. Terminar antes conserva la composición y la profundidad, mientras que el resto de los pasos suaviza las formas."
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "Porcentaje de muestreo en el que comienza el control."
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "Escala la contribución de los mapas a los tokens de imagen. 0.0 equivale a no usar mapas; 1.0 es la intensidad con la que se entrenó."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -20138,7 +20397,7 @@
     "inputs": {
       "band": {
         "name": "band",
-        "tooltip": "Ancho de la banda estrecha en unidades de vóxel. En modo UDF también desplaza la superficie."
+        "tooltip": "Ancho de banda estrecha en unidades de vóxel. En modo udf también desplaza la superficie; en modo solid es el radio de cierre: los pliegues se redondean y las separaciones se conectan a este tamaño; la superficie queda a medio vóxel hacia afuera."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -20165,7 +20424,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: robusto ante entradas desordenadas/no manifold. sdf: superficie única limpia con recuperación de rasgos nítidos mediante QEF (función de error cuadrático), pero requiere una orientación coherente."
+        "tooltip": "udf: robusto ante entradas desordenadas/no manifold. sdf: una única superficie limpia con recuperación de características afiladas mediante QEF (Quadratic Error Function), pero necesita una orientación coherente. solid: un sólido estanco a partir de una entrada desordenada: un corte de grafo global de interior/exterior (CelloCut) elimina capas dobles y cierra agujeros pequeños. Más lento."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"

@@ -850,7 +850,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "編集後の画像の構造化された説明。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO 2.0 Image Edit で後続の編集を行うために使用します。"
       }
     }
   },
@@ -876,7 +876,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "編集後の画像の構造化された説明。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO 2.0 Image Edit で後続の編集を行うために使用します。"
       }
     }
   },
@@ -1003,8 +1003,8 @@
     }
   },
   "BriaImageEditNode": {
-    "description": "Briaの最新モデルを使って画像を編集します",
-    "display_name": "Bria画像編集",
+    "description": "Bria FIBO 2.0 を使用して画像を編集します。",
+    "display_name": "Bria FIBO 2.0 Image Edit",
     "inputs": {
       "control_after_generate": {
         "name": "生成後コントロール"
@@ -1052,6 +1052,49 @@
       "1": {
         "name": "構造化プロンプト",
         "tooltip": null
+      }
+    }
+  },
+  "BriaImageGenerate": {
+    "description": "Bria FIBO 2.0 を使用して、テキストプロンプト、参照画像、または構造化プロンプトから画像を生成します。",
+    "display_name": "Bria FIBO 2.0 Image Generate",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "16:10 およびそれ以降の比率では、1MP と、prompt または structured_prompt のいずれか一方のみが必要です。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "image": {
+        "name": "画像",
+        "tooltip": "基にする参照画像です。結果は選択したアスペクト比の新しい画像であり、この画像を編集したものではありません。"
+      },
+      "moderation": {
+        "name": "モデレーション",
+        "tooltip": "モデレーション設定"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "シード"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "以前の Bria FIBO の結果からのJSON構造化プロンプトです。同じシードではその画像を再現します。JSONを変更するか、プロンプトを追加して調整できます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "生成された画像の構造化された説明です。このノードで再現または調整するために使用します。"
       }
     }
   },
@@ -1107,7 +1150,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "編集後の画像の構造化された説明。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO 2.0 Image Edit で後続の編集を行うために使用します。"
       }
     }
   },
@@ -1236,7 +1279,7 @@
       },
       "1": {
         "name": "構造化プロンプト",
-        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO 2.0 Image Edit で後続の編集を行うために使用します。"
       }
     }
   },
@@ -1262,7 +1305,7 @@
       },
       "1": {
         "name": "構造化プロンプト",
-        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO Image Edit で後続の編集を行うために使用します。"
+        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO 2.0 Image Edit で後続の編集を行うために使用します。"
       }
     }
   },
@@ -1284,7 +1327,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Editで後続の編集を行うための、編集済み画像の構造化された説明。"
+        "tooltip": "編集後の画像の構造化された説明です。Bria FIBO 2.0 Image Edit で後続の編集を行うために使用します。"
       }
     }
   },
@@ -2953,6 +2996,24 @@
       },
       "model_creativity": {
         "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "Clarity AI の Crystal Video Upscaler を使用して動画をアップスケールします。これは、元の映像に忠実な高精度アップスケーラーです。出力は1フレームあたり9メガピクセル（例: 4000x2250）に制限され、長いクリップはより低い解像度で返されます。30 fpsを超えるクリップは2倍、60 fpsを超えるクリップは3倍のコストとなり、以降も同様です。",
+    "display_name": "Clarity AI Crystal Video Upscale",
+    "inputs": {
+      "model": {
+        "name": "モデル",
+        "tooltip": "使用するモデルです。"
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -6008,6 +6069,98 @@
       }
     }
   },
+  "Flux3MaxImageToVideoNode": {
+    "description": "FLUX 3 Max で1～10枚の画像をアニメーション化します。各画像はクリップのフレームになります。1枚の場合は開始フレーム、2枚の場合は最初と最後のフレームになり、それ以上の場合はクリップ全体に配置されるか、選択した時刻に固定されます。",
+    "display_name": "FLUX 3 Max Image to Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "出力アスペクト比です。「auto」はテキストプロンプトでは16:9になり、それ以外では最初の画像に従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "クリップの長さ（秒）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "同期した音声を生成します。オフにすると、音声トラックのない動画が生成されます。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "再生順に並べた1～10枚の画像です。"
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "「クリップ全体に配置」は最初の画像を開始位置、最後の画像を終了位置に置き、残りをその間に均等に配置します。「時刻を指定」は各画像を選択した秒数に固定します。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "シーンの動きと音声を指定します。"
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "生成前にモデルがプロンプトを推論・拡張する度合い。'high' は時間がかかりますが、価格は同じです。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力解像度。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "FLUX 3 Max を介して、テキストプロンプトから同期した音声付きの動画を生成します。",
+    "display_name": "FLUX 3 Max テキストから動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "出力アスペクト比。'auto' はテキストプロンプトでは16:9になり、それ以外では最初の画像に従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "duration": {
+        "name": "長さ",
+        "tooltip": "クリップの長さ（秒）。"
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "同期した音声を生成します。オフにすると、音声トラックのない動画が生成されます。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "必要なものを自然な言葉で記述します。レイヤー化された音声を作成するには、環境音、音楽、音声をそれぞれ個別に記述してください。"
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "生成前にモデルがプロンプトを推論・拡張する度合い。'high' は時間がかかりますが、価格は同じです。"
+      },
+      "resolution": {
+        "name": "解像度",
+        "tooltip": "出力解像度。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "テキストプロンプトからFLUX 3経由で同期音声付き動画を生成します。",
     "display_name": "Flux 3 テキストから動画へ",
@@ -6087,7 +6240,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "継続するクリップ。"
+        "tooltip": "続きの生成に使用するクリップ。面積が3840x2160ピクセルを超えるクリップは、収まるように縮小されます。"
       }
     },
     "outputs": {
@@ -8110,6 +8263,67 @@
       "video": {
         "name": "ビデオ",
         "tooltip": "翻訳する音声付きビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceCloneNode": {
+    "description": "HeyGen Voice 1.0 を使用して、1人の話者の録音から音声をクローンします。voice_id を HeyGen Voice 1.0 Text to Speech、または HeyGen Avatar Video と HeyGen Talking Photo の custom_voice_id に接続してください。",
+    "display_name": "HeyGen Voice 1.0 インスタントクローン",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "1人の話者の録音。明瞭な音声を少なくとも10秒使用してください。使用されるのは最初の3分間のみです。"
+      },
+      "fixed": {
+        "name": "生成後の制御"
+      },
+      "language": {
+        "name": "言語",
+        "tooltip": "録音で話されている言語。"
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードを変更して録音を再度クローンします。各クローンはわずかに異なる音声になります。"
+      },
+      "similarity": {
+        "name": "類似度",
+        "tooltip": "音声が録音にどの程度忠実に従うか。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "HeyGen Voice 1.0 Instant Cloneでクローンした音声でテキストを読み上げます。",
+    "display_name": "HeyGen Voice 1.0 テキスト読み上げ",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "heygen-voice-1-turboはより高速で、コストは半分です。"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "language"
+      },
+      "model_text": {
+        "name": "text"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
       }
     },
     "outputs": {
@@ -13282,6 +13496,51 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "LoRAローダーで読み込まれたMOSS-Imageカラー/深度コントロールアダプターに、カラー領域と深度マップを追加します。",
+    "display_name": "MOSS-Image カラー/深度コントロール",
+    "inputs": {
+      "color_map": {
+        "name": "color_map",
+        "tooltip": "出力サイズで、領域ごとに1つのフラットカラーを使用します。色は領域IDとしてのみ使用されます。"
+      },
+      "depth_map": {
+        "name": "depth_map",
+        "tooltip": "出力サイズの深度マップです。近い部分は白です。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "コントロールを終了するサンプリング率です。早めに終了するとレイアウトと深度を維持しつつ、残りのステップで形状を緩めます。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "コントロールを開始するサンプリング率です。"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "マップが画像トークンに寄与する度合いをスケーリングします。0.0はマップなしと同じで、1.0は学習時の強度です。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -20138,7 +20397,7 @@
     "inputs": {
       "band": {
         "name": "band",
-        "tooltip": "ボクセル単位の狭帯域幅。UDFモードではサーフェスもオフセットします。"
+        "tooltip": "ボクセル単位のナローバンド幅です。udfモードではサーフェスもオフセットします。solidモードでは閉じる半径になります。このサイズで折り目はフィレットされ、隙間はつながれ、サーフェスは半ボクセル外側に配置されます。"
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -20165,7 +20424,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: 乱雑な／非多様体の入力に対して堅牢です。sdf: QEF（Quadratic Error Function）によるシャープな特徴の復元を伴うクリーンな単一サーフェスですが、一貫した巻き方向が必要です。"
+        "tooltip": "udf: 複雑な入力や非多様体入力に対して堅牢です。sdf: QEF（Quadratic Error Function）によるシャープな特徴の復元を備えた、きれいな単一サーフェスですが、一貫した巻き方向が必要です。solid: 複雑な入力から1つの水密なソリッドを作成します。グローバルな内側/外側のグラフカット（CelloCut）により、二重シェルを除去して小さな穴を閉じます。低速です。"
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"

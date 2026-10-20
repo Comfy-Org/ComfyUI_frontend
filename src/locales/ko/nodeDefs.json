@@ -850,7 +850,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집용으로, 편집된 이미지의 구조화된 설명입니다."
+        "tooltip": "편집된 이미지의 구조화된 설명으로, Bria FIBO 2.0 Image Edit를 사용한 후속 편집에 사용됩니다."
       }
     }
   },
@@ -876,7 +876,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집용으로, 편집된 이미지의 구조화된 설명입니다."
+        "tooltip": "편집된 이미지의 구조화된 설명으로, Bria FIBO 2.0 Image Edit를 사용한 후속 편집에 사용됩니다."
       }
     }
   },
@@ -1003,8 +1003,8 @@
     }
   },
   "BriaImageEditNode": {
-    "description": "Bria 최신 모델을 사용하여 이미지를 편집합니다",
-    "display_name": "Bria 이미지 편집",
+    "description": "Bria FIBO 2.0을 사용하여 이미지를 편집합니다.",
+    "display_name": "Bria FIBO 2.0 이미지 편집",
     "inputs": {
       "control_after_generate": {
         "name": "생성 후 제어"
@@ -1052,6 +1052,49 @@
       "1": {
         "name": "구조화된 프롬프트",
         "tooltip": null
+      }
+    }
+  },
+  "BriaImageGenerate": {
+    "description": "Bria FIBO 2.0을 사용하여 텍스트 프롬프트, 참조 이미지 또는 구조화된 프롬프트로 이미지를 생성합니다.",
+    "display_name": "Bria FIBO 2.0 이미지 생성",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "16:10 및 그 이후의 비율에는 1MP와 prompt 또는 structured_prompt 중 정확히 하나가 필요합니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "참조할 이미지입니다. 결과는 선택한 종횡비의 새 이미지이며, 이 이미지를 편집한 것이 아닙니다."
+      },
+      "moderation": {
+        "name": "모더레이션",
+        "tooltip": "모더레이션 설정"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "이전 Bria FIBO 결과의 JSON 구조화된 프롬프트입니다. 동일한 시드에서는 해당 이미지를 재현하며, JSON을 변경하거나 프롬프트를 추가하여 세부 조정할 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "생성된 이미지의 구조화된 설명으로, 이 노드로 이미지를 재현하거나 세부 조정하는 데 사용됩니다."
       }
     }
   },
@@ -1107,7 +1150,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집용으로, 편집된 이미지의 구조화된 설명입니다."
+        "tooltip": "편집된 이미지의 구조화된 설명으로, Bria FIBO 2.0 Image Edit를 사용한 후속 편집에 사용됩니다."
       }
     }
   },
@@ -1236,7 +1279,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집을 위한 편집된 이미지의 구조화된 설명입니다."
+        "tooltip": "편집된 이미지의 구조화된 설명으로, Bria FIBO 2.0 Image Edit를 사용한 후속 편집에 사용됩니다."
       }
     }
   },
@@ -1262,7 +1305,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집을 위한 편집된 이미지의 구조화된 설명입니다."
+        "tooltip": "편집된 이미지의 구조화된 설명으로, Bria FIBO 2.0 Image Edit를 사용한 후속 편집에 사용됩니다."
       }
     }
   },
@@ -1284,7 +1327,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "Bria FIBO Image Edit로 후속 편집할 수 있도록 편집된 이미지의 구조화된 설명입니다."
+        "tooltip": "편집된 이미지의 구조화된 설명으로, Bria FIBO 2.0 Image Edit를 사용한 후속 편집에 사용됩니다."
       }
     }
   },
@@ -2953,6 +2996,24 @@
       },
       "model_creativity": {
         "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "원본에 충실한 고품질 업스케일러인 Clarity AI의 Crystal Video Upscaler로 비디오를 업스케일합니다. 출력은 프레임당 9메가픽셀(예: 4000x2250)로 제한되며, 긴 클립은 더 낮은 해상도로 반환됩니다. 30fps 초과 클립은 2배, 60fps 초과 클립은 3배의 비용이 들며, 이후에도 같은 방식으로 증가합니다.",
+    "display_name": "Clarity AI Crystal 비디오 업스케일",
+    "inputs": {
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -6008,6 +6069,98 @@
       }
     }
   },
+  "Flux3MaxImageToVideoNode": {
+    "description": "FLUX 3 Max로 이미지 1~10개에 애니메이션을 적용합니다. 각 이미지는 클립의 프레임이 됩니다. 이미지 하나는 클립의 시작 장면이 되고, 두 장은 첫 번째와 마지막 프레임이 되며, 그 이상은 클립 전체에 분산되거나 선택한 시간에 고정됩니다.",
+    "display_name": "FLUX 3 Max 이미지-비디오 변환",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "출력 종횡비입니다. 'auto'는 텍스트 프롬프트의 경우 16:9이며, 그 외에는 첫 번째 이미지를 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "지속 시간",
+        "tooltip": "클립 길이(초)."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "동기화된 오디오를 생성합니다. 끄면 오디오 트랙이 없는 비디오가 생성됩니다."
+      },
+      "keyframes": {
+        "name": "키프레임",
+        "tooltip": "재생 순서대로 된 이미지 1~10개입니다."
+      },
+      "placement": {
+        "name": "배치",
+        "tooltip": "'spread across the clip'은 첫 번째 이미지를 시작 부분에, 마지막 이미지를 끝부분에 배치하고 나머지는 그 사이에 균등하게 배치합니다. 'at times'는 각 이미지를 선택한 초 단위 시간에 고정합니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "장면이 움직이고 소리 나야 하는 방식입니다."
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "생성 전에 모델이 프롬프트를 추론하고 확장하는 정도입니다. 'high'는 더 오래 걸리지만 가격은 같습니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 해상도."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "FLUX 3 Max를 통해 텍스트 프롬프트로 동기화된 오디오가 포함된 비디오를 생성합니다.",
+    "display_name": "FLUX 3 Max 텍스트-비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "출력 종횡비입니다. 'auto'는 텍스트 프롬프트의 경우 16:9이며, 그 외에는 첫 번째 이미지를 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "duration": {
+        "name": "지속 시간",
+        "tooltip": "클립 길이(초)."
+      },
+      "generate_audio": {
+        "name": "generate_audio",
+        "tooltip": "동기화된 오디오를 생성합니다. 끄면 오디오 트랙이 없는 비디오가 생성됩니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "원하는 내용을 자연어로 입력합니다. 레이어드 오디오를 위해 주변 소리, 음악, 음성을 각각 설명하세요."
+      },
+      "reasoning_level": {
+        "name": "reasoning_level",
+        "tooltip": "생성 전에 모델이 프롬프트를 추론하고 확장하는 정도입니다. 'high'는 더 오래 걸리지만 가격은 같습니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "출력 해상도."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "FLUX 3를 통해 텍스트 프롬프트로부터 동기화된 오디오가 포함된 비디오를 생성합니다.",
     "display_name": "Flux 3 텍스트에서 비디오로",
@@ -6087,7 +6240,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "이어갈 clip입니다."
+        "tooltip": "계속할 클립입니다. 면적이 3840x2160픽셀을 초과하는 클립은 맞도록 축소됩니다."
       }
     },
     "outputs": {
@@ -8110,6 +8263,67 @@
       "video": {
         "name": "비디오",
         "tooltip": "번역할 음성이 포함된 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceCloneNode": {
+    "description": "HeyGen Voice 1.0을 사용하여 한 화자의 녹음에서 음성을 복제합니다. voice_id를 HeyGen Voice 1.0 Text to Speech에 연결하거나, HeyGen Avatar Video 및 HeyGen Talking Photo의 custom_voice_id에 연결하세요.",
+    "display_name": "HeyGen Voice 1.0 즉시 클론",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "한 화자의 녹음입니다. 선명한 음성을 최소 10초 이상 사용하세요. 처음 3분만 사용됩니다."
+      },
+      "fixed": {
+        "name": "생성 후 제어"
+      },
+      "language": {
+        "name": "언어",
+        "tooltip": "녹음에서 사용된 언어입니다."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드를 변경하여 녹음을 다시 복제합니다. 각 복제본은 약간씩 다른 음성입니다."
+      },
+      "similarity": {
+        "name": "유사도",
+        "tooltip": "음성이 녹음을 얼마나 충실히 따르는지입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "HeyGen Voice 1.0 Instant Clone으로 복제한 음성으로 텍스트를 말합니다.",
+    "display_name": "HeyGen Voice 1.0 텍스트 음성 변환",
+    "inputs": {
+      "model": {
+        "name": "모델",
+        "tooltip": "heygen-voice-1-turbo는 더 빠르며 비용이 절반입니다."
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "언어"
+      },
+      "model_text": {
+        "name": "텍스트"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
       }
     },
     "outputs": {
@@ -13282,6 +13496,51 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "LoRA 로더로 로드한 MOSS-Image 색상/깊이 제어 어댑터에 색상 영역 및 깊이 맵을 추가합니다.",
+    "display_name": "MOSS-Image 색상/깊이 제어",
+    "inputs": {
+      "color_map": {
+        "name": "color_map",
+        "tooltip": "출력 크기에서 영역마다 하나의 단색을 사용합니다. 색상은 영역 ID일 뿐입니다."
+      },
+      "depth_map": {
+        "name": "depth_map",
+        "tooltip": "출력 크기의 깊이 맵입니다. 가까운 부분은 흰색입니다."
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "제어가 종료되는 샘플링 비율입니다. 일찍 종료하면 레이아웃과 깊이는 유지되며, 나머지 단계에서 형태가 느슨해집니다."
+      },
+      "negative": {
+        "name": "부정"
+      },
+      "positive": {
+        "name": "긍정"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "제어가 시작되는 샘플링 비율입니다."
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "맵이 이미지 토큰에 기여하는 정도를 조절합니다. 0.0은 맵이 없는 것과 같고, 1.0은 학습된 강도입니다."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정",
+        "tooltip": null
+      },
+      "1": {
+        "name": "부정",
         "tooltip": null
       }
     }
@@ -20138,7 +20397,7 @@
     "inputs": {
       "band": {
         "name": "band",
-        "tooltip": "복셀 단위의 협대역 폭입니다. UDF 모드에서는 표면도 오프셋합니다."
+        "tooltip": "복셀 단위의 좁은 밴드 폭입니다. udf 모드에서는 표면을 오프셋하기도 하며, solid 모드에서는 닫힘 반경입니다. 이 크기에서 주름은 필렛 처리되고 간격은 연결되며, 표면은 반 복셀만큼 바깥에 위치합니다."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -20165,7 +20424,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: 복잡한/non-manifold 입력에 강합니다. sdf: QEF (Quadratic Error Function)를 사용한 날카로운 특징 복원이 가능한 깔끔한 단일 표면이지만, 일관된 winding이 필요합니다."
+        "tooltip": "udf: 지저분하거나 비매니폴드인 입력에 강합니다. sdf: QEF(이차 오차 함수)를 사용한 날카로운 특징 복원이 가능한 깔끔한 단일 표면이지만, 일관된 권선 방향이 필요합니다. solid: 지저분한 입력에서 하나의 수밀 솔리드를 만듭니다. 전역 내부/외부 그래프 컷(CelloCut)이 이중 셸을 제거하고 작은 구멍을 닫습니다. 더 느립니다."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"

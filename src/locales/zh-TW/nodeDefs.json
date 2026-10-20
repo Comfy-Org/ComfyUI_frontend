@@ -850,7 +850,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯圖像的結構化描述，可用於後續透過 Bria FIBO 2.0 Image Edit 進行編輯。"
       }
     }
   },
@@ -876,7 +876,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯圖像的結構化描述，可用於後續透過 Bria FIBO 2.0 Image Edit 進行編輯。"
       }
     }
   },
@@ -1003,8 +1003,8 @@
     }
   },
   "BriaImageEditNode": {
-    "description": "使用 Bria 最新模型編輯圖像",
-    "display_name": "Bria FIBO 圖像編輯",
+    "description": "使用 Bria FIBO 2.0 編輯圖像。",
+    "display_name": "Bria FIBO 2.0 Image Edit",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -1052,6 +1052,49 @@
       "1": {
         "name": "結構化提示詞",
         "tooltip": null
+      }
+    }
+  },
+  "BriaImageGenerate": {
+    "description": "使用 Bria FIBO 2.0，根據文字提示、參考圖像或結構化提示產生圖像。",
+    "display_name": "Bria FIBO 2.0 Image Generate",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "16:10 及其後的比例需要 1MP，且 prompt 與 structured_prompt 必須恰好提供其中一項。"
+      },
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "用於參考的圖像。結果會是所選長寬比的新圖像，而非對此圖像進行編輯。"
+      },
+      "moderation": {
+        "name": "moderation",
+        "tooltip": "內容審核設定"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed"
+      },
+      "structured_prompt": {
+        "name": "structured_prompt",
+        "tooltip": "來自先前 Bria FIBO 結果的 JSON 結構化提示。使用相同的 seed 可重現該圖像；變更 JSON 或加入 prompt 可進一步調整。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "已產生圖像的結構化描述，可透過此節點重現或進一步調整。"
       }
     }
   },
@@ -1107,7 +1150,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯圖像的結構化描述，可用於後續透過 Bria FIBO 2.0 Image Edit 進行編輯。"
       }
     }
   },
@@ -1236,7 +1279,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯圖片的結構化描述，可用於後續以 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯圖像的結構化描述，可用於後續透過 Bria FIBO 2.0 Image Edit 進行編輯。"
       }
     }
   },
@@ -1262,7 +1305,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯圖片的結構化描述，可用於後續以 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯圖像的結構化描述，可用於後續透過 Bria FIBO 2.0 Image Edit 進行編輯。"
       }
     }
   },
@@ -1284,7 +1327,7 @@
       },
       "1": {
         "name": "structured_prompt",
-        "tooltip": "已編輯影像的結構化描述，供後續使用 Bria FIBO Image Edit 進行編輯。"
+        "tooltip": "已編輯圖像的結構化描述，可用於後續透過 Bria FIBO 2.0 Image Edit 進行編輯。"
       }
     }
   },
@@ -2953,6 +2996,24 @@
       },
       "model_creativity": {
         "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "使用 Clarity AI 的 Crystal Video Upscaler 放大影片；這是一款忠於來源的高保真放大工具。輸出每個影格最多限於 900 萬像素（例如 4000x2250），較長的片段會以較低解析度輸出。超過 30 fps 的片段費用為 2x，超過 60 fps 為 3x，依此類推。",
+    "display_name": "Clarity AI Crystal 影片放大",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "要使用的模型。"
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -6008,6 +6069,98 @@
       }
     }
   },
+  "Flux3MaxImageToVideoNode": {
+    "description": "使用 FLUX 3 Max 將 1 至 10 張圖像製作成動畫。每張圖像都會成為片段的一個影格：一張圖像會作為開頭，兩張圖像會成為第一與最後一個影格，更多圖像則會分布於片段中，或固定在您選擇的時間點。",
+    "display_name": "FLUX 3 Max 圖像轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "輸出長寬比。對於文字提示，'auto' 為 16:9；否則會依第一張圖像而定。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "片段長度（秒）。"
+      },
+      "generate_audio": {
+        "name": "生成音訊",
+        "tooltip": "生成同步音訊。關閉時會產生沒有音軌的影片。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "1 至 10 張圖像，依播放順序排列。"
+      },
+      "placement": {
+        "name": "placement",
+        "tooltip": "「分布於片段中」會將第一張圖像放在開頭、最後一張放在結尾，其餘圖像均勻置於中間；「指定時間」會將每張圖像固定在您選擇的秒數。"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "場景應如何移動與發出聲音。"
+      },
+      "reasoning_level": {
+        "name": "推理等級",
+        "tooltip": "模型在生成前對提示詞進行推理與擴展的程度。'high' 需要較長時間；價格相同。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出解析度。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Flux3MaxTextToVideoNode": {
+    "description": "透過 FLUX 3 Max 根據文字提示詞生成帶有同步音訊的影片。",
+    "display_name": "FLUX 3 Max 文字轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "輸出長寬比。對於文字提示詞，'auto' 為 16:9；否則會依照第一張圖片。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長",
+        "tooltip": "片段長度（秒）。"
+      },
+      "generate_audio": {
+        "name": "生成音訊",
+        "tooltip": "生成同步音訊。關閉時會產生沒有音軌的影片。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "以自然語言描述你想要的內容。若要製作分層音訊，請分別描述環境音、音樂與語音。"
+      },
+      "reasoning_level": {
+        "name": "推理等級",
+        "tooltip": "模型在生成前對提示詞進行推理與擴展的程度。'high' 需要較長時間；價格相同。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出解析度。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "透過 FLUX 3，從文字提示詞產生帶有同步音訊的影片。",
     "display_name": "Flux 3 文字轉影片",
@@ -6087,7 +6240,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "要續接的片段。"
+        "tooltip": "要延續的片段。面積超過 3840x2160 像素的片段會縮小以符合限制。"
       }
     },
     "outputs": {
@@ -8110,6 +8263,67 @@
       "video": {
         "name": "影片",
         "tooltip": "要翻譯語音的影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceCloneNode": {
+    "description": "使用 HeyGen Voice 1.0 從單一說話者的錄音複製聲音。將 voice_id 連接至 HeyGen Voice 1.0 文字轉語音，或連接至 HeyGen Avatar Video 和 HeyGen Talking Photo 中的 custom_voice_id。",
+    "display_name": "HeyGen Voice 1.0 即時複製",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "單一說話者的錄音。請使用至少 10 秒的清晰語音；僅會使用前 3 分鐘。"
+      },
+      "fixed": {
+        "name": "生成後控制"
+      },
+      "language": {
+        "name": "語言",
+        "tooltip": "錄音中使用的語言。"
+      },
+      "remove_background_noise": {
+        "name": "移除背景雜訊"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "變更種子可再次複製錄音；每次複製的聲音都會略有不同。"
+      },
+      "similarity": {
+        "name": "相似度",
+        "tooltip": "聲音與錄音相符的程度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "使用以 HeyGen Voice 1.0 即時複製功能複製的語音朗讀文字。",
+    "display_name": "HeyGen Voice 1.0 文字轉語音",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "heygen-voice-1-turbo 速度更快，且費用只要一半。"
+      },
+      "model_expressiveness_boost": {
+        "name": "model_expressiveness_boost"
+      },
+      "model_language": {
+        "name": "language"
+      },
+      "model_text": {
+        "name": "text"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
       }
     },
     "outputs": {
@@ -13282,6 +13496,51 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "為透過 lora 載入器載入的 MOSS-Image 色彩／深度控制介面卡加入色彩區域圖與深度圖。",
+    "display_name": "MOSS-Image 色彩／深度控制",
+    "inputs": {
+      "color_map": {
+        "name": "color_map",
+        "tooltip": "每個區域各有一種純色，尺寸為輸出大小。色彩僅作為區域識別碼。"
+      },
+      "depth_map": {
+        "name": "depth_map",
+        "tooltip": "輸出大小的深度圖，近處為白色。"
+      },
+      "end_percent": {
+        "name": "end_percent",
+        "tooltip": "控制結束時的採樣百分比。提早結束會保留版面配置與深度，其餘步驟則會放寬形狀。"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "start_percent": {
+        "name": "start_percent",
+        "tooltip": "控制開始時的採樣百分比。"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "調整圖對影像詞元的影響程度。0.0 等同於不使用圖，1.0 為訓練時的強度。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }
@@ -20138,7 +20397,7 @@
     "inputs": {
       "band": {
         "name": "窄帶",
-        "tooltip": "以體素為單位的窄帶寬度。在 UDF 模式中也會偏移表面。"
+        "tooltip": "以體素為單位的窄頻帶寬度。在 udf 模式中也會偏移表面；在 solid 模式中則是封閉半徑：會以此大小將折痕圓角化並連接間隙，表面會向外偏移半個體素。"
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -20165,7 +20424,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf：可穩健處理雜亂／非流形輸入。sdf：使用 QEF（二次誤差函數）銳利特徵復原產生乾淨的單一表面，但需要一致的環繞方向。"
+        "tooltip": "udf：對雜亂／非流形輸入具穩健性。sdf：使用 QEF（Quadratic Error Function）進行銳利特徵復原的乾淨單一表面，但需要一致的繞向。solid：從雜亂輸入建立單一水密實體：全域內部／外部圖割（CelloCut）會移除雙層殼體並封閉小孔。較慢。"
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
