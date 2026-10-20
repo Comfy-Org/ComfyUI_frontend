@@ -28,9 +28,7 @@ test.describe(
         await expect
           .poll(() =>
             page.evaluate(() => {
-              const node = window.app!.graph.nodes.find(
-                (candidate) => String(candidate.id) === '1'
-              )
+              const node = window.app!.graph.getNodeById(1)
               return {
                 type: node?.type,
                 hasErrors: node?.has_errors === true,
@@ -85,9 +83,7 @@ test.describe(
         await expect
           .poll(() =>
             page.evaluate(() => {
-              const node = window.app!.graph.nodes.find(
-                (candidate) => String(candidate.id) === '1'
-              )
+              const node = window.app!.graph.getNodeById(1)
               return {
                 type: node?.type,
                 hasErrors: node?.has_errors === true,
