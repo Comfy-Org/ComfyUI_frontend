@@ -2,7 +2,10 @@ import type {
   OAuthConsentChallenge as GeneratedOAuthConsentChallenge,
   OAuthConsentChallengeWorkspace
 } from '@comfyorg/ingest-types'
-import { zErrorResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zErrorResponse,
+  zOAuthConsentChallenge
+} from '@comfyorg/ingest-types/zod'
 
 // All OAuth calls are relative-URL (same-origin) on purpose. useSessionCookie
 // POSTs /api/auth/session through the Vite dev-server proxy (or the production
@@ -40,7 +43,7 @@ export type OAuthConsentDecisionParams = {
   oauthRequestId: string
   csrfToken: string
   decision: 'allow' | 'deny'
-  workspaceId: string
+  workspaceId?: string
   /**
    * The challenge's registered `redirect_uri`. When present, the
    * post-consent navigation must match it (scheme, authority, path) —
@@ -97,6 +100,8 @@ function assertChallenge(
     typeof challenge.oauth_request_id !== 'string' ||
     typeof challenge.csrf_token !== 'string' ||
     typeof challenge.client_display_name !== 'string' ||
+    !zOAuthConsentChallenge.pick({ grant_mode: true }).safeParse(challenge)
+      .success ||
     !Array.isArray(challenge.scopes) ||
     !challenge.scopes.every((scope) => typeof scope === 'string') ||
     !Array.isArray(challenge.workspaces) ||
@@ -168,15 +173,6 @@ export async function submitOAuthConsentDecision({
     throw new Error('OAuth consent response did not include redirect_url')
   }
 
-  // Defense in depth at this sink. Two risks: schemes that execute in our
-  // origin (always rejected, below), and the OS routing the authorization
-  // code + state to whichever installed app claims an arbitrary custom
-  // scheme. For the latter we hold the navigation to the redirect the
-  // backend registered for THIS auth request (the challenge's
-  // redirect_uri): the server only ever appends code/state query params
-  // to the registered URI, so scheme, authority, and path must match
-  // exactly. No per-client scheme list lives in the frontend — new native
-  // clients need only their backend registration.
   const parseTarget = () => {
     try {
       return new URL(redirectUrl, globalThis.location.origin)
@@ -212,12 +208,8 @@ export async function submitOAuthConsentDecision({
       )
     }
   } else if (target.protocol !== 'http:' && target.protocol !== 'https:') {
-    // Challenges that don't surface redirect_uri can't be bound; hold the
-    // pre-existing http(s)-only line for them.
     throw new Error('OAuth consent redirect_url has an unsafe scheme')
   }
 
-  // Navigate the parsed URL, not the raw string, so the value validated
-  // above is byte-for-byte the value the browser receives.
   globalThis.location.href = target.href
 }

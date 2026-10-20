@@ -39,7 +39,10 @@
         </div>
       </header>
 
-      <section class="flex flex-col gap-2">
+      <p v-if="isAccountGrant" class="m-0 text-sm text-foreground">
+        {{ t('oauth.consent.accountAccess') }}
+      </p>
+      <section v-else class="flex flex-col gap-2">
         <p class="m-0 text-sm font-medium">
           {{ t('oauth.consent.workspaceLabel') }}
         </p>
@@ -145,7 +148,9 @@
           size="lg"
           class="w-full bg-ink-500 hover:bg-ink-400"
           :loading="submitting === 'allow'"
-          :disabled="isSubmitting || !selectedWorkspaceIsValid"
+          :disabled="
+            isSubmitting || (!isAccountGrant && !selectedWorkspaceIsValid)
+          "
           @click="submit('allow')"
         >
           {{ t('oauth.consent.allow') }}
@@ -219,6 +224,7 @@ const selectedWorkspaceId = ref<string | undefined>(
 const errorMessage = ref('')
 const submitting = ref<'allow' | 'deny' | null>(null)
 const isSubmitting = computed(() => submitting.value !== null)
+const isAccountGrant = computed(() => challenge.value?.grant_mode === 'account')
 
 const resourceName = computed(
   () =>
@@ -288,10 +294,16 @@ function forbiddenMessage(code: string | undefined): string {
 
 async function submit(decision: 'allow' | 'deny') {
   if (!challenge.value) return
-  if (decision === 'allow' && !selectedWorkspaceIsValid.value) return
-  const workspaceId =
-    selectedWorkspaceId.value ?? challenge.value.workspaces[0]?.id
-  if (!workspaceId) {
+  if (
+    decision === 'allow' &&
+    !isAccountGrant.value &&
+    !selectedWorkspaceIsValid.value
+  )
+    return
+  const workspaceId = isAccountGrant.value
+    ? undefined
+    : (selectedWorkspaceId.value ?? challenge.value.workspaces[0]?.id)
+  if (!isAccountGrant.value && !workspaceId) {
     errorMessage.value = t('oauth.consent.genericError')
     return
   }

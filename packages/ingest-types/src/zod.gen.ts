@@ -1522,11 +1522,12 @@ export const zPaymentPortalRequest = z.object({
  * RFC 6749 §5.1 successful token response.
  */
 export const zOAuthTokenResponse = z.object({
+  grant_mode: z.enum(['workspace', 'account']).optional(),
   access_token: z.string(),
+  token_type: z.enum(['Bearer']),
   expires_in: z.int(),
   refresh_token: z.string(),
-  scope: z.string(),
-  token_type: z.enum(['Bearer'])
+  scope: z.string()
 })
 
 /**
@@ -1637,12 +1638,13 @@ export const zOAuthConsentChallengeWorkspace = z.object({
  *
  */
 export const zOAuthConsentChallenge = z.object({
+  grant_mode: z.enum(['workspace', 'account']).optional(),
+  oauth_request_id: z.uuid(),
+  csrf_token: z.string(),
   client_display_name: z.string(),
   client_provenance: z.enum(['first_party', 'dynamic']),
-  csrf_token: z.string(),
-  oauth_request_id: z.uuid(),
-  redirect_uri: z.url(),
   resource_display_name: z.string(),
+  redirect_uri: z.url(),
   scopes: z.array(z.string()),
   workspaces: z.array(zOAuthConsentChallengeWorkspace)
 })
@@ -1658,16 +1660,17 @@ export const zOAuthAuthorizeRedirectResponse = z.object({
  * OAuth 2.1 authorization-server metadata (RFC 8414).
  */
 export const zOAuthAuthorizationServerMetadata = z.object({
-  authorization_endpoint: z.url(),
-  code_challenge_methods_supported: z.array(z.string()),
-  grant_types_supported: z.array(z.string()),
+  desktop_account_grants_supported: z.boolean().optional(),
   issuer: z.url(),
+  authorization_endpoint: z.url(),
+  token_endpoint: z.url(),
   jwks_uri: z.url(),
   registration_endpoint: z.url().optional(),
   response_types_supported: z.array(z.string()),
-  scopes_supported: z.array(z.string()).optional(),
-  token_endpoint: z.url(),
-  token_endpoint_auth_methods_supported: z.array(z.string())
+  grant_types_supported: z.array(z.string()),
+  code_challenge_methods_supported: z.array(z.string()),
+  token_endpoint_auth_methods_supported: z.array(z.string()),
+  scopes_supported: z.array(z.string()).optional()
 })
 
 /**
@@ -6307,7 +6310,8 @@ export const zGetOAuthAuthorizeQuery = z.object({
   code_challenge: z.string().optional(),
   code_challenge_method: z.string().optional(),
   resource: z.string().optional(),
-  oauth_request_id: z.string().optional()
+  oauth_request_id: z.string().optional(),
+  grant_mode: z.string().optional()
 })
 
 /**
@@ -6317,10 +6321,10 @@ export const zGetOAuthAuthorizeQuery = z.object({
 export const zGetOAuthAuthorizeResponse = zOAuthConsentChallenge
 
 export const zPostOAuthAuthorizeBody = z.object({
+  oauth_request_id: z.uuid(),
   csrf_token: z.string(),
   decision: z.enum(['allow', 'deny']),
-  oauth_request_id: z.uuid(),
-  workspace_id: z.string()
+  workspace_id: z.string().optional()
 })
 
 /**
@@ -6336,14 +6340,15 @@ export const zPostOAuthRegisterBody = zOAuthRegisterRequest
 export const zPostOAuthRegisterResponse = zOAuthRegisterResponse
 
 export const zPostOAuthTokenBody = z.object({
-  client_id: z.string(),
-  client_secret: z.string().optional(),
-  code: z.string().optional(),
-  code_verifier: z.string().optional(),
   grant_type: z.enum(['authorization_code', 'refresh_token']),
+  client_id: z.string(),
+  code: z.string().optional(),
   redirect_uri: z.string().optional(),
+  code_verifier: z.string().optional(),
   refresh_token: z.string().optional(),
-  scope: z.string().optional()
+  workspace_id: z.string().optional(),
+  scope: z.string().optional(),
+  client_secret: z.string().optional()
 })
 
 /**

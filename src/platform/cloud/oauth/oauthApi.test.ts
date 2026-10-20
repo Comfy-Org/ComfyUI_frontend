@@ -376,3 +376,40 @@ describe('submitOAuthConsentDecision', () => {
     })
   })
 })
+
+describe('account grant contract', () => {
+  it('preserves the server-approved account mode', async () => {
+    const account = { ...validChallenge, grant_mode: 'account' }
+    vi.mocked(fetch).mockResolvedValue(okResponse(account))
+    expect(await fetchOAuthConsentChallenge('request')).toEqual(account)
+  })
+
+  it('rejects an unknown grant mode', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      okResponse({ ...validChallenge, grant_mode: 'everything' })
+    )
+    await expect(fetchOAuthConsentChallenge('request')).rejects.toThrow(
+      'OAuth consent challenge is invalid'
+    )
+  })
+
+  it('omits the workspace from an account consent submission', async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      okResponse({ redirect_url: 'javascript:invalid' })
+    )
+    await expect(
+      submitOAuthConsentDecision({
+        oauthRequestId: 'request',
+        csrfToken: 'csrf',
+        decision: 'allow'
+      })
+    ).rejects.toThrow('OAuth consent redirect_url has an unsafe scheme')
+    expect(JSON.parse(String(vi.mocked(fetch).mock.calls[0][1]?.body))).toEqual(
+      {
+        oauth_request_id: 'request',
+        csrf_token: 'csrf',
+        decision: 'allow'
+      }
+    )
+  })
+})

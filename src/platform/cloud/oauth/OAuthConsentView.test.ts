@@ -38,6 +38,7 @@ const i18n = createI18n({
           title: '{client} wants access',
           subtitle: 'Sign in to {resource} to continue',
           workspaceLabel: 'Your Workspaces',
+          accountAccess: 'Access workspaces you belong to now or join later.',
           detailsHeader: 'Details',
           permissionsHeader: 'Permissions',
           redirectNotice: "You'll be redirected to",
@@ -281,4 +282,30 @@ describe('OAuthConsentView', () => {
       ).toBeVisible()
     })
   })
+})
+
+describe('account consent', () => {
+  it.for(['allow', 'deny'] as const)(
+    'submits %s without a workspace selection',
+    async (decision) => {
+      mockSubmitOAuthConsentDecision.mockResolvedValue(undefined)
+      renderConsent({ grant_mode: 'account' })
+      expect(
+        screen.getByText('Access workspaces you belong to now or join later.')
+      ).toBeVisible()
+      expect(screen.queryByRole('radiogroup')).not.toBeInTheDocument()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: decision === 'allow' ? 'Continue' : 'Cancel'
+        })
+      )
+      expect(mockSubmitOAuthConsentDecision).toHaveBeenCalledWith({
+        oauthRequestId: challenge.oauth_request_id,
+        csrfToken: challenge.csrf_token,
+        decision,
+        workspaceId: undefined,
+        expectedRedirectUri: challenge.redirect_uri
+      })
+    }
+  )
 })

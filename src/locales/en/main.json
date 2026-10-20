@@ -2677,6 +2677,7 @@
       "title": "{client} wants access",
       "subtitle": "Sign in to {resource} to continue",
       "resourceFallback": "this app",
+      "accountAccess": "Access workspaces you belong to now or join later.",
       "workspaceLabel": "Your Workspaces",
       "detailsHeader": "Details",
       "permissionsHeader": "Permissions",

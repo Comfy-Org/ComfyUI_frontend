@@ -2379,9 +2379,14 @@ export type PaymentPortalRequest = {
  */
 export type OAuthTokenResponse = {
   /**
+   * Server-approved authority of the grant. Absence means workspace. Access tokens always belong to one workspace.
+   */
+  grant_mode?: 'workspace' | 'account'
+  /**
    * Resource-bound Cloud JWT (audience matches the protected resource).
    */
   access_token: string
+  token_type: 'Bearer'
   /**
    * Access token lifetime in seconds.
    */
@@ -2394,7 +2399,6 @@ export type OAuthTokenResponse = {
    * Space-delimited scopes granted with this token.
    */
   scope: string
-  token_type: 'Bearer'
 }
 
 /**
@@ -2572,6 +2576,18 @@ export type OAuthConsentChallengeWorkspace = {
  */
 export type OAuthConsentChallenge = {
   /**
+   * Server-approved authority of the grant. Absence means workspace. Access tokens always belong to one workspace.
+   */
+  grant_mode?: 'workspace' | 'account'
+  /**
+   * Opaque server-side identifier for the authorization-request row. Carried back unchanged in the consent submission.
+   */
+  oauth_request_id: string
+  /**
+   * Per-row CSRF token bound to this authorization request (not to the session). Must be echoed back on POST.
+   */
+  csrf_token: string
+  /**
    * Human-readable name of the OAuth client requesting authorization, from oauth_clients.display_name.
    */
   client_display_name: string
@@ -2587,13 +2603,9 @@ export type OAuthConsentChallenge = {
    */
   client_provenance: 'first_party' | 'dynamic'
   /**
-   * Per-row CSRF token bound to this authorization request (not to the session). Must be echoed back on POST.
+   * Human-readable name of the protected resource, from oauth_resources.display_name.
    */
-  csrf_token: string
-  /**
-   * Opaque server-side identifier for the authorization-request row. Carried back unchanged in the consent submission.
-   */
-  oauth_request_id: string
+  resource_display_name: string
   /**
    * The exact redirect URI this authorization request was validated
    * against at GET time (oauth_authorization_requests.redirect_uri,
@@ -2604,10 +2616,6 @@ export type OAuthConsentChallenge = {
    *
    */
   redirect_uri: string
-  /**
-   * Human-readable name of the protected resource, from oauth_resources.display_name.
-   */
-  resource_display_name: string
   /**
    * Scopes the client is requesting for this resource. The frontend should present these for the user to approve.
    */
@@ -2632,10 +2640,13 @@ export type OAuthAuthorizeRedirectResponse = {
  * OAuth 2.1 authorization-server metadata (RFC 8414).
  */
 export type OAuthAuthorizationServerMetadata = {
-  authorization_endpoint: string
-  code_challenge_methods_supported: Array<string>
-  grant_types_supported: Array<string>
+  /**
+   * Whether new comfy-desktop authorizations for the comfy-cloud resource can request grant_mode=account. Does not prove the identity of a public client. Existing account grants remain usable when false.
+   */
+  desktop_account_grants_supported?: boolean
   issuer: string
+  authorization_endpoint: string
+  token_endpoint: string
   jwks_uri: string
   /**
    * RFC 7591 §3.1 Dynamic Client Registration endpoint. Advertised so MCP-spec-compliant clients can auto-discover and self-register without operator involvement. Present only when DCR is enabled.
@@ -2643,9 +2654,10 @@ export type OAuthAuthorizationServerMetadata = {
    */
   registration_endpoint?: string
   response_types_supported: Array<string>
-  scopes_supported?: Array<string>
-  token_endpoint: string
+  grant_types_supported: Array<string>
+  code_challenge_methods_supported: Array<string>
   token_endpoint_auth_methods_supported: Array<string>
+  scopes_supported?: Array<string>
 }
 
 /**
@@ -17769,6 +17781,10 @@ export type GetOAuthAuthorizeData = {
     code_challenge_method?: string
     resource?: string
     oauth_request_id?: string
+    /**
+     * Account mode requires the enabled Desktop policy and explicit account consent. Omit for a workspace grant. Unsupported account requests return invalid_request.
+     */
+    grant_mode?: string
   }
   url: '/oauth/authorize'
 }
@@ -17800,10 +17816,13 @@ export type GetOAuthAuthorizeResponse =
 
 export type PostOAuthAuthorizeData = {
   body: {
+    oauth_request_id: string
     csrf_token: string
     decision: 'allow' | 'deny'
-    oauth_request_id: string
-    workspace_id: string
+    /**
+     * Required for workspace consent. Must be absent for account consent.
+     */
+    workspace_id?: string
   }
   path?: never
   query?: never
@@ -17876,14 +17895,18 @@ export type PostOAuthRegisterResponse =
 
 export type PostOAuthTokenData = {
   body: {
-    client_id: string
-    client_secret?: string
-    code?: string
-    code_verifier?: string
     grant_type: 'authorization_code' | 'refresh_token'
+    client_id: string
+    code?: string
     redirect_uri?: string
+    code_verifier?: string
     refresh_token?: string
+    /**
+     * Target workspace for an account grant. Omit on the code exchange to select an accessible default. Required on account refresh. Legacy grants only allow their original workspace.
+     */
+    workspace_id?: string
     scope?: string
+    client_secret?: string
   }
   path?: never
   query?: never
