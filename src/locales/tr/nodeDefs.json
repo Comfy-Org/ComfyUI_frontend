@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "Tarifler:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Önerilen) veya t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL veya Music3 Qwen/RVQ",
+    "description": "Tarifler:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226 belirteç dolgusu)\ncosmos: eski t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Önerilir) veya t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL veya Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "CLIP Yükle",
     "inputs": {
       "clip_name": {
@@ -2953,6 +2953,24 @@
       },
       "model_creativity": {
         "name": "yaratıcılık"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "Bir videoyu, kaynağa sadık kalan yüksek doğruluklu bir büyütücü olan Clarity AI Crystal Video Upscaler ile büyütün. Çıktı, kare başına 9 megapiksel ile sınırlıdır (örneğin 4000x2250) ve uzun klipler daha düşük çözünürlükte döner. 30 fps üzerindeki klipler 2x, 60 fps üzerindekiler 3x ücrete tabidir ve bu şekilde devam eder.",
+    "display_name": "Clarity AI Crystal Video Büyütme",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -5701,7 +5719,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Metni konuşmaya dönüştürür. Metindeki duygu ipuçlarını ([happy], [whispering] s2.1-pro'da; (happy) s1'de) ve birden çok bağlı sesle {'@'}Voice1/{'@'}Voice2 etiketleri aracılığıyla çok konuşmacılı diyaloğu destekler.",
+    "description": "Metni konuşmaya dönüştürür. Metindeki duygu ipuçlarını (s2.1-pro'da [happy], [whispering]; s1'de (happy)), drama-3'te sade dilde [directions] ve `<whisper>...</whisper>` sözcük etiketlerini, ayrıca birden çok bağlı sesle {'@'}Voice1/{'@'}Voice2 etiketleri aracılığıyla çok konuşmacılı diyaloğu destekler.",
     "display_name": "Fish Audio Metinden Konuşmaya",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5911,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "Bir istemden FLUX 3 ile bir görsel üretir veya en fazla 10 referans görseli düzenler ve birleştirir. İstem içinde referanslara görsel 1, görsel 2 ve benzeri olarak başvurun.",
-    "display_name": "Flux 3 Görsel",
+    "description": "Bir istemden FLUX 3 Image ile görsel oluşturur veya en fazla 10 referans görseli düzenler ve birleştirir. İstemde referanslara görsel 1, görsel 2 vb. şeklinde başvurun.",
+    "display_name": "FLUX 3 Görsel",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5988,6 +6006,26 @@
       }
     }
   },
+  "Flux3LayoutPrompt": {
+    "description": "Create Bounding Boxes düğümündeki kutuları, düzen tablosu olarak bir FLUX 3 Image istemine ekler.",
+    "display_name": "FLUX 3 Görsel Düzen İstemi",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "Create Bounding Boxes düğümünden gelen istem öğeleri. Renk paletleri kullanılmaz; renkleri açıklamada belirtin."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Sözcükleri kutuya bağlamak için N kutusuna <obj_N> olarak başvurun."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "FLUX 3 üzerinden bir metin promptundan senkronize sesli video üretir.",
     "display_name": "Flux 3 Metinden Videoya",
@@ -6067,7 +6105,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "Devam ettirilecek klip."
+        "tooltip": "Devam ettirilecek klip. Alanı 3840x2160 pikseli aşan klipler sığacak şekilde küçültülür."
       }
     },
     "outputs": {
@@ -7223,6 +7261,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "Bir ses latentinin uzunluğunu, ses kanalı sayısını ve toplu iş boyutunu döndürür.",
+    "display_name": "Ses Latent Boyutunu Al",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "İncelenecek ses veya ses/video latent'i."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "length",
+        "tooltip": "Ses latent uzunluğu."
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "Ses kanallarının sayısı. Ses kanalı boyutu olmayan latent'lerin bir kanalı vardır."
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "Toplu işteki latent sayısı."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "Bir LoRA yüklü modelin safetensors meta verilerinden IC-LoRA parametrelerini çıkarır ve LTXVAddGuide için çıktılar (örn. reference_downscale_factor).",
     "display_name": "IC-LoRA Parametrelerini Al",
@@ -7275,6 +7337,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "Bir görsel veya video latentinin genişliğini, yüksekliğini, kare sayısını ve toplu iş boyutunu döndürür.",
+    "display_name": "Görsel/Video Latent Boyutunu Al",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "İncelenecek görsel veya video latent'i."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "Latent genişliği."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "Latent yüksekliği."
+      },
+      "2": {
+        "name": "frames",
+        "tooltip": "Latent kare sayısı. Görsel latent'lerin bir karesi vardır."
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "Toplu işteki latent sayısı."
       }
     }
   },
@@ -8046,6 +8136,67 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "description": "HeyGen Voice 1.0 ile tek bir konuşmacının kaydından sesi klonlayın. voice_id değerini HeyGen Voice 1.0 Text to Speech'e veya HeyGen Avatar Video ve HeyGen Talking Photo'daki custom_voice_id alanına bağlayın.",
+    "display_name": "HeyGen Voice 1.0 Anında Klonlama",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Tek bir konuşmacının kaydı. En az 10 saniye net konuşma kullanın; yalnızca ilk 3 dakika kullanılır."
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "language": {
+        "name": "dil",
+        "tooltip": "Kayıtta konuşulan dil."
+      },
+      "remove_background_noise": {
+        "name": "arka_plan_gürültüsünü_kaldır"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Kaydı yeniden klonlamak için seed'i değiştirin; her klon biraz farklı bir sestir."
+      },
+      "similarity": {
+        "name": "benzerlik",
+        "tooltip": "Sesin kaydı ne kadar yakından takip ettiği."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "HeyGen Voice 1.0 Instant Clone ile klonlanmış bir sesle metni seslendirin.",
+    "display_name": "HeyGen Voice 1.0 Metinden Konuşmaya",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "heygen-voice-1-turbo daha hızlıdır ve maliyeti yarısı kadardır."
+      },
+      "model_expressiveness_boost": {
+        "name": "ifade_gücünü_artır"
+      },
+      "model_language": {
+        "name": "dil"
+      },
+      "model_text": {
+        "name": "metin"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "Örneklemenin son kısmında model çıktısını birden fazla kaydırılmış yama-ızgara pozisyonunda ortalar. Dikişleri yok eder.",
     "display_name": "HiDream-O1 Yama Dikiş Yumuşatma",
@@ -8106,6 +8257,33 @@
       },
       "1": {
         "name": "negatif",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Hareketini, kamera hareketini ve zamanlamasını korurken bir videoyu referans görüntülerden yeni karakterler, mekânlar veya stillerle yeniden oluşturun.",
+    "display_name": "Higgsfield Genjutsu Hareket Aktarımı",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Kullanılacak model."
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9441,28 @@
       },
       "rotation": {
         "name": "döndürme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "sRGB parlaklığını Rec.2020 HLG HDR'ye genişletin. Sonucu HDR renk uzayı seçiliyken kaydedin. Alfa korunur.",
+    "display_name": "SDR'yi HDR'ye Dönüştür",
+    "inputs": {
+      "algorithm": {
+        "name": "algoritma",
+        "tooltip": "Kalibre edilmiş monotonik bir log-kazanç eğrisiyle harmanlanmış, Lottes tarzı rasyonel genişletme."
+      },
+      "algorithm_target_luminance": {
+        "name": "hedef_parlaklık"
+      },
+      "image": {
+        "name": "görüntü",
+        "tooltip": "sRGB'deki SDR görüntü(ler)."
       }
     },
     "outputs": {
@@ -10563,6 +10763,41 @@
     "outputs": {
       "0": {
         "name": "stil_referansı",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Krea 3 ile görüntüleri düzenleyin veya hiçbir görüntü bağlı değilse metinden yeni bir görüntü oluşturun.",
+    "display_name": "Krea 3 Görüntü",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra kontrol"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_precise_edit": {
+        "name": "hassas_düzenleme"
+      },
+      "model_prompt": {
+        "name": "istem"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_thinking_mode": {
+        "name": "düşünme_modu"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13397,83 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "LoRA yükleyiciyle yüklenen bir MOSS-Image renk/derinlik kontrol adaptörü için renk bölgesi ve derinlik haritalarını ekler.",
+    "display_name": "MOSS-Image Renk/Derinlik Kontrolü",
+    "inputs": {
+      "color_map": {
+        "name": "renk_haritası",
+        "tooltip": "Çıktı boyutunda, bölge başına tek düz renk. Renkler yalnızca bölge kimlikleridir."
+      },
+      "depth_map": {
+        "name": "derinlik_haritası",
+        "tooltip": "Çıktı boyutunda derinlik haritası; yakın alan beyazdır."
+      },
+      "end_percent": {
+        "name": "bitiş_yüzdesi",
+        "tooltip": "Kontrolün sona erdiği örnekleme yüzdesi. Erken bitirmek düzeni ve derinliği korurken, kalan adımlar şekilleri gevşetir."
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "start_percent": {
+        "name": "başlangıç_yüzdesi",
+        "tooltip": "Kontrolün başladığı örnekleme yüzdesi."
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Haritaların görüntü belirteçlerine katkısını ölçeklendirir. 0.0, harita olmamasıyla aynıdır; 1.0, eğitilmiş güçtür."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "İstemden ve Sınırlayıcı Kutuları Oluştur düğümündeki kutulardan bir MOSS-Image düzen istemi oluşturur.",
+    "display_name": "MOSS-Image Düzen İstemi",
+    "inputs": {
+      "character_boxes": {
+        "name": "karakter_kutuları",
+        "tooltip": "Sınırlayıcı Kutuları Oluştur önizlemesinde etiketlendiği şekilde, nesneler yerine karakter olarak etiketlenecek nesne kutularının numaraları; ör. \"1, 3\"."
+      },
+      "element": {
+        "name": "öğe",
+        "tooltip": "Sınırlayıcı Kutuları Oluştur düğümündeki istem öğeleri. Açıklama kutunun başlığıdır; metin kutuları ayrıca metinlerini de oluşturur."
+      },
+      "height": {
+        "name": "yükseklik",
+        "tooltip": "Oluşturulan görüntünün yüksekliği; kutular görüntünün piksellerine yerleştirilir."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Tüm görüntünün açıklaması."
+      },
+      "width": {
+        "name": "genişlik",
+        "tooltip": "Oluşturulan görüntünün genişliği; kutular görüntünün piksellerine yerleştirilir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "istem",
         "tooltip": null
       }
     }
@@ -18889,7 +19201,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin çizimden önce ne kadar muhakeme yapacağını belirler. Daha yüksek seviyeler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme harcadığı. Daha yüksek düzeyler ayrıntıyı artırır ve daha fazla belirteç maliyetine yol açar."
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +19289,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Modelin çizimden önce ne kadar muhakeme yapacağını belirler. Daha yüksek seviyeler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme harcadığı. Daha yüksek düzeyler ayrıntıyı artırır ve daha fazla belirteç maliyetine yol açar."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19836,6 +20148,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "Referans görüntülerini kodlar ve latent'lerini düzenleme modelleri için pozitif ve isteğe bağlı negatif koşullandırmaya ekler.",
+    "display_name": "Referans Çoklu Latent'i Ayarla",
+    "inputs": {
+      "images": {
+        "name": "görüntüler"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Hiçbir VAE bağlanmadığında referans görüntüler yok sayılır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": "Negatif koşullandırma bağlı olmadığında pozitif çıktıyı döndürür."
+      },
+      "2": {
+        "name": "empty_latent",
+        "tooltip": "0.0 ile çarpılmış ilk referans latent veya seçili çözünürlükte kare boş bir latent."
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "Bu düğüm, tını için referans sesi ayarlar (ace step 1.5 için)",
     "display_name": "ReferenceTimbreAudio",
@@ -19950,7 +20298,7 @@
     "inputs": {
       "band": {
         "name": "band",
-        "tooltip": "Voxel birimleri cinsinden dar bant genişliği. UDF modunda yüzeyi de kaydırır."
+        "tooltip": "Voksel birimlerinde dar bant genişliği. udf modunda yüzeyi de ofsetler; solid modunda kapatma yarıçapıdır: kıvrımlar bu boyutta yuvarlatılır ve boşluklar köprülenir, yüzey yarım voksel dışarıda konumlanır."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19977,7 +20325,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: dağınık/manifold olmayan girişe karşı dayanıklıdır. sdf: QEF (Quadratic Error Function) keskin özellik kurtarmalı temiz tek yüzeydir, ancak tutarlı sarım gerektirir."
+        "tooltip": "udf: karmaşık/manifold olmayan girdilere karşı dayanıklıdır. sdf: QEF (Kuadratik Hata Fonksiyonu) ile keskin özellikleri geri kazanan temiz tek bir yüzey sağlar, ancak tutarlı sarım gerektirir. solid: karmaşık girdiden tek bir su geçirmez katı oluşturur: genel bir iç/dış grafik kesimi (CelloCut) çift kabukları kaldırır ve küçük delikleri kapatır. Daha yavaştır."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"

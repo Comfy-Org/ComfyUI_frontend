@@ -2413,7 +2413,7 @@
     }
   },
   "CLIPLoader": {
-    "description": "권장 설정:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226토큰 패딩)\ncosmos: 이전 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (권장) 또는 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 또는 Music3 Qwen/RVQ",
+    "description": "권장 구성:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226토큰 패딩)\ncosmos: 이전 t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (권장) 또는 t5\nomnigen2: qwen vl 2.5 3B\njoyimage: qwen3-vl 8B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm\nminimax: MiniMax H3 Qwen3-VL 또는 Music3 Qwen/RVQ\nflux3: qwen3-vl 4B",
     "display_name": "CLIP 로드",
     "inputs": {
       "clip_name": {
@@ -2953,6 +2953,24 @@
       },
       "model_creativity": {
         "name": "creativity"
+      },
+      "model_scale_factor": {
+        "name": "scale_factor"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ClarityCrystalVideoUpscaleNode": {
+    "description": "원본에 충실한 고화질 업스케일러인 Clarity AI의 Crystal Video Upscaler로 비디오를 업스케일합니다. 출력은 프레임당 9메가픽셀(예: 4000x2250)로 제한되며, 긴 클립은 더 낮은 해상도로 반환됩니다. 30fps를 초과하는 클립은 비용이 2배, 60fps를 초과하면 3배가 되는 식입니다.",
+    "display_name": "Clarity AI Crystal 비디오 업스케일",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "사용할 모델입니다."
       },
       "model_scale_factor": {
         "name": "scale_factor"
@@ -5701,7 +5719,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "텍스트를 음성으로 변환합니다. 텍스트의 감정 단서(s2.1-pro에서는 [happy], [whispering], s1에서는 (happy))와 여러 음성이 연결된 경우 {'@'}Voice1/{'@'}Voice2 태그를 통한 다중 화자 대화를 지원합니다.",
+    "description": "텍스트를 음성으로 변환합니다. 텍스트 내 감정 큐(s2.1-pro의 [happy], [whispering], s1의 (happy)), drama-3의 일반 언어 [directions] 및 `<whisper>...</whisper>` 단어 태그, 그리고 여러 음성이 연결된 {'@'}Voice1/{'@'}Voice2 태그를 통한 다중 화자 대화를 지원합니다.",
     "display_name": "Fish Audio 텍스트 음성 변환",
     "inputs": {
       "control_after_generate": {
@@ -5893,8 +5911,8 @@
     }
   },
   "Flux3ImageNode": {
-    "description": "프롬프트를 사용해 FLUX 3로 이미지를 생성하거나, 최대 10개의 참조 이미지를 편집하고 결합합니다. 프롬프트에서 참조 이미지는 이미지 1, 이미지 2 등의 방식으로 지칭하세요.",
-    "display_name": "Flux 3 이미지",
+    "description": "프롬프트로 FLUX 3 이미지를 생성하거나, 최대 10개의 참조 이미지를 편집하고 결합합니다. 프롬프트에서 참조 이미지는 이미지 1, 이미지 2 등의 방식으로 지칭하세요.",
+    "display_name": "FLUX 3 이미지",
     "inputs": {
       "aspect_ratio": {
         "name": "aspect_ratio",
@@ -5988,6 +6006,26 @@
       }
     }
   },
+  "Flux3LayoutPrompt": {
+    "description": "Create Bounding Boxes의 상자를 레이아웃 테이블로 FLUX 3 이미지 프롬프트에 추가합니다.",
+    "display_name": "FLUX 3 이미지 레이아웃 프롬프트",
+    "inputs": {
+      "element": {
+        "name": "element",
+        "tooltip": "Create Bounding Boxes 노드의 프롬프트 요소입니다. 색상 팔레트는 사용되지 않으므로 색상은 설명에 기술하세요."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "프롬프트 텍스트입니다. 단어를 상자와 연결하려면 상자 N을 <obj_N>으로 참조하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt",
+        "tooltip": null
+      }
+    }
+  },
   "Flux3TextToVideoNode": {
     "description": "FLUX 3를 통해 텍스트 프롬프트로부터 동기화된 오디오가 포함된 비디오를 생성합니다.",
     "display_name": "Flux 3 텍스트에서 비디오로",
@@ -6067,7 +6105,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "이어갈 clip입니다."
+        "tooltip": "계속 생성할 클립입니다. 면적이 3840x2160픽셀을 초과하는 클립은 맞추기 위해 축소됩니다."
       }
     },
     "outputs": {
@@ -7223,6 +7261,30 @@
       }
     }
   },
+  "GetAudioLatentSize": {
+    "description": "오디오 잠재 공간의 길이, 오디오 채널 수 및 배치 크기를 반환합니다.",
+    "display_name": "오디오 잠재 공간 크기 가져오기",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "검사할 오디오 또는 오디오/비디오 잠재 공간입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "length",
+        "tooltip": "오디오 잠재 공간 길이입니다."
+      },
+      "1": {
+        "name": "audio_channels",
+        "tooltip": "오디오 채널 수입니다. 오디오 채널 차원이 없는 잠재 공간에는 채널이 하나 있습니다."
+      },
+      "2": {
+        "name": "batch_size",
+        "tooltip": "배치의 잠재 공간 수입니다."
+      }
+    }
+  },
   "GetICLoRAParameters": {
     "description": "LoRA가 로드된 모델의 safetensors 메타데이터에서 IC-LoRA 파라미터를 추출하여 LTXVAddGuide(예: reference_downscale_factor)에 출력합니다.",
     "display_name": "IC-LoRA 파라미터 가져오기",
@@ -7275,6 +7337,34 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "GetLatentSize": {
+    "description": "이미지 또는 비디오 잠재 공간의 너비, 높이, 프레임 수 및 배치 크기를 반환합니다.",
+    "display_name": "이미지/비디오 잠재 공간 크기 가져오기",
+    "inputs": {
+      "latent": {
+        "name": "latent",
+        "tooltip": "검사할 이미지 또는 비디오 잠재 공간입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "width",
+        "tooltip": "잠재 공간 너비입니다."
+      },
+      "1": {
+        "name": "height",
+        "tooltip": "잠재 공간 높이입니다."
+      },
+      "2": {
+        "name": "frames",
+        "tooltip": "잠재 공간 프레임 수입니다. 이미지 잠재 공간에는 프레임이 하나 있습니다."
+      },
+      "3": {
+        "name": "batch_size",
+        "tooltip": "배치의 잠재 공간 수입니다."
       }
     }
   },
@@ -8046,6 +8136,67 @@
       }
     }
   },
+  "HeyGenVoiceCloneNode": {
+    "description": "HeyGen Voice 1.0으로 한 명의 화자가 녹음된 음성에서 목소리를 복제합니다. voice_id를 HeyGen Voice 1.0 Text to Speech에 연결하거나 HeyGen Avatar Video 및 HeyGen Talking Photo의 custom_voice_id에 연결하세요.",
+    "display_name": "HeyGen Voice 1.0 즉시 복제",
+    "inputs": {
+      "audio": {
+        "name": "오디오",
+        "tooltip": "한 명의 화자가 녹음된 음성입니다. 최소 10초 이상의 선명한 음성을 사용하세요. 처음 3분만 사용됩니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "language": {
+        "name": "언어",
+        "tooltip": "녹음에서 사용된 언어입니다."
+      },
+      "remove_background_noise": {
+        "name": "remove_background_noise"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "녹음을 다시 복제하려면 시드를 변경하세요. 각 복제본은 약간씩 다른 목소리가 됩니다."
+      },
+      "similarity": {
+        "name": "유사도",
+        "tooltip": "목소리가 녹음을 얼마나 가깝게 따를지 설정합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "voice_id",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenVoiceTextToSpeechNode": {
+    "description": "HeyGen Voice 1.0 Instant Clone으로 복제한 목소리로 텍스트를 말합니다.",
+    "display_name": "HeyGen Voice 1.0 Text to Speech",
+    "inputs": {
+      "model": {
+        "name": "모델",
+        "tooltip": "heygen-voice-1-turbo는 더 빠르고 비용이 절반입니다."
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "언어"
+      },
+      "model_text": {
+        "name": "텍스트"
+      },
+      "model_voice_id": {
+        "name": "voice_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HiDreamO1PatchSeamSmoothing": {
     "description": "샘플링 후반부에 여러 번 이동된 패치 그리드 위치에서 모델 출력을 평균화합니다. 이음새를 제거합니다.",
     "display_name": "HiDream-O1 Patch Seam Smoothing",
@@ -8106,6 +8257,33 @@
       },
       "1": {
         "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
+  "HiggsfieldMotionTransferNode": {
+    "description": "움직임, 카메라 이동 및 타이밍은 유지하면서 참조 이미지의 새 캐릭터, 장소 또는 스타일로 비디오를 재구성합니다.",
+    "display_name": "Higgsfield Genjutsu 모션 전송",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9263,6 +9441,28 @@
       },
       "rotation": {
         "name": "회전"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "sRGB 밝기를 Rec.2020 HLG HDR로 확장합니다. HDR 색 공간을 선택한 상태로 결과를 저장하세요. 알파 채널은 유지됩니다.",
+    "display_name": "SDR을 HDR로 변환",
+    "inputs": {
+      "algorithm": {
+        "name": "알고리즘",
+        "tooltip": "보정된 단조 로그 게인 곡선과 혼합한 Lottes 스타일 유리함수 확장입니다."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "sRGB의 SDR 이미지입니다."
       }
     },
     "outputs": {
@@ -10563,6 +10763,41 @@
     "outputs": {
       "0": {
         "name": "스타일 참조",
+        "tooltip": null
+      }
+    }
+  },
+  "Krea3ImageNode": {
+    "description": "Krea 3으로 이미지를 편집하거나, 이미지가 연결되지 않은 경우 텍스트로 새 이미지를 생성합니다.",
+    "display_name": "Krea 3 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_precise_edit": {
+        "name": "정밀 편집"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_thinking_mode": {
+        "name": "사고 모드"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13162,6 +13397,83 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageControl": {
+    "description": "LoRA 로더로 로드한 MOSS-Image 색상/깊이 제어 어댑터에 색상 영역 및 깊이 맵을 추가합니다.",
+    "display_name": "MOSS-Image 색상/깊이 제어",
+    "inputs": {
+      "color_map": {
+        "name": "색상 맵",
+        "tooltip": "출력 크기에서 영역당 하나의 단색입니다. 색상은 영역 ID일 뿐입니다."
+      },
+      "depth_map": {
+        "name": "깊이 맵",
+        "tooltip": "출력 크기의 깊이 맵이며, 가까운 부분은 흰색입니다."
+      },
+      "end_percent": {
+        "name": "종료 비율",
+        "tooltip": "제어가 끝나는 샘플링 비율입니다. 일찍 종료하면 레이아웃과 깊이는 유지하면서 나머지 단계에서 형태가 느슨해집니다."
+      },
+      "negative": {
+        "name": "부정"
+      },
+      "positive": {
+        "name": "긍정"
+      },
+      "start_percent": {
+        "name": "시작 비율",
+        "tooltip": "제어가 시작되는 샘플링 비율입니다."
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "맵이 이미지 토큰에 기여하는 정도를 조절합니다. 0.0은 맵이 없는 것과 같고, 1.0은 학습된 강도입니다."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "긍정",
+        "tooltip": null
+      },
+      "1": {
+        "name": "부정",
+        "tooltip": null
+      }
+    }
+  },
+  "MOSSImageLayoutPrompt": {
+    "description": "프롬프트와 Create Bounding Boxes의 박스를 사용하여 MOSS-Image 레이아웃 프롬프트를 만듭니다.",
+    "display_name": "MOSS-Image 레이아웃 프롬프트",
+    "inputs": {
+      "character_boxes": {
+        "name": "캐릭터 박스",
+        "tooltip": "Create Bounding Boxes 미리보기에서 태그된 대로 객체 대신 캐릭터로 라벨링할 객체 박스의 번호입니다. 예: \"1, 3\"."
+      },
+      "element": {
+        "name": "요소",
+        "tooltip": "Create Bounding Boxes 노드의 프롬프트 요소입니다. 설명은 박스의 캡션이며, 텍스트 박스는 해당 텍스트도 렌더링합니다."
+      },
+      "height": {
+        "name": "높이",
+        "tooltip": "생성된 이미지의 높이입니다. 박스는 해당 이미지의 픽셀에 배치됩니다."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "전체 이미지에 대한 설명입니다."
+      },
+      "width": {
+        "name": "너비",
+        "tooltip": "생성된 이미지의 너비입니다. 박스는 해당 이미지의 픽셀에 배치됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "프롬프트",
         "tooltip": null
       }
     }
@@ -18889,7 +19201,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+        "tooltip": "그리기 전에 모델이 사용하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 향상되지만 더 많은 토큰이 소모됩니다."
       },
       "seed": {
         "name": "seed",
@@ -18977,7 +19289,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+        "tooltip": "그리기 전에 모델이 사용하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 향상되지만 더 많은 토큰이 소모됩니다."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19836,6 +20148,42 @@
       }
     }
   },
+  "ReferenceMultiLatent": {
+    "description": "참조 이미지를 인코딩하고 해당 latent를 편집 모델용 긍정 및 선택적 부정 conditioning에 추가합니다.",
+    "display_name": "참조 멀티 latent 설정",
+    "inputs": {
+      "images": {
+        "name": "이미지"
+      },
+      "negative": {
+        "name": "네거티브"
+      },
+      "positive": {
+        "name": "긍정"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "vae가 연결되지 않으면 참조 이미지가 무시됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "포지티브",
+        "tooltip": null
+      },
+      "1": {
+        "name": "네거티브",
+        "tooltip": "네거티브 conditioning이 연결되지 않은 경우 포지티브 출력을 반환합니다."
+      },
+      "2": {
+        "name": "빈 latent",
+        "tooltip": "첫 번째 참조 latent에 0.0을 곱한 값 또는 선택한 해상도의 정사각형 빈 latent입니다."
+      }
+    }
+  },
   "ReferenceTimbreAudio": {
     "description": "이 노드는 timbre(ace step 1.5용) 기준 오디오를 설정합니다.",
     "display_name": "ReferenceTimbreAudio",
@@ -19950,7 +20298,7 @@
     "inputs": {
       "band": {
         "name": "band",
-        "tooltip": "복셀 단위의 협대역 폭입니다. UDF 모드에서는 표면도 오프셋합니다."
+        "tooltip": "복셀 단위의 좁은 밴드 폭입니다. udf 모드에서는 표면도 오프셋합니다. solid 모드에서는 닫기 반경입니다. 이 크기에서 모서리는 필렛 처리되고 틈은 연결되며, 표면은 반 복셀만큼 바깥쪽에 위치합니다."
       },
       "drop_small_components": {
         "name": "drop_small_components",
@@ -19977,7 +20325,7 @@
       },
       "sign_mode": {
         "name": "sign_mode",
-        "tooltip": "udf: 복잡한/non-manifold 입력에 강합니다. sdf: QEF (Quadratic Error Function)를 사용한 날카로운 특징 복원이 가능한 깔끔한 단일 표면이지만, 일관된 winding이 필요합니다."
+        "tooltip": "udf: 지저분하거나 비매니폴드인 입력에 견고합니다. sdf: QEF(이차 오차 함수)를 사용한 날카로운 특징 복원이 적용된 깔끔한 단일 표면이지만, 일관된 와인딩이 필요합니다. solid: 지저분한 입력에서 하나의 수밀 솔리드를 생성합니다. 전역 내부/외부 그래프 컷(CelloCut)이 이중 셸을 제거하고 작은 구멍을 닫습니다. 더 느립니다."
       },
       "sign_mode_drop_enclosed_components": {
         "name": "drop_enclosed_components"
