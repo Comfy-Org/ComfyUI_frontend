@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { compareBaseline, inspectSource } from './expected-failure-ratchet'
+import { compareBaseline, inspectSource } from './inventory'
 
 describe('expected failure inventory', () => {
   it('ignores test-shaped calls in production source files', () => {

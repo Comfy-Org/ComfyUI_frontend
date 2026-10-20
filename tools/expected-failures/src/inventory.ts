@@ -4,8 +4,6 @@ import path from 'node:path'
 import ts from 'typescript'
 import { z } from 'zod'
 
-import { isMainModule } from '../isMainModule'
-
 type ExpectedFailureKind = 'playwright' | 'vitest'
 
 interface ExpectedFailure {
@@ -315,8 +313,8 @@ async function sourceFiles(root: string): Promise<string[]> {
   return nested.flat()
 }
 
-async function buildInventory(
-  repositoryRoot = process.cwd()
+export async function buildInventory(
+  repositoryRoot: string
 ): Promise<ExpectedFailure[]> {
   const files = (
     await Promise.all(
@@ -389,30 +387,3 @@ export function compareBaseline(
     infrastructure: baseline.length - liveDefects
   }
 }
-
-async function run() {
-  const inventory = await buildInventory()
-  const baselinePath = path.join(
-    process.cwd(),
-    'scripts/cicd/expected-failure-baseline.json'
-  )
-  const { errors, liveDefects, infrastructure } = compareBaseline(
-    inventory,
-    JSON.parse(await readFile(baselinePath, 'utf8')) as unknown
-  )
-
-  if (errors.length === 0) {
-    console.log(
-      `Expected-failure baseline matches: ${liveDefects} live defects, ${infrastructure} infrastructure assertions.`
-    )
-    return
-  }
-
-  for (const error of errors) console.error(error)
-  console.error(
-    'Update scripts/cicd/expected-failure-baseline.json: remove resolved entries and classify each addition as "live-defect" or "infrastructure-assertion".'
-  )
-  process.exitCode = 1
-}
-
-if (isMainModule(import.meta.url)) await run()
