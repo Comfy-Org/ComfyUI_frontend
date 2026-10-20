@@ -25,9 +25,7 @@ export class VueNodeHelpers {
 
   constructor(private page: Page) {
     this.nodes = page.locator('[data-node-id]')
-    this.selectedNodes = page.locator(
-      '[data-node-id].outline-node-component-outline'
-    )
+    this.selectedNodes = page.locator('[data-node-id].outline-foreground')
   }
 
   /**

@@ -1,3 +1,9 @@
+import type {
+  LGraph,
+  LGraphNode,
+  LLink,
+  SerialisedLLinkArray
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { useTelemetry } from '@/platform/telemetry'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
@@ -6,9 +12,8 @@ import { parseLinkId, toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
-import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
+
+import type { LinkId } from '@/types/linkId'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,

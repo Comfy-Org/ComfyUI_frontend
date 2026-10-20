@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": true,
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "noEmitOnError": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo/build.tsbuildinfo",
+    "types": [],
+    "paths": {}
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/__tests__/**", "src/**/*.test.ts"]
+}
