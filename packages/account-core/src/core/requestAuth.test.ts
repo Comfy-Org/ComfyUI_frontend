@@ -285,18 +285,21 @@ describe('createRequestAuthorizer', () => {
       { value: null },
       { value: undefined },
       { value: '' }
-    ])('omits the header when getInstallId yields $value', async ({ value }) => {
-      const authorizeWithId = createRequestAuthorizer({
-        getWorkspaceToken: async () => 'jwt',
-        getInstallId: () => value
-      })
-      const result = await authorizeWithId(SESSION, {
-        target: 'ingest',
-        method: 'POST',
-        workspaceId: 'ws-1'
-      })
-      expect(result.headers).not.toHaveProperty('X-Comfy-Install-Id')
-    })
+    ])(
+      'omits the header when getInstallId yields $value',
+      async ({ value }) => {
+        const authorizeWithId = createRequestAuthorizer({
+          getWorkspaceToken: async () => 'jwt',
+          getInstallId: () => value
+        })
+        const result = await authorizeWithId(SESSION, {
+          target: 'ingest',
+          method: 'POST',
+          workspaceId: 'ws-1'
+        })
+        expect(result.headers).not.toHaveProperty('X-Comfy-Install-Id')
+      }
+    )
 
     it('omits the header when no getInstallId option is provided', async () => {
       const result = await authorize(SESSION, {
