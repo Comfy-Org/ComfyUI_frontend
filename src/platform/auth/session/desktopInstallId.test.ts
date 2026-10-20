@@ -2,11 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { getDesktopInstallId } from '@/platform/auth/session/desktopInstallId'
 
-type MutableWindow = typeof window & {
+const win = window as typeof window & {
   __comfyDesktop2?: { getInstallId?: () => string }
 }
-
-const win = window as MutableWindow
 
 afterEach(() => {
   delete win.__comfyDesktop2
