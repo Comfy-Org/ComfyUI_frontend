@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, assert, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createApp, nextTick, ref } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -357,7 +357,7 @@ describe('useUploadModelWizard', () => {
     const handler = vi
       .mocked(api.addEventListener)
       .mock.calls.find((c) => c[0] === 'asset_download')?.[1]
-    assert.exists(handler)
+    if (typeof handler !== 'function') throw new Error('no listener')
     handler(event)
 
     await nextTick()
@@ -404,7 +404,7 @@ describe('useUploadModelWizard', () => {
       }
     })
 
-    assert.exists(handler)
+    if (typeof handler !== 'function') throw new Error('no listener')
     handler(failEvent)
 
     await nextTick()
@@ -455,7 +455,7 @@ describe('useUploadModelWizard', () => {
     const handler = vi
       .mocked(api.addEventListener)
       .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
-    assert.exists(handler)
+    if (typeof handler !== 'function') throw new Error('no listener')
     handler(
       new CustomEvent('asset_download', {
         detail: {
@@ -531,7 +531,7 @@ describe('useUploadModelWizard', () => {
     const handler = vi
       .mocked(api.addEventListener)
       .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
-    assert.exists(handler)
+    if (typeof handler !== 'function') throw new Error('no listener')
 
     await useAssetDownloadStore().cancelDownload('task-cancelled')
     await nextTick()
@@ -589,13 +589,13 @@ describe('useUploadModelWizard', () => {
       const handler = vi
         .mocked(api.addEventListener)
         .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
-      assert.exists(handler)
+      if (typeof handler !== 'function') throw new Error('no listener')
 
-      function dispatchDownload(
+      const dispatchDownload = (
         detail: Partial<AssetDownloadWsMessage> &
           Pick<AssetDownloadWsMessage, 'status'>
-      ) {
-        handler!(
+      ) =>
+        handler(
           new CustomEvent('asset_download', {
             detail: {
               task_id: taskId,
@@ -608,7 +608,6 @@ describe('useUploadModelWizard', () => {
             }
           })
         )
-      }
 
       dispatchDownload({ status, error })
       await nextTick()

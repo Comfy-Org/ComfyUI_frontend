@@ -27,8 +27,8 @@ export interface TabSwitchLens {
 }
 
 interface CapturedMessages {
-  clientFeatureFlags: unknown
-  serverFeatureFlags: unknown
+  clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
+  serverFeatureFlags: Record<string, unknown> | null
 }
 
 interface PerfFrameState {

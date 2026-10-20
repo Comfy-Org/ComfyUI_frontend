@@ -122,12 +122,14 @@ describe('useWorkflowAutoSave', () => {
 
     const graphChangedCallback = vi.mocked(api.addEventListener).mock
       .calls[0][1]
+    if (typeof graphChangedCallback !== 'function')
+      throw new Error('no listener')
 
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    graphChangedCallback({} as Parameters<typeof graphChangedCallback>[0])
 
     vi.advanceTimersByTime(500)
 
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    graphChangedCallback({} as Parameters<typeof graphChangedCallback>[0])
 
     vi.advanceTimersByTime(1999)
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
@@ -196,7 +198,9 @@ describe('useWorkflowAutoSave', () => {
 
     const graphChangedCallback = vi.mocked(api.addEventListener).mock
       .calls[0][1]
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    if (typeof graphChangedCallback !== 'function')
+      throw new Error('no listener')
+    graphChangedCallback({} as Parameters<typeof graphChangedCallback>[0])
 
     resolveSave!(true)
     await Promise.resolve()
@@ -245,7 +249,9 @@ describe('useWorkflowAutoSave', () => {
 
     const graphChangedCallback = vi.mocked(api.addEventListener).mock
       .calls[0][1]
-    graphChangedCallback?.({} as Parameters<typeof graphChangedCallback>[0])
+    if (typeof graphChangedCallback !== 'function')
+      throw new Error('no listener')
+    graphChangedCallback({} as Parameters<typeof graphChangedCallback>[0])
 
     await vi.runAllTimersAsync()
 

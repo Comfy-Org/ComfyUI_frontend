@@ -83,7 +83,8 @@ export type {
   UserDataFullInfo,
   TerminalSize,
   LogEntry,
-  LogsRawResponse
+  LogsRawResponse,
+  DesktopHostAuthBridge
 }
 export type {
   SidebarTabExtension,
@@ -229,17 +230,6 @@ export type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 export type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
 export type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 
-interface CapturedMessages {
-  clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
-  serverFeatureFlags: Record<string, unknown> | null
-}
-
-interface AppReadiness {
-  featureFlagsReceived: boolean
-  apiInitialized: boolean
-  appInitialized: boolean
-}
-
 declare global {
   interface Window {
     /** For use by extensions and in the browser console. Where possible, import `app` from '@/scripts/app' instead. */
@@ -257,12 +247,6 @@ declare global {
     LGraphCanvas?: typeof LGraphCanvas
     ContextMenu?: typeof ContextMenu
     LGraphBadge?: typeof LGraphBadge
-
-    /** For use in tests to capture WebSocket messages */
-    __capturedMessages?: CapturedMessages
-
-    /** For use in tests to track app initialization state */
-    __appReadiness?: AppReadiness
 
     /**
      * Set to `true` by Desktop builds predating the bridge's `isRemote()`;
