@@ -68,11 +68,11 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {
   LIGHT_TYPES,
   LIGHT_TYPE_LABEL_KEYS
-} from '@/extensions/core/lightInfo/types'
+} from '@comfyorg/viewport3d/lightInfo/types'
 import type {
   LightInfoEntry,
   LightInfoType
-} from '@/extensions/core/lightInfo/types'
+} from '@comfyorg/viewport3d/lightInfo/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 type NumberField =
