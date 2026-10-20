@@ -216,11 +216,7 @@ async function redeemLegacyRequest(
   await finishRedemption(code, state, response)
 }
 
-async function accountScope(
-  requests: WebSessionRequests,
-  code: string,
-  state: CodeRedemptionState
-) {
+async function accountScope(requests: WebSessionRequests) {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     const result = await Promise.race([
@@ -232,14 +228,7 @@ async function accountScope(
         timer = setTimeout(() => resolve({ ok: false }), REDEEM_TIMEOUT_MS)
       })
     ])
-    if (!result.ok) {
-      if (useAuthStore().currentUser || useAuthStore().sessionUser) {
-        state.attempts++
-        handleTransientFailure(code, state, 'account session unavailable')
-      }
-      return
-    }
-    if (!result.scope) unavailableAccountSession(code, state)
+    if (!result.ok) return
     return result.scope
   } finally {
     clearTimeout(timer)
@@ -263,14 +252,14 @@ async function approvedAccountScope(
   code: string,
   state: CodeRedemptionState
 ) {
-  const scope = await accountScope(requests, code, state)
+  const scope = await accountScope(requests)
   if (!scope) return
   if (onAuthHandoffRoute()) return
   if (!(await confirmRedemption(state, scope.session.user.id))) {
     settle(code, state)
     return
   }
-  const current = await accountScope(requests, code, state)
+  const current = await accountScope(requests)
   if (
     !current ||
     onAuthHandoffRoute() ||
@@ -333,11 +322,11 @@ async function finishRedemption(
       .json()
       .catch(() => undefined)
     const refusal = classifyWebSessionFailure(response.status, body).code
-    if (
-      refusal === 'SSO_REQUIRED' ||
-      refusal === 'WORKSPACE_ACCESS_DENIED' ||
-      refusal === 'CSRF_STALE'
-    ) {
+    if (refusal === 'SSO_REQUIRED') {
+      state.attempts--
+      return
+    }
+    if (refusal === 'WORKSPACE_ACCESS_DENIED' || refusal === 'CSRF_STALE') {
       handleTransientFailure(code, state, 'account session refused')
       return
     }
@@ -395,12 +384,9 @@ function installAuthWatcherOnce(): void {
   if (authWatcherInstalled) return
   authWatcherInstalled = true
   const auth = useAuthStore()
-  watch(
-    () => [auth.currentUser, auth.sessionUser],
-    () => {
-      void redeemPendingDesktopLoginCode()
-    }
-  )
+  watch([() => auth.currentUser?.uid, () => auth.sessionUser?.id], () => {
+    void redeemPendingDesktopLoginCode()
+  })
 }
 
 /**
