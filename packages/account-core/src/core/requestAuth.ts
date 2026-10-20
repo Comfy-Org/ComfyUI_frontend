@@ -38,6 +38,13 @@ export interface RequestAuthOptions {
   readonly getWorkspaceToken: (
     workspaceId: string | undefined
   ) => Promise<string>
+  /**
+   * The Desktop per-installation id, when the frontend is hosted by Comfy
+   * Desktop. Sent as `X-Comfy-Install-Id` on web-session (ingest) requests so
+   * cloud can attribute them to a Desktop install. Returns null/undefined on
+   * plain web, where the header is omitted. A non-PII, non-secret value.
+   */
+  readonly getInstallId?: () => string | null | undefined
 }
 
 export const COMFY_CLIENT = `${packageManifest.name}/${packageManifest.version}`
@@ -46,10 +53,12 @@ const SAFE_METHODS: ReadonlySet<string> = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 function sessionHeaders(
   session: WebSession,
-  { method, workspaceId }: RequestAuthInput
+  { method, workspaceId }: RequestAuthInput,
+  installId?: string | null
 ): Record<string, string> {
   return {
     'X-Comfy-Client': COMFY_CLIENT,
+    ...(installId ? { 'X-Comfy-Install-Id': installId } : {}),
     ...(workspaceId === undefined
       ? {}
       : { 'X-Comfy-Workspace-ID': workspaceId }),
@@ -60,7 +69,8 @@ function sessionHeaders(
 }
 
 export function createRequestAuthorizer({
-  getWorkspaceToken
+  getWorkspaceToken,
+  getInstallId
 }: RequestAuthOptions): RequestAuthorizer {
   return async function authorize(
     principal,
@@ -79,7 +89,7 @@ export function createRequestAuthorizer({
           return { headers: { Authorization: `Bearer ${token}` } }
         }
         return {
-          headers: sessionHeaders(principal.session, input),
+          headers: sessionHeaders(principal.session, input, getInstallId?.()),
           credentials: 'include'
         }
     }
