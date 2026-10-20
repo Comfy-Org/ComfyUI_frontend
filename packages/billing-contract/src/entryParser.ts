@@ -4,22 +4,18 @@
  * product may add analytics noise without breaking the app; everything the
  * contract names is validated, because this is untrusted input.
  */
-import type {
-  BillingIntent,
-  BillingProduct,
-  BillingSource
-} from './contract.js'
+import type { BillingIntent, BillingProduct, BillingSource } from './contract'
 import {
   BILLING_CONTRACT_VERSION,
   isBillingIntent,
   isBillingProduct,
   isBillingSource
-} from './contract.js'
+} from './contract'
 import type {
   InvalidIdentifierCode,
   OptionalEntryKey,
   OptionalEntryValues
-} from './entryFields.js'
+} from './entryFields'
 import {
   ENTRY_PARAM_AMOUNT,
   ENTRY_PARAM_PRODUCT,
@@ -27,11 +23,11 @@ import {
   ENTRY_PARAM_SOURCE,
   OPTIONAL_ENTRY_FIELDS,
   readEntryAmountCents
-} from './entryFields.js'
-import { isContractIdentifier } from './identifiers.js'
-import type { ReturnTarget } from './returnTargets.js'
-import { isReturnTarget } from './returnTargets.js'
-import { CONTRACT_PARSE_BASE, parseUrl } from './url.js'
+} from './entryFields'
+import { isContractIdentifier } from './identifiers'
+import type { ReturnTarget } from './returnTargets'
+import { isReturnTarget } from './returnTargets'
+import { CONTRACT_PARSE_BASE, parseUrl } from './url'
 
 export interface BillingEntry extends OptionalEntryValues {
   readonly version: typeof BILLING_CONTRACT_VERSION

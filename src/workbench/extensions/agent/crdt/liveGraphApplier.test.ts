@@ -1768,6 +1768,28 @@ describe('LiveGraphApplier', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it('connects a dangling link when its endpoint arrives in a later frame', () => {
+    const { graph, doc, applyCollected, applyEdit } = setup({
+      nodes: [sourceNode(1), sinkNode(2)],
+      links: []
+    })
+    applyCollected()
+
+    applyEdit(() => {
+      linksMap(doc).set('7', [7, 3, 0, 2, 0, 'IMAGE'])
+    })
+    expect(graph.links.has(toLinkId(7))).toBe(false)
+
+    applyEdit(() => {
+      nodesMap(doc).set('3', new Y.Map<unknown>(Object.entries(sourceNode(3))))
+    })
+
+    expect(graph.links.get(toLinkId(7))).toMatchObject({
+      origin_id: toNodeId(3),
+      target_id: toNodeId(2)
+    })
+  })
+
   it('removes a live link whose document entry now names a slot the node lacks', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1), sinkNode(2)],

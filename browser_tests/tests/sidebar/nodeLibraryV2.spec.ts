@@ -95,9 +95,7 @@ test.describe('Node library sidebar V2', () => {
     await menu.hoverItem('Bookmark Node', 'content')
 
     const hoverStyle = await menu.getItemStyle('Bookmark Node')
-    const expectedBackground = await menu.resolveBackgroundToken(
-      '--secondary-background-hover'
-    )
+    const expectedBackground = await menu.resolveBackgroundToken('--accent')
     expect.soft(hoverStyle).toEqual({
       backgroundColor: expectedBackground,
       borderRadius: '6px',

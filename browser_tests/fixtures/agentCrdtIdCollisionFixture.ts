@@ -193,7 +193,6 @@ export class IdCollisionHarness {
       page,
       WORKFLOW_ID,
       this.host,
-      'id-collision-repro-sid',
       'hold'
     )
   }

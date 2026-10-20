@@ -7,7 +7,7 @@
     @mouseleave="hidePopover"
   >
     <div
-      class="flex max-w-62.5 flex-col overflow-hidden rounded-xl bg-interface-menu-surface text-text-primary"
+      class="flex max-w-62.5 flex-col overflow-hidden rounded-xl bg-popover text-foreground"
     >
       <div
         v-if="thumbnailUrl && !isActiveTab"
@@ -15,7 +15,7 @@
       >
         <img
           :src="thumbnailUrl"
-          class="block h-50 rounded-lg bg-secondary-background object-cover p-2 shadow-lg"
+          class="block h-50 rounded-lg bg-secondary object-cover p-2 shadow-lg"
           :style="{ width: `${POPOVER_WIDTH}px` }"
         />
       </div>

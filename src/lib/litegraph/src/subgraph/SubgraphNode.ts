@@ -27,7 +27,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 import type {
   ExportedSubgraphInstance,
@@ -40,7 +40,10 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import {
+  coerceRestoredWidgetValue,
+  deriveWidgetRenderState
+} from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -505,8 +508,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const value = quarantineValuesByInputName.has(input.name)
         ? quarantineValuesByInputName.get(input.name)
         : widgetValues?.[valueIndex]
-      if (value !== undefined) {
-        useWidgetValueStore().setValue(input.widgetId, value)
+      const state = useWidgetValueStore().getWidget(input.widgetId)
+      if (value !== undefined && state) {
+        useWidgetValueStore().setValue(
+          input.widgetId,
+          coerceRestoredWidgetValue(state, value)
+        )
       }
       valueIndex += 1
     }
@@ -818,6 +825,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   override getWidgetFromSlot(slot: INodeInputSlot): IBaseWidget | undefined {
     if (slot._widget) return slot._widget
     return super.getWidgetFromSlot(slot)
+  }
+
+  resolvePromotedTarget(
+    inputName: string
+  ): { nodeId: NodeId; widgetName: string } | undefined {
+    return resolveSubgraphInputTarget(this, inputName)
   }
 
   override getInputLink(slot: number): LLink | null {

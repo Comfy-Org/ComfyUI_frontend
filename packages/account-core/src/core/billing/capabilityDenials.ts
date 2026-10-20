@@ -27,6 +27,40 @@ export type CapabilityDenialReason =
   | 'subscription_change_in_progress'
   /** The server has no guidance for the row — distinct from a deliberate refusal. */
   | 'subscription_status_unrecognized'
+  | 'not_original_owner'
+  | 'creator_only_provisioning'
+  | 'payment_past_due'
+  | 'free_plan'
+  | 'no_subscription'
+  | 'subscription_ended'
+  | 'billing_operation_in_progress'
+  | 'billing_operation_parked'
+  | 'cancellation_scheduled'
+  | 'cancellation_not_scheduled'
+  | 'workspace_sso_attached'
+  | 'personal_workspace'
+  | 'plan_not_ended'
+  | 'membership_managed_by_directory'
+  | 'personal_workspace_creator'
+  | 'workspace_creator'
+  | 'only_owner'
+  | 'billing_state_unknown'
+  | 'free_tier_exhausted'
+  | 'invite_capacity_reached'
+  | 'manual_block'
+  | 'no_funds'
+  | 'no_revertible_scheduled_change'
+  | 'no_upgrade_available'
+  | 'partner_governance_not_entitled'
+  | 'plan_ending'
+  | 'project_cap_exceeded'
+  | 'rollout_disabled'
+  | 'sales_managed'
+  | 'sales_managed_plan'
+  | 'subscription_inactive'
+  | 'usage_attribution_unavailable'
+  | 'user_cap_exceeded'
+  | 'workspace_cap_exceeded'
   /**
    * A reason outside the set above. Kept as a reason rather than dropped so a
    * refusal the server explained still reads as explained; the copy it maps to
@@ -34,19 +68,55 @@ export type CapabilityDenialReason =
    */
   | 'unspecified'
 
-const KNOWN_REASONS: ReadonlySet<string> = new Set<CapabilityDenialReason>([
-  'not_a_member',
-  'not_workspace_owner',
-  'tier_not_self_serve',
-  'subscription_not_started',
-  'subscription_change_in_progress',
-  'subscription_status_unrecognized'
-])
+const KNOWN_REASONS: Readonly<
+  Record<Exclude<CapabilityDenialReason, 'unspecified'>, true>
+> = {
+  not_a_member: true,
+  not_workspace_owner: true,
+  tier_not_self_serve: true,
+  subscription_not_started: true,
+  subscription_change_in_progress: true,
+  subscription_status_unrecognized: true,
+  not_original_owner: true,
+  creator_only_provisioning: true,
+  payment_past_due: true,
+  free_plan: true,
+  no_subscription: true,
+  subscription_ended: true,
+  billing_operation_in_progress: true,
+  billing_operation_parked: true,
+  cancellation_scheduled: true,
+  cancellation_not_scheduled: true,
+  workspace_sso_attached: true,
+  personal_workspace: true,
+  plan_not_ended: true,
+  membership_managed_by_directory: true,
+  personal_workspace_creator: true,
+  workspace_creator: true,
+  only_owner: true,
+  billing_state_unknown: true,
+  free_tier_exhausted: true,
+  invite_capacity_reached: true,
+  manual_block: true,
+  no_funds: true,
+  no_revertible_scheduled_change: true,
+  no_upgrade_available: true,
+  partner_governance_not_entitled: true,
+  plan_ending: true,
+  project_cap_exceeded: true,
+  rollout_disabled: true,
+  sales_managed: true,
+  sales_managed_plan: true,
+  subscription_inactive: true,
+  usage_attribution_unavailable: true,
+  user_cap_exceeded: true,
+  workspace_cap_exceeded: true
+}
 
 /**
- * Only `can_subscribe_self_serve` carries a reason today. The record is open
- * because the server adds keys as policy grows, and a client that rejected an
- * unknown key would fail the whole read over a field it does not use.
+ * The record is open because the server adds keys as policy grows, and a
+ * client that rejected an unknown key would fail the whole read over a field
+ * it does not use.
  */
 export type CapabilityDenials = Readonly<
   Partial<Record<string, CapabilityDenialReason>>
@@ -70,7 +140,7 @@ export function decodeCapabilityDenials(raw: unknown): CapabilityDenials {
 
   const denials: Record<string, CapabilityDenialReason> = {}
   for (const [capability, reason] of Object.entries(parsed.data)) {
-    denials[capability] = KNOWN_REASONS.has(reason)
+    denials[capability] = Object.hasOwn(KNOWN_REASONS, reason)
       ? (reason as CapabilityDenialReason)
       : 'unspecified'
   }

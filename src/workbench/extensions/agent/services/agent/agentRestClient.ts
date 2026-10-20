@@ -8,7 +8,7 @@ import {
   zUploadImageResponse,
   zWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 import type {
   AuthRejectionStatus,
@@ -25,20 +25,22 @@ import {
 import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 
-import { refusedAttachmentsMessage } from '../../utils/attachmentMessages'
+import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/attachmentMessages'
+import { withAgentAuth } from './agentAuth'
 
 import {
   RENDERED_ASK_KINDS,
   zAgentAnswerReceipt,
   zAgentCancelAccepted,
   zAgentError,
+  zAgentIdentity,
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
   zAttachmentRejection,
   zCloudWorkflowIndex
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentAnswerReceipt,
   AgentCancelAccepted,
@@ -47,7 +49,7 @@ import type {
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
@@ -80,6 +82,7 @@ const ANSWER_ASK_TIMEOUT_MS = 15_000
 type AgentApiOperation =
   | 'answer_thread_ask'
   | 'cancel_thread_message'
+  | 'get_agent_identity'
   | 'get_cloud_workflow'
   | 'get_run_mode'
   | 'get_thread_messages'
@@ -87,6 +90,7 @@ type AgentApiOperation =
   | 'list_threads'
   | 'post_thread_message'
   | 'put_run_mode'
+  | 'refresh_credential'
   | 'upload_image'
 
 type ReportedAuthScheme = AuthScheme | 'unreported'
@@ -532,15 +536,18 @@ export function createAgentRestClient() {
   ): Promise<T> {
     let authScheme: ReportedAuthScheme = 'unreported'
     let credential: ReportedAuthCredential = 'unreported'
-    const response = await api.fetchApi(route, {
-      ...init,
-      onAuthScheme: (scheme) => {
-        authScheme = scheme
-      },
-      onAuthCredential: (kind) => {
-        credential = kind
-      }
-    })
+    const response = await api.fetchApi(
+      route,
+      await withAgentAuth({
+        ...init,
+        onAuthScheme: (scheme) => {
+          authScheme = scheme
+        },
+        onAuthCredential: (kind) => {
+          credential = kind
+        }
+      })
+    )
     if (!response.ok) {
       throw await toApiError(response, operation, authScheme, credential)
     }
@@ -607,6 +614,16 @@ export function createAgentRestClient() {
       zAgentThreads
     )
     return page.threads
+  }
+
+  async function getIdentity(): Promise<{ userId: string }> {
+    const identity = await request(
+      'get_agent_identity',
+      '/agent/identity',
+      { method: 'GET' },
+      zAgentIdentity
+    )
+    return { userId: identity.user_id }
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -690,6 +707,15 @@ export function createAgentRestClient() {
     )
   }
 
+  async function refreshCredential(): Promise<void> {
+    await request(
+      'refresh_credential',
+      '/agent/threads?limit=1',
+      { method: 'GET' },
+      z.unknown()
+    )
+  }
+
   async function uploadImage(
     image: Blob,
     filename: string,
@@ -714,12 +740,14 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getIdentity,
     getRunMode,
     putRunMode,
     listCloudWorkflows,
     getCloudWorkflow,
     cancelMessage,
     answerAsk,
+    refreshCredential,
     uploadImage
   }
 }

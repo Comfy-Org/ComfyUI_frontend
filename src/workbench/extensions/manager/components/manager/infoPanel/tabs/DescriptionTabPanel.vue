@@ -15,7 +15,7 @@
         :href="safeRepositoryHref"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
       >
         <i
           v-if="isGitHubLink(safeRepositoryHref)"
@@ -31,7 +31,7 @@
         :href="safeLicenseHref"
         target="_blank"
         rel="noopener noreferrer"
-        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
+        class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-foreground"
       >
         <span class="break-all">{{ licenseInfo.text }}</span>
         <i class="icon-[lucide--external-link] size-4 shrink-0" />

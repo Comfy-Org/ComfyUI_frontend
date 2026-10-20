@@ -8,7 +8,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   AskUserPart,
   AskUserResolution
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import AskUserCard from './AskUserCard.vue'
 

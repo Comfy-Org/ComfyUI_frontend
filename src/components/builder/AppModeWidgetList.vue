@@ -228,12 +228,7 @@ defineExpose({ handleDragDrop })
     <div
       v-if="description || builderMode"
       data-testid="app-mode-widget-description"
-      :class="
-        cn(
-          'h-5 px-5',
-          description ? 'text-muted-foreground' : 'text-muted-background'
-        )
-      "
+      class="h-5 px-5 text-muted-foreground"
     >
       <WidgetDescription
         :description
@@ -271,7 +266,7 @@ defineExpose({ handleDragDrop })
           :class="
             cn(
               'gap-y-3 rounded-lg py-1 [&_textarea]:resize-y **:[.col-span-2]:grid-cols-1',
-              nodeData.hasErrors && 'ring-2 ring-node-stroke-error ring-inset'
+              nodeData.hasErrors && 'ring-2 ring-destructive ring-inset'
             )
           "
         />

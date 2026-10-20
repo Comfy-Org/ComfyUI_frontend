@@ -134,6 +134,30 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
+  it('restores a boolean string saved for a BOOLEAN target as a boolean', () => {
+    const graph = new LGraph()
+    const target = new LGraphNode('Target')
+    graph.add(target)
+    target.addInput('enabled', 'BOOLEAN')
+    target.inputs[0].widget = {
+      name: 'enabled',
+      [GET_CONFIG]: () => ['BOOLEAN', {}]
+    }
+    target.addWidget('toggle', 'enabled', true, () => {})
+    const primitive = new PrimitiveNode('Primitive')
+    graph.add(primitive)
+    vi.mocked(app).configuringGraph = true
+    primitive.connect(0, target, 0)
+    primitive.configure(
+      fromPartial({ widgets_values: ['false'], outputs: [{ type: 'BOOLEAN' }] })
+    )
+    vi.mocked(app).configuringGraph = false
+
+    primitive.onAfterGraphConfigured()
+
+    expect(primitive.widgets?.[0].value).toBe(false)
+  })
+
   it.for([
     { label: 'null', value: null },
     { label: 'undefined', value: undefined }
