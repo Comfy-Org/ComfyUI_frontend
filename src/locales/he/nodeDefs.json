@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "המרת טקסט לדיבור. תומך בסימוני רגש בטקסט ([happy], [whispering] ב־s2.1-pro; (happy) ב־s1) ובדיאלוג מרובה דוברים באמצעות תגיות {'@'}Voice1/{'@'}Voice2 עם מספר קולות מחוברים.",
+    "description": "המרת טקסט לדיבור. תומך ברמזי רגש בטקסט ([שמח], [בלחש] ב-s2.1-pro; (שמח) ב-s1), ב[הוראות] בשפה טבעית ובתגיות מילים `<whisper>...</whisper>` ב-drama-3, ובדיאלוג רב-דוברי באמצעות תגיות {'@'}Voice1/{'@'}Voice2 עם קולות מחוברים מרובים.",
     "display_name": "Fish Audio המרת טקסט לדיבור",
     "inputs": {
       "control_after_generate": {
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "עיצוב מחדש של סרטון עם דמויות, מיקומים או סגנונות חדשים מתמונות ייחוס, תוך שמירה על התנועה, תנועת המצלמה והתזמון שלו.",
+    "display_name": "העברת תנועה של Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שבו ייעשה שימוש."
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "הגדל תמונות ברזולוציה נמוכה לסופר-רזולוציה, הסר ארטיפקטים ורעש. פלט מקסימלי: 32 מגה-פיקסל.",
     "display_name": "HitPaw שיפור תמונה כללי",
@@ -9263,6 +9290,28 @@
       },
       "rotation": {
         "name": "rotation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "הרחבת בהירות sRGB ל-HLG HDR מסוג Rec.2020. יש לשמור את התוצאה כאשר מרחב הצבע HDR נבחר. ערוץ האלפא נשמר.",
+    "display_name": "המרת SDR ל-HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "אלגוריתם",
+        "tooltip": "הרחבה רציונלית בסגנון Lottes המשולבת עם עקומת הגבר לוגריתמית מונוטונית מכוילת."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונות SDR ב-sRGB."
       }
     },
     "outputs": {

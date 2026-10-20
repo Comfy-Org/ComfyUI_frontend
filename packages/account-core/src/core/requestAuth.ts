@@ -4,9 +4,9 @@
  * every other service takes a Bearer workspace token. Firebase and API-key
  * principals keep the single header they send today, whatever the target.
  */
-import packageManifest from '../../package.json' with { type: 'json' }
+import packageManifest from '#package.json' with { type: 'json' }
 
-import type { WebSession } from './sessionContracts.js'
+import type { WebSession } from './sessionContracts'
 
 export type RequestTarget = 'ingest' | 'resource'
 

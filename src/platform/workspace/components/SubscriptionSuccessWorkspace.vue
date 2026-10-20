@@ -5,14 +5,13 @@
     :locale
     :preview-data
     :billing-cycle
-    :dark-surface
     :promo-applied
     :close-demoted="showInviteBlock && invitedEmails.length === 0"
     @close="$emit('close')"
   >
     <template #details>
       <div v-if="showInviteBlock" class="mt-4 flex w-full flex-col gap-2">
-        <h3 class="m-0 text-base font-normal text-base-foreground">
+        <h3 class="m-0 text-base font-normal">
           {{ $t('subscription.success.inviteTitle') }}
         </h3>
         <p class="m-0 text-muted-foreground">
@@ -23,7 +22,7 @@
             v-if="invitedEmails.length > 0"
             ref="invitedMessage"
             tabindex="-1"
-            class="m-0 text-success-background"
+            class="m-0 text-success"
           >
             {{
               $t(
@@ -37,11 +36,6 @@
             v-else
             ref="inviteForm"
             :show-submit="false"
-            :tags-input-class="
-              darkSurface
-                ? 'min-h-10 w-full bg-secondary-background px-3 focus-within:bg-secondary-background hover:bg-secondary-background-hover'
-                : undefined
-            "
             source="post_upgrade_success"
             :submit-label="$t('subscription.success.sendInvites')"
             :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
@@ -92,15 +86,12 @@ const {
   previewData = null,
   teamPlan = null,
   billingCycle = 'monthly',
-  darkSurface = false,
   promoApplied = null
 } = defineProps<{
   tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
   teamPlan?: TeamPlanSelection | null
   billingCycle?: BillingCycle
-  /** Dialog paints base-background; the plan card elevates to stay visible. */
-  darkSurface?: boolean
   /** Applied promotion feedback (Figma 5379-30077 S3). Display-ready strings;
    *  the backend does not supply this yet — see the promo validation ask. */
   promoApplied?: {

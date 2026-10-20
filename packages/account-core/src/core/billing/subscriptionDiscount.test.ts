@@ -1,7 +1,7 @@
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
-import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
+import { SubscriptionDiscountSchema } from './subscriptionDiscount'
 
 const TERMS = [
   'this_payment',

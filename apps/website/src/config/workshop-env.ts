@@ -124,3 +124,12 @@ const RESHOOT_PROXY_IDS: Record<WorkshopCloudEnv, string | undefined> = {
 }
 
 export const WORKSHOP_RESHOOT_PROXY_ID = RESHOOT_PROXY_IDS[WORKSHOP_CLOUD_ENV]
+
+const OPENJUTSU_PROXY_IDS: Record<WorkshopCloudEnv, string | undefined> = {
+  prod: '51a6c7e1-0117-4bc4-9cc5-5278be98cba0',
+  staging: 'e800652d-df5c-463d-9419-9abd45957e19',
+  test: '14194c69-6846-4e88-bdc6-09ebc44d1391'
+}
+
+export const WORKSHOP_OPENJUTSU_PROXY_ID =
+  OPENJUTSU_PROXY_IDS[WORKSHOP_CLOUD_ENV]

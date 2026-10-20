@@ -8,7 +8,12 @@ import type { RerouteId } from '@/types/rerouteId'
 import type { SlotIndex } from '@/types/slotId'
 import type { WidgetId } from '@/types/widgetId'
 
-import type { IWidgetLocator, ISlotType, INodeSlot, Point } from '../interfaces'
+import type {
+  IWidgetLocator,
+  ISlotType,
+  INodeSlot,
+  Point
+} from '@/lib/litegraph/src/interfaces'
 
 import type { LinkDirection } from './globalEnums'
 import type { IBaseWidget } from './widgets'
