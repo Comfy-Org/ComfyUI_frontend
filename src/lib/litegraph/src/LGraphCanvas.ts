@@ -5843,7 +5843,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param size Size of the background to draw, in graph units.  Differs from node size if collapsed, etc.
    * @param fgcolor Foreground colour - used for text
    * @param bgcolor Background colour of the node
-   * @param _selected Whether to render the node as selected.  Likely to be removed in future, as current usage is simply the selected property of the node.
+   * @param _selected Whether to render the node's selection emphasis: its selected state, or a transient highlight that does not change graph selection.
    */
   drawNodeShape(
     node: LGraphNode,

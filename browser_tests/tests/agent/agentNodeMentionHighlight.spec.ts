@@ -49,22 +49,25 @@ for (const mode of renderModes) {
           exact: true
         })
 
-        const clip = await comfyPage.page.evaluate((padding) => {
-          const node = window.app!.graph.nodes.at(0)
-          if (!node) throw new Error('KSampler node is unavailable')
-          const [x, y, width, height] = node.getBounding()
-          const [left, top] = window.app!.canvasPosToClientPos([x, y])
-          const [right, bottom] = window.app!.canvasPosToClientPos([
-            x + width,
-            y + height
-          ])
-          return {
-            x: left - padding,
-            y: top - padding,
-            width: right - left + padding * 2,
-            height: bottom - top + padding * 2
-          }
-        }, NODE_CLIP_PADDING)
+        const bounds = await (
+          await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
+        ).getBounding()
+        const clip = await comfyPage.page.evaluate(
+          ({ x, y, width, height, padding }) => {
+            const [left, top] = window.app!.canvasPosToClientPos([x, y])
+            const [right, bottom] = window.app!.canvasPosToClientPos([
+              x + width,
+              y + height
+            ])
+            return {
+              x: left - padding,
+              y: top - padding,
+              width: right - left + padding * 2,
+              height: bottom - top + padding * 2
+            }
+          },
+          { ...bounds, padding: NODE_CLIP_PADDING }
+        )
 
         const screenshotNode = () =>
           comfyPage.page.screenshot({
