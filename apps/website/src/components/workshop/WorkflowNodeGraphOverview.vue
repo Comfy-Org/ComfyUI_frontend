@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { NodeGraphWorkflow } from '@/lib/hub/node-graph-workflow'
+import { sampleMedia } from '@/lib/hub/node-graph-workflow'
 
 import ExamplesTab from './ExamplesTab.vue'
 import WorkflowNodeGraphAbout from './WorkflowNodeGraphAbout.vue'
@@ -21,6 +22,7 @@ watch(
   () => (selectedExample.value = 0)
 )
 const shown = computed(() => workflow.examples[selectedExample.value])
+const shownMedia = computed(() => shown.value && sampleMedia(shown.value))
 function openExample(id: string) {
   const index = workflow.examples.findIndex((example) => example.id === id)
   if (index !== -1) selectedExample.value = index
@@ -63,7 +65,7 @@ function openExample(id: string) {
             {{ t('workshop.output.example') }}
           </span>
           <video
-            v-if="shown.mediaKind === 'video'"
+            v-if="shownMedia === 'video'"
             :key="shown.id"
             :src="shown.outputUrl"
             class="max-h-[70vh] w-full object-contain"
@@ -71,6 +73,15 @@ function openExample(id: string) {
             muted
             loop
             playsinline
+          />
+          <audio
+            v-else-if="shownMedia === 'audio'"
+            :key="shown.id"
+            :src="shown.outputUrl"
+            :aria-label="shown.title"
+            controls
+            preload="metadata"
+            class="w-full p-5"
           />
           <img
             v-else

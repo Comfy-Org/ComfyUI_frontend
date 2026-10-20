@@ -1,5 +1,6 @@
 import type { FaqItem } from '@/components/common/FAQSection.vue'
 import type { PlaygroundExample } from '@/config/workshop-playground'
+import { isAudioUrl, isVideoUrl } from '@/config/workshop-playground'
 
 import type { NodeGraphInput } from './node-graph-inputs'
 
@@ -22,6 +23,16 @@ export interface NodeGraphWorkflow {
   readonly author?: string
   readonly examples: readonly PlaygroundExample[]
   readonly faq: readonly FaqItem[]
+}
+
+/** What a sample output is: its declared kind, or else what its URL ends in. */
+export function sampleMedia(
+  example: PlaygroundExample
+): 'image' | 'video' | 'audio' {
+  if (example.mediaKind) return example.mediaKind
+  if (isVideoUrl(example.outputUrl)) return 'video'
+  if (isAudioUrl(example.outputUrl)) return 'audio'
+  return 'image'
 }
 
 const MEDIA =

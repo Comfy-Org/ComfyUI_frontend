@@ -10,6 +10,7 @@ import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { NodeGraphWorkflow } from '@/lib/hub/node-graph-workflow'
+import { sampleMedia } from '@/lib/hub/node-graph-workflow'
 
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
@@ -30,7 +31,7 @@ const cloudHref = computed(
 )
 const samples = computed(() =>
   workflow.examples
-    .filter((example) => example.mediaKind !== 'video')
+    .filter((example) => sampleMedia(example) === 'image')
     .slice(0, 1)
     .map((example) => example.outputUrl)
 )
@@ -160,6 +161,7 @@ const pillClass =
           <WorkflowGraph
             :source="workflow.graph.source"
             :samples
+            :active="section === 'workflow'"
             :fallback="workflow.graph.previewUrl"
             :full-href="workflow.graph.previewUrl"
           />

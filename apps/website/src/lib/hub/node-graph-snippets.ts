@@ -6,11 +6,11 @@ const literal = (value: string) => JSON.stringify(value)
 
 function curlSnippet(): string {
   return [
-    '# Replace YOUR_API_KEY with a key from your account.',
+    '# Set COMFY_API_KEY first. Partner nodes read it from extra_data too.',
     `curl --fail-with-body --request POST '${WORKSHOP_CLOUD_BASE_URL}/api/prompt' \\`,
-    `  --header 'X-API-Key: YOUR_API_KEY' \\`,
+    `  --header "X-API-Key: $COMFY_API_KEY" \\`,
     `  --header 'Content-Type: application/json' \\`,
-    `  --data "$(jq '{prompt: .}' ${API_GRAPH_FILE})"`
+    `  --data "$(jq --arg key "$COMFY_API_KEY" '{prompt: ., extra_data: {api_key_comfy_org: $key}}' ${API_GRAPH_FILE})"`
   ].join('\n')
 }
 
@@ -26,7 +26,7 @@ function pythonSnippet(): string {
     'if not api_key: raise RuntimeError("Set COMFY_API_KEY")',
     `os.environ.setdefault("COMFY_BASE_URL", ${literal(WORKSHOP_CLOUD_BASE_URL)})`,
     'client = Comfy(api_key=api_key)',
-    `with open(${literal(API_GRAPH_FILE)}) as file:`,
+    `with open(${literal(API_GRAPH_FILE)}, encoding="utf-8") as file:`,
     '    workflow = client.workflows.from_json(json.load(file))',
     '',
     'job = client.run(workflow, api_key=api_key)',

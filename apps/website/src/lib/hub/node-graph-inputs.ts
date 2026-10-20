@@ -8,42 +8,47 @@ export interface NodeGraphInput {
   readonly title?: string
 }
 
-const LOADER_MEDIA: Readonly<Record<string, NodeGraphInputMedia>> = {
-  LoadImage: 'image',
-  LoadImageMask: 'image',
-  LoadVideo: 'video',
-  LoadAudio: 'audio'
-}
+const LOADER_MEDIA: ReadonlyMap<string, NodeGraphInputMedia> = new Map([
+  ['LoadImage', 'image'],
+  ['LoadImageMask', 'image'],
+  ['LoadVideo', 'video'],
+  ['LoadAudio', 'audio']
+])
 
 const graphNodeSchema = z.object({
-  type: z.string().catch(''),
+  type: z.string(),
   title: z.string().optional().catch(undefined)
 })
+type GraphNode = z.output<typeof graphNodeSchema>
+
+const nodeListSchema = z
+  .array(z.unknown())
+  .catch([])
+  .transform((nodes) =>
+    nodes.flatMap((node): GraphNode[] => {
+      const parsed = graphNodeSchema.safeParse(node)
+      return parsed.success ? [parsed.data] : []
+    })
+  )
+
 const graphSchema = z.object({
-  nodes: z.array(graphNodeSchema).catch([]),
+  nodes: nodeListSchema,
   definitions: z
     .object({
-      subgraphs: z
-        .array(z.object({ nodes: z.array(graphNodeSchema).catch([]) }))
-        .catch([])
+      subgraphs: z.array(z.object({ nodes: nodeListSchema })).catch([])
     })
     .optional()
     .catch(undefined)
 })
 
-const isTitleCaseWord = (word: string) => /^[A-Z][a-z]+$/.test(word)
+const DEFAULT_TITLE = /^load( (image|video|audio)( mask)?)?$/i
+const TRAILING_MEDIA_WORD = /\s(Image|Video|Audio)$/
 
 function labelFromTitle(title: string | undefined): string | undefined {
-  const words = (title ?? '')
-    .replace(/^load\s+/i, '')
-    .trim()
-    .split(/\s+/)
-  if (!words[0]) return undefined
-  const [first, ...rest] = words
-  return [
-    first,
-    ...rest.map((word) => (isTitleCaseWord(word) ? word.toLowerCase() : word))
-  ].join(' ')
+  const trimmed = (title ?? '').trim()
+  if (!trimmed || DEFAULT_TITLE.test(trimmed)) return undefined
+  const label = trimmed.replace(/^load\s+/i, '')
+  return label.replace(TRAILING_MEDIA_WORD, (word) => word.toLowerCase())
 }
 
 /** The loader nodes of a workflow graph, top level and subgraphs, as inputs. */
@@ -51,10 +56,11 @@ export function nodeGraphInputs(graph: unknown): NodeGraphInput[] {
   const parsed = graphSchema.safeParse(graph)
   if (!parsed.success) return []
   const { nodes, definitions } = parsed.data
-  return [...nodes, ...(definitions?.subgraphs ?? []).flatMap((s) => s.nodes)]
-    .filter((node) => node.type in LOADER_MEDIA)
-    .map((node) => ({
-      media: LOADER_MEDIA[node.type],
-      title: labelFromTitle(node.title)
-    }))
+  return [
+    ...nodes,
+    ...(definitions?.subgraphs ?? []).flatMap((s) => s.nodes)
+  ].flatMap((node) => {
+    const media = LOADER_MEDIA.get(node.type)
+    return media ? [{ media, title: labelFromTitle(node.title) }] : []
+  })
 }
