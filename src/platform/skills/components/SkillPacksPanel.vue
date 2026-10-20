@@ -2,12 +2,12 @@
   <div class="flex h-full flex-col">
     <div>
       <h2 class="text-2xl font-bold">{{ $t('skillPacks.title') }}</h2>
-      <p class="mt-1 text-sm text-muted">
+      <p class="mt-1 text-sm text-muted-foreground">
         {{ $t('skillPacks.panelDescription') }}
       </p>
     </div>
 
-    <div class="my-4 border-t border-border-default" />
+    <div class="my-4 border-t" />
 
     <div class="my-4 flex items-center justify-between">
       <h3 class="my-0 text-lg font-semibold">
@@ -23,12 +23,14 @@
       v-if="loading && !hasLoaded"
       class="flex items-center justify-center py-8"
     >
-      <i class="icon-[lucide--loader-circle] size-8 animate-spin text-muted" />
+      <i
+        class="icon-[lucide--loader-circle] size-8 animate-spin text-muted-foreground"
+      />
     </div>
 
     <div
       v-else-if="packs.length === 0"
-      class="py-4 text-center text-sm text-muted"
+      class="py-4 text-center text-sm text-muted-foreground"
     >
       {{ $t('skillPacks.noPacks') }}
     </div>
@@ -59,8 +61,8 @@ import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { useSkillPacks } from '../composables/useSkillPacks'
-import type { SkillPack } from '../types'
+import { useSkillPacks } from '@/platform/skills/composables/useSkillPacks'
+import type { SkillPack } from '@/platform/skills/types'
 import SkillPackFormDialog from './SkillPackFormDialog.vue'
 import SkillPackListItem from './SkillPackListItem.vue'
 

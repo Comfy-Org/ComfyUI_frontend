@@ -2,10 +2,8 @@
   <div
     :class="
       cn(
-        'flex size-full cursor-pointer flex-col overflow-hidden rounded-lg bg-modal-card-background transition-colors duration-200 select-none',
-        isSelected
-          ? 'ring-3 ring-modal-card-border-highlighted'
-          : 'hover:bg-modal-card-background-hovered',
+        'flex size-full cursor-pointer flex-col overflow-hidden rounded-lg bg-secondary transition-colors duration-200 select-none',
+        isSelected ? 'ring-3 ring-muted-foreground' : 'hover:bg-accent',
         isDisabled && 'opacity-60'
       )
     "
@@ -26,7 +24,7 @@
           </span>
           <p
             v-if="nodePack.description"
-            class="my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden text-xs/4 font-medium wrap-break-word text-muted"
+            class="my-0 mb-1 line-clamp-3 min-h-12 flex-1 overflow-hidden text-xs/4 font-medium wrap-break-word text-muted-foreground"
           >
             {{ nodePack.description }}
           </p>
@@ -43,7 +41,7 @@
               />
               <div
                 v-if="formattedLatestVersionDate"
-                class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted"
+                class="flex items-center justify-center gap-1 px-2 py-1 text-xs font-medium text-muted-foreground"
               >
                 {{ formattedLatestVersionDate }}
               </div>
@@ -51,7 +49,7 @@
             <div class="flex">
               <span
                 v-if="publisherName"
-                class="max-w-40 truncate text-xs/3 font-medium text-muted"
+                class="max-w-40 truncate text-xs/3 font-medium text-muted-foreground"
               >
                 {{ publisherName }}
               </span>
@@ -62,7 +60,7 @@
     </div>
 
     <!-- Footer -->
-    <div class="border-t border-border-default">
+    <div class="border-t">
       <PackCardFooter :node-pack="nodePack" :is-installing="isInstalling" />
     </div>
   </div>

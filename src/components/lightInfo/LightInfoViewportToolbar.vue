@@ -1,7 +1,7 @@
 <template>
   <div class="pointer-events-none absolute inset-0 flex flex-col">
     <div
-      class="pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2"
+      class="pointer-events-auto flex h-10 items-center gap-1 bg-popover px-2"
       @wheel.stop
     >
       <Button
@@ -25,7 +25,7 @@
         />
         <span v-if="!compact">{{ gizmosLabel }}</span>
       </Button>
-      <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
+      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
       <Button
         v-for="option in transformGizmoOptions"
         :key="option.value"
@@ -46,7 +46,7 @@
     </div>
     <div class="flex-1" />
     <div
-      class="pointer-events-auto flex h-10 items-center justify-end gap-1 bg-interface-menu-surface px-2"
+      class="pointer-events-auto flex h-10 items-center justify-end gap-1 bg-popover px-2"
       @wheel.stop
     >
       <Button
@@ -64,7 +64,7 @@
         size="icon"
         :tooltip="cameraLockLabel"
         type="button"
-        :class="cn(cameraLocked && 'bg-button-active-surface')"
+        :class="cn(cameraLocked && 'bg-muted')"
         :aria-pressed="cameraLocked"
         :aria-label="cameraLockLabel"
         @click="cameraLocked = !cameraLocked"

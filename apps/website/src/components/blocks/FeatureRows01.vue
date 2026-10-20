@@ -20,6 +20,7 @@ type RowMedia =
       autoplay?: boolean
       loop?: boolean
       minimal?: boolean
+      preview?: boolean
       hideControls?: boolean
       fit?: 'cover' | 'contain'
     }
@@ -132,6 +133,7 @@ function mediaLabel(row: FeatureRow): string {
             :autoplay="row.media.autoplay"
             :loop="row.media.loop"
             :minimal="row.media.minimal"
+            :preview="row.media.preview"
             :hide-controls="row.media.hideControls"
             :fit="row.media.fit"
             :class="

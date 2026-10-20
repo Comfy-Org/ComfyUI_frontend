@@ -14,7 +14,7 @@
       @keydown="handleSearchKeydown"
     />
   </div>
-  <DropdownMenuSeparator class="my-1 h-px bg-border-subtle" />
+  <DropdownMenuSeparator class="my-1 h-px bg-border/50" />
 
   <template v-if="isSearching">
     <template v-if="matchingMediaTypes.length">

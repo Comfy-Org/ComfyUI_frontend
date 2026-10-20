@@ -29,6 +29,7 @@ export interface AgentStarterPromptAttribution {
   promptId: AgentStarterPromptId
   promptIndex: number
   promptCount: number
+  visiblePromptCount: number
   promptTextHash: string
   locale: string
   assignment?: AgentStarterPromptAssignment
@@ -45,17 +46,27 @@ export function starterPromptIdAt(index: number): AgentStarterPromptId {
   return STARTER_PROMPT_IDS[index] ?? 'unregistered'
 }
 
+/**
+ * `count` is the size of the rendered set; `visibleCount` is how many of that
+ * set the viewer could actually see, which is smaller in a narrow panel. They
+ * are two separate facts and are reported as two separate fields on purpose —
+ * folding the width-dependent one into `promptCount` would make a set change
+ * and a panel resize indistinguishable to the starter-prompt set experiment.
+ * `visibleCount` defaults to `count` for callers with no layout to measure.
+ */
 export function starterPromptAttribution(
   text: string,
   index: number,
   count: number,
   locale: string,
-  assignment?: AgentStarterPromptAssignment
+  assignment?: AgentStarterPromptAssignment,
+  visibleCount: number = count
 ): AgentStarterPromptAttribution {
   return {
     promptId: starterPromptIdAt(index),
     promptIndex: index,
     promptCount: count,
+    visiblePromptCount: visibleCount,
     promptTextHash: hashPath(text),
     locale,
     ...(assignment ? { assignment } : {})

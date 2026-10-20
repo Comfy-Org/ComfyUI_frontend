@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Ref, ShallowRef } from 'vue'
 
-import type { MinimapCanvas } from '../types'
+import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 export function useMinimapInteraction(
   containerRef: Readonly<ShallowRef<HTMLDivElement | null>>,

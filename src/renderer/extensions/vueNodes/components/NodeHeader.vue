@@ -1,27 +1,21 @@
 <template>
-  <div v-if="renderError" class="node-error p-4 text-red-500">
+  <div v-if="renderError" class="node-error p-4 text-destructive">
     {{ st('nodeErrors.header', 'Node Header Error') }}
   </div>
   <div
     v-else
-    :class="
-      cn(
-        'lg-node-header w-full min-w-0 p-1 text-xs',
-        'text-node-component-slot-text',
-        headerShapeClass
-      )
-    "
+    :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
       <!-- Collapse/Expand Button -->
-      <div class="relative mr-auto flex min-w-0 shrink items-center gap-1">
+      <div class="relative mr-auto flex min-w-0 items-center gap-1">
         <div class="flex shrink-0 items-center px-0.5">
           <Button
             size="icon-sm"
             variant="textonly"
-            class="hover:bg-transparent"
+            class="text-inherit hover:bg-transparent"
             data-testid="node-collapse-button"
             @click.stop="handleCollapse"
             @dblclick.stop
@@ -33,11 +27,9 @@
                   collapsed && '-rotate-90'
                 )
               "
-              class="text-node-component-header-icon"
             />
           </Button>
         </div>
-        <!-- Node Title -->
         <Tooltip :disabled="!tooltipText">
           <TooltipTrigger as-child>
             <div

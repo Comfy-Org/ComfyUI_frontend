@@ -1,5 +1,6 @@
 <template>
   <div
+    class="text-xs"
     :class="
       cn(
         WidgetInputBaseClass,
@@ -10,14 +11,14 @@
     :data-widget-name="widget.name"
   >
     <template v-if="resolution">
-      <span class="text-xs" data-testid="resolution-preview-value">
+      <span data-testid="resolution-preview-value">
         {{ resolution.width }} × {{ resolution.height }}
       </span>
-      <span class="text-xs text-muted-foreground">
+      <span class="text-muted-foreground">
         {{ resolution.mpLabel }}
       </span>
     </template>
-    <span v-else class="text-xs text-muted-foreground"> — </span>
+    <span v-else class="text-muted-foreground"> — </span>
   </div>
 </template>
 

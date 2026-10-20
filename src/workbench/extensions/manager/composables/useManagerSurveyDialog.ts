@@ -18,9 +18,6 @@ export function useManagerSurveyDialog() {
       component: ManagerSurveyDialog,
       props: {
         onClose: hide
-      },
-      dialogComponentProps: {
-        contentClass: 'w-full sm:max-w-lg rounded-2xl overflow-hidden'
       }
     })
   }

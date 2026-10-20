@@ -8,6 +8,6 @@ export class AuthToasts {
   }
 
   withText(text: string): Locator {
-    return this.list.getByRole('alert').filter({ hasText: text })
+    return this.list.getByRole('listitem').filter({ hasText: text })
   }
 }

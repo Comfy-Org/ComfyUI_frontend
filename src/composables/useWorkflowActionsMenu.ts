@@ -213,7 +213,7 @@ export function useWorkflowActionsMenu(
         if (!(await ensureWorkflowActive(targetWorkflow.value))) return
         await openDeployToComfyApiDialog().catch(toastErrorHandler)
       },
-      visible: isRoot,
+      visible: isRoot && !isCloud,
       newItemBadge: t('g.new')
     })
 
