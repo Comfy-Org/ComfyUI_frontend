@@ -6,6 +6,7 @@ import { useDocumentVisibility } from '@vueuse/core'
 import { computed, shallowRef, watch } from 'vue'
 
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { SubscribeResponse } from '@/platform/workspace/api/workspaceApi'
@@ -59,6 +60,7 @@ export function useSubscriptionCheckoutBanner(
   const launch = shallowRef<CheckoutLaunch>({ state: 'idle' })
 
   const banner = computed(() => {
+    if (!isCloud) return null
     const shown =
       operation.value && subscriptionCheckoutBannerFor(operation.value)
     return shown && !dismissed.value.has(`${shown.opId}:${shown.kind}`)
@@ -67,6 +69,7 @@ export function useSubscriptionCheckoutBanner(
   })
 
   async function refresh() {
+    if (!isCloud) return
     try {
       operation.value = await readSubscriptionOperation(operation.value)
     } catch (error) {

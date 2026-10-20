@@ -30,6 +30,22 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 
 import BillingTab from './BillingTab.vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get DISTRIBUTION() {
+    return distribution.isCloud ? 'cloud' : 'localhost'
+  },
+  get isCloud() {
+    return distribution.isCloud
+  },
+  get isDesktop() {
+    return false
+  },
+  get isNightly() {
+    return false
+  }
+}))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -814,6 +830,37 @@ describe('BillingTab', () => {
         ).toEqual(action ? ['Dismiss', action] : ['Dismiss'])
       }
     )
+
+    it('hides a plan checkout on local and keeps a top-up banner', async () => {
+      distribution.isCloud = false
+      try {
+        servedOperation(parked)
+        vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+          checkouts: [
+            {
+              session_id: 'cs_bank',
+              amount_cents: 2500,
+              created_at: '2026-10-20T00:00:00Z'
+            }
+          ],
+          next_cursor: null
+        })
+        vi.mocked(workspaceApi.getTopupCheckout).mockResolvedValue({
+          session_id: 'cs_bank',
+          amount_cents: 2500,
+          payment_amount_cents: 2500,
+          state: 'payment_processing'
+        })
+        arrange()
+
+        const banner = await screen.findByTestId('billing-checkout-banner')
+        expect(banner).toHaveTextContent('Payment processing')
+        expect(banner).not.toHaveTextContent('unfinished checkout')
+        expect(workspaceApi.getBillingOpStatus).not.toHaveBeenCalled()
+      } finally {
+        distribution.isCloud = true
+      }
+    })
 
     it('reopens the parked checkout in a reserved tab', async () => {
       servedOperation(parked)
