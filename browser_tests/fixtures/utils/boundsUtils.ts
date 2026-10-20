@@ -109,3 +109,20 @@ export async function intersection(a: Locator, b: Locator) {
 
   return { x, y, width, height }
 }
+
+interface Area {
+  x: number
+  y: number
+  width?: number
+  height?: number
+}
+
+/** The rectangle covering every box or point, grown by `margin` on each side; pass it as `toHaveScreenshot`'s `clip`. */
+export function clipAround(areas: readonly Area[], margin = 0) {
+  const left = Math.min(...areas.map(({ x }) => x)) - margin
+  const top = Math.min(...areas.map(({ y }) => y)) - margin
+  const right = Math.max(...areas.map(({ x, width = 0 }) => x + width)) + margin
+  const bottom =
+    Math.max(...areas.map(({ y, height = 0 }) => y + height)) + margin
+  return { x: left, y: top, width: right - left, height: bottom - top }
+}

@@ -2,6 +2,7 @@ import { toRerouteId } from '@/types/rerouteId'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { test } from '@e2e/fixtures/linkVisibilityFixture'
+import { clipAround } from '@e2e/fixtures/utils/boundsUtils'
 
 test.use({
   initialSettings: { 'Comfy.UseNewMenu': 'Disabled' }
@@ -196,15 +197,7 @@ test.describe(
         y: outputBox.y + outputBox.height / 2
       }
       const dragTo = { x: start.x + 160, y: start.y + 120 }
-      const margin = 40
-      const left = Math.min(start.x, inputBox.x) - margin
-      const top = Math.min(start.y, inputBox.y) - margin
-      const linkRegion = {
-        x: left,
-        y: top,
-        width: Math.max(dragTo.x, inputBox.x + inputBox.width) + margin - left,
-        height: Math.max(dragTo.y, inputBox.y + inputBox.height) + margin - top
-      }
+      const linkRegion = clipAround([start, dragTo, inputBox], 40)
 
       await test.step('Dragging away from the output keeps the link revealed', async () => {
         await comfyMouse.move(start)
