@@ -271,6 +271,21 @@ describe('DeployToComfyApiCard', () => {
     }
   )
 
+  it('keeps the dialog open when the blocked-tab link is right-clicked', async () => {
+    fakeInstallationDeploy(
+      { status: 'tab_blocked', url: BUILDER_URL },
+      { status: 'opened' }
+    )
+    const { onDone, user } = renderCard({ deploysInstallation: true })
+
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByRole('link', { name: 'Open the build wizard' })
+    })
+
+    expect(onDone).not.toHaveBeenCalled()
+  })
+
   it('shows the placeholder when there is no video', () => {
     renderCard()
 
