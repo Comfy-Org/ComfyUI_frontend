@@ -16,13 +16,15 @@ import { parse } from 'yaml'
 import { z } from 'zod'
 
 const script = join(import.meta.dirname, 'plan-playwright-videos.sh')
-// The recording command runs with PATH limited to stub binaries, so resolve
-// bash from the caller's PATH up front.
-const bash =
-  (process.env.PATH ?? '')
+function resolveBashPath(): string {
+  const found = (process.env.PATH ?? '')
     .split(delimiter)
     .map((dir) => join(dir, 'bash'))
-    .find((candidate) => existsSync(candidate)) ?? 'bash'
+    .find((candidate) => existsSync(candidate))
+  if (!found) throw new Error('bash not found on PATH')
+  return found
+}
+const bash = resolveBashPath()
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
 
 function fixture(chromiumCount: number, cloudCount = 0) {
