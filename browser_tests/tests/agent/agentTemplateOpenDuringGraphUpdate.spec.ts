@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
-import type { ClickedTemplate } from '@e2e/fixtures/components/Templates'
+import type { ClickedTemplate } from '@e2e/tests/agent/agentTemplates'
+import { AgentTemplates } from '@e2e/tests/agent/agentTemplates'
 
 test.describe(
   'PM-2126: opening a template while the agent is updating the graph',
@@ -11,11 +12,10 @@ test.describe(
 
     test('opens the template without the load-failure toast', async ({
       agentConversation,
-      comfyPage,
       page,
       toast
     }) => {
-      const { templates } = comfyPage
+      const templates = new AgentTemplates(page)
       let graphOpsSeen = 0
       let clicked: ClickedTemplate | undefined
       let releaseTemplate = () => {}

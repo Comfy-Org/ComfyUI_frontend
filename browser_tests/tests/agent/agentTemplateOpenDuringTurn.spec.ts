@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { agentTurnLockTest as test } from '@e2e/fixtures/agentTurnLockFixture'
-import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
+import { AgentTemplates } from '@e2e/tests/agent/agentTemplates'
 
 test.use({ connectWebSocketToServer: false })
 
@@ -14,7 +14,7 @@ test.describe(
       page,
       toast
     }) => {
-      const templates = new ComfyTemplates(page)
+      const templates = new AgentTemplates(page)
 
       await test.step('agent turn is running', async () => {
         await turnLock.openOnBlankWorkflow()
