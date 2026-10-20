@@ -5,7 +5,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import {
-  getGraphItemClientRects,
+  graphItems,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
 
@@ -68,9 +68,7 @@ test.describe(
       await expect(comfyPage.page).toHaveScreenshot(
         'add-group-group-added.png',
         {
-          clip: await screenshotRegion(
-            await getGraphItemClientRects(comfyPage.page, 'groups')
-          )
+          clip: await screenshotRegion([graphItems(comfyPage.page, 'groups')])
         }
       )
     })

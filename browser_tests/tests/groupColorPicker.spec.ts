@@ -5,7 +5,7 @@ import {
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 import {
-  getGraphItemClientRects,
+  graphItems,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
 
@@ -106,7 +106,7 @@ test.describe(
       await expect(comfyPage.selectionToolbox).toBeVisible()
 
       const clip = await screenshotRegion([
-        ...(await getGraphItemClientRects(comfyPage.page, 'groups')),
+        graphItems(comfyPage.page, 'groups'),
         ...(await comfyPage.contextMenu.ariaMenu.all())
       ])
       await expect(comfyPage.page).toHaveScreenshot(

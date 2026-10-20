@@ -7,7 +7,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import {
-  getGraphItemClientRects,
+  graphItems,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
 
@@ -134,7 +134,7 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await fitToViewInstant(comfyPage)
     const clip = await screenshotRegion([
-      ...(await getGraphItemClientRects(comfyPage.page, 'groups')),
+      graphItems(comfyPage.page, 'groups'),
       ...(await comfyPage.vueNodes.nodes.all())
     ])
     await expect(comfyPage.page).toHaveScreenshot(

@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
-  getGraphItemClientRects,
+  graphItems,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
 import { assertNodeSlotsWithinBounds } from '@e2e/fixtures/utils/slotBoundsUtil'
@@ -88,7 +88,7 @@ test.describe(
       const clip = await screenshotRegion(
         [
           ...(await comfyPage.vueNodes.nodes.all()),
-          ...(await getGraphItemClientRects(comfyPage.page, 'subgraphIO'))
+          graphItems(comfyPage.page, 'subgraphIO')
         ],
         8
       )

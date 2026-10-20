@@ -10,7 +10,7 @@ import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPosit
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
 import {
-  getGraphItemClientRects,
+  graphItems,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
 import type { WorkspaceStore } from '@e2e/types/globals'
@@ -18,12 +18,12 @@ import type { WorkspaceStore } from '@e2e/types/globals'
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 async function graphItemsRegion(comfyPage: ComfyPage) {
-  const region = await screenshotRegion(
-    await getGraphItemClientRects(comfyPage.page, 'all')
-  )
+  const region = await screenshotRegion([graphItems(comfyPage.page, 'all')])
   const legacyMenu = await comfyPage.page.locator('.comfy-menu').boundingBox()
   if (!legacyMenu || region.x + region.width <= legacyMenu.x) return region
-  return { ...region, width: Math.floor(legacyMenu.x) - region.x }
+  const width = Math.floor(legacyMenu.x) - region.x
+  if (width <= 0) throw new Error('Graph items are hidden behind the menu')
+  return { ...region, width }
 }
 
 async function textEncodeNodesRegion(comfyPage: ComfyPage) {
@@ -690,9 +690,7 @@ test.describe('Node Interaction', () => {
       await expect(comfyPage.page).toHaveScreenshot(
         'group-selected-nodes.png',
         {
-          clip: await screenshotRegion(
-            await getGraphItemClientRects(comfyPage.page, 'groups')
-          )
+          clip: await screenshotRegion([graphItems(comfyPage.page, 'groups')])
         }
       )
     }

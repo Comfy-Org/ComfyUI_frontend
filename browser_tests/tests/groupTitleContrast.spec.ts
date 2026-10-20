@@ -4,7 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { setGroupColor } from '@e2e/fixtures/utils/groupHelpers'
 import {
-  getGraphItemClientRects,
+  graphItems,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
 
@@ -31,9 +31,7 @@ test.describe(
       await expect(comfyPage.page).toHaveScreenshot(
         'group-title-contrast-black.png',
         {
-          clip: await screenshotRegion(
-            await getGraphItemClientRects(comfyPage.page, 'groups')
-          )
+          clip: await screenshotRegion([graphItems(comfyPage.page, 'groups')])
         }
       )
     })

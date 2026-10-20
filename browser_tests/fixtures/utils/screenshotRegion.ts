@@ -59,39 +59,55 @@ export async function screenshotRegion(
   padding = 24
 ): Promise<Rect> {
   if (targets.length === 0) throw new Error('No targets to frame')
-  let previous: Rect | undefined
   let current = await enclosingRect(targets, padding)
+  let previous: Rect | undefined
   await expect
     .poll(
       async () => {
-        previous = current
-        current = await enclosingRect(targets, padding)
-        return isEqual(previous, current)
+        const sample = await enclosingRect(targets, padding)
+        const settled = isEqual(previous, sample)
+        previous = current = sample
+        return settled
       },
-      { message: 'Screenshot region targets never settled' }
+      { intervals: [50], message: 'Screenshot region targets never settled' }
     )
     .toBe(true)
   return current
 }
 
-/** Page-space bounds of the shown graph's groups, all positionable items, or subgraph IO nodes. */
-export async function getGraphItemClientRects(
+/** Region target enclosing the shown graph's groups, all positionable items, or subgraph IO nodes, measured live on each read. */
+export function graphItems(
   page: Page,
   kind: 'groups' | 'all' | 'subgraphIO'
-): Promise<Rect[]> {
-  return page.evaluate((kind) => {
-    const app = window.app!
-    const graph = app.canvas.graph!
-    const items = (() => {
-      if (kind === 'groups') return graph.groups
-      if (kind === 'all') return [...graph.positionableItems()]
-      if (!('inputNode' in graph)) throw new Error('Not in a subgraph')
-      return [graph.inputNode, graph.outputNode]
-    })()
-    return items.map(({ boundingRect: [x, y, width, height] }) => {
-      const [left, top] = app.canvasPosToClientPos([x, y])
-      const [right, bottom] = app.canvasPosToClientPos([x + width, y + height])
-      return { x: left, y: top, width: right - left, height: bottom - top }
-    })
-  }, kind)
+): ClientBounded {
+  return {
+    getClientBounding: () =>
+      page.evaluate((kind) => {
+        const app = window.app!
+        const graph = app.canvas.graph!
+        const items = (() => {
+          if (kind === 'groups') return graph.groups
+          if (kind === 'all') return [...graph.positionableItems()]
+          if (!('inputNode' in graph)) throw new Error('Not in a subgraph')
+          return [graph.inputNode, graph.outputNode]
+        })()
+        if (items.length === 0) throw new Error(`No ${kind} to frame`)
+        const rects = items.map((item) => {
+          if (!('measure' in item) || item.flags.collapsed)
+            return item.boundingRect
+          const bounds: [number, number, number, number] = [0, 0, 0, 0]
+          item.measure(bounds)
+          return bounds
+        })
+        const [left, top] = app.canvasPosToClientPos([
+          Math.min(...rects.map(([x]) => x)),
+          Math.min(...rects.map(([, y]) => y))
+        ])
+        const [right, bottom] = app.canvasPosToClientPos([
+          Math.max(...rects.map(([x, , width]) => x + width)),
+          Math.max(...rects.map(([, y, , height]) => y + height))
+        ])
+        return { x: left, y: top, width: right - left, height: bottom - top }
+      }, kind)
+  }
 }
