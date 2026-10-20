@@ -1790,12 +1790,7 @@ describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1
     const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(activeTab(WORKFLOW_ID))
-    transport.ingest(
-      toolCall('add_node', 'success', undefined, undefined, {
-        workflow_id: WORKFLOW_ID,
-        op_ids: ['op-add']
-      })
-    )
+    transport.ingest(toolCall('add_node', 'success'))
     vi.advanceTimersByTime(STALE_AFTER_MS)
 
     expect(toolParts(message)[0]).toMatchObject({
@@ -1956,12 +1951,7 @@ describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1
     const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(activeTab(WORKFLOW_ID))
-    transport.ingest(
-      toolCall('add_node', 'success', undefined, undefined, {
-        workflow_id: WORKFLOW_ID,
-        op_ids: ['op-add']
-      })
-    )
+    transport.ingest(toolCall('add_node', 'success'))
     transport.dispose()
 
     expect(toolParts(message)[0]).toMatchObject({

@@ -124,27 +124,20 @@ export function createAgentEventTransport(
   // part that never gets a `notifyCanvasCaughtUp` call still settles.
   const pendingCanvasSync = new Map<ToolPart, PendingCanvasSync>()
   const observedCanvasOps = new Map<string, Set<string>>()
-  // PM-1575: the outcome count as of the last time some tool part actually
-  // claimed a canvas catch-up (see `claimCanvasSyncOutcome` below), starting
-  // at this transport's own creation. `canvasSyncBaseline` below hands each
-  // NEW tool part this shared watermark rather than a fresh
-  // `getCanvasSyncOutcomeCount()` read, because that read is worthless when a
-  // tool call's first-ever frame is already its terminal one (the common
-  // case -- recorded conversations never send a `running` frame at all,
-  // see the file header): capturing the baseline and checking it happen in
-  // the same synchronous call, so a fresh read is trivially equal to itself
-  // regardless of whether a `doc_update` already landed moments earlier. The
-  // watermark instead stays stale across that no-op `notifyCanvasCaughtUp()`
-  // call, so the next part created can see the count has moved since the
-  // watermark was last claimed and settle immediately.
-  let canvasSyncOutcomeWatermark = getCanvasSyncOutcomeCount()
-  // The outcome-count watermark handed to each tool part when it is first
-  // seen (see `canvasSyncOutcomeWatermark` above).
+  // PM-1575: the outcome count at this transport's own creation.
+  // `canvasSyncBaseline` below hands each NEW tool part this value rather
+  // than a fresh `getCanvasSyncOutcomeCount()` read, because that read is
+  // worthless when a tool call's first-ever frame is already its terminal
+  // one (the common case -- recorded conversations never send a `running`
+  // frame at all, see the file header): a fresh read is trivially equal to
+  // itself regardless of whether a `doc_update` already landed moments
+  // earlier. It is never advanced: the count cannot say which write a frame
+  // carried, so one write consuming it would leave a coalesced second write
+  // looking as though nothing arrived.
+  const canvasSyncOutcomeAtStart = getCanvasSyncOutcomeCount()
+  // The start count handed to each tool part when it is first seen (see
+  // `canvasSyncOutcomeAtStart` above).
   const canvasSyncBaseline = new Map<ToolPart, number>()
-
-  function claimCanvasSyncOutcome(): void {
-    canvasSyncOutcomeWatermark = getCanvasSyncOutcomeCount()
-  }
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
     const pending = pendingCanvasSync.get(part)
@@ -153,16 +146,15 @@ export function createAgentEventTransport(
   }
 
   /**
-   * Only a correlated frame names the ops whose arrival proves the write, so
-   * only it can be confirmed or denied. An uncorrelated frame settles on the
-   * legacy unscoped signals without a claim either way: the outcome counter
-   * cannot say which workflow, or which write, a live frame belonged to.
+   * Only a correlated frame names the ops whose arrival proves the write. An
+   * uncorrelated frame is released by any live frame, which the unscoped
+   * outcome count cannot attribute to a workflow or a write, so that release
+   * makes no canvas claim. It is still denied when no live frame arrives.
    */
-  function canvasOutcome(
-    correlation: CanvasCorrelation | undefined,
-    { observed }: { observed: boolean }
-  ): boolean | undefined {
-    return correlation === undefined ? undefined : observed
+  function observedCanvasOutcome(
+    correlation: CanvasCorrelation | undefined
+  ): true | undefined {
+    return correlation === undefined ? undefined : true
   }
 
   function settlePendingCanvasSync(
@@ -176,11 +168,8 @@ export function createAgentEventTransport(
 
   function flushPendingCanvasSync(): void {
     if (pendingCanvasSync.size === 0) return
-    for (const [part, pending] of pendingCanvasSync)
-      settlePendingCanvasSync(part, {
-        canvasConfirmed: canvasOutcome(pending.correlation, { observed: false })
-      })
-    claimCanvasSyncOutcome()
+    for (const part of pendingCanvasSync.keys())
+      settlePendingCanvasSync(part, { canvasConfirmed: false })
     emit(snapshotMessage(message))
   }
 
@@ -235,15 +224,12 @@ export function createAgentEventTransport(
     for (const [part, pending] of pendingCanvasSync) {
       if (shouldSettlePendingCanvasSync(pending, evidence)) {
         settlePendingCanvasSync(part, {
-          canvasConfirmed: canvasOutcome(pending.correlation, {
-            observed: true
-          })
+          canvasConfirmed: observedCanvasOutcome(pending.correlation)
         })
         changed = true
       }
     }
     if (!changed) return
-    claimCanvasSyncOutcome()
     emit(snapshotMessage(message))
   }
 
@@ -296,17 +282,14 @@ export function createAgentEventTransport(
     }
     if (canvasWasObserved(correlation, baseline)) {
       settlePendingCanvasSync(part, {
-        canvasConfirmed: canvasOutcome(correlation, { observed: true })
+        canvasConfirmed: observedCanvasOutcome(correlation)
       })
-      claimCanvasSyncOutcome()
       return
     }
     pendingCanvasSync.set(part, {
       correlation,
       timer: setTimeout(() => {
-        settlePendingCanvasSync(part, {
-          canvasConfirmed: canvasOutcome(correlation, { observed: false })
-        })
+        settlePendingCanvasSync(part, { canvasConfirmed: false })
         emit(snapshotMessage(message))
       }, STALE_AFTER_MS)
     })
@@ -323,7 +306,7 @@ export function createAgentEventTransport(
       }
       tools.set(data.tool_call_id, part)
       message.parts.push(part)
-      canvasSyncBaseline.set(part, canvasSyncOutcomeWatermark)
+      canvasSyncBaseline.set(part, canvasSyncOutcomeAtStart)
     }
     part.name = data.tool_name
     updateSkill(part, data.skill)
