@@ -1,0 +1,86 @@
+{
+  "id": "agent-inserted-subgraph-save-image",
+  "revision": 0,
+  "last_node_id": 105,
+  "last_link_id": 0,
+  "nodes": [
+    {
+      "id": "insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root:node:105",
+      "type": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+      "pos": [64, 104],
+      "size": [225, 368],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {},
+      "widgets_values": []
+    }
+  ],
+  "links": [],
+  "groups": [],
+  "definitions": {
+    "subgraphs": [
+      {
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "version": 1,
+        "state": {
+          "lastGroupId": 0,
+          "lastNodeId": 11,
+          "lastLinkId": 2,
+          "lastRerouteId": 0
+        },
+        "revision": 0,
+        "config": {},
+        "name": "New Subgraph",
+        "inputNode": {
+          "id": -10,
+          "bounding": [300, 350, 120, 60]
+        },
+        "outputNode": {
+          "id": -20,
+          "bounding": [900, 350, 120, 40]
+        },
+        "inputs": [],
+        "outputs": [],
+        "widgets": [],
+        "nodes": [
+          {
+            "id": "insert:0fbd38ecb13037d0b3b0ca78b8a20a5a:root/definition:%22a1b2c3d4-e5f6-7890-abcd-ef1234567890%22:node:6",
+            "type": "SaveImage",
+            "pos": [500.0046924937855, 300.0146992076527],
+            "size": [315, 340],
+            "flags": {},
+            "order": 0,
+            "mode": 0,
+            "inputs": [
+              {
+                "localized_name": "images",
+                "name": "images",
+                "type": "IMAGE",
+                "link": null
+              }
+            ],
+            "outputs": [],
+            "properties": {
+              "Node name for S&R": "SaveImage"
+            },
+            "widgets_values": ["ComfyUI"]
+          }
+        ],
+        "groups": [],
+        "links": [],
+        "extra": {}
+      }
+    ]
+  },
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 1,
+      "offset": [0, 0]
+    }
+  },
+  "version": 0.4
+}

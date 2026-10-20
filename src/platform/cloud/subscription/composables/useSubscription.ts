@@ -58,6 +58,7 @@ import {
   runReportedCheckoutAttempt
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutUtil'
 import { useSubscriptionCancellationWatcher } from './useSubscriptionCancellationWatcher'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 type CloudSubscriptionCheckoutResponse = NonNullable<
   operations['createCloudSubscriptionCheckout']['responses']['201']['content']['application/json']
@@ -551,7 +552,7 @@ function useSubscriptionInternal() {
 
         if (!response.checkout_url) throw missingCheckoutUrlError()
 
-        if (!window.open(response.checkout_url, '_blank')) {
+        if (!openBillingUrl(response.checkout_url)) {
           throw new PaymentPopupBlockedError(
             t('subscription.preview.paymentPopupBlocked')
           )

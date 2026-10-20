@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
-import { computeSubjectTransform } from '../cameraTransform'
-import type { CameraInfoState } from '../types'
+import { computeSubjectTransform } from '@/extensions/core/cameraInfo/cameraTransform'
+import type { CameraInfoState } from '@/extensions/core/cameraInfo/types'
 import { rollBasis } from './rollDragMath'
 
 const RING_RADIUS = 0.9

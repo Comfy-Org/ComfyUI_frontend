@@ -11,6 +11,7 @@ import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilitie
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 // Regression e2e coverage for the fix in dialogService.showSubscriptionRequiredDialog:
 // clicking the agent panel paywall's "Subscribe" action must always open the
@@ -84,7 +85,7 @@ async function sendMessageExpectingPaywall(page: Page) {
 
   await mockNoFundsOnNextTurn(page)
 
-  const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+  const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
   const sendButton = panel.getByRole('button', {
     name: enMessages.agent.send
   })

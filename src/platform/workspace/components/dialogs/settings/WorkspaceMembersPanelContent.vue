@@ -2,7 +2,7 @@
   <div class="flex min-h-0 flex-1 flex-col">
     <div
       v-if="loadFailed"
-      class="flex items-center gap-2 px-6 py-3 text-sm text-warning-background"
+      class="flex items-center gap-2 px-6 py-3 text-sm text-warning"
     >
       <i class="icon-[lucide--circle-alert] size-4 shrink-0" />
       <span>{{ $t('workspacePanel.members.loadFailed') }}</span>

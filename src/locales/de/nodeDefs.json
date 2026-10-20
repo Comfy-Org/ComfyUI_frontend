@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Konvertiert Text in Sprache. Unterstützt Emotionshinweise im Text ([happy], [whispering] bei s2.1-pro; (happy) bei s1) und Dialoge mit mehreren Sprechern über {'@'}Voice1/{'@'}Voice2-Tags mit mehreren verbundenen Stimmen.",
+    "description": "Wandelt Text in Sprache um. Unterstützt Emotionshinweise im Text ([happy], [whispering] bei s2.1-pro; (happy) bei s1), natürlichsprachliche [Anweisungen] und `<whisper>...</whisper>`-Wort-Tags bei drama-3 sowie Dialoge mit mehreren Sprechern über {'@'}Voice1/{'@'}Voice2-Tags mit mehreren verbundenen Stimmen.",
     "display_name": "Fish Audio Text zu Sprache",
     "inputs": {
       "control_after_generate": {
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Gestalten Sie ein Video anhand von Referenzbildern mit neuen Charakteren, Orten oder Stilen um, während Bewegung, Kamerabewegung und Timing erhalten bleiben.",
+    "display_name": "Higgsfield Genjutsu Motion Transfer",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Skalieren Sie niedrig aufgelöste Bilder auf Superauflösung hoch und entfernen Sie Artefakte und Rauschen. Maximale Ausgabe: 32 Megapixel.",
     "display_name": "HitPaw Allgemeine Bildverbesserung",
@@ -9263,6 +9290,28 @@
       },
       "rotation": {
         "name": "rotation"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "Erweitert die sRGB-Helligkeit zu Rec.2020 HLG HDR. Speichern Sie das Ergebnis mit ausgewähltem HDR-Farbraum. Alpha bleibt erhalten.",
+    "display_name": "SDR in HDR konvertieren",
+    "inputs": {
+      "algorithm": {
+        "name": "Algorithmus",
+        "tooltip": "Rationale Erweiterung im Lottes-Stil, gemischt mit einer kalibrierten monotonen Log-Gain-Kurve."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "Bild",
+        "tooltip": "SDR-Bild(er) in sRGB."
       }
     },
     "outputs": {

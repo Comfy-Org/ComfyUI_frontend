@@ -1,5 +1,5 @@
-import type { Point } from '../interfaces'
-import { LinkDirection } from '../types/globalEnums'
+import type { Point } from '@/lib/litegraph/src/interfaces'
+import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 
 export type CubicBezier = readonly [Point, Point, Point, Point]
 

@@ -126,10 +126,8 @@ async function cancelDownload(taskId: TaskId) {
 <template>
   <ToastPanel v-model:expanded="isExpanded" :visible :announcement>
     <template #default>
-      <div
-        class="flex h-12 items-center justify-between border-b border-border-default px-4"
-      >
-        <h3 class="text-sm font-bold text-base-foreground">
+      <div class="flex h-12 items-center justify-between border-b px-4">
+        <h3 class="text-sm font-bold">
           {{ t('progressToast.importingModels') }}
         </h3>
         <div class="flex items-center gap-2">
@@ -149,7 +147,7 @@ async function cancelDownload(taskId: TaskId) {
             content-class="border-none bg-transparent p-0 pt-2"
           >
             <div
-              class="flex min-w-30 flex-col items-stretch rounded-lg border border-interface-stroke bg-interface-panel-surface px-2 py-3"
+              class="flex min-w-30 flex-col rounded-lg border bg-background px-2 py-3"
             >
               <Button
                 v-for="option in filterOptions"
@@ -159,8 +157,7 @@ async function cancelDownload(taskId: TaskId) {
                 :class="
                   cn(
                     'w-full justify-start bg-transparent',
-                    activeFilter === option.value &&
-                      'bg-secondary-background-selected'
+                    activeFilter === option.value && 'bg-muted'
                   )
                 "
                 @click="setFilter(option.value)"
@@ -206,23 +203,19 @@ async function cancelDownload(taskId: TaskId) {
     </template>
 
     <template #footer="{ toggle }">
-      <div
-        class="flex h-12 items-center justify-between gap-2 border-t border-border-default px-4"
-      >
+      <div class="flex h-12 items-center justify-between gap-2 border-t px-4">
         <div class="flex min-w-0 flex-1 items-center gap-2 text-sm">
           <template v-if="isInProgress">
             <Loader size="sm" class="shrink-0 text-muted-foreground" />
-            <span
-              class="min-w-0 flex-1 truncate font-bold text-base-foreground"
-            >
+            <span class="min-w-0 flex-1 truncate font-bold">
               {{ currentJobName }}
             </span>
           </template>
           <template v-else-if="failedJobs.length > 0">
             <i
-              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive-background"
+              class="icon-[lucide--circle-alert] size-4 shrink-0 text-destructive"
             />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
+            <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>
@@ -230,15 +223,15 @@ async function cancelDownload(taskId: TaskId) {
             <i
               class="icon-[lucide--circle-x] size-4 shrink-0 text-muted-foreground"
             />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
+            <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>
           <template v-else>
             <i
-              class="icon-[lucide--check-circle] size-4 shrink-0 text-jade-600"
+              class="icon-[lucide--check-circle] size-4 shrink-0 text-success"
             />
-            <span class="min-w-0 truncate font-bold text-base-foreground">
+            <span class="min-w-0 truncate font-bold">
               {{ outcomeLabel }}
             </span>
           </template>

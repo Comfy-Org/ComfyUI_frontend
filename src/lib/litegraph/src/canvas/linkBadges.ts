@@ -1,14 +1,20 @@
+import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
 import { textOnColor } from '@/utils/colorUtil'
 
-import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from '../interfaces'
-import { LGraphBadge } from '../LGraphBadge'
-import type { LLink } from '../LLink'
+import type {
+  HasBoundingRect,
+  Point,
+  ReadOnlyRect,
+  Rect
+} from '@/lib/litegraph/src/interfaces'
+import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
+
 import type { LinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { compareNodeIds } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import { overlapBounding } from '../measure'
-import { slotTypeKey } from '../utils/type'
+import { overlapBounding } from '@/lib/litegraph/src/measure'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
 export const BADGE_GAP = 14
 const BADGE_HEIGHT = 18

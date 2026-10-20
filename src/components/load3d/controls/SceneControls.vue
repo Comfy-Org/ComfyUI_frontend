@@ -9,7 +9,7 @@
       :aria-label="$t('load3d.showGrid')"
       @click="toggleGrid"
     >
-      <i class="pi pi-table text-lg text-base-foreground" />
+      <i class="pi pi-table text-lg text-foreground" />
     </Button>
 
     <template v-if="!hdriActive">
@@ -23,7 +23,7 @@
           :aria-label="$t('load3d.backgroundColor')"
           @click="openColorPicker"
         >
-          <i class="pi pi-palette text-lg text-base-foreground" />
+          <i class="pi pi-palette text-lg text-foreground" />
           <input
             ref="colorPickerRef"
             type="color"
@@ -46,7 +46,7 @@
           :aria-label="$t('load3d.uploadBackgroundImage')"
           @click="openImagePicker"
         >
-          <i class="pi pi-image text-lg text-base-foreground" />
+          <i class="pi pi-image text-lg text-foreground" />
           <input
             ref="imagePickerRef"
             type="file"
@@ -73,7 +73,7 @@
         :aria-label="$t('load3d.panoramaMode')"
         @click="toggleBackgroundRenderMode"
       >
-        <i class="pi pi-globe text-lg text-base-foreground" />
+        <i class="pi pi-globe text-lg text-foreground" />
       </Button>
     </div>
 
@@ -97,7 +97,7 @@
         :aria-label="$t('load3d.removeBackgroundImage')"
         @click="removeBackgroundImage"
       >
-        <i class="pi pi-times text-lg text-base-foreground" />
+        <i class="pi pi-times text-lg text-foreground" />
       </Button>
     </div>
   </div>
