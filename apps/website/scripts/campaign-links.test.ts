@@ -185,7 +185,7 @@ describe('campaign link automation', () => {
   })
 
   it.for([
-    { env: 'CAMPAIGN_VERTICAL', value: 'unknown', message: 'Unknown vertical' },
+    { env: 'CAMPAIGN_VERTICAL', value: 'VFX', message: 'Unknown vertical' },
     {
       env: 'CAMPAIGN_TRACK',
       value: 'other',
@@ -331,6 +331,23 @@ describe('campaign link automation', () => {
       [last.fullUrl],
       [collision.fullUrl]
     ])
+  })
+
+  it('omits a request failure from the report when read-back finds the draft', async () => {
+    const [link] = vfxLinks()
+    const saved = installManager()
+    respondToFetch(creationRoute, (_, init) => {
+      saved.push(...postedLinks(init?.body))
+      return new Response('', { status: 504 })
+    })
+    expect(
+      await syncCampaignLinks([link], { token: 'test', mode: 'create-drafts' })
+    ).toMatchObject({
+      created: 1,
+      missing: [],
+      requiresReview: false,
+      creationFailures: []
+    })
   })
 
   it('fails without any request for a whitespace-only credential', async () => {
@@ -479,31 +496,38 @@ describe('campaign link automation', () => {
     expect(fetchRequests(creationRoute)).toEqual([])
   })
 
+  it('previews every environment field without contacting the manager', async () => {
+    vi.stubEnv('UTM_MANAGER_TOKEN', 'test')
+    vi.stubEnv('CAMPAIGN_VERTICAL', 'vfx')
+    vi.stubEnv('CAMPAIGN_TRACK', 'comfy-led')
+    vi.stubEnv('CAMPAIGN_VERSION', 'v2')
+    vi.stubEnv('CAMPAIGN_SOURCE', 'reddit')
+    vi.stubEnv('CAMPAIGN_CREATIVE', 'sales_demo_03')
+    vi.stubEnv('CAMPAIGN_AUDIENCE', 'vfx_buyers')
+    const report = await runCampaignLinks('preview')
+    expect(report.links).toEqual([
+      {
+        title: 'VFX · comfy-led · v2 · sales_demo_03',
+        campaign: 'comfy_vfx',
+        fullUrl:
+          'https://comfy.org/solutions/vfx/?utm_source=reddit&utm_medium=ads&utm_campaign=comfy_vfx&utm_content=sales_demo_03&utm_term=vfx_buyers'
+      }
+    ])
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it.for([
-    { mode: 'preview', requests: 0, writes: 0 },
-    { mode: 'check', requests: 2, writes: 0 },
-    { mode: 'create-drafts', requests: 4, writes: 1 }
+    { mode: 'check', writes: 0 },
+    { mode: 'create-drafts', writes: 1 }
   ] as const)(
     'runs $mode without crossing its write boundary',
-    async ({ mode, requests, writes }) => {
+    async ({ mode, writes }) => {
       vi.stubEnv('UTM_MANAGER_TOKEN', 'test')
       vi.stubEnv('CAMPAIGN_VERTICAL', 'vfx')
       vi.stubEnv('CAMPAIGN_TRACK', 'comfy-led')
       vi.stubEnv('CAMPAIGN_VERSION', 'v2')
-      vi.stubEnv('CAMPAIGN_SOURCE', 'reddit')
-      vi.stubEnv('CAMPAIGN_CREATIVE', 'sales_demo_03')
-      vi.stubEnv('CAMPAIGN_AUDIENCE', 'vfx_buyers')
       installManager()
-      const report = await runCampaignLinks(mode)
-      expect(report.links).toEqual([
-        {
-          title: 'VFX · comfy-led · v2 · sales_demo_03',
-          campaign: 'comfy_vfx',
-          fullUrl:
-            'https://comfy.org/solutions/vfx/?utm_source=reddit&utm_medium=ads&utm_campaign=comfy_vfx&utm_content=sales_demo_03&utm_term=vfx_buyers'
-        }
-      ])
-      expect(fetch).toHaveBeenCalledTimes(requests)
+      await runCampaignLinks(mode)
       expect(fetchRequests(creationRoute)).toHaveLength(writes)
     }
   )

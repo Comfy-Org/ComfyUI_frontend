@@ -159,9 +159,8 @@ JavaScript-based selection later if metrics demand it.
 ## `campaign-links.ts`
 
 The **Website: Campaign Links** GitHub Actions workflow runs in the cloud on
-manual dispatch. The destination table in `campaign-links.ts` defines six draft
-links: Comfy VFX v2 at `/solutions/vfx/` and five agency-led destinations (VFX v1
-and v2, advertising, film and animation, and architectural visualization).
+manual dispatch. The destination table in `campaign-links.ts` defines the
+supported destinations; run a preview to inspect the generated URLs.
 Unbuilt Comfy advertising, film and animation, and architectural visualization
 pages, retired Comfy VFX v1, and Black Math are excluded. A destination is not a
 launch approval: verify the page and partner assets before publishing its draft.
@@ -189,8 +188,8 @@ actual ad and audience before creating drafts.
 
 Creation sends one link per `/links-batch` request and continues past an
 individual failure. Read-back verifies every missing URL; the report counts only
-verified creations, lists unsaved URLs and per-link failures, and fails the run
-if anything remains unverified. A timeout can happen after a link was saved:
+verified creations, lists unsaved URLs and their request failures, and fails the
+run if anything remains unverified. A timeout can happen after a link was saved:
 inspect the report and manager before rerunning, rather than changing the token
 solely because a request timed out. If read-back itself fails, no verified
 creation report is available; check the manager before rerunning.
@@ -223,10 +222,9 @@ credential. A repository administrator must complete this setup before use:
 5. Merge this workflow onto `main`, run **check**, review its report, then run
    **create-drafts** when the missing links are correct. No schedule is enabled.
 
-The shared manager concurrency group serializes manual runs. PR previews use
-separate groups and cannot cancel a queued manager run. GitHub can replace an
-older pending manual run when another is queued; check for a cancelled run
-before assuming it created drafts.
+Authenticated runs share one concurrency group, so they never overlap. GitHub
+replaces an older pending authenticated run when another is queued; check for a
+cancelled run before assuming it created drafts. Previews are not serialized.
 
 The [UTM Manager skill](https://utm-link-manager.pages.dev/skills/utm-link-manager/SKILL.md)
 documents the API contract. This CLI intentionally uses only `node:` built-ins

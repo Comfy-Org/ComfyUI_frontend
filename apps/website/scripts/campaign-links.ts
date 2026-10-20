@@ -64,7 +64,7 @@ const destinations = [
 ] as const
 
 type Destination = (typeof destinations)[number]
-export type CampaignMode = 'preview' | 'check' | 'create-drafts'
+type CampaignMode = 'preview' | 'check' | 'create-drafts'
 type CampaignFilters = {
   vertical?: 'all' | Destination['vertical']
   track?: 'all' | Destination['track']
@@ -291,7 +291,9 @@ export async function syncCampaignLinks(
     missing: unverified.map(({ fullUrl }) => fullUrl),
     requiresReview: requiresReview || (creating && unverified.length > 0),
     validation,
-    creationFailures
+    creationFailures: creationFailures.filter(
+      ({ fullUrl }) => !savedUrls.has(canonicalUrl(fullUrl))
+    )
   }
 }
 
