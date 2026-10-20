@@ -1,4 +1,4 @@
-import type { useBillingOperationStore } from '../stores/billingOperationStore'
+import type { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 export type BillingOperation = Awaited<
   ReturnType<ReturnType<typeof useBillingOperationStore>['startOperation']>

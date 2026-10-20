@@ -20,6 +20,14 @@
   ],
   "type": "module",
   "sideEffects": false,
+  "imports": {
+    "#package.json": "./package.json",
+    "#/*": {
+      "@comfyorg/account-core": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
   "exports": {
     "./boundedOperation": {
       "types": "./dist-types/core/boundedOperation.d.ts",
@@ -220,7 +228,7 @@
   "scripts": {
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
-    "build": "pnpm run clean && tsc -p tsconfig.build.json",
+    "build": "pnpm run clean && vite build --logLevel error",
     "check:pack": "tsx scripts/checkPublishable.ts",
     "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
     "prepack": "pnpm run build",
@@ -233,12 +241,14 @@
     "@comfyorg/ingest-types": "workspace:^"
   },
   "devDependencies": {
+    "@comfyorg/published-package-build": "workspace:*",
     "@comfyorg/test-utils": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "firebase": "catalog:",
     "happy-dom": "catalog:",
     "typescript": "catalog:",
+    "vite": "catalog:",
     "vitest": "catalog:",
     "zod": "catalog:"
   },
