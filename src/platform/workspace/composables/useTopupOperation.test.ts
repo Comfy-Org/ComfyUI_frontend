@@ -2,10 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import {
   fakeBillingSdk,
   pendingTopup,
+  serverCode,
   settledTopup
 } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
 import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
@@ -185,5 +189,106 @@ describe('useTopupOperation', () => {
 
     expect(refusal).toBeInstanceOf(WorkspaceApiError)
     expect(refusal).toMatchObject({ status: 503, code: 'REQUEST_FAILED' })
+  })
+
+  describe('createHostedCheckout', () => {
+    type Refusal = { status: number; code: string }
+    const busy: Refusal = { status: 409, code: 'TOPUP_CHECKOUT_BUSY' }
+    const notPayable: Refusal = {
+      status: 409,
+      code: 'TOPUP_CHECKOUT_NOT_PAYABLE'
+    }
+    const returnUrl = 'https://cloud.comfy.org/topup-return'
+
+    const rails = [
+      {
+        rail: 'legacy',
+        flagOn: false,
+        mint: (outcomes: Array<string | Refusal>) => {
+          const mint = vi.spyOn(workspaceApi, 'createTopupCheckout')
+          for (const outcome of outcomes) {
+            if (typeof outcome === 'string') {
+              mint.mockResolvedValueOnce({ checkout_url: outcome })
+            } else {
+              mint.mockRejectedValueOnce(
+                new WorkspaceApiError('refused', outcome.status, outcome.code)
+              )
+            }
+          }
+          return mint
+        }
+      },
+      {
+        rail: 'SDK',
+        flagOn: true,
+        mint: (outcomes: Array<string | Refusal>) => {
+          const mint = vi.mocked(harness.sdk.topup.createHostedTopupCheckout)
+          for (const outcome of outcomes) {
+            mint.mockResolvedValueOnce(
+              typeof outcome === 'string'
+                ? { status: 'ok', url: outcome }
+                : {
+                    status: 'error',
+                    code: 'REQUEST_FAILED',
+                    httpStatus: outcome.status,
+                    serverCode: serverCode(outcome.code)
+                  }
+            )
+          }
+          return mint
+        }
+      }
+    ]
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    async function settle(promise: Promise<string>) {
+      const outcome = promise.then(
+        (url) => ({ url }),
+        (error: unknown) => ({ error })
+      )
+      await vi.runAllTimersAsync()
+      return outcome
+    }
+
+    it.for(rails)(
+      'mints a fresh checkout after a retryable refusal on the $rail rail',
+      async ({ flagOn, mint }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const mintCheckout = mint([busy, notPayable, 'https://stripe/new'])
+
+        const outcome = await settle(
+          useTopupOperation().createHostedCheckout(1000, returnUrl)
+        )
+
+        expect(outcome).toEqual({ url: 'https://stripe/new' })
+        expect(mintCheckout).toHaveBeenCalledTimes(3)
+      }
+    )
+
+    it.for([
+      {
+        name: 'a refusal outside the retryable set',
+        outcomes: [{ status: 503, code: 'TOPUP_CHECKOUT_UNAVAILABLE' }],
+        attempts: 1
+      },
+      {
+        name: 'the last retryable refusal',
+        outcomes: [busy, busy, busy],
+        attempts: 3
+      }
+    ])('surfaces $name', async ({ outcomes, attempts }) => {
+      flagState.billingSdkTopupEnabled = false
+      const mintCheckout = rails[0].mint(outcomes)
+
+      const outcome = await settle(
+        useTopupOperation().createHostedCheckout(1000, returnUrl)
+      )
+
+      expect(outcome).toEqual({ error: expect.any(WorkspaceApiError) })
+      expect(mintCheckout).toHaveBeenCalledTimes(attempts)
+    })
   })
 })
