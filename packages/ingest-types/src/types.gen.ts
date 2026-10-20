@@ -1350,7 +1350,11 @@ export type AgentConsentSettingValue = {
 /**
  * Server-to-client CRDT document frame carried by the /ws envelope.
  */
-export type ServerDocFrame = DocUpdateFrame | DocResetFrame | DocOpsResultFrame
+export type ServerDocFrame =
+  | DocSubscribedFrame
+  | DocUpdateFrame
+  | DocResetFrame
+  | DocOpsResultFrame
 
 /**
  * First rejected op in an abort-remainder batch.
@@ -1420,6 +1424,37 @@ export type DocUpdateData = {
 export type DocUpdateFrame = {
   data: DocUpdateData
   type: 'doc_update'
+}
+
+export type DocSubscribedData = {
+  code?: string
+  /**
+   * Binds a stale-schema refusal to the exact row the client may re-mint. Present only with stale_schema_reseed_required.
+   */
+  expected_seq?: number
+  /**
+   * Current lineage sequence. On an accepted subscription, omission means lineage 0 (the document has not been minted yet).
+   */
+  lineage_seq?: number
+  /**
+   * Human-readable rejection reason. The generated Go field is named Reason so it does not collide with the frame's Message method.
+   */
+  message?: string
+  ok: boolean
+  /**
+   * Current document sequence. On an accepted subscription, omission means sequence 0 (the document has not been minted yet).
+   */
+  seq?: number
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Server acknowledgement for a doc_subscribe request.
+ */
+export type DocSubscribedFrame = {
+  data: DocSubscribedData
+  type: 'doc_subscribed'
 }
 
 /**
