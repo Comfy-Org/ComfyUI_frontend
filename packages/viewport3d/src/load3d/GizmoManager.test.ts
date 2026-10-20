@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GizmoManager } from './GizmoManager'
@@ -23,7 +23,7 @@ const {
   omitGetPointer: { value: false }
 }))
 
-vi.mock(import('three/examples/jsm/controls/TransformControls.js'), () => {
+vi.mock(import('three/examples/jsm/controls/TransformControls'), () => {
   class TransformControls {
     enabled = true
     dragging = false
@@ -61,7 +61,7 @@ vi.mock(import('three/examples/jsm/controls/TransformControls.js'), () => {
   return { TransformControls: fromAny(TransformControls) }
 })
 
-vi.mock(import('three/examples/jsm/controls/OrbitControls.js'), () => {
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {
     enabled = true
   }

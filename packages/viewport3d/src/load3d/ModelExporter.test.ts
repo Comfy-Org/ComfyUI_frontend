@@ -17,7 +17,7 @@ vi.mock(import('./downloadBlob'), () => ({
   downloadBlob: vi.fn()
 }))
 
-vi.mock(import('three/examples/jsm/exporters/GLTFExporter.js'), () => ({
+vi.mock(import('three/examples/jsm/exporters/GLTFExporter'), () => ({
   GLTFExporter: fromAny(
     class {
       parse = gltfParseMock
@@ -25,7 +25,7 @@ vi.mock(import('three/examples/jsm/exporters/GLTFExporter.js'), () => ({
   )
 }))
 
-vi.mock(import('three/examples/jsm/exporters/OBJExporter.js'), () => ({
+vi.mock(import('three/examples/jsm/exporters/OBJExporter'), () => ({
   OBJExporter: fromAny(
     class {
       parse = objParseMock
@@ -33,7 +33,7 @@ vi.mock(import('three/examples/jsm/exporters/OBJExporter.js'), () => ({
   )
 }))
 
-vi.mock(import('three/examples/jsm/exporters/STLExporter.js'), () => ({
+vi.mock(import('three/examples/jsm/exporters/STLExporter'), () => ({
   STLExporter: fromAny(
     class {
       parse = stlParseMock

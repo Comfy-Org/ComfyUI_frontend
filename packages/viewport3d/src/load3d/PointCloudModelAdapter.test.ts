@@ -14,7 +14,7 @@ vi.mock(import('./loader/ply'), () => ({
 const plyLoaderParse = vi.fn(() => makePLYGeometry({ withFaces: true }))
 const fastPlyLoaderParse = vi.fn(() => makePLYGeometry({ withFaces: true }))
 
-vi.mock(import('three/examples/jsm/loaders/PLYLoader.js'), () => ({
+vi.mock(import('three/examples/jsm/loaders/PLYLoader'), () => ({
   PLYLoader: fromAny(
     class {
       setPath = vi.fn()

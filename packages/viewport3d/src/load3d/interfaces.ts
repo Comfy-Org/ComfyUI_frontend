@@ -1,9 +1,9 @@
 // Use type-only imports to avoid pulling THREE.js into the main bundle
 // These imports are erased at compile time and don't create runtime dependencies
 import type * as THREE from 'three'
-import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper.js'
-import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
 export type MaterialMode =
   | 'original'

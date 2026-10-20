@@ -6,10 +6,10 @@ import {
   readFbxPolygons
 } from '@comfyorg/quad-wireframe-three'
 import * as THREE from 'three'
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
-import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js'
-import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader'
 import { MtlObjBridge, OBJLoader2Parallel } from 'wwobjloader2'
 // Use pre-bundled worker module (has all dependencies included).
 // The unbundled 'wwobjloader2/worker' has ES imports that fail in production builds.

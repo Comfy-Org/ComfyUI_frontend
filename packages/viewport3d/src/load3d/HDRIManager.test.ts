@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js'
-import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js'
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
+import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 
 import { createRendererViewState } from '../three/sharedWebGLRenderer'
 
@@ -25,7 +25,7 @@ beforeEach(() => {
   })
 })
 
-vi.mock(import('three/examples/jsm/loaders/EXRLoader.js'), () => {
+vi.mock(import('three/examples/jsm/loaders/EXRLoader'), () => {
   class EXRLoader {
     load(
       _url: string,
@@ -39,7 +39,7 @@ vi.mock(import('three/examples/jsm/loaders/EXRLoader.js'), () => {
   return { EXRLoader: fromAny(EXRLoader) }
 })
 
-vi.mock(import('three/examples/jsm/loaders/RGBELoader.js'), () => {
+vi.mock(import('three/examples/jsm/loaders/RGBELoader'), () => {
   class RGBELoader {
     load(
       _url: string,

@@ -45,7 +45,7 @@ const objLoaderStub = {
   )
 }
 
-vi.mock(import('three/examples/jsm/loaders/STLLoader.js'), () => ({
+vi.mock(import('three/examples/jsm/loaders/STLLoader'), () => ({
   STLLoader: fromAny(
     class {
       setPath = stlLoaderStub.setPath
@@ -54,7 +54,7 @@ vi.mock(import('three/examples/jsm/loaders/STLLoader.js'), () => ({
   )
 }))
 
-vi.mock(import('three/examples/jsm/loaders/FBXLoader.js'), () => ({
+vi.mock(import('three/examples/jsm/loaders/FBXLoader'), () => ({
   FBXLoader: fromAny(
     class {
       setPath = fbxLoaderStub.setPath
@@ -63,7 +63,7 @@ vi.mock(import('three/examples/jsm/loaders/FBXLoader.js'), () => ({
   )
 }))
 
-vi.mock(import('three/examples/jsm/loaders/GLTFLoader.js'), () => ({
+vi.mock(import('three/examples/jsm/loaders/GLTFLoader'), () => ({
   GLTFLoader: fromAny(
     class {
       setPath = gltfLoaderStub.setPath
@@ -72,7 +72,7 @@ vi.mock(import('three/examples/jsm/loaders/GLTFLoader.js'), () => ({
   )
 }))
 
-vi.mock(import('three/examples/jsm/loaders/MTLLoader.js'), () => ({
+vi.mock(import('three/examples/jsm/loaders/MTLLoader'), () => ({
   MTLLoader: fromAny(
     class {
       setPath = mtlLoaderStub.setPath

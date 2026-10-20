@@ -8,7 +8,7 @@ const { mockOrbitControls } = vi.hoisted(() => ({
   mockOrbitControls: vi.fn()
 }))
 
-vi.mock(import('three/examples/jsm/controls/OrbitControls.js'), () => {
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   type Listener = () => void
   class OrbitControls {
     object: THREE.Camera

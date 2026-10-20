@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import type { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
+import type { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { SceneOverlay } from '../load3d/interfaces'

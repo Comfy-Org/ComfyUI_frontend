@@ -1,7 +1,7 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
 import { delay } from 'es-toolkit'
 import * as THREE from 'three'
-import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import type { RendererView } from '../three/RendererView'
 import { createHighPrecisionTarget } from '../three/highPrecisionOutput'

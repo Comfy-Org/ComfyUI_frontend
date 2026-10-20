@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils'
 
 import type { AnimationManager } from './AnimationManager'
 import type { GizmoManager } from './GizmoManager'

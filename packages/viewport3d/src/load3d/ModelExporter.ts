@@ -1,8 +1,8 @@
 import { FBXExporter } from '@comfyorg/fbx-exporter-three'
 import type * as THREE from 'three'
-import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
-import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter.js'
-import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js'
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
+import { OBJExporter } from 'three/examples/jsm/exporters/OBJExporter'
+import { STLExporter } from 'three/examples/jsm/exporters/STLExporter'
 
 import { downloadBlob } from './downloadBlob'
 

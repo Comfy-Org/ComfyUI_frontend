@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader.js'
+import { PLYLoader } from 'three/examples/jsm/loaders/PLYLoader'
 
 import { isPLYAsciiFormat } from './loader/ply'
 

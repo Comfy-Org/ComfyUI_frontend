@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js'
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader'
 
 const FXAA_SAMPLE = 'return texture( tex2D, uv );'
 

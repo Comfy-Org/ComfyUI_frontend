@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { TransformControls } from 'three/examples/jsm/controls/TransformControls.js'
+import { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 
 import type { DraggingChangeListener } from './types'
 

@@ -1,7 +1,7 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
 import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
-import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { RendererView } from '../three/RendererView'
@@ -24,7 +24,7 @@ beforeEach(() => {
   vi.spyOn(THREE, 'TextureLoader').mockImplementation(MockTextureLoader)
 })
 
-vi.mock(import('three/examples/jsm/controls/OrbitControls.js'), () => {
+vi.mock(import('three/examples/jsm/controls/OrbitControls'), () => {
   class OrbitControls {}
   return { OrbitControls: fromAny(OrbitControls) }
 })
