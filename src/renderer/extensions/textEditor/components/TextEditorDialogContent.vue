@@ -33,7 +33,7 @@ const textareaRef = useTemplateRef('textareaRef')
 onMounted(() => {
   const element: unknown = textareaRef.value?.$el
   if (!(element instanceof HTMLTextAreaElement)) return
+  element.setSelectionRange(0, 0)
   element.focus()
-  element.setSelectionRange(element.value.length, element.value.length)
 })
 </script>

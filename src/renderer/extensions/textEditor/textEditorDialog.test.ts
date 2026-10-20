@@ -46,13 +46,13 @@ describe('showTextEditor', () => {
     expect(await screen.findByRole('dialog', { name: title })).toBeVisible()
   })
 
-  it('focuses the editor with the caret after the text', async () => {
+  it('focuses the editor with the caret at the start of the text', async () => {
     renderDialogHost()
     openEditor()
 
     const editor = await screen.findByRole<HTMLTextAreaElement>('textbox')
     await waitFor(() => expect(editor).toHaveFocus())
-    expect(editor.selectionStart).toBe('a portrait'.length)
+    expect([editor.selectionStart, editor.selectionEnd]).toEqual([0, 0])
   })
 
   it('passes every keystroke to onEdit exactly as typed', async () => {

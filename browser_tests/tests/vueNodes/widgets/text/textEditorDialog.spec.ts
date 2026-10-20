@@ -22,7 +22,7 @@ test.describe(
       const actions = node.getByRole('group', { name: 'Actions' })
       const dialog = new TextEditorDialog(comfyPage.page)
       const original = await widget.inputValue()
-      const edited = `${original}, at dusk`
+      const edited = `at ${original}, dusk`
 
       await test.step('the actions show on hover, not on focus alone', async () => {
         await widget.click()
@@ -43,12 +43,12 @@ test.describe(
       })
 
       await test.step('typing updates the node while the editor is open', async () => {
-        await comfyPage.page.keyboard.type(', at')
-        await expect(widgetBehindDialog).toHaveValue(`${original}, at`)
+        await comfyPage.page.keyboard.type('at ')
+        await expect(widgetBehindDialog).toHaveValue(`at ${original}`)
 
         await dialog.editor.click()
         await dialog.editor.press('Control+End')
-        await dialog.editor.pressSequentially(' dusk', { delay: 80 })
+        await dialog.editor.pressSequentially(', dusk', { delay: 80 })
 
         await expect(widgetBehindDialog).toHaveValue(edited)
       })
@@ -67,6 +67,32 @@ test.describe(
 
         await expect(widget).toHaveValue(original)
       })
+    })
+
+    test('opens long text scrolled to the top', async ({ comfyPage }) => {
+      const node = comfyPage.vueNodes
+        .getNodeByTitle('CLIP Text Encode (Prompt)')
+        .first()
+      const widget = node.getByRole('textbox', { name: 'text' })
+      const dialog = new TextEditorDialog(comfyPage.page)
+      await widget.fill(
+        Array.from({ length: 60 }, (_, line) => `line ${line + 1}`).join('\n')
+      )
+
+      await widget.hover()
+      await node
+        .getByRole('group', { name: 'Actions' })
+        .getByRole('button', { name: 'Expand' })
+        .click()
+
+      await expect(dialog.editor).toBeFocused()
+      await expect
+        .poll(() =>
+          dialog.editor.evaluate((el) => el.scrollHeight > el.clientHeight)
+        )
+        .toBe(true)
+      await expect(dialog.editor).toHaveJSProperty('scrollTop', 0)
+      await expect(dialog.editor).toHaveJSProperty('selectionStart', 0)
     })
   }
 )
