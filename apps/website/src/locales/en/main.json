@@ -2526,6 +2526,7 @@
     "fishAudio": "Fish Audio",
     "nvidiaVfx": "Nvidia VFX",
     "flux3ImageKlein": "FLUX 3 Image Klein",
+    "krea3": "Krea 3",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
     "changelog": "Changelog"
