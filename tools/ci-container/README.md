@@ -45,7 +45,7 @@ enabled even if the image sets `PYTHONOPTIMIZE`. Failed checks print the
 backend logs.
 
 Candidate validation rebuilds the image for container source, workflow, or Node
-version-file changes. Dependency-only changes do not trigger candidate
+version-file changes. Frontend dependency-only changes do not trigger candidate
 validation; use manual dispatch when a dependency update needs a compatibility
 check against the candidate image. The workflow has read-only repository access
 and does not log in to a registry.
