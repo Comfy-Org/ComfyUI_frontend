@@ -275,7 +275,7 @@
         variant="primary"
         size="lg"
         class="h-10 w-full justify-center"
-        @click="openBlockedCheckout"
+        @click="continueToCheckout"
       >
         {{ $t('credits.topUp.openCheckout') }}
         <i class="icon-[lucide--external-link] size-4" />
@@ -495,7 +495,6 @@ const payAmount = ref(50)
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
-const blockedCheckoutUrl = ref<string | null>(null)
 const step = ref<'amount' | 'confirm' | 'verifying' | 'checkoutBlocked'>(
   topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
 )
@@ -797,6 +796,10 @@ async function continueToCheckout() {
     return
   }
   const checkoutTab = reserveBillingTab()
+  if (!checkoutTab) {
+    step.value = 'checkoutBlocked'
+    return
+  }
   loading.value = true
   try {
     const checkoutUrl = await createHostedCheckout(
@@ -804,29 +807,19 @@ async function continueToCheckout() {
       returnUrl
     )
     if (unmounted) {
-      checkoutTab?.close()
+      checkoutTab.close()
       return
     }
-    if (checkoutTab) {
-      handOffToCheckout(checkoutTab, checkoutUrl)
-      return
-    }
-    blockedCheckoutUrl.value = checkoutUrl
-    step.value = 'checkoutBlocked'
+    handOffToCheckout(checkoutTab, checkoutUrl)
   } catch (error) {
-    checkoutTab?.close()
+    checkoutTab.close()
     console.error('Hosted top-up checkout failed to open', error)
     if (unmounted) return
+    step.value = 'confirm'
     checkoutRecovery.value = 'failed'
   } finally {
     loading.value = false
   }
-}
-
-function openBlockedCheckout() {
-  const checkoutUrl = blockedCheckoutUrl.value
-  const checkoutTab = checkoutUrl ? reserveBillingTab() : null
-  if (checkoutUrl && checkoutTab) handOffToCheckout(checkoutTab, checkoutUrl)
 }
 
 /**
