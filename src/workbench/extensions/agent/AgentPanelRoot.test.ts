@@ -6,6 +6,7 @@ import type {
   AgentThreadListResponse,
   AgentThreadSummary,
   BillingStatus,
+  PaginationInfo,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import type { User } from 'firebase/auth'
@@ -537,8 +538,11 @@ function agentThread({
   }
 }
 
+const threadListRoute = /\/api\/agent\/threads\?/
+
 function agentThreadList(
-  threads: AgentThreadSummary[] = []
+  threads: AgentThreadSummary[] = [],
+  pagination: Partial<PaginationInfo> = {}
 ): AgentThreadListResponse {
   return {
     threads,
@@ -546,7 +550,8 @@ function agentThreadList(
       has_more: false,
       limit: Math.max(threads.length, 1),
       offset: 0,
-      total: threads.length
+      total: threads.length,
+      ...pagination
     }
   }
 }
@@ -1970,8 +1975,7 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
-        if (url.endsWith('/api/agent/threads'))
-          return json(200, agentThreadList())
+        if (threadListRoute.test(url)) return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
@@ -5033,8 +5037,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
-        if (url.endsWith('/api/agent/threads'))
-          return json(200, agentThreadList())
+        if (threadListRoute.test(url)) return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
@@ -5073,8 +5076,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
       async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input)
 
-        if (url.endsWith('/api/agent/threads'))
-          return json(200, agentThreadList())
+        if (threadListRoute.test(url)) return json(200, agentThreadList())
         messageBodies.push(JSON.parse(String(init?.body)))
         return json(202, { thread_id: 'th-1', message_id: 'm-1' })
       }
@@ -5094,10 +5096,25 @@ describe('AgentPanelRoot canvas draft on send', () => {
 })
 
 describe('AgentPanelRoot history', () => {
+  beforeEach(() => {
+    respondToFetch({}, () => json(200, []))
+  })
+
+  async function openHistory(): Promise<void> {
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await screen.findByRole('heading', {
+      name: i18n.global.t('agent.history')
+    })
+  }
+
   async function renderWithActiveThread(): Promise<void> {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
-      return url.endsWith('/api/agent/threads')
+      return threadListRoute.test(url)
         ? new Response(
             JSON.stringify(
               agentThreadList([
@@ -5124,7 +5141,7 @@ describe('AgentPanelRoot history', () => {
 
   it('keeps a new chat rename when the first turn creates its thread', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) =>
-      String(input).endsWith('/api/agent/threads')
+      threadListRoute.test(String(input))
         ? json(200, agentThreadList())
         : json(202, { thread_id: 'th-new', message_id: 'm-new' })
     )
@@ -5153,6 +5170,10 @@ describe('AgentPanelRoot history', () => {
         'Duck storyboard'
       )
     })
+    expect(reportError).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ errorType: 'agent_thread_list_load_failed' })
+    )
   })
 
   it('renames the current chat from the title menu on Enter', async () => {
@@ -5347,7 +5368,7 @@ describe('AgentPanelRoot history', () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
 
-      if (url.endsWith('/api/agent/threads')) {
+      if (threadListRoute.test(url)) {
         return new Response(
           JSON.stringify(
             agentThreadList([
@@ -5392,7 +5413,7 @@ describe('AgentPanelRoot history', () => {
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
         const url = String(input)
 
-        if (url.endsWith('/api/agent/threads'))
+        if (threadListRoute.test(url))
           return json(
             200,
             agentThreadList([
@@ -5419,17 +5440,6 @@ describe('AgentPanelRoot history', () => {
         return json(200, [])
       })
       useAgentConversationStore().setThreadId('th-active')
-    }
-
-    async function openHistory(): Promise<void> {
-      await userEvent.click(
-        await screen.findByRole('button', {
-          name: i18n.global.t('agent.showChatHistory')
-        })
-      )
-      await screen.findByRole('heading', {
-        name: i18n.global.t('agent.history')
-      })
     }
 
     it('shows the first user message while the server title is empty', async () => {
@@ -5490,11 +5500,181 @@ describe('AgentPanelRoot history', () => {
     expect(useAgentChatHistoryStore().sessions).toHaveLength(0)
   })
 
+  it('keeps the loaded chat list and reports a non-retryable failure when a refresh ends before its last page', async () => {
+    respondToFetch(threadListRoute, () =>
+      json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-kept',
+            title: 'Kept chat',
+            last_message_at: '2026-07-07T10:00:00Z'
+          })
+        ])
+      )
+    )
+    renderWithSelectedTarget()
+    const history = useAgentChatHistoryStore()
+    await vi.waitFor(() =>
+      expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
+    )
+    respondToFetch(threadListRoute, () =>
+      json(
+        200,
+        agentThreadList(
+          [
+            agentThread({
+              id: 'th-partial',
+              title: 'Partial chat',
+              last_message_at: '2026-07-07T11:00:00Z'
+            })
+          ],
+          { has_more: true }
+        )
+      )
+    )
+
+    await openHistory()
+
+    await vi.waitFor(() =>
+      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
+    )
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        error_class: 'thread_list_load_failed',
+        retryable: false
+      })
+    )
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Agent thread list ended before its last page'
+      }),
+      expect.objectContaining({ tags: { reason: 'missing_cursor' } })
+    )
+    expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
+  })
+
+  const staleRefreshOutcomes = [
+    {
+      outcome: 'a list',
+      staleResponse: () =>
+        json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-stale',
+              title: 'Stale chat',
+              last_message_at: '2026-07-07T09:00:00Z'
+            })
+          ])
+        )
+    },
+    { outcome: 'a failure', staleResponse: () => json(500, {}) }
+  ]
+
+  it.for(staleRefreshOutcomes)(
+    'ignores a closed panel history refresh that ends with $outcome after the panel reopens',
+    async ({ staleResponse }) => {
+      const secondPageRoute = /\/api\/agent\/threads\?.*after=page-2/
+      let resolveStale!: (response: Response) => void
+      const staleSecondPage = new Promise<Response>((resolve) => {
+        resolveStale = resolve
+      })
+      respondToFetch(threadListRoute, () =>
+        json(
+          200,
+          agentThreadList(
+            [
+              agentThread({
+                id: 'th-old',
+                title: 'Old chat',
+                last_message_at: '2026-07-07T08:00:00Z'
+              })
+            ],
+            { has_more: true, next_cursor: 'page-2' }
+          )
+        )
+      )
+      respondToFetch(secondPageRoute, () => staleSecondPage, { times: 1 })
+      const closedPanel = renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(fetchRequests(secondPageRoute)).toHaveLength(1)
+      )
+      closedPanel.unmount()
+      const secondPageInit = vi
+        .mocked(fetch)
+        .mock.calls.find(([input]) => secondPageRoute.test(String(input)))?.[1]
+      expect(secondPageInit?.signal?.aborted).toBe(true)
+      respondToFetch(threadListRoute, () =>
+        json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-new',
+              title: 'New chat',
+              last_message_at: '2026-07-07T10:00:00Z'
+            })
+          ])
+        )
+      )
+      renderWithSelectedTarget()
+      const history = useAgentChatHistoryStore()
+      await vi.waitFor(() =>
+        expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
+      )
+
+      const stale = staleResponse()
+      resolveStale(stale)
+      await vi.waitFor(() => expect(stale.bodyUsed).toBe(true))
+
+      expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
+      expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+    }
+  )
+
+  it('does not refresh chat history once the panel closes while a picked chat loads', async () => {
+    const pickedMessagesRoute = /\/th-picked\/messages/
+    let resolveMessages!: (response: Response) => void
+    const pickedMessages = new Promise<Response>((resolve) => {
+      resolveMessages = resolve
+    })
+    respondToFetch(threadListRoute, () =>
+      json(
+        200,
+        agentThreadList([
+          agentThread({
+            id: 'th-picked',
+            title: 'Picked chat',
+            last_message_at: '2026-07-07T10:00:00Z'
+          })
+        ])
+      )
+    )
+    respondToFetch(pickedMessagesRoute, () => pickedMessages, { times: 1 })
+    const panel = renderWithSelectedTarget()
+    await openHistory()
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Picked chat' })
+    )
+    await vi.waitFor(() =>
+      expect(fetchRequests(pickedMessagesRoute)).toHaveLength(1)
+    )
+    const listRequestsBeforeClose = fetchRequests(threadListRoute).length
+    panel.unmount()
+
+    const messages = json(200, [])
+    resolveMessages(messages)
+    await vi.waitFor(() => expect(messages.bodyUsed).toBe(true))
+
+    expect(fetchRequests(threadListRoute)).toHaveLength(listRequestsBeforeClose)
+    expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+  })
+
   it('marks the restored thread as the current session', async () => {
     vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
       const url = String(input)
-      return url.endsWith('/api/agent/threads')
-        ? new Response('{"threads":[]}', {
+      return threadListRoute.test(url)
+        ? new Response(JSON.stringify(agentThreadList()), {
             status: 200,
             headers: { 'Content-Type': 'application/json' }
           })
@@ -5522,7 +5702,7 @@ describe('AgentPanelRoot transcript copy', () => {
     async (loaded) => {
       vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
         const url = String(input)
-        return url.endsWith('/api/agent/threads')
+        return threadListRoute.test(url)
           ? new Response(
               JSON.stringify(
                 agentThreadList([

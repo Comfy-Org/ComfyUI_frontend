@@ -1627,10 +1627,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pendingThreadSource.value = source ?? null
   }
 
-  function listThreads() {
-    return rest.listThreads()
-  }
-
   async function loadThread(
     threadId: string,
     isNavigationCurrent: () => boolean = () => true
@@ -2015,7 +2011,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answerAsk,
     answeringAskIds: computed(() => answeringAskIds.value),
     newChat,
-    listThreads,
     loadThread,
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
