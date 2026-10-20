@@ -363,13 +363,11 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
-    closeLegacyMenu = false,
     initialLocalStorage = {},
     mockReleases = true,
     url
   }: {
     clearStorage?: boolean
-    closeLegacyMenu?: boolean
     initialLocalStorage?: Record<string, string>
     mockReleases?: boolean
     url?: string
@@ -408,7 +406,8 @@ export class ComfyPage {
 
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.waitForAppReady()
-    if (closeLegacyMenu) await this.closeMenu()
+    if ((await this.settings.getSetting('Comfy.UseNewMenu')) === 'Disabled')
+      await this.closeMenu()
   }
 
   /**
@@ -711,7 +710,6 @@ export const comfyPageFixture = base.extend<{
       }
 
       await comfyPage.setup({
-        closeLegacyMenu: initialSettings['Comfy.UseNewMenu'] === 'Disabled',
         initialLocalStorage,
         url: initialUrl,
         mockReleases
