@@ -71,6 +71,7 @@ export interface ClientDocFrame {
 interface ParsedClientDocFrame {
   type: string
   workflowId: string | null
+  tab: string | null
   stateVector: string | null
   opsResult: ParsedWireBatch
 }
@@ -90,6 +91,25 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
+/**
+ * Whether every writer the op claims, in its envelope and in its stamp, is the
+ * human actor the agent derives for this frame's tab. The agent refuses the
+ * whole batch otherwise (cloud `services/agent/server/doc_handler.go`,
+ * `messages.HumanActor(userID, req.Tab)`), and the relay answers `forbidden`.
+ */
+function claimsFrameActor(op: WireOpEnvelope, tab: string): boolean {
+  const { actor, stamp } = op as { actor?: unknown; stamp?: unknown }
+  return [actor, Array.isArray(stamp) ? stamp[1] : undefined].every(
+    (claimed) => {
+      if (typeof claimed !== 'string') return false
+      const [kind, user, claimedTab, ...rest] = claimed.split(':')
+      return (
+        kind === 'human' && !!user && claimedTab === tab && rest.length === 0
+      )
+    }
+  )
+}
+
 function opLabel(op: WireOpEnvelope): string {
   return `${op.op}:${'node_id' in op ? String(op.node_id) : ''}`
 }
@@ -99,10 +119,11 @@ function parseClientDocFrame(
 ): ParsedClientDocFrame | null {
   const envelope = docFrameEnvelope(raw)
   if (!envelope) return null
-  const { workflow_id, state_vector_b64, ops } = envelope.data
+  const { workflow_id, tab, state_vector_b64, ops } = envelope.data
   return {
     type: envelope.type,
     workflowId: stringOrNull(workflow_id),
+    tab: stringOrNull(tab),
     stateVector: stringOrNull(state_vector_b64),
     opsResult: parseWireOps(ops)
   }
@@ -115,7 +136,9 @@ export class AgentFollowerHostSocket {
 
   private socket: WebSocketRoute | null = null
   private comfySocket: WebSocketRoute | null = null
+  private comfyConnections = 0
   private connections = 0
+  private unansweredHumanBatches = 0
   private subscribes = 0
   private subscribeAnswer = (stateVector: string): HostFrame[] => [
     this.host.subscribed(),
@@ -123,7 +146,10 @@ export class AgentFollowerHostSocket {
   ]
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
-  private readonly heldBatches: WireOpEnvelope[][] = []
+  private readonly heldBatches: Array<{
+    tab: string | null
+    ops: WireOpEnvelope[]
+  }> = []
   private readonly humanOutcomes: ApplyOutcome[] = []
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
@@ -141,12 +167,19 @@ export class AgentFollowerHostSocket {
   async install(): Promise<void> {
     await this.page.routeWebSocket(/\/ws/, (socket) => {
       this.comfySocket = socket
+      this.comfyConnections += 1
+      // Cloud ingest mints a fresh session id for every /ws connection, so a
+      // reconnect hands the page a new `api.clientId`.
+      const sid =
+        this.comfyConnections === 1
+          ? COMFY_SOCKET_SID
+          : `${COMFY_SOCKET_SID}-${this.comfyConnections}`
       socket.send(
         JSON.stringify({
           type: 'status',
           data: {
             status: { exec_info: { queue_remaining: 0 } },
-            sid: COMFY_SOCKET_SID
+            sid
           }
         })
       )
@@ -230,12 +263,16 @@ export class AgentFollowerHostSocket {
       this.answerSubscribe(frame.stateVector)
       return
     }
+    if (frame.type === 'doc_ops' && this.unansweredHumanBatches > 0) {
+      this.unansweredHumanBatches -= 1
+      return
+    }
     if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply') {
-      this.judgeHumanOps(frame.opsResult)
+      this.judgeHumanOps(frame.opsResult, frame.tab)
       return
     }
     if (frame.type === 'doc_ops' && frame.opsResult.ok) {
-      this.heldBatches.push(frame.opsResult.ops)
+      this.heldBatches.push({ tab: frame.tab, ops: frame.opsResult.ops })
     }
   }
 
@@ -247,7 +284,7 @@ export class AgentFollowerHostSocket {
    * applier alone skips the relay gate and records no outcome.
    */
   heldClientOps(): WireOpEnvelope[] {
-    return this.heldBatches.flat()
+    return this.heldBatches.flatMap((batch) => batch.ops)
   }
 
   /**
@@ -261,8 +298,8 @@ export class AgentFollowerHostSocket {
   releaseHeldClientOps(): WireOpEnvelope[] {
     const batch = this.heldBatches.shift()
     if (!batch) return []
-    this.judgeHumanOps({ ok: true, ops: batch })
-    return batch
+    this.judgeHumanOps({ ok: true, ops: batch.ops }, batch.tab)
+    return batch.ops
   }
 
   /**
@@ -304,18 +341,29 @@ export class AgentFollowerHostSocket {
     return this.refusedSubscribes
   }
 
+  /**
+   * Record the next `count` human `doc_ops` batches and never answer them, as
+   * when a result is lost in transit. The sender then resends the same ops
+   * after its result timeout, and the host judges that resend normally.
+   */
+  leaveHumanBatchesUnanswered(count = 1): void {
+    this.unansweredHumanBatches = count
+  }
+
   // The applier is the only judge of a structurally valid human batch; the
   // wire ops reach it in place, exactly as the relay hands them to the host.
-  // A batch that failed the envelope check, or that cleared it but is empty
-  // or carries a duplicate `op_id`, never reaches the applier at all — the
-  // relay itself rejects that frame as `invalid_frame` earlier.
-  private judgeHumanOps(opsResult: ParsedWireBatch): void {
-    if (!opsResult.ok) {
+  // A batch that failed the envelope check, that cleared it but is empty or
+  // carries a duplicate `op_id`, or whose frame has no tab never reaches the
+  // applier at all — the relay itself rejects that frame as `invalid_frame`
+  // earlier. A batch claiming any writer other than the frame's human actor
+  // is refused whole as `forbidden`.
+  private judgeHumanOps(opsResult: ParsedWireBatch, tab: string | null): void {
+    if (!opsResult.ok || !tab || !isValidDocOpsBatch(opsResult.ops)) {
       this.send(this.invalidFrameResult())
       return
     }
-    if (!isValidDocOpsBatch(opsResult.ops)) {
-      this.send(this.invalidFrameResult())
+    if (!opsResult.ops.every((op) => claimsFrameActor(op, tab))) {
+      this.send(this.forbiddenResult())
       return
     }
     const { result, update, outcomes } = this.host.applyWire(opsResult.ops)
@@ -356,6 +404,19 @@ export class AgentFollowerHostSocket {
     }
   }
 
+  private forbiddenResult(): HostFrame {
+    return {
+      type: 'doc_ops_result',
+      data: {
+        v: DOC_PROTOCOL_VERSION,
+        workflow_id: this.workflowId,
+        ok: false,
+        code: 'forbidden',
+        message: 'op actor does not match the authenticated writer'
+      }
+    }
+  }
+
   /**
    * Rises once per subscribe the host accepted, after its answer was sent.
    * A custom answer from {@link answerSubscribesWith} may carry no catch-up;
@@ -373,6 +434,16 @@ export class AgentFollowerHostSocket {
     if (!this.socket)
       throw new Error('the panel has not opened the agent socket yet')
     await this.socket.close()
+  }
+
+  /**
+   * Closes the routed `/ws` from the host side. The app reconnects on its own
+   * and receives a fresh session id, so `api.clientId` changes; the agent
+   * socket is untouched.
+   */
+  async disconnectComfySocket(): Promise<void> {
+    if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
+    await this.comfySocket.close()
   }
 
   /** Every `doc_*` frame the page has sent so far, oldest first. */
