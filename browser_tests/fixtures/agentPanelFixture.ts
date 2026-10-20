@@ -205,13 +205,13 @@ export const agentTest = cloudAppFixture.extend<AgentFixtures>({
   agentFlagEnabled: [true, { option: true }]
 })
 
-type RestoredTargetlessAgentThreadFixtures = {
+type AgentComposerPerformanceFixtures = {
   agentComposerTurnCount: number
   agentComposerPanel: AgentPanel
 }
 
-export const restoredTargetlessAgentThreadTest =
-  agentTest.extend<RestoredTargetlessAgentThreadFixtures>({
+export const agentComposerPerformanceTest =
+  agentTest.extend<AgentComposerPerformanceFixtures>({
     agentComposerTurnCount: [0, { option: true }],
     agentComposerPanel: async (
       { page, agentFlagEnabled, agentComposerTurnCount },
