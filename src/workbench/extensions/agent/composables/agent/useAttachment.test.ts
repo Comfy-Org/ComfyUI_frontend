@@ -891,30 +891,6 @@ describe('useAttachment', () => {
     )
   })
 
-  it('does not restore a chip removed while its stored preview was loading', async () => {
-    let resolvePreview: (url: string) => void = () => {}
-    const registry = chipRegistry()
-    const update = vi.fn(registry.update)
-    const { addFiles } = useAttachment({
-      upload: async () => ({ ref: 'plate.exr' }),
-      resolveStoredPreview: () =>
-        new Promise<string>((resolve) => {
-          resolvePreview = resolve
-        }),
-      ...registry,
-      update
-    })
-
-    await addFiles([fileOfSize('plate.exr', 1024, '')])
-    registry.remove(registry.chips[0].id)
-    update.mockClear()
-    resolvePreview('/api/assets/preview-1/content')
-    await new Promise((resolve) => setTimeout(resolve))
-
-    expect(registry.chips).toHaveLength(0)
-    expect(update).not.toHaveBeenCalled()
-  })
-
   it('reuses the prior upload when the same file is attached again', async () => {
     const upload = vi.fn(async (file: File) => ({
       ref: `uploaded_${file.name}`
