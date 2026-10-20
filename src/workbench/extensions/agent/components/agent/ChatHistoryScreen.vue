@@ -210,7 +210,6 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
               <span class="icon-[lucide--copy] size-3.5" />
             </Button>
             <Menu
-              :new-label="$t('contextMenu.new')"
               :items="getSessionMenuItems(session)"
               side="bottom"
               align="end"

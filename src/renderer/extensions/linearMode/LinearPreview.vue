@@ -139,11 +139,7 @@ async function rerun(e: Event) {
       <i class="icon-[lucide--x]" />
       {{ t('linearMode.cancelThisRun') }}
     </Button>
-    <Menu
-      v-if="selectedItem"
-      :new-label="$t('contextMenu.new')"
-      :items="selectedItemMenuEntries"
-    >
+    <Menu v-if="selectedItem" :items="selectedItemMenuEntries">
       <template #trigger>
         <Button
           size="icon"

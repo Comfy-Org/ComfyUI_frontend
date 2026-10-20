@@ -1,7 +1,6 @@
 <template>
   <ContextMenu
     ref="contextMenu"
-    :new-label="$t('contextMenu.new')"
     :model="menuItems"
     :reference="menuReference"
     @show="onMenuShow"

@@ -217,7 +217,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
               <span> Upload Model </span>
             </Button>
 
-            <Menu :items="moreMenuItems" align="end" new-label="New" remove-label="Remove">
+            <Menu :items="moreMenuItems" align="end" remove-label="Remove">
               <template #trigger>
                 <Button size="icon" variant="secondary">
                   <i class="icon-[lucide--ellipsis] size-4" />
@@ -343,7 +343,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                 <span>Upload Model</span>
             </Button>
 
-            <Menu :items="moreMenuItems" align="end" new-label="New" remove-label="Remove">
+            <Menu :items="moreMenuItems" align="end" remove-label="Remove">
               <template #trigger>
                 <Button size="icon" variant="secondary">
                   <i class="icon-[lucide--ellipsis] size-4" />

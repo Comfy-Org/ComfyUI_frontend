@@ -8,11 +8,10 @@ import Menu from './Menu.vue'
 import ContextMenu from './ContextMenu.vue'
 
 describe('Menu', () => {
-  it('renders the supplied new-item text in nested menus', async () => {
+  it('renders item badges in nested menus', async () => {
     render(Menu, {
       props: {
-        newLabel: 'Nouveau',
-        items: [{ label: 'More', items: [{ label: 'Run', new: true }] }]
+        items: [{ label: 'More', items: [{ label: 'Run', badge: 'Beta' }] }]
       },
       slots: { trigger: '<button>Open</button>' }
     })
@@ -21,9 +20,9 @@ describe('Menu', () => {
     await user.click(screen.getByRole('button', { name: 'Open' }))
     await user.hover(await screen.findByRole('menuitem', { name: 'More' }))
 
-    expect(await screen.findByText('Nouveau')).toBeVisible()
+    expect(await screen.findByText('Beta')).toBeVisible()
     expect(screen.getByRole('menuitem', { name: 'Run' })).toHaveTextContent(
-      'Nouveau'
+      'Beta'
     )
   })
 
@@ -31,7 +30,6 @@ describe('Menu', () => {
     const command = vi.fn()
     render(Menu, {
       props: {
-        newLabel: 'New',
         open: true,
         items: [{ label: 'Zoom', command, pressAndHoldInterval: 50 }]
       },
@@ -56,7 +54,6 @@ describe('Menu', () => {
     const command = vi.fn()
     render(Menu, {
       props: {
-        newLabel: 'New',
         open: true,
         items: [{ label: 'Zoom', command, pressAndHoldInterval: 50 }]
       },
@@ -83,7 +80,6 @@ describe('Menu', () => {
     const command = vi.fn()
     render(Menu, {
       props: {
-        newLabel: 'New',
         open: true,
         items: [
           { label: 'Zoom', command, disabled: true, pressAndHoldInterval: 50 }
@@ -112,7 +108,6 @@ describe('Menu', () => {
     const command = vi.fn()
     render(Menu, {
       props: {
-        newLabel: 'New',
         open: true,
         items: [{ label: 'Zoom', command, pressAndHoldInterval: 50 }]
       },
@@ -140,7 +135,7 @@ describe('Menu', () => {
   it('gives custom menu content keyboard selection and dismissal', async () => {
     const command = vi.fn()
     render(Menu, {
-      props: { label: 'Actions', newLabel: 'New' },
+      props: { label: 'Actions' },
       slots: {
         trigger: '<button>Open</button>',
         default: () =>
@@ -165,8 +160,7 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         items: [{ label: 'Run' }],
-        modal: false,
-        newLabel: 'New'
+        modal: false
       },
       slots: { trigger: '<button>Open</button>' }
     })
@@ -178,8 +172,7 @@ describe('Menu', () => {
   it('disables commandless actions', async () => {
     render(Menu, {
       props: {
-        items: [{ label: 'Unavailable' }],
-        newLabel: 'New'
+        items: [{ label: 'Unavailable' }]
       },
       slots: { trigger: '<button>Open</button>' }
     })
@@ -200,8 +193,7 @@ describe('Menu', () => {
       const command = vi.fn()
       render(Menu, {
         props: {
-          items: [{ label, command }],
-          newLabel: 'New'
+          items: [{ label, command }]
         },
         slots: { trigger: '<button>Open</button>' }
       })
@@ -226,7 +218,6 @@ describe('Menu', () => {
   ])('hides separators with $kind visibility', async ({ visible }) => {
     render(Menu, {
       props: {
-        newLabel: 'New',
         items: [
           { label: 'Download' },
           { separator: true },
@@ -251,8 +242,7 @@ describe('Menu', () => {
     const { rerender } = render(Menu, {
       props: {
         items: [{ label: 'Run' }],
-        open: true,
-        newLabel: 'New'
+        open: true
       },
       slots: { trigger: '<button>Open</button>' }
     })
@@ -268,7 +258,6 @@ describe('Menu', () => {
   it('resolves class getters on actions and submenu triggers', async () => {
     render(Menu, {
       props: {
-        newLabel: 'New',
         items: [
           { label: 'Action', class: () => 'action-class' },
           {
@@ -297,7 +286,6 @@ describe('Menu', () => {
     const shortcut = ref('Ctrl+G')
     render(Menu, {
       props: {
-        newLabel: 'New',
         items: [
           {
             label: 'Grid',
@@ -329,7 +317,6 @@ describe('Menu', () => {
     const selectCompact = vi.fn()
     render(Menu, {
       props: {
-        newLabel: 'New',
         items: [
           {
             label: 'Density',
@@ -371,8 +358,7 @@ describe('Menu', () => {
   it('toggles closed and reopens from its trigger', async () => {
     render(Menu, {
       props: {
-        items: [{ label: 'Run' }],
-        newLabel: 'New'
+        items: [{ label: 'Run' }]
       },
       slots: { trigger: '<button>Open</button>' }
     })
@@ -396,8 +382,7 @@ describe('Menu', () => {
         setup: () => () =>
           h(ContextMenu, {
             model: [{ label: 'Inspect' }],
-            ref: menu,
-            newLabel: 'New'
+            ref: menu
           })
       })
     )
@@ -423,7 +408,7 @@ describe('Menu', () => {
           return { menu }
         },
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button @pointerdown.stop>Outside</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button @pointerdown.stop>Outside</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -452,7 +437,7 @@ describe('Menu', () => {
           return { menu }
         },
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button>Outside</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button>Outside</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -483,7 +468,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu, selected }),
         template:
-          '<button @contextmenu.prevent.stop="selected = true; menu?.show($event)">Widget</button><button v-if="selected">Selection tools</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent.stop="selected = true; menu?.show($event)">Widget</button><button v-if="selected">Selection tools</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     screen.getByRole('button', { name: 'Widget' }).dispatchEvent(
@@ -511,7 +496,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu }),
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -535,7 +520,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu: ref<InstanceType<typeof ContextMenu>>() }),
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -559,7 +544,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu }),
         template:
-          '<button @click="menu?.toggle($event)" @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
+          '<button @click="menu?.toggle($event)" @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -582,7 +567,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ first, second }),
         template:
-          '<button @contextmenu.prevent="first?.show($event)">First</button><button @contextmenu.prevent="second?.show($event)">Second</button><ContextMenu ref="first" new-label="New" :model="[{ label: \'First action\' }]" /><ContextMenu ref="second" new-label="New" :model="[{ label: \'Second action\' }]" />'
+          '<button @contextmenu.prevent="first?.show($event)">First</button><button @contextmenu.prevent="second?.show($event)">Second</button><ContextMenu ref="first" :model="[{ label: \'First action\' }]" /><ContextMenu ref="second" :model="[{ label: \'Second action\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -612,7 +597,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu }),
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'More\', items: [{ label: \'Child\' }] }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" :model="[{ label: \'More\', items: [{ label: \'Child\' }] }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })

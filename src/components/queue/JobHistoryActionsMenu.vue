@@ -1,10 +1,5 @@
 <template>
-  <Menu
-    v-model:open="open"
-    :new-label="$t('contextMenu.new')"
-    :items="items"
-    align="end"
-  >
+  <Menu v-model:open="open" :items="items" align="end">
     <template #trigger>
       <Button
         :tooltip="t('g.more')"

@@ -30,7 +30,6 @@
           />
           <Menu
             v-if="selectedTab === 'essentials'"
-            :new-label="$t('contextMenu.new')"
             :items="jumpMenuEntries"
             :label="$t('essentials.jumpTo')"
           >
@@ -42,7 +41,7 @@
               />
             </template>
           </Menu>
-          <Menu v-else :new-label="$t('contextMenu.new')">
+          <Menu v-else>
             <template #trigger>
               <Button
                 size="icon"

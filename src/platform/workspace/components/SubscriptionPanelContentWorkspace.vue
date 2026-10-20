@@ -4,7 +4,7 @@
     @scroll="handlePanelScroll"
   >
     <DefineWorkspaceMenu>
-      <Menu :new-label="$t('contextMenu.new')" :items="menuEntries">
+      <Menu :items="menuEntries">
         <template #trigger>
           <Button
             :tooltip="$t('g.moreOptions')"

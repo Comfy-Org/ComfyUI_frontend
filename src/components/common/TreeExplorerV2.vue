@@ -42,7 +42,7 @@
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent :class="menuContentClass">
-        <MenuItems :new-label="$t('contextMenu.new')" :items="menuItems" />
+        <MenuItems :items="menuItems" />
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>

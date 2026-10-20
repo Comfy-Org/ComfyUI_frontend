@@ -244,9 +244,8 @@
                     :hover-zoom="0"
                   >
                     <template #overlay>
-                      <Spinner
+                      <AppSpinner
                         v-if="loadingTemplateId === template.name"
-                        :loading-label="$t('g.loading')"
                         class="absolute inset-0 z-10 m-auto size-12"
                       />
                     </template>
@@ -465,7 +464,7 @@ import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { selectCountBadgeClass } from '@comfyorg/design-system/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'

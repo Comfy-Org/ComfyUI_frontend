@@ -19,8 +19,7 @@ type MenuItemSlotProps = {
 const [DefineItemContent, ReuseItemContent] =
   createReusableTemplate<MenuItemSlotProps>()
 
-const { itemContent, items, ownerId, newLabel } = defineProps<{
-  newLabel: string
+const { itemContent, items, ownerId } = defineProps<{
   items: MenuItem[]
   itemContent?: Slot<MenuItemSlotProps>
   ownerId?: string
@@ -43,7 +42,7 @@ const visibleItems = computed(() =>
       v-bind="{ item, hasSubmenu }"
     />
     <slot v-else name="item" :item :has-submenu>
-      <MenuItemContent :item :has-submenu :new-label />
+      <MenuItemContent :item :has-submenu />
     </slot>
   </DefineItemContent>
   <template
@@ -56,7 +55,6 @@ const visibleItems = computed(() =>
       <template #content="{ items: childItems }">
         <MenuItems
           :items="childItems"
-          :new-label
           :item-content="itemContent ?? $slots.item"
           :owner-id
           @select="emit('select')"

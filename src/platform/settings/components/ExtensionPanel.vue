@@ -46,11 +46,7 @@
             {{ $t('g.extensionName') }}
           </TableSortHead>
           <TableHead class="w-20 text-right">
-            <Menu
-              :new-label="$t('contextMenu.new')"
-              :items="extensionActions"
-              align="end"
-            >
+            <Menu :items="extensionActions" align="end">
               <template #trigger>
                 <Button
                   size="icon"

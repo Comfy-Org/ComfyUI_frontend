@@ -155,7 +155,6 @@
   <ContextMenu
     :id="contextMenuId"
     ref="contextMenuRef"
-    :new-label="$t('contextMenu.new')"
     :model="contextMenuItems"
   />
 </template>

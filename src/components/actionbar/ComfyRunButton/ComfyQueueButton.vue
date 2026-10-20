@@ -19,12 +19,7 @@
       {{ queueButtonLabel }}
     </Button>
 
-    <Menu
-      :new-label="$t('contextMenu.new')"
-      side="bottom"
-      :side-offset="4"
-      class="min-w-44"
-    >
+    <Menu side="bottom" :side-offset="4" class="min-w-44">
       <template #trigger>
         <Button
           :variant="queueMenuTriggerVariant"

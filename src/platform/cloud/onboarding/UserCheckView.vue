@@ -14,7 +14,7 @@
     </div>
   </div>
   <div v-else class="flex items-center justify-center">
-    <Spinner :loading-label="$t('g.loading')" class="size-8" />
+    <AppSpinner class="size-8" />
   </div>
 </template>
 
@@ -24,7 +24,7 @@ import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {

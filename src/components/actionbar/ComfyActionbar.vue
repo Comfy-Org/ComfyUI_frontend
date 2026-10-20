@@ -63,11 +63,7 @@
           />
           <span class="sr-only">{{ queueToggleLabel }}</span>
         </Button>
-        <ContextMenu
-          ref="queueContextMenu"
-          :new-label="$t('contextMenu.new')"
-          :model="queueContextMenuItems"
-        />
+        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
       </div>
       <FreeTierQuota v-if="!isDocked" />
       <PartnerNodesRunCaption v-if="!isDocked" />

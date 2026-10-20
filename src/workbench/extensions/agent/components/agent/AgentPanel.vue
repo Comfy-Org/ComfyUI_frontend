@@ -430,7 +430,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           </Button>
           <Menu
             v-if="sessionId"
-            :new-label="$t('contextMenu.new')"
             :items="chatMenuItems"
             side="bottom"
             align="start"

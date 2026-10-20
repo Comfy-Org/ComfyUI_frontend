@@ -121,12 +121,7 @@
             class="w-full"
           />
         </label>
-        <Menu
-          v-if="isRestricted"
-          :new-label="$t('contextMenu.new')"
-          :items="bulkMenuEntries"
-          :modal="false"
-        >
+        <Menu v-if="isRestricted" :items="bulkMenuEntries" :modal="false">
           <template #trigger>
             <Button
               variant="secondary"

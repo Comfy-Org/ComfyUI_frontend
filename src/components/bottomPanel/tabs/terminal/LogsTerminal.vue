@@ -7,9 +7,8 @@
     >
       {{ errorMessage }}
     </p>
-    <Spinner
+    <AppSpinner
       v-else-if="loading"
-      :loading-label="$t('g.loading')"
       data-testid="terminal-loading-spinner"
       class="absolute inset-0 z-10 m-auto size-8"
     />
@@ -25,7 +24,7 @@ import type { Terminal } from '@xterm/xterm'
 import type { Ref } from 'vue'
 import { shallowRef } from 'vue'
 
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useLogsTerminal } from '@/composables/bottomPanelTabs/useLogsTerminal'
 import type { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 

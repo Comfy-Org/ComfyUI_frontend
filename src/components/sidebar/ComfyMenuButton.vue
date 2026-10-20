@@ -1,9 +1,5 @@
 <template>
-  <Menu
-    :new-label="$t('contextMenu.new')"
-    :items="translatedItems"
-    class="comfy-command-menu"
-  >
+  <Menu :items="translatedItems" class="comfy-command-menu">
     <template #trigger="{ open }">
       <Button
         variant="textonly"

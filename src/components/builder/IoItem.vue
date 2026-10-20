@@ -93,7 +93,6 @@ const entries = computed(() => {
       </Tooltip>
     </div>
     <Menu
-      :new-label="$t('contextMenu.new')"
       :items="entries"
       @close-auto-focus="isEditing && $event.preventDefault()"
     >

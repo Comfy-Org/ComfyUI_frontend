@@ -3,8 +3,7 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { class: customClass = '', loadingLabel } = defineProps<{
-  loadingLabel: string
+const { class: customClass = '' } = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 </script>
@@ -12,7 +11,6 @@ const { class: customClass = '', loadingLabel } = defineProps<{
 <template>
   <svg
     role="progressbar"
-    :aria-label="loadingLabel"
     :class="cn('size-6 animate-spin text-muted-foreground', customClass)"
     viewBox="0 0 24 24"
     fill="none"

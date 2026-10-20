@@ -133,7 +133,6 @@ async function downloadAssets(): Promise<void> {
         }}</TooltipContent>
       </Tooltip>
       <Menu
-        :new-label="$t('contextMenu.new')"
         :items="copyMenuItems"
         align="end"
         :side-offset="4"

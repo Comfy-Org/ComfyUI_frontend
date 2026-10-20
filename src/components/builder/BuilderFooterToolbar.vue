@@ -74,7 +74,6 @@
             {{ t('g.save') }}
           </Button>
           <Menu
-            :new-label="$t('contextMenu.new')"
             :items="saveAsMenuItems"
             align="end"
             :side-offset="4"

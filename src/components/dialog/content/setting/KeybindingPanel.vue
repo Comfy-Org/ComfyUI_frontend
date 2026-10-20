@@ -20,12 +20,7 @@
           :preset-names="presetNames"
           @presets-changed="refreshPresetList"
         />
-        <Menu
-          :new-label="$t('contextMenu.new')"
-          :items="menuEntries"
-          to="#keybinding-panel-actions"
-          align="end"
-        >
+        <Menu :items="menuEntries" to="#keybinding-panel-actions" align="end">
           <template #trigger>
             <Button
               size="icon-lg"
@@ -86,12 +81,7 @@
       :total="filteredCommands.length"
       :items-per-page-options="commandsPerPageOptions"
     />
-    <ContextMenu
-      ref="rowMenu"
-      :new-label="$t('contextMenu.new')"
-      :model="rowMenuItems"
-      @hide="restoreRowFocus"
-    />
+    <ContextMenu ref="rowMenu" :model="rowMenuItems" @hide="restoreRowFocus" />
 
     <Button
       :tooltip="$t('g.resetAllKeybindingsTooltip')"

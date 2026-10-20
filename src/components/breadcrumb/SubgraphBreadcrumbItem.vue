@@ -39,7 +39,6 @@
   </DefineTrigger>
   <Menu
     v-if="isActive"
-    :new-label="$t('contextMenu.new')"
     :open="menuOpen"
     :items="menuItems"
     :data-testid="`subgraph-breadcrumb-menu-${item.key}`"

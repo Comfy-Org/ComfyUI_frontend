@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="loading" class="flex items-center justify-center p-8">
-      <Spinner :loading-label="$t('g.loading')" />
+      <AppSpinner />
     </div>
     <div v-else-if="error" class="p-4">
       <Message severity="error">{{ error }}</Message>
@@ -98,7 +98,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Message from '@/components/ui/message/Message.vue'
 import Pagination from '@/components/ui/pagination/Pagination.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'

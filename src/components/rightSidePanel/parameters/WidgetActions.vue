@@ -121,7 +121,7 @@ const menuItems = computed<MenuItem[]>(() => [
 </script>
 
 <template>
-  <Menu :new-label="$t('contextMenu.new')" :items="menuItems" align="end">
+  <Menu :items="menuItems" align="end">
     <template #trigger>
       <Button
         size="icon"

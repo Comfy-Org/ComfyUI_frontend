@@ -8,12 +8,10 @@ import Switch from '@/components/ui/switch/Switch.vue'
 
 import type { MenuItem } from './types'
 
-const { hasSubmenu, item, newLabel } = defineProps<
-  { hasSubmenu: boolean } & (
-    | { item: MenuItem; newLabel: string }
-    | { item: MenuItem & { new?: false }; newLabel?: string }
-  )
->()
+const { hasSubmenu, item } = defineProps<{
+  hasSubmenu: boolean
+  item: MenuItem
+}>()
 </script>
 
 <template>
@@ -62,12 +60,6 @@ const { hasSubmenu, item, newLabel } = defineProps<
       )
     "
   />
-  <span
-    v-if="item.new && !toValue(item.checked) && !hasSubmenu"
-    class="shrink-0 rounded-full bg-primary px-1 text-2xs leading-none font-bold"
-  >
-    {{ newLabel }}
-  </span>
   <span
     v-if="!hasSubmenu && toValue(item.shortcut)"
     class="ml-auto rounded-sm border bg-secondary p-1 text-xs text-nowrap text-muted-foreground"

@@ -18,7 +18,7 @@
         nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
       }}</span>
     </Button>
-    <Menu :new-label="$t('contextMenu.new')" :items="updateOptions" align="end">
+    <Menu :items="updateOptions" align="end">
       <template #trigger>
         <Button
           variant="primary"

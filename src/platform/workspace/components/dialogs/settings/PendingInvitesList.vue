@@ -51,11 +51,7 @@
         }}
       </span>
       <div class="flex items-center justify-end">
-        <Menu
-          :new-label="$t('contextMenu.new')"
-          :items="getInviteMenuItems(invite)"
-          align="end"
-        >
+        <Menu :items="getInviteMenuItems(invite)" align="end">
           <template #trigger>
             <Button
               size="icon"

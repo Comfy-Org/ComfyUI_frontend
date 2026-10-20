@@ -127,7 +127,7 @@ const menuEntries = computed<MenuItem[]>(() => [
   {
     label: t('linearMode.enterNodeGraph'),
     icon: 'icon-[comfy--workflow]',
-    new: true,
+    badge: t('contextMenu.new'),
     command: () => (canvasStore.linearMode = false)
   },
   { separator: true },
@@ -168,11 +168,7 @@ const menuEntries = computed<MenuItem[]>(() => [
     <header
       class="flex h-16 w-full items-center gap-3 border-b border-border/50 bg-background px-4 py-3"
     >
-      <Menu
-        :new-label="$t('contextMenu.new')"
-        :items="menuEntries"
-        :label="$t('linearMode.appModeToolbar.apps')"
-      >
+      <Menu :items="menuEntries" :label="$t('linearMode.appModeToolbar.apps')">
         <template #trigger>
           <Button
             size="icon"
@@ -181,7 +177,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           />
         </template>
       </Menu>
-      <Menu :new-label="$t('contextMenu.new')">
+      <Menu>
         <template #trigger>
           <Button
             variant="secondary"

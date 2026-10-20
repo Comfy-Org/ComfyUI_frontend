@@ -12,7 +12,7 @@
         "
       />
       <template #actions>
-        <Menu v-if="isCloud" :new-label="$t('contextMenu.new')" :modal="false">
+        <Menu v-if="isCloud" :modal="false">
           <template #trigger>
             <Button
               :tooltip="$t('assetBrowser.filterBy')"

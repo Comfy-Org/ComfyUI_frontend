@@ -1,10 +1,6 @@
 <template>
   <div class="shrink-0 self-center">
-    <Menu
-      :new-label="$t('contextMenu.new')"
-      :items="menuItems"
-      max-height="viewport"
-    >
+    <Menu :items="menuItems" max-height="viewport">
       <template #trigger>
         <Button
           :tooltip="$t('g.moreWorkflows')"

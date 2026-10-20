@@ -28,11 +28,7 @@
           <i class="icon-[lucide--upload]" />
           <span>{{ $t('g.upload') }}</span>
         </Button>
-        <Menu
-          :new-label="$t('contextMenu.new')"
-          :items="moreMenuItems"
-          align="end"
-        >
+        <Menu :items="moreMenuItems" align="end">
           <template #trigger>
             <Button
               size="icon"

@@ -11,7 +11,6 @@ const meta: Meta<typeof Menu> = {
   component: Menu,
   tags: ['autodocs'],
   args: {
-    newLabel: 'New',
     items: [
       { label: 'Open', icon: 'icon-[lucide--folder-open]', command: fn() },
       { label: 'Disabled', disabled: true },
@@ -37,5 +36,15 @@ export const Disabled: Story = {
 export const Nested: Story = {
   args: {
     items: [{ label: 'Parent', items: [{ label: 'Child', command: fn() }] }]
+  }
+}
+
+export const Badges: Story = {
+  args: {
+    items: [
+      { label: 'Enter node graph', badge: 'New', command: fn() },
+      { label: 'Preview', badge: 'Beta', command: fn() },
+      { label: 'Settings', command: fn() }
+    ]
   }
 }

@@ -23,10 +23,8 @@ defineOptions({ inheritAttrs: false })
 const {
   id: providedId,
   model,
-  newLabel,
   reference
 } = defineProps<{
-  newLabel: string
   id?: string
   model: MenuItem[]
   reference?: DropdownMenuContentProps['reference']
@@ -154,7 +152,7 @@ defineExpose({ hide, show, toggle, visible })
         @close-auto-focus.prevent
         @focus-outside.prevent
       >
-        <MenuItems :items="model" :owner-id :new-label @select="hide">
+        <MenuItems :items="model" :owner-id @select="hide">
           <template v-if="$slots.item" #item="slotProps">
             <slot name="item" v-bind="slotProps" />
           </template>

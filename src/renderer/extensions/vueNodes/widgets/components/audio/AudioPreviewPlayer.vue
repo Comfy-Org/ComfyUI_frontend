@@ -92,11 +92,7 @@
         </Button>
 
         <!-- Options Button -->
-        <Menu
-          v-if="showOptionsButton"
-          :new-label="$t('contextMenu.new')"
-          :items="menuItems"
-        >
+        <Menu v-if="showOptionsButton" :items="menuItems">
           <template #trigger>
             <Button
               variant="textonly"
@@ -122,12 +118,7 @@
                 @update:model-value="handleVolumeChange"
               />
             </div>
-            <MenuItemContent
-              v-else
-              :new-label="$t('contextMenu.new')"
-              :item
-              :has-submenu
-            />
+            <MenuItemContent v-else :item :has-submenu />
           </template>
         </Menu>
       </div>

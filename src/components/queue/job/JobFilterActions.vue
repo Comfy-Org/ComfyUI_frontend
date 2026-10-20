@@ -13,7 +13,7 @@
       class="flex shrink-0 items-center gap-2"
       :class="{ 'ml-2': !showSearch }"
     >
-      <Menu :new-label="$t('contextMenu.new')">
+      <Menu>
         <template #trigger>
           <Button
             :tooltip="t('sideToolbar.queueProgressOverlay.filterBy')"
@@ -29,7 +29,7 @@
           :options="workflowFilterOptions"
         />
       </Menu>
-      <Menu :new-label="$t('contextMenu.new')">
+      <Menu>
         <template #trigger>
           <Button
             :tooltip="t('sideToolbar.queueProgressOverlay.sortBy')"

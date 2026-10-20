@@ -52,7 +52,6 @@
         <Menu
           v-if="showAssetOptions"
           v-model:open="assetMenuOpen"
-          :new-label="$t('contextMenu.new')"
           :items="assetMenuItems"
           align="end"
         >

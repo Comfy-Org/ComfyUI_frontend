@@ -157,7 +157,6 @@ onMounted(async () => {
 <template>
   <Menu
     v-model:open="dropdownOpen"
-    :new-label="$t('contextMenu.new')"
     :items="menuItems"
     :modal="false"
     :align
