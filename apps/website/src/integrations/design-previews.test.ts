@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { DESIGN_PREVIEW_ROUTES, isDesignPreviewBuild } from './design-previews'
 
@@ -8,8 +8,18 @@ describe('design previews', () => {
   })
 
   it('builds on pull request previews and locally', () => {
-    expect(isDesignPreviewBuild('preview')).toBe(true)
-    expect(isDesignPreviewBuild(undefined)).toBe(true)
+    vi.stubEnv('VERCEL_ENV', undefined)
+
+    expect([isDesignPreviewBuild('preview'), isDesignPreviewBuild()]).toEqual([
+      true,
+      true
+    ])
+  })
+
+  it('reads VERCEL_ENV when no environment is passed', () => {
+    vi.stubEnv('VERCEL_ENV', 'production')
+
+    expect(isDesignPreviewBuild()).toBe(false)
   })
 
   it('builds every preview in English and Chinese', () => {

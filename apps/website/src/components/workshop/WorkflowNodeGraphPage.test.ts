@@ -1,4 +1,5 @@
 import { render, screen, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
@@ -15,6 +16,12 @@ function renderPage() {
     props: { workflow },
     global: { stubs: { WorkflowGraph: true } }
   })
+}
+
+async function openTab(name: string) {
+  const tab = screen.getByRole('tab', { name })
+  await userEvent.setup().click(tab)
+  return tab
 }
 
 describe('WorkflowNodeGraphPage', () => {
@@ -68,10 +75,13 @@ describe('WorkflowNodeGraphPage', () => {
     ).toBe(sample.outputUrl)
   })
 
-  it('shows the graph and its facts on the Details tab', () => {
+  it('shows the graph and its facts on the Details tab', async () => {
     renderPage()
+    const tab = await openTab('Details')
 
-    expect(screen.getByTestId('node-graph-graph')).toBeTruthy()
+    expect(tab.getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('tabpanel', { name: 'Details' })).toBeVisible()
+    expect(screen.getByTestId('node-graph-graph')).toBeVisible()
 
     const facts = within(screen.getByTestId('workflow-facts'))
     expect(
@@ -93,9 +103,12 @@ describe('WorkflowNodeGraphPage', () => {
     expect(screen.getByTestId('workflow-facts').textContent).toContain('Author')
   })
 
-  it('points the API at Comfy Cloud, starting from an API key', () => {
+  it('points the API at Comfy Cloud, starting from an API key', async () => {
     renderPage()
+    const tab = await openTab('API')
 
+    expect(tab.getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByRole('tabpanel', { name: 'API' })).toBeVisible()
     const api = screen.getByTestId('node-graph-api')
     expect(within(api).getByTestId('node-graph-api-key')).toBeTruthy()
     expect(
