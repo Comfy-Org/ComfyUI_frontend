@@ -1,9 +1,11 @@
 import { spawnSync } from 'node:child_process'
 import {
-  existsSync,
+  accessSync,
+  constants,
   mkdtempSync,
   readFileSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync
 } from 'node:fs'
@@ -16,11 +18,20 @@ import { parse } from 'yaml'
 import { z } from 'zod'
 
 const script = join(import.meta.dirname, 'plan-playwright-videos.sh')
+function isExecutableFile(path: string): boolean {
+  try {
+    if (!statSync(path).isFile()) return false
+    accessSync(path, constants.X_OK)
+    return true
+  } catch {
+    return false
+  }
+}
 function resolveBashPath(): string {
   const found = (process.env.PATH ?? '')
     .split(delimiter)
     .map((dir) => join(dir, 'bash'))
-    .find((candidate) => existsSync(candidate))
+    .find(isExecutableFile)
   if (!found) throw new Error('bash not found on PATH')
   return found
 }
