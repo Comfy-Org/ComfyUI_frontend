@@ -4,7 +4,7 @@
       v-if="isPositioned && ringStyle"
       aria-hidden="true"
       data-testid="first-run-nudge-ring"
-      class="pointer-events-none fixed z-toolbar rounded-lg outline-2 -outline-offset-2 outline-white"
+      class="pointer-events-none fixed rounded-lg outline-2 -outline-offset-2 outline-white"
       :style="ringStyle"
     />
     <div
@@ -14,7 +14,7 @@
       data-testid="first-run-nudge"
       :class="
         cn(
-          'fixed z-toolbar w-80 animate-in animation-duration-500 fade-in-0',
+          'fixed w-80 animate-in animation-duration-500 fade-in-0',
           !isPositioned && 'invisible'
         )
       "

@@ -21,6 +21,14 @@ dock own separate stacking contexts and provide their descendant portal target
 through Reka's configuration. Targets must sit outside transformed, animated,
 or scrolling content; otherwise fixed-position descendants can move or clip.
 
+Within each owner, prefer DOM paint order to z-index classes. Isolate canvas
+rendering from the later workspace controls, and isolate image planes from
+the later mask-editor controls. Dialog scrims precede content; canvas-control
+scrims precede their menus. These descendants do not need application layers.
+Shared popup primitives retain an overlay layer because they also portal to
+the document without an owner. Local offsets remain only where the required
+paint order differs from DOM order.
+
 Getting Started covers the workspace but yields to dialogs. Tours sit above
 ordinary overlays; toast owners and their descendants sit above tours. The
 application loading blocker covers all of them. Do not collapse these roles
@@ -44,9 +52,10 @@ classes, including variants and class-composition helpers.
 - Renaming every local offset into an application token makes unrelated image
   planes and controls appear globally comparable. Isolation is the boundary;
   token names alone cannot provide it.
-- Renumbering the entire application layer scale would change ordering against
-  extension-owned UI. Keep existing layer values while moving first-party
-  callers to named roles. Legacy imperative extension menus and the pre-Vue
+- Renumbering document-level layers would change ordering against
+  extension-owned UI. Keep their existing values, but remove workspace-wide
+  tiers that isolation makes unnecessary. Document-level node previews share
+  the nonmodal panel layer. Legacy imperative extension menus and the pre-Vue
   splash loader retain their independent contracts.
 
 ## Consequences

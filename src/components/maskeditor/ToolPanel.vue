@@ -1,5 +1,5 @@
 <template>
-  <div class="z-10 flex h-full flex-col justify-between bg-background">
+  <div class="flex h-full flex-col justify-between bg-background">
     <div class="flex flex-col">
       <div
         v-for="tool in allTools"

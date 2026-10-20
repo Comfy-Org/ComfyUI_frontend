@@ -1,4 +1,50 @@
 <template>
+  <div class="absolute inset-0 isolate">
+    <canvas
+      id="graph-canvas"
+      ref="canvasRef"
+      tabindex="1"
+      class="absolute inset-0 size-full touch-none"
+    />
+    <TransformPane
+      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+      ref="transformPaneRef"
+      :canvas="comfyApp.canvas"
+      :inert="canvasStore.isPickingNodes"
+      @wheel.capture="canvasInteractions.forwardEventToCanvas"
+      @pointerdown.capture="forwardPointerDownPanEvent"
+      @pointerup.capture="forwardPointerUpPanEvent"
+      @pointermove.capture="forwardPointerMovePanEvent"
+      @keydown.space="forwardSpaceKeyEvent"
+    >
+      <LGraphNode
+        v-for="nodeData in allNodes"
+        :key="nodeData.id"
+        :node-data
+        :data-node-id="nodeData.id"
+      />
+    </TransformPane>
+    <LinkOverlayCanvas
+      v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
+      :canvas="comfyApp.canvas"
+      @ready="onLinkOverlayReady"
+      @dispose="onLinkOverlayDispose"
+    />
+    <SelectionRectangle
+      v-if="comfyAppReady"
+      :panel-el="canvasPanelBoundsRef ?? undefined"
+    />
+    <NodeTooltip v-if="tooltipEnabled" />
+    <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
+    <NodeDragPreview />
+    <VueNodeSwitchPopup />
+    <template v-if="comfyAppReady">
+      <TitleEditor />
+      <SelectionToolbox v-if="selectionToolboxEnabled" />
+      <NodeContextMenu />
+      <DomWidgets v-if="!shouldRenderVueNodes" />
+    </template>
+  </div>
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly
   synced with the stateStorage (localStorage). -->
@@ -46,10 +92,6 @@
         ref="canvasPanelBoundsRef"
         class="pointer-events-none absolute inset-0"
       />
-      <GraphCanvasMenu
-        v-if="canvasMenuEnabled && !isBuilderMode"
-        class="pointer-events-auto"
-      />
       <MiniMap
         v-if="
           comfyAppReady &&
@@ -60,64 +102,13 @@
         "
         class="pointer-events-auto"
       />
+      <GraphCanvasMenu
+        v-if="canvasMenuEnabled && !isBuilderMode"
+        class="pointer-events-auto"
+      />
       <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
-  <canvas
-    id="graph-canvas"
-    ref="canvasRef"
-    tabindex="1"
-    class="absolute inset-0 size-full touch-none"
-  />
-
-  <!-- TransformPane for Vue node rendering -->
-  <TransformPane
-    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-    ref="transformPaneRef"
-    :canvas="comfyApp.canvas"
-    :inert="canvasStore.isPickingNodes"
-    @wheel.capture="canvasInteractions.forwardEventToCanvas"
-    @pointerdown.capture="forwardPointerDownPanEvent"
-    @pointerup.capture="forwardPointerUpPanEvent"
-    @pointermove.capture="forwardPointerMovePanEvent"
-    @keydown.space="forwardSpaceKeyEvent"
-  >
-    <!-- Vue nodes rendered based on graph nodes -->
-    <LGraphNode
-      v-for="nodeData in allNodes"
-      :key="nodeData.id"
-      :node-data
-      :data-node-id="nodeData.id"
-    />
-  </TransformPane>
-
-  <LinkOverlayCanvas
-    v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
-    :canvas="comfyApp.canvas"
-    @ready="onLinkOverlayReady"
-    @dispose="onLinkOverlayDispose"
-  />
-
-  <!-- Selection rectangle overlay - rendered in DOM layer to appear above DOM widgets -->
-  <SelectionRectangle
-    v-if="comfyAppReady"
-    :panel-el="canvasPanelBoundsRef ?? undefined"
-  />
-
-  <NodeTooltip v-if="tooltipEnabled" />
-  <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
-  <NodeDragPreview />
-  <VueNodeSwitchPopup />
-
-  <!-- Initialize components after comfyApp is ready. useAbsolutePosition requires
-  canvasStore.canvas to be initialized. -->
-  <template v-if="comfyAppReady">
-    <TitleEditor />
-    <SelectionToolbox v-if="selectionToolboxEnabled" />
-    <NodeContextMenu />
-    <!-- Render legacy DOM widgets only when Vue nodes are disabled -->
-    <DomWidgets v-if="!shouldRenderVueNodes" />
-  </template>
 </template>
 
 <script lang="ts">

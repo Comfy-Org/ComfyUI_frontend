@@ -4,7 +4,7 @@
     ref="minimapRef"
     :class="
       cn(
-        'minimap-main-container absolute right-0 bottom-[54px] z-toolbar flex',
+        'minimap-main-container absolute right-0 bottom-[54px] isolate flex',
         isMobile ? 'flex-col' : 'flex-row'
       )
     "

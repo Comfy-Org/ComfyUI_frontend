@@ -422,7 +422,7 @@ const panelClass = computed(() =>
   cn(
     'actionbar pointer-events-auto',
     isDragging.value && 'pointer-events-none select-none',
-    !isDocked.value && 'fixed z-floating-panel floating-panel'
+    !isDocked.value && 'fixed z-1 floating-panel'
   )
 )
 </script>

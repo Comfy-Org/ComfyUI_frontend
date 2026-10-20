@@ -56,7 +56,7 @@
           v-if="isHovered && item.value.leaf && $slots.preview"
           ref="preview"
           data-testid="tree-item-preview"
-          class="pointer-events-none fixed z-toolbar-menu"
+          class="pointer-events-none fixed z-1"
           :style="previewStyle"
         >
           <slot name="preview" :node="item.value" />

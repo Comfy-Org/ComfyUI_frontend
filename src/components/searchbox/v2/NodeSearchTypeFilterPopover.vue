@@ -7,7 +7,7 @@
       side="bottom"
       :side-offset="4"
       :collision-padding="10"
-      class="z-toolbar-menu w-64 rounded-lg border bg-background px-4 py-1 shadow-md will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+      class="w-64 rounded-lg border bg-background px-4 py-1 shadow-md will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       @open-auto-focus="onOpenAutoFocus"
       @close-auto-focus="onCloseAutoFocus"
       @escape-key-down.prevent

@@ -53,7 +53,7 @@
       <div
         v-if="isSubmenuVisible"
         ref="submenuRef"
-        class="more-submenu z-overlay"
+        class="more-submenu"
         :style="submenuStyle"
         @mouseenter="onSubmenuHover"
         @mouseleave="onSubmenuLeave"

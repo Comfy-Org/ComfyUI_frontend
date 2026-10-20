@@ -75,7 +75,7 @@ function viewNodes(): void {
   <Teleport v-if="teleportTarget" :to="teleportTarget">
     <div
       v-if="visibleState"
-      class="pointer-events-none absolute inset-x-2 bottom-8 z-panel flex justify-center"
+      class="pointer-events-none absolute inset-x-2 bottom-8 flex justify-center"
     >
       <CanvasBanner
         :data-testid="presentation.testId"

@@ -4,7 +4,7 @@
     :data-position="position"
     :class="
       cn(
-        'pointer-events-auto absolute z-toolbar flex max-h-96 w-96 flex-col rounded-lg border bg-background shadow-md',
+        'pointer-events-auto absolute flex max-h-96 w-96 flex-col rounded-lg border bg-background shadow-md',
         position === 'bottom-left' && 'bottom-4 left-4',
         position === 'bottom-right' && 'right-4 bottom-4'
       )

@@ -1,16 +1,8 @@
 <template>
-  <div>
-    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
+  <div class="isolate">
+    <div v-if="hasActivePopup" class="fixed inset-0" @click="hideModal"></div>
 
-    <div
-      v-if="hasActivePopup"
-      class="fixed inset-0 z-canvas-controls"
-      @click="hideModal"
-    ></div>
-
-    <div
-      class="pointer-events-none absolute inset-x-0 bottom-0 z-canvas-controls flex"
-    >
+    <div class="pointer-events-none absolute inset-x-0 bottom-0 flex">
       <div
         role="toolbar"
         :aria-label="t('graphCanvasMenu.canvasToolbar')"
@@ -91,6 +83,7 @@
         </Button>
       </div>
     </div>
+    <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
   </div>
 </template>
 
