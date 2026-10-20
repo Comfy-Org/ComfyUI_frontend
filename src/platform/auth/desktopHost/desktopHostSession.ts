@@ -142,3 +142,16 @@ export async function requestDesktopHostWorkspaceSwitch(
   if (next && bridge === current && revision === before) apply(next)
   return desktopHostUser.value?.workspaceId === workspaceId
 }
+
+export function canDesktopHostMintPartnerNodeToken(): boolean {
+  return bridge?.getPartnerNodeToken !== undefined
+}
+
+export function desktopHostPartnerNodeToken(
+  workspaceId: string
+): Promise<string | undefined> {
+  return fetchToken(
+    (current) =>
+      current.getPartnerNodeToken?.(workspaceId) ?? Promise.resolve(null)
+  )
+}

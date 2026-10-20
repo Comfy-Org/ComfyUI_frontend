@@ -10,4 +10,6 @@ export type DesktopHostAuthBridge = Omit<
   ComfyDesktop2AuthBridge,
   'switchWorkspace'
 > &
-  Partial<Pick<ComfyDesktop2AuthBridge, 'switchWorkspace'>>
+  Partial<Pick<ComfyDesktop2AuthBridge, 'switchWorkspace'>> & {
+    getPartnerNodeToken?: (workspaceId: string) => Promise<string | null>
+  }

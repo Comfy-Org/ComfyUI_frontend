@@ -123,6 +123,30 @@ describe('queueAuthToken', () => {
     expect(fetchRequests(MINT_URL)).toHaveLength(0)
   })
 
+  it.for(['native-partner-token', null])(
+    'uses the native mint result %s without sending the workspace token to mint',
+    async (token) => {
+      vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+      const getPartnerNodeToken = vi.fn(async () => token)
+      await startDesktopHostSession(
+        fromPartial<DesktopHostAuthBridge>({
+          getState: async () => ({
+            status: 'signed_in',
+            userId: 'sso-user',
+            workspaceId: 'ws-a'
+          }),
+          onChanged: () => () => {},
+          getPartnerNodeToken
+        })
+      )
+      await expect(queueAuthToken(WORKSPACE_TOKEN, 'ws-a')).resolves.toBe(
+        token ?? undefined
+      )
+      expect(getPartnerNodeToken).toHaveBeenCalledExactlyOnceWith('ws-a')
+      expect(fetchRequests(MINT_URL)).toHaveLength(0)
+    }
+  )
+
   describe('with a host session', () => {
     const signedInAs = (
       userId: string,
