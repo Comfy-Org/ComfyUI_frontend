@@ -5,6 +5,7 @@
       "@/*": ["./src/*"],
       "@website/*": ["./*"]
     },
+    "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,

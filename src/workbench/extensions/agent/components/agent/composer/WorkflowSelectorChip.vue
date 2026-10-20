@@ -16,7 +16,7 @@ import MenuContent from '@/components/ui/menu/MenuContent.vue'
 import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
-import type { ActiveTab } from '../../../types/activeTab'
+import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 
 const {
   activeTab,

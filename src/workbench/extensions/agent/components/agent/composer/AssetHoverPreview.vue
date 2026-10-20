@@ -12,7 +12,7 @@ import AssetMediaPreview from './AssetMediaPreview.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { AssetPreviewMode } from '../../../types/assetPreview'
+import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 
 const { name, previewUrl, mediaUrl, mediaKind } = defineProps<{
   name: string

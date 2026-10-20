@@ -1,33 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { createBalanceWatch } from './balanceWatch.js'
-import { sessionBillingScopeSource } from './billingScope.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { createBalanceWatch } from './balanceWatch'
+import { sessionBillingScopeSource } from './billingScope'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import { createCapabilitiesReader } from './capabilities.js'
-import { driveEmbeddedChallenge } from './challengeDriver.js'
-import { createCreditsReader } from './credits.js'
+} from './billingContracts'
+import { createCapabilitiesReader } from './capabilities'
+import { driveEmbeddedChallenge } from './challengeDriver'
+import { createCreditsReader } from './credits'
 import {
   createBillingOperationLifecycle,
   operationRoute
-} from './operationLifecycle.js'
-import { OPERATION_POLL_TIMING } from './operationPolicy.js'
-import type { BillingOpStatus } from './operationState.js'
-import type { BillingStatusData } from './status.js'
-import { createBillingStatusReader } from './status.js'
-import type { HostedTopupCheckoutResult, TopupResult } from './topup.js'
+} from './operationLifecycle'
+import { OPERATION_POLL_TIMING } from './operationPolicy'
+import type { BillingOpStatus } from './operationState'
+import type { BillingStatusData } from './status'
+import { createBillingStatusReader } from './status'
+import type { HostedTopupCheckoutResult, TopupResult } from './topup'
 import {
   TOPUP_CHECKOUT_ROUTE,
   TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
-} from './topup.js'
+} from './topup'
 
 const NOW = 1_000_000
 

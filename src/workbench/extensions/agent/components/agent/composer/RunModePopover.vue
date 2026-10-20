@@ -17,8 +17,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'
 
-import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
-import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
+import type { AgentRunModeValue } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()

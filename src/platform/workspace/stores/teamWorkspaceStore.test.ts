@@ -87,7 +87,7 @@ const mockWorkspaceApiError = vi.hoisted(
     }
 )
 
-vi.mock<unknown>(import('../api/workspaceApi'), () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi,
   WorkspaceApiError: mockWorkspaceApiError
 }))

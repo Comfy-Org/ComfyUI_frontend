@@ -5,22 +5,25 @@ import { createI18n } from 'vue-i18n'
 
 import SecretFormDialog from './SecretFormDialog.vue'
 
-vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
-  useSecretForm: () => ({
-    form: { provider: '', name: '', secretValue: '' },
-    errors: {},
-    loading: false,
-    apiError: '',
-    providerOptions: [],
-    providerHelp: '',
-    selectedInputType: ref('text'),
-    credentialOptions: ref([]),
-    credentialType: ref<string | null>(null),
-    fileName: ref(''),
-    loadSecretFromFile: vi.fn(),
-    handleSubmit: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/secrets/composables/useSecretForm'),
+  () => ({
+    useSecretForm: () => ({
+      form: { provider: '', name: '', secretValue: '' },
+      errors: {},
+      loading: false,
+      apiError: '',
+      providerOptions: [],
+      providerHelp: '',
+      selectedInputType: ref('text'),
+      credentialOptions: ref([]),
+      credentialType: ref<string | null>(null),
+      fileName: ref(''),
+      loadSecretFromFile: vi.fn(),
+      handleSubmit: vi.fn()
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,

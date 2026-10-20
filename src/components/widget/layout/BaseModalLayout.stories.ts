@@ -15,7 +15,7 @@ import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
-import LeftSidePanel from '../panel/LeftSidePanel.vue'
+import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import BaseModalLayout from './BaseModalLayout.vue'
 
 interface StoryArgs {
