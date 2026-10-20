@@ -1083,7 +1083,7 @@ describe('attachDocOpMinter', () => {
       await afterFlush()
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
 
       mayWrite = true
@@ -1098,7 +1098,7 @@ describe('attachDocOpMinter', () => {
           promoted: expect.objectContaining({ value_index: 1 })
         })
       ])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
       doc.destroy()
     })
@@ -1168,12 +1168,12 @@ describe('attachDocOpMinter', () => {
       host.widgets[1].value = 'never synced'
       await afterFlush()
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS - 1)
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
 
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(1)
+      expect(refusals).toEqual([[host.id, 'text']])
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
@@ -1198,7 +1198,7 @@ describe('attachDocOpMinter', () => {
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(1)
+      expect(refusals).toEqual([[host.id, 'text']])
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
@@ -1219,7 +1219,7 @@ describe('attachDocOpMinter', () => {
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(1)
+      expect(refusals).toEqual([[host.id, 'text']])
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
@@ -1242,7 +1242,7 @@ describe('attachDocOpMinter', () => {
       expect(
         minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
       ).toEqual(['slow relay'])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       doc.destroy()
     })
 
@@ -1260,7 +1260,7 @@ describe('attachDocOpMinter', () => {
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       doc.destroy()
     })
 
@@ -1277,7 +1277,7 @@ describe('attachDocOpMinter', () => {
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       doc.destroy()
     })
 
@@ -1291,7 +1291,7 @@ describe('attachDocOpMinter', () => {
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(1)
+      expect(refusals).toEqual([[host.id, 'text']])
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
@@ -1311,14 +1311,14 @@ describe('attachDocOpMinter', () => {
       graphAvailable = false
       mayWrite = true
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       graphAvailable = true
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
 
       expect(
         minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
       ).toEqual(['during a load'])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       doc.destroy()
     })
 
@@ -1337,7 +1337,7 @@ describe('attachDocOpMinter', () => {
       expect(
         minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
       ).toEqual(['across a resend'])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       doc.destroy()
     })
 
@@ -1354,7 +1354,7 @@ describe('attachDocOpMinter', () => {
       expect(
         minted.map((op) => (op.op === 'set_widget' ? op.value : op.op))
       ).toEqual(['third attempt'])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       doc.destroy()
     })
 
@@ -1372,7 +1372,7 @@ describe('attachDocOpMinter', () => {
       await vi.advanceTimersByTimeAsync(1_000 + PROMOTED_WRITE_RETRY_MS)
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(1)
+      expect(refusals).toEqual([[host.id, 'text']])
       doc.destroy()
     })
 
@@ -1384,7 +1384,7 @@ describe('attachDocOpMinter', () => {
       await afterFlush()
       graphAvailable = false
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
-      expect(refusals).toBe(1)
+      expect(refusals).toEqual([[host.id, 'text']])
       expect(vi.getTimerCount()).toBe(0)
 
       graphAvailable = true
@@ -1410,7 +1410,7 @@ describe('attachDocOpMinter', () => {
       mayWrite = true
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
       expect(minted).toEqual([])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       doc.destroy()
     })
 
@@ -1427,7 +1427,7 @@ describe('attachDocOpMinter', () => {
       await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
 
       expect(minted).toEqual([])
-      expect(refusals).toBe(0)
+      expect(refusals).toEqual([])
       doc.destroy()
     })
   })
