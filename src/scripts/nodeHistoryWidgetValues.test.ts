@@ -1,6 +1,13 @@
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished
+} from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   createTestRootGraph,
@@ -11,6 +18,7 @@ import {
 import { parseFlattenableSubgraphDefinitions } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -76,6 +84,37 @@ describe('node-history widget values', () => {
       ])
     )
   })
+
+  it.for([
+    { mode: 'Vue nodes', vueNodesMode: true, includesFields: true },
+    { mode: 'the classic canvas', vueNodesMode: false, includesFields: false }
+  ])(
+    'collects the fields mirrored by a crop widget in $mode: $includesFields',
+    ({ vueNodesMode, includesFields }) => {
+      const previous = LiteGraph.vueNodesMode
+      LiteGraph.vueNodesMode = vueNodesMode
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = previous
+      })
+      const node = new LGraphNode('ImageCropV2')
+      node.id = toNodeId(3)
+      rootGraph.add(node)
+      useBoundingBoxWidget()(node, {
+        type: 'BOUNDING_BOX',
+        name: 'crop_region',
+        component: 'ImageCrop'
+      })
+
+      const collected = collectNodeHistoryWidgets(rootGraph)
+
+      expect(
+        collected.get(widgetId(rootGraph.id, toNodeId(3), 'crop_region'))
+      ).toBe(0)
+      expect(collected.has(widgetId(rootGraph.id, toNodeId(3), 'x'))).toBe(
+        includesFields
+      )
+    }
+  )
 
   it.for([
     { case: 'only the boxes changed', width: 512, expected: [512, [regionA]] },
