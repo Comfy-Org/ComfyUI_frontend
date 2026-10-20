@@ -878,6 +878,11 @@ function isNoPaymentMethodRefusal(error: unknown): boolean {
 let unmounted = false
 let stopDefaultCardReturnRefresh: (() => void) | null = null
 const dialogScope = new AbortController()
+watch(
+  () => workspaceStore.workspaceTransitionGeneration,
+  () => dialogScope.abort(),
+  { flush: 'sync' }
+)
 onUnmounted(() => {
   unmounted = true
   dialogScope.abort()
@@ -1013,7 +1018,7 @@ async function openCheckoutInReservedTab(): Promise<
       returnUrl,
       dialogScope.signal
     )
-    if (unmounted) {
+    if (dialogScope.signal.aborted) {
       checkoutTab.close()
       return 'abandoned'
     }
@@ -1023,7 +1028,7 @@ async function openCheckoutInReservedTab(): Promise<
   } catch (error) {
     checkoutTab.close()
     console.error('Hosted top-up checkout failed to open', error)
-    return unmounted ? 'abandoned' : 'failed'
+    return dialogScope.signal.aborted ? 'abandoned' : 'failed'
   } finally {
     loading.value = false
   }

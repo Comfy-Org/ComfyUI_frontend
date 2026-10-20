@@ -16,7 +16,6 @@ import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingS
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'))
@@ -299,36 +298,10 @@ describe('useTopupOperation', () => {
       }
     )
 
-    const teamWorkspace = {
-      id: 'ws-team',
-      name: 'Team',
-      type: 'team',
-      role: 'owner'
-    } as const
-
-    it.for(
-      rails.flatMap((rail) => [
-        {
-          ...rail,
-          name: 'the dialog is abandoned',
-          interrupt: (scope: AbortController) => scope.abort()
-        },
-        {
-          ...rail,
-          name: 'the tab switches workspace',
-          interrupt: () => {
-            useWorkspaceAuthStore().currentWorkspace = {
-              ...teamWorkspace,
-              id: 'ws-other'
-            }
-          }
-        }
-      ])
-    )(
-      'sends no retry once $name during the backoff on the $rail rail',
-      async ({ flagOn, mint, interrupt }) => {
+    it.for(rails)(
+      'sends no retry once the scope aborts during the backoff on the $rail rail',
+      async ({ flagOn, mint }) => {
         flagState.billingSdkTopupEnabled = flagOn
-        useWorkspaceAuthStore().currentWorkspace = teamWorkspace
         const mintCheckout = mint([busy, 'https://stripe/other-scope'])
         const scope = new AbortController()
 
@@ -339,7 +312,7 @@ describe('useTopupOperation', () => {
             (error: unknown) => ({ error })
           )
         await vi.advanceTimersByTimeAsync(500)
-        interrupt(scope)
+        scope.abort()
         await vi.runAllTimersAsync()
 
         expect(await checkout).toEqual({ error: expect.anything() })

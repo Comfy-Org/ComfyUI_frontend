@@ -973,6 +973,7 @@ export const workspaceApi = {
     signal?: AbortSignal
   ): Promise<CreateTopupCheckoutResponse> {
     const auth = await requestAuth()
+    signal?.throwIfAborted()
     try {
       const response =
         await workspaceApiClient.post<CreateTopupCheckoutResponse>(

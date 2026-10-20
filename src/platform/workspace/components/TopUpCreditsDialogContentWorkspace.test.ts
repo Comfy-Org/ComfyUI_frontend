@@ -1047,6 +1047,32 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
+    it('abandons a checkout still opening once this tab starts switching workspace', async () => {
+      refuseForNoPaymentMethod()
+      const handedSignals: AbortSignal[] = []
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockImplementation(
+        (_amountCents, _returnUrl, signal) => {
+          if (signal) handedSignals.push(signal)
+          return new Promise((_resolve, reject) =>
+            signal?.addEventListener('abort', () => reject(signal.reason))
+          )
+        }
+      )
+      const tab = newCheckoutTab()
+      vi.spyOn(window, 'open').mockReturnValue(tab as never)
+      await userEvent.click((await payAndGetRefused()).continueButton)
+      await waitFor(() => expect(handedSignals).toHaveLength(1))
+
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceTransitionGeneration: 1
+      })
+
+      expect(handedSignals[0].aborted).toBe(true)
+      await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
+      expect(tab.location.href).toBe('')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
     describe('reopening checkout from the hand-off', () => {
       const reopenedUrl = 'https://checkout.stripe.com/c/pay/cs_test_reopened'
 
