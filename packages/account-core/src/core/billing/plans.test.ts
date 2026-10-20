@@ -4,16 +4,16 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import { createPlansReader } from './plans.js'
+import type { SessionSnapshot } from '#/core/session'
+import { sessionBillingScopeSource } from './billingScope'
+import { createPlansReader } from './plans'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
   const fake: SessionFake = {

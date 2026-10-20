@@ -8,13 +8,13 @@
       }}
     </template>
 
-    <div class="flex flex-col gap-6 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
+    <div class="flex flex-col gap-6 p-4 text-sm">
+      <p class="m-0 text-muted-foreground">
         {{ $t('workspacePanel.members.creditLimitDialog.description') }}
       </p>
-      <div class="flex flex-col gap-2">
+      <div class="flex cursor-pointer flex-col gap-2 text-muted-foreground">
         <div
-          class="flex cursor-pointer items-start gap-2 rounded-lg p-2 text-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover/30"
+          class="flex items-start gap-2 rounded-lg p-2 transition-colors hover:bg-accent/30"
           @click="mode = 'limited'"
         >
           <input
@@ -23,14 +23,14 @@
             type="radio"
             :name="modeGroupName"
             value="limited"
-            class="mt-0.5 size-4 appearance-none rounded-full border border-muted-background checked:border-3 checked:bg-white focus-visible:ring-2 focus-visible:ring-border-default focus-visible:outline-none"
+            class="mt-0.5 size-4 appearance-none rounded-full border border-muted checked:border-3 checked:bg-white focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           />
           <span class="flex flex-1 flex-col gap-2">
-            <label :for="`${modeGroupName}-limited`" class="cursor-pointer">
+            <label :for="`${modeGroupName}-limited`">
               {{ $t('workspacePanel.members.creditLimitDialog.limitOption') }}
             </label>
             <span
-              class="flex h-10 items-center gap-2 rounded-lg bg-secondary-background px-4"
+              class="flex h-10 items-center gap-2 rounded-lg bg-secondary px-4"
             >
               <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
               <input
@@ -39,14 +39,14 @@
                 :aria-label="
                   $t('workspacePanel.members.creditLimitDialog.limitOption')
                 "
-                class="w-full border-none bg-transparent text-sm text-base-foreground tabular-nums outline-none"
+                class="w-full border-none bg-transparent text-foreground tabular-nums outline-none"
                 @focus="mode = 'limited'"
               />
             </span>
           </span>
         </div>
         <div
-          class="flex cursor-pointer items-center gap-2 rounded-lg p-2 text-sm text-muted-foreground transition-colors hover:bg-secondary-background-hover/30"
+          class="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-accent/30"
           @click="mode = 'unlimited'"
         >
           <input
@@ -55,14 +55,14 @@
             type="radio"
             :name="modeGroupName"
             value="unlimited"
-            class="size-4 appearance-none rounded-full border border-muted-background checked:border-3 checked:bg-white focus-visible:ring-2 focus-visible:ring-border-default focus-visible:outline-none"
+            class="size-4 appearance-none rounded-full border border-muted checked:border-3 checked:bg-white focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           />
-          <label :for="`${modeGroupName}-unlimited`" class="cursor-pointer">
+          <label :for="`${modeGroupName}-unlimited`">
             {{ $t('workspacePanel.members.creditLimitDialog.noLimit') }}
           </label>
         </div>
       </div>
-      <p v-if="showWarning" class="m-0 flex gap-1 text-sm text-credit">
+      <p v-if="showWarning" class="m-0 flex gap-1 text-credit">
         <i class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
         {{
           $t('workspacePanel.members.creditLimitDialog.warning', {
@@ -70,7 +70,7 @@
           })
         }}
       </p>
-      <p v-if="showError" class="m-0 text-sm text-destructive-background">
+      <p v-if="showError" class="m-0 text-destructive">
         {{ $t('workspacePanel.members.creditLimitDialog.invalidLimit') }}
       </p>
     </div>

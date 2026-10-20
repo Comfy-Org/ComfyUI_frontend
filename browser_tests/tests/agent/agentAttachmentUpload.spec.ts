@@ -3,6 +3,7 @@ import type { Route } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
+import { Tooltip } from '@e2e/fixtures/components/Tooltip'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
@@ -31,7 +32,7 @@ test.describe('Agent attachment cancellation', { tag: '@cloud' }, () => {
       await agentPanel.open()
       await agentPanel.selectWorkflow()
       const panel = page.locator('#agent-panel-root')
-      const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+      const composer = agentPanel.composer
       const send = panel.getByRole('button', { name: 'Send', exact: true })
       await composer.fill('Keep this draft')
       await expect(send).toBeEnabled()
@@ -93,13 +94,12 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     await expect(agentPanel.sendButton).toBeDisabled()
     await agentPanel.sendButton.hover()
     await expect(
-      comfyPage.page.getByRole('tooltip', {
-        name: enMessages.agent.sendBlockedByInvalidVideo.replace(
+      new Tooltip(comfyPage.page).named(
+        enMessages.agent.sendBlockedByInvalidVideo.replace(
           '{name}',
           'renamed.mp4'
-        ),
-        exact: true
-      })
+        )
+      )
     ).toBeVisible()
     await agentPanel.composer.press('Enter')
     await expect(agentPanel.composer).toHaveText('Describe this video')
@@ -107,13 +107,9 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     await agentPanel.open()
     await agentPanel.attachmentChip('renamed.mp4').getByRole('status').hover()
     await expect(
-      comfyPage.page.getByRole('tooltip', {
-        name: enMessages.agent.attachmentInvalidVideo.replace(
-          '{name}',
-          'renamed.mp4'
-        ),
-        exact: true
-      })
+      new Tooltip(comfyPage.page).named(
+        enMessages.agent.attachmentInvalidVideo.replace('{name}', 'renamed.mp4')
+      )
     ).toBeVisible()
     await expect(agentPanel.sendButton).toBeDisabled()
     await expect(
@@ -176,13 +172,9 @@ test.describe('Agent attachment validation', { tag: ['@cloud', '@ui'] }, () => {
     ).toBeVisible()
     await agentPanel.attachmentChip('renamed.mp4').getByRole('status').hover()
     await expect(
-      comfyPage.page.getByRole('tooltip', {
-        name: enMessages.agent.attachmentInvalidVideo.replace(
-          '{name}',
-          'renamed.mp4'
-        ),
-        exact: true
-      })
+      new Tooltip(comfyPage.page).named(
+        enMessages.agent.attachmentInvalidVideo.replace('{name}', 'renamed.mp4')
+      )
     ).toBeVisible()
   })
 })

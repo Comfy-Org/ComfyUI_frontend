@@ -8,7 +8,7 @@
     <!-- Image preview container -->
     <div
       ref="containerEl"
-      class="relative min-h-0 flex-1 overflow-hidden rounded-[5px] bg-node-component-surface"
+      class="relative min-h-0 flex-1 overflow-hidden rounded-[5px] bg-node"
     >
       <div
         v-if="!imageUrl"
@@ -37,7 +37,7 @@
         <div
           v-if="isLoading"
           aria-live="polite"
-          class="absolute inset-0 z-10 flex size-full items-center justify-center bg-node-component-surface/90"
+          class="absolute inset-0 z-10 flex size-full items-center justify-center bg-node/90"
         >
           <span class="text-sm">{{ $t('imageCrop.loading') }}</span>
         </div>
@@ -78,7 +78,7 @@
     </div>
 
     <div v-if="!isDisabled" class="flex shrink-0 items-center gap-2">
-      <label class="text-xs text-muted-foreground">
+      <label>
         {{ $t('imageCrop.ratio') }}
       </label>
       <Select v-model="selectedRatio">

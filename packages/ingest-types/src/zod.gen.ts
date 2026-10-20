@@ -2657,6 +2657,26 @@ export const zDeploymentCompatibility = z.object({
 })
 
 /**
+ * Error body of local ComfyUI's /api/deploy* routes. Branch on `error`, never on `message`.
+ */
+export const zDeployToCloudError = z.object({
+  error: z.enum([
+    'offline',
+    'multiple_credentials',
+    'invalid_api_key_format',
+    'invalid_body',
+    'missing_credentials',
+    'unauthorized',
+    'too_large',
+    'too_many_bundles',
+    'builder_rejected',
+    'builder_unavailable',
+    'builder_busy'
+  ]),
+  message: z.string().optional()
+})
+
+/**
  * Response after deleting a session cookie
  */
 export const zDeleteSessionResponse = z.object({
@@ -3098,6 +3118,8 @@ export const zBillingEvent = z.object({
   api_key_name: z.string().optional(),
   api_key_prefix: z.string().optional(),
   createdAt: z.iso.datetime(),
+  deployment_id: z.string().optional(),
+  deployment_name: z.string().optional(),
   event_id: z.string(),
   event_type: z.string(),
   member_display_name: z.string().optional(),
@@ -3240,6 +3262,7 @@ export const zBillingCapabilityDenials = z.object({
   can_delete_workspace: z
     .enum([
       'not_a_member',
+      'sales_managed_plan',
       'not_workspace_owner',
       'not_original_owner',
       'workspace_sso_attached',
@@ -3329,6 +3352,7 @@ export const zBillingCapabilityDenials = z.object({
     .enum([
       'manual_block',
       'subscription_inactive',
+      'payment_past_due',
       'no_funds',
       'workspace_cap_exceeded',
       'project_cap_exceeded',
@@ -3450,8 +3474,11 @@ export const zBillingCapabilities = z.object({
 
 /**
  * Recorded account setup guidance, separate from owner authority in
- * can_manage_auto_top_up. Frozen keeps the owner's card visible but prevents
- * enabling/editing; unavailable hides it. Owner read/disable authority remains.
+ * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
+ * means setup is not available. Owner read/disable authority remains separate.
+ * These states do not determine surface visibility. Unified billing settings
+ * hide the auto top-up card when can_top_up is false, including paused or
+ * payment-failed billing.
  * Ready does not authorize a charge or guarantee an off-session payment method.
  * This fact ignores saved consent and monthly budget. An absent fact is unknown.
  *
@@ -3518,7 +3545,16 @@ export const zBillingBalanceResponse = z.object({
   pending_charges_cents: z.number().optional(),
   pending_charges_micros: z.number().optional(),
   prepaid_balance_cents: z.number().optional(),
-  prepaid_balance_micros: z.number().optional()
+  prepaid_balance_micros: z.number().optional(),
+  suggested_topup_amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullish()
 })
 
 /**
@@ -3569,6 +3605,7 @@ export const zAutoReloadSettingsRequest = z.object({
  *
  */
 export const zAutoReloadSettings = z.object({
+  card_expiring_soon: z.boolean().nullish(),
   configured: z.boolean(),
   cycle_resets_at: z.iso.datetime().nullable(),
   disabled_reason: z.string().nullable(),
@@ -3628,6 +3665,7 @@ export const zAutoReloadSettings = z.object({
     .max(BigInt('9223372036854775807'), {
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
+  status: z.enum(['failed', 'off', 'on_hold', 'paused_by_budget', 'on']),
   threshold_credits: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -3749,6 +3787,42 @@ export const zAgentViewableAttachmentExtension = z.enum([
 export const zAgentTurnAccepted = z.object({
   message_id: z.string(),
   thread_id: z.string()
+})
+
+/**
+ * The `data` of an agent_tool_call WebSocket event: one tool invocation's lifecycle. Mirrors `$defs.agent_tool_call.data` in services/agent/api/agent_events.schema.json, which also states the presence rules: the document correlation fields appear only on a terminal (success or error) frame, workflow_id and op_ids appear together, and doc_seq and doc_lineage_seq appear together and only with both of them. This schema leaves those rules out on purpose. A oneOf over closed variants could express them, but it would turn the generated frontend type into a union the consumer cannot extend field by field. The producer enforces them instead: the Publisher omits incomplete correlation, and TestToolCallEmissionsSatisfyBothContracts validates every emitted shape against the canonical schema. Consumers treat correlation as advisory and use it only when workflow_id and op_ids are both present on a terminal frame. TestToolCallFrameMatchesContract holds the two definitions to the same fields and constraints.
+ */
+export const zAgentToolCallData = z.object({
+  doc_lineage_seq: z.int().gte(1).optional(),
+  doc_seq: z.int().gte(1).optional(),
+  duration_ms: z.int().optional(),
+  error_code: z.string().optional(),
+  message_id: z.string(),
+  op_ids: z
+    .array(
+      z
+        .string()
+        .min(1)
+        .max(128)
+        .regex(/^[^\x00\n\r\t]+$/)
+    )
+    .min(1)
+    .max(256)
+    .optional(),
+  skill: z.string().optional(),
+  status: z.enum(['running', 'success', 'error']),
+  thread_id: z.string(),
+  tool_call_id: z.string(),
+  tool_name: z.string(),
+  workflow_id: z.string().min(1).optional()
+})
+
+/**
+ * Server-to-client agent_tool_call frame on /ws. A tool invocation started or reached a terminal state. Closed, like the canonical envelope.
+ */
+export const zAgentToolCallFrame = z.object({
+  data: zAgentToolCallData,
+  type: z.enum(['agent_tool_call'])
 })
 
 /**
@@ -3942,6 +4016,7 @@ export const zAgentPostMessageRequest = z.object({
   attachments: z.array(z.string().max(256)).max(25).optional(),
   client_id: z.string().optional(),
   client_message_id: z.string().max(128).optional(),
+  client_version: z.string().optional(),
   content: z.string(),
   current_tab: z.string().optional(),
   current_tab_unbound: z.boolean().optional(),
@@ -4510,7 +4585,8 @@ export const zAgentDeleteSkillResponse = z.void()
 
 export const zAgentListThreadsQuery = z.object({
   limit: z.int().gte(1).lte(100).optional().default(20),
-  after: z.string().optional()
+  after: z.string().optional(),
+  workflow_id: z.string().min(1).max(128).optional()
 })
 
 /**
@@ -5105,6 +5181,32 @@ export const zGetBillingUsageTimeSeriesResponse = zUsageTimeSeries
 export const zGetDefaultWorkflowResponse = z.record(z.string(), z.unknown())
 
 /**
+ * A JSON object; `{}` is valid. Null members count as absent.
+ */
+export const zCreateDeployBundleBody = z.object({
+  name: z.string().max(200).nullish(),
+  workflow: z.record(z.string(), z.unknown()).nullish()
+})
+
+/**
+ * Bundle stored on comfy-builder
+ */
+export const zCreateDeployBundleResponse = z.object({
+  bundle_id: z.uuid(),
+  expires_at: z.iso.datetime(),
+  url: z.url(),
+  workspace_id: z.string()
+})
+
+/**
+ * Counts of what the bundle would include
+ */
+export const zGetDeploySummaryResponse = z.object({
+  custom_nodes: z.int(),
+  models: z.int()
+})
+
+/**
  * Embedding names
  */
 export const zGetEmbeddingsResponse = z.array(z.string())
@@ -5163,6 +5265,7 @@ export const zGetFeaturesResponse = z.object({
     .default('control'),
   billing_web_url: z.string().optional(),
   can_run_partner_nodes: z.boolean().optional(),
+  deploy_to_cloud: z.boolean().optional(),
   free_tier_balance: z
     .object({
       allowance: z.int(),

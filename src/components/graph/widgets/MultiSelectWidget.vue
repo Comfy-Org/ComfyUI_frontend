@@ -9,13 +9,15 @@
     >
       <template v-if="inputSpec.multi_select?.chip" #value="{ selected }">
         <div class="flex min-w-0 gap-1 overflow-hidden">
-          <span
+          <Badge
             v-for="item in selected"
             :key="item.value"
-            class="truncate rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs"
+            variant="square"
+            severity="secondary"
+            class="min-w-0 shrink"
           >
-            {{ item.name }}
-          </span>
+            <span class="truncate">{{ item.name }}</span>
+          </Badge>
         </div>
       </template>
     </MultiSelect>
@@ -23,6 +25,7 @@
 </template>
 
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
 import { computed } from 'vue'
 
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'

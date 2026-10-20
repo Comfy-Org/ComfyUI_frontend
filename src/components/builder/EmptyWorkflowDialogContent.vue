@@ -7,11 +7,11 @@
       {{ $t('builderToolbar.emptyWorkflowTitle') }}
     </template>
 
-    <div class="flex flex-col gap-2 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
+    <div class="flex flex-col gap-2 p-4 text-sm text-muted-foreground">
+      <p class="m-0">
         {{ $t('linearMode.emptyWorkflowExplanation') }}
       </p>
-      <p class="m-0 text-sm text-muted-foreground">
+      <p class="m-0">
         {{ $t('builderToolbar.emptyWorkflowPrompt') }}
       </p>
     </div>

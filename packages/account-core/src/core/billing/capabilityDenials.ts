@@ -56,6 +56,7 @@ export type CapabilityDenialReason =
   | 'project_cap_exceeded'
   | 'rollout_disabled'
   | 'sales_managed'
+  | 'sales_managed_plan'
   | 'subscription_inactive'
   | 'usage_attribution_unavailable'
   | 'user_cap_exceeded'
@@ -105,6 +106,7 @@ const KNOWN_REASONS: Readonly<
   project_cap_exceeded: true,
   rollout_disabled: true,
   sales_managed: true,
+  sales_managed_plan: true,
   subscription_inactive: true,
   usage_attribution_unavailable: true,
   user_cap_exceeded: true,

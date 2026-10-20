@@ -11,10 +11,7 @@ const { class: className } = defineProps<{
 <template>
   <h2
     :class="
-      cn(
-        'm-0 flex min-w-0 items-center gap-2 text-sm font-normal text-base-foreground',
-        className
-      )
+      cn('m-0 flex min-w-0 items-center gap-2 text-sm font-normal', className)
     "
   >
     <slot />

@@ -15,26 +15,26 @@ import type {
   AgentStopMethod
 } from '@/platform/telemetry/types'
 
-import type { FreeUseVariant } from '../../experiments/freeUsePlacement'
-import type { ActiveTab } from '../../types/activeTab'
+import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
-} from '../../types/workflowReference'
-import type { TurnId } from '../../schemas/agentApiSchema'
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
-import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
-import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
-import type { AgentPanelView } from '../../stores/agent/agentPanelStore'
-import { deriveSessionTitle } from '../../utils/sessionTitle'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
@@ -354,7 +354,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
 <template>
   <section
-    class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"
+    class="@container flex h-full flex-col overflow-hidden bg-background text-foreground"
   >
     <PanelHeader
       :is-maximized
@@ -394,7 +394,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
+          class="size-6 shrink-0 data-coach-hover:bg-accent"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />

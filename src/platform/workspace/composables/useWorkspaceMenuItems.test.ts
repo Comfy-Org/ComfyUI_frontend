@@ -55,11 +55,6 @@ vi.mock<unknown>(
           }
         }
       },
-      uiConfig: computed(() => ({
-        showEditWorkspaceMenuItem: false,
-        workspaceMenuAction: null,
-        workspaceMenuDisabledTooltip: null
-      })),
       canAccessSubscriptionFeatures: computed(
         () => state.canAccessSubscriptionFeatures
       ),
@@ -117,6 +112,9 @@ afterEach(() => {
 
 describe('useWorkspaceMenuItems', () => {
   beforeEach(() => {
+    useBillingCapabilities().canEditWorkspace = computed(() =>
+      receiveServerFact('can_edit_workspace', false)
+    )
     state.billingStatus = 'paid'
 
     state.canManageSubscriptionLifecycle = false
@@ -193,22 +191,9 @@ describe('useWorkspaceMenuItems', () => {
     }
   )
 
-  it('hides Delete for an Enterprise workspace the server would otherwise grant', () => {
-    grantDelete()
-    state.planSlug = 'enterprise_monthly'
-    state.tier = 'ENTERPRISE'
-
-    const { menuItems } = useWorkspaceMenuItems()
-
-    expect(menuItems.value.map((item) => item.label)).not.toContain(
-      'workspacePanel.menu.deleteWorkspace'
-    )
-  })
-
-  it('keeps Leave available for an Enterprise workspace member', () => {
+  it('keeps Leave when the server refuses Delete for a sales-managed plan', () => {
     grantLeave()
-    state.planSlug = 'enterprise_monthly'
-    state.tier = 'ENTERPRISE'
+    denyDelete('sales_managed_plan')
 
     const { menuItems } = useWorkspaceMenuItems()
 

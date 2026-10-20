@@ -150,7 +150,7 @@
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
       "name": "Workflow store opens, renames, closes, and tracks modified workflows",
