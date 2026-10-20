@@ -30,7 +30,11 @@
         :aria-label="$t('g.close')"
         @click="
           () =>
-            handleClose(!topupIsParkedWithoutLink && step !== 'checkoutOpened')
+            handleClose(
+              !topupIsParkedWithoutLink &&
+                step !== 'checkoutOpened' &&
+                step !== 'checkoutBlocked'
+            )
         "
       >
         <i class="icon-[lucide--x] size-6" />

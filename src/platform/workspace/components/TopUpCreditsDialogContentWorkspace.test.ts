@@ -1073,6 +1073,19 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         expect(createCheckout).toHaveBeenCalledOnce()
       })
 
+      it('keeps the opened checkout pending when the dialog closes on a blocked reopen', async () => {
+        await openCheckoutThenReopen({
+          reopenTab: null,
+          reopened: async () => ({ checkout_url: reopenedUrl })
+        })
+        await screen.findByRole('heading', { name: "Checkout didn't open" })
+
+        await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+        expect(mockClearPendingTopup).not.toHaveBeenCalled()
+        expect(useDialogStore().closeDialog).toHaveBeenCalled()
+      })
+
       it('stays on the hand-off and explains a session that could not start', async () => {
         await openCheckoutThenReopen({
           reopenTab: newCheckoutTab(),
