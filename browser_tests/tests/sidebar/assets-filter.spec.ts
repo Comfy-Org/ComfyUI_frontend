@@ -3,11 +3,6 @@ import { expect } from '@playwright/test'
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-// We tag tests `@cloud` so they run against the cloud Playwright project,
-// and register `/api/assets` route handlers as auto fixtures — Playwright
-// runs auto fixtures before the `comfyPage` fixture's internal `setup()`,
-// so the page first-loads with mocks already in place.
-//
 // Use `waitForAssets()` not `waitForAssets(MIXED_ASSETS.length)`: VirtualGrid
 // can virtualize the 3D card out of the initial render (#11635). Filtering
 // reads the full store, so the per-filter count assertions still cover the

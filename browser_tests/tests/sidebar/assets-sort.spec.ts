@@ -4,13 +4,6 @@ import type { Locator } from '@playwright/test'
 import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-// The assets sidebar's sort options live inside the settings popover. We tag
-// tests `@cloud` so they run against
-// the cloud Playwright project, and register `/api/assets` and
-// `/internal/files/input` route handlers as auto fixtures — Playwright runs
-// auto fixtures before the `comfyPage` fixture's internal `setup()`, so the
-// page first-loads with mocks already in place.
-
 // Three jobs whose name, create_time, and duration axes are intentionally
 // misaligned so all six sorts produce different orderings.
 //
