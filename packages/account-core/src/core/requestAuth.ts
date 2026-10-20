@@ -39,10 +39,8 @@ export interface RequestAuthOptions {
     workspaceId: string | undefined
   ) => Promise<string>
   /**
-   * The Desktop per-installation id, when the frontend is hosted by Comfy
-   * Desktop. Sent as `X-Comfy-Install-Id` on web-session (ingest) requests so
-   * cloud can attribute them to a Desktop install. Returns null/undefined on
-   * plain web, where the header is omitted. A non-PII, non-secret value.
+   * The Desktop per-installation id, sent as `X-Comfy-Install-Id`; null on
+   * plain web.
    */
   readonly getInstallId?: () => string | null | undefined
 }

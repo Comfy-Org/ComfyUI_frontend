@@ -2,8 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { getDesktopInstallId } from '@/platform/auth/session/desktopInstallId'
 
-/** A partial Desktop bridge is all these tests exercise; `vi.stubGlobal`
- *  installs it and the shared test setup unstubs globals after each test. */
 type BridgeFixture = { getInstallId?: () => string }
 
 function stubBridge(bridge: BridgeFixture | undefined): void {
