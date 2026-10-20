@@ -18,7 +18,7 @@ const baselineEntrySchema = z.object({
   id: z.string().min(1),
   classification: z.enum(['infrastructure-assertion', 'live-defect'])
 })
-const baselineSchema = z.object({ entries: z.array(baselineEntrySchema) })
+const baselineSchema = z.array(baselineEntrySchema)
 type BaselineEntry = z.infer<typeof baselineEntrySchema>
 
 const LIVE_DEFECT_CEILING = 14
@@ -343,7 +343,7 @@ export async function buildInventory(
 }
 
 function validateBaseline(value: unknown): BaselineEntry[] {
-  const entries = baselineSchema.parse(value).entries
+  const entries = baselineSchema.parse(value)
   const ids = entries.map(({ id }) => id)
   if (new Set(ids).size !== ids.length) {
     throw new Error('Expected-failure baseline contains duplicate IDs.')

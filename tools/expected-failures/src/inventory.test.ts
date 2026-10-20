@@ -254,14 +254,12 @@ describe('expected failure baseline comparison', () => {
       ]
     }
   ])('$name', ({ inventory, entries, ceiling, errors }) => {
-    expect(compareBaseline(inventory, { entries }, ceiling).errors).toEqual(
-      errors
-    )
+    expect(compareBaseline(inventory, entries, ceiling).errors).toEqual(errors)
   })
 
   it('rejects duplicate baseline IDs', () => {
     expect(() =>
-      compareBaseline([pin('a')], { entries: [entry('a'), entry('a')] }, 2)
+      compareBaseline([pin('a')], [entry('a'), entry('a')], 2)
     ).toThrow('duplicate IDs')
   })
 })
