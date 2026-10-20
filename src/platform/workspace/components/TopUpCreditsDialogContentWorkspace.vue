@@ -30,7 +30,11 @@
         :aria-label="$t('g.close')"
         @click="
           () =>
-            handleClose(!topupIsParkedWithoutLink && step !== 'checkoutOpened')
+            handleClose(
+              !topupIsParkedWithoutLink &&
+                step !== 'checkoutOpened' &&
+                step !== 'checkoutBlocked'
+            )
         "
       >
         <i class="icon-[lucide--x] size-6" />
@@ -310,15 +314,12 @@
         </Button>
       </div>
       <Button
-        v-else-if="step === 'checkoutBlocked' && blockedCheckoutUrl"
-        as="a"
-        :href="blockedCheckoutUrl"
-        target="_blank"
-        rel="noopener"
+        v-else-if="step === 'checkoutBlocked'"
         variant="primary"
         size="lg"
-        class="w-full no-underline"
-        @click="watchCheckoutCompletion"
+        class="w-full"
+        :loading="loading"
+        @click="retryBlockedCheckout"
       >
         {{ $t('credits.topUp.openCheckout') }}
         <i class="icon-[lucide--external-link] size-4" />
@@ -586,9 +587,9 @@ watch(suggestedAmount, (amount) => {
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
-const blockedCheckoutUrl = ref<string | null>(null)
 const blockedDefaultCardUrl = ref<string | null>(null)
 const checkoutReopenFailed = ref(false)
+const stepBeforeCheckoutBlocked = ref<'confirm' | 'checkoutOpened'>('confirm')
 const step = ref<
   | 'amount'
   | 'confirm'
@@ -974,6 +975,15 @@ async function continueToCheckout() {
   }
 }
 
+async function retryBlockedCheckout() {
+  if (!canTopUp.value || loading.value) return
+  const returnStep = stepBeforeCheckoutBlocked.value
+  if ((await openCheckoutInReservedTab()) !== 'failed') return
+  step.value = returnStep
+  if (returnStep === 'checkoutOpened') checkoutReopenFailed.value = true
+  else checkoutRecovery.value = 'failed'
+}
+
 async function reopenCheckout() {
   if (!canTopUp.value || loading.value) return
   checkoutReopenFailed.value = false
@@ -986,6 +996,13 @@ async function openCheckoutInReservedTab(): Promise<
   const returnUrl = topupCheckoutReturnUrl()
   if (!returnUrl) return 'failed'
   const checkoutTab = reserveBillingTab()
+  if (!checkoutTab) {
+    if (step.value === 'confirm' || step.value === 'checkoutOpened') {
+      stepBeforeCheckoutBlocked.value = step.value
+    }
+    step.value = 'checkoutBlocked'
+    return 'blocked'
+  }
   loading.value = true
   try {
     if (!balance.value) await Promise.allSettled([fetchBalance()])
@@ -994,19 +1011,14 @@ async function openCheckoutInReservedTab(): Promise<
       returnUrl
     )
     if (unmounted) {
-      checkoutTab?.close()
+      checkoutTab.close()
       return 'abandoned'
-    }
-    if (!checkoutTab) {
-      blockedCheckoutUrl.value = checkoutUrl
-      step.value = 'checkoutBlocked'
-      return 'blocked'
     }
     checkoutTab.navigate(checkoutUrl)
     watchCheckoutCompletion()
     return 'opened'
   } catch (error) {
-    checkoutTab?.close()
+    checkoutTab.close()
     console.error('Hosted top-up checkout failed to open', error)
     return unmounted ? 'abandoned' : 'failed'
   } finally {
