@@ -1,7 +1,8 @@
 // What a user sees on the panel for each recorded turn: the complete assistant
 // text, and the tool call groups in order with each row's label, multiplicity
 // and failure state. Explicit per recording, so the replay never predicts
-// production rendering.
+// production rendering. The panel rebases comfy.org API links onto the page's
+// own API base, so a recording that shows one writes {apiBase} for that prefix.
 interface ExpectedToolRow {
   label: string
   count: number
@@ -14,6 +15,17 @@ export interface ExpectedTurn {
 }
 
 export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
+  'repro/agent-load-image-layout': [
+    {
+      text: 'Done. The five populated image rows are arranged with room for their previews.',
+      groups: [
+        [
+          { label: 'Add node', count: 1, failed: false },
+          { label: 'Connect', count: 1, failed: false }
+        ]
+      ]
+    }
+  ],
   'agent-l4-zimage-string-node-prompt': [
     {
       text: "I'm on the \"Text to image\" tab, and the text node is in and wired: your prompt \"a red bicycle on a pier at dusk\" now feeds the positive prompt. I also connected two things the graph was missing (an empty negative prompt and the blank canvas the sampler starts from) — without those it couldn't have run at all. I couldn't run it, though. The image model this workflow is built on isn't installed on this server — the checkpoint slot reports no available files at all, so there's nothing valid to point it at, and I'd rather tell you than silently swap in a different model and hand you an image that isn't the one you set up. Two ways forward, your call: Install the checkpoint this workflow expects, then hit Run — the graph is otherwise complete and correct. Let me rebuild it on one of the hosted image models that are available here (Flux, Ideogram, Stable Image and others), keeping your prompt. That's a different model than your current setup, so I'd want your OK first.",
@@ -123,6 +135,20 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
       ]
     }
   ],
+  'agent-rec-asset-url-reply': [
+    {
+      text: '{apiBase}/view?filename=ComfyUI_00001_32f6b8c7.png&subfolder=agent%2Foutputs&type=output',
+      groups: [
+        [
+          {
+            label: 'Switched tabs',
+            count: 1,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
   'agent-rec-batched-ops': [
     {
       text: "Done — I'm now on your \"Text to image\" tab, and both new text prompt nodes are on the canvas with their CLIP inputs wired from the checkpoint loader. They're not connected to anything downstream yet, so tell me if you'd like one hooked up as a negative prompt.",
@@ -212,6 +238,35 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
           },
           {
             label: 'Set widget',
+            count: 1,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
+  'agent-rec-clear-workflow': [
+    {
+      text: 'Done — focus is on the "Text to image" tab, the text node was added, and the canvas is now empty as you asked. Nothing else was added.',
+      groups: [
+        [
+          {
+            label: 'Switched tabs',
+            count: 1,
+            failed: false
+          },
+          {
+            label: 'Ls nodes',
+            count: 1,
+            failed: false
+          },
+          {
+            label: 'Add node',
+            count: 1,
+            failed: false
+          },
+          {
+            label: 'Clear canvas',
             count: 1,
             failed: false
           }
@@ -418,6 +473,20 @@ export const RECORDED_EXPECTATIONS: Partial<Record<string, ExpectedTurn[]>> = {
           {
             label: 'Print workflow',
             count: 1,
+            failed: false
+          }
+        ]
+      ]
+    }
+  ],
+  'repro/pm-1135-asset-grid-fragmentation': [
+    {
+      text: 'Version A: Version B:',
+      groups: [
+        [
+          {
+            label: 'Generate image',
+            count: 2,
             failed: false
           }
         ]

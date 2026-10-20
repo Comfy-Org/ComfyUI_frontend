@@ -1,28 +1,13 @@
 <template>
-  <div
-    class="flex w-full max-w-[512px] flex-col rounded-2xl border border-border-default bg-base-background"
-  >
-    <!-- Header -->
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{
-          canAccessSubscriptionFeatures
-            ? $t('workspacePanel.inviteUpsellDialog.titleSingleSeat')
-            : $t('workspacePanel.inviteUpsellDialog.titleNotSubscribed')
-        }}
-      </h2>
-      <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        @click="onDismiss"
-      >
-        <i class="pi pi-times size-4" />
-      </button>
-    </div>
+  <DialogPanel class="w-full max-w-[512px]" @close="onDismiss">
+    <template #title>
+      {{
+        canAccessSubscriptionFeatures
+          ? $t('workspacePanel.inviteUpsellDialog.titleSingleSeat')
+          : $t('workspacePanel.inviteUpsellDialog.titleNotSubscribed')
+      }}
+    </template>
 
-    <!-- Body -->
     <div class="flex flex-col gap-4 p-4">
       <p class="m-0 text-sm text-muted-foreground">
         {{
@@ -33,27 +18,27 @@
       </p>
     </div>
 
-    <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 p-4">
+    <template #footer>
       <Button variant="muted-textonly" @click="onDismiss">
         {{ $t('g.cancel') }}
       </Button>
       <Button variant="primary" size="lg" @click="onUpgrade">
         {{ $t('workspacePanel.inviteUpsellDialog.upgradeToTeam') }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useSubscriptionDialogAccess } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
 const { canAccessSubscriptionFeatures } = useBillingContext()
-const subscriptionDialog = useSubscriptionDialog()
+const subscriptionDialog = useSubscriptionDialogAccess()
 
 function onDismiss() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })

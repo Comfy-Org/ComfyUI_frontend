@@ -13,63 +13,39 @@ import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
 import { MobileAppHelper } from '@e2e/fixtures/helpers/MobileAppHelper'
 
 export class AppModeHelper {
+  readonly arrangeNoOutputs: Locator
+  readonly arrangePreview: Locator
+  readonly arrangeSwitchToOutputsButton: Locator
+  readonly backToWorkflowButton: Locator
+  readonly buildAppButton: Locator
+  readonly cancelRunButton: Locator
+  readonly centerPanel: Locator
+  readonly connectOutputPopover: Locator
+  readonly connectOutputSwitchButton: Locator
+  readonly emptyWorkflowBackButton: Locator
+  readonly emptyWorkflowDialog: Locator
+  readonly emptyWorkflowLoadTemplateButton: Locator
+  readonly emptyWorkflowText: Locator
   readonly footer: BuilderFooterHelper
+  readonly imagePickerPopover: Locator
+  readonly linearWidgets: Locator
+  readonly loadTemplateButton: Locator
   readonly mobile: MobileAppHelper
+  readonly outputHistory: OutputHistoryComponent
+  readonly outputPlaceholder: Locator
+  readonly rightPanelResizeHandle: Locator
+  readonly runButton: Locator
   readonly saveAs: BuilderSaveAsHelper
   readonly select: BuilderSelectHelper
-  readonly outputHistory: OutputHistoryComponent
   readonly steps: BuilderStepsHelper
+  readonly validationWarning: Locator
+  readonly viewErrorsInGraphButton: Locator
+  readonly vueNodeSwitchDismissButton: Locator
+  readonly vueNodeSwitchDontShowAgainCheckbox: Locator
+  readonly vueNodeSwitchPopup: Locator
+  readonly welcome: Locator
   readonly widgets: AppModeWidgetHelper
   readonly workflowActions: WorkflowActionsDropdown
-
-  /** The "Connect an output" popover shown when saving without outputs. */
-  public readonly connectOutputPopover: Locator
-  /** The "Switch to Outputs" button inside the connect-output popover. */
-  public readonly connectOutputSwitchButton: Locator
-  /** The empty-workflow dialog shown when entering builder on an empty graph. */
-  public readonly emptyWorkflowDialog: Locator
-  /** "Back to workflow" button on the empty-workflow dialog. */
-  public readonly emptyWorkflowBackButton: Locator
-  /** "Load template" button on the empty-workflow dialog. */
-  public readonly emptyWorkflowLoadTemplateButton: Locator
-  /** The empty-state placeholder shown when no outputs are selected. */
-  public readonly outputPlaceholder: Locator
-  /** The linear-mode widget list container (visible in app mode). */
-  public readonly linearWidgets: Locator
-  /** The validation warning shown above the app mode run button. */
-  public readonly validationWarning: Locator
-  /** The action that opens graph mode errors from the validation warning. */
-  public readonly viewErrorsInGraphButton: Locator
-  /** The PrimeVue Popover for the image picker (renders with role="dialog"). */
-  public readonly imagePickerPopover: Locator
-  /** The Run button in the app mode footer. */
-  public readonly runButton: Locator
-  /** The welcome screen shown when app mode has no outputs or no nodes. */
-  public readonly welcome: Locator
-  /** The empty workflow message shown when no nodes exist. */
-  public readonly emptyWorkflowText: Locator
-  /** The "Build app" button shown when nodes exist but no outputs. */
-  public readonly buildAppButton: Locator
-  /** The "Back to workflow" button on the welcome screen. */
-  public readonly backToWorkflowButton: Locator
-  /** The "Load template" button shown when no nodes exist. */
-  public readonly loadTemplateButton: Locator
-  /** The cancel button for an in-progress run in the output history. */
-  public readonly cancelRunButton: Locator
-  /** Arrange-step placeholder shown when outputs are configured but no run has happened. */
-  public readonly arrangePreview: Locator
-  /** Arrange-step state shown when no outputs have been configured. */
-  public readonly arrangeNoOutputs: Locator
-  /** "Switch to Outputs" button inside the arrange no-outputs state. */
-  public readonly arrangeSwitchToOutputsButton: Locator
-  /** The Vue Node switch notification popup shown on entering builder. */
-  public readonly vueNodeSwitchPopup: Locator
-  /** The "Dismiss" button inside the Vue Node switch popup. */
-  public readonly vueNodeSwitchDismissButton: Locator
-  /** The "Don't show again" checkbox inside the Vue Node switch popup. */
-  public readonly vueNodeSwitchDontShowAgainCheckbox: Locator
-  /** The main content area where outputs are displayed*/
-  public readonly centerPanel: Locator
 
   constructor(private readonly comfyPage: ComfyPage) {
     this.mobile = new MobileAppHelper(comfyPage)
@@ -144,13 +120,28 @@ export class AppModeHelper {
       TestIds.appMode.vueNodeSwitchDontShowAgain
     )
     this.centerPanel = this.page.getByTestId(TestIds.linear.centerPanel)
+    this.rightPanelResizeHandle = this.page
+      .getByRole('separator')
+      .and(this.page.locator('[aria-controls="linearCenterPanel"]'))
   }
 
   private get page(): Page {
     return this.comfyPage.page
   }
 
-  /** Enable the linear mode feature flag and top menu. */
+  async resizeRightPanelBy(deltaX: number): Promise<void> {
+    const box = await this.rightPanelResizeHandle.boundingBox()
+    if (!box)
+      throw new Error('App mode right panel resize handle has no layout')
+
+    const x = box.x + box.width / 2
+    const y = box.y + box.height / 2
+    await this.page.mouse.move(x, y)
+    await this.page.mouse.down()
+    await this.page.mouse.move(x + deltaX, y, { steps: 10 })
+    await this.page.mouse.up()
+  }
+
   async enableLinearMode() {
     await this.page.evaluate(() => {
       window.app!.api.serverFeatureFlags.value = {
@@ -158,35 +149,10 @@ export class AppModeHelper {
         linear_toggle_enabled: true
       }
     })
-    await this.comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
   }
 
-  /** Set preference so the Vue node switch popup does not appear in builder. */
-  async suppressVueNodeSwitchPopup() {
-    await this.comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      true
-    )
-  }
-
-  /** Allow the Vue node switch popup so tests can assert its behavior. */
-  async allowVueNodeSwitchPopup() {
-    await this.comfyPage.settings.setSetting(
-      'Comfy.AppBuilder.VueNodeSwitchDismissed',
-      false
-    )
-  }
-
-  /** Enter builder mode via the "Workflow actions" dropdown. */
   async enterBuilder() {
-    // Wait for any workflow-tab popover to dismiss before clicking —
-    // the popover overlay can intercept the "Workflow actions" click.
-    // Best-effort: the popover may or may not exist; if it stays visible
-    // past the timeout we still proceed with the click.
-    await this.page
-      .locator('.workflow-popover-fade')
-      .waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {})
+    await this.comfyPage.menu.topbar.dismissWorkflowPopover()
 
     await this.workflowActions.trigger.click()
     await this.page
@@ -195,21 +161,11 @@ export class AppModeHelper {
     await this.comfyPage.nextFrame()
   }
 
-  /** Toggle app mode (linear view) on/off. */
   async toggleAppMode() {
     await this.comfyPage.workflow.waitForActiveWorkflow()
     await this.comfyPage.command.executeCommand('Comfy.ToggleLinear')
   }
 
-  /**
-   * Inject linearData into the current graph and enter app mode.
-   *
-   * Serializes the graph, injects linearData with the given inputs and
-   * auto-detected output node IDs, then reloads so the appModeStore
-   * picks up the data via its activeWorkflow watcher.
-   *
-   * @param inputs - Widget selections as [nodeId, widgetName] tuples
-   */
   async enterAppModeWithInputs(inputs: [string, string][]) {
     await this.page.evaluate(async (inputTuples) => {
       const graph = window.app!.graph
@@ -235,10 +191,6 @@ export class AppModeHelper {
     await this.toggleAppMode()
   }
 
-  /**
-   * Get the actions menu trigger for a widget in the app mode widget list.
-   * @param widgetName Text shown in the widget label (e.g. "seed").
-   */
   getAppModeWidgetMenu(widgetName: string): Locator {
     return this.linearWidgets
       .locator(`div:has(> div > span:text-is("${widgetName}"))`)

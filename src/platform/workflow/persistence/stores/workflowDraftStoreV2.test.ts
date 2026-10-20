@@ -2,6 +2,7 @@ import type { MockInstance } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { reportError } from '@/platform/telemetry/reportError'
+import { api } from '@/scripts/api'
 
 import { createEmptyIndex } from '../base/draftCacheV2'
 import { MAX_DRAFTS } from '../base/draftTypes'
@@ -10,18 +11,14 @@ import { readIndex, resetStorageAvailable } from '../base/storageIO'
 import { StorageKeys } from '../base/storageKeys'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    clientId: 'test-client',
-    initialClientId: 'test-client'
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    loadGraphData: vi.fn().mockResolvedValue(undefined)
-  }
-}))
+beforeEach(() => {
+  api.clientId = 'test-client'
+  api.initialClientId = 'test-client'
+})
+
+vi.mock(import('@/scripts/app'))
 
 const reportErrorMock = vi.hoisted(() => vi.fn<typeof reportError>())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -75,7 +72,6 @@ describe('workflowDraftStoreV2', () => {
   })
 
   afterEach(() => {
-    activeSpy?.mockRestore()
     activeSpy = null
     localStorage.clear()
     sessionStorage.clear()
@@ -336,6 +332,7 @@ describe('workflowDraftStoreV2', () => {
       expect(ok).toBe(false)
 
       expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'graph',
         errorType: 'storage_quota_exhausted',
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },

@@ -21,14 +21,14 @@
       <!-- Placeholder for queued/failed states or running without preview -->
       <div
         v-else
-        class="absolute inset-0 flex items-center justify-center bg-modal-card-placeholder-background"
+        class="absolute inset-0 flex items-center justify-center bg-muted"
       >
         <!-- Spinner for queued/initialization states -->
         <Loader v-if="isQueued" size="md" class="text-muted-foreground" />
         <!-- Error icon for failed state -->
         <i
           v-else-if="isFailed"
-          class="icon-[lucide--circle-alert] size-8 text-red-500"
+          class="icon-[lucide--circle-alert] size-8 text-destructive"
         />
         <!-- Spinner for running without preview -->
         <Loader v-else size="md" class="text-muted-foreground" />
@@ -53,7 +53,7 @@
         <span class="shrink-0 text-sm text-muted-foreground">
           {{ Math.round(progressPercent ?? 0) }}%
         </span>
-        <div class="relative h-1 flex-1 rounded-sm bg-secondary-background">
+        <div class="relative h-1 flex-1 rounded-sm bg-secondary">
           <div
             :class="progressBarPrimaryClass"
             :style="progressPercentStyle(progressPercent)"

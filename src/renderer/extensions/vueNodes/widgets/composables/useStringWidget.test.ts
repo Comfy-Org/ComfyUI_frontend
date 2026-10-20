@@ -4,7 +4,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { DOMWidget } from '@/scripts/domWidget'
+import type { DOMWidget } from '@/types/domWidget'
 import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
@@ -63,6 +63,28 @@ describe('useStringWidget (multiline)', () => {
     const entries = useWidgetValueStore().getNodeWidgets('root', toNodeId(1))
     expect(entries.some((s) => s.value === 'from-execution')).toBe(true)
     expect(entries.every((s) => s.type === 'customtext')).toBe(true)
+  })
+
+  it('does not throw when a saved value is restored synchronously during construction', () => {
+    // Mirrors LGraphNode.addCustomWidget, which restores a saved widget
+    // value (from a loaded workflow) by invoking `options.setValue`
+    // synchronously, from inside `node.addDOMWidget(...)`, before that
+    // call returns.
+    const node = createMockDOMWidgetNode({
+      addDOMWidget: vi.fn(
+        (
+          name: string,
+          type: string,
+          element: HTMLElement,
+          options?: { setValue?: (v: string) => void }
+        ) => {
+          options?.setValue?.('restored-value')
+          return { name, type, element, options: options ?? {}, value: '' }
+        }
+      )
+    })
+
+    expect(() => createStringWidget(node)).not.toThrow()
   })
 
   it('fires the widget callback on input', () => {

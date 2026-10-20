@@ -38,18 +38,12 @@ async function importPreset(page: Page, preset: typeof TEST_PRESET) {
   await fileChooser.setFiles(presetPath)
 }
 
-test.beforeEach(async ({ comfyPage }) => {
-  await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-})
+test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.afterEach(async ({ comfyPage }) => {
   await comfyPage.request.fetch(
     `${comfyPage.url}/api/userdata/keybindings%2Ftest-preset.json`,
     { method: 'DELETE' }
-  )
-  await comfyPage.settings.setSetting(
-    'Comfy.Keybinding.CurrentPreset',
-    'default'
   )
 })
 

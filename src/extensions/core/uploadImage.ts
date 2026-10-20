@@ -1,9 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import {
-  type ComfyNodeDef,
-  type InputSpec,
-  isMediaUploadComboInput
-} from '@/schemas/nodeDefSchema'
+import { isMediaUploadComboInput } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 
 import { app } from '../../scripts/app'
 
@@ -23,7 +20,7 @@ const createUploadInput = (
 app.registerExtension({
   name: 'Comfy.UploadImage',
   beforeRegisterNodeDef(_nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
-    const { input } = nodeData ?? {}
+    const { input } = nodeData
     const { required } = input ?? {}
     if (!required) return
 

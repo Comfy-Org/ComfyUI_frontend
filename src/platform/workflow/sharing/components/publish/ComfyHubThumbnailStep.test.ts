@@ -49,11 +49,7 @@ function renderStep(
           template:
             '<div><button data-testid="type-image" @click="$emit(\'update:modelValue\', \'image\')" /><button data-testid="type-video" @click="$emit(\'update:modelValue\', \'video\')" /><button data-testid="type-comparison" @click="$emit(\'update:modelValue\', \'imageComparison\')" /><slot /></div>'
         },
-        ToggleGroupItem: { template: '<div><slot /></div>', props: ['value'] },
-        Button: {
-          template:
-            '<button data-testid="clear-button" @click="$emit(\'click\')"><slot /></button>'
-        }
+        ToggleGroupItem: { template: '<div><slot /></div>', props: ['value'] }
       }
     }
   })
@@ -158,7 +154,7 @@ describe('ComfyHubThumbnailStep', () => {
       'src',
       'https://cdn.example.com/anim.gif'
     )
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     expect(container.querySelector('video')).toBeNull()
   })
 
@@ -169,7 +165,7 @@ describe('ComfyHubThumbnailStep', () => {
       existingThumbnailType: 'video'
     })
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     const video = container.querySelector('video')
     expect(video?.getAttribute('src')).toBe('https://cdn.example.com/clip.mp4')
     expect(screen.queryByRole('img')).toBeNull()
@@ -182,7 +178,7 @@ describe('ComfyHubThumbnailStep', () => {
       existingThumbnailType: 'video'
     })
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     expect(container.querySelector('video')).not.toBeNull()
     expect(screen.queryByRole('img')).toBeNull()
   })
@@ -194,7 +190,7 @@ describe('ComfyHubThumbnailStep', () => {
       existingThumbnailType: 'video'
     })
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     expect(container.querySelector('video')).not.toBeNull()
     expect(screen.queryByRole('img')).toBeNull()
   })
@@ -207,7 +203,7 @@ describe('ComfyHubThumbnailStep', () => {
       existingThumbnailType: 'imageComparison'
     })
 
-    // eslint-disable-next-line testing-library/no-node-access, testing-library/no-container
+    // oxlint-disable-next-line testing-library/no-node-access, testing-library/no-container
     const srcs = Array.from(container.querySelectorAll('img')).map((el) =>
       el.getAttribute('src')
     )
@@ -231,7 +227,7 @@ describe('ComfyHubThumbnailStep', () => {
       }
     )
 
-    await user.click(screen.getByTestId('clear-button'))
+    await user.click(screen.getByRole('button', { name: 'Clear' }))
 
     expect(onUpdateThumbnailFile).toHaveBeenCalledWith(null)
     expect(onUpdateThumbnailUrl).toHaveBeenCalledWith(null)
@@ -258,7 +254,7 @@ describe('ComfyHubThumbnailStep', () => {
       }
     )
 
-    await user.click(screen.getByTestId('clear-button'))
+    await user.click(screen.getByRole('button', { name: 'Clear' }))
 
     expect(onUpdateThumbnailUrl).toHaveBeenCalledWith(null)
     expect(onUpdateComparisonAfterUrl).toHaveBeenCalledWith(null)

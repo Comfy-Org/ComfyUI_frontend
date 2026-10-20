@@ -5,30 +5,25 @@ import { nextTick } from 'vue'
 import type * as VueRouter from 'vue-router'
 
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 type MockSubgraph = Pick<Subgraph, 'id' | 'rootGraph' | '_nodes' | 'nodes'>
 
-const {
-  routeHash,
-  routerPush,
-  routerReplace,
-  routerHistory,
-  mockOpenWorkflow
-} = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
-  return {
-    routeHash: ref(''),
-    routerPush: vi.fn(),
-    routerReplace: vi.fn(),
-    routerHistory: { state: {} },
-    mockOpenWorkflow: vi.fn()
-  }
-})
+const { routeHash, routerPush, routerReplace, routerHistory } =
+  await vi.hoisted(async () => {
+    const { ref } = await import('vue')
+    return {
+      routeHash: ref(''),
+      routerPush: vi.fn(),
+      routerReplace: vi.fn(),
+      routerHistory: { state: {} }
+    }
+  })
 
 function createMockSubgraph(id: string, rootGraph = app.rootGraph): Subgraph {
   const mockSubgraph = {
@@ -70,14 +65,19 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     _nodes: [],
     nodes: [],
     subgraphs: new Map(),
-    getNodeById: vi.fn()
+    getNodeById: vi.fn(),
+    get rootGraph() {
+      return mockGraph
+    }
   }
 
   return {
     app: {
       graph: mockGraph,
       rootGraph: mockGraph,
-      canvas: mockCanvas
+      rootGraphOrUndefined: mockGraph,
+      canvas: mockCanvas,
+      canvasOrUndefined: mockCanvas
     }
   }
 })
@@ -95,15 +95,11 @@ vi.mock<unknown>(import('vue-router'), () => ({
     options: { history: routerHistory }
   })
 }))
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({ openWorkflow: mockOpenWorkflow })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
+    useCanvasStore().canvas = app.canvas
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     app.rootGraph.subgraphs.clear()
     app.rootGraph.id = 'current-root'
@@ -122,7 +118,6 @@ describe('useSubgraphNavigationStore', () => {
     routerReplace.mockReset().mockImplementation(async (target) => {
       applyRouteTarget(target)
     })
-    mockOpenWorkflow.mockReset()
   })
 
   it('should not clear navigation stack when workflow internal state changes', async () => {
@@ -357,7 +352,7 @@ describe('useSubgraphNavigationStore', () => {
     expect(routerPush).toHaveBeenCalledWith(
       expect.objectContaining({ hash: '#next-root' })
     )
-    expect(mockOpenWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('writes the latest graph after an earlier route write settles', async () => {
@@ -402,7 +397,7 @@ describe('useSubgraphNavigationStore', () => {
       routerPush.mock.calls.map(([target]) => getRouteTargetHash(target))
     ).toEqual(['#' + firstId, '#' + secondId])
     expect(routeHash.value).toBe('#' + secondId)
-    expect(mockOpenWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('handles an external route while an internal write is pending', async () => {
@@ -526,5 +521,112 @@ describe('useSubgraphNavigationStore', () => {
 
     expect(routeHash.value).toBe('#' + firstId)
     expect(routerPush).toHaveBeenCalledTimes(1)
+  })
+
+  it('navigates to a graph owned by the active workflow without recovery', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const targetId = '11111111-1111-4111-8111-111111111111'
+    const targetGraph = createMockSubgraph(targetId)
+    app.rootGraph.subgraphs.set(targetId, targetGraph)
+    vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
+      app.canvas.graph = graph
+    })
+
+    await expect(navigationStore.navigateToGraph(targetGraph)).resolves.toBe(
+      true
+    )
+
+    expect(app.canvas.setGraph).toHaveBeenCalledWith(targetGraph)
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(routerPush).toHaveBeenCalledWith(
+      expect.objectContaining({ hash: '#' + targetId })
+    )
+  })
+
+  it('returns false when writing the graph hash fails', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const originalGraph = app.canvas.graph
+    const targetId = '11111111-1111-4111-8111-111111111111'
+    const targetGraph = createMockSubgraph(targetId)
+    app.rootGraph.subgraphs.set(targetId, targetGraph)
+    routeHash.value = '#' + app.rootGraph.id
+    routerPush.mockRejectedValueOnce(new Error('router failure'))
+    vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
+      app.canvas.graph = graph
+    })
+
+    await expect(navigationStore.navigateToGraph(targetGraph)).resolves.toBe(
+      false
+    )
+
+    expect(app.canvas.graph).toBe(originalGraph)
+    expect(routeHash.value).toBe('#' + app.rootGraph.id)
+  })
+
+  it('returns false when a delayed graph navigation is superseded', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const firstId = '11111111-1111-4111-8111-111111111111'
+    const secondId = '22222222-2222-4222-8222-222222222222'
+    const firstGraph = createMockSubgraph(firstId)
+    const secondGraph = createMockSubgraph(secondId)
+    let resolveFirstPush: (() => void) | undefined
+
+    app.rootGraph.subgraphs.set(firstId, firstGraph)
+    app.rootGraph.subgraphs.set(secondId, secondGraph)
+    vi.mocked(app.canvas.setGraph).mockImplementation((graph) => {
+      app.canvas.graph = graph
+    })
+    routerPush.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveFirstPush = resolve
+        })
+    )
+
+    const firstNavigation = navigationStore.navigateToGraph(firstGraph)
+    await vi.waitFor(() => expect(resolveFirstPush).toBeTypeOf('function'))
+    const secondNavigation = navigationStore.navigateToGraph(secondGraph)
+    resolveFirstPush?.()
+
+    await expect(firstNavigation).resolves.toBe(false)
+    await expect(secondNavigation).resolves.toBe(true)
+    expect(app.canvas.graph).toBe(secondGraph)
+    expect(routeHash.value).toBe('#' + secondId)
+  })
+
+  it('rejects a graph outside the active workflow without moving the canvas', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const originalGraph = app.canvas.graph
+    const staleRoot = fromPartial<typeof app.rootGraph>({
+      id: 'stale-root',
+      subgraphs: new Map()
+    })
+    const staleGraph = createMockSubgraph(
+      '22222222-2222-4222-8222-222222222222',
+      staleRoot
+    )
+
+    await expect(navigationStore.navigateToGraph(staleGraph)).resolves.toBe(
+      false
+    )
+
+    expect(app.canvas.graph).toBe(originalGraph)
+    expect(app.canvas.setGraph).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
+  })
+
+  it('leaves workflow navigation untouched when focus is already active', async () => {
+    const navigationStore = useSubgraphNavigationStore()
+    const workflowNavigationId = navigationStore.beginWorkflowNavigation()
+
+    await expect(navigationStore.navigateToGraph(app.rootGraph)).resolves.toBe(
+      true
+    )
+    navigationStore.endWorkflowNavigation(workflowNavigationId)
+    await nextTick()
+
+    expect(app.canvas.setGraph).not.toHaveBeenCalled()
+    expect(routerPush).not.toHaveBeenCalled()
   })
 })

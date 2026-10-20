@@ -1,5 +1,10 @@
 #!/usr/bin/env tsx
 
+// The assembler reaches into src/ for the frame schemas, and that graph reads
+// Vite defines (__DISTRIBUTION__ via reportError). tsx is not Vite, so the shim
+// has to run before those modules evaluate.
+import './vite-define-shim'
+
 import { execFileSync, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -79,7 +84,7 @@ const writeJson = (path: string, value: unknown): void =>
 const ROWS_MAX_BYTES = 64 * 1024 * 1024
 const ROWS_TIMEOUT_MS = 60_000
 
-function readRows(
+export function readRows(
   exec: string[],
   path: string,
   ids: TurnIds & { workflowId: string }

@@ -9,7 +9,9 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit"
   },
   "dependencies": {
     "clsx": "^2.1.1",

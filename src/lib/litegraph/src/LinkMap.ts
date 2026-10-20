@@ -1,7 +1,6 @@
+import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
-
-import type { LLink } from './LLink'
 
 export class LinkMap extends Map<LinkId, LLink> {
   private cachedRevision = -1
@@ -22,7 +21,7 @@ export class LinkMap extends Map<LinkId, LLink> {
   }
 
   override clear(): void {
-    for (const id of [...this.keys()]) this.remove(id)
+    for (const id of Array.from(this.keys())) this.remove(id)
   }
 
   override delete(id: LinkId): boolean {

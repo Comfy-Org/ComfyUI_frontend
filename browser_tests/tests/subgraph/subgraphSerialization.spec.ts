@@ -411,20 +411,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
   })
 
   test.describe('Legacy And Round-Trip Coverage', () => {
-    let previousUseNewMenu: unknown
-
-    test.beforeEach(async ({ comfyPage }) => {
-      previousUseNewMenu =
-        await comfyPage.settings.getSetting('Comfy.UseNewMenu')
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.UseNewMenu',
-        previousUseNewMenu
-      )
-    })
+    test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
     test('Legacy -1 proxyWidgets entries are hydrated to concrete interior node IDs', async ({
       comfyPage

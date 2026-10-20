@@ -22,6 +22,7 @@ const meta: Meta<ComponentPropsAndSlots<typeof SearchInput>> = {
     debounceTime: { control: 'number' },
     autofocus: { control: 'boolean' },
     loading: { control: 'boolean' },
+    invalid: { control: 'boolean' },
     size: {
       control: { type: 'select' },
       options: sizes
@@ -136,7 +137,7 @@ export const CustomBackground: Story = {
         <SearchInput
           v-bind="args"
           v-model="searchText"
-          class="bg-component-node-widget-background"
+          class="bg-input"
         />
       </div>
     `
@@ -156,4 +157,11 @@ export const Disabled: Story = {
       </div>
     `
   })
+}
+
+export const Invalid: Story = {
+  ...Default,
+  args: {
+    invalid: true
+  }
 }

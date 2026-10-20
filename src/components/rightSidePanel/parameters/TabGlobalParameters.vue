@@ -64,7 +64,7 @@ function handleReorder({
     hidden-favorite-indicator
     show-node-name
     enable-empty-state
-    class="border-b border-interface-stroke"
+    class="border-b"
     @reorder="handleReorder"
   >
     <template #empty>
@@ -85,7 +85,7 @@ function handleReorder({
           <template #moreIcon>
             <span
               aria-hidden="true"
-              class="text-secondary-foreground inline-flex size-5 items-center justify-center rounded-md bg-secondary-background-hover align-middle"
+              class="inline-flex size-5 items-center justify-center rounded-md bg-accent align-middle text-foreground"
             >
               <i class="icon-[lucide--more-vertical] text-sm" />
             </span>

@@ -5,15 +5,7 @@ import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    getNodeDefs: vi.fn(),
-    apiURL: vi.fn((path: string) => path),
-    addEventListener: vi.fn(),
-    getUserData: vi.fn(),
-    storeUserData: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function nodeDef(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
   return {
@@ -26,7 +18,7 @@ function nodeDef(overrides: Partial<ComfyNodeDefV1>): ComfyNodeDefV1 {
     output_node: false,
     python_module: 'test.module',
     ...overrides
-  } as ComfyNodeDefV1
+  }
 }
 
 function mockDefs(...defs: ComfyNodeDefV1[]) {
@@ -37,6 +29,7 @@ function mockDefs(...defs: ComfyNodeDefV1[]) {
 
 describe('ComfyApp.getNodeDefs', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((path) => path)
     mergeCustomNodesI18n({})
   })
 
@@ -118,7 +111,7 @@ describe('ComfyApp.getNodeDefs', () => {
   })
 
   test('resolves a def without a category to an empty category', async () => {
-    mockDefs(nodeDef({ category: undefined as unknown as string }))
+    mockDefs(nodeDef({ category: undefined }))
 
     const result = await comfyApp.getNodeDefs()
 

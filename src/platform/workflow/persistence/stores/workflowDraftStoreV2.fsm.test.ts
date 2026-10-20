@@ -1,23 +1,21 @@
 import * as fc from 'fast-check'
 import type { Command } from 'fast-check'
 
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { api } from '@/scripts/api'
 
 import { MAX_DRAFTS } from '../base/draftTypes'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    clientId: 'test-client',
-    initialClientId: 'test-client'
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    loadGraphData: vi.fn().mockResolvedValue(undefined)
-  }
-}))
+beforeEach(() => {
+  api.clientId = 'test-client'
+  api.initialClientId = 'test-client'
+})
+
+vi.mock(import('@/scripts/app'))
 
 // ── Model & Real ────────────────────────────────────────────────────
 

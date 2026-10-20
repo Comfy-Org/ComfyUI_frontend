@@ -1,14 +1,16 @@
-import type * as DistributionModule from '@/platform/distribution/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingTreeNode } from '@/platform/settings/settingStore'
+import type { SettingTreeNode } from '@/platform/settings/composables/useSettingSearch'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import { useSettingUI as useSettingUIComposable } from './useSettingUI'
 
@@ -16,9 +18,6 @@ const env = vi.hoisted(() => {
   const state = {
     isCloud: false,
     isDesktop: false,
-    isLoggedIn: false,
-    partnerNodeGovernanceEnabled: false,
-    userSecretsEnabled: false,
     workspaceRole: 'owner' as 'owner' | 'member',
     partnerNodeGovernanceStatus: 'inactive' as
       | 'inactive'
@@ -29,37 +28,18 @@ const env = vi.hoisted(() => {
       | 'error',
     partnerNodeGovernanceProviders: [] as { id: string }[]
   }
-  const fakeRef = <K extends keyof typeof state>(key: K) => ({
-    get value() {
-      return state[key]
-    }
-  })
-  return { state, fakeRef }
+  return { state }
 })
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({ isLoggedIn: env.fakeRef('isLoggedIn') })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get partnerNodeGovernanceEnabled() {
-        return env.state.partnerNodeGovernanceEnabled
-      },
-      get userSecretsEnabled() {
-        return env.state.userSecretsEnabled
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(import('@/composables/useVueFeatureFlags'), () => ({
   useVueFeatureFlags: () => ({ shouldRenderVueNodes: ref(false) })
 }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return env.state.isCloud
   },
@@ -68,14 +48,7 @@ vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      workspaceRole: env.fakeRef('workspaceRole')
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 interface MockSettingParams {
   id: string
@@ -151,13 +124,13 @@ describe('useSettingUI', () => {
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,
-      isLoggedIn: false,
-      partnerNodeGovernanceEnabled: false,
-      userSecretsEnabled: false,
       workspaceRole: 'owner',
       partnerNodeGovernanceStatus: 'inactive',
       partnerNodeGovernanceProviders: []
     })
+    vi.mocked(useWorkspaceUI()).workspaceRole = computed(
+      () => env.state.workspaceRole
+    )
 
     Object.assign(useSettingStore(), { settingsById: mockSettings })
   })
@@ -225,10 +198,8 @@ describe('useSettingUI', () => {
 
   describe('workspace panels', () => {
     beforeEach(() => {
-      Object.assign(env.state, {
-        isLoggedIn: true,
-        userSecretsEnabled: true
-      })
+      useCurrentUser().isLoggedIn = computed(() => true)
+      vi.mocked(useFeatureFlags().flags).userSecretsEnabled = true
     })
 
     it('shows Plan & Credits and Members on cloud', () => {
@@ -251,6 +222,33 @@ describe('useSettingUI', () => {
       expect(defaultCategory.value).toMatchObject({
         key: 'workspace',
         label: 'PlanCredits'
+      })
+    })
+
+    it('swaps Plan & Credits for Billing on cloud when unified billing settings is on', () => {
+      env.state.isCloud = true
+      const flags = vi.mocked(useFeatureFlags().flags)
+      flags.unifiedBillingSettingsEnabled = true
+      onTestFinished(() => {
+        flags.unifiedBillingSettingsEnabled = false
+      })
+      const { defaultCategory, findPanelByKey, navGroups } =
+        useSettingUI('workspace')
+      const workspaceItems = navGroups.value
+        .find((group) => group.title === 'Workspace')
+        ?.items.map(({ id, label }) => ({ id, label }))
+
+      expect(workspaceItems).toEqual([
+        { id: 'workspace', label: 'Billing' },
+        { id: 'workspace-members', label: 'Members' }
+      ])
+      expect(findPanelByKey('workspace')?.props).toBeUndefined()
+      expect(findPanelByKey('workspace')?.component).not.toBe(
+        findPanelByKey('workspace-members')?.component
+      )
+      expect(defaultCategory.value).toMatchObject({
+        key: 'workspace',
+        label: 'Billing'
       })
     })
 
@@ -312,11 +310,9 @@ describe('useSettingUI', () => {
       groups.flatMap((group) => group.items.map((item) => item.id))
 
     beforeEach(() => {
-      Object.assign(env.state, {
-        isCloud: true,
-        isLoggedIn: true,
-        partnerNodeGovernanceEnabled: true
-      })
+      useCurrentUser().isLoggedIn = computed(() => true)
+      env.state.isCloud = true
+      vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = true
     })
 
     it('exposes workspace sections as Plan & Credits, Members, and Allowlist', () => {
@@ -341,7 +337,7 @@ describe('useSettingUI', () => {
     })
 
     it('hides Allowlist when governance is unavailable', () => {
-      env.state.partnerNodeGovernanceEnabled = false
+      vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = false
 
       const { navGroups } = useSettingUI()
 

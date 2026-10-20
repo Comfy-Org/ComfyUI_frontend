@@ -2,7 +2,7 @@
   <Button
     ref="buttonRef"
     variant="secondary"
-    class="group h-8 rounded-none! bg-comfy-menu-bg p-0 transition-none! hover:rounded-lg! hover:bg-interface-button-hover-surface!"
+    class="group rounded-none! bg-transparent p-0 transition-none! hover:rounded-lg! hover:bg-accent!"
     :style="buttonStyles"
     :aria-label="$t('graphCanvasMenu.canvasMode')"
     aria-haspopup="menu"
@@ -10,9 +10,7 @@
     @click="toggle"
   >
     <div class="flex items-center gap-1 pr-0.5">
-      <div
-        class="rounded-lg bg-interface-panel-selected-surface p-2 group-hover:bg-interface-button-hover-surface"
-      >
+      <div class="rounded-lg bg-muted p-2 group-hover:bg-accent">
         <i :class="currentModeIcon" class="block size-4" aria-hidden="true" />
       </div>
       <i
@@ -24,18 +22,15 @@
 
   <Popover
     ref="popover"
-    :auto-z-index="true"
-    :base-z-index="1000"
-    :dismissable="true"
-    :close-on-escape="true"
-    unstyled
-    :pt="popoverPt"
+    side="top"
+    :side-offset="8"
+    :content-class="cn(menuContentClass, 'min-w-39 select-none')"
     @show="onPopoverShow"
     @hide="onPopoverHide"
   >
     <div
       ref="menuRef"
-      class="flex flex-col gap-1"
+      class="flex flex-col"
       role="menu"
       :aria-label="$t('graphCanvasMenu.canvasMode')"
     >
@@ -44,7 +39,7 @@
         role="menuitemradio"
         :aria-checked="!isCanvasReadOnly"
         :tabindex="!isCanvasReadOnly ? 0 : -1"
-        class="flex w-full cursor-pointer items-center justify-between rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered"
+        :class="cn(menuButtonClass, 'justify-between')"
         :aria-label="$t('graphCanvasMenu.select')"
         @click="setMode('select')"
         @keydown.arrow-down.prevent="focusNextItem"
@@ -55,11 +50,9 @@
           <i class="icon-[lucide--mouse-pointer-2] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.select') }}</span>
         </div>
-        <span
-          class="text-[9px] text-text-primary"
-          data-testid="shortcut-hint"
-          >{{ unlockCommandText }}</span
-        >
+        <span class="text-[9px] text-foreground" data-testid="shortcut-hint">{{
+          unlockCommandText
+        }}</span>
       </button>
 
       <button
@@ -67,7 +60,7 @@
         role="menuitemradio"
         :aria-checked="isCanvasReadOnly"
         :tabindex="isCanvasReadOnly ? 0 : -1"
-        class="flex w-full cursor-pointer items-center justify-between rounded-sm border-none bg-transparent px-3 py-2 text-sm text-text-primary outline-none hover:bg-node-component-surface-hovered focus-visible:bg-node-component-surface-hovered"
+        :class="cn(menuButtonClass, 'justify-between')"
         :aria-label="$t('graphCanvasMenu.hand')"
         @click="setMode('hand')"
         @keydown.arrow-down.prevent="focusNextItem"
@@ -78,24 +71,27 @@
           <i class="icon-[lucide--hand] size-4" aria-hidden="true" />
           <span>{{ $t('graphCanvasMenu.hand') }}</span>
         </div>
-        <span
-          class="text-[9px] text-text-primary"
-          data-testid="shortcut-hint"
-          >{{ lockCommandText }}</span
-        >
+        <span class="text-[9px] text-foreground" data-testid="shortcut-hint">{{
+          lockCommandText
+        }}</span>
       </button>
     </div>
   </Popover>
 </template>
 
 <script setup lang="ts">
-import Popover from 'primevue/popover'
+import Popover from '@/components/common/ImperativePopover.vue'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import {
+  menuButtonClass,
+  menuContentClass
+} from '@/components/ui/menu/menuStyles'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 interface Props {
   buttonStyles?: Record<string, string>
@@ -179,21 +175,4 @@ function getMenuItems(event: KeyboardEvent): HTMLElement[] {
   if (!menu) return []
   return Array.from(menu.querySelectorAll('[role="menuitemradio"]'))
 }
-
-const popoverPt = computed(() => ({
-  root: {
-    class: 'absolute z-50 -translate-y-2'
-  },
-  content: {
-    class: [
-      'mb-2 text-text-primary',
-      'shadow-lg border border-interface-stroke',
-      'bg-nav-background',
-      'rounded-lg',
-      'p-2 px-3',
-      'min-w-39',
-      'select-none'
-    ]
-  }
-}))
 </script>

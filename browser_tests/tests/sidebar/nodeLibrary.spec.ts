@@ -42,10 +42,15 @@ async function renameInlineFolder(comfyPage: ComfyPage, newName: string) {
 }
 
 test.describe('Node library sidebar', () => {
+  test.use({
+    initialSettings: {
+      'Comfy.NodeLibrary.NewDesign': false,
+      [bookmarksSettingId]: [],
+      [bookmarksCustomizationSettingId]: {}
+    }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
-    await comfyPage.settings.setSetting(bookmarksSettingId, [])
-    await comfyPage.settings.setSetting(bookmarksCustomizationSettingId, {})
     // Open the sidebar
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.open()
@@ -57,8 +62,8 @@ test.describe('Node library sidebar', () => {
     await tab.getFolder('sampling').click()
 
     // Hover over a node to display the preview
-    const nodeSelector = tab.nodeSelector('KSampler (Advanced)')
-    await comfyPage.page.locator(nodeSelector).hover()
+    const node = tab.getNode('KSampler (Advanced)')
+    await node.hover()
 
     // Verify the preview is displayed
     await expect(tab.nodePreview).toBeVisible()
@@ -78,9 +83,9 @@ test.describe('Node library sidebar', () => {
       y: canvasBoundingBox.y + canvasBoundingBox.height / 2
     }
 
-    await comfyPage.page
-      .locator(nodeSelector)
-      .dragTo(comfyPage.page.locator(canvasSelector), { targetPosition })
+    await node.dragTo(comfyPage.page.locator(canvasSelector), {
+      targetPosition
+    })
     await comfyPage.nextFrame()
 
     // Verify the node is added to the canvas
@@ -95,7 +100,10 @@ test.describe('Node library sidebar', () => {
     await tab.getFolder('sampling').click()
 
     // Bookmark the node
-    await tab.getNode('KSampler (Advanced)').locator('.bookmark-button').click()
+    await tab
+      .getNode('KSampler (Advanced)')
+      .getByRole('button', { name: 'Bookmark' })
+      .click()
 
     // Verify the bookmark is added to the bookmarks tab
     await expectBookmarks(comfyPage, ['KSamplerAdvanced'])
@@ -103,9 +111,7 @@ test.describe('Node library sidebar', () => {
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(2)
 
     // Hover on the bookmark node to display the preview
-    await comfyPage.page
-      .locator('.node-lib-bookmark-tree-explorer .tree-leaf')
-      .hover()
+    await tab.getBookmarkedNode('KSampler (Advanced)').hover()
     await expect(tab.nodePreview).toBeVisible()
   })
 
@@ -170,7 +176,7 @@ test.describe('Node library sidebar', () => {
 
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
 
@@ -185,11 +191,9 @@ test.describe('Node library sidebar', () => {
     await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('model').click()
     await tab.getFolder('sampling').click()
-    await comfyPage.page.dragAndDrop(
-      tab.nodeSelector('KSampler (Advanced)'),
-      tab.folderSelector('foo')
-    )
+    await tab.getNode('KSampler (Advanced)').dragTo(tab.getFolder('foo'))
     await expectBookmarks(comfyPage, ['foo/', 'foo/KSamplerAdvanced'])
+    await expect(tab.getFolder('foo')).toHaveAttribute('aria-expanded', 'true')
   })
 
   test('Can add bookmark by clicking bookmark button', async ({
@@ -198,7 +202,10 @@ test.describe('Node library sidebar', () => {
     const tab = comfyPage.menu.nodeLibraryTab
     await tab.getFolder('model').click()
     await tab.getFolder('sampling').click()
-    await tab.getNode('KSampler (Advanced)').locator('.bookmark-button').click()
+    await tab
+      .getNode('KSampler (Advanced)')
+      .getByRole('button', { name: 'Bookmark' })
+      .click()
     await expectBookmarks(comfyPage, ['KSamplerAdvanced'])
   })
 
@@ -208,7 +215,10 @@ test.describe('Node library sidebar', () => {
     ])
     const tab = comfyPage.menu.nodeLibraryTab
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(1)
-    await tab.getNode('KSampler (Advanced)').locator('.bookmark-button').click()
+    await tab
+      .getNode('KSampler (Advanced)')
+      .getByRole('button', { name: 'Bookmark' })
+      .click()
     await expectBookmarks(comfyPage, [])
   })
 
@@ -221,8 +231,8 @@ test.describe('Node library sidebar', () => {
     await tab.getFolder('sampling').click()
     await expect(tab.getNode('KSampler (Advanced)')).toHaveCount(2)
     await tab
-      .getNodeInFolder('KSampler (Advanced)', 'sampling')
-      .locator('.bookmark-button')
+      .getNodeInParentFolder('KSampler (Advanced)', 'sampling')
+      .getByRole('button', { name: 'Bookmark' })
       .click()
     await expectBookmarks(comfyPage, [])
   })
@@ -253,6 +263,10 @@ test.describe('Node library sidebar', () => {
         color: '#007bff'
       }
     })
+    await expect(tab.getFolderIcon('foo')).toHaveCSS(
+      'color',
+      'rgb(0, 123, 255)'
+    )
   })
 
   // If color is left as default, it should not be saved
@@ -288,9 +302,10 @@ test.describe('Node library sidebar', () => {
     await comfyPage.page.getByLabel('Customize').click()
 
     // Click a color option multiple times
-    const customColorOption = comfyPage.page.locator(
-      '.p-togglebutton-content > .pi-palette'
-    )
+    const customColorOption = comfyPage.page.getByRole('button', {
+      name: 'Custom',
+      exact: true
+    })
     await customColorOption.click()
     await customColorOption.click()
 
@@ -337,7 +352,7 @@ test.describe('Node library sidebar', () => {
     await expect(tab.getFolder('foo')).toBeVisible()
     await tab.getFolder('foo').click({ button: 'right' })
     await comfyPage.page
-      .locator('.p-contextmenu-item-label:has-text("Rename")')
+      .getByRole('menuitem', { name: 'Rename', exact: true })
       .click()
     await renameInlineFolder(comfyPage, 'bar')
     await comfyPage.nextFrame()

@@ -1,15 +1,15 @@
 import { applyTextReplacements as _applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { api } from './api'
-import type { ComfyApp } from './app'
-import { $el } from './ui'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { $el } from './ui/utils'
 
 export function clone<T>(obj: T): T {
   try {
     if (typeof structuredClone !== 'undefined') {
       return structuredClone(obj)
     }
-  } catch (error) {
+  } catch {
     // structuredClone is stricter than using JSON.parse/stringify so fallback to that
   }
 
@@ -20,7 +20,10 @@ export function clone<T>(obj: T): T {
  * @deprecated Use `applyTextReplacements` from `@/utils/searchAndReplace` instead
  * There are external callers to this function, so we need to keep it for now
  */
-export function applyTextReplacements(app: ComfyApp, value: string): string {
+export function applyTextReplacements(
+  app: { rootGraph: LGraph },
+  value: string
+): string {
   return _applyTextReplacements(app.rootGraph, value)
 }
 
@@ -76,15 +79,12 @@ export function prop<T>(
     name: string
   ) => void
 ): T {
-  // @ts-expect-error fixme ts strict error
-  let currentValue
+  let currentValue: T
   Object.defineProperty(target, name, {
     get() {
-      // @ts-expect-error fixme ts strict error
       return currentValue
     },
     set(newValue) {
-      // @ts-expect-error fixme ts strict error
       const prevValue = currentValue
       currentValue = newValue
       onChanged?.(currentValue, prevValue, target, name)

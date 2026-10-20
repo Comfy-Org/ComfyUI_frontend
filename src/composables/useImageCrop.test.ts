@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { useResizeObserver } from '@vueuse/core'
 import { createApp, defineComponent, nextTick, ref, computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,10 +10,13 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useLinkStore } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { resolveNode } from '@/utils/litegraphUtil'
+import { resolveNode } from '@/utils/litegraphUtil'
 import {
   createMockLGraphNode,
   createMockSubgraphNode
@@ -22,21 +26,23 @@ import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 
 const resizeObserverCallbacks: Array<() => void> = []
 
-vi.mock(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  useResizeObserver: (_target: unknown, cb: ResizeObserverCallback) => {
-    resizeObserverCallbacks.push(() => cb([], fromPartial<ResizeObserver>({})))
-    return { stop: vi.fn(), isSupported: computed(() => true) }
-  }
-}))
+const GRAPH_SCOPE = graphScopeOf({
+  id: 'test-graph',
+  rootGraph: { id: 'test-graph' }
+})
+const CROP_NODE_ID = toNodeId(2)
+
+vi.mock(import('@vueuse/core'), { spy: true })
 
 const mockResolveNode = vi.hoisted(() => vi.fn<typeof resolveNode>())
-vi.mock(import('@/utils/litegraphUtil'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  resolveNode: mockResolveNode
-}))
+vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 
 beforeEach(() => {
+  vi.mocked(useResizeObserver).mockImplementation((_target, cb) => {
+    resizeObserverCallbacks.push(() => cb([], fromPartial<ResizeObserver>({})))
+    return { stop: vi.fn(), isSupported: computed(() => true) }
+  })
+  vi.mocked(resolveNode).mockImplementation(mockResolveNode)
   useCanvasStore().canvas = fromPartial<LGraphCanvas>({
     graph: { rootGraph: { id: 'test-graph' } }
   })
@@ -73,7 +79,7 @@ const ImageCropHarness = defineComponent({
 })
 
 function flushResizeObservers() {
-  for (const cb of [...resizeObserverCallbacks]) {
+  for (const cb of Array.from(resizeObserverCallbacks)) {
     cb()
   }
 }
@@ -133,10 +139,10 @@ type CropVm = Record<string, unknown> & {
 
 function setupImageLayout(vm: CropVm, nw: number, nh: number) {
   /* Harness root + image are not RTL queries — layout is driven by composable state */
-  /* eslint-disable testing-library/no-node-access */
+  /* oxlint-disable testing-library/no-node-access */
   const container = vm.$el
   const img = container.querySelector('img')
-  /* eslint-enable testing-library/no-node-access */
+  /* oxlint-enable testing-library/no-node-access */
   mountContainerLayout(container, 400, 300)
   if (img) {
     Object.defineProperty(img, 'naturalWidth', {
@@ -219,16 +225,81 @@ describe('useImageCrop', () => {
     )
   })
 
+  const SOURCE_LOCATOR = 'source'
+
+  /**
+   * The real `getNodeImageUrls` reads the output store, so these stand-ins do
+   * too: a preview only refreshes if the composable tracks the store entry it
+   * was derived from.
+   */
+  function useSourcePreviews() {
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
+      n === sourceNode ? outputStore.nodePreviewImages[SOURCE_LOCATOR] : void 0
+    )
+  }
+
+  function setSourcePreview(url: string) {
+    outputStore.nodePreviewImages[SOURCE_LOCATOR] = [url]
+  }
+
+  function useSourceOutputs() {
+    vi.mocked(outputStore.getNodeImageUrls).mockImplementation((n) =>
+      n === sourceNode
+        ? outputStore.nodeOutputs[SOURCE_LOCATOR]?.images?.flatMap((image) =>
+            image.filename ? [image.filename] : []
+          )
+        : undefined
+    )
+  }
+
+  function setSourceOutput(url: string) {
+    outputStore.nodeOutputs[SOURCE_LOCATOR] = fromPartial({
+      images: [{ filename: url }]
+    })
+  }
+
+  /**
+   * Resolves the image input through the link store, the way
+   * `LGraphNode.getInputLink` does, so link edits drive the preview.
+   */
+  function useLinkedCropNode() {
+    const linkStore = useLinkStore()
+    cropNode = createMockLGraphNode({
+      id: CROP_NODE_ID,
+      isSubgraphNode: () => false,
+      getInputLink: (slot: number) =>
+        linkStore.getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, slot) ?? null,
+      getInputNode: (slot: number) =>
+        linkStore.getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, slot)
+          ? sourceNode
+          : null
+    })
+    mockResolveNode.mockReturnValue(cropNode)
+  }
+
+  function connectImageInput() {
+    useLinkStore().registerLink(GRAPH_SCOPE, {
+      id: toLinkId(1),
+      graphId: GRAPH_SCOPE.owningGraphId,
+      originNodeId: toNodeId(99),
+      originSlot: 0,
+      targetNodeId: CROP_NODE_ID,
+      targetSlot: 0,
+      type: 'IMAGE'
+    })
+  }
+
+  function disconnectImageInput() {
+    const link = useLinkStore().getInputSlotLink(GRAPH_SCOPE, CROP_NODE_ID, 0)
+    if (!link) throw new Error('expected a link on the image input')
+    useLinkStore().deleteLink(GRAPH_SCOPE, link)
+  }
+
   afterEach(() => {
     for (const c of harnessCleanups) {
       c()
     }
     harnessCleanups.length = 0
-  })
-
-  it('resolves image URL from the connected input node after mount', async () => {
-    const vm = await mountHarness()
-    expect(vm.imageUrl).toBe('https://example.com/a.png')
   })
 
   it('returns null image URL when the graph node cannot be resolved', async () => {
@@ -291,29 +362,50 @@ describe('useImageCrop', () => {
   })
 
   it('updates imageUrl when nodeOutputs change', async () => {
+    useSourceOutputs()
+    setSourceOutput('https://example.com/a.png')
     const vm = await mountHarness()
     expect(vm.imageUrl).toBe('https://example.com/a.png')
 
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === sourceNode ? ['https://example.com/b.png'] : undefined
-    )
-    outputStore.nodeOutputs['touch'] = { updated: true }
+    setSourceOutput('https://example.com/b.png')
 
     await flushTicks()
     expect(vm.imageUrl).toBe('https://example.com/b.png')
   })
 
   it('updates imageUrl when nodePreviewImages change', async () => {
-    let url = 'https://example.com/a.png'
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === sourceNode ? [url] : undefined
-    )
+    useSourcePreviews()
+    setSourcePreview('https://example.com/a.png')
     const vm = await mountHarness()
     expect(vm.imageUrl).toBe('https://example.com/a.png')
-    url = 'https://example.com/preview.png'
-    outputStore.nodePreviewImages['rev'] = []
+
+    setSourcePreview('https://example.com/preview.png')
+
     await flushTicks()
     expect(vm.imageUrl).toBe('https://example.com/preview.png')
+  })
+
+  it('shows the upstream image when the input is connected after mount', async () => {
+    useLinkedCropNode()
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBeNull()
+
+    connectImageInput()
+    await flushTicks()
+
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+  })
+
+  it('clears the preview when the image input is disconnected', async () => {
+    useLinkedCropNode()
+    connectImageInput()
+    const vm = await mountHarness()
+    expect(vm.imageUrl).toBe('https://example.com/a.png')
+
+    disconnectImageInput()
+    await flushTicks()
+
+    expect(vm.imageUrl).toBeNull()
   })
 
   it('computes letterboxed display metrics for a wide image', async () => {
@@ -336,10 +428,10 @@ describe('useImageCrop', () => {
 
   it('uses scale factor 1 when natural dimensions are zero', async () => {
     const vm = await mountHarness()
-    /* eslint-disable testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-node-access */
     const container = vm.$el
     const img = container.querySelector('img')
-    /* eslint-enable testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-node-access */
     if (!img) throw new Error('expected preview img')
     Object.defineProperty(img, 'naturalWidth', { configurable: true, value: 0 })
     Object.defineProperty(img, 'naturalHeight', {
@@ -363,13 +455,12 @@ describe('useImageCrop', () => {
   })
 
   it('sets isLoading to true when imageUrl changes to a new URL, then clears on load', async () => {
+    useSourcePreviews()
+    setSourcePreview('https://example.com/a.png')
     const vm = await mountHarness()
     expect(vm.imageUrl).toBe('https://example.com/a.png')
 
-    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation((n) =>
-      n === sourceNode ? ['https://example.com/b.png'] : undefined
-    )
-    outputStore.nodeOutputs['touch'] = {}
+    setSourcePreview('https://example.com/b.png')
     await flushTicks()
 
     expect(vm.imageUrl).toBe('https://example.com/b.png')

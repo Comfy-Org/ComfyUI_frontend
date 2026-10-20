@@ -4,8 +4,9 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Zoom Controls', { tag: '@canvas' }, () => {
+  test.use({ initialSettings: { 'Comfy.Graph.CanvasMenu': true } })
+
   test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Graph.CanvasMenu', true)
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.page.waitForFunction(() => window.app && window.app.canvas)
   })

@@ -1,8 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type {
   PreviewSubscribeResponse,
   SubscriptionDuration,
@@ -12,12 +14,25 @@ import type {
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
 // Not cancelled: keeps the reactivation banner out of these baseline scenarios.
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    subscription: { value: { isCancelled: false, endDate: null } },
-    isInitialized: { value: true }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+beforeEach(() => {
+  const billingContext = useBillingContext()
+  billingContext.subscription = computed(() => ({
+    isActive: true,
+    tier: null,
+    duration: null,
+    planSlug: null,
+    scheduledChange: null,
+    renewalDate: null,
+    endDate: null,
+    isCancelled: false,
+    hasFunds: true,
+    agentHasFunds: true
+  }))
+  billingContext.isInitialized = ref(true)
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+})
 
 // Only the renewal messages are supplied, so the renewal assertions verify
 // real interpolated output while every other key still renders as itself.
@@ -39,8 +54,7 @@ const i18n = createI18n({
 const globalOptions = {
   plugins: [i18n],
   stubs: {
-    SubscriptionTermsNote: { template: '<div />' },
-    Button: { template: '<button @click="$emit(\'click\')"><slot /></button>' }
+    CheckoutTermsNote: { template: '<div />' }
   }
 }
 
@@ -88,8 +102,6 @@ function preview(
   }
 }
 
-// Shape returned while embedded checkout is disabled: every exact-quote field
-// is absent and only the legacy cost fields are populated.
 function legacyPreview(
   overrides: Partial<PreviewSubscribeResponse>
 ): PreviewSubscribeResponse {
@@ -183,22 +195,35 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
     )
   })
 
-  it('reports failed verification without offering to resume it', () => {
+  it('locks the plan change while an earlier payment awaits verification', () => {
     render(SubscriptionTransitionPreviewWorkspace, {
       props: {
         previewData: preview({}),
-        embeddedCheckoutEnabled: true,
-        authenticationState: 'failed_retryable',
-        authenticationError: 'Challenge was closed',
-        // A stale action_url from the abandoned challenge can still be present
-        // when the server reports failed_retryable; the button must stay
-        // hidden regardless.
         actionUrl: 'https://verify.example/sensitive-token'
       },
       global: globalOptions
     })
 
-    expect(screen.getByRole('alert')).toHaveTextContent('Challenge was closed')
+    expect(
+      screen.getByText('subscription.preview.pendingVerificationDetail')
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('button', {
+        name: 'subscription.preview.confirmUpgradeCta'
+      })
+    ).toBeDisabled()
+  })
+
+  it('withholds a stale verification link once the last attempt failed', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({}),
+        authenticationState: 'failed_retryable',
+        actionUrl: 'https://verify.example/sensitive-token'
+      },
+      global: globalOptions
+    })
+
     expect(
       screen.queryByRole('button', {
         name: 'subscription.preview.completeVerification'

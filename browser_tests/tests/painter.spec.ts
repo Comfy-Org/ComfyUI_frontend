@@ -813,7 +813,6 @@ test.describe(
   { tag: ['@widget', '@canvas'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
       await comfyPage.page.evaluate(() => window.app?.graph.clear())
       await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
     })

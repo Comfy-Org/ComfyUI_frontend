@@ -1,9 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
@@ -13,7 +14,6 @@ import type { SidebarTabExtension } from '@/types/extensionTypes'
 
 import SideToolbar from './SideToolbar.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 beforeEach(() => {
   useSettingStore().$patch({
@@ -29,7 +29,6 @@ beforeEach(() => {
 })
 
 const spies = vi.hoisted(() => ({
-  trackUiButtonClicked: vi.fn(),
   toggleAssets: vi.fn()
 }))
 
@@ -39,9 +38,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackUiButtonClicked: spies.trackUiButtonClicked })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -55,8 +52,7 @@ function renderToolbar(props: SideToolbarProps = {}) {
   return render(SideToolbar, {
     props,
     global: {
-      plugins: [PrimeVue, i18n],
-      directives: { tooltip: {} },
+      plugins: [i18n],
       stubs: {
         ComfyMenuButton: { template: '<div />' },
         SidebarTemplatesButton: { template: '<div />' },
@@ -148,7 +144,7 @@ describe('SideToolbar', () => {
 
     await user.click(screen.getByRole('button', { name: 'Assets' }))
 
-    expect(spies.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'sidebar_tab_assets_media_selected',
       element_group: 'sidebar'
     })

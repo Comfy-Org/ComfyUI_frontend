@@ -9,6 +9,7 @@ import {
   boxesAt,
   fromBoundingBoxes,
   isBoundingBox,
+  isRegionList,
   tagRects,
   toBoundingBoxes
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
@@ -17,11 +18,16 @@ import type {
   HitMode,
   Region
 } from '@/composables/boundingBoxes/boundingBoxesUtil'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import {
+  locateWidgetNode,
+  widgetHistoryScope
+} from '@/composables/widgetHistoryScope'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useBoundingBoxesSources } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxesSources'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { NodeId } from '@/types/nodeId'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { readableTextColor, textOnColor } from '@/utils/colorUtil'
 
 const HANDLE_PX = 8
@@ -44,6 +50,7 @@ interface UseBoundingBoxesOptions {
   canvasContainer: Readonly<ShallowRef<HTMLDivElement | null>>
   inlineEditorEl: Readonly<ShallowRef<HTMLTextAreaElement | null>>
   modelValue: Ref<BoundingBox[]>
+  widget: Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
 }
 
 export function useBoundingBoxes(
@@ -52,7 +59,8 @@ export function useBoundingBoxes(
     canvasEl,
     canvasContainer,
     inlineEditorEl,
-    modelValue
+    modelValue,
+    widget
   }: UseBoundingBoxesOptions
 ) {
   const focused = ref(false)
@@ -65,12 +73,14 @@ export function useBoundingBoxes(
   const bgImage = ref<HTMLImageElement | null>(null)
   const inlineEditor = ref<InlineEditorState | null>(null)
   const grid = ref(true)
+  const incomingPending = ref(false)
 
   const { width: containerWidth } = useElementSize(canvasContainer)
 
-  const litegraphNode = computed(() =>
-    nodeId && app.canvas.graph ? app.canvas.graph.getNodeById(nodeId) : null
-  )
+  const litegraphNode = computed(() => {
+    const location = locateWidgetNode(widget, nodeId)
+    return location?.graph.getNodeById(location.nodeId) ?? null
+  })
   const { selectedNodeIds } = storeToRefs(useCanvasStore())
   const isNodeSelected = computed(() => selectedNodeIds.value.has(nodeId))
 
@@ -470,7 +480,7 @@ export function useBoundingBoxes(
     if (b.w < 0.005 || b.h < 0.005) {
       removeRegion(activeIndex.value)
     }
-    syncState()
+    commitEdit()
   }
 
   function onCanvasPointerMove(e: PointerEvent) {
@@ -569,7 +579,7 @@ export function useBoundingBoxes(
     const b = state.value.regions[ed.index]
     b.desc = ed.value
     inlineEditor.value = null
-    syncState()
+    commitEdit()
   }
 
   function onCanvasKeyDown(e: KeyboardEvent) {
@@ -579,7 +589,7 @@ export function useBoundingBoxes(
       e.preventDefault()
       e.stopPropagation()
       removeRegion(idx)
-      syncState()
+      commitEdit()
     }
   }
 
@@ -593,15 +603,28 @@ export function useBoundingBoxes(
   function setActiveType(t: 'obj' | 'text') {
     if (activeRegion.value) {
       activeRegion.value.type = t
-      syncState()
+      commitEdit()
     }
   }
 
   function clearAll() {
     state.value.regions = []
     activeIndex.value = -1
+    incomingPending.value = false
     setLastIncoming([])
-    syncState()
+    commitEdit()
+  }
+
+  function onActiveTextInput() {
+    commitEdit(`text:${activeIndex.value}`)
+  }
+
+  function onActiveDescInput() {
+    commitEdit(`desc:${activeIndex.value}`)
+  }
+
+  function onActivePaletteChange() {
+    commitEdit(`palette:${activeIndex.value}`)
   }
 
   function syncState() {
@@ -611,6 +634,28 @@ export function useBoundingBoxes(
       heightValue.value
     )
     requestDraw()
+  }
+
+  function restoreRegions(value: unknown) {
+    if (!isRegionList(value)) return
+    state.value.regions = value
+    activeIndex.value = Math.min(
+      activeIndex.value,
+      state.value.regions.length - 1
+    )
+    inlineEditor.value = null
+    syncState()
+  }
+
+  const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
+    scope: () => widgetHistoryScope(widget, nodeId),
+    read: () => state.value.regions,
+    apply: restoreRegions
+  })
+
+  function commitEdit(mergeKey?: string) {
+    syncState()
+    commit(mergeKey)
   }
 
   watch(containerWidth, () => requestDraw())
@@ -638,7 +683,20 @@ export function useBoundingBoxes(
     requestDraw()
   })
 
-  const nodeOutputStore = useNodeOutputStore()
+  const { backgroundConnected, backgroundUrl, incomingBoxes } =
+    useBoundingBoxesSources(litegraphNode)
+
+  watch(
+    [litegraphNode, backgroundConnected],
+    ([node, hidden]) => {
+      for (const widget of node?.widgets ?? []) {
+        if (widget.name === 'width' || widget.name === 'height')
+          widget.hidden = hidden
+      }
+    },
+    { immediate: true }
+  )
+
   function applyImageDimensions(naturalWidth: number, naturalHeight: number) {
     const node = litegraphNode.value
     if (!node) return
@@ -658,36 +716,37 @@ export function useBoundingBoxes(
     }
   }
 
-  let lastBgUrl = ''
-  function updateBgImage() {
-    const node = litegraphNode.value
-    if (!node) return
-    const slot = node.findInputSlot('background')
-    const inputNode = slot >= 0 ? node.getInputNode(slot) : null
-    const url = inputNode
-      ? nodeOutputStore.getNodeImageUrls(inputNode)?.[0]
-      : undefined
-    if (!url) {
-      if (bgImage.value) {
+  const backgroundLoading = ref(false)
+  watch(
+    backgroundUrl,
+    (url, _, onCleanup) => {
+      backgroundLoading.value = !!url
+      if (!url) {
         bgImage.value = null
-        lastBgUrl = ''
+        requestDraw()
+        return
+      }
+      let stale = false
+      onCleanup(() => {
+        stale = true
+      })
+      const img = new Image()
+      img.crossOrigin = 'anonymous'
+      img.onload = () => {
+        if (stale) return
+        bgImage.value = img
+        applyImageDimensions(img.naturalWidth, img.naturalHeight)
+        backgroundLoading.value = false
         requestDraw()
       }
-      return
-    }
-    if (url === lastBgUrl) return
-    lastBgUrl = url
-    const currentUrl = url
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    img.onload = () => {
-      if (currentUrl !== lastBgUrl) return
-      bgImage.value = img
-      applyImageDimensions(img.naturalWidth, img.naturalHeight)
-      requestDraw()
-    }
-    img.src = url
-  }
+      img.onerror = () => {
+        if (!stale) backgroundLoading.value = false
+      }
+      img.src = url
+    },
+    { immediate: true }
+  )
+
   function lastIncomingWidget() {
     return litegraphNode.value?.widgets?.find((w) => w.name === 'last_incoming')
   }
@@ -705,20 +764,11 @@ export function useBoundingBoxes(
     widget.callback?.(next)
   }
 
-  function applyIncomingBoxes(apply = true) {
-    if (drawing.value) return
-    const node = litegraphNode.value
-    if (!node) return
-    const slot = node.findInputSlot('bboxes')
-    if (slot < 0 || !node.isInputConnected(slot)) return
-    const outputs = nodeOutputStore.getNodeOutputs(node)
-    const incoming = outputs?.input_bboxes
-    if (
-      !Array.isArray(incoming) ||
-      !incoming.length ||
-      !incoming.every(isBoundingBox)
-    )
-      return
+  function applyIncomingBoxes(
+    incoming: BoundingBoxInput[] | undefined,
+    apply = true
+  ) {
+    if (!incoming || drawing.value) return
     const applied = lastIncomingValue()
     if (isEqual(incoming, applied)) return
     if (!apply) {
@@ -733,21 +783,19 @@ export function useBoundingBoxes(
     )
     activeIndex.value = state.value.regions.length ? 0 : -1
     setLastIncoming(incoming)
-    syncState()
+    commitEdit()
   }
 
-  watch(
-    () => nodeOutputStore.nodeOutputs,
-    () => {
-      updateBgImage()
-      applyIncomingBoxes()
-    },
-    { deep: true }
-  )
-  watch(() => nodeOutputStore.nodePreviewImages, updateBgImage, { deep: true })
-
-  updateBgImage()
-  applyIncomingBoxes(false)
+  applyIncomingBoxes(incomingBoxes.value, false)
+  watch(incomingBoxes, (incoming) => {
+    if (backgroundLoading.value) incomingPending.value = true
+    else applyIncomingBoxes(incoming)
+  })
+  watch(backgroundLoading, (loading) => {
+    if (loading || !incomingPending.value) return
+    incomingPending.value = false
+    applyIncomingBoxes(incomingBoxes.value)
+  })
   void nextTick(() => requestDraw())
 
   onBeforeUnmount(() => {
@@ -772,7 +820,13 @@ export function useBoundingBoxes(
     commitInlineEditor,
     setActiveType,
     clearAll,
-    syncState,
+    onActiveTextInput,
+    onActiveDescInput,
+    onActivePaletteChange,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
     grid
   }
 }

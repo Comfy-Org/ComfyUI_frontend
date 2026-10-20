@@ -1,33 +1,34 @@
 import type { Page } from '@playwright/test'
-import type { BillingCapabilities } from '@comfyorg/ingest-types'
+import type {
+  BillingCapabilities,
+  BillingPlansResponse,
+  Plan
+} from '@comfyorg/ingest-types'
 
 import {
   cloudAppExpect,
   cloudAppFixture as test
 } from '@e2e/fixtures/cloudAppFixture'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * The pricing table's plan CTAs are gated on the server capability set alone
- * (FE-2030). These drive the real dialog against capability responses shaped
- * like the INC-128 cohorts, so a regression shows up as a dead button rather
- * than a changed expression.
- */
 const OWNER = workspace('personal', 'owner')
 
 const BOOT_FEATURES = { billing_control_enabled: true }
 
-// The billing status the app boots with: an active paid plan, which is what
-// makes the cards read "Change to ..." rather than "Subscribe to ...".
-async function openPricingTable(
+const CHANGE_CREATOR = { action: 'change' } as const
+
+async function gotoPricingDeepLink(
   page: Page,
   options: {
+    creator: Pick<Plan, 'action'> & { deniedReason?: Plan['denied_reason'] }
     capabilities?: Partial<BillingCapabilities>
     unresolved?: boolean
     status?: number
-  } = {}
+  }
 ) {
   await setupCloudApp(page, {
     workspace: OWNER,
@@ -37,34 +38,67 @@ async function openPricingTable(
       : createBillingCapabilities(OWNER.id, options.capabilities),
     billingCapabilitiesStatus: options.status
   })
+  await page.route('**/api/billing/plans', (route) =>
+    route.fulfill(
+      jsonRoute({
+        plans: [
+          createPlan({
+            slug: 'creator-annual',
+            tier: 'CREATOR',
+            duration: 'ANNUAL',
+            priceCents: 33_600,
+            monthlyCredits: 7_400,
+            ...options.creator
+          })
+        ]
+      } satisfies BillingPlansResponse)
+    )
+  )
 
   await page.goto(`${APP_URL}/?pricing=1`)
+}
+
+async function openPricingTable(
+  page: Page,
+  options: Parameters<typeof gotoPricingDeepLink>[1]
+) {
+  await gotoPricingDeepLink(page, options)
   await cloudAppExpect(
     page.getByRole('heading', { name: 'Choose a Plan' })
   ).toBeVisible()
 }
 
-const creatorCta = (page: Page) =>
-  page.getByRole('button', { name: 'Change to Creator Yearly' })
-
-test.describe('Pricing table capability gating', { tag: '@cloud' }, () => {
-  test('acts on the capability the server granted, not the one the tier implies', async ({
+test.describe('Pricing table plan action', { tag: '@cloud' }, () => {
+  test('renders the plan action the server sent, not the capability the tier implies', async ({
     page
   }) => {
-    // The legacy-rail shape: a paid tier the server lets subscribe, with
-    // change-seats cleared because there is no local subscription row.
     await openPricingTable(page, {
+      creator: CHANGE_CREATOR,
       capabilities: { can_subscribe_self_serve: true, can_change_seats: false }
     })
 
-    await cloudAppExpect(creatorCta(page)).toBeEnabled()
+    await cloudAppExpect(
+      page.getByRole('button', { name: 'Change to Creator Yearly' })
+    ).toBeEnabled()
   })
 
-  // The closed direction cannot be reached from here: every entry point to the
-  // catalog is itself gated on can_subscribe_self_serve, so a resolved refusal
-  // withholds the dialog rather than opening it with dead cards. Asserting that
-  // is the negative control; the disabled CTA itself is covered in
-  // UnifiedPricingTable.test.ts, which can render the table directly.
+  test('disables a plan the server answers none for and says why', async ({
+    page
+  }) => {
+    await openPricingTable(page, {
+      creator: { action: 'none', deniedReason: 'billing_operation_parked' }
+    })
+
+    await cloudAppExpect(
+      page.getByRole('button', { name: 'Creator Yearly', exact: true })
+    ).toBeDisabled()
+    await cloudAppExpect(
+      page.getByText(
+        'A recent billing change needs a fix from our team. Contact support to change your plan.'
+      )
+    ).toBeVisible()
+  })
+
   test('withholds the catalog when the server refuses every lifecycle write', async ({
     page
   }) => {
@@ -86,19 +120,34 @@ test.describe('Pricing table capability gating', { tag: '@cloud' }, () => {
     ).toBeHidden()
   })
 
-  test('keeps the cards live while the capability read has not resolved', async ({
+  test('holds the catalog while the capability read has not resolved', async ({
     page
   }) => {
-    await openPricingTable(page, { unresolved: true })
+    const capabilityRequest = page.waitForRequest('**/api/billing/capabilities')
+    await gotoPricingDeepLink(page, {
+      creator: CHANGE_CREATOR,
+      unresolved: true
+    })
+    await capabilityRequest
+    await page.waitForURL((url) => !url.searchParams.has('pricing'))
 
-    await cloudAppExpect(creatorCta(page)).toBeEnabled()
+    await cloudAppExpect(
+      page.getByRole('heading', { name: 'Choose a Plan' })
+    ).toBeHidden()
   })
 
-  test('keeps the cards live when the capability read fails', async ({
+  test('withholds the catalog when the capability read fails', async ({
     page
   }) => {
-    await openPricingTable(page, { status: 500 })
+    const capabilityResponse = page.waitForResponse(
+      '**/api/billing/capabilities'
+    )
+    await gotoPricingDeepLink(page, { creator: CHANGE_CREATOR, status: 500 })
+    await capabilityResponse
+    await page.waitForURL((url) => !url.searchParams.has('pricing'))
 
-    await cloudAppExpect(creatorCta(page)).toBeEnabled()
+    await cloudAppExpect(
+      page.getByRole('heading', { name: 'Choose a Plan' })
+    ).toBeHidden()
   })
 })

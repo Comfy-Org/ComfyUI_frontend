@@ -16,27 +16,22 @@
       class="mt-16 flex flex-col gap-4 xl:gap-6"
       @submit.prevent="handleSubmit"
     >
-      <div class="flex flex-col gap-2">
-        <label
-          class="mb-1 text-base text-primary-comfy-canvas/70"
-          for="reset-email"
-        >
+      <Field :data-invalid="!!errorMessage">
+        <FieldLabel for="reset-email" :class="CLOUD_AUTH_LABEL_CLASS">
           {{ t('cloudForgotPassword_emailLabel') }}
-        </label>
-        <InputText
+        </FieldLabel>
+        <Input
           id="reset-email"
           v-model="email"
           type="email"
           :placeholder="t('cloudForgotPassword_emailPlaceholder')"
           :class="CLOUD_AUTH_FIELD_CLASS"
-          :invalid="!!errorMessage && !email"
+          :aria-invalid="!!errorMessage"
           autocomplete="email"
           required
         />
-        <small v-if="errorMessage" class="text-red-500">
-          {{ errorMessage }}
-        </small>
-      </div>
+        <FieldError v-if="errorMessage">{{ errorMessage }}</FieldError>
+      </Field>
 
       <Message v-if="successMessage" severity="success">
         {{ successMessage }}
@@ -69,16 +64,20 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
+import Field from '@/components/ui/field/Field.vue'
+import FieldError from '@/components/ui/field/FieldError.vue'
+import FieldLabel from '@/components/ui/field/FieldLabel.vue'
+import Input from '@/components/ui/input/Input.vue'
+import Message from '@/components/ui/message/Message.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import {
   CLOUD_AUTH_FIELD_CLASS,
+  CLOUD_AUTH_LABEL_CLASS,
   CLOUD_AUTH_LINK_BUTTON_CLASS
 } from '@/platform/cloud/onboarding/constants/authClasses'
 
@@ -90,6 +89,8 @@ const email = ref('')
 const loading = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+
+let redirectTimer: ReturnType<typeof setTimeout> | undefined
 
 const navigateToLogin = () => {
   void router.push({ name: 'cloud-login' })
@@ -105,21 +106,17 @@ const handleSubmit = async () => {
   errorMessage.value = ''
   successMessage.value = ''
 
-  try {
-    // sendPasswordReset is already wrapped and returns a promise
-    await authActions.sendPasswordReset(email.value)
+  const sent = await authActions.sendPasswordReset(email.value)
+  loading.value = false
 
-    successMessage.value = t('cloudForgotPassword_passwordResetSent')
-
-    // Optionally redirect to login after a delay
-    setTimeout(() => {
-      navigateToLogin()
-    }, 3000)
-  } catch (error) {
-    console.error('Password reset error:', error)
+  if (!sent) {
     errorMessage.value = t('cloudForgotPassword_passwordResetError')
-  } finally {
-    loading.value = false
+    return
   }
+
+  successMessage.value = t('cloudForgotPassword_passwordResetSent')
+  redirectTimer = setTimeout(navigateToLogin, 3000)
 }
+
+onUnmounted(() => clearTimeout(redirectTimer))
 </script>
