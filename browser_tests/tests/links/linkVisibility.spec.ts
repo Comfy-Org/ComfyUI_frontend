@@ -107,7 +107,11 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
         )
       )
       .toEqual([{ hidden: true }])
-    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getAllNodeRefs(),
+      'link-hidden.png'
+    )
   })
 
   test('persists a hidden renamed link through graph load and browser reload', async ({
