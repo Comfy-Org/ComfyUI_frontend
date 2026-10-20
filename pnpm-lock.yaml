@@ -1379,6 +1379,9 @@ importers:
       ajv6:
         specifier: npm:ajv@6.15.0
         version: ajv@6.15.0
+      comfy-multi-player-v0310:
+        specifier: npm:@comfyorg/comfy-multi-player@0.3.10
+        version: '@comfyorg/comfy-multi-player@0.3.10'
       dependency-cruiser:
         specifier: 'catalog:'
         version: 18.5.0
@@ -2212,6 +2215,9 @@ packages:
   '@clack/prompts@1.7.0':
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
+
+  '@comfyorg/comfy-multi-player@0.3.10':
+    resolution: {integrity: sha512-HPR9Of8qTbt0E5wXiYHCF8+FixXPqvRewUiKOfoSE8mZwm21u4gztoIMRXmsVS2pcWiAh0iW0Vh5bgu8XkylsA==}
 
   '@comfyorg/comfy-multi-player@0.3.6':
     resolution: {integrity: sha512-6mC4E43YH+58gV4I+tmUR4pIYxqUeiY8ShS1WjjDEYxsBKGbzU1rRNGZHKgrzP3cOKGzK/JSP663/SIN50kfeQ==}
@@ -11465,6 +11471,10 @@ snapshots:
       fast-string-width: 3.0.2
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
+
+  '@comfyorg/comfy-multi-player@0.3.10':
+    dependencies:
+      yjs: 13.6.32
 
   '@comfyorg/comfy-multi-player@0.3.6':
     dependencies:

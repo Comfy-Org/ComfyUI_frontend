@@ -9,9 +9,12 @@ Proposed
 ## Context
 
 The frontend and Cloud doc host must execute the same multiplayer semantics.
-Moving their shared package does not make their deployments atomic. At import,
-the frontend pins npm 0.3.6, Cloud main pins 0.3.7, and the package is 0.3.10.
-These repository pins do not establish what is deployed.
+Moving their shared package does not make their deployments atomic. The
+import started from upstream `86aecb9`, the npm 0.3.10 release, when the
+frontend pinned npm 0.3.6 and Cloud main pinned 0.3.7. By 2026-10-20 both pin
+npm 0.3.10: the frontend catalog, and Cloud's doc host, which also keeps a
+schema-v4 alias at 0.3.7. These repository pins do not establish what is
+deployed.
 
 ## Decision
 
@@ -19,6 +22,14 @@ Import `Comfy-Org/comfy-multi-player` into `packages/comfy-multi-player` with
 its original Git ancestry, license, tests, fixtures, and decisions. Keep the
 frontend on its existing npm version in the import PR. A stacked draft PR
 switches it to `workspace:*` only after Cloud alignment is verified.
+
+The in-tree tree is a copy of standalone `main` at a recorded commit, currently
+`c12150d`. It carries no semantic change of its own, so it is not npm 0.3.10
+even though `package.json` still says 0.3.10: the version field names the last
+published release, as it does on standalone `main`, and the package
+`CHANGELOG.md` lists the unreleased changes under `Unreleased`. Fixes land in
+the standalone repository until it is frozen, and the import is re-synced to
+its `main` before merging.
 
 Workspace consumers resolve TypeScript source. External consumers continue
 to install compiled ESM and declarations from npm. `pnpm pack` applies

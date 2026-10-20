@@ -58,6 +58,7 @@
     "@types/node": "catalog:",
     "@typescript-eslint/parser": "^8.68.0",
     "ajv6": "npm:ajv@6.15.0",
+    "comfy-multi-player-v0310": "npm:@comfyorg/comfy-multi-player@0.3.10",
     "dependency-cruiser": "catalog:",
     "eslint": "^10.11.0",
     "eslint-plugin-sonarjs": "^4.2.1",

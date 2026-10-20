@@ -7,15 +7,17 @@
  * actually has depends on its current selection, exactly as the frontend
  * builds it (`src/core/graph/widgets/dynamicWidgets.ts`): the selected
  * option's widget slots sit right after their selector, a nested selector's
- * after it. Nothing is written when the selection changes: a selected
+ * after it. No DEFAULT is written when the selection changes: a selected
  * option's slot that no op ever wrote shows that option's DEFAULT, applied at
- * read time (`widgetLayoutForWidgets`). Any receiver-side write at selection
- * time is arrival-dependent — with two options sharing a child name, the
- * first seed to land would win (review on #240) — so the document holds only
- * values ops wrote and the projection is a pure function of it. A child name
- * several options share is therefore ONE slot. Which names a write may target
- * does not depend on the selection either (every option's slots are
- * accepted), so no op's outcome depends on its arrival order.
+ * read time (`widgetLayoutForWidgets`). Any receiver-side VALUE write at
+ * selection time is arrival-dependent — with two options sharing a child
+ * name, the first seed to land would win (review on #240) — so the document
+ * holds only values ops wrote and the projection is a pure function of it. A
+ * child name several options share is therefore ONE slot. A self-described
+ * ARRAY form does persist its recomputed realized ORDER (A25), but never an
+ * option default. Which names a write may target does not depend on the
+ * selection either (every option's slots are accepted), so no op's outcome
+ * depends on its arrival order.
  *
  * An entry WITHOUT `dynamic_combos` is returned unchanged everywhere here, so
  * the value-blind behaviour (BE-9176 `_extra_N` placeholders) is untouched.
@@ -73,6 +75,7 @@ function expand(
   entry: WidgetCatalogEntry,
   combos: Combos,
   valueAt: (name: string, index: number, occurrence: number) => unknown,
+  producerOrder: readonly string[] = entry.widget_order,
 ): WidgetLayout {
   const owned = optionOwnedWidgets(entry);
   const order: string[] = [];
@@ -89,7 +92,12 @@ function expand(
       walk(option.widgets, depth + 1);
     }
   };
-  walk(entry.widget_order.filter((name) => !owned.has(name)), 0);
+  // The class catalog normally owns the base order. A self-described ARRAY
+  // form is the exception: its producer observed this instance's realized
+  // order, so preserve that order for stable widgets and only replace the
+  // catalog-owned dynamic children. This lets a selector change recompute the
+  // realized order without moving unrelated producer-local widgets.
+  walk(producerOrder.filter((name) => !owned.has(name)), 0);
   return { order, defaults };
 }
 
@@ -121,6 +129,28 @@ export function widgetOrderForWidgets(
   widgets: Y.Map<unknown> | undefined,
 ): readonly string[] {
   return widgetLayoutForWidgets(entry, widgets).order;
+}
+
+/**
+ * Recompute a self-described ARRAY form's realized order after a selector
+ * write wins. `producerOrder` may already contain the previous selection's
+ * children; {@link expand} removes every catalog-owned child before expanding
+ * the selectors from their stored values, so repeated A→B→A switches remain
+ * anchored to the same producer-local order.
+ */
+export function widgetOrderForProducerOrder(
+  entry: WidgetCatalogEntry,
+  producerOrder: readonly string[],
+  widgets: Y.Map<unknown> | undefined,
+): readonly string[] {
+  const combos = combosOf(entry);
+  if (!combos) return [...producerOrder];
+  return expand(
+    entry,
+    combos,
+    (name, _index, occurrence) => widgets?.get(widgetStorageKey(name, occurrence)),
+    producerOrder,
+  ).order;
 }
 
 /**

@@ -19,7 +19,7 @@
     },
     "golden-vectors/conformance.json": {
       "generator": "hand-authored package-local conformance manifest",
-      "sha256": "772607484279e2ac685e6e208837fa79f3349dcc6bcbb1630b748e62fc89d9cb"
+      "sha256": "816ca5c68ab8cc3ed54646f97f825c50044adb247926bf656c4831fb47279bb8"
     },
     "golden-vectors/definition-payload-rejections.json": {
       "generator": "hand-authored package-local N1-N8 rejection fixtures",
@@ -28,6 +28,10 @@
     "golden-vectors/session-interior-add-node.session.jsonl": {
       "generator": "hand-authored package-local interior add_node conformance vector (D-E2 / ecw337-4)",
       "sha256": "1f17513439a3cb222c5d218309faf976b3d55d39737425364199d7cee2db9492"
+    },
+    "golden-vectors/node-local-order-overlay.json": {
+      "generator": "hand-authored package-local H1 node-local array-order/dynamic-catalog overlay conformance vector (oploop-812b)",
+      "sha256": "e9f1f4c7bb4447325a61265c07f468c03c0e2dc68fe1a4043151a860cfc8eb3b"
     },
     "lww-vectors.json": {
       "generator": "crdt-spike/gen_fixtures.py: workflow_ops.apply_op both-order vectors",

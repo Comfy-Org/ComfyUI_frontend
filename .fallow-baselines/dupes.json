@@ -21,6 +21,6 @@
     "src/lib/litegraph/src/widgets/GradientSliderWidget.ts:35-45|src/lib/litegraph/src/widgets/KnobWidget.ts:162-176|src/lib/litegraph/src/widgets/SliderWidget.ts:55-66",
     "src/platform/cloud/subscription/components/PricingTable.vue:52-66|src/platform/workspace/components/PricingTableWorkspace.vue:52-66|src/platform/workspace/components/UnifiedPricingTable.vue:101-115",
     "src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue:135-150|src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue:186-201|src/platform/workspace/components/SubscriptionPanelContentWorkspace.vue:269-284",
-    "packages/comfy-multi-player/src/applier.ts:2490-2494|packages/comfy-multi-player/src/applier.ts:2717-2721|packages/comfy-multi-player/src/applier.ts:2855-2859"
+    "packages/comfy-multi-player/src/applier.ts:2557-2561|packages/comfy-multi-player/src/applier.ts:2784-2788|packages/comfy-multi-player/src/applier.ts:2922-2926"
   ]
 }
