@@ -11,10 +11,13 @@ import enMessages from '@/locales/en/main.json'
 import { useTelemetry } from '@/platform/telemetry'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
-import type { InstallationDeployState } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
 
 import DeployToComfyApiCard from './DeployToComfyApiCard.vue'
+
+type InstallationDeployState = ReturnType<
+  typeof useInstallationDeploy
+>['state']['value']
 
 const BUILDER_URL =
   'https://platform.comfy.org/profile/builds/new?step=import&bundle=b-1&workspace=ws-1'
@@ -191,15 +194,11 @@ describe('DeployToComfyApiCard', () => {
   })
 
   it('uploads the installation from Deploy on Platform and reports done once the wizard opens', async () => {
-    const installation = fakeInstallationDeploy(
-      { status: 'idle' },
-      { status: 'opened' }
-    )
+    fakeInstallationDeploy({ status: 'idle' }, { status: 'opened' })
     const { onDone, user } = renderCard({ deploysInstallation: true })
 
     await user.click(screen.getByRole('button', { name: 'Deploy on Platform' }))
 
-    expect(installation.deploy).toHaveBeenCalledOnce()
     expect(onDone).toHaveBeenCalledOnce()
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'deploy_to_comfy_api_platform_clicked',
@@ -211,41 +210,66 @@ describe('DeployToComfyApiCard', () => {
     })
   })
 
-  it('keeps the dialog open and reports no wizard when the upload does not open it', async () => {
-    fakeInstallationDeploy({ status: 'idle' }, { status: 'idle' })
-    const { onDone, user } = renderCard({ deploysInstallation: true })
+  it.for([
+    {
+      upload: 'fails',
+      initial: { status: 'idle' },
+      outcome: { status: 'idle' }
+    },
+    {
+      upload: 'starts after an earlier wizard opened',
+      initial: { status: 'opened' },
+      outcome: { status: 'uploading' }
+    }
+  ] satisfies {
+    upload: string
+    initial: InstallationDeployState
+    outcome: InstallationDeployState
+  }[])(
+    'keeps the dialog open and reports no wizard when the upload $upload',
+    async ({ initial, outcome }) => {
+      fakeInstallationDeploy(initial, outcome)
+      const { onDone, user } = renderCard({ deploysInstallation: true })
 
-    await user.click(screen.getByRole('button', { name: 'Deploy on Platform' }))
+      await user.click(
+        screen.getByRole('button', { name: 'Deploy on Platform' })
+      )
 
-    expect(onDone).not.toHaveBeenCalled()
-    expect(
-      useTelemetry()?.trackUiButtonClicked
-    ).toHaveBeenCalledExactlyOnceWith({
-      button_id: 'deploy_to_comfy_api_platform_clicked',
-      element_group: 'deploy_to_comfy_api'
-    })
-  })
+      expect(onDone).not.toHaveBeenCalled()
+      expect(
+        useTelemetry()?.trackUiButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({
+        button_id: 'deploy_to_comfy_api_platform_clicked',
+        element_group: 'deploy_to_comfy_api'
+      })
+    }
+  )
 
-  it('links to the build wizard when the browser blocked its tab, and reports done', async () => {
-    const installation = fakeInstallationDeploy(
-      { status: 'tab_blocked', url: BUILDER_URL },
-      { status: 'opened' }
-    )
-    const { onDone, user } = renderCard({ deploysInstallation: true })
-    const link = screen.getByRole('link', { name: 'Open the build wizard' })
+  it.for([
+    { gesture: 'click', keys: '[MouseLeft]' },
+    { gesture: 'middle-click', keys: '[MouseMiddle]' }
+  ])(
+    'links to the build wizard when the browser blocked its tab, and reports done on $gesture',
+    async ({ keys }) => {
+      fakeInstallationDeploy(
+        { status: 'tab_blocked', url: BUILDER_URL },
+        { status: 'opened' }
+      )
+      const { onDone, user } = renderCard({ deploysInstallation: true })
+      const link = screen.getByRole('link', { name: 'Open the build wizard' })
 
-    expect(link).toHaveAttribute('href', BUILDER_URL)
-    await user.click(link)
+      expect(link).toHaveAttribute('href', BUILDER_URL)
+      await user.pointer({ keys, target: link })
 
-    expect(installation.markOpened).toHaveBeenCalledOnce()
-    expect(onDone).toHaveBeenCalledOnce()
-    expect(
-      useTelemetry()?.trackUiButtonClicked
-    ).toHaveBeenCalledExactlyOnceWith({
-      button_id: 'deploy_to_comfy_api_builder_opened',
-      element_group: 'deploy_to_comfy_api'
-    })
-  })
+      expect(onDone).toHaveBeenCalledOnce()
+      expect(
+        useTelemetry()?.trackUiButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({
+        button_id: 'deploy_to_comfy_api_builder_opened',
+        element_group: 'deploy_to_comfy_api'
+      })
+    }
+  )
 
   it('shows the placeholder when there is no video', () => {
     renderCard()

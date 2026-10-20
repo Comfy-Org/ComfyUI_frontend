@@ -10,6 +10,7 @@
     rel="noopener noreferrer"
     data-testid="deploy-to-comfy-api-open-builder"
     @click="markOpened"
+    @auxclick.middle="markOpened"
   >
     {{ $t('deployToComfyApi.openBuilder') }}
     <i

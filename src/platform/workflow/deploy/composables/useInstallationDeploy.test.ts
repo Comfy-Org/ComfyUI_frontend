@@ -30,6 +30,11 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
+type PendingToken = {
+  resolve: (token: string) => void
+  reject: (cause: Error) => void
+}
+
 const BUNDLE_ID = 'b78dcd79-8aba-4d5f-abd7-d35e4d33cbce'
 const BUILDER_URL = `https://platform.comfy.org/profile/builds/new?step=import&bundle=${BUNDLE_ID}&workspace=ws-1`
 
@@ -145,6 +150,24 @@ describe(useInstallationDeploy, () => {
         }
       })
     )
+  })
+
+  it('reports a sign-in prompt that fails to open, and lets the next deploy try again', async () => {
+    vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(undefined)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockRejectedValueOnce(
+      new TypeError('Failed to fetch dynamically imported module')
+    )
+    const { deploy, state } = useInstallationDeploy()
+
+    await expect(deploy()).resolves.toBe(false)
+
+    expect(state.value).toEqual({ status: 'idle' })
+    expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
+      t('deployToComfyApi.bundleUnavailable')
+    )
+    expect(reportError).toHaveBeenCalledOnce()
+    await deploy()
+    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledTimes(2)
   })
 
   it('tells the user to sign in again when sign-in yields no credential', async () => {
@@ -281,32 +304,45 @@ describe(useInstallationDeploy, () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('discards a credential resolved after the account changes', async () => {
-    const authStore = useAuthStore()
-    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
-    let finishToken: (token: string) => void = () => {}
-    vi.mocked(authStore.getWorkspaceAuthToken).mockImplementationOnce(
-      () =>
-        new Promise<string>((resolve) => {
-          finishToken = resolve
-        })
-    )
-    const deployment = useInstallationDeploy()
-    const pending = deployment.deploy()
-    await vi.waitFor(() =>
-      expect(authStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
-    )
+  it.for([
+    {
+      lookup: 'resolves',
+      finish: (token: PendingToken) => token.resolve('account-a-jwt')
+    },
+    {
+      lookup: 'fails',
+      finish: (token: PendingToken) =>
+        token.reject(new Error('token exchange failed'))
+    }
+  ])(
+    'discards a token lookup that $lookup after the account changes',
+    async ({ finish }) => {
+      const authStore = useAuthStore()
+      authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
+      let token: PendingToken = { resolve: () => {}, reject: () => {} }
+      vi.mocked(authStore.getWorkspaceAuthToken).mockImplementationOnce(
+        () =>
+          new Promise<string>((resolve, reject) => {
+            token = { resolve, reject }
+          })
+      )
+      const deployment = useInstallationDeploy()
+      const pending = deployment.deploy()
+      await vi.waitFor(() =>
+        expect(authStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
+      )
 
-    authStore.currentUser = fromPartial<User>({ uid: 'account-b' })
-    finishToken('account-a-jwt')
+      authStore.currentUser = fromPartial<User>({ uid: 'account-b' })
+      finish(token)
 
-    await expect(pending).resolves.toBe(false)
-    expect(api.fetchApi).not.toHaveBeenCalled()
-    expect(window.open).not.toHaveBeenCalled()
-    expect(deployment.state.value).toEqual({ status: 'idle' })
-    expect(useToast().error).not.toHaveBeenCalled()
-    expect(reportError).not.toHaveBeenCalled()
-  })
+      await expect(pending).resolves.toBe(false)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+      expect(window.open).not.toHaveBeenCalled()
+      expect(deployment.state.value).toEqual({ status: 'idle' })
+      expect(useToast().error).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
 
   it('owns the blocked link with the account signed in through the prompt', async () => {
     const authStore = useAuthStore()

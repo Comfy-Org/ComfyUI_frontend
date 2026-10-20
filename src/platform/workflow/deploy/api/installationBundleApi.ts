@@ -31,7 +31,7 @@ type BundlePost =
   | { ok: true; response: Response }
   | { ok: false; cause: unknown }
 
-export type BundleResult =
+type BundleResult =
   | { ok: true; url: string }
   | { ok: false; reason: BundleFailureReason; cause?: unknown }
 

@@ -6,15 +6,12 @@ import { t } from '@/i18n'
 import { isDesktop } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createInstallationBundle } from '@/platform/workflow/deploy/api/installationBundleApi'
-import type {
-  BundleFailureReason,
-  BundleResult
-} from '@/platform/workflow/deploy/api/installationBundleApi'
+import type { BundleFailureReason } from '@/platform/workflow/deploy/api/installationBundleApi'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 
-export type InstallationDeployState =
+type InstallationDeployState =
   | { status: 'idle' }
   | { status: 'uploading' }
   | { status: 'opened' }
@@ -22,7 +19,7 @@ export type InstallationDeployState =
 
 type DeployFailure = {
   ok: false
-  reason: BundleFailureReason | 'signed_out' | 'identity_changed'
+  reason: BundleFailureReason | 'signed_out'
   cause?: unknown
 }
 
@@ -30,13 +27,13 @@ type TokenLookup =
   | { ok: true; token: string | undefined }
   | { ok: false; cause: unknown }
 
-type CredentialLookup =
-  | { ok: true; header: AuthHeader; owner: string | null }
-  | DeployFailure
+type SignInPrompt =
+  | { ok: true; signedIn: boolean }
+  | { ok: false; cause: unknown }
 
-type OwnedBundleResult =
-  | (BundleResult & { owner: string | null })
-  | DeployFailure
+type CredentialLookup = ({ ok: true; header: AuthHeader } | DeployFailure) & {
+  owner: string | null
+}
 
 type DeploymentState =
   | Exclude<InstallationDeployState, { status: 'tab_blocked' }>
@@ -93,14 +90,19 @@ export function useInstallationDeploy() {
     }
   }
 
+  async function promptSignIn(): Promise<SignInPrompt> {
+    try {
+      return { ok: true, signedIn: await showSignInDialog() }
+    } catch (cause) {
+      return { ok: false, cause }
+    }
+  }
+
   async function deployCredential(): Promise<CredentialLookup> {
     const owner = authStore.currentUserIdentity()
     const workspace = await workspaceToken()
-    if (owner !== authStore.currentUserIdentity()) {
-      return { ok: false, reason: 'identity_changed' }
-    }
     if (!workspace.ok) {
-      return { ok: false, reason: 'unavailable', cause: workspace.cause }
+      return { ok: false, reason: 'unavailable', cause: workspace.cause, owner }
     }
     if (workspace.token) {
       return {
@@ -109,32 +111,31 @@ export function useInstallationDeploy() {
         owner
       }
     }
-    if (authStore.isAuthenticated) return { ok: false, reason: 'unauthorized' }
+    if (authStore.isAuthenticated) {
+      return { ok: false, reason: 'unauthorized', owner }
+    }
     const apiKeyHeader = apiKeyAuthStore.getAuthHeader()
     return apiKeyHeader
       ? { ok: true, header: apiKeyHeader, owner }
-      : { ok: false, reason: 'signed_out' }
+      : { ok: false, reason: 'signed_out', owner }
   }
 
   async function signedInCredential(): Promise<CredentialLookup> {
     const credential = await deployCredential()
     if (credential.ok || credential.reason !== 'signed_out') return credential
-    if (!(await showSignInDialog())) return credential
+    const prompt = await promptSignIn()
+    if (!prompt.ok) {
+      return {
+        ok: false,
+        reason: 'unavailable',
+        cause: prompt.cause,
+        owner: credential.owner
+      }
+    }
+    if (!prompt.signedIn) return credential
     const retried = await deployCredential()
     if (retried.ok || retried.reason !== 'signed_out') return retried
-    return { ok: false, reason: 'unauthorized' }
-  }
-
-  async function uploadInstallation(): Promise<OwnedBundleResult> {
-    const credential = await signedInCredential()
-    if (!credential.ok) return credential
-    if (credential.owner !== authStore.currentUserIdentity()) {
-      return { ok: false, reason: 'identity_changed' }
-    }
-    return {
-      ...(await createInstallationBundle(credential.header)),
-      owner: credential.owner
-    }
+    return { ok: false, reason: 'unauthorized', owner: retried.owner }
   }
 
   function notifyFailure(reason: BundleFailureReason, cause: unknown) {
@@ -148,28 +149,32 @@ export function useInstallationDeploy() {
     toast.error(t(FAILURE_MESSAGE_KEY[reason]))
   }
 
+  function stopUploading(): false {
+    deployment.value = { status: 'idle' }
+    return false
+  }
+
+  function fail(failure: DeployFailure): false {
+    if (failure.reason !== 'signed_out') {
+      notifyFailure(failure.reason, failure.cause)
+    }
+    return stopUploading()
+  }
+
   async function deploy(): Promise<boolean> {
     if (deployment.value.status === 'uploading') return false
     deployment.value = { status: 'uploading' }
-    const result = await uploadInstallation()
-    if ('owner' in result && result.owner !== authStore.currentUserIdentity()) {
-      deployment.value = { status: 'idle' }
-      return false
-    }
-    if (!result.ok) {
-      deployment.value = { status: 'idle' }
-      if (
-        result.reason !== 'signed_out' &&
-        result.reason !== 'identity_changed'
-      ) {
-        notifyFailure(result.reason, result.cause)
-      }
-      return false
-    }
-    const opened = openInNewTab(result.url)
+    const credential = await signedInCredential()
+    const { owner } = credential
+    if (owner !== authStore.currentUserIdentity()) return stopUploading()
+    if (!credential.ok) return fail(credential)
+    const bundle = await createInstallationBundle(credential.header)
+    if (owner !== authStore.currentUserIdentity()) return stopUploading()
+    if (!bundle.ok) return fail(bundle)
+    const opened = openInNewTab(bundle.url)
     deployment.value = opened
       ? { status: 'opened' }
-      : { status: 'tab_blocked', url: result.url, owner: result.owner }
+      : { status: 'tab_blocked', url: bundle.url, owner }
     return opened
   }
 
