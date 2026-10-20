@@ -714,6 +714,11 @@
         "count": 4
       }
     },
+    "packages/comfy-multi-player/src/compact.ts": {
+      "crap_moderate": {
+        "count": 1
+      }
+    },
     "packages/comfy-multi-player/src/doc.ts": {
       "complexity_moderate": {
         "count": 1
