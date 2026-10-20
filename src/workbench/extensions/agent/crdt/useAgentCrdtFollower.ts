@@ -613,22 +613,37 @@ function startAgentCrdtFollower(
       reportPendingFrames(update.workflowId, 'applied_deferred', outcome)
     else reportPendingFrames(update.workflowId, 'discarded', NOTHING_APPLIED)
   }
+  const notifyPendingFramesApplied = (
+    workflowId: string,
+    frames: readonly ProjectionFrameId[]
+  ): void => {
+    for (const frame of frames) {
+      events.onAppliedUpdate?.({
+        workflowId,
+        opIds: frame.opIds ?? [],
+        isLive: frame.isLive ?? true
+      })
+    }
+  }
+  const settleCollectedProjection = (
+    workflowId: string,
+    outcome: Extract<FrameOutcome, { applied: true }>,
+    pendingFrames: readonly ProjectionFrameId[]
+  ): void => {
+    if (outcome.failureCount > 0) {
+      markProjectionStale(workflowId)
+      return
+    }
+    notifyPendingFramesApplied(workflowId, pendingFrames)
+    if (!projection.hasPendingFailure(workflowId))
+      clearProjectionStaleness(workflowId)
+  }
   const applyCollected = (workflowId: string): void => {
     const pendingFrames = pendingProjectionFrames.get(workflowId) ?? []
     const outcome = projection.applyCollected(workflowId)
     if (!outcome.applied) return
     const settlesCatchUp = catchUpAwaitingProjectionFor === workflowId
-    if (outcome.failureCount === 0) {
-      for (const frame of pendingFrames) {
-        events.onAppliedUpdate?.({
-          workflowId,
-          opIds: frame.opIds ?? [],
-          isLive: frame.isLive ?? true
-        })
-      }
-      if (!projection.hasPendingFailure(workflowId))
-        clearProjectionStaleness(workflowId)
-    } else markProjectionStale(workflowId)
+    settleCollectedProjection(workflowId, outcome, pendingFrames)
     if (settlesCatchUp) clearSyncStaleness()
     reportMaterialized(workflowId, outcome.createdNodeIds)
     reportPendingFrames(workflowId, 'applied_deferred', outcome)
