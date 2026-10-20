@@ -1,8 +1,9 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { EXTENSION_FAILURES_TRUNCATED_FIELD } from '@/platform/telemetry/extensionLoadTelemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
+import { provideExtensionHost } from '@/services/extensionHostProvider'
 
 import type { ExtensionLoadFailure } from './extensionLoader'
 import {
@@ -218,6 +219,37 @@ describe('extension loading', () => {
   })
 
   describe('loadExtensions', () => {
+    it('delegates claimed extension URLs to the installed host', async () => {
+      const load = vi.fn(async () => {})
+      provideExtensionHost({ name: 'test-host', canLoad: () => true, load })
+      onTestFinished(() => provideExtensionHost(null))
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([BROKEN])
+      await loadExtensions()
+      expect(load).toHaveBeenCalledExactlyOnceWith(BROKEN)
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('aggregates host failures while continuing to load other extensions', async () => {
+      const failure = new Error('host rejected pack')
+      const healthy = '/extensions/healthy/main.js'
+      const load = vi.fn(async (url: string) => {
+        if (url === BROKEN) throw failure
+      })
+      provideExtensionHost({ name: 'test-host', canLoad: () => true, load })
+      onTestFinished(() => provideExtensionHost(null))
+      vi.spyOn(api, 'getExtensions').mockResolvedValue([BROKEN, healthy])
+      await loadExtensions()
+      expect(load).toHaveBeenCalledTimes(2)
+      expect(load).toHaveBeenCalledWith(healthy)
+      expect(reportError).toHaveBeenCalledOnce()
+      const [cause, options] = vi.mocked(reportError).mock.calls[0]
+      assert(cause instanceof AggregateError)
+      expect(cause.errors).toEqual([
+        expect.objectContaining({ message: failure.message })
+      ])
+      expect(options.tags).toEqual({ failed_extension_count: 1 })
+    })
+
     it('reports every failing custom import as one aggregate', async () => {
       vi.spyOn(api, 'getExtensions').mockResolvedValue([
         '/extensions/pack-a/main.js',

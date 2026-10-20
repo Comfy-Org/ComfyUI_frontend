@@ -211,6 +211,7 @@ import {
   isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { currentExtensionHost } from '@/services/extensionHostProvider'
 import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
@@ -2190,7 +2191,19 @@ export class ComfyApp implements IComfyApp {
     }
   ) {
     const fileName = file.name.replace(/\.\w+$/, '') // Strip file extension
-    const workflowData = await getWorkflowDataFromFile(file)
+    let hostedWorkflowData
+    try {
+      hostedWorkflowData = await currentExtensionHost()?.importFile?.(file)
+    } catch (error) {
+      // An optional host importer must never suppress the native parser or
+      // normal media-file handling.
+      console.warn(
+        'Extension host file importer failed; using native import',
+        error
+      )
+    }
+    const workflowData =
+      hostedWorkflowData ?? (await getWorkflowDataFromFile(file))
     const { workflow, prompt, parameters, templates } = workflowData ?? {}
 
     if (!(workflow || prompt || parameters || templates)) {
