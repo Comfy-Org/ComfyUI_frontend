@@ -104,6 +104,7 @@ test.describe(
     test('Can show node badge with unknown color palette', async ({
       comfyPage
     }) => {
+      await comfyPage.setFocusMode(false)
       await comfyPage.settings.setSetting(
         'Comfy.NodeBadge.NodeIdBadgeMode',
         NodeBadgeMode.ShowAll
@@ -115,9 +116,12 @@ test.describe(
         })
         .toBe('unknown')
       await comfyPage.canvasOps.clickEmptySpace()
-      await expect(comfyPage.page).toHaveScreenshot(
-        'node-badge-unknown-color-palette.png',
-        { clip: await allNodesRegion(comfyPage) }
+      const paletteNotFoundToast = comfyPage.toast.withText(
+        'Color palette unknown not found'
+      )
+      await expect(paletteNotFoundToast).toBeVisible()
+      await expect(paletteNotFoundToast).toHaveScreenshot(
+        'node-badge-unknown-color-palette.png'
       )
     })
 
