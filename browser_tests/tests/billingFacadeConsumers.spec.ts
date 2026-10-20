@@ -229,7 +229,7 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       .poll(() => billingRequests.legacyBalance, { timeout: 30_000 })
       .toBeGreaterThan(0)
     await page.getByRole('button', { name: 'Current user' }).click()
-    const popover = page.locator('.current-user-popover')
+    const popover = page.getByTestId('current-user-popover')
     await expect(popover.getByText('12,660')).toBeVisible()
     await expect(popover.getByText('0', { exact: true })).toHaveCount(0)
     expect(billingRequests.legacyStatus).toBe(0)
