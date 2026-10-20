@@ -95,28 +95,29 @@ const pillClass =
         data-testid="workflow-actions"
       >
         <Button
+          as="a"
+          :href="workflow.downloadUrl"
+          download
+          variant="secondaryOutline"
+          class="h-auto min-h-11 max-w-full whitespace-normal"
+          :aria-label="t('workshop.workflow.download')"
+          data-testid="node-graph-download"
+          >{{ t('workshop.workflow.downloadShort') }}</Button
+        >
+        <Button
           v-if="cloudHref"
           as="a"
           :href="cloudHref"
           target="_blank"
           rel="noopener"
-          class="h-auto min-h-11 max-w-full font-bold tracking-wider whitespace-normal"
+          variant="ghost"
+          class="h-auto min-h-11 max-w-full font-bold tracking-wider whitespace-normal uppercase"
           data-testid="node-graph-try-cloud"
           >{{ t('workshop.workflow.tryCloud') }}
           <template #append>
             <ArrowUpRight aria-hidden="true" />
           </template>
         </Button>
-        <Button
-          as="a"
-          :href="workflow.downloadUrl"
-          download
-          :variant="cloudHref ? 'secondaryOutline' : 'default'"
-          class="h-auto min-h-11 max-w-full whitespace-normal"
-          :aria-label="t('workshop.workflow.download')"
-          data-testid="node-graph-download"
-          >{{ t('workshop.workflow.downloadShort') }}</Button
-        >
       </div>
     </header>
 

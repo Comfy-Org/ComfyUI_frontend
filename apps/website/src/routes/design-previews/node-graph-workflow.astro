@@ -1,7 +1,10 @@
 ---
 import NodeGraphWorkflowPreview from '@/components/design-previews/NodeGraphWorkflowPreview.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import { nodeGraphSampleInputs } from '@/lib/hub/node-graph-sample-inputs'
 import { nodeGraphWorkflowSample as workflow } from '@/lib/hub/node-graph-workflow'
+
+const inputs = await nodeGraphSampleInputs()
 ---
 
 <BaseLayout
@@ -16,6 +19,7 @@ import { nodeGraphWorkflowSample as workflow } from '@/lib/hub/node-graph-workfl
     {Astro.locals.t('workshop.nodeGraph.previewNotice')}
   </p>
   <NodeGraphWorkflowPreview
+    inputs={inputs}
     locale={Astro.currentLocale === 'zh-CN' ? 'zh-CN' : 'en'}
     client:load
   />

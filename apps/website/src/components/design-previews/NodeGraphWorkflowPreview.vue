@@ -3,16 +3,29 @@ import { computed, onMounted, ref, watch } from 'vue'
 
 import WorkflowNodeGraphPage from '@/components/workshop/WorkflowNodeGraphPage.vue'
 import type { Locale } from '@/i18n/translations'
-import { nodeGraphWorkflowSample } from '@/lib/hub/node-graph-workflow'
+import type { NodeGraphInput } from '@/lib/hub/node-graph-inputs'
+import type { SampleKey } from '@/lib/hub/node-graph-workflow'
+import { nodeGraphSamples } from '@/lib/hub/node-graph-workflow'
 
 import type { PrototypeField } from './PrototypeSwitcher.vue'
 import PrototypeSwitcher from './PrototypeSwitcher.vue'
 import { resolvePrototypeState } from './prototype-state'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { locale = 'en', inputs } = defineProps<{
+  locale?: Locale
+  inputs: Readonly<Record<SampleKey, readonly NodeGraphInput[]>>
+}>()
 
-type Key = 'cloud' | 'examples' | 'nodes' | 'faq'
+type Key = 'workflow' | 'cloud' | 'examples' | 'nodes' | 'faq'
 const fields: readonly PrototypeField<Key>[] = [
+  {
+    key: 'workflow',
+    label: 'Workflow',
+    options: [
+      { value: 'turnaround', label: 'Character turnaround' },
+      { value: 'fasth3', label: 'FastH3 image to video' }
+    ]
+  },
   {
     key: 'cloud',
     label: 'Availability',
@@ -34,7 +47,7 @@ const fields: readonly PrototypeField<Key>[] = [
     key: 'nodes',
     label: 'Custom nodes',
     options: [
-      { value: 'yes', label: 'Custom nodes' },
+      { value: 'yes', label: 'Needs custom nodes' },
       { value: 'no', label: 'Core nodes only' }
     ]
   },
@@ -48,6 +61,7 @@ const fields: readonly PrototypeField<Key>[] = [
   }
 ]
 const defaults: Record<Key, string> = {
+  workflow: 'turnaround',
   cloud: 'yes',
   examples: '3',
   nodes: 'yes',
@@ -90,20 +104,23 @@ watch(state, (value) => {
   writeSaved(value)
 })
 
-const workflow = computed(() => ({
-  ...nodeGraphWorkflowSample,
-  examples: nodeGraphWorkflowSample.examples.slice(
-    0,
-    Number(state.value.examples)
-  ),
-  customNodes:
-    state.value.nodes === 'yes' ? nodeGraphWorkflowSample.customNodes : [],
-  faq: state.value.faq === 'yes' ? nodeGraphWorkflowSample.faq : []
-}))
+const workflow = computed(() => {
+  const key: SampleKey =
+    state.value.workflow === 'fasth3' ? 'fasth3' : 'turnaround'
+  const sample = nodeGraphSamples[key]
+  return {
+    ...sample,
+    inputs: inputs[key],
+    examples: sample.examples.slice(0, Number(state.value.examples)),
+    customNodes: state.value.nodes === 'yes' ? sample.customNodes : [],
+    faq: state.value.faq === 'yes' ? sample.faq : []
+  }
+})
 </script>
 
 <template>
   <WorkflowNodeGraphPage
+    :key="workflow.slug"
     :workflow="workflow"
     :locale="locale"
     :cloud-available="state.cloud === 'yes'"

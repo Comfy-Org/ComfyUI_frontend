@@ -5,9 +5,14 @@ import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
 import { nodeGraphWorkflowSample } from '@/lib/hub/node-graph-workflow'
 import WorkflowNodeGraphPage from './WorkflowNodeGraphPage.vue'
 
+const workflow = {
+  ...nodeGraphWorkflowSample,
+  inputs: [{ media: 'image', title: 'Character image' }, { media: 'video' }]
+} as const
+
 function renderPage(props: { cloudAvailable?: boolean } = {}) {
   return render(WorkflowNodeGraphPage, {
-    props: { workflow: nodeGraphWorkflowSample, ...props },
+    props: { workflow, ...props },
     global: { stubs: { WorkflowGraph: true } }
   })
 }
@@ -33,14 +38,14 @@ describe('WorkflowNodeGraphPage', () => {
     expect(cloud.getAttribute('target')).toBe('_blank')
   })
 
-  it('leads with Try in Cloud and keeps Download as the secondary action', () => {
+  it('orders the header actions like a runnable workflow page', () => {
     renderPage()
 
     const [first, second] = within(
       screen.getByTestId('workflow-actions')
     ).getAllByRole('link')
-    expect(first).toBe(screen.getByTestId('node-graph-try-cloud'))
-    expect(second).toBe(screen.getByTestId('node-graph-download'))
+    expect(first).toBe(screen.getByTestId('node-graph-download'))
+    expect(second).toBe(screen.getByTestId('node-graph-try-cloud'))
   })
 
   it('offers only Download when the workflow cannot open in Cloud', () => {
@@ -70,10 +75,11 @@ describe('WorkflowNodeGraphPage', () => {
 
     const about = screen.getByTestId('node-graph-about')
     expect(about.textContent).toContain(nodeGraphWorkflowSample.description[0])
-    for (const input of nodeGraphWorkflowSample.inputs)
-      expect(screen.getByTestId('node-graph-inputs').textContent).toContain(
-        input
-      )
+    expect(
+      within(screen.getByTestId('node-graph-inputs'))
+        .getAllByRole('listitem')
+        .map((item) => item.textContent.trim())
+    ).toEqual(['Character image', 'Video'])
     const [sample] = nodeGraphWorkflowSample.examples
     expect(
       within(screen.getByTestId('node-graph-output'))
