@@ -405,6 +405,20 @@ describe('native CONTENT presentation', () => {
     })
     expect(view).toMatchObject({ thumbnail: { kind: 'image' } })
   })
+  it('presents an exact still as an image even when the old card was a video', () => {
+    const view = catalogPresentation({
+      ...record,
+      data: {
+        ...record.data,
+        website_media: { '$.static_thumb': '/catalog-media/still/frame' },
+        website_media_types: { '$.static_thumb': 'image/webp' },
+        compatibility: { website: { thumbnailKind: 'video' } }
+      }
+    })
+    expect(view).toMatchObject({
+      thumbnail: { url: '/catalog-media/still/frame', kind: 'image' }
+    })
+  })
   it('preserves explicit download-only and stored script facts only in detail data', () => {
     const view = catalogPresentation({
       ...record,
