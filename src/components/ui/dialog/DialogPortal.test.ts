@@ -50,6 +50,35 @@ describe('DialogPortal', () => {
     expect(await screen.findByRole('dialog', { name: 'Second' })).toBeVisible()
   })
 
+  it('keeps a closing dialog mounted until its exit animation ends', async () => {
+    const open = ref(true)
+    render({
+      components: { Dialog, DialogContent, DialogPortal, DialogTitle },
+      setup: () => ({ open }),
+      template: `
+        <component is="style">
+          [data-state=open] { animation-name: enter }
+          [data-state=closed] { animation-name: exit }
+        </component>
+        <Dialog v-model:open="open">
+          <DialogPortal>
+            <DialogContent :aria-describedby="undefined">
+              <DialogTitle>Closing</DialogTitle>
+            </DialogContent>
+          </DialogPortal>
+        </Dialog>
+      `
+    })
+    const dialog = await screen.findByRole('dialog', { name: 'Closing' })
+    open.value = false
+    await waitFor(() => expect(dialog).toHaveAttribute('data-state', 'closed'))
+    expect(dialog).toBeInTheDocument()
+    dialog.dispatchEvent(
+      new AnimationEvent('animationend', { animationName: 'exit' })
+    )
+    await waitFor(() => expect(dialog).not.toBeInTheDocument())
+  })
+
   it.for([false, true])(
     'forwards the target with disabled=%s',
     async (disabled) => {
