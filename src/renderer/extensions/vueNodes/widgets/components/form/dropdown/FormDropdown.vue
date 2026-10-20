@@ -5,11 +5,14 @@ import {
   unrefElement,
   useEventListener
 } from '@vueuse/core'
-import Popover from '@/components/common/ImperativePopover.vue'
+import { PopoverAnchor } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 
@@ -109,7 +112,6 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toast = useToast()
-const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
 const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
@@ -193,12 +195,9 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
 }
 
-const toggleDropdown = (event: Event) => {
+const toggleDropdown = () => {
   if (disabled) return
-  if (popoverRef.value && triggerAnchorRef.value) {
-    popoverRef.value.toggle?.(event, triggerAnchorRef.value)
-    isOpen.value = !isOpen.value
-  }
+  isOpen.value = !isOpen.value
 }
 
 function focusTrigger() {
@@ -206,10 +205,7 @@ function focusTrigger() {
 }
 
 const closeDropdown = ({ restoreFocus = false } = {}) => {
-  if (popoverRef.value) {
-    popoverRef.value.hide?.()
-    isOpen.value = false
-  }
+  isOpen.value = false
 
   if (restoreFocus) focusTrigger()
 }
@@ -238,6 +234,8 @@ function isInsideDropdownPanel(target: EventTarget): boolean {
 }
 
 useDismissOnCanvasGesture(isOpen, () => closeDropdown())
+
+usePopoverViewportDismiss(isOpen, triggerAnchorRef)
 
 function handleFileChange(event: Event) {
   if (disabled) return
@@ -334,42 +332,45 @@ function showPicker() {
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
-    <Popover
-      ref="popoverRef"
-      :dismissable="false"
-      align="start"
-      content-class="border-none bg-transparent p-0 pt-2"
-      @hide="isOpen = false"
-    >
-      <FormDropdownMenu
-        ref="menuRef"
-        v-model:filter-selected="filterSelected"
-        v-model:layout-mode="layoutMode"
-        v-model:sort-selected="sortSelected"
-        v-model:search-query="searchQuery"
-        v-model:ownership-selected="ownershipSelected"
-        v-model:base-model-selected="baseModelSelected"
-        :uploadable
-        :filter-options
-        :sort-options
-        :show-ownership-filter
-        :ownership-options
-        :show-base-model-filter
-        :base-model-options
-        :disabled
-        :items="sortedItems"
-        :candidate-index
-        :candidate-label
-        :is-selected="internalIsSelected"
-        :max-selectable
-        :loading-more
-        :on-load-more
-        :can-load-more
-        @close="closeDropdown"
-        @search-enter="handleSearchEnter"
-        @item-click="handleSelection"
-        @show-picker="showPicker"
-      />
+    <Popover v-model:open="isOpen">
+      <PopoverAnchor as="template" :reference="triggerAnchorRef ?? undefined" />
+      <PopoverContent
+        align="start"
+        :collision-padding="8"
+        class="pointer-events-auto max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-none bg-transparent p-0 pt-2 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+        @interact-outside.prevent
+        @close-auto-focus.prevent="focusTrigger"
+      >
+        <FormDropdownMenu
+          ref="menuRef"
+          v-model:filter-selected="filterSelected"
+          v-model:layout-mode="layoutMode"
+          v-model:sort-selected="sortSelected"
+          v-model:search-query="searchQuery"
+          v-model:ownership-selected="ownershipSelected"
+          v-model:base-model-selected="baseModelSelected"
+          :uploadable
+          :filter-options
+          :sort-options
+          :show-ownership-filter
+          :ownership-options
+          :show-base-model-filter
+          :base-model-options
+          :disabled
+          :items="sortedItems"
+          :candidate-index
+          :candidate-label
+          :is-selected="internalIsSelected"
+          :max-selectable
+          :loading-more
+          :on-load-more
+          :can-load-more
+          @close="closeDropdown"
+          @search-enter="handleSearchEnter"
+          @item-click="handleSelection"
+          @show-picker="showPicker"
+        />
+      </PopoverContent>
     </Popover>
   </div>
 </template>

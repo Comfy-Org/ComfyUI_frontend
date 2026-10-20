@@ -1,47 +1,61 @@
 <template>
   <div>
-    <Button
-      :tooltip="isDisabled ? $t('manager.enablePackToChangeVersion') : ''"
-      variant="textonly"
-      size="unset"
-      :class="
-        cn(
-          'gap-1 rounded-2xl py-1 text-xs font-normal',
-          fill && 'bg-muted px-1.5',
-          isDisabled && 'cursor-not-allowed opacity-60'
-        )
-      "
-      :aria-haspopup="!isDisabled"
-      :aria-disabled="isDisabled"
-      @click="!isDisabled && toggleVersionSelector($event)"
+    <Popover
+      :open="isVersionSelectorOpen"
+      @update:open="isVersionSelectorOpen = $event && !isDisabled"
     >
-      <i
-        v-if="isUpdateAvailable"
-        class="pi pi-arrow-circle-up text-xs text-blue-600"
-      />
-      <span>{{ installedVersion }}</span>
-      <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
-    </Button>
-
-    <Popover ref="popoverRef" align="start" content-class="p-0">
-      <PackVersionSelectorPopover
-        :installed-version="installedVersion"
-        :node-pack="nodePack"
-        @cancel="closeVersionSelector"
-        @submit="closeVersionSelector"
-      />
+      <PopoverTrigger as-child>
+        <Button
+          ref="versionAnchor"
+          :tooltip="isDisabled ? $t('manager.enablePackToChangeVersion') : ''"
+          variant="textonly"
+          size="unset"
+          :class="
+            cn(
+              'gap-1 rounded-2xl py-1 text-xs font-normal',
+              fill && 'bg-muted px-1.5',
+              isDisabled && 'cursor-not-allowed opacity-60'
+            )
+          "
+          :aria-haspopup="!isDisabled"
+          :aria-disabled="isDisabled"
+        >
+          <i
+            v-if="isUpdateAvailable"
+            class="pi pi-arrow-circle-up text-xs text-blue-600"
+          />
+          <span>{{ installedVersion }}</span>
+          <i v-if="!isDisabled" class="pi pi-chevron-right text-2xs" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        :collision-padding="8"
+        class="w-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none"
+      >
+        <PackVersionSelectorPopover
+          :installed-version="installedVersion"
+          :node-pack="nodePack"
+          @cancel="closeVersionSelector"
+          @submit="closeVersionSelector"
+        />
+      </PopoverContent>
     </Popover>
   </div>
 </template>
 
 <script setup lang="ts">
 import { valid as validSemver } from 'semver'
-import { computed, ref, watch } from 'vue'
+import { unrefElement } from '@vueuse/core'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Popover from '@/components/common/ImperativePopover.vue'
+import { PopoverTrigger } from 'reka-ui'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
 import type { components } from '@/types/comfyRegistryTypes'
 import PackVersionSelectorPopover from '@/workbench/extensions/manager/components/manager/PackVersionSelectorPopover.vue'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
@@ -60,7 +74,13 @@ const {
 }>()
 
 const { isUpdateAvailable } = usePackUpdateStatus(() => nodePack)
-const popoverRef = ref()
+const isVersionSelectorOpen = ref(false)
+const versionAnchor =
+  useTemplateRef<InstanceType<typeof Button>>('versionAnchor')
+
+usePopoverViewportDismiss(isVersionSelectorOpen, () =>
+  unrefElement(versionAnchor)
+)
 
 const managerStore = useComfyManagerStore()
 
@@ -82,15 +102,10 @@ const installedVersion = computed(() => {
     : version.slice(0, TRUNCATED_HASH_LENGTH)
 })
 
-const toggleVersionSelector = (event: Event) => {
-  popoverRef.value.toggle(event)
-}
-
 const closeVersionSelector = () => {
-  popoverRef.value.hide()
+  isVersionSelectorOpen.value = false
 }
 
-// If the card is unselected, automatically close the version selector popover
 watch(
   () => isSelected,
   (isSelected, wasSelected) => {

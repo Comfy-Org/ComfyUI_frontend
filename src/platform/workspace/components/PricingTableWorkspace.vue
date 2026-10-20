@@ -161,12 +161,37 @@
                     <i
                       class="pi pi-question-circle text-xs group-hover:text-foreground"
                     />
-                    <span
-                      class="cursor-pointer text-sm font-normal group-hover:text-foreground"
-                      @click="togglePopover"
+                    <Popover
+                      :show-arrow="false"
+                      align="start"
+                      :side-offset="4"
+                      :collision-padding="8"
+                      class="max-h-(--reka-popover-content-available-height) max-w-sm overflow-auto p-4 shadow-lg data-[state=open]:animate-none"
                     >
-                      {{ t('subscription.videoEstimateHelp') }}
-                    </span>
+                      <template #button>
+                        <button
+                          class="cursor-pointer border-0 bg-transparent p-0 text-sm font-normal group-hover:text-foreground"
+                        >
+                          {{ t('subscription.videoEstimateHelp') }}
+                        </button>
+                      </template>
+                      <div class="flex flex-col gap-2">
+                        <p class="text-sm/normal text-foreground">
+                          {{ t('subscription.videoEstimateExplanation') }}
+                        </p>
+                        <a
+                          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="flex gap-1 text-sm text-primary no-underline hover:text-primary/80"
+                        >
+                          <span class="underline">{{
+                            t('subscription.videoEstimateTryTemplate')
+                          }}</span>
+                          <span class="no-underline">→</span>
+                        </a>
+                      </div>
+                    </Popover>
                   </div>
                 </div>
                 <span class="text-sm/normal font-bold">
@@ -199,25 +224,6 @@
       </div>
     </div>
 
-    <!-- Video Estimate Help Popover -->
-    <Popover ref="popover" align="start" content-class="max-w-sm p-4">
-      <div class="flex flex-col gap-2">
-        <p class="text-sm/normal text-foreground">
-          {{ t('subscription.videoEstimateExplanation') }}
-        </p>
-        <a
-          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="flex gap-1 text-sm text-primary no-underline hover:text-primary/80"
-        >
-          <span class="underline">
-            {{ t('subscription.videoEstimateTryTemplate') }}
-          </span>
-          <span class="no-underline">→</span>
-        </a>
-      </div>
-    </Popover>
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
       <p class="m-0 text-sm text-muted-foreground">
@@ -250,7 +256,7 @@
 import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
 import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
-import Popover from '@/components/common/ImperativePopover.vue'
+import Popover from '@/components/ui/Popover.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -352,7 +358,6 @@ const {
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
-const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
 const isYearly = computed(() => currentBillingCycle.value === 'yearly')
@@ -409,10 +414,6 @@ const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
     currentTierKey.value === tierKey &&
     isYearlySubscription.value === selectedIsYearly
   )
-}
-
-const togglePopover = (event: Event) => {
-  popover.value.toggle(event)
 }
 
 const getButtonLabel = (tier: PricingTierConfig): string => {

@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -48,6 +48,32 @@ async function openMenu() {
 }
 
 describe('CanvasModeSelector', () => {
+  it.for([
+    { event: 'resize', target: window },
+    { event: 'scroll', target: document }
+  ])(
+    'dismisses on viewport $event but not menu scrolling',
+    async ({ event, target }) => {
+      await openMenu()
+      await fireEvent.scroll(screen.getByRole('menu'))
+      expect(screen.getByRole('menu')).toBeInTheDocument()
+
+      await fireEvent(target, new Event(event))
+      expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    }
+  )
+
+  it('focuses the selected mode and restores trigger focus after choosing another', async () => {
+    const { user } = await openMenu()
+    expect(screen.getByRole('menuitemradio', { name: 'Select' })).toHaveFocus()
+
+    await user.click(screen.getByRole('menuitemradio', { name: 'Hand' }))
+
+    expect(useCommandStore().execute).toHaveBeenCalledWith('Comfy.Canvas.Lock')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Canvas Mode' })).toHaveFocus()
+  })
+
   it('should render menu with menuitemradio roles and aria-checked', async () => {
     await openMenu()
 

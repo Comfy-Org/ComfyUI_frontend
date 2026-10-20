@@ -1,4 +1,10 @@
-import { render, screen, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
@@ -123,6 +129,23 @@ async function openPopover(user: TestUser, triggerName: string) {
 }
 
 describe('FormDropdownMenuActions', () => {
+  it.for(
+    ['Sort by', 'Ownership', 'Base model'].flatMap((triggerName) =>
+      ['resize', 'scroll'].map((type) => ({ triggerName, type }))
+    )
+  )(
+    'dismisses $triggerName on viewport $type',
+    async ({ triggerName, type }) => {
+      const { user } = renderMenu({
+        showOwnershipFilter: true,
+        showBaseModelFilter: true
+      })
+      await openPopover(user, triggerName)
+      await fireEvent(type === 'scroll' ? document : window, new Event(type))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    }
+  )
+
   describe('Search', () => {
     it('binds search input to v-model on initial render', () => {
       renderMenu({ searchQuery: 'seed' })
@@ -157,6 +180,15 @@ describe('FormDropdownMenuActions', () => {
   })
 
   describe('Sort popover', () => {
+    it('returns focus to the trigger after keyboard dismissal', async () => {
+      const { user } = renderMenu()
+      const trigger = screen.getByRole('button', { name: 'Sort by' })
+      await openPopover(user, 'Sort by')
+      await user.keyboard('{Escape}')
+      await waitFor(() => expect(trigger).toHaveFocus())
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
     it('is closed by default', () => {
       renderMenu()
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
