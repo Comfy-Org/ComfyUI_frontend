@@ -88,21 +88,27 @@ const isThisDoc = (expression: ts.Expression): boolean => {
 
 const Y_APPLY_UPDATES = new Set(['applyUpdate', 'applyUpdateV2'])
 
+const isYjsImport = (
+  statement: ts.Statement
+): statement is ts.ImportDeclaration =>
+  ts.isImportDeclaration(statement) &&
+  ts.isStringLiteral(statement.moduleSpecifier) &&
+  statement.moduleSpecifier.text === 'yjs'
+
+const namedImports = (
+  statement: ts.ImportDeclaration
+): readonly ts.ImportSpecifier[] => {
+  const bindings = statement.importClause?.namedBindings
+  return bindings && ts.isNamedImports(bindings) ? bindings.elements : []
+}
+
 const yApplyUpdateNames = (source: ts.SourceFile): ReadonlySet<string> => {
   const names = new Set(Y_APPLY_UPDATES)
-  for (const statement of source.statements) {
-    if (
-      !ts.isImportDeclaration(statement) ||
-      !ts.isStringLiteral(statement.moduleSpecifier) ||
-      statement.moduleSpecifier.text !== 'yjs'
-    )
-      continue
-    const bindings = statement.importClause?.namedBindings
-    if (!bindings || !ts.isNamedImports(bindings)) continue
-    for (const element of bindings.elements)
-      if (Y_APPLY_UPDATES.has((element.propertyName ?? element.name).text))
-        names.add(element.name.text)
-  }
+  for (const element of source.statements
+    .filter(isYjsImport)
+    .flatMap(namedImports))
+    if (Y_APPLY_UPDATES.has((element.propertyName ?? element.name).text))
+      names.add(element.name.text)
   return names
 }
 
