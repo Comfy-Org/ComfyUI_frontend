@@ -6,11 +6,13 @@ const literal = (value: string) => JSON.stringify(value)
 
 function curlSnippet(): string {
   return [
-    '# Set COMFY_API_KEY first. Partner nodes read it from extra_data too.',
-    `curl --fail-with-body --request POST '${WORKSHOP_CLOUD_BASE_URL}/api/prompt' \\`,
-    `  --header "X-API-Key: $COMFY_API_KEY" \\`,
-    `  --header 'Content-Type: application/json' \\`,
-    `  --data "$(jq --arg key "$COMFY_API_KEY" '{prompt: ., extra_data: {api_key_comfy_org: $key}}' ${API_GRAPH_FILE})"`
+    '# Bash or zsh. Set COMFY_API_KEY first: it stays out of the command line,',
+    '# and partner nodes read it from extra_data.',
+    `jq '{prompt: ., extra_data: {api_key_comfy_org: env.COMFY_API_KEY}}' ${API_GRAPH_FILE} |`,
+    `  curl --fail-with-body --request POST '${WORKSHOP_CLOUD_BASE_URL}/api/prompt' \\`,
+    `    --header @<(printf 'X-API-Key: %s\\n' "$COMFY_API_KEY") \\`,
+    `    --header 'Content-Type: application/json' \\`,
+    '    --data-binary @-'
   ].join('\n')
 }
 
