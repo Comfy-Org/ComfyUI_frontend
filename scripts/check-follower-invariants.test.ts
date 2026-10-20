@@ -61,6 +61,16 @@ describe('follower invariant guard', () => {
       line: 5
     },
     {
+      name: 'forbidden-typed-text-apply-delta.ts',
+      message: 'must not call applyDelta',
+      line: 4
+    },
+    {
+      name: 'forbidden-element-access-set.ts',
+      message: 'must not call set',
+      line: 5
+    },
+    {
       name: 'forbidden-destructured-doc-set.ts',
       message: 'must not call set',
       line: 6

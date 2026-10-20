@@ -59,7 +59,9 @@ function unwrapped(expression: ts.Expression): ts.Expression {
 function hasYType(type: ts.TypeNode | undefined): boolean {
   return (
     type !== undefined &&
-    /(?:^|\.)Y\.(?:Array|Doc|Map)(?:<|$)/.test(type.getText())
+    /(?:^|\.)Y\.(?:Array|Doc|Map|Text|XmlElement|XmlFragment|XmlText)(?:<|$)/.test(
+      type.getText()
+    )
   )
 }
 
@@ -155,11 +157,18 @@ function isFollowerDocAccess(expression: ts.Expression): boolean {
   return false
 }
 
-function mutationName(call: ts.CallExpression): string | null {
-  return ts.isPropertyAccessExpression(call.expression) &&
-    MUTATING_METHODS.has(call.expression.name.text)
-    ? call.expression.name.text
-    : null
+function calledMember(
+  call: ts.CallExpression
+): { name: string; receiver: ts.Expression } | null {
+  const callee = unwrapped(call.expression)
+  if (ts.isPropertyAccessExpression(callee))
+    return { name: callee.name.text, receiver: callee.expression }
+  if (
+    ts.isElementAccessExpression(callee) &&
+    ts.isStringLiteralLike(callee.argumentExpression)
+  )
+    return { name: callee.argumentExpression.text, receiver: callee.expression }
+  return null
 }
 
 function addViolation(
@@ -379,17 +388,17 @@ function inspectCalls(
           'only FollowerDoc.applyRemoteUpdate may integrate a Yjs update'
         )
 
-      const method = mutationName(node)
+      const member = calledMember(node)
       if (
-        method &&
-        ts.isPropertyAccessExpression(node.expression) &&
-        referencesTrackedDoc(node.expression.expression)
+        member &&
+        MUTATING_METHODS.has(member.name) &&
+        referencesTrackedDoc(member.receiver)
       )
         addViolation(
           violations,
           source,
           node,
-          `follower code must not call ${method} on a shared document value`
+          `follower code must not call ${member.name} on a shared document value`
         )
     }
     ts.forEachChild(node, inspect)
