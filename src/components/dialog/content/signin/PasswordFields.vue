@@ -18,7 +18,7 @@
         :copy="passwordRulesCopy"
         root-class="text-sm"
         list-class="mt-1 space-y-1"
-        unmet-class="text-destructive-background"
+        unmet-class="text-destructive"
       />
       <FieldError v-if="errors.length && !isPasswordFocused" :errors />
     </Field>

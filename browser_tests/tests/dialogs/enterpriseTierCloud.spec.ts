@@ -330,7 +330,7 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     ).toBeVisible()
   })
 
-  test('keeps the pricing deep link available during a capability outage', async ({
+  test('withholds the pricing deep link during a capability outage', async ({
     page
   }) => {
     const workspace = new CloudWorkspaceMockHelper(page)
@@ -338,16 +338,22 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     await page.route('**/api/billing/capabilities', (route) =>
       route.fulfill({ status: 503 })
     )
+    const capabilityResponse = page.waitForResponse(
+      '**/api/billing/capabilities'
+    )
 
     await page.goto(`${APP_URL}/?pricing=team`)
+    await capabilityResponse
+    await page.waitForURL((url) => !url.searchParams.has('pricing'), {
+      timeout: 45_000
+    })
 
     await expect(
       page.getByRole('heading', { name: 'Plans for Team Workspace' })
-    ).toBeVisible({ timeout: 45_000 })
-    await expect(page).not.toHaveURL(/[?&]pricing=/)
+    ).toBeHidden()
   })
 
-  test('keeps inactive credits disabled during a capability outage', async ({
+  test('keeps inactive credits locked during a capability outage', async ({
     page
   }) => {
     const workspace = new CloudWorkspaceMockHelper(page)
@@ -362,9 +368,7 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
 
     const content = await workspace.openPlanAndCreditsSettings()
 
-    await expect(
-      content.getByText('Reactivate your plan to use these credits')
-    ).toBeVisible()
+    await expect(content.getByText('Total credits')).toBeVisible()
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toHaveCount(0)

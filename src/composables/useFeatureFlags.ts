@@ -6,7 +6,6 @@ import { normalizeHostedBillingDestination } from '@/config/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
-  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -288,13 +287,6 @@ export function useFeatureFlags() {
         remoteConfig.value.member_credit_limits_enabled
       )
     },
-    get legacyBillingMigrationEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
-        remoteConfig.value.legacy_billing_migration_enabled,
-        cachedLegacyBillingMigrationEnabled
-      )
-    },
     get billingSdkTopupEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
@@ -314,21 +306,27 @@ export function useFeatureFlags() {
     get billingSdkSubscriptionRailEnabled() {
       return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
     },
+    get unifiedBillingSettingsEnabled() {
+      if (!isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
+        remoteConfig.value.unified_billing_settings
+      )
+    },
+    get autoTopUpEnabled() {
+      if (!isCloud) return false
+
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.AUTO_TOP_UP_ENABLED,
+        remoteConfig.value.auto_top_up_enabled
+      )
+    },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
         ServerFeatureFlag.V1_PAYMENT_RECOVERY,
         remoteConfig.value.v1_payment_recovery,
         cachedV1PaymentRecovery
-      )
-    },
-    get freeTierJobAllowanceEnabled() {
-      const config = remoteConfig.value as typeof remoteConfig.value & {
-        free_tier_job_allowance_enabled?: boolean
-      }
-      return resolveFlag(
-        ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED,
-        config.free_tier_job_allowance_enabled,
-        false
       )
     },
     get signupTurnstileMode() {
@@ -408,15 +406,14 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
-      [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
-        flags.legacyBillingMigrationEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
         flags.billingSdkSubscriptionEnabled,
+      [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
+        flags.unifiedBillingSettingsEnabled,
+      [ServerFeatureFlag.AUTO_TOP_UP_ENABLED]: flags.autoTopUpEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
-      [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
-        flags.freeTierJobAllowanceEnabled,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,
       [ServerFeatureFlag.ONBOARDING_TOUR_ENABLED]: flags.onboardingTourEnabled,

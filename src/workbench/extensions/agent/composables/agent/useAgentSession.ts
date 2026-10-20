@@ -1,5 +1,6 @@
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { useIntervalFn } from '@vueuse/core'
 import { delay, xor } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
@@ -117,8 +118,15 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
+  onAgentEvent?: (event: AgentWsEvent) => void
   onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
+  /**
+   * Re-send the user's credential on an interval while a turn runs, so a long
+   * local turn never outlives its token. Off in the cloud, where fetchApi
+   * authenticates every request.
+   */
+  refreshCredentialDuringTurns?: boolean
   workflow?: {
     /** Resolve fresh versus restored startup before asynchronous hydration. */
     initialize?(hasThread: boolean): void
@@ -374,6 +382,8 @@ function consumeStopPendingAck() {
   return pending
 }
 
+const CREDENTIAL_REFRESH_INTERVAL_MS = 4 * 60 * 1000
+
 function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
   const parsed = zAgentAdmissionError.safeParse(error.body)
@@ -428,8 +438,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rest,
     events,
     onThreadStarted,
+    onAgentEvent,
     onThreadActivated,
     onAskResolved,
+    refreshCredentialDuringTurns = false,
     workflow
   } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
@@ -540,6 +552,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
     'first_open'
   )
+
+  useIntervalFn(() => {
+    if (!refreshCredentialDuringTurns) return
+    if (conversationStore.liveTurns().length === 0) return
+    rest.refreshCredential().catch((error: unknown) =>
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_refreshing_agent_credential',
+        level: 'warning'
+      })
+    )
+  }, CREDENTIAL_REFRESH_INTERVAL_MS)
 
   function nextLocalErrorId(): TurnId {
     return toTurnId(`local-error-${createUuidv4()}`)
@@ -1801,6 +1825,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       handleMalformedEvent(type, raw, parsed.error)
       return
     }
+    onAgentEvent?.(parsed.data)
     handleAgentEvent(parsed.data)
   }
 

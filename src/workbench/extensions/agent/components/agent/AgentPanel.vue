@@ -354,7 +354,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
 <template>
   <section
-    class="@container flex h-full flex-col overflow-hidden bg-base-background text-base-foreground"
+    class="@container flex h-full flex-col overflow-hidden bg-background text-foreground"
   >
     <PanelHeader
       :is-maximized
@@ -394,7 +394,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           variant="muted-textonly"
           size="icon-sm"
           :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0 data-coach-hover:bg-secondary-background-hover"
+          class="size-6 shrink-0 data-coach-hover:bg-accent"
           @click="onOpenHistory"
         >
           <span class="icon-[lucide--history] size-4 shrink-0" />
@@ -421,7 +421,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             type="button"
             variant="muted-textonly"
             size="sm"
-            :disabled="sessionId === null"
             class="min-w-0 justify-start text-left"
             @click="startRename"
           >

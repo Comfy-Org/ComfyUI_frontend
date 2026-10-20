@@ -86,17 +86,12 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    dispatchCustomEvent: vi.fn(),
-    apiURL: vi.fn(() => 'http://localhost:8188'),
-    addEventListener: vi.fn(),
-    addCustomEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    removeCustomEventListener: vi.fn(),
-    getServerFeature: vi.fn(() => false)
-  }
-}))
+vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(api.apiURL).mockReturnValue('http://localhost:8188')
+  vi.mocked(api.getServerFeature).mockReturnValue(false)
+})
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({

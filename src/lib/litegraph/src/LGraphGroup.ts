@@ -17,6 +17,10 @@ import { canvasClass } from './canvas/canvasClassAccess'
 import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import { createMutationView } from './infrastructure/createMutationView'
+import {
+  defineAbsorbingBuffer,
+  defineGuardedCollection
+} from './infrastructure/externalWriteGuards'
 import type {
   ColorOption,
   IColorable,
@@ -124,11 +128,61 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
   })
 
   constructor(title?: string, id?: GroupId) {
-    // TODO: Object instantiation pattern requires too much boilerplate and null checking.  ID should be passed in via constructor.
     this.id = toGroupId(id ?? -1)
     this.title = title || 'Group'
     const { pale_blue } = canvasClass.node_colors
     this.color = pale_blue.groupcolor
+
+    let reported = false
+    function onRefused(key: string, value: unknown) {
+      if (reported) return
+      reported = true
+      console.warn(
+        `[LGraphGroup] rejected ${key} assignment (${typeof value}); kept the existing value`
+      )
+    }
+
+    const writeRect = (coords: number[]) =>
+      this.setBounds(coords[0], coords[1], coords[2], coords[3])
+    defineAbsorbingBuffer(this, 'bounds', 4, writeRect, onRefused)
+    defineAbsorbingBuffer(this, '_bounding', 4, writeRect, onRefused)
+    defineAbsorbingBuffer(
+      this,
+      '_pos',
+      2,
+      (coords) => {
+        this.pos = [coords[0], coords[1]]
+      },
+      onRefused
+    )
+    defineAbsorbingBuffer(
+      this,
+      '_size',
+      2,
+      (coords) => {
+        this.setBounds(this._pos[0], this._pos[1], coords[0], coords[1])
+      },
+      onRefused
+    )
+
+    defineGuardedCollection(
+      this,
+      '_nodes',
+      (value): value is LGraphNode[] =>
+        Array.isArray(value) && value.every((n) => n instanceof LGraphNode),
+      onRefused
+    )
+    defineGuardedCollection(
+      this,
+      '_children',
+      (value): value is Set<Positionable> =>
+        value instanceof Set &&
+        [...value].every(
+          (item: unknown) =>
+            typeof (item as Positionable | undefined)?.move === 'function'
+        ),
+      onRefused
+    )
   }
 
   /** @inheritdoc {@link IColorable.setColorOption} */

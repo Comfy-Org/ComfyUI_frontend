@@ -147,7 +147,7 @@ const advancedLabel = computed(() => {
           ? ''
           : t('rightSidePanel.inputsNoneTooltip')
       "
-      class="border-b border-interface-stroke"
+      class="border-b"
       @update:collapse="setSectionCollapsed(node.id, $event)"
     />
   </TransitionGroup>
@@ -160,7 +160,7 @@ const advancedLabel = computed(() => {
       :label="advancedLabel"
       :widgets
       :show-locate-button="isMultipleNodesSelected"
-      class="border-b border-interface-stroke"
+      class="border-b"
     />
   </template>
 </template>

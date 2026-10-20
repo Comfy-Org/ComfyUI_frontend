@@ -35,8 +35,8 @@ describe('Badge', () => {
       'text-xs'
     )
     expect(screen.getByText('Input')).not.toHaveClass(
-      'bg-secondary-background',
-      'text-base-foreground'
+      'bg-secondary',
+      'text-foreground'
     )
   })
 
