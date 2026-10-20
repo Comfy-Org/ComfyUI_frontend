@@ -1,7 +1,5 @@
-import { render } from '@testing-library/vue'
-import { afterEach, describe, expect, it } from 'vitest'
-
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
 
 import SearchAutocomplete from './SearchAutocomplete.vue'
 
@@ -9,20 +7,13 @@ function findContentElement(): HTMLElement | null {
   return document.querySelector('[data-dismissable-layer]')
 }
 
-let openModal: HTMLElement | undefined
-
-afterEach(() => {
-  if (openModal) {
-    releaseModalLayer(openModal)
-    openModal = undefined
-  }
-})
-
 describe('SearchAutocomplete z-index', () => {
-  it('opens suggestions above a dialog registered with the modal z-index counter', async () => {
-    openModal = document.createElement('div')
-    raiseModalLayer(openModal)
-    const dialogZIndex = Number(openModal.style.zIndex)
+  it('opens suggestions above a dialog already in the document', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
 
     const { rerender, unmount } = render(SearchAutocomplete, {
       container: document.body.appendChild(document.createElement('div')),
@@ -38,7 +29,9 @@ describe('SearchAutocomplete z-index', () => {
 
     const content = findContentElement()
     expect(content).not.toBeNull()
-    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+    expect(dialog.compareDocumentPosition(content!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
 
     unmount()
   })
@@ -59,7 +52,7 @@ describe('SearchAutocomplete z-index', () => {
     const content = findContentElement()
     expect(content).not.toBeNull()
     expect(content!.style.zIndex).toBe('')
-    expect(content!.className).toContain('z-3000')
+    expect(content!.className).toContain('z-overlay')
 
     unmount()
   })

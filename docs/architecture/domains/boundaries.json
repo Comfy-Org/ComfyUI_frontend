@@ -989,8 +989,6 @@
           "src/composables/useCurveEditor.ts",
           "src/composables/useImageQuiet.ts",
           "src/composables/useIntersectionObserver.ts",
-          "src/composables/useModalLiftedZIndex.test.ts",
-          "src/composables/useModalLiftedZIndex.ts",
           "src/composables/usePopoverSizing.ts",
           "src/composables/useRangeEditor.test.ts",
           "src/composables/useRangeEditor.ts",

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import {
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuRoot,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuPortal
 } from 'reka-ui'
 import type { DropdownMenuContentProps } from 'reka-ui'
 
@@ -42,7 +42,7 @@ const emit = defineEmits<{ activate: [item: MenuItemAction] }>()
     <DropdownMenuTrigger as-child>
       <slot name="trigger" :open />
     </DropdownMenuTrigger>
-    <DropdownMenuPortal :to>
+    <DropdownMenuPortal :key="Number(open)" :to>
       <MenuContent
         :align
         :collision-padding

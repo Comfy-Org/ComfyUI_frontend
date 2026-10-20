@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import {
   DialogClose,
   DialogContent,
   DialogOverlay,
-  DialogPortal,
   DialogRoot,
   DialogTitle,
   DialogTrigger
@@ -23,11 +23,11 @@ const { t } = useI18n()
     </DialogTrigger>
     <DialogPortal :to>
       <DialogOverlay
-        class="fixed inset-0 z-30 bg-black/70 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        class="fixed inset-0 z-overlay bg-black/70 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       />
       <DialogContent
         v-bind="$attrs"
-        class="fixed top-[50%] left-[50%] z-1700 max-h-[85vh] w-[90vw] max-w-[450px] -translate-1/2 rounded-2xl border border-border/50 bg-background p-2 shadow-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        class="fixed top-[50%] left-[50%] z-overlay max-h-[85vh] w-[90vw] max-w-[450px] -translate-1/2 rounded-2xl border border-border/50 bg-background p-2 shadow-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div
           v-if="title"

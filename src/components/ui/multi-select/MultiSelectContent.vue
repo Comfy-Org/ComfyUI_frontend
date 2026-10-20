@@ -1,10 +1,10 @@
 <template>
-  <ComboboxPortal>
+  <ComboboxPortal :key="Number(open)">
     <ComboboxContent
       position="popper"
       :side-offset="8"
       align="start"
-      :style="[popoverStyle, contentStyle, liftedContentStyle]"
+      :style="[popoverStyle, contentStyle]"
       :class="cn(selectContentClass, 'flex flex-col')"
       @keydown="onKeydown"
       @focus-outside="preventFocusDismiss"
@@ -108,9 +108,10 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxItemIndicator,
-  ComboboxPortal,
   ComboboxViewport,
-  FocusScope
+  FocusScope,
+  injectComboboxRootContext,
+  ComboboxPortal
 } from 'reka-ui'
 import { computed } from 'vue'
 import type { StyleValue } from 'vue'
@@ -139,8 +140,7 @@ const {
   searchPlaceholder,
   listMaxHeight,
   popoverStyle,
-  contentStyle,
-  liftedContentStyle
+  contentStyle
 } = defineProps<{
   searchLabel?: string
   emptyText: string
@@ -154,8 +154,9 @@ const {
   listMaxHeight: string
   popoverStyle: StyleValue
   contentStyle?: StyleValue
-  liftedContentStyle: StyleValue
 }>()
+
+const { open } = injectComboboxRootContext()
 
 const emit = defineEmits<{
   escape: []
