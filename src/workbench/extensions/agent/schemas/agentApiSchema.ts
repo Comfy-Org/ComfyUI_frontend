@@ -11,6 +11,7 @@ import {
   zAgentPendingAskBase,
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
+  zAgentToolCallData as zGeneratedAgentToolCallData,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zToolCallSummary,
   zWorkflowListResponse
@@ -240,39 +241,15 @@ const zAgentThinkingData = z
   })
   .passthrough()
 
-const zCanvasCorrelationWorkflowId = z
-  .string()
-  .min(1)
-  .max(256)
-  .optional()
-  .catch(undefined)
-const zCanvasCorrelationOpIDs = z
-  .array(z.string().min(1).max(128))
-  .min(1)
-  .max(256)
-  .optional()
-  .catch(undefined)
-const zCanvasCorrelationSeq = z
-  .number()
-  .int()
-  .nonnegative()
-  .optional()
-  .catch(undefined)
-
-const zAgentToolCallData = z
-  .object({
-    tool_call_id: z.string(),
-    tool_name: z.string(),
-    status: z.enum(['running', 'success', 'error']),
+const zAgentToolCallData = zGeneratedAgentToolCallData
+  .extend({
     skill: zSkillName,
     args: z.never().optional(),
-    duration_ms: z.number().optional(),
-    workflow_id: zCanvasCorrelationWorkflowId,
-    op_ids: zCanvasCorrelationOpIDs,
-    doc_seq: zCanvasCorrelationSeq,
-    doc_lineage_seq: zCanvasCorrelationSeq,
-    message_id: z.string(),
-    thread_id: z.string()
+    workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
+    op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
+    doc_seq: zGeneratedAgentToolCallData.shape.doc_seq.catch(undefined),
+    doc_lineage_seq:
+      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined)
   })
   .passthrough()
 
