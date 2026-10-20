@@ -17,7 +17,6 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { toNodeId } from '@/types/nodeId'
@@ -45,13 +44,7 @@ vi.mock(import('@/scripts/app'), () => ({
     ui: { autoQueueEnabled: false, autoQueueMode: 'instant' }
   })
 }))
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({
-    dispatchCustomEvent: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  })
-}))
+vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 class TestSource extends LGraphNode {
@@ -272,6 +265,8 @@ describe('LiveGraphApplier with the real change tracker', () => {
       boundRootGraphId: () => toRootGraphId(graph.id),
       docInputNames: () => [],
       docPromotedWidgets: () => null,
+      mayWritePromotedHost: () => true,
+      onWidgetWriteRefused: () => {},
       enqueue
     })
     onTestFinished(() => minter.detach())
@@ -315,5 +310,64 @@ describe('LiveGraphApplier with the real change tracker', () => {
         }
       ])
     )
+  })
+
+  it('builds a DynamicGroup node from the catch-up frame without outbound echo and reloads to the same graph', async () => {
+    const graph = new LGraph()
+    appState.rootGraph = graph
+    onTestFinished(() => {
+      appState.rootGraph = undefined
+    })
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'DynamicGroupTest',
+            pos: [0, 0],
+            size: [200, 100],
+            widgets_values: ['head', 2, 0.5, 0.7, 'tail']
+          }
+        ],
+        links: []
+      },
+      CATALOG
+    )
+    const enqueue = vi.fn()
+    const minter = attachDocOpMinter({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(graph.id),
+      docInputNames: () => [],
+      docPromotedWidgets: () => null,
+      mayWritePromotedHost: () => true,
+      onWidgetWriteRefused: () => {},
+      enqueue
+    })
+    onTestFinished(() => minter.detach())
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    expect(node.serialize().widgets_values).toEqual([
+      'head',
+      2,
+      0.5,
+      0.7,
+      'tail'
+    ])
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+    expect(enqueue).not.toHaveBeenCalled()
+
+    const saved = await workflowJson(graph)
+    const reloaded = new LGraph()
+    reloaded.configure(structuredClone(graph.serialize()))
+    expect(await workflowJson(reloaded)).toEqual({
+      ...saved,
+      id: expect.any(String)
+    })
   })
 })

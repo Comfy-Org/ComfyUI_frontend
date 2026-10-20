@@ -13,12 +13,14 @@ import type {
   AgentConsentOfferExitedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
+  AgentCreditTransitionNoticeMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
+  AgentGraphProjectionMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
@@ -92,7 +94,9 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
-  WorkspaceInviteMetadata
+  WorkspaceInviteMetadata,
+  WorkspaceScopeMismatchMetadata,
+  WorkspaceTelemetryContext
 } from './types'
 
 /**
@@ -231,6 +235,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBillingEvent?.(event))
   }
 
+  // fallow-ignore-next-line unused-class-member
+  setWorkspaceContext(context: WorkspaceTelemetryContext | undefined): void {
+    this.dispatch((provider) => provider.setWorkspaceContext?.(context))
+  }
+
+  // fallow-ignore-next-line unused-class-member
+  trackWorkspaceScopeMismatch(metadata: WorkspaceScopeMismatchMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackWorkspaceScopeMismatch?.(metadata)
+    )
+  }
+
   trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
     this.dispatch((provider) => provider.trackCheckoutJourneyEvent?.(event))
   }
@@ -242,6 +258,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.dispatch((provider) =>
       provider.trackAgentPaywallCtaClicked?.(metadata)
+    )
+  }
+
+  trackAgentCreditTransitionNotice(
+    metadata: AgentCreditTransitionNoticeMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentCreditTransitionNotice?.(metadata)
     )
   }
 
@@ -485,6 +509,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  trackAgentGraphProjection(metadata: AgentGraphProjectionMetadata): void {
+    this.dispatch((provider) => provider.trackAgentGraphProjection?.(metadata))
   }
 
   // fallow-ignore-next-line unused-class-member

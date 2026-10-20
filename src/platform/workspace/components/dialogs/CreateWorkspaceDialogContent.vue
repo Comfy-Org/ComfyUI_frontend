@@ -1,36 +1,21 @@
 <template>
-  <div
-    class="flex w-full max-w-lg flex-col rounded-2xl border border-border-default bg-base-background"
-  >
-    <!-- Header -->
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{ $t('workspacePanel.createWorkspaceDialog.title') }}
-      </h2>
-      <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        @click="onCancel"
-      >
-        <i class="pi pi-times size-4" />
-      </button>
-    </div>
+  <DialogPanel class="w-full max-w-lg" @close="onCancel">
+    <template #title>
+      {{ $t('workspacePanel.createWorkspaceDialog.title') }}
+    </template>
 
-    <!-- Body -->
     <div class="flex flex-col gap-4 p-4">
       <p class="m-0 text-sm text-muted-foreground">
         {{ $t('workspacePanel.createWorkspaceDialog.message') }}
       </p>
-      <div class="flex flex-col gap-2">
-        <label class="text-sm text-muted-foreground">
+      <div class="flex flex-col gap-2 text-sm">
+        <label class="text-muted-foreground">
           {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
         </label>
         <input
           v-model="workspaceName"
           type="text"
-          class="h-10 w-full rounded-lg border-none bg-secondary-background px-4 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border-default focus:outline-none"
+          class="h-10 w-full rounded-lg border-none bg-secondary px-4 placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
           :placeholder="
             $t('workspacePanel.createWorkspaceDialog.namePlaceholder')
           "
@@ -39,8 +24,7 @@
       </div>
     </div>
 
-    <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 p-4">
+    <template #footer>
       <Button variant="muted-textonly" @click="onCancel">
         {{ $t('g.cancel') }}
       </Button>
@@ -53,11 +37,12 @@
       >
         {{ $t('workspacePanel.createWorkspaceDialog.create') }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </DialogPanel>
 </template>
 
 <script setup lang="ts">
+import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

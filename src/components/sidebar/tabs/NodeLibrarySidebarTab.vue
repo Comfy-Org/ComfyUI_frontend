@@ -141,7 +141,7 @@
           <div
             v-show="nodeBookmarkStore.bookmarks.length > 0"
             role="separator"
-            class="m-2 border-0 border-t border-dashed border-interface-stroke"
+            class="m-2 border-0 border-t border-dashed"
           />
           <TreeExplorer
             v-model:expanded-keys="expandedKeys"
@@ -269,7 +269,7 @@ import {
 } from '@/services/nodeOrganizationService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useNodeHelpStore } from '@/stores/workspace/nodeHelpStore'

@@ -64,17 +64,17 @@ const forwarded = useForwardPropsEmits(
         :style="contentStyle"
         :class="
           cn(
-            'z-1700 max-w-96 rounded-md border border-border-default bg-base-background px-3 py-2 text-xs/tight whitespace-pre-line text-base-foreground shadow-interface',
+            'z-1700 max-w-96 rounded-md border bg-background px-3 py-2 text-xs/tight whitespace-pre-line text-foreground shadow-md',
             className
           )
         "
         @escape-key-down="rootContext.onClose()"
       >
-        <div ref="text" role="tooltip"><slot /></div>
+        <div ref="text" data-testid="tooltip-text"><slot /></div>
         <TooltipArrow
           :width="10"
           :height="5"
-          class="-mt-px fill-base-background stroke-border-default"
+          class="-mt-px fill-background stroke-border"
         />
       </TooltipContent>
     </div>

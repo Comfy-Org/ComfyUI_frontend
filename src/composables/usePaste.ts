@@ -12,12 +12,12 @@ import { useApp } from '@/scripts/appInstance'
 import type { ComfyApp } from '@/types/comfy'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
-  createNode,
   isAudioNode,
   isImageNode,
   isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
+import { createNode } from '@/utils/createNode'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {

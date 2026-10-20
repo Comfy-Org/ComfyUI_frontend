@@ -40,6 +40,72 @@ function isRejectedWidgetWrite(
   )
 }
 
+function nodeFieldTarget(nodeId: string | number, field: string): string {
+  const t = i18n.global.t
+  const plain = { escapeParameter: false }
+  return t(
+    'agent.editRejected.targets.nodeField',
+    { id: String(nodeId), field },
+    plain
+  )
+}
+
+function rejectedTarget(op: Op | undefined): string | undefined {
+  const t = i18n.global.t
+  const plain = { escapeParameter: false }
+  switch (op?.op) {
+    case 'set_widget':
+      return nodeFieldTarget(op.node_id, op.widget)
+    case 'add_node':
+      return op.class_type
+    case 'set_node_field':
+      return nodeFieldTarget(op.node_id, op.field)
+    case 'delete_node':
+      return t(
+        'agent.editRejected.targets.node',
+        { id: String(op.node_id) },
+        plain
+      )
+    case 'clear':
+      return t('agent.editRejected.targets.clear')
+    case 'connect':
+    case 'disconnect':
+      return t(
+        'agent.editRejected.targets.link',
+        { id: String(op.link_id) },
+        plain
+      )
+    default:
+      return undefined
+  }
+}
+
+function withReason(
+  notice: string,
+  target: string | undefined,
+  code: string
+): string {
+  const plain = { escapeParameter: false }
+  if (target && code && code !== 'unspecified')
+    return i18n.global.t(
+      'agent.editRejected.withReason',
+      { notice, target, code },
+      plain
+    )
+  if (target)
+    return i18n.global.t(
+      'agent.editRejected.withReasonTarget',
+      { notice, target },
+      plain
+    )
+  if (!code || code === 'unspecified') return notice
+  return i18n.global.t(
+    'agent.editRejected.withReasonCode',
+    { notice, code },
+    plain
+  )
+}
+
 /**
  * Schema §4 aborts the REMAINDER of a batch, so a rejected result can still
  * carry an applied prefix — which is what `partial` distinguishes.
@@ -55,22 +121,11 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
     : 'agent.editRejected.generic'
 }
 
-/**
- * Tells the human which of their edits the host refused. One follower owns one
- * notifier. Actual guarantees, since two of them are narrower than they look:
- *
- * - A refused batch may still have applied a prefix (schema §4 aborts the
- *   remainder, not the batch), so this reports the REJECTED operations and not
- *   that nothing reached the document.
- * - Toasts are throttled per RENDERED MESSAGE, not per code, so two rejections
- *   that render the same copy — every generic one does — collapse to one toast
- *   for `NOTICE_LIFE_MS`. Only a differently-worded rejection speaks inside
- *   that window.
- * - Telemetry records each distinct CODE once for this notifier's lifetime,
- *   even when its toast was collapsed. It does not count rejection events.
- */
 export function createRejectedOpNotifier() {
-  const throttledToasts = new Map<string, ThrottledFunction<() => void>>()
+  const throttledToasts = new Map<
+    string,
+    ThrottledFunction<(detail: string) => void>
+  >()
   const reportedCodes = new Set<string>()
 
   function reportOnce(
@@ -94,11 +149,11 @@ export function createRejectedOpNotifier() {
     )
   }
 
-  function throttledToast(detail: string): ThrottledFunction<() => void> {
-    const existing = throttledToasts.get(detail)
-    if (existing) return existing
+  function showThrottled(kind: string, description: string): void {
+    const existing = throttledToasts.get(kind)
+    if (existing) return existing(description)
     const created = throttle(
-      () => {
+      (detail: string) => {
         useToast().error(i18n.global.t('g.error'), {
           description: detail,
           duration: NOTICE_LIFE_MS
@@ -107,8 +162,8 @@ export function createRejectedOpNotifier() {
       NOTICE_LIFE_MS,
       { edges: ['leading'] }
     )
-    throttledToasts.set(detail, created)
-    return created
+    throttledToasts.set(kind, created)
+    created(description)
   }
 
   return {
@@ -116,13 +171,20 @@ export function createRejectedOpNotifier() {
       if (result.ok) return
       const { failed } = result
       const widgetWrite = isRejectedWidgetWrite(ops, failed)
-      // A batch-level refusal (`overloaded`, `catalog_mismatch`, …) carries no
-      // `failure` at all; without this every one collapses to 'unspecified' and
-      // the first suppresses the telemetry report for every later kind.
       const code = failed?.code ?? result.code ?? 'unspecified'
       reportOnce(code, widgetWrite, result, failed)
       const partial = result.applied.length > 0 && failed !== undefined
-      throttledToast(i18n.global.t(noticeKey(widgetWrite, partial)))()
+      const kind = noticeKey(widgetWrite, partial)
+      const notice = i18n.global.t(kind)
+      const target = failed && rejectedTarget(rejectedOp(ops, failed))
+      showThrottled(kind, withReason(notice, target, code))
+    },
+    notifyWidgetWriteRefused(nodeId: string | number, widgetName: string) {
+      const notice = i18n.global.t('agent.editRejected.widgetWrite')
+      showThrottled(
+        'agent.editRejected.widgetWrite',
+        withReason(notice, nodeFieldTarget(nodeId, widgetName), 'unspecified')
+      )
     },
     cancel() {
       for (const throttled of throttledToasts.values()) throttled.cancel()

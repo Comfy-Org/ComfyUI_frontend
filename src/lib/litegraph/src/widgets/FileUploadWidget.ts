@@ -1,4 +1,4 @@
-import type { IFileUploadWidget } from '../types/widgets'
+import type { IFileUploadWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

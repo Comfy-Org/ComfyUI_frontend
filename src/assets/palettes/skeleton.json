@@ -1,0 +1,34 @@
+{
+  "id": "skeleton",
+  "name": "Skeleton",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/skeleton-bones.png",
+      "CLEAR_BACKGROUND_COLOR": "#0d0e11",
+      "LINK_COLOR": "#c9c0aa",
+      "CONNECTING_LINK_COLOR": "#ece6d6"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#0d0e11",
+      "foreground": "#ece6d6",
+      "card": "#17181c",
+      "primary": "#5d6b85",
+      "secondary": "#1c1d22",
+      "muted": "#33343b",
+      "muted-foreground": "#9d978a",
+      "accent": "#25262c",
+      "destructive": "#a8323a",
+      "border": "#3b3c44",
+      "input": "#121317",
+      "ring": "#c9c0aa",
+      "node": "#131418",
+      "node-foreground": "#c4bdab",
+      "node-header": "#23242a",
+      "node-border": "#45464f",
+      "warning": "#d9a93a",
+      "shadow-color": "rgb(0 0 0 / 0.55)"
+    }
+  }
+}

@@ -1,7 +1,7 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index data-reka-nested-dialog-overlay />
+      <DialogOverlay v-reka-z-index />
       <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
@@ -30,11 +30,11 @@
               v-if="errors.name"
               :id="`${nameId}-help`"
               role="alert"
-              class="text-destructive-background"
+              class="text-destructive"
             >
               {{ errors.name }}
             </small>
-            <small v-else :id="`${nameId}-help`" class="text-muted">
+            <small v-else :id="`${nameId}-help`" class="text-muted-foreground">
               {{ $t('skillPacks.nameHint') }}
             </small>
           </div>
@@ -55,11 +55,15 @@
               v-if="errors.description"
               :id="`${descriptionId}-help`"
               role="alert"
-              class="text-destructive-background"
+              class="text-destructive"
             >
               {{ errors.description }}
             </small>
-            <small v-else :id="`${descriptionId}-help`" class="text-muted">
+            <small
+              v-else
+              :id="`${descriptionId}-help`"
+              class="text-muted-foreground"
+            >
               {{ $t('skillPacks.triggerLineHint') }}
             </small>
           </div>
@@ -81,26 +85,29 @@
               v-if="errors.body"
               :id="`${bodyId}-help`"
               role="alert"
-              class="text-destructive-background"
+              class="text-destructive"
             >
               {{ errors.body }}
             </small>
-            <small v-else :id="`${bodyId}-help`" class="text-muted">{{
-              bodySizeLabel
-            }}</small>
+            <small
+              v-else
+              :id="`${bodyId}-help`"
+              class="text-muted-foreground"
+              >{{ bodySizeLabel }}</small
+            >
           </div>
 
           <div
             v-if="budgetError"
             data-testid="skill-pack-budget-error"
             role="alert"
-            class="flex flex-col gap-1 rounded-lg border border-destructive-background p-3"
+            class="flex flex-col gap-1 rounded-lg border border-destructive p-3 text-sm text-muted-foreground"
           >
-            <span class="text-sm font-medium text-destructive-background">
+            <span class="font-medium text-destructive">
               {{ $t('skillPacks.atLimitTitle') }}
             </span>
-            <span class="text-sm text-muted">{{ budgetError }}</span>
-            <span class="text-sm text-muted">
+            <span>{{ budgetError }}</span>
+            <span>
               {{ $t('skillPacks.atLimitHint') }}
             </span>
           </div>
@@ -109,7 +116,7 @@
             v-else-if="fieldError"
             data-testid="skill-pack-field-error"
             role="alert"
-            class="text-sm text-destructive-background"
+            class="text-sm text-destructive"
           >
             {{ fieldError }}
           </span>
@@ -144,9 +151,9 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
-import { useSkillPackForm } from '../composables/useSkillPackForm'
-import type { SkillPack } from '../types'
-import { MAX_NAME_LENGTH } from '../types'
+import { useSkillPackForm } from '@/platform/skills/composables/useSkillPackForm'
+import type { SkillPack } from '@/platform/skills/types'
+import { MAX_NAME_LENGTH } from '@/platform/skills/types'
 
 const { pack } = defineProps<{
   pack?: SkillPack

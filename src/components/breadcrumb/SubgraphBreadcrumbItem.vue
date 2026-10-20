@@ -10,10 +10,10 @@
       draggable="false"
       :class="
         cn(
-          'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center justify-start gap-0 overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit] hover:bg-transparent',
-          isActive &&
-            'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
-          menuOpen && 'p-breadcrumb-item-link-menu-visible'
+          'flex h-8 appearance-none items-center justify-start gap-0 overflow-hidden border-none bg-transparent px-[calc(var(--breadcrumb-item-margin)+var(--breadcrumb-item-padding))] py-0 text-inherit select-none [font:inherit] hover:bg-transparent',
+          isRoot && 'pl-(--breadcrumb-item-padding)',
+          isActive && 'gap-1 text-foreground',
+          menuOpen && 'bg-accent text-foreground hover:bg-accent'
         )
       "
       @click="handleClick"
@@ -22,12 +22,9 @@
       <i
         v-if="hasMissingNodes && isRoot"
         data-testid="subgraph-breadcrumb-missing-nodes-icon"
-        class="icon-[lucide--triangle-alert] text-warning-background"
+        class="icon-[lucide--triangle-alert] text-warning"
       />
-      <span
-        ref="labelRef"
-        class="p-breadcrumb-item-label max-w-72 truncate px-2"
-      >
+      <span ref="labelRef" class="max-w-72 truncate px-2">
         {{ item.label }}
       </span>
       <Badge

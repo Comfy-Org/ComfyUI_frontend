@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { useWorkflowService as realUseWorkflowService } from '../workflowService'
+import type { useWorkflowService as realUseWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 const workflowService: ReturnType<typeof realUseWorkflowService> = {
   exportWorkflow: vi.fn(async () => {}),

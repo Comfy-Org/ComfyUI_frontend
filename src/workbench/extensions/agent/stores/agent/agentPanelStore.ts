@@ -1,7 +1,7 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, toRaw, watch } from 'vue'
+import { computed, readonly, ref, shallowRef, toRaw, watch } from 'vue'
 
 import {
   SIDEBAR_MIN_WIDTH,
@@ -15,6 +15,13 @@ import type {
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+
+import type {
+  CreditTransitionNoticeEvent,
+  CreditTransitionNoticeState
+} from './creditTransitionNoticeState'
+import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
@@ -69,6 +76,16 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  /** The server's `agent` feature; undefined unless its state is known. */
+  const comfyAgent = computed(() => {
+    if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
+    const agent = api.getServerFeature<{ state?: unknown } | null>('agent')
+    return agent?.state === 'starting' ||
+      agent?.state === 'ready' ||
+      agent?.state === 'failed'
+      ? (agent as AgentServerFeature)
+      : undefined
+  })
   const maximized = ref(false)
   const draggedWidth = ref(PANEL_MIN_WIDTH)
   /**
@@ -80,6 +97,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const reportedExhaustionIdentity = ref<string | null>(null)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
+  const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
+    null
+  )
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -333,6 +353,36 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (!maximized.value) draggedWidth.value = PANEL_MIN_WIDTH
   }
 
+  function dispatchCreditTransitionNotice(
+    event: CreditTransitionNoticeEvent
+  ): boolean {
+    const before = creditTransitionNotice.value
+    creditTransitionNotice.value = reduceCreditTransitionNotice(before, event)
+    return creditTransitionNotice.value !== before
+  }
+
+  function observeAgentScopedFunds(
+    identity: string,
+    scopedHasFunds: boolean
+  ): void {
+    dispatchCreditTransitionNotice({
+      type: 'scopedRead',
+      identity,
+      scopedHasFunds
+    })
+  }
+
+  function claimCreditTransitionNoticeImpression(identity: string): boolean {
+    return dispatchCreditTransitionNotice({
+      type: 'shown',
+      identity
+    })
+  }
+
+  function dismissCreditTransitionNotice(identity: string): void {
+    dispatchCreditTransitionNotice({ type: 'dismissed', identity })
+  }
+
   return {
     enabled,
     consentAccepted,
@@ -343,9 +393,14 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     view,
     interruptHistorySelection,
     flagsSettled,
+    comfyAgent,
     reportedExhaustionIdentity,
     reportedFreeUseExposure,
     reportedFreeUseImpression,
+    creditTransitionNotice: readonly(creditTransitionNotice),
+    observeAgentScopedFunds,
+    claimCreditTransitionNoticeImpression,
+    dismissCreditTransitionNotice,
     width,
     requestedWidth,
     isOverlay,

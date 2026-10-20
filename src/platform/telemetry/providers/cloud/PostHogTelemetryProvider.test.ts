@@ -18,8 +18,8 @@ import type {
   BootstrapCompleteMetadata,
   OnboardingTourStage,
   RunButtonProperties
-} from '../../types'
-import { TelemetryEvents } from '../../types'
+} from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()
@@ -650,6 +650,7 @@ describe('PostHogTelemetryProvider', () => {
         prompt_id: 'slot_3',
         prompt_index: 2,
         prompt_count: 5,
+        visible_prompt_count: 5,
         prompt_text_hash: 'deadbeef',
         locale: 'en',
         click_id: 'click-1',
@@ -662,6 +663,7 @@ describe('PostHogTelemetryProvider', () => {
           prompt_id: 'slot_3',
           prompt_index: 2,
           prompt_count: 5,
+          visible_prompt_count: 5,
           prompt_text_hash: 'deadbeef',
           locale: 'en',
           click_id: 'click-1',
@@ -1154,6 +1156,12 @@ describe('PostHogTelemetryProvider', () => {
             surface: 'refused_send'
           }),
         properties: { cta: 'add_credits', surface: 'refused_send' }
+      },
+      {
+        event: TelemetryEvents.AGENT_CREDIT_TRANSITION_NOTICE,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentCreditTransitionNotice({ action: 'shown' }),
+        properties: { action: 'shown' }
       }
     ])('captures $event', async ({ event, track, properties }) => {
       const provider = createProvider()

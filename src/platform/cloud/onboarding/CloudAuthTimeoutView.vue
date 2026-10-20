@@ -1,19 +1,19 @@
 <template>
   <div class="flex h-full items-center justify-center p-6">
     <div class="max-w-[100vw] text-center lg:w-[500px]">
-      <h2 class="mb-3 text-xl text-text-primary">
+      <h2 class="mb-3 text-xl text-foreground">
         {{ $t('cloudOnboarding.authTimeout.title') }}
       </h2>
-      <p class="mb-5 text-muted">
+      <p class="mb-5 text-muted-foreground">
         {{ $t('cloudOnboarding.authTimeout.message') }}
       </p>
 
       <!-- Troubleshooting Section -->
-      <div class="mb-4 rounded-sm bg-secondary-background px-3 py-2 text-left">
-        <h3 class="mb-2 text-sm font-semibold text-text-primary">
+      <div class="mb-4 rounded-sm bg-secondary px-3 py-2 text-left text-sm">
+        <h3 class="mb-2 font-semibold text-foreground">
           {{ $t('cloudOnboarding.authTimeout.troubleshooting') }}
         </h3>
-        <ul class="space-y-1.5 text-sm text-muted">
+        <ul class="space-y-1.5 text-muted-foreground">
           <li
             v-for="(cause, index) in $tm('cloudOnboarding.authTimeout.causes')"
             :key="index"
@@ -26,9 +26,9 @@
       </div>
 
       <!-- Technical Details (Collapsible) -->
-      <div v-if="errorMessage" class="mb-4 text-left">
+      <div v-if="errorMessage" class="mb-4 text-left text-muted-foreground">
         <button
-          class="flex w-full items-center justify-between rounded-sm border-0 bg-secondary-background px-4 py-2 text-sm text-text-secondary transition-colors hover:bg-secondary-background-hover"
+          class="flex w-full items-center justify-between rounded-sm border-0 bg-secondary px-4 py-2 text-sm transition-colors hover:bg-accent"
           @click="showTechnicalDetails = !showTechnicalDetails"
         >
           <span>{{ $t('cloudOnboarding.authTimeout.technicalDetails') }}</span>
@@ -41,14 +41,14 @@
         </button>
         <div
           v-if="showTechnicalDetails"
-          class="mt-2 rounded-sm border border-muted-background p-4 font-mono text-xs break-all text-muted-foreground"
+          class="mt-2 rounded-sm border border-muted p-4 font-mono text-xs break-all"
         >
           {{ errorMessage }}
         </div>
       </div>
 
       <!-- Helpful Links -->
-      <p class="mb-5 text-center text-sm text-gray-600">
+      <p class="mb-5 text-sm text-gray-600">
         {{ $t('cloudOnboarding.authTimeout.helpText') }}
         <a
           href="https://support.comfy.org"

@@ -83,7 +83,7 @@
                 <i class="icon-[comfy--extensions-blocks] size-4" />
                 <span
                   v-if="shouldShowRedDot"
-                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-destructive"
                 />
               </Button>
               <Button
@@ -105,7 +105,7 @@
                   :class="
                     cn(
                       showErrorIndicatorOnPanelButton &&
-                        'outline-1 outline-destructive-background'
+                        'outline-1 outline-destructive'
                     )
                   "
                   variant="secondary"
@@ -115,7 +115,7 @@
                 >
                   <i class="icon-[lucide--panel-right] size-4" />
                 </Button>
-                <StatusBadge
+                <Badge
                   v-if="showErrorIndicatorOnPanelButton"
                   variant="dot"
                   severity="danger"
@@ -180,7 +180,7 @@ import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
@@ -201,6 +201,7 @@ import {
   prefetchShareDialog
 } from '@/platform/workflow/sharing/composables/lazyShareDialog'
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
+import { useManagerDialog } from '@/workbench/extensions/manager/composables/useManagerDialog'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useManagerSurveyDialog } from '@/workbench/extensions/manager/composables/useManagerSurveyDialog'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
@@ -352,7 +353,7 @@ const openCustomNodeManager = async () => {
     return
   }
   try {
-    await managerState.openManager({
+    await useManagerDialog().openManager({
       initialTab: ManagerTab.All,
       showToastOnLegacyError: false
     })

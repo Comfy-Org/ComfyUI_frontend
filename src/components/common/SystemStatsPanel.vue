@@ -12,10 +12,12 @@
       </div>
       <div class="grid grid-cols-2 gap-2">
         <template v-for="col in systemStatsColumns" :key="col.field">
-          <div :class="cn('font-medium', isOutdated(col) && 'text-danger-100')">
+          <div
+            :class="cn('font-medium', isOutdated(col) && 'text-destructive')"
+          >
             {{ $t(col.headerKey) }}
           </div>
-          <div :class="cn(isOutdated(col) && 'text-danger-100')">
+          <div :class="cn(isOutdated(col) && 'text-destructive')">
             {{ getColumnDisplayValue(stats, col) }}
           </div>
         </template>
@@ -23,7 +25,7 @@
     </div>
 
     <template v-if="hasDevices">
-      <div class="my-4 border-t border-interface-stroke" />
+      <div class="my-4 border-t" />
 
       <div>
         <h2 class="mb-4 text-2xl font-semibold">

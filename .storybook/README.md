@@ -85,8 +85,7 @@ export const WithVariant: Story = {
 ### Available Features
 
 - **Vue 3 Support**: Full Vue 3 composition API and reactivity
-- **PrimeVue Integration**: All PrimeVue components and theming
-- **ComfyUI Theming**: Custom ComfyUI theme preset applied
+- **ComfyUI Theming**: Design-system tokens and dark/light themes applied
 - **Pinia Stores**: Access to application stores for components that need state
 - **TypeScript**: Full TypeScript support with proper type checking
 - **CSS/SCSS**: Component styling support
@@ -99,9 +98,7 @@ export const WithVariant: Story = {
 
 ### Scope – When to Create Stories
 
-- **PrimeVue components**:  
-  No need to create stories. Just refer to the official PrimeVue documentation.
-- **Custom shared components (design system components)**:  
+- **Design system components** (`src/components/ui`):  
   Always create stories. These components are built in collaboration with designers, and Storybook serves as both documentation and a communication tool.
 - **Container components (logic-heavy)**:  
   Do not create stories. Only the underlying pure UI components should be included in Storybook.
@@ -128,15 +125,14 @@ export const WithVariant: Story = {
   - What cases are covered
   - How variants (e.g. size, colors) look in isolation
 - **Example**:  
-  `PackActionButton.vue` wraps a PrimeVue button with additional logic.  
+  `PackActionButton.vue` wraps the design-system `Button` with additional logic.  
   → Only create a story for the base UI button, not for the wrapper.
 
 ### Suggested Workflow
 
-1. Use PrimeVue docs for standard components
-2. Use Storybook for **shared/custom components** that define our design system
-3. Keep story files alongside components
-4. When in doubt, focus on components reused across the app or those that need to be showcased to designers
+1. Use Storybook for **shared components** that define our design system
+2. Keep story files alongside components
+3. When in doubt, focus on components reused across the app or those that need to be showcased to designers
 
 ### Best Practices
 
@@ -212,7 +208,6 @@ This Storybook setup includes:
 - ComfyUI-specific theming and styling
 - Pre-configured Pinia stores for state management
 - Internationalization (i18n) support
-- PrimeVue component library integration
 - Proper alias resolution for `@/` imports
 
 ## Icon Usage in Storybook
