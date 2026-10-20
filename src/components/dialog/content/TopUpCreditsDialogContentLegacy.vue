@@ -133,7 +133,7 @@
     <div class="flex flex-col gap-8 p-8">
       <Button
         :disabled="!isValidAmount || loading"
-        :loading="loading"
+        :loading
         variant="primary"
         size="lg"
         @click="handleBuy"

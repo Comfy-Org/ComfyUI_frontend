@@ -33,8 +33,8 @@ const { t } = useI18n()
       <TagsInputItemText />
       <TagsInputItemDelete :aria-label="t('g.removeTag')" />
     </TagsInputItem>
-    <slot name="input" :is-empty="isEmpty">
-      <TagsInputInput :is-empty="isEmpty" :placeholder="placeholder" />
+    <slot name="input" :is-empty>
+      <TagsInputInput :is-empty :placeholder />
     </slot>
   </TagsInput>
 </template>

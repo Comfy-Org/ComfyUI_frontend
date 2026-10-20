@@ -151,7 +151,7 @@
             >
               {{ $t('g.cancel') }}
             </Button>
-            <Button type="submit" tabindex="0" :loading="loading">
+            <Button type="submit" tabindex="0" :loading>
               {{ $t('g.save') }}
             </Button>
           </div>

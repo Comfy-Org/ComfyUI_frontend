@@ -7,8 +7,8 @@
       :max
       :step
       :disabled
-      :aria-label="ariaLabel"
-      :aria-labelledby="ariaLabelledby"
+      :aria-label
+      :aria-labelledby
       v-bind="$attrs"
       @update:model-value="
         (value) => value && emit('update:modelValue', value[0])
@@ -24,7 +24,7 @@
       step-snapping
       :disabled
       :aria-label
-      :aria-labelledby="ariaLabelledby"
+      :aria-labelledby
       @update:model-value="(value) => emit('update:modelValue', value)"
     />
   </div>

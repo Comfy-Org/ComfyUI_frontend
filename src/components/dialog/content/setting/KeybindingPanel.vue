@@ -17,7 +17,7 @@
     <Teleport defer to="#keybinding-panel-actions">
       <div class="flex items-center gap-2">
         <KeybindingPresetToolbar
-          :preset-names="presetNames"
+          :preset-names
           @presets-changed="refreshPresetList"
         />
         <Menu :items="menuEntries" to="#keybinding-panel-actions" align="end">
@@ -55,7 +55,7 @@
           <KeybindingCommandRows
             v-for="command in visibleCommands"
             :key="command.id"
-            :command="command"
+            :command
             :expanded="expandedCommandIds.has(command.id)"
             :selected="selectedCommandId === command.id"
             @activate="activateRow(command)"

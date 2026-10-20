@@ -178,8 +178,8 @@
       </div>
       <AppPagination
         v-model:page="page"
-        :total="total"
-        :items-per-page="itemsPerPage"
+        :total
+        :items-per-page
         class="@2xl:ml-auto"
       />
     </div>

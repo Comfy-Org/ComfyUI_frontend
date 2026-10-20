@@ -19,7 +19,7 @@
     >
       <template #input>
         <TagsInputInput
-          :auto-focus="autoFocus"
+          :auto-focus
           class="min-w-0 text-sm"
           :aria-label="placeholder"
           :aria-describedby="describedBy"

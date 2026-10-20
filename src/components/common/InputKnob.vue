@@ -6,8 +6,8 @@
       :max
       :step
       :disabled
-      :aria-label="ariaLabel"
-      :aria-labelledby="ariaLabelledby"
+      :aria-label
+      :aria-labelledby
       v-bind="$attrs"
     />
     <FormNumberField
@@ -20,7 +20,7 @@
       :step-snapping="step !== 0"
       :disabled
       :aria-label
-      :aria-labelledby="ariaLabelledby"
+      :aria-labelledby
     />
   </div>
 </template>

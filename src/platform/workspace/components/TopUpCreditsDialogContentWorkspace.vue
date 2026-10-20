@@ -300,7 +300,7 @@
           variant="link"
           size="md"
           :disabled="!canTopUp"
-          :loading="loading"
+          :loading
           @click="reopenCheckout"
         >
           {{ $t('credits.topUp.reopenCheckout') }}

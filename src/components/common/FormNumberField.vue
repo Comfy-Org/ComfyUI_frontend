@@ -13,11 +13,7 @@
   >
     <NumberFieldDecrement :aria-label="$t('g.decrement')" />
     <slot name="prefix" />
-    <NumberFieldInput
-      :aria-label="ariaLabel"
-      :aria-labelledby="ariaLabelledby"
-      :class="inputClass"
-    />
+    <NumberFieldInput :aria-label :aria-labelledby :class="inputClass" />
     <slot name="suffix" />
     <NumberFieldIncrement :aria-label="$t('g.increment')" />
   </NumberField>
