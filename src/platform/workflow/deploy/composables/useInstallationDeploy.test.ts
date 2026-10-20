@@ -291,6 +291,19 @@ describe(useInstallationDeploy, () => {
       reports: 1
     },
     {
+      when: 'the builder rejects the uploaded bundle',
+      response: () =>
+        Response.json(
+          {
+            error: 'builder_rejected',
+            message: 'snapshot is invalid'
+          } satisfies DeployToCloudError,
+          { status: 502 }
+        ),
+      message: 'deployToComfyApi.bundleRejected',
+      reports: 1
+    },
+    {
       when: 'the request body is invalid',
       response: () =>
         Response.json(

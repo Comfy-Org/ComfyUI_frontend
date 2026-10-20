@@ -44,7 +44,7 @@ const REASON_BY_ERROR_CODE = {
   offline: 'offline',
   builder_busy: 'busy',
   builder_unavailable: 'unavailable',
-  builder_rejected: 'unavailable',
+  builder_rejected: 'invalid_request',
   invalid_body: 'invalid_request',
   multiple_credentials: 'invalid_request'
 } satisfies Record<DeployToCloudError['error'], BundleFailureReason>
