@@ -6,7 +6,6 @@ import { render } from '@testing-library/vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { api } from '@/scripts/api'
-import { blankGraph } from '@/scripts/defaultGraph'
 
 vi.mock(import('@/scripts/api'))
 
@@ -17,7 +16,20 @@ function fireGraphChanged() {
     .mocked(api.addEventListener)
     .mock.calls.find(([type]) => type === 'graphChanged')?.[1]
   if (typeof listener !== 'function') throw new Error('no listener')
-  listener(new CustomEvent('graphChanged', { detail: blankGraph }))
+  listener(
+    new CustomEvent('graphChanged', {
+      detail: {
+        last_node_id: 0,
+        last_link_id: 0,
+        nodes: [],
+        links: [],
+        groups: [],
+        config: {},
+        extra: {},
+        version: 0.4
+      }
+    })
+  )
 }
 
 beforeEach(() => {
