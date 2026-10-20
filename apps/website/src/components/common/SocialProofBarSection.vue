@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import SocialProofLogo from './SocialProofLogo.vue'
+
 const logos = [
   'Amazon Studios',
   'Apple',
@@ -45,6 +47,10 @@ const mobileRow2Logos = allLogos.slice(mobileSplit)
 const desktopDuration = `${(30 * allLogos.length) / logos.length}s`
 const mobileRow1Duration = `${(30 * mobileRow1Logos.length) / Math.ceil(logos.length / 2)}s`
 const mobileRow2Duration = `${(30 * mobileRow2Logos.length) / Math.floor(logos.length / 2)}s`
+const mobileRows = [
+  { logos: mobileRow1Logos, duration: mobileRow1Duration, reverse: false },
+  { logos: mobileRow2Logos, duration: mobileRow2Duration, reverse: true }
+]
 </script>
 
 <template>
@@ -66,17 +72,12 @@ const mobileRow2Duration = `${(30 * mobileRow2Logos.length) / Math.floor(logos.l
           :key="logo.name"
           class="flex h-20 w-50 shrink-0 items-center justify-center"
         >
-          <span
-            v-if="agencyLogos.includes(logo)"
-            role="img"
-            :aria-label="logo.name"
-            class="block h-10 w-40 shrink-0 bg-secondary-mauve mask-contain mask-center mask-no-repeat"
-            :style="{
-              maskImage: `url('${logo.src}')`,
-              ...agencyMaskStyles[logo.name]
-            }"
+          <SocialProofLogo
+            :name="logo.name"
+            :src="logo.src"
+            :masked="agencyLogos.includes(logo)"
+            :mask-style="agencyMaskStyles[logo.name]"
           />
-          <img v-else :src="logo.src" :alt="logo.name" />
         </div>
       </div>
     </div>
@@ -86,63 +87,33 @@ const mobileRow2Duration = `${(30 * mobileRow2Logos.length) / Math.floor(logos.l
       data-testid="social-proof-mobile"
       class="flex flex-col gap-6 md:hidden"
     >
-      <div class="flex w-max gap-8">
+      <div
+        v-for="(row, index) in mobileRows"
+        :key="index"
+        class="flex w-max gap-8"
+      >
         <div
           v-for="copy in 2"
           :key="copy"
-          class="flex shrink-0 animate-marquee items-center gap-8"
+          class="flex shrink-0 items-center gap-8"
+          :class="row.reverse ? 'animate-marquee-reverse' : 'animate-marquee'"
           :style="{
             '--marquee-gap': '2rem',
-            animationDuration: mobileRow1Duration
+            animationDuration: row.duration
           }"
           :aria-hidden="copy === 2 ? 'true' : undefined"
         >
           <div
-            v-for="logo in mobileRow1Logos"
+            v-for="logo in row.logos"
             :key="logo.name"
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
-            <span
-              v-if="agencyLogos.includes(logo)"
-              role="img"
-              :aria-label="logo.name"
-              class="block h-10 w-40 shrink-0 bg-secondary-mauve mask-contain mask-center mask-no-repeat"
-              :style="{
-                maskImage: `url('${logo.src}')`,
-                ...agencyMaskStyles[logo.name]
-              }"
-            />
-            <img v-else :src="logo.src" :alt="logo.name" />
-          </div>
-        </div>
-      </div>
-      <div class="flex w-max gap-8">
-        <div
-          v-for="copy in 2"
-          :key="copy"
-          class="flex shrink-0 animate-marquee-reverse items-center gap-8"
-          :style="{
-            '--marquee-gap': '2rem',
-            animationDuration: mobileRow2Duration
-          }"
-          :aria-hidden="copy === 2 ? 'true' : undefined"
-        >
-          <div
-            v-for="logo in mobileRow2Logos"
-            :key="logo.name"
-            class="flex h-10 w-40 shrink-0 items-center justify-center"
-          >
-            <span
-              v-if="agencyLogos.includes(logo)"
-              role="img"
-              :aria-label="logo.name"
-              class="block h-10 w-40 shrink-0 bg-secondary-mauve mask-contain mask-center mask-no-repeat"
-              :style="{
-                maskImage: `url('${logo.src}')`,
-                ...agencyMaskStyles[logo.name]
-              }"
-            />
-            <img v-else :src="logo.src" :alt="logo.name" />
+            <SocialProofLogo
+            :name="logo.name"
+            :src="logo.src"
+            :masked="agencyLogos.includes(logo)"
+            :mask-style="agencyMaskStyles[logo.name]"
+          />
           </div>
         </div>
       </div>
