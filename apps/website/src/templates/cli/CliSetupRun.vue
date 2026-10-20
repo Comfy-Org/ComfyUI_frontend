@@ -7,8 +7,6 @@ import CardContent from '@/components/ui/card/CardContent.vue'
 import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-const codeFieldClass =
-  '[&>span]:text-2xs/relaxed sm:[&>span]:text-xs/relaxed lg:[&>span]:text-sm/relaxed'
 const {
   locale = 'en',
   client,
@@ -65,7 +63,7 @@ const description = computed(() => {
       <CopyableField
         v-for="command in runCommands"
         :key="command"
-        :class="codeFieldClass"
+        variant="cli"
         :value="command"
         :copy-label="copyLabel"
         :copied-label="copiedLabel"

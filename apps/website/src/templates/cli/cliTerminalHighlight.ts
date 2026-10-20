@@ -2,13 +2,12 @@ import { highlightTokens } from '@/lib/highlight'
 import type { HighlightToken } from '@/lib/highlight'
 import type { TerminalLine } from './cliTerminalSequences'
 
-/** Use Router's Shiki grammar/theme, retaining full-command token context while
- * the terminal reveals a prefix (including an unfinished quoted string). */
 export function terminalTokens(
   line: TerminalLine,
   visibleText: string
 ): readonly HighlightToken[] {
-  if (line.kind === 'ok') return [{ content: visibleText, color: '#A7C080' }]
+  if (line.kind === 'ok')
+    return [{ content: visibleText, color: 'var(--color-terminal-success)' }]
 
   const isCommand = line.kind === 'cmd'
   const tokens = isCommand

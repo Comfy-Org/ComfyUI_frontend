@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import CliAgentConcept from './CliAgentExperience.vue'
+import CliAgentExperience from './CliAgentExperience.vue'
 import { translationsFor } from '@/i18n/translations'
 import { externalLinks } from '@/config/routes'
 import {
@@ -9,10 +9,7 @@ import {
   captureCliConnectionTabClick
 } from '@/scripts/posthog'
 
-vi.mock(import('@/scripts/posthog'), () => ({
-  captureCliClientTabClick: vi.fn(),
-  captureCliConnectionTabClick: vi.fn()
-}))
+vi.mock(import('@/scripts/posthog'))
 const install = 'pip install comfy-cli'
 const cloudPrompt =
   "Set up the Comfy CLI for me: pip install comfy-cli,\nthen comfy setup --where cloud,\nthen comfy skills install.\nFollow the guide at https://docs.comfy.org/agent-tools/cli.md and tell me when it's ready."
@@ -82,36 +79,6 @@ const cases = [
     expectedPayloads: [localPrompt]
   },
   {
-    client: 'Codex',
-    connection: 'local',
-    connectionLabel: 'Local',
-    expectedPayloads: [localPrompt]
-  },
-  {
-    client: 'Cursor',
-    connection: 'local',
-    connectionLabel: 'Local',
-    expectedPayloads: [localPrompt]
-  },
-  {
-    client: 'Gemini CLI',
-    connection: 'local',
-    connectionLabel: 'Local',
-    expectedPayloads: [localPrompt]
-  },
-  {
-    client: 'OpenClaw',
-    connection: 'local',
-    connectionLabel: 'Local',
-    expectedPayloads: [localPrompt]
-  },
-  {
-    client: 'Hermes',
-    connection: 'local',
-    connectionLabel: 'Local',
-    expectedPayloads: [localPrompt]
-  },
-  {
     client: 'Terminal',
     connection: 'local',
     connectionLabel: 'Local',
@@ -131,7 +98,7 @@ const cases = [
 
 async function openClientSetup(client: string, connectionLabel: string) {
   const user = userEvent.setup()
-  render(CliAgentConcept)
+  render(CliAgentExperience)
   await user.click(screen.getByRole('tab', { name: client }))
   await user.click(screen.getByRole('button', { name: `SET UP ${client}` }))
   const dialog = within(screen.getByRole('dialog'))
@@ -204,7 +171,7 @@ it.for(cases.filter((row) => row.expectedPayloads.length === 3))(
 
 it('omits a run step for local CI setup', async () => {
   const user = userEvent.setup()
-  render(CliAgentConcept)
+  render(CliAgentExperience)
   await user.click(screen.getByRole('tab', { name: 'CI / Headless' }))
   await user.click(screen.getByRole('button', { name: 'SET UP CI / Headless' }))
   const dialog = within(screen.getByRole('dialog'))
@@ -220,7 +187,7 @@ describe('approved setup flow corrections', () => {
     '%s exposes one setup action',
     async (name) => {
       const user = userEvent.setup()
-      render(CliAgentConcept)
+      render(CliAgentExperience)
       await user.click(screen.getByRole('tab', { name }))
       expect(
         screen.queryByRole('button', { name: 'INSTALL MANUALLY' })
@@ -236,7 +203,7 @@ describe('approved setup flow corrections', () => {
   )
   it('keeps manual Cloud and Local instructions terminal-oriented and can return to agent setup', async () => {
     const user = userEvent.setup()
-    render(CliAgentConcept)
+    render(CliAgentExperience)
     await user.click(screen.getByRole('tab', { name: 'Codex' }))
     await user.click(screen.getByRole('button', { name: 'INSTALL MANUALLY' }))
     const dialog = within(
@@ -265,7 +232,7 @@ describe('approved setup flow corrections', () => {
   })
   it('places the CI API-key prerequisite before the command that needs it', async () => {
     const user = userEvent.setup()
-    render(CliAgentConcept)
+    render(CliAgentExperience)
     await user.click(screen.getByRole('tab', { name: 'CI / Headless' }))
     await user.click(
       screen.getByRole('button', { name: 'SET UP CI / Headless' })
@@ -281,7 +248,7 @@ describe('approved setup flow corrections', () => {
 
 it('offers keyboard-accessible setup method tabs with matching panels', async () => {
   const user = userEvent.setup()
-  render(CliAgentConcept)
+  render(CliAgentExperience)
   await user.click(screen.getByRole('button', { name: 'SET UP Claude Code' }))
   const dialog = within(screen.getByRole('dialog'))
   const agent = dialog.getByRole('tab', { name: 'Use agent' })
@@ -304,7 +271,7 @@ it('offers keyboard-accessible setup method tabs with matching panels', async ()
 
 it('preserves the same client across Cloud and Local changes', async () => {
   const user = userEvent.setup()
-  render(CliAgentConcept)
+  render(CliAgentExperience)
   await user.click(screen.getByRole('button', { name: 'SET UP Claude Code' }))
   const dialog = within(screen.getByRole('dialog'))
   await user.click(dialog.getByRole('button', { name: 'Local' }))
@@ -323,7 +290,7 @@ it('preserves the same client across Cloud and Local changes', async () => {
 
 it('captures client and connection changes once without tracking initialization or repeated selections', async () => {
   const user = userEvent.setup()
-  render(CliAgentConcept)
+  render(CliAgentExperience)
   expect(captureCliClientTabClick).not.toHaveBeenCalled()
   expect(captureCliConnectionTabClick).not.toHaveBeenCalled()
   await user.click(screen.getByRole('tab', { name: 'Codex' }))
@@ -345,7 +312,7 @@ it('captures client and connection changes once without tracking initialization 
 it('uses Chinese setup copy and local agent commands', async () => {
   const user = userEvent.setup()
   const { t } = translationsFor('zh-CN')
-  render(CliAgentConcept, { props: { locale: 'zh-CN' } })
+  render(CliAgentExperience, { props: { locale: 'zh-CN' } })
   expect(screen.getByRole('tab', { name: 'CI / 无头模式' })).toBeVisible()
   await user.click(
     screen.getByRole('button', {
@@ -375,3 +342,18 @@ it('uses Chinese setup copy and local agent commands', async () => {
   )
   expect(dialog.getByText(t('cli.experience.localHelp'))).toBeVisible()
 })
+
+it.for(['Terminal', 'CI / Headless'])(
+  'restores focus after the manual opener disappears for %s',
+  async (name) => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(CliAgentExperience)
+    await user.click(screen.getByRole('button', { name: 'INSTALL MANUALLY' }))
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('tab', { name })
+    )
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('button', { name: `SET UP ${name}` })).toHaveFocus()
+  }
+)

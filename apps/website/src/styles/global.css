@@ -62,6 +62,7 @@
 @custom-variant can-hover (@media (hover: hover));
 
 @theme {
+  --color-terminal-success: #a7c080;
   --color-cli-terminal: #2a2230;
   --color-site-dropdown: #332b38;
   --color-site-bg-soft: color-mix(

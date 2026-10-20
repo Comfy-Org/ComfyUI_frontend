@@ -2274,27 +2274,27 @@
       },
       "card": {
         "packshots": {
-          "title": "BATCH PACK SHOTS",
+          "title": "Batch pack shots",
           "prompt": "Run our pack-shot workflow for every SKU in ./skus.csv, 4 angles each, route it to cloud, and download everything to ./shots."
         },
         "keyframes": {
-          "title": "KEYFRAME BOARDS",
+          "title": "Keyframe boards",
           "prompt": "Board a 30-second spot from BRIEF.md: 8 keyframes, consistent hero character, 16:9, contact sheet at the end."
         },
         "characterSheets": {
-          "title": "CHARACTER SHEETS",
+          "title": "Character sheets",
           "prompt": "Load our saved character workflow and generate a 4-view turnaround for each hero in ./characters."
         },
         "setExtension": {
-          "title": "SET EXTENSION",
+          "title": "Set extension",
           "prompt": "Extend this plate to a 21:9 crop, matte-painting style. Keep the horizon line and the light direction."
         },
         "heroProps": {
-          "title": "3D HERO PROPS",
+          "title": "3d hero props",
           "prompt": "Build a 3D hero prop from sketch.png, game-ready, and hand me the .glb."
         },
         "keyArt": {
-          "title": "CAMPAIGN KEY ART",
+          "title": "Campaign key art",
           "prompt": "Match frame_04.png's palette and produce campaign key art in 1:1, 4:5, and 16:9."
         }
       },

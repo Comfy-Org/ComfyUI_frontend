@@ -6,8 +6,6 @@ import CardContent from '@/components/ui/card/CardContent.vue'
 import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-const codeFieldClass =
-  '[&>span]:text-2xs/relaxed sm:[&>span]:text-xs/relaxed lg:[&>span]:text-sm/relaxed'
 import { ArrowUpRight } from '@lucide/vue'
 import Button from '@/components/ui/button/Button.vue'
 import { externalLinks } from '@/config/routes'
@@ -37,7 +35,7 @@ const copiedLabel = t('ui.copied')
     <CardContent class="space-y-3 px-0">
       <template v-if="usesManualSetup">
         <CopyableField
-          :class="codeFieldClass"
+          variant="cli"
           :value="INSTALL_COMMAND"
           :copy-label="copyLabel"
           :copied-label="copiedLabel"
@@ -61,7 +59,7 @@ const copiedLabel = t('ui.copied')
             ><ArrowUpRight class="ml-1 size-4" aria-hidden="true" /></template
         ></Button>
         <CopyableField
-          :class="codeFieldClass"
+          variant="cli"
           :value="connectCommand"
           :copy-label="copyLabel"
           :copied-label="copiedLabel"
@@ -69,7 +67,7 @@ const copiedLabel = t('ui.copied')
       </template>
       <template v-else
         ><CopyableField
-          :class="codeFieldClass"
+          variant="cli"
           :value="agentPrompt"
           :copy-label="copyLabel"
           :copied-label="copiedLabel"

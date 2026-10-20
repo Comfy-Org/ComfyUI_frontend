@@ -18,7 +18,6 @@ const {
 } = defineProps<{
   locale?: Locale
   cards?: AiModelCard[]
-  /** Reduced proof-section emphasis for feature pages; full product pages retain defaults. */
   compact?: boolean
 }>()
 const { t } = translationsFor(locale)

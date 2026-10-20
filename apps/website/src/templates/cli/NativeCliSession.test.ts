@@ -7,10 +7,10 @@ import { translationsFor } from '@/i18n/translations'
 import SessionSection from './SessionSection.vue'
 import NativeCliSession from './NativeCliSession.vue'
 
-const preference = vi.hoisted(() => ({ reduced: false }))
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 const visibility = ref(true)
 vi.mock(import('@/composables/useReducedMotion'), () => ({
-  prefersReducedMotion: () => preference.reduced
+  prefersReducedMotion: vi.fn(() => false)
 }))
 vi.mock(import('@vueuse/core'), { spy: true })
 beforeEach(() => {
@@ -24,9 +24,8 @@ beforeEach(() => {
       stop: vi.fn()
     })
   )
-  preference.reduced = false
+  vi.mocked(prefersReducedMotion).mockReturnValue(false)
   visibility.value = true
-  vi.useFakeTimers()
 })
 describe('native CLI recorded session', () => {
   it('can pause by tapping the session and resume with the keyboard when the footer is hidden', async () => {
@@ -60,22 +59,33 @@ describe('native CLI recorded session', () => {
     const { unmount } = render(NativeCliSession)
     await nextTick()
     const group = screen.getByRole('group', { name: /CLI session animation/ })
-    expect(group).toHaveAttribute('data-phase', 'terminal')
-    expect(screen.queryAllByText(/.*/, { selector: 'details' })).toHaveLength(0)
-    expect(
-      screen.getByText(translationsFor('en').t('cli.session.transcript'), {
-        selector: 'pre.sr-only'
-      })
-    ).toHaveTextContent('comfy generate renders a cat')
+    await user.click(screen.getByRole('button', { name: 'Replay' }))
+    await vi.advanceTimersByTimeAsync(2000)
+    const prefix = screen.getByText(
+      (_, element) =>
+        element instanceof HTMLParagraphElement &&
+        element.textContent.startsWith('$ comfy gene')
+    )
+    expect(prefix).toBeVisible()
+    expect(prefix).not.toHaveTextContent('cat.png')
+    const initialText = prefix.textContent
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(prefix.textContent.length).toBeGreaterThan(initialText.length)
+    const pausedText = prefix.textContent
     await user.click(group)
     await user.keyboard(' ')
-    expect(group).toHaveAttribute('data-paused', 'true')
-    await vi.advanceTimersByTimeAsync(36000)
-    expect(group).toHaveAttribute('data-phase', 'terminal')
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(prefix).toHaveTextContent(pausedText)
     await user.click(screen.getByRole('button', { name: 'Resume' }))
-    await vi.advanceTimersByTimeAsync(9000)
-    await nextTick()
-    expect(group).toHaveAttribute('data-phase', 'results')
+    await vi.advanceTimersByTimeAsync(6500)
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element instanceof HTMLParagraphElement &&
+          /Request accepted/.test(element.textContent)
+      )
+    ).toBeVisible()
+    await vi.advanceTimersByTimeAsync(25000)
     expect(screen.getAllByRole('img')).toHaveLength(2)
     expect(
       screen.getByText('cat.png', { selector: 'figcaption' })
@@ -92,10 +102,17 @@ describe('native CLI recorded session', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(NativeCliSession)
     const group = screen.getByRole('group', { name: /CLI session animation/ })
-    expect(group).toHaveAttribute('data-elapsed', '26250')
+    expect(
+      screen.getByText(
+        (_, element) =>
+          element instanceof HTMLParagraphElement &&
+          element.textContent.startsWith('$ comfy workflow set-slot')
+      )
+    ).toBeVisible()
+    const initial = Number(group.getAttribute('data-elapsed'))
     await vi.advanceTimersByTimeAsync(1000)
     const progressed = Number(group.getAttribute('data-elapsed'))
-    expect(progressed).toBeGreaterThan(26250)
+    expect(progressed).toBeGreaterThan(initial)
     visibility.value = false
     await vi.advanceTimersByTimeAsync(3000)
     expect(Number(group.getAttribute('data-elapsed'))).toBe(progressed)
@@ -109,7 +126,7 @@ describe('native CLI recorded session', () => {
   })
   it('shows final outputs without motion or playback controls for reduced motion', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
-    preference.reduced = true
+    vi.mocked(prefersReducedMotion).mockReturnValue(true)
     render(NativeCliSession)
     expect(
       screen.getByRole('group', {
@@ -162,9 +179,32 @@ it('stops requesting frames while paused or outside the viewport and restarts wh
 })
 
 it('never requests animation frames with reduced motion', async () => {
-  preference.reduced = true
+  vi.mocked(prefersReducedMotion).mockReturnValue(true)
   const request = vi.spyOn(window, 'requestAnimationFrame')
   render(NativeCliSession)
   await vi.advanceTimersByTimeAsync(1000)
   expect(request).not.toHaveBeenCalled()
+})
+
+it('suspends playback in a hidden document and resumes when visible', async () => {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+  const request = vi.spyOn(window, 'requestAnimationFrame')
+  render(NativeCliSession)
+  const group = screen.getByRole('group', { name: /CLI session animation/ })
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden')
+  document.dispatchEvent(new Event('visibilitychange'))
+  await nextTick()
+  const elapsed = group.getAttribute('data-elapsed')
+  request.mockClear()
+  await vi.advanceTimersByTimeAsync(1000)
+  expect(request).not.toHaveBeenCalled()
+  expect(group).toHaveAttribute('data-elapsed', elapsed)
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+  document.dispatchEvent(new Event('visibilitychange'))
+  await nextTick()
+  expect(request).toHaveBeenCalled()
+  await vi.advanceTimersByTimeAsync(1000)
+  expect(Number(group.getAttribute('data-elapsed'))).toBeGreaterThan(
+    Number(elapsed)
+  )
 })

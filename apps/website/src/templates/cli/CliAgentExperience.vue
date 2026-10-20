@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef, useTemplateRef } from 'vue'
 import { ArrowUpRight, X } from '@lucide/vue'
 import Button from '@/components/ui/button/Button.vue'
 import { TabsRoot, TabsContent } from 'reka-ui'
@@ -26,128 +26,28 @@ import {
   captureCliConnectionTabClick
 } from '@/scripts/posthog'
 import type { Locale } from '@/i18n/translations'
+import { cliSetupFor, INSTALL_COMMAND } from './cliSetup'
+import type { ConnectionId } from './cliSetup'
 import type { CliClientId } from '@/scripts/posthog'
 const { headingTag = 'h1', locale = 'en' } = defineProps<{
   headingTag?: 'h1' | 'h2'
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
-type ConnectionId = 'cloud' | 'local'
-
-const INSTALL_COMMAND = 'pip install comfy-cli'
-const codeFieldClass =
-  '[&>span]:text-2xs/relaxed sm:[&>span]:text-xs/relaxed lg:[&>span]:text-sm/relaxed'
-
-interface ShellCard {
-  title: string
-  step: Record<ConnectionId, string>
-  commands: Record<ConnectionId, string[]>
-  showKeyLink: boolean
-}
-
-interface CliClient {
-  name: string
-  kind: 'agent' | 'shell'
-  shell?: ShellCard
-}
-
-const clients: Record<CliClientId, CliClient> = {
-  'claude-code': { name: 'Claude Code', kind: 'agent' },
-  codex: { name: 'Codex', kind: 'agent' },
-  cursor: { name: 'Cursor', kind: 'agent' },
-  'gemini-cli': { name: 'Gemini CLI', kind: 'agent' },
-  openclaw: { name: 'OpenClaw', kind: 'agent' },
-  hermes: { name: 'Hermes', kind: 'agent' },
-  terminal: {
-    name: t('cli.setup.clients.terminal.name'),
-    kind: 'shell',
-    shell: {
-      title: t('cli.setup.shell.terminal.title'),
-      step: {
-        cloud: t('cli.setup.shell.terminal.stepCloud'),
-        local: t('cli.setup.shell.terminal.stepLocal')
-      },
-      commands: {
-        cloud: [
-          'comfy setup --where cloud',
-          'comfy generate nano-banana --prompt "a watercolor of a sleeping fox" --download fox.png'
-        ],
-        local: ['comfy setup', 'comfy launch']
-      },
-      showKeyLink: false
-    }
-  },
-  ci: {
-    name: t('cli.setup.clients.ci.name'),
-    kind: 'shell',
-    shell: {
-      title: t('cli.setup.shell.ci.title'),
-      step: {
-        cloud: t('cli.setup.shell.ci.stepCloud'),
-        local: t('cli.setup.shell.ci.stepLocal')
-      },
-      commands: {
-        cloud: [
-          'comfy setup --where cloud --api-key comfyui-... --non-interactive',
-          'comfy run --workflow my_workflow.json --wait | comfy download'
-        ],
-        local: ['comfy setup --where local --non-interactive']
-      },
-      showKeyLink: true
-    }
-  }
-}
-
-interface CliConnection {
-  name: string
-  tagline: string
-  installDescription: string
-  manualCommand: string
-  agentCommand: string
-}
-
-const connections: Record<ConnectionId, CliConnection> = {
-  cloud: {
-    name: t('cli.setup.connections.cloud.name'),
-    tagline: t('cli.setup.connections.cloud.tagline'),
-    installDescription: t('cli.setup.install.cloudDescription'),
-    manualCommand: 'comfy setup --where cloud\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandCloud', {
-      url: externalLinks.docsCliMd
-    })
-  },
-  local: {
-    name: t('cli.experience.localLabel'),
-    tagline: t('cli.setup.connections.local.tagline'),
-    installDescription: t('cli.setup.install.localDescription'),
-    manualCommand: 'comfy setup --where local\ncomfy skills install',
-    agentCommand: t('cli.setup.agent.commandLocal', {
-      url: externalLinks.docsCliMd
-    })
-  }
-}
+const { clients, connections } = cliSetupFor(locale)
 
 const DEFAULT_CLIENT_ID = 'claude-code'
 
 const activeConnectionId = ref<ConnectionId>('cloud')
-const activeClientIds = ref<Record<ConnectionId, CliClientId>>({
-  cloud: DEFAULT_CLIENT_ID,
-  local: DEFAULT_CLIENT_ID
-})
-
-function activeClientFor(connId: ConnectionId): CliClient {
-  return clients[activeClientIds.value[connId]] ?? clients[DEFAULT_CLIENT_ID]
-}
+const activeClientId = ref<CliClientId>(DEFAULT_CLIENT_ID)
 
 const connection = computed(() => connections[activeConnectionId.value])
 const agentPrompt = computed(() => connection.value.agentCommand)
-const client = computed(() => activeClientFor(activeConnectionId.value))
-const isHeadless = computed(
-  () => activeClientIds.value[activeConnectionId.value] === 'ci'
-)
+const client = computed(() => clients[activeClientId.value])
+const isHeadless = computed(() => activeClientId.value === 'ci')
 const connectCommand = computed(() =>
-  isHeadless.value
-    ? client.value.shell!.commands[activeConnectionId.value][0]
+  client.value.kind === 'shell' && isHeadless.value
+    ? client.value.shell.commands[activeConnectionId.value][0]
     : connection.value.manualCommand
 )
 const runCommands = computed(
@@ -159,16 +59,14 @@ function selectConnection(value: unknown) {
     value !== activeConnectionId.value
   ) {
     captureCliConnectionTabClick(value)
-    const selectedClient = activeClientIds.value[activeConnectionId.value]
-    activeClientIds.value[value] = selectedClient
     activeConnectionId.value = value
   }
 }
 function selectClient(value: unknown) {
   if (typeof value !== 'string' || !Object.hasOwn(clients, value)) return
   const id = value as CliClientId
-  if (id === activeClientIds.value[activeConnectionId.value]) return
-  activeClientIds.value[activeConnectionId.value] = id
+  if (id === activeClientId.value) return
+  activeClientId.value = id
   captureCliClientTabClick(id)
 }
 const copyLabel = t('ui.copy')
@@ -176,14 +74,14 @@ const copiedLabel = t('ui.copied')
 
 const setupOpen = ref(false)
 const dialogTop = ref<string>()
-const manual = ref(false)
+const manualMode = ref(false)
 const usesManualSetup = computed(
-  () => manual.value || client.value.kind === 'shell'
+  () => manualMode.value || client.value.kind === 'shell'
 )
 const setupMode = computed({
   get: () => (usesManualSetup.value ? 'manual' : 'agent'),
   set: (value: string) => {
-    manual.value = value === 'manual'
+    manualMode.value = value === 'manual'
   }
 })
 const setupModes = {
@@ -191,6 +89,8 @@ const setupModes = {
   manual: { name: t('cli.experience.manualMode') }
 }
 const opener = shallowRef<HTMLElement>()
+const setupButton =
+  useTemplateRef<InstanceType<typeof BrandButton>>('setupButton')
 function focusDialog(event: Event) {
   event.preventDefault()
   const dialog = event.target as HTMLElement
@@ -200,12 +100,15 @@ function focusDialog(event: Event) {
 }
 function restoreFocus(event: Event) {
   event.preventDefault()
-  opener.value?.focus()
+  const target = opener.value?.isConnected
+    ? opener.value
+    : setupButton.value?.$el
+  if (target instanceof HTMLElement) target.focus()
 }
-function openSetup(event: MouseEvent, manualMode = false) {
+function openSetup(event: MouseEvent, { manual = false } = {}) {
   dialogTop.value = undefined
   opener.value = event.currentTarget as HTMLElement
-  manual.value = manualMode || client.value.kind === 'shell'
+  manualMode.value = manual || client.value.kind === 'shell'
   setupOpen.value = true
 }
 </script>
@@ -216,7 +119,7 @@ function openSetup(event: MouseEvent, manualMode = false) {
       class="mx-auto max-w-6xl scroll-mt-36 px-6 py-12 lg:py-20"
     >
       <TabsRoot
-        :model-value="activeClientIds[activeConnectionId]"
+        :model-value="activeClientId"
         activation-mode="manual"
         class="text-center"
         @update:model-value="selectClient"
@@ -225,7 +128,7 @@ function openSetup(event: MouseEvent, manualMode = false) {
           :clients="clients"
           :label="t('cli.experience.clientLabel')"
         />
-        <TabsContent :value="activeClientIds[activeConnectionId]">
+        <TabsContent :value="activeClientId">
           <div class="mt-12 lg:mt-16">
             <SectionHeader
               :heading-tag="headingTag"
@@ -252,8 +155,9 @@ function openSetup(event: MouseEvent, manualMode = false) {
           </div>
           <div class="mt-8 flex flex-wrap justify-center gap-3">
             <BrandButton
+              ref="setupButton"
               class="px-8 py-4 text-base uppercase focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
-              @click="openSetup($event, false)"
+              @click="openSetup($event)"
               >{{
                 t('cli.experience.setup', { client: client.name })
               }}</BrandButton
@@ -262,13 +166,13 @@ function openSetup(event: MouseEvent, manualMode = false) {
               v-if="client.kind === 'agent'"
               class="px-8 py-4 text-base uppercase focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none"
               variant="outline"
-              @click="openSetup($event, true)"
+              @click="openSetup($event, { manual: true })"
               >{{ t('cli.experience.manual') }}</BrandButton
             >
           </div>
           <div class="mx-auto mt-8 max-w-md">
             <CopyableField
-              :class="codeFieldClass"
+              variant="cli"
               :value="INSTALL_COMMAND"
               :copy-label="copyLabel"
               :copied-label="copiedLabel"
@@ -327,7 +231,7 @@ function openSetup(event: MouseEvent, manualMode = false) {
           t('cli.experience.dialogDescription')
         }}</DialogDescription>
         <TabsRoot
-          :model-value="activeClientIds[activeConnectionId]"
+          :model-value="activeClientId"
           activation-mode="manual"
           class="mt-4"
           @update:model-value="selectClient"
@@ -335,7 +239,7 @@ function openSetup(event: MouseEvent, manualMode = false) {
           <AgentSetupClientTabs
             :clients="clients"
             :label="t('cli.experience.setupClientLabel')" />
-          <TabsContent :value="activeClientIds[activeConnectionId]">
+          <TabsContent :value="activeClientId">
             <TabsRoot v-model="setupMode" activation-mode="manual">
               <div class="mt-4 flex flex-wrap items-center gap-4">
                 <ToggleGroup
@@ -344,7 +248,9 @@ function openSetup(event: MouseEvent, manualMode = false) {
                   :aria-label="t('cli.experience.connectionLabel')"
                   @update:model-value="selectConnection"
                 >
-                  <ToggleGroupItem value="cloud">Comfy Cloud</ToggleGroupItem
+                  <ToggleGroupItem value="cloud">{{
+                    connections.cloud.name
+                  }}</ToggleGroupItem
                   ><ToggleGroupItem value="local">{{
                     t('cli.experience.localLabel')
                   }}</ToggleGroupItem>
@@ -391,7 +297,7 @@ function openSetup(event: MouseEvent, manualMode = false) {
                     v-if="activeConnectionId === 'local'"
                     variant="underlineLink"
                     size="sm"
-                    href="https://docs.comfy.org/comfy-cli/getting-started#install-comfyui-local"
+                    :href="externalLinks.docsCliLocalInstall"
                     >{{ t('cli.experience.localGuide')
                     }}<template #append
                       ><ArrowUpRight

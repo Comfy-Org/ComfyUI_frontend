@@ -8,7 +8,7 @@ import Accordion from '@/components/ui/accordion/Accordion.vue'
 import AccordionItem from '@/components/ui/accordion/AccordionItem.vue'
 import AccordionTrigger from '@/components/ui/accordion/AccordionTrigger.vue'
 import AccordionContent from '@/components/ui/accordion/AccordionContent.vue'
-import CliCommand from './CliCommand.vue'
+import CopyableField from '@/components/ui/copyable-field/CopyableField.vue'
 import { externalLinks } from '@/config/routes'
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -32,72 +32,71 @@ const cards: {
   titleKey: TranslationKey
   promptKey: TranslationKey
   skill: string
+  src: string
+  fit: 'cover' | 'contain'
 }[] = [
   {
     id: 'packshots',
+    src: 'https://media.comfy.org/website/learning/advertising3-thumb.png',
+    fit: 'cover',
     titleKey: 'cli.skills.card.packshots.title',
     promptKey: 'cli.skills.card.packshots.prompt',
     skill: 'comfy-fragments'
   },
   {
     id: 'keyframes',
+    src: 'https://media.comfy.org/website/learning/advertising2-thumb.png',
+    fit: 'contain',
     titleKey: 'cli.skills.card.keyframes.title',
     promptKey: 'cli.skills.card.keyframes.prompt',
     skill: 'comfy-director'
   },
   {
     id: 'character-sheets',
+    src: 'https://media.comfy.org/website/learning/animation1-thumb.jpg',
+    fit: 'contain',
     titleKey: 'cli.skills.card.characterSheets.title',
     promptKey: 'cli.skills.card.characterSheets.prompt',
     skill: 'comfy'
   },
   {
     id: 'set-extension',
+    src: 'https://media.comfy.org/website/mcp/hero-demo/set-extension.webp',
+    fit: 'cover',
     titleKey: 'cli.skills.card.setExtension.title',
     promptKey: 'cli.skills.card.setExtension.prompt',
     skill: 'comfy'
   },
   {
     id: 'hero-props',
+    src: 'https://media.comfy.org/website/learning/animation4-thumb.jpg',
+    fit: 'cover',
     titleKey: 'cli.skills.card.heroProps.title',
     promptKey: 'cli.skills.card.heroProps.prompt',
     skill: 'comfy'
   },
   {
     id: 'key-art',
+    src: 'https://media.comfy.org/website/learning/advertising1-thumb.png',
+    fit: 'cover',
     titleKey: 'cli.skills.card.keyArt.title',
     promptKey: 'cli.skills.card.keyArt.prompt',
     skill: 'comfy'
   }
 ]
 
-function cardTitle(key: TranslationKey): string {
-  const title = t(key)
-  if (locale !== 'en') return title
-  const sentence = title.charAt(0) + title.slice(1).toLowerCase()
-  return sentence.replace(/\b3d\b/gi, '3D')
-}
-
-const images = [
-  'https://media.comfy.org/website/learning/advertising3-thumb.png',
-  'https://media.comfy.org/website/learning/advertising2-thumb.png',
-  'https://media.comfy.org/website/learning/animation1-thumb.jpg',
-  'https://media.comfy.org/website/mcp/hero-demo/set-extension.webp',
-  'https://media.comfy.org/website/learning/animation4-thumb.jpg',
-  'https://media.comfy.org/website/learning/advertising1-thumb.png'
-]
 const skillsById = Object.fromEntries(
   cards.map((card) => [card.id, card.skill])
 )
-const rows: FeatureRow[] = cards.map((card, index) => ({
+const rows: FeatureRow[] = cards.map((card) => ({
   id: card.id,
-  title: cardTitle(card.titleKey),
+  title: t(card.titleKey),
   description: t(card.promptKey),
   media: {
     type: 'image',
-    src: images[index]!,
-    alt: cardTitle(card.titleKey),
-    fit: index === 1 || index === 2 ? 'contain' : 'cover'
+    src: card.src,
+    alt: t(card.titleKey),
+    fit: card.fit
   }
 }))
 
@@ -120,7 +119,8 @@ const copiedLabel = t('ui.copied')
         {{ t('cli.skills.subtitle') }}
       </p>
       <div class="mx-auto mt-6 max-w-md">
-        <CliCommand
+        <CopyableField
+          variant="cli"
           value="comfy skills install"
           :copy-label="copyLabel"
           :copied-label="copiedLabel"

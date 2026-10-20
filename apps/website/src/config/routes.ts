@@ -229,6 +229,8 @@ export const externalLinks = {
   // Markdown variant handed to agents in the "ask your agent" cards, same
   // rationale as docsMcpMd below.
   docsCliMd: 'https://docs.comfy.org/agent-tools/cli.md',
+  docsCliLocalInstall:
+    'https://docs.comfy.org/comfy-cli/getting-started#install-comfyui-local',
   docsCliReference: 'https://docs.comfy.org/comfy-cli/reference',
   docsMcp: 'https://docs.comfy.org/agent-tools/mcp',
   docsMcpLocal:
