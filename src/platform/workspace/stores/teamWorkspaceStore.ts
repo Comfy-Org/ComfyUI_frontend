@@ -164,7 +164,6 @@ function setLastWorkspaceId(workspaceId: string): void {
   }
 }
 
-/** The workspace this tab was on before a reload; other tabs cannot change it. */
 function getTabWorkspaceId(): string | null {
   try {
     const stored = sessionStorage.getItem(
