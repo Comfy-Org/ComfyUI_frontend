@@ -54,19 +54,17 @@ describe('EXR without a stored preview', () => {
   })
 
   it('shows the stored preview when there is one', () => {
+    const previewUrl = '/stored-preview.png'
     render(AssetThumbnail, {
       props: {
         name: 'plate.exr',
         mediaKind: 'image',
-        previewUrl: '/api/assets/preview-1/content',
+        previewUrl,
         variant: 'tray'
       },
       global: { plugins: [i18n] }
     })
-    expect(screen.getByAltText('plate.exr')).toHaveAttribute(
-      'src',
-      '/api/assets/preview-1/content'
-    )
+    expect(screen.getByAltText('plate.exr')).toHaveAttribute('src', previewUrl)
     expect(screen.queryByText('plate.exr')).not.toBeInTheDocument()
   })
 
