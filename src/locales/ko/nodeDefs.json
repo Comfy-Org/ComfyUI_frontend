@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "텍스트를 음성으로 변환합니다. 텍스트의 감정 단서(s2.1-pro에서는 [happy], [whispering], s1에서는 (happy))와 여러 음성이 연결된 경우 {'@'}Voice1/{'@'}Voice2 태그를 통한 다중 화자 대화를 지원합니다.",
+    "description": "텍스트를 음성으로 변환합니다. 텍스트 내 감정 큐(s2.1-pro의 [happy], [whispering], s1의 (happy)), drama-3의 자연어 [directions] 및 `<whisper>...</whisper>` 단어 태그, 그리고 여러 연결된 음성과 {'@'}Voice1/{'@'}Voice2 태그를 통한 다중 화자 대화를 지원합니다.",
     "display_name": "Fish Audio 텍스트 음성 변환",
     "inputs": {
       "control_after_generate": {
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "참조 이미지의 새로운 캐릭터, 장소 또는 스타일로 비디오를 재구성하면서 모션, 카메라 움직임 및 타이밍은 유지합니다.",
+    "display_name": "Higgsfield Genjutsu 모션 전송",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "저해상도 이미지를 초고해상도로 업스케일하고, 아티팩트와 노이즈를 제거합니다. 최대 출력: 32 메가픽셀.",
     "display_name": "HitPaw 일반 이미지 향상",
@@ -9263,6 +9290,28 @@
       },
       "rotation": {
         "name": "회전"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "sRGB 밝기를 Rec.2020 HLG HDR로 확장합니다. HDR 색 공간을 선택한 상태로 결과를 저장하세요. 알파는 유지됩니다.",
+    "display_name": "SDR을 HDR로 변환",
+    "inputs": {
+      "algorithm": {
+        "name": "알고리즘",
+        "tooltip": "보정된 단조 로그 게인 곡선과 혼합된 Lottes 스타일의 유리함수 확장입니다."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "이미지",
+        "tooltip": "sRGB의 SDR 이미지입니다."
       }
     },
     "outputs": {

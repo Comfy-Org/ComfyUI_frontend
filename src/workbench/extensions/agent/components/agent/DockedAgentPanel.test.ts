@@ -20,7 +20,7 @@ import DockedAgentPanel from './DockedAgentPanel.vue'
 vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/composables/billing/useBillingContext'))
 const billingContext = useBillingContext()
-vi.mock(import('../../services/agent/agentAuth'))
+vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 vi.mock(import('@/platform/telemetry/reportError'))
 
 const fetchApi = vi.hoisted(() =>

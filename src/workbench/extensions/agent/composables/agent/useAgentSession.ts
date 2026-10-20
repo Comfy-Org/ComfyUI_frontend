@@ -30,7 +30,7 @@ import type {
   AgentTurnAccepted,
   AgentWsEvent,
   TurnId
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   isAgentEvent,
   parseAgentWsEvent,
@@ -39,30 +39,30 @@ import {
   zAttachmentRejection,
   zDisownedWorkflowError,
   zTurnInProgressError
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
   DraftSnapshot,
   OpenTabsSnapshot,
   PostMessageInput
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AskUserResolution,
   AssistantMessage
-} from '../../services/agent/agentMessageParts'
-import { toAskResolution } from '../../services/agent/agentMessageParts'
-import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
-import type { LiveTurn } from '../../stores/agent/agentConversationStore'
-import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import type { WorkflowReference } from '../../types/workflowReference'
-import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { toAskResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { normalizeAgentTranscript } from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import { serializeWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 
 export interface AgentEventSource {
   subscribe(listener: (raw: unknown) => void): () => void

@@ -4,8 +4,8 @@ import { effectScope } from 'vue'
 import type {
   AgentRestClient,
   ThreadListing
-} from '../../services/agent/agentRestClient'
-import { useAgentChatHistoryStore } from '../../stores/agent/agentChatHistoryStore'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentChatHistoryRefresh } from './useAgentChatHistoryRefresh'
 
 function completedListing(id: string): ThreadListing {

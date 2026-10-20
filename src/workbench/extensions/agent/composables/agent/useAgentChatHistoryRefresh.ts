@@ -1,14 +1,14 @@
 import { onScopeDispose } from 'vue'
 
-import type { AgentThreadSummary } from '../../schemas/agentApiSchema'
+import type { AgentThreadSummary } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentRestClient,
   ThreadListing
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   ChatSession,
   useAgentChatHistoryStore
-} from '../../stores/agent/agentChatHistoryStore'
+} from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
 type HistoryRefreshFailure = Extract<
   ThreadListing,
