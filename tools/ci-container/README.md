@@ -44,12 +44,12 @@ directory and stops before the checkout server starts. Python assertions stay
 enabled even if the image sets `PYTHONOPTIMIZE`. Failed checks print the
 backend logs.
 
-`.github/workflows/ci-container.yaml` builds and validates candidates when
-this directory, that workflow, `package.json`, `pnpm-lock.yaml`,
-`pnpm-workspace.yaml`, or `.nvmrc` changes. Dependency changes rebuild the image
-to catch Node and Playwright incompatibilities; ordinary frontend source changes
-do not. The workflow has read-only repository access and does not log in to a
-registry.
+Candidate validation rebuilds the image for container source, workflow, or Node
+version changes. Shared dependency changes first pass through a lightweight
+comparison of engine requirements, the package manager, and resolved Playwright
+dependencies. Unrelated dependency updates skip the build. Manual dispatch
+always builds and validates. The workflow has read-only repository access and
+does not log in to a registry.
 
 ## Runtime contract
 
