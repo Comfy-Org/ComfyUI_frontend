@@ -11,7 +11,12 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
+      :class="
+        cn(
+          'pointer-events-none absolute top-1 left-2 z-10 rounded-sm px-1 text-2xs text-muted-foreground',
+          isReadOnly ? 'bg-input/50' : 'bg-input'
+        )
+      "
     >
       {{ displayName }}
     </label>
@@ -37,31 +42,38 @@
       @contextmenu.capture="handleContextMenu"
     />
     <div
-      class="pointer-events-none absolute top-1.5 right-1.5 z-10 flex gap-0.5"
+      role="group"
+      :aria-label="$t('g.actions')"
+      :class="
+        cn(
+          'pointer-events-none absolute top-0 right-0 z-10 flex gap-1 rounded-tr-md bg-linear-to-r from-transparent to-50% py-1.5 pr-1.5 pl-4 opacity-0 group-hover:opacity-100 focus-within:opacity-100',
+          isReadOnly ? 'to-input/50' : 'to-input'
+        )
+      "
     >
       <Button
         v-if="isReadOnly"
-        variant="textonly"
-        size="icon"
+        variant="tertiary"
+        size="unset"
         :class="actionButtonClass"
         :title="$t('g.copyToClipboard')"
         :aria-label="$t('g.copyToClipboard')"
         @click="handleCopy"
         @pointerdown.capture.stop
       >
-        <i class="icon-[lucide--copy] size-4 text-foreground" />
+        <i class="icon-[lucide--copy] size-3" />
       </Button>
       <Button
         v-if="!widget.linkedUpstream"
-        variant="textonly"
-        size="icon"
+        variant="tertiary"
+        size="unset"
         :class="actionButtonClass"
         :title="$t('textEditor.expand')"
         :aria-label="$t('textEditor.expand')"
         @click="openTextEditor"
         @pointerdown.capture.stop
       >
-        <i class="icon-[lucide--maximize-2] size-4 text-foreground" />
+        <i class="icon-[lucide--maximize-2] size-3" />
       </Button>
     </div>
   </div>
@@ -89,7 +101,7 @@ import {
 import { WidgetInputBaseClass } from './layout'
 
 const actionButtonClass =
-  'pointer-events-auto invisible group-focus-within:visible group-hover:visible hover:bg-foreground/10'
+  'pointer-events-none size-6 border border-solid border-border shadow-md group-hover:pointer-events-auto'
 
 const {
   widget,

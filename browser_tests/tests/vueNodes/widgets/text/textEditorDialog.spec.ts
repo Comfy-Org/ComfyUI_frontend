@@ -19,13 +19,22 @@ test.describe(
         name: 'text',
         includeHidden: true
       })
+      const actions = node.getByRole('group', { name: 'Actions' })
       const dialog = new TextEditorDialog(comfyPage.page)
       const original = await widget.inputValue()
       const edited = `${original}, at dusk`
 
-      await test.step('the expand button opens a titled, focused editor', async () => {
+      await test.step('the actions show on hover, not on focus alone', async () => {
+        await widget.click()
+        await comfyPage.page.mouse.move(0, 0)
+        await expect(actions).toHaveCSS('opacity', '0')
+
         await widget.hover()
-        await node.getByRole('button', { name: 'Expand' }).click()
+        await expect(actions).toHaveCSS('opacity', '1')
+      })
+
+      await test.step('the expand button opens a titled, focused editor', async () => {
+        await actions.getByRole('button', { name: 'Expand' }).click()
 
         await expect(dialog.root).toHaveAccessibleName(
           'text · CLIP Text Encode (Prompt)'
