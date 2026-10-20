@@ -212,10 +212,12 @@ it('suspends playback in a hidden document and resumes when visible', async () =
 
 it('hydrates reduced-motion session labels and phase from server markup', async () => {
   const host = document.createElement('div')
+  vi.mocked(prefersReducedMotion).mockReturnValue(true)
   host.innerHTML = await renderToString(createSSRApp(NativeCliSession))
   document.body.append(host)
-  vi.mocked(prefersReducedMotion).mockReturnValue(true)
   const app = createSSRApp(NativeCliSession)
+  const warn = vi.fn()
+  app.config.warnHandler = warn
   try {
     app.mount(host)
     await nextTick()
@@ -224,8 +226,27 @@ it('hydrates reduced-motion session labels and phase from server markup', async 
         name: translationsFor('en').t('cli.session.reducedLabel')
       })
     ).toHaveAttribute('data-phase', 'results')
+    expect(warn).not.toHaveBeenCalled()
   } finally {
     app.unmount()
     host.remove()
   }
+})
+
+it('updates the session label and phase when reduced motion becomes preferred', async () => {
+  const reduced = ref(false)
+  vi.mocked(prefersReducedMotion).mockImplementation(() => reduced.value)
+  render(NativeCliSession)
+  expect(
+    screen.getByRole('group', {
+      name: translationsFor('en').t('cli.session.animationLabel')
+    })
+  ).toHaveAttribute('data-phase', 'terminal')
+  reduced.value = true
+  await nextTick()
+  expect(
+    screen.getByRole('group', {
+      name: translationsFor('en').t('cli.session.reducedLabel')
+    })
+  ).toHaveAttribute('data-phase', 'results')
 })
