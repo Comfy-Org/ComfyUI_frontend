@@ -123,13 +123,13 @@ jobs:
           path: ${{ env.LINT_CACHE_PATHS }}
 
       - name: Explain architecture verdict
-        if: ${{ !cancelled() && steps.architecture.outcome != 'skipped' }}
+        if: ${{ !cancelled() }}
         uses: ./.github/actions/explain-check
         with:
           slug: architecture
           title: Architecture
           icon: '🏛️'
-          status: ${{ steps.architecture.outcome == 'success' && 'pass' || 'fail' }}
+          status: ${{ steps.architecture.outcome == 'skipped' && 'withheld' || steps.architecture.outcome == 'success' && 'pass' || 'fail' }}
           details-file: ${{ runner.temp }}/architecture-findings.md
           reproduce: pnpm architecture:check
           docs: '[Frontend domain catalog](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha }}/docs/architecture/domains/README.md)'

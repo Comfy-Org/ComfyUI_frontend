@@ -9,7 +9,7 @@ import type { DropdownMenuContentProps } from 'reka-ui'
 
 import MenuContent from './MenuContent.vue'
 import MenuItems from './MenuItems.vue'
-import type { MenuItem } from './types'
+import type { MenuItem, MenuItemAction } from './types'
 
 defineOptions({ inheritAttrs: false })
 
@@ -33,6 +33,8 @@ const {
 } = defineProps<MenuProps>()
 
 const open = defineModel<boolean>('open', { default: false })
+
+const emit = defineEmits<{ activate: [item: MenuItemAction] }>()
 </script>
 
 <template>
@@ -56,7 +58,11 @@ const open = defineModel<boolean>('open', { default: false })
           {{ label }}
         </DropdownMenuLabel>
         <slot>
-          <MenuItems :items @select="open = false">
+          <MenuItems
+            :items
+            @select="open = false"
+            @activate="emit('activate', $event)"
+          >
             <template v-if="$slots.item" #item="slotProps">
               <slot name="item" v-bind="slotProps" />
             </template>

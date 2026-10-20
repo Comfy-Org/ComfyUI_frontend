@@ -91,7 +91,8 @@ function toolCall(
   tool_name: string,
   status: 'running' | 'success' | 'error',
   tool_call_id = `call-${tool_name}`,
-  skill?: string
+  skill?: string,
+  correlation?: { workflow_id: string; op_ids: string[] }
 ): AgentChatEvent {
   return {
     type: 'agent_tool_call',
@@ -100,6 +101,7 @@ function toolCall(
       tool_name,
       status,
       skill,
+      ...correlation,
       message_id: 'm',
       thread_id: 't'
     }
@@ -1107,6 +1109,171 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 
+  it('does not release an uncorrelated tool call for a catch-up frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(toolCall('add_node', 'success'))
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-catch-up'],
+      isLive: false
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-live'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+  })
+
+  it('releases only the held call whose workflow and op ids materialized', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-add']
+      })
+    )
+    transport.ingest(
+      toolCall('connect', 'success', 'call-connect', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-connect']
+      })
+    )
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-b',
+      opIds: ['op-add'],
+      isLive: true
+    })
+    expect(toolParts(message).map(({ state }) => state)).toEqual([
+      'streaming',
+      'streaming'
+    ])
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-add'],
+      isLive: true
+    })
+    expect(toolParts(message).map(({ state }) => state)).toEqual([
+      'done',
+      'streaming'
+    ])
+  })
+
+  it('releases a correlated call when matching catch-up evidence materializes', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-add']
+      })
+    )
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-add'],
+      isLive: false
+    })
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+  })
+
+  it('remembers exact op evidence that arrives before the terminal tool frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-add'],
+      isLive: true
+    })
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-add']
+      })
+    )
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('holds a multi-op call until its final op applies after the terminal frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('apply_ops', 'success', 'call-ops', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-a', 'op-b']
+      })
+    )
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-a'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-b',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('holds a multi-op call whose earlier evidence covered only some ops', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-a'],
+      isLive: true
+    })
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-b',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    transport.ingest(
+      toolCall('apply_ops', 'success', 'call-ops', undefined, {
+        workflow_id: 'wf-a',
+        op_ids: ['op-a', 'op-b']
+      })
+    )
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'wf-a',
+      opIds: ['op-b'],
+      isLive: true
+    })
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
   // A failed tool call never mutates anything, so there is no forthcoming
   // doc_update for it to wait on -- gating it the same as a success would
   // strand it at the spinner glyph until STALE_AFTER_MS (30s), and, for a
@@ -1128,6 +1295,25 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const transport = createAgentEventTransport(message, emit, () => false)
 
     transport.ingest(toolCall('add_node', 'success'))
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('does not hold correlated work for a workflow the follower cannot observe', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      (workflowId) => workflowId !== 'background-workflow'
+    )
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-background', undefined, {
+        workflow_id: 'background-workflow',
+        op_ids: ['op-background']
+      })
+    )
 
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })

@@ -1,16 +1,9 @@
 import { render } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
 import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import SearchAutocomplete from './SearchAutocomplete.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: { g: { searchPlaceholder: 'Search...', clear: 'Clear' } } }
-})
 
 function findContentElement(): HTMLElement | null {
   return document.querySelector('[data-dismissable-layer]')
@@ -33,8 +26,12 @@ describe('SearchAutocomplete z-index', () => {
 
     const { rerender, unmount } = render(SearchAutocomplete, {
       container: document.body.appendChild(document.createElement('div')),
-      props: { modelValue: 'fo', suggestions: [] },
-      global: { plugins: [i18n] }
+      props: {
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
+        modelValue: 'fo',
+        suggestions: []
+      }
     })
 
     await rerender({ suggestions: ['foo', 'foobar'] })
@@ -49,8 +46,12 @@ describe('SearchAutocomplete z-index', () => {
   it('keeps the static z-index class when no dialog is open', async () => {
     const { rerender, unmount } = render(SearchAutocomplete, {
       container: document.body.appendChild(document.createElement('div')),
-      props: { modelValue: 'fo', suggestions: [] },
-      global: { plugins: [i18n] }
+      props: {
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
+        modelValue: 'fo',
+        suggestions: []
+      }
     })
 
     await rerender({ suggestions: ['foo', 'foobar'] })

@@ -582,11 +582,22 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
-  it('advances to confirmation without charging', async () => {
+  it('shows the purchase disclosure before confirming without charging', async () => {
     renderDialog()
+
+    expect(
+      screen.getByText(
+        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+      )
+    ).toBeVisible()
 
     await clickAddCredits()
 
+    expect(
+      screen.getByText(
+        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+      )
+    ).toBeVisible()
     expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Total due today')).toBeInTheDocument()
     expect(screen.getByText('$50.00')).toBeInTheDocument()

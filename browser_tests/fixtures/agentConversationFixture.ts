@@ -6,6 +6,8 @@ import { z } from 'zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -53,6 +55,7 @@ import {
 import { agentReplayNodeDefs } from '@e2e/fixtures/data/agentReplayNodeDefs'
 import type { ExpectedTurn } from '@e2e/fixtures/data/agent/agentConversationExpectations'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -221,6 +224,9 @@ export class AgentConversationHarness {
   private readonly displayNames = new Map<string, string>()
   // Resolved when the panel cancels the turn the recording stopped.
   private readonly cancelWaiters = new Map<string, () => void>()
+  private savedWorkflow: Awaited<
+    ReturnType<typeof mockSavedWorkflowPersistence>
+  > | null = null
 
   constructor(
     private readonly page: Page,
@@ -350,7 +356,44 @@ export class AgentConversationHarness {
    * implementations of the same save/reopen round trip.
    */
   async persistSavedWorkflow(): Promise<void> {
-    await mockSavedWorkflowPersistence(this.page, this.conversation.workflow.id)
+    this.savedWorkflow = await mockSavedWorkflowPersistence(
+      this.page,
+      this.conversation.workflow.id
+    )
+  }
+
+  savedWorkflowPath(): string | null {
+    const name = this.savedWorkflow?.savedName()
+    return name === undefined ? null : `workflows/${name}.json`
+  }
+
+  async savedWorkflowContent(): Promise<ComfyWorkflowJSON> {
+    const content = this.savedWorkflow?.savedContent()
+    if (content === undefined)
+      throw new Error('the app has not saved a workflow yet')
+    const errors: string[] = []
+    const workflow = await validateComfyWorkflow(
+      JSON.parse(content) as unknown,
+      (error) => errors.push(error)
+    )
+    if (!workflow)
+      throw new Error(
+        `the saved workflow is not schema-valid: ${errors.join('; ')}`
+      )
+    return workflow
+  }
+
+  replaceInSavedWorkflow(search: string, replacement: string): void {
+    const content = this.savedWorkflow?.savedContent()
+    if (!content?.includes(search))
+      throw new Error(`the saved workflow does not contain "${search}"`)
+    this.savedWorkflow?.corruptSavedContent(
+      content.replaceAll(search, replacement)
+    )
+  }
+
+  refuseHostSubscribes(reason = 'overloaded'): void {
+    this.hostSocket.refuseSubscribes(reason)
   }
 
   async sendPrompt(turn = 0): Promise<void> {
@@ -671,8 +714,8 @@ export class AgentConversationHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    await page.route('**/api/agent/threads', (route) =>
-      route.fulfill(jsonRoute({ threads: [] }))
+    await page.route('**/api/agent/threads?*', (route) =>
+      route.fulfill(jsonRoute(emptyAgentThreadList()))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       const request = route.request()
@@ -699,7 +742,6 @@ export class AgentConversationHarness {
         target === null || target[1] !== THREAD_ID
           ? undefined
           : this.cancelWaiters.get(target[2])
-      // A real server knows nothing about any other message.
       if (release === undefined) return route.fulfill({ status: 404 })
       release()
       const cancelled: AgentCancelAccepted = { status: 'cancelling' }
@@ -875,9 +917,6 @@ export class AgentConversationHarness {
     const before = new Set(await this.graphNodeIds())
     await this.page.mouse.dblclick(position.x, position.y, { delay: 5 })
     const dialog = this.page.getByRole('search')
-    // Scoped by accessible name: the seed workflow already has nodes on the
-    // canvas, and a widget-select trigger (e.g. LoadImage's) is also
-    // role="combobox", so an unnamed query resolves to more than one match.
     const input = dialog.getByRole('combobox', { name: enMessages.g.addNode })
     await input.waitFor({ state: 'visible' })
     await input.fill('Note')
@@ -898,7 +937,14 @@ export class AgentConversationHarness {
       return Boolean(ghostNode?.flags.ghost)
     })
 
-    await this.page.mouse.click(position.x, position.y)
+    const canvasBounds = await this.comfyPage.canvas.boundingBox()
+    if (!canvasBounds) throw new Error('the graph canvas is not visible')
+    await this.comfyPage.canvas.click({
+      position: {
+        x: position.x - canvasBounds.x,
+        y: position.y - canvasBounds.y
+      }
+    })
     const after = await this.graphNodeIds()
     const [added] = after.filter((id) => !before.has(id))
     if (!added) throw new Error('the search box add produced no node')

@@ -657,20 +657,15 @@ export class LiveGraphApplier {
     }
   }
 
-  /**
-   * One frame is one change: the same `before-change`/`after-change` bracket
-   * a multi-step human edit emits, so the change tracker records a single
-   * undo entry and flips `isModified` once.
-   */
   private write<T>(graph: LGraph, context: RemoteApplyContext, fn: () => T): T {
     const withActor = this.deps.withRemoteActor ?? ((_, run) => run())
     return withActor(context.actor, () => {
-      graph.canvasAction((canvas) => canvas.emitBeforeChange())
+      this.deps.getCanvas?.()?.emitBeforeChange()
       try {
         return withGraphIntentSource('agent-remote', fn)
       } finally {
         graph.setDirtyCanvas(true, true)
-        graph.canvasAction((canvas) => canvas.emitAfterChange())
+        this.deps.getCanvas?.()?.emitAfterChange()
       }
     })
   }
