@@ -91,14 +91,18 @@ test.describe(
                 hasErrors: node?.has_errors === true,
                 hasStepsWidget: node?.widgets?.some(
                   (widget) => widget.name === 'steps'
-                )
+                ),
+                seed: node?.widgets?.find((widget) => widget.name === 'seed')
+                  ?.value
               }
             }, browserProofNodeId)
           )
           .toEqual({
             type: 'BrowserProofNode',
             hasErrors: false,
-            hasStepsWidget: true
+            hasStepsWidget: true,
+            // Saved value, not the refreshed definition's default of 0.
+            seed: 156680208700286
           })
       })
     })
