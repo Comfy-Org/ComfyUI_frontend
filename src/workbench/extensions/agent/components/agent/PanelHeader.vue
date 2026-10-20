@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -28,13 +29,12 @@ const sizeToggleLabel = computed(() =>
 </script>
 
 <template>
-  <header
-    class="flex h-12 shrink-0 items-center gap-2 border-b border-component-node-border px-4"
-  >
+  <header class="flex h-12 shrink-0 items-center gap-2 border-b px-4">
     <div class="flex items-center gap-1">
       <h1
         id="agent-panel-title"
-        class="my-0 text-sm font-normal whitespace-nowrap text-base-foreground"
+        data-testid="agent-panel-title"
+        class="my-0 text-sm font-normal whitespace-nowrap"
       >
         {{ t('agent.title') }}
       </h1>
@@ -50,11 +50,12 @@ const sizeToggleLabel = computed(() =>
         <span class="icon-[lucide--info] size-4" />
       </Button>
     </div>
-    <span
-      class="shrink-0 rounded-full border border-border-default px-2 py-0.5 text-xs text-muted-foreground"
+    <Badge
+      variant="pill"
+      class="border bg-transparent text-xs text-muted-foreground"
     >
       {{ t('agent.beta') }}
-    </span>
+    </Badge>
 
     <div class="ml-auto flex items-center gap-2">
       <Button
@@ -65,7 +66,7 @@ const sizeToggleLabel = computed(() =>
         :aria-label="t('agent.newChat')"
         @click="emit('newChat')"
       >
-        <span class="icon-[lucide--message-circle-plus] size-4" />
+        <span class="icon-[lucide--plus] size-4" />
       </Button>
       <Button
         :tooltip="sizeToggleLabel"

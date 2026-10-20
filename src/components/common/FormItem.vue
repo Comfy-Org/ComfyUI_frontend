@@ -1,17 +1,16 @@
-<!-- A generalized form item for rendering in a form. -->
 <template>
-  <div class="flex min-h-8 flex-row items-center gap-2">
+  <div class="flex min-h-8 items-center gap-2">
     <div class="flex grow items-center">
       <span
         :id="`${props.id}-label`"
-        class="text-sm text-muted"
+        class="text-sm text-muted-foreground"
         :class="props.labelClass"
       >
         <slot name="name-prefix" />
         {{ props.item.name }}
         <Tooltip v-if="props.item.tooltip">
           <TooltipTrigger as-child>
-            <i class="pi pi-info-circle bg-transparent" />
+            <i class="pi pi-info-circle" />
           </TooltipTrigger>
           <TooltipContent>{{ props.item.tooltip }}</TooltipContent>
         </Tooltip>

@@ -1,10 +1,13 @@
+import type {
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import type { LightInfoEntry } from '@/types/lightInfo'
-import type { NodeId } from '@/types/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { WidgetValue } from '@/types/widgetValue'
 import type { WidgetId } from '@/types/widgetId'
 import type {
   WidgetSurfaces,
@@ -18,13 +21,11 @@ import type {
   Point,
   RequiredProps,
   Size
-} from '../interfaces'
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+} from '@/lib/litegraph/src/interfaces'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { CanvasPointerEvent } from './events'
 
-export interface NodeBindable {
-  setNodeId(nodeId: NodeId): void
-}
+export type { NodeBindable } from '@/lib/litegraph/src/utils/type'
 
 export interface IWidgetOptions<TValues = unknown> {
   on?: string

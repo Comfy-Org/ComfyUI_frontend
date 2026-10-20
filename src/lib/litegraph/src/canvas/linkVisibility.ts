@@ -1,16 +1,19 @@
+import type {
+  LGraph,
+  LLink,
+  Reroute
+} from '@/lib/litegraph/src/types/entityRegistry'
 import { st, t } from '@/i18n'
-import type { IContextMenuValue } from '../types/contextMenu'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
-import type { LGraph } from '../LGraph'
-import type { LLink } from '../LLink'
-import type { Reroute } from '../Reroute'
-import type { CanvasPointerEvent } from '../types/events'
+import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 
-interface LinkMutationHost {
+export interface LinkMutationHost {
   emitBeforeChange(): void
   emitAfterChange(): void
   setDirty(fgcanvas: boolean, bgcanvas?: boolean): void
@@ -53,6 +56,26 @@ export function hideLinks(
   mutateLink(host, () => {
     const store = useLinkPresentationStore()
     for (const linkId of linkIds) store.patch(scope, linkId, { hidden: true })
+  })
+}
+
+export function deleteLinks(
+  host: LinkMutationHost,
+  graph: LGraph,
+  links: Iterable<LLink>
+): void {
+  mutateLink(host, () => {
+    for (const link of links) {
+      const outputSlot =
+        link.targetIsIoNode && graph instanceof Subgraph
+          ? graph.outputNode.slots[link.target_slot]
+          : undefined
+      if (outputSlot?.linkIds.includes(link.id)) {
+        outputSlot.disconnect()
+      } else {
+        graph.removeLink(link.id)
+      }
+    }
   })
 }
 

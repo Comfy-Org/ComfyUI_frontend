@@ -39,7 +39,6 @@ function settlesAs(status: TerminalOperation['status']) {
       authenticationRequiredSeen: false,
       blockedOnCustomerSeen: false,
       workspaceId: 'workspace-1',
-      autoHandleRequiresAction: false,
       phase: null,
       dismissed: false
     })

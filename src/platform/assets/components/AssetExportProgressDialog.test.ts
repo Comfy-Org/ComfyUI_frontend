@@ -8,13 +8,7 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 
 import AssetExportProgressDialog from './AssetExportProgressDialog.vue'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const i18n = createI18n({
   legacy: false,

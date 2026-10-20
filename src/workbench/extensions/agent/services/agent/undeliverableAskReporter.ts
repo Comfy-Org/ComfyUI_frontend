@@ -1,5 +1,5 @@
 import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 type AgentAskData = Extract<AgentWsEvent, { type: 'agent_ask' }>['data']
 
@@ -43,7 +43,7 @@ export function createUndeliverableAskReporter() {
           level: 'warning',
           tags: {
             reason,
-            ask_kind: data.kind?.slice(0, 64) || 'missing',
+            ask_kind: data.kind,
             has_active_turn: context.hasActiveTurn,
             background_turn_count: context.backgroundTurnCount
           },

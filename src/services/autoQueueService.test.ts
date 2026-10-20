@@ -3,12 +3,11 @@ import { nextTick } from 'vue'
 
 import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
+import { api } from '@/scripts/api'
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 const mocks = vi.hoisted(() => ({
-  addEventListener:
-    vi.fn<(event: string, listener: (event: Event) => void) => void>(),
   gateBlocks: false
 }))
 
@@ -16,11 +15,7 @@ vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), () => ({
   partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: mocks.addEventListener
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'))
 
@@ -30,11 +25,8 @@ import { useQueuePendingTaskCountStore } from '@/stores/queueStore'
 
 function setupAndGetAutoQueueGraphChangedListener() {
   setupAutoQueueHandler()
-  const registration = mocks.addEventListener.mock.calls.find(
-    ([event]) => event === 'autoQueueGraphChanged'
-  )
-  if (!registration) throw new Error('autoQueueGraphChanged listener missing')
-  return registration[1]
+  const apiEvents: EventTarget = api
+  return (event: Event) => apiEvents.dispatchEvent(event)
 }
 
 describe('setupAutoQueueHandler', () => {
@@ -51,7 +43,7 @@ describe('setupAutoQueueHandler', () => {
   it('queues on autoQueueGraphChanged instead of graphChanged', () => {
     const listener = setupAndGetAutoQueueGraphChangedListener()
 
-    expect(mocks.addEventListener).not.toHaveBeenCalledWith(
+    expect(api.addEventListener).not.toHaveBeenCalledWith(
       'graphChanged',
       expect.any(Function)
     )

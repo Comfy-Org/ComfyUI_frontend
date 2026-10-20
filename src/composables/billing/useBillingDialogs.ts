@@ -2,10 +2,6 @@ import { watch } from 'vue'
 
 import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationDialogContent.vue'
 import TopUpCreditsDialogContentLegacy from '@/components/dialog/content/TopUpCreditsDialogContentLegacy.vue'
-import {
-  SELF_STYLED_PANEL_CONTENT_CLASS,
-  SELF_STYLED_PANEL_DIALOG_PROPS
-} from '@/components/ui/dialog/dialog.variants'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type {
   DowngradeToPersonalResult,
@@ -14,6 +10,8 @@ import type {
 } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { t } from '@/i18n'
+import { provideBillingDialogs } from '@/platform/cloud/subscription/composables/billingDialogsAccess'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { CancellationFlowDialogOptions } from '@/platform/cloud/subscription/launchCancellationFlow'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -21,16 +19,13 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import InsufficientCreditsMemberDialog from '@/platform/workspace/components/InsufficientCreditsMemberDialog.vue'
 import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/TopUpCreditsDialogContentWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import {
+  isTopUpDeniedPastDue,
+  usePaymentRecoveryDialog
+} from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { getErrorMessage } from '@/utils/errorUtil'
-
-function topUpFallbackReason(
-  options?: TopUpCreditsDialogOptions
-): PaymentIntentSource {
-  if (options?.isInsufficientCredits) return 'out_of_credits'
-  return options?.source ?? 'top_up_blocked'
-}
 
 export function useBillingDialogs() {
   const dialogStore = useDialogStore()
@@ -45,18 +40,13 @@ export function useBillingDialogs() {
         (options?.isInsufficientCredits ? 'out_of_credits' : undefined)
     })
     const { type } = useBillingContext()
-    const { canTopUp, canSubscribeSelfServe, isReady, initialize } =
+    const { canTopUp, topUpDenial, isReady, initialize } =
       useBillingCapabilities()
-    // A capability read still in flight has to be awaited here, or a top-up
-    // triggered during that window is silently dropped with no recovery UI.
     if (!isReady.value) await initialize()
     if (!isReady.value) return
-    if (!canTopUp.value && canSubscribeSelfServe.value) {
-      await showSubscriptionRequiredDialog({
-        reason: topUpFallbackReason(options),
-        paymentIntentSource: options?.source
-      })
-      return
+
+    if (isTopUpDeniedPastDue(topUpDenial.value)) {
+      return usePaymentRecoveryDialog().showPaymentRecoveryDialog()
     }
 
     if (!canTopUp.value && type.value === 'workspace') {
@@ -68,10 +58,7 @@ export function useBillingDialogs() {
             dialogStore.closeDialog({ key: 'insufficient-credits-member' })
         },
         dialogComponentProps: {
-          renderer: 'reka',
-          headless: true,
-          contentClass:
-            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
+          headless: true
         }
       })
     }
@@ -87,9 +74,7 @@ export function useBillingDialogs() {
         : TopUpCreditsDialogContentLegacy,
       props: options,
       dialogComponentProps: {
-        renderer: 'reka',
-        headless: true,
-        contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
+        headless: true
       }
     })
   }
@@ -132,8 +117,6 @@ export function useBillingDialogs() {
       return
     }
 
-    const { useSubscriptionDialog } =
-      await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
     const { show } = useSubscriptionDialog()
     show(options)
   }
@@ -149,9 +132,7 @@ export function useBillingDialogs() {
         onConfirm: () => {}
       },
       dialogComponentProps: {
-        renderer: 'reka',
-        size: 'sm',
-        contentClass: 'max-w-[360px]'
+        size: 'sm'
       }
     })
   }
@@ -180,7 +161,7 @@ export function useBillingDialogs() {
       component,
       props: guardedProps,
       dialogComponentProps: {
-        ...SELF_STYLED_PANEL_DIALOG_PROPS
+        headless: true
       }
     })
   }
@@ -196,9 +177,9 @@ export function useBillingDialogs() {
       component,
       props: { ...options },
       dialogComponentProps: {
-        ...SELF_STYLED_PANEL_DIALOG_PROPS,
+        headless: true,
         closable: false,
-        dismissableMask: false
+        dismissOnPointerDownOutside: false
       }
     })
   }
@@ -313,9 +294,9 @@ export function useBillingDialogs() {
           }
         },
         dialogComponentProps: {
-          ...SELF_STYLED_PANEL_DIALOG_PROPS,
+          headless: true,
           closable: false,
-          dismissableMask: false,
+          dismissOnPointerDownOutside: false,
           onClose: () => resolveResult(null)
         }
       })
@@ -331,3 +312,5 @@ export function useBillingDialogs() {
     showDowngradeToPersonalDialog
   }
 }
+
+provideBillingDialogs(useBillingDialogs)

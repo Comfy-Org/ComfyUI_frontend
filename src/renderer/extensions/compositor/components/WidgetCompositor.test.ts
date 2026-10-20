@@ -10,7 +10,7 @@ import { toNodeId } from '@/types/nodeId'
 import {
   clearCompositorLayers,
   setCompositorLayers
-} from '../composables/useCompositorLayers'
+} from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import WidgetCompositor from './WidgetCompositor.vue'
 
 vi.mock(import('@/scripts/app'))

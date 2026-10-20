@@ -12,11 +12,16 @@ type RenderGuard = {
   cls: number
   loaderLastSeenAt: number
   frames: number
+  hydratedAt: WeakMap<Element, number>
   flush: () => void
 }
 type RenderGuardWindow = Window & { __renderGuard?: RenderGuard }
 
 const CLS_BUDGET = 0.1
+// Counted from the moment the page's island hydrates, not from navigation:
+// until then the server-rendered loader is waiting on the runner's network and
+// CPU to boot the site's JavaScript, which is not what this guard is about. The
+// no-JavaScript cases below cover model pages that ship a loader in their HTML.
 const LOADER_GRACE_MS = 1_000
 
 const catalogueSchema = z.array(
@@ -83,10 +88,21 @@ async function recordLoaderAndLayoutShift(page: Page) {
       cls: 0,
       loaderLastSeenAt: 0,
       frames: 0,
+      hydratedAt: new WeakMap(),
       flush: () => addShifts(observer.takeRecords())
     }
     ;(window as RenderGuardWindow).__renderGuard = guard
     observer.observe({ type: 'layout-shift', buffered: true })
+    // Astro dispatches a non-bubbling `astro:hydrate` on each <astro-island>
+    // once it hydrates, so listen in the capture phase.
+    document.addEventListener(
+      'astro:hydrate',
+      (event) => {
+        if (event.target instanceof Element)
+          guard.hydratedAt.set(event.target, performance.now())
+      },
+      true
+    )
     const watchLoader = () => {
       guard.frames++
       const loader = document.querySelector(
@@ -99,13 +115,18 @@ async function recordLoaderAndLayoutShift(page: Page) {
   })
 }
 
+/** Waits out the grace after the page island hydrates; returns when it hydrated. */
 async function waitUntilSettled(
   page: Page,
   kind: GuardedPage['kind'],
   enabled: boolean
 ) {
-  if (kind === 'model') {
-    await expectIslandHydrated(page, page.getByTestId('model-detail'))
+  const content =
+    kind === 'model'
+      ? page.getByTestId('model-detail')
+      : page.getByTestId('workshop-model-card').first()
+  await expectIslandHydrated(page, content)
+  if (kind === 'model')
     await expect(
       enabled
         ? page.locator(
@@ -113,16 +134,19 @@ async function waitUntilSettled(
           )
         : page.getByTestId('run-rollout-note')
     ).toBeVisible()
-  } else {
-    await expectIslandHydrated(
-      page,
-      page.getByTestId('workshop-model-card').first()
+  const hydratedAt = await page
+    .locator('astro-island')
+    .filter({ has: content })
+    .evaluate((island) =>
+      (window as RenderGuardWindow).__renderGuard?.hydratedAt.get(island)
     )
-  }
+  if (hydratedAt === undefined)
+    throw new Error('The render guard never saw the page island hydrate')
   await page.waitForFunction(
-    (graceMs) => performance.now() > graceMs,
-    LOADER_GRACE_MS
+    (settledAt) => performance.now() > settledAt,
+    hydratedAt + LOADER_GRACE_MS
   )
+  return hydratedAt
 }
 
 test.describe('without JavaScript', () => {
@@ -179,7 +203,7 @@ for (const { width, height } of GUARD_VIEWPORTS) {
           )
           await page.goto(path)
           await flagAnswered
-          await waitUntilSettled(page, guarded.kind, enabled)
+          const hydratedAt = await waitUntilSettled(page, guarded.kind, enabled)
           if (name)
             await expect(page.getByRole('heading', { level: 1 })).toHaveText(
               name
@@ -199,13 +223,17 @@ for (const { width, height } of GUARD_VIEWPORTS) {
           if (!guard) throw new Error('The render guard never installed')
           const { cls, loaderLastSeenAt, frames } = guard
           expect(frames, 'frames the loader watcher ran').toBeGreaterThan(0)
+          const loaderAfterHydration = Math.max(
+            0,
+            loaderLastSeenAt - hydratedAt
+          )
           test.info().annotations.push({
             type: 'render-guard',
-            description: `${path} cls=${cls} loaderLastSeenAt=${loaderLastSeenAt}`
+            description: `${path} cls=${cls} hydratedAt=${hydratedAt} loaderLastSeenAt=${loaderLastSeenAt}`
           })
           expect(
-            loaderLastSeenAt,
-            'ms after navigation the loader was last visible'
+            loaderAfterHydration,
+            'ms after the page island hydrated that the loader was last visible'
           ).toBeLessThan(LOADER_GRACE_MS)
           expect(cls, 'cumulative layout shift').toBeLessThan(CLS_BUDGET)
         })

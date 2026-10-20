@@ -195,7 +195,7 @@ test.describe(
         .poll(async () => {
           const aAfter = await a.boundingBox()
           const bAfter = await b.boundingBox()
-          if (!aAfter || !bAfter) throw new Error('Both nodes must be rendered')
+          if (!aAfter || !bAfter) return null
           return { x: aAfter.x - bAfter.x, y: aAfter.y - bAfter.y }
         }, 'Locked drag may pan but must not move A relative to B')
         .toEqual({ x: aBefore.x - bBefore.x, y: aBefore.y - bBefore.y })

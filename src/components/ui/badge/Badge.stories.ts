@@ -11,6 +11,37 @@ const meta: Meta<ComponentPropsAndSlots<typeof Badge>> = {
   component: Badge,
   tags: ['autodocs'],
   args: { default: 'Badge', variant: 'tag', severity: 'secondary' },
+  argTypes: {
+    variant: {
+      control: 'select',
+      options: [
+        'tag',
+        'chip',
+        'badge',
+        'compact',
+        'label',
+        'circle',
+        'outline',
+        'square',
+        'pill',
+        'dot'
+      ]
+    },
+    severity: {
+      control: 'select',
+      options: [
+        'default',
+        'contrast',
+        'primary',
+        'secondary',
+        'muted',
+        'danger',
+        'info',
+        'success',
+        'warning'
+      ]
+    }
+  },
   render: (args) => ({
     components: { Badge },
     setup: () => ({ args }),
