@@ -5,7 +5,6 @@ import {
 } from '@vueuse/core'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -204,8 +203,8 @@ function useBillingCapabilitiesInternal() {
     )
   )
   const runDeniedPaymentPastDue = computed(() =>
-    pendingServerFact<'denied_reasons.can_run_workflows', boolean>(
-      'BE-21535',
+    receiveServerFact(
+      'denied_reasons.can_run_workflows',
       resolvedResponse.value?.denied_reasons?.can_run_workflows ===
         'payment_past_due'
     )
