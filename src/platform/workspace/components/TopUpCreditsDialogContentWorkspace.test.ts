@@ -927,17 +927,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     it.for([
       {
-        page: 'checkout',
-        url: checkoutUrl,
-        heading: "Checkout didn't open",
-        link: 'Open checkout',
-        trigger: 'Continue to checkout',
-        session: () =>
-          vi
-            .spyOn(workspaceApi, 'createTopupCheckout')
-            .mockResolvedValue({ checkout_url: checkoutUrl })
-      },
-      {
         page: 'card settings',
         url: portalUrl,
         heading: "Payment page didn't open",
@@ -980,28 +969,64 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       return { opener: window, location: { href: '' }, close: vi.fn() }
     }
 
-    it.for([
-      {
-        path: 'the checkout tab opens',
-        tab: newCheckoutTab,
-        follow: async () => {}
-      },
-      {
-        path: 'the customer follows the blocked checkout link',
-        tab: () => null,
-        follow: async () =>
-          userEvent.click(
-            await screen.findByRole('link', { name: 'Open checkout' })
-          )
-      }
-    ])('hands off to the open checkout once $path', async ({ tab, follow }) => {
+    it('mints the checkout session only once Open checkout gets a tab', async () => {
       refuseForNoPaymentMethod()
-      checkoutOpensAt(checkoutUrl)
-      vi.spyOn(window, 'open').mockReturnValue(tab() as never)
-      stopBrowserFollowingLinks()
+      const createCheckout = vi
+        .spyOn(workspaceApi, 'createTopupCheckout')
+        .mockResolvedValue({ checkout_url: checkoutUrl })
+      const checkoutTab = newCheckoutTab()
+      const open = vi
+        .spyOn(window, 'open')
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(checkoutTab as never)
+      const appUrl = window.location.href
       await userEvent.click((await payAndGetRefused()).continueButton)
 
-      await follow()
+      expect(
+        await screen.findByRole('heading', { name: "Checkout didn't open" })
+      ).toBeInTheDocument()
+      expect(createCheckout).not.toHaveBeenCalled()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Open checkout' })
+      )
+
+      await waitFor(() => expect(checkoutTab.location.href).toBe(checkoutUrl))
+      expect(createCheckout).toHaveBeenCalledOnce()
+      expect(open).toHaveBeenCalledTimes(2)
+      expect(window.location.href).toBe(appUrl)
+      expect(
+        screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
+      ).toBeInTheDocument()
+    })
+
+    it('returns to Pay when the blocked checkout fails to start a session', async () => {
+      refuseForNoPaymentMethod()
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockRejectedValue(
+        new WorkspaceApiError('Checkout down', 502)
+      )
+      vi.spyOn(window, 'open')
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(newCheckoutTab() as never)
+      await userEvent.click((await payAndGetRefused()).continueButton)
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Open checkout' })
+      )
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "The payment page couldn't open. Nothing was charged. Try again."
+      )
+      expect(
+        screen.getByRole('button', { name: 'Continue to checkout' })
+      ).toBeInTheDocument()
+    })
+
+    it('hands off to the open checkout once the checkout tab opens', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      vi.spyOn(window, 'open').mockReturnValue(newCheckoutTab() as never)
+      await userEvent.click((await payAndGetRefused()).continueButton)
 
       expect(
         await screen.findByRole('heading', {
@@ -1058,15 +1083,56 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         ).toBeInTheDocument()
       })
 
-      it('links to the fresh session when the reopened tab is blocked', async () => {
-        await openCheckoutThenReopen({
+      it('mints no session when the reopened tab is blocked', async () => {
+        const { createCheckout } = await openCheckoutThenReopen({
           reopenTab: null,
           reopened: async () => ({ checkout_url: reopenedUrl })
         })
 
         expect(
-          await screen.findByRole('link', { name: 'Open checkout' })
-        ).toHaveAttribute('href', reopenedUrl)
+          await screen.findByRole('heading', { name: "Checkout didn't open" })
+        ).toBeInTheDocument()
+        expect(createCheckout).toHaveBeenCalledOnce()
+      })
+
+      it('returns to the hand-off when the blocked reopen fails to start a session', async () => {
+        const { open } = await openCheckoutThenReopen({
+          reopenTab: null,
+          reopened: async () => {
+            throw new WorkspaceApiError('Checkout down', 502)
+          }
+        })
+        open.mockReturnValueOnce(newCheckoutTab() as never)
+
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Open checkout' })
+        )
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          "The payment page couldn't open. Nothing was charged. Try again."
+        )
+        expect(
+          screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
+        ).toBeInTheDocument()
+
+        await userEvent.click(
+          screen.getAllByRole('button', { name: 'Close' })[0]
+        )
+
+        expect(mockClearPendingTopup).not.toHaveBeenCalled()
+      })
+
+      it('keeps the opened checkout pending when the dialog closes on a blocked reopen', async () => {
+        await openCheckoutThenReopen({
+          reopenTab: null,
+          reopened: async () => ({ checkout_url: reopenedUrl })
+        })
+        await screen.findByRole('heading', { name: "Checkout didn't open" })
+
+        await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+        expect(mockClearPendingTopup).not.toHaveBeenCalled()
+        expect(useDialogStore().closeDialog).toHaveBeenCalled()
       })
 
       it('stays on the hand-off and explains a session that could not start', async () => {
