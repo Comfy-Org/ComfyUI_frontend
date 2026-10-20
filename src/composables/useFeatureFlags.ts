@@ -5,7 +5,6 @@ import { normalizeHostedBillingDestination } from '@/config/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
-  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -44,7 +43,6 @@ export enum ServerFeatureFlag {
   SSO_ENABLED = 'sso_enabled',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   MEMBER_CREDIT_LIMITS_ENABLED = 'member_credit_limits_enabled',
-  LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
   BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
   BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
@@ -317,13 +315,6 @@ export function useFeatureFlags() {
         remoteConfig.value.member_credit_limits_enabled
       )
     },
-    get legacyBillingMigrationEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
-        remoteConfig.value.legacy_billing_migration_enabled,
-        cachedLegacyBillingMigrationEnabled
-      )
-    },
     get embeddedCheckoutEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
@@ -445,8 +436,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
-      [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
-        flags.legacyBillingMigrationEnabled,
       [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:
         flags.embeddedCheckoutEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
