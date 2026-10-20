@@ -1,6 +1,6 @@
 <template>
   <BaseModalLayout
-    content-title=""
+    :content-title="$t('g.settings')"
     data-testid="settings-dialog"
     size="md"
     :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
@@ -8,13 +8,15 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
-      <h2 class="text-base text-base-foreground">{{ $t('g.settings') }}</h2>
+      <h2 class="text-base text-foreground">{{ $t('g.settings') }}</h2>
     </template>
 
     <template #leftPanel>
       <div class="px-3">
         <SearchInput
           v-model:model-value="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
@@ -315,11 +317,7 @@ watch(activeCategoryKey, (newKey, oldKey) => {
     background-color: transparent;
   }
   30% {
-    background-color: color-mix(
-      in srgb,
-      var(--primary-background) 15%,
-      transparent
-    );
+    background-color: color-mix(in srgb, var(--primary) 15%, transparent);
   }
 }
 </style>

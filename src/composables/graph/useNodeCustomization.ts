@@ -1,3 +1,4 @@
+import { toLightThemeNodeColor } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -10,7 +11,6 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import { adjustColor } from '@/utils/colorUtil'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
 
@@ -37,12 +37,7 @@ export function useNodeCustomization() {
   const canvasStore = useCanvasStore()
   const colorPaletteStore = useColorPaletteStore()
   const canvasRefresh = useCanvasRefresh()
-  const isLightTheme = computed(
-    () => colorPaletteStore.completedActivePalette.light_theme
-  )
-
-  const toLightThemeColor = (color: string) =>
-    adjustColor(color, { lightness: 0.5 })
+  const isLightTheme = computed(() => colorPaletteStore.colorScheme === 'light')
 
   // Color options
   const NO_COLOR_OPTION: ColorOption = {
@@ -50,7 +45,7 @@ export function useNodeCustomization() {
     localizedName: t('color.noColor'),
     value: {
       dark: LiteGraph.NODE_DEFAULT_BGCOLOR,
-      light: toLightThemeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
+      light: toLightThemeNodeColor(LiteGraph.NODE_DEFAULT_BGCOLOR)
     }
   }
 
@@ -61,7 +56,7 @@ export function useNodeCustomization() {
       localizedName: t(`color.${name}`),
       value: {
         dark: color.bgcolor,
-        light: toLightThemeColor(color.bgcolor)
+        light: toLightThemeNodeColor(color.bgcolor)
       }
     }))
   ]

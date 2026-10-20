@@ -11,6 +11,8 @@ vi.mock(import('firebase/auth'))
 
 const GRAPH_MUTATION_COMMANDS = [
   'Comfy.Canvas.DeleteSelectedItems',
+  'Comfy.Canvas.DeleteSelectedLinks',
+  'Comfy.Canvas.HideSelectedLinks',
   'Comfy.Canvas.MoveSelectedNodes.Down',
   'Comfy.Canvas.MoveSelectedNodes.Left',
   'Comfy.Canvas.MoveSelectedNodes.Right',
@@ -18,6 +20,7 @@ const GRAPH_MUTATION_COMMANDS = [
   'Comfy.Canvas.PasteFromClipboard',
   'Comfy.Canvas.PasteFromClipboardWithConnect',
   'Comfy.Canvas.Resize',
+  'Comfy.Canvas.ShowSelectedLinks',
   'Comfy.Canvas.ToggleSelected.Pin',
   'Comfy.Canvas.ToggleSelectedNodes.Bypass',
   'Comfy.Canvas.ToggleSelectedNodes.Collapse',

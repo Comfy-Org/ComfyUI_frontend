@@ -4,7 +4,6 @@ import { storeToRefs } from 'pinia'
 import type { Ref } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingRouting } from './useBillingRouting'
@@ -16,7 +15,6 @@ let mockActiveWorkspace: Ref<
 >
 let mockActiveWorkspaceBillingRail: Ref<BillingRail | null>
 
-vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
@@ -78,25 +76,18 @@ describe('useBillingRouting', () => {
     expect(shouldUseUnifiedPricing.value).toBe(true)
   })
 
-  it('migrates legacy Stripe personal workspaces behind the rollout flag', () => {
-    vi.mocked(useFeatureFlags().flags).legacyBillingMigrationEnabled = true
-    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
+  it.for(['stripe', 'metronome'] as const)(
+    'uses workspace billing for personal workspaces on %s',
+    (rail) => {
+      mockActiveWorkspace.value = personal
+      mockActiveWorkspaceBillingRail.value = rail
 
-    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+      const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
-    expect(type.value).toBe('workspace')
-    expect(shouldUseWorkspaceBilling.value).toBe(true)
-  })
-
-  it('uses workspace billing for migrated Stripe personal workspaces', () => {
-    mockActiveWorkspace.value = personal
-    mockActiveWorkspaceBillingRail.value = 'stripe'
-
-    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
-
-    expect(type.value).toBe('workspace')
-    expect(shouldUseWorkspaceBilling.value).toBe(true)
-  })
+      expect(type.value).toBe('workspace')
+      expect(shouldUseWorkspaceBilling.value).toBe(true)
+    }
+  )
 
   it('uses workspace billing for team workspaces', () => {
     mockActiveWorkspace.value = team

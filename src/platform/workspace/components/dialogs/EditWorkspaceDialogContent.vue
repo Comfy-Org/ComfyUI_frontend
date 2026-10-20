@@ -1,40 +1,26 @@
 <template>
-  <div
-    class="flex w-full min-w-[400px] flex-col rounded-2xl border border-border-default bg-base-background"
+  <AppDialogPanel
+    body-class="flex flex-col gap-4"
+    class="max-w-none min-w-100"
+    @close="onCancel"
   >
-    <!-- Header -->
-    <div
-      class="flex h-12 items-center justify-between border-b border-border-default px-4"
-    >
-      <h2 class="m-0 text-sm font-normal text-base-foreground">
-        {{ $t('workspacePanel.editWorkspaceDialog.title') }}
-      </h2>
-      <button
-        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
-        :aria-label="$t('g.close')"
-        @click="onCancel"
-      >
-        <i class="pi pi-times size-4" />
-      </button>
+    <template #title>
+      {{ $t('workspacePanel.editWorkspaceDialog.title') }}
+    </template>
+
+    <div class="flex flex-col gap-2 text-sm">
+      <label>
+        {{ $t('workspacePanel.editWorkspaceDialog.nameLabel') }}
+      </label>
+      <input
+        v-model="newWorkspaceName"
+        type="text"
+        class="w-full rounded-lg border bg-transparent px-3 py-2 placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
+        @keydown.enter="isValidName && onSave()"
+      />
     </div>
 
-    <!-- Body -->
-    <div class="flex flex-col gap-4 p-4">
-      <div class="flex flex-col gap-2">
-        <label class="text-sm text-base-foreground">
-          {{ $t('workspacePanel.editWorkspaceDialog.nameLabel') }}
-        </label>
-        <input
-          v-model="newWorkspaceName"
-          type="text"
-          class="w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border-default focus:outline-none"
-          @keydown.enter="isValidName && onSave()"
-        />
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="flex items-center justify-end gap-4 p-4">
+    <template #footer>
       <Button variant="muted-textonly" @click="onCancel">
         {{ $t('g.cancel') }}
       </Button>
@@ -47,11 +33,12 @@
       >
         {{ $t('workspacePanel.editWorkspaceDialog.save') }}
       </Button>
-    </div>
-  </div>
+    </template>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

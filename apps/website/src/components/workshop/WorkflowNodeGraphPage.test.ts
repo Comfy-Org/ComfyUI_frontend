@@ -27,7 +27,7 @@ describe('WorkflowNodeGraphPage', () => {
     expect(actions.contains(download)).toBe(true)
     expect(actions.contains(cloud)).toBe(true)
 
-    expect(download.textContent.trim()).toBe('Download workflow')
+    expect(download.textContent.trim()).toBe('Download Workflow')
     expect(download.getAttribute('href')).toBe(
       nodeGraphWorkflowSample.downloadUrl
     )

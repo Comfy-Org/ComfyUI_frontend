@@ -7,10 +7,10 @@ import { createI18n } from 'vue-i18n'
 import BuilderSaveDialogContent from '@/components/builder/BuilderSaveDialogContent.vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
+import CancellationStepLayout from '@/platform/cloud/subscription/components/CancellationStepLayout.vue'
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useSubscriptionCheckout'),
@@ -26,16 +26,11 @@ vi.mock<unknown>(
         isResubscribing: ref(false),
         previewData: ref(null),
         reactivationRequired: ref(false),
-        quoteIsCurrent: ref(false),
-        savedPaymentMethods: ref([]),
-        selectedSavedPaymentMethodId: ref(null),
         selectedTierKey: ref(null),
         selectedTeamStop: ref(null),
         selectedBillingCycle: ref('yearly'),
         activeCheckoutActionUrl: ref(null),
         authenticationState: ref(null),
-        authenticationError: ref(null),
-        reconciliationOperationId: ref(null),
         isPolling: ref(false),
         isTeamCheckout: computed(() => false),
         previewVariant: computed(() => null),
@@ -46,10 +41,6 @@ vi.mock<unknown>(
         handleAddCreditCard: vi.fn(),
         handleConfirmTransition: vi.fn(),
         handleTeamSubscribe: vi.fn(),
-        handleSubscriptionPayment: vi.fn(),
-        handleTeamSubscriptionPayment: vi.fn(),
-        applyPromotionCode: vi.fn(),
-        invalidateQuote: vi.fn(),
         handleResubscribe: vi.fn()
       })
     }
@@ -166,12 +157,9 @@ describe('GlobalDialog', () => {
     expect(screen.getByText('Visible title')).toBeInTheDocument()
   })
 
-  it('uses the credit-limit heading as the headless dialog name', async () => {
-    mountDialog()
-    const store = useDialogStore()
-
-    store.showDialog({
-      key: 'set-member-credit-limit',
+  it.for([
+    {
+      frame: 'DialogPanel',
       component: SetMemberCreditLimitDialogContent,
       props: {
         memberId: 'member-1',
@@ -179,15 +167,29 @@ describe('GlobalDialog', () => {
         creditsUsed: 645,
         currentLimit: 3000
       },
-      dialogComponentProps: { headless: true }
-    })
+      name: 'Set a monthly credit limit for Jane'
+    },
+    {
+      frame: 'a custom layout',
+      component: CancellationStepLayout,
+      props: { title: 'Cancel your plan', onClose: () => {} },
+      name: 'Cancel your plan'
+    }
+  ])(
+    'names a headless dialog by the DialogTitle in $frame',
+    async ({ component, props, name }) => {
+      mountDialog()
 
-    expect(
-      await screen.findByRole('dialog', {
-        name: 'Set a monthly credit limit for Jane'
+      useDialogStore().showDialog({
+        key: 'headless-named',
+        component,
+        props,
+        dialogComponentProps: { headless: true }
       })
-    ).toBeInTheDocument()
-  })
+
+      expect(await screen.findByRole('dialog', { name })).toBeInTheDocument()
+    }
+  )
 
   it('opens the save dialog with an accessible name and description', async () => {
     mountDialog()
@@ -197,10 +199,7 @@ describe('GlobalDialog', () => {
       key: 'builder-save',
       component: BuilderSaveDialogContent,
       props: { defaultFilename: 'workflow.json' },
-      dialogComponentProps: {
-        headless: true,
-        useAutomaticLabeling: true
-      }
+      dialogComponentProps: { headless: true }
     })
 
     const dialog = await screen.findByRole('dialog', { name: 'Save as' })
@@ -415,7 +414,6 @@ describe('shouldPreventRekaDismiss', () => {
     layer.appendChild(inner)
     document.body.appendChild(layer)
     onTestFinished(() => {
-      releaseModalLayer(layer)
       layer.remove()
     })
     return inner
@@ -438,7 +436,6 @@ describe('shouldPreventRekaDismiss', () => {
       mark: (layer: HTMLElement) =>
         layer.setAttribute('data-reka-popper-content-wrapper', '')
     },
-    { name: 'a raised modal layer', mark: raiseModalLayer },
     {
       name: 'a toast',
       mark: (layer: HTMLElement) =>
@@ -460,10 +457,9 @@ describe('shouldPreventRekaDismiss', () => {
     }
   )
 
-  it('allows dismiss from a dialog scrim raised on the modal stack', () => {
+  it('allows dismiss from a dialog scrim', () => {
     const target = appendLayer((layer) => {
       layer.dataset.slot = 'dialog-overlay'
-      raiseModalLayer(layer)
     })
     expect(pointerDownOn(target).defaultPrevented).toBe(false)
   })

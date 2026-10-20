@@ -10,11 +10,47 @@ function linkPlacement(
   return 'page'
 }
 
+function isCanvasMedia(video: HTMLVideoElement) {
+  return video.closest('[data-playback-background]') !== null
+}
+
+function playbackTarget(event: Event) {
+  if (!(event.target instanceof HTMLVideoElement)) return undefined
+  return isCanvasMedia(event.target) ? undefined : event.target
+}
+
+function playbackGroup(video: HTMLVideoElement) {
+  return video.closest('[data-playback-group]')
+}
+
+function belongsToPlaybackGroup(
+  video: HTMLVideoElement,
+  comparison: Element | null
+) {
+  if (!comparison) return false
+  if (comparison.contains(video)) return true
+  return isCanvasMedia(video)
+}
+
+function shouldPauseVideo(
+  video: HTMLVideoElement,
+  active: HTMLVideoElement,
+  comparison: Element | null
+) {
+  return (
+    video !== active &&
+    !video.paused &&
+    !belongsToPlaybackGroup(video, comparison)
+  )
+}
+
 export function mountVfxCampaign(root: HTMLElement): () => void {
   function onPlay(event: Event) {
-    if (!(event.target instanceof HTMLVideoElement)) return
+    const active = playbackTarget(event)
+    if (!active) return
+    const comparison = playbackGroup(active)
     for (const video of root.querySelectorAll('video')) {
-      if (video !== event.target && !video.paused) video.pause()
+      if (shouldPauseVideo(video, active, comparison)) video.pause()
     }
   }
 

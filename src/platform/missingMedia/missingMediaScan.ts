@@ -94,10 +94,11 @@ function resolveMediaMissingState(
   return !options.includes(value) && !options.includes(filepath)
 }
 
-/** Scan a single node for missing media candidates. */
+/** Scan media; includeTemp is only for known deletions, not verification. */
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
-  node: LGraphNode
+  node: LGraphNode,
+  { includeTemp = false }: { includeTemp?: boolean } = {}
 ): MissingMediaCandidate[] {
   if (!node.widgets?.length) return []
 
@@ -119,6 +120,8 @@ export function scanNodeMediaCandidates(
 
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
+    if (!includeTemp && parseAnnotatedPath(value).rootFolder === 'temp')
+      continue
 
     const isMissing = resolveMediaMissingState(widget, value)
 

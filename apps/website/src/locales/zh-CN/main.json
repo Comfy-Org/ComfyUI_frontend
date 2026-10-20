@@ -384,8 +384,7 @@
     "events": "活动",
     "fdct": "前沿驻场创意技术专家",
     "home": "首页",
-    "pricing": "定价",
-    "supportedNodes": "支持的节点"
+    "pricing": "定价"
   },
   "buildWhat": {
     "row1": "构建",
@@ -578,6 +577,21 @@
       "fromImageAction": "匹配图片的色彩",
       "yourPalette": "你的色板"
     },
+    "download": {
+      "label": "下载",
+      "locked": "运行后即可下载"
+    },
+    "zoom": {
+      "label": "缩放",
+      "in": "放大",
+      "out": "缩小",
+      "fit": "适应屏幕，当前 {n}%"
+    },
+    "compare": {
+      "label": "对比",
+      "before": "之前",
+      "after": "之后"
+    },
     "hub": {
       "apps": "应用",
       "appsIntro": "围绕一类工作打造的工具，为你运行模型和工作流。",
@@ -590,6 +604,9 @@
       "prototype": "原型",
       "reshoot": "重拍视频",
       "reshootMeta": "视频 · MiniMax H3",
+      "openjutsu": "Openjutsu",
+      "openjutsuSummary": "用一张图片替换视频中的角色，并保留场景和声音。",
+      "openjutsuMeta": "视频 · MiniMax H3",
       "reshootSummary": "为你的片段重新架设机位，从新的角度生成这一场景。",
       "studioMeta": "图像 · 5 个模型",
       "studioSummary": "用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。",
@@ -701,8 +718,8 @@
       "unsupported": "{model} 无法使用参考图。请移除参考图或选择其他模型。"
     },
     "repo": {
-      "soon": "GitHub · 即将推出",
-      "view": "在 GitHub 上查看"
+      "view": "在 GitHub 上查看",
+      "org": "Comfy 的 GitHub"
     },
     "scene": {
       "enhance": "AI 提示词",
@@ -1081,7 +1098,7 @@
         "q": "我可以在 Comfy Cloud 上使用现有的工作流吗？"
       },
       "7": {
-        "a": "您可以随时在 Cloud 上免费查看我们支持的扩展和模型列表。\n大多数热门扩展已可用，新的扩展会持续添加。",
+        "a": "目前还不是全部。Comfy Cloud 预装了 ComfyUI 社区中许多最常用的自定义节点，我们会根据需求和兼容性定期扩展支持。\n您可以随时在 Cloud 上免费查看我们支持的扩展和模型。如果某个节点暂不可用，您可以在 Comfy 桌面版上自行安装，您的工作流在桌面版和云端都能使用。",
         "q": "所有 ComfyUI 扩展和自定义节点都支持吗？"
       },
       "8": {
@@ -1141,59 +1158,6 @@
       },
       "heading": "专业人士为何\n选择",
       "headingHighlight": "Cloud"
-    }
-  },
-  "cloudNodes": {
-    "card": {
-      "nodeCountOne": "{count} 个节点",
-      "nodeCountOther": "{count} 个节点",
-      "nodesHeading": "包含节点",
-      "unavailableDescription": "暂无描述信息。",
-      "viewRepo": "查看仓库"
-    },
-    "detail": {
-      "back": "返回所有节点包",
-      "deprecated": "已弃用",
-      "downloads": "下载量",
-      "experimental": "实验性",
-      "lastUpdated": "最后更新",
-      "latestVersion": "最新版本",
-      "license": "许可证",
-      "metaDescription": "{pack} 已预装于 Comfy Cloud——{nodeCount} 个节点可在托管 GPU 上即时运行。{description}",
-      "metaTitle": "{pack}（Comfy Cloud）",
-      "nodesHeading": "此节点包中的节点",
-      "publisher": "发布者",
-      "stars": "GitHub 星标"
-    },
-    "empty": {
-      "body": "试试其他关键词，或清空筛选条件。",
-      "heading": "未找到匹配的节点包"
-    },
-    "hero": {
-      "body": "在 Comfy Cloud 托管 GPU 上即开即用，预装数百个社区节点——细节修复、ControlNet 预处理、动画工具与日常便利组件，应有尽有。",
-      "heading": "在云端运行你喜爱的 ComfyUI 自定义节点",
-      "label": "云端节点目录"
-    },
-    "list": {
-      "ariaLabel": "Comfy Cloud 支持的自定义节点包"
-    },
-    "meta": {
-      "description": "浏览 Comfy Cloud 预装的数百个 ComfyUI 自定义节点包：细节修复、ControlNet 预处理、动画工具、采样器等——按节点包或节点名搜索。",
-      "title": "Comfy Cloud 自定义节点包合集——开箱即用"
-    },
-    "search": {
-      "label": "搜索自定义节点包",
-      "placeholder": "搜索节点包或节点名称"
-    },
-    "section": {
-      "heading": "查找自定义节点包"
-    },
-    "sort": {
-      "az": "按名称 A → Z",
-      "downloads": "按安装量",
-      "label": "排序节点包",
-      "mostNodes": "按节点数量",
-      "recentlyUpdated": "最近更新"
     }
   },
   "cloudNodesLaunch": {
@@ -2085,6 +2049,7 @@
     "enterpriseMsa": "Enterprise MSA",
     "fishAudio": "Fish Audio",
     "flux3": "Flux 3",
+    "flux3ImageKlein": "FLUX 3 Image Klein",
     "geminiOmni": "Gemini Omni 1.1 Flash",
     "language": "语言",
     "location": "美国旧金山",
@@ -3174,11 +3139,6 @@
       "3": "当机器运行不同版本时，共享的工作流会失效。",
       "4": "环境维护占用了构建工作流的时间。",
       "heading": "一次构建，在任何地方运行同一个 Comfy。"
-    },
-    "challengeBanner": {
-      "cta": "阅读文章",
-      "label": "公开征集挑战赛",
-      "line": "基于平台构建，有机会赢取 1 万美元。太平洋时间 10 月 19 日上午 9 点截止。"
     },
     "closing": {
       "heading": "在开发者平台上将规模与控制力最大化",
@@ -4278,6 +4238,103 @@
       "yellow": "训练过，但不太稳定。"
     }
   },
+  "openjutsu": {
+    "title": "Openjutsu",
+    "panel": "替换设置",
+    "closed": "Openjutsu 尚未开放",
+    "unavailable": "Openjutsu 暂时不可用，请稍后再试。",
+    "signIn": "登录后即可开始替换。",
+    "video": {
+      "add": "上传视频",
+      "limits": "MP4 或 MOV · 最多使用 15 秒",
+      "remove": "移除视频",
+      "restore": "撤销移除视频"
+    },
+    "target": {
+      "heading": "额外说明（可选）",
+      "placeholder": "可选：补充角色细节或修正上一版，例如：外套颜色更深、保留眼镜、少一点笑容。",
+      "empty": "无额外说明",
+      "anyone": "画面中的人物"
+    },
+    "seed": {
+      "shuffle": "随机选取种子",
+      "placeholder": "随机种子"
+    },
+    "trim": {
+      "first": "使用前 {seconds} 秒",
+      "part": "使用 {from}–{to} 秒",
+      "change": "更改",
+      "changeLabel": "更改使用的片段"
+    },
+    "needs": {
+      "video": "先添加一段视频",
+      "character": "添加一张角色图片"
+    },
+    "generate": {
+      "note": "结果会保留原始声音。每次运行还会生成一张首帧图片，单独计费。",
+      "busy": "正在替换。你可以同时准备下一次生成。"
+    },
+    "phase": {
+      "uploading": "正在上传文件",
+      "starting": "正在启动服务器",
+      "queued": "正在等待服务器",
+      "running": "正在替换角色",
+      "fetching": "正在获取结果",
+      "elapsed": "已用时 {time}"
+    },
+    "take": {
+      "name": "第 {n} 次",
+      "source": "源视频",
+      "reuse": "使用这些设置",
+      "retry": "返回设置",
+      "detail": "已替换{target}"
+    },
+    "examples": {
+      "title": "从示例开始",
+      "singer": {
+        "place": "家庭录音室",
+        "character": "迪斯科天后"
+      },
+      "boxer": {
+        "place": "老拳馆",
+        "character": "Comfy 粉丝"
+      },
+      "painter": {
+        "place": "画室",
+        "character": "浪人"
+      },
+      "cowboy": {
+        "place": "沙漠峡谷",
+        "character": "机器人"
+      },
+      "failed": "无法加载该示例。请重试，或添加你自己的视频。"
+    },
+    "error": {
+      "swap": "替换未完成。请重试，或换一个更短的片段。"
+    },
+    "sample": {
+      "banner": "示例模式：页面自行应答，不会运行模型，也不会扣费。",
+      "result": "示例结果：这是原样返回的你自己的视频，用来展示真实替换结果出现的位置。"
+    },
+    "size": {
+      "label": "画质",
+      "768p": "768p · 更清晰",
+      "480p": "480p · 更快"
+    },
+    "run": "替换角色",
+    "tools": "结果视图",
+    "sheet": {
+      "expand": "显示替换设置",
+      "collapse": "隐藏替换设置"
+    },
+    "compare": {
+      "slider": "拖动以对比原视频与结果"
+    },
+    "peek": {
+      "seconds": "{seconds} 秒"
+    },
+    "noscript": "Openjutsu 需要启用 JavaScript 才能运行。"
+  },
   "seedance": {
     "breadcrumb": {
       "model": "Seedance 2.5",
@@ -4587,6 +4644,21 @@
       "workflowsSubtitle": "用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。"
     },
     "cinematic": {},
+    "videoTrim": {
+      "title": "裁剪视频",
+      "description": "选择要使用的片段，长度可为 {min} 到 {max} 秒。",
+      "play": "播放所选片段",
+      "pause": "暂停",
+      "start": "保留片段的起点",
+      "end": "保留片段的终点",
+      "seek": "在所选片段内定位",
+      "selected": "{from} – {to} · 共 {total} 秒中的 {seconds} 秒",
+      "tooShort": "该视频时长为 {seconds} 秒，至少需要 {min} 秒。",
+      "unreadable": "无法读取该视频。请尝试 MP4。",
+      "reading": "正在读取视频",
+      "confirm": "确认",
+      "cancel": "取消"
+    },
     "credits": {
       "added": "新增",
       "addedTo": "已添加到 {workspace}。你的输入保持原样。",
@@ -5179,6 +5251,111 @@
       "zoomReset": "重置"
     }
   },
+  "eventChallenge": {
+    "name": "Open Source Higgsfield",
+    "banner": {
+      "label": "Open Source Higgsfield：",
+      "line": "10/30 前构建一个应用，赢取最高 1 万美元。",
+      "cta": "了解更多"
+    },
+    "description": "Higgsfield 说要开源他们的平台。我们来帮一把。你有两周时间，在 Comfy 开发者平台上重建他们最受欢迎的应用，以及更多。",
+    "submit": "提交作品",
+    "signup": "立即报名",
+    "signupCredits": "前 200 名报名者可获得免费积分",
+    "how": "如何参赛",
+    "winnersFeatured": "所有获奖作品都将在 comfy.org/hub 上展示并署名。",
+    "examples": "你见过这些效果。现在，亲手打造应用",
+    "examplesBody": "从熟悉的效果开始：表演特效、电影镜头运动或音乐视频变换。打造一个可运行的应用，让其他人也能轻松创造自己的作品。这些示例为你的参赛作品提供灵感。",
+    "enter": "如何参赛",
+    "enterLead": "使用 Comfy 开发者平台打造你最喜欢的应用，以及更多。提交截止日期为 10 月 30 日。",
+    "enterSignupTitle": "报名",
+    "enterSignupBody": "前 200 名报名者可获得免费积分。",
+    "enterSignupLink": "点此报名",
+    "enterSignupCta": "报名",
+    "enterRequirementsTitle": "应用要求",
+    "enterPrepareTitle": "准备你的作品",
+    "enterSubmitTitle": "提交",
+    "enterSubmitBody": "请在 10 月 30 日前提交。最终获胜者将于 11 月 6 日公布。",
+    "enterIntro": "每份参赛作品必须包含：",
+    "requirement1": "作品必须使用 Comfy <a href=\"/zh-CN/platform/\" class=\"text-primary-comfy-yellow underline\">开发者平台</a>构建（Comfy Router 和/或 <a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>）",
+    "requirement2": "代码仓库必须包含开源许可证，以及足够详细的安装说明，让其他人能在自己的机器上运行",
+    "requirement3": "可以结合使用任何其他工具、模型或技术，但必须在演示视频中加以说明",
+    "requirement4": "所有参赛作品必须合法、适合公开场合观看（SFW），且不得包含未经授权的 IP 或肖像",
+    "requirement5": "提交作品即表示你同意 ComfyUI、NVIDIA、Runpod、LTX、Black Forest Labs 和 MiniMax 在各自渠道展示你的作品并署名",
+    "requirement6": "每人限提交一份作品",
+    "enterRepo": "GitHub 仓库",
+    "enterRepoBody": "包含应用代码、工作流文件、开源许可证，以及本地运行说明。",
+    "enterDemo": "演示视频",
+    "enterDemoBody": "最长两分钟，以防我们无法自行运行。",
+    "enterLink": "试用链接",
+    "enterLinkBody": "可选，但强烈建议提供：已部署的应用或接口地址。",
+    "enterSocial": "社交媒体帖子",
+    "enterSocialBody": "在 Reddit、X、IG、LI、YT 或 TikTok 发布演示视频链接，并带上 #OpenSourceHiggsfield 标签。",
+    "timelineNightsTitle": "构建之夜",
+    "timelineNightsDate": "10/28 – 10/29",
+    "timelineNightsBody": "旧金山 10/28 · 洛杉矶 10/29，请在上方报名。",
+    "prizes": "奖项与类别",
+    "partners": "合作伙伴",
+    "prizeMainLabel": "主要奖项",
+    "prizeOverall": "最佳综合作品",
+    "prizeOverallAward": "10,000 美元",
+    "prizeOverallBody": "综合表现最佳的作品。所有参赛作品均自动参评。",
+    "prizeInnovative": "最具创新奖",
+    "prizeInnovativeBody": "前所未有的应用、新颖的自定义节点包或 ComfyUI 的全新用法。演示视频须说明作品的创新之处。",
+    "prizeViral": "最具传播力奖",
+    "prizeViralBody": "用起来令人愉悦，让人忍不住想分享。",
+    "prizeOpenWeights": "纯开放权重奖",
+    "prizeOpenWeightsBody": "不使用合作伙伴节点或闭源 API，仅使用开放权重模型。",
+    "prizeRunnerUp": "10 名优秀奖",
+    "prizeRunnerUpAward": "250 美元 Comfy 额度",
+    "prizeBonusLabel": "开源生态额外奖项",
+    "prizeLtx": "使用 LTX 构建的视觉特效工作流",
+    "prizeLtxAward": "2,000 美元现金",
+    "prizeLtxBody": "工作流须以 LTX 作为核心视频模型方可参评。",
+    "prizeFlux": "使用 FLUX 构建",
+    "prizeFluxAward": "1,000 / 500 / 250 美元 Flux API 额度",
+    "prizeFluxBody": "工作流须以 FLUX 3 作为核心模型方可参评。",
+    "prizeMinimax": "使用 MiniMax H3 构建",
+    "prizeMinimaxAward": "1,000 美元 API 额度",
+    "prizeMinimaxBody": "工作流须以 MiniMax H3 作为核心模型方可参评。",
+    "totalPrize": "25,000 美元",
+    "totalPrizeCaption": "奖品总价值",
+    "shareImageAlt": "Open Source Higgsfield：25,000 美元奖品",
+    "gpu": "GeForce RTX 5090",
+    "details": "活动详情",
+    "timeline": "时间线",
+    "submitNav": "提交作品",
+    "timelineSignupDate": "10/15",
+    "timelineSignupBody": "线上比赛开放报名。",
+    "timelineSignupTitle": "开放报名",
+    "timelineWindowTitle": "构建",
+    "timelineWindowDate": "10/15 – 10/30",
+    "timelineWindowBody": "提交窗口关闭：10 月 30 日 · 太平洋时间上午 9 点。",
+    "timelineWinnerDate": "11/6",
+    "timelineWinnerTitle": "获奖公布",
+    "timelineWinnerBody": "获奖作品将在 comfy.org/hub 展示并署名。",
+    "meetupHeading": "线下共建",
+    "meetupBody": "带上笔记本电脑，与 Comfy 团队和社区一起构建、观看演示，认识工作流背后的创作者。",
+    "meetupCta": "报名",
+    "meetupSfTitle": "Comfy 构建之夜：旧金山",
+    "meetupSfBody": "由 Comfy 团队主办。",
+    "meetupSfLocation": "Frontier Tower，加州旧金山",
+    "meetupSfDate": "2026 年 10 月 28 日",
+    "meetupLaTitle": "Comfy 构建之夜：洛杉矶",
+    "meetupLaBody": "与 AI On The Lot 合作举办。",
+    "meetupLaLocation": "加州洛杉矶",
+    "meetupLaDate": "2026 年 10 月 29 日",
+    "closing": "向我们展示你的作品。",
+    "questions": "问答",
+    "faqDemo": "需要精心制作演示视频吗？",
+    "faqDemoBody": "我们评审的是作品本身，而不是视频剪辑或画质。最好的演示会展示作品的实际运行效果，并说明它是如何构建的。",
+    "faqEvent": "必须参加构建之夜线下活动吗？",
+    "faqEventBody": "线上比赛与构建之夜各自独立。使用提交表单参加比赛，并在上方报名构建之夜。",
+    "faqLicense": "仓库需要许可证吗？",
+    "faqLicenseBody": "需要。为应用代码添加开源许可证和安装说明。允许使用合作伙伴模型；只有纯开放权重奖类别要求仅使用开放权重模型，且不使用合作伙伴节点或闭源 API。",
+    "faqBonus": "可以同时获得主奖和额外奖吗？",
+    "faqBonusBody": "每份作品都可参与主奖和模型提供方额外奖的评选。"
+  },
   "vfx": {
     "meta": {
       "title": "Comfy 视觉特效 | 为制作流程打造的工作流",
@@ -5309,6 +5486,10 @@
       "sdk": "了解 SDK",
       "platform": "开发者平台"
     },
+    "fdc": {
+      "heading": "与前沿驻场创意人才一起构建你的定制工作流",
+      "cta": "了解更多"
+    },
     "learning": {
       "heading": "深入了解工作流。",
       "description": "准备开始制作时，可跟随净板和天空替换教程逐步操作。"
@@ -5350,6 +5531,183 @@
       },
       "enterprise": "查看企业方案详情",
       "licensing": "MINIMAX 许可"
+    }
+  },
+  "krea3": {
+    "meta": {
+      "title": "Krea 3：参考图驱动的图像编辑 | Comfy",
+      "description": "通过视觉参考编辑图像。探索 Comfy 中用于产品广告、室内设计和角色创作的 Krea 3 工作流。"
+    },
+    "hero": {
+      "title": "KREA 3",
+      "description": "从你的图像出发，掌控每次编辑，保留关键细节。使用 Krea 3 构建参考图驱动的图像工作流。",
+      "cta": "使用 KREA 3 编辑",
+      "references": "参考图驱动的编辑",
+      "image": "图像模型",
+      "workflows": "查看工作流"
+    },
+    "references": "你的参考图，你的创作方向。",
+    "products": "同一产品，不同广告场景。",
+    "interiors": "同一空间，更多可能。",
+    "characters": "保留角色，改变场景。",
+    "steps": {
+      "heading": "构建参考图编辑工作流",
+      "label": "步骤"
+    },
+    "faq": "了解 KREA 3",
+    "closing": {
+      "heading": "将你的下一个创意带入 COMFY",
+      "description": "将参考图、编辑步骤和后续处理连接成可重复使用的工作流。",
+      "cta": "使用 KREA 3 编辑"
+    },
+    "workflows": {
+      "heading": "使用 Krea 3 创作"
+    }
+  },
+  "flux3Image": {
+    "meta": {
+      "title": "FLUX 3 Image Klein Launch {'|'} Comfy"
+    },
+    "breadcrumb": {
+      "updated": "更新于 2026 年 10 月"
+    },
+    "hero": {
+      "title": "FLUX 3 Image Klein",
+      "description": "Black Forest Labs 最新的开放权重模型提供两个版本：标准版和步数蒸馏 turbo 版。两者都能生成和编辑图像。使用标准版创作图像，或使用 turbo 版快速迭代。",
+      "openSource": "开源",
+      "imageGeneration": "图像生成",
+      "imageEdit": "图像编辑",
+      "primaryCta": "运行 FLUX 3 IMAGE KLEIN",
+      "secondaryCta": "阅读文档"
+    },
+    "runOptions": {
+      "subtitle": "在浏览器中构建工作流，在自己的硬件上探索 ComfyUI，或通过 API 连接创作流程。"
+    }
+  },
+  "vfxV3": {
+    "referenceFrame": "参考帧",
+    "originalFootage": "原始素材",
+    "badge": "视觉特效",
+    "heading": "一个镜头，更多可能。",
+    "description": "调整光线、替换物体、扩展画面。使用 Comfy 构建可重复使用的视觉特效工作流，并融入工作室的制作流程。",
+    "sales": "联系销售",
+    "browse": "探索工作流",
+    "workflow": "查看工作流",
+    "sequenceHeading": "一次拍摄，新的视角。",
+    "sequenceDescription": "查看 Seedance 基于参考视频生成的多镜头序列。打开工作流，了解序列的构建方式。",
+    "sequenceTitle": "从参考视频到多镜头序列",
+    "contactHeading": "您的工作室可以用 Comfy 实现什么？",
+    "demos": {
+      "sequence": {
+        "title": "一次拍摄，新的视角。",
+        "rowTitle": "从参考视频到多镜头序列",
+        "description": "查看基于同一段雨中街道参考视频生成的多镜头序列、推进镜头和环绕镜头。"
+      },
+      "relight": {
+        "title": "改变光线与天气。",
+        "rowTitle": "同一镜头，不同光线与天气。",
+        "description": "对比同一镜头在黄金时刻、夜晚、蓝调时刻、雨天、雪天和白天的效果。选择一个版本即可观看播放效果。"
+      },
+      "swap": {
+        "title": "替换画面中的汽车。",
+        "rowTitle": "为不同市场调整镜头。",
+        "description": "观看原始镜头与丰田 Century、伦敦出租车和菲亚特 500 版本的对比。"
+      },
+      "reframe": {
+        "title": "扩展画面边界。",
+        "rowTitle": "一次拍摄，多种交付格式。",
+        "description": "将超宽屏和竖屏格式与原始横屏画面对比。"
+      }
+    },
+    "sampleCaption": "预先生成的示例画面。拖动画布探索，拖动分隔线进行对比。",
+    "variants": {
+      "seedance_multishot_rain": "多镜头序列",
+      "seedance_push": "推进镜头",
+      "seedance_orbit": "环绕镜头",
+      "relight_night": "夜景",
+      "relight_rain": "雨天",
+      "relight_day": "白天",
+      "swap_jp": "丰田 Century",
+      "swap_uk": "伦敦出租车",
+      "swap_it": "菲亚特 500",
+      "reframe_wide": "超宽屏",
+      "reframe_vertical": "竖屏",
+      "relight_golden": "黄金时刻",
+      "relight_blue": "蓝调时刻",
+      "relight_snow": "雪天"
+    },
+    "workstationTitle": "工作站与渲染",
+    "videoCaption": "预先生成的示例。拖动画布探索，选择版本后拖动分隔线进行对比。",
+    "tryWorkflow": "体验工作流",
+    "prototype": {
+      "back": "返回示例",
+      "heading": "重新布光工作流",
+      "use": "使用工作流",
+      "customize": "在 Comfy Cloud 中自定义",
+      "sample": "示例工作区 · 切换已渲染的效果。打开 Comfy Cloud 即可自定义并运行此工作流。",
+      "examples": "现有示例效果。选择一种风格，然后探索对应的工作流。"
+    },
+    "customizeNow": "立即定制",
+    "openStudio": "打开工作室",
+    "keyframe": "关键帧",
+    "workflowUnavailable": "Cloud 工作流链接正在核实。",
+    "studio": {
+      "sequence": {
+        "title": "从参考视频到多镜头序列",
+        "source": "示例 · 雨中街道",
+        "presets": "选择序列或运镜方式",
+        "description": "夜晚，一名撑着黑伞的男子走在巴黎的雨中街道上。咖啡馆的灯光映在湿润的鹅卵石路面上。",
+        "stepOne": "使用参考视频确定主体和场景。",
+        "stepTwo": "描述镜头序列或运镜方式，然后在 Comfy Cloud 中运行 Seedance 工作流。",
+        "look": "描述镜头序列或运镜方式"
+      },
+      "footage": "原始素材",
+      "mode": "工作室视图",
+      "settings": "设置",
+      "workflow": "工作流",
+      "sampleOnly": "示例工作室。浏览现有输出并准备工作流需求。上传和生成功能尚未连接。",
+      "upload": "上传素材",
+      "shot": "描述镜头",
+      "adjust": "调整关键帧",
+      "generate": "运行工作流",
+      "expose": "查看工作流",
+      "request": "修改工作流",
+      "requestHelp": "复制此需求，在 Comfy Cloud 中自定义工作流时使用。",
+      "requestText": "{task}\n所选示例：{look}\n镜头描述：{description}",
+      "copy": "复制需求",
+      "copied": "已复制",
+      "copyFailed": "复制失败。请选中并复制上方需求。",
+      "relight": {
+        "title": "调整时间、天气与光线",
+        "source": "示例 · Starlite Diner",
+        "presets": "时间、天气或光线",
+        "description": "路边餐厅外景，Starlite Diner 招牌发光。一辆青绿色轿车停在湿润的柏油路面上。",
+        "stepOne": "调整关键帧，设定光线与天气。",
+        "stepTwo": "以原始素材作为运动参考，将关键帧的视觉效果应用到整个镜头。",
+        "look": "描述光线和天气"
+      },
+      "swap": {
+        "title": "更换车辆",
+        "source": "示例 · 雪中外景片场",
+        "presets": "选择替换车辆",
+        "description": "电影外景片场中的欧洲雪街。一位穿红色外套的女子走向镜头。一辆老式汽车停在街道尽头。",
+        "stepOne": "替换关键帧中的车辆。",
+        "stepTwo": "跟踪整个镜头中的物体遮罩，并重新渲染选定区域。",
+        "look": "描述替换对象"
+      },
+      "reframe": {
+        "title": "扩展画面",
+        "source": "示例 · 森林",
+        "presets": "选择画幅",
+        "description": "一张横向森林图像。扩展原始画面以适配所选交付格式。",
+        "stepOne": "选择新的画幅。",
+        "stepTwo": "向原图边缘之外扩图，填充扩展后的画面。",
+        "look": "描述要扩展的内容"
+      },
+      "openAgent": "使用 COMFY AGENT 打开",
+      "agentUnavailable": "此示例尚未连接 Agent。",
+      "sourceHint": "使用提供的示例探索工作流。",
+      "videoMetadata": "1280 × 720 · 24 帧/秒 · 121 帧"
     }
   }
 }

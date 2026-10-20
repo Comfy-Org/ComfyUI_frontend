@@ -3,7 +3,7 @@ import { useShareFlowContext } from '@/platform/workflow/sharing/composables/use
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useWorkflowStore } from '../../management/stores/workflowStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import { t } from '@/i18n'

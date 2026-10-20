@@ -1,4 +1,4 @@
-import type { IBoundingBoxesWidget } from '../types/widgets'
+import type { IBoundingBoxesWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
 

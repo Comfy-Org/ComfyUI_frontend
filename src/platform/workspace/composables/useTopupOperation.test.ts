@@ -2,10 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 import {
   fakeBillingSdk,
   pendingTopup,
+  serverCode,
   settledTopup
 } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
 import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingSdk'
@@ -30,8 +34,7 @@ vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
         return (
           flagState.billingSdkTopupEnabled && flagState.unifiedCloudAuthEnabled
         )
-      },
-      embeddedCheckoutEnabled: false
+      }
     }
   })
 }))
@@ -59,7 +62,7 @@ beforeEach(() => {
 })
 
 describe('useTopupOperation', () => {
-  it('reads and drives the poller while the SDK flag is off', async () => {
+  it('reads and drives the poller while the SDK flag is off', () => {
     flagState.billingSdkTopupEnabled = false
     const store = useBillingOperationStore()
     Object.assign(store, {
@@ -71,12 +74,10 @@ describe('useTopupOperation', () => {
     })
 
     const view = useTopupOperation()
-    await view.retryPaymentAuthentication('op-poller')
     view.dismissOperation('op-poller')
 
     expect(view.isAddingCredits.value).toBe(true)
     expect(view.topupOperation.value?.opId).toBe('op-poller')
-    expect(store.retryPaymentAuthentication).toHaveBeenCalledWith('op-poller')
     expect(store.dismissOperation).toHaveBeenCalledWith('op-poller')
     expect(mockCreateBillingSdk).not.toHaveBeenCalled()
   })
@@ -168,7 +169,7 @@ describe('useTopupOperation', () => {
         expect(store.startOperation).toHaveBeenCalledWith(
           'op-pending',
           'topup',
-          { attemptStartedAt: 1000, autoHandleRequiresAction: true }
+          { attemptStartedAt: 1000 }
         )
       }
     }
@@ -188,5 +189,156 @@ describe('useTopupOperation', () => {
 
     expect(refusal).toBeInstanceOf(WorkspaceApiError)
     expect(refusal).toMatchObject({ status: 503, code: 'REQUEST_FAILED' })
+  })
+
+  describe('createHostedCheckout', () => {
+    type Refusal = { status: number; code: string }
+    const busy: Refusal = { status: 409, code: 'TOPUP_CHECKOUT_BUSY' }
+    const notPayable: Refusal = {
+      status: 409,
+      code: 'TOPUP_CHECKOUT_NOT_PAYABLE'
+    }
+    const returnUrl = 'https://cloud.comfy.org/topup-return'
+
+    const rails = [
+      {
+        rail: 'legacy',
+        flagOn: false,
+        mint: (outcomes: Array<string | Refusal>) => {
+          const mint = vi.spyOn(workspaceApi, 'createTopupCheckout')
+          for (const outcome of outcomes) {
+            if (typeof outcome === 'string') {
+              mint.mockResolvedValueOnce({ checkout_url: outcome })
+            } else {
+              mint.mockRejectedValueOnce(
+                new WorkspaceApiError('refused', outcome.status, outcome.code)
+              )
+            }
+          }
+          return mint
+        }
+      },
+      {
+        rail: 'SDK',
+        flagOn: true,
+        mint: (outcomes: Array<string | Refusal>) => {
+          const mint = vi.mocked(harness.sdk.topup.createHostedTopupCheckout)
+          for (const outcome of outcomes) {
+            mint.mockResolvedValueOnce(
+              typeof outcome === 'string'
+                ? { status: 'ok', url: outcome }
+                : {
+                    status: 'error',
+                    code: 'REQUEST_FAILED',
+                    httpStatus: outcome.status,
+                    serverCode: serverCode(outcome.code)
+                  }
+            )
+          }
+          return mint
+        }
+      }
+    ]
+
+    beforeEach(() => {
+      vi.useFakeTimers()
+    })
+
+    async function settle(promise: Promise<string>) {
+      const outcome = promise.then(
+        (url) => ({ url }),
+        (error: unknown) => ({ error })
+      )
+      await vi.runAllTimersAsync()
+      return outcome
+    }
+
+    it.for(rails)(
+      'mints a fresh checkout after a retryable refusal on the $rail rail',
+      async ({ flagOn, mint }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const mintCheckout = mint([busy, notPayable, 'https://stripe/new'])
+
+        const outcome = await settle(
+          useTopupOperation().createHostedCheckout(1000, returnUrl)
+        )
+
+        expect(outcome).toEqual({ url: 'https://stripe/new' })
+        expect(mintCheckout).toHaveBeenCalledTimes(3)
+      }
+    )
+
+    it.for(
+      rails.flatMap((rail) => [
+        {
+          ...rail,
+          name: 'a refusal outside the retryable set',
+          outcomes: [{ status: 503, code: 'TOPUP_CHECKOUT_UNAVAILABLE' }],
+          attempts: 1
+        },
+        {
+          ...rail,
+          name: 'the last retryable refusal',
+          outcomes: [busy, busy, busy],
+          attempts: 3
+        }
+      ])
+    )(
+      'surfaces $name on the $rail rail',
+      async ({ flagOn, mint, outcomes, attempts }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const mintCheckout = mint(outcomes)
+
+        const outcome = await settle(
+          useTopupOperation().createHostedCheckout(1000, returnUrl)
+        )
+
+        expect(outcome).toEqual({ error: expect.any(WorkspaceApiError) })
+        expect(mintCheckout).toHaveBeenCalledTimes(attempts)
+      }
+    )
+
+    it.for(rails)(
+      'sends no retry once the scope aborts during the backoff on the $rail rail',
+      async ({ flagOn, mint }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const mintCheckout = mint([busy, 'https://stripe/other-scope'])
+        const scope = new AbortController()
+
+        const checkout = useTopupOperation()
+          .createHostedCheckout(1000, returnUrl, scope.signal)
+          .then(
+            (url) => ({ url }),
+            (error: unknown) => ({ error })
+          )
+        await vi.advanceTimersByTimeAsync(500)
+        scope.abort()
+        await vi.runAllTimersAsync()
+
+        expect(await checkout).toEqual({ error: expect.anything() })
+        expect(mintCheckout).toHaveBeenCalledTimes(1)
+      }
+    )
+
+    it.for(rails)(
+      'hands the dialog scope to the $rail checkout request',
+      async ({ flagOn, mint }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const mintCheckout = mint(['https://stripe/new'])
+        const scope = new AbortController()
+
+        await useTopupOperation().createHostedCheckout(
+          1000,
+          returnUrl,
+          scope.signal
+        )
+
+        expect(mintCheckout.mock.lastCall).toContainEqual(
+          flagOn
+            ? { amountCents: 1000, returnUrl, signal: scope.signal }
+            : scope.signal
+        )
+      }
+    )
   })
 })

@@ -16,6 +16,7 @@ const baseRoutes = {
   enterprise: '/enterprise/',
   managedBuilds: '/enterprise/managed-builds/',
   events: '/events/',
+  eventChallenge: '/open-source-higgsfield/',
   about: '/about/',
   careers: '/careers/',
   customers: '/customers/',
@@ -54,6 +55,8 @@ const baseRoutes = {
   wan3: '/wan-3.0/',
   chatgptImage25: '/chatgpt-image-2.5/',
   qwenImage21: '/qwen-image-2.1/',
+  krea3: '/krea-3/',
+  flux3ImageKlein: '/flux-3-image-klein/',
   nanoBanana: '/nano-banana/',
   brand: '/brand/',
   // The hub catalogue. `workshop` keeps its old name.
@@ -62,7 +65,8 @@ const baseRoutes = {
   hubApps: '/hub/apps/',
   workshopSignIn: '/login/',
   cinematicStudio: '/hub/apps/cinematic-studio/',
-  reshoot: '/hub/apps/reshoot/'
+  reshoot: '/hub/apps/reshoot/',
+  openjutsu: '/hub/apps/openjutsu/'
 } as const
 
 type RouteKey = keyof typeof baseRoutes
@@ -90,8 +94,8 @@ type Routes = Readonly<Record<RouteKey, string>>
 // form, so no localized variant exists. See the comment header in
 // src/pages/minimax/license/professional-request.astro.
 //
-// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot:
-// English only. Every locale links the one catalogue.
+// workshop, hubWorkflows, hubApps, workshopSignIn, cinematicStudio, reshoot,
+// openjutsu: English only. Every locale links the one catalogue.
 //
 // customerVideoBlackMath / customerVideoSilversideAi: dedicated watch pages
 // built from a single English-language caption track — a "translated" watch
@@ -114,6 +118,7 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'workshopSignIn',
   'cinematicStudio',
   'reshoot',
+  'openjutsu',
   'customerVideoBlackMath',
   'customerVideoSilversideAi'
 ])

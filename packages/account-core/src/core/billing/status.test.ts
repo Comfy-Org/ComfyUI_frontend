@@ -4,17 +4,17 @@
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import type { BillingTransport } from './billingContracts.js'
-import { createBillingStatusReader } from './status.js'
+import type { SessionSnapshot } from '#/core/session'
+import { sessionBillingScopeSource } from './billingScope'
+import type { BillingTransport } from './billingContracts'
+import { createBillingStatusReader } from './status'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 function fakeSession(snapshot: SessionSnapshot = authenticated(credential())) {
   const fake: SessionFake = {

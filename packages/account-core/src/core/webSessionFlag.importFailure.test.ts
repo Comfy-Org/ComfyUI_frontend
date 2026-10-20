@@ -1,8 +1,8 @@
 import { expect, it, vi } from 'vitest'
 
-import { resolveUnifiedWebSession } from './webSessionFlag.js'
+import { resolveUnifiedWebSession } from './webSessionFlag'
 
-vi.mock(import('./requestAuth.js'), () => {
+vi.mock(import('./requestAuth'), () => {
   throw new Error('chunk failed to load')
 })
 

@@ -1,6 +1,9 @@
 import { api } from '@/scripts/api'
 
-import type { TelemetryProvider, WorkflowImportMetadata } from '../../types'
+import type {
+  TelemetryProvider,
+  WorkflowImportMetadata
+} from '@/platform/telemetry/types'
 
 /**
  * ClickHouse Telemetry Provider - Cloud Build Implementation

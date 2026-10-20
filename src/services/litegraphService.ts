@@ -31,6 +31,7 @@ import type {
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
@@ -62,6 +63,7 @@ import {
   zDynamicGroupInputSpec
 } from '@/schemas/nodeDefSchema'
 import { useApp } from '@/scripts/appInstance'
+import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
 import {
   clipspace,
   copyToClipspace,
@@ -139,9 +141,6 @@ async function reencodeAsPngBlob(
     }, 'image/png')
   })
 }
-
-export const CONFIG = Symbol()
-export const GET_CONFIG = Symbol()
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -1022,3 +1021,5 @@ export const useLitegraphService = () => {
     updatePreviews
   }
 }
+
+provideLitegraphService(useLitegraphService)

@@ -9,7 +9,7 @@
       :aria-label="$t('load3d.switchCamera')"
       @click="switchCamera"
     >
-      <i class="pi pi-camera text-lg text-base-foreground" />
+      <i class="pi pi-camera text-lg text-foreground" />
     </Button>
     <Button
       v-if="hasCustomUp"
@@ -31,7 +31,7 @@
             useCustomUp
               ? 'icon-[lucide--compass]'
               : 'icon-[lucide--rotate-ccw]',
-            'size-5 text-base-foreground'
+            'size-5 text-foreground'
           )
         "
       />
@@ -49,7 +49,7 @@ import { computed } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@comfyorg/viewport3d/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { hasCustomUp = false } = defineProps<{

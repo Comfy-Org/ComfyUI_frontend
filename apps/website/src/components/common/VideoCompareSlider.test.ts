@@ -1,10 +1,12 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createSSRApp, h } from 'vue'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import VideoCompareSlider from './VideoCompareSlider.vue'
+
+import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
@@ -28,8 +30,41 @@ async function renderSlider(extraProps = {}) {
     'video-compare-before'
   )
   const afterVideo = screen.getByTestId<HTMLVideoElement>('video-compare-after')
-  await waitFor(() => expect(beforeVideo).toHaveAttribute('src', 'before.webm'))
+  await nextTick()
   return { slider, surface, beforeVideo, afterVideo }
+}
+
+async function renderVisibleMetadataSlider() {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+  const observers = stubIntersectionObserver()
+  const { surface, beforeVideo, afterVideo } = await renderSlider({
+    synchronizedPlayback: true
+  })
+  const observer = observers.instances[0]
+  assert.exists(observer)
+  const bounds = new DOMRect(0, 0, 400, 225)
+  observer.callback(
+    [
+      {
+        target: surface,
+        boundingClientRect: bounds,
+        intersectionRect: bounds,
+        rootBounds: null,
+        isIntersecting: true,
+        intersectionRatio: 1,
+        time: 0
+      }
+    ],
+    new IntersectionObserver(() => undefined)
+  )
+  await nextTick()
+  vi.spyOn(beforeVideo, 'readyState', 'get').mockReturnValue(1)
+  vi.spyOn(beforeVideo, 'duration', 'get').mockReturnValue(8)
+  beforeVideo.dispatchEvent(new Event('loadedmetadata'))
+  vi.spyOn(afterVideo, 'readyState', 'get').mockReturnValue(1)
+  vi.spyOn(afterVideo, 'duration', 'get').mockReturnValue(8)
+  afterVideo.dispatchEvent(new Event('loadedmetadata'))
+  return { beforeVideo, afterVideo }
 }
 
 async function pressAt(
@@ -45,8 +80,189 @@ async function pressAt(
 }
 
 describe('VideoCompareSlider', () => {
+  it('defers synchronized sources until first visibility and retains them afterward', async () => {
+    const observers = stubIntersectionObserver()
+    const { surface, beforeVideo, afterVideo } = await renderSlider({
+      synchronizedPlayback: true
+    })
+    const observer = observers.instances[0]
+    assert.exists(observer)
+    const bounds = new DOMRect(0, 0, 400, 225)
+    const entry = {
+      target: surface,
+      boundingClientRect: bounds,
+      intersectionRect: bounds,
+      rootBounds: null,
+      isIntersecting: true,
+      intersectionRatio: 0.24,
+      time: 0
+    }
+    const nativeObserver = new IntersectionObserver(() => undefined)
+    expect(beforeVideo).not.toHaveAttribute('src')
+    expect(afterVideo).not.toHaveAttribute('src')
+    expect(beforeVideo).toHaveAttribute('preload', 'none')
+    expect(afterVideo).toHaveAttribute('preload', 'none')
+
+    observer.callback([entry], nativeObserver)
+    await nextTick()
+    expect(beforeVideo).not.toHaveAttribute('src')
+    expect(afterVideo).not.toHaveAttribute('src')
+
+    observer.callback([{ ...entry, intersectionRatio: 0.25 }], nativeObserver)
+    await waitFor(() => {
+      expect(beforeVideo).toHaveAttribute('src', 'before.webm')
+      expect(afterVideo).toHaveAttribute('src', 'after.webm')
+    })
+    expect(beforeVideo).toHaveAttribute('preload', 'auto')
+    expect(afterVideo).toHaveAttribute('preload', 'auto')
+    expect(beforeVideo.autoplay).toBe(false)
+    expect(afterVideo.autoplay).toBe(false)
+    expect(beforeVideo.muted).toBe(true)
+    expect(afterVideo.muted).toBe(true)
+
+    observer.callback(
+      [{ ...entry, isIntersecting: false, intersectionRatio: 0 }],
+      nativeObserver
+    )
+    await nextTick()
+    expect(beforeVideo).toHaveAttribute('src', 'before.webm')
+    expect(afterVideo).toHaveAttribute('src', 'after.webm')
+    expect(beforeVideo).toHaveAttribute('preload', 'auto')
+    expect(afterVideo).toHaveAttribute('preload', 'auto')
+  })
+
+  it('seeks both paused synchronized clips when their shared time changes', async () => {
+    const time = ref(0)
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(VideoCompareSlider, {
+            ...props,
+            synchronizedPlayback: true,
+            paused: true,
+            time: time.value,
+            'onUpdate:time': (value: number) => {
+              time.value = value
+            }
+          })
+      })
+    )
+    const beforeVideo = screen.getByTestId<HTMLVideoElement>(
+      'video-compare-before'
+    )
+    const afterVideo = screen.getByTestId<HTMLVideoElement>(
+      'video-compare-after'
+    )
+    vi.spyOn(beforeVideo, 'duration', 'get').mockReturnValue(4.5)
+    vi.spyOn(afterVideo, 'duration', 'get').mockReturnValue(4.5)
+    time.value = 1.25
+    await waitFor(() => {
+      expect(beforeVideo.currentTime).toBe(1.25)
+      expect(afterVideo.currentTime).toBe(1.25)
+    })
+    expect(beforeVideo.paused).toBe(true)
+    expect(afterVideo.paused).toBe(true)
+  })
+
+  it('starts visible clips when only metadata is loaded', async () => {
+    const { beforeVideo, afterVideo } = await renderVisibleMetadataSlider()
+    await waitFor(() => {
+      expect(beforeVideo.paused).toBe(false)
+      expect(afterVideo.paused).toBe(false)
+    })
+  })
+
+  it('keeps both playing when the after clip waits for data', async () => {
+    const { beforeVideo, afterVideo } = await renderVisibleMetadataSlider()
+    await waitFor(() => expect(afterVideo.paused).toBe(false))
+    afterVideo.dispatchEvent(new Event('waiting'))
+    await nextTick()
+    expect(beforeVideo.paused).toBe(false)
+    expect(afterVideo.paused).toBe(false)
+  })
+
+  it('corrects drift only after the after clip finishes seeking', async () => {
+    const { beforeVideo, afterVideo } = await renderVisibleMetadataSlider()
+    await waitFor(() => expect(afterVideo.paused).toBe(false))
+    beforeVideo.currentTime = 2
+    afterVideo.currentTime = 1
+    const seeking = vi.spyOn(afterVideo, 'seeking', 'get').mockReturnValue(true)
+    beforeVideo.dispatchEvent(new Event('timeupdate'))
+    await nextTick()
+    expect(afterVideo.currentTime).toBe(1)
+    seeking.mockReturnValue(false)
+    beforeVideo.dispatchEvent(new Event('timeupdate'))
+    await nextTick()
+    expect(afterVideo.currentTime).toBe(2)
+  })
+
+  it('tolerates small drift between synchronized clips', async () => {
+    const { beforeVideo, afterVideo } = await renderVisibleMetadataSlider()
+    await waitFor(() => expect(afterVideo.paused).toBe(false))
+    beforeVideo.currentTime = 2
+    afterVideo.currentTime = 1.85
+    beforeVideo.dispatchEvent(new Event('timeupdate'))
+    await nextTick()
+    expect(afterVideo.currentTime).toBe(1.85)
+  })
+
+  it('starts observing when synchronized playback is enabled after mounting', async () => {
+    const observers = stubIntersectionObserver()
+    const enabled = ref(false)
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(VideoCompareSlider, {
+            ...props,
+            synchronizedPlayback: enabled.value
+          })
+      })
+    )
+    await nextTick()
+    expect(observers.instances).toHaveLength(0)
+    enabled.value = true
+    await nextTick()
+    await nextTick()
+    expect(observers.instances[0]?.observed).toContain(
+      screen.getByTestId('video-compare-surface')
+    )
+  })
+
   beforeEach(() => {
+    vi.stubGlobal(
+      'HTMLMediaElement',
+      class extends HTMLMediaElement {
+        static override readonly HAVE_METADATA = 1
+      }
+    )
     motion.reduced = false
+  })
+
+  it('reveals either reference image with keyboard controls', async () => {
+    const user = userEvent.setup()
+    render(VideoCompareSlider, {
+      props: {
+        ...props,
+        mediaKind: 'image',
+        beforeSrc: '/before.jpg',
+        afterSrc: '/after.jpg'
+      }
+    })
+    expect(screen.getByRole('img', { name: 'Before' })).toHaveAttribute(
+      'src',
+      '/before.jpg'
+    )
+    const after = screen.getByRole('img', { name: 'After' })
+    expect(after).toHaveAttribute('src', '/after.jpg')
+    expect(after.style.clipPath).toBe('inset(0 0 0 50%)')
+    const slider = screen.getByRole('slider', { name: 'Comparison slider' })
+    slider.focus()
+    await user.keyboard('{Home}')
+    expect(slider).toHaveAttribute('aria-valuenow', '0')
+    expect(after.style.clipPath).toBe('inset(0 0 0 0%)')
+    await user.keyboard('{End}')
+    expect(slider).toHaveAttribute('aria-valuenow', '100')
+    expect(after.style.clipPath).toBe('inset(0 0 0 100%)')
   })
 
   it('renders no clip sources on the server', async () => {
@@ -60,8 +276,11 @@ describe('VideoCompareSlider', () => {
   })
 
   it('starts at the midpoint with the after clip revealed on the right', async () => {
-    const { slider, afterVideo } = await renderSlider()
+    const { slider, beforeVideo, afterVideo } = await renderSlider()
 
+    expect(beforeVideo).toHaveAttribute('src', 'before.webm')
+    expect(beforeVideo).toHaveAttribute('preload', 'none')
+    expect(afterVideo).toHaveAttribute('preload', 'none')
     expect(afterVideo).toHaveAttribute('src', 'after.webm')
     expect(slider).toHaveAttribute('aria-valuenow', '50')
     expect(afterVideo.style.clipPath).toBe('inset(0 0 0 50%)')

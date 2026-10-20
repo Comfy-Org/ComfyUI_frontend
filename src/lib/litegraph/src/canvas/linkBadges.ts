@@ -1,14 +1,20 @@
+import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
 import { textOnColor } from '@/utils/colorUtil'
 
-import type { HasBoundingRect, Point, ReadOnlyRect, Rect } from '../interfaces'
-import { LGraphBadge } from '../LGraphBadge'
-import type { LLink } from '../LLink'
+import type {
+  HasBoundingRect,
+  Point,
+  ReadOnlyRect,
+  Rect
+} from '@/lib/litegraph/src/interfaces'
+import { LGraphBadge } from '@/lib/litegraph/src/LGraphBadge'
+
 import type { LinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { compareNodeIds } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import { overlapBounding } from '../measure'
-import { slotTypeKey } from '../utils/type'
+import { overlapBounding } from '@/lib/litegraph/src/measure'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
 export const BADGE_GAP = 14
 const BADGE_HEIGHT = 18
@@ -80,7 +86,8 @@ function makeBadge(text: string, color: string): LGraphBadge {
     fgColor: textOnColor(color),
     fontSize: BADGE_FONT_SIZE,
     height: BADGE_HEIGHT,
-    cornerRadius: BADGE_HEIGHT / 2
+    cornerRadius: BADGE_HEIGHT / 2,
+    centerOnCapHeight: true
   })
 }
 
@@ -217,10 +224,26 @@ function drawConnector(
   ctx.restore()
 }
 
+function scaledAround(
+  ctx: CanvasRenderingContext2D,
+  [x, y]: Point,
+  scale: number,
+  draw: () => void
+): void {
+  if (scale === 1) return draw()
+  ctx.save()
+  ctx.translate(x, y)
+  ctx.scale(scale, scale)
+  ctx.translate(-x, -y)
+  draw()
+  ctx.restore()
+}
+
 export function drawHiddenLinkBadges(
   ctx: CanvasRenderingContext2D,
   layout: LinkBadgePair,
-  visibleArea: ReadOnlyRect
+  visibleArea: ReadOnlyRect,
+  scale = 1
 ): void {
   const endpoints = [layout.output, layout.input]
   const visible = endpoints.some(({ socket, hitArea }) =>
@@ -234,7 +257,9 @@ export function drawHiddenLinkBadges(
       side === 'output'
         ? left + BADGE_CONNECT_INSET
         : left + width - BADGE_CONNECT_INSET
-    drawConnector(ctx, socket, [connectorX, top + height / 2], layout.color)
-    layout.badge.draw(ctx, left, top)
+    scaledAround(ctx, socket, scale, () => {
+      drawConnector(ctx, socket, [connectorX, top + height / 2], layout.color)
+      layout.badge.draw(ctx, left, top)
+    })
   }
 }

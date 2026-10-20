@@ -6,12 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { tagRemoveButtonVariants } from '@comfyorg/design-system/tag.variants'
 
-const {
-  label,
-  tooltip,
-  class: className
-} = defineProps<{
-  label: string
+const { tooltip, class: className } = defineProps<{
   tooltip?: string
   class?: HTMLAttributes['class']
 }>()
@@ -23,7 +18,6 @@ const {
     type="button"
     variant="textonly"
     size="icon-sm"
-    :aria-label="label"
     :class="cn(tagRemoveButtonVariants(), 'opacity-60', className)"
   >
     <slot>

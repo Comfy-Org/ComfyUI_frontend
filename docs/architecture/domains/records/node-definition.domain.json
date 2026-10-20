@@ -8,47 +8,7 @@
       "role": "domain"
     },
     {
-      "path": "src/schemas/nodeDef/inputSpecTree.cap.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDef/inputSpecTree.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDef/inputSpecTree.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDef/inputSpecUtil.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDef/inputSpecUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDef/migration.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDef/migration.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDef/nodeDefSchemaV2.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDef/searchableSlotTypes.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDef/searchableSlotTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/schemas/nodeDefSchema.ts",
+      "path": "src/schemas/**",
       "role": "domain"
     },
     {
@@ -60,21 +20,13 @@
       "role": "domain"
     },
     {
-      "path": "src/workbench/utils/nodeDefOrderingUtil.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/workbench/utils/nodeDefOrderingUtil.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/workbench/utils/nodeHelpUtil.ts",
+      "path": "src/workbench/utils/**",
       "role": "domain"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["graph-model"],
   "characterizationScenarios": [
     {
       "name": "V1 node definitions migrate to V2 and input spec trees report diagnostics within bounds",
@@ -95,7 +47,7 @@
   ],
   "adrs": [],
   "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+    "Inventory preserves existing exports and runtime behavior. nodeDefSchemaV2 is the only public entry point and graph-model its only approved consumer; other cross-module imports remain inherited debt."
   ],
   "deepImports": "inventory"
 }
