@@ -9,7 +9,9 @@ import type { Locator, Page } from '@playwright/test'
 import { test } from './fixtures/blockExternalMedia'
 import { expectIslandHydrated } from './fixtures/islands'
 
-import { vfxMediaRoot } from '@/data/vfxMedia'
+import { vfxWorkflows } from '@/data/vfxWorkflows'
+import { DEFAULT_OG_IMAGE } from '@/utils/jsonLd'
+import { vfxRedSkyMedia, vfxMediaRoot } from '@/data/vfxMedia'
 
 test.beforeEach(async ({ context }) => {
   await context.route(`${vfxMediaRoot}/*.mp4`, (route) =>
@@ -37,7 +39,16 @@ async function waitForShowcase(section: Locator) {
   })
 }
 
-for (const { path, heading, sales, contact, rain, taxi, vertical } of [
+for (const {
+  path,
+  heading,
+  sales,
+  contact,
+  rain,
+  taxi,
+  vertical,
+  shareAlt
+} of [
   {
     path: '/solutions/vfx/v3/',
     heading: 'One shot. More possibilities.',
@@ -45,7 +56,9 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
     contact: '/contact/',
     rain: 'Rain',
     taxi: 'London taxi',
-    vertical: 'Vertical'
+    vertical: 'Vertical',
+    shareAlt:
+      'A classic car outside the Starlite Diner beneath a red sky with meteors.'
   },
   {
     path: '/zh-CN/solutions/vfx/v3/',
@@ -54,7 +67,8 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
     contact: '/zh-CN/contact/',
     rain: '雨天',
     taxi: '伦敦出租车',
-    vertical: '竖屏'
+    vertical: '竖屏',
+    shareAlt: '流星划过红色天空，经典汽车停在星光餐厅外。'
   }
 ]) {
   test(`${path} preserves sales attribution`, async ({ page }) => {
@@ -65,6 +79,32 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
       `https://comfy.org${path}`
     )
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
+    expect(
+      await page
+        .locator('meta[property^="og:image"]')
+        .evaluateAll((nodes) =>
+          nodes.map((node) => [
+            node.getAttribute('property'),
+            node.getAttribute('content')
+          ])
+        )
+    ).toEqual([
+      ['og:image', vfxRedSkyMedia.share],
+      ['og:image:type', 'image/gif'],
+      ['og:image:width', '1200'],
+      ['og:image:height', '630'],
+      ['og:image:alt', shareAlt],
+      ['og:image', vfxRedSkyMedia.poster],
+      ['og:image:type', 'image/jpeg'],
+      ['og:image:width', '1200'],
+      ['og:image:height', '630'],
+      ['og:image:alt', shareAlt]
+    ])
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute(
+      'content',
+      vfxRedSkyMedia.share
+    )
+
     await expect(
       page.getByRole('link', { name: sales, exact: true }).first()
     ).toHaveAttribute(
@@ -1186,3 +1226,31 @@ test('VFX hero follows fine-pointer hover without a press and preserves keyboard
     .poll(() => page.evaluate(() => window.scrollY))
     .toBeGreaterThan(beforeScroll)
 })
+
+for (const { path, image, dimensions } of [
+  { path: '/', image: DEFAULT_OG_IMAGE, dimensions: 1 },
+  {
+    path: '/solutions/vfx/',
+    image: vfxWorkflows[5].template.thumbnails[0],
+    dimensions: 0
+  }
+]) {
+  test(`${path} keeps its existing share image when V3 uses animated metadata`, async ({
+    page
+  }) => {
+    await page.goto(path)
+    await expect(page.locator('meta[property="og:image"]')).toHaveCount(1)
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      'content',
+      image
+    )
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute(
+      'content',
+      image
+    )
+    await expect(page.locator('meta[property="og:image:type"]')).toHaveCount(0)
+    await expect(page.locator('meta[property="og:image:width"]')).toHaveCount(
+      dimensions
+    )
+  })
+}

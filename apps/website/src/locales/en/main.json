@@ -6202,6 +6202,7 @@
         "description": "Compare ultra-wide and vertical formats with the landscape original."
       }
     },
+    "shareImageAlt": "A classic car outside the Starlite Diner beneath a red sky with meteors.",
     "sampleCaption": "Pre-rendered frames. Drag the canvas to explore and the divider to compare.",
     "variants": {
       "seedance_multishot_rain": "Multishot sequence",

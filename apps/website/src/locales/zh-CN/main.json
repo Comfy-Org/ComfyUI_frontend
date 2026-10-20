@@ -5595,6 +5595,7 @@
         "description": "将超宽屏和竖屏格式与原始横屏画面对比。"
       }
     },
+    "shareImageAlt": "流星划过红色天空，经典汽车停在星光餐厅外。",
     "sampleCaption": "预先生成的示例画面。拖动画布探索，拖动分隔线进行对比。",
     "variants": {
       "seedance_multishot_rain": "多镜头序列",

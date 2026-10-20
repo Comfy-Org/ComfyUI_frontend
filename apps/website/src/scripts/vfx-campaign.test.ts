@@ -100,6 +100,7 @@ describe('VFX campaign journey', () => {
 
   it.for([
     { attribute: 'data-campaign-hero', placement: 'hero' },
+    { attribute: 'data-vfx-hero', placement: 'hero' },
     { attribute: 'id="workflows"', placement: 'workflows' },
     { attribute: 'id="studio"', placement: 'studio' },
     { attribute: '', placement: 'page' }

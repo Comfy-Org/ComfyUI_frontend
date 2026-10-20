@@ -58,7 +58,11 @@ onUnmounted(() => clearTimeout(assemblyTimer))
 </script>
 
 <template>
-  <div class="vfx-connected vfx-hero-prototype" data-vfx-demo="hero">
+  <div
+    class="vfx-connected vfx-hero-prototype"
+    data-vfx-demo="hero"
+    data-vfx-hero
+  >
     <HeroSplit01
       :locale="locale"
       :badge-text="t('vfxV3.badge').toLocaleUpperCase(locale)"
