@@ -28,7 +28,10 @@
       <button
         class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
         :aria-label="$t('g.close')"
-        @click="() => handleClose(!topupIsParkedWithoutLink)"
+        @click="
+          () =>
+            handleClose(!topupIsParkedWithoutLink && step !== 'checkoutOpened')
+        "
       >
         <i class="icon-[lucide--x] size-6" />
       </button>
@@ -74,6 +77,25 @@
     </template>
 
     <div
+      v-if="step === 'checkoutOpened'"
+      class="flex flex-col items-center gap-3 px-8 text-center"
+    >
+      <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
+        {{ $t('credits.topUp.checkoutOpenedTitle') }}
+      </DialogTitle>
+      <p class="m-0 text-sm text-balance text-muted-foreground">
+        {{ $t('credits.topUp.checkoutOpenedBody') }}
+      </p>
+      <p
+        v-if="checkoutReopenFailed"
+        role="alert"
+        class="m-0 text-sm text-destructive"
+      >
+        {{ $t('credits.topUp.checkoutOpenFailed') }}
+      </p>
+    </div>
+
+    <div
       v-if="step === 'checkoutBlocked'"
       class="flex flex-col items-center gap-3 px-8 text-center"
     >
@@ -82,6 +104,18 @@
       </DialogTitle>
       <p class="m-0 text-sm text-balance text-muted-foreground">
         {{ $t('credits.topUp.checkoutBlockedBody') }}
+      </p>
+    </div>
+
+    <div
+      v-if="step === 'defaultCardBlocked'"
+      class="flex flex-col items-center gap-3 px-8 text-center"
+    >
+      <DialogTitle class="m-0 text-center text-xl lg:text-2xl">
+        {{ $t('credits.topUp.defaultCardBlockedTitle') }}
+      </DialogTitle>
+      <p class="m-0 text-sm text-balance text-muted-foreground">
+        {{ $t('credits.topUp.defaultCardBlockedBody') }}
       </p>
     </div>
 
@@ -178,6 +212,18 @@
     <!-- Warnings -->
 
     <p
+      v-if="negativeBalanceCredits !== null && step === 'amount'"
+      class="m-0 px-8 pt-4 text-sm text-muted-foreground"
+    >
+      {{
+        $t(
+          'credits.topUp.negativeBalanceNotice',
+          { credits: formatNumber(negativeBalanceCredits) },
+          negativeBalanceCredits
+        )
+      }}
+    </p>
+    <p
       v-if="isBelowMin && step === 'amount'"
       class="m-0 flex items-center justify-center gap-1 px-8 pt-4 text-center text-sm text-destructive"
     >
@@ -240,14 +286,55 @@
           {{ $t('subscription.preview.completeVerification') }}
         </Button>
       </div>
+      <div
+        v-else-if="step === 'checkoutOpened'"
+        class="flex flex-col items-center gap-4"
+      >
+        <Button
+          variant="secondary"
+          size="lg"
+          class="w-full"
+          @click="() => handleClose(false)"
+        >
+          {{ $t('g.close') }}
+        </Button>
+        <Button
+          variant="link"
+          size="md"
+          :disabled="!canTopUp"
+          :loading="loading"
+          @click="reopenCheckout"
+        >
+          {{ $t('credits.topUp.reopenCheckout') }}
+          <i class="icon-[lucide--external-link] size-4" />
+        </Button>
+      </div>
       <Button
-        v-else-if="step === 'checkoutBlocked'"
+        v-else-if="step === 'checkoutBlocked' && blockedCheckoutUrl"
+        as="a"
+        :href="blockedCheckoutUrl"
+        target="_blank"
+        rel="noopener"
         variant="primary"
         size="lg"
-        class="w-full"
-        @click="openBlockedCheckout"
+        class="w-full no-underline"
+        @click="watchCheckoutCompletion"
       >
         {{ $t('credits.topUp.openCheckout') }}
+        <i class="icon-[lucide--external-link] size-4" />
+      </Button>
+      <Button
+        v-else-if="step === 'defaultCardBlocked' && blockedDefaultCardUrl"
+        as="a"
+        :href="blockedDefaultCardUrl"
+        target="_blank"
+        rel="noopener"
+        variant="primary"
+        size="lg"
+        class="w-full no-underline"
+        @click="followBlockedDefaultCardLink"
+      >
+        {{ $t('credits.topUp.openPaymentPage') }}
         <i class="icon-[lucide--external-link] size-4" />
       </Button>
       <div v-else class="flex flex-col gap-2">
@@ -328,7 +415,11 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
+import {
+  centsToCredits,
+  creditsToUsd,
+  usdToCredits
+} from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
@@ -468,17 +559,44 @@ const verifyingBody = computed(() => {
 // Constants
 const MIN_AMOUNT = 5
 const MAX_AMOUNT = 10000
+const DEFAULT_AMOUNT = 50
+
+function wholeDollarsOrNull(cents: number | null | undefined): number | null {
+  if (cents == null) return null
+  const dollars = cents / 100
+  return Number.isInteger(dollars) ? dollars : null
+}
 
 // State
-const selectedPreset = ref<number | null>(50)
-const payAmount = ref(50)
+const suggestedAmount = computed(() =>
+  wholeDollarsOrNull(balance.value?.suggestedTopupAmountCents)
+)
+const selectedPreset = ref<number | null>(
+  suggestedAmount.value === null ? DEFAULT_AMOUNT : null
+)
+const payAmount = ref(suggestedAmount.value ?? DEFAULT_AMOUNT)
+const amountEditedByUser = ref(false)
+
+watch(suggestedAmount, (amount) => {
+  if (amount === null || amountEditedByUser.value || step.value !== 'amount')
+    return
+  payAmount.value = amount
+  selectedPreset.value = null
+})
 const loading = ref(false)
 const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
 const blockedCheckoutUrl = ref<string | null>(null)
-const step = ref<'amount' | 'confirm' | 'verifying' | 'checkoutBlocked'>(
-  topupOperation.value && canTopUp.value ? 'verifying' : 'amount'
-)
+const blockedDefaultCardUrl = ref<string | null>(null)
+const checkoutReopenFailed = ref(false)
+const step = ref<
+  | 'amount'
+  | 'confirm'
+  | 'verifying'
+  | 'checkoutOpened'
+  | 'checkoutBlocked'
+  | 'defaultCardBlocked'
+>(topupOperation.value && canTopUp.value ? 'verifying' : 'amount')
 
 // Computed
 const pricingUrl = computed(() =>
@@ -490,12 +608,21 @@ const creditsModel = computed({
   set: (newCredits: number) => {
     payAmount.value = Math.round(creditsToUsd(newCredits))
     selectedPreset.value = null
+    amountEditedByUser.value = true
   }
 })
 
 const isValidAmount = computed(
   () => payAmount.value >= MIN_AMOUNT && payAmount.value <= MAX_AMOUNT
 )
+
+const negativeBalanceCredits = computed(() => {
+  const info = balance.value
+  const cents = info?.effectiveBalanceMicros
+  if (cents === undefined || cents >= 0) return null
+  if (info?.effectiveBalanceAuthoritative === false) return null
+  return centsToCredits(-cents)
+})
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
 const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
@@ -558,11 +685,13 @@ function getCreditsStepAmount(currentCredits: number): number {
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
+  amountEditedByUser.value = true
 }
 
 function handlePresetClick(amount: number) {
   payAmount.value = amount
   selectedPreset.value = amount
+  amountEditedByUser.value = true
 }
 
 function handlePrimaryAction() {
@@ -752,10 +881,13 @@ onUnmounted(() => {
   stopDefaultCardReturnRefresh?.()
 })
 
-function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
-  checkoutTab.navigate(checkoutUrl)
+function watchCheckoutCompletion() {
   usePendingTopup().startPendingTopup()
+  step.value = 'checkoutOpened'
   watchForTopupBalanceUpdate({
+    onBalanceIncreased: async () => {
+      if (!unmounted) handleClose(false)
+    },
     source: {
       current: () => balance.value?.amountMicros ?? null,
       fetch: async () => {
@@ -769,7 +901,6 @@ function handOffToCheckout(checkoutTab: BillingTab, checkoutUrl: string) {
       }
     }
   })
-  handleClose(false)
 }
 
 function refreshOnDefaultCardReturn() {
@@ -796,12 +927,6 @@ function refreshOnDefaultCardReturn() {
 async function setDefaultCard() {
   if (paymentLocked.value) return
   const portalTab = reserveBillingTab()
-  if (!portalTab) {
-    toast.warning(t('g.warning'), {
-      description: t('subscription.billingTabBlocked')
-    })
-    return
-  }
   openingDefaultCardPortal.value = true
   try {
     const { url } = await workspaceApi.getPaymentPortalUrl(
@@ -809,10 +934,15 @@ async function setDefaultCard() {
       'payment_method_update'
     )
     if (unmounted) {
-      portalTab.close()
+      portalTab?.close()
       return
     }
     if (!url) return reportDefaultCardPortalFailure(portalTab)
+    if (!portalTab) {
+      blockedDefaultCardUrl.value = url
+      step.value = 'defaultCardBlocked'
+      return
+    }
     portalTab.navigate(url)
     refreshOnDefaultCardReturn()
   } catch {
@@ -822,8 +952,13 @@ async function setDefaultCard() {
   }
 }
 
-function reportDefaultCardPortalFailure(portalTab: BillingTab) {
-  portalTab.close()
+function followBlockedDefaultCardLink() {
+  step.value = 'confirm'
+  refreshOnDefaultCardReturn()
+}
+
+function reportDefaultCardPortalFailure(portalTab: BillingTab | null) {
+  portalTab?.close()
   if (unmounted) return
   toast.error(t('credits.topUp.setDefaultCardError'), {
     description: t('credits.topUp.unknownError')
@@ -834,42 +969,49 @@ async function continueToCheckout() {
   if (!(canTopUp.value && isValidAmount.value && !paymentLocked.value)) {
     return
   }
-  const returnUrl = topupCheckoutReturnUrl()
-  if (!returnUrl) {
+  if ((await openCheckoutInReservedTab()) === 'failed') {
     checkoutRecovery.value = 'failed'
-    return
   }
+}
+
+async function reopenCheckout() {
+  if (!canTopUp.value || loading.value) return
+  checkoutReopenFailed.value = false
+  checkoutReopenFailed.value = (await openCheckoutInReservedTab()) === 'failed'
+}
+
+async function openCheckoutInReservedTab(): Promise<
+  'opened' | 'blocked' | 'failed' | 'abandoned'
+> {
+  const returnUrl = topupCheckoutReturnUrl()
+  if (!returnUrl) return 'failed'
   const checkoutTab = reserveBillingTab()
   loading.value = true
   try {
+    if (!balance.value) await Promise.allSettled([fetchBalance()])
     const checkoutUrl = await createHostedCheckout(
       payAmount.value * 100,
       returnUrl
     )
     if (unmounted) {
       checkoutTab?.close()
-      return
+      return 'abandoned'
     }
-    if (checkoutTab) {
-      handOffToCheckout(checkoutTab, checkoutUrl)
-      return
+    if (!checkoutTab) {
+      blockedCheckoutUrl.value = checkoutUrl
+      step.value = 'checkoutBlocked'
+      return 'blocked'
     }
-    blockedCheckoutUrl.value = checkoutUrl
-    step.value = 'checkoutBlocked'
+    checkoutTab.navigate(checkoutUrl)
+    watchCheckoutCompletion()
+    return 'opened'
   } catch (error) {
     checkoutTab?.close()
     console.error('Hosted top-up checkout failed to open', error)
-    if (unmounted) return
-    checkoutRecovery.value = 'failed'
+    return unmounted ? 'abandoned' : 'failed'
   } finally {
     loading.value = false
   }
-}
-
-function openBlockedCheckout() {
-  const checkoutUrl = blockedCheckoutUrl.value
-  const checkoutTab = checkoutUrl ? reserveBillingTab() : null
-  if (checkoutUrl && checkoutTab) handOffToCheckout(checkoutTab, checkoutUrl)
 }
 
 /**

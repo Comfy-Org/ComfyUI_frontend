@@ -136,7 +136,7 @@ const options: {
       :model-value="store.mode"
       :aria-label="t('agent.runPermissions')"
       class="flex flex-col gap-0.5"
-      @update:model-value="onSelectMode"
+      @update:model-value="typeof $event === 'string' && onSelectMode($event)"
     >
       <MenuRadioItem
         v-for="option in options"

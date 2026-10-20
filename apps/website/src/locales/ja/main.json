@@ -695,7 +695,6 @@
       "unsupported": "{model} は参照画像を使用できません。削除するか、別のモデルを選択してください。"
     },
     "repo": {
-      "soon": "GitHub · 近日公開",
       "view": "GitHubで見る"
     },
     "scene": {
