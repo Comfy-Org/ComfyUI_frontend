@@ -239,16 +239,6 @@ export interface PostMessageInput {
   clientMessageId?: string
 }
 
-/**
- * The bundle submitting this turn, sent as `client_version` so the agent can
- * attribute the turn to the frontend build the browser is actually running.
- * Production serves a weighted canary beside stable from the same package
- * version, so the commit is what tells the two arms apart.
- *
- * The server keeps the value only if it is at most 64 bytes of
- * `[A-Za-z0-9.+-]` and otherwise drops it without failing the turn. A
- * `'unknown'` commit (a build with no git metadata) still satisfies that.
- */
 const CLIENT_VERSION = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
 
 /**

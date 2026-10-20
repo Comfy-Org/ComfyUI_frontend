@@ -711,11 +711,6 @@ describe('postMessage wire body', () => {
     })
   })
 
-  // The agent attributes a turn to the frontend build that sent it, and drops a
-  // client_version it would not accept without failing the turn - so a value
-  // outside its contract is lost silently. Check the shape against that
-  // contract (at most 64 bytes of [A-Za-z0-9.+-]) and that the commit, the only
-  // part that differs between the stable and canary arms, is the one carried.
   it('reports the submitting build in a form the server keeps', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', { content: 'build it' })
