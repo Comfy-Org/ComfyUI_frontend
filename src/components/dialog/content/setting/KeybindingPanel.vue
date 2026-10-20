@@ -70,14 +70,10 @@
         </TableBody>
       </RovingFocusGroup>
     </Table>
-    <Pagination
+    <AppPagination
       v-if="filteredCommands.length > commandsPerPageOptions[0]"
       v-model:page="currentPage"
       v-model:items-per-page="commandsPerPage"
-      :items-per-page-label="$t('g.itemsPerPage')"
-      :previous-label="$t('g.previous')"
-      :next-label="$t('g.next')"
-      :format-page-label="(page) => $t('g.pageNumber', { page })"
       :total="filteredCommands.length"
       :items-per-page-options="commandsPerPageOptions"
     />
@@ -107,7 +103,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
-import Pagination from '@/components/ui/pagination/Pagination.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'

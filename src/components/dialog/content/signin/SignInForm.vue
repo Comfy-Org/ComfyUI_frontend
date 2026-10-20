@@ -39,11 +39,9 @@
               {{ t('auth.login.forgotPassword') }}
             </Button>
           </div>
-          <PasswordInput
+          <AppPasswordInput
             v-bind="componentField"
             id="comfy-org-sign-in-password"
-            :show-password-label="$t('auth.showPassword')"
-            :hide-password-label="$t('auth.hidePassword')"
             autocomplete="current-password"
             :placeholder="t('auth.login.passwordPlaceholder')"
             :aria-invalid="!!errors.length"
@@ -74,7 +72,7 @@ import FieldError from '@/components/ui/field/FieldError.vue'
 import FieldGroup from '@/components/ui/field/FieldGroup.vue'
 import FieldLabel from '@/components/ui/field/FieldLabel.vue'
 import Input from '@/components/ui/input/Input.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'

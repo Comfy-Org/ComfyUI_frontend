@@ -10,7 +10,7 @@
       :aria-labelledby="ariaLabelledby"
       v-bind="$attrs"
     />
-    <NumberField
+    <FormNumberField
       v-model="modelValue"
       class="w-32"
       :format-options="{ maximumFractionDigits: 3 }"
@@ -19,20 +19,15 @@
       :step
       :step-snapping="step !== 0"
       :disabled
-    >
-      <NumberFieldDecrement :aria-label="$t('g.decrement')" />
-      <NumberFieldInput :aria-label :aria-labelledby="ariaLabelledby" />
-      <NumberFieldIncrement :aria-label="$t('g.increment')" />
-    </NumberField>
+      :aria-label
+      :aria-labelledby="ariaLabelledby"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import Knob from '@/components/ui/knob/Knob.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import FormNumberField from '@/components/common/FormNumberField.vue'
 
 defineProps<{
   ariaLabel?: string

@@ -14,7 +14,7 @@
         (value) => value && emit('update:modelValue', value[0])
       "
     />
-    <NumberField
+    <FormNumberField
       :model-value
       class="w-32"
       :format-options="{ maximumFractionDigits: 3 }"
@@ -23,21 +23,16 @@
       :step
       step-snapping
       :disabled
+      :aria-label
+      :aria-labelledby="ariaLabelledby"
       @update:model-value="(value) => emit('update:modelValue', value)"
-    >
-      <NumberFieldDecrement :aria-label="$t('g.decrement')" />
-      <NumberFieldInput :aria-label :aria-labelledby="ariaLabelledby" />
-      <NumberFieldIncrement :aria-label="$t('g.increment')" />
-    </NumberField>
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import Slider from '@/components/ui/slider/Slider.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import FormNumberField from '@/components/common/FormNumberField.vue'
 
 defineProps<{
   modelValue: number

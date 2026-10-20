@@ -74,12 +74,8 @@
           </TableRow>
         </TableBody>
       </Table>
-      <Pagination
+      <AppPagination
         v-if="pagination.total > pagination.limit"
-        :items-per-page-label="$t('g.itemsPerPage')"
-        :previous-label="$t('g.previous')"
-        :next-label="$t('g.next')"
-        :format-page-label="(page) => $t('g.pageNumber', { page })"
         :page="pagination.page"
         :total="pagination.total"
         :items-per-page="pagination.limit"
@@ -97,7 +93,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Badge from '@/components/ui/badge/Badge.vue'
 import Message from '@/components/ui/message/Message.vue'
-import Pagination from '@/components/ui/pagination/Pagination.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'

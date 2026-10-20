@@ -176,12 +176,8 @@
           {{ $t('workspacePanel.activity.fullActivity') }}
         </a>
       </div>
-      <Pagination
+      <AppPagination
         v-model:page="page"
-        :items-per-page-label="$t('g.itemsPerPage')"
-        :previous-label="$t('g.previous')"
-        :next-label="$t('g.next')"
-        :format-page-label="(page) => $t('g.pageNumber', { page })"
         :total="total"
         :items-per-page="itemsPerPage"
         class="@2xl:ml-auto"
@@ -197,7 +193,7 @@ import { useI18n } from 'vue-i18n'
 import HoverCard from '@/components/ui/hover-card/HoverCard.vue'
 import HoverCardContent from '@/components/ui/hover-card/HoverCardContent.vue'
 import HoverCardTrigger from '@/components/ui/hover-card/HoverCardTrigger.vue'
-import Pagination from '@/components/ui/pagination/Pagination.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 import Table from '@/components/ui/table/Table.vue'
 import TableBody from '@/components/ui/table/TableBody.vue'
 import TableCell from '@/components/ui/table/TableCell.vue'

@@ -4,11 +4,9 @@
       <FieldLabel for="comfy-org-sign-up-password">
         {{ t('auth.signup.passwordLabel') }}
       </FieldLabel>
-      <PasswordInput
+      <AppPasswordInput
         v-bind="componentField"
         id="comfy-org-sign-up-password"
-        :show-password-label="$t('auth.showPassword')"
-        :hide-password-label="$t('auth.hidePassword')"
         autocomplete="new-password"
         :placeholder="t('auth.signup.passwordPlaceholder')"
         :class="fieldClass"
@@ -31,11 +29,9 @@
       <FieldLabel for="comfy-org-sign-up-confirm-password">
         {{ t('auth.login.confirmPasswordLabel') }}
       </FieldLabel>
-      <PasswordInput
+      <AppPasswordInput
         v-bind="componentField"
         id="comfy-org-sign-up-confirm-password"
-        :show-password-label="$t('auth.showPassword')"
-        :hide-password-label="$t('auth.hidePassword')"
         autocomplete="new-password"
         :placeholder="t('auth.login.confirmPasswordPlaceholder')"
         :class="fieldClass"
@@ -57,7 +53,7 @@ import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
 import Field from '@/components/ui/field/Field.vue'
 import FieldError from '@/components/ui/field/FieldError.vue'
 import FieldLabel from '@/components/ui/field/FieldLabel.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 
 const { fieldClass } = defineProps<{
   fieldClass?: HTMLAttributes['class']

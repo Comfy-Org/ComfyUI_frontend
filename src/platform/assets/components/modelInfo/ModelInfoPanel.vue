@@ -100,48 +100,26 @@
         </template>
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.compatibleBaseModels')">
-        <TagsInput
-          v-slot="{ isEmpty }"
+        <TagEditor
           v-model="baseModels"
           :disabled="isImmutable"
-        >
-          <TagsInputItem
-            v-for="model in baseModels"
-            :key="model"
-            :value="model"
-          >
-            <TagsInputItemText />
-            <TagsInputItemDelete :aria-label="$t('g.removeTag')" />
-          </TagsInputItem>
-          <TagsInputInput
-            :is-empty="isEmpty"
-            :placeholder="
-              isImmutable
-                ? t('assetBrowser.modelInfo.baseModelUnknown')
-                : t('assetBrowser.modelInfo.addBaseModel')
-            "
-          />
-        </TagsInput>
+          :placeholder="
+            isImmutable
+              ? t('assetBrowser.modelInfo.baseModelUnknown')
+              : t('assetBrowser.modelInfo.addBaseModel')
+          "
+        />
       </ModelInfoField>
       <ModelInfoField :label="t('assetBrowser.modelInfo.additionalTags')">
-        <TagsInput
-          v-slot="{ isEmpty }"
+        <TagEditor
           v-model="additionalTags"
           :disabled="isImmutable"
-        >
-          <TagsInputItem v-for="tag in additionalTags" :key="tag" :value="tag">
-            <TagsInputItemText />
-            <TagsInputItemDelete :aria-label="$t('g.removeTag')" />
-          </TagsInputItem>
-          <TagsInputInput
-            :is-empty="isEmpty"
-            :placeholder="
-              isImmutable
-                ? t('assetBrowser.modelInfo.noAdditionalTags')
-                : t('assetBrowser.modelInfo.addTag')
-            "
-          />
-        </TagsInput>
+          :placeholder="
+            isImmutable
+              ? t('assetBrowser.modelInfo.noAdditionalTags')
+              : t('assetBrowser.modelInfo.addTag')
+          "
+        />
       </ModelInfoField>
     </PropertiesAccordionItem>
 
@@ -224,11 +202,7 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
-import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
-import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
-import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
-import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
+import TagEditor from '@/components/common/TagEditor.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
 import { isCloud } from '@/platform/distribution/types'

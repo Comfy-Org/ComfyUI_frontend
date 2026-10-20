@@ -59,7 +59,10 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
-        <NumberField
+        <FormNumberField
+          class="w-full"
+          :aria-label="$t('credits.topUp.youPay')"
+          input-class="text-lg font-medium"
           :model-value="payAmount"
           :min="0"
           :max="MAX_AMOUNT"
@@ -67,14 +70,10 @@
           :format-options="{ maximumFractionDigits: 0 }"
           @update:model-value="handlePayAmountChange"
         >
-          <NumberFieldDecrement :aria-label="$t('g.decrement')" />
-          <span class="shrink-0 text-base font-semibold">$</span>
-          <NumberFieldInput
-            :aria-label="$t('credits.topUp.youPay')"
-            class="text-lg font-medium"
-          />
-          <NumberFieldIncrement :aria-label="$t('g.increment')" />
-        </NumberField>
+          <template #prefix>
+            <span class="shrink-0 text-base font-semibold">$</span>
+          </template>
+        </FormNumberField>
       </div>
 
       <!-- You Get -->
@@ -82,21 +81,20 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
-        <NumberField
+        <FormNumberField
           v-model="creditsModel"
+          class="w-full"
+          :aria-label="$t('credits.topUp.youGet')"
+          input-class="text-lg font-medium"
           :min="0"
           :max="usdToCredits(MAX_AMOUNT)"
           :step="getCreditsStepAmount(creditsModel)"
           :format-options="{ maximumFractionDigits: 0 }"
         >
-          <NumberFieldDecrement :aria-label="$t('g.decrement')" />
-          <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
-          <NumberFieldInput
-            :aria-label="$t('credits.topUp.youGet')"
-            class="text-lg font-medium"
-          />
-          <NumberFieldIncrement :aria-label="$t('g.increment')" />
-        </NumberField>
+          <template #prefix>
+            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
+          </template>
+        </FormNumberField>
       </div>
     </div>
 
@@ -168,10 +166,7 @@ import { useI18n } from 'vue-i18n'
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import FormNumberField from '@/components/common/FormNumberField.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
