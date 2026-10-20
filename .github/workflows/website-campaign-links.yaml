@@ -39,10 +39,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: campaign-links-${{ github.event_name == 'pull_request' && github.ref || 'manager' }}
-  cancel-in-progress: false
-
 env:
   MODE: ${{ inputs.mode || 'preview' }}
   CAMPAIGN_VERTICAL: ${{ inputs.vertical }}
@@ -58,65 +54,54 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - &checkout
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v6
+      - &setup-node
+        uses: actions/setup-node@v6
         with:
           node-version-file: '.nvmrc'
           package-manager-cache: false
       - name: Generate campaign links
         run: node apps/website/scripts/campaign-links.ts --mode "$MODE" --output "$RUNNER_TEMP/campaign-links.json"
-      - name: Attach link report
+      - &upload-report
+        name: Attach link report
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: campaign-links-${{ github.run_id }}
+          name: campaign-links
           path: ${{ runner.temp }}/campaign-links.json
           if-no-files-found: warn
-      - name: Show link report
+      - &summarize-report
+        name: Show link report
         if: always()
         run: |
-          echo '### Campaign link report' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f "$RUNNER_TEMP/campaign-links.json" ]; then
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat "$RUNNER_TEMP/campaign-links.json" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo 'No report was written. Check the failed generation step before rerunning.' >> "$GITHUB_STEP_SUMMARY"
-          fi
+          {
+            echo '### Campaign link report'
+            if [ -f "$RUNNER_TEMP/campaign-links.json" ]; then
+              echo '```json'
+              cat "$RUNNER_TEMP/campaign-links.json"
+              echo '```'
+            else
+              echo 'No report was written. Check the failed generation step before rerunning.'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
   manager:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.mode != 'preview'
     runs-on: ubuntu-latest
-    environment: campaign-links
     timeout-minutes: 10
+    environment: campaign-links
+    concurrency:
+      group: campaign-links-manager
+      cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@v6
-        with:
-          node-version-file: '.nvmrc'
-          package-manager-cache: false
+      - *checkout
+      - *setup-node
       - name: Generate campaign links
         env:
           UTM_MANAGER_TOKEN: ${{ secrets.UTM_MANAGER_ENV_TOKEN }}
         run: node apps/website/scripts/campaign-links.ts --mode "$MODE" --output "$RUNNER_TEMP/campaign-links.json"
-      - name: Attach link report
-        if: always()
-        uses: actions/upload-artifact@v6
-        with:
-          name: campaign-links-${{ github.run_id }}
-          path: ${{ runner.temp }}/campaign-links.json
-          if-no-files-found: warn
-      - name: Show link report
-        if: always()
-        run: |
-          echo '### Campaign link report' >> "$GITHUB_STEP_SUMMARY"
-          if [ -f "$RUNNER_TEMP/campaign-links.json" ]; then
-            echo '```json' >> "$GITHUB_STEP_SUMMARY"
-            cat "$RUNNER_TEMP/campaign-links.json" >> "$GITHUB_STEP_SUMMARY"
-            echo '```' >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo 'No report was written. Check the failed generation step before rerunning.' >> "$GITHUB_STEP_SUMMARY"
-          fi
+      - *upload-report
+      - *summarize-report
