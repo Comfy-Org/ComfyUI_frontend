@@ -23,6 +23,7 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
@@ -45,38 +46,7 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 
 setupInlinePromptEditorDom()
 
-const ws = vi.hoisted(() => {
-  type Listener = (event: { detail?: unknown }) => void
-  const listeners = new Map<string, Set<Listener>>()
-  return {
-    add(type: string, listener: Listener): void {
-      const set = listeners.get(type) ?? new Set()
-      set.add(listener)
-      listeners.set(type, set)
-    },
-    remove(type: string, listener: Listener): void {
-      listeners.get(type)?.delete(listener)
-    },
-    clear(): void {
-      listeners.clear()
-    }
-  }
-})
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => `/api${route}`,
-    fetchApi: (route: string, options?: RequestInit) =>
-      fetch(route.startsWith('/api') ? route : `/api${route}`, options),
-    getServerFeature: (_name: string, defaultValue?: unknown) => defaultValue,
-    socket: { readyState: 1, send: vi.fn() },
-    dispatchCustomEvent: vi.fn(),
-    addEventListener: ws.add,
-    removeEventListener: ws.remove,
-    addCustomEventListener: ws.add,
-    removeCustomEventListener: ws.remove
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => {
   const graph = {
@@ -291,7 +261,10 @@ function tabActivity() {
 
 beforeEach(() => {
   vi.useRealTimers()
-  ws.clear()
+  vi.mocked(api.fetchApi).mockImplementation((route, options) =>
+    fetch(route.startsWith('/api') ? route : `/api${route}`, options)
+  )
+  api.socket = fromPartial<WebSocket>({ readyState: 1, send: vi.fn() })
   agentSocket = createFakeAgentSocket()
   vi.mocked(createAgentEventSource).mockReturnValue(agentSocket.socket)
   vi.mocked(resolveAgentIdentity).mockReturnValue({
@@ -471,24 +444,43 @@ describe('AgentPanelRoot tab activity across chats', () => {
   })
 
   it.for([
-    { chat: 'open', frame: 'done', modified: true },
-    { chat: 'open', frame: 'malformed done', modified: false },
-    { chat: 'background', frame: 'done', modified: true },
-    { chat: 'background', frame: 'malformed done', modified: false }
+    {
+      chat: 'open',
+      selectChat: () => {},
+      frame: 'done',
+      message: { message_id: 'm-1', thread_id: 'th-1' },
+      modified: true
+    },
+    {
+      chat: 'open',
+      selectChat: () => {},
+      frame: 'malformed done',
+      message: { message_id: 'm-1' },
+      modified: false
+    },
+    {
+      chat: 'background',
+      selectChat: () => openChat('Other chat', 'th-2'),
+      frame: 'done',
+      message: { message_id: 'm-1', thread_id: 'th-1' },
+      modified: true
+    },
+    {
+      chat: 'background',
+      selectChat: () => openChat('Other chat', 'th-2'),
+      frame: 'malformed done',
+      message: { message_id: 'm-1' },
+      modified: false
+    }
   ])(
     'stops the spinner when the $chat chat gets a $frame frame',
-    async ({ chat, frame, modified }) => {
+    async ({ selectChat, message, modified }) => {
       renderPanel()
       await send('add an upscaler')
-      if (chat === 'background') await openChat('Other chat', 'th-2')
+      await selectChat()
       expect([...tabActivity().editingPaths]).toEqual([runningTab])
 
-      agentSocket.receive(
-        'agent_message_done',
-        frame === 'done'
-          ? { message_id: 'm-1', thread_id: 'th-1' }
-          : { message_id: 'm-1' }
-      )
+      agentSocket.receive('agent_message_done', message)
       await nextTick()
 
       expect(tabActivity().editingPaths.size).toBe(0)
@@ -576,30 +568,30 @@ describe('AgentPanelRoot tab activity across chats', () => {
   it.for([
     {
       asked: 'while the chat is open',
-      switchBefore: false,
-      switchAfter: false
+      beforeAsk: () => {},
+      afterAsk: () => {}
     },
     {
       asked: 'while the chat is in the background',
-      switchBefore: true,
-      switchAfter: false
+      beforeAsk: () => openChat('Other chat', 'th-2'),
+      afterAsk: () => {}
     },
     {
       asked: 'and then the chat is stashed',
-      switchBefore: false,
-      switchAfter: true
+      beforeAsk: () => {},
+      afterAsk: () => openChat('Other chat', 'th-2')
     }
   ])(
     'marks the tab as needing approval when asked $asked',
-    async ({ switchBefore, switchAfter }) => {
+    async ({ beforeAsk, afterAsk }) => {
       renderPanel()
       await send('add an upscaler')
-      if (switchBefore) await openChat('Other chat', 'th-2')
+      await beforeAsk()
       expect(tabActivity().awaitingApprovalPaths.size).toBe(0)
 
       emitRunApproval()
       await nextTick()
-      if (switchAfter) await openChat('Other chat', 'th-2')
+      await afterAsk()
       expect([...tabActivity().awaitingApprovalPaths]).toEqual([runningTab])
 
       agentSocket.receive('agent_ask_resolved', {
