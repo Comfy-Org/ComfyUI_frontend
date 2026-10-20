@@ -67,6 +67,8 @@ const projectionState = vi.hoisted(() => ({
     nodes: { added: [], removed: [] }
   })),
   applyCollected: vi.fn(() => []),
+  retryFailed: vi.fn(() => null),
+  hasPendingFailure: vi.fn(() => false),
   revertRejected: vi.fn(() => []),
   replaceOnNextFrame: vi.fn(),
   discardPending: vi.fn(() => ({ added: [], removed: [] })),
@@ -102,6 +104,8 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     unbind = projectionState.unbind
     applyFrame = projectionState.applyFrame
     applyCollected = projectionState.applyCollected
+    retryFailed = projectionState.retryFailed
+    hasPendingFailure = projectionState.hasPendingFailure
     revertRejected = projectionState.revertRejected
     replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending

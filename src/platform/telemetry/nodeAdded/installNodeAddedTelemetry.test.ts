@@ -4,12 +4,12 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { useTelemetry } from '..'
+import { useTelemetry } from '@/platform/telemetry'
 
 import { installNodeAddedTelemetry } from './installNodeAddedTelemetry'
 import { withNodeAddSource } from './nodeAddSource'
 
-vi.mock(import('..'))
+vi.mock(import('@/platform/telemetry'))
 
 function fakeGraph(): LGraph {
   return {

@@ -9,7 +9,7 @@ import type {
   ModelThumbnailResult
 } from '@/components/load3d/modelThumbnail'
 
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))

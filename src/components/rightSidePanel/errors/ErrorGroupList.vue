@@ -394,8 +394,8 @@ import { useManagerDialog } from '@/workbench/extensions/manager/composables/use
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
-import TransitionCollapse from '../layout/TransitionCollapse.vue'
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorCardSection from './ErrorCardSection.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'

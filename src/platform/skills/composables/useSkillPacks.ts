@@ -8,9 +8,9 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import {
   deleteSkillPack as deleteSkillPackApi,
   SkillPacksApiError
-} from '../api/skillsApi'
-import { useSkillPacksStore } from '../stores/skillPacksStore'
-import type { SkillPack } from '../types'
+} from '@/platform/skills/api/skillsApi'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import type { SkillPack } from '@/platform/skills/types'
 
 export function useSkillPacks() {
   const { t } = useI18n()

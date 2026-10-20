@@ -8,13 +8,13 @@ import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { generateCategoryId, getCategoryIcon } from '@/utils/categoryUtil'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
-import { zLogoIndex } from '../schemas/templateSchema'
-import type { LogoIndex } from '../schemas/templateSchema'
+import { zLogoIndex } from '@/platform/workflow/templates/schemas/templateSchema'
+import type { LogoIndex } from '@/platform/workflow/templates/schemas/templateSchema'
 import type {
   TemplateGroup,
   TemplateInfo,
   WorkflowTemplates
-} from '../types/template'
+} from '@/platform/workflow/templates/types/template'
 
 // Enhanced template interface for easier filtering
 interface EnhancedTemplate extends TemplateInfo {
