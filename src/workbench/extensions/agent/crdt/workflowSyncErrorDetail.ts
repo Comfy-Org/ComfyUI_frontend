@@ -19,11 +19,18 @@ export function formatWorkflowSyncErrorDetail(
   message: string | undefined,
   code?: string
 ): string {
-  const detail = translate(
-    code === 'catalog_mismatch'
-      ? 'agent.workflowSyncFailedDetailCatalogMismatch'
-      : 'agent.workflowSyncFailedDetail'
-  )
+  const detail = translate(detailKey(code))
   if (!message) return detail
   return `${detail} (${truncate(message, { length: SYNC_ERROR_RAW_MESSAGE_MAX_LENGTH })})`
+}
+
+function detailKey(code: string | undefined): string {
+  switch (code) {
+    case 'catalog_mismatch':
+      return 'agent.workflowSyncFailedDetailCatalogMismatch'
+    case 'stale_client_schema':
+      return 'agent.workflowSyncFailedDetailStaleClient'
+    default:
+      return 'agent.workflowSyncFailedDetail'
+  }
 }
