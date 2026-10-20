@@ -109,11 +109,11 @@ const mobileRows = [
             class="flex h-10 w-40 shrink-0 items-center justify-center"
           >
             <SocialProofLogo
-            :name="logo.name"
-            :src="logo.src"
-            :masked="agencyLogos.includes(logo)"
-            :mask-style="agencyMaskStyles[logo.name]"
-          />
+              :name="logo.name"
+              :src="logo.src"
+              :masked="agencyLogos.includes(logo)"
+              :mask-style="agencyMaskStyles[logo.name]"
+            />
           </div>
         </div>
       </div>
