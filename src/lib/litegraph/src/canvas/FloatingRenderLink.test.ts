@@ -7,7 +7,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 
-import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { FloatingRenderLink } from './FloatingRenderLink'
 
 function inputFloatingLink(targetId: number, targetSlot: number): LLink {

@@ -27,7 +27,14 @@ export type NavColumn = {
   placement?: 'footer'
 }
 
+type NavFeaturedVariant = {
+  imageSrc: string
+  videoSrc?: string
+  imageAlt: string
+}
+
 export type NavFeatured = {
+  analyticsId?: string
   imageSrc: string
   videoSrc?: string
   showPlayOverlay?: boolean
@@ -38,6 +45,7 @@ export type NavFeatured = {
     ariaLabel?: string
     href: string
   }
+  variants?: Record<string, NavFeaturedVariant>
 }
 
 export type NavItem =
@@ -45,6 +53,7 @@ export type NavItem =
       label: string
       columns: NavColumn[]
       featured?: NavFeatured
+      analyticsId: string
       activePathPrefix?: string
       badge?: 'new'
       href?: never
@@ -84,8 +93,10 @@ export function getMainNavigation(
   return [
     {
       label: t('nav.workshop'),
+      analyticsId: 'hub',
       activePathPrefix: '/hub/',
       featured: {
+        analyticsId: 'seedance-2-5',
         imageSrc:
           'https://media.comfy.org/website/seedance-2.5/balloons-poster.webp',
         videoSrc: 'https://media.comfy.org/website/seedance-2.5/balloons.webm',
@@ -150,13 +161,11 @@ export function getMainNavigation(
           items: [
             {
               label: t('nav.cinematicStudio'),
-              href: routes.cinematicStudio,
-              newTab: true
+              href: routes.cinematicStudio
             },
             ...when(hubSections.reshoot, {
               label: t('nav.reshoot'),
-              href: routes.reshoot,
-              newTab: true
+              href: routes.reshoot
             })
           ],
           allLink: { label: t('nav.hubAllApps'), href: routes.hubApps }
@@ -165,7 +174,9 @@ export function getMainNavigation(
     },
     {
       label: t('nav.products'),
+      analyticsId: 'products',
       featured: {
+        analyticsId: 'gemini-omni',
         imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
         videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
         imageAlt: t('nav.featuredProductsAlt'),
@@ -220,11 +231,7 @@ export function getMainNavigation(
               href: routes.platformRouter,
               badge: 'new'
             },
-            { label: t('nav.builds'), href: routes.platformBuilder },
-            {
-              label: t('nav.managedBuilds'),
-              href: routes.managedBuilds
-            }
+            { label: t('nav.builds'), href: routes.platformBuilder }
           ]
         },
         {
@@ -247,7 +254,9 @@ export function getMainNavigation(
     },
     {
       label: t('nav.enterprise'),
+      analyticsId: 'enterprise',
       featured: {
+        analyticsId: 'minimax-license',
         imageSrc:
           'https://media.comfy.org/website/minimax-license/hero-poster.jpg',
         videoSrc: 'https://media.comfy.org/website/minimax-license/hero.mp4',
@@ -265,6 +274,10 @@ export function getMainNavigation(
             {
               label: t('nav.comfyEnterprise'),
               href: routes.enterprise
+            },
+            {
+              label: t('nav.managedBuilds'),
+              href: routes.managedBuilds
             },
             {
               label: t('nav.fdct'),
@@ -289,7 +302,9 @@ export function getMainNavigation(
     { label: t('nav.pricing'), href: routes.pricing },
     {
       label: t('nav.company'),
+      analyticsId: 'company',
       featured: {
+        analyticsId: 'customer-story',
         imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
         showPlayOverlay: true,
         imageAlt: t('nav.featuredCompanyAlt'),
@@ -335,7 +350,6 @@ export function getMainNavigation(
               href: routes.customers,
               badge: 'new'
             },
-            { label: t('nav.launches'), href: routes.launches },
             {
               label: t('nav.blogs'),
               href: externalLinks.blog,

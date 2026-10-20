@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { SafeParseReturnType } from 'zod'
+import type { ZodSafeParseResult } from 'zod'
 
 import {
   PASSWORD_RULES,
@@ -20,10 +20,7 @@ const signUpValues = (overrides: Partial<Record<string, string>> = {}) => ({
   ...overrides
 })
 
-const errorAt = (
-  result: SafeParseReturnType<unknown, unknown>,
-  path: string
-) =>
+const errorAt = (result: ZodSafeParseResult<unknown>, path: string) =>
   result.success
     ? undefined
     : result.error.issues.find((issue) => issue.path[0] === path)?.message

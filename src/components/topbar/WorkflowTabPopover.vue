@@ -1,13 +1,13 @@
 <template>
   <Popover
     ref="popoverRef"
-    side="top"
+    side="bottom"
     :side-offset="8"
     content-class="workflow-popover-fade w-fit rounded-xl border-none bg-transparent p-0 shadow-lg transition-opacity duration-150 ease-out"
     @mouseleave="hidePopover"
   >
     <div
-      class="flex max-w-62.5 flex-col overflow-hidden rounded-xl bg-interface-menu-surface text-text-primary"
+      class="flex max-w-62.5 flex-col overflow-hidden rounded-xl bg-popover text-foreground"
     >
       <div
         v-if="thumbnailUrl && !isActiveTab"
@@ -15,12 +15,12 @@
       >
         <img
           :src="thumbnailUrl"
-          class="block h-50 rounded-lg bg-secondary-background object-cover p-2 shadow-lg"
+          class="block h-50 rounded-lg bg-secondary object-cover p-2 shadow-lg"
           :style="{ width: `${POPOVER_WIDTH}px` }"
         />
       </div>
       <div class="px-3 pt-1 pb-2">
-        <span class="block truncate text-sm font-medium text-text-primary">
+        <span class="block truncate text-sm font-medium">
           {{ workflowFilename }}
         </span>
       </div>

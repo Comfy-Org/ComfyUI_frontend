@@ -12,10 +12,8 @@
       >
         <div class="flex min-w-0 flex-1 items-center gap-2">
           <Button
-            v-tooltip.bottom="{
-              value: $t('sideToolbar.backToAssets'),
-              showDelay: 300
-            }"
+            :tooltip="$t('sideToolbar.backToAssets')"
+            tooltip-side="bottom"
             variant="textonly"
             size="icon"
             type="button"
@@ -30,10 +28,8 @@
           </span>
           <span class="min-w-0 truncate text-sm">{{ folderJobId }}</span>
           <Button
-            v-tooltip.bottom="{
-              value: $t('g.copyJobId'),
-              showDelay: 300
-            }"
+            :tooltip="$t('g.copyJobId')"
+            tooltip-side="bottom"
             variant="textonly"
             size="icon"
             type="button"
@@ -148,7 +144,7 @@
   <Teleport to="body">
     <div
       v-if="marqueeStyle"
-      class="pointer-events-none fixed z-9999 border border-primary-background bg-primary-background/20"
+      class="pointer-events-none fixed z-9999 border border-primary bg-primary/20"
       :style="marqueeStyle"
     />
   </Teleport>
@@ -192,6 +188,7 @@ import Button from '@/components/ui/button/Button.vue'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import MediaAssetSelectionBar from '@/platform/assets/components/MediaAssetSelectionBar.vue'
 import {
@@ -214,11 +211,13 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 import {
   getAssetFileUrl,
-  getAssetSubfolder
+  getAssetSubfolder,
+  getAssetViewUrl
 } from '@/platform/assets/utils/assetUrlUtil'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
+import { openHdrViewer } from '@/services/hdrViewerService'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import {
@@ -226,6 +225,7 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
+import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
@@ -234,6 +234,7 @@ const Load3dViewerContent = defineAsyncComponent(
 )
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 
 const { closable = true } = defineProps<{ closable?: boolean }>()
 
@@ -281,10 +282,9 @@ useDismissableOverlay({
 
 // Determine if delete button should be shown
 // Hide delete button when in input tab and not in cloud (OSS mode - files are from local folders)
-const shouldShowDeleteButton = computed(() => {
-  if (activeTab.value === 'input' && !isCloud) return false
-  return true
-})
+const shouldShowDeleteButton = computed(
+  () => activeTab.value !== 'input' || flags.assetDeletionEnabled
+)
 
 const showOutputCount = (item: AssetItem): boolean => {
   if (activeTab.value !== 'output' || isInFolderView.value) {
@@ -547,7 +547,9 @@ function handleAssetContextMenu(event: MouseEvent, asset: AssetItem) {
       {
         label: t('mediaAsset.actions.inspect'),
         icon: 'icon-[lucide--zoom-in]',
-        visible: isPreviewableMediaType(getMediaTypeFromFilename(asset.name)),
+        visible:
+          isPreviewableMediaType(getMediaTypeFromFilename(asset.name)) ||
+          isHdrImageFilename(asset.name),
         command: () => handleZoomClick(asset)
       },
       {
@@ -622,6 +624,11 @@ const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
 }
 
 const handleZoomClick = (asset: AssetItem) => {
+  if (isHdrImageFilename(asset.name)) {
+    openHdrViewer(getAssetViewUrl(asset))
+    return
+  }
+
   const mediaType = getMediaTypeFromFilename(asset.name)
   if (!isPreviewableMediaType(mediaType)) {
     return

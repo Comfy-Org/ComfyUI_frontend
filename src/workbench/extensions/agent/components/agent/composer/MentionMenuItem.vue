@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
-import type { useAgentMentionPicker } from '../../../composables/agent/useAgentMentionPicker'
-import type { SkillReferenceMetadata } from '../../../types/skillReference'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import type { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import AssetThumbnail from './AssetThumbnail.vue'
 import SkillMenuDescription from './SkillMenuDescription.vue'
 
@@ -66,14 +68,8 @@ const nodeId = computed(() =>
 </script>
 
 <template>
-  <AccessibleTooltip
-    :label="disabledReason ?? ''"
-    :disabled="!disabledReason"
-    :skip-delay-duration="0"
-    disable-hoverable-content
-    :collision-padding="8"
-  >
-    <template #trigger>
+  <Tooltip :disabled="!disabledReason">
+    <TooltipTrigger as-child>
       <div
         :id="`agent-reference-item-${index}`"
         ref="row"
@@ -85,8 +81,8 @@ const nodeId = computed(() =>
         :data-active="active"
         :class="
           cn(
-            'flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
-            active && 'bg-secondary-background-hover'
+            'flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs font-normal outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+            active && 'bg-accent'
           )
         "
         @mouseenter="emit('highlight')"
@@ -113,12 +109,12 @@ const nodeId = computed(() =>
           @release-focus="emit('descriptionReleaseFocus')"
           @dismiss="emit('descriptionDismiss')"
         />
-        <span v-if="unsavedWorkflow" class="text-xs text-muted-foreground">{{
+        <span v-if="unsavedWorkflow" class="text-muted-foreground">{{
           $t('agent.unsavedWorkflow')
         }}</span>
         <span
           v-if="nodeId !== undefined"
-          class="ml-auto shrink-0 rounded-full bg-interface-menu-keybind-surface-default px-1 py-0.5 font-mono text-xs/4 text-base-foreground"
+          class="ml-auto shrink-0 rounded-full bg-muted px-1 py-0.5 font-mono text-xs/4"
         >
           {{ ' #' + nodeId }}</span
         >
@@ -127,6 +123,7 @@ const nodeId = computed(() =>
           class="icon-[lucide--chevron-right] size-4 shrink-0"
         />
       </div>
-    </template>
-  </AccessibleTooltip>
+    </TooltipTrigger>
+    <TooltipContent>{{ disabledReason }}</TooltipContent>
+  </Tooltip>
 </template>

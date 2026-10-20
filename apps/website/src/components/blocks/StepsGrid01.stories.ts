@@ -11,8 +11,12 @@ const meta: Meta<typeof StepsGrid01> = {
       template: '<div class="bg-primary-comfy-ink"><story /></div>'
     })
   ],
+  argTypes: {
+    layout: { control: 'select', options: ['grid', 'timeline'] }
+  },
   args: {
     heading: 'From prompt to production',
+    layout: 'grid',
     steps: [
       {
         id: 'install',
@@ -51,6 +55,41 @@ export const OddStepCount: Story = {
         id: 'scale',
         label: 'Scale',
         description: 'Run the same governed workflow wherever it is needed.'
+      }
+    ]
+  }
+}
+
+export const Timeline: Story = {
+  args: {
+    heading: 'Timeline',
+    layout: 'timeline',
+    highlightedId: 'build',
+    steps: [
+      {
+        id: 'signup',
+        title: 'Signups open',
+        label: '10/15',
+        description: 'Registration opens for the online competition.'
+      },
+      {
+        id: 'build',
+        title: 'Build',
+        label: '10/15 – 10/30',
+        description: 'Submission window closes: October 30 · 9am PT.'
+      },
+      {
+        id: 'nights',
+        title: 'Build Nights',
+        label: '10/28 – 11/3',
+        description: 'SF 10/28 · LA 10/29 · NYC 11/3.'
+      },
+      {
+        id: 'winner',
+        title: 'Winners announced',
+        label: '11/6',
+        description:
+          'Winning entries are featured on comfy.org/hub with credit.'
       }
     ]
   }

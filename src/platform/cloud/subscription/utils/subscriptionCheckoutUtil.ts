@@ -29,6 +29,7 @@ import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 
 import type { BillingCycle } from './subscriptionTierRank'
 import { loadCheckoutAttributionModule } from './checkoutAttributionLoader'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 type CheckoutTier = TierKey | `${TierKey}-yearly`
 
@@ -282,7 +283,7 @@ function completeSubscriptionCheckout(
 
   trackBeginCheckout(context)
 
-  if (!window.open(checkoutUrl, '_blank')) {
+  if (!openBillingUrl(checkoutUrl)) {
     throw new PaymentPopupBlockedError(
       t('subscription.preview.paymentPopupBlocked')
     )

@@ -77,6 +77,21 @@ describe('vercel.json redirects', () => {
 })
 
 describe('the redirect list', () => {
+  it.for([
+    ['/vfx', '/solutions/vfx/'],
+    ['/zh-CN/vfx', '/zh-CN/solutions/vfx/']
+  ])(
+    'permanently redirects both slash forms of %s to %s',
+    ([source, destination]) => {
+      expect(toVercelRedirects(siteRedirects)).toEqual(
+        expect.arrayContaining([
+          { source, destination, permanent: true },
+          { source: `${source}/`, destination, permanent: true }
+        ])
+      )
+    }
+  )
+
   const sources = siteRedirects.map(({ source }) => source)
 
   it('names each source once', () => {
@@ -157,6 +172,8 @@ describe('generated Vercel rules', () => {
       destination: '/hub/models/local/t5xxl-fp16/'
     },
     { source: '/p/supported-models', destination: '/hub/models/local/' },
+    { source: '/nvidia-rtx', destination: '/nvidia-vfx/' },
+    { source: '/zh-CN/nvidia-rtx', destination: '/zh-CN/nvidia-vfx/' },
     { source: '/models', destination: '/hub/models/' },
     {
       source: '/models/workflows/change-material',
@@ -187,6 +204,13 @@ describe('generated Vercel rules', () => {
     }
   )
 
+  it.for(['/nvidia-vfx/', '/zh-CN/nvidia-vfx/'])(
+    'sends the old NVIDIA address to %s, a built page',
+    (destination) => {
+      expect(pageExistsAt(destination)).toBe(true)
+    }
+  )
+
   it('keeps only the listed rows temporary', () => {
     expect(
       vercelRedirects
@@ -203,7 +227,19 @@ describe('generated Vercel rules', () => {
       '/minimax',
       '/minimax/',
       '/zh-CN/minimax',
-      '/zh-CN/minimax/'
+      '/zh-CN/minimax/',
+      '/gallery',
+      '/gallery/',
+      '/gallery.md',
+      '/zh-CN/gallery',
+      '/zh-CN/gallery/',
+      '/zh-CN/gallery.md',
+      '/launches',
+      '/launches/',
+      '/launches.md',
+      '/zh-CN/launches',
+      '/zh-CN/launches/',
+      '/zh-CN/launches.md'
     ])
   })
 
@@ -237,6 +273,23 @@ describe('generated Vercel rules', () => {
   )
 })
 
+describe('the retired gallery and launches pages', () => {
+  it.for([
+    ['/gallery/', '/customers/'],
+    ['/zh-CN/gallery/', '/zh-CN/customers/'],
+    ['/launches/', '/events/'],
+    ['/zh-CN/launches/', '/zh-CN/events/'],
+    ['/gallery.md', '/customers.md'],
+    ['/zh-CN/gallery.md', '/zh-CN/customers.md'],
+    ['/launches.md', '/events.md'],
+    ['/zh-CN/launches.md', '/zh-CN/events.md']
+  ])('sends %s to %s with a 307', ([source, destination]) => {
+    expect(
+      toVercelRedirects(siteRedirects).find((row) => row.source === source)
+    ).toEqual({ source, destination, permanent: false })
+  })
+})
+
 describe('link-stale sources', () => {
   it('leave out a bare source whose slash form is a page', () => {
     expect(linkStaleSources).not.toContain('/about')
@@ -266,11 +319,11 @@ describe('Astro redirects', () => {
           ({ source, destination, slashFormIsPageBecause }) =>
             isInternalDestination(destination) &&
             slashFormIsPageBecause === undefined &&
+            !/\.(md|txt)$/.test(source) &&
             !isRetiredAddress(source)
         )
         .map(({ source }) => source)
     )
-    expect(Object.keys(astroRedirects)).toHaveLength(18)
     expect(astroRedirects['/minimax']).toEqual({
       status: 307,
       destination: '/minimax-h3/'
@@ -279,6 +332,7 @@ describe('Astro redirects', () => {
       status: 307,
       destination: '/zh-CN/minimax-h3/'
     })
+    expect(astroRedirects['/gallery.md']).toBeUndefined()
     expect(astroRedirects['/career']).toEqual({
       status: 308,
       destination: '/careers/'

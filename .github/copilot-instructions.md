@@ -1,4 +1,4 @@
-Use the Vue 3 Composition API instead of the Options API when writing Vue components. An exception is when overriding or extending a PrimeVue component for compatibility, you may use the Options API.
+Use the Vue 3 Composition API instead of the Options API when writing Vue components.
 
 Use setup() function for component logic
 
@@ -35,3 +35,5 @@ Follow Vue 3 style guide and naming conventions
 Use Vite for fast development and building
 
 Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json.
+
+Do not write code comments. The only exception is curt JSDoc on an exported API. Put rationale in the commit message or PR description.

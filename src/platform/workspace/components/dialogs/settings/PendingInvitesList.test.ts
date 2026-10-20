@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 
 import PendingInvitesList from './PendingInvitesList.vue'
 
-import type { WorkspacePendingInvite } from '../../../stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const i18n = createI18n({
   legacy: false,

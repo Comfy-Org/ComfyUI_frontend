@@ -10,13 +10,13 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useAuthStore } from '@/stores/authStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-import { WorkspaceApiError } from '../api/workspaceApi'
-import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '../api/workspaceApiError'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '@/platform/workspace/api/workspaceApiError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceSwitch } from './useWorkspaceSwitch'
 
 function isDirectoryManagedRefusal(error: unknown): boolean {
@@ -44,7 +44,8 @@ export function useInviteUrlLoader() {
   const { t } = useI18n()
   const toast = useToast()
   const { switchWorkspace } = useWorkspaceSwitch()
-  const dialogService = useDialogService()
+  const { showInviteLinkInvalidDialog, showInviteWrongAccountDialog } =
+    useWorkspaceDialogs()
   const workspaceStore = useTeamWorkspaceStore()
   const authStore = useAuthStore()
   const INVITE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.INVITE
@@ -76,29 +77,38 @@ export function useInviteUrlLoader() {
     void router.replace({ query: newQuery })
   }
 
-  /**
-   * Loads and accepts workspace invite from URL query parameters if present.
-   * Handles errors internally and shows appropriate user feedback.
-   *
-   * Flow:
-   * 1. Restore preserved query (for post-login redirect)
-   * 2. Check for invite token in route.query
-   * 3. Accept the invite via API (backend validates token)
-   * 4. Show toast notification
-   * 5. Clean up URL and preserved query
-   */
+  const offerSignInAgain = () => {
+    const { href } = router.resolve({
+      name: 'cloud-login',
+      query: {
+        switchAccount: 'true',
+        previousFullPath: encodeURIComponent(route.fullPath)
+      }
+    })
+    toast.info(t('workspace.inviteNeedsSignIn'), {
+      description: t('workspace.inviteNeedsSignInDetail'),
+      action: {
+        label: t('workspace.inviteSignIn'),
+        onClick: () => window.location.assign(href)
+      }
+    })
+  }
+
   const loadInviteFromUrl = async () => {
-    // Restore preserved query from sessionStorage (handles login redirect case)
     const query = await ensureInviteQueryFromIntent()
     const inviteParam = query.invite
     if (!inviteParam || typeof inviteParam !== 'string') {
       return
     }
 
-    if (authStore.signedInWithSso && authStore.currentUser === null) {
-      toast.info(t('workspace.inviteSsoUnavailable'), {
-        description: t('workspace.inviteSsoUnavailableDetail')
-      })
+    if (authStore.currentUser === null) {
+      if (authStore.signedInWithSso) {
+        toast.info(t('workspace.inviteSsoUnavailable'), {
+          description: t('workspace.inviteSsoUnavailableDetail')
+        })
+      } else {
+        offerSignInAgain()
+      }
       cleanupUrlParams()
       clearPreservedQuery(INVITE_NAMESPACE)
       return
@@ -127,9 +137,6 @@ export function useInviteUrlLoader() {
     } catch (error) {
       await presentAcceptFailure(error, inviteParam)
     } finally {
-      // showDialog resolves immediately, so this clears the preserved token
-      // while a landing dialog is still open — Switch account re-stashes it
-      // itself before signing out.
       cleanupUrlParams()
       clearPreservedQuery(INVITE_NAMESPACE)
     }
@@ -155,11 +162,11 @@ export function useInviteUrlLoader() {
     }
     try {
       if (status === 404) {
-        await dialogService.showInviteLinkInvalidDialog()
+        await showInviteLinkInvalidDialog()
         return
       }
       if (status === 403) {
-        await dialogService.showInviteWrongAccountDialog({ inviteToken })
+        await showInviteWrongAccountDialog({ inviteToken })
         return
       }
     } catch (dialogError) {

@@ -1,6 +1,6 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useDialogService } from '@/services/dialogService'
+import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,6 +19,8 @@ import type {
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { describeServerFactGate } from '@/utils/__tests__/serverFactGate'
+import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 
 import {
   filterBySearch,
@@ -243,8 +245,6 @@ const {
       canInviteMembers: true,
       canManageInvites: true,
       canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }),
     mockUiConfig: ref({
@@ -256,7 +256,6 @@ const {
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null as string | null
     }),
@@ -279,6 +278,7 @@ let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
 let workspaceType: 'personal' | 'team' = 'personal'
 let workspaceMembers: WorkspaceMember[] = []
 let workspacePendingInvites: WorkspacePendingInvite[] = []
+let workspaceMembersLoaded = true
 
 function updateWorkspaceStore() {
   workspaceStore.workspaces = [
@@ -294,7 +294,7 @@ function updateWorkspaceStore() {
       subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
       members: workspaceMembers,
       pendingInvites: workspacePendingInvites,
-      membersLoaded: true,
+      membersLoaded: workspaceMembersLoaded,
       pendingInvitesLoaded: true
     }
   ]
@@ -349,6 +349,7 @@ vi.mock(
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/services/dialogService'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 describe('useMembersPanel', () => {
@@ -356,7 +357,6 @@ describe('useMembersPanel', () => {
   let pinia: Pinia
 
   beforeEach(() => {
-    mockDistribution.isCloud = true
     const workspaceUI = vi.mocked(useWorkspaceUI())
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
@@ -416,6 +416,7 @@ describe('useMembersPanel', () => {
     workspaceType = 'personal'
     workspaceMembers = []
     workspacePendingInvites = []
+    workspaceMembersLoaded = true
     updateWorkspaceStore()
     vi.mocked(useFeatureFlags().flags).memberCreditLimitsEnabled = true
     mockMaxSeats.value = 73
@@ -425,8 +426,12 @@ describe('useMembersPanel', () => {
     mockIsTeamPlan.value = true
     mockSubscriptionStatus.value = 'active'
     mockWorkspaceRole.value = 'owner'
-    useBillingCapabilities().canManageMembers = computed(() => true)
-    useBillingCapabilities().canInviteMembers = computed(() => true)
+    useBillingCapabilities().canManageMembers = computed(() =>
+      receiveServerFact('can_manage_members', true)
+    )
+    useBillingCapabilities().canInviteMembers = computed(() =>
+      receiveServerFact('can_invite_members', true)
+    )
     mockSubscription.value = { tier: 'PRO', isCancelled: false }
     mockPermissions.value = {
       canViewOtherMembers: true,
@@ -434,8 +439,6 @@ describe('useMembersPanel', () => {
       canInviteMembers: true,
       canManageInvites: true,
       canManageMembers: true,
-      canLeaveWorkspace: true,
-      canAccessWorkspaceMenu: true,
       canManageSubscription: true
     }
     mockUiConfig.value = {
@@ -447,7 +450,6 @@ describe('useMembersPanel', () => {
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: 'delete',
       workspaceMenuDisabledTooltip: null
     }
@@ -530,7 +532,9 @@ describe('useMembersPanel', () => {
     ])(
       'renders a successful roster with $canManage management, $maxSeats seats and $status status',
       async ({ canManage, maxSeats, status }) => {
-        useBillingCapabilities().canManageMembers = computed(() => canManage)
+        useBillingCapabilities().canManageMembers = computed(() =>
+          receiveServerFact('can_manage_members', canManage)
+        )
         mockMaxSeats.value = maxSeats
         mockSubscriptionStatus.value = status
         mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
@@ -549,58 +553,6 @@ describe('useMembersPanel', () => {
       }
     )
 
-    it.for([
-      {
-        role: 'owner' as const,
-        maxSeats: 1,
-        status: 'active' as const,
-        canManage: false,
-        showMembers: false,
-        showTabs: false
-      },
-      {
-        role: 'owner' as const,
-        maxSeats: 1,
-        status: 'ended' as const,
-        canManage: false,
-        showMembers: true,
-        showTabs: false
-      },
-      {
-        role: 'owner' as const,
-        maxSeats: 73,
-        status: 'active' as const,
-        canManage: true,
-        showMembers: true,
-        showTabs: true
-      },
-      {
-        role: 'member' as const,
-        maxSeats: 73,
-        status: 'active' as const,
-        canManage: false,
-        showMembers: true,
-        showTabs: true
-      }
-    ])(
-      'preserves desktop $role visibility with $maxSeats seats and $status status',
-      async ({ role, maxSeats, status, canManage, showMembers, showTabs }) => {
-        mockDistribution.isCloud = false
-        mockWorkspaceRole.value = role
-        mockMaxSeats.value = maxSeats
-        mockSubscriptionStatus.value = status
-        useBillingCapabilities().canManageMembers = computed(() => !canManage)
-        mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
-        mockPendingInvites.value = [createInvite()]
-
-        const panel = await setup()
-
-        expect(panel.permissions.value.canManageMembers).toBe(canManage)
-        expect(panel.uiConfig.value.showMembersList).toBe(showMembers)
-        expect(panel.showViewTabs.value).toBe(showTabs)
-      }
-    )
-
     it.for([false, true])(
       'uses read readiness for roster visibility (members loaded: %s)',
       async (loaded) => {
@@ -610,7 +562,9 @@ describe('useMembersPanel', () => {
           ...workspaceStore.workspaces[0],
           membersLoaded: loaded
         }
-        useBillingCapabilities().canManageMembers = computed(() => false)
+        useBillingCapabilities().canManageMembers = computed(() =>
+          receiveServerFact('can_manage_members', false)
+        )
         const panel = await setup()
 
         expect(panel.permissions.value.canViewOtherMembers).toBe(loaded)
@@ -645,7 +599,9 @@ describe('useMembersPanel', () => {
         createMember({ role: 'owner', email: 'owner@example.com' })
       ]
       mockMaxSeats.value = 73
-      useBillingCapabilities().canManageMembers = computed(() => true)
+      useBillingCapabilities().canManageMembers = computed(() =>
+        receiveServerFact('can_manage_members', true)
+      )
       const panel = await setup()
 
       expect(panel.permissions.value.canViewOtherMembers).toBe(true)
@@ -678,8 +634,12 @@ describe('useMembersPanel', () => {
       mockMembers.value = [
         createMember({ role: 'owner', email: 'owner@example.com' })
       ]
-      useBillingCapabilities().canManageMembers = computed(() => false)
-      useBillingCapabilities().canInviteMembers = computed(() => false)
+      useBillingCapabilities().canManageMembers = computed(() =>
+        receiveServerFact('can_manage_members', false)
+      )
+      useBillingCapabilities().canInviteMembers = computed(() =>
+        receiveServerFact('can_invite_members', false)
+      )
       mockIsTeamPlan.value = false
       mockMaxSeats.value = 1
 
@@ -823,7 +783,7 @@ describe('useMembersPanel', () => {
     it('calls showRevokeInviteDialog', async () => {
       const panel = await setup()
       panel.handleRevokeInvite(createInvite({ id: 'inv-42' }))
-      expect(useDialogService().showRevokeInviteDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRevokeInviteDialog).toHaveBeenCalledWith(
         'inv-42'
       )
     })
@@ -833,7 +793,7 @@ describe('useMembersPanel', () => {
     it('calls showRemoveMemberDialog', async () => {
       const panel = await setup()
       panel.handleRemoveMember(createMember({ id: 'mem-7' }))
-      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRemoveMemberDialog).toHaveBeenCalledWith(
         'mem-7'
       )
     })
@@ -847,7 +807,7 @@ describe('useMembersPanel', () => {
         'owner'
       )
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).toHaveBeenCalledWith({
         memberId: 'mem-7',
         memberName: 'Jane',
@@ -862,7 +822,7 @@ describe('useMembersPanel', () => {
         'member'
       )
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).toHaveBeenCalledWith({
         memberId: 'own-2',
         memberName: 'Jane',
@@ -874,7 +834,7 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       panel.handleChangeRole(createMember({ role: 'member' }), 'member')
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).not.toHaveBeenCalled()
     })
   })
@@ -918,7 +878,7 @@ describe('useMembersPanel', () => {
       ownerItem?.command()
 
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).toHaveBeenCalledWith(
         expect.objectContaining({ memberId: 'mem-9', targetRole: 'owner' })
       )
@@ -934,7 +894,7 @@ describe('useMembersPanel', () => {
         item: removeItem
       })
 
-      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRemoveMemberDialog).toHaveBeenCalledWith(
         'mem-9'
       )
     })
@@ -955,7 +915,7 @@ describe('useMembersPanel', () => {
       })
 
       expect(
-        useDialogService().showSetMemberCreditLimitDialog
+        useWorkspaceDialogs().showSetMemberCreditLimitDialog
       ).toHaveBeenCalledWith({
         memberId: 'mem-9',
         memberName: 'Jane',
@@ -975,7 +935,7 @@ describe('useMembersPanel', () => {
       })
 
       expect(
-        useDialogService().showSetMemberCreditLimitDialog
+        useWorkspaceDialogs().showSetMemberCreditLimitDialog
       ).toHaveBeenCalledWith({
         memberId: 'mem-9',
         memberName: 'Jane',
@@ -986,7 +946,9 @@ describe('useMembersPanel', () => {
 
     it('returns no actions without member-management permission', async () => {
       mockWorkspaceRole.value = 'member'
-      useBillingCapabilities().canManageMembers = computed(() => false)
+      useBillingCapabilities().canManageMembers = computed(() =>
+        receiveServerFact('can_manage_members', false)
+      )
       const panel = await setup()
 
       expect(panel.memberMenuItems(createMember())).toEqual([])
@@ -1036,6 +998,23 @@ describe('useMembersPanel', () => {
         panel.memberMenuItems(createMember({ id: 'creator-1', role: 'owner' }))
       ).toEqual([])
     })
+  })
+
+  describe('workspace menu placement', () => {
+    it.for([
+      { inHeader: false, shown: true },
+      { inHeader: true, shown: false }
+    ])(
+      'keeps the menu in the Members controls: $shown (in header: $inHeader)',
+      async ({ inHeader, shown }) => {
+        vi.mocked(useWorkspaceUI()).isWorkspaceMenuInHeader = computed(
+          () => inHeader
+        )
+        const panel = await setup()
+
+        expect(panel.showWorkspaceMenu.value).toBe(shown)
+      }
+    )
   })
 
   describe('isOriginalOwner', () => {
@@ -1095,7 +1074,9 @@ describe('useMembersPanel', () => {
     })
 
     it('shows a successfully returned personal roster without management controls', async () => {
-      useBillingCapabilities().canManageMembers = computed(() => false)
+      useBillingCapabilities().canManageMembers = computed(() =>
+        receiveServerFact('can_manage_members', false)
+      )
       mockIsTeamPlan.value = false
       mockMaxSeats.value = 1
       mockMembers.value = [createMember(), createMember({ id: '2' })]
@@ -1109,9 +1090,9 @@ describe('useMembersPanel', () => {
     it('opens the invite dialog on an active team plan', async () => {
       const panel = await setup()
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
       expect(
-        useDialogService().showInviteMemberUpsellDialog
+        useWorkspaceDialogs().showInviteMemberUpsellDialog
       ).not.toHaveBeenCalled()
     })
 
@@ -1126,12 +1107,11 @@ describe('useMembersPanel', () => {
         mockMaxSeats.value = maxSeats
         mockOccupiedSeats.value = occupiedSeats
         const panel = await setup()
-        expect(panel.isInviteDisabled.value).toBe(false)
-        expect(panel.inviteTooltip.value).toBeNull()
+        expect(panel.showInviteButton.value).toBe(true)
         panel.handleInviteMember()
-        expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+        expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
         expect(
-          useDialogService().showInviteMemberUpsellDialog
+          useWorkspaceDialogs().showInviteMemberUpsellDialog
         ).not.toHaveBeenCalled()
       }
     )
@@ -1140,22 +1120,22 @@ describe('useMembersPanel', () => {
       mockMaxSeats.value = 0
       mockOccupiedSeats.value = 1000
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
     })
 
     it('keeps the invite button enabled from backend capacity without a team plan', async () => {
       mockIsTeamPlan.value = false
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
     })
 
     it('keeps invites live while a cancellation is scheduled', async () => {
       mockSubscription.value = { tier: 'PRO', isCancelled: true }
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
       expect(panel.permissions.value.canInviteMembers).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
     })
 
     it('keeps invites live for an end-dated Enterprise plan still running', async () => {
@@ -1165,26 +1145,32 @@ describe('useMembersPanel', () => {
         endDate: '2027-01-15T00:00:00Z'
       }
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
       expect(panel.permissions.value.canInviteMembers).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
     })
 
     it('hides denied invitations on an ended plan', async () => {
       mockSubscriptionStatus.value = 'ended'
-      useBillingCapabilities().canInviteMembers = computed(() => false)
+      useBillingCapabilities().canInviteMembers = computed(() =>
+        receiveServerFact('can_invite_members', false)
+      )
       const panel = await setup()
       expect(panel.isPlanEnded.value).toBe(true)
       expect(panel.showInviteButton.value).toBe(false)
-      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.showInviteButton.value).toBe(false)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('keeps the ended invite button hidden from members', async () => {
       mockSubscriptionStatus.value = 'ended'
-      useBillingCapabilities().canInviteMembers = computed(() => false)
+      useBillingCapabilities().canInviteMembers = computed(() =>
+        receiveServerFact('can_invite_members', false)
+      )
       mockPermissions.value = {
         ...mockPermissions.value,
         canManageSubscription: false
@@ -1297,19 +1283,21 @@ describe('useMembersPanel', () => {
         mockMaxSeats.value = 1
         mockSubscriptionStatus.value = 'ended'
         mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
-        useBillingCapabilities().canInviteMembers = computed(() => canInvite)
+        useBillingCapabilities().canInviteMembers = computed(() =>
+          receiveServerFact('can_invite_members', canInvite)
+        )
         const panel = await setup()
         expect(panel.isPlanEnded.value).toBe(true)
         expect(panel.isSalesManagedPlan.value).toBe(true)
         expect(panel.showInviteButton.value).toBe(canInvite)
-        expect(panel.isInviteDisabled.value).toBe(!canInvite)
+        expect(panel.showInviteButton.value).toBe(canInvite)
         expect(panel.uiConfig.value.showMembersList).toBe(true)
         panel.handleInviteMember()
-        expect(useDialogService().showInviteMemberDialog).toHaveBeenCalledTimes(
-          canInvite ? 1 : 0
-        )
         expect(
-          useDialogService().showInviteMemberUpsellDialog
+          useWorkspaceDialogs().showInviteMemberDialog
+        ).toHaveBeenCalledTimes(canInvite ? 1 : 0)
+        expect(
+          useWorkspaceDialogs().showInviteMemberUpsellDialog
         ).not.toHaveBeenCalled()
       }
     )
@@ -1320,7 +1308,9 @@ describe('useMembersPanel', () => {
       mockIsTeamPlan.value = false
       mockSubscriptionStatus.value = 'ended'
       mockMaxSeats.value = 1
-      useBillingCapabilities().canInviteMembers = computed(() => false)
+      useBillingCapabilities().canInviteMembers = computed(() =>
+        receiveServerFact('can_invite_members', false)
+      )
       const panel = await setup()
       expect(panel.isPlanEnded.value).toBe(false)
       expect(panel.showInviteButton.value).toBe(false)
@@ -1333,18 +1323,22 @@ describe('useMembersPanel', () => {
       }
       const panel = await setup()
       expect(panel.showInviteButton.value).toBe(true)
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
     })
 
     it('hides the invite button for workspace members', async () => {
       mockWorkspaceRole.value = 'member'
-      useBillingCapabilities().canInviteMembers = computed(() => false)
+      useBillingCapabilities().canInviteMembers = computed(() =>
+        receiveServerFact('can_invite_members', false)
+      )
       const panel = await setup()
       expect(panel.showInviteButton.value).toBe(false)
     })
 
     it('keeps management available when a full workspace cannot invite', async () => {
-      useBillingCapabilities().canInviteMembers = computed(() => false)
+      useBillingCapabilities().canInviteMembers = computed(() =>
+        receiveServerFact('can_invite_members', false)
+      )
       useBillingCapabilities().canChangeSeats = computed(() => false)
       mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: true }
       mockMaxSeats.value = 73
@@ -1356,7 +1350,7 @@ describe('useMembersPanel', () => {
       const member = createMember({ id: 'member-1' })
 
       expect(panel.showInviteButton.value).toBe(false)
-      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.showInviteButton.value).toBe(false)
       expect(panel.permissions.value.canViewPendingInvites).toBe(true)
       expect(panel.showViewTabs.value).toBe(true)
       expect(panel.uiConfig.value.showPendingTab).toBe(true)
@@ -1368,18 +1362,24 @@ describe('useMembersPanel', () => {
       panel.handleInviteMember()
 
       expect(workspaceStore.resendInvite).toHaveBeenCalledWith('inv-1')
-      expect(useDialogService().showRevokeInviteDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRevokeInviteDialog).toHaveBeenCalledWith(
         'inv-1'
       )
-      expect(useDialogService().showRemoveMemberDialog).toHaveBeenCalledWith(
+      expect(useWorkspaceDialogs().showRemoveMemberDialog).toHaveBeenCalledWith(
         'member-1'
       )
-      expect(useDialogService().showChangeMemberRoleDialog).toHaveBeenCalled()
-      expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showChangeMemberRoleDialog
+      ).toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showInviteMemberDialog
+      ).not.toHaveBeenCalled()
     })
 
     it('hides management actions when the server denies member management', async () => {
-      useBillingCapabilities().canManageMembers = computed(() => false)
+      useBillingCapabilities().canManageMembers = computed(() =>
+        receiveServerFact('can_manage_members', false)
+      )
       const panel = await setup()
       const member = createMember({ id: 'member-1' })
 
@@ -1390,23 +1390,175 @@ describe('useMembersPanel', () => {
       panel.handleRevokeInvite(createInvite())
       expect(panel.permissions.value.canViewPendingInvites).toBe(false)
       expect(workspaceStore.resendInvite).not.toHaveBeenCalled()
-      expect(useDialogService().showRevokeInviteDialog).not.toHaveBeenCalled()
-
-      expect(useDialogService().showRemoveMemberDialog).not.toHaveBeenCalled()
       expect(
-        useDialogService().showChangeMemberRoleDialog
+        useWorkspaceDialogs().showRevokeInviteDialog
+      ).not.toHaveBeenCalled()
+
+      expect(
+        useWorkspaceDialogs().showRemoveMemberDialog
+      ).not.toHaveBeenCalled()
+      expect(
+        useWorkspaceDialogs().showChangeMemberRoleDialog
       ).not.toHaveBeenCalled()
     })
 
     it('honors the resolved invitation capability while billing is initializing', async () => {
       mockIsInitialized.value = false
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.showInviteButton.value).toBe(true)
       panel.handleInviteMember()
-      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+      expect(useWorkspaceDialogs().showInviteMemberDialog).toHaveBeenCalled()
       expect(
-        useDialogService().showInviteMemberUpsellDialog
+        useWorkspaceDialogs().showInviteMemberUpsellDialog
       ).not.toHaveBeenCalled()
+    })
+  })
+
+  function setCapability(
+    name: 'canInviteMembers' | 'canManageMembers' | 'canChangeSeats',
+    value: boolean
+  ) {
+    const capabilities = useBillingCapabilities()
+    if (name === 'canChangeSeats') {
+      capabilities.canChangeSeats = computed(() => value)
+    } else if (name === 'canInviteMembers') {
+      capabilities.canInviteMembers = computed(() =>
+        receiveServerFact('can_invite_members', value)
+      )
+    } else {
+      capabilities.canManageMembers = computed(() =>
+        receiveServerFact('can_manage_members', value)
+      )
+    }
+  }
+
+  function flipCapability(
+    name: 'canInviteMembers' | 'canManageMembers' | 'canChangeSeats'
+  ) {
+    setCapability(name, !useBillingCapabilities()[name].value)
+  }
+
+  function endPlan() {
+    mockSubscriptionStatus.value = 'ended'
+    mockCanAccessSubscriptionFeatures.value = false
+  }
+
+  const planAndRolePerturbations = [
+    { name: 'an ended plan', apply: endPlan },
+    {
+      name: 'an Enterprise tier',
+      apply: () => {
+        mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      }
+    },
+    {
+      name: 'an ended Enterprise plan with one seat',
+      apply: () => {
+        endPlan()
+        mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+        mockMaxSeats.value = 1
+      }
+    },
+    {
+      name: 'one seat',
+      apply: () => {
+        mockMaxSeats.value = 1
+      }
+    },
+    {
+      name: 'a personal plan',
+      apply: () => {
+        mockIsTeamPlan.value = false
+      }
+    },
+    {
+      name: 'a scheduled cancellation',
+      apply: () => {
+        mockSubscriptionStatus.value = 'canceled'
+        mockSubscription.value = { tier: 'PRO', isCancelled: true }
+      }
+    },
+    {
+      name: 'no subscription management',
+      apply: () => {
+        mockPermissions.value = {
+          ...mockPermissions.value,
+          canManageSubscription: false
+        }
+      }
+    },
+    {
+      name: 'the member role',
+      apply: () => {
+        mockWorkspaceRole.value = 'member'
+      }
+    },
+    {
+      name: 'a flipped can_change_seats',
+      apply: () => flipCapability('canChangeSeats')
+    }
+  ]
+
+  describeServerFactGate({
+    name: 'Invite (can_invite_members)',
+    fact: { set: (value) => setCapability('canInviteMembers', value) },
+    perturbations: [
+      ...planAndRolePerturbations,
+      {
+        name: 'a flipped can_manage_members',
+        apply: () => flipCapability('canManageMembers')
+      }
+    ],
+    mount: setup,
+    read: (panel) => ({
+      showInviteButton: panel.showInviteButton.value,
+      canInviteMembers: panel.permissions.value.canInviteMembers
+    })
+  })
+
+  describeServerFactGate({
+    name: 'Member management (can_manage_members)',
+    fact: { set: (value) => setCapability('canManageMembers', value) },
+    perturbations: [
+      ...planAndRolePerturbations,
+      {
+        name: 'a flipped can_invite_members',
+        apply: () => flipCapability('canInviteMembers')
+      }
+    ],
+    mount: setup,
+    read: (panel) => ({
+      canManageMembers: panel.permissions.value.canManageMembers,
+      canViewPendingInvites: panel.permissions.value.canViewPendingInvites,
+      showPendingTab: panel.uiConfig.value.showPendingTab,
+      hasMemberActions: panel.memberMenuItems(createMember()).length > 0
+    })
+  })
+
+  describeServerFactGate({
+    name: 'Roster visibility (members response)',
+    fact: {
+      set: (loaded) => {
+        workspaceMembersLoaded = loaded
+        workspaceType = 'team'
+        mockMembers.value = [createMember(), createMember({ id: 'member-2' })]
+      }
+    },
+    perturbations: [
+      ...planAndRolePerturbations,
+      {
+        name: 'a flipped can_manage_members',
+        apply: () => flipCapability('canManageMembers')
+      },
+      {
+        name: 'a flipped can_invite_members',
+        apply: () => flipCapability('canInviteMembers')
+      }
+    ],
+    mount: setup,
+    read: (panel) => ({
+      canViewOtherMembers: panel.permissions.value.canViewOtherMembers,
+      showMembersList: panel.uiConfig.value.showMembersList
     })
   })
 })

@@ -1,11 +1,14 @@
 <template>
   <div class="pointer-events-none absolute inset-0 flex flex-col">
     <div
-      class="pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2"
+      class="pointer-events-auto flex h-10 items-center gap-1 bg-popover px-2"
       @wheel.stop
     >
-      <button
-        v-tooltip.bottom="tip(gizmosLabel)"
+      <Button
+        variant="textonly"
+        size="unset"
+        :tooltip="gizmosLabel"
+        tooltip-side="bottom"
         type="button"
         :class="actionClass(gizmosOn)"
         :aria-pressed="gizmosOn"
@@ -21,46 +24,47 @@
           "
         />
         <span v-if="!compact">{{ gizmosLabel }}</span>
-      </button>
-      <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
-      <button
+      </Button>
+      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
+      <Button
         v-for="option in transformGizmoOptions"
         :key="option.value"
-        v-tooltip.bottom="tip($t(option.labelKey))"
+        variant="textonly"
+        size="unset"
+        :tooltip="$t(option.labelKey)"
+        tooltip-side="bottom"
         type="button"
         :disabled="!option.enabled"
         :aria-pressed="effectiveTransformGizmoMode === option.value"
         :aria-label="$t(option.labelKey)"
-        :class="
-          cn(
-            actionClass(effectiveTransformGizmoMode === option.value),
-            !option.enabled && 'cursor-not-allowed opacity-40'
-          )
-        "
+        :class="actionClass(effectiveTransformGizmoMode === option.value)"
         @click="transformGizmoMode = option.value"
       >
         <i :class="cn('size-4', option.icon)" />
         <span v-if="!compact">{{ $t(option.labelKey) }}</span>
-      </button>
+      </Button>
     </div>
     <div class="flex-1" />
     <div
-      class="pointer-events-auto flex h-10 items-center justify-end gap-1 bg-interface-menu-surface px-2"
+      class="pointer-events-auto flex h-10 items-center justify-end gap-1 bg-popover px-2"
       @wheel.stop
     >
-      <button
-        v-tooltip.top="tip($t('load3d.outputView'))"
+      <Button
+        variant="textonly"
+        size="icon"
+        :tooltip="$t('load3d.outputView')"
         type="button"
-        :class="iconBtnClass"
         :aria-label="$t('load3d.outputView')"
         @click="emit('resetView')"
       >
         <i class="icon-[lucide--focus] size-4" />
-      </button>
-      <button
-        v-tooltip.top="tip(cameraLockLabel)"
+      </Button>
+      <Button
+        variant="textonly"
+        size="icon"
+        :tooltip="cameraLockLabel"
         type="button"
-        :class="cn(iconBtnClass, cameraLocked && 'bg-button-active-surface')"
+        :class="cn(cameraLocked && 'bg-muted')"
         :aria-pressed="cameraLocked"
         :aria-label="cameraLockLabel"
         @click="cameraLocked = !cameraLocked"
@@ -73,7 +77,7 @@
             )
           "
         />
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -82,18 +86,16 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  actionClass,
-  iconBtnClass,
-  tip
-} from '@/components/load3d/menubar/menuBarStyles'
-import type { LightTransformGizmoMode } from '@/extensions/core/lightInfo/LightInfoViewport'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
+import Button from '@/components/ui/button/Button.vue'
+import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import {
   lightPositionApplies,
   targetApplies
-} from '@/extensions/core/lightInfo/LightInfoViewport'
-import type { LightInfoType } from '@/extensions/core/lightInfo/types'
-import { cn } from '@comfyorg/tailwind-utils'
+} from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import type { LightInfoType } from '@comfyorg/viewport3d/lightInfo/types'
 
 const { compact, lightType } = defineProps<{
   compact: boolean

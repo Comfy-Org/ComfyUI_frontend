@@ -13,7 +13,7 @@ import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { FOR_STORIES } from '@/components/ui/dialog/dialog.variants'
 
-const { sizes } = FOR_STORIES
+const { sizes, surfaces } = FOR_STORIES
 
 const meta: Meta = {
   title: 'Components/Dialog/Dialog',
@@ -23,10 +23,16 @@ const meta: Meta = {
       control: { type: 'select' },
       options: sizes,
       defaultValue: 'md'
+    },
+    surface: {
+      control: { type: 'select' },
+      options: surfaces,
+      defaultValue: 'card'
     }
   },
   args: {
-    size: 'md'
+    size: 'md',
+    surface: 'card'
   }
 }
 
@@ -56,10 +62,10 @@ export const Default: Story = {
       <Dialog v-model:open="open">
         <DialogPortal>
           <DialogOverlay />
-          <DialogContent :size="args.size">
+          <DialogContent :size="args.size" :surface="args.surface">
             <DialogHeader>
               <DialogTitle>Are you sure?</DialogTitle>
-              <DialogClose />
+              <DialogClose aria-label="Close" />
             </DialogHeader>
             <div class="px-4 py-2">
               <DialogDescription>
@@ -98,10 +104,10 @@ export const LongContent: Story = {
       <Dialog v-model:open="open">
         <DialogPortal>
           <DialogOverlay />
-          <DialogContent :size="args.size">
+          <DialogContent :size="args.size" :surface="args.surface">
             <DialogHeader>
               <DialogTitle>Long content scrolls</DialogTitle>
-              <DialogClose />
+              <DialogClose aria-label="Close" />
             </DialogHeader>
             <div class="px-4 py-2 space-y-2 overflow-auto">
               <p v-for="n in 30" :key="n">
@@ -175,7 +181,7 @@ export const AllSizes: Story = {
           <DialogContent :size="s">
             <DialogHeader>
               <DialogTitle>Size: {{ s }}</DialogTitle>
-              <DialogClose />
+              <DialogClose aria-label="Close" />
             </DialogHeader>
             <div class="px-4 py-2 text-sm">
               The {{ s }} size variant.

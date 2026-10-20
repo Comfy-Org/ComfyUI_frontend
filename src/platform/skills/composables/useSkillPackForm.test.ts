@@ -10,14 +10,14 @@ import {
   listSkillPacks,
   publishSkillPack,
   SkillPacksApiError
-} from '../api/skillsApi'
-import { useSkillPacksStore } from '../stores/skillPacksStore'
-import type { SkillPack } from '../types'
+} from '@/platform/skills/api/skillsApi'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
+import type { SkillPack } from '@/platform/skills/types'
 import { useSkillPackForm } from './useSkillPackForm'
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('../api/skillsApi'), { spy: true })
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()

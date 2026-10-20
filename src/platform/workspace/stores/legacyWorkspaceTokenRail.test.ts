@@ -1,13 +1,12 @@
 import { ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import type { LegacyWorkspaceTokenRailDeps } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
 
-vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
-  useSessionCookie: () => ({ ensureSessionCookie: vi.fn() })
-}))
+provideEnsureSessionCookie(vi.fn(async () => {}))
 
 const workspace: WorkspaceIdentity = {
   id: 'workspace-123',

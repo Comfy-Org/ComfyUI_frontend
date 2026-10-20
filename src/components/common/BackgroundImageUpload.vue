@@ -6,7 +6,7 @@
       :placeholder="$t('g.imageUrl')"
     />
     <Button
-      v-tooltip="$t('g.upload')"
+      :tooltip="$t('g.upload')"
       variant="secondary"
       size="sm"
       :aria-label="$t('g.upload')"
@@ -16,7 +16,7 @@
       <i :class="isUploading ? 'pi pi-spin pi-spinner' : 'pi pi-upload'" />
     </Button>
     <Button
-      v-tooltip="$t('g.clear')"
+      :tooltip="$t('g.clear')"
       variant="destructive"
       size="sm"
       :aria-label="$t('g.clear')"

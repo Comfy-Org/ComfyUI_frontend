@@ -1,26 +1,13 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, expectTypeOf, it } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
+
+import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import SingleSelect from './SingleSelect.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        singleSelectDropdown: 'Single-select dropdown',
-        search: 'Search',
-        noResultsFound: 'No results found'
-      }
-    }
-  }
-})
+import type { SingleSelectProps } from './types'
 
 const options = [
   { name: 'Option A', value: 'a' },
@@ -50,7 +37,7 @@ function renderInParent(
 
   const Parent = {
     template:
-      '<div @keydown.escape="onEsc"><SingleSelect v-model="sel" :options="options" label="Pick" v-bind="extraProps" /><button>After</button></div>',
+      '<div @keydown.escape="onEsc"><SingleSelect v-model="sel" :options="options" label="Pick" accessible-label="Pick" search-label="Search" search-placeholder="Search" empty-text="No results found" v-bind="extraProps" /><button>After</button></div>',
     components: { SingleSelect },
     setup() {
       return {
@@ -65,8 +52,7 @@ function renderInParent(
   }
 
   const { unmount } = render(Parent, {
-    container: document.body.appendChild(document.createElement('div')),
-    global: { plugins: [i18n] }
+    container: document.body.appendChild(document.createElement('div'))
   })
 
   return { unmount, parentEscapeCount }
@@ -95,12 +81,77 @@ let openModal: HTMLElement | undefined
 
 afterEach(() => {
   if (openModal) {
-    ZIndex.clear(openModal)
+    releaseModalLayer(openModal)
     openModal = undefined
   }
 })
 
 describe('SingleSelect', () => {
+  it('requires search copy only when searching can be enabled', () => {
+    expectTypeOf<{
+      accessibleLabel: string
+      searchable: true
+    }>().not.toMatchTypeOf<SingleSelectProps>()
+    expectTypeOf<{
+      accessibleLabel: string
+      searchable: true
+      searchLabel: string
+    }>().not.toMatchTypeOf<SingleSelectProps>()
+    expectTypeOf<{
+      accessibleLabel: string
+      searchable: boolean
+      emptyText: string
+    }>().not.toMatchTypeOf<SingleSelectProps>()
+    expectTypeOf<{
+      accessibleLabel: string
+      searchable: boolean
+      searchLabel: string
+      emptyText: string
+    }>().toMatchTypeOf<SingleSelectProps>()
+    expectTypeOf<{
+      searchable: false
+    }>().not.toMatchTypeOf<SingleSelectProps>()
+  })
+
+  it.for([undefined, false] as const)(
+    'allows omitted search copy with searchable=%s',
+    async (searchable) => {
+      const props = {
+        accessibleLabel: 'Choose an option',
+        searchable,
+        options,
+        modelValue: undefined
+      } satisfies SingleSelectProps & { modelValue: undefined }
+      render(SingleSelect, { props })
+      await openSelect(screen.getByLabelText('Choose an option'))
+      expect(screen.getByRole('option', { name: 'Option A' })).toBeVisible()
+      expect(screen.queryByRole('combobox', { name: 'Search' })).toBeNull()
+    }
+  )
+
+  it('renders caller search and empty text without an i18n plugin', async () => {
+    const user = userEvent.setup()
+    render(SingleSelect, {
+      props: {
+        modelValue: undefined,
+        options,
+        searchable: true,
+        label: 'Catégorie',
+        accessibleLabel: 'Choisir une catégorie',
+        searchLabel: 'Rechercher',
+        searchPlaceholder: 'Rechercher...',
+        emptyText: 'Aucun résultat'
+      }
+    })
+    await openSelect(
+      screen.getByRole('button', { name: 'Choisir une catégorie' })
+    )
+    const searchInput = screen.getByRole('combobox', { name: 'Rechercher' })
+    expect(searchInput).toHaveAttribute('placeholder', 'Rechercher...')
+    await user.type(searchInput, 'zzz')
+    expect(screen.getByText('Aucun résultat')).toBeVisible()
+  })
+
   it('filters searchable options', async () => {
     const user = userEvent.setup()
     const { unmount } = renderInParent(undefined, { searchable: true })
@@ -191,7 +242,7 @@ describe('SingleSelect', () => {
 
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
+    raiseModalLayer(openModal)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderInParent()
 
@@ -206,7 +257,7 @@ describe('SingleSelect', () => {
 
   it('opens above a dialog even when the caller passes its own contentStyle z-index', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
+    raiseModalLayer(openModal)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { unmount } = renderInParent(undefined, {
       contentStyle: { zIndex: 3000 }
@@ -223,14 +274,20 @@ describe('SingleSelect', () => {
 
   it('lets a consumer class override the trigger variant it conflicts with', () => {
     const { unmount } = render(SingleSelect, {
-      props: { modelValue: undefined, options, label: 'Pick' },
-      attrs: { class: 'bg-transparent' },
-      global: { plugins: [i18n] }
+      props: {
+        modelValue: undefined,
+        options,
+        label: 'Pick',
+        accessibleLabel: 'Pick',
+        searchLabel: 'Search',
+        emptyText: 'No results found'
+      },
+      attrs: { class: 'bg-transparent' }
     })
 
     const trigger = screen.getByRole('combobox')
     expect(trigger).toHaveClass('bg-transparent')
-    expect(trigger).not.toHaveClass('bg-secondary-background')
+    expect(trigger).not.toHaveClass('bg-secondary')
 
     unmount()
   })

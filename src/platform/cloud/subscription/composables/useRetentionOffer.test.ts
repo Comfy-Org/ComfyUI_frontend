@@ -33,7 +33,6 @@ function settlesAs(status: TerminalOperation['status']) {
       authenticationRequiredSeen: false,
       blockedOnCustomerSeen: false,
       workspaceId: metadata?.workspaceId ?? null,
-      autoHandleRequiresAction: false,
       phase: null,
       dismissed: false
     })

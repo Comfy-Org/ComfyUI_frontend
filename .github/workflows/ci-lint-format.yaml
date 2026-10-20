@@ -31,8 +31,11 @@ jobs:
         with:
           ref: ${{ !github.event.pull_request.head.repo.fork && github.head_ref || github.ref }}
           token: ${{ !github.event.pull_request.head.repo.fork && secrets.PR_GH_TOKEN || github.token }}
+          fetch-depth: 0
+          filter: blob:none
 
       - name: Setup frontend
+        id: setup
         uses: ./.github/actions/setup-frontend
         with:
           # The optional pnpm cache currently fails during runner cleanup on this PR.
@@ -56,8 +59,14 @@ jobs:
         run: pnpm -r --include-workspace-root format
 
       - name: Verify architecture contracts
-        if: hashFiles('tools/architecture/src/cli.ts') != ''
-        run: pnpm architecture:check
+        id: architecture
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' && hashFiles('tools/architecture/src/cli.ts') != '' }}
+        run: pnpm architecture:check --report "$RUNNER_TEMP/architecture-findings.md"
+
+      - name: Check server facts on changed lines
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: pnpm lint:server-facts --base "$BASE_SHA"
 
       - name: Check for changes
         id: verify-changed-files
@@ -112,6 +121,20 @@ jobs:
         with:
           cache-key: ${{ steps.lint-cache.outputs.cache-key }}
           path: ${{ env.LINT_CACHE_PATHS }}
+
+      - name: Explain architecture verdict
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/explain-check
+        with:
+          slug: architecture
+          title: Architecture
+          icon: '🏛️'
+          status: ${{ steps.architecture.outcome == 'skipped' && 'withheld' || steps.architecture.outcome == 'success' && 'pass' || 'fail' }}
+          details-file: ${{ runner.temp }}/architecture-findings.md
+          reproduce: pnpm architecture:check
+          docs: '[Frontend domain catalog](${{ github.server_url }}/${{ github.repository }}/blob/${{ github.event.pull_request.head.sha }}/docs/architecture/domains/README.md)'
+          pr-number: ${{ github.event.pull_request.number }}
+          token: ${{ github.token }}
 
   typecheck:
     runs-on: ubuntu-latest
@@ -179,5 +202,5 @@ jobs:
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
 
-      - name: Verify knip, locale integrity and ADR index
+      - name: Verify knip, locale integrity and ADR naming
         uses: ./.github/actions/repo-checks

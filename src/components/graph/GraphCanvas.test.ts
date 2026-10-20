@@ -1,14 +1,32 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
-import { cleanup, render, screen } from '@testing-library/vue'
+import { cleanup, fireEvent, render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { Toast } from '@/components/ui/toast/toastStore'
 import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/controlWidgetMarker'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  hasDeploymentLink,
+  readDeploymentHint
+} from '@/platform/workspace/deploymentHint'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -20,6 +38,15 @@ import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import GraphCanvas from './GraphCanvas.vue'
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'localhost' as const,
+  isDesktop: false,
+  isNightly: false,
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 const agentDocked = { value: true }
 vi.mock<unknown>(
   import('@/workbench/extensions/agent/composables/useAgentDockMount'),
@@ -38,6 +65,12 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('firebase/auth'))
+
+vi.mock(import('@/platform/workspace/deploymentHint'), () => ({
+  readDeploymentHint: vi.fn<typeof readDeploymentHint>(() => 'deployment'),
+  hasDeploymentLink: vi.fn(() => false),
+  setDeploymentHint: vi.fn()
+}))
 
 /**
  * GraphCanvas is the only place the first-run tour is wired into startup: it
@@ -249,6 +282,32 @@ describe('GraphCanvas first-run tour wiring', () => {
 })
 
 describe('GraphCanvas legacy settings bridge', () => {
+  it('keeps title-editor touches within the canvas parent used by extensions', async () => {
+    vi.spyOn(api, 'getSystemStats').mockResolvedValue(
+      fromPartial({ devices: [] })
+    )
+    await mountGraphCanvas({
+      TitleEditor: { template: '<input aria-label="Node title" />' }
+    })
+    // oxlint-disable-next-line testing-library/no-node-access -- Extensions use this canvas ID.
+    const canvas = document.getElementById('graph-canvas')
+    assert.exists(canvas)
+    // oxlint-disable-next-line testing-library/no-node-access -- Canvas-parent listeners are the compatibility contract under test.
+    const parent = canvas.parentElement
+    assert.exists(parent)
+    const receivedTouch = vi.fn()
+    parent.addEventListener('touchstart', receivedTouch, true)
+    onTestFinished(() =>
+      parent.removeEventListener('touchstart', receivedTouch, true)
+    )
+
+    await fireEvent.touchStart(
+      screen.getByRole('textbox', { name: 'Node title' })
+    )
+
+    expect(receivedTouch).toHaveBeenCalledOnce()
+  })
+
   it('replays setting changes on the legacy settings dialog', async () => {
     await mountGraphCanvas()
 
@@ -599,5 +658,299 @@ describe('GraphCanvas agent dock', () => {
     await mountGraphCanvas(dockStubs)
 
     expect(screen.queryByTestId('docked-agent-panel')).not.toBeInTheDocument()
+  })
+})
+
+describe('deployment model options at startup', () => {
+  beforeEach(() => {
+    // These tests pin startup against the deployment lookup's backstop to the
+    // millisecond, so the fake clock must move only when a test moves it. With
+    // the suite's `shouldAdvanceTime`, a real 20ms interval also ticks it, and
+    // when that lands in the native yield after a timer fires mid-advance
+    // (the bootstrap watchdog at 30s), `advanceTimersByTimeAsync` extends its
+    // window by the same 20ms and runs the backstop early.
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(readDeploymentHint).mockReturnValue('deployment')
+    vi.mocked(hasDeploymentLink).mockReturnValue(false)
+  })
+
+  it.for([
+    { listing: 'never answers', answer: () => new Promise<void>(() => {}) },
+    { listing: 'fails', answer: () => Promise.resolve() }
+  ])(
+    'mounts the canvas at once, with no lookup toast, when the listing $listing and this browser last booted on Comfy Cloud',
+    async ({ answer }) => {
+      vi.mocked(readDeploymentHint).mockReturnValue('cloud')
+      const store = useDeploymentPickStore()
+      vi.spyOn(store, 'loadOnce').mockReturnValue(answer())
+
+      await mountGraphCanvas()
+
+      expect(app.setup).toHaveBeenCalledOnce()
+      expect(store.bootDeployment).toBeNull()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+      expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
+    }
+  )
+
+  it.for([
+    {
+      why: 'the page opened from a deployment link, though this browser last booted on Comfy Cloud',
+      hint: 'cloud' as const,
+      link: true
+    },
+    {
+      why: 'this browser has no hint for the workspace',
+      hint: 'unknown' as const,
+      link: false
+    }
+  ])(
+    'waits for the listing, then shows the lookup toast, when $why',
+    async ({ hint, link }) => {
+      vi.mocked(readDeploymentHint).mockReturnValue(hint)
+      vi.mocked(hasDeploymentLink).mockReturnValue(link)
+      vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+        new Promise(() => {})
+      )
+
+      await mountGraphCanvas()
+      expect(app.setup).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+
+      await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+      expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'deploymentSwitcher.lookupUnavailable'
+          })
+        ])
+      )
+    }
+  )
+
+  it('waits for the deployment before constructing workflow widgets', async () => {
+    let finishListing = () => {}
+    const listing = new Promise<void>((resolve) => {
+      finishListing = resolve
+    })
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(listing)
+    await mountGraphCanvas()
+    expect(app.setup).not.toHaveBeenCalled()
+    useDeploymentPickStore().bootDeployment = null
+    finishListing()
+    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+  })
+
+  it.for([true, false])(
+    'does not resume startup after unmount when deployment lookup succeeds: %s',
+    async (succeeds) => {
+      const store = useDeploymentPickStore()
+      let finishListing = () => {}
+      const listing = new Promise<void>((resolve) => {
+        finishListing = resolve
+      })
+      vi.spyOn(store, 'loadOnce').mockReturnValue(listing)
+      await mountGraphCanvas()
+      expect(store.loadOnce).toHaveBeenCalledOnce()
+      expect(app.setup).not.toHaveBeenCalled()
+
+      cleanup()
+      store.bootDeployment = succeeds ? null : undefined
+      finishListing()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(app.setup).not.toHaveBeenCalled()
+      expect(mocks.initializeWorkflow).not.toHaveBeenCalled()
+      expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
+    }
+  )
+
+  it.for([true, false])(
+    'clears abandoned startup when lookup eventually succeeds: %s',
+    async (succeeds) => {
+      const store = useDeploymentPickStore()
+      let finishListing = () => {}
+      vi.spyOn(store, 'loadOnce').mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishListing = resolve
+        })
+      )
+      const complete = vi.spyOn(bootstrapTracer, 'complete')
+      await mountGraphCanvas()
+      expect(useWorkspaceStore().spinner).toBe(true)
+
+      cleanup()
+      await nextTick()
+
+      expect(useWorkspaceStore().spinner).toBe(false)
+      expect(complete).not.toHaveBeenCalled()
+
+      store.bootDeployment = succeeds ? null : undefined
+      finishListing()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(useWorkspaceStore().spinner).toBe(false)
+      expect(complete).not.toHaveBeenCalled()
+      expect(app.setup).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { name: 'immediate', remount: () => mountGraphCanvas() },
+    {
+      name: 'after a Vue flush',
+      remount: () => nextTick().then(() => mountGraphCanvas())
+    }
+  ])(
+    'lets the replacement editor finish startup: $name',
+    async ({ remount }) => {
+      const store = useDeploymentPickStore()
+      let finishListing = () => {}
+      vi.spyOn(store, 'loadOnce').mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishListing = resolve
+        })
+      )
+      let finishSetup = () => {}
+      vi.mocked(app.setup).mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishSetup = resolve
+        })
+      )
+      const complete = vi.spyOn(bootstrapTracer, 'complete')
+      await mountGraphCanvas()
+      cleanup()
+      await remount()
+
+      store.bootDeployment = null
+      finishListing()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(app.setup).toHaveBeenCalledOnce()
+      expect(useWorkspaceStore().spinner).toBe(true)
+      expect(complete).not.toHaveBeenCalled()
+
+      finishSetup()
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(useWorkspaceStore().spinner).toBe(false)
+      expect(complete).toHaveBeenCalledExactlyOnceWith('completed')
+      expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('boots on Comfy Cloud models with a Reload toast after a failed lookup', async () => {
+    const store = useDeploymentPickStore()
+    vi.spyOn(store, 'loadOnce').mockResolvedValue()
+    const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
+    await mountGraphCanvas()
+    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+    expect(store.bootDeployment).toBeNull()
+    const toasts: Toast[] = getActivePinia()?.state.value.toast?.toasts ?? []
+    const toast = toasts.find(
+      (t) => t.title === 'deploymentSwitcher.lookupUnavailable'
+    )
+    expect(toast).toMatchObject({
+      kind: 'error',
+      description: 'deploymentSwitcher.lookupUnavailableDetail',
+      duration: Number.POSITIVE_INFINITY,
+      action: { label: 'deploymentSwitcher.reload' }
+    })
+    toast?.action?.onClick()
+    expect(reload).toHaveBeenCalledOnce()
+    store.bootDeployment = {
+      deployment_id: 'dep-1',
+      release_id: 'r-1',
+      build_id: 'b-1',
+      build_name: 'Build',
+      release_version: 1,
+      status: 'ready',
+      created_at: ''
+    }
+    await nextTick()
+    expect(app.setup).toHaveBeenCalledOnce()
+  })
+
+  it('shows no lookup toast when the lookup settles the boot source', async () => {
+    const store = useDeploymentPickStore()
+    vi.spyOn(store, 'loadOnce').mockImplementation(async () => {
+      store.bootDeployment = null
+    })
+    await mountGraphCanvas()
+    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+    expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
+  })
+
+  it('does not wait for a deployment lookup on a local build', async () => {
+    distribution.isCloud = false
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+      new Promise(() => {})
+    )
+    await mountGraphCanvas()
+    expect(app.setup).toHaveBeenCalledOnce()
+    expect(useDeploymentPickStore().loadOnce).not.toHaveBeenCalled()
+  })
+
+  it('boots on Comfy Cloud models if the deployment lookup never settles', async () => {
+    vi.spyOn(useDeploymentPickStore(), 'loadOnce').mockReturnValue(
+      new Promise(() => {})
+    )
+    await mountGraphCanvas()
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS - 1)
+    expect(app.setup).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(getActivePinia()?.state.value.toast?.toasts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'error',
+          title: 'deploymentSwitcher.lookupUnavailable'
+        })
+      ])
+    )
+    expect(useDeploymentPickStore().bootDeployment).toBeNull()
+    await vi.waitFor(() => expect(app.setup).toHaveBeenCalledOnce())
+    expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
+  })
+
+  it('boots on the deployment when the lookup answers slowly', async () => {
+    const store = useDeploymentPickStore()
+    const deployment = {
+      deployment_id: 'dep-1',
+      release_id: 'r-1',
+      build_id: 'b-1',
+      build_name: 'Build',
+      release_version: 1,
+      status: 'ready',
+      created_at: ''
+    } as const
+    vi.spyOn(store, 'loadOnce').mockReturnValue(
+      new Promise<void>((resolve) => {
+        setTimeout(() => {
+          store.bootDeployment = deployment
+          resolve()
+        }, 3_000)
+      })
+    )
+    let bootedOn: unknown = 'not booted'
+    vi.mocked(app.setup).mockImplementation(async () => {
+      bootedOn = store.bootDeployment
+    })
+    await mountGraphCanvas()
+    await vi.advanceTimersByTimeAsync(2_999)
+    expect(app.setup).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(app.setup).toHaveBeenCalledOnce()
+    expect(bootedOn).toEqual(deployment)
+    await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
+    expect(store.bootDeployment).toEqual(deployment)
+    expect(app.setup).toHaveBeenCalledOnce()
+    expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
+    expect(getActivePinia()?.state.value.toast?.toasts ?? []).toEqual([])
   })
 })

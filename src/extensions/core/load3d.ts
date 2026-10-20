@@ -19,17 +19,18 @@ import type {
   CameraState,
   LoadFolder,
   Model3DInfo
-} from '@/extensions/core/load3d/interfaces'
-import type Load3d from '@/extensions/core/load3d/Load3d'
+} from '@comfyorg/viewport3d/load3d/interfaces'
+import type Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import {
   LOAD3D_NONE_MODEL,
   SUPPORTED_EXTENSIONS_ACCEPT
-} from '@/extensions/core/load3d/constants'
+} from '@comfyorg/viewport3d/load3d/constants'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import type { Model3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import { readModel3DOutput } from '@/extensions/core/load3d/model3dOutput'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { reportLoadModelOutcome } from '@/extensions/core/load3d/reportLoadModelOutcome'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
@@ -64,6 +65,7 @@ import { useLoad3dService } from '@/services/load3dService'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import { isLoad3dNode } from '@/utils/litegraphUtil'
+import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 
 const inputSpecLoad3D: CustomInputSpec = {
   name: 'image',
@@ -107,7 +109,7 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
 
     useLoad3d(node).waitForLoad3d(async (load3d) => {
       try {
-        await load3d.loadModel(modelUrl)
+        reportLoadModelOutcome(await load3d.loadModel(modelUrl))
       } catch {
         useToast().warning(t('toastMessages.failedToLoadModel'))
       }
@@ -267,11 +269,10 @@ useExtensionService().registerExtension({
       icon: 'pi pi-pencil',
       label: 'Open 3D Viewer (Beta) for Selected Node',
       function: () => {
-        const selectedNodes = app.canvas.selected_nodes
-        if (Object.keys(selectedNodes).length !== 1) return
+        const selectedNodes = selectedCanvasNodes(app.canvas)
+        if (selectedNodes.length !== 1) return
 
-        const selectedNode = selectedNodes[Object.keys(selectedNodes)[0]]
-
+        const [selectedNode] = selectedNodes
         if (!isLoad3dNode(selectedNode)) return
 
         ComfyApp.copyToClipspace(selectedNode)

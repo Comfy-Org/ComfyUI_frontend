@@ -4,7 +4,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import QueueOverlayActive from './QueueOverlayActive.vue'
-import * as tooltipConfig from '@/composables/useTooltipConfig'
 
 const i18n = createI18n({
   legacy: false,
@@ -28,11 +27,6 @@ const i18n = createI18n({
   }
 })
 
-const tooltipDirectiveStub = {
-  mounted: vi.fn(),
-  updated: vi.fn()
-}
-
 const defaultProps = {
   totalProgressStyle: { transform: 'scaleX(0.65)' },
   currentNodeProgressStyle: { transform: 'scaleX(0.4)' },
@@ -48,10 +42,7 @@ const renderComponent = (props: Record<string, unknown> = {}) =>
   render(QueueOverlayActive, {
     props: { ...defaultProps, ...props },
     global: {
-      plugins: [i18n],
-      directives: {
-        tooltip: tooltipDirectiveStub
-      }
+      plugins: [i18n]
     }
   })
 
@@ -113,12 +104,15 @@ describe('QueueOverlayActive', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('builds tooltip configs with translated strings', () => {
-    const spy = vi.spyOn(tooltipConfig, 'buildTooltipConfig')
-
+  it.for([
+    { name: 'Interrupt all running jobs', tooltip: 'Cancel job' },
+    { name: 'Clear queued', tooltip: 'Clear queue' }
+  ])('describes $name with a translated tooltip', async ({ name, tooltip }) => {
+    const user = userEvent.setup()
     renderComponent()
 
-    expect(spy).toHaveBeenCalledWith('Cancel job')
-    expect(spy).toHaveBeenCalledWith('Clear queue')
+    await user.hover(screen.getByRole('button', { name }))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
   })
 })

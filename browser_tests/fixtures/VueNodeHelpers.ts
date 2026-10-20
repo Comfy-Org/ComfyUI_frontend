@@ -25,9 +25,7 @@ export class VueNodeHelpers {
 
   constructor(private page: Page) {
     this.nodes = page.locator('[data-node-id]')
-    this.selectedNodes = page.locator(
-      '[data-node-id].outline-node-component-outline'
-    )
+    this.selectedNodes = page.locator('[data-node-id].outline-foreground')
   }
 
   /**
@@ -277,13 +275,6 @@ export class VueNodeHelpers {
     return this.getNodeByTitle(nodeTitle)
       .getByTestId(TestIds.widgets.widget)
       .filter({ has: widgetLabel })
-  }
-
-  /**
-   * Get the visible widget tooltip text element (PrimeVue tooltip portal).
-   */
-  getVisibleWidgetTooltip(): Locator {
-    return this.page.locator('.p-tooltip-text:visible')
   }
 
   /**
