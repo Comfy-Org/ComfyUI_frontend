@@ -23,7 +23,7 @@ function onImageError(event: Event): void {
     failedUrl.value = event.target.getAttribute('src') ?? undefined
 }
 const showNameTile = computed(
-  () => variant === 'tray' && kind.value !== 'other' && isHdrImageFilename(name)
+  () => variant === 'tray' && kind.value === 'image'
 )
 const isMediaIcon = computed(
   () => kind.value === 'audio' || kind.value === 'video'
