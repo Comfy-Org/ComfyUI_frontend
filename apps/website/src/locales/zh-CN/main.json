@@ -384,8 +384,7 @@
     "events": "活动",
     "fdct": "前沿驻场创意技术专家",
     "home": "首页",
-    "pricing": "定价",
-    "supportedNodes": "支持的节点"
+    "pricing": "定价"
   },
   "buildWhat": {
     "row1": "构建",
@@ -1099,7 +1098,7 @@
         "q": "我可以在 Comfy Cloud 上使用现有的工作流吗？"
       },
       "7": {
-        "a": "您可以随时在 Cloud 上免费查看我们支持的扩展和模型列表。\n大多数热门扩展已可用，新的扩展会持续添加。",
+        "a": "目前还不是全部。Comfy Cloud 预装了 ComfyUI 社区中许多最常用的自定义节点，我们会根据需求和兼容性定期扩展支持。\n您可以随时在 Cloud 上免费查看我们支持的扩展和模型。如果某个节点暂不可用，您可以在 Comfy 桌面版上自行安装，您的工作流在桌面版和云端都能使用。",
         "q": "所有 ComfyUI 扩展和自定义节点都支持吗？"
       },
       "8": {
@@ -1159,59 +1158,6 @@
       },
       "heading": "专业人士为何\n选择",
       "headingHighlight": "Cloud"
-    }
-  },
-  "cloudNodes": {
-    "card": {
-      "nodeCountOne": "{count} 个节点",
-      "nodeCountOther": "{count} 个节点",
-      "nodesHeading": "包含节点",
-      "unavailableDescription": "暂无描述信息。",
-      "viewRepo": "查看仓库"
-    },
-    "detail": {
-      "back": "返回所有节点包",
-      "deprecated": "已弃用",
-      "downloads": "下载量",
-      "experimental": "实验性",
-      "lastUpdated": "最后更新",
-      "latestVersion": "最新版本",
-      "license": "许可证",
-      "metaDescription": "{pack} 已预装于 Comfy Cloud——{nodeCount} 个节点可在托管 GPU 上即时运行。{description}",
-      "metaTitle": "{pack}（Comfy Cloud）",
-      "nodesHeading": "此节点包中的节点",
-      "publisher": "发布者",
-      "stars": "GitHub 星标"
-    },
-    "empty": {
-      "body": "试试其他关键词，或清空筛选条件。",
-      "heading": "未找到匹配的节点包"
-    },
-    "hero": {
-      "body": "在 Comfy Cloud 托管 GPU 上即开即用，预装数百个社区节点——细节修复、ControlNet 预处理、动画工具与日常便利组件，应有尽有。",
-      "heading": "在云端运行你喜爱的 ComfyUI 自定义节点",
-      "label": "云端节点目录"
-    },
-    "list": {
-      "ariaLabel": "Comfy Cloud 支持的自定义节点包"
-    },
-    "meta": {
-      "description": "浏览 Comfy Cloud 预装的数百个 ComfyUI 自定义节点包：细节修复、ControlNet 预处理、动画工具、采样器等——按节点包或节点名搜索。",
-      "title": "Comfy Cloud 自定义节点包合集——开箱即用"
-    },
-    "search": {
-      "label": "搜索自定义节点包",
-      "placeholder": "搜索节点包或节点名称"
-    },
-    "section": {
-      "heading": "查找自定义节点包"
-    },
-    "sort": {
-      "az": "按名称 A → Z",
-      "downloads": "按安装量",
-      "label": "排序节点包",
-      "mostNodes": "按节点数量",
-      "recentlyUpdated": "最近更新"
     }
   },
   "cloudNodesLaunch": {

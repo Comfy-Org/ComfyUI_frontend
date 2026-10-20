@@ -1412,7 +1412,7 @@
       },
       "7": {
         "q": "Are all ComfyUI extensions and custom nodes supported?",
-        "a": "You can always check Cloud to see the list of extensions and models that we support, for free.\nMost popular ones are available, and new ones are added over time."
+        "a": "Not every one yet. Comfy Cloud comes with a variety of the most-used community custom nodes pre-installed, and we expand support regularly based on demand and compatibility.\nYou can always check Cloud to see which extensions and models are supported, for free. For a node that isn't available yet, you can install it on Comfy Desktop, and your workflows work across Desktop and Cloud."
       },
       "8": {
         "q": "Can I use my own models or checkpoints?",
@@ -1436,59 +1436,6 @@
       },
       "heading": "FAQs",
       "footer": "For pricing, plans, credits, and billing details, see the <a href=\"/pricing/#faq\" class=\"text-primary-comfy-yellow underline\">Pricing FAQs</a>."
-    }
-  },
-  "cloudNodes": {
-    "hero": {
-      "label": "CLOUD NODES",
-      "heading": "Run your favorite ComfyUI custom nodes on the cloud",
-      "body": "Spin up workflows with hundreds of community-built nodes — detailers, ControlNet preprocessors, animation tools, and quality-of-life utilities — preinstalled on Comfy Cloud and ready to run on managed GPUs."
-    },
-    "section": {
-      "heading": "Find a custom-node pack"
-    },
-    "search": {
-      "placeholder": "Search packs or nodes",
-      "label": "Search custom-node packs"
-    },
-    "sort": {
-      "downloads": "Most installed",
-      "mostNodes": "Most nodes",
-      "az": "A → Z",
-      "recentlyUpdated": "Recently updated",
-      "label": "Sort packs"
-    },
-    "list": {
-      "ariaLabel": "Custom-node packs supported on Comfy Cloud"
-    },
-    "meta": {
-      "title": "Custom-node packs on Comfy Cloud - supported by default",
-      "description": "Browse hundreds of ComfyUI custom-node packs preinstalled on Comfy Cloud. Detailers, ControlNet preprocessors, animation tools, samplers, and more — search by pack or by node name."
-    },
-    "detail": {
-      "metaTitle": "{pack} on Comfy Cloud",
-      "metaDescription": "{pack} is preinstalled on Comfy Cloud — {nodeCount} nodes ready to run on managed GPUs. {description}",
-      "back": "Back to all packs",
-      "publisher": "Publisher",
-      "downloads": "Downloads",
-      "stars": "GitHub stars",
-      "latestVersion": "Latest version",
-      "license": "License",
-      "lastUpdated": "Last updated",
-      "deprecated": "Deprecated",
-      "experimental": "Experimental",
-      "nodesHeading": "Nodes in this pack"
-    },
-    "empty": {
-      "heading": "No matching packs",
-      "body": "Try a different search term or clear your filters."
-    },
-    "card": {
-      "nodeCountOne": "{count} node",
-      "nodeCountOther": "{count} nodes",
-      "viewRepo": "View repository",
-      "unavailableDescription": "Description unavailable.",
-      "nodesHeading": "Included nodes"
     }
   },
   "pricing": {
@@ -2539,7 +2486,6 @@
     "careers": "Careers",
     "pricing": "Pricing",
     "fdct": "Forward Deployed Creative Technologists",
-    "supportedNodes": "Supported Nodes",
     "events": "Events"
   },
   "footer": {
