@@ -9,13 +9,14 @@ import { translationsFor } from '@/i18n/translations'
 import { ArrowUpRight } from '@lucide/vue'
 import Button from '@/components/ui/button/Button.vue'
 import { externalLinks } from '@/config/routes'
-const INSTALL_COMMAND = 'pip install comfy-cli'
+import { INSTALL_COMMAND } from './cliSetup'
+import type { ConnectionId } from './cliSetup'
 const { locale = 'en' } = defineProps<{
   locale?: Locale
   client: { name: string; kind: 'agent' | 'shell' }
   usesManualSetup: boolean
   isHeadless: boolean
-  activeConnectionId: 'cloud' | 'local'
+  activeConnectionId: ConnectionId
   agentPrompt: string
   connectCommand: string
 }>()

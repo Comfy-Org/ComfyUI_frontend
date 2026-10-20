@@ -2,7 +2,8 @@ import userEvent from '@testing-library/user-event'
 import * as VueUse from '@vueuse/core'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { computed, createSSRApp, nextTick, ref } from 'vue'
+import { renderToString } from 'vue/server-renderer'
 import { translationsFor } from '@/i18n/translations'
 import SessionSection from './SessionSection.vue'
 import NativeCliSession from './NativeCliSession.vue'
@@ -207,4 +208,24 @@ it('suspends playback in a hidden document and resumes when visible', async () =
   expect(Number(group.getAttribute('data-elapsed'))).toBeGreaterThan(
     Number(elapsed)
   )
+})
+
+it('hydrates reduced-motion session labels and phase from server markup', async () => {
+  const host = document.createElement('div')
+  host.innerHTML = await renderToString(createSSRApp(NativeCliSession))
+  document.body.append(host)
+  vi.mocked(prefersReducedMotion).mockReturnValue(true)
+  const app = createSSRApp(NativeCliSession)
+  try {
+    app.mount(host)
+    await nextTick()
+    expect(
+      screen.getByRole('group', {
+        name: translationsFor('en').t('cli.session.reducedLabel')
+      })
+    ).toHaveAttribute('data-phase', 'results')
+  } finally {
+    app.unmount()
+    host.remove()
+  }
 })

@@ -19,7 +19,7 @@ describe('CLI skill briefs', () => {
       expect(screen.getAllByRole('img')).toHaveLength(6)
       expect(
         screen.getByRole('link', {
-          name: t('cli.skills.moreSkillsLinkLabel').toUpperCase()
+          name: t('cli.skills.moreSkillsLinkLabel')
         })
       ).toHaveAttribute('href', externalLinks.mcpSkills)
       expect(screen.getAllByText(prompt)).toHaveLength(1)

@@ -19,5 +19,5 @@ it('copies the complete multiline command without changing its text', async () =
   await user.click(screen.getByRole('button', { name: 'Copy command' }))
 
   expect(await navigator.clipboard.readText()).toBe(value)
-  expect(screen.getByRole('status')).toBeTruthy()
+  expect(screen.getByRole('status')).toHaveTextContent('Copied')
 })

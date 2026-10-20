@@ -151,7 +151,7 @@ const copiedLabel = t('ui.copied')
           rel="noopener noreferrer"
           variant="outline"
           class="uppercase"
-          >{{ t('cli.skills.moreSkillsLinkLabel').toUpperCase()
+          >{{ t('cli.skills.moreSkillsLinkLabel')
           }}<ArrowUpRight class="size-4" aria-hidden="true"
         /></BrandButton>
         <Accordion type="single" collapsible class="w-full">
