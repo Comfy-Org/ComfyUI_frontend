@@ -372,6 +372,20 @@ describe(useInstallationDeploy, () => {
     expect(api.fetchApi).toHaveBeenCalledTimes(2)
   })
 
+  it('offers a fresh upload when the dialog reopens after an unfollowed blocked-tab link', async () => {
+    vi.mocked(window.open).mockReturnValueOnce(null)
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(bundleCreated())
+      .mockResolvedValueOnce(bundleCreated())
+    await useInstallationDeploy().deploy()
+
+    const reopened = useInstallationDeploy()
+
+    expect(reopened.state.value).toEqual({ status: 'idle' })
+    await expect(reopened.deploy()).resolves.toBe(true)
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+  })
+
   it.for([
     {
       desktop: 'the Desktop build',

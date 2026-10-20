@@ -65,7 +65,14 @@ function openInNewTab(url: string): boolean {
   return tab !== null || isDesktop || window.__comfyDesktop2 !== undefined
 }
 
+function forgetLinkFromEarlierDialog() {
+  if (deployment.value.status === 'tab_blocked') {
+    deployment.value = { status: 'idle' }
+  }
+}
+
 export function useInstallationDeploy() {
+  forgetLinkFromEarlierDialog()
   const authStore = useAuthStore()
   const apiKeyAuthStore = useApiKeyAuthStore()
   const { showSignInDialog } = useAuthDialogs()
