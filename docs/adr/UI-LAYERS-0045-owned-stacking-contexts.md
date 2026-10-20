@@ -15,6 +15,8 @@ retain their original position when their content closes and opens again.
 
 ## Decision
 
+![Document layers, owner containment, and DOM ordering when a dialog reopens](UI-LAYERS-0045-owned-stacking-contexts/layers.svg)
+
 Use named layers for ordering between surfaces. Keep workspace chrome in an
 isolated workspace stacking context. Dialogs, the help center, and the toast
 dock own separate stacking contexts and provide their descendant portal target
