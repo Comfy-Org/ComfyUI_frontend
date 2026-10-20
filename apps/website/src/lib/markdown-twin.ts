@@ -285,9 +285,11 @@ function meta(document: Document, name: string): string {
 /** Extract the page's main content as markdown, with absolute links. */
 export function htmlToTwin(html: string, fallbackCanonical: string): TwinPage {
   const window = new Window({
+    url: fallbackCanonical,
     settings: {
       disableJavaScriptEvaluation: true,
       disableJavaScriptFileLoading: true,
+      disableIframePageLoading: true,
       disableCSSFileLoading: true
     }
   })
