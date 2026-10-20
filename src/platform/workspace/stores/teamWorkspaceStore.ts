@@ -405,6 +405,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     const workspaceAuthStore = useWorkspaceAuthStore()
     const isApiKeySession = useCurrentUserAccess().isApiKeyLogin.value
+    const tabWorkspaceId = getTabWorkspaceId()
 
     let sessionRevokedRetries = 0
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
@@ -436,7 +437,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         await ensureSessionCookie()
         if (isStaleIdentity(generation)) return
 
-        const tabWorkspaceId = getTabWorkspaceId()
         const hasValidSession = workspaceAuthStore.initializeFromSession()
 
         if (hasValidSession && workspaceAuthStore.currentWorkspace) {

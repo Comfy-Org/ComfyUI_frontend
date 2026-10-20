@@ -397,6 +397,33 @@ describe('useTeamWorkspaceStore', () => {
       }
     )
 
+    it("keeps this tab's workspace when a transient failure retries initialization", async () => {
+      mockLocalStorage.getItem.mockReturnValue(mockPersonalWorkspace.id)
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+        JSON.stringify(mockTeamWorkspace)
+      )
+      vi.mocked(
+        useWorkspaceAuthStore().initializeFromSession
+      ).mockImplementation(() => {
+        sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+        return false
+      })
+      mockWorkspaceApi.list
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
+
+      const store = useTeamWorkspaceStore()
+      const initialized = store.initialize()
+      await vi.advanceTimersByTimeAsync(1000)
+      await initialized
+
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
     it.for([
       {
         name: 'lands in the default workspace the server names',
