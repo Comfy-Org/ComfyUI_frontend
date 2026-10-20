@@ -6,6 +6,7 @@ import '@/styles/global.css'
 document.body.classList.add('font-formula', 'antialiased')
 
 const preview: Preview = {
+  tags: ['autodocs'],
   initialGlobals: {
     backgrounds: { value: 'dark' }
   },

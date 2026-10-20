@@ -49,6 +49,7 @@ const config: StorybookConfig = {
     )
 
     return mergeConfig(config, {
+      publicDir: false,
       plugins: [
         vue({
           template: {
