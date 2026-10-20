@@ -1,4 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+import { isEqual } from 'es-toolkit'
 
 import type { Position, Size } from '@e2e/fixtures/types'
 
@@ -21,15 +23,10 @@ async function clientRectOf(target: RegionTarget): Promise<Rect> {
   return { ...target, width: 0, height: 0 }
 }
 
-/**
- * Page-space `clip` enclosing every target plus `padding` on each side, so a
- * `toHaveScreenshot` captures only the area under test.
- */
-export async function screenshotRegion(
+async function enclosingRect(
   targets: RegionTarget[],
-  padding = 24
+  padding: number
 ): Promise<Rect> {
-  if (targets.length === 0) throw new Error('No targets to frame')
   const rects = await Promise.all(targets.map(clientRectOf))
   const left = Math.floor(Math.min(...rects.map((r) => r.x)) - padding)
   const top = Math.floor(Math.min(...rects.map((r) => r.y)) - padding)
@@ -40,6 +37,31 @@ export async function screenshotRegion(
     Math.max(...rects.map((r) => r.y + r.height)) + padding
   )
   return { x: left, y: top, width: right - left, height: bottom - top }
+}
+
+/**
+ * Page-space `clip` enclosing every target plus `padding` on each side, so a
+ * `toHaveScreenshot` captures only the area under test. Waits until the
+ * targets stop moving or resizing.
+ */
+export async function screenshotRegion(
+  targets: RegionTarget[],
+  padding = 24
+): Promise<Rect> {
+  if (targets.length === 0) throw new Error('No targets to frame')
+  let previous: Rect | undefined
+  let current = await enclosingRect(targets, padding)
+  await expect
+    .poll(
+      async () => {
+        previous = current
+        current = await enclosingRect(targets, padding)
+        return isEqual(previous, current)
+      },
+      { message: 'Screenshot region targets never settled' }
+    )
+    .toBe(true)
+  return current
 }
 
 /** Page-space bounds of the shown graph's groups, all positionable items, or subgraph IO nodes. */
