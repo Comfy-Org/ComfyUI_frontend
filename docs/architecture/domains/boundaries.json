@@ -1324,8 +1324,7 @@
           "src/scripts/app.graphReadiness.test.ts",
           "src/scripts/app.test.ts",
           "src/scripts/app.ts",
-          "src/scripts/utils.ts",
-          "src/types/index.ts"
+          "src/scripts/utils.ts"
         ]
       },
       {
