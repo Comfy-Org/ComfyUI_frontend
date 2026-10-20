@@ -57,10 +57,11 @@ function unwrapped(expression: ts.Expression): ts.Expression {
 }
 
 function hasYType(type: ts.TypeNode | undefined): boolean {
-  return (
-    type !== undefined &&
+  if (type === undefined) return false
+  const constituents = ts.isUnionTypeNode(type) ? type.types : [type]
+  return constituents.some((constituent) =>
     /(?:^|\.)Y\.(?:Array|Doc|Map|Text|XmlElement|XmlFragment|XmlText)(?:<|$)/.test(
-      type.getText()
+      constituent.getText()
     )
   )
 }
