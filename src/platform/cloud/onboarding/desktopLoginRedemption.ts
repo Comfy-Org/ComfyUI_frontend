@@ -202,10 +202,14 @@ async function redeemCode(code: string): Promise<void> {
   await finishRedemption(code, state, response)
 }
 
-async function accountScope(requests: WebSessionRequests) {
+async function accountScope(
+  requests: WebSessionRequests,
+  code: string,
+  state: CodeRedemptionState
+) {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
-    return await Promise.race([
+    const result = await Promise.race([
       requests.scope().then(
         (scope) => ({ ok: true, scope }) as const,
         () => ({ ok: false }) as const
@@ -214,6 +218,15 @@ async function accountScope(requests: WebSessionRequests) {
         timer = setTimeout(() => resolve({ ok: false }), REDEEM_TIMEOUT_MS)
       })
     ])
+    if (!result.ok) {
+      if (useAuthStore().currentUser || webSessionUser.value) {
+        state.attempts++
+        handleTransientFailure(code, state, 'account session unavailable')
+      }
+      return
+    }
+    if (!result.scope) unavailableAccountSession(code, state)
+    return result.scope
   } finally {
     clearTimeout(timer)
   }
@@ -241,30 +254,14 @@ async function redeemAccountCode(
     unavailableAccountSession(code, state)
     return
   }
-  const initial = await accountScope(requests)
-  if (!initial.ok) {
-    if (!useAuthStore().currentUser && !webSessionUser.value) return
-    state.attempts++
-    handleTransientFailure(code, state, 'account session unavailable')
-    return
-  }
-  const scope = initial.scope
-  if (!scope) {
-    unavailableAccountSession(code, state)
-    return
-  }
+  const scope = await accountScope(requests, code, state)
+  if (!scope) return
   if (onAuthHandoffRoute()) return
   if (!(await confirmRedemption(state, scope.session.user.id))) {
     settle(code, state)
     return
   }
-  const latest = await accountScope(requests)
-  if (!latest.ok) {
-    state.attempts++
-    handleTransientFailure(code, state, 'account session unavailable')
-    return
-  }
-  const current = latest.scope
+  const current = await accountScope(requests, code, state)
   if (
     !current ||
     onAuthHandoffRoute() ||
