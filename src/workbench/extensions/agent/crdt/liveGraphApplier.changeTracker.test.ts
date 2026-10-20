@@ -202,10 +202,8 @@ describe('LiveGraphApplier with the real change tracker', () => {
     'records one undo entry and marks modified for a node-add frame with $open open',
     async ({ open }) => {
       const graph = new LGraph()
-      const { applier, tracker, workflow, beforeFrame } = await trackedCanvas(
-        graph,
-        open
-      )
+      const { canvas, applier, tracker, workflow, beforeFrame } =
+        await trackedCanvas(graph, open)
       const { doc, collector } = followedDoc({ nodes: [], links: [] }, CATALOG)
       collector.take()
       const add = op({
@@ -217,17 +215,20 @@ describe('LiveGraphApplier with the real change tracker', () => {
       })
 
       expect(applyOps(doc, [add], CATALOG).outcomes[0].outcome).toBe('applied')
+      canvas.dirty_canvas = false
+      canvas.dirty_bgcanvas = false
       applier.applyChanges(doc, collector.take(), CONTEXT)
 
       expect(graph.getNodeById(toNodeId(42))).not.toBeNull()
       expect.soft(tracker.undoQueue).toEqual([beforeFrame])
       expect(workflow.isModified).toBe(true)
+      expect(canvas.dirty_canvas).toBe(true)
+      expect(canvas.dirty_bgcanvas).toBe(true)
     }
   )
 
   it('records one undo entry holding the pre-frame graph for a frame of several operations', async () => {
     const graph = new LGraph()
-    appState.rootGraph = graph
     const { doc, collector } = followedDoc(
       {
         nodes: [
@@ -291,93 +292,99 @@ describe('LiveGraphApplier with the real change tracker', () => {
     expect(tracker.activeState).not.toEqual(beforeFrame)
   })
 
-  it('resizes an existing DynamicGroup remotely as one undo unit without outbound echo', async () => {
-    const graph = new LGraph()
-    const node = LiteGraph.createNode('DynamicGroupTest')
-    assert.exists(node)
-    graph.add(node)
-    const count = node.widgets?.find((widget) => widget.name === 'rows')
-    assert.exists(count)
-    count.value = 2
-    const first = node.widgets?.find(
-      (widget) => widget.name === 'rows.0.strength'
-    )
-    const second = node.widgets?.find(
-      (widget) => widget.name === 'rows.1.strength'
-    )
-    assert.exists(first)
-    assert.exists(second)
-    first.value = 0.5
-    second.value = 0.7
-    expect(node.serialize().widgets_values).toEqual([
-      'head',
-      2,
-      0.5,
-      0.7,
-      'tail'
-    ])
-    const { applier, tracker, beforeFrame } = await trackedCanvas(
-      graph,
-      'subgraph'
-    )
-    const { flags, ...serialized } = node.serialize()
-    const { doc, collector } = followedDoc(
-      { nodes: [{ ...serialized, flags: { ...flags } }], links: [] },
-      CATALOG
-    )
-    collector.take()
-    const enqueue = vi.fn()
-    const minter = attachDocOpMinter({
-      isEnabled: () => true,
-      isDocBound: () => true,
-      getGraph: () => graph,
-      boundRootGraphId: () => toRootGraphId(graph.id),
-      docInputNames: () => [],
-      docPromotedWidgets: () => null,
-      mayWritePromotedHost: () => true,
-      onWidgetWriteRefused: () => {},
-      enqueue
-    })
-    onTestFinished(() => minter.detach())
-    const resize = op({
-      op: 'set_widget',
-      node_id: 1,
-      widget: 'rows',
-      value: 0
-    })
-    const after = {
-      ...op({
+  it.for([{ open: 'root' }, { open: 'subgraph' }] as const)(
+    'resizes an existing DynamicGroup remotely as one undo unit without outbound echo with $open open',
+    async ({ open }) => {
+      const graph = new LGraph()
+      const node = LiteGraph.createNode('DynamicGroupTest')
+      assert.exists(node)
+      graph.add(node)
+      const count = node.widgets?.find((widget) => widget.name === 'rows')
+      assert.exists(count)
+      count.value = 2
+      const first = node.widgets?.find(
+        (widget) => widget.name === 'rows.0.strength'
+      )
+      const second = node.widgets?.find(
+        (widget) => widget.name === 'rows.1.strength'
+      )
+      assert.exists(first)
+      assert.exists(second)
+      first.value = 0.5
+      second.value = 0.7
+      expect(node.serialize().widgets_values).toEqual([
+        'head',
+        2,
+        0.5,
+        0.7,
+        'tail'
+      ])
+      const { applier, tracker, beforeFrame } = await trackedCanvas(graph, open)
+      const { flags, ...serialized } = node.serialize()
+      const { doc, collector } = followedDoc(
+        { nodes: [{ ...serialized, flags: { ...flags } }], links: [] },
+        CATALOG
+      )
+      collector.take()
+      const enqueue = vi.fn()
+      const minter = attachDocOpMinter({
+        isEnabled: () => true,
+        isDocBound: () => true,
+        getGraph: () => graph,
+        boundRootGraphId: () => toRootGraphId(graph.id),
+        docInputNames: () => [],
+        docPromotedWidgets: () => null,
+        mayWritePromotedHost: () => true,
+        onWidgetWriteRefused: () => {},
+        enqueue
+      })
+      onTestFinished(() => minter.detach())
+      const resize = op({
         op: 'set_widget',
         node_id: 1,
-        widget: 'after',
-        value: 'remote tail'
-      }),
-      op_id: 'op-after'.padEnd(32, '0')
-    }
-
-    expect(
-      applyOps(doc, [resize, after], CATALOG).outcomes.map(
-        ({ outcome }) => outcome
-      )
-    ).toEqual(['applied', 'applied'])
-    applier.applyChanges(doc, collector.take(), CONTEXT)
-
-    expect(node.serialize().widgets_values).toEqual(['head', 0, 'remote tail'])
-    expect(tracker.undoQueue).toEqual([beforeFrame])
-    expect(tracker.activeState).toEqual(await workflowJson(graph))
-    const afterWidget = node.widgets?.find((widget) => widget.name === 'after')
-    assert.exists(afterWidget)
-    afterWidget.value = 'human tail'
-    await vi.waitFor(() =>
-      expect(enqueue).toHaveBeenCalledExactlyOnceWith([
-        {
+        widget: 'rows',
+        value: 0
+      })
+      const after = {
+        ...op({
           op: 'set_widget',
-          node_id: '1',
+          node_id: 1,
           widget: 'after',
-          value: 'human tail',
-          old: 'remote tail'
-        }
+          value: 'remote tail'
+        }),
+        op_id: 'op-after'.padEnd(32, '0')
+      }
+
+      expect(
+        applyOps(doc, [resize, after], CATALOG).outcomes.map(
+          ({ outcome }) => outcome
+        )
+      ).toEqual(['applied', 'applied'])
+      applier.applyChanges(doc, collector.take(), CONTEXT)
+
+      expect(node.serialize().widgets_values).toEqual([
+        'head',
+        0,
+        'remote tail'
       ])
-    )
-  })
+      expect(tracker.undoQueue).toEqual([beforeFrame])
+      expect(tracker.activeState).toEqual(await workflowJson(graph))
+      const afterWidget = node.widgets?.find(
+        (widget) => widget.name === 'after'
+      )
+      assert.exists(afterWidget)
+      afterWidget.value = 'human tail'
+      await vi.waitFor(() =>
+        expect(enqueue).toHaveBeenCalledExactlyOnceWith([
+          {
+            op: 'set_widget',
+            node_id: '1',
+            widget: 'after',
+            value: 'human tail',
+            old: 'remote tail'
+          }
+        ])
+      )
+    }
+  )
 })
