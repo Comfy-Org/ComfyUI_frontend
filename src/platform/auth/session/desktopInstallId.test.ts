@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { getDesktopInstallId } from '@/platform/auth/session/desktopInstallId'
 
-const win = window as typeof window & {
+const win = window as unknown as {
   __comfyDesktop2?: { getInstallId?: () => string }
 }
 
