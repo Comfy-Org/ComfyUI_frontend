@@ -45,7 +45,7 @@ describe('ModelMenuGroup', () => {
 
       const option = screen.getByRole('button', { name: selected })
       expect(option).toHaveAttribute('aria-pressed', 'true')
-      expect(option).toHaveClass('bg-secondary-background-selected')
+      expect(option).toHaveClass('bg-muted')
     }
   )
 

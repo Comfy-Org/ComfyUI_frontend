@@ -2,7 +2,6 @@ import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
-  AgentThreadListResponse,
   BillingStatusResponse,
   GlobalSetting,
   WorkflowListResponse
@@ -21,7 +20,9 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -29,7 +30,8 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
+/** The cloud workflow id a turn ack binds the posting tab to. */
+export const WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-c33b7bb880f6'
 
 const TURN_ACCEPTED: AgentTurnAccepted = {
   message_id: TURN_ID,
@@ -361,6 +363,7 @@ async function mockAgentBoot(
   )
 
   await mockBilling(page)
+  await mockAgentIdentity(page)
   await page.route('**/api/billing/status', (route) =>
     agentBilling.fulfillStatus(route)
   )
@@ -459,11 +462,8 @@ async function mockAgentBoot(
     }
     return route.fulfill(jsonRoute(workflows))
   })
-  const threads: AgentThreadListResponse = {
-    threads: [],
-    pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-  }
-  await page.route('**/api/agent/threads', (route) =>
+  const threads = emptyAgentThreadList()
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(threads))
   )
   const storedConsent: GlobalSetting = {

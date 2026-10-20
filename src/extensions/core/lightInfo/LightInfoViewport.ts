@@ -36,6 +36,7 @@ const OUTPUT_VIEW = {
 export interface LightInfoViewportOptions extends Load3DOptions {
   onLightsChange?: (lights: LightInfoEntry[]) => void
   onSelectLight?: (index: number) => void
+  onEditEnd?: () => void
 }
 
 interface DragState {
@@ -52,6 +53,7 @@ export class LightInfoViewport {
 
   private readonly onLightsChange?: LightInfoViewportOptions['onLightsChange']
   private readonly onSelectLight?: LightInfoViewportOptions['onSelectLight']
+  private readonly onEditEnd?: LightInfoViewportOptions['onEditEnd']
   private readonly raycaster = new THREE.Raycaster()
   private readonly pointer = new THREE.Vector2()
 
@@ -69,6 +71,7 @@ export class LightInfoViewport {
   ) {
     this.onLightsChange = options?.onLightsChange
     this.onSelectLight = options?.onSelectLight
+    this.onEditEnd = options?.onEditEnd
     this.viewport = createViewport3d(container, options)
     this.viewport.viewHelperManager.visibleViewHelper(false)
     this.viewport.sceneManager.toggleGrid(false)
@@ -85,10 +88,7 @@ export class LightInfoViewport {
     this.positionHandle = new TargetHandle(
       this.viewport.cameraManager.activeCamera,
       this.viewport.domElement,
-      (dragging) => {
-        this.viewport.controlsManager.controls.enabled =
-          !dragging && !this.cameraLocked
-      },
+      (dragging) => this.onHandleDraggingChange(dragging),
       (position) => {
         this.mutateSelected((light) => ({
           ...light,
@@ -102,10 +102,7 @@ export class LightInfoViewport {
     this.targetHandle = new TargetHandle(
       this.viewport.cameraManager.activeCamera,
       this.viewport.domElement,
-      (dragging) => {
-        this.viewport.controlsManager.controls.enabled =
-          !dragging && !this.cameraLocked
-      },
+      (dragging) => this.onHandleDraggingChange(dragging),
       (target) => {
         this.mutateSelected((light) => ({ ...light, target: { ...target } }))
       },
@@ -353,6 +350,13 @@ export class LightInfoViewport {
     this.dragState = null
     this.viewport.controlsManager.controls.enabled = !this.cameraLocked
     this.refreshCursor()
+    this.onEditEnd?.()
+  }
+
+  private onHandleDraggingChange(dragging: boolean): void {
+    this.viewport.controlsManager.controls.enabled =
+      !dragging && !this.cameraLocked
+    if (!dragging) this.onEditEnd?.()
   }
 }
 

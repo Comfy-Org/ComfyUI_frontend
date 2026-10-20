@@ -76,9 +76,12 @@ import type {
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
   WorkflowSavedMetadata
-} from '../../types'
-import { CANCELLATION_STAGE_EVENTS, TelemetryEvents } from '../../types'
-import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
+} from '@/platform/telemetry/types'
+import {
+  CANCELLATION_STAGE_EVENTS,
+  TelemetryEvents
+} from '@/platform/telemetry/types'
+import { normalizeSurveyResponses } from '@/platform/telemetry/utils/surveyNormalization'
 
 type HostTelemetryProperties = Parameters<
   ComfyDesktop2TelemetryBridge['capture']

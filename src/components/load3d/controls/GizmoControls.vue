@@ -9,7 +9,7 @@
       :aria-label="t('load3d.gizmo.toggle')"
       @click="toggleGizmo"
     >
-      <i class="pi pi-compass text-lg text-base-foreground" />
+      <i class="pi pi-compass text-lg text-foreground" />
     </Button>
 
     <template v-if="gizmoEnabled">
@@ -27,7 +27,7 @@
         :aria-label="t('load3d.gizmo.translate')"
         @click="setMode('translate')"
       >
-        <i class="pi pi-arrows-alt text-lg text-base-foreground" />
+        <i class="pi pi-arrows-alt text-lg text-foreground" />
       </Button>
 
       <Button
@@ -41,7 +41,7 @@
         :aria-label="t('load3d.gizmo.rotate')"
         @click="setMode('rotate')"
       >
-        <i class="pi pi-sync text-lg text-base-foreground" />
+        <i class="pi pi-sync text-lg text-foreground" />
       </Button>
 
       <Button
@@ -55,7 +55,7 @@
         :aria-label="t('load3d.gizmo.scale')"
         @click="setMode('scale')"
       >
-        <i class="pi pi-expand text-lg text-base-foreground" />
+        <i class="pi pi-expand text-lg text-foreground" />
       </Button>
 
       <Button
@@ -67,7 +67,7 @@
         :aria-label="t('load3d.gizmo.reset')"
         @click="resetTransform"
       >
-        <i class="pi pi-refresh text-lg text-base-foreground" />
+        <i class="pi pi-refresh text-lg text-foreground" />
       </Button>
     </template>
   </div>

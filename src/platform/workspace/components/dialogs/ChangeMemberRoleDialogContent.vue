@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-full max-w-90" @close="onCancel">
+  <AppDialogPanel
+    size="compact"
+    body-class="text-sm text-muted-foreground"
+    @close="onCancel"
+  >
     <template #title>
       {{
         isPromotion
@@ -12,21 +16,19 @@
       }}
     </template>
 
-    <div class="p-4">
-      <template v-if="isPromotion">
-        <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.changeRoleDialog.promoteIntro') }}
-        </p>
-        <ul class="m-0 mt-1 list-disc ps-5 text-sm text-muted-foreground">
-          <li v-for="permission in promotePermissions" :key="permission">
-            {{ permission }}
-          </li>
-        </ul>
-      </template>
-      <p v-else class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.changeRoleDialog.demoteMessage') }}
+    <template v-if="isPromotion">
+      <p class="m-0">
+        {{ $t('workspacePanel.changeRoleDialog.promoteIntro') }}
       </p>
-    </div>
+      <ul class="m-0 mt-1 list-disc ps-5">
+        <li v-for="permission in promotePermissions" :key="permission">
+          {{ permission }}
+        </li>
+      </ul>
+    </template>
+    <p v-else class="m-0">
+      {{ $t('workspacePanel.changeRoleDialog.demoteMessage') }}
+    </p>
 
     <template #footer>
       <Button variant="muted-textonly" @click="onCancel">
@@ -40,11 +42,11 @@
         }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

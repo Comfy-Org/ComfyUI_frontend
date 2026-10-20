@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { PopupWatchCallbacks } from './popupWatch.js'
+import type { PopupWatchCallbacks } from './popupWatch'
 
 /**
  * Firebase's resolver as the SDK drives it: `_initialize` hands back the
@@ -57,7 +57,7 @@ beforeEach(() => {
 })
 
 async function load() {
-  const watch = await import('./popupWatch.js')
+  const watch = await import('./popupWatch')
   const Resolver =
     watch.watchedPopupRedirectResolver as unknown as new () => ResolverUnderTest
   const resolver = new Resolver()

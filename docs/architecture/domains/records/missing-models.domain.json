@@ -4,47 +4,23 @@
   "description": "Scans workflows for model files that are not installed, verifies them against assets, groups and stores results, fetches model metadata, dispatches downloads (browser, desktop, or model library), and renders the missing-model card and rows.",
   "modules": [
     {
-      "path": "src/platform/missingModel/types.ts",
-      "role": "domain"
+      "path": "src/platform/missingModel/components/**",
+      "role": "presentation"
     },
     {
-      "path": "src/platform/missingModel/missingModelGrouping.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/missingModel/missingModelGrouping.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/missingModel/missingModelViewUtils.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/missingModel/missingModelViewUtils.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/missingModel/missingModelScan.ts",
+      "path": "src/platform/missingModel/composables/**",
       "role": "application"
     },
     {
-      "path": "src/platform/missingModel/missingModelScan.test.ts",
-      "role": "application"
+      "path": "src/platform/missingModel/folderPathCache.test.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/platform/missingModel/missingModelPipeline.ts",
-      "role": "application"
+      "path": "src/platform/missingModel/folderPathCache.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/platform/missingModel/missingModelPipeline.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingModel/missingModelStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/missingModel/missingModelStore.test.ts",
+      "path": "src/platform/missingModel/missingModelDownload.test.ts",
       "role": "application"
     },
     {
@@ -52,28 +28,52 @@
       "role": "application"
     },
     {
-      "path": "src/platform/missingModel/missingModelDownload.test.ts",
-      "role": "application"
+      "path": "src/platform/missingModel/missingModelGrouping.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/missingModel/missingModelGrouping.ts",
+      "role": "domain"
     },
     {
       "path": "src/platform/missingModel/missingModelMetadata.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/missingModel/composables/**",
+      "path": "src/platform/missingModel/missingModelPipeline.test.ts",
       "role": "application"
     },
     {
-      "path": "src/platform/missingModel/folderPathCache.ts",
-      "role": "infrastructure"
+      "path": "src/platform/missingModel/missingModelPipeline.ts",
+      "role": "application"
     },
     {
-      "path": "src/platform/missingModel/folderPathCache.test.ts",
-      "role": "infrastructure"
+      "path": "src/platform/missingModel/missingModelScan.test.ts",
+      "role": "application"
     },
     {
-      "path": "src/platform/missingModel/components/**",
-      "role": "presentation"
+      "path": "src/platform/missingModel/missingModelScan.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingModel/missingModelStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingModel/missingModelStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/platform/missingModel/missingModelViewUtils.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/missingModel/missingModelViewUtils.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/platform/missingModel/types.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

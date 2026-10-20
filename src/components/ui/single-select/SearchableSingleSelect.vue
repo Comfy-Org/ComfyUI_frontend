@@ -11,7 +11,7 @@
         ref="trigger"
         v-bind="attrsWithoutClass"
         tabindex="0"
-        :aria-label="label || t('g.singleSelectDropdown')"
+        :aria-label="accessibleLabel"
         :aria-busy="loading || undefined"
         :aria-invalid="invalid || undefined"
         :class="
@@ -60,14 +60,12 @@
           @unmount-auto-focus.prevent
         >
           <div class="px-2 pt-2">
-            <div
-              class="flex items-center gap-2 rounded-lg border border-border-default px-3 py-1.5"
-            >
+            <div class="flex items-center gap-2 rounded-lg border px-3 py-1.5">
               <i class="icon-[lucide--search] text-muted-foreground" />
               <ComboboxInput
                 v-model="searchQuery"
-                :aria-label="t('g.search')"
-                :placeholder="searchPlaceholder ?? t('g.search')"
+                :aria-label="searchLabel"
+                :placeholder="searchPlaceholder"
                 class="w-full border-none bg-transparent text-sm outline-none"
               />
             </div>
@@ -87,13 +85,13 @@
                 class="flex shrink-0 items-center justify-center"
               >
                 <i
-                  class="icon-[lucide--check] text-base-foreground"
+                  class="icon-[lucide--check] text-foreground"
                   aria-hidden="true"
                 />
               </ComboboxItemIndicator>
             </ComboboxItem>
             <ComboboxEmpty :class="selectEmptyMessageClass">
-              {{ t('g.noResultsFound') }}
+              {{ emptyText }}
             </ComboboxEmpty>
           </ComboboxViewport>
         </FocusScope>
@@ -120,7 +118,6 @@ import {
 } from 'reka-ui'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { StyleValue } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import {
   selectContentClass,
@@ -141,6 +138,9 @@ defineOptions({ inheritAttrs: false })
 const { attrsClass, attrsWithoutClass } = useAttrsClass()
 const {
   label,
+  accessibleLabel,
+  searchLabel,
+  emptyText,
   options = [],
   size = 'lg',
   invalid = false,
@@ -153,6 +153,9 @@ const {
   contentStyle
 } = defineProps<{
   label?: string
+  accessibleLabel: string
+  searchLabel: string
+  emptyText: string
   options?: SelectOption<string | number>[]
   size?: 'lg' | 'md'
   invalid?: boolean
@@ -168,7 +171,6 @@ const {
 const selectedItem = defineModel<string | number | undefined>({
   required: true
 })
-const { t } = useI18n()
 const triggerRef = useTemplateRef('trigger')
 const isOpen = ref(false)
 const searchQuery = ref('')

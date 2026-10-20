@@ -72,7 +72,7 @@ function projectStopPrice(
   const price_cents = asSafeNumber(price.price_cents)
   if (list_price_cents === undefined || price_cents === undefined)
     return undefined
-  return { list_price_cents, price_cents }
+  return { ...price, list_price_cents, price_cents }
 }
 
 function projectStop(

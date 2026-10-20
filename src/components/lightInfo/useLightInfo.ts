@@ -6,6 +6,7 @@ import {
   createSceneHoverHandlers,
   useViewportNodeWiring
 } from '@/composables/useViewportNodeWiring'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
 import {
   getNodeWidgetValue,
   setNodeWidgetValue
@@ -25,10 +26,14 @@ import { t } from '@/i18n'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 
 const EDITOR_WIDGET_NAME = 'editor_state'
 
-export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
+export function useLightInfo(
+  nodeRef: MaybeRef<LGraphNode | null>,
+  historyScope: () => WidgetHistoryScope | null = () => null
+) {
   let viewport: LightInfoViewport | null = null
   let host: LGraphNode | null = null
   let stopObserving: (() => void) | null = null
@@ -42,6 +47,20 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     () => lights.value[selectedIndex.value] ?? null
   )
 
+  const {
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+    commit: commitHistory,
+    syncBaseline,
+    discardHistory
+  } = useWidgetValueHistory({
+    scope: historyScope,
+    read: () => lights.value,
+    apply: (value) => commit(normalizeLightsValue(value))
+  })
+
   const initialize = (container: HTMLElement): void => {
     const raw = toRaw(unref(nodeRef))
     if (!raw) return
@@ -53,6 +72,7 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
         getNodeWidgetValue(raw, EDITOR_WIDGET_NAME)
       )
       selectedIndex.value = lights.value.length ? 0 : -1
+      syncBaseline()
       viewport = new LightInfoViewport(container, lights.value, {
         onLightsChange: (next) => {
           lights.value = next
@@ -60,7 +80,8 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
         },
         onSelectLight: (index) => {
           selectedIndex.value = index
-        }
+        },
+        onEditEnd: () => commitHistory()
       })
       viewport.applyLights(lights.value, selectedIndex.value)
       observeExternalChanges(raw)
@@ -114,6 +135,7 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     const next = [...lights.value, createDefaultLight(type)]
     selectedIndex.value = next.length - 1
     commit(next)
+    commitHistory()
   }
 
   const removeSelectedLight = (): void => {
@@ -122,6 +144,7 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     next.splice(selectedIndex.value, 1)
     selectedIndex.value = Math.min(selectedIndex.value, next.length - 1)
     commit(next)
+    commitHistory()
   }
 
   const updateSelectedLight = (patch: Partial<LightInfoEntry>): void => {
@@ -132,6 +155,9 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
       { ...current, ...patch }
     ])[0]
     commit(next)
+    commitHistory(
+      `light:${selectedIndex.value}:${Object.keys(patch).sort().join(',')}`
+    )
   }
 
   const setSelectedLightType = (type: LightInfoType): void => {
@@ -148,12 +174,15 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
         : {})
     }
     commit(next)
+    commitHistory()
   }
 
   function commit(next: LightInfoEntry[]): void {
     lights.value = next
     if (selectedIndex.value >= next.length) {
       selectedIndex.value = next.length - 1
+    } else if (selectedIndex.value < 0 && next.length) {
+      selectedIndex.value = 0
     }
     writeWidgetValue(next)
     viewport?.applyLights(next, selectedIndex.value)
@@ -178,6 +207,7 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
       selectedIndex.value = 0
     }
     viewport.applyLights(lights.value, selectedIndex.value)
+    discardHistory()
   }
 
   function observeExternalChanges(target: LGraphNode): void {
@@ -211,6 +241,10 @@ export function useLightInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     addLight,
     removeSelectedLight,
     updateSelectedLight,
-    setSelectedLightType
+    setSelectedLightType,
+    canUndo,
+    canRedo,
+    undo,
+    redo
   }
 }

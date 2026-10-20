@@ -1,9 +1,15 @@
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type {
+  LGraph,
+  LGraphNode,
+  LLink,
+  ResolvedConnection,
+  Subgraph
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { SerializedNodeId } from '@/types/nodeId'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, ResolvedConnection } from '@/lib/litegraph/src/LLink'
+
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+
 import type { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   ExportedSubgraph,

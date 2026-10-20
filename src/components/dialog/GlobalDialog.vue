@@ -61,10 +61,18 @@
               >
                 <DialogMaximize
                   v-if="item.dialogComponentProps.maximizable"
+                  :aria-label="
+                    item.dialogComponentProps.maximized
+                      ? $t('g.restoreDialog')
+                      : $t('g.maximizeDialog')
+                  "
                   :maximized="!!item.dialogComponentProps.maximized"
                   @toggle="toggleMaximize(item)"
                 />
-                <DialogClose v-if="hasCloseButton(item)" />
+                <DialogClose
+                  v-if="hasCloseButton(item)"
+                  :aria-label="$t('g.close')"
+                />
               </div>
             </DialogHeader>
             <div

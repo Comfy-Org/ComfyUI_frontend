@@ -4,127 +4,11 @@
   "description": "Queued and historical jobs: the jobs API client and job schemas, queue polling, the queue store and result-item parsing, auto-queue settings, job list grouping, filtering, estimates, menus, actions, notification banners, result gallery, clear-history dialog, and the queue progress overlay and job details UI. Live execution state, wire contracts, asset records, and the media lightbox are separate.",
   "modules": [
     {
-      "path": "src/components/queue/JobHistoryActionsMenu.test.ts",
+      "path": "src/components/actionbar/**",
       "role": "presentation"
     },
     {
-      "path": "src/components/queue/JobHistoryActionsMenu.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueInlineProgress.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueInlineProgress.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueInlineProgressSummary.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueNotificationBanner.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueNotificationBanner.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueNotificationBanner.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueNotificationBannerHost.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueOverlayActive.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueOverlayActive.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueOverlayExpanded.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueOverlayExpanded.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueOverlayHeader.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueOverlayHeader.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueProgressOverlay.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/QueueProgressOverlay.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/dialogs/QueueClearHistoryDialog.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobAssetsList.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobAssetsList.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobDetailsHoverPopover.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobDetailsPopover.stories.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobDetailsPopover.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobFilterActions.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobFilterActions.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobFilterTabs.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobFiltersBar.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/JobFiltersBar.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/buildVirtualJobRows.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/buildVirtualJobRows.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/queue/job/testUtils/mockTanstackVirtualizer.ts",
+      "path": "src/components/queue/**",
       "role": "presentation"
     },
     {
@@ -144,6 +28,14 @@
       "role": "application"
     },
     {
+      "path": "src/components/sidebar/tabs/JobHistorySidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/queue/**",
+      "role": "application"
+    },
+    {
       "path": "src/composables/queue/jobTabs.test.ts",
       "role": "domain"
     },
@@ -152,67 +44,23 @@
       "role": "domain"
     },
     {
-      "path": "src/composables/queue/useJobActions.ts",
+      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useReconnectQueueRefresh.test.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/queue/useJobList.test.ts",
+      "path": "src/composables/useReconnectQueueRefresh.ts",
       "role": "application"
     },
     {
-      "path": "src/composables/queue/useJobList.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useJobMenu.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useJobMenu.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useQueueClearHistoryDialog.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useQueueFeatureFlags.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useQueueNotificationBanners.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useQueueNotificationBanners.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useQueueProgress.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useQueueProgress.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useResultGallery.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/queue/useResultGallery.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/remote/comfyui/jobs/__mocks__/fetchJobs.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/remote/comfyui/jobs/fetchJobs.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/remote/comfyui/jobs/fetchJobs.ts",
+      "path": "src/platform/remote/comfyui/jobs/**",
       "role": "infrastructure"
     },
     {
@@ -226,6 +74,26 @@
     {
       "path": "src/platform/remote/comfyui/useQueuePolling.ts",
       "role": "application"
+    },
+    {
+      "path": "src/platform/workflow/cloud/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/autoQueueService.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/autoQueueService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/jobOutputCache.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/jobOutputCache.ts",
+      "role": "infrastructure"
     },
     {
       "path": "src/stores/queueSettingsStore.ts",
@@ -252,80 +120,16 @@
       "role": "domain"
     },
     {
-      "path": "src/components/actionbar/BatchCountEdit.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/actionbar/BatchCountEdit.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/actionbar/ComfyActionbar.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/actionbar/ComfyActionbar.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/actionbar/ComfyRunButton/ComfyQueueButton.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/actionbar/ComfyRunButton/ComfyQueueButton.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/actionbar/ComfyRunButton/index.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/actionbar/ComfyRunButton/LocalRunButtonWrapper.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/actionbar/ComfyRunButton/LocalRunButtonWrapper.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/sidebar/tabs/JobHistorySidebarTab.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/services/autoQueueService.ts",
+      "path": "src/storybook/mocks/useJobActions.ts",
       "role": "application"
     },
     {
-      "path": "src/services/autoQueueService.test.ts",
+      "path": "src/storybook/mocks/useJobList.ts",
       "role": "application"
     },
     {
-      "path": "src/services/jobOutputCache.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/services/jobOutputCache.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workflow/cloud/getWorkflowFromHistory.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/sidebarTabs/useJobHistorySidebarTab.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/useReconnectQueueRefresh.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useReconnectQueueRefresh.ts",
-      "role": "application"
+      "path": "src/types/queue.ts",
+      "role": "domain"
     },
     {
       "path": "src/utils/queueDisplay.test.ts",
@@ -344,24 +148,12 @@
       "role": "domain"
     },
     {
-      "path": "src/utils/resultItemUrl.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/utils/resultItemUrl.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/types/queue.ts",
+      "path": "src/utils/resultItemUrl.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/storybook/mocks/useJobActions.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/storybook/mocks/useJobList.ts",
-      "role": "application"
     }
   ],
   "publicEntryPoints": [],

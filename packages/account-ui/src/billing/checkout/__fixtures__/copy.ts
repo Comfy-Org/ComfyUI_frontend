@@ -2,8 +2,8 @@ import type {
   CheckoutCopy,
   CheckoutInviteCopy,
   CheckoutSuccessCopy
-} from '../checkoutCopy'
-import type { CheckoutPlan } from '../checkoutQuote'
+} from '#/billing/checkout/checkoutCopy'
+import type { CheckoutPlan } from '#/billing/checkout/checkoutQuote'
 
 export const checkoutCopy: CheckoutCopy = {
   back: 'Back',

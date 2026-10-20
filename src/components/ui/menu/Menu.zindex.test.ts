@@ -1,25 +1,16 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
 import type { MenuItem } from '@/components/ui/menu/types'
-import enMessages from '@/locales/en/main.json'
 import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import Menu from './Menu.vue'
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-})
-
 function renderMenu(items: MenuItem[] = [{ label: 'Item A' }]) {
   return render(Menu, {
     props: { items },
-    slots: { trigger: '<button>Open</button>' },
-    global: { plugins: [i18n] }
+    slots: { trigger: '<button>Open</button>' }
   })
 }
 
