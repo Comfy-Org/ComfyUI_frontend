@@ -3,10 +3,7 @@
  * deliberately returns an answer of any status as `ok`, so that every typed
  * operation maps status the same way instead of each inventing its own.
  */
-import type {
-  BillingErrorCode,
-  BillingHttpResponse
-} from './billingContracts.js'
+import type { BillingErrorCode, BillingHttpResponse } from './billingContracts'
 
 export function codeForHttpStatus(
   response: Pick<

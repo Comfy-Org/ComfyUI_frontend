@@ -144,6 +144,21 @@
       "count": 1
     }
   },
+  "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "packages/viewport3d/src/load3d/SceneManager.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "packages/viewport3d/src/load3d/createLoad3d.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
   "scripts/agentConversationFromLangfuse.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -372,58 +387,8 @@
       "count": 1
     }
   },
-  "src/extensions/core/lightInfo/types.ts": {
-    "comfy/no-reexports": {
-      "count": 2
-    }
-  },
-  "src/extensions/core/load3d/HDRIManager.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/extensions/core/load3d/Load3d.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
   "src/extensions/core/load3d/Load3dUtils.ts": {
     "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/ModelAdapter.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/ModelExporter.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/extensions/core/load3d/RecordingManager.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/SceneManager.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/SceneModelManager.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/cameraFromMatrices.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
-  "src/extensions/core/load3d/createLoad3d.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
@@ -434,11 +399,6 @@
   },
   "src/extensions/core/load3d/load3dSerialize.test.ts": {
     "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/loader/FastPLYLoader.ts": {
-    "comfy/no-new-error-throw": {
       "count": 1
     }
   },
@@ -579,7 +539,7 @@
   },
   "src/lib/litegraph/src/litegraph.ts": {
     "comfy/no-reexports": {
-      "count": 54
+      "count": 55
     }
   },
   "src/lib/litegraph/src/litegraphInstance.ts": {
@@ -617,6 +577,16 @@
   },
   "src/lib/litegraph/src/subgraph/SubgraphOutput.ts": {
     "comfy/no-new-error-throw": {
+      "count": 1
+    }
+  },
+  "src/lib/litegraph/src/subgraph/subgraphUtils.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "src/lib/litegraph/src/types/widgets.ts": {
+    "comfy/no-reexports": {
       "count": 1
     }
   },
@@ -940,11 +910,6 @@
       "count": 1
     }
   },
-  "src/platform/workspace/components/SubscriptionAddPaymentPreviewWorkspace.stripe.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/platform/workspace/components/SubscriptionTransitionPreviewWorkspaceReactivation.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -997,12 +962,12 @@
   },
   "src/platform/workspace/composables/useSubscriptionCheckout.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
-      "count": 3
+      "count": 2
     }
   },
   "src/platform/workspace/composables/useSubscriptionCheckout.ts": {
     "comfy/no-new-error-throw": {
-      "count": 6
+      "count": 3
     }
   },
   "src/platform/workspace/composables/useTeamPlan.test.ts": {
@@ -1018,11 +983,6 @@
   "src/platform/workspace/composables/useWorkspaceUI.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 4
-    }
-  },
-  "src/platform/workspace/stores/billingOperationStore.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
     }
   },
   "src/platform/workspace/stores/teamWorkspaceStore.test.ts": {
@@ -1092,61 +1052,6 @@
   },
   "src/renderer/extensions/layerEditor/composables/useLayerEditorExport.ts": {
     "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/document.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/editor/selectionMath.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 3
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/history.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/kinds/index.ts": {
-    "comfy/no-reexports": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/kinds/kinds.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/nodeKind.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/render/place.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/tool.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/tools/overlayBox.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/tools/transformMath.ts": {
-    "comfy/no-positional-boolean-params": {
       "count": 1
     }
   },
@@ -1270,11 +1175,6 @@
       "count": 10
     }
   },
-  "src/renderer/three/RendererView.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/scripts/api.ts": {
     "comfy/no-new-error-throw": {
       "count": 8
@@ -1339,11 +1239,6 @@
   "src/services/extensionLoader.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    }
-  },
-  "src/services/gateway/registrySearchGateway.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/services/jobOutputCache.test.ts": {
@@ -1429,6 +1324,16 @@
   "src/types/index.ts": {
     "comfy/no-reexports": {
       "count": 36
+    }
+  },
+  "src/types/nodeState.ts": {
+    "comfy/no-reexports": {
+      "count": 1
+    }
+  },
+  "src/types/simplifiedWidget.ts": {
+    "comfy/no-reexports": {
+      "count": 1
     }
   },
   "src/types/slotId.test.ts": {
@@ -1533,7 +1438,7 @@
   },
   "src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts": {
     "comfy/no-reexports": {
-      "count": 3
+      "count": 2
     }
   },
   "src/workbench/extensions/agent/services/agent/agentEventTransport.test.ts": {

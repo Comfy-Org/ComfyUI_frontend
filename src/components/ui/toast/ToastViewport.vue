@@ -8,7 +8,10 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { TOAST_Z_INDEX } from '@/utils/modalLayerStack'
 
 const { class: className, ...restProps } = defineProps<
-  ToastViewportProps & { class?: HTMLAttributes['class'] }
+  ToastViewportProps & {
+    class?: HTMLAttributes['class']
+    label: NonNullable<ToastViewportProps['label']>
+  }
 >()
 const forwardedProps = useForwardProps(restProps)
 </script>

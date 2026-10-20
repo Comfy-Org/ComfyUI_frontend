@@ -8,8 +8,11 @@ import {
   listSecretProviders,
   listSecrets,
   SecretsApiError
-} from '../api/secretsApi'
-import type { SecretMetadata, SecretProviderInfo } from '../types'
+} from '@/platform/secrets/api/secretsApi'
+import type {
+  SecretMetadata,
+  SecretProviderInfo
+} from '@/platform/secrets/types'
 
 export function useSecrets() {
   const { t } = useI18n()

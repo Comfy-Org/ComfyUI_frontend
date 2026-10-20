@@ -667,7 +667,22 @@
       "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
-    "cinematic": {}
+    "cinematic": {},
+    "videoTrim": {
+      "title": "Trim video",
+      "description": "Choose the part to use. It can be {min} to {max} seconds long.",
+      "play": "Play the selected part",
+      "pause": "Pause",
+      "start": "Start of the part to keep",
+      "end": "End of the part to keep",
+      "seek": "Seek within the selected part",
+      "selected": "{from} – {to} · {seconds} s of {total} s",
+      "tooShort": "This video is {seconds} s long. It needs to be at least {min} s.",
+      "unreadable": "This video could not be read. Try an MP4.",
+      "reading": "Reading the video",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    }
   },
   "auth": {
     "signIn": {
@@ -1397,7 +1412,7 @@
       },
       "7": {
         "q": "Are all ComfyUI extensions and custom nodes supported?",
-        "a": "You can always check Cloud to see the list of extensions and models that we support, for free.\nMost popular ones are available, and new ones are added over time."
+        "a": "Not every one yet. Comfy Cloud comes with a variety of the most-used community custom nodes pre-installed, and we expand support regularly based on demand and compatibility.\nYou can always check Cloud to see which extensions and models are supported, for free. For a node that isn't available yet, you can install it on Comfy Desktop, and your workflows work across Desktop and Cloud."
       },
       "8": {
         "q": "Can I use my own models or checkpoints?",
@@ -1421,59 +1436,6 @@
       },
       "heading": "FAQs",
       "footer": "For pricing, plans, credits, and billing details, see the <a href=\"/pricing/#faq\" class=\"text-primary-comfy-yellow underline\">Pricing FAQs</a>."
-    }
-  },
-  "cloudNodes": {
-    "hero": {
-      "label": "CLOUD NODES",
-      "heading": "Run your favorite ComfyUI custom nodes on the cloud",
-      "body": "Spin up workflows with hundreds of community-built nodes — detailers, ControlNet preprocessors, animation tools, and quality-of-life utilities — preinstalled on Comfy Cloud and ready to run on managed GPUs."
-    },
-    "section": {
-      "heading": "Find a custom-node pack"
-    },
-    "search": {
-      "placeholder": "Search packs or nodes",
-      "label": "Search custom-node packs"
-    },
-    "sort": {
-      "downloads": "Most installed",
-      "mostNodes": "Most nodes",
-      "az": "A → Z",
-      "recentlyUpdated": "Recently updated",
-      "label": "Sort packs"
-    },
-    "list": {
-      "ariaLabel": "Custom-node packs supported on Comfy Cloud"
-    },
-    "meta": {
-      "title": "Custom-node packs on Comfy Cloud - supported by default",
-      "description": "Browse hundreds of ComfyUI custom-node packs preinstalled on Comfy Cloud. Detailers, ControlNet preprocessors, animation tools, samplers, and more — search by pack or by node name."
-    },
-    "detail": {
-      "metaTitle": "{pack} on Comfy Cloud",
-      "metaDescription": "{pack} is preinstalled on Comfy Cloud — {nodeCount} nodes ready to run on managed GPUs. {description}",
-      "back": "Back to all packs",
-      "publisher": "Publisher",
-      "downloads": "Downloads",
-      "stars": "GitHub stars",
-      "latestVersion": "Latest version",
-      "license": "License",
-      "lastUpdated": "Last updated",
-      "deprecated": "Deprecated",
-      "experimental": "Experimental",
-      "nodesHeading": "Nodes in this pack"
-    },
-    "empty": {
-      "heading": "No matching packs",
-      "body": "Try a different search term or clear your filters."
-    },
-    "card": {
-      "nodeCountOne": "{count} node",
-      "nodeCountOther": "{count} nodes",
-      "viewRepo": "View repository",
-      "unavailableDescription": "Description unavailable.",
-      "nodesHeading": "Included nodes"
     }
   },
   "pricing": {
@@ -2524,7 +2486,6 @@
     "careers": "Careers",
     "pricing": "Pricing",
     "fdct": "Forward Deployed Creative Technologists",
-    "supportedNodes": "Supported Nodes",
     "events": "Events"
   },
   "footer": {
@@ -4693,11 +4654,6 @@
       "getStarted": "Get Started",
       "readDocs": "Read the docs"
     },
-    "challengeBanner": {
-      "label": "OPEN CALL CHALLENGE",
-      "line": "Build on the platform for a chance to win $10k. Ends Oct 19, 9am PT.",
-      "cta": "Read the post"
-    },
     "serverless": {
       "codeHeading": "Call your endpoint",
       "codeSubtitle": "The SDK is the front door; plain HTTP works too."
@@ -5290,7 +5246,10 @@
       "prototype": "Prototype",
       "reshoot": "Re-shoot a video",
       "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
-      "reshootMeta": "Video · MiniMax H3"
+      "reshootMeta": "Video · MiniMax H3",
+      "openjutsu": "Openjutsu",
+      "openjutsuSummary": "Swap a character in your video for one from a single image, and keep the scene and its sound.",
+      "openjutsuMeta": "Video · MiniMax H3"
     },
     "stage": {
       "longWait": "Still going. Some models take about a minute. Nothing is queued; yours already started.",
@@ -5376,7 +5335,7 @@
     "beta": "Beta",
     "repo": {
       "view": "View on GitHub",
-      "soon": "GitHub · Coming soon"
+      "org": "Comfy on GitHub"
     },
     "meta": {
       "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
@@ -5533,6 +5492,21 @@
       "yourPalette": "Your palette",
       "edit": "Edit palette",
       "done": "Done"
+    },
+    "download": {
+      "label": "Download",
+      "locked": "Run to download"
+    },
+    "zoom": {
+      "label": "Zoom",
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "fit": "Fit to screen, now {n}%"
+    },
+    "compare": {
+      "label": "Compare",
+      "before": "Before",
+      "after": "After"
     }
   },
   "reshoot": {
@@ -5750,6 +5724,103 @@
     "play": "Play",
     "pause": "Pause"
   },
+  "openjutsu": {
+    "title": "Openjutsu",
+    "panel": "Swap settings",
+    "closed": "Openjutsu is not open yet",
+    "unavailable": "Openjutsu is not available right now. Try again later.",
+    "signIn": "Sign in to run a swap.",
+    "video": {
+      "add": "Upload video",
+      "limits": "MP4 or MOV · up to 15 s is used",
+      "remove": "Remove video",
+      "restore": "Undo remove video"
+    },
+    "target": {
+      "heading": "Extra direction (optional)",
+      "placeholder": "Optional: add character details or fix the last take, e.g. darker jacket, keep the glasses, less smiling.",
+      "empty": "No extra direction",
+      "anyone": "the person"
+    },
+    "seed": {
+      "shuffle": "Pick a random seed",
+      "placeholder": "Random seed"
+    },
+    "trim": {
+      "first": "Using the first {seconds} s",
+      "part": "Using {from}–{to} s",
+      "change": "Change",
+      "changeLabel": "Change the part used"
+    },
+    "needs": {
+      "video": "Add a video to start",
+      "character": "Add a character image"
+    },
+    "generate": {
+      "note": "The original sound is kept on the result. Each run also makes a first-frame image, charged separately.",
+      "busy": "Swapping. You can set up the next take meanwhile."
+    },
+    "phase": {
+      "uploading": "Uploading your files",
+      "starting": "Starting a server",
+      "queued": "Waiting for a server",
+      "running": "Swapping the character",
+      "fetching": "Fetching the result",
+      "elapsed": "{time} elapsed"
+    },
+    "take": {
+      "name": "Take {n}",
+      "source": "Source video",
+      "reuse": "Use these settings",
+      "retry": "Back to settings",
+      "detail": "Replaced {target}"
+    },
+    "examples": {
+      "title": "Start with an example",
+      "singer": {
+        "place": "Home studio",
+        "character": "Disco diva"
+      },
+      "boxer": {
+        "place": "Old gym",
+        "character": "Comfy fan"
+      },
+      "painter": {
+        "place": "Painter's studio",
+        "character": "Ronin"
+      },
+      "cowboy": {
+        "place": "Desert canyon",
+        "character": "Robot"
+      },
+      "failed": "That example could not be loaded. Try again, or add your own video."
+    },
+    "error": {
+      "swap": "The swap did not finish. Try again, or try a shorter part."
+    },
+    "sample": {
+      "banner": "Sample mode: this page is answering itself. No model runs and nothing is charged.",
+      "result": "Sample result: this is your own clip handed back unchanged, to show where a real swap will appear."
+    },
+    "size": {
+      "label": "Quality",
+      "768p": "768p · Sharper",
+      "480p": "480p · Faster"
+    },
+    "run": "Swap character",
+    "tools": "Result views",
+    "sheet": {
+      "expand": "Show swap settings",
+      "collapse": "Hide swap settings"
+    },
+    "compare": {
+      "slider": "Drag to compare the source and the result"
+    },
+    "peek": {
+      "seconds": "{seconds} s"
+    },
+    "noscript": "Openjutsu needs JavaScript to run."
+  },
   "changelog": {
     "meta": {
       "title": "Changelog - Comfy",
@@ -5765,21 +5836,31 @@
   },
   "eventChallenge": {
     "name": "Open Source Higgsfield",
+    "banner": {
+      "label": "Open Source Higgsfield:",
+      "line": "Build an app by 10/30. Win up to $10K.",
+      "cta": "LEARN MORE"
+    },
     "description": "Higgsfield said they’d open source their platform. Let’s help. You have two weeks to rebuild their most popular apps and more on the Comfy Developer Platform.",
     "submit": "Submit your entry",
+    "signup": "Sign up now",
+    "signupCredits": "First 200 signups get free credits",
     "how": "How to enter",
-    "prizeTeaser": "$10,000 grand prize + three GeForce RTX 5090s",
-    "prizeTeaserBonus": "+ Bonuses from LTX, Black Forest Labs & MiniMax",
     "winnersFeatured": "All winner submissions will be featured on comfy.org/hub with credit.",
     "examples": "You’ve seen the outputs. Now build the apps",
     "examplesBody": "Start with a recognizable output: a performance effect, a cinematic camera move, or a music-video transformation. Build a working app that makes it easy for someone else to create their own. These are inspiration prompts for your entry.",
-    "comingSoon": "Coming soon",
-    "openjutsu": "Openjutsu",
     "enter": "How to enter",
-    "enterNote": "About the demo video: we’re judging the work, not your video editing or quality. The best demo shows your work in action with an explanation of how it was built.",
+    "enterLead": "Create your favorite app and more using the Comfy Developer Platform. Submission deadline is October 30.",
+    "enterSignupTitle": "Sign up",
+    "enterSignupBody": "The first 200 signups get free credits to use.",
+    "enterSignupLink": "Sign up here",
+    "enterSignupCta": "Sign up",
+    "enterRequirementsTitle": "App requirements",
+    "enterPrepareTitle": "Prepare your submission",
+    "enterSubmitTitle": "Submit",
+    "enterSubmitBody": "Submit by October 30. Final winners will be announced November 6.",
     "enterIntro": "Every submission must include:",
-    "requirementsHeading": "Requirements",
-    "requirement1": "Your work must be built using the Comfy Developer Platform (Comfy API, Comfy Router, and/or Comfy SDK)",
+    "requirement1": "Your work must be built using the Comfy <a href=\"/platform/\" class=\"text-primary-comfy-yellow underline\">Developer Platform</a> (Comfy Router and/or <a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>)",
     "requirement2": "Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine",
     "requirement3": "Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video",
     "requirement4": "All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses",
@@ -5807,7 +5888,7 @@
     "prizeViral": "Most Viral",
     "prizeViralBody": "Delightful to use and made to be shared.",
     "prizeOpenWeights": "Open Weights Only",
-    "prizeOpenWeightsBody": "No partner nodes or APIs, open-weights models only.",
+    "prizeOpenWeightsBody": "No partner nodes or closed-source APIs, open-weights models only.",
     "prizeRunnerUp": "10 Runner Ups",
     "prizeRunnerUpAward": "$250 in Comfy Credits",
     "prizeBonusLabel": "OSS Ecosystem Bonuses",
@@ -5826,18 +5907,16 @@
     "gpu": "GeForce RTX 5090",
     "details": "The details",
     "timeline": "Timeline",
-    "submitNav": "Submit",
+    "submitNav": "Submit your entry",
     "timelineSignupDate": "10/15",
     "timelineSignupBody": "Registration opens for the online competition.",
     "timelineSignupTitle": "Signups open",
     "timelineWindowTitle": "Build",
     "timelineWindowDate": "10/15 – 10/30",
     "timelineWindowBody": "Submission window closes: October 30 · 9am PT.",
-    "closeDate": "October 30 · 9am PT",
     "timelineWinnerDate": "11/6",
     "timelineWinnerTitle": "Winners announced",
     "timelineWinnerBody": "Winning entries are featured on comfy.org/hub with credit.",
-    "rulesLink": "Read the full published rules",
     "meetupHeading": "Build together IRL",
     "meetupBody": "Bring your laptop and join the Comfy team and community for building, demos, and meeting the people behind the workflows.",
     "meetupCta": "Register",
@@ -5849,20 +5928,16 @@
     "meetupLaBody": "In partnership with AI On The Lot.",
     "meetupLaLocation": "Los Angeles, CA",
     "meetupLaDate": "October 29, 2026",
-    "closing": "Your next creative app starts here",
-    "closingBody": "Make it work. Make it open. Show us what you built.",
-    "what": "What you make",
-    "whatBody": "A working creative app built with Comfy, with a usable interface and example outputs.",
-    "deadline": "Submission deadline",
+    "closing": "Show us what you built.",
     "questions": "Q & A",
     "faqDemo": "Do I need a polished demo video?",
     "faqDemoBody": "We’re judging the work, not your video editing or quality. The best demo shows your work in action with an explanation of how it was built.",
     "faqEvent": "Do I have to attend a Build Night?",
     "faqEventBody": "The online competition and the Build Nights are separate. Use the submission form to enter the competition and register for a Build Night above.",
     "faqLicense": "Does my repo need a license?",
-    "faqLicenseBody": "Yes. Publish your app code with an open-source license and setup instructions. You may use partner models; only the Open Weights Only category requires open-weights models with no partner nodes or APIs.",
+    "faqLicenseBody": "Yes. Publish your app code with an open-source license and setup instructions. You may use partner models; only the Open Weights Only category requires open-weights models with no partner nodes or closed-source APIs.",
     "faqBonus": "Can I win a main prize and a bonus prize?",
-    "faqBonusBody": "Each entry is eligible for both a main category and a model-provider bonus category. See the published rules for model requirements."
+    "faqBonusBody": "Each entry is eligible for both a main category and a model-provider bonus category."
   },
   "vfx": {
     "meta": {
@@ -6090,6 +6165,132 @@
     },
     "runOptions": {
       "subtitle": "Build workflows in the browser, explore ComfyUI on your own hardware, or connect your creative pipeline through the API."
+    }
+  },
+  "vfxV3": {
+    "referenceFrame": "Reference frame",
+    "originalFootage": "Original footage",
+    "badge": "VFX",
+    "heading": "One shot. More possibilities.",
+    "description": "Change the light, replace an object, extend the frame. Build repeatable VFX workflows with Comfy, then bring them into your studio’s pipeline.",
+    "sales": "TALK TO SALES",
+    "browse": "Explore the workflows",
+    "workflow": "View workflow",
+    "sequenceHeading": "One take. A new point of view.",
+    "sequenceDescription": "Explore a multishot sequence generated with Seedance from a reference clip. Open the workflow to see how the sequence is built.",
+    "sequenceTitle": "From a reference clip to a sequence",
+    "contactHeading": "What could your studio do with Comfy?",
+    "demos": {
+      "sequence": {
+        "title": "One take. A new point of view.",
+        "rowTitle": "From a reference clip to a sequence",
+        "description": "Explore a multishot sequence, a push-in and an orbit generated from the same rainy-street reference clip."
+      },
+      "relight": {
+        "title": "Change the conditions.",
+        "rowTitle": "One shot. Different light and weather.",
+        "description": "Compare golden hour, night, blue hour, rain, snow and daylight versions of the same shot. Choose a version to see it play."
+      },
+      "swap": {
+        "title": "Change the car.",
+        "rowTitle": "Adapt the shot for another market.",
+        "description": "Watch the original shot alongside Toyota Century, London taxi and Fiat 500 versions."
+      },
+      "reframe": {
+        "title": "Extend the frame.",
+        "rowTitle": "One take. More delivery formats.",
+        "description": "Compare ultra-wide and vertical formats with the landscape original."
+      }
+    },
+    "sampleCaption": "Pre-rendered frames. Drag the canvas to explore and the divider to compare.",
+    "variants": {
+      "seedance_multishot_rain": "Multishot sequence",
+      "seedance_push": "Push-in",
+      "seedance_orbit": "Orbit",
+      "relight_night": "Night",
+      "relight_rain": "Rain",
+      "relight_day": "Daylight",
+      "swap_jp": "Toyota Century",
+      "swap_uk": "London taxi",
+      "swap_it": "Fiat 500",
+      "reframe_wide": "Ultra-wide",
+      "reframe_vertical": "Vertical",
+      "relight_golden": "Golden hour",
+      "relight_blue": "Blue hour",
+      "relight_snow": "Snow"
+    },
+    "workstationTitle": "Workstations & rendering",
+    "videoCaption": "Pre-rendered examples. Drag the canvas to explore. Choose a version and drag the divider to compare.",
+    "tryWorkflow": "TRY WORKFLOW",
+    "prototype": {
+      "back": "Back to examples",
+      "heading": "Relight workflow",
+      "use": "Use workflow",
+      "customize": "Customize in Comfy Cloud",
+      "sample": "Sample workspace · Switch between existing rendered outputs. Open Comfy Cloud to customize and run this workflow.",
+      "examples": "Existing sample outputs. Choose a look, then explore its workflow."
+    },
+    "customizeNow": "CUSTOMIZE NOW",
+    "openStudio": "OPEN STUDIO",
+    "keyframe": "KEY FRAME",
+    "workflowUnavailable": "Cloud workflow link pending verification.",
+    "studio": {
+      "sequence": {
+        "title": "From a reference clip to a sequence",
+        "source": "Sample · Rainy street",
+        "presets": "Choose the sequence or camera move",
+        "description": "A man carrying a black umbrella walks along a rainy Parisian street at night. Café lights reflect on the wet cobblestones.",
+        "stepOne": "Use the reference clip to establish the subject and setting.",
+        "stepTwo": "Describe the sequence or camera move, then run the Seedance workflow in Comfy Cloud.",
+        "look": "Describe the sequence or camera move"
+      },
+      "footage": "YOUR FOOTAGE",
+      "mode": "Studio view",
+      "settings": "SETTINGS",
+      "workflow": "WORKFLOW",
+      "sampleOnly": "Sample studio. Explore the supplied outputs and prepare a workflow request. Upload and generation are not connected.",
+      "upload": "UPLOAD FOOTAGE",
+      "shot": "Describe the shot",
+      "adjust": "ADJUST KEY FRAME",
+      "generate": "RUN WORKFLOW",
+      "expose": "EXPOSE WORKFLOW",
+      "request": "Change the workflow",
+      "requestHelp": "Copy this request to use when customizing the workflow in Comfy Cloud.",
+      "requestText": "{task}\nSelected sample: {look}\nShot description: {description}",
+      "copy": "COPY REQUEST",
+      "copied": "COPIED",
+      "copyFailed": "Copy failed. Select and copy the request above.",
+      "relight": {
+        "title": "Change time, weather & light",
+        "source": "Sample · Starlite Diner",
+        "presets": "Time, weather or light",
+        "description": "Exterior of a chrome roadside diner with a glowing Starlite Diner sign. A turquoise sedan is parked on the wet asphalt.",
+        "stepOne": "Adjust the key frame to set the light and weather.",
+        "stepTwo": "Carry the key frame look through the shot, using the source footage as the motion reference.",
+        "look": "Describe the light and weather"
+      },
+      "swap": {
+        "title": "Change the car",
+        "source": "Sample · Snowy backlot",
+        "presets": "Choose the replacement car",
+        "description": "A snowy European street on a film backlot. A woman in a red coat walks towards the camera. A vintage car is parked at the end of the street.",
+        "stepOne": "Replace the car in the key frame.",
+        "stepTwo": "Track the object mask through the shot and re-render the selected region.",
+        "look": "Describe the replacement"
+      },
+      "reframe": {
+        "title": "Extend the frame",
+        "source": "Sample · Forest",
+        "presets": "Choose the frame format",
+        "description": "A landscape forest image. Extend beyond the original frame to fit the selected delivery format.",
+        "stepOne": "Choose the new frame format.",
+        "stepTwo": "Outpaint beyond the source image to fill the extended frame.",
+        "look": "Describe what to extend"
+      },
+      "openAgent": "OPEN WITH COMFY AGENT",
+      "agentUnavailable": "Agent handoff is not connected in this sample.",
+      "sourceHint": "Use the supplied sample to explore the workflow.",
+      "videoMetadata": "1280 × 720 · 24 fps · 121 frames"
     }
   }
 }

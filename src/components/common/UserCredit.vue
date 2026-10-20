@@ -10,7 +10,7 @@
     <Badge
       v-if="!showCreditsOnly"
       severity="secondary"
-      class="rounded-full p-1 text-amber-400"
+      class="rounded-full p-1 text-credit"
     >
       <template #icon>
         <i class="icon-[lucide--coins]" />

@@ -50,8 +50,8 @@ export type DeploymentPickState =
   /** Nothing has answered yet; the switcher is not shown. */
   | { phase: 'idle' }
   /**
-   * The account is outside the rollout, the session cannot pick, or the
-   * first listing failed (for example ingest without these routes).
+   * The account is outside the rollout, ingest has no deployment routes,
+   * the session cannot pick, or the first listing failed.
    */
   | { phase: 'hidden' }
   | ({ phase: 'ready' } & DeploymentListing)
@@ -70,10 +70,13 @@ export type DeploymentPickState =
 
 export type DeploymentPickEvent =
   | ({ type: 'loaded' } & DeploymentListing)
-  /** A 403: the account is outside the rollout, whatever was shown before. */
+  /**
+   * A 403 (the account is outside the rollout) or a 404 (ingest without
+   * these routes): hidden, whatever was shown before.
+   */
   | { type: 'loadRefused' }
   /** Any other failure: keep a listing already shown, else stay hidden. */
-  | { type: 'loadFailed'; routesMissing?: true }
+  | { type: 'loadFailed' }
   | { type: 'switchStarted'; target: string | null }
   /** The server refused the switch. */
   | { type: 'switchFailed' }

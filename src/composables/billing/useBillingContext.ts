@@ -26,6 +26,7 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
+  BillingPortalOutcome,
   CancelRail,
   BillingState,
   SubscriptionInfo
@@ -395,8 +396,10 @@ function useBillingContextInternal(): BillingContext {
     return checkoutContext.value.previewSubscribe(planSlug, options)
   }
 
-  async function manageSubscription() {
-    if (!(await whenRoutingKnown())) return
+  async function manageSubscription(): Promise<BillingPortalOutcome> {
+    if (!(await whenRoutingKnown())) {
+      return { ok: false, reason: 'routing_unavailable' }
+    }
     return activeContext.value.manageSubscription()
   }
 

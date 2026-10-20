@@ -10,10 +10,10 @@ import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-import { api } from '../../scripts/api'
-import { app } from '../../scripts/app'
-import { ComfyDialog } from '../../scripts/ui'
-import { $el } from '../../scripts/ui/utils'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { ComfyDialog } from '@/scripts/ui'
+import { $el } from '@/scripts/ui/utils'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -188,7 +188,7 @@ class ManageTemplates extends ComfyDialog {
                   gridTemplateColumns: '1fr auto',
                   border: '1px dashed transparent',
                   gap: '5px',
-                  backgroundColor: 'var(--comfy-menu-bg)'
+                  backgroundColor: 'var(--background)'
                 },
                 ondragstart: (e: DragEvent) => {
                   const row = e.currentTarget
@@ -285,7 +285,7 @@ class ManageTemplates extends ComfyDialog {
                         el.style.transitionDuration = '0s'
                         this.saveVisualCue = setTimeout(function () {
                           el.style.transitionDuration = '.7s'
-                          el.style.backgroundColor = 'var(--comfy-input-bg)'
+                          el.style.backgroundColor = 'var(--input)'
                         }, 15)
                       },
                       onkeypress: (e: KeyboardEvent) => {
@@ -293,7 +293,7 @@ class ManageTemplates extends ComfyDialog {
                         if (!(el instanceof HTMLInputElement)) return
                         if (this.saveVisualCue) clearTimeout(this.saveVisualCue)
                         el.style.transitionDuration = '0s'
-                        el.style.backgroundColor = 'var(--comfy-input-bg)'
+                        el.style.backgroundColor = 'var(--input)'
                       },
                       $: (el) => {
                         if (el instanceof HTMLInputElement) nameInput = el

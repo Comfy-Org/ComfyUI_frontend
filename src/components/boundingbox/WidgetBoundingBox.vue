@@ -1,90 +1,109 @@
 <template>
-  <div
-    class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1"
-    data-testid="bounding-box"
-  >
-    <label class="content-center text-xs text-node-component-slot-text">
-      {{ $t('boundingBox.x') }}
-    </label>
-    <ScrubableNumberInput
-      v-model="x"
-      :min="0"
-      :step="1"
-      :disabled
-      data-testid="bounding-box-x"
+  <div class="flex flex-col gap-1" data-testid="bounding-box">
+    <WidgetHistoryButtons
+      v-if="widget"
+      class="self-end"
+      :can-undo
+      :can-redo
+      @undo="undo"
+      @redo="redo"
     />
-    <label class="content-center text-xs text-node-component-slot-text">
-      {{ $t('boundingBox.y') }}
-    </label>
-    <ScrubableNumberInput
-      v-model="y"
-      :min="0"
-      :step="1"
-      :disabled
-      data-testid="bounding-box-y"
-    />
-    <label class="content-center text-xs text-node-component-slot-text">
-      {{ $t('boundingBox.width') }}
-    </label>
-    <ScrubableNumberInput
-      v-model="width"
-      :min="1"
-      :step="1"
-      :disabled
-      data-testid="bounding-box-width"
-    />
-    <label class="content-center text-xs text-node-component-slot-text">
-      {{ $t('boundingBox.height') }}
-    </label>
-    <ScrubableNumberInput
-      v-model="height"
-      :min="1"
-      :step="1"
-      :disabled
-      data-testid="bounding-box-height"
-    />
+    <div class="grid grid-cols-[auto_1fr] gap-x-2 gap-y-1 text-xs">
+      <label class="content-center">
+        {{ $t('boundingBox.x') }}
+      </label>
+      <ScrubableNumberInput
+        v-model="x"
+        :min="0"
+        :step="1"
+        :disabled
+        data-testid="bounding-box-x"
+      />
+      <label class="content-center">
+        {{ $t('boundingBox.y') }}
+      </label>
+      <ScrubableNumberInput
+        v-model="y"
+        :min="0"
+        :step="1"
+        :disabled
+        data-testid="bounding-box-y"
+      />
+      <label class="content-center">
+        {{ $t('boundingBox.width') }}
+      </label>
+      <ScrubableNumberInput
+        v-model="width"
+        :min="1"
+        :step="1"
+        :disabled
+        data-testid="bounding-box-width"
+      />
+      <label class="content-center">
+        {{ $t('boundingBox.height') }}
+      </label>
+      <ScrubableNumberInput
+        v-model="height"
+        :min="1"
+        :step="1"
+        :disabled
+        data-testid="bounding-box-height"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
+import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
+import { useWidgetValueHistory } from '@/composables/useWidgetValueHistory'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { Bounds } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/types/nodeId'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const { disabled = false } = defineProps<{
+const {
+  disabled = false,
+  widget,
+  nodeId
+} = defineProps<{
   disabled?: boolean
+  widget?: SimplifiedWidget
+  nodeId?: NodeId
+}>()
+
+const emit = defineEmits<{
+  editEnd: [field: keyof Bounds]
 }>()
 
 const modelValue = defineModel<Bounds>({
   default: () => ({ x: 0, y: 0, width: 512, height: 512 })
 })
 
-const x = computed({
-  get: () => modelValue.value.x,
-  set: (x) => {
-    modelValue.value = { ...modelValue.value, x }
+const { canUndo, canRedo, undo, redo, commit } = useWidgetValueHistory({
+  scope: () => (widget ? widgetHistoryScope(widget, nodeId) : null),
+  read: () => modelValue.value,
+  apply: (value) => {
+    if (isBoundsObject(value)) modelValue.value = value
   }
 })
 
-const y = computed({
-  get: () => modelValue.value.y,
-  set: (y) => {
-    modelValue.value = { ...modelValue.value, y }
-  }
-})
+function boundsField(field: keyof Bounds) {
+  return computed({
+    get: () => modelValue.value[field],
+    set: (value: number) => {
+      modelValue.value = { ...modelValue.value, [field]: value }
+      emit('editEnd', field)
+      void nextTick(() => commit(field))
+    }
+  })
+}
 
-const width = computed({
-  get: () => modelValue.value.width,
-  set: (width) => {
-    modelValue.value = { ...modelValue.value, width }
-  }
-})
-
-const height = computed({
-  get: () => modelValue.value.height,
-  set: (height) => {
-    modelValue.value = { ...modelValue.value, height }
-  }
-})
+const x = boundsField('x')
+const y = boundsField('y')
+const width = boundsField('width')
+const height = boundsField('height')
 </script>

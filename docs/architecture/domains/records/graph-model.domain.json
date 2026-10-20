@@ -4,8 +4,16 @@
   "description": "LiteGraph graph, node, link, reroute, group, and slot entities with their store-backed node shell state, identity allocation, serialisation shapes, load-time link repair, and geometry value types. Node, slot, and group classes still carry canvas drawing and import shared drawing, widget, subgraph-promotion, selection, and layout code; those imports are recorded coupling, not owned responsibilities.",
   "modules": [
     {
-      "path": "src/stores/executionOrderStore.ts",
+      "path": "src/constants/slotColors.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/core/graph/nodeShell/**",
       "role": "application"
+    },
+    {
+      "path": "src/extensions/core/rerouteNode.ts",
+      "role": "integration"
     },
     {
       "path": "src/lib/litegraph/src/LGraph.compoundUndo.test.ts",
@@ -34,6 +42,10 @@
     {
       "path": "src/lib/litegraph/src/LGraph.linkPresentationTransfer.test.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/LGraph.remintLinkRemap.test.ts",
+      "role": "application"
     },
     {
       "path": "src/lib/litegraph/src/LGraph.roundTrip.test.ts",
@@ -148,12 +160,20 @@
       "role": "domain"
     },
     {
+      "path": "src/lib/litegraph/src/MapProxyHandler.ts",
+      "role": "infrastructure"
+    },
+    {
       "path": "src/lib/litegraph/src/Reroute.store.test.ts",
       "role": "domain"
     },
     {
       "path": "src/lib/litegraph/src/Reroute.ts",
       "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/__fixtures__/**",
+      "role": "integration"
     },
     {
       "path": "src/lib/litegraph/src/extensionPersistence.test.ts",
@@ -180,180 +200,24 @@
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/ConstrainedSize.ts",
+      "path": "src/lib/litegraph/src/infrastructure/**",
       "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/InvalidLinkError.ts",
-      "role": "domain"
+      "path": "src/lib/litegraph/src/infrastructure/CustomEventTarget.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/LGraphEventMap.ts",
-      "role": "domain"
+      "path": "src/lib/litegraph/src/infrastructure/createMutationView.test.ts",
+      "role": "infrastructure"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/NullGraphError.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/infrastructure/Rectangle.resize.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/infrastructure/Rectangle.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/infrastructure/Rectangle.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/infrastructure/RecursionError.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/infrastructure/SlotIndexError.ts",
-      "role": "domain"
+      "path": "src/lib/litegraph/src/infrastructure/createMutationView.ts",
+      "role": "infrastructure"
     },
     {
       "path": "src/lib/litegraph/src/interfaces.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/measure.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/measure.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/NodeInputSlot.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/NodeInputSlot.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/NodeOutputSlot.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/NodeOutputSlot.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/NodeSlot.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/NodeSlot.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/SlotBase.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/cleanExtensionCompatFixture.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/legacySlotLinkMutations.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/rgthreeLifecycleCompatFixture.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/slotEcosystemPatterns.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/slotMirrorNormalisationOnLoad.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/slotUtils.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/slotUtils.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/serialization.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/strings.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/types/NodeLike.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/types/disposable.d.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/types/globalEnums.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/types/graphTriggers.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/types/linkNetwork.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/types/serialisation.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/types/slots.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/types/utility.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/arrange.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/collections.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/collections.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/spaceDistribution.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/spaceDistribution.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/type.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/core/graph/nodeShell/**",
-      "role": "application"
-    },
-    {
-      "path": "src/lib/litegraph/src/LGraph.remintLinkRemap.test.ts",
-      "role": "application"
     },
     {
       "path": "src/lib/litegraph/src/linkDeduplication.conflictingOrigins.test.ts",
@@ -372,6 +236,26 @@
       "role": "application"
     },
     {
+      "path": "src/lib/litegraph/src/measure.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/measure.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/**",
+      "role": "domain"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/slotDescriptorView.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/node/slotDescriptorView.ts",
+      "role": "infrastructure"
+    },
+    {
       "path": "src/lib/litegraph/src/node/slotLinks.test.ts",
       "role": "application"
     },
@@ -384,95 +268,27 @@
       "role": "application"
     },
     {
-      "path": "src/lib/litegraph/src/MapProxyHandler.ts",
-      "role": "infrastructure"
+      "path": "src/lib/litegraph/src/serialization.test.ts",
+      "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/CustomEventTarget.ts",
-      "role": "infrastructure"
+      "path": "src/lib/litegraph/src/strings.ts",
+      "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/createMutationView.test.ts",
-      "role": "infrastructure"
+      "path": "src/lib/litegraph/src/types/**",
+      "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/infrastructure/createMutationView.ts",
-      "role": "infrastructure"
+      "path": "src/lib/litegraph/src/utils/**",
+      "role": "domain"
     },
     {
-      "path": "src/lib/litegraph/src/node/slotDescriptorView.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/lib/litegraph/src/node/slotDescriptorView.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/lib/litegraph/src/__fixtures__/assets/testGraphs.ts",
+      "path": "src/lib/litegraph/test/**",
       "role": "integration"
     },
     {
-      "path": "src/lib/litegraph/src/__fixtures__/duplicateLinks.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/__fixtures__/nestedSubgraphProxyWidgets.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/__fixtures__/nodeHelpers.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/__fixtures__/nodeIdsFromReservedMintRange.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/__fixtures__/testExtensions.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/src/__fixtures__/uniqueSubgraphNodeIds.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/test/fixtures/cleanExtensionCompatFixture.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/stores/linkStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/linkStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/rerouteStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/rerouteStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeDataStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/nodeDataStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/entityIdStore.ts",
+      "path": "src/stores/clearNodeOwnedStoreState.ts",
       "role": "application"
     },
     {
@@ -480,7 +296,11 @@
       "role": "application"
     },
     {
-      "path": "src/stores/graphMetadataStore.ts",
+      "path": "src/stores/entityIdStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/executionOrderStore.ts",
       "role": "application"
     },
     {
@@ -488,11 +308,35 @@
       "role": "application"
     },
     {
+      "path": "src/stores/graphMetadataStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/linkStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/linkStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeDataStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeDataStore.ts",
+      "role": "application"
+    },
+    {
       "path": "src/stores/rekeyGraphId.ts",
       "role": "application"
     },
     {
-      "path": "src/stores/clearNodeOwnedStoreState.ts",
+      "path": "src/stores/rerouteStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/rerouteStore.ts",
       "role": "application"
     },
     {
@@ -500,35 +344,7 @@
       "role": "application"
     },
     {
-      "path": "src/types/nodeId.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/nodeId.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/linkId.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/linkId.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/rerouteId.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/rerouteId.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/slotId.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/slotId.test.ts",
+      "path": "src/types/graphScopeId.ts",
       "role": "domain"
     },
     {
@@ -536,15 +352,11 @@
       "role": "domain"
     },
     {
-      "path": "src/types/graphScopeId.ts",
+      "path": "src/types/linkId.test.ts",
       "role": "domain"
     },
     {
-      "path": "src/types/nodeIdentification.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/types/nodeIdentification.test.ts",
+      "path": "src/types/linkId.ts",
       "role": "domain"
     },
     {
@@ -552,7 +364,19 @@
       "role": "domain"
     },
     {
-      "path": "src/types/rerouteChain.ts",
+      "path": "src/types/nodeId.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/nodeId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/nodeIdentification.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/nodeIdentification.ts",
       "role": "domain"
     },
     {
@@ -560,19 +384,31 @@
       "role": "domain"
     },
     {
-      "path": "src/constants/slotColors.ts",
+      "path": "src/types/rerouteChain.ts",
       "role": "domain"
     },
     {
-      "path": "src/extensions/core/rerouteNode.ts",
-      "role": "integration"
+      "path": "src/types/rerouteId.test.ts",
+      "role": "domain"
     },
     {
-      "path": "src/utils/uuid.ts",
-      "role": "infrastructure"
+      "path": "src/types/rerouteId.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/slotId.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/slotId.ts",
+      "role": "domain"
     },
     {
       "path": "src/utils/uuid.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/utils/uuid.ts",
       "role": "infrastructure"
     }
   ],

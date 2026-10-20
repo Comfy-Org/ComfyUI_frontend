@@ -58,7 +58,7 @@ test.describe('@canvas Selection Rectangle', { tag: '@vue-nodes' }, () => {
     await comfyPage.page.getByText('Load Checkpoint').click()
     await comfyPage.nextFrame()
 
-    await expect(checkpointNode).toHaveClass(/outline-node-component-outline/)
+    await expect(checkpointNode).toHaveClass(/outline-foreground/)
   })
 
   test('Drag-select rectangle selects multiple nodes', async ({

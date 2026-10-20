@@ -17,7 +17,7 @@
           v-model="dontShowAgain"
           type="checkbox"
           data-testid="linear-vue-node-switch-dont-show-again"
-          class="accent-primary-background"
+          class="accent-primary"
         />
         {{ $t('appBuilder.vueNodeSwitch.dontShowAgain') }}
       </label>

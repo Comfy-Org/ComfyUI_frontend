@@ -2,12 +2,17 @@ import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import { defineStore } from 'pinia'
 import { computed, shallowRef, watch } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
-import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
+import {
+  DEPLOYMENT_LISTING_BACKSTOP_MS,
+  DEPLOYMENT_LISTING_RETRY_DELAYS_MS
+} from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
 import type {
   DeploymentPickEvent,
   DeploymentPickSource,
@@ -121,14 +126,14 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    */
   const isVisible = computed(() => 'deployments' in state.value)
   const isSwitching = computed(() => state.value.phase === 'switching')
-  /** True after a 403, or a 404 before any listing showed: this account has no deployments to pick. */
   const listingRefused = shallowRef(false)
   /**
    * The deployment this page booted on, from the first listing that
-   * answered: null for Comfy Cloud (a gone pick included), undefined before
-   * any listing answered. The editor's node catalog is that deployment's
-   * Release as it was at boot, since a pick or a workspace switch reloads
-   * the page.
+   * answered: null for Comfy Cloud (a gone pick, a rollout refusal, an ingest
+   * without these routes, or a boot listing the editor gave up on; see
+   * `bootOnComfyCloud`), undefined before the model source is known. The
+   * editor's node catalog is that deployment's Release as it was at boot,
+   * since a pick or a workspace switch reloads the page.
    */
   const bootDeployment = shallowRef<WorkspaceDeployment | null | undefined>(
     undefined
@@ -161,33 +166,63 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   let latestRequest = 0
   let lastApplied = 0
 
-  async function load(): Promise<void> {
+  function load(): Promise<void> {
+    return loadListing([])
+  }
+
+  /**
+   * Load the listing, retrying a failure with no definite answer after each
+   * of `retryDelaysMs` while this workspace is still the active one.
+   */
+  async function loadListing(retryDelaysMs: readonly number[]): Promise<void> {
     const id = workspaceStore.workspaceId
     if (!id) return
     const request = ++latestRequest
-    const event = await listingEvent(id)
-    // The workspace may have changed while the listing was in flight.
+    const event = await listingEvent(
+      id,
+      retryDelaysMs,
+      () => workspaceStore.workspaceId === id
+    )
     if (workspaceStore.workspaceId !== id) return
-    applyAnswer(request, event)
+    applyAnswer(id, request, event)
   }
 
-  function applyAnswer(request: number, event: DeploymentPickEvent) {
+  function applyAnswer(
+    workspaceId: string,
+    request: number,
+    event: DeploymentPickEvent
+  ) {
     if (request <= lastApplied) {
       if (event.type === 'loaded') keepPickGone(event.gonePickedDeploymentId)
       return
     }
     if (event.type === 'loadFailed') {
-      if (request !== latestRequest) return
-      dispatch(event)
-      if (event.routesMissing && state.value.phase === 'hidden') {
-        listingRefused.value = true
-      }
+      if (request === latestRequest) dispatch(event)
       return
     }
     lastApplied = request
     dispatch(event)
     listingRefused.value = event.type === 'loadRefused'
     if (event.type === 'loaded') noteListing(event.gonePickedDeploymentId)
+    if (event.type === 'loadRefused' && bootDeployment.value === undefined) {
+      bootDeployment.value = null
+    }
+    rememberBootTarget(workspaceId)
+  }
+
+  function rememberBootTarget(workspaceId: string) {
+    setDeploymentHint(
+      workspaceId,
+      pickedDeployment.value?.deployment_id ?? null
+    )
+  }
+
+  function reloadOnto(workspaceId: string, deploymentId: string | null) {
+    setDeploymentHint(workspaceId, deploymentId)
+    reloadForDeploymentSwitch(() => {
+      dispatch({ type: 'switchFailed' })
+      void load()
+    })
   }
 
   function keepPickGone(gonePickedDeploymentId: string | null) {
@@ -226,12 +261,25 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   )
 
   /**
-   * The page's first `load()`, started at boot so the editor learns which
-   * deployment it booted on; later calls wait on that same load.
+   * The page's first load, started at boot so the editor learns which
+   * deployment it booted on; later calls wait on that same load. It retries
+   * a failure with no definite answer (`DEPLOYMENT_LISTING_RETRY_DELAYS_MS`)
+   * and reports only the last one.
    */
   function loadOnce(): Promise<void> {
-    if (!firstLoad && workspaceStore.workspaceId) firstLoad = load()
+    if (!firstLoad && workspaceStore.workspaceId) {
+      firstLoad = loadListing(DEPLOYMENT_LISTING_RETRY_DELAYS_MS)
+    }
     return firstLoad ?? Promise.resolve()
+  }
+
+  /**
+   * The editor starts on Comfy Cloud's models when the boot listing failed
+   * or did not answer in time. A listing that answers later does not change
+   * that; it shows as `changeSinceBoot` when it names a deployment.
+   */
+  function bootOnComfyCloud() {
+    if (bootDeployment.value === undefined) bootDeployment.value = null
   }
 
   /**
@@ -305,16 +353,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       })
     ]).finally(() => clearTimeout(timeout))
     if (workspaceStore.workspaceId !== workspaceId) return { kind: 'unchanged' }
-    if (outcome.kind === 'picked') reloadAfterSwitch()
+    if (outcome.kind === 'picked') reloadOnto(workspaceId, deploymentId)
     else dispatch({ type: 'switchFailed' })
     return outcome
-  }
-
-  function reloadAfterSwitch() {
-    reloadForDeploymentSwitch(() => {
-      dispatch({ type: 'switchFailed' })
-      void load()
-    })
   }
 
   async function pickAndReload(
@@ -334,7 +375,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    reloadAfterSwitch()
+    reloadOnto(workspaceId, deploymentId)
     return null
   }
 
@@ -351,7 +392,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   /**
    * Drop this browser's own pick so it runs on whatever the workspace says
    * (its default deployment, or Comfy Cloud), then reload. Resolves like `pick`.
-   * An own pick of the default itself is dropped without a reload.
    */
   async function followWorkspace(): Promise<string | null> {
     const id = workspaceStore.workspaceId
@@ -367,7 +407,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
-    reloadAfterSwitch()
+    reloadOnto(id, defaultDeploymentId.value)
     return null
   }
 
@@ -407,7 +447,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       return errorMessage(err)
     }
     if (defaultMovesThisBrowser(deploymentId)) {
-      reloadAfterSwitch()
+      reloadOnto(id, deploymentId)
       return null
     }
     lastApplied = latestRequest
@@ -435,6 +475,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     changeSinceBoot,
     load,
     loadOnce,
+    bootOnComfyCloud,
     pick,
     pickFromLink,
     followWorkspace,
@@ -442,26 +483,59 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   }
 })
 
-async function listingEvent(workspaceId: string): Promise<DeploymentPickEvent> {
-  try {
-    return loadedEvent(await workspaceApi.listDeployments(workspaceId))
-  } catch (err) {
-    return loadFailure(err)
+async function listingEvent(
+  workspaceId: string,
+  retryDelaysMs: readonly number[],
+  stillWanted: () => boolean
+): Promise<DeploymentPickEvent> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return loadedEvent(await workspaceApi.listDeployments(workspaceId))
+    } catch (err) {
+      const retriesLeft = attempt < retryDelaysMs.length
+      if (!retriesLeft || !isTransient(err) || !stillWanted()) {
+        return loadFailure(err)
+      }
+      await new Promise((resolve) =>
+        setTimeout(resolve, retryDelaysMs[attempt])
+      )
+      // Another workspace took over: this answer would be dropped anyway.
+      if (!stillWanted()) return { type: 'loadFailed' }
+    }
   }
 }
 
 /**
- * A 403 means the account is outside the rollout: hide the switcher. Any
- * other failure (a 404 from an ingest without these routes, a 5xx, a network
- * error, no signed-in user) hides it too unless a listing is already shown.
+ * A listing request that got no definite answer: no response (a network
+ * error or the request timeout), a 408 or 429, or a 5xx. A failure before
+ * the request (the sign-in step) is not retried.
+ */
+function isTransient(err: unknown): boolean {
+  if (!(err instanceof WorkspaceApiError)) return false
+  const { status } = err
+  return (
+    status === undefined || status === 408 || status === 429 || status >= 500
+  )
+}
+
+/**
+ * A 403 means the account is outside the rollout, and a 404 that this
+ * ingest has no deployment routes (or no such workspace): either way the
+ * browser runs on Comfy Cloud, as it would without this feature, so neither
+ * is reported. Any other failure is reported and hides the switcher unless
+ * a listing is already shown.
  */
 function loadFailure(err: unknown): DeploymentPickEvent {
-  if (err instanceof WorkspaceApiError && err.status === 403) {
+  if (
+    err instanceof WorkspaceApiError &&
+    (err.status === 403 || err.status === 404)
+  ) {
     return { type: 'loadRefused' }
   }
-  if (err instanceof WorkspaceApiError && err.status === 404) {
-    return { type: 'loadFailed', routesMissing: true }
-  }
+  reportError(err, {
+    surface: 'workspace',
+    errorType: 'error_loading_deployment_listing'
+  })
   return { type: 'loadFailed' }
 }
 

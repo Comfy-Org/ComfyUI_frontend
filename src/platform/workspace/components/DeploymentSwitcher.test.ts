@@ -526,8 +526,8 @@ describe('DeploymentSwitcher', () => {
 
   it.for([
     {
-      answer: 'a plain failure',
-      error: new WorkspaceApiError('Network Error'),
+      answer: 'no signed-in user',
+      error: new Error('User not authenticated'),
       retries: true
     },
     {

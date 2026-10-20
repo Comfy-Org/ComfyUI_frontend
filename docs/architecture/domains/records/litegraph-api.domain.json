@@ -4,16 +4,8 @@
   "description": "The LiteGraph barrel and global singleton that custom nodes and extensions consume: node type registration and creation, global configuration, late-bound instance access, deprecation feedback, and canvas polyfills.",
   "modules": [
     {
-      "path": "src/lib/litegraph/src/litegraphInstance.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/lib/litegraph/src/polyfills.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/lib/litegraph/src/utils/feedback.ts",
-      "role": "infrastructure"
+      "path": "src/composables/useGlobalLitegraph.ts",
+      "role": "integration"
     },
     {
       "path": "src/lib/litegraph/src/LiteGraphGlobal.ts",
@@ -32,8 +24,16 @@
       "role": "integration"
     },
     {
-      "path": "src/composables/useGlobalLitegraph.ts",
-      "role": "integration"
+      "path": "src/lib/litegraph/src/litegraphInstance.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/polyfills.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/utils/feedback.ts",
+      "role": "infrastructure"
     }
   ],
   "publicEntryPoints": [],
