@@ -4,6 +4,7 @@ import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFi
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
 import { toNodeId } from '@/types/nodeId'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
@@ -84,9 +85,6 @@ test.describe(
     test.describe('wire evidence', () => {
       test.use({ conversationCase: WIRING_CASE })
 
-      // The second turn's only edit is a connect, so what the canvas shows after
-      // it is the wire itself: the app's own render loop paints it, and the
-      // expectation is the picture, not a reconstruction of the renderer.
       test('paints the wire the second turn connects @screenshot', async ({
         agentConversation,
         page
@@ -95,9 +93,12 @@ test.describe(
         await agentConversation.runTurns()
         await page.evaluate(() => window.app!.canvas.deselectAll())
 
-        await expect(page.locator('#graph-canvas')).toHaveScreenshot(
+        const clip = await screenshotRegion(
+          await agentConversation.vueNodes.nodes.all()
+        )
+        await expect(page).toHaveScreenshot(
           'two-turn-dependent-edit-wired.png',
-          { mask: [agentConversation.panel] }
+          { clip, mask: [agentConversation.panel] }
         )
       })
     })

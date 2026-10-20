@@ -1,6 +1,10 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  getGraphItemClientRects,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 import { assertNodeSlotsWithinBounds } from '@e2e/fixtures/utils/slotBoundsUtil'
 
 const NODE_ID = '3'
@@ -81,11 +85,16 @@ test.describe(
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      // fitView runs on first entry and re-syncs slot layouts for the
-      // pre-collapsed KSampler. Screenshot captures the rendered canvas
-      // links to guard against regressing the stale-coordinate bug.
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'subgraph-entry-collapsed-node-links.png'
+      const clip = await screenshotRegion(
+        [
+          ...(await comfyPage.vueNodes.nodes.all()),
+          ...(await getGraphItemClientRects(comfyPage.page, 'subgraphIO'))
+        ],
+        8
+      )
+      await expect(comfyPage.page).toHaveScreenshot(
+        'subgraph-entry-collapsed-node-links.png',
+        { clip }
       )
     })
   }

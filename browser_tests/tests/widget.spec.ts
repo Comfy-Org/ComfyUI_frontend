@@ -6,6 +6,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -17,8 +18,12 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
       0.2,
       1
     )
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'load-checkpoint-resized-min-width.png'
+    const [loadCheckpoint] = await comfyPage.nodeOps.getNodeRefsByType(
+      'CheckpointLoaderSimple'
+    )
+    await expect(comfyPage.page).toHaveScreenshot(
+      'load-checkpoint-resized-min-width.png',
+      { clip: await screenshotRegion([loadCheckpoint]) }
     )
     await comfyPage.closeMenu()
     await comfyPage.nodeOps.resizeNode(
@@ -27,8 +32,10 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
       0.2,
       1
     )
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      `ksampler-resized-min-width.png`
+    const [ksampler] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    await expect(comfyPage.page).toHaveScreenshot(
+      'ksampler-resized-min-width.png',
+      { clip: await screenshotRegion([ksampler]) }
     )
   })
 
@@ -39,8 +46,11 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
       0.8,
       0.8
     )
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'empty-latent-resized-80-percent.png'
+    const [emptyLatent] =
+      await comfyPage.nodeOps.getNodeRefsByType('EmptyLatentImage')
+    await expect(comfyPage.page).toHaveScreenshot(
+      'empty-latent-resized-80-percent.png',
+      { clip: await screenshotRegion([emptyLatent]) }
     )
   })
 
@@ -52,7 +62,12 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
       1,
       true
     )
-    await expect(comfyPage.canvas).toHaveScreenshot('resized-to-original.png')
+    const [loadCheckpoint] = await comfyPage.nodeOps.getNodeRefsByType(
+      'CheckpointLoaderSimple'
+    )
+    await expect(comfyPage.page).toHaveScreenshot('resized-to-original.png', {
+      clip: await screenshotRegion([loadCheckpoint])
+    })
   })
 
   test('should refresh combo values of optional inputs', async ({
@@ -107,12 +122,16 @@ test.describe('Combo text widget', { tag: ['@screenshot', '@widget'] }, () => {
 test.describe('Boolean widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can toggle', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/boolean_widget')
-    await expect(comfyPage.canvas).toHaveScreenshot('boolean_widget.png')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
+    const clip = await screenshotRegion([node])
+    await expect(comfyPage.page).toHaveScreenshot('boolean_widget.png', {
+      clip
+    })
     const widget = await node.getWidget(0)
     await widget.click()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'boolean_widget_toggled.png'
+    await expect(comfyPage.page).toHaveScreenshot(
+      'boolean_widget_toggled.png',
+      { clip }
     )
   })
 })
@@ -131,7 +150,9 @@ test.describe('Slider widget', { tag: ['@screenshot', '@widget'] }, () => {
       }
     })
     await widget.dragHorizontal(50)
-    await expect(comfyPage.canvas).toHaveScreenshot('slider_widget_dragged.png')
+    await expect(comfyPage.page).toHaveScreenshot('slider_widget_dragged.png', {
+      clip: await screenshotRegion([node])
+    })
 
     await expect
       .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
@@ -153,7 +174,9 @@ test.describe('Number widget', { tag: ['@screenshot', '@widget'] }, () => {
       }
     })
     await widget.dragHorizontal(50)
-    await expect(comfyPage.canvas).toHaveScreenshot('seed_widget_dragged.png')
+    await expect(comfyPage.page).toHaveScreenshot('seed_widget_dragged.png', {
+      clip: await screenshotRegion([node])
+    })
 
     await expect
       .poll(() => comfyPage.page.evaluate(() => window.widgetValue))
@@ -181,8 +204,9 @@ test.describe(
         .poll(async () => (await node.getSize()).height)
         .toBeGreaterThan(initialSize.height)
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'ksampler_widget_added.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'ksampler_widget_added.png',
+        { clip: await screenshotRegion([node]) }
       )
     })
   }
@@ -191,30 +215,30 @@ test.describe(
 test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
   test('Can load image', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
-    await expect(comfyPage.canvas).toHaveScreenshot('load_image_widget.png', {
-      maxDiffPixels: 50
+    const [loadImageNode] =
+      await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    await expect(comfyPage.page).toHaveScreenshot('load_image_widget.png', {
+      maxDiffPixels: 50,
+      clip: await screenshotRegion([loadImageNode])
     })
   })
 
   test('Can drag and drop image', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
 
-    // Get position of the load image node
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const loadImageNode = nodes[0]
     const { x, y } = await loadImageNode.getPosition()
 
-    // Drag and drop image file onto the load image node
     await comfyPage.dragDrop.dragAndDropFile('image32x32.webp', {
       dropPosition: { x, y }
     })
 
-    // Expect the image preview to change automatically
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'image_preview_drag_and_dropped.png'
+    await expect(comfyPage.page).toHaveScreenshot(
+      'image_preview_drag_and_dropped.png',
+      { clip: await screenshotRegion([loadImageNode]) }
     )
 
-    // Expect the filename combo value to be updated
     const fileComboWidget = await loadImageNode.getWidget(0)
     await expect.poll(() => fileComboWidget.getValue()).toBe('image32x32.webp')
   })
@@ -242,17 +266,14 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const loadImageNode = nodes[0]
 
-    // Click the combo widget used to select the image filename
     const fileComboWidget = await loadImageNode.getWidget(0)
     await fileComboWidget.click()
 
-    // Select a new image filename value from the combo context menu
     const comboEntry = comfyPage.page.getByRole('menuitem', {
       name: 'image32x32.webp'
     })
     await comboEntry.click()
 
-    // Wait for the image to decode and appear on the node
     await expect
       .poll(
         () =>
@@ -271,13 +292,11 @@ test.describe('Image widget', { tag: ['@screenshot', '@widget'] }, () => {
       .toBe(true)
     await comfyPage.nextFrame()
 
-    // Expect the image preview to change automatically
-    await expect(comfyPage.canvas).toHaveScreenshot(
+    await expect(comfyPage.page).toHaveScreenshot(
       'image_preview_changed_by_combo_value.png',
-      { maxDiffPixels: 50 }
+      { maxDiffPixels: 50, clip: await screenshotRegion([loadImageNode]) }
     )
 
-    // Expect the filename combo value to be updated
     await expect.poll(() => fileComboWidget.getValue()).toBe('image32x32.webp')
   })
 
@@ -458,7 +477,9 @@ test.describe('Load audio widget', { tag: ['@screenshot', '@widget'] }, () => {
         )
       )
       .toBe(filename)
-    await expect(comfyPage.canvas).toHaveScreenshot('load_audio_widget.png')
+    await expect(comfyPage.page).toHaveScreenshot('load_audio_widget.png', {
+      clip: await screenshotRegion([loadAudioNode, audioPreview])
+    })
   })
 })
 

@@ -4,6 +4,7 @@ import { toNodeId } from '@/types/nodeId'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -12,27 +13,37 @@ test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
   test('No shape specified', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/optional_input_no_shape')
-    await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
+    await expect(comfyPage.page).toHaveScreenshot('optional_input.png', {
+      clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
+    })
   })
 
   test('Wrong shape specified', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/optional_input_wrong_shape')
-    await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
+    await expect(comfyPage.page).toHaveScreenshot('optional_input.png', {
+      clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
+    })
   })
 
   test('Correct shape specified', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/optional_input_correct_shape')
-    await expect(comfyPage.canvas).toHaveScreenshot('optional_input.png')
+    await expect(comfyPage.page).toHaveScreenshot('optional_input.png', {
+      clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
+    })
   })
 
   test('Force input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/force_input')
-    await expect(comfyPage.canvas).toHaveScreenshot('force_input.png')
+    await expect(comfyPage.page).toHaveScreenshot('force_input.png', {
+      clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
+    })
   })
 
   test('Default input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/default_input')
-    await expect(comfyPage.canvas).toHaveScreenshot('default_input.png')
+    await expect(comfyPage.page).toHaveScreenshot('default_input.png', {
+      clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
+    })
   })
 
   test('Only optional inputs', async ({ comfyPage }) => {
@@ -79,22 +90,26 @@ test.describe('Optional input', { tag: ['@screenshot', '@node'] }, () => {
 
   test('slider', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/simple_slider')
-    await expect(comfyPage.canvas).toHaveScreenshot('simple_slider.png')
+    await expect(comfyPage.page).toHaveScreenshot('simple_slider.png', {
+      clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
+    })
   })
 
   test('unknown converted widget', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow(
       'missing/missing_nodes_converted_widget'
     )
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'missing_nodes_converted_widget.png'
+    await expect(comfyPage.page).toHaveScreenshot(
+      'missing_nodes_converted_widget.png',
+      { clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs()) }
     )
   })
 
   test('dynamically added input', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('inputs/dynamically_added_input')
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'dynamically_added_input.png'
+    await expect(comfyPage.page).toHaveScreenshot(
+      'dynamically_added_input.png',
+      { clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs()) }
     )
   })
 })

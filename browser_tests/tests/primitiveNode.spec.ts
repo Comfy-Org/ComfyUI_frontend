@@ -3,13 +3,16 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
   test('Can load with correct size', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('primitive/primitive_node')
-    await expect(comfyPage.canvas).toHaveScreenshot('primitive_node.png')
+    await expect(comfyPage.page).toHaveScreenshot('primitive_node.png', {
+      clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
+    })
   })
 
   // When link is dropped on widget, it should automatically convert the widget
@@ -24,12 +27,12 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
       await comfyPage.nodeOps.getNodeRefById(1)
     const ksamplerNode: NodeReference =
       await comfyPage.nodeOps.getNodeRefById(2)
-    // Connect the output of the primitive node to the input of first widget of the ksampler node
     await primitiveNode.connectWidget(0, ksamplerNode, 0)
     const primitiveWidget = await primitiveNode.getWidget(0)
     expect(await primitiveWidget.getValue()).toBe(0)
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'primitive_node_connected.png'
+    await expect(comfyPage.page).toHaveScreenshot(
+      'primitive_node_connected.png',
+      { clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs()) }
     )
   })
 
@@ -43,8 +46,9 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
       await comfyPage.nodeOps.getNodeRefById(2)
     await primitiveNode.connectWidget(0, clipEncoderNode, 0)
     await comfyPage.canvasOps.moveMouseToEmptyArea()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'primitive_node_connected_dom_widget.png'
+    await expect(comfyPage.page).toHaveScreenshot(
+      'primitive_node_connected_dom_widget.png',
+      { clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs()) }
     )
   })
 
@@ -57,8 +61,9 @@ test.describe('Primitive Node', { tag: ['@screenshot', '@node'] }, () => {
     const ksamplerNode: NodeReference =
       await comfyPage.nodeOps.getNodeRefById(2)
     await primitiveNode.connectWidget(0, ksamplerNode, 0)
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'static_primitive_connected.png'
+    await expect(comfyPage.page).toHaveScreenshot(
+      'static_primitive_connected.png',
+      { clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs()) }
     )
   })
 

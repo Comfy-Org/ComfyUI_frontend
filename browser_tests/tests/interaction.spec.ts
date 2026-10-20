@@ -9,9 +9,39 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import { TestIds } from '@e2e/fixtures/selectors'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import {
+  getGraphItemClientRects,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
+
+async function graphItemsRegion(comfyPage: ComfyPage) {
+  const region = await screenshotRegion(
+    await getGraphItemClientRects(comfyPage.page, 'all')
+  )
+  const legacyMenu = await comfyPage.page.locator('.comfy-menu').boundingBox()
+  if (!legacyMenu || region.x + region.width <= legacyMenu.x) return region
+  return { ...region, width: Math.floor(legacyMenu.x) - region.x }
+}
+
+async function textEncodeNodesRegion(comfyPage: ComfyPage) {
+  return screenshotRegion(
+    await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
+  )
+}
+
+async function clipLinksRegion(
+  comfyPage: ComfyPage,
+  ...extraPoints: Position[]
+) {
+  return screenshotRegion([
+    await comfyPage.nodeOps.getNodeRefByType('CheckpointLoaderSimple'),
+    ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')),
+    ...extraPoints
+  ])
+}
 
 test.beforeEach(async ({ comfyPage, initialSettings }) => {
   // Wait for the legacy menu to appear and canvas to settle after layout shift.
@@ -27,10 +57,15 @@ test.describe('Item Interaction', { tag: ['@node'] }, () => {
     { tag: ['@screenshot'] },
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+      const clip = await graphItemsRegion(comfyPage)
       await comfyPage.canvas.press('Control+a')
-      await expect(comfyPage.canvas).toHaveScreenshot('selected-all.png')
+      await expect(comfyPage.page).toHaveScreenshot('selected-all.png', {
+        clip
+      })
       await comfyPage.canvas.press('Delete')
-      await expect(comfyPage.canvas).toHaveScreenshot('deleted-all.png')
+      await expect(comfyPage.page).toHaveScreenshot('deleted-all.png', {
+        clip
+      })
     }
   )
 
@@ -98,11 +133,14 @@ test.describe('Item Interaction', { tag: ['@node'] }, () => {
     { tag: ['@screenshot'] },
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('groups/mixed_graph_items')
+      const clip = await graphItemsRegion(comfyPage)
       await comfyPage.canvas.press('Control+a')
       await comfyPage.keyboard.press('KeyP')
-      await expect(comfyPage.canvas).toHaveScreenshot('pinned-all.png')
+      await expect(comfyPage.page).toHaveScreenshot('pinned-all.png', { clip })
       await comfyPage.keyboard.press('KeyP')
-      await expect(comfyPage.canvas).toHaveScreenshot('unpinned-all.png')
+      await expect(comfyPage.page).toHaveScreenshot('unpinned-all.png', {
+        clip
+      })
     }
   )
 })
@@ -139,15 +177,20 @@ test.describe('Node Interaction', () => {
       '@2x Can highlight selected',
       { tag: '@screenshot' },
       async ({ comfyPage }) => {
-        await expect(comfyPage.canvas).toHaveScreenshot('default.png')
+        const clip = await clipLinksRegion(comfyPage)
+        await expect(comfyPage.page).toHaveScreenshot('default.png', { clip })
         await comfyPage.canvas.click({
           position: DefaultGraphPositions.textEncodeNode1
         })
-        await comfyPage.expectScreenshot(comfyPage.canvas, 'selected-node1.png')
+        await expect(comfyPage.page).toHaveScreenshot('selected-node1.png', {
+          clip
+        })
         await comfyPage.canvas.click({
           position: DefaultGraphPositions.textEncodeNode2
         })
-        await comfyPage.expectScreenshot(comfyPage.canvas, 'selected-node2.png')
+        await expect(comfyPage.page).toHaveScreenshot('selected-node2.png', {
+          clip
+        })
       }
     )
 
@@ -284,14 +327,17 @@ test.describe('Node Interaction', () => {
       test(`Can disconnect/connect edge ${reverse ? 'reverse' : 'normal'}`, async ({
         comfyPage
       }) => {
+        const clip = await clipLinksRegion(comfyPage)
         await comfyPage.canvasOps.disconnectEdge()
-        await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
+        await expect(comfyPage.page).toHaveScreenshot('disconnected-edge.png', {
+          clip
+        })
         await comfyPage.canvasOps.connectEdge({ reverse })
         // Move mouse to empty area to avoid slot highlight.
         await comfyPage.canvasOps.moveMouseToEmptyArea()
-        // Litegraph renders edge with a slight offset.
-        await expect(comfyPage.canvas).toHaveScreenshot('default.png', {
-          maxDiffPixels: 50
+        await expect(comfyPage.page).toHaveScreenshot('default.png', {
+          maxDiffPixels: 50,
+          clip
         })
       })
     })
@@ -344,31 +390,39 @@ test.describe('Node Interaction', () => {
     })
 
     test('Can move link', async ({ comfyPage }) => {
+      const clip = await clipLinksRegion(comfyPage)
       await comfyPage.canvasOps.dragAndDrop(
         DefaultGraphPositions.clipTextEncodeNode1InputSlot,
         DefaultGraphPositions.emptySpace
       )
-      await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
+      await expect(comfyPage.page).toHaveScreenshot('disconnected-edge.png', {
+        clip
+      })
       await comfyPage.canvasOps.dragAndDrop(
         DefaultGraphPositions.clipTextEncodeNode2InputSlot,
         DefaultGraphPositions.clipTextEncodeNode1InputSlot
       )
-      await expect(comfyPage.canvas).toHaveScreenshot('moved-link.png')
+      await expect(comfyPage.page).toHaveScreenshot('moved-link.png', { clip })
     })
 
     test('Can copy link by shift-drag existing link', async ({ comfyPage }) => {
+      const clip = await clipLinksRegion(comfyPage)
       await comfyPage.canvasOps.dragAndDrop(
         DefaultGraphPositions.clipTextEncodeNode1InputSlot,
         DefaultGraphPositions.emptySpace
       )
-      await expect(comfyPage.canvas).toHaveScreenshot('disconnected-edge.png')
+      await expect(comfyPage.page).toHaveScreenshot('disconnected-edge.png', {
+        clip
+      })
       await comfyPage.page.keyboard.down('Shift')
       await comfyPage.canvasOps.dragAndDrop(
         DefaultGraphPositions.clipTextEncodeNode2InputLinkPath,
         DefaultGraphPositions.clipTextEncodeNode1InputSlot
       )
       await comfyPage.page.keyboard.up('Shift')
-      await expect(comfyPage.canvas).toHaveScreenshot('copied-link.png')
+      await expect(comfyPage.page).toHaveScreenshot('copied-link.png', {
+        clip
+      })
     })
 
     test('Auto snap&highlight when dragging link over node', async ({
@@ -378,9 +432,12 @@ test.describe('Node Interaction', () => {
       await comfyPage.settings.setSetting('Comfy.Node.AutoSnapLinkToSlot', true)
       await comfyPage.settings.setSetting('Comfy.Node.SnapHighlightsNode', true)
 
+      const clip = await clipLinksRegion(comfyPage)
       await comfyMouse.move(DefaultGraphPositions.clipTextEncodeNode1InputSlot)
       await comfyMouse.drag(DefaultGraphPositions.clipTextEncodeNode2InputSlot)
-      await expect(comfyPage.canvas).toHaveScreenshot('snapped-highlighted.png')
+      await expect(comfyPage.page).toHaveScreenshot('snapped-highlighted.png', {
+        clip
+      })
     })
   })
 
@@ -389,15 +446,21 @@ test.describe('Node Interaction', () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.nodeOps.adjustEmptyLatentWidth()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'adjusted-widget-value.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'adjusted-widget-value.png',
+        {
+          clip: await screenshotRegion([
+            await comfyPage.nodeOps.getNodeRefByType('EmptyLatentImage')
+          ])
+        }
       )
     }
   )
 
   test('Link snap to slot', { tag: '@screenshot' }, async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('links/snap_to_slot')
-    await expect(comfyPage.canvas).toHaveScreenshot('snap_to_slot.png')
+    const clip = await graphItemsRegion(comfyPage)
+    await expect(comfyPage.page).toHaveScreenshot('snap_to_slot.png', { clip })
 
     const outputSlotPos = {
       x: 406,
@@ -409,7 +472,9 @@ test.describe('Node Interaction', () => {
     }
     await comfyPage.canvasOps.dragAndDrop(outputSlotPos, samplerNodeCenterPos)
 
-    await expect(comfyPage.canvas).toHaveScreenshot('snap_to_slot_linked.png')
+    await expect(comfyPage.page).toHaveScreenshot('snap_to_slot_linked.png', {
+      clip
+    })
   })
 
   test(
@@ -417,7 +482,10 @@ test.describe('Node Interaction', () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('links/batch_move_links')
-      await expect(comfyPage.canvas).toHaveScreenshot('batch_move_links.png')
+      const clip = await graphItemsRegion(comfyPage)
+      await expect(comfyPage.page).toHaveScreenshot('batch_move_links.png', {
+        clip
+      })
 
       const outputSlot1Pos = {
         x: 304,
@@ -432,8 +500,9 @@ test.describe('Node Interaction', () => {
       await comfyPage.canvasOps.dragAndDrop(outputSlot1Pos, outputSlot2Pos)
       await comfyPage.page.keyboard.up('Shift')
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'batch_move_links_moved.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'batch_move_links_moved.png',
+        { clip }
       )
     }
   )
@@ -442,6 +511,7 @@ test.describe('Node Interaction', () => {
     'Can batch disconnect links with ctrl+alt+click',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
+      const clip = await clipLinksRegion(comfyPage)
       const loadCheckpointClipSlotPos = {
         x: 332,
         y: 508
@@ -450,9 +520,9 @@ test.describe('Node Interaction', () => {
         modifiers: ['Control', 'Alt'],
         position: loadCheckpointClipSlotPos
       })
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'batch-disconnect-links-disconnected.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'batch-disconnect-links-disconnected.png',
+        { clip }
       )
     }
   )
@@ -481,7 +551,8 @@ test.describe('Node Interaction', () => {
         }
       }
 
-      await expect(comfyPage.canvas).toHaveScreenshot('default.png')
+      const clip = await clipLinksRegion(comfyPage)
+      await expect(comfyPage.page).toHaveScreenshot('default.png', { clip })
       await comfyPage.canvas.click({
         position: togglerPos
       })
@@ -489,8 +560,9 @@ test.describe('Node Interaction', () => {
         performance.now()
       )
       await expect.poll(() => targetNode.isCollapsed()).toBe(true)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'text-encode-toggled-off.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'text-encode-toggled-off.png',
+        { clip }
       )
       await expect
         .poll(
@@ -508,9 +580,9 @@ test.describe('Node Interaction', () => {
       await expect.poll(() => targetNode.isCollapsed()).toBe(false)
       // Move mouse away to avoid hover highlight differences.
       await comfyPage.canvasOps.moveMouseToEmptyArea()
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'text-encode-toggled-back-open.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'text-encode-toggled-back-open.png',
+        { clip }
       )
     }
   )
@@ -580,7 +652,9 @@ test.describe('Node Interaction', () => {
       })
       await comfyPage.page.keyboard.type('Hello World')
       await comfyPage.page.keyboard.press('Enter')
-      await expect(comfyPage.canvas).toHaveScreenshot('node-title-edited.png')
+      await expect(comfyPage.page).toHaveScreenshot('node-title-edited.png', {
+        clip: await graphItemsRegion(comfyPage)
+      })
     }
   )
 
@@ -613,8 +687,13 @@ test.describe('Node Interaction', () => {
       await comfyPage.nextFrame()
       // Confirm group title
       await comfyPage.keyboard.press('Enter')
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'group-selected-nodes.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'group-selected-nodes.png',
+        {
+          clip: await screenshotRegion(
+            await getGraphItemClientRects(comfyPage.page, 'groups')
+          )
+        }
       )
     }
   )
@@ -649,8 +728,9 @@ test.describe('Node Interaction', () => {
           })
         )
         .not.toEqual(initialGroupSize)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'group-fit-to-contents.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'group-fit-to-contents.png',
+        { clip: await graphItemsRegion(comfyPage) }
       )
     }
   )
@@ -664,13 +744,16 @@ test.describe('Node Interaction', () => {
     await comfyPage.command.executeCommand(
       'Comfy.Canvas.ToggleSelectedNodes.Pin'
     )
+    const clip = await textEncodeNodesRegion(comfyPage)
     await expect.poll(() => nodeRef.isPinned()).toBe(true)
-    await expect(comfyPage.canvas).toHaveScreenshot('nodes-pinned.png')
+    await expect(comfyPage.page).toHaveScreenshot('nodes-pinned.png', { clip })
     await comfyPage.command.executeCommand(
       'Comfy.Canvas.ToggleSelectedNodes.Pin'
     )
     await expect.poll(() => nodeRef.isPinned()).toBe(false)
-    await expect(comfyPage.canvas).toHaveScreenshot('nodes-unpinned.png')
+    await expect(comfyPage.page).toHaveScreenshot('nodes-unpinned.png', {
+      clip
+    })
   })
 
   test(
@@ -682,12 +765,17 @@ test.describe('Node Interaction', () => {
         await comfyPage.nodeOps.getNodeRefsByTitle('CLIP Text Encode (Prompt)')
       )[0]
 
+      const clip = await textEncodeNodesRegion(comfyPage)
       await comfyPage.canvas.press('Control+b')
       await expect.poll(() => nodeRef.isBypassed()).toBe(true)
-      await expect(comfyPage.canvas).toHaveScreenshot('nodes-bypassed.png')
+      await expect(comfyPage.page).toHaveScreenshot('nodes-bypassed.png', {
+        clip
+      })
       await comfyPage.canvas.press('Control+b')
       await expect.poll(() => nodeRef.isBypassed()).toBe(false)
-      await expect(comfyPage.canvas).toHaveScreenshot('nodes-unbypassed.png')
+      await expect(comfyPage.page).toHaveScreenshot('nodes-unbypassed.png', {
+        clip
+      })
     }
   )
 })
@@ -704,7 +792,9 @@ test.describe('Group Interaction', { tag: '@screenshot' }, () => {
     })
     await comfyPage.page.keyboard.type('Hello World')
     await comfyPage.page.keyboard.press('Enter')
-    await expect(comfyPage.canvas).toHaveScreenshot('group-title-edited.png')
+    await expect(comfyPage.page).toHaveScreenshot('group-title-edited.png', {
+      clip: await graphItemsRegion(comfyPage)
+    })
   })
 })
 
@@ -851,7 +941,9 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     await comfyMouse.move(posSlot1)
     const posEmpty = DefaultGraphPositions.emptySpace
     await comfyMouse.drag(posEmpty)
-    await expect(comfyPage.canvas).toHaveScreenshot('dragging-link1.png')
+    await expect(comfyPage.page).toHaveScreenshot('dragging-link1.png', {
+      clip: await clipLinksRegion(comfyPage, posEmpty)
+    })
 
     await comfyPage.page.keyboard.down('Space')
     await comfyMouse.mouse.move(posEmpty.x + 100, posEmpty.y + 100)
@@ -862,7 +954,9 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     await comfyPage.page.keyboard.up('Space')
     await comfyMouse.move(posEmpty)
     // Should be back to dragging link mode when space is released.
-    await expect(comfyPage.canvas).toHaveScreenshot('dragging-link2.png')
+    await expect(comfyPage.page).toHaveScreenshot('dragging-link2.png', {
+      clip: await clipLinksRegion(comfyPage, posEmpty)
+    })
     await comfyMouse.drop()
   })
 
@@ -919,14 +1013,18 @@ test.describe('Widget Interaction', () => {
 test.describe('Load workflow', { tag: '@screenshot' }, () => {
   test('Can load workflow with string node id', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('nodes/string_node_id')
-    await expect(comfyPage.canvas).toHaveScreenshot('string_node_id.png')
+    await expect(comfyPage.page).toHaveScreenshot('string_node_id.png', {
+      clip: await graphItemsRegion(comfyPage)
+    })
   })
 
   test('Can load workflow with ("STRING",) input node', async ({
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('inputs/string_input')
-    await expect(comfyPage.canvas).toHaveScreenshot('string_input.png')
+    await expect(comfyPage.page).toHaveScreenshot('string_input.png', {
+      clip: await graphItemsRegion(comfyPage)
+    })
   })
 
   test('Creates initial workflow tab when persistence is disabled', async ({
@@ -950,10 +1048,15 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
     comfyPage
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
-    await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
+    const clip = await graphItemsRegion(comfyPage)
+    await expect(comfyPage.page).toHaveScreenshot('single_ksampler.png', {
+      clip
+    })
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
-    await expect(comfyPage.canvas).toHaveScreenshot('single_ksampler.png')
+    await expect(comfyPage.page).toHaveScreenshot('single_ksampler.png', {
+      clip
+    })
   })
 
   test('Restore workflow on reload (modify workflow)', async ({
@@ -961,17 +1064,20 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     const node = (await comfyPage.nodeOps.getFirstNodeRef())!
+    const clip = await graphItemsRegion(comfyPage)
     const draftSaveStartedAt = Date.now()
     await node.click('collapse')
     await comfyPage.canvasOps.clickEmptySpace()
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'single_ksampler_modified.png'
+    await expect(comfyPage.page).toHaveScreenshot(
+      'single_ksampler_modified.png',
+      { clip }
     )
     await comfyPage.workflow.waitForDraftIndexUpdatedSince(draftSaveStartedAt)
     // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
     await comfyPage.setup({ clearStorage: false })
-    await expect(comfyPage.canvas).toHaveScreenshot(
-      'single_ksampler_modified.png'
+    await expect(comfyPage.page).toHaveScreenshot(
+      'single_ksampler_modified.png',
+      { clip }
     )
   })
 
@@ -1286,6 +1392,7 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
     })
 
     test('Left-click on node should not pan canvas', async ({ comfyPage }) => {
+      const clip = await textEncodeNodesRegion(comfyPage)
       await comfyPage.canvas.click({
         position: DefaultGraphPositions.textEncodeNode1
       })
@@ -1293,8 +1400,9 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       await expect
         .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
         .toBe(1)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'legacy-click-node-select.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'legacy-click-node-select.png',
+        { clip }
       )
     })
   })
@@ -1315,23 +1423,23 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       const clipNode1Pos = await clipNodes[0].getPosition()
       const clipNode2Pos = await clipNodes[1].getPosition()
       const offset = 64
+      const dragFrom = {
+        x: Math.min(clipNode1Pos.x, clipNode2Pos.x) - offset,
+        y: Math.min(clipNode1Pos.y, clipNode2Pos.y) - offset
+      }
+      const dragTo = {
+        x: Math.max(clipNode1Pos.x, clipNode2Pos.x) + offset,
+        y: Math.max(clipNode1Pos.y, clipNode2Pos.y) + offset
+      }
 
-      await comfyPage.canvasOps.dragAndDrop(
-        {
-          x: Math.min(clipNode1Pos.x, clipNode2Pos.x) - offset,
-          y: Math.min(clipNode1Pos.y, clipNode2Pos.y) - offset
-        },
-        {
-          x: Math.max(clipNode1Pos.x, clipNode2Pos.x) + offset,
-          y: Math.max(clipNode1Pos.y, clipNode2Pos.y) + offset
-        }
-      )
+      await comfyPage.canvasOps.dragAndDrop(dragFrom, dragTo)
 
       await expect
         .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
         .toBe(clipNodes.length)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'standard-left-drag-select.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'standard-left-drag-select.png',
+        { clip: await screenshotRegion([...clipNodes, dragFrom, dragTo]) }
       )
     })
 
@@ -1368,6 +1476,7 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
     test('Left-click on node should select node (not start selection box)', async ({
       comfyPage
     }) => {
+      const clip = await textEncodeNodesRegion(comfyPage)
       await comfyPage.canvas.click({
         position: DefaultGraphPositions.textEncodeNode1
       })
@@ -1375,8 +1484,9 @@ test.describe('Canvas Navigation', { tag: '@screenshot' }, () => {
       await expect
         .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
         .toBe(1)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'standard-click-node-select.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'standard-click-node-select.png',
+        { clip }
       )
     })
 

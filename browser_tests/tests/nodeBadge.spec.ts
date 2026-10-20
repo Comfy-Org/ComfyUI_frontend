@@ -2,12 +2,25 @@ import { expect } from '@playwright/test'
 
 import type { ComfyApp } from '@/scripts/app'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
 const DEPRECATED_NODE_TYPE = 'ImageBatch'
 const API_NODE_TYPE = 'FluxProUltraImageNode'
+const BADGE_OVERHANG_PADDING = 40
+
+async function allNodesRegion(comfyPage: ComfyPage) {
+  return screenshotRegion(
+    [
+      ...(await comfyPage.nodeOps.getAllNodeRefs()),
+      ...(await comfyPage.vueNodes.nodes.all())
+    ],
+    BADGE_OVERHANG_PADDING
+  )
+}
 
 test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
   test('Can add badge', async ({ comfyPage }) => {
@@ -24,7 +37,9 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
       graph.setDirtyCanvas(true, true)
     })
 
-    await expect(comfyPage.canvas).toHaveScreenshot('node-badge.png')
+    await expect(comfyPage.page).toHaveScreenshot('node-badge.png', {
+      clip: await allNodesRegion(comfyPage)
+    })
   })
 
   test('Can add multiple badges', async ({ comfyPage }) => {
@@ -44,7 +59,9 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
       graph.setDirtyCanvas(true, true)
     })
 
-    await expect(comfyPage.canvas).toHaveScreenshot('node-badge-multiple.png')
+    await expect(comfyPage.page).toHaveScreenshot('node-badge-multiple.png', {
+      clip: await allNodesRegion(comfyPage)
+    })
   })
 })
 
@@ -54,7 +71,6 @@ test.describe(
   () => {
     Object.values(NodeBadgeMode).forEach(async (mode) => {
       test(`Shows node badges (${mode})`, async ({ comfyPage }) => {
-        // Execution error workflow has both custom node and core node.
         await comfyPage.workflow.loadWorkflow('nodes/execution_error')
         await comfyPage.settings.setSetting(
           'Comfy.NodeBadge.NodeSourceBadgeMode',
@@ -72,8 +88,9 @@ test.describe(
           )
           .toBe(mode)
         await comfyPage.canvasOps.resetView()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          `node-badge-${mode}.png`
+        await expect(comfyPage.page).toHaveScreenshot(
+          `node-badge-${mode}.png`,
+          { clip: await allNodesRegion(comfyPage) }
         )
       })
     })
@@ -98,8 +115,9 @@ test.describe(
         })
         .toBe('unknown')
       await comfyPage.canvasOps.clickEmptySpace()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'node-badge-unknown-color-palette.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'node-badge-unknown-color-palette.png',
+        { clip: await allNodesRegion(comfyPage) }
       )
     })
 
@@ -117,8 +135,9 @@ test.describe(
         })
         .toBe('light')
       await comfyPage.canvasOps.clickEmptySpace()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'node-badge-light-color-palette.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'node-badge-light-color-palette.png',
+        { clip: await allNodesRegion(comfyPage) }
       )
     })
   }
@@ -145,8 +164,9 @@ for (const vueEnabled of [false, true] as const) {
           y: 100
         })
         await comfyPage.canvasOps.resetView()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          `node-lifecycle-${mode}-${renderer}.png`
+        await expect(comfyPage.page).toHaveScreenshot(
+          `node-lifecycle-${mode}-${renderer}.png`,
+          { clip: await allNodesRegion(comfyPage) }
         )
       })
     }
@@ -181,8 +201,9 @@ for (const vueEnabled of [false, true] as const) {
           y: 100
         })
         await comfyPage.canvasOps.resetView()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          `api-pricing-${enabled ? 'on' : 'off'}-${renderer}.png`
+        await expect(comfyPage.page).toHaveScreenshot(
+          `api-pricing-${enabled ? 'on' : 'off'}-${renderer}.png`,
+          { clip: await allNodesRegion(comfyPage) }
         )
       })
     }

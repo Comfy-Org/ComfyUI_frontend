@@ -238,6 +238,15 @@ export class CanvasHelper {
     )
   }
 
+  async setOffset(offset: [number, number]): Promise<void> {
+    await this.page.evaluate((offset) => {
+      const canvas = window.app!.canvas
+      canvas.ds.offset = offset
+      canvas.setDirty(true, true)
+    }, offset)
+    await nextFrame(this.page)
+  }
+
   async getElementWidth(): Promise<number> {
     return this.page.evaluate(() => window.app!.canvasEl.width)
   }

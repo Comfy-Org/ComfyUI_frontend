@@ -1,4 +1,4 @@
-import type { Locator } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import type { Position, Size } from '@e2e/fixtures/types'
 
@@ -40,4 +40,26 @@ export async function screenshotRegion(
     Math.max(...rects.map((r) => r.y + r.height)) + padding
   )
   return { x: left, y: top, width: right - left, height: bottom - top }
+}
+
+/** Page-space bounds of the shown graph's groups, all positionable items, or subgraph IO nodes. */
+export async function getGraphItemClientRects(
+  page: Page,
+  kind: 'groups' | 'all' | 'subgraphIO'
+): Promise<Rect[]> {
+  return page.evaluate((kind) => {
+    const app = window.app!
+    const graph = app.canvas.graph!
+    const items = (() => {
+      if (kind === 'groups') return graph.groups
+      if (kind === 'all') return [...graph.positionableItems()]
+      if (!('inputNode' in graph)) throw new Error('Not in a subgraph')
+      return [graph.inputNode, graph.outputNode]
+    })()
+    return items.map(({ boundingRect: [x, y, width, height] }) => {
+      const [left, top] = app.canvasPosToClientPos([x, y])
+      const [right, bottom] = app.canvasPosToClientPos([x + width, y + height])
+      return { x: left, y: top, width: right - left, height: bottom - top }
+    })
+  }, kind)
 }

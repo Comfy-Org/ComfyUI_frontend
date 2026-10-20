@@ -3,6 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 async function waitForSearchInsertion(
   comfyPage: ComfyPage,
@@ -12,6 +14,15 @@ async function waitForSearchInsertion(
   await expect
     .poll(() => comfyPage.nodeOps.getGraphNodesCount())
     .toBe(initialNodeCount + 1)
+}
+
+async function getNodeRefsAddedSince(
+  comfyPage: ComfyPage,
+  initialNodes: NodeReference[]
+): Promise<NodeReference[]> {
+  const initialIds = new Set(initialNodes.map(({ id }) => id))
+  const nodes = await comfyPage.nodeOps.getAllNodeRefs()
+  return nodes.filter(({ id }) => !initialIds.has(id))
 }
 
 test.describe('Node search box', { tag: '@node' }, () => {
@@ -61,14 +72,18 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test('Can add node', { tag: '@screenshot' }, async ({ comfyPage }) => {
-    const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+    const initialNodes = await comfyPage.nodeOps.getAllNodeRefs()
     await comfyPage.canvasOps.doubleClick()
     await expect(comfyPage.searchBox.input).toHaveCount(1)
     await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
       exact: true
     })
-    await waitForSearchInsertion(comfyPage, initialNodeCount)
-    await expect(comfyPage.canvas).toHaveScreenshot('added-node.png')
+    await waitForSearchInsertion(comfyPage, initialNodes.length)
+    await expect(comfyPage.page).toHaveScreenshot('added-node.png', {
+      clip: await screenshotRegion(
+        await getNodeRefsAddedSince(comfyPage, initialNodes)
+      )
+    })
   })
 
   test('Enter adds the top match after typing a query', async ({
@@ -99,14 +114,19 @@ test.describe('Node search box', { tag: '@node' }, () => {
   })
 
   test('Can auto link node', { tag: '@screenshot' }, async ({ comfyPage }) => {
-    const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+    const initialNodes = await comfyPage.nodeOps.getAllNodeRefs()
     await comfyPage.canvasOps.disconnectEdge()
-    // Select the second item as the first item is always reroute
     await comfyPage.searchBox.fillAndSelectFirstNode('CLIPTextEncode', {
       suggestionIndex: 0
     })
-    await waitForSearchInsertion(comfyPage, initialNodeCount)
-    await expect(comfyPage.canvas).toHaveScreenshot('auto-linked-node.png')
+    await waitForSearchInsertion(comfyPage, initialNodes.length)
+    const clip = await screenshotRegion([
+      ...(await comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple')),
+      ...(await getNodeRefsAddedSince(comfyPage, initialNodes))
+    ])
+    await expect(comfyPage.page).toHaveScreenshot('auto-linked-node.png', {
+      clip
+    })
   })
 
   test(
@@ -117,12 +137,10 @@ test.describe('Node search box', { tag: '@node' }, () => {
       await comfyPage.workflow.loadWorkflow('links/batch_move_links')
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
 
-      // Get the CLIP output slot (index 1) from the first CheckpointLoaderSimple node (id: 4)
       const checkpointNode = await comfyPage.nodeOps.getNodeRefById(4)
       const clipOutputSlot = await checkpointNode.getOutput(1)
       const outputSlotPos = await clipOutputSlot.getPosition()
 
-      // Use a position in the empty canvas area (top-left corner)
       const emptySpacePos = { x: 5, y: 5 }
 
       await comfyPage.page.keyboard.down('Shift')
@@ -138,8 +156,11 @@ test.describe('Node search box', { tag: '@node' }, () => {
           comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple')
         )
         .toHaveLength(3)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'auto-linked-node-batch.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'auto-linked-node-batch.png',
+        {
+          clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
+        }
       )
     }
   )
@@ -148,16 +169,23 @@ test.describe('Node search box', { tag: '@node' }, () => {
     'Link release connecting to node with no slots',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+      const initialNodes = await comfyPage.nodeOps.getAllNodeRefs()
       await comfyPage.canvasOps.disconnectEdge()
       await expect(comfyPage.searchBox.input).toHaveCount(1)
       await comfyPage.searchBox.removeFilter(0)
       await comfyPage.searchBox.fillAndSelectFirstNode('KSampler', {
         exact: true
       })
-      await waitForSearchInsertion(comfyPage, initialNodeCount)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'added-node-no-connection.png'
+      await waitForSearchInsertion(comfyPage, initialNodes.length)
+      const clip = await screenshotRegion([
+        ...(await comfyPage.nodeOps.getNodeRefsByType(
+          'CheckpointLoaderSimple'
+        )),
+        ...(await getNodeRefsAddedSince(comfyPage, initialNodes))
+      ])
+      await expect(comfyPage.page).toHaveScreenshot(
+        'added-node-no-connection.png',
+        { clip }
       )
     }
   )
@@ -402,15 +430,18 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     async ({ comfyPage }) => {
       await comfyPage.canvasOps.disconnectEdge()
       const contextMenu = comfyPage.page.locator('.litecontextmenu')
-      // Wait for context menu with correct title (slot name | slot type)
-      // The title shows the output slot name and type from the disconnected link
       await expect(contextMenu.locator('.litemenu-title')).toContainText(
         'CLIP | CLIP'
       )
       await comfyPage.page.mouse.move(10, 10)
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'link-release-context-menu.png'
+      await comfyPage.nextFrame()
+      const clip = await screenshotRegion([
+        contextMenu,
+        ...(await comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple'))
+      ])
+      await expect(comfyPage.page).toHaveScreenshot(
+        'link-release-context-menu.png',
+        { clip }
       )
     }
   )
@@ -419,15 +450,22 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     'Can search and add node from context menu',
     { tag: '@screenshot' },
     async ({ comfyPage, comfyMouse }) => {
-      const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
+      const initialNodes = await comfyPage.nodeOps.getAllNodeRefs()
       await comfyPage.canvasOps.disconnectEdge()
       await comfyMouse.move({ x: 10, y: 10 })
       await comfyPage.contextMenu.clickMenuItem('Search')
       await comfyPage.nextFrame()
       await comfyPage.searchBox.fillAndSelectFirstNode('CLIP Prompt')
-      await waitForSearchInsertion(comfyPage, initialNodeCount)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-context-menu-search.png'
+      await waitForSearchInsertion(comfyPage, initialNodes.length)
+      const clip = await screenshotRegion([
+        ...(await comfyPage.nodeOps.getNodeRefsByType(
+          'CheckpointLoaderSimple'
+        )),
+        ...(await getNodeRefsAddedSince(comfyPage, initialNodes))
+      ])
+      await expect(comfyPage.page).toHaveScreenshot(
+        'link-context-menu-search.png',
+        { clip }
       )
     }
   )

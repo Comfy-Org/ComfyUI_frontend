@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
   test.use({
@@ -19,10 +20,14 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
       const button = comfyPage.page.getByTestId(
         TestIds.canvas.toggleLinkVisibilityButton
       )
+      const clip = await screenshotRegion(
+        await comfyPage.nodeOps.getAllNodeRefs()
+      )
       await button.click()
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'canvas-with-hidden-links.png'
+      await comfyPage.nextFrame()
+      await expect(comfyPage.page).toHaveScreenshot(
+        'canvas-with-hidden-links.png',
+        { clip }
       )
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
         return window.LiteGraph!.HIDDEN_LINK
@@ -32,9 +37,10 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
         .toBe(hiddenLinkRenderMode)
 
       await button.click()
-      await comfyPage.expectScreenshot(
-        comfyPage.canvas,
-        'canvas-with-visible-links.png'
+      await comfyPage.nextFrame()
+      await expect(comfyPage.page).toHaveScreenshot(
+        'canvas-with-visible-links.png',
+        { clip }
       )
       await expect
         .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))

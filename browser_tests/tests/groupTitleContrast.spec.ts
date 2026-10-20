@@ -3,6 +3,10 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { setGroupColor } from '@e2e/fixtures/utils/groupHelpers'
+import {
+  getGraphItemClientRects,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 const GROUP_TITLE = 'Group'
 const POOR_CONTRAST_COLOR = 'black'
@@ -24,8 +28,13 @@ test.describe(
     }) => {
       await setGroupColor(comfyPage, GROUP_TITLE, POOR_CONTRAST_COLOR)
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'group-title-contrast-black.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'group-title-contrast-black.png',
+        {
+          clip: await screenshotRegion(
+            await getGraphItemClientRects(comfyPage.page, 'groups')
+          )
+        }
       )
     })
   }
