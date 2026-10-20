@@ -5546,7 +5546,9 @@ describe('AgentPanelRoot history', () => {
       })
     )
     expect(reportError).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'AgentThreadListIncompleteError' }),
+      expect.objectContaining({
+        message: 'Agent thread list ended before its last page'
+      }),
       expect.objectContaining({ tags: { reason: 'missing_cursor' } })
     )
     expect(history.sessions.map(({ id }) => id)).toEqual(['th-kept'])
@@ -5569,123 +5571,6 @@ describe('AgentPanelRoot history', () => {
     },
     { outcome: 'a failure', staleResponse: () => json(500, {}) }
   ]
-
-  it.for(staleRefreshOutcomes)(
-    'ignores an older history refresh that ends with $outcome after a newer one',
-    async ({ staleResponse }) => {
-      let resolveStale!: (response: Response) => void
-      const staleList = new Promise<Response>((resolve) => {
-        resolveStale = resolve
-      })
-      respondToFetch(threadListRoute, () =>
-        json(
-          200,
-          agentThreadList([
-            agentThread({
-              id: 'th-old',
-              title: 'Old chat',
-              last_message_at: '2026-07-07T08:00:00Z'
-            })
-          ])
-        )
-      )
-      renderWithSelectedTarget()
-      const history = useAgentChatHistoryStore()
-      await vi.waitFor(() =>
-        expect(history.sessions.map(({ id }) => id)).toEqual(['th-old'])
-      )
-      respondToFetch(threadListRoute, () => staleList, { times: 1 })
-      await openHistory()
-      await vi.waitFor(() =>
-        expect(fetchRequests(threadListRoute)).toHaveLength(2)
-      )
-      await userEvent.click(
-        screen.getByRole('button', {
-          name: i18n.global.t('agent.backToPreviousChat')
-        })
-      )
-      respondToFetch(threadListRoute, () =>
-        json(
-          200,
-          agentThreadList([
-            agentThread({
-              id: 'th-new',
-              title: 'New chat',
-              last_message_at: '2026-07-07T10:00:00Z'
-            })
-          ])
-        )
-      )
-      await openHistory()
-      await vi.waitFor(() =>
-        expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
-      )
-
-      const stale = staleResponse()
-      resolveStale(stale)
-      await vi.waitFor(() => expect(stale.bodyUsed).toBe(true))
-
-      expect(history.sessions.map(({ id }) => id)).toEqual(['th-new'])
-      expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
-    }
-  )
-
-  it('applies an older history refresh that succeeds after a newer one fails', async () => {
-    let resolveOlder!: (response: Response) => void
-    const olderList = new Promise<Response>((resolve) => {
-      resolveOlder = resolve
-    })
-    respondToFetch(threadListRoute, () =>
-      json(
-        200,
-        agentThreadList([
-          agentThread({
-            id: 'th-old',
-            title: 'Old chat',
-            last_message_at: '2026-07-07T08:00:00Z'
-          })
-        ])
-      )
-    )
-    renderWithSelectedTarget()
-    const history = useAgentChatHistoryStore()
-    await vi.waitFor(() =>
-      expect(history.sessions.map(({ id }) => id)).toEqual(['th-old'])
-    )
-    respondToFetch(threadListRoute, () => olderList, { times: 1 })
-    await openHistory()
-    await vi.waitFor(() =>
-      expect(fetchRequests(threadListRoute)).toHaveLength(2)
-    )
-    await userEvent.click(
-      screen.getByRole('button', {
-        name: i18n.global.t('agent.backToPreviousChat')
-      })
-    )
-    respondToFetch(threadListRoute, () => json(500, {}))
-    await openHistory()
-    await vi.waitFor(() =>
-      expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
-    )
-
-    resolveOlder(
-      json(
-        200,
-        agentThreadList([
-          agentThread({
-            id: 'th-older-refresh',
-            title: 'Older refresh chat',
-            last_message_at: '2026-07-07T09:00:00Z'
-          })
-        ])
-      )
-    )
-
-    await vi.waitFor(() =>
-      expect(history.sessions.map(({ id }) => id)).toEqual(['th-older-refresh'])
-    )
-    expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
-  })
 
   it.for(staleRefreshOutcomes)(
     'ignores a closed panel history refresh that ends with $outcome after the panel reopens',

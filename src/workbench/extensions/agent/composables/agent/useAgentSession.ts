@@ -42,8 +42,7 @@ import {
 } from '../../schemas/agentApiSchema'
 import {
   AgentApiError,
-  AgentResponseUnreadableError,
-  AgentThreadListIncompleteError
+  AgentResponseUnreadableError
 } from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
@@ -277,8 +276,7 @@ export function isRetryableRequestFailure(
   if (accepted) return false
   if (
     error instanceof ZodError ||
-    error instanceof AgentResponseUnreadableError ||
-    error instanceof AgentThreadListIncompleteError
+    error instanceof AgentResponseUnreadableError
   )
     return false
   if (error instanceof AgentApiError)
@@ -1629,8 +1627,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pendingThreadSource.value = source ?? null
   }
 
-  const listThreads = rest.listThreads
-
   async function loadThread(
     threadId: string,
     isNavigationCurrent: () => boolean = () => true
@@ -2015,7 +2011,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answerAsk,
     answeringAskIds: computed(() => answeringAskIds.value),
     newChat,
-    listThreads,
     loadThread,
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),

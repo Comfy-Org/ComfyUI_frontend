@@ -178,17 +178,15 @@ export class AgentResponseUnreadableError extends Error {
   }
 }
 
-export type PaginationStopReason = 'missing_cursor' | 'repeated_cursor'
+type PaginationStopReason = 'missing_cursor' | 'repeated_cursor'
 
-export class AgentThreadListIncompleteError extends Error {
-  readonly reason: PaginationStopReason
+type RequestResult<T> = { ok: true; value: T } | { ok: false; cause: unknown }
 
-  constructor(reason: PaginationStopReason) {
-    super('Agent thread list ended before its last page')
-    this.name = 'AgentThreadListIncompleteError'
-    this.reason = reason
-  }
-}
+export type ThreadListing =
+  | { status: 'complete'; threads: AgentThreadSummary[] }
+  | { status: 'incomplete'; reason: PaginationStopReason }
+  | { status: 'failed'; cause: unknown }
+  | { status: 'aborted' }
 
 /** A workflow index and whether pagination reached its last page. */
 export interface CloudWorkflowListing {
@@ -499,6 +497,15 @@ function asDelaySeconds(seconds: number): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
+function getNextPageCursor(
+  cursor: PaginationInfo['next_cursor'],
+  seenCursors: ReadonlySet<string>
+): { ok: true; cursor: string } | { ok: false; reason: PaginationStopReason } {
+  if (!cursor) return { ok: false, reason: 'missing_cursor' }
+  if (seenCursors.has(cursor)) return { ok: false, reason: 'repeated_cursor' }
+  return { ok: true, cursor }
+}
+
 export function createAgentRestClient() {
   async function toApiError(
     response: Response,
@@ -541,37 +548,68 @@ export function createAgentRestClient() {
     return apiError
   }
 
+  async function requestResult<T>(
+    operation: AgentApiOperation,
+    route: string,
+    init: Parameters<typeof api.fetchApi>[1],
+    schema: z.ZodType<T>
+  ): Promise<RequestResult<T>> {
+    let authScheme: ReportedAuthScheme = 'unreported'
+    let credential: ReportedAuthCredential = 'unreported'
+    let response: Response
+    try {
+      response = await api.fetchApi(
+        route,
+        await withAgentAuth({
+          ...init,
+          onAuthScheme: (scheme) => {
+            authScheme = scheme
+          },
+          onAuthCredential: (kind) => {
+            credential = kind
+          }
+        })
+      )
+    } catch (cause) {
+      return { ok: false, cause }
+    }
+    if (!response.ok) {
+      try {
+        return {
+          ok: false,
+          cause: await toApiError(response, operation, authScheme, credential)
+        }
+      } catch (cause) {
+        return { ok: false, cause }
+      }
+    }
+    let payload: unknown
+    try {
+      payload = await response.json()
+    } catch (cause) {
+      return {
+        ok: false,
+        cause:
+          cause instanceof SyntaxError
+            ? new AgentResponseUnreadableError(cause)
+            : cause
+      }
+    }
+    const parsed = schema.safeParse(payload)
+    return parsed.success
+      ? { ok: true, value: parsed.data }
+      : { ok: false, cause: parsed.error }
+  }
+
   async function request<T>(
     operation: AgentApiOperation,
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
   ): Promise<T> {
-    let authScheme: ReportedAuthScheme = 'unreported'
-    let credential: ReportedAuthCredential = 'unreported'
-    const response = await api.fetchApi(
-      route,
-      await withAgentAuth({
-        ...init,
-        onAuthScheme: (scheme) => {
-          authScheme = scheme
-        },
-        onAuthCredential: (kind) => {
-          credential = kind
-        }
-      })
-    )
-    if (!response.ok) {
-      throw await toApiError(response, operation, authScheme, credential)
-    }
-    let payload: unknown
-    try {
-      payload = await response.json()
-    } catch (error) {
-      if (!(error instanceof SyntaxError)) throw error
-      throw new AgentResponseUnreadableError(error)
-    }
-    return schema.parse(payload)
+    const result = await requestResult(operation, route, init, schema)
+    if (!result.ok) throw result.cause
+    return result.value
   }
 
   function jsonInit(method: string, body: unknown): RequestInit {
@@ -591,27 +629,35 @@ export function createAgentRestClient() {
     schema: z.ZodType<Page>,
     itemsOf: (page: Page) => Item[],
     signal?: AbortSignal
-  ): Promise<{ items: Item[]; stopReason?: PaginationStopReason }> {
+  ): Promise<
+    RequestResult<{ items: Item[]; stopReason?: PaginationStopReason }>
+  > {
     const items: Item[] = []
     let cursor: string | undefined
+    let hasMore: boolean
     const seenCursors = new Set<string>()
-    for (;;) {
+    do {
       const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
-      const page = await request(
+      const result = await requestResult(
         operation,
         `${path}?limit=${LIST_PAGE_SIZE}${after}`,
         { method: 'GET', signal },
         schema
       )
+      if (signal?.aborted) return { ok: false, cause: signal.reason }
+      if (!result.ok) return result
+      const page = result.value
       items.push(...itemsOf(page))
-      if (!page.pagination.has_more) return { items }
-      const nextCursor = page.pagination.next_cursor
-      if (!nextCursor) return { items, stopReason: 'missing_cursor' }
-      if (seenCursors.has(nextCursor))
-        return { items, stopReason: 'repeated_cursor' }
-      seenCursors.add(nextCursor)
-      cursor = nextCursor
-    }
+      hasMore = page.pagination.has_more
+      if (hasMore) {
+        const next = getNextPageCursor(page.pagination.next_cursor, seenCursors)
+        if (!next.ok)
+          return { ok: true, value: { items, stopReason: next.reason } }
+        seenCursors.add(next.cursor)
+        cursor = next.cursor
+      }
+    } while (hasMore)
+    return { ok: true, value: { items } }
   }
 
   async function postMessage(
@@ -653,16 +699,21 @@ export function createAgentRestClient() {
 
   async function listThreads(
     options: { signal?: AbortSignal } = {}
-  ): Promise<AgentThreadSummary[]> {
-    const { items, stopReason } = await listAllPages(
+  ): Promise<ThreadListing> {
+    if (options.signal?.aborted) return { status: 'aborted' }
+    const result = await listAllPages(
       'list_threads',
       '/agent/threads',
       zAgentThreads,
       (page) => page.threads,
       options.signal
     )
-    if (stopReason) throw new AgentThreadListIncompleteError(stopReason)
-    return items
+    if (options.signal?.aborted) return { status: 'aborted' }
+    if (!result.ok) return { status: 'failed', cause: result.cause }
+    const { items, stopReason } = result.value
+    return stopReason
+      ? { status: 'incomplete', reason: stopReason }
+      : { status: 'complete', threads: items }
   }
 
   async function getIdentity(): Promise<{ userId: string }> {
@@ -696,12 +747,14 @@ export function createAgentRestClient() {
   }
 
   async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
-    const { items, stopReason } = await listAllPages(
+    const result = await listAllPages(
       'list_cloud_workflows',
       '/workflows',
       zCloudWorkflowIndex,
       (page) => page.data
     )
+    if (!result.ok) throw result.cause
+    const { items, stopReason } = result.value
     return { entries: items, complete: stopReason === undefined }
   }
 

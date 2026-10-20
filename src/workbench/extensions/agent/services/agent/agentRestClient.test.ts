@@ -317,6 +317,25 @@ describe('agentRestClient route + method', () => {
     expect(listing.complete).toBe(false)
   })
 
+  it('preserves workflow-list rejection after a successful first page', async () => {
+    respond(
+      jsonResponse(200, {
+        data: [{ id: 'wf-1', name: 'one' }],
+        pagination: {
+          offset: 0,
+          limit: 100,
+          total: 2,
+          has_more: true,
+          next_cursor: 'page-2'
+        }
+      })
+    )
+    const cause = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(cause)
+
+    await expect(makeClient().listCloudWorkflows()).rejects.toBe(cause)
+  })
+
   it('includes saved workflows beyond the fifth page', async () => {
     for (let page = 0; page < 6; page++) {
       respond(
@@ -373,13 +392,16 @@ describe('listThreads pagination', () => {
     )
     respond(threadPage(['th-3'], { has_more: false }))
 
-    const threads = await makeClient().listThreads()
+    const result = await makeClient().listThreads()
 
     expect(vi.mocked(api.fetchApi).mock.calls.map(([route]) => route)).toEqual([
       '/agent/threads?limit=100',
       '/agent/threads?limit=100&after=next%20page'
     ])
-    expect(threads.map(({ id }) => id)).toEqual(['th-1', 'th-2', 'th-3'])
+    expect(result).toMatchObject({
+      status: 'complete',
+      threads: [{ id: 'th-1' }, { id: 'th-2' }, { id: 'th-3' }]
+    })
   })
 
   it.for([
@@ -395,12 +417,12 @@ describe('listThreads pagination', () => {
       ]
     }
   ])(
-    'rejects with $reason when paging stops before the last page',
+    'returns $reason without partial threads when paging stops before the last page',
     async ({ reason, pages }) => {
       pages().forEach(respond)
 
-      await expect(makeClient().listThreads()).rejects.toMatchObject({
-        name: 'AgentThreadListIncompleteError',
+      await expect(makeClient().listThreads()).resolves.toEqual({
+        status: 'incomplete',
         reason
       })
     }
@@ -418,14 +440,72 @@ describe('listThreads pagination', () => {
     ).toEqual([signal, signal])
   })
 
-  it('rejects instead of returning a partial list when a later page fails', async () => {
+  it('returns a failure without partial threads when a later page fails', async () => {
     respond(threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' }))
     respond(jsonResponse(503, { error: 'unavailable' }))
 
-    await expect(makeClient().listThreads()).rejects.toMatchObject({
-      name: 'AgentApiError',
-      status: 503
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'failed',
+      cause: expect.objectContaining({ name: 'AgentApiError', status: 503 })
     })
+  })
+  it.for([
+    {
+      name: 'invalid JSON',
+      response: () => new Response('{'),
+      error: 'AgentResponseUnreadableError'
+    },
+    {
+      name: 'invalid schema',
+      response: () => jsonResponse(200, {}),
+      error: 'ZodError'
+    }
+  ])('returns a failure for $name', async ({ response, error }) => {
+    respond(response())
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'failed',
+      cause: expect.objectContaining({ name: error })
+    })
+  })
+
+  it('returns the transport failure as data', async () => {
+    const cause = new TypeError('Failed to fetch')
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(cause)
+
+    await expect(makeClient().listThreads()).resolves.toEqual({
+      status: 'failed',
+      cause
+    })
+  })
+
+  it('does not start a cancelled listing', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    respond(threadPage([], { has_more: false }))
+
+    await expect(
+      makeClient().listThreads({ signal: controller.signal })
+    ).resolves.toEqual({
+      status: 'aborted'
+    })
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
+  it('does not request another page after cancellation during a page read', async () => {
+    const controller = new AbortController()
+    vi.mocked(api.fetchApi).mockImplementationOnce(async () => {
+      controller.abort()
+      return threadPage(['th-1'], { has_more: true, next_cursor: 'page-2' })
+    })
+    respond(threadPage([], { has_more: false }))
+
+    await expect(
+      makeClient().listThreads({ signal: controller.signal })
+    ).resolves.toEqual({
+      status: 'aborted'
+    })
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -641,14 +721,20 @@ describe('success response parsing', () => {
       },
       path: ['pagination', 'limit']
     }
-  ])('rejects $name from the agent service', async ({ response, path }) => {
-    respond(jsonResponse(200, response))
+  ])(
+    'returns a schema failure for $name from the agent service',
+    async ({ response, path }) => {
+      respond(jsonResponse(200, response))
 
-    await expect(makeClient().listThreads()).rejects.toMatchObject({
-      name: 'ZodError',
-      issues: expect.arrayContaining([expect.objectContaining({ path })])
-    })
-  })
+      await expect(makeClient().listThreads()).resolves.toEqual({
+        status: 'failed',
+        cause: expect.objectContaining({
+          name: 'ZodError',
+          issues: expect.arrayContaining([expect.objectContaining({ path })])
+        })
+      })
+    }
+  )
 })
 
 describe('error mapping', () => {
@@ -1201,7 +1287,10 @@ describe('error mapping', () => {
       vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
       respond(response)
 
-      await expect(makeClient().listThreads()).rejects.toBe(cause)
+      await expect(makeClient().listThreads()).resolves.toEqual({
+        status: 'failed',
+        cause
+      })
     }
   )
 })
