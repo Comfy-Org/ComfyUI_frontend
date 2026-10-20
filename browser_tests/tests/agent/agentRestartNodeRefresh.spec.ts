@@ -101,7 +101,6 @@ test.describe(
             type: 'BrowserProofNode',
             hasErrors: false,
             hasStepsWidget: true,
-            // Saved value, not the refreshed definition's default of 0.
             seed: 156680208700286
           })
       })
