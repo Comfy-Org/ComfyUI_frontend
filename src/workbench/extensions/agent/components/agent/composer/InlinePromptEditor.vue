@@ -20,20 +20,20 @@ import { useI18n } from 'vue-i18n'
 
 import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 
-import type { ComposerPrompt } from '../../../types/composerPrompt'
+import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
 import {
   composerReferenceKey,
   composerReferenceName
-} from '../../../types/composerPrompt'
-import { sameComposerReferenceOrder } from '../../../utils/composerPrompt'
+} from '@/workbench/extensions/agent/types/composerPrompt'
+import { sameComposerReferenceOrder } from '@/workbench/extensions/agent/utils/composerPrompt'
 import {
   assetReferenceText,
   nodeReferenceText
-} from '../../../utils/agentMessageText'
-import { selectedNodeKey } from '../../../composables/agent/useCanvasSelection'
-import type { PromptEditor } from '../../../types/promptEditor'
-import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
-import type { SkillReferenceMetadata } from '../../../types/skillReference'
+} from '@/workbench/extensions/agent/utils/agentMessageText'
+import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import type { PromptEditor } from '@/workbench/extensions/agent/types/promptEditor'
+import type { WorkflowReferenceMetadata } from '@/workbench/extensions/agent/types/workflowReference'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import InlineAssetReference from './InlineAssetReference.vue'
 import {
   inlineReferenceChipClass,

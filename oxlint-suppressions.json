@@ -1095,61 +1095,6 @@
       "count": 1
     }
   },
-  "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/document.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/editor/selectionMath.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 3
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/history.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/kinds/index.ts": {
-    "comfy/no-reexports": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/kinds/kinds.test.ts": {
-    "comfy/prefer-array-containing": {
-      "count": 2
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/nodeKind.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/render/place.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/tool.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/tools/overlayBox.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/renderer/extensions/layerEditor/engine/tools/transformMath.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/renderer/extensions/linearMode/LinearControls.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -1339,11 +1284,6 @@
   "src/services/extensionLoader.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    }
-  },
-  "src/services/gateway/registrySearchGateway.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
     }
   },
   "src/services/jobOutputCache.test.ts": {

@@ -10,9 +10,9 @@ import { api } from '@/scripts/api'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import '@/scripts/changeTracker'
-import { StorageKeys } from '../base/storageKeys'
-import * as storageIO from '../base/storageIO'
-import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
 
 const apiEvents: EventTarget = api

@@ -1,4 +1,4 @@
-import type { IGalleriaWidget } from '../types/widgets'
+import type { IGalleriaWidget } from '@/lib/litegraph/src/types/widgets'
 import { VueOnlyWidget } from './VueOnlyWidget'
 
 /**

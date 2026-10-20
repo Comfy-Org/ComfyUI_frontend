@@ -32,7 +32,7 @@ function gatedItem(status: 'enabled' | 'disabled', item: GatedItem): MenuItem {
 /** Edit, Leave and Delete workspace: the one source for every workspace ⋯ menu. */
 export function useWorkspaceActionMenuItems() {
   const { t } = useI18n()
-  const { uiConfig } = useWorkspaceUI()
+  const { canEditWorkspace } = useBillingCapabilities()
   const { gate: leaveGate, tooltip: leaveTooltip } = useLeaveWorkspaceGate()
   const { gate: deleteGate, tooltip: deleteTooltip } = useDeleteWorkspaceGate()
   const {
@@ -53,7 +53,7 @@ export function useWorkspaceActionMenuItems() {
 
   return computed<MenuItem[]>(() => {
     const items: MenuItem[] = []
-    if (uiConfig.value.showEditWorkspaceMenuItem) {
+    if (canEditWorkspace.value) {
       items.push({
         label: t('workspacePanel.menu.editWorkspace'),
         command: () => void showEditWorkspaceDialog()
