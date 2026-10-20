@@ -12,7 +12,15 @@ import { createRequire } from 'node:module'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { version } from 'typescript'
+import type { CompilerOptions } from 'typescript'
+import {
+  parseJsonConfigFileContent,
+  readConfigFile,
+  resolveModuleName,
+  sys,
+  version
+} from 'typescript'
+import { z } from 'zod'
 
 const root = fileURLToPath(new URL('../../../', import.meta.url))
 const require = createRequire(import.meta.url)
@@ -44,7 +52,102 @@ function saveJson(file: string, value: unknown) {
   writeFileSync(file, JSON.stringify(value, null, 2))
 }
 
+function checkPackageExports(directory: string, options: CompilerOptions) {
+  const manifestSchema = z.object({
+    name: z.string(),
+    exports: z.record(
+      z.string(),
+      z.union([
+        z.string(),
+        z.object({ types: z.string().endsWith('.d.ts'), default: z.string() })
+      ])
+    )
+  })
+  const from = path.join(root, 'src/package-reference-consumer.ts')
+  const runtime = createRequire(path.join(root, 'package.json'))
+  let checked = 0
+  const manifest = manifestSchema.parse(
+    JSON.parse(readFileSync(path.join(directory, 'package.json'), 'utf8'))
+  )
+  const entries = Object.entries(manifest.exports).filter(
+    ([subpath]) => !subpath.includes('*') && subpath !== './package.json'
+  )
+  for (const [subpath, target] of entries) {
+    assert.ok(
+      typeof target !== 'string',
+      `${manifest.name}${subpath}: declaration export`
+    )
+    const specifier = manifest.name + (subpath === '.' ? '' : subpath.slice(1))
+    const resolved = resolveModuleName(
+      specifier,
+      from,
+      options,
+      sys
+    ).resolvedModule
+    assert.equal(
+      resolved?.resolvedFileName,
+      path.resolve(directory, target.types),
+      specifier
+    )
+    assert.ok(
+      sys.fileExists(resolved.resolvedFileName),
+      `${specifier}: missing declaration`
+    )
+    assert.equal(
+      runtime.resolve(specifier),
+      path.resolve(directory, target.default),
+      `${specifier}: runtime source`
+    )
+    checked++
+  }
+  return checked
+}
+
+function checkWorkspaceResolution() {
+  const solution = z
+    .object({
+      references: z.array(z.object({ path: z.string() }))
+    })
+    .parse(
+      JSON.parse(
+        readFileSync(path.join(root, 'tsconfig.packages.json'), 'utf8')
+      )
+    )
+  const options = parseJsonConfigFileContent(
+    readConfigFile(path.join(root, 'tsconfig.json'), sys.readFile).config,
+    sys,
+    root
+  ).options
+  let checked = solution.references.reduce(
+    (total, reference) =>
+      total +
+      checkPackageExports(
+        path.dirname(path.resolve(root, reference.path)),
+        options
+      ),
+    0
+  )
+  const from = path.join(root, 'src/package-reference-consumer.ts')
+  const aliases = Object.entries(options.paths ?? {}).filter(([, targets]) =>
+    targets.some((target) => target.includes('/packages/'))
+  )
+  for (const [alias] of aliases) {
+    const resolved = resolveModuleName(alias, from, options, sys).resolvedModule
+    assert.ok(
+      resolved && resolved.resolvedFileName.endsWith('.d.ts'),
+      `${alias}: declaration boundary`
+    )
+    assert.ok(
+      sys.fileExists(resolved.resolvedFileName),
+      `${alias}: missing declaration`
+    )
+    checked++
+  }
+  return checked
+}
+
 try {
+  const workspaceExportsChecked = checkWorkspaceResolution()
   cpSync(
     path.join(root, 'packages/object-info-parser/src'),
     path.join(producer, 'src'),
@@ -186,6 +289,7 @@ try {
         sourceConsumerCheckMs: sourceCheck.milliseconds,
         declarationConsumerCheckMs: declarationCheck.milliseconds,
         consumerExcludesProducerSource: true,
+        workspaceExportsChecked,
         results
       },
       null,
