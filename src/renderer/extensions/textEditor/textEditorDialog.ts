@@ -1,6 +1,7 @@
 import { t } from '@/i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import TextEditorDialogContent from '@/renderer/extensions/textEditor/components/TextEditorDialogContent.vue'
+import TextEditorDialogHeader from '@/renderer/extensions/textEditor/components/TextEditorDialogHeader.vue'
 import { TEXT_EDITOR_DIALOG_KEY } from '@/renderer/extensions/textEditor/textEditorDialogKey'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -32,9 +33,12 @@ export function showTextEditor({
 
   dialogStore.showDialog({
     key: TEXT_EDITOR_DIALOG_KEY,
-    title: nodeTitle
-      ? t('textEditor.title', { widget: widgetLabel, node: nodeTitle })
-      : widgetLabel,
+    headerComponent: TextEditorDialogHeader,
+    headerProps: {
+      title: nodeTitle
+        ? t('textEditor.title', { widget: widgetLabel, node: nodeTitle })
+        : widgetLabel
+    },
     component: TextEditorDialogContent,
     props: {
       text,
@@ -47,6 +51,7 @@ export function showTextEditor({
     },
     dialogComponentProps: {
       size: 'lg',
+      flush: true,
       maximizable: true,
       onRemoved: () => {
         isOpen = false

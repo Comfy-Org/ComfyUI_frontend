@@ -4,7 +4,7 @@
     v-model="draft"
     :aria-label="label"
     :readonly="readOnly"
-    class="h-140 min-h-40 flex-auto resize-none px-[max(--spacing(4),calc((100%-34em)/2))] py-10 font-inter text-[15px] leading-6"
+    class="h-150 min-h-40 flex-auto resize-none rounded-t-none rounded-b-2xl border-t border-solid border-border/50 bg-transparent px-[max(--spacing(4),calc((100%-34em)/2))] py-10 font-inter text-[15px] leading-6 focus-visible:ring-0"
     data-testid="text-editor-dialog-textarea"
     @update:model-value="(value) => onEdit(String(value))"
   />
