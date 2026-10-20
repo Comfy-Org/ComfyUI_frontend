@@ -9,6 +9,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
 
@@ -112,11 +113,11 @@ export const useBootstrapStore = defineStore('bootstrap', () => {
       await bootstrapTracer.settle('auth-gate/initialized', waitForCloudAuth)
       await bootCloudIdentity()
 
-      // Signed-out cloud pages (/cloud/login) must issue no authenticated
-      // request, so bootstrap parks here until the user signs in rather than
-      // loading stores that can only answer 401.
-      const { isAuthenticated } = storeToRefs(useAuthStore())
-      await until(isAuthenticated).toBe(true)
+      const authStore = useAuthStore()
+      const apiKeyAuthStore = useApiKeyAuthStore()
+      await until(
+        () => authStore.isAuthenticated || apiKeyAuthStore.isAuthenticated
+      ).toBe(true)
     }
 
     const userStore = useUserStore()

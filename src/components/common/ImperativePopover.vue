@@ -132,7 +132,7 @@ defineExpose({ show, hide, toggle, open })
       :collision-padding
       :class="
         cn(
-          'pointer-events-auto z-3000 max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border-subtle p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none',
+          'pointer-events-auto z-3000 max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) overflow-auto rounded-lg border-border/50 p-0 shadow-lg data-[state=closed]:animate-none data-[state=open]:animate-none',
           className,
           contentClass
         )

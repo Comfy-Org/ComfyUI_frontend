@@ -49,6 +49,33 @@ describe('VideoCompareSlider', () => {
     motion.reduced = false
   })
 
+  it('reveals either reference image with keyboard controls', async () => {
+    const user = userEvent.setup()
+    render(VideoCompareSlider, {
+      props: {
+        ...props,
+        mediaKind: 'image',
+        beforeSrc: '/before.jpg',
+        afterSrc: '/after.jpg'
+      }
+    })
+    expect(screen.getByRole('img', { name: 'Before' })).toHaveAttribute(
+      'src',
+      '/before.jpg'
+    )
+    const after = screen.getByRole('img', { name: 'After' })
+    expect(after).toHaveAttribute('src', '/after.jpg')
+    expect(after.style.clipPath).toBe('inset(0 0 0 50%)')
+    const slider = screen.getByRole('slider', { name: 'Comparison slider' })
+    slider.focus()
+    await user.keyboard('{Home}')
+    expect(slider).toHaveAttribute('aria-valuenow', '0')
+    expect(after.style.clipPath).toBe('inset(0 0 0 0%)')
+    await user.keyboard('{End}')
+    expect(slider).toHaveAttribute('aria-valuenow', '100')
+    expect(after.style.clipPath).toBe('inset(0 0 0 100%)')
+  })
+
   it('renders no clip sources on the server', async () => {
     const html = await renderToString(
       createSSRApp({ render: () => h(VideoCompareSlider, props) })

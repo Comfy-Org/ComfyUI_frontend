@@ -11,7 +11,7 @@ import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult
-} from './billingContracts.js'
+} from './billingContracts'
 
 export const DEFAULT_BILLING_TIMEOUT_MS = 30_000
 

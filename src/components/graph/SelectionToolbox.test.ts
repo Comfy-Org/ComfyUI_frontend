@@ -12,7 +12,8 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/services/extensionService'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useCommandStore } from '@/stores/commandStore'
-import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import * as nodeFilterUtil from '@/utils/nodeFilterUtil'
 
@@ -494,7 +495,9 @@ describe('SelectionToolbox', () => {
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 
       await vi.advanceTimersByTimeAsync(500)
-      expect(screen.getByRole('tooltip')).toHaveTextContent('More Options')
+      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+        'More Options'
+      )
     })
   })
 })

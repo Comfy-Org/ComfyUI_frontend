@@ -19,8 +19,14 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import {
+  deleteSelectedLinks,
+  hideSelectedLinks,
+  showSelectedLinks
+} from '@/lib/litegraph/src/canvas/linkSelection'
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { openModelLibraryBrowser } from '@/platform/assets/composables/openModelLibraryBrowser'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
@@ -81,11 +87,8 @@ const moveSelectedNodesVersionAdded = '1.22.2'
 let onboardingReplayInProgress: Promise<void> | undefined
 
 export function useCoreCommands(): ComfyCommand[] {
-  const {
-    canAccessSubscriptionFeatures,
-    showSubscriptionDialog,
-    subscription
-  } = useBillingContext()
+  const { canAccessSubscriptionFeatures, subscription } = useBillingContext()
+  const { showSubscriptionDialog } = useSubscriptionPaywall()
 
   function blockRunWithoutSubscription(): boolean {
     if (!isCloud || canAccessSubscriptionFeatures.value) return false
@@ -987,6 +990,36 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.Canvas.HideSelectedLinks',
+      icon: 'icon-[lucide--eye-off]',
+      label: 'Hide Selected Links',
+      versionAdded: '1.58.0',
+      mutatesGraph: true,
+      function: () => {
+        hideSelectedLinks(app.canvas)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.ShowSelectedLinks',
+      icon: 'icon-[lucide--eye]',
+      label: 'Show Selected Links',
+      versionAdded: '1.58.0',
+      mutatesGraph: true,
+      function: () => {
+        showSelectedLinks(app.canvas)
+      }
+    },
+    {
+      id: 'Comfy.Canvas.DeleteSelectedLinks',
+      icon: 'icon-[lucide--trash-2]',
+      label: 'Delete Selected Links',
+      versionAdded: '1.58.0',
+      mutatesGraph: true,
+      function: () => {
+        deleteSelectedLinks(app.canvas)
+      }
+    },
+    {
       id: 'Comfy.Canvas.DeleteSelectedItems',
       icon: 'pi pi-trash',
       label: 'Delete Selected Items',
@@ -994,6 +1027,7 @@ export function useCoreCommands(): ComfyCommand[] {
       mutatesGraph: true,
       function: () => {
         if (app.canvas.selectedItems.size === 0) {
+          if (deleteSelectedLinks(app.canvas)) return
           app.canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })
           )

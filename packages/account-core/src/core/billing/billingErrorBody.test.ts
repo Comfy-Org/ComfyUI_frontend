@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { readBillingErrorMessage } from './billingErrorBody.js'
+import { readBillingErrorMessage } from './billingErrorBody'
 
 describe('readBillingErrorMessage', () => {
   it('reads the message of an ErrorResponse body', () => {

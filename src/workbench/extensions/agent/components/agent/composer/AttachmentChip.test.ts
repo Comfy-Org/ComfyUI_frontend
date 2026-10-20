@@ -12,6 +12,7 @@ import { nextTick } from 'vue'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { i18n } from '@/i18n'
 
+import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'
 import AttachmentChip from './AttachmentChip.vue'
 
 function renderChip(props: {
@@ -20,7 +21,7 @@ function renderChip(props: {
   mediaUrl?: string
   mediaKind?: MediaKind
   uploading?: boolean
-  validationError?: 'invalid-video'
+  validationError?: AttachmentValidationError
 }) {
   const rendered = render(AttachmentChip, {
     props,
@@ -430,17 +431,43 @@ describe('AttachmentChip', () => {
       screen.queryByRole('button', { name: 'Preview bad.mov' })
     ).not.toBeInTheDocument()
     await user.hover(status)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(errorMessage)
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      errorMessage
+    )
     await user.unhover(status)
     await waitFor(() =>
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     )
     await user.tab()
     expect(status).toHaveFocus()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(errorMessage)
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      errorMessage
+    )
     await user.tab()
     expect(screen.getByRole('button', { name: 'Remove bad.mov' })).toHaveFocus()
     await user.keyboard('{Enter}')
     expect(emitted('remove')).toHaveLength(1)
   })
+
+  it.for([
+    { name: 'doc.pdf', mediaKind: undefined },
+    { name: 'clip.wmv', mediaKind: 'video' as const }
+  ])(
+    'shows $name of an unaccepted type as a generic file with the type explanation',
+    ({ name, mediaKind }) => {
+      renderChip({
+        name,
+        mediaKind,
+        previewUrl: 'blob:preview',
+        validationError: 'unsupported-type'
+      })
+      const message = `${name} isn’t a file type the agent accepts. Remove it and try another file.`
+
+      expect(screen.getByRole('status')).toHaveAccessibleName(message)
+      expect(screen.queryByRole('img')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: `Preview ${name}` })
+      ).not.toBeInTheDocument()
+    }
+  )
 })

@@ -1,7 +1,6 @@
+import type { LLink } from '@/lib/litegraph/src/types/entityRegistry'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
-
-import type { LLink } from './LLink'
 
 export class LinkMap extends Map<LinkId, LLink> {
   private cachedRevision = -1

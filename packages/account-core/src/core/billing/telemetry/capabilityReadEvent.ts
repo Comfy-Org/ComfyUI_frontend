@@ -1,4 +1,4 @@
-import type { BillingFailed, BillingSucceeded } from './stages.js'
+import type { BillingFailed, BillingSucceeded } from './stages'
 
 export type CapabilityReadBillingEvent = {
   operation: 'capability_read'

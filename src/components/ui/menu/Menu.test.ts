@@ -32,6 +32,68 @@ describe('Menu', () => {
     expect(command).toHaveBeenCalledOnce()
   })
 
+  it('emits activate once with the item for a click', async () => {
+    const onActivate = vi.fn()
+    const item = { label: 'Rename', command: vi.fn() }
+    render(Menu, {
+      props: { open: true, items: [item], onActivate },
+      slots: { trigger: '<button>Open</button>' }
+    })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(await screen.findByRole('menuitem', { name: 'Rename' }))
+
+    expect(onActivate).toHaveBeenCalledExactlyOnceWith(item)
+  })
+
+  it.for([
+    { gesture: 'a click', role: 'menuitem', checked: undefined, hold: 0 },
+    { gesture: 'a click', role: 'menuitemcheckbox', checked: false, hold: 0 },
+    {
+      gesture: 'a 100 ms hold',
+      role: 'menuitem',
+      checked: undefined,
+      hold: 100
+    },
+    {
+      gesture: 'a 100 ms hold',
+      role: 'menuitemcheckbox',
+      checked: false,
+      hold: 100
+    }
+  ] as const)(
+    'emits one activate event for $gesture on a press-and-hold $role',
+    async ({ role, checked, hold }) => {
+      const onActivate = vi.fn()
+      render(Menu, {
+        props: {
+          open: true,
+          items: [
+            {
+              label: 'Zoom',
+              command: vi.fn(),
+              pressAndHoldInterval: 50,
+              checked
+            }
+          ],
+          onActivate
+        },
+        slots: { trigger: '<button>Open</button>' }
+      })
+      const item = await screen.findByRole(role, { name: 'Zoom' })
+      const user = userEvent.setup({
+        advanceTimers: vi.advanceTimersByTime,
+        pointerEventsCheck: 0
+      })
+
+      await user.pointer({ keys: '[MouseLeft>]', target: item })
+      await vi.advanceTimersByTimeAsync(hold)
+      await user.pointer({ keys: '[/MouseLeft]', target: item })
+
+      expect(onActivate).toHaveBeenCalledOnce()
+    }
+  )
+
   it('does not add a click command after press-and-hold repeats', async () => {
     const command = vi.fn()
     render(Menu, {

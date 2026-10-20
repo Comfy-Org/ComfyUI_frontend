@@ -18,16 +18,31 @@ install PrimeVue and its theme on that app.
 
 ## Extensions that read `--p-*` variables
 
-Replace them with the design system tokens, which follow the active light or
-dark theme:
+Replace them with the design system theme variables, which follow the active
+light or dark theme and the active color palette:
 
-| PrimeVue variable                                         | Design system token      |
-| --------------------------------------------------------- | ------------------------ |
-| `--p-primary-color`                                       | `--primary-background`   |
-| `--p-text-color`                                          | `--base-foreground`      |
-| `--p-text-muted-color`                                    | `--muted-foreground`     |
-| `--p-content-background`                                  | `--base-background`      |
-| `--p-surface-*` (panels, elevated areas)                  | `--secondary-background` |
-| `--p-content-border-color`, `--p-form-field-border-color` | `--border-default`       |
+| PrimeVue variable                                         | Theme variable       |
+| --------------------------------------------------------- | -------------------- |
+| `--p-primary-color`                                       | `--primary`          |
+| `--p-text-color`                                          | `--foreground`       |
+| `--p-text-muted-color`                                    | `--muted-foreground` |
+| `--p-content-background`                                  | `--background`       |
+| `--p-surface-*` (panels, elevated areas)                  | `--secondary`        |
+| `--p-content-border-color`, `--p-form-field-border-color` | `--border`           |
+
+## Deprecated variable names
+
+Earlier versions of these notes pointed at older design system names. They
+still resolve, but they are deprecated and will be removed in a future
+release. Move to the theme variable now:
+
+| Deprecated name               | Theme variable |
+| ----------------------------- | -------------- |
+| `--base-background`           | `--background` |
+| `--base-foreground`           | `--foreground` |
+| `--border-default`            | `--border`     |
+| `--primary-background`        | `--primary`    |
+| `--secondary-background`      | `--secondary`  |
+| `--component-node-background` | `--node`       |
 
 PrimeIcons are still loaded, so `pi pi-*` icon classes keep working.

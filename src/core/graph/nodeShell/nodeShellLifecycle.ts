@@ -1,3 +1,8 @@
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { WidgetRefusalReport } from '@/lib/litegraph/src/node/widgetsView'
 import { refuseAmbiguousNodeWidgets } from '@/lib/litegraph/src/node/widgetsView'
@@ -10,10 +15,8 @@ import type { RefusedWidget } from '@/types/widgetId'
 
 import { registerNodeState, unregisterNodeState } from './nodeShellState'
 
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+
 import type { UUID } from '@/utils/uuid'
 
 const REFUSAL_TEARDOWN_ERROR_TYPE = 'failure_tearing_down_refused_widget'

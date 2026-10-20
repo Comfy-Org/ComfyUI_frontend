@@ -1,7 +1,10 @@
 import { assert, describe, expect, it } from 'vitest'
 
-import type { AgentMessages } from '../../schemas/agentApiSchema'
-import { toTurnId, zAgentMessages } from '../../schemas/agentApiSchema'
+import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  toTurnId,
+  zAgentMessages
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
 const row = (
@@ -630,6 +633,58 @@ describe('normalizeAgentTranscript', () => {
       state: 'streaming'
     })
     expect(transcript.pending?.messageId).toBe('row-1')
+  })
+
+  const pendingAsk = (kind: string) => ({
+    message_id: 'row-1',
+    ask_id: 'ask-1',
+    kind,
+    prompt: 'Which style?',
+    options: [
+      { id: 'oil', label: 'Oil' },
+      { id: 'ink', label: 'Ink', description: 'Fine lines' }
+    ],
+    min_selections: 1,
+    max_selections: 2,
+    allow_other: true
+  })
+
+  it.for([
+    {
+      name: 'an ask_user card',
+      ask: pendingAsk('ask_user'),
+      part: expect.objectContaining({ type: 'askUser', askId: 'ask-1' })
+    },
+    {
+      name: 'a notice for an unknown kind',
+      ask: pendingAsk('something_new'),
+      part: { type: 'askUnavailable', askId: 'ask-1' }
+    }
+  ])('restores $name and keeps the turn live', ({ ask, part }) => {
+    const message = row(1, 'assistant', 'turn-a', '', 'row-1')
+
+    const transcript = normalizeAgentTranscript(
+      zAgentMessages.parse([
+        { ...message, status: 'streaming', pending_ask: ask }
+      ])
+    )
+
+    expect(transcript.messages[0].parts).toEqual([part])
+    expect(transcript.messages[0].streaming).toBe(true)
+    expect(transcript.pending?.messageId).toBe('row-1')
+  })
+
+  it('drops a pending ask_user card from a streaming row a later turn retired', () => {
+    const asked = row(1, 'assistant', 'turn-a', '', 'row-1')
+    const transcript = normalizeAgentTranscript([
+      zAgentMessages.parse([
+        { ...asked, status: 'streaming', pending_ask: pendingAsk('ask_user') }
+      ])[0],
+      row(2, 'user', 'turn-b', 'next', 'row-2'),
+      row(3, 'assistant', 'turn-b', 'all done', 'row-3')
+    ])
+
+    expect(transcript.messages[0].parts).toEqual([])
   })
 
   // PM-1776 / PM-1682: the counterpart of the clamp above. A server row that

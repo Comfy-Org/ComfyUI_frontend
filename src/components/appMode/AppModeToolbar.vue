@@ -16,7 +16,7 @@ const { hasNodes } = storeToRefs(appModeStore)
 </script>
 
 <template>
-  <div class="pointer-events-auto flex flex-row items-start gap-2">
+  <div class="pointer-events-auto flex items-start gap-2">
     <WorkflowActionsDropdown source="app_mode_toolbar" />
     <Button
       v-if="enableAppBuilder"

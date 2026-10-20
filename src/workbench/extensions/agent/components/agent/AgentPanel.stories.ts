@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import { FREE_USE_VARIANTS } from '../../experiments/freeUsePlacement'
-import { toTurnId } from '../../schemas/agentApiSchema'
-import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
-import '../../agentPanel.css'
+import { FREE_USE_VARIANTS } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import AgentPanel from './AgentPanel.vue'
 
@@ -32,7 +32,7 @@ const meta: Meta<typeof AgentPanel> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-secondary-background h-screen w-100"><story /></div>'
+        '<div class="agent-scope bg-secondary h-screen w-100"><story /></div>'
     })
   ]
 }
@@ -113,7 +113,7 @@ export const FreeUsePlacements: Story = {
       <div class="flex h-screen gap-4 overflow-x-auto">
         <div v-for="placement in placements" :key="placement" class="shrink-0">
           <div class="px-2 py-1 text-xs text-muted-foreground">{{ placement }}</div>
-          <div class="agent-scope bg-secondary-background h-full w-100">
+          <div class="agent-scope bg-secondary h-full w-100">
             <AgentPanel v-bind="args" :free-use-placement="placement" />
           </div>
         </div>

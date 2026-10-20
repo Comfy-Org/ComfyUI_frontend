@@ -6,13 +6,13 @@ import type {
   BillingOperationState,
   BillingPresentationState,
   PendingBillingOperation
-} from './operationState.js'
+} from './operationState'
 import {
   BillingOpStatusSchema,
   reduceBillingOperation,
   validateActionUrl
-} from './operationState.js'
-import { projectPaymentStep } from './paymentProjection.js'
+} from './operationState'
+import { projectPaymentStep } from './paymentProjection'
 
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
 

@@ -199,7 +199,7 @@ function expectShowcaseCardsLocalized(
 function expectGalleryCardsLocalized(cards: ModelLaunchGallery['cards']) {
   for (const card of cards) {
     expectLocalized(card.name, card.id, 'name')
-    expectLocalized(card.note, card.id, 'note')
+    if (card.note) expectLocalized(card.note, card.id, 'note')
     expectLocalized(card.description, card.id, 'description')
   }
 }
@@ -281,6 +281,9 @@ function outboundHrefs(page: ModelLaunchPage): string[] {
 function expectHeroStills(hero: ModelLaunchHero) {
   if (hero.videoSrc !== undefined) {
     expect(hero.videoSrc).toMatch(VIDEO_URL)
+  }
+  if (hero.mobileVideoSrc !== undefined) {
+    expect(hero.mobileVideoSrc).toMatch(VIDEO_URL)
   }
   if (hero.posterSrc !== undefined) {
     expect(hero.posterSrc).toMatch(HERO_STILL_URL)

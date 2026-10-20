@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
 import type {
   CancelTaskOutcome,
-  TaskResponse,
   TaskResult
 } from '@/platform/tasks/services/taskService'
 import {
@@ -14,22 +14,9 @@ import {
   isDownloadCancelled,
   useAssetDownloadStore
 } from '@/stores/assetDownloadStore'
+import { api } from '@/scripts/api'
 
-type DownloadEventHandler = (e: CustomEvent<AssetDownloadWsMessage>) => void
-
-const eventHandler = vi.hoisted(() => {
-  const state: { current: DownloadEventHandler | null } = { current: null }
-  return state
-})
-
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn((_event: string, handler: DownloadEventHandler) => {
-      eventHandler.current = handler
-    }),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function createDownloadMessage(
   overrides: Partial<AssetDownloadWsMessage> = {}
@@ -68,18 +55,12 @@ function createTaskResponse(
 }
 
 function dispatch(msg: AssetDownloadWsMessage) {
-  if (!eventHandler.current) {
-    throw new Error(
-      'Event handler not registered. Call useAssetDownloadStore() first.'
-    )
-  }
-  eventHandler.current(new CustomEvent('asset_download', { detail: msg }))
+  api.dispatchCustomEvent('asset_download', msg)
 }
 
 describe('useAssetDownloadStore', () => {
   beforeEach(() => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    eventHandler.current = null
     // Only the service calls are stubbed. `TaskNotFoundError` and the result
     // parser stay real because the store branches on them.
     vi.spyOn(taskService, 'getTask')

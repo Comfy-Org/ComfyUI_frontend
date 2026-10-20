@@ -34,7 +34,7 @@
           <span class="menu-label">{{ menuItem.label }}</span>
           <i
             v-if="menuItem.showExternalIcon"
-            class="ml-auto icon-[lucide--external-link] size-4 text-primary-background"
+            class="ml-auto icon-[lucide--external-link] size-4 text-primary"
           />
           <i
             v-if="menuItem.key === 'more'"
@@ -45,7 +45,7 @@
       <div
         class="flex h-4 flex-col items-center justify-between self-stretch p-2"
       >
-        <div class="w-full border-b border-interface-menu-stroke" />
+        <div class="w-full border-b" />
       </div>
     </div>
 
@@ -103,7 +103,7 @@
         <article
           v-for="release in releaseStore.recentReleases"
           :key="release.id || release.version"
-          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-interface-menu-component-surface-hovered"
+          class="release-menu-item flex h-12 min-h-6 cursor-pointer items-center gap-2 self-stretch rounded-sm p-2 transition-colors hover:bg-accent"
           :data-testid="`help-release-item-${release.version}`"
           role="button"
           tabindex="0"
@@ -313,7 +313,7 @@ const menuItems = computed<MenuItem[]>(() => {
     {
       key: 'feedback',
       type: 'item',
-      icon: 'icon-[lucide--clipboard-pen]',
+      icon: 'icon-[lucide--megaphone] size-4',
       label: t('helpCenter.feedback'),
       showExternalIcon: isCloud || isNightly,
       action: () => {
@@ -665,10 +665,10 @@ onBeforeUnmount(() => {
   width: 256px;
   max-height: 500px;
   overflow-y: auto;
-  background: var(--interface-menu-surface);
+  background: var(--popover);
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
-  border: 1px solid var(--interface-menu-stroke);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
   padding: 12px 8px;
   position: relative;
 }
@@ -687,12 +687,12 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: background-color 0.2s;
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: var(--foreground);
   text-align: left;
 }
 
 .help-menu-item:hover {
-  background-color: var(--interface-menu-component-surface-hovered);
+  background-color: var(--accent);
 }
 
 .help-menu-item:focus,
@@ -712,7 +712,7 @@ onBeforeUnmount(() => {
   width: 16px;
   height: 16px;
   font-size: 16px;
-  color: var(--text-primary);
+  color: var(--foreground);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -722,7 +722,7 @@ onBeforeUnmount(() => {
 .help-menu-icon svg {
   width: 16px;
   height: 16px;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .menu-red-dot {
@@ -731,9 +731,9 @@ onBeforeUnmount(() => {
   right: -2px;
   width: 8px;
   height: 8px;
-  background: #ff3b30;
+  background: var(--destructive);
   border-radius: 50%;
-  border: 1.5px solid var(--base-background);
+  border: 1.5px solid var(--background);
   z-index: 1;
 }
 
@@ -746,7 +746,7 @@ onBeforeUnmount(() => {
 }
 
 .section-description {
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
@@ -773,12 +773,12 @@ onBeforeUnmount(() => {
   font-size: 0.9rem;
   line-height: 1.2;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--foreground);
 }
 
 .release-date {
   height: 16px;
-  color: var(--text-secondary);
+  color: var(--muted-foreground);
   font-family: var(--font-inter);
   font-size: 12px;
   font-style: normal;
@@ -809,10 +809,10 @@ onBeforeUnmount(() => {
 .more-submenu {
   width: 210px;
   padding: 12px 8px;
-  background: var(--interface-menu-surface);
+  background: var(--popover);
   border-radius: 8px;
-  border: 1px solid var(--interface-menu-stroke);
-  box-shadow: 0 2px 12px 0 rgb(0 0 0 / 0.1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: opacity 0.15s ease-out;
 }
@@ -822,14 +822,14 @@ onBeforeUnmount(() => {
   height: 32px;
   min-height: 24px;
   border-radius: 4px;
-  color: var(--text-primary);
+  color: var(--foreground);
   font-size: 0.9rem;
   font-weight: inherit;
   line-height: inherit;
 }
 
 .submenu-item:hover {
-  background-color: var(--interface-menu-component-surface-hovered);
+  background-color: var(--accent);
 }
 
 .submenu-item:focus,
@@ -840,7 +840,7 @@ onBeforeUnmount(() => {
 
 .submenu-divider {
   height: 1px;
-  background: var(--interface-menu-stroke);
+  background: var(--border);
   margin: 4px 0;
 }
 
@@ -854,12 +854,12 @@ onBeforeUnmount(() => {
 }
 
 .help-center-menu::-webkit-scrollbar-thumb {
-  background: var(--interface-menu-stroke);
+  background: var(--border);
   border-radius: 3px;
 }
 
 .help-center-menu::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: var(--muted-foreground);
 }
 
 /* Reduced Motion */

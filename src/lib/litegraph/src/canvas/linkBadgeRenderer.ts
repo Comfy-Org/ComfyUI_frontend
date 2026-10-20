@@ -1,11 +1,11 @@
-import type { LGraph } from '../LGraph'
-import type { LLink } from '../LLink'
+import type { LGraph, LLink } from '@/lib/litegraph/src/types/entityRegistry'
+
 import type { HiddenLinkBadge } from './linkBadges'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { layoutHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
-import { slotTypeKey } from '../utils/type'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
 export function queryHiddenLinkBadgeAtPoint(
   host: object,
