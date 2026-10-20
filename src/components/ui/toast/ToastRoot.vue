@@ -15,6 +15,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
 <template>
   <ToastRoot
     v-bind="forwarded"
+    aria-live="off"
     :class="
       cn(
         'pointer-events-auto relative grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3 rounded-lg border bg-background p-4 shadow-lg',

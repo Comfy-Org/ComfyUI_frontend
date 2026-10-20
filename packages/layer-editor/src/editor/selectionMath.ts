@@ -1,4 +1,4 @@
-import type { Rect, Vec2 } from '../node'
+import type { Rect, Vec2 } from '#/node'
 
 export type SelectionOp = 'replace' | 'add' | 'subtract' | 'intersect'
 

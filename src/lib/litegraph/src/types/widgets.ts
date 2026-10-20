@@ -23,11 +23,11 @@ import type {
   Point,
   RequiredProps,
   Size
-} from '../interfaces'
+} from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { CanvasPointerEvent } from './events'
 
-export type { NodeBindable } from '../utils/type'
+export type { NodeBindable } from '@/lib/litegraph/src/utils/type'
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()

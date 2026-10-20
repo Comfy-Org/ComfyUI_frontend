@@ -1,4 +1,4 @@
-import { useReleaseStore } from '../common/releaseStore'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 beforeEach(() => {
   Object.assign(useReleaseStore(), {
     recentRelease: null as ReleaseNote | null
@@ -15,7 +15,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ReleaseNote } from '../common/releaseService'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import WhatsNewPopup from './WhatsNewPopup.vue'
 
 vi.hoisted(() => {

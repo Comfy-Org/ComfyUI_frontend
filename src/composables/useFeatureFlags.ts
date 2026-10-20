@@ -6,7 +6,6 @@ import { normalizeHostedBillingDestination } from '@/config/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
-  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -288,13 +287,6 @@ export function useFeatureFlags() {
         remoteConfig.value.member_credit_limits_enabled
       )
     },
-    get legacyBillingMigrationEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
-        remoteConfig.value.legacy_billing_migration_enabled,
-        cachedLegacyBillingMigrationEnabled
-      )
-    },
     get billingSdkTopupEnabled() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
@@ -414,8 +406,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
-      [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
-        flags.legacyBillingMigrationEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:

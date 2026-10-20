@@ -5,7 +5,7 @@ import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
 import type {
   getExtraOptionsForWidget as realGetExtraOptionsForWidget,
   useLitegraphService as realUseLitegraphService
-} from '../litegraphService'
+} from '@/services/litegraphService'
 
 export const getExtraOptionsForWidget = vi.fn<
   typeof realGetExtraOptionsForWidget

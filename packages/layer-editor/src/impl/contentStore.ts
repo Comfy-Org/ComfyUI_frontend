@@ -1,5 +1,5 @@
-import type { ContentEntry, ContentStore } from '../content'
-import { generateId } from '../id'
+import type { ContentEntry, ContentStore } from '#/content'
+import { generateId } from '#/id'
 
 export class DefaultContentStore implements ContentStore {
   private entries = new Map<string, ContentEntry>()

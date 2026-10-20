@@ -37,7 +37,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import NodeSettings from './NodeSettings.vue'
 
 const props = defineProps<{

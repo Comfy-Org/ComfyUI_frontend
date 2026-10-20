@@ -5,7 +5,6 @@ import { isCloud } from '@/platform/distribution/types'
 import {
   authenticatedRemoteConfigState,
   cachedBillingControlEnabled,
-  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   remoteConfig,
   remoteConfigErrorStatus,
@@ -70,7 +69,6 @@ export function invalidateRemoteConfig(): void {
   remoteConfigErrorStatus.value = null
   remoteConfigState.value = 'unloaded'
   authenticatedRemoteConfigState.value = 'unloaded'
-  cachedLegacyBillingMigrationEnabled.value = undefined
   clearSessionAgentGrant()
 }
 
@@ -111,9 +109,6 @@ function commitRemoteConfigSuccess(
     authenticatedRemoteConfigState.value = 'authenticated'
     authenticatedLoadingGeneration = undefined
     cachedBillingControlEnabled.value = Boolean(config.billing_control_enabled)
-    cachedLegacyBillingMigrationEnabled.value = Boolean(
-      config.legacy_billing_migration_enabled
-    )
     cachedV1PaymentRecovery.value = Boolean(config.v1_payment_recovery)
     cacheSessionAgentGrant(config['agent-in-app-experience'] === true)
   } else {
@@ -162,7 +157,6 @@ function commitRemoteConfigFailure(response: Response, useAuth: boolean): void {
   } else {
     remoteConfigErrorStatus.value = null
   }
-  if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
   if (useAuth) {
     authenticatedRemoteConfigState.value = 'error'
     authenticatedLoadingGeneration = undefined
@@ -174,7 +168,6 @@ function commitRemoteConfigFailure(response: Response, useAuth: boolean): void {
 function commitRemoteConfigException(error: unknown, useAuth: boolean): void {
   console.error('Failed to fetch remote config:', error)
   remoteConfigErrorStatus.value = null
-  if (useAuth) cachedLegacyBillingMigrationEnabled.value = undefined
   if (useAuth) {
     authenticatedRemoteConfigState.value = 'error'
     authenticatedLoadingGeneration = undefined

@@ -1,7 +1,7 @@
-import type { ContentStore } from '../content'
-import type { Command, Direction } from '../history'
-import { Dirty } from '../history'
-import type { ChannelData, RasterData, Transform } from '../node'
+import type { ContentStore } from '#/content'
+import type { Command, Direction } from '#/history'
+import { Dirty } from '#/history'
+import type { ChannelData, RasterData, Transform } from '#/node'
 
 export interface RasterSnapshot {
   contentId: string
