@@ -1,5 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import { toNodeId } from '@/types/nodeId'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
@@ -8,6 +9,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest, pushAgentEvent } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
+const browserProofNodeId = toNodeId(1)
 
 test.describe(
   'Agent restart node refresh',
@@ -27,8 +29,8 @@ test.describe(
         await comfyPage.workflow.loadWorkflow('agent/restart_node_refresh')
         await expect
           .poll(() =>
-            page.evaluate(() => {
-              const node = window.app!.graph.getNodeById(1)
+            page.evaluate((nodeId) => {
+              const node = window.app!.graph.getNodeById(nodeId)
               return {
                 type: node?.type,
                 hasErrors: node?.has_errors === true,
@@ -36,7 +38,7 @@ test.describe(
                   (widget) => widget.name === 'steps'
                 )
               }
-            })
+            }, browserProofNodeId)
           )
           .toEqual({
             type: 'BrowserProofNode',
@@ -82,8 +84,8 @@ test.describe(
       await test.step('verify the active workflow was reconstructed', async () => {
         await expect
           .poll(() =>
-            page.evaluate(() => {
-              const node = window.app!.graph.getNodeById(1)
+            page.evaluate((nodeId) => {
+              const node = window.app!.graph.getNodeById(nodeId)
               return {
                 type: node?.type,
                 hasErrors: node?.has_errors === true,
@@ -91,7 +93,7 @@ test.describe(
                   (widget) => widget.name === 'steps'
                 )
               }
-            })
+            }, browserProofNodeId)
           )
           .toEqual({
             type: 'BrowserProofNode',
