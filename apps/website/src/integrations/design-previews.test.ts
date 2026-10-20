@@ -13,8 +13,9 @@ describe('design previews', () => {
   })
 
   it('builds every preview in English and Chinese', () => {
-    const patterns = DESIGN_PREVIEW_ROUTES.map(({ pattern }) => pattern)
-    for (const pattern of patterns.filter((p) => !p.startsWith('/zh-CN/')))
-      expect(patterns).toContain(`/zh-CN${pattern}`)
+    expect(DESIGN_PREVIEW_ROUTES.map(({ pattern }) => pattern)).toEqual([
+      '/hub-preview/node-graph-workflow',
+      '/zh-CN/hub-preview/node-graph-workflow'
+    ])
   })
 })

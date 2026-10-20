@@ -73,13 +73,15 @@ describe('WorkflowNodeGraphPage', () => {
 
     expect(screen.getByTestId('node-graph-graph')).toBeTruthy()
 
-    const facts = screen.getByTestId('workflow-facts')
-    for (const text of [
-      ...nodeGraphWorkflowSample.models,
-      ...nodeGraphWorkflowSample.customNodes,
-      'Runs in ComfyUI'
-    ])
-      expect(facts.textContent).toContain(text)
+    const facts = within(screen.getByTestId('workflow-facts'))
+    expect(
+      [
+        'Nano Banana Pro',
+        'ComfyUI-KJNodes',
+        'ComfyUI-Impact-Pack',
+        'Runs in ComfyUI'
+      ].map((text) => facts.queryByText(text) !== null)
+    ).toEqual([true, true, true, true])
   })
 
   it('leaves Output and Author to the Details facts', () => {
@@ -104,8 +106,14 @@ describe('WorkflowNodeGraphPage', () => {
   it('answers the workflow FAQ below the tabs', () => {
     renderPage()
 
-    for (const { question } of nodeGraphWorkflowSample.faq)
-      expect(screen.getByText(question)).toBeTruthy()
+    expect(
+      [
+        'What kind of reference image works best?',
+        'Can I change which views go on the sheet?',
+        'Why does it need custom nodes?',
+        'How do I keep a character consistent across runs?'
+      ].map((question) => screen.queryByText(question) !== null)
+    ).toEqual([true, true, true, true])
   })
 
   it('leaves the About footer to the Runs in ComfyUI note, with no button', () => {
