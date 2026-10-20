@@ -1,5 +1,5 @@
 import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'
@@ -88,15 +88,6 @@ describe('NodeSearchBoxPopover', () => {
     const pinia = getActivePinia()!
     const settingStore = useSettingStore()
     settingStore.settingValues = settings
-    settingStore.settingsById = coreSettingsById
-    useSearchBoxStore().visible = false
-    useCanvasStore().canvas = fromPartial({
-      linkConnector: {
-        events: new EventTarget(),
-        reset: vi.fn()
-      },
-      setDirty: vi.fn()
-    })
 
     const result = render(NodeSearchBoxPopover, {
       global: {
@@ -139,6 +130,15 @@ describe('NodeSearchBoxPopover', () => {
 
   beforeEach(() => {
     vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(null)
+    useSettingStore().settingsById = coreSettingsById
+    useSearchBoxStore().visible = false
+    useCanvasStore().canvas = fromPartial({
+      linkConnector: {
+        events: new EventTarget(),
+        reset: vi.fn()
+      },
+      setDirty: vi.fn()
+    })
   })
 
   describe('addFilter duplicate prevention', () => {
@@ -218,25 +218,33 @@ describe('NodeSearchBoxPopover', () => {
     expect(screen.getByLabelText('filter count')).toHaveTextContent('0')
   })
 
-  it('opens above an already open dialog', async () => {
+  it('reopens above a later overlay using the dialog portal', async () => {
+    render(NodeSearchBoxPopover, {
+      global: {
+        plugins: [i18n, getActivePinia()!],
+        stubs: {
+          NodeSearchBox: true,
+          NodeSearchContent: true,
+          NodePreviewCard: true
+        }
+      }
+    })
+    const searchBoxStore = useSearchBoxStore()
+    searchBoxStore.visible = true
+    await screen.findByRole('dialog')
+    searchBoxStore.visible = false
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+
     render({
       template:
         '<section class="fixed z-overlay" data-testid="existing-overlay" />'
     })
     const dialog = screen.getByTestId('existing-overlay')
-    const { pinia } = renderComponent({
-      'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'
-    })
-
-    useSearchBoxStore(pinia).visible = true
-    await nextTick()
-
-    expect(
-      dialog.compareDocumentPosition(screen.getByTestId('search-overlay'))
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
-    expect(
-      dialog.compareDocumentPosition(screen.getByTestId('search-content'))
-    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    searchBoxStore.visible = true
+    const searchDialog = await screen.findByRole('dialog')
+    expect(dialog.compareDocumentPosition(searchDialog)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 
   describe('addNode ghost flag (FollowCursor setting)', () => {

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -23,15 +23,20 @@ function renderMenu(items: MenuItem[] = [{ label: 'Item A' }]) {
 }
 
 describe('Menu z-index', () => {
-  it('opens above a dialog already in the document', async () => {
+  it('reopens above an overlay opened after the menu closed', async () => {
+    const user = userEvent.setup()
+    renderMenu()
+    await user.click(screen.getByRole('button'))
+    await screen.findByRole('menu')
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
     render({
       template:
         '<section class="fixed z-overlay" data-testid="existing-overlay" />'
     })
     const dialog = screen.getByTestId('existing-overlay')
 
-    const user = userEvent.setup()
-    renderMenu()
     await user.click(screen.getByRole('button'))
 
     const menu = await screen.findByRole('menu')
