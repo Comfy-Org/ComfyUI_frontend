@@ -51,6 +51,10 @@ const SUPPORTED_MODELS_PATH = '/p/supported-models'
 
 const SUPPORTED_NODES_PATH = '/cloud/supported-nodes'
 
+/** The maintained answer to "which custom nodes are on Cloud". */
+const CUSTOM_NODES_ON_CLOUD_ARTICLE =
+  'https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud'
+
 /** Leaves room under Vercel's 2,048-character limit on a rule's source. */
 const MAX_SLUG_GROUP_LENGTH = 1900
 
@@ -126,23 +130,23 @@ const supportedNodesRedirects: readonly SiteRedirect[] = (
 ).flatMap((locale) => [
   {
     source: `${locale}${SUPPORTED_NODES_PATH}`,
-    destination: `${locale}/cloud/`
+    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}.md`,
-    destination: `${locale}/cloud.md`
+    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}/llms.txt`,
-    destination: `${locale}/cloud.md`
+    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}/:pack.md`,
-    destination: `${locale}/cloud.md`
+    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}/:path+`,
-    destination: `${locale}/cloud/`
+    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
   }
 ])
 

@@ -300,24 +300,31 @@ describe('the retired supported-nodes pages', () => {
   const find = (source: string) =>
     vercelRedirects.find((redirect) => redirect.source === source)
 
+  const article =
+    'https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud'
+
   it.for([
-    ['/cloud/supported-nodes', '/cloud/'],
-    ['/cloud/supported-nodes/', '/cloud/'],
-    ['/cloud/supported-nodes/:path+', '/cloud/'],
-    ['/zh-CN/cloud/supported-nodes', '/zh-CN/cloud/'],
-    ['/zh-CN/cloud/supported-nodes/', '/zh-CN/cloud/'],
-    ['/zh-CN/cloud/supported-nodes/:path+', '/zh-CN/cloud/'],
-    ['/cloud/supported-nodes.md', '/cloud.md'],
-    ['/cloud/supported-nodes/llms.txt', '/cloud.md'],
-    ['/cloud/supported-nodes/:pack.md', '/cloud.md'],
-    ['/zh-CN/cloud/supported-nodes.md', '/zh-CN/cloud.md'],
-    ['/zh-CN/cloud/supported-nodes/llms.txt', '/zh-CN/cloud.md'],
-    ['/zh-CN/cloud/supported-nodes/:pack.md', '/zh-CN/cloud.md']
-  ])('sends %s to %s with a 308', ([source, destination]) => {
-    expect(find(source)).toEqual({ source, destination, permanent: true })
+    '/cloud/supported-nodes',
+    '/cloud/supported-nodes/',
+    '/cloud/supported-nodes/:path+',
+    '/zh-CN/cloud/supported-nodes',
+    '/zh-CN/cloud/supported-nodes/',
+    '/zh-CN/cloud/supported-nodes/:path+',
+    '/cloud/supported-nodes.md',
+    '/cloud/supported-nodes/llms.txt',
+    '/cloud/supported-nodes/:pack.md',
+    '/zh-CN/cloud/supported-nodes.md',
+    '/zh-CN/cloud/supported-nodes/llms.txt',
+    '/zh-CN/cloud/supported-nodes/:pack.md'
+  ])('sends %s to the Custom nodes on Cloud article with a 308', (source) => {
+    expect(find(source)).toEqual({
+      source,
+      destination: article,
+      permanent: true
+    })
   })
 
-  it('sends the pack Markdown twins to the Cloud twin before the catch-all', () => {
+  it('sends the pack Markdown twins ahead of the catch-all', () => {
     const order = vercelRedirects.map(({ source }) => source)
     expect(order.indexOf('/cloud/supported-nodes/:pack.md')).toBeLessThan(
       order.indexOf('/cloud/supported-nodes/:path+')
@@ -327,9 +334,12 @@ describe('the retired supported-nodes pages', () => {
     )
   })
 
-  it('points at pages and twins that exist', () => {
-    expect(pageExistsAt('/cloud/')).toBe(true)
-    expect(pageExistsAt('/zh-CN/cloud/')).toBe(true)
+  it('leaves no supported-nodes row pointing anywhere else', () => {
+    expect(
+      siteRedirects
+        .filter(({ source }) => source.includes('/cloud/supported-nodes'))
+        .filter(({ destination }) => destination !== article)
+    ).toEqual([])
   })
 
   it('ships no Astro stub under the retired address', () => {
