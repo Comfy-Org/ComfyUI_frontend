@@ -45,6 +45,7 @@
     "regexp/no-useless-lazy": "error",
     "regexp/no-useless-quantifier": "error",
     "comfy/no-relative-packages": "error",
+    "comfy/no-js-extension-imports": "error",
     "comfy/no-js-private-class-members": "error",
     "comfy/no-vitest-mock-method-names": "error",
     "comfy/no-primevue-imports": "error",
@@ -478,6 +479,18 @@
       "files": ["browser_tests/tests/**/*.spec.ts"],
       "rules": {
         "comfy/prefer-initial-settings": "error"
+      }
+    },
+    {
+      "files": [
+        "packages/account-core/**",
+        "packages/billing-contract/**",
+        "packages/design-system/src/css/**",
+        "packages/ingest-types/**",
+        "tools/devtools/web/**"
+      ],
+      "rules": {
+        "comfy/no-js-extension-imports": "off"
       }
     },
     {
