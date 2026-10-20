@@ -24,6 +24,10 @@
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
+    <p class="m-0 px-8 pb-4 text-sm text-muted-foreground">
+      {{ $t('credits.topUp.purchaseDisclosure') }}
+    </p>
+
     <!-- Preset amount buttons -->
     <div class="px-8">
       <h3 class="m-0 text-sm font-normal text-muted-foreground">

@@ -4,6 +4,8 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json'
+
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
@@ -43,6 +45,7 @@ const i18n = createI18n({
       g: { close: 'Close', increment: 'Increment', decrement: 'Decrement' },
       credits: {
         topUp: {
+          purchaseDisclosure: enMessages.credits.topUp.purchaseDisclosure,
           addMoreCredits: 'Add more credits',
           addMoreCreditsToRun: 'Add more credits to run',
           selectAmount: 'Select amount',
@@ -94,6 +97,21 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       checkout_url: 'https://checkout.stripe.test'
     })
     vi.spyOn(window, 'open').mockImplementation(() => window)
+  })
+
+  it('explains the Cloud plan requirement before continuing to payment', () => {
+    useBillingContext().canAccessSubscriptionFeatures = computed(() => false)
+    renderDialog({ source: 'deep_link' })
+
+    expect(
+      screen.getByText(
+        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+      )
+    ).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Continue to payment' })
+    ).toBeEnabled()
+    expect(useAuthStore().initiateCreditPurchase).not.toHaveBeenCalled()
   })
 
   it.for([

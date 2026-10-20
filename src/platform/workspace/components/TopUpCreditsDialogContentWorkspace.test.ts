@@ -582,22 +582,41 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
-  it('advances to confirmation without charging', async () => {
-    renderDialog()
+  it.for([true, false])(
+    'discloses the Cloud plan requirement before confirming without a plan (Cloud: %s)',
+    async (isCloud) => {
+      mockDistributionTypes.isCloud = isCloud
+      mockBillingContext().canAccessSubscriptionFeatures = computed(() => false)
+      renderDialog({ source: 'deep_link' })
 
-    await clickAddCredits()
+      expect(
+        screen.getByText(
+          'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+        )
+      ).toBeVisible()
 
-    expect(screen.getByText('Confirm')).toBeInTheDocument()
-    expect(screen.getByText('Total due today')).toBeInTheDocument()
-    expect(screen.getByText('$50.00')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
-    expect(mockBillingContext().topup).not.toHaveBeenCalled()
-    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith({
-      operation: 'topup',
-      stage: 'intent',
-      outcome: 'pending'
-    })
-  })
+      await clickAddCredits()
+
+      expect(
+        screen.getByText(
+          'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+        )
+      ).toBeVisible()
+      expect(screen.getByText('Confirm')).toBeInTheDocument()
+      expect(screen.getByText('Total due today')).toBeInTheDocument()
+      expect(screen.getByText('$50.00')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Pay $50.00' })).toBeEnabled()
+      expect(mockBillingContext().topup).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
+        {
+          operation: 'topup',
+          stage: 'intent',
+          outcome: 'pending',
+          payment_intent_source: 'deep_link'
+        }
+      )
+    }
+  )
 
   function renderWithBalance(overrides: Partial<BalanceInfo>) {
     const balance: BalanceInfo = {
