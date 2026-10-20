@@ -21,30 +21,102 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    "./boundedOperation": "./src/core/boundedOperation.ts",
-    "./lazyIdentity": "./src/core/lazyIdentity.ts",
-    "./session": "./src/core/session.ts",
-    "./webSession": "./src/core/webSession.ts",
-    "./webSessionFlag": "./src/core/webSessionFlag.ts",
-    "./requestAuth": "./src/core/requestAuth.ts",
-    "./sessionTokenMint": "./src/core/sessionTokenMint.ts",
-    "./webSessionIdentity": "./src/core/webSessionIdentity.ts",
-    "./billing": "./src/core/billing/index.ts",
-    "./firebase": "./src/firebase/index.ts",
-    "./web": "./src/web/crossTabRefresh.ts",
-    "./testing": "./src/testing.ts",
-    "./customerRecovery": "./src/core/customerRecovery.ts",
-    "./signInSchemas": "./src/signInSchemas.ts",
-    "./turnstile": "./src/turnstile.ts",
-    "./turnstileScript": "./src/turnstileScript.ts",
-    "./firebaseAuthError": "./src/firebaseAuthError.ts",
-    "./provisioning": "./src/provisioning.ts",
-    "./redirect": "./src/redirect.ts",
-    "./sso": "./src/sso.ts",
-    "./workspaceLink": "./src/workspaceLink.ts",
-    "./telemetry": "./src/telemetry.ts",
-    "./webviewDetection": "./src/webviewDetection.ts",
-    "./oauthPkce": "./src/oauthPkce.ts",
+    "./boundedOperation": {
+      "types": "./dist-types/core/boundedOperation.d.ts",
+      "default": "./src/core/boundedOperation.ts"
+    },
+    "./lazyIdentity": {
+      "types": "./dist-types/core/lazyIdentity.d.ts",
+      "default": "./src/core/lazyIdentity.ts"
+    },
+    "./session": {
+      "types": "./dist-types/core/session.d.ts",
+      "default": "./src/core/session.ts"
+    },
+    "./webSession": {
+      "types": "./dist-types/core/webSession.d.ts",
+      "default": "./src/core/webSession.ts"
+    },
+    "./webSessionFlag": {
+      "types": "./dist-types/core/webSessionFlag.d.ts",
+      "default": "./src/core/webSessionFlag.ts"
+    },
+    "./requestAuth": {
+      "types": "./dist-types/core/requestAuth.d.ts",
+      "default": "./src/core/requestAuth.ts"
+    },
+    "./sessionTokenMint": {
+      "types": "./dist-types/core/sessionTokenMint.d.ts",
+      "default": "./src/core/sessionTokenMint.ts"
+    },
+    "./webSessionIdentity": {
+      "types": "./dist-types/core/webSessionIdentity.d.ts",
+      "default": "./src/core/webSessionIdentity.ts"
+    },
+    "./billing": {
+      "types": "./dist-types/core/billing/index.d.ts",
+      "default": "./src/core/billing/index.ts"
+    },
+    "./firebase": {
+      "types": "./dist-types/firebase/index.d.ts",
+      "default": "./src/firebase/index.ts"
+    },
+    "./web": {
+      "types": "./dist-types/web/crossTabRefresh.d.ts",
+      "default": "./src/web/crossTabRefresh.ts"
+    },
+    "./testing": {
+      "types": "./dist-types/testing.d.ts",
+      "default": "./src/testing.ts"
+    },
+    "./customerRecovery": {
+      "types": "./dist-types/core/customerRecovery.d.ts",
+      "default": "./src/core/customerRecovery.ts"
+    },
+    "./signInSchemas": {
+      "types": "./dist-types/signInSchemas.d.ts",
+      "default": "./src/signInSchemas.ts"
+    },
+    "./turnstile": {
+      "types": "./dist-types/turnstile.d.ts",
+      "default": "./src/turnstile.ts"
+    },
+    "./turnstileScript": {
+      "types": "./dist-types/turnstileScript.d.ts",
+      "default": "./src/turnstileScript.ts"
+    },
+    "./firebaseAuthError": {
+      "types": "./dist-types/firebaseAuthError.d.ts",
+      "default": "./src/firebaseAuthError.ts"
+    },
+    "./provisioning": {
+      "types": "./dist-types/provisioning.d.ts",
+      "default": "./src/provisioning.ts"
+    },
+    "./redirect": {
+      "types": "./dist-types/redirect.d.ts",
+      "default": "./src/redirect.ts"
+    },
+    "./sso": {
+      "types": "./dist-types/sso.d.ts",
+      "default": "./src/sso.ts"
+    },
+    "./workspaceLink": {
+      "types": "./dist-types/workspaceLink.d.ts",
+      "default": "./src/workspaceLink.ts"
+    },
+    "./telemetry": {
+      "types": "./dist-types/telemetry.d.ts",
+      "default": "./src/telemetry.ts"
+    },
+    "./webviewDetection": {
+      "types": "./dist-types/webviewDetection.d.ts",
+      "default": "./src/webviewDetection.ts"
+    },
+    "./oauthPkce": {
+      "types": "./dist-types/oauthPkce.d.ts",
+      "default": "./src/oauthPkce.ts"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

@@ -353,7 +353,9 @@ describe('Composer', () => {
     expect(send).toBeEnabled()
 
     await userEvent.hover(send)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Send')
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'Send'
+    )
   })
 
   it('renders without vue-i18n message compilation errors', async () => {
