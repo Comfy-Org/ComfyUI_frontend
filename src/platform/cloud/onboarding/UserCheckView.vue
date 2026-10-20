@@ -14,7 +14,7 @@
     </div>
   </div>
   <div v-else class="flex items-center justify-center">
-    <Spinner class="size-8" />
+    <Spinner :loading-label="$t('g.loading')" class="size-8" />
   </div>
 </template>
 

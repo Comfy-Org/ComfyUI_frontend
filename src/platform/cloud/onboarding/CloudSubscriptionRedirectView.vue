@@ -180,7 +180,11 @@ onMounted(() => {
           })
         }}
       </p>
-      <Spinner v-if="planLabel" class="size-8" />
+      <Spinner
+        v-if="planLabel"
+        :loading-label="$t('g.loading')"
+        class="size-8"
+      />
       <Button v-if="planLabel" as="a" href="/" variant="link">
         {{ t('cloudOnboarding.skipToCloudApp') }}
       </Button>

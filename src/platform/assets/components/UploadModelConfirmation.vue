@@ -59,6 +59,15 @@
       </div>
       <SingleSelect
         v-model="modelValue"
+        :search-label="$t('g.search')"
+        :search-placeholder="$t('g.search')"
+        :empty-text="$t('g.noResultsFound')"
+        :accessible-label="
+          (isLoading
+            ? $t('g.loading')
+            : $t('assetBrowser.modelTypeSelectorPlaceholder')) ||
+          $t('g.singleSelectDropdown')
+        "
         :label="
           isLoading
             ? $t('g.loading')

@@ -5,7 +5,11 @@
     :remove-label="$t('g.removeFilter', { label: `${badge}: ${text}` })"
     @remove="emit('remove', $event)"
   >
-    <Badge variant="badge" :class="semanticBadgeClass">
+    <Badge
+      :remove-label="$t('g.remove')"
+      variant="badge"
+      :class="semanticBadgeClass"
+    >
       {{ badge }}
     </Badge>
     {{ text }}

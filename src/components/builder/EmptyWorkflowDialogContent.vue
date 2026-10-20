@@ -1,5 +1,6 @@
 <template>
   <DialogPanel
+    :close-label="$t('g.close')"
     data-testid="builder-empty-workflow-dialog"
     class="w-xl max-w-full min-w-116"
   >

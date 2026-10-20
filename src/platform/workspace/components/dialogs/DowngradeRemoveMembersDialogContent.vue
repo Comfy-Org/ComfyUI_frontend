@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-full max-w-[400px]" @close="onClose">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-full max-w-[400px]"
+    @close="onClose"
+  >
     <template #title>
       {{ $t('subscription.downgrade.title', { plan: planName }) }}
     </template>

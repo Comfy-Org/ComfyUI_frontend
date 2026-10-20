@@ -19,7 +19,11 @@ const emit = defineEmits<{ 'download-model': [rowId: string] }>()
   >
     <div class="flex h-10 items-center gap-2 px-2">
       <h3 :id="titleId" class="m-0 text-sm font-medium">{{ group.label }}</h3>
-      <Badge severity="secondary" variant="badge">
+      <Badge
+        :remove-label="$t('g.remove')"
+        severity="secondary"
+        variant="badge"
+      >
         {{ group.rows.length }}
       </Badge>
       <span v-if="group.total" class="ml-auto text-sm text-muted-foreground">

@@ -50,7 +50,11 @@
           </div>
         </div>
 
-        <Spinner v-if="loading" class="mt-4 size-8" />
+        <Spinner
+          v-if="loading"
+          :loading-label="$t('g.loading')"
+          class="mt-4 size-8"
+        />
         <div v-else class="mt-4 flex flex-col gap-2">
           <div class="flex flex-wrap items-center gap-2">
             <Button class="w-32" variant="secondary" @click="handleSignOut">

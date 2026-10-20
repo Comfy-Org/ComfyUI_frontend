@@ -30,6 +30,21 @@ const i18n = createI18n({
 })
 
 describe('SearchInput', () => {
+  it('renders caller labels without an i18n plugin', () => {
+    render(SearchInput, {
+      props: {
+        modelValue: 'abc',
+        accessibleLabel: 'Rechercher',
+        clearLabel: 'Effacer',
+        placeholder: 'Rechercher...'
+      }
+    })
+    expect(
+      screen.getByRole('combobox', { name: 'Rechercher' })
+    ).toHaveAttribute('placeholder', 'Rechercher...')
+    expect(screen.getByRole('button', { name: 'Effacer' })).toBeVisible()
+  })
+
   function renderComponent(props = {}) {
     const result = render(SearchInput, {
       global: {
@@ -50,6 +65,9 @@ describe('SearchInput', () => {
         }
       },
       props: {
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
+        placeholder: 'Search...',
         modelValue: '',
         ...props
       }
@@ -148,7 +166,7 @@ describe('SearchInput', () => {
       ).toBeInTheDocument()
     })
 
-    it('should use i18n placeholder when not provided', () => {
+    it('renders the supplied placeholder', () => {
       renderComponent()
       expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument()
     })

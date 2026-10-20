@@ -1,5 +1,11 @@
 <template>
-  <Menu v-model:open="open" :items="menuItems" class="min-w-56">
+  <Menu
+    v-model:open="open"
+    :new-label="$t('contextMenu.new')"
+    :remove-label="$t('g.remove')"
+    :items="menuItems"
+    class="min-w-56"
+  >
     <template #trigger>
       <button
         :class="

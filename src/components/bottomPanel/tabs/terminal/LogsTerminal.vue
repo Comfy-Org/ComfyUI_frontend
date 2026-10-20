@@ -9,6 +9,7 @@
     </p>
     <Spinner
       v-else-if="loading"
+      :loading-label="$t('g.loading')"
       data-testid="terminal-loading-spinner"
       class="absolute inset-0 z-10 m-auto size-8"
     />

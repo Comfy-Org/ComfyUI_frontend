@@ -51,7 +51,12 @@
         }}
       </span>
       <div class="flex items-center justify-end">
-        <Menu :items="getInviteMenuItems(invite)" align="end">
+        <Menu
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :items="getInviteMenuItems(invite)"
+          align="end"
+        >
           <template #trigger>
             <Button
               size="icon"

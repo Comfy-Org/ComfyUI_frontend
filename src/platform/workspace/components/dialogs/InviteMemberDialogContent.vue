@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-full max-w-lg" @close="onClose">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-full max-w-lg"
+    @close="onClose"
+  >
     <template #title>
       <template v-if="step === 'invited'">
         <i class="pi pi-check-circle size-4 text-success" />

@@ -27,6 +27,11 @@ const meta: Meta<typeof MultiSelect> = {
     searchPlaceholder: { control: 'text' }
   },
   args: {
+    accessibleLabel: 'Category',
+    searchLabel: 'Search categories',
+    emptyText: 'No results found',
+    clearAllLabel: 'Clear all',
+    formatSelectedCount: (count: number) => `${count} selected`,
     label: 'Category',
     size: 'lg',
     showSearchBox: false,
@@ -54,7 +59,7 @@ export const Default: Story = {
       return { selected, sampleOptions, args }
     },
     template:
-      '<MultiSelect v-model="selected" :options="sampleOptions" :label="args.label" :size="args.size" :show-search-box="args.showSearchBox" :show-selected-count="args.showSelectedCount" :show-clear-button="args.showClearButton" />'
+      '<MultiSelect v-bind="args" v-model="selected" :options="sampleOptions" />'
   })
 }
 
@@ -66,7 +71,7 @@ export const MediumSize: Story = {
       return { selected, sampleOptions }
     },
     template:
-      '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" size="md" />'
+      '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" size="md" accessible-label="Category" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => `${count} selected`" />'
   }),
   parameters: { controls: { disable: true } }
 }
@@ -79,7 +84,7 @@ export const WithPreselectedValues: Story = {
       return { selected, sampleOptions }
     },
     template:
-      '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" />'
+      '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" accessible-label="Category" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => `${count} selected`" />'
   }),
   parameters: { controls: { disable: true } }
 }
@@ -92,7 +97,7 @@ export const Disabled: Story = {
       return { selected, sampleOptions }
     },
     template:
-      '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" disabled />'
+      '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" disabled accessible-label="Category" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => `${count} selected`" />'
   }),
   parameters: { controls: { disable: true } }
 }
@@ -105,7 +110,7 @@ export const ChipsViaValueSlot: Story = {
       return { selected, sampleOptions }
     },
     template: `
-      <MultiSelect v-model="selected" :options="sampleOptions" label="Category">
+      <MultiSelect v-model="selected" :options="sampleOptions" label="Category" accessible-label="Category" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)">
         <template #value="{ selected }">
           <div class="flex min-w-0 gap-1 overflow-hidden">
             <span
@@ -131,7 +136,7 @@ export const WithSearchBox: Story = {
       return { selected, sampleOptions, args }
     },
     template:
-      '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" :show-search-box="args.showSearchBox" />'
+      '<MultiSelect v-bind="args" v-model="selected" :options="sampleOptions" />'
   })
 }
 
@@ -148,7 +153,7 @@ export const AllHeaderFeatures: Story = {
       return { selected, sampleOptions, args }
     },
     template:
-      '<MultiSelect v-model="selected" :options="sampleOptions" label="Category" :show-search-box="args.showSearchBox" :show-selected-count="args.showSelectedCount" :show-clear-button="args.showClearButton" />'
+      '<MultiSelect v-bind="args" v-model="selected" :options="sampleOptions" />'
   })
 }
 
@@ -166,17 +171,17 @@ export const AllStates: Story = {
         <div>
           <p class="mb-2 text-xs text-muted-foreground">Large (Interface)</p>
           <div class="flex flex-col gap-3">
-            <MultiSelect v-model="a" :options="sampleOptions" label="Default" />
-            <MultiSelect v-model="b" :options="sampleOptions" label="With Selection" />
-            <MultiSelect v-model="c" :options="sampleOptions" label="Disabled" disabled />
+            <MultiSelect v-model="a" :options="sampleOptions" label="Default" accessible-label="Default" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)" />
+            <MultiSelect v-model="b" :options="sampleOptions" label="With Selection" accessible-label="With Selection" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)" />
+            <MultiSelect v-model="c" :options="sampleOptions" label="Disabled" disabled accessible-label="Disabled" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)" />
           </div>
         </div>
         <div>
           <p class="mb-2 text-xs text-muted-foreground">Medium (Node)</p>
           <div class="flex flex-col gap-3">
-            <MultiSelect v-model="a" :options="sampleOptions" label="Default" size="md" />
-            <MultiSelect v-model="b" :options="sampleOptions" label="With Selection" size="md" />
-            <MultiSelect v-model="c" :options="sampleOptions" label="Disabled" size="md" disabled />
+            <MultiSelect v-model="a" :options="sampleOptions" label="Default" size="md" accessible-label="Default" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)" />
+            <MultiSelect v-model="b" :options="sampleOptions" label="With Selection" size="md" accessible-label="With Selection" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)" />
+            <MultiSelect v-model="c" :options="sampleOptions" label="Disabled" size="md" disabled accessible-label="Disabled" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)" />
           </div>
         </div>
       </div>

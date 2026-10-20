@@ -2,7 +2,17 @@
   <div class="color-picker-wrapper flex items-center gap-2">
     <ColorPicker
       :id="id"
+      :hex-label="$t('color.hex')"
       v-model="hexValue"
+      :rgba-label="$t('color.rgba')"
+      :hue-label="$t('color.hue')"
+      :alpha-label="$t('color.alpha')"
+      :red-label="$t('color.red')"
+      :green-label="$t('color.green')"
+      :blue-label="$t('color.blue')"
+      :saturation-brightness-label="$t('color.saturationBrightness')"
+      :format-label="$t('g.color')"
+      :accessible-label="$t('g.color')"
       :disabled="disabled"
       :aria-labelledby="ariaLabelledby"
     />

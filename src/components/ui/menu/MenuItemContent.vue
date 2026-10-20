@@ -8,7 +8,9 @@ import Switch from '@/components/ui/switch/Switch.vue'
 
 import type { MenuItem } from './types'
 
-const { hasSubmenu, item } = defineProps<{
+const { hasSubmenu, item, newLabel, removeLabel } = defineProps<{
+  newLabel: string
+  removeLabel: string
   hasSubmenu: boolean
   item: MenuItem
 }>()
@@ -31,6 +33,7 @@ const { hasSubmenu, item } = defineProps<{
   />
   <Badge
     v-if="item.badge"
+    :remove-label="removeLabel"
     variant="pill"
     severity="default"
     class="ml-3 px-1.5 uppercase"
@@ -64,7 +67,7 @@ const { hasSubmenu, item } = defineProps<{
     v-if="item.new && !toValue(item.checked) && !hasSubmenu"
     class="shrink-0 rounded-full bg-primary px-1 text-2xs leading-none font-bold"
   >
-    {{ $t('contextMenu.new') }}
+    {{ newLabel }}
   </span>
   <span
     v-if="!hasSubmenu && toValue(item.shortcut)"

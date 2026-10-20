@@ -25,7 +25,11 @@
               $t('subscription.retentionOffer.stayOnPlan', { plan: planName })
             }}
           </p>
-          <Badge variant="compact" class="bg-foreground text-background">
+          <Badge
+            :remove-label="$t('g.remove')"
+            variant="compact"
+            class="bg-foreground text-background"
+          >
             {{ $t('subscription.retentionOffer.percentOff', { percent }) }}
           </Badge>
         </div>
@@ -72,7 +76,11 @@
             {{
               $t('subscription.retentionOffer.nextPayments', { months }, months)
             }}
-            <Badge variant="compact" class="bg-foreground text-background">
+            <Badge
+              :remove-label="$t('g.remove')"
+              variant="compact"
+              class="bg-foreground text-background"
+            >
               {{ $t('subscription.retentionOffer.appliedBadge') }}
             </Badge>
           </span>

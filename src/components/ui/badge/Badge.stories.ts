@@ -10,7 +10,12 @@ const meta: Meta<ComponentPropsAndSlots<typeof Badge>> = {
   title: 'Components/Badge',
   component: Badge,
   tags: ['autodocs'],
-  args: { default: 'Badge', variant: 'tag', severity: 'secondary' },
+  args: {
+    default: 'Badge',
+    variant: 'tag',
+    severity: 'secondary',
+    removeLabel: 'Remove'
+  },
   argTypes: {
     variant: {
       control: 'select',
@@ -66,12 +71,12 @@ export const Severities: Story = {
     components: { Badge },
     template: `
       <div class="flex gap-2">
-        <Badge severity="primary">Primary</Badge>
-        <Badge severity="secondary">Secondary</Badge>
-        <Badge severity="danger">Danger</Badge>
-        <Badge severity="info">Info</Badge>
-        <Badge severity="success">Success</Badge>
-        <Badge severity="warning">Warning</Badge>
+        <Badge severity="primary" remove-label="Remove">Primary</Badge>
+        <Badge severity="secondary" remove-label="Remove">Secondary</Badge>
+        <Badge severity="danger" remove-label="Remove">Danger</Badge>
+        <Badge severity="info" remove-label="Remove">Info</Badge>
+        <Badge severity="success" remove-label="Remove">Success</Badge>
+        <Badge severity="warning" remove-label="Remove">Warning</Badge>
       </div>`
   })
 }

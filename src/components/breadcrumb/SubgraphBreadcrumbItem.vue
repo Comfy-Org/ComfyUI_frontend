@@ -29,6 +29,7 @@
       </span>
       <Badge
         v-if="item.isBlueprint"
+        :remove-label="$t('g.remove')"
         data-testid="subgraph-breadcrumb-blueprint-tag"
         severity="primary"
       >
@@ -39,6 +40,8 @@
   </DefineTrigger>
   <Menu
     v-if="isActive"
+    :new-label="$t('contextMenu.new')"
+    :remove-label="$t('g.remove')"
     :open="menuOpen"
     :items="menuItems"
     :data-testid="`subgraph-breadcrumb-menu-${item.key}`"

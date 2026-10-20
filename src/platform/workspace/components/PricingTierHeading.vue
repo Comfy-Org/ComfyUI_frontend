@@ -12,6 +12,7 @@ const { name, isPopular = false } = defineProps<{
     <span class="text-base/normal">{{ name }}</span>
     <Badge
       v-if="isPopular"
+      :remove-label="$t('g.remove')"
       variant="pill"
       severity="contrast"
       class="font-bold tracking-tight uppercase"

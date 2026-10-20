@@ -337,7 +337,12 @@ onMounted(() => {
 <template>
   <div v-if="activeNode" class="subgraph-edit-section flex h-full flex-col">
     <div class="flex gap-2 border-b px-4 pt-1 pb-4">
-      <AsyncSearchInput v-model="searchQuery" />
+      <AsyncSearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+      />
     </div>
 
     <div class="flex-1">

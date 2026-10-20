@@ -12,7 +12,14 @@
     </template>
 
     <template #header>
-      <SearchInput v-model="searchQuery" size="lg" class="max-w-96 flex-1" />
+      <SearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+        size="lg"
+        class="max-w-96 flex-1"
+      />
     </template>
 
     <template #header-right-area>
@@ -21,7 +28,12 @@
           <i class="icon-[lucide--upload]" />
           <span>{{ $t('g.upload') }}</span>
         </Button>
-        <Menu :items="moreMenuItems" align="end">
+        <Menu
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :items="moreMenuItems"
+          align="end"
+        >
           <template #trigger>
             <Button
               size="icon"
@@ -39,6 +51,14 @@
         <MultiSelect
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
+          :search-label="$t('g.search')"
+          :search-placeholder="$t('g.search')"
+          :empty-text="$t('g.noResultsFound')"
+          :accessible-label="
+            $t('assetBrowser.selectFrameworks') || $t('g.multiSelectDropdown')
+          "
+          :clear-all-label="$t('g.clearAll')"
+          :format-selected-count="(count) => $t('g.itemsSelected', { count })"
           class="w-[250px]"
           :label="$t('assetBrowser.selectFrameworks')"
           :options="frameworkOptions"
@@ -48,11 +68,25 @@
         />
         <MultiSelect
           v-model="selectedProjects"
+          :search-label="$t('g.search')"
+          :search-placeholder="$t('g.search')"
+          :empty-text="$t('g.noResultsFound')"
+          :accessible-label="
+            $t('assetBrowser.selectProjects') || $t('g.multiSelectDropdown')
+          "
+          :clear-all-label="$t('g.clearAll')"
+          :format-selected-count="(count) => $t('g.itemsSelected', { count })"
           :label="$t('assetBrowser.selectProjects')"
           :options="projectOptions"
         />
         <SingleSelect
           v-model="selectedSort"
+          :search-label="$t('g.search')"
+          :search-placeholder="$t('g.search')"
+          :empty-text="$t('g.noResultsFound')"
+          :accessible-label="
+            $t('assetBrowser.sortingType') || $t('g.singleSelectDropdown')
+          "
           :label="$t('assetBrowser.sortingType')"
           :options="sortOptions"
           class="w-[135px]"

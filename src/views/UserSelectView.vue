@@ -23,13 +23,19 @@
           <SingleSelect
             id="existing-user-select"
             v-model="selectedUserId"
+            :search-label="$t('g.search')"
+            :search-placeholder="$t('g.search')"
+            :empty-text="$t('g.noResultsFound')"
+            :accessible-label="
+              $t('userSelect.selectUser') || $t('g.singleSelectDropdown')
+            "
             aria-labelledby="existing-user-label"
             class="w-full"
             :options="userOptions"
             :label="$t('userSelect.selectUser')"
             :disabled="createNewUser"
           />
-          <Message v-if="error" severity="error">
+          <Message v-if="error" :close-label="$t('g.close')" severity="error">
             {{ error }}
           </Message>
         </div>

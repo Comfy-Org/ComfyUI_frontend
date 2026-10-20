@@ -1,6 +1,7 @@
 <template>
   <Badge
     v-if="nodeDef.api_node && providerName"
+    :remove-label="$t('g.remove')"
     variant="outline"
     class="text-foreground"
     :style="borderStyle"

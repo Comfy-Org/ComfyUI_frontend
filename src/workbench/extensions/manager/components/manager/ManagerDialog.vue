@@ -21,11 +21,17 @@
         <div class="flex w-full items-center gap-2">
           <SingleSelect
             v-model="searchMode"
+            :search-label="$t('g.search')"
+            :search-placeholder="$t('g.search')"
+            :empty-text="$t('g.noResultsFound')"
+            :accessible-label="$t('g.singleSelectDropdown')"
             class="min-w-34"
             :options="filterOptions"
           />
           <SearchAutocomplete
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             :suggestions="suggestions"
             :placeholder="$t('manager.searchPlaceholder')"
             option-label="query"
@@ -80,6 +86,7 @@
       </div>
 
       <Message
+        :close-label="$t('g.close')"
         :visible="isUnmatchedLegacyManagerSearch"
         severity="info"
         class="mx-6 mb-4 w-auto"
@@ -94,6 +101,10 @@
       <div v-if="isSortable" class="flex justify-end px-6 pb-4">
         <SingleSelect
           v-model="sortField"
+          :search-label="$t('g.search')"
+          :search-placeholder="$t('g.search')"
+          :empty-text="$t('g.noResultsFound')"
+          :accessible-label="$t('g.sort') || $t('g.singleSelectDropdown')"
           :label="$t('g.sort')"
           :options="availableSortOptions"
           class="w-48"

@@ -16,7 +16,11 @@
       :class="CLOUD_AUTH_FIELD_CLASS"
     />
 
-    <Message v-if="feedback" :severity="feedback.severity">
+    <Message
+      v-if="feedback"
+      :close-label="$t('g.close')"
+      :severity="feedback.severity"
+    >
       {{ t(feedback.key) }}
     </Message>
 

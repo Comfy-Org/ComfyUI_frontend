@@ -37,19 +37,27 @@ const isCancelled = computed(() => isDownloadCancelled(job.status))
     <div class="flex shrink-0 items-center gap-2">
       <template v-if="isFailed">
         <i class="icon-[lucide--circle-alert] size-4 text-destructive" />
-        <Badge variant="label" severity="danger">
+        <Badge :remove-label="$t('g.remove')" variant="label" severity="danger">
           {{ t('progressToast.failed') }}
         </Badge>
       </template>
 
       <template v-else-if="isCompleted">
-        <Badge variant="label" severity="contrast">
+        <Badge
+          :remove-label="$t('g.remove')"
+          variant="label"
+          severity="contrast"
+        >
           {{ t('progressToast.finished') }}
         </Badge>
       </template>
 
       <template v-else-if="isCancelled">
-        <Badge variant="label" severity="secondary">
+        <Badge
+          :remove-label="$t('g.remove')"
+          variant="label"
+          severity="secondary"
+        >
           {{ t('electronFileDownload.cancelled') }}
         </Badge>
       </template>

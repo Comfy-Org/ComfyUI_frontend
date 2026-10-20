@@ -42,7 +42,11 @@ function toggleCategory(category: string) {
 }
 </script>
 <template>
-  <Menu :items>
+  <Menu
+    :new-label="$t('contextMenu.new')"
+    :remove-label="$t('g.remove')"
+    :items
+  >
     <template #trigger>
       <Button
         size="icon"

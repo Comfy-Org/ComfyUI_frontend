@@ -28,9 +28,18 @@
     >
       <label :class="FIELD_LABEL_CLASS">{{ $t('lightInfo.color') }}</label>
       <ColorPicker
+        :hex-label="$t('color.hex')"
+        :rgba-label="$t('color.rgba')"
+        :hue-label="$t('color.hue')"
+        :alpha-label="$t('color.alpha')"
+        :red-label="$t('color.red')"
+        :green-label="$t('color.green')"
+        :blue-label="$t('color.blue')"
+        :saturation-brightness-label="$t('color.saturationBrightness')"
+        :format-label="$t('g.color')"
         :model-value="light.color"
         :alpha="false"
-        :aria-label="$t('lightInfo.color')"
+        :accessible-label="$t('lightInfo.color')"
         @update:model-value="(color) => emit('update', { color })"
       />
       <label :class="FIELD_LABEL_CLASS">

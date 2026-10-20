@@ -168,7 +168,12 @@ const menuEntries = computed<MenuItem[]>(() => [
     <header
       class="flex h-16 w-full items-center gap-3 border-b border-border/50 bg-background px-4 py-3"
     >
-      <Menu :items="menuEntries" :label="$t('linearMode.appModeToolbar.apps')">
+      <Menu
+        :new-label="$t('contextMenu.new')"
+        :remove-label="$t('g.remove')"
+        :items="menuEntries"
+        :label="$t('linearMode.appModeToolbar.apps')"
+      >
         <template #trigger>
           <Button
             size="icon"
@@ -177,7 +182,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           />
         </template>
       </Menu>
-      <Menu>
+      <Menu :new-label="$t('contextMenu.new')" :remove-label="$t('g.remove')">
         <template #trigger>
           <Button
             variant="secondary"
@@ -197,6 +202,8 @@ const menuEntries = computed<MenuItem[]>(() => [
         </template>
         <MenuRadioGroup
           v-model="activeWorkflowPath"
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
           :options="workflowOptions"
         />
       </Menu>

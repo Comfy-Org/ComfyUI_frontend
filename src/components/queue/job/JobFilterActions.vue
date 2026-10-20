@@ -2,6 +2,8 @@
   <div class="flex min-w-0 items-center gap-2">
     <SearchInput
       v-if="showSearch"
+      :clear-label="$t('g.clear')"
+      :accessible-label="$t('g.search')"
       :model-value="searchQuery"
       class="min-w-0 flex-1"
       :placeholder="searchPlaceholderText"
@@ -11,7 +13,7 @@
       class="flex shrink-0 items-center gap-2"
       :class="{ 'ml-2': !showSearch }"
     >
-      <Menu>
+      <Menu :new-label="$t('contextMenu.new')" :remove-label="$t('g.remove')">
         <template #trigger>
           <Button
             :tooltip="t('sideToolbar.queueProgressOverlay.filterBy')"
@@ -24,10 +26,12 @@
         </template>
         <MenuRadioGroup
           v-model="selectedWorkflowFilter"
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
           :options="workflowFilterOptions"
         />
       </Menu>
-      <Menu>
+      <Menu :new-label="$t('contextMenu.new')" :remove-label="$t('g.remove')">
         <template #trigger>
           <Button
             :tooltip="t('sideToolbar.queueProgressOverlay.sortBy')"
@@ -38,7 +42,12 @@
             :indicator="selectedSortMode !== 'mostRecent'"
           />
         </template>
-        <MenuRadioGroup v-model="selectedSortMode" :options="sortOptions" />
+        <MenuRadioGroup
+          v-model="selectedSortMode"
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :options="sortOptions"
+        />
       </Menu>
       <Button
         v-if="showAssetsAction"

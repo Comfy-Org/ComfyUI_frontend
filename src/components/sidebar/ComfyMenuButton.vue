@@ -1,5 +1,10 @@
 <template>
-  <Menu :items="translatedItems" class="comfy-command-menu">
+  <Menu
+    :new-label="$t('contextMenu.new')"
+    :remove-label="$t('g.remove')"
+    :items="translatedItems"
+    class="comfy-command-menu"
+  >
     <template #trigger="{ open }">
       <Button
         variant="textonly"

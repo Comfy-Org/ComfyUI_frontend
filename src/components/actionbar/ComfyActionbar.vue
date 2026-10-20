@@ -56,6 +56,7 @@
           </span>
           <Badge
             v-if="activeJobsCount > 0"
+            :remove-label="$t('g.remove')"
             data-testid="active-jobs-indicator"
             variant="dot"
             severity="default"
@@ -63,7 +64,12 @@
           />
           <span class="sr-only">{{ queueToggleLabel }}</span>
         </Button>
-        <ContextMenu ref="queueContextMenu" :model="queueContextMenuItems" />
+        <ContextMenu
+          ref="queueContextMenu"
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :model="queueContextMenuItems"
+        />
       </div>
       <FreeTierQuota v-if="!isDocked" />
       <PartnerNodesRunCaption v-if="!isDocked" />

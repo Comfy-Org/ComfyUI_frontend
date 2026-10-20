@@ -2,6 +2,12 @@
   <MultiSelect
     v-model="selectedModels"
     v-model:search-query="modelSearchText"
+    :search-label="$t('g.search')"
+    :search-placeholder="$t('g.search')"
+    :empty-text="$t('g.noResultsFound')"
+    :accessible-label="modelFilterLabel || $t('g.multiSelectDropdown')"
+    :clear-all-label="$t('g.clearAll')"
+    :format-selected-count="(count) => $t('g.itemsSelected', { count })"
     size="md"
     :class="triggerClass"
     :label="modelFilterLabel"
@@ -14,6 +20,12 @@
 
   <MultiSelect
     v-model="selectedUseCases"
+    :search-label="$t('g.search')"
+    :search-placeholder="$t('g.search')"
+    :empty-text="$t('g.noResultsFound')"
+    :accessible-label="useCaseFilterLabel || $t('g.multiSelectDropdown')"
+    :clear-all-label="$t('g.clearAll')"
+    :format-selected-count="(count) => $t('g.itemsSelected', { count })"
     size="md"
     :class="triggerClass"
     :label="useCaseFilterLabel"
@@ -26,6 +38,12 @@
 
   <MultiSelect
     v-model="selectedRunsOn"
+    :search-label="$t('g.search')"
+    :search-placeholder="$t('g.search')"
+    :empty-text="$t('g.noResultsFound')"
+    :accessible-label="runsOnFilterLabel || $t('g.multiSelectDropdown')"
+    :clear-all-label="$t('g.clearAll')"
+    :format-selected-count="(count) => $t('g.itemsSelected', { count })"
     size="md"
     :class="triggerClass"
     :label="runsOnFilterLabel"
@@ -38,6 +56,12 @@
 
   <SingleSelect
     v-model="sortSelection"
+    :search-label="$t('g.search')"
+    :search-placeholder="$t('g.search')"
+    :empty-text="$t('g.noResultsFound')"
+    :accessible-label="
+      $t('templateWorkflows.sorting') || $t('g.singleSelectDropdown')
+    "
     size="md"
     :class="triggerClass"
     :label="$t('templateWorkflows.sorting')"

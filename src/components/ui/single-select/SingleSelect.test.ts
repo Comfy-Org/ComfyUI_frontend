@@ -51,7 +51,7 @@ function renderInParent(
 
   const Parent = {
     template:
-      '<div @keydown.escape="onEsc"><SingleSelect v-model="sel" :options="options" label="Pick" v-bind="extraProps" /><button>After</button></div>',
+      '<div @keydown.escape="onEsc"><SingleSelect v-model="sel" :options="options" label="Pick" accessible-label="Pick" search-label="Search" search-placeholder="Search" empty-text="No results found" v-bind="extraProps" /><button>After</button></div>',
     components: { SingleSelect },
     setup() {
       return {
@@ -102,6 +102,29 @@ afterEach(() => {
 })
 
 describe('SingleSelect', () => {
+  it('renders caller search and empty text without an i18n plugin', async () => {
+    const user = userEvent.setup()
+    render(SingleSelect, {
+      props: {
+        modelValue: undefined,
+        options,
+        searchable: true,
+        label: 'Catégorie',
+        accessibleLabel: 'Choisir une catégorie',
+        searchLabel: 'Rechercher',
+        searchPlaceholder: 'Rechercher...',
+        emptyText: 'Aucun résultat'
+      }
+    })
+    await openSelect(
+      screen.getByRole('button', { name: 'Choisir une catégorie' })
+    )
+    const searchInput = screen.getByRole('combobox', { name: 'Rechercher' })
+    expect(searchInput).toHaveAttribute('placeholder', 'Rechercher...')
+    await user.type(searchInput, 'zzz')
+    expect(screen.getByText('Aucun résultat')).toBeVisible()
+  })
+
   it('filters searchable options', async () => {
     const user = userEvent.setup()
     const { unmount } = renderInParent(undefined, { searchable: true })
@@ -224,7 +247,14 @@ describe('SingleSelect', () => {
 
   it('lets a consumer class override the trigger variant it conflicts with', () => {
     const { unmount } = render(SingleSelect, {
-      props: { modelValue: undefined, options, label: 'Pick' },
+      props: {
+        modelValue: undefined,
+        options,
+        label: 'Pick',
+        accessibleLabel: 'Pick',
+        searchLabel: 'Search',
+        emptyText: 'No results found'
+      },
       attrs: { class: 'bg-transparent' },
       global: { plugins: [i18n] }
     })

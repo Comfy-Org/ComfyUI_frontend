@@ -1,5 +1,6 @@
 <template>
   <DialogPanel
+    :close-label="$t('g.close')"
     class="w-90 max-w-full"
     data-testid="insufficient-credits-member-message"
     @close="onClose"

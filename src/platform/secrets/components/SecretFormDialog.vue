@@ -11,7 +11,7 @@
                 : $t('secrets.editSecret')
             }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :close-label="$t('g.close')" />
         </DialogHeader>
         <form
           class="flex flex-col gap-4 px-4 py-2"
@@ -127,6 +127,8 @@
               v-else
               id="secret-value"
               v-model="form.secretValue"
+              :show-password-label="$t('auth.showPassword')"
+              :hide-password-label="$t('auth.hidePassword')"
               :placeholder="
                 mode === 'edit'
                   ? $t('secrets.secretValuePlaceholderEdit')

@@ -30,7 +30,12 @@
       />
     </div>
 
-    <ContextMenu ref="jobContextMenuRef" :model="jobMenuEntries" />
+    <ContextMenu
+      ref="jobContextMenuRef"
+      :new-label="$t('contextMenu.new')"
+      :remove-label="$t('g.remove')"
+      :model="jobMenuEntries"
+    />
   </div>
 </template>
 

@@ -33,7 +33,11 @@
         <FieldError v-if="errorMessage">{{ errorMessage }}</FieldError>
       </Field>
 
-      <Message v-if="successMessage" severity="success">
+      <Message
+        v-if="successMessage"
+        :close-label="$t('g.close')"
+        severity="success"
+      >
         {{ successMessage }}
       </Message>
 

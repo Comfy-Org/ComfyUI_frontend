@@ -7,7 +7,12 @@
     data-testid="apps-sidebar"
   >
     <template #alt-title>
-      <Badge variant="pill" severity="default" class="ml-2 px-1.5 uppercase">
+      <Badge
+        :remove-label="$t('g.remove')"
+        variant="pill"
+        severity="default"
+        class="ml-2 px-1.5 uppercase"
+      >
         {{ $t('g.beta') }}
       </Badge>
     </template>

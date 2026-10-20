@@ -6,6 +6,10 @@ const meta: Meta<typeof PasswordInput> = {
   title: 'Components/PasswordInput',
   component: PasswordInput,
   tags: ['autodocs'],
+  args: {
+    hidePasswordLabel: 'Hide password',
+    showPasswordLabel: 'Show password'
+  },
   render: (args) => ({
     components: { PasswordInput },
     setup: () => ({ args }),
@@ -23,7 +27,7 @@ export const Disabled: Story = {
   render: () => ({
     components: { PasswordInput },
     template:
-      '<PasswordInput aria-label="Password" placeholder="Enter password" disabled />'
+      '<PasswordInput aria-label="Password" placeholder="Enter password" hide-password-label="Hide password" show-password-label="Show password" disabled />'
   })
 }
 
@@ -31,6 +35,6 @@ export const Invalid: Story = {
   render: () => ({
     components: { PasswordInput },
     template:
-      '<PasswordInput aria-label="Password" placeholder="Enter password" aria-invalid="true" />'
+      '<PasswordInput aria-label="Password" placeholder="Enter password" hide-password-label="Hide password" show-password-label="Show password" aria-invalid="true" />'
   })
 }

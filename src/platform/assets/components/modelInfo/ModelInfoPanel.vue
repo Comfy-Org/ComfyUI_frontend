@@ -111,7 +111,7 @@
             :value="model"
           >
             <TagsInputItemText />
-            <TagsInputItemDelete />
+            <TagsInputItemDelete :remove-label="$t('g.removeTag')" />
           </TagsInputItem>
           <TagsInputInput
             :is-empty="isEmpty"
@@ -131,7 +131,7 @@
         >
           <TagsInputItem v-for="tag in additionalTags" :key="tag" :value="tag">
             <TagsInputItemText />
-            <TagsInputItemDelete />
+            <TagsInputItemDelete :remove-label="$t('g.removeTag')" />
           </TagsInputItem>
           <TagsInputInput
             :is-empty="isEmpty"

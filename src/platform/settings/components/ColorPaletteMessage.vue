@@ -1,5 +1,5 @@
 <template>
-  <Message severity="info">
+  <Message :close-label="$t('g.close')" severity="info">
     <template #icon>
       <i class="pi pi-palette" />
     </template>
@@ -10,6 +10,10 @@
       <div class="actions">
         <SingleSelect
           v-model="activePaletteId"
+          :search-label="$t('g.search')"
+          :search-placeholder="$t('g.search')"
+          :empty-text="$t('g.noResultsFound')"
+          :accessible-label="$t('g.singleSelectDropdown')"
           class="w-44"
           :options="paletteOptions"
         />

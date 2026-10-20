@@ -3,6 +3,8 @@
     <SidebarTopArea>
       <SearchInput
         v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :accessible-label="$t('g.search')"
         :placeholder="
           $t('g.searchPlaceholder', {
             subject: $t('sideToolbar.labels.assets')
@@ -10,7 +12,12 @@
         "
       />
       <template #actions>
-        <Menu v-if="isCloud" :modal="false">
+        <Menu
+          v-if="isCloud"
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :modal="false"
+        >
           <template #trigger>
             <Button
               :tooltip="$t('assetBrowser.filterBy')"

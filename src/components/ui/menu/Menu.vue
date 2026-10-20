@@ -14,6 +14,8 @@ import type { MenuItem } from './types'
 defineOptions({ inheritAttrs: false })
 
 type MenuProps = {
+  newLabel: string
+  removeLabel: string
   items?: MenuItem[]
   label?: string
   modal?: boolean
@@ -27,6 +29,8 @@ const {
   align = 'start',
   collisionPadding,
   items = [],
+  newLabel,
+  removeLabel,
   modal = true,
   side,
   sideOffset = 2
@@ -56,7 +60,7 @@ const open = defineModel<boolean>('open', { default: false })
           {{ label }}
         </DropdownMenuLabel>
         <slot>
-          <MenuItems :items @select="open = false">
+          <MenuItems :items :new-label :remove-label @select="open = false">
             <template v-if="$slots.item" #item="slotProps">
               <slot name="item" v-bind="slotProps" />
             </template>

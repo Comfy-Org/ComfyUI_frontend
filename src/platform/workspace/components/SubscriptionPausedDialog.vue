@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-90 max-w-full" @close="onClose">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-90 max-w-full"
+    @close="onClose"
+  >
     <template #title>
       {{ $t(titleKey) }}
     </template>

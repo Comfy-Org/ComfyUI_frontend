@@ -49,6 +49,9 @@
         </h2>
         <AsyncSearchInput
           v-model="searchInput"
+          :clear-label="$t('g.clear')"
+          :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+          :accessible-label="$t('g.search')"
           :searcher="applySearchQuery"
           :debounce-ms="400"
           :debounce-max-wait-ms="4000"
@@ -243,6 +246,7 @@
                     <template #overlay>
                       <Spinner
                         v-if="loadingTemplateId === template.name"
+                        :loading-label="$t('g.loading')"
                         class="absolute inset-0 z-10 m-auto size-12"
                       />
                     </template>

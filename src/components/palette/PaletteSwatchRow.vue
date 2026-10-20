@@ -2,7 +2,17 @@
   <div ref="container" class="flex flex-wrap items-center gap-1">
     <ColorPicker
       v-for="(hex, i) in modelValue"
+      :hex-label="$t('color.hex')"
       :key="i"
+      :rgba-label="$t('color.rgba')"
+      :hue-label="$t('color.hue')"
+      :alpha-label="$t('color.alpha')"
+      :red-label="$t('color.red')"
+      :green-label="$t('color.green')"
+      :blue-label="$t('color.blue')"
+      :saturation-brightness-label="$t('color.saturationBrightness')"
+      :format-label="$t('g.color')"
+      :accessible-label="$t('g.color')"
       :model-value="hex"
       :alpha="false"
       @update:model-value="(value) => updateAt(i, value)"

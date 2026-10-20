@@ -2,7 +2,6 @@
 import { storeToRefs } from 'pinia'
 import { ToastProvider } from 'reka-ui'
 import { computed, onBeforeUnmount } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -17,14 +16,18 @@ import ToastViewport from './ToastViewport.vue'
 import { useToast } from './toastStore'
 import type { Toast } from './toastStore'
 
+const { regionLabel, closeLabel, formatViewportLabel } = defineProps<{
+  regionLabel: string
+  closeLabel: string
+  formatViewportLabel: (hotkey: string) => string
+}>()
+
 const toast = useToast()
 const { held, toasts } = storeToRefs(toast)
-const { t } = useI18n()
 
 onBeforeUnmount(toast.dismissAll)
 
 const shownToasts = computed(() => (held.value ? [] : toasts.value))
-const regionLabel = computed(() => t('toastMessages.notificationsLabel'))
 
 const isAssertive = (item: Toast) =>
   item.kind === 'error' || item.kind === 'warning'
@@ -104,6 +107,7 @@ const icons = {
       <ToastTitle class="col-start-2 row-start-1">{{ item.title }}</ToastTitle>
       <ToastClose
         v-if="item.closable"
+        :accessible-label="closeLabel"
         class="col-start-3 row-start-1"
         data-testid="toast-close"
       />
@@ -120,12 +124,6 @@ const icons = {
         {{ item.action.label }}
       </Button>
     </ToastRoot>
-    <ToastViewport
-      :label="
-        (hotkey: string) =>
-          t('toastMessages.notificationsViewportLabel', { hotkey })
-      "
-      data-testid="toast-viewport"
-    />
+    <ToastViewport :label="formatViewportLabel" data-testid="toast-viewport" />
   </ToastProvider>
 </template>

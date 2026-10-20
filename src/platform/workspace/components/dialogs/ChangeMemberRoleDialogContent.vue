@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-full max-w-90" @close="onCancel">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-full max-w-90"
+    @close="onCancel"
+  >
     <template #title>
       {{
         isPromotion

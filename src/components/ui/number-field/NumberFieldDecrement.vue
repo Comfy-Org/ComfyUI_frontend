@@ -5,8 +5,15 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { class: className, ...restProps } = defineProps<
-  NumberFieldDecrementProps & { class?: HTMLAttributes['class'] }
+const {
+  class: className,
+  decrementLabel,
+  ...restProps
+} = defineProps<
+  NumberFieldDecrementProps & {
+    class?: HTMLAttributes['class']
+    decrementLabel: string
+  }
 >()
 const forwarded = useForwardProps(restProps)
 </script>
@@ -15,7 +22,7 @@ const forwarded = useForwardProps(restProps)
   <NumberFieldDecrement
     v-bind="forwarded"
     data-slot="number-field-decrement"
-    :aria-label="$t('g.decrement')"
+    :aria-label="decrementLabel"
     :class="
       cn(
         'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center rounded-l-lg border-none bg-transparent text-muted-foreground hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-30',

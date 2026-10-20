@@ -12,7 +12,7 @@
       </div>
     </template>
     <template v-else-if="isLoading">
-      <Spinner />
+      <Spinner :loading-label="$t('g.loading')" />
     </template>
     <template v-else-if="nodeNames.length">
       <div

@@ -7,6 +7,8 @@
       <PasswordInput
         v-bind="componentField"
         id="comfy-org-sign-up-password"
+        :show-password-label="$t('auth.showPassword')"
+        :hide-password-label="$t('auth.hidePassword')"
         autocomplete="new-password"
         :placeholder="t('auth.signup.passwordPlaceholder')"
         :class="fieldClass"
@@ -32,6 +34,8 @@
       <PasswordInput
         v-bind="componentField"
         id="comfy-org-sign-up-confirm-password"
+        :show-password-label="$t('auth.showPassword')"
+        :hide-password-label="$t('auth.hidePassword')"
         autocomplete="new-password"
         :placeholder="t('auth.login.confirmPasswordPlaceholder')"
         :class="fieldClass"

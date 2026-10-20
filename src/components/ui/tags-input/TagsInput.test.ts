@@ -2,19 +2,12 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { h, nextTick } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import TagsInput from './TagsInput.vue'
 import TagsInputInput from './TagsInputInput.vue'
 import TagsInputItem from './TagsInputItem.vue'
 import TagsInputItemDelete from './TagsInputItemDelete.vue'
 import TagsInputItemText from './TagsInputItemText.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: { g: { removeTag: 'Remove tag' } } }
-})
 
 describe('TagsInput', () => {
   function renderTagsInput(props = {}, slots = {}) {
@@ -46,7 +39,6 @@ describe('TagsInput with child components', () => {
     const user = userEvent.setup()
 
     const result = render(TagsInput, {
-      global: { plugins: [i18n] },
       props: {
         modelValue: tags,
         ...extraProps
@@ -56,7 +48,7 @@ describe('TagsInput with child components', () => {
           ...tags.map((tag) =>
             h(TagsInputItem, { key: tag, value: tag }, () => [
               h(TagsInputItemText),
-              h(TagsInputItemDelete)
+              h(TagsInputItemDelete, { removeLabel: 'Remove tag' })
             ])
           ),
           h(TagsInputInput, { placeholder: 'Add tag...' })

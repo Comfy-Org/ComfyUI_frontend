@@ -27,6 +27,7 @@
           </p>
           <Badge
             v-if="isGated"
+            :remove-label="$t('g.remove')"
             variant="pill"
             severity="secondary"
             class="text-xs"
@@ -112,12 +113,20 @@
           </span>
           <SearchInput
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
             size="lg"
             class="w-full"
           />
         </label>
-        <Menu v-if="isRestricted" :items="bulkMenuEntries" :modal="false">
+        <Menu
+          v-if="isRestricted"
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :items="bulkMenuEntries"
+          :modal="false"
+        >
           <template #trigger>
             <Button
               variant="secondary"

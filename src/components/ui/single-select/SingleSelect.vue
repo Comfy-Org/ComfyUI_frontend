@@ -5,6 +5,9 @@
     v-bind="attrsWithoutClass"
     :class="attrsClass"
     :label
+    :accessible-label
+    :search-label
+    :empty-text
     :options
     :size
     :invalid
@@ -22,7 +25,7 @@
   <SelectRoot v-else v-model="selectedItem" v-model:open="isOpen" :disabled>
     <SelectTrigger
       v-bind="attrsWithoutClass"
-      :aria-label="label || t('g.singleSelectDropdown')"
+      :aria-label="accessibleLabel"
       :aria-busy="loading || undefined"
       :aria-invalid="invalid || undefined"
       :class="
@@ -106,7 +109,6 @@ import {
 } from 'reka-ui'
 import { ref } from 'vue'
 import type { StyleValue } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import {
   selectContentClass,
@@ -130,6 +132,9 @@ const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const {
   label,
+  accessibleLabel,
+  searchLabel,
+  emptyText,
   options = [],
   size = 'lg',
   invalid = false,
@@ -143,6 +148,9 @@ const {
   contentStyle
 } = defineProps<{
   label?: string
+  accessibleLabel: string
+  searchLabel: string
+  emptyText: string
   options?: SelectOption<string | number>[]
   /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
   size?: 'lg' | 'md'
@@ -167,7 +175,6 @@ const selectedItem = defineModel<string | number | undefined>({
   required: true
 })
 
-const { t } = useI18n()
 const isOpen = ref(false)
 const liftedContentStyle = useModalLiftedZIndex(isOpen)
 

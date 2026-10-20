@@ -11,6 +11,8 @@ const meta: Meta<typeof Menu> = {
   component: Menu,
   tags: ['autodocs'],
   args: {
+    newLabel: 'New',
+    removeLabel: 'Remove',
     items: [
       { label: 'Open', icon: 'icon-[lucide--folder-open]', command: fn() },
       { label: 'Disabled', disabled: true },

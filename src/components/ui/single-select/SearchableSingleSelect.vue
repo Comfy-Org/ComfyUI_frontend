@@ -11,7 +11,7 @@
         ref="trigger"
         v-bind="attrsWithoutClass"
         tabindex="0"
-        :aria-label="label || t('g.singleSelectDropdown')"
+        :aria-label="accessibleLabel"
         :aria-busy="loading || undefined"
         :aria-invalid="invalid || undefined"
         :class="
@@ -64,8 +64,8 @@
               <i class="icon-[lucide--search] text-muted-foreground" />
               <ComboboxInput
                 v-model="searchQuery"
-                :aria-label="t('g.search')"
-                :placeholder="searchPlaceholder ?? t('g.search')"
+                :aria-label="searchLabel"
+                :placeholder="searchPlaceholder"
                 class="w-full border-none bg-transparent text-sm outline-none"
               />
             </div>
@@ -91,7 +91,7 @@
               </ComboboxItemIndicator>
             </ComboboxItem>
             <ComboboxEmpty :class="selectEmptyMessageClass">
-              {{ t('g.noResultsFound') }}
+              {{ emptyText }}
             </ComboboxEmpty>
           </ComboboxViewport>
         </FocusScope>
@@ -118,7 +118,6 @@ import {
 } from 'reka-ui'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { StyleValue } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import {
   selectContentClass,
@@ -139,6 +138,9 @@ defineOptions({ inheritAttrs: false })
 const { attrsClass, attrsWithoutClass } = useAttrsClass()
 const {
   label,
+  accessibleLabel,
+  searchLabel,
+  emptyText,
   options = [],
   size = 'lg',
   invalid = false,
@@ -151,6 +153,9 @@ const {
   contentStyle
 } = defineProps<{
   label?: string
+  accessibleLabel: string
+  searchLabel: string
+  emptyText: string
   options?: SelectOption<string | number>[]
   size?: 'lg' | 'md'
   invalid?: boolean
@@ -166,7 +171,6 @@ const {
 const selectedItem = defineModel<string | number | undefined>({
   required: true
 })
-const { t } = useI18n()
 const triggerRef = useTemplateRef('trigger')
 const isOpen = ref(false)
 const searchQuery = ref('')

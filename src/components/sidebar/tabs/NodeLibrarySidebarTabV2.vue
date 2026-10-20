@@ -12,6 +12,8 @@
         <SearchInput
           ref="searchBoxRef"
           v-model="searchQuery"
+          :clear-label="$t('g.clear')"
+          :accessible-label="$t('g.search')"
           :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
           @search="handleSearch"
         />
@@ -28,6 +30,8 @@
           />
           <Menu
             v-if="selectedTab === 'essentials'"
+            :new-label="$t('contextMenu.new')"
+            :remove-label="$t('g.remove')"
             :items="jumpMenuEntries"
             :label="$t('essentials.jumpTo')"
           >
@@ -39,7 +43,11 @@
               />
             </template>
           </Menu>
-          <Menu v-else>
+          <Menu
+            v-else
+            :new-label="$t('contextMenu.new')"
+            :remove-label="$t('g.remove')"
+          >
             <template #trigger>
               <Button
                 size="icon"
@@ -47,7 +55,12 @@
                 icon="icon-[lucide--settings-2]"
               />
             </template>
-            <MenuRadioGroup v-model="sortOrder" :options="sortingOptions" />
+            <MenuRadioGroup
+              v-model="sortOrder"
+              :new-label="$t('contextMenu.new')"
+              :remove-label="$t('g.remove')"
+              :options="sortingOptions"
+            />
           </Menu>
         </template>
       </SidebarTopArea>

@@ -42,7 +42,11 @@
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent :class="menuContentClass">
-        <MenuItems :items="menuItems" />
+        <MenuItems
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :items="menuItems"
+        />
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>

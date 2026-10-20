@@ -2,6 +2,7 @@
   <span class="flex gap-0.5">
     <template v-for="(sequence, index) in keySequences" :key="index">
       <Badge
+        :remove-label="$t('g.remove')"
         class="min-w-6 justify-center gap-1 bg-muted text-center font-normal text-foreground capitalize"
         :severity="isModified ? 'info' : 'secondary'"
       >

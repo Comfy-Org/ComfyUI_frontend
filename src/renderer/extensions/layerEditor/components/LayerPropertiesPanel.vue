@@ -183,7 +183,20 @@
       <div v-if="backgroundLayer" :class="sectionClass">
         <span :class="sectionLabelClass">{{ t('layerEditor.fill') }}</span>
         <div data-testid="background-color-swatch">
-          <ColorPicker v-model="backgroundColorModel" class="h-7" />
+          <ColorPicker
+            v-model="backgroundColorModel"
+            :hex-label="$t('color.hex')"
+            :rgba-label="$t('color.rgba')"
+            :hue-label="$t('color.hue')"
+            :alpha-label="$t('color.alpha')"
+            :red-label="$t('color.red')"
+            :green-label="$t('color.green')"
+            :blue-label="$t('color.blue')"
+            :saturation-brightness-label="$t('color.saturationBrightness')"
+            :format-label="$t('g.color')"
+            :accessible-label="$t('g.color')"
+            class="h-7"
+          />
         </div>
       </div>
     </template>

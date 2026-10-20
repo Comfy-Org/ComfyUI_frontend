@@ -3,6 +3,8 @@
     <Teleport defer to="#keybinding-panel-header">
       <SearchInput
         v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :accessible-label="$t('g.search')"
         class="max-w-96"
         size="lg"
         autofocus
@@ -18,7 +20,13 @@
           :preset-names="presetNames"
           @presets-changed="refreshPresetList"
         />
-        <Menu :items="menuEntries" to="#keybinding-panel-actions" align="end">
+        <Menu
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :items="menuEntries"
+          to="#keybinding-panel-actions"
+          align="end"
+        >
           <template #trigger>
             <Button
               size="icon-lg"
@@ -72,10 +80,21 @@
       v-if="filteredCommands.length > commandsPerPageOptions[0]"
       v-model:page="currentPage"
       v-model:items-per-page="commandsPerPage"
+      :accessible-label="$t('g.pageNumber', { page: '' })"
+      :items-per-page-label="$t('g.itemsPerPage')"
+      :previous-label="$t('g.previous')"
+      :next-label="$t('g.next')"
+      :format-page-label="(page) => $t('g.pageNumber', { page })"
       :total="filteredCommands.length"
       :items-per-page-options="commandsPerPageOptions"
     />
-    <ContextMenu ref="rowMenu" :model="rowMenuItems" @hide="restoreRowFocus" />
+    <ContextMenu
+      ref="rowMenu"
+      :new-label="$t('contextMenu.new')"
+      :remove-label="$t('g.remove')"
+      :model="rowMenuItems"
+      @hide="restoreRowFocus"
+    />
 
     <Button
       :tooltip="$t('g.resetAllKeybindingsTooltip')"

@@ -3,8 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import { testI18n } from '@/utils/__tests__/testI18n'
-
 import Pagination from './Pagination.vue'
 
 describe('Pagination', () => {
@@ -20,10 +18,14 @@ describe('Pagination', () => {
           v-model:page="page"
           v-model:items-per-page="itemsPerPage"
           :total="240"
+          accessible-label="Results pages"
+          items-per-page-label="Items per page"
+          previous-label="Previous"
+          next-label="Next"
+          :format-page-label="(page) => 'Page ' + page"
           :items-per-page-options="[25, 50, 100]"
         />`
-      }),
-      { global: { plugins: [testI18n] } }
+      })
     )
 
     await user.click(screen.getByRole('button', { name: 'Page 10' }))

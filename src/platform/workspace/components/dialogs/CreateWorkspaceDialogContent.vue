@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-full max-w-lg" @close="onCancel">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-full max-w-lg"
+    @close="onCancel"
+  >
     <template #title>
       {{ $t('workspacePanel.createWorkspaceDialog.title') }}
     </template>

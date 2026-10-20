@@ -10,10 +10,12 @@ import { messageVariants } from './message.variants'
 
 const {
   severity,
+  closeLabel,
   closable = false,
   class: customClass = ''
 } = defineProps<{
   severity?: MessageVariants['severity']
+  closeLabel: string
   closable?: boolean
   class?: HTMLAttributes['class']
 }>()
@@ -45,7 +47,7 @@ function close(event: MouseEvent) {
       variant="textonly"
       size="unset"
       class="size-6 shrink-0 p-0 text-current"
-      :aria-label="$t('g.close')"
+      :aria-label="closeLabel"
       @click="close"
     >
       <i class="icon-[lucide--x] size-4" aria-hidden="true" />

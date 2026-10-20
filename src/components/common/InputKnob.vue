@@ -20,9 +20,9 @@
       :step-snapping="step !== 0"
       :disabled
     >
-      <NumberFieldDecrement />
+      <NumberFieldDecrement :decrement-label="$t('g.decrement')" />
       <NumberFieldInput :aria-label :aria-labelledby="ariaLabelledby" />
-      <NumberFieldIncrement />
+      <NumberFieldIncrement :increment-label="$t('g.increment')" />
     </NumberField>
   </div>
 </template>

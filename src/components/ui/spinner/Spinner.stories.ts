@@ -5,7 +5,8 @@ import Spinner from './Spinner.vue'
 const meta: Meta<typeof Spinner> = {
   title: 'Components/Spinner',
   component: Spinner,
-  tags: ['autodocs']
+  tags: ['autodocs'],
+  args: { loadingLabel: 'Loading' }
 }
 
 export default meta
@@ -17,9 +18,9 @@ export const Sizes: Story = {
     components: { Spinner },
     template: `
       <div class="flex items-center gap-4">
-        <Spinner class="size-4" aria-label="Loading" />
-        <Spinner class="size-8" aria-label="Loading" />
-        <Spinner class="size-12" aria-label="Loading" />
+        <Spinner class="size-4" loading-label="Loading" />
+        <Spinner class="size-8" loading-label="Loading" />
+        <Spinner class="size-12" loading-label="Loading" />
       </div>`
   })
 }

@@ -117,6 +117,7 @@
                 </Button>
                 <Badge
                   v-if="showErrorIndicatorOnPanelButton"
+                  :remove-label="$t('g.remove')"
                   variant="dot"
                   severity="danger"
                   class="absolute -top-1 -right-1"

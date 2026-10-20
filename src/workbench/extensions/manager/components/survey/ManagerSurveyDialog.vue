@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-lg max-w-full" @close="onClose">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-lg max-w-full"
+    @close="onClose"
+  >
     <template #title>
       <i class="icon-[comfy--extensions-blocks]" />
       {{ $t('manager.survey.title') }}

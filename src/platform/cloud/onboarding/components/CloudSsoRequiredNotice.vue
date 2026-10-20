@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-4">
-    <Message severity="warning">
+    <Message :close-label="$t('g.close')" severity="warning">
       {{
         knownEmail
           ? t('auth.sso.required.bodyWithEmail', { email: knownEmail })

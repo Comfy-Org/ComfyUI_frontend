@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-full max-w-lg" @close="onDismiss">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-full max-w-lg"
+    @close="onDismiss"
+  >
     <template #title>
       {{ $t('workspacePanel.inviteLinks.wrongAccountTitle') }}
     </template>

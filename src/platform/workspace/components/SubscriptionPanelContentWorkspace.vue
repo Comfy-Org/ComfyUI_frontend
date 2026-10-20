@@ -133,6 +133,8 @@
                 </Button>
                 <Menu
                   v-if="showInactiveTeamSubscription && menuEntries.length > 0"
+                  :new-label="$t('contextMenu.new')"
+                  :remove-label="$t('g.remove')"
                   :items="menuEntries"
                 >
                   <template #trigger>
@@ -192,7 +194,12 @@
                 >
                   {{ $t('subscription.subscribe') }}
                 </Button>
-                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                <Menu
+                  v-if="menuEntries.length > 0"
+                  :new-label="$t('contextMenu.new')"
+                  :remove-label="$t('g.remove')"
+                  :items="menuEntries"
+                >
                   <template #trigger>
                     <Button
                       :tooltip="$t('g.moreOptions')"
@@ -215,6 +222,7 @@
                   </h3>
                   <Badge
                     v-if="planStatusBadge"
+                    :remove-label="$t('g.remove')"
                     data-testid="plan-status-badge"
                     variant="label"
                     :severity="planStatusBadge.severity"
@@ -299,7 +307,12 @@
                       : $t('subscription.changePlan')
                   }}
                 </Button>
-                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
+                <Menu
+                  v-if="menuEntries.length > 0"
+                  :new-label="$t('contextMenu.new')"
+                  :remove-label="$t('g.remove')"
+                  :items="menuEntries"
+                >
                   <template #trigger>
                     <Button
                       :tooltip="$t('g.moreOptions')"

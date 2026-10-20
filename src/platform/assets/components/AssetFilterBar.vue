@@ -10,6 +10,14 @@
       <MultiSelect
         v-if="availableFileFormats.length > 0"
         v-model="activeFileFormatObjects"
+        :search-label="$t('g.search')"
+        :search-placeholder="$t('g.search')"
+        :empty-text="$t('g.noResultsFound')"
+        :accessible-label="
+          $t('assetBrowser.fileFormats') || $t('g.multiSelectDropdown')
+        "
+        :clear-all-label="$t('g.clearAll')"
+        :format-selected-count="(count) => $t('g.itemsSelected', { count })"
         :label="$t('assetBrowser.fileFormats')"
         :options="availableFileFormats"
         class="min-w-32"
@@ -20,6 +28,14 @@
       <MultiSelect
         v-if="availableBaseModels.length > 0"
         v-model="activeBaseModelObjects"
+        :search-label="$t('g.search')"
+        :search-placeholder="$t('g.search')"
+        :empty-text="$t('g.noResultsFound')"
+        :accessible-label="
+          $t('assetBrowser.baseModels') || $t('g.multiSelectDropdown')
+        "
+        :clear-all-label="$t('g.clearAll')"
+        :format-selected-count="(count) => $t('g.itemsSelected', { count })"
         :label="$t('assetBrowser.baseModels')"
         :options="availableBaseModels"
         class="min-w-32"
@@ -30,6 +46,12 @@
       <SingleSelect
         v-if="showOwnershipFilter"
         v-model="ownership"
+        :search-label="$t('g.search')"
+        :search-placeholder="$t('g.search')"
+        :empty-text="$t('g.noResultsFound')"
+        :accessible-label="
+          $t('assetBrowser.ownership') || $t('g.singleSelectDropdown')
+        "
         :label="$t('assetBrowser.ownership')"
         :options="ownershipOptions"
         class="min-w-32"
@@ -41,6 +63,12 @@
     <div class="flex items-center" data-component-id="asset-filter-bar-right">
       <SingleSelect
         v-model="sortBy"
+        :search-label="$t('g.search')"
+        :search-placeholder="$t('g.search')"
+        :empty-text="$t('g.noResultsFound')"
+        :accessible-label="
+          $t('assetBrowser.sortBy') || $t('g.singleSelectDropdown')
+        "
         :label="$t('assetBrowser.sortBy')"
         :options="sortOptions"
         class="min-w-32"

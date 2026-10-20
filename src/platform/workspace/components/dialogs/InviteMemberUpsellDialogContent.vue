@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-full max-w-[512px]" @close="onDismiss">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-full max-w-[512px]"
+    @close="onDismiss"
+  >
     <template #title>
       {{
         canAccessSubscriptionFeatures

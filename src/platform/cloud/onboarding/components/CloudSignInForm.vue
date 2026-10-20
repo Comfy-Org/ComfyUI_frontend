@@ -29,6 +29,8 @@
         <PasswordInput
           v-bind="componentField"
           id="cloud-sign-in-password"
+          :show-password-label="$t('auth.showPassword')"
+          :hide-password-label="$t('auth.hidePassword')"
           autocomplete="current-password"
           :placeholder="t('auth.login.passwordPlaceholder')"
           :class="CLOUD_AUTH_FIELD_CLASS"
@@ -45,7 +47,7 @@
       </Field>
     </VeeField>
 
-    <Message v-if="authError" severity="error">
+    <Message v-if="authError" :close-label="$t('g.close')" severity="error">
       {{ authError }}
     </Message>
 

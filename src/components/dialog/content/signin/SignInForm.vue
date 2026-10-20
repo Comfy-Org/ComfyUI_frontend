@@ -42,6 +42,8 @@
           <PasswordInput
             v-bind="componentField"
             id="comfy-org-sign-in-password"
+            :show-password-label="$t('auth.showPassword')"
+            :hide-password-label="$t('auth.hidePassword')"
             autocomplete="current-password"
             :placeholder="t('auth.login.passwordPlaceholder')"
             :aria-invalid="!!errors.length"
@@ -51,7 +53,11 @@
       </VeeField>
     </FieldGroup>
 
-    <Spinner v-if="loading" class="mx-auto size-8" />
+    <Spinner
+      v-if="loading"
+      :loading-label="$t('g.loading')"
+      class="mx-auto size-8"
+    />
     <Button v-else type="submit" class="h-10" :disabled="!meta.valid">
       {{ t('auth.login.loginButton') }}
     </Button>

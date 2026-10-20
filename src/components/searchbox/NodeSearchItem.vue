@@ -15,7 +15,11 @@
           />
         </span>
         <span>&nbsp;</span>
-        <Badge v-if="showIdName" severity="secondary">
+        <Badge
+          v-if="showIdName"
+          :remove-label="$t('g.remove')"
+          severity="secondary"
+        >
           <span>
             <HighlightedText
               :text="nodeDef.name"
@@ -33,20 +37,37 @@
       </div>
     </div>
     <div class="option-badges">
-      <Badge v-if="nodeDef.deprecated" severity="danger">
+      <Badge
+        v-if="nodeDef.deprecated"
+        :remove-label="$t('g.remove')"
+        severity="danger"
+      >
         {{ $t('g.deprecated') }}
       </Badge>
-      <Badge v-if="nodeDef.experimental" severity="primary">
+      <Badge
+        v-if="nodeDef.experimental"
+        :remove-label="$t('g.remove')"
+        severity="primary"
+      >
         {{ $t('g.experimental') }}
       </Badge>
-      <Badge v-if="nodeDef.dev_only" severity="info">
+      <Badge
+        v-if="nodeDef.dev_only"
+        :remove-label="$t('g.remove')"
+        severity="info"
+      >
         {{ $t('g.devOnly') }}
       </Badge>
-      <Badge v-if="showNodeFrequency && nodeFrequency > 0" severity="secondary">
+      <Badge
+        v-if="showNodeFrequency && nodeFrequency > 0"
+        :remove-label="$t('g.remove')"
+        severity="secondary"
+      >
         {{ formatNumberWithSuffix(nodeFrequency, { roundToInt: true }) }}
       </Badge>
       <Badge
         v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
+        :remove-label="$t('g.remove')"
         variant="chip"
         class="text-sm font-light"
       >

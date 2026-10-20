@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-
-const { t } = useI18n()
-
-const { hue } = defineProps<{
+const { hue, accessibleLabel } = defineProps<{
   hue: number
+  accessibleLabel: string
 }>()
 
 const saturation = defineModel<number>('saturation', { required: true })
@@ -45,7 +42,7 @@ function handlePointerMove(e: PointerEvent) {
   <div
     ref="containerRef"
     role="slider"
-    :aria-label="t('color.saturationBrightness')"
+    :aria-label="accessibleLabel"
     :aria-valuetext="`${saturation}%, ${value}%`"
     class="relative aspect-square w-full cursor-crosshair rounded-sm"
     :style="{ backgroundColor: hueBackground, touchAction: 'none' }"

@@ -7,7 +7,14 @@ const meta = {
   title: 'Components/Pagination',
   component: Pagination,
   tags: ['autodocs'],
-  args: { total: 240 },
+  args: {
+    total: 240,
+    accessibleLabel: 'Results pages',
+    itemsPerPageLabel: 'Items per page',
+    previousLabel: 'Previous',
+    nextLabel: 'Next',
+    formatPageLabel: (page: number) => `Page ${page}`
+  },
   argTypes: {
     total: { control: 'number' }
   },

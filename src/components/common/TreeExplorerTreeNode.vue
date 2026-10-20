@@ -21,6 +21,7 @@
       </span>
       <Badge
         v-if="showNodeBadgeText"
+        :remove-label="$t('g.remove')"
         variant="badge"
         severity="secondary"
         class="ml-2"

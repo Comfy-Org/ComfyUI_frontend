@@ -46,7 +46,15 @@ function renderInParent(
       return {
         sel: ref(modelValue),
         options,
-        extraProps: multiSelectProps,
+        extraProps: {
+          accessibleLabel: 'Choose options',
+          searchLabel: 'Search',
+          searchPlaceholder: 'Search',
+          emptyText: 'No results found',
+          clearAllLabel: 'Clear all',
+          formatSelectedCount: (count: number) => `${count} selected`,
+          ...multiSelectProps
+        },
         onEsc: () => {
           parentEscapeCount.value++
         }
@@ -86,6 +94,39 @@ afterEach(() => {
 })
 
 describe('MultiSelect', () => {
+  it.for(['header', 'footer'] as const)(
+    'renders caller text and updates formatted counts in the %s',
+    async (actionsPlacement) => {
+      const user = userEvent.setup()
+      const { unmount } = renderInParent(
+        {
+          accessibleLabel: 'Choisir',
+          searchLabel: 'Rechercher',
+          emptyText: 'Aucun résultat',
+          clearAllLabel: 'Tout effacer',
+          formatSelectedCount: (count) => `${count} choisis`,
+          showSearchBox: true,
+          showSelectedCount: true,
+          showClearButton: true,
+          actionsPlacement
+        },
+        [options[0], options[1]]
+      )
+
+      await user.click(screen.getByRole('button', { name: 'Choisir' }))
+      expect(screen.getByRole('combobox', { name: 'Rechercher' })).toBeVisible()
+      expect(screen.getByText('2 choisis')).toBeVisible()
+      await user.click(screen.getByRole('button', { name: 'Tout effacer' }))
+      expect(screen.getByText('0 choisis')).toBeVisible()
+      await user.type(
+        screen.getByRole('combobox', { name: 'Rechercher' }),
+        'zzz'
+      )
+      expect(screen.getByText('Aucun résultat')).toBeVisible()
+      unmount()
+    }
+  )
+
   it('opens above a dialog registered with the modal z-index counter', async () => {
     openModal = document.createElement('div')
     raiseModalLayer(openModal)
@@ -212,7 +253,7 @@ describe('MultiSelect', () => {
   it('renders the value slot with the selected options instead of the joined labels', () => {
     const Parent = {
       template: `
-        <MultiSelect v-model="sel" :options="options">
+        <MultiSelect v-model="sel" :options="options" accessible-label="Choose options" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)">
           <template #value="{ selected }">
             <span v-for="item in selected" :key="item.value" data-testid="chip">
               {{ item.name }}
@@ -243,7 +284,7 @@ describe('MultiSelect', () => {
       template: `
         <FocusScope trapped as-child>
           <div>
-            <MultiSelect v-model="sel" :options="options" :show-search-box="true" />
+            <MultiSelect v-model="sel" :options="options" :show-search-box="true" accessible-label="Choose options" search-label="Search" search-placeholder="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)" />
           </div>
         </FocusScope>`,
       setup: () => ({ sel: ref([]), options })

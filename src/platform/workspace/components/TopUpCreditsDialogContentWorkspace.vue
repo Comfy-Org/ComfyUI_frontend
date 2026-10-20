@@ -176,13 +176,13 @@
           :format-options="{ maximumFractionDigits: 0 }"
           @update:model-value="handlePayAmountChange"
         >
-          <NumberFieldDecrement />
+          <NumberFieldDecrement :decrement-label="$t('g.decrement')" />
           <span class="shrink-0 text-base font-semibold">$</span>
           <NumberFieldInput
             :aria-label="$t('credits.topUp.youPay')"
             class="text-lg font-medium"
           />
-          <NumberFieldIncrement />
+          <NumberFieldIncrement :increment-label="$t('g.increment')" />
         </NumberField>
       </div>
 
@@ -198,13 +198,13 @@
           :step="getCreditsStepAmount(creditsModel)"
           :format-options="{ maximumFractionDigits: 0 }"
         >
-          <NumberFieldDecrement />
+          <NumberFieldDecrement :decrement-label="$t('g.decrement')" />
           <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
           <NumberFieldInput
             :aria-label="$t('credits.topUp.youGet')"
             class="text-lg font-medium"
           />
-          <NumberFieldIncrement />
+          <NumberFieldIncrement :increment-label="$t('g.increment')" />
         </NumberField>
       </div>
     </div>

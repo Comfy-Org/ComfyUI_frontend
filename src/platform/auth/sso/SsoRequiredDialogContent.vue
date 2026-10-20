@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-full max-w-lg" @close="dismiss">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-full max-w-lg"
+    @close="dismiss"
+  >
     <template #title>
       {{ t('auth.sso.required.title') }}
     </template>

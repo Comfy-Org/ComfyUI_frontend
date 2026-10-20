@@ -12,7 +12,7 @@
       v-bind="attrsWithoutClass"
       :class="attrsClass"
       :label
-      :fallback-label="t('g.multiSelectDropdown')"
+      :accessible-label
       :selected-items="selectedItems"
       :size
     >
@@ -30,6 +30,10 @@
       :show-clear-button
       :actions-placement
       :search-placeholder
+      :search-label
+      :empty-text
+      :clear-all-label
+      :format-selected-count
       :list-max-height
       :popover-style
       :content-style
@@ -43,7 +47,6 @@
 import { ComboboxRoot } from 'reka-ui'
 import { ref } from 'vue'
 import type { StyleValue } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import MultiSelectContent from '@/components/ui/multi-select/MultiSelectContent.vue'
 import MultiSelectTrigger from '@/components/ui/multi-select/MultiSelectTrigger.vue'
@@ -61,6 +64,11 @@ const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const {
   label,
+  accessibleLabel,
+  searchLabel,
+  emptyText,
+  clearAllLabel,
+  formatSelectedCount,
   options = [],
   size = 'lg',
   disabled = false,
@@ -74,6 +82,11 @@ const {
   popoverMaxWidth,
   contentStyle
 } = defineProps<{
+  accessibleLabel: string
+  searchLabel: string
+  emptyText: string
+  clearAllLabel: string
+  formatSelectedCount: (count: number) => string
   /** Input label shown on the trigger button */
   label?: string
   /** Available options */
@@ -105,7 +118,6 @@ const selectedItems = defineModel<SelectOption[]>({
 })
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
-const { t } = useI18n()
 const isOpen = ref(false)
 const liftedContentStyle = useModalLiftedZIndex(isOpen)
 

@@ -1,5 +1,9 @@
 <template>
-  <DialogPanel class="w-xl max-w-full min-w-116" @close="emit('close')">
+  <DialogPanel
+    :close-label="$t('g.close')"
+    class="w-xl max-w-full min-w-116"
+    @close="emit('close')"
+  >
     <template #title>
       {{ $t('builderToolbar.saveAs') }}
     </template>

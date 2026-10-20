@@ -178,6 +178,11 @@
       </div>
       <Pagination
         v-model:page="page"
+        :accessible-label="$t('g.pageNumber', { page: '' })"
+        :items-per-page-label="$t('g.itemsPerPage')"
+        :previous-label="$t('g.previous')"
+        :next-label="$t('g.next')"
+        :format-page-label="(page) => $t('g.pageNumber', { page })"
         :total="total"
         :items-per-page="itemsPerPage"
         class="@2xl:ml-auto"

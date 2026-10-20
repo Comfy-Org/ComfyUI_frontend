@@ -23,6 +23,7 @@
         </span>
         <Badge
           v-if="badge !== undefined"
+          :remove-label="$t('g.remove')"
           severity="contrast"
           variant="circle"
           class="ml-auto min-h-5 min-w-5 px-1"

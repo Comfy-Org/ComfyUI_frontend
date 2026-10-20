@@ -9,7 +9,7 @@
       v-if="isBusy"
       class="flex flex-col items-center py-4 text-center text-muted-foreground"
     >
-      <Spinner class="mb-2 size-8" />
+      <Spinner :loading-label="$t('g.loading')" class="mb-2 size-8" />
       {{ $t('manager.loadingVersions') }}
     </div>
     <div v-else-if="versionOptions.length === 0" class="py-2">

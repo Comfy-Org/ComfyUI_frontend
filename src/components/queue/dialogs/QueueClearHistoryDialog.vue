@@ -1,5 +1,5 @@
 <template>
-  <DialogPanel class="w-[360px]" @close="onCancel">
+  <DialogPanel :close-label="$t('g.close')" class="w-[360px]" @close="onCancel">
     <template #title>
       {{ t('sideToolbar.queueProgressOverlay.clearHistoryDialogTitle') }}
     </template>

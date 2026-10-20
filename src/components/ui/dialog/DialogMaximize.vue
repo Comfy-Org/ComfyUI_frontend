@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 import Button from '@/components/ui/button/Button.vue'
 
-const { maximized = false } = defineProps<{ maximized?: boolean }>()
+const {
+  maximized = false,
+  restoreLabel,
+  maximizeLabel
+} = defineProps<{
+  maximized?: boolean
+  restoreLabel: string
+  maximizeLabel: string
+}>()
 const emit = defineEmits<{ toggle: [] }>()
-
-const { t } = useI18n()
 </script>
 
 <template>
   <Button
-    :aria-label="maximized ? t('g.restoreDialog') : t('g.maximizeDialog')"
+    :aria-label="maximized ? restoreLabel : maximizeLabel"
     size="icon"
     variant="muted-textonly"
     @click="emit('toggle')"

@@ -94,6 +94,8 @@
           <SearchInput
             ref="searchBoxRef"
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             data-testid="node-library-search"
             class="node-lib-search-box"
             :placeholder="$t('g.searchPlaceholder', { subject: $t('g.nodes') })"
@@ -152,10 +154,18 @@
             <template #node="{ node }">
               <TreeExplorerTreeNode :node>
                 <template #before-label>
-                  <Badge v-if="node.data?.experimental" severity="primary">
+                  <Badge
+                    v-if="node.data?.experimental"
+                    :remove-label="$t('g.remove')"
+                    severity="primary"
+                  >
                     {{ $t('g.experimental') }}
                   </Badge>
-                  <Badge v-if="node.data?.deprecated" severity="danger">
+                  <Badge
+                    v-if="node.data?.deprecated"
+                    :remove-label="$t('g.remove')"
+                    severity="danger"
+                  >
                     {{ $t('g.deprecated') }}
                   </Badge>
                 </template>

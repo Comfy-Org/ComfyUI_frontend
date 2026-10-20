@@ -66,7 +66,12 @@
             @menu="onMenuItem"
           />
         </div>
-        <ContextMenu ref="jobContextMenuRef" :model="jobMenuEntries" />
+        <ContextMenu
+          ref="jobContextMenuRef"
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :model="jobMenuEntries"
+        />
         <MediaLightbox
           v-model:active-index="galleryActiveIndex"
           :all-gallery-items="galleryItems"

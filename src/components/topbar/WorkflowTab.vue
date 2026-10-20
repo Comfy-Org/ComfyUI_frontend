@@ -106,7 +106,11 @@
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
-        <MenuItems :items="contextMenuItems" />
+        <MenuItems
+          :new-label="$t('contextMenu.new')"
+          :remove-label="$t('g.remove')"
+          :items="contextMenuItems"
+        />
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>

@@ -49,10 +49,10 @@
           data-testid="zoom-percentage-input"
           @update:model-value="canvasStore.setAppZoomFromPercentage"
         >
-          <NumberFieldDecrement />
+          <NumberFieldDecrement :decrement-label="$t('g.decrement')" />
           <NumberFieldInput :aria-label="$t('zoomControls.zoomPercentage')" />
           <span class="shrink-0 text-sm">%</span>
-          <NumberFieldIncrement />
+          <NumberFieldIncrement :increment-label="$t('g.increment')" />
         </NumberField>
       </div>
     </div>

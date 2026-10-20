@@ -12,6 +12,21 @@ const i18n = createI18n({
 })
 
 describe('SearchAutocomplete', () => {
+  it('renders caller labels without an i18n plugin', () => {
+    render(SearchAutocomplete, {
+      props: {
+        modelValue: 'abc',
+        accessibleLabel: 'Rechercher',
+        clearLabel: 'Effacer',
+        placeholder: 'Rechercher...'
+      }
+    })
+    expect(
+      screen.getByRole('combobox', { name: 'Rechercher' })
+    ).toHaveAttribute('placeholder', 'Rechercher...')
+    expect(screen.getByRole('button', { name: 'Effacer' })).toBeVisible()
+  })
+
   function renderComponent(props: Record<string, unknown> = {}) {
     return render(SearchAutocomplete, {
       global: {
@@ -34,7 +49,12 @@ describe('SearchAutocomplete', () => {
           }
         }
       },
-      props: { modelValue: '', ...props }
+      props: {
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
+        modelValue: '',
+        ...props
+      }
     })
   }
 
@@ -111,6 +131,8 @@ describe('SearchAutocomplete', () => {
         modelValue: '',
         suggestions: ['foo', 'bar'],
         openOnFocus: true,
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
         onHighlight
       }
     })
@@ -132,6 +154,8 @@ describe('SearchAutocomplete', () => {
       props: {
         modelValue: 'foo',
         suggestions: [],
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
         onHighlight
       }
     })
@@ -149,6 +173,8 @@ describe('SearchAutocomplete', () => {
       props: {
         modelValue: 'foo',
         suggestions: ['foo', 'bar'],
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
         openOnFocus: true
       }
     })
@@ -171,6 +197,8 @@ describe('SearchAutocomplete', () => {
         modelValue: '',
         suggestions: ['foo'],
         openOnFocus: true,
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
         onSelect,
         'onUpdate:modelValue': onUpdateModelValue
       }

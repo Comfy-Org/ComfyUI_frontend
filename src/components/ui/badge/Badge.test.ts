@@ -1,22 +1,14 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
 import Badge from './Badge.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: { g: { remove: 'Remove' } } }
-})
 
 describe('Badge', () => {
   it('renders its content', () => {
     render(Badge, {
-      props: { variant: 'badge' },
-      slots: { default: '12' },
-      global: { plugins: [i18n] }
+      props: { variant: 'badge', removeLabel: 'Remove' },
+      slots: { default: '12' }
     })
 
     expect(screen.getByText('12')).toBeInTheDocument()
@@ -24,9 +16,12 @@ describe('Badge', () => {
 
   it('keeps caller colors without losing the badge text size', () => {
     render(Badge, {
-      props: { variant: 'badge', class: 'bg-green-500 text-white' },
-      slots: { default: 'Input' },
-      global: { plugins: [i18n] }
+      props: {
+        variant: 'badge',
+        class: 'bg-green-500 text-white',
+        removeLabel: 'Remove'
+      },
+      slots: { default: 'Input' }
     })
 
     expect(screen.getByText('Input')).toHaveClass(
@@ -44,9 +39,13 @@ describe('Badge', () => {
     const user = userEvent.setup()
     const onRemove = vi.fn()
     render(Badge, {
-      props: { variant: 'chip', removable: true, onRemove },
-      slots: { default: 'Filter' },
-      global: { plugins: [i18n] }
+      props: {
+        variant: 'chip',
+        removable: true,
+        onRemove,
+        removeLabel: 'Remove'
+      },
+      slots: { default: 'Filter' }
     })
 
     await user.tab()

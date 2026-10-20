@@ -72,7 +72,12 @@
       v-if="canManageMembers && !isSingleSeatPlan"
       class="flex items-center justify-end"
     >
-      <Menu v-if="menuItems.length > 0" :items="menuItems">
+      <Menu
+        v-if="menuItems.length > 0"
+        :new-label="$t('contextMenu.new')"
+        :remove-label="$t('g.remove')"
+        :items="menuItems"
+      >
         <template #trigger>
           <Button
             :tooltip="$t('g.moreOptions')"

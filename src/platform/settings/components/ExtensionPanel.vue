@@ -2,9 +2,16 @@
   <div class="extension-panel flex flex-col gap-2">
     <SearchInput
       v-model="searchQuery"
+      :clear-label="$t('g.clear')"
+      :accessible-label="$t('g.search')"
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
-    <Message v-if="hasChanges" severity="info" class="max-h-96 overflow-y-auto">
+    <Message
+      v-if="hasChanges"
+      :close-label="$t('g.close')"
+      severity="info"
+      class="max-h-96 overflow-y-auto"
+    >
       <ul>
         <li v-for="ext in changedExtensions" :key="ext.name">
           <span>
@@ -44,7 +51,12 @@
             {{ $t('g.extensionName') }}
           </TableSortHead>
           <TableHead class="w-20 text-right">
-            <Menu :items="extensionActions" align="end">
+            <Menu
+              :new-label="$t('contextMenu.new')"
+              :remove-label="$t('g.remove')"
+              :items="extensionActions"
+              align="end"
+            >
               <template #trigger>
                 <Button
                   size="icon"
@@ -85,10 +97,15 @@
           </TableCell>
           <TableCell>
             {{ extension.name }}
-            <Badge v-if="extensionStore.isCoreExtension(extension.name)">
+            <Badge
+              v-if="extensionStore.isCoreExtension(extension.name)"
+              :remove-label="$t('g.remove')"
+            >
               {{ $t('g.core') }}
             </Badge>
-            <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
+            <Badge v-else :remove-label="$t('g.remove')" severity="info">{{
+              $t('g.custom')
+            }}</Badge>
           </TableCell>
           <TableCell class="text-right">
             <Switch

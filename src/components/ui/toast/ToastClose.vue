@@ -2,17 +2,19 @@
 import type { ToastCloseProps } from 'reka-ui'
 import { ToastClose, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 
-const { class: className, ...restProps } = defineProps<
-  ToastCloseProps & { class?: HTMLAttributes['class'] }
+const {
+  class: className,
+  accessibleLabel,
+  ...restProps
+} = defineProps<
+  ToastCloseProps & { class?: HTMLAttributes['class']; accessibleLabel: string }
 >()
 const forwardedProps = useForwardProps(restProps)
-const { t } = useI18n()
 </script>
 
 <template>
@@ -20,7 +22,7 @@ const { t } = useI18n()
     <Button
       variant="muted-textonly"
       size="icon-sm"
-      :aria-label="t('g.close')"
+      :aria-label="accessibleLabel"
       :class="cn('ml-auto', className)"
     >
       <i class="icon-[lucide--x] size-4" aria-hidden="true" />

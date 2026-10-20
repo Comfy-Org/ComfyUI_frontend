@@ -22,7 +22,7 @@
         "
       >
         <TagsInputItemText />
-        <TagsInputItemDelete />
+        <TagsInputItemDelete :remove-label="$t('g.removeTag')" />
       </TagsInputItem>
       <TagsInputInput
         :auto-focus="autoFocus"

@@ -3,7 +3,13 @@
     <!-- This will render the nested route components -->
     <RouterView />
   </CloudTemplate>
-  <Toaster />
+  <Toaster
+    :close-label="$t('g.close')"
+    :region-label="$t('toastMessages.notificationsLabel')"
+    :format-viewport-label="
+      (hotkey) => $t('toastMessages.notificationsViewportLabel', { hotkey })
+    "
+  />
 </template>
 
 <script setup lang="ts">

@@ -2,6 +2,7 @@
 <template>
   <Message
     v-if="userStore.isMultiUserServer"
+    :close-label="$t('g.close')"
     severity="info"
     data-testid="current-user-indicator"
   >

@@ -46,7 +46,7 @@
           class="backdrop-blur-none"
         >
           <TagsInputItemText />
-          <TagsInputItemDelete />
+          <TagsInputItemDelete :remove-label="$t('g.removeTag')" />
         </TagsInputItem>
         <TagsInputInput :is-empty />
       </TagsInput>

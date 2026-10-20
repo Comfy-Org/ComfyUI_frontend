@@ -16,6 +16,8 @@ interface Option {
 }
 
 defineProps<{
+  newLabel: string
+  removeLabel: string
   options: Option[]
 }>()
 
@@ -37,6 +39,8 @@ function select(option: Option, event: Event) {
   <DefineItem v-slot="{ option }">
     <MenuRadioItem :value="option.value" @select="select(option, $event)">
       <MenuItemContent
+        :new-label
+        :remove-label
         :item="{
           label: option.label,
           icon: option.icon,

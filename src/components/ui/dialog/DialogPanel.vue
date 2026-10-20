@@ -9,7 +9,12 @@ import CardFooter from '@/components/ui/card/CardFooter.vue'
 import CardHeader from '@/components/ui/card/CardHeader.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 
-const { class: className, onClose } = defineProps<{
+const {
+  class: className,
+  onClose,
+  closeLabel
+} = defineProps<{
+  closeLabel: string
   class?: HTMLAttributes['class']
   onClose?: () => void
 }>()
@@ -25,7 +30,7 @@ const { class: className, onClose } = defineProps<{
         v-if="onClose"
         size="icon"
         variant="muted-textonly"
-        :aria-label="$t('g.close')"
+        :aria-label="closeLabel"
         @click="onClose"
       >
         <i class="icon-[lucide--x] size-4" />

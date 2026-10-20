@@ -168,6 +168,13 @@ function openFullSettings() {
         <LayoutField :label="t('rightSidePanel.globalSettings.linkShape')">
           <SingleSelect
             v-model="linkShape"
+            :search-label="$t('g.search')"
+            :search-placeholder="$t('g.search')"
+            :empty-text="$t('g.noResultsFound')"
+            :accessible-label="
+              t('rightSidePanel.globalSettings.linkShape') ||
+              $t('g.singleSelectDropdown')
+            "
             :options="linkShapeOptions"
             :label="t('rightSidePanel.globalSettings.linkShape')"
             :class="cn(WidgetInputBaseClass, 'w-full text-xs')"

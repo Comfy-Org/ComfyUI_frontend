@@ -64,7 +64,12 @@
       </UiTreeItem>
     </template>
   </UiTree>
-  <ContextMenu ref="menu" :model="menuItems" />
+  <ContextMenu
+    ref="menu"
+    :new-label="$t('contextMenu.new')"
+    :remove-label="$t('g.remove')"
+    :model="menuItems"
+  />
 </template>
 <script setup lang="ts" generic="T">
 import { useElementBounding, useElementSize, useWindowSize } from '@vueuse/core'

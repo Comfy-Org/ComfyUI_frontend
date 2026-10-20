@@ -23,7 +23,7 @@
     </div>
 
     <div v-if="loading" class="flex items-center justify-center py-8">
-      <Spinner class="size-8" />
+      <Spinner :loading-label="$t('g.loading')" class="size-8" />
     </div>
 
     <div

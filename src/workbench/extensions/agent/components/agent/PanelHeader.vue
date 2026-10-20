@@ -51,6 +51,7 @@ const sizeToggleLabel = computed(() =>
       </Button>
     </div>
     <Badge
+      :remove-label="$t('g.remove')"
       variant="pill"
       class="border bg-transparent text-xs text-muted-foreground"
     >

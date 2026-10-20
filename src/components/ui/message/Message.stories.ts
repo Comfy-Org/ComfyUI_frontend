@@ -6,7 +6,7 @@ const meta: Meta<typeof Message> = {
   title: 'Components/Message',
   component: Message,
   tags: ['autodocs'],
-  args: { severity: 'info' }
+  args: { severity: 'info', closeLabel: 'Close' }
 }
 
 export default meta
@@ -25,10 +25,10 @@ export const AllSeverities: Story = {
     components: { Message },
     template: `
       <div class="flex w-96 flex-col gap-3">
-        <Message severity="error">Error message</Message>
-        <Message severity="warning">Warning message</Message>
-        <Message severity="info">Information message</Message>
-        <Message severity="success">Success message</Message>
+        <Message severity="error" close-label="Close">Error message</Message>
+        <Message severity="warning" close-label="Close">Warning message</Message>
+        <Message severity="info" close-label="Close">Information message</Message>
+        <Message severity="success" close-label="Close">Success message</Message>
       </div>`
   })
 }

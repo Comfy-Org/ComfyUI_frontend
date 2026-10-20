@@ -34,6 +34,9 @@ function renderSearch(
     components: { AsyncSearchInput },
     setup: () => ({ query, searcher, key, onEnter }),
     template: `<AsyncSearchInput
+      accessible-label="Search"
+      clear-label="Clear"
+      placeholder="Search..."
       v-model="query"
       :searcher="searcher"
       :update-key="key"
@@ -48,7 +51,9 @@ describe('AsyncSearchInput', () => {
   describe('Input binding', () => {
     it('renders the initial query', () => {
       renderSearch('hello')
-      expect(screen.getByRole('textbox')).toHaveValue('hello')
+      expect(screen.getByRole('textbox', { name: 'Search' })).toHaveValue(
+        'hello'
+      )
     })
 
     it('updates v-model as the user types', async () => {
@@ -166,7 +171,7 @@ describe('AsyncSearchInput', () => {
       const Harness = defineComponent({
         components: { AsyncSearchInput },
         setup: () => ({ autofocus }),
-        template: `<AsyncSearchInput :autofocus="autofocus" />`
+        template: `<AsyncSearchInput accessible-label="Search" clear-label="Clear" :autofocus="autofocus" />`
       })
       return render(Harness, { global: { plugins: [i18n] } })
     }

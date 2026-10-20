@@ -1,10 +1,12 @@
 <template>
   <div>
     <div v-if="loading" class="flex items-center justify-center p-8">
-      <Spinner />
+      <Spinner :loading-label="$t('g.loading')" />
     </div>
     <div v-else-if="error" class="p-4">
-      <Message severity="error">{{ error }}</Message>
+      <Message :close-label="$t('g.close')" severity="error">{{
+        error
+      }}</Message>
     </div>
     <template v-else>
       <Table>
@@ -23,6 +25,7 @@
           >
             <TableCell>
               <Badge
+                :remove-label="$t('g.remove')"
                 variant="badge"
                 :severity="
                   customerEventService.getEventSeverity(event.event_type ?? '')
@@ -76,6 +79,11 @@
       </Table>
       <Pagination
         v-if="pagination.total > pagination.limit"
+        :accessible-label="$t('g.pageNumber', { page: '' })"
+        :items-per-page-label="$t('g.itemsPerPage')"
+        :previous-label="$t('g.previous')"
+        :next-label="$t('g.next')"
+        :format-page-label="(page) => $t('g.pageNumber', { page })"
         :page="pagination.page"
         :total="pagination.total"
         :items-per-page="pagination.limit"

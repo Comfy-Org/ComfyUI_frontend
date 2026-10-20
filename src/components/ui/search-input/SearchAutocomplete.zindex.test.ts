@@ -33,7 +33,12 @@ describe('SearchAutocomplete z-index', () => {
 
     const { rerender, unmount } = render(SearchAutocomplete, {
       container: document.body.appendChild(document.createElement('div')),
-      props: { modelValue: 'fo', suggestions: [] },
+      props: {
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
+        modelValue: 'fo',
+        suggestions: []
+      },
       global: { plugins: [i18n] }
     })
 
@@ -49,7 +54,12 @@ describe('SearchAutocomplete z-index', () => {
   it('keeps the static z-index class when no dialog is open', async () => {
     const { rerender, unmount } = render(SearchAutocomplete, {
       container: document.body.appendChild(document.createElement('div')),
-      props: { modelValue: 'fo', suggestions: [] },
+      props: {
+        accessibleLabel: 'Search',
+        clearLabel: 'Clear',
+        modelValue: 'fo',
+        suggestions: []
+      },
       global: { plugins: [i18n] }
     })
 

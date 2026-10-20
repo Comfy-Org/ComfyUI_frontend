@@ -1,5 +1,6 @@
 <template>
   <DialogPanel
+    :close-label="$t('g.close')"
     data-testid="open-shared-workflow-dialog"
     class="w-176 max-w-full"
     :aria-busy="isOpening"
