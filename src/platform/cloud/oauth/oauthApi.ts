@@ -4,6 +4,8 @@ import type {
 } from '@comfyorg/ingest-types'
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
+import { isLoopbackHost } from '@/utils/hostWhitelist'
+
 // All OAuth calls are relative-URL (same-origin) on purpose. useSessionCookie
 // POSTs /api/auth/session through the Vite dev-server proxy (or the production
 // same-host ingress), so the Set-Cookie response lands on the FE origin. A
@@ -39,12 +41,6 @@ export type OAuthConsentChallenge = Omit<
     client_application_type?: 'native' | 'web'
   }
 
-const LOOPBACK_HOSTNAMES: ReadonlySet<string> = new Set([
-  'localhost',
-  '127.0.0.1',
-  '[::1]'
-])
-
 export function isFirstPartyClient(
   challenge: Pick<OAuthConsentChallenge, 'client_provenance'>
 ): boolean {
@@ -57,7 +53,7 @@ export function redirectHost(uri: string | undefined): string | undefined {
     const { protocol, hostname } = new URL(uri)
     const isWebHost =
       (protocol === 'https:' || protocol === 'http:') &&
-      !LOOPBACK_HOSTNAMES.has(hostname)
+      !isLoopbackHost(hostname)
     return isWebHost ? hostname : undefined
   } catch {
     return undefined

@@ -146,16 +146,6 @@ describe('OAuthConsentView', () => {
     ).not.toBeInTheDocument()
   })
 
-  // The badge claims only that the NAME is unverified, not that the app is
-  // untrusted. `client_provenance` is derived from the client_id prefix, so
-  // every client minted through RFC 7591 DCR is `dynamic` -- including the
-  // official claude.ai / chatgpt.com / figma.com connectors, which register
-  // that way and are admitted by the backend's OAUTH_DCR_HTTPS_HOSTS
-  // allowlist. Only the seeded `comfy-desktop` / `comfy-cli` clients are
-  // `first_party`. An "unverified app" verdict would therefore fire on every
-  // third-party connection we have deliberately vetted, which both misstates
-  // the case and trains users to ignore the badge. The redirect host in the
-  // notice is the discriminator the user can actually act on.
   it.for([
     {
       case: 'a dynamically registered client',

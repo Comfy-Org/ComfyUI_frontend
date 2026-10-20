@@ -382,6 +382,7 @@ describe('redirectHost', () => {
   it.for([
     ['https://chatgpt.com/connector/oauth/abc123', 'chatgpt.com'],
     ['http://127.0.0.1:50632/cb', undefined],
+    ['http://127.0.0.2/cb', undefined],
     ['http://localhost:8080/cb', undefined],
     ['http://[::1]:50632/cb', undefined],
     ['com.example.app://oauth/cb', undefined],
