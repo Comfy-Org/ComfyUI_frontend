@@ -6517,6 +6517,180 @@ describe('AgentPanelRoot history', () => {
     const followFailure = () =>
       i18n.global.t('agent.followedChatOpenFailed', { workflowName: 'second' })
 
+    const cachedSecondThread = agentThread({
+      id: 'th-second',
+      title: 'Second chat',
+      last_message_at: '2026-09-22T10:00:00Z',
+      workflow_id: 'wf-second'
+    })
+    const failedFollowListing = () => json(500, { error: 'unavailable' })
+    const incompleteFollowListing = () =>
+      json(200, agentThreadList([], { has_more: true }))
+
+    async function openFirstChatWithHistory(threads: AgentThreadSummary[]) {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      const { loadedThreads } = stubWorkflowBoundHistory(
+        [
+          agentThread({
+            id: 'th-first',
+            title: 'First chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-first'
+          }),
+          ...threads
+        ],
+        { 'th-first': { workflowId: 'wf-first' } }
+      )
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('First chat'))
+      await vi.waitFor(() =>
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+      )
+      await settleFollow()
+      return { first, second, loadedThreads }
+    }
+
+    it.for([
+      {
+        listing: 'failed',
+        cached: 'an old matching chat',
+        threads: [cachedSecondThread],
+        answer: failedFollowListing
+      },
+      {
+        listing: 'incomplete',
+        cached: 'an old matching chat',
+        threads: [cachedSecondThread],
+        answer: incompleteFollowListing
+      },
+      {
+        listing: 'failed',
+        cached: 'no matching chat',
+        threads: [],
+        answer: failedFollowListing
+      },
+      {
+        listing: 'incomplete',
+        cached: 'no matching chat',
+        threads: [],
+        answer: incompleteFollowListing
+      }
+    ])(
+      'keeps the current chat after a $listing follow listing with $cached cached, then retries the newest chat',
+      async ({ threads, answer }) => {
+        const { first, second, loadedThreads } =
+          await openFirstChatWithHistory(threads)
+        respondToFetch(threadListRoute, answer)
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+        expect(loadedThreads).toEqual(['th-first'])
+        expect(await screen.findByText(followFailure())).toBeVisible()
+        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+          'inert'
+        )
+        expect(executionErrors.recordPromptError).not.toHaveBeenCalled()
+        expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+
+        respondToFetch(threadListRoute, () =>
+          json(
+            200,
+            agentThreadList([
+              cachedSecondThread,
+              agentThread({
+                id: 'th-newest',
+                title: 'Newest chat',
+                last_message_at: '2026-09-22T11:00:00Z',
+                workflow_id: 'wf-second'
+              })
+            ])
+          )
+        )
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.retryFollowedChat', {
+              workflowName: 'second'
+            })
+          })
+        )
+
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-newest')
+        )
+        expect(userPrompts()).toEqual(['Prompt in th-newest'])
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+        expect(loadedThreads).toEqual(['th-first', 'th-newest'])
+        expect(screen.queryByText(followFailure())).toBeNull()
+      }
+    )
+
+    it.for([
+      {
+        listing: 'failed',
+        cancel: 'returning to the original tab',
+        answer: failedFollowListing,
+        retire: activateTabAsUser
+      },
+      {
+        listing: 'incomplete',
+        cancel: 'starting a draft',
+        answer: incompleteFollowListing,
+        retire: async () => useAgentComposerStore().setText('Keep this chat')
+      },
+      {
+        listing: 'complete',
+        cancel: 'returning to the original tab',
+        answer: () => json(200, agentThreadList([cachedSecondThread])),
+        retire: activateTabAsUser
+      }
+    ])(
+      'ignores a late $listing follow listing after $cancel',
+      async ({ answer, retire }) => {
+        const { first, second, loadedThreads } = await openFirstChatWithHistory(
+          [cachedSecondThread]
+        )
+        let answerList!: () => void
+        const listing = new Promise<Response>((resolve) => {
+          answerList = () => resolve(answer())
+        })
+        respondToFetch(threadListRoute, () => listing)
+
+        await activateTabAsUser(second)
+        expect(
+          await screen.findByRole('status', {
+            name: 'Opening chat for second…'
+          })
+        ).toBeVisible()
+        await retire(first)
+        answerList()
+        await settleFollow()
+
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        expect(loadedThreads).toEqual(['th-first'])
+        expect(screen.queryByText(followFailure())).toBeNull()
+        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+          'inert'
+        )
+        expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+      }
+    )
+
     it('keeps the current conversation covered until the followed chat is ready', async () => {
       await openFirstChatThenLoseTranscripts()
       const second = workflowStore.getWorkflowByPath('workflows/second.json')

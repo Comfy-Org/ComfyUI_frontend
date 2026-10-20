@@ -87,7 +87,7 @@ describe('useAgentChatHistoryRefresh', () => {
       const { history, listThreads, onFailure, refreshHistory } = setup()
       listThreads.mockResolvedValueOnce(failure)
 
-      await refreshHistory()
+      await expect(refreshHistory()).resolves.toBe(failure.status)
 
       expect(history.sessions.map(({ id }) => id)).toEqual(['kept'])
       expect(onFailure).toHaveBeenCalledExactlyOnceWith(
@@ -105,10 +105,10 @@ describe('useAgentChatHistoryRefresh', () => {
       listThreads.mockReturnValueOnce(older.promise)
       const olderRefresh = refreshHistory()
       listThreads.mockResolvedValueOnce(completedListing('newer'))
-      await refreshHistory()
+      await expect(refreshHistory()).resolves.toBe('complete')
 
       older.resolve(result)
-      await olderRefresh
+      await expect(olderRefresh).resolves.toBe('superseded')
 
       expect(history.sessions.map(({ id }) => id)).toEqual(['newer'])
       expect(onFailure).not.toHaveBeenCalled()
@@ -121,10 +121,10 @@ describe('useAgentChatHistoryRefresh', () => {
     listThreads.mockReturnValueOnce(older.promise)
     const olderRefresh = refreshHistory()
     listThreads.mockResolvedValueOnce(requestFailure)
-    await refreshHistory()
+    await expect(refreshHistory()).resolves.toBe('failed')
 
     older.resolve(completedListing('older'))
-    await olderRefresh
+    await expect(olderRefresh).resolves.toBe('complete')
 
     expect(history.sessions).toEqual([
       {
@@ -153,10 +153,10 @@ describe('useAgentChatHistoryRefresh', () => {
     const newerRefresh = refreshHistory()
 
     older.resolve(missingCursor)
-    await olderRefresh
+    await expect(olderRefresh).resolves.toBe('superseded')
     expect(onFailure).not.toHaveBeenCalled()
     newer.resolve(requestFailure)
-    await newerRefresh
+    await expect(newerRefresh).resolves.toBe('failed')
 
     expect(history.sessions.map(({ id }) => id)).toEqual(['kept'])
     expect(onFailure).toHaveBeenCalledExactlyOnceWith(
@@ -169,7 +169,7 @@ describe('useAgentChatHistoryRefresh', () => {
     const { history, listThreads, onFailure, refreshHistory } = setup()
     listThreads.mockResolvedValueOnce(failure)
 
-    await refreshHistory('none')
+    await expect(refreshHistory('none')).resolves.toBe(failure.status)
 
     expect(history.sessions.map(({ id }) => id)).toEqual(['kept'])
     expect(onFailure).toHaveBeenCalledExactlyOnceWith(failure, 'none')
@@ -186,14 +186,14 @@ describe('useAgentChatHistoryRefresh', () => {
     const silentRefresh = refreshHistory('none')
 
     explicit.resolve(requestFailure)
-    await explicitRefresh
+    await expect(explicitRefresh).resolves.toBe('failed')
 
     expect(onFailure).toHaveBeenCalledExactlyOnceWith(
       requestFailure,
       'error_overlay'
     )
     silent.resolve(missingCursor)
-    await silentRefresh
+    await expect(silentRefresh).resolves.toBe('incomplete')
     expect(onFailure).toHaveBeenLastCalledWith(missingCursor, 'none')
   })
 
@@ -203,10 +203,10 @@ describe('useAgentChatHistoryRefresh', () => {
     listThreads.mockReturnValueOnce(explicit.promise)
     const explicitRefresh = refreshHistory()
     listThreads.mockResolvedValueOnce(completedListing('newer'))
-    await refreshHistory('none')
+    await expect(refreshHistory('none')).resolves.toBe('complete')
 
     explicit.resolve(requestFailure)
-    await explicitRefresh
+    await expect(explicitRefresh).resolves.toBe('superseded')
 
     expect(history.sessions.map(({ id }) => id)).toEqual(['newer'])
     expect(onFailure).not.toHaveBeenCalled()
@@ -216,7 +216,7 @@ describe('useAgentChatHistoryRefresh', () => {
     const { history, listThreads, onFailure, refreshHistory } = setup()
     listThreads.mockResolvedValueOnce({ status: 'aborted' })
 
-    await refreshHistory()
+    await expect(refreshHistory()).resolves.toBe('aborted')
 
     expect(history.sessions.map(({ id }) => id)).toEqual(['kept'])
     expect(onFailure).not.toHaveBeenCalled()
@@ -235,8 +235,8 @@ describe('useAgentChatHistoryRefresh', () => {
       scope.stop()
       expect(signal.aborted).toBe(true)
       pending.resolve(result)
-      await refresh
-      await refreshHistory()
+      await expect(refresh).resolves.toBe('aborted')
+      await expect(refreshHistory()).resolves.toBe('aborted')
 
       expect(history.sessions.map(({ id }) => id)).toEqual(['kept'])
       expect(onFailure).not.toHaveBeenCalled()

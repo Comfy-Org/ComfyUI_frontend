@@ -16,6 +16,7 @@ type HistoryRefreshFailure = Extract<
 >
 
 type HistoryFailureTreatment = 'error_overlay' | 'none'
+type HistoryRefreshOutcome = ThreadListing['status'] | 'superseded'
 
 type HistoryRefreshDeps = {
   listThreads: AgentRestClient['listThreads']
@@ -71,21 +72,23 @@ export function useAgentChatHistoryRefresh({
 
   async function refreshHistory(
     uiTreatment: HistoryFailureTreatment = 'error_overlay'
-  ): Promise<void> {
-    if (controller.signal.aborted) return
+  ): Promise<HistoryRefreshOutcome> {
+    if (controller.signal.aborted) return 'aborted'
     const { signal } = controller
     const generation = ++latestStartedRefresh
     if (uiTreatment === 'error_overlay') latestSurfacedRefresh = generation
     const result = await listThreads({ signal })
-    if (signal.aborted || result.status === 'aborted') return
+    if (signal.aborted || result.status === 'aborted') return 'aborted'
     if (result.status !== 'complete') {
-      if (ownsFailure(generation, uiTreatment)) onFailure(result, uiTreatment)
-      return
+      if (!ownsFailure(generation, uiTreatment)) return 'superseded'
+      onFailure(result, uiTreatment)
+      return result.status
     }
-    if (generation < latestAppliedRefresh) return
+    if (generation < latestAppliedRefresh) return 'superseded'
     const sessions = result.threads.map(toChatSession)
     history.replaceAll(sessions)
     latestAppliedRefresh = generation
+    return 'complete'
   }
 
   return { refreshHistory }

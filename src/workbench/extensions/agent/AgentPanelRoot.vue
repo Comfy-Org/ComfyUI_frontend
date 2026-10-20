@@ -1688,6 +1688,17 @@ async function openFollowedChat(
   useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
 }
 
+async function refreshHistoryForFollow(
+  workflow: ComfyWorkflow,
+  isCurrent: () => boolean
+): Promise<boolean> {
+  const historyOutcome = await refreshHistory('none')
+  if (!isCurrent()) return false
+  if (historyOutcome === 'failed' || historyOutcome === 'incomplete')
+    followState.value = { status: 'failed', workflow }
+  return historyOutcome === 'complete'
+}
+
 async function followTab(workflow: ComfyWorkflow): Promise<void> {
   const generation = ++followGeneration
   followState.value = { status: 'idle' }
@@ -1707,8 +1718,8 @@ async function followTab(workflow: ComfyWorkflow): Promise<void> {
     const workflowId =
       cloudIdFor(workflow) ?? (await refreshedCloudIdFor(workflow))
     if (workflowId === undefined || !isCurrent()) return
-    await refreshHistory('none')
-    if (!isCurrent()) return
+    const historyReady = await refreshHistoryForFollow(workflow, isCurrent)
+    if (!historyReady || !isCurrent()) return
     const latest = latestChatFor(workflowId)
     if (latest !== undefined && latest !== threadId.value)
       await openFollowedChat(latest, operation, workflowId, isCurrent)
