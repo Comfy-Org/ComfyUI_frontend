@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope } from 'vue'
 import { effectScope, ref, shallowRef } from 'vue'
 
@@ -13,10 +13,13 @@ afterEach(() => {
 function setup(initial: string[]) {
   const modelValue = ref(initial)
   const container = shallowRef(document.createElement('div'))
+  const onEditEnd = vi.fn()
   const scope = effectScope()
   scopes.push(scope)
-  const api = scope.run(() => usePaletteSwatchRow({ modelValue, container }))!
-  return { modelValue, container, ...api }
+  const api = scope.run(() =>
+    usePaletteSwatchRow({ modelValue, container, onEditEnd })
+  )!
+  return { modelValue, container, onEditEnd, ...api }
 }
 
 describe('usePaletteSwatchRow', () => {
@@ -45,8 +48,43 @@ describe('usePaletteSwatchRow', () => {
     expect(modelValue.value).toBe(before)
   })
 
+  it.for([
+    {
+      action: 'recoloring a swatch',
+      run: (api: ReturnType<typeof setup>) => api.updateAt(1, '#c'),
+      key: ['color:1']
+    },
+    {
+      action: 'removing a swatch',
+      run: (api: ReturnType<typeof setup>) => api.remove(0),
+      key: []
+    },
+    {
+      action: 'adding a swatch',
+      run: (api: ReturnType<typeof setup>) => api.addColor(),
+      key: []
+    }
+  ])('reports the end of an edit after $action', ({ run, key }) => {
+    const api = setup(['#a', '#b'])
+
+    run(api)
+
+    expect(api.onEditEnd.mock.calls).toEqual([key])
+  })
+
+  it('reports no edit for a recolor that keeps the color', () => {
+    const { onEditEnd, updateAt } = setup(['#a'])
+
+    updateAt(0, '#a')
+
+    expect(onEditEnd).not.toHaveBeenCalled()
+  })
+
   it('reorders via drag when the pointer crosses another swatch', () => {
-    const { modelValue, container, onPointerDown } = setup(['#a', '#b'])
+    const { modelValue, container, onPointerDown, onEditEnd } = setup([
+      '#a',
+      '#b'
+    ])
     for (const i of [0, 1]) {
       const swatch = document.createElement('div')
       swatch.setAttribute('data-index', String(i))
@@ -61,6 +99,7 @@ describe('usePaletteSwatchRow', () => {
       new MouseEvent('pointermove', { clientX: 130, clientY: 10, buttons: 1 })
     )
     expect(modelValue.value).toEqual(['#b', '#a'])
+    expect(onEditEnd).toHaveBeenCalledOnce()
   })
 
   it('cancels a stale drag when the primary button is no longer pressed', () => {

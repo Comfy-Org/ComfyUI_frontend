@@ -1,6 +1,10 @@
 import type { Locator } from '@playwright/test'
 
-import { BADGE_GAP } from '@/lib/litegraph/src/canvas/linkBadges'
+import {
+  BADGE_GAP,
+  BADGE_ROW_PITCH
+} from '@/lib/litegraph/src/canvas/linkBadges'
+import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -75,6 +79,54 @@ export class LinkVisibilityHelper {
     await this.clickMenuAction(point, 'Hide Link')
   }
 
+  async hideLinksFromOutput(nodeId: NodeId, slot: number): Promise<void> {
+    const linkIds = await this.comfyPage.page.evaluate(
+      ([nodeId, slot]) =>
+        window.app!.graph.getNodeById(nodeId)?.outputs[slot]?.links ?? [],
+      [nodeId, slot] as const
+    )
+    for (const linkId of linkIds) {
+      const handle = await this.comfyPage.page.waitForFunction((id) => {
+        const link = window.app!.graph.getLink(id)
+        if (!link?.path) return null
+        return [link._pos[0], link._pos[1]] satisfies Point
+      }, linkId)
+      const point = await handle.jsonValue()
+      if (!point) throw new Error(`Rendered link ${linkId} was not found`)
+      await this.clickMenuAction(point, 'Hide Link')
+    }
+  }
+
+  async clickOutputBadgeRow(
+    nodeId: NodeId,
+    slot: number,
+    row: number
+  ): Promise<void> {
+    const [x, y] = await this.outputBadgeRowClientPoint(nodeId, slot, row)
+    await this.comfyPage.page.mouse.click(x, y)
+    await this.comfyPage.nextFrame()
+  }
+
+  async hoverOutputBadgeRow(
+    nodeId: NodeId,
+    slot: number,
+    row: number
+  ): Promise<void> {
+    const [x, y] = await this.outputBadgeRowClientPoint(nodeId, slot, row)
+    await this.comfyPage.page.mouse.move(x, y)
+    await this.comfyPage.nextFrame()
+  }
+
+  async openRenamePromptAtOutputBadgeRow(
+    nodeId: NodeId,
+    slot: number,
+    row: number
+  ): Promise<void> {
+    const [x, y] = await this.outputBadgeRowClientPoint(nodeId, slot, row)
+    await this.comfyPage.page.mouse.dblclick(x, y, { delay: 5 })
+    await this.promptInput.waitFor({ state: 'visible' })
+  }
+
   async parkPointer(): Promise<void> {
     await this.comfyPage.canvas.hover({
       position: DefaultGraphPositions.emptySpaceClick
@@ -114,6 +166,23 @@ export class LinkVisibilityHelper {
       (point) => window.app!.canvasPosToClientPos(point),
       point
     )
+  }
+
+  private async outputBadgeRowClientPoint(
+    nodeId: NodeId,
+    slot: number,
+    row: number
+  ): Promise<Point> {
+    const socket = await this.comfyPage.page.evaluate(
+      ([nodeId, slot]) =>
+        window.app!.graph.getNodeById(nodeId)?.getOutputPos(slot) ?? null,
+      [nodeId, slot] as const
+    )
+    if (!socket) throw new Error(`Output ${nodeId}:${slot} was not found`)
+    return this.graphPointToClient([
+      socket[0] + BADGE_GAP + 4,
+      socket[1] + row * BADGE_ROW_PITCH
+    ])
   }
 
   private async firstBadgeCenter(): Promise<Point> {

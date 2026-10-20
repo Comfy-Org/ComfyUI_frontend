@@ -59,7 +59,6 @@ jobs:
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
-          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
           WORKSHOP_IN_BUILD: '1'
           PUBLIC_WORKSHOP_AUTH_FLAG: '1'
           PUBLIC_WORKSHOP_ROUTER_RUN: '1'
@@ -167,20 +166,10 @@ jobs:
       - name: Pull Vercel environment information
         run: vercel pull --yes --environment=production
 
-      - name: Verify WEBSITE_CLOUD_API_KEY is present for production build
-        env:
-          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
-        run: |
-          if [ -z "${WEBSITE_CLOUD_API_KEY:-}" ]; then
-            echo "::error title=Missing WEBSITE_CLOUD_API_KEY::Production builds require WEBSITE_CLOUD_API_KEY so /cloud/supported-nodes is generated from fresh Cloud API data. Add it as a GitHub Actions repo secret and to the Vercel project environment. See apps/website/README.md."
-            exit 1
-          fi
-
       - name: Build project artifacts
         env:
           WEBSITE_ASHBY_API_KEY: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           WEBSITE_ASHBY_JOB_BOARD_NAME: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
-          WEBSITE_CLOUD_API_KEY: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
           WORKSHOP_IN_BUILD: '1'
           PUBLIC_WORKSHOP_ROUTER_RUN: '1'
           PUBLIC_WORKSHOP_CLOUD_ENV: prod

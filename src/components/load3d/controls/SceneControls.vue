@@ -108,7 +108,7 @@ import { computed, ref } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { BackgroundRenderModeType } from '@/extensions/core/load3d/interfaces'
+import type { BackgroundRenderModeType } from '@comfyorg/viewport3d/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { hdriActive = false, showBackgroundImage = true } = defineProps<{

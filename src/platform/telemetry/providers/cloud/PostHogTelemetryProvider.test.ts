@@ -18,8 +18,8 @@ import type {
   BootstrapCompleteMetadata,
   OnboardingTourStage,
   RunButtonProperties
-} from '../../types'
-import { TelemetryEvents } from '../../types'
+} from '@/platform/telemetry/types'
+import { TelemetryEvents } from '@/platform/telemetry/types'
 
 const hoisted = vi.hoisted(() => {
   const mockCapture = vi.fn()

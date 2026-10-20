@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/composables/useLoad3d'
-import type { CameraState } from '@/extensions/core/load3d/interfaces'
+import type { CameraState } from '@comfyorg/viewport3d/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
@@ -110,7 +110,7 @@ vi.mock(import('@/extensions/core/load3d/Load3dUtils'), () => ({
   })
 }))
 
-vi.mock(import('@/extensions/core/load3d/constants'), () => ({
+vi.mock(import('@comfyorg/viewport3d/load3d/constants'), () => ({
   SUPPORTED_EXTENSIONS_ACCEPT: '.glb,.gltf'
 }))
 

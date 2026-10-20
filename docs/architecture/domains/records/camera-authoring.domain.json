@@ -40,88 +40,8 @@
       "role": "application"
     },
     {
-      "path": "src/extensions/core/cameraAngle/SubjectBox.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/cameraAngle/SubjectBox.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/cameraAngle/cameraAngleMath.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/cameraAngle/cameraAngleMath.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/cameraAngle/orbitGizmos.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/cameraAngle/orbitGizmos.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/cameraAngle/types.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/extensions/core/cameraInfo.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/CameraInfoOverlay.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/CameraInfoOverlay.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/CameraInfoViewport.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/CameraInfoViewport.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/handles/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/handles/orbitDragMath.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/handles/orbitDragMath.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/handles/rollDragMath.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/handles/rollDragMath.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/handles/types.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/subjectCameraPreview.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/cameraInfo/subjectCameraPreview.ts",
-      "role": "infrastructure"
     },
     {
       "path": "src/extensions/core/cameraInfo/widgetBridge.test.ts",
@@ -139,11 +59,11 @@
     {
       "name": "Camera state math converts orbit, roll, look-at, and look-through drags without drift",
       "checks": [
-        "src/extensions/core/cameraInfo/cameraTransform.test.ts",
-        "src/extensions/core/cameraInfo/lookThroughDragMath.test.ts",
-        "src/extensions/core/cameraInfo/handles/orbitDragMath.test.ts",
-        "src/extensions/core/cameraInfo/handles/rollDragMath.test.ts",
-        "src/extensions/core/cameraAngle/cameraAngleMath.test.ts"
+        "packages/viewport3d/src/cameraInfo/cameraTransform.test.ts",
+        "packages/viewport3d/src/cameraInfo/lookThroughDragMath.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/orbitDragMath.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/rollDragMath.test.ts",
+        "packages/viewport3d/src/cameraAngle/cameraAngleMath.test.ts"
       ]
     },
     {
@@ -158,18 +78,18 @@
     {
       "name": "Viewports, handles, overlays, and previews pick, drag, render, and dispose Three.js objects",
       "checks": [
-        "src/extensions/core/cameraInfo/CameraInfoViewport.test.ts",
-        "src/extensions/core/cameraInfo/CameraInfoOverlay.test.ts",
-        "src/extensions/core/cameraInfo/subjectCameraPreview.test.ts",
-        "src/extensions/core/cameraInfo/handles/CameraHandle.test.ts",
-        "src/extensions/core/cameraInfo/handles/OrbitHandles.test.ts",
-        "src/extensions/core/cameraInfo/handles/RollHandle.test.ts",
-        "src/extensions/core/cameraInfo/handles/TargetHandle.test.ts",
-        "src/extensions/core/cameraInfo/handles/handlePicking.test.ts",
-        "src/extensions/core/cameraInfo/handles/pointerInteraction.test.ts",
-        "src/extensions/core/cameraAngle/CameraAngleViewport.test.ts",
-        "src/extensions/core/cameraAngle/SubjectBox.test.ts",
-        "src/extensions/core/cameraAngle/orbitGizmos.test.ts"
+        "packages/viewport3d/src/cameraInfo/CameraInfoViewport.test.ts",
+        "packages/viewport3d/src/cameraInfo/CameraInfoOverlay.test.ts",
+        "packages/viewport3d/src/cameraInfo/subjectCameraPreview.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/CameraHandle.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/OrbitHandles.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/RollHandle.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/TargetHandle.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/handlePicking.test.ts",
+        "packages/viewport3d/src/cameraInfo/handles/pointerInteraction.test.ts",
+        "packages/viewport3d/src/cameraAngle/CameraAngleViewport.test.ts",
+        "packages/viewport3d/src/cameraAngle/SubjectBox.test.ts",
+        "packages/viewport3d/src/cameraAngle/orbitGizmos.test.ts"
       ]
     },
     {

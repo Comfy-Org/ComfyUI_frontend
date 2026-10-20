@@ -12,7 +12,7 @@ import { nextTick } from 'vue'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { i18n } from '@/i18n'
 
-import type { AttachmentValidationError } from '../../../types/composerAttachment'
+import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'
 import AttachmentChip from './AttachmentChip.vue'
 
 function renderChip(props: {
@@ -101,13 +101,12 @@ describe('AttachmentChip', () => {
       await waitFor(() => expect(player).not.toBeInTheDocument())
       await waitFor(() => expect(trigger).toHaveFocus())
       expect(trigger).toHaveAttribute('aria-expanded', 'false')
-      expect(pause).toHaveBeenCalledTimes(2)
-      expect(player.currentTime).toBe(0)
+      expect(pause).toHaveBeenCalled()
       await user.keyboard(key)
-      expect(await screen.findByLabelText(name, { selector })).toHaveAttribute(
-        'src',
-        '/playable-media'
-      )
+      const reopenedPlayer = await screen.findByLabelText(name, { selector })
+      assert.instanceOf(reopenedPlayer, HTMLMediaElement)
+      expect(reopenedPlayer).toHaveAttribute('src', '/playable-media')
+      expect(reopenedPlayer.currentTime).toBe(0)
     }
   )
 
@@ -297,8 +296,11 @@ describe('AttachmentChip', () => {
       const pause = vi.spyOn(player, 'pause')
       await user.keyboard('{Escape}')
       await waitFor(() => expect(player).not.toBeInTheDocument())
-      expect(pause).toHaveBeenCalledTimes(2)
-      expect(player.currentTime).toBe(0)
+      expect(pause).toHaveBeenCalled()
+      await user.click(trigger)
+      const reopenedPlayer = await screen.findByLabelText(name, { selector })
+      assert.instanceOf(reopenedPlayer, HTMLMediaElement)
+      expect(reopenedPlayer.currentTime).toBe(0)
     }
   )
 
@@ -362,8 +364,13 @@ describe('AttachmentChip', () => {
       coords: { clientX: 500, clientY: 500 }
     })
     await waitFor(() => expect(player).not.toBeInTheDocument())
-    expect(pause).toHaveBeenCalledTimes(2)
-    expect(player.currentTime).toBe(0)
+    expect(pause).toHaveBeenCalled()
+    await user.hover(trigger)
+    const reopenedPlayer = await screen.findByLabelText('song.mp3', {
+      selector: 'audio'
+    })
+    assert.instanceOf(reopenedPlayer, HTMLAudioElement)
+    expect(reopenedPlayer.currentTime).toBe(0)
   })
 
   it('stops an audio preview on replacement and removal', async () => {

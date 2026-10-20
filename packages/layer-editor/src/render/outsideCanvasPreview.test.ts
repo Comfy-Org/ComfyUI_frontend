@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { Transform } from '../node'
+import type { Transform } from '#/node'
 import type { OutsideCanvasPreviewLayer } from './outsideCanvasPreview'
 import { drawOutsideCanvasPreview } from './outsideCanvasPreview'
 

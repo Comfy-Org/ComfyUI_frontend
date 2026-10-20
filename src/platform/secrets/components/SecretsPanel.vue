@@ -23,7 +23,7 @@
     </div>
 
     <div v-if="loading" class="flex items-center justify-center py-8">
-      <Spinner class="size-8" />
+      <AppSpinner class="size-8" />
     </div>
 
     <div
@@ -70,11 +70,11 @@ import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { useSecrets } from '../composables/useSecrets'
-import type { SecretMetadata } from '../types'
+import { useSecrets } from '@/platform/secrets/composables/useSecrets'
+import type { SecretMetadata } from '@/platform/secrets/types'
 import SecretFormDialog from './SecretFormDialog.vue'
 import SecretListItem from './SecretListItem.vue'
 

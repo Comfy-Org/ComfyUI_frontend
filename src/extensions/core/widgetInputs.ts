@@ -10,10 +10,12 @@ import type {
   ISlotType,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
 import { NodeSlot } from '@/lib/litegraph/src/node/NodeSlot'
 import { outputHasLinks, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  IBaseWidget,
+  IWidgetLocator
+} from '@/lib/litegraph/src/types/widgets'
 import { assetService } from '@/platform/assets/services/assetService'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
 import {
@@ -26,7 +28,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
 import { ComfyWidgets, isValidWidgetType } from '@/scripts/widgets'
-import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { CONFIG, GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 

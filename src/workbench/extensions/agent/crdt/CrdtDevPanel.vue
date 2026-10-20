@@ -25,7 +25,7 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 
-import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
 import type {

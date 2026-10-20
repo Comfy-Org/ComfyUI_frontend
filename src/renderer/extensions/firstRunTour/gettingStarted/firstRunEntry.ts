@@ -22,7 +22,7 @@ import { useNewUserService } from '@/services/useNewUserService'
 import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
 
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
+import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 
 const STARTUP_DECISION_TIMEOUT_MS = 60_000
 

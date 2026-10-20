@@ -1,6 +1,8 @@
 import { cloneDeep, groupBy, isEqual, omit } from 'es-toolkit'
 
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   collectSubgraphDefinitions,
   parseFlattenableSubgraphDefinitions
@@ -20,20 +22,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function nodeHistoryOwnedWidgets(widgets: readonly IBaseWidget[]) {
+  const owned = widgets.filter(ownsNodeHistory)
+  const mirrored = LiteGraph.vueNodesMode
+    ? owned.flatMap((widget) => widget.linkedWidgets ?? [])
+    : []
+  return new Set([...owned, ...mirrored])
+}
+
 export function collectNodeHistoryWidgets(
   rootGraph: LGraph
 ): Map<WidgetId, number> {
   return new Map(
     [rootGraph, ...rootGraph.subgraphs.values()].flatMap((graph) =>
-      graph.nodes.flatMap((node) =>
-        (node.widgets ?? [])
+      graph.nodes.flatMap((node) => {
+        const widgets = node.widgets ?? []
+        const owned = nodeHistoryOwnedWidgets(widgets)
+        return widgets
           .filter((widget) => widget.serialize !== false)
           .flatMap((widget, slot): [WidgetId, number][] =>
-            ownsNodeHistory(widget)
+            owned.has(widget)
               ? [[widgetId(graph.id, node.id, widget.name), slot]]
               : []
           )
-      )
+      })
     )
   )
 }

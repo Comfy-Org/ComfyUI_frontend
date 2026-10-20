@@ -15,7 +15,7 @@ import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
-import LeftSidePanel from '../panel/LeftSidePanel.vue'
+import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import BaseModalLayout from './BaseModalLayout.vue'
 
 interface StoryArgs {
@@ -201,6 +201,9 @@ const createStoryTemplate = (args: StoryArgs) => ({
           <SearchInput
             class="max-w-[384px]"
             size="lg"
+            clear-label="Clear search"
+            accessible-label="Search"
+            placeholder="Search..."
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -214,7 +217,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
               <span> Upload Model </span>
             </Button>
 
-            <Menu :items="moreMenuItems" align="end">
+            <Menu :items="moreMenuItems" align="end" remove-label="Remove">
               <template #trigger>
                 <Button size="icon" variant="secondary">
                   <i class="icon-[lucide--ellipsis] size-4" />
@@ -230,6 +233,12 @@ const createStoryTemplate = (args: StoryArgs) => ({
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
+              accessible-label="Select Frameworks"
+              search-label="Search frameworks"
+              search-placeholder="Search..."
+              empty-text="No results found"
+              clear-all-label="Clear all"
+              :format-selected-count="(count) => count + ' selected'"
               :options="frameworkOptions"
               :has-search-box="true"
               :show-selected-count="true"
@@ -238,11 +247,21 @@ const createStoryTemplate = (args: StoryArgs) => ({
             <MultiSelect
               v-model="selectedProjects"
               label="Select Projects"
+              accessible-label="Select Projects"
+              search-label="Search projects"
+              search-placeholder="Search..."
+              empty-text="No results found"
+              clear-all-label="Clear all"
+              :format-selected-count="(count) => count + ' selected'"
               :options="projectOptions"
             />
             <SingleSelect
               v-model="selectedSort"
               label="Sorting Type"
+              accessible-label="Sorting Type"
+              search-label="Search sorting options"
+              search-placeholder="Search..."
+              empty-text="No results found"
               :options="sortOptions"
               class="w-[135px]"
             >
@@ -308,6 +327,9 @@ const createStoryTemplate = (args: StoryArgs) => ({
           <SearchInput
             class="max-w-[384px]"
             size="lg"
+            clear-label="Clear search"
+            accessible-label="Search"
+            placeholder="Search..."
             :modelValue="searchQuery"
             @update:modelValue="searchQuery = $event"
           />
@@ -321,7 +343,7 @@ const createStoryTemplate = (args: StoryArgs) => ({
                 <span>Upload Model</span>
             </Button>
 
-            <Menu :items="moreMenuItems" align="end">
+            <Menu :items="moreMenuItems" align="end" remove-label="Remove">
               <template #trigger>
                 <Button size="icon" variant="secondary">
                   <i class="icon-[lucide--ellipsis] size-4" />
@@ -337,16 +359,32 @@ const createStoryTemplate = (args: StoryArgs) => ({
             <MultiSelect
               v-model="selectedFrameworks"
               label="Select Frameworks"
+              accessible-label="Select Frameworks"
+              search-label="Search frameworks"
+              search-placeholder="Search..."
+              empty-text="No results found"
+              clear-all-label="Clear all"
+              :format-selected-count="(count) => count + ' selected'"
               :options="frameworkOptions"
             />
             <MultiSelect
               v-model="selectedProjects"
               label="Select Projects"
+              accessible-label="Select Projects"
+              search-label="Search projects"
+              search-placeholder="Search..."
+              empty-text="No results found"
+              clear-all-label="Clear all"
+              :format-selected-count="(count) => count + ' selected'"
               :options="projectOptions"
             />
             <SingleSelect
               v-model="selectedSort"
               label="Sorting Type"
+              accessible-label="Sorting Type"
+              search-label="Search sorting options"
+              search-placeholder="Search..."
+              empty-text="No results found"
               :options="sortOptions"
               class="w-[135px]"
             >
