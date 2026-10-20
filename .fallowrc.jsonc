@@ -71,6 +71,9 @@
     "eslint-plugin-storybook",
     "eslint-plugin-testing-library",
     "postcss-html",
+    // Optional peer of @vueuse/integrations/useFuse, imported by the design
+    // system's select search. Packed consumers fail to resolve it without it.
+    "fuse.js",
     // Executed by models-snippets.test.ts inside the generated Node examples.
     "mime-types"
   ],
