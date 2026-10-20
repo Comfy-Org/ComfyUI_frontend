@@ -1,18 +1,14 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { getDesktopInstallId } from '@/platform/auth/session/desktopInstallId'
 
-/** A partial Desktop bridge is all these tests exercise; the installed value is
- *  handed to `vi.stubGlobal`, which restores the real global in teardown. */
+/** A partial Desktop bridge is all these tests exercise; `vi.stubGlobal`
+ *  installs it and the shared test setup unstubs globals after each test. */
 type BridgeFixture = { getInstallId?: () => string }
 
 function stubBridge(bridge: BridgeFixture | undefined): void {
   vi.stubGlobal('__comfyDesktop2', bridge)
 }
-
-afterEach(() => {
-  vi.unstubAllGlobals()
-})
 
 describe('getDesktopInstallId', () => {
   it('returns null on plain web (no Desktop bridge)', () => {
