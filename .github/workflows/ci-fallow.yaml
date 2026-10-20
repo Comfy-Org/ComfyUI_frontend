@@ -36,7 +36,7 @@ jobs:
 
       - name: Audit new findings
         id: audit
-        uses: fallow-rs/fallow@c2da9fcae5388226a87e986b1812f9c872d288c6 # v3.24.1
+        uses: fallow-rs/fallow@2823b6588b26e582124977135b9998efeb6959ad # v3.34.0
         with:
           command: audit
           version: '3.24.1'
