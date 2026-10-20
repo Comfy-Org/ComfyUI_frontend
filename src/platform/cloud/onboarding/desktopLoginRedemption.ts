@@ -176,6 +176,14 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
+  await redeemLegacyRequest(code, state, idToken)
+}
+
+async function redeemLegacyRequest(
+  code: string,
+  state: CodeRedemptionState,
+  idToken: string
+): Promise<void> {
   let response: Response
   try {
     response = await fetch(api.apiURL('/auth/desktop-login-codes/redeem'), {
@@ -243,16 +251,11 @@ function unavailableAccountSession(
   })
 }
 
-async function redeemAccountCode(
+async function approvedAccountScope(
+  requests: WebSessionRequests,
   code: string,
   state: CodeRedemptionState
-): Promise<void> {
-  if (onAuthHandoffRoute()) return
-  const requests = webSessionRequests()
-  if (!requests) {
-    unavailableAccountSession(code, state)
-    return
-  }
+) {
   const scope = await accountScope(requests, code, state)
   if (!scope) return
   if (onAuthHandoffRoute()) return
@@ -268,6 +271,21 @@ async function redeemAccountCode(
     current.session.user.id !== state.approvedUserUid
   )
     return
+  return current
+}
+
+async function redeemAccountCode(
+  code: string,
+  state: CodeRedemptionState
+): Promise<void> {
+  if (onAuthHandoffRoute()) return
+  const requests = webSessionRequests()
+  if (!requests) {
+    unavailableAccountSession(code, state)
+    return
+  }
+  const current = await approvedAccountScope(requests, code, state)
+  if (!current) return
   state.attempts++
   let response: Response
   try {
