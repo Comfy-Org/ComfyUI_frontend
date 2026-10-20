@@ -107,7 +107,7 @@ function parseAttachmentRefs(value: unknown): ParsedAttachmentRef[] {
   })
 }
 
-function isAttachmentKind(value: unknown): value is AttachmentKind {
+export function isAttachmentKind(value: unknown): value is AttachmentKind {
   return value === 'image' || value === 'video' || value === 'audio'
 }
 

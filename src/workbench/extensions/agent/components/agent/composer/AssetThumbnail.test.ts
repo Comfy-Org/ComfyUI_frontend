@@ -70,7 +70,7 @@ describe('EXR without a stored preview', () => {
     expect(screen.queryByText('plate.exr')).not.toBeInTheDocument()
   })
 
-  it('keeps the file icon for a refused file', () => {
+  it('does not show a name tile for a refused HDR file', () => {
     render(AssetThumbnail, {
       props: { name: 'env.hdr', mediaKind: 'other', variant: 'tray' },
       global: { plugins: [i18n] }

@@ -4660,20 +4660,15 @@ describe('AgentPanelRoot attach flow', () => {
   })
 
   async function attachExr(
-    assets: Record<string, string>[],
-    rejectPreviewLookup = false
+    assets: Pick<AssetItem, 'id' | 'name' | 'hash' | 'preview_id'>[]
   ) {
-    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
-      const url = String(input)
-
-      if (url.endsWith('/api/upload/image'))
-        return json(200, { name: 'plate.exr', subfolder: '', type: 'input' })
-      if (url.includes('/api/assets?')) {
-        if (rejectPreviewLookup) throw new Error('preview lookup failed')
-        return json(200, { assets })
-      }
-      return json(202, { thread_id: 'th-1', message_id: 'm-1' })
-    })
+    respondToFetch({}, () =>
+      json(202, { thread_id: 'th-1', message_id: 'm-1' })
+    )
+    respondToFetch(/\/api\/upload\/image$/, () =>
+      json(200, { name: 'a1b2c3', subfolder: '', type: 'input' })
+    )
+    respondToFetch(/\/api\/assets\?/, () => json(200, { assets }))
 
     renderWithSelectedTarget()
 
@@ -4693,26 +4688,21 @@ describe('AgentPanelRoot attach flow', () => {
     return chip
   }
 
-  it('shows the stored preview of an uploaded EXR', async () => {
+  it('shows the stored preview of an uploaded EXR stored under its content hash', async () => {
     const chip = await attachExr([
-      { id: 'a-1', name: 'plate.exr', hash: 'plate.exr', preview_id: 'p-1' }
+      { id: 'a-1', name: 'plate.exr', hash: 'a1b2c3', preview_id: 'p-1' }
     ])
 
-    expect(within(chip).getByAltText('plate.exr')).toHaveAttribute(
-      'src',
-      expect.stringContaining('/assets/p-1/content')
+    await vi.waitFor(() =>
+      expect(within(chip).getByAltText('plate.exr')).toHaveAttribute(
+        'src',
+        expect.stringContaining('/assets/p-1/content')
+      )
     )
   })
 
   it('shows the name tile for an EXR with no stored preview', async () => {
     const chip = await attachExr([])
-
-    expect(within(chip).queryByRole('img')).not.toBeInTheDocument()
-    expect(within(chip).getByText('plate.exr')).toBeInTheDocument()
-  })
-
-  it('keeps the name tile when the EXR preview lookup fails', async () => {
-    const chip = await attachExr([], true)
 
     expect(within(chip).queryByRole('img')).not.toBeInTheDocument()
     expect(within(chip).getByText('plate.exr')).toBeInTheDocument()

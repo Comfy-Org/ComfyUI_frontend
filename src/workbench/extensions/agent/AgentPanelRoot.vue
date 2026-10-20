@@ -1716,17 +1716,19 @@ const attachment = useAttachment({
   upload: async (file, signal) => {
     const uploaded = await rest.uploadImage(file, file.name, signal)
     const filename = uploaded.name ?? file.name
-    const previewUrl = isHdrImageFilename(filename)
-      ? ((await findServerPreviewUrl(filename)) ?? undefined)
-      : undefined
     return {
       ref: filename,
-      url: api.apiURL(
-        `/view?filename=${encodeURIComponent(filename)}&type=input`
-      ),
-      previewUrl
+      url: isHdrImageFilename(file.name)
+        ? undefined
+        : api.apiURL(
+            `/view?filename=${encodeURIComponent(filename)}&type=input`
+          )
     }
   },
+  resolveStoredPreview: async (file, ref) =>
+    isHdrImageFilename(file.name)
+      ? ((await findServerPreviewUrl(ref)) ?? undefined)
+      : undefined,
   // The library caches input assets; without this refresh a just-uploaded file
   // is neither listed in the Assets tab nor mentionable this session. One run
   // per settled batch, chained, because the query queue coalesces an

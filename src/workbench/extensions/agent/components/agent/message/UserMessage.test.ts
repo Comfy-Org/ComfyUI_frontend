@@ -191,6 +191,39 @@ describe('UserMessage', () => {
     expect(screen.getByText('use these')).toBeInTheDocument()
   })
 
+  it("keeps a sent EXR's stored preview in the grid", () => {
+    renderMessage({
+      text: '',
+      attachments: [
+        {
+          name: 'plate.exr',
+          ref: 'a1b2c3',
+          kind: 'image',
+          previewUrl: '/api/assets/p-1/content'
+        }
+      ]
+    })
+
+    expect(stubbedAssets()).toEqual([
+      {
+        url: '/api/assets/p-1/content',
+        filename: 'a1b2c3',
+        kind: 'image',
+        label: 'plate.exr'
+      }
+    ])
+  })
+
+  it('never points a sent EXR without a stored preview at its raw file', () => {
+    renderMessage({
+      text: '',
+      attachments: [{ name: 'plate.exr', ref: 'a1b2c3', kind: 'image' }]
+    })
+
+    expect(screen.queryByTestId('reply-asset-group')).not.toBeInTheDocument()
+    expect(screen.getByText('plate.exr')).toBeInTheDocument()
+  })
+
   // Dragging a non-first batch output (e.g. "layer 2" of a multi-output job)
   // into the composer attaches it with `ref` set to the bare output filename
   // (no content hash — see outputAssetUtil.ts's deliberate omission) and a

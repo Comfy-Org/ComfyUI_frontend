@@ -28,7 +28,6 @@ const MIME_TYPE_PATTERN =
 interface UploadResult {
   ref: string
   url?: string
-  previewUrl?: string
 }
 
 type UploadFileResult = 'uploaded' | 'cancelled' | 'failed'
@@ -50,6 +49,10 @@ type DeferredFileResult =
 
 export interface UseAttachmentOptions {
   upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
+  resolveStoredPreview?: (
+    file: File,
+    ref: string
+  ) => Promise<string | undefined>
   validate?: (file: File) => boolean | Promise<boolean>
   uploadTimeoutMs?: number
   maxBytes?: (file: File) => number
@@ -115,11 +118,9 @@ function localPreview(
 }
 
 function uploadedPreview(
-  name: string,
   kind: MediaKind,
-  { url, previewUrl }: UploadResult
+  url?: string
 ): Partial<ComposerAttachment> {
-  if (isHdrImageFilename(name)) return previewUrl ? { previewUrl } : {}
   if (!url) return {}
   if (kind === 'audio' || kind === 'video') return { mediaUrl: url }
   if (kind === 'image') return { previewUrl: url }
@@ -320,9 +321,10 @@ export function useAttachment(options: UseAttachmentOptions) {
       const result = await resolveUpload(id, file)
       options.update(id, {
         ref: result.ref,
-        ...uploadedPreview(file.name, mediaKind, result),
+        ...uploadedPreview(mediaKind, result.url),
         uploading: false
       })
+      void showStoredPreview(id, file, result.ref)
       return 'uploaded'
     } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
@@ -334,6 +336,19 @@ export function useAttachment(options: UseAttachmentOptions) {
       if (next) next()
       else activeUploads -= 1
     }
+  }
+
+  async function showStoredPreview(
+    id: string,
+    file: File,
+    ref: string
+  ): Promise<void> {
+    if (!options.resolveStoredPreview) return
+    const previewUrl = await options
+      .resolveStoredPreview(file, ref)
+      .catch(() => undefined)
+    if (previewUrl && options.staged().some((item) => item.id === id))
+      options.update(id, { previewUrl })
   }
 
   function cancelUpload(id: string): void {

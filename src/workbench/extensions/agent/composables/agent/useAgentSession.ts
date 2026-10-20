@@ -54,7 +54,10 @@ import type {
   AssistantMessage
 } from '../../services/agent/agentMessageParts'
 import { toAskResolution } from '../../services/agent/agentMessageParts'
-import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import {
+  isAttachmentKind,
+  normalizeAgentTranscript
+} from '../../services/agent/agentTranscript'
 import type { LiveTurn } from '../../stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
@@ -75,7 +78,7 @@ interface SessionNotice {
 
 type SentAttachment = Pick<
   ComposerAttachment,
-  'ref' | 'name' | 'previewUrl' | 'mediaUrl'
+  'ref' | 'name' | 'previewUrl' | 'mediaUrl' | 'mediaKind'
 >
 
 interface SentTag {
@@ -1095,11 +1098,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordUser(
       turnId,
       text,
-      attachments?.map(({ name, previewUrl, mediaUrl, ref }) => ({
+      attachments?.map(({ name, previewUrl, mediaUrl, ref, mediaKind }) => ({
         name,
         previewUrl,
         mediaUrl,
-        ref
+        ref,
+        ...(isAttachmentKind(mediaKind) ? { kind: mediaKind } : {})
       })),
       tags?.map((tag) => `${tag.title} #${tag.id}`),
       workflowReferences
