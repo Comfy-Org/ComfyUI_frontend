@@ -24,7 +24,7 @@ const { t } = useI18n()
     :class="className"
     :alpha
     :disabled
-    :accessible-label="accessibleLabel ?? t('g.color')"
+    :accessible-label="accessibleLabel ?? `${t('g.color')} ${color}`"
     :hex-label="t('color.hex')"
     :rgba-label="t('color.rgba')"
     :hue-label="t('color.hue')"
