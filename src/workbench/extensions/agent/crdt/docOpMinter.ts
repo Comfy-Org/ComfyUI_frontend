@@ -149,6 +149,7 @@ function nodeLocalWidgetForm(
     .filter((name) => Object.hasOwn(values, name))
   const isClosed =
     order.length > 0 &&
+    order.length === Object.keys(values).length &&
     order.every((name) => name.length > 0) &&
     new Set(order).size === order.length
   return isClosed ? { order } : undefined
