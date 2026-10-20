@@ -4,6 +4,8 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -17,7 +19,6 @@ import {
   CONSENT_DIALOG_KEY,
   useAgentConsent
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
-import { consentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -420,7 +421,9 @@ export function registerAgentPanelExtension(): void {
       const offerWhenStartupDecided = (): void => {
         whenStartupDecided()
           .then((decided) => {
-            if (consentOfferDeclined()) {
+            if (
+              useSettingStore().get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
+            ) {
               reportOfferExit('consent_declined', 'startup')
               dropHold()
             } else if (decided) {

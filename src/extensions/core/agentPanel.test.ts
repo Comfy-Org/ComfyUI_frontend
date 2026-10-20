@@ -19,6 +19,8 @@ import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent
 
 import type { ComfyExtension } from '@/types/comfy'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
 import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
@@ -78,6 +80,7 @@ function beginFirstRunScreenHandoff(): void {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
@@ -134,14 +137,6 @@ vi.mock(
 )
 
 const READY_AGENT = { state: 'ready', reason: null } as const
-const consentOfferDeclined = vi.hoisted(() => vi.fn())
-vi.mock(
-  import('@/workbench/extensions/agent/services/agent/consentOfferDeclined'),
-  () => ({
-    consentOfferDeclined,
-    recordConsentOfferDeclined: vi.fn()
-  })
-)
 
 function setAgentReady(ready: boolean): void {
   Object.assign(agentStore, {
@@ -223,7 +218,6 @@ describe('AgentPanel extension flag gate', () => {
     setAgentReady(false)
     releaseFirstRunScreen()
     activeTour.value = null
-    consentOfferDeclined.mockReturnValue(false)
     startupDecision = Promise.resolve(true)
     vi.spyOn(useOnboardingTourStore(), 'activeTour', 'get').mockImplementation(
       () => activeTour.value
@@ -1232,7 +1226,8 @@ describe('AgentPanel extension flag gate', () => {
     it('makes no automatic offer, and leaves the one-shot key unspent', async () => {
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
-      consentOfferDeclined.mockReturnValue(true)
+      useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
+        true
 
       await loadEntryAndSetup()
       const exited = await offerExited()
@@ -1248,7 +1243,7 @@ describe('AgentPanel extension flag gate', () => {
       expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
     })
 
-    it('stays silent when a surface that was holding the offer releases it', async () => {
+    it('reports retry_armed and makes no offer when a held offer is refused', async () => {
       setAgentReady(true)
       openDialog()
       Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -1261,7 +1256,8 @@ describe('AgentPanel extension flag gate', () => {
         })
       )
 
-      consentOfferDeclined.mockReturnValue(true)
+      useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
+        true
       closeDialog()
       const exited = await offerExited()
       await vi.waitFor(() =>
@@ -1279,7 +1275,8 @@ describe('AgentPanel extension flag gate', () => {
     it('does not suppress panel activation', async () => {
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
-      consentOfferDeclined.mockReturnValue(true)
+      useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
+        true
       agentStore.isOpen = false
 
       await loadEntryAndSetup()

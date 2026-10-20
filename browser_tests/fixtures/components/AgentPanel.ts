@@ -29,7 +29,6 @@ export class AgentPanel {
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
   public readonly composerStack: Locator
-  public readonly consentAcceptButton: Locator
   public readonly consentDialog: Locator
   public readonly consentRejectButton: Locator
   public readonly copiedButton: Locator
@@ -79,9 +78,6 @@ export class AgentPanel {
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
     this.consentDialog = page.getByRole('dialog', {
       name: enMessages.agent.consent.title
-    })
-    this.consentAcceptButton = this.consentDialog.getByRole('button', {
-      name: enMessages.agent.consent.accept
     })
     this.consentRejectButton = this.consentDialog.getByRole('button', {
       name: enMessages.agent.consent.reject

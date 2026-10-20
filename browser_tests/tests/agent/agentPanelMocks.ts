@@ -30,7 +30,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
-export const AGENT_AUTO_SHOWN_KEY =
+const AGENT_AUTO_SHOWN_KEY =
   'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal'
 export const AGENT_COACH_SEEN_KEY =
   'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'

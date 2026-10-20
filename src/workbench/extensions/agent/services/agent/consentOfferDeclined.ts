@@ -3,11 +3,12 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 
-export function consentOfferDeclined(): boolean {
-  return useSettingStore().get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
-}
+const DECLINE_WRITE_FAILURE = {
+  surface: 'agent',
+  errorType: 'agent_consent_decline_write_failure'
+} as const
 
-export async function recordConsentOfferDeclined(): Promise<boolean> {
+export async function recordConsentOfferDeclined(): Promise<void> {
   try {
     const response = await api.storeSetting(
       AGENT_CONSENT_OFFER_DECLINED_SETTING_ID,
@@ -17,22 +18,15 @@ export async function recordConsentOfferDeclined(): Promise<boolean> {
     if (!response.ok) {
       reportError(
         new Error(`Failed to store consent refusal (${response.status})`),
-        {
-          surface: 'agent',
-          errorType: 'agent_consent_decline_write_failure'
-        }
+        DECLINE_WRITE_FAILURE
       )
-      return false
+      return
     }
   } catch (error) {
-    reportError(error, {
-      surface: 'agent',
-      errorType: 'agent_consent_decline_write_failure'
-    })
-    return false
+    reportError(error, DECLINE_WRITE_FAILURE)
+    return
   }
 
   useSettingStore().settingValues[AGENT_CONSENT_OFFER_DECLINED_SETTING_ID] =
     true
-  return true
 }

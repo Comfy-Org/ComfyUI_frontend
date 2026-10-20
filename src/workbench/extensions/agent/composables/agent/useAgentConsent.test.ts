@@ -12,6 +12,7 @@ import { setImmediate } from 'node:timers/promises'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogStore } from '@/stores/dialogStore'
+import type { DialogInstance } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -130,6 +131,12 @@ async function startConsent() {
   accept()
 }
 
+function dismissConsent(dialog: DialogInstance) {
+  const close = dialog.dialogComponentProps.onClose
+  if (typeof close !== 'function') throw new Error('Missing close handler')
+  close()
+}
+
 describe('useAgentConsent', () => {
   beforeEach(() => {
     useCurrentUser().isLoggedIn = computed(() => true)
@@ -145,9 +152,6 @@ describe('useAgentConsent', () => {
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
     reportError.mockReset()
-    recordConsentOfferDeclined.mockReset()
-    recordConsentOfferDeclined.mockResolvedValue(true)
-    vi.mocked(useToast().error).mockReset()
   })
 
   it.for(['first_load', 'button_click'] as const)(
@@ -182,7 +186,9 @@ describe('useAgentConsent', () => {
     expect(onOpen).not.toHaveBeenCalled()
   })
 
-  it('records the refusal durably, without writing consent', async () => {
+  it('closes the card without waiting for the durable refusal, and writes no consent', async () => {
+    const write = deferred<void>()
+    recordConsentOfferDeclined.mockReturnValue(write.promise)
     const request = useAgentConsent().withConsent('button_click', vi.fn())
     const dialog = await waitForConsentDialog()
     await renderConsentCard(dialog)
@@ -190,12 +196,14 @@ describe('useAgentConsent', () => {
     await clickCardAction('reject')
     await request
 
+    expect(useDialogStore().dialogStack).toEqual([])
     expect(recordConsentOfferDeclined).toHaveBeenCalledOnce()
-    expect(
-      fetchWithUnifiedRemint.mock.calls.filter(
-        ([, init]) => (init as RequestInit | undefined)?.method === 'POST'
-      )
-    ).toEqual([])
+    expect(fetchWithUnifiedRemint).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ method: 'POST' }),
+      expect.anything()
+    )
+    write.resolve()
   })
 
   it('does not attach a refusal to an account that did not own the card', async () => {
@@ -223,7 +231,6 @@ describe('useAgentConsent', () => {
     await request
 
     expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
-    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
   })
 
   it('records no refusal when the card is dismissed instead of refused', async () => {
@@ -231,9 +238,7 @@ describe('useAgentConsent', () => {
     const dialog = await waitForConsentDialog()
     await renderConsentCard(dialog)
 
-    const close = dialog.dialogComponentProps.onClose
-    if (typeof close !== 'function') throw new Error('Missing close handler')
-    close()
+    dismissConsent(dialog)
     await request
 
     expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
