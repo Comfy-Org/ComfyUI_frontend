@@ -1,3 +1,7 @@
+import type {
+  CreateDeployBundleResponse,
+  DeployToCloudError
+} from '@comfyorg/ingest-types'
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -25,16 +29,16 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-const BUILDER_URL =
-  'https://platform.comfy.org/profile/builds/new?step=import&bundle=b-1&workspace=ws-1'
+const BUNDLE_ID = 'b78dcd79-8aba-4d5f-abd7-d35e4d33cbce'
+const BUILDER_URL = `https://platform.comfy.org/profile/builds/new?step=import&bundle=${BUNDLE_ID}&workspace=ws-1`
 
 function bundleCreated(url = BUILDER_URL) {
   return Response.json({
     url,
-    bundle_id: 'b-1',
+    bundle_id: BUNDLE_ID,
     workspace_id: 'ws-1',
     expires_at: '2026-10-18T00:00:00Z'
-  })
+  } satisfies CreateDeployBundleResponse)
 }
 
 beforeEach(() => {
@@ -235,14 +239,20 @@ describe(useInstallationDeploy, () => {
     {
       when: 'the credential is missing',
       response: () =>
-        Response.json({ error: 'missing_credentials' }, { status: 401 }),
+        Response.json(
+          { error: 'missing_credentials' } satisfies DeployToCloudError,
+          { status: 401 }
+        ),
       message: 'deployToComfyApi.bundleUnauthorized',
       reports: 0
     },
     {
       when: 'the user has too many live bundles',
       response: () =>
-        Response.json({ error: 'too_many_bundles' }, { status: 429 }),
+        Response.json(
+          { error: 'too_many_bundles' } satisfies DeployToCloudError,
+          { status: 429 }
+        ),
       message: 'deployToComfyApi.bundleTooMany',
       reports: 0
     },
@@ -254,20 +264,29 @@ describe(useInstallationDeploy, () => {
     },
     {
       when: 'the local server is offline',
-      response: () => Response.json({ error: 'offline' }, { status: 403 }),
+      response: () =>
+        Response.json({ error: 'offline' } satisfies DeployToCloudError, {
+          status: 403
+        }),
       message: 'deployToComfyApi.bundleUnavailable',
       reports: 0
     },
     {
       when: 'the builder is busy',
-      response: () => Response.json({ error: 'builder_busy' }, { status: 503 }),
+      response: () =>
+        Response.json({ error: 'builder_busy' } satisfies DeployToCloudError, {
+          status: 503
+        }),
       message: 'deployToComfyApi.bundleBusy',
       reports: 0
     },
     {
       when: 'the builder is unavailable',
       response: () =>
-        Response.json({ error: 'builder_unavailable' }, { status: 502 }),
+        Response.json(
+          { error: 'builder_unavailable' } satisfies DeployToCloudError,
+          { status: 502 }
+        ),
       message: 'deployToComfyApi.bundleUnavailable',
       reports: 1
     },
@@ -275,7 +294,10 @@ describe(useInstallationDeploy, () => {
       when: 'the request body is invalid',
       response: () =>
         Response.json(
-          { error: 'invalid_body', message: 'name too long' },
+          {
+            error: 'invalid_body',
+            message: 'name too long'
+          } satisfies DeployToCloudError,
           { status: 400 }
         ),
       message: 'deployToComfyApi.bundleRejected',
@@ -284,7 +306,10 @@ describe(useInstallationDeploy, () => {
     {
       when: 'the stored API key is malformed',
       response: () =>
-        Response.json({ error: 'invalid_api_key_format' }, { status: 400 }),
+        Response.json(
+          { error: 'invalid_api_key_format' } satisfies DeployToCloudError,
+          { status: 400 }
+        ),
       message: 'deployToComfyApi.bundleUnauthorized',
       reports: 0
     },
@@ -293,6 +318,12 @@ describe(useInstallationDeploy, () => {
       response: () =>
         Response.json({ error: 'something_new' }, { status: 400 }),
       message: 'deployToComfyApi.bundleRejected',
+      reports: 1
+    },
+    {
+      when: 'the success response omits required bundle metadata',
+      response: () => Response.json({ url: BUILDER_URL }),
+      message: 'deployToComfyApi.bundleUnavailable',
       reports: 1
     },
     {

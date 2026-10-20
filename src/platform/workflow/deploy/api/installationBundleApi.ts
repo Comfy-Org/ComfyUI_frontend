@@ -1,29 +1,22 @@
+import type {
+  CreateDeployBundleData,
+  DeployToCloudError
+} from '@comfyorg/ingest-types'
+import {
+  zCreateDeployBundleResponse,
+  zDeployToCloudError
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { api } from '@/scripts/api'
 import type { AuthHeader } from '@/types/authTypes'
 
 const BUNDLE_TIMEOUT_MS = 90_000
+const EMPTY_BUNDLE_REQUEST: CreateDeployBundleData['body'] = {}
 
-const zBundleCreated = z.object({ url: z.url({ protocol: /^https$/ }) })
-
-const zBundleErrorCode = z.enum([
-  'missing_credentials',
-  'unauthorized',
-  'too_many_bundles',
-  'too_large',
-  'offline',
-  'builder_busy',
-  'builder_unavailable',
-  'builder_rejected',
-  'invalid_body',
-  'invalid_api_key_format',
-  'multiple_credentials'
-])
-
-type BundleErrorCode = z.infer<typeof zBundleErrorCode>
-
-const zBundleError = z.object({ error: zBundleErrorCode })
+const zBundleCreated = zCreateDeployBundleResponse.extend({
+  url: z.url({ protocol: /^https$/ })
+})
 
 export type BundleFailureReason =
   | 'unauthorized'
@@ -54,7 +47,7 @@ const REASON_BY_ERROR_CODE = {
   builder_rejected: 'unavailable',
   invalid_body: 'invalid_request',
   multiple_credentials: 'invalid_request'
-} satisfies Record<BundleErrorCode, BundleFailureReason>
+} satisfies Record<DeployToCloudError['error'], BundleFailureReason>
 
 async function readJson(response: Response): Promise<unknown> {
   try {
@@ -65,7 +58,7 @@ async function readJson(response: Response): Promise<unknown> {
 }
 
 function failureReason(status: number, body: unknown): BundleFailureReason {
-  const parsed = zBundleError.safeParse(body)
+  const parsed = zDeployToCloudError.safeParse(body)
   if (parsed.success) return REASON_BY_ERROR_CODE[parsed.data.error]
   if (status === 413) return 'too_large'
   return status < 500 ? 'invalid_request' : 'unavailable'
@@ -76,7 +69,7 @@ async function postBundle(credential: AuthHeader): Promise<BundlePost> {
     const response = await api.fetchApi('/deploy/bundle', {
       method: 'POST',
       headers: { ...credential, 'Content-Type': 'application/json' },
-      body: '{}',
+      body: JSON.stringify(EMPTY_BUNDLE_REQUEST),
       timeoutMs: BUNDLE_TIMEOUT_MS
     })
     return { ok: true, response }
