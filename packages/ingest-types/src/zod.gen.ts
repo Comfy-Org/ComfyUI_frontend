@@ -1534,6 +1534,7 @@ export const zOAuthTokenResponse = z.object({
  * RFC 6749 §5.2 error response.
  */
 export const zOAuthTokenError = z.object({
+  reauthentication_required: z.boolean().optional(),
   error: z.string(),
   error_description: z.string().optional()
 })

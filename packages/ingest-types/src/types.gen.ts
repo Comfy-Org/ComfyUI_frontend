@@ -2406,6 +2406,10 @@ export type OAuthTokenResponse = {
  */
 export type OAuthTokenError = {
   /**
+   * True when the presented refresh credential cannot be used again and the client must sign in. Workspace refusal and transient failures do not set this field.
+   */
+  reauthentication_required?: boolean
+  /**
    * RFC 6749 §5.2 error code: invalid_request, invalid_client, invalid_grant, unauthorized_client, unsupported_grant_type, invalid_scope.
    */
   error: string
