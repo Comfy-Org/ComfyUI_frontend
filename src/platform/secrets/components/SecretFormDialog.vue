@@ -11,7 +11,7 @@
                 : $t('secrets.editSecret')
             }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <form
           class="flex flex-col gap-4 px-4 py-2"
@@ -123,7 +123,7 @@
                 :aria-invalid="!!errors.secretValue"
               />
             </template>
-            <PasswordInput
+            <AppPasswordInput
               v-else
               id="secret-value"
               v-model="form.secretValue"
@@ -151,7 +151,7 @@
             >
               {{ $t('g.cancel') }}
             </Button>
-            <Button type="submit" tabindex="0" :loading="loading">
+            <Button type="submit" tabindex="0" :loading>
               {{ $t('g.save') }}
             </Button>
           </div>
@@ -178,7 +178,7 @@ import FieldDescription from '@/components/ui/field/FieldDescription.vue'
 import FieldError from '@/components/ui/field/FieldError.vue'
 import FieldLabel from '@/components/ui/field/FieldLabel.vue'
 import Input from '@/components/ui/input/Input.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'

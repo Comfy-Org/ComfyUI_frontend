@@ -6,7 +6,10 @@ import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
-  ToastViewportProps & { class?: HTMLAttributes['class'] }
+  ToastViewportProps & {
+    class?: HTMLAttributes['class']
+    label: NonNullable<ToastViewportProps['label']>
+  }
 >()
 const forwardedProps = useForwardProps(restProps)
 </script>

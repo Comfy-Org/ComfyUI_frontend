@@ -140,6 +140,7 @@
         </template>
         <Message
           v-model:visible="authActions.accessError.value"
+          :close-label="$t('g.close')"
           severity="info"
           closable
         >

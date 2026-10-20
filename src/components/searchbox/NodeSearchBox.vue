@@ -35,7 +35,7 @@
         >
           <DialogHeader>
             <DialogTitle>{{ $t('g.addNodeFilterCondition') }}</DialogTitle>
-            <DialogClose />
+            <DialogClose :aria-label="$t('g.close')" />
           </DialogHeader>
           <div class="px-4 py-2">
             <NodeSearchFilter @add-filter="onAddFilter" />
@@ -47,6 +47,8 @@
     <SearchAutocomplete
       ref="searchAutocomplete"
       v-model="currentQuery"
+      :clear-label="$t('g.clear')"
+      :accessible-label="$t('g.search')"
       class="comfy-vue-node-search-box z-10 grow"
       anchor-class="h-auto min-h-8 flex-wrap"
       :content-style="{ maxHeight: '40vh' }"

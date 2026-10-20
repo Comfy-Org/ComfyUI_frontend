@@ -7,18 +7,14 @@ import {
 } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
+import type { ColorPickerProps } from '@/components/ui/color-picker/types'
 import type { HSVA } from '@/utils/colorUtil'
 import { hexToHsva, hsbToRgb, hsvaToHex, rgbToHex } from '@/utils/colorUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
 
-const { alpha = true, ariaLabel } = defineProps<{
-  class?: string
-  disabled?: boolean
-  alpha?: boolean
-  ariaLabel?: string
-}>()
+const { alpha = true, accessibleLabel } = defineProps<ColorPickerProps>()
 
 const modelValue = defineModel<string>({ default: '#000000' })
 
@@ -77,7 +73,7 @@ const isOpen = ref(false)
         <button
           type="button"
           :disabled="$props.disabled"
-          :aria-label="ariaLabel"
+          :aria-label="accessibleLabel"
           :class="
             cn(
               'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-secondary pr-2 outline-none hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50',
@@ -132,6 +128,15 @@ const isOpen = ref(false)
           v-model:hsva="hsva"
           v-model:display-mode="displayMode"
           :alpha
+          :hex-label="$props.hexLabel"
+          :rgba-label="$props.rgbaLabel"
+          :hue-label="$props.hueLabel"
+          :alpha-label="$props.alphaLabel"
+          :red-label="$props.redLabel"
+          :green-label="$props.greenLabel"
+          :blue-label="$props.blueLabel"
+          :saturation-brightness-label="$props.saturationBrightnessLabel"
+          :format-label="$props.formatLabel"
         />
       </PopoverContent>
     </PopoverPortal>
