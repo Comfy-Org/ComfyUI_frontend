@@ -12,6 +12,7 @@ import type {
 } from './BrowseToolbar.vue'
 import BrowseToolbar from './BrowseToolbar.vue'
 import HubWorkflowCard from './HubWorkflowCard.vue'
+import LoadMoreButton from './LoadMoreButton.vue'
 
 export interface GridLabels {
   readonly tryNow: string
@@ -154,16 +155,11 @@ const showingText = computed(() =>
       <p class="mt-2 text-sm">{{ labels.emptyHint }}</p>
     </div>
 
-    <div v-if="hasMore" class="flex justify-center pt-10 pb-4">
-      <button
-        type="button"
-        data-testid="hub-load-more"
-        class="inline-flex h-10 cursor-pointer items-center justify-center rounded-2xl border border-brand px-12 text-sm font-semibold tracking-wider text-brand uppercase transition-colors hover:bg-brand hover:text-page"
-        @click="displayCount += PAGE"
-      >
-        <span>{{ labels.loadMore }}</span>
-      </button>
-    </div>
+    <LoadMoreButton
+      v-if="hasMore"
+      :label="labels.loadMore"
+      @click="displayCount += PAGE"
+    />
 
     <div
       v-if="store.activeTab.value !== 'models'"
