@@ -5,13 +5,13 @@ import type {
   CompositeInput,
   FBOHandle,
   NodeTexture
-} from '../compositor'
-import { DefaultContentStore } from '../impl/contentStore'
-import { defaultMode } from '../mode'
-import type { Document } from '../document'
-import type { GroupData, Rect, SceneNode, Transform } from '../node'
-import type { NodeKind } from '../nodeKind'
-import { registerNodeKind } from '../nodeKind'
+} from '#/compositor'
+import { DefaultContentStore } from '#/impl/contentStore'
+import { defaultMode } from '#/mode'
+import type { Document } from '#/document'
+import type { GroupData, Rect, SceneNode, Transform } from '#/node'
+import type { NodeKind } from '#/nodeKind'
+import { registerNodeKind } from '#/nodeKind'
 import type { PlacedEntry, PreviewOverride, RenderDeps } from './renderStack'
 import { buildDocumentInputs, renderDocument } from './renderStack'
 

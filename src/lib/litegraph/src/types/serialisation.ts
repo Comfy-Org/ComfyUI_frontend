@@ -19,7 +19,7 @@ import type {
   ISlotType,
   Point,
   Size
-} from '../interfaces'
+} from '@/lib/litegraph/src/interfaces'
 import type { INodeInputSlot, INodeOutputSlot } from './slots'
 import type { LiteGraphGlobal } from './entityRegistry'
 import type { RenderShape } from './globalEnums'

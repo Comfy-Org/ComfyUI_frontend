@@ -20,6 +20,18 @@
   ],
   "type": "module",
   "sideEffects": false,
+  "imports": {
+    "#/*.vue": {
+      "@comfyorg/account-ui": "./src/*.vue",
+      "types": "./dist-types/*.vue.d.ts",
+      "default": "./src/*.vue"
+    },
+    "#/*": {
+      "@comfyorg/account-ui": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
   "exports": {
     "./billing": {
       "types": "./dist-types/billing/index.d.ts",
@@ -140,6 +152,7 @@
   },
   "devDependencies": {
     "@comfyorg/design-system": "workspace:^",
+    "@comfyorg/published-package-build": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:^",
     "@comfyorg/test-utils": "workspace:*",
     "@stripe/stripe-js": "catalog:",
@@ -153,7 +166,6 @@
     "reka-ui": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:"
   },

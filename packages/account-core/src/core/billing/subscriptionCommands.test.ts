@@ -8,33 +8,30 @@ import {
   vi
 } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { sessionBillingScopeSource } from './billingScope'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import type { CapabilitiesReader } from './capabilities.js'
-import { driveEmbeddedChallenge } from './challengeDriver.js'
-import type { CreditsReader } from './credits.js'
+} from './billingContracts'
+import type { CapabilitiesReader } from './capabilities'
+import { driveEmbeddedChallenge } from './challengeDriver'
+import type { CreditsReader } from './credits'
 import {
   createBillingOperationLifecycle,
   operationRoute
-} from './operationLifecycle.js'
-import {
-  OPERATION_POLL_BUDGET,
-  OPERATION_POLL_TIMING
-} from './operationPolicy.js'
-import type { BillingOpStatus } from './operationState.js'
+} from './operationLifecycle'
+import { OPERATION_POLL_BUDGET, OPERATION_POLL_TIMING } from './operationPolicy'
+import type { BillingOpStatus } from './operationState'
 import type {
   BillingStatusData,
   BillingStatusReader,
   BillingStatusSnapshot
-} from './status.js'
-import type { SubscriptionPreview } from './subscriptionCommands.js'
+} from './status'
+import type { SubscriptionPreview } from './subscriptionCommands'
 import {
   CANCEL_SUBSCRIPTION_ROUTE,
   PAYMENT_PORTAL_ROUTE,
@@ -43,7 +40,7 @@ import {
   SUBSCRIBE_ROUTE,
   cancelOperationRoute,
   createBillingCommands
-} from './subscriptionCommands.js'
+} from './subscriptionCommands'
 
 const NOW = 1_000_000
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const

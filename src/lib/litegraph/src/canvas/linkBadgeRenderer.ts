@@ -5,7 +5,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { layoutHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
-import { slotTypeKey } from '../utils/type'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
 export function queryHiddenLinkBadgeAtPoint(
   host: object,

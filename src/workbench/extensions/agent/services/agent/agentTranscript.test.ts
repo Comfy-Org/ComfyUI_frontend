@@ -1,7 +1,10 @@
 import { assert, describe, expect, it } from 'vitest'
 
-import type { AgentMessages } from '../../schemas/agentApiSchema'
-import { toTurnId, zAgentMessages } from '../../schemas/agentApiSchema'
+import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  toTurnId,
+  zAgentMessages
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { normalizeAgentTranscript } from './agentTranscript'
 
 const row = (

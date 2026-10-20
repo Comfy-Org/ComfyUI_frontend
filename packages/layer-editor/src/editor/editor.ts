@@ -1,12 +1,12 @@
-import { BakeRasterCommand, snapshotRaster } from '../commands/bakeContent'
-import { AddNodeCommand, ReorderCommand } from '../commands/structure'
-import type { Compositor, CompositeInput } from '../compositor'
-import type { ContentStore } from '../content'
-import type { DocGuide, Document } from '../document'
-import { findNode } from '../document'
-import { History } from '../history'
-import { DefaultContentStore } from '../impl/contentStore'
-import { defaultMode, resolveMode } from '../mode'
+import { BakeRasterCommand, snapshotRaster } from '#/commands/bakeContent'
+import { AddNodeCommand, ReorderCommand } from '#/commands/structure'
+import type { Compositor, CompositeInput } from '#/compositor'
+import type { ContentStore } from '#/content'
+import type { DocGuide, Document } from '#/document'
+import { findNode } from '#/document'
+import { History } from '#/history'
+import { DefaultContentStore } from '#/impl/contentStore'
+import { defaultMode, resolveMode } from '#/mode'
 import type {
   ChannelData,
   GroupData,
@@ -15,22 +15,22 @@ import type {
   SceneNode,
   Transform,
   Vec2
-} from '../node'
-import { getNodeKind } from '../nodeKind'
+} from '#/node'
+import { getNodeKind } from '#/nodeKind'
 import {
   bakeMaskInto,
   bakePlaced,
   drawPlacedInto,
   isIdentityPlacement,
   placedBounds
-} from '../render/bake'
-import { placeBitmap } from '../render/place'
-import type { PlacedEntry } from '../render/renderStack'
-import { renderDocument } from '../render/renderStack'
-import type { Tool, ToolContext } from '../tool'
-import { getTool } from '../tool'
-import { addTransformBox } from '../tools/overlayBox'
-import type { HandleId } from '../tools/transformMath'
+} from '#/render/bake'
+import { placeBitmap } from '#/render/place'
+import type { PlacedEntry } from '#/render/renderStack'
+import { renderDocument } from '#/render/renderStack'
+import type { Tool, ToolContext } from '#/tool'
+import { getTool } from '#/tool'
+import { addTransformBox } from '#/tools/overlayBox'
+import type { HandleId } from '#/tools/transformMath'
 import {
   angleTo,
   applyMove,
@@ -38,10 +38,10 @@ import {
   applyRotate,
   hitHandle,
   insideBox
-} from '../tools/transformMath'
-import { isTransformTool } from '../tools/transformTool'
-import { SetSelectionCommand, snapshotSelection } from '../commands/selection'
-import { generateId } from '../id'
+} from '#/tools/transformMath'
+import { isTransformTool } from '#/tools/transformTool'
+import { SetSelectionCommand, snapshotSelection } from '#/commands/selection'
+import { generateId } from '#/id'
 
 import { fullSelectionCanvas } from './selectionOps'
 import type { GrayMask, SelectionOp } from './selectionMath'

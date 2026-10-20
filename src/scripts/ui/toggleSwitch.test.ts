@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { toggleSwitch } from './toggleSwitch'
 
-vi.mock(import('../app'))
-vi.mock(import('../api'))
+vi.mock(import('@/scripts/app'))
+vi.mock(import('@/scripts/api'))
 
 function readState(container: HTMLElement) {
   const labels = [...container.querySelectorAll('label')]

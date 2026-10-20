@@ -8,7 +8,8 @@
     "noEmitOnError": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo/build.tsbuildinfo",
     "types": [],
-    "paths": {}
+    "paths": {},
+    "customConditions": ["@comfyorg/object-info-parser"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/__tests__/**", "src/**/*.test.ts"]

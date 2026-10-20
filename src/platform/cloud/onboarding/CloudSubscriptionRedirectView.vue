@@ -13,7 +13,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { getPricingCheckoutSelection } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import type { CheckoutTierKey } from '@/composables/billing/types'
 
-import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 
 function isBillingCycle(value: string): value is BillingCycle {
   return value === 'monthly' || value === 'yearly'

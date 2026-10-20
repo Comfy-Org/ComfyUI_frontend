@@ -87,7 +87,7 @@ import type {
 } from '@comfyorg/account-core/billing'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { StripePaymentPhase } from '../stripe/stripePaymentPhase'
+import type { StripePaymentPhase } from '#/billing/stripe/stripePaymentPhase'
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPromotionCode from './CheckoutPromotionCode.vue'
 import CheckoutSavedMethods from './CheckoutSavedMethods.vue'

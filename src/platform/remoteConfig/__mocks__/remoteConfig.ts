@@ -1,7 +1,7 @@
 import { onTestFinished } from 'vitest'
 import { computed, customRef } from 'vue'
 
-import type * as realRemoteConfig from '../remoteConfig'
+import type * as realRemoteConfig from '@/platform/remoteConfig/remoteConfig'
 
 function testScopedRef<T>(defaultValue: T) {
   let value = defaultValue
