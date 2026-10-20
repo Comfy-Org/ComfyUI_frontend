@@ -229,7 +229,7 @@
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": [],
+  "allowedDependencies": ["authentication"],
   "allowedConsumers": [],
   "characterizationScenarios": [
     {

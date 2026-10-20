@@ -2,6 +2,18 @@
   "boundaries": {
     "zones": [
       {
+        "name": "authentication/application/public",
+        "patterns": ["src/platform/auth/session/webSessionUser.ts"]
+      },
+      {
+        "name": "authentication/infrastructure/public",
+        "patterns": ["src/platform/auth/session/webSessionFetch.ts"]
+      },
+      {
+        "name": "error-reporting/application/public",
+        "patterns": ["src/platform/telemetry/reportError.ts"]
+      },
+      {
         "name": "agent/domain",
         "patterns": [
           "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.test.ts",
@@ -4118,6 +4130,51 @@
     ],
     "rules": [
       {
+        "from": "authentication/application/public",
+        "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "authentication/infrastructure/outer-1",
+          "error-reporting/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "authentication/infrastructure/public",
+        "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "authentication/infrastructure/outer-1",
+          "error-reporting/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "error-reporting/application/public",
+        "allow": [
+          "error-reporting/application/public",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "error-reporting/application/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "agent/domain",
         "allow": [
           "agent/domain",
@@ -4134,6 +4191,9 @@
       {
         "from": "agent/application",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -4165,6 +4225,9 @@
       {
         "from": "agent/infrastructure",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -4196,6 +4259,8 @@
       {
         "from": "agent/presentation",
         "allow": [
+          "authentication/application/public",
+          "error-reporting/application/public",
           "agent/domain",
           "agent/application",
           "agent/presentation",
@@ -4228,6 +4293,9 @@
       {
         "from": "agent/integration",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -4413,46 +4481,76 @@
       },
       {
         "from": "authentication/domain",
-        "allow": ["authentication/domain", "unclassified"]
+        "allow": [
+          "authentication/domain",
+          "error-reporting/domain",
+          "unclassified"
+        ]
       },
       {
         "from": "authentication/application",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "authentication/infrastructure/outer-1",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "authentication/infrastructure",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "authentication/infrastructure/outer-1",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "authentication/presentation",
         "allow": [
+          "authentication/application/public",
+          "error-reporting/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "authentication/integration",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
           "authentication/presentation",
           "authentication/integration",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "authentication/infrastructure/outer-1",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
@@ -4700,14 +4798,25 @@
       },
       {
         "from": "cloud/domain",
-        "allow": ["cloud/domain", "cloud/domain/outer-1", "unclassified"]
+        "allow": [
+          "authentication/domain",
+          "cloud/domain",
+          "cloud/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "cloud/application",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
@@ -4718,9 +4827,15 @@
       {
         "from": "cloud/infrastructure",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
@@ -4731,6 +4846,10 @@
       {
         "from": "cloud/presentation",
         "allow": [
+          "authentication/application/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/presentation",
           "cloud/domain",
           "cloud/application",
           "cloud/presentation",
@@ -4744,11 +4863,19 @@
       {
         "from": "cloud/integration",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
+          "authentication/presentation",
+          "authentication/integration",
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
           "cloud/presentation",
           "cloud/integration",
+          "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
@@ -4888,6 +5015,7 @@
       {
         "from": "error-reporting/application",
         "allow": [
+          "error-reporting/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -4898,6 +5026,7 @@
       {
         "from": "error-reporting/infrastructure",
         "allow": [
+          "error-reporting/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -6126,6 +6255,8 @@
       {
         "from": "settings/application",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -6142,6 +6273,8 @@
       {
         "from": "settings/infrastructure",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -6158,6 +6291,7 @@
       {
         "from": "settings/presentation",
         "allow": [
+          "authentication/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/presentation",
@@ -6174,6 +6308,8 @@
       {
         "from": "settings/integration",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -6857,6 +6993,9 @@
       {
         "from": "agent/integration/outer-1",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -6966,10 +7105,17 @@
       {
         "from": "authentication/infrastructure/outer-1",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
           "authentication/infrastructure/outer-1",
+          "error-reporting/application/outer-1",
           "unclassified"
         ]
       },
@@ -7095,14 +7241,25 @@
       },
       {
         "from": "cloud/domain/outer-1",
-        "allow": ["cloud/domain", "cloud/domain/outer-1", "unclassified"]
+        "allow": [
+          "authentication/domain",
+          "cloud/domain",
+          "cloud/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "cloud/application/outer-1",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
@@ -7113,9 +7270,15 @@
       {
         "from": "cloud/infrastructure/outer-1",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
@@ -7154,6 +7317,7 @@
       {
         "from": "error-reporting/application/outer-1",
         "allow": [
+          "error-reporting/application/public",
           "error-reporting/domain",
           "error-reporting/application",
           "error-reporting/infrastructure",
@@ -7458,6 +7622,8 @@
       {
         "from": "settings/application/outer-1",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
           "authentication/domain",
           "authentication/application",
           "authentication/infrastructure",
@@ -7724,6 +7890,10 @@
       {
         "from": "cloud/presentation/outer-2",
         "allow": [
+          "authentication/application/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/presentation",
           "cloud/domain",
           "cloud/application",
           "cloud/presentation",
@@ -7820,9 +7990,15 @@
       {
         "from": "cloud/application/outer-3",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "authentication/domain",
+          "authentication/application",
+          "authentication/infrastructure",
           "cloud/domain",
           "cloud/application",
           "cloud/infrastructure",
+          "authentication/infrastructure/outer-1",
           "cloud/domain/outer-1",
           "cloud/application/outer-1",
           "cloud/infrastructure/outer-1",
@@ -7841,6 +8017,9 @@
       {
         "from": "unclassified",
         "allow": [
+          "authentication/application/public",
+          "authentication/infrastructure/public",
+          "error-reporting/application/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",

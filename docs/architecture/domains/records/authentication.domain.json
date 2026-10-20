@@ -352,9 +352,12 @@
       "role": "presentation"
     }
   ],
-  "publicEntryPoints": [],
-  "allowedDependencies": [],
-  "allowedConsumers": ["agent", "settings"],
+  "publicEntryPoints": [
+    "src/platform/auth/session/webSessionFetch.ts",
+    "src/platform/auth/session/webSessionUser.ts"
+  ],
+  "allowedDependencies": ["error-reporting"],
+  "allowedConsumers": ["agent", "settings", "cloud"],
   "characterizationScenarios": [
     {
       "name": "Firebase identity drives sign-in, sign-out, current-user projection, and auth headers",
