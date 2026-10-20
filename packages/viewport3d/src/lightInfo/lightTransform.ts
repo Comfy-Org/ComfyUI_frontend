@@ -1,5 +1,5 @@
-import { DEFAULT_CAMERA_INFO_STATE } from '../cameraInfo/types'
-import type { CameraInfoState } from '../cameraInfo/types'
+import { DEFAULT_CAMERA_INFO_STATE } from '#/cameraInfo/types'
+import type { CameraInfoState } from '#/cameraInfo/types'
 
 import { lightTarget } from './types'
 import type { LightInfoEntry, Vec3 } from './types'

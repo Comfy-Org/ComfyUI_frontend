@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 import { assert, describe, expect, it } from 'vitest'
 
-import { OrbitHandles } from '../cameraInfo/handles/OrbitHandles'
-import type { OrbitHandleType } from '../cameraInfo/handles/OrbitHandles'
+import { OrbitHandles } from '#/cameraInfo/handles/OrbitHandles'
+import type { OrbitHandleType } from '#/cameraInfo/handles/OrbitHandles'
 
 import {
   orbitAnglesFor,

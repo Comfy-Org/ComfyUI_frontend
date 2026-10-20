@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import type { CameraInfoState } from '@/extensions/core/cameraInfo/types'
+import type { CameraInfoState } from '#/cameraInfo/types'
 
 const RING_RADIUS = 1.5
 const HANDLE_RADIUS = 0.08

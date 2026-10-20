@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import type { RendererView } from '../three/RendererView'
+import type { RendererView } from '#/three/RendererView'
 
 export const PREVIEW_WIDTH = 200
 export const PREVIEW_HEIGHT = 150

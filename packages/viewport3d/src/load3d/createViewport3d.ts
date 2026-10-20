@@ -1,6 +1,6 @@
 import type * as THREE from 'three'
 
-import { RendererView } from '../three/RendererView'
+import { RendererView } from '#/three/RendererView'
 
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'

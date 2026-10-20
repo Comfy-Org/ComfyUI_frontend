@@ -2,14 +2,14 @@ import { clamp } from 'es-toolkit'
 
 import type { Vector3Like } from 'three'
 
-import { DEFAULT_CAMERA_INFO_STATE } from '../cameraInfo/types'
-import type { CameraInfoState } from '../cameraInfo/types'
-import type { OrbitHandleType } from '../cameraInfo/handles/OrbitHandles'
+import { DEFAULT_CAMERA_INFO_STATE } from '#/cameraInfo/types'
+import type { CameraInfoState } from '#/cameraInfo/types'
+import type { OrbitHandleType } from '#/cameraInfo/handles/OrbitHandles'
 import {
   pointToDistance,
   pointToPitchAngle,
   pointToYawAngle
-} from '../cameraInfo/handles/orbitDragMath'
+} from '#/cameraInfo/handles/orbitDragMath'
 
 import {
   CAMERA_ANGLE_FOV,

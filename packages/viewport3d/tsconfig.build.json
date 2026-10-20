@@ -21,7 +21,8 @@
     "outDir": "dist",
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo/build.tsbuildinfo",
     "typeRoots": ["./node_modules/@types"],
-    "types": []
+    "types": [],
+    "customConditions": ["@comfyorg/viewport3d"]
   },
   "include": ["src/**/*.ts"],
   "exclude": ["src/**/*.test.ts"]

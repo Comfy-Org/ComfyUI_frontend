@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import type { SceneOverlay } from '../load3d/interfaces'
+import type { SceneOverlay } from '#/load3d/interfaces'
 
 import { cloneLights, lightTarget } from './types'
 import type { LightInfoEntry, LightInfoType } from './types'
