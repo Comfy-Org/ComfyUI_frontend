@@ -6553,6 +6553,62 @@ describe('thread resume (B17)', () => {
     })
   })
 
+  describe('a turn still running when the thread comes back', () => {
+    // The thread a reload (or the local agent continuing after a ComfyUI
+    // restart) brings back with its last turn still running on wf-9.
+    const running = (): AgentMessages =>
+      HISTORY.map((row) =>
+        row.role === 'user'
+          ? { ...row, workflow_id: 'wf-9' }
+          : { ...row, status: 'streaming' as const, content: {} }
+      )
+
+    // A page load forgets the binding a previous page held; a start with no
+    // thread does the same for the module state these cases share.
+    beforeEach(() => {
+      localStorage.clear()
+      useAgentSession({ rest: fakeRest(), events: fakeEvents().source }).start()
+    })
+
+    function resume(history: AgentMessages) {
+      localStorage.setItem(StorageKeys.agentThread('personal'), 'th-9')
+      const getMessages = vi.fn(async (): Promise<AgentMessages> => history)
+      const session = useAgentSession({
+        rest: fakeRest({ getMessages }),
+        events: fakeEvents().source
+      })
+      session.start()
+      return { session, getMessages }
+    }
+
+    it('binds the workflow the running turn is on, so its edits reach the canvas', async () => {
+      useAgentWorkflowTabBindingStore().bind('wf-9', 'workflows/duck.json')
+      const { session } = resume(running())
+
+      await vi.waitFor(() => expect(session.boundWorkflowId.value).toBe('wf-9'))
+      expect(session.isStreaming.value).toBe(true)
+    })
+
+    it('leaves a finished thread unbound until the user sends', async () => {
+      useAgentWorkflowTabBindingStore().bind('wf-9', 'workflows/duck.json')
+      const finished = HISTORY.map((row) =>
+        row.role === 'user' ? { ...row, workflow_id: 'wf-9' } : row
+      )
+      const { session, getMessages } = resume(finished)
+
+      await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-9'))
+      await vi.waitFor(() => expect(session.entries.value).toHaveLength(2))
+      expect(session.boundWorkflowId.value).toBeNull()
+    })
+
+    it('does not bind a running turn whose workflow has no known tab', async () => {
+      const { session } = resume(running())
+
+      await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
+      expect(session.boundWorkflowId.value).toBeNull()
+    })
+  })
+
   it('forgets a stale persisted thread on 404 without surfacing an error', async () => {
     localStorage.setItem(StorageKeys.agentThread('personal'), 'th-gone')
     const onThreadActivated = vi.fn()
