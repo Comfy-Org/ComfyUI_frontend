@@ -189,9 +189,8 @@ test.describe(
         await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
       })
 
-      const outputBox = await outputSlot.boundingBox()
-      const inputBox = await inputSlot.boundingBox()
-      if (!outputBox || !inputBox) throw new Error('Slots have no bounding box')
+      const outputBox = (await outputSlot.boundingBox())!
+      const inputBox = (await inputSlot.boundingBox())!
       const start = {
         x: outputBox.x + outputBox.width / 2,
         y: outputBox.y + outputBox.height / 2
