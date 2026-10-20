@@ -36,6 +36,16 @@ describe('follower invariant guard', () => {
     },
     { name: 'forbidden-array-push.ts', message: 'must not call push', line: 6 },
     {
+      name: 'forbidden-aliased-update.ts',
+      message: 'only FollowerDoc.applyRemoteUpdate',
+      line: 5
+    },
+    {
+      name: 'forbidden-shared-update-v2.ts',
+      message: 'only FollowerDoc.applyRemoteUpdate',
+      line: 5
+    },
+    {
       name: 'forbidden-destructured-doc-set.ts',
       message: 'must not call set',
       line: 6

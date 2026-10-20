@@ -86,11 +86,34 @@ const isThisDoc = (expression: ts.Expression): boolean => {
   )
 }
 
-const isYApplyUpdate = (expression: ts.Expression): boolean => {
+const Y_APPLY_UPDATES = new Set(['applyUpdate', 'applyUpdateV2'])
+
+const yApplyUpdateNames = (source: ts.SourceFile): ReadonlySet<string> => {
+  const names = new Set(Y_APPLY_UPDATES)
+  for (const statement of source.statements) {
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      statement.moduleSpecifier.text !== 'yjs'
+    )
+      continue
+    const bindings = statement.importClause?.namedBindings
+    if (!bindings || !ts.isNamedImports(bindings)) continue
+    for (const element of bindings.elements)
+      if (Y_APPLY_UPDATES.has((element.propertyName ?? element.name).text))
+        names.add(element.name.text)
+  }
+  return names
+}
+
+const isYApplyUpdate = (
+  expression: ts.Expression,
+  applyUpdateNames: ReadonlySet<string>
+): boolean => {
   const value = unwrapped(expression)
-  if (ts.isIdentifier(value)) return value.text === 'applyUpdate'
+  if (ts.isIdentifier(value)) return applyUpdateNames.has(value.text)
   return (
-    ts.isPropertyAccessExpression(value) && value.name.text === 'applyUpdate'
+    ts.isPropertyAccessExpression(value) && Y_APPLY_UPDATES.has(value.name.text)
   )
 }
 
@@ -221,10 +244,6 @@ const trackedDocReference =
 const declarationName = (declaration: SupportedDeclaration): string | null =>
   ts.isIdentifier(declaration.name) ? declaration.name.text : null
 
-/**
- * The expression a destructured binding ultimately reads from, found by walking
- * out of any nesting of binding patterns to the owning declaration.
- */
 const bindingSourceExpression = (
   element: ts.BindingElement
 ): ts.Expression | undefined => {
@@ -245,10 +264,6 @@ const boundPropertyName = (element: ts.BindingElement): string | null =>
       ? element.name.text
       : null
 
-/**
- * `const { doc } = follower` aliases the shared document without ever naming it,
- * so the binding has to be tracked from what it destructures.
- */
 const shouldTrackBindingElement = (
   element: ts.BindingElement,
   referencesTrackedDoc: (expression: ts.Expression) => boolean
@@ -303,10 +318,11 @@ const inspectCalls = (
   violations: FollowerInvariantViolation[]
 ): void => {
   const referencesTrackedDoc = trackedDocReference(tracked)
+  const applyUpdateNames = yApplyUpdateNames(source)
   const inspect = (node: ts.Node): void => {
     if (ts.isCallExpression(node)) {
       if (
-        isYApplyUpdate(node.expression) &&
+        isYApplyUpdate(node.expression, applyUpdateNames) &&
         !isAllowedFollowerApply(source, node)
       )
         addViolation(
