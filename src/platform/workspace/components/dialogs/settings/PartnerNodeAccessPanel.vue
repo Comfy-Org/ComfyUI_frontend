@@ -112,6 +112,10 @@
           </span>
           <SearchInput
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="
+              $t('workspacePanel.partnerNodes.searchPlaceholder')
+            "
             :placeholder="$t('workspacePanel.partnerNodes.searchPlaceholder')"
             size="lg"
             class="w-full"

@@ -6,7 +6,11 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  ExecutableNodeDTO,
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -72,6 +76,10 @@ function paintNode(): LGraphNode {
   const node = rootGraph.getNodeById(toNodeId('test-node'))
   if (!(node instanceof LGraphNode)) throw new Error('Expected a paint node')
   return node
+}
+
+function executablePaintNode(): ExecutableNodeDTO {
+  return new ExecutableNodeDTO(paintNode(), [], new Map())
 }
 
 function widgetOf(name: string): IBaseWidget {
@@ -430,7 +438,10 @@ describe('usePainter', () => {
 
       mountPainter(toNodeId('test-node'), 'painter/existing.png [temp]')
 
-      const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
+      const result = await widgetOf('mask').serializeValue!(
+        executablePaintNode(),
+        0
+      )
       expect(result).toBe('painter/existing.png [temp]')
     })
 
@@ -452,7 +463,10 @@ describe('usePainter', () => {
       canvasEl.value = fakeCanvas
       await nextTick()
 
-      const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
+      const result = await widgetOf('mask').serializeValue!(
+        executablePaintNode(),
+        0
+      )
       expect(api.fetchApi).toHaveBeenCalledWith(
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
@@ -485,7 +499,7 @@ describe('usePainter', () => {
       await nextTick()
 
       await expect(
-        widgetOf('mask').serializeValue!(paintNode(), 0)
+        widgetOf('mask').serializeValue!(executablePaintNode(), 0)
       ).rejects.toThrow(/missing 'name'/)
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
@@ -516,7 +530,7 @@ describe('usePainter', () => {
       await nextTick()
 
       await expect(
-        widgetOf('mask').serializeValue!(paintNode(), 0)
+        widgetOf('mask').serializeValue!(executablePaintNode(), 0)
       ).rejects.toThrow(/painter\.uploadError/)
     })
 
@@ -525,7 +539,10 @@ describe('usePainter', () => {
 
       mountPainter(toNodeId('test-node'), 'painter/cached.png [temp]')
 
-      const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
+      const result = await widgetOf('mask').serializeValue!(
+        executablePaintNode(),
+        0
+      )
       expect(result).toBe('painter/cached.png [temp]')
     })
 

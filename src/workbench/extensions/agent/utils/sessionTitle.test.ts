@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { toTurnId } from '../schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   ChatSession,
   HistoryGroups
-} from '../stores/agent/agentChatHistoryStore'
-import type { ConversationEntry } from '../stores/agent/agentConversationStore'
+} from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
 import { deriveSessionTitle, withCurrentSessionTitle } from './sessionTitle'
 

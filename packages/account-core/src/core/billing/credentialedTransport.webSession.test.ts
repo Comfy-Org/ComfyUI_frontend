@@ -1,15 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FakeWebSessionState } from '../../testing.js'
-import {
-  createFakeWebSessionEndpoint,
-  fakeWebSessionUser
-} from '../../testing.js'
-import { COMFY_CLIENT, createRequestAuthorizer } from '../requestAuth.js'
-import type { WebSession } from '../sessionContracts.js'
-import { readWebSession } from '../webSession.js'
-import type { BillingScope } from './billingScope.js'
-import { createCredentialedBillingTransport } from './credentialedTransport.js'
+import type { FakeWebSessionState } from '#/testing'
+import { createFakeWebSessionEndpoint, fakeWebSessionUser } from '#/testing'
+import { COMFY_CLIENT, createRequestAuthorizer } from '#/core/requestAuth'
+import type { WebSession } from '#/core/sessionContracts'
+import { readWebSession } from '#/core/webSession'
+import type { BillingScope } from './billingScope'
+import { createCredentialedBillingTransport } from './credentialedTransport'
 
 const BASE = 'https://cloud.test/api'
 const USER = fakeWebSessionUser({ id: 'user-1' })

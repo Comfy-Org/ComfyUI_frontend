@@ -10,7 +10,7 @@ import { widgetId } from '@/types/widgetId'
 import {
   createTestSubgraph,
   createTestSubgraphNode
-} from '../subgraph/__fixtures__/subgraphHelpers'
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 

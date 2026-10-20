@@ -4,9 +4,9 @@ import type {
   DefaultConnectionColors,
   INodeSlot,
   ISlotType,
-  IWidgetLocator,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type {
   LinkDirection,
   RenderShape
@@ -26,7 +26,7 @@ export abstract class SlotBase implements INodeSlot {
   color_on?: CanvasColour
   locked?: boolean
   nameLocked?: boolean
-  widget?: IWidgetLocator
+  widget?: INodeInputSlot['widget']
   hasErrors?: boolean
 
   /** The centre point of the slot. */

@@ -6,9 +6,9 @@ import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import {
   AgentApiError,
   AgentResponseUnreadableError
-} from '../../services/agent/agentRestClient'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import {
   MAX_ATTACHMENT_BYTES,
   MAX_TURN_ATTACHMENTS,

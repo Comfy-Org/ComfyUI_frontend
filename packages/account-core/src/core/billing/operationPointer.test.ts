@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { BillingOperationPointerStorage } from './operationPointer.js'
+import type { BillingOperationPointerStorage } from './operationPointer'
 import {
   OPERATION_POINTER_MAX_AGE_MS,
   createOperationPointerStore,
   operationPointerKey
-} from './operationPointer.js'
-import type { BillingOperationState } from './operationState.js'
+} from './operationPointer'
+import type { BillingOperationState } from './operationState'
 
 const SCOPE = { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' } as const
 const OTHER_WORKSPACE = { ...SCOPE, workspaceId: 'ws-2' } as const
