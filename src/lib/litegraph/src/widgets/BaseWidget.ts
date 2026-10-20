@@ -2,6 +2,7 @@ import type {
   LGraphCanvas,
   LGraphNode
 } from '@/lib/litegraph/src/types/entityRegistry'
+import { commitWidgetValue } from '@/lib/litegraph/src/widgets/commitWidgetValue'
 import { t } from '@/i18n'
 import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
@@ -13,6 +14,7 @@ import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { NodeBindable } from '@/lib/litegraph/src/utils/type'
+import { extensionValue } from '@/lib/litegraph/src/utils/extensionValue'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
@@ -84,10 +86,6 @@ export interface WidgetEventOptions {
   e: CanvasPointerEvent
   node: LGraphNode
   canvas: LGraphCanvas
-}
-
-export function extensionValue<T>(value: T): T | null | undefined {
-  return value
 }
 
 export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
@@ -728,24 +726,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * @param value The value to set
    * @param options The options for setting the value
    */
-  setValue(
-    value: TWidget['value'],
-    { e, node, canvas }: WidgetEventOptions
-  ): void {
-    const oldValue = this.value
-    if (value === this.value) return
-
-    const v = this.type === 'number' ? Number(value) : value
-    this.value = v
-    const property = extensionValue(this.options)?.property
-    if (property && node.properties[property] !== undefined) {
-      node.setProperty(property, v)
-    }
-    const pos = canvas.graph_mouse
-    this.callback?.(this.value, canvas, node, pos, e)
-
-    node.onWidgetChanged?.(extensionValue(this.name) ?? '', v, oldValue, this)
-    if (node.graph) node.graph.incrementVersion()
+  setValue(value: TWidget['value'], options: WidgetEventOptions): void {
+    commitWidgetValue(this, value, options)
   }
 
   /**
