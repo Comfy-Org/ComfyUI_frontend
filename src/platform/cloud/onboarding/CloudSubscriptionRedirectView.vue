@@ -163,9 +163,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div
-    class="flex size-full items-center justify-center bg-comfy-menu-secondary"
-  >
+  <div class="flex size-full items-center justify-center bg-secondary">
     <div class="flex flex-col items-center gap-4">
       <img
         src="/assets/images/comfy-logo-single.svg"
@@ -174,7 +172,7 @@ onMounted(() => {
       />
       <p
         v-if="planLabel"
-        class="font-inter text-base/normal font-normal text-base-foreground"
+        class="font-inter text-base/normal font-normal text-foreground"
       >
         {{
           t('subscription.subscribeTo', {

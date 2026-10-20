@@ -23,6 +23,13 @@ The panel speaks one contract on the cloud and on the local agent:
   with backoff, capped at 30 seconds and never given up, and at once when the
   socket connects again. A rejected credential is not retried until the
   account changes.
+- **ComfyUI restart** (`stores/agent/agentNodeDefinitionRefreshStore.ts`). A
+  successful `restart_comfyui` tool call refreshes node definitions and then
+  reloads the open workflow; the refresh shows its own "Update requested" and
+  "Node definitions updated" toasts. A failed refresh runs again only when
+  ComfyUI's `/ws` reconnects later; until then definitions stay stale, and
+  **Refresh Node Definitions** recovers them. A restart made while the panel is
+  closed is not observed.
 - **Saved workflows, `GET /api/workflows`**. Saved tabs resolve through the
   saved-workflow index on every backend.
 - **Credential** (`services/agent/agentAuth.ts`). In the cloud, agent requests
@@ -35,10 +42,15 @@ The panel speaks one contract on the cloud and on the local agent:
 
 ## Activation and consent
 
-The dock is visible only when the `agent-in-app-experience` feature flag is
-enabled, the panel has an open intent, and the current user and workspace have
-accepted Agent consent. Development mode enables the feature flag; consent is
-still required. A restored open intent cannot bypass consent.
+The dock is visible only when the server's `agent` feature reports
+`state: "ready"`, the panel has an open intent, and the current user and
+workspace have accepted Agent consent. Cloud and ComfyUI (`--enable-agent`)
+publish the same feature, and ComfyUI pushes `agent_status` when it changes;
+while it is `starting` or `failed` the entry button shows that, inert. Builds
+with `VITE_AGENT_STANDALONE=true` (the local agent harness) ignore the feature
+and, in development mode, force the panel on; consent is still required. A
+plain `pnpm dev` shows the panel only when the ComfyUI it proxies publishes the
+feature. A restored open intent cannot bypass consent.
 
 On first use, click **Agent**, then **Start using Comfy Agent**.
 Acceptance is stored through the hosted Global Settings API under
@@ -46,10 +58,7 @@ Acceptance is stored through the hosted Global Settings API under
 Agent opens after the save succeeds. Skip, Escape and outside clicks dismiss
 without saving; failed loads or saves keep the panel closed and allow retry.
 Switching user or workspace invalidates the cached acceptance and loads the new
-scope. Desktop/Local sign-in continuation authenticates before saving; this
-branch mounts the Agent extension in Cloud builds and in builds with
-`VITE_AGENT_STANDALONE=true` (the local agent harness, in any distribution);
-FE-1931 owns the remaining Local and Desktop product entry points.
+scope. Desktop/Local sign-in continuation authenticates before saving.
 
 ## First-use tour
 

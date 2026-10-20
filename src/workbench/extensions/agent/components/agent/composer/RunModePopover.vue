@@ -104,7 +104,7 @@ const options: {
         :tooltip="triggerTooltip"
         variant="muted-textonly"
         size="md"
-        :class="cn('gap-1', open && 'bg-secondary-background-hover')"
+        :class="cn('gap-1', open && 'bg-accent')"
       >
         <span>{{ triggerLabel }}</span>
         <span
@@ -119,10 +119,10 @@ const options: {
         align="end"
         :side-offset="8"
         :aria-describedby="descriptionId"
-        class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-lg border border-border-default bg-secondary-background p-2.5 text-base-foreground shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-lg border bg-secondary p-2.5 text-foreground shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div class="flex flex-col gap-0.5">
-          <div aria-hidden="true" class="text-sm/5 text-base-foreground">
+          <div aria-hidden="true" class="text-sm/5 text-foreground">
             {{ t('agent.runPermissions') }}
           </div>
           <div
@@ -138,7 +138,9 @@ const options: {
           :model-value="store.mode"
           :aria-label="t('agent.runPermissions')"
           class="flex flex-col gap-1"
-          @update:model-value="onSelectMode"
+          @update:model-value="
+            typeof $event === 'string' && onSelectMode($event)
+          "
         >
           <DropdownMenuRadioItem
             v-for="option in options"
@@ -172,7 +174,7 @@ const options: {
                 "
               />
               <span class="min-w-0 flex-1">
-                <span class="block text-sm/5 text-base-foreground">
+                <span class="block text-sm/5 text-foreground">
                   {{ t(option.title) }}
                 </span>
                 <span class="mt-0.5 block text-xs/4 text-muted-foreground">
@@ -187,7 +189,7 @@ const options: {
                     savingMode === option.mode
                       ? 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
                       : store.mode === option.mode &&
-                          'icon-[lucide--check] text-base-foreground'
+                          'icon-[lucide--check] text-foreground'
                   )
                 "
               />

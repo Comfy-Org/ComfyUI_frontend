@@ -6,6 +6,7 @@ const INBOUND_DOC_FRAMES = new Set<string>(SERVER_DOC_FRAME_TYPES)
 
 export interface AgentDocFrameTransport extends DocFrameTransport {
   onSocketOpen(listener: () => void): () => void
+  onSocketStatus(listener: (live: boolean) => void): () => void
   destroy(): void
 }
 
@@ -41,6 +42,9 @@ export function createAgentDocFrameTransport(
       return source.onStatus((live) => {
         if (live) listener()
       })
+    },
+    onSocketStatus(listener) {
+      return source.onStatus(listener)
     },
     destroy() {
       unsubscribe?.()

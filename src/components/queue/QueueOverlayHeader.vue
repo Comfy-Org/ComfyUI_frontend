@@ -1,13 +1,9 @@
 <template>
-  <div
-    class="flex h-12 items-center gap-2 border-b border-interface-stroke px-2"
-  >
-    <div class="min-w-0 flex-1 px-2 text-[14px] font-normal text-text-primary">
+  <div class="flex h-12 items-center gap-2 border-b px-2">
+    <div class="min-w-0 flex-1 px-2 text-[14px] font-normal">
       <span>{{ headerTitle }}</span>
     </div>
-    <div
-      class="inline-flex h-6 items-center gap-2 text-[12px] leading-none text-text-primary"
-    >
+    <div class="inline-flex h-6 items-center gap-2 text-[12px] leading-none">
       <span :class="{ 'opacity-50': queuedCount === 0 }">{{
         t('sideToolbar.queueProgressOverlay.clearQueueTooltip')
       }}</span>

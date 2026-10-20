@@ -48,7 +48,6 @@ const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const SYNC_FAILED_TITLE = enMessages.agent.workflowSyncFailedTitle
 const SYNC_FAILED_DETAIL = enMessages.agent.workflowSyncFailedDetailStaleClient
-const COMPOSER_LABEL = /add references, drag in assets/
 
 test.describe(
   'Agent tells the user when the document schema is newer than this build reads',
@@ -104,7 +103,8 @@ test.describe(
         'true',
         { timeout: 8_000 }
       )
-      await new AgentPanel(page).open()
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
       await expect(panel).toBeVisible({ timeout: 30_000 })
 
       let savedName: string | undefined
@@ -159,7 +159,7 @@ test.describe(
 
       await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
-      const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
+      const composer = agentPanel.composer
       await composer.fill('Rebuild the workflow.')
       await panel.getByRole('button', { name: SEND_LABEL }).click()
       await expect(

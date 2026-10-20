@@ -22,8 +22,11 @@ function capabilities(): Capabilities {
     can_cancel: true,
     can_change_seats: true,
     can_downgrade_to_personal: false,
+    can_edit_workspace: true,
     can_invite_members: true,
+    can_manage_auto_top_up: true,
     can_manage_members: true,
+    can_manage_subscription: true,
     can_delete_workspace: false,
     can_leave_workspace: false,
     can_manage_billing: false,
@@ -32,8 +35,10 @@ function capabilities(): Capabilities {
     can_view_team_usage: false,
     can_reactivate: false,
     can_revert_scheduled_change: false,
+    can_run_workflows: true,
     can_subscribe_self_serve: true,
-    can_top_up: true
+    can_top_up: true,
+    can_upgrade: true
   }
 }
 
@@ -55,9 +60,12 @@ function capabilitiesBody(
 }
 
 expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
+  | 'auto_top_up_setup'
   | 'capabilities'
+  | 'denied_reason_params'
   | 'denied_reasons'
   | 'expires_at'
+  | 'payment_recovery_available'
   | 'plan_kind'
   | 'recovery_route'
   | 'resolved_for'
@@ -70,15 +78,21 @@ expectTypeOf<Capabilities>().toEqualTypeOf<{
   can_change_seats: boolean
   can_delete_workspace: boolean
   can_downgrade_to_personal: boolean
+  can_edit_workspace: boolean
   can_invite_members: boolean
   can_leave_workspace: boolean
+  can_manage_auto_top_up: boolean
   can_manage_billing: boolean
   can_manage_members: boolean
   can_manage_partner_node_access: boolean
+  can_manage_subscription: boolean
   can_reactivate: boolean
   can_revert_scheduled_change: boolean
+  can_run_workflows: boolean
   can_subscribe_self_serve: boolean
   can_top_up: boolean
+  can_upgrade: boolean
+  can_view_own_usage?: boolean | undefined
   can_view_pending_invites: boolean
   can_view_team_usage: boolean
 }>()

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex aspect-square size-8 items-center justify-center rounded-md bg-secondary-background text-base font-semibold text-base-foreground"
+    class="flex aspect-square size-8 items-center justify-center rounded-md bg-secondary text-base font-semibold text-foreground"
     :style="workspaceAvatarStyle(workspaceName, subscriptionTier)"
   >
     {{ letter }}

@@ -69,7 +69,7 @@ const meta: Meta<typeof AgentMessage> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope bg-secondary-background w-100 p-4"><story /></div>'
+        '<div class="agent-scope bg-secondary w-100 p-4"><story /></div>'
     })
   ]
 }

@@ -247,8 +247,8 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       test.setTimeout(60_000)
       const askId = `${MESSAGE_ID}:call-${selection}`
       const answeredRequests: Array<{ url: string; selected: string[] }> = []
-      let releaseAnswer = () => {}
-      const answerReleased = new Promise<void>((resolve) => {
+      let releaseAnswer = (): void => {}
+      const answerCanFinish = new Promise<void>((resolve) => {
         releaseAnswer = resolve
       })
       await page.route(
@@ -257,7 +257,7 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
           const request = route.request()
           const body = zAgentAnswerRequest.parse(request.postDataJSON())
           answeredRequests.push({ url: request.url(), selected: body.selected })
-          await answerReleased
+          await answerCanFinish
           await route.fulfill({
             ...jsonRoute({ status: 'answered' }),
             status: 202
@@ -311,15 +311,6 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
         ])
       await expect(action).toHaveAttribute('aria-busy', 'true')
       releaseAnswer()
-      send({
-        type: 'agent_ask_resolved',
-        data: {
-          ...ids,
-          ask_id: askId,
-          status: 'answered',
-          selected: [selection]
-        }
-      })
       await expect(action).toHaveCount(0)
     })
   }

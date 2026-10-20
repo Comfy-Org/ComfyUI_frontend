@@ -5,6 +5,7 @@ import type { EffectScope } from 'vue'
 
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -54,7 +55,12 @@ function capabilitiesFor(
       can_manage_billing: isOwner,
       can_manage_partner_node_access: isOwner,
       can_view_pending_invites: isOwner,
-      can_view_team_usage: isOwner
+      can_view_team_usage: isOwner,
+      can_edit_workspace: isOwner,
+      can_manage_auto_top_up: isOwner,
+      can_manage_subscription: isOwner,
+      can_run_workflows: isOwner,
+      can_upgrade: isOwner
     },
     rollout_defaults_applied: {
       can_downgrade_to_personal: false,
@@ -138,6 +144,12 @@ function signIn(firebaseUid: string, role: 'owner' | 'member') {
   Object.assign(useTeamWorkspaceStore(), {
     activeWorkspaceId: TEAM_WORKSPACE_ID,
     activeWorkspace: { id: TEAM_WORKSPACE_ID, role }
+  })
+}
+
+function signInWithApiKey(ownerId: string | null) {
+  Object.assign(useApiKeyAuthStore(), {
+    currentUser: ownerId === null ? null : { id: ownerId }
   })
 }
 
@@ -273,6 +285,36 @@ describe('useBillingCapabilities across an account switch in one workspace', () 
 
       expect(billing.isReady.value).toBe(true)
       expect(billing.canManageMembers.value).toBe(false)
+    }
+  )
+
+  it.for(['legacy', 'sdk'] as const)(
+    'keeps the next API key owner on its own answer when the previous key answer lands late (%s rail)',
+    async (rail) => {
+      Object.assign(useAuthStore(), { userId: undefined, currentUser: null })
+      signInWithApiKey(OWNER.firebaseUid)
+      await nextTick()
+      const reads = heldCapabilityReads(rail)
+      const billing = mountCapabilities()
+
+      const initialized = billing.initialize()
+      signInWithApiKey(null)
+      await nextTick()
+      signInWithApiKey(MEMBER.firebaseUid)
+      await nextTick()
+      expect(reads.requestCount()).toBe(2)
+
+      await reads.answer(0, capabilitiesFor(OWNER.canonicalId, true))
+      expect(billing.isReady.value).toBe(false)
+      expect(billing.canManageMembers.value).toBe(false)
+
+      await reads.answer(1, capabilitiesFor(MEMBER.canonicalId, false))
+      await initialized
+
+      expect(billing.isReady.value).toBe(true)
+      expect(billing.hasResolvedCapabilities.value).toBe(true)
+      expect(billing.canManageMembers.value).toBe(false)
+      expect(billing.canCancel.value).toBe(false)
     }
   )
 

@@ -4,10 +4,6 @@
   --font-formula: 'PP Formula', 'Inter', sans-serif;
 
   /* Palette Colors */
-  --color-transparency-white-t8: rgb(255 255 255 / 0.08);
-  --color-transparency-white-t20: rgb(255 255 255 / 0.2);
-  --color-transparency-white-t40: rgb(255 255 255 / 0.4);
-
   --color-charcoal-100: #55565e;
   --color-charcoal-200: #494a50;
   --color-charcoal-300: #3c3d42;
@@ -99,26 +95,4 @@
   --color-ocean-300: #badde8;
   --color-ocean-600: #2f687a;
   --color-ocean-900: #253236;
-
-  /* Alpha */
-  --color-alpha-charcoal-600-30: color-mix(
-    in srgb,
-    var(--color-charcoal-600) 30%,
-    transparent
-  );
-  --color-alpha-ash-500-20: color-mix(
-    in srgb,
-    var(--color-ash-500) 20%,
-    transparent
-  );
-  --color-alpha-smoke-500-50: color-mix(
-    in srgb,
-    var(--color-smoke-500) 50%,
-    transparent
-  );
-  --color-alpha-smoke-500-20: #c5c5c533;
-  --color-alpha-smoke-400-40: #d9d9d966;
-  --color-alpha-azure-600-30: #0b8ce94d;
-  --color-alpha-magenta-700-60: #6a246a99;
-  --color-alpha-magenta-300-60: #ceaac999;
 }
