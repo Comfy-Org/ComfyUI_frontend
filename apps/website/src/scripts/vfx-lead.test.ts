@@ -51,19 +51,25 @@ describe('VFX completed leads', () => {
       })
     }
   )
-  it('ignores other forms and malformed events and deduplicates a successful instance', () => {
+  it.for([
+    undefined,
+    null,
+    'bad',
+    {},
+    { formId: FORM },
+    { formId: FORM, instanceId: '' }
+  ])('ignores malformed success detail %j', (detail) => {
     mount('interest=vfx&landing_version=v3')
-    for (const detail of [
-      undefined,
-      null,
-      'bad',
-      {},
-      { formId: 'other', instanceId: 'one' },
-      { formId: FORM },
-      { formId: FORM, instanceId: '' }
-    ])
-      success(detail)
+    success(detail)
     expect(captureVfxLeadSubmitted).not.toHaveBeenCalled()
+  })
+  it('ignores a successful submission from another form', () => {
+    mount('interest=vfx&landing_version=v3')
+    success({ formId: 'other', instanceId: 'one' })
+    expect(captureVfxLeadSubmitted).not.toHaveBeenCalled()
+  })
+  it('deduplicates callbacks for the same successful instance', () => {
+    mount('interest=vfx&landing_version=v3')
     success({ formId: FORM, instanceId: 'one' })
     success({ formId: FORM, instanceId: 'one' })
     expect(captureVfxLeadSubmitted).toHaveBeenCalledTimes(1)
@@ -78,14 +84,16 @@ describe('VFX completed leads', () => {
     success({ formId: FORM, instanceId: 'one' })
     expect(captureVfxLeadSubmitted).not.toHaveBeenCalled()
   })
-  it.for(['unmount', 'navigation'])(
-    'removes success listeners on %s',
-    (reason) => {
-      mount('interest=vfx&landing_version=v2')
-      if (reason === 'unmount') cleanup?.()
-      else document.dispatchEvent(new Event('astro:before-swap'))
-      success({ formId: FORM, instanceId: 'one' })
-      expect(captureVfxLeadSubmitted).not.toHaveBeenCalled()
-    }
-  )
+  it('removes the success listener on unmount', () => {
+    mount('interest=vfx&landing_version=v2')
+    cleanup?.()
+    success({ formId: FORM, instanceId: 'one' })
+    expect(captureVfxLeadSubmitted).not.toHaveBeenCalled()
+  })
+  it('removes the success listener before Astro navigation', () => {
+    mount('interest=vfx&landing_version=v2')
+    document.dispatchEvent(new Event('astro:before-swap'))
+    success({ formId: FORM, instanceId: 'one' })
+    expect(captureVfxLeadSubmitted).not.toHaveBeenCalled()
+  })
 })
