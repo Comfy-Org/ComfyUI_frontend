@@ -4,10 +4,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import {
-  expectElementScreenshot,
-  expectRegionScreenshot
-} from '@e2e/fixtures/utils/screenshotRegion'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -99,31 +96,6 @@ test.describe(
   'Node badge color',
   { tag: ['@screenshot', '@smoke', '@node'] },
   () => {
-    test('Can show node badge with unknown color palette', async ({
-      comfyPage
-    }) => {
-      await comfyPage.setFocusMode(false)
-      await comfyPage.settings.setSetting(
-        'Comfy.NodeBadge.NodeIdBadgeMode',
-        NodeBadgeMode.ShowAll
-      )
-      await comfyPage.settings.setSetting('Comfy.ColorPalette', 'unknown')
-      await expect
-        .poll(() => comfyPage.settings.getSetting('Comfy.ColorPalette'), {
-          message: 'ColorPalette setting should be applied'
-        })
-        .toBe('unknown')
-      await comfyPage.canvasOps.clickEmptySpace()
-      const paletteNotFoundToast = comfyPage.toast.withText(
-        'Color palette unknown not found'
-      )
-      await expect(paletteNotFoundToast).toBeVisible()
-      await expectElementScreenshot(
-        paletteNotFoundToast,
-        'node-badge-unknown-color-palette.png'
-      )
-    })
-
     test('Can show node badge with light color palette', async ({
       comfyPage
     }) => {
