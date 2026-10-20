@@ -305,9 +305,25 @@ describe('fetchJobs', () => {
 
       const result = await fetchJobDetail(mockFetch, 'job1')
 
-      expect(mockFetch).toHaveBeenCalledWith('/jobs/job1')
+      expect(mockFetch).toHaveBeenCalledWith('/jobs/job1', {
+        signal: undefined
+      })
       expect(result?.id).toBe('job1')
       expect(result?.outputs).toBeDefined()
+    })
+
+    it('passes the abort signal to the request', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(createMockJob('job1', 'completed'))
+      })
+      const controller = new AbortController()
+
+      await fetchJobDetail(mockFetch, 'job1', controller.signal)
+
+      expect(mockFetch).toHaveBeenCalledWith('/jobs/job1', {
+        signal: controller.signal
+      })
     })
 
     it('returns undefined for non-ok response', async () => {

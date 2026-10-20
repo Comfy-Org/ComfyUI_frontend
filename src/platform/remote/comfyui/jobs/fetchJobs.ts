@@ -174,8 +174,9 @@ export async function fetchJobDetail(
   signal?: AbortSignal
 ): Promise<JobDetail | undefined> {
   try {
-    const url = `/jobs/${encodeURIComponent(jobId)}`
-    const res = await (signal ? fetchApi(url, { signal }) : fetchApi(url))
+    const res = await fetchApi(`/jobs/${encodeURIComponent(jobId)}`, {
+      signal
+    })
 
     if (!res.ok) {
       console.warn(`Job not found for job ${jobId}`)
