@@ -498,7 +498,7 @@ class VfxWorkflowShowcase extends HTMLElement {
     if (viewport)
       this.reveal = ScrollTrigger.create({
         trigger: viewport,
-        start: 'center center',
+        start: 'center 67%',
         once: true,
         onEnter: this.play
       })
