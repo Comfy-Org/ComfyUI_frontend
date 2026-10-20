@@ -5,10 +5,15 @@ import dts from 'vite-plugin-dts'
 
 type ExportTarget = string | { import: string }
 
+type SourceTarget = string | { default: string }
+
 interface PublishedManifest {
-  exports: Record<string, string>
+  exports: Record<string, SourceTarget>
   publishConfig: { exports: Record<string, ExportTarget> }
 }
+
+const sourcePath = (target: SourceTarget) =>
+  typeof target === 'string' ? target : target.default
 
 const BUILT_ENTRY = /^\.\/dist\/(.+)\.js$/
 
@@ -22,7 +27,9 @@ function readEntries(packageDir: string): Record<string, string> {
   return Object.fromEntries(
     Object.entries(manifest.publishConfig.exports).flatMap(([key, target]) => {
       const name = builtEntryName(target)
-      return name ? [[name, join(packageDir, manifest.exports[key])]] : []
+      return name
+        ? [[name, join(packageDir, sourcePath(manifest.exports[key]))]]
+        : []
     })
   )
 }

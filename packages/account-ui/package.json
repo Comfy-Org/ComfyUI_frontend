@@ -21,8 +21,16 @@
   "type": "module",
   "sideEffects": false,
   "imports": {
-    "#/*.vue": "./src/*.vue",
-    "#/*": "./src/*.ts"
+    "#/*.vue": {
+      "@comfyorg/account-ui": "./src/*.vue",
+      "types": "./dist-types/*.vue.d.ts",
+      "default": "./src/*.vue"
+    },
+    "#/*": {
+      "@comfyorg/account-ui": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
   },
   "exports": {
     "./billing": {

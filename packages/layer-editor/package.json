@@ -4,7 +4,11 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#/*": "./src/*.ts"
+    "#/*": {
+      "@comfyorg/layer-editor": "./src/*.ts",
+      "types": "./dist/*.d.ts",
+      "default": "./src/*.ts"
+    }
   },
   "exports": {
     "./*": {

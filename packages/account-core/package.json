@@ -22,7 +22,11 @@
   "sideEffects": false,
   "imports": {
     "#package.json": "./package.json",
-    "#/*": "./src/*.ts"
+    "#/*": {
+      "@comfyorg/account-core": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
   },
   "exports": {
     "./boundedOperation": {
