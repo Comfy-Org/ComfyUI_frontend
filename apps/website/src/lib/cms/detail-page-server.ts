@@ -1,5 +1,7 @@
 import type { APIContext } from 'astro'
 
+import { CATALOG_LOCALES } from '@/config/catalog-locales'
+import type { Locale } from '@/config/locales'
 import { isIndexableModelPage } from '@/config/indexing'
 import { modelDeveloper } from '@/config/model-vendors'
 import { modelsPageDataSchema } from '@/config/models-page-data'
@@ -16,7 +18,12 @@ import { catalogDetailPath } from './detail-route'
 type DetailLocale = Parameters<typeof prepareModelPage>[1]
 
 export type CatalogDetailLoad =
-  | { status: 'ok'; page: ModelsPageData; translated: boolean }
+  | {
+      status: 'ok'
+      page: ModelsPageData
+      translated: boolean
+      translatedLocales: Locale[]
+    }
   | { status: 'missing' | 'unavailable' }
 
 /**
@@ -61,12 +68,13 @@ export async function loadCatalogDetailPage(
     parsed.data.model.href.replace(/\/$/, '') !== canonical
   )
     return { status: 'unavailable' }
+  const item = catalog.projection.items[0]
   return {
     status: 'ok',
     page: parsed.data,
-    translated: catalogLocaleTranslated(
-      catalog.projection.items[0],
-      locale ?? 'en'
+    translated: catalogLocaleTranslated(item, locale ?? 'en'),
+    translatedLocales: CATALOG_LOCALES.filter((code) =>
+      catalogLocaleTranslated(item, code)
     )
   }
 }

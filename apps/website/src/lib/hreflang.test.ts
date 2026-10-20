@@ -315,6 +315,35 @@ describe('CMS Hub alternates', () => {
     ).toEqual(['/hub/models/', '/zh-CN/hub/models/', '/ja/hub/models/'])
   })
 
+  it.for([
+    {
+      indexableLocales: ['en', 'ja'],
+      expected: [
+        { hreflang: 'en', href: `${ORIGIN}${hub}` },
+        { hreflang: 'ja', href: `${ORIGIN}/ja${hub}` },
+        { hreflang: 'x-default', href: `${ORIGIN}${hub}` }
+      ]
+    },
+    {
+      indexableLocales: ['zh-CN', 'ja'],
+      expected: [
+        { hreflang: 'zh-CN', href: `${ORIGIN}/zh-CN${hub}` },
+        { hreflang: 'ja', href: `${ORIGIN}/ja${hub}` }
+      ]
+    },
+    { indexableLocales: ['en'], expected: [] }
+  ] satisfies { indexableLocales: Locale[]; expected: Alternate[] }[])(
+    'lists only the indexable locales $indexableLocales',
+    ({ indexableLocales, expected }) => {
+      expect(
+        hreflangAlternates(hub, ORIGIN, {
+          localizedHub: true,
+          indexableLocales
+        })
+      ).toEqual(expected)
+    }
+  )
+
   it('does not localize non-Hub pages through the Hub option', () => {
     expect(
       hreflangAlternates('/login/', ORIGIN, { localizedHub: true })

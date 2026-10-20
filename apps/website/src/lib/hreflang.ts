@@ -1,6 +1,7 @@
 import { isNoindexPathname } from '@/config/indexing'
 import type { Hreflang, Locale } from '@/config/locales'
 import {
+  DEFAULT_LOCALE,
   LOCALE_CODES,
   LOCALES,
   NON_DEFAULT_LOCALE_PREFIXES,
@@ -65,13 +66,21 @@ export function localeAlternates(
   })
 }
 
+export interface HreflangOptions extends AlternateOptions {
+  /** Locales whose version of this page is indexable; every locale when unset. */
+  indexableLocales?: readonly Locale[]
+}
+
 export function hreflangAlternates(
   pathname: string,
   origin: string,
-  options: AlternateOptions = {}
+  options: HreflangOptions = {}
 ): Alternate[] {
+  const { indexableLocales } = options
   const locales = localeAlternates(pathname, options).filter(
-    ({ path }) => !isNoindexPathname(path)
+    ({ locale, path }) =>
+      !isNoindexPathname(path) &&
+      (!indexableLocales || indexableLocales.includes(locale))
   )
   // A cluster needs at least one translation to link to; a lone indexable
   // page has nothing to pair with, so hreflang has nothing to say.
@@ -81,10 +90,11 @@ export function hreflangAlternates(
     hreflang: LOCALES[locale].hreflang,
     href: new URL(path, origin).href
   }))
-  alternates.push({
-    hreflang: 'x-default',
-    href: new URL(withRouteSlash(englishPath(pathname)), origin).href
-  })
+  if (!indexableLocales || indexableLocales.includes(DEFAULT_LOCALE))
+    alternates.push({
+      hreflang: 'x-default',
+      href: new URL(withRouteSlash(englishPath(pathname)), origin).href
+    })
   return alternates
 }
 

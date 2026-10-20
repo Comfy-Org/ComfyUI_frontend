@@ -16,6 +16,7 @@ import {
   isIndexableBuild,
   isNoindexPathname
 } from '@/config/indexing'
+import type { Locale } from '@/config/locales'
 import { isWorkshopInBuild } from '@/config/workshop-release'
 import { appModels } from '@/config/workshop-app-content'
 import type { HubApp } from '@/data/mainNavigation'
@@ -56,6 +57,8 @@ interface Props {
   noindex?: boolean
   /** Set on a page that duplicates another address, e.g. an old model URL. */
   canonicalPath?: string
+  /** Locales whose version of this page is indexable; hreflang names only these. */
+  indexableLocales?: readonly Locale[]
   pageType?: WebPageType
   breadcrumbs?: Crumb[]
   mainEntityId?: string
@@ -78,6 +81,7 @@ const {
   ogImageAlt = ogImage === DEFAULT_OG_IMAGE ? 'Comfy' : pageName,
   noindex = false,
   canonicalPath,
+  indexableLocales,
   pageType,
   breadcrumbs,
   mainEntityId,
@@ -111,11 +115,10 @@ const languageAlternates = localeAlternates(
   alternateOptions
 )
 const alternates = head.emitAlternates
-  ? hreflangAlternates(
-      canonicalURL.pathname,
-      canonicalURL.origin,
-      alternateOptions
-    )
+  ? hreflangAlternates(canonicalURL.pathname, canonicalURL.origin, {
+      ...alternateOptions,
+      indexableLocales
+    })
   : []
 const openGraphLocale = ogLocale(locale)
 const openGraphLocaleAlternates = ogLocaleAlternates(locale, alternates)

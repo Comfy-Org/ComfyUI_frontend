@@ -54,6 +54,8 @@ const head =
     locale
   )
 const noindex = detail ? catalogDetailNoindex(Astro.locals, detail) : true
+const indexableLocales =
+  detail?.status === 'ok' ? detail.translatedLocales : undefined
 ---
 
 {catalog ? (
@@ -65,6 +67,7 @@ const noindex = detail ? catalogDetailNoindex(Astro.locals, detail) : true
       ogImageAlt={head.ogImageAlt}
       canonicalPath={head.canonicalPath}
       noindex={noindex}
+      indexableLocales={indexableLocales}
       pageType={head.jsonLd.pageType}
       breadcrumbs={head.jsonLd.breadcrumbs}
       mainEntityId={head.jsonLd.mainEntityId}

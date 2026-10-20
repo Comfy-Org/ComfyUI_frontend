@@ -2,6 +2,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { PREFIXED_CATALOG_LOCALES } from '@/config/catalog-locales'
+import { isIndexableModelPage } from '@/config/indexing'
 import {
   catalogDetailHead,
   catalogDetailNoindex,
@@ -25,7 +26,10 @@ function reviewedTranslations() {
   )
 }
 
-function serveCatalog(data: Record<string, unknown> = record.data) {
+function serveCatalog(
+  data: Record<string, unknown> = record.data,
+  item: typeof record = record
+) {
   vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
   vi.mocked(fetch).mockResolvedValue(
     Response.json({
@@ -33,11 +37,11 @@ function serveCatalog(data: Record<string, unknown> = record.data) {
       generation: 0,
       items: [
         {
-          ...record,
+          ...item,
           data,
           revision: 1,
           deleted: false,
-          edit_version: record.uid
+          edit_version: item.uid
         }
       ]
     })
@@ -103,5 +107,42 @@ describe('localized catalog detail pages', () => {
     const load = await loadCatalogDetailPage({}, `${slug}/`, 'en')
     expect(load.status).toBe('ok')
     expect(catalogDetailNoindex({}, load)).toBe(false)
+  })
+
+  it('pairs the English page of an untranslated record with no noindex locale page', async () => {
+    serveCatalog()
+    const load = await loadCatalogDetailPage({}, `${slug}/`, 'en')
+    if (load.status !== 'ok') throw new Error(load.status)
+    const head = catalogDetailHead(load.page, `${slug}/`, SITE, 'en', 'en')
+    expect(
+      hreflangAlternates(head.canonicalPath, SITE.origin, {
+        localizedHub: true,
+        indexableLocales: load.translatedLocales
+      })
+    ).toEqual([])
+  })
+
+  it('keeps an unlaunched English workflow page noindex even when every locale is translated', async () => {
+    const workflow = entries.find(
+      (entry) =>
+        entry.kind === 'WORKFLOW' &&
+        entry.slug &&
+        !isIndexableModelPage(entry.slug)
+    )
+    if (!workflow?.slug) throw new Error('Expected an unlaunched workflow seed')
+    serveCatalog(
+      {
+        type: 'workflow',
+        title: 'Source title',
+        description: 'Source description',
+        compatibility: { website: workflow.data },
+        translations: reviewedTranslations()
+      },
+      workflow
+    )
+    const load = await loadCatalogDetailPage({}, `${workflow.slug}/`, 'en')
+    if (load.status !== 'ok') throw new Error(load.status)
+    expect(load.translatedLocales).toEqual(['en', 'zh-CN', 'ja'])
+    expect(catalogDetailNoindex({}, load)).toBe(true)
   })
 })
