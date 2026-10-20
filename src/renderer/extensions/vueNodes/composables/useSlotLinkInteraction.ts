@@ -160,7 +160,7 @@ export function useSlotLinkInteraction({
 
   // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
-  const dragReveal = useSlotLinkReveal({ nodeId, index, type, source: 'drag' })
+  const dragReveal = useSlotLinkReveal({ nodeId, index, type, kind: 'drag' })
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
@@ -744,6 +744,17 @@ export function useSlotLinkInteraction({
 
     if (!wasConnecting && activeAdapter.linkConnector.isConnecting) {
       dragReveal.revealLinks()
+      const { linkConnector } = activeAdapter
+      // Escape on the canvas resets the connector without ending this
+      // pointer session. Check after dispatch, since a listener may veto it.
+      linkConnector.events.addEventListener(
+        'reset',
+        () =>
+          queueMicrotask(() => {
+            if (!linkConnector.isConnecting) dragReveal.unrevealLinks()
+          }),
+        { once: true }
+      )
     }
 
     if (shouldMoveExistingInput && existingInputLink) {
