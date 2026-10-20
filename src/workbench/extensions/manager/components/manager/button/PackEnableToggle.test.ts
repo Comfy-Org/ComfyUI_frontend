@@ -254,7 +254,9 @@ describe('PackEnableToggle', () => {
 
       const warningButton = screen.getByRole('button', { name: warningLabel })
       await user.hover(warningButton)
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(warningLabel)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        warningLabel
+      )
       await user.click(warningButton)
 
       expect(mockShowImportFailedDialog).toHaveBeenCalledOnce()

@@ -40,38 +40,31 @@ const signup = {
 }
 const hubApps = [
   { appId: 'studio', name: 'studioName', task: 'studioTask' },
-  { appId: 'reshoot', name: 'reshootName', task: 'reshootTask' }
+  { appId: 'reshoot', name: 'reshootName', task: 'reshootTask' },
+  { appId: 'openjutsu', name: 'openjutsuName', task: 'openjutsuTask' }
 ] as const
-const examples = [
-  ...hubApps.flatMap(({ appId, name, task }) => {
-    const app = appModels.find((model) => model.appId === appId)
-    if (!app?.thumbnail) return []
-    return [
-      {
-        id: app.slug,
-        title: ac(name, locale),
-        description: ac(task, locale),
-        href: app.href,
-        newTab: false,
-        media: {
-          type:
-            app.thumbnail.kind === 'video'
-              ? ('video' as const)
-              : ('image' as const),
-          src: app.thumbnail.url,
-          poster: app.thumbnail.poster,
-          alt: ac(name, locale)
-        }
+const examples = hubApps.flatMap(({ appId, name, task }) => {
+  const app = appModels.find((model) => model.appId === appId)
+  if (!app?.thumbnail) return []
+  return [
+    {
+      id: app.slug,
+      title: ac(name, locale),
+      description: ac(task, locale),
+      href: app.href,
+      newTab: false,
+      media: {
+        type:
+          app.thumbnail.kind === 'video'
+            ? ('video' as const)
+            : ('image' as const),
+        src: app.thumbnail.url,
+        poster: app.thumbnail.poster,
+        alt: ac(name, locale)
       }
-    ]
-  }),
-  {
-    id: 'openjutsu',
-    title: t('eventChallenge.openjutsu'),
-    tags: [t('eventChallenge.comingSoon')],
-    media: { type: 'image' as const, src: '/icons/logomark.svg', alt: '' }
-  }
-]
+    }
+  ]
+})
 const categoryPrizes = ['Innovative', 'Viral', 'OpenWeights'] as const
 const bonusPrizes = ['Ltx', 'Flux', 'Minimax'] as const
 const milestones = ['Signup', 'Window', 'Nights', 'Winner'] as const

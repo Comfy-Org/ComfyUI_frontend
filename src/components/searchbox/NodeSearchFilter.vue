@@ -13,7 +13,7 @@
         {{ filter.name }}
       </ToggleGroupItem>
     </ToggleGroup>
-    <SingleSelect
+    <AppSingleSelect
       v-model="selectedFilterValue"
       :options="filterValues"
       searchable
@@ -28,7 +28,7 @@
 import { computed, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'

@@ -14,7 +14,9 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import {
+  appendQuarantine,
   flushProxyWidgetMigration,
+  makeQuarantineEntry,
   normalizeLegacyProxyWidgetEntry,
   readHostQuarantine
 } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
@@ -125,7 +127,7 @@ describe('flushProxyWidgetMigration', () => {
       host.properties.proxyWidgets = [[String(inner.id), 'seed']]
       flushProxyWidgetMigration({
         hostNode: host,
-        hostWidgetValues: [99]
+        hostWidgetValues: ['99']
       })
 
       expect(getPromotedInputValue(host, 'seed')).toBe(99)
@@ -542,6 +544,30 @@ describe('flushProxyWidgetMigration', () => {
   })
 
   describe('quarantine accumulation', () => {
+    it('restores a quarantined numeric string as a number', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'seed', type: 'INT' }]
+      })
+      const inner = new LGraphNode('Inner')
+      const slot = inner.addInput('seed', 'INT')
+      const widget = inner.addWidget('number', 'seed', 0, () => {})
+      slot.widget = { name: widget.name }
+      subgraph.add(inner)
+      subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
+      const host = createTestSubgraphNode(subgraph)
+      host.graph!.add(host)
+
+      appendQuarantine(host, [
+        makeQuarantineEntry({
+          originalEntry: ['-1', 'seed'],
+          reason: 'missingSourceNode',
+          hostValue: '42'
+        })
+      ])
+
+      expect(getPromotedInputValue(host, 'seed')).toBe(42)
+    })
+
     it('quarantines entries whose source node has disappeared', () => {
       const host = buildHost()
       host.properties.proxyWidgets = [['9999', 'seed']]

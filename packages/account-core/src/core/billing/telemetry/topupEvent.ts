@@ -7,8 +7,8 @@ import type {
   BillingRequestSent,
   BillingStarted,
   BillingSucceeded
-} from './stages.js'
-import type { PaymentIntentSource } from './vocabulary.js'
+} from './stages'
+import type { PaymentIntentSource } from './vocabulary'
 
 /** The fixed amounts, in USD, a top-up dialog offers as one-click choices. */
 export const TOPUP_AMOUNT_PRESETS_USD = [10, 25, 50, 100] as const

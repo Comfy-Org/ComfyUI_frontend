@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import type { useAppMode as realUseAppMode } from '../useAppMode'
+import type { useAppMode as realUseAppMode } from '@/composables/useAppMode'
 
 const appMode: ReturnType<typeof realUseAppMode> = {
   mode: computed(() => 'graph'),
