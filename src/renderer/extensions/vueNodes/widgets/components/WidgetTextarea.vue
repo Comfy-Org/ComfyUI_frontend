@@ -36,31 +36,51 @@
       @pointerup.capture.stop
       @contextmenu.capture="handleContextMenu"
     />
-    <Button
-      v-if="isReadOnly"
-      variant="textonly"
-      size="icon"
-      class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-foreground/10"
-      :title="$t('g.copyToClipboard')"
-      :aria-label="$t('g.copyToClipboard')"
-      @click="handleCopy"
-      @pointerdown.capture.stop
+    <div
+      class="pointer-events-none absolute top-1.5 right-1.5 z-10 flex gap-0.5"
     >
-      <i class="icon-[lucide--copy] size-4 text-foreground" />
-    </Button>
+      <Button
+        v-if="isReadOnly"
+        variant="textonly"
+        size="icon"
+        :class="actionButtonClass"
+        :title="$t('g.copyToClipboard')"
+        :aria-label="$t('g.copyToClipboard')"
+        @click="handleCopy"
+        @pointerdown.capture.stop
+      >
+        <i class="icon-[lucide--copy] size-4 text-foreground" />
+      </Button>
+      <Button
+        v-if="!widget.linkedUpstream"
+        variant="textonly"
+        size="icon"
+        :class="actionButtonClass"
+        :title="$t('textEditor.expand')"
+        :aria-label="$t('textEditor.expand')"
+        @click="openTextEditor"
+        @pointerdown.capture.stop
+      >
+        <i class="icon-[lucide--maximize-2] size-4 text-foreground" />
+      </Button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId, useTemplateRef } from 'vue'
+import { computed, onBeforeUnmount, ref, useId, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { showTextEditor } from '@/renderer/extensions/textEditor/textEditorDialog'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
+import { resolveNode } from '@/utils/litegraphUtil'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
@@ -68,8 +88,16 @@ import {
 
 import { WidgetInputBaseClass } from './layout'
 
-const { widget, placeholder = '' } = defineProps<{
+const actionButtonClass =
+  'pointer-events-auto invisible group-focus-within:visible group-hover:visible hover:bg-foreground/10'
+
+const {
+  widget,
+  nodeId,
+  placeholder = ''
+} = defineProps<{
   widget: SimplifiedWidget<string>
+  nodeId?: NodeId
   placeholder?: string
 }>()
 
@@ -107,4 +135,23 @@ function handleContextMenu(e: MouseEvent) {
 function handleCopy() {
   copyToClipboard(modelValue.value)
 }
+
+const canvasStore = useCanvasStore()
+let closeTextEditor: (() => void) | undefined
+
+function openTextEditor() {
+  const node =
+    nodeId === undefined
+      ? undefined
+      : resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
+  closeTextEditor = showTextEditor({
+    text: modelValue.value,
+    widgetLabel: displayName.value,
+    nodeTitle: node?.title,
+    readOnly: isReadOnly.value,
+    onEdit: (text) => (modelValue.value = text)
+  })
+}
+
+onBeforeUnmount(() => closeTextEditor?.())
 </script>

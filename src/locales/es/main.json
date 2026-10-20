@@ -5430,6 +5430,10 @@
   "templates": {
     "logoProviderSeparator": " y "
   },
+  "textEditor": {
+    "expand": "Ampliar",
+    "title": "{widget} · {node}"
+  },
   "toastMessages": {
     "a1111CoreNodesUnavailable": "No se pudo cargar el flujo de trabajo porque a esta instalación de ComfyUI le faltan nodos principales. Verifica que el backend se haya iniciado correctamente.",
     "a1111EmbeddingsUnavailable": "No se pudieron cargar los embeddings desde el servidor. El flujo de trabajo se importó, pero los nombres de los embeddings se dejaron como texto sin formato.",

@@ -1,7 +1,21 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { i18n } from '@/i18n'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -196,14 +210,16 @@ describe('WidgetTextarea Value Binding', () => {
       const widget = createTextareaWidget('test')
       renderComponent(widget, 'test')
 
-      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'g.copyToClipboard' })
+      ).not.toBeInTheDocument()
     })
 
     it('copy button has invisible class by default when read-only', () => {
       const widget = createTextareaWidget('test', { read_only: true })
       renderComponent(widget, 'test')
 
-      const button = screen.getByRole('button')
+      const button = screen.getByRole('button', { name: 'g.copyToClipboard' })
       expect(button.classList.contains('invisible')).toBe(true)
     })
 
@@ -211,7 +227,7 @@ describe('WidgetTextarea Value Binding', () => {
       const widget = createTextareaWidget('test value', { read_only: true })
       renderComponent(widget, 'test value')
 
-      const button = screen.getByRole('button')
+      const button = screen.getByRole('button', { name: 'g.copyToClipboard' })
       expect(button.classList.contains('group-hover:visible')).toBe(true)
 
       await userEvent.click(button)
@@ -331,5 +347,137 @@ describe('WidgetTextarea contextmenu', () => {
 
     expect(preventDefaultSpy).not.toHaveBeenCalled()
     expect(stopPropagationSpy).toHaveBeenCalled()
+  })
+})
+
+describe('WidgetTextarea expand to editor', () => {
+  const captureCanvasState = vi.fn()
+
+  beforeEach(() => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      changeTracker: { captureCanvasState }
+    })
+  })
+
+  function renderWithDialogHost(
+    widgetOverrides: Partial<SimplifiedWidget<string>> = {}
+  ) {
+    const graph = createTestRootGraph()
+    const node = new LGraphNode('CLIP Text Encode')
+    graph.add(node)
+    useCanvasStore().currentGraph = graph
+    const onUpdateModelValue = vi.fn()
+    render(GlobalDialog, { global: { plugins: [i18n] } })
+    const view = render(WidgetTextarea, {
+      props: {
+        widget: createMockWidget({
+          value: 'a portrait',
+          name: 'text',
+          ...widgetOverrides
+        }),
+        nodeId: node.id,
+        modelValue: 'a portrait',
+        'onUpdate:modelValue': onUpdateModelValue
+      },
+      global: { mocks: { $t: (msg: string) => msg } }
+    })
+    return { onUpdateModelValue, view }
+  }
+
+  async function openEditor() {
+    await userEvent.click(
+      screen.getByRole('button', { name: 'textEditor.expand' })
+    )
+    const dialog = await screen.findByRole('dialog')
+    return { dialog, editor: within(dialog).getByRole('textbox') }
+  }
+
+  it.for<{
+    state: string
+    overrides: Partial<SimplifiedWidget<string>>
+    shown: boolean
+  }>([
+    { state: 'editable', overrides: {}, shown: true },
+    {
+      state: 'read-only',
+      overrides: { options: { read_only: true } },
+      shown: true
+    },
+    {
+      state: 'linked',
+      overrides: {
+        options: { disabled: true },
+        linkedUpstream: { nodeId: toNodeId('upstream') }
+      },
+      shown: false
+    }
+  ])(
+    'shows the expand button on hover when $state: $shown',
+    ({ overrides, shown }) => {
+      renderWithDialogHost(overrides)
+
+      const button = screen.queryByRole('button', {
+        name: 'textEditor.expand'
+      })
+
+      expect(Boolean(button)).toBe(shown)
+      if (button) {
+        expect(button.classList.contains('invisible')).toBe(true)
+        expect(button.classList.contains('group-hover:visible')).toBe(true)
+      }
+    }
+  )
+
+  it.for([
+    { label: undefined, title: 'text · CLIP Text Encode' },
+    { label: 'Prompt', title: 'Prompt · CLIP Text Encode' }
+  ])('opens a dialog titled "$title"', async ({ label, title }) => {
+    renderWithDialogHost({ label })
+
+    await openEditor()
+
+    expect(screen.getByRole('dialog', { name: title })).toBeVisible()
+  })
+
+  it('writes each keystroke to the widget value while the dialog is open', async () => {
+    const { onUpdateModelValue } = renderWithDialogHost()
+
+    const { editor } = await openEditor()
+    await userEvent.type(editor, ' at dusk')
+
+    expect(onUpdateModelValue).toHaveBeenCalledTimes(' at dusk'.length)
+    expect(onUpdateModelValue).toHaveBeenLastCalledWith('a portrait at dusk')
+  })
+
+  it('opens a read-only widget in a read-only editor', async () => {
+    const { onUpdateModelValue } = renderWithDialogHost({
+      options: { read_only: true }
+    })
+
+    const { editor } = await openEditor()
+    await userEvent.type(editor, 'more')
+
+    expect(editor).toHaveAttribute('readonly')
+    expect(onUpdateModelValue).not.toHaveBeenCalled()
+  })
+
+  it('records one undo step when the dialog closes after an edit', async () => {
+    renderWithDialogHost()
+
+    const { editor } = await openEditor()
+    await userEvent.type(editor, 'abc')
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(captureCanvasState).toHaveBeenCalledOnce()
+  })
+
+  it('closes the dialog when the widget unmounts', async () => {
+    const { view } = renderWithDialogHost()
+
+    await openEditor()
+    view.unmount()
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   })
 })
