@@ -152,9 +152,22 @@ export function createAgentEventTransport(
     pendingCanvasSync.delete(part)
   }
 
+  /**
+   * Only a correlated frame names the ops whose arrival proves the write, so
+   * only it can be confirmed or denied. An uncorrelated frame settles on the
+   * legacy unscoped signals without a claim either way: the outcome counter
+   * cannot say which workflow, or which write, a live frame belonged to.
+   */
+  function canvasOutcome(
+    correlation: CanvasCorrelation | undefined,
+    { observed }: { observed: boolean }
+  ): boolean | undefined {
+    return correlation === undefined ? undefined : observed
+  }
+
   function settlePendingCanvasSync(
     part: ToolPart,
-    { canvasConfirmed }: { canvasConfirmed: boolean }
+    { canvasConfirmed }: { canvasConfirmed: boolean | undefined }
   ): void {
     clearPendingCanvasSyncTimer(part)
     part.state = 'done'
@@ -163,8 +176,10 @@ export function createAgentEventTransport(
 
   function flushPendingCanvasSync(): void {
     if (pendingCanvasSync.size === 0) return
-    for (const part of pendingCanvasSync.keys())
-      settlePendingCanvasSync(part, { canvasConfirmed: false })
+    for (const [part, pending] of pendingCanvasSync)
+      settlePendingCanvasSync(part, {
+        canvasConfirmed: canvasOutcome(pending.correlation, { observed: false })
+      })
     claimCanvasSyncOutcome()
     emit(snapshotMessage(message))
   }
@@ -219,7 +234,11 @@ export function createAgentEventTransport(
     let changed = false
     for (const [part, pending] of pendingCanvasSync) {
       if (shouldSettlePendingCanvasSync(pending, evidence)) {
-        settlePendingCanvasSync(part, { canvasConfirmed: true })
+        settlePendingCanvasSync(part, {
+          canvasConfirmed: canvasOutcome(pending.correlation, {
+            observed: true
+          })
+        })
         changed = true
       }
     }
@@ -276,14 +295,18 @@ export function createAgentEventTransport(
       return
     }
     if (canvasWasObserved(correlation, baseline)) {
-      settlePendingCanvasSync(part, { canvasConfirmed: true })
+      settlePendingCanvasSync(part, {
+        canvasConfirmed: canvasOutcome(correlation, { observed: true })
+      })
       claimCanvasSyncOutcome()
       return
     }
     pendingCanvasSync.set(part, {
       correlation,
       timer: setTimeout(() => {
-        settlePendingCanvasSync(part, { canvasConfirmed: false })
+        settlePendingCanvasSync(part, {
+          canvasConfirmed: canvasOutcome(correlation, { observed: false })
+        })
         emit(snapshotMessage(message))
       }, STALE_AFTER_MS)
     })

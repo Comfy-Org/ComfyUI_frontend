@@ -1108,13 +1108,18 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(activeTab(WORKFLOW_ID))
-    transport.ingest(toolCall('add_node', 'success'))
+    transport.ingest(
+      toolCall('add_node', 'success', undefined, undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-add']
+      })
+    )
     expect(toolParts(message)[0]).toMatchObject({
       ok: true,
       state: 'streaming'
     })
 
-    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID))
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID, ['op-add']))
     expect(toolParts(message)[0]).toMatchObject({
       ok: true,
       state: 'done',
@@ -1785,7 +1790,12 @@ describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1
     const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(activeTab(WORKFLOW_ID))
-    transport.ingest(toolCall('add_node', 'success'))
+    transport.ingest(
+      toolCall('add_node', 'success', undefined, undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-add']
+      })
+    )
     vi.advanceTimersByTime(STALE_AFTER_MS)
 
     expect(toolParts(message)[0]).toMatchObject({
@@ -1793,6 +1803,55 @@ describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1
       state: 'done',
       canvasConfirmed: false
     })
+  })
+
+  it('makes no canvas claim from a live frame of another workflow', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    let appliedLive = 0
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => 'awaiting',
+      () => appliedLive
+    )
+
+    transport.ingest(activeTab('wf-a'))
+    transport.ingest(toolCall('add_node', 'success'))
+    transport.ingest(activeTab('wf-b'))
+    appliedLive += 1
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence('wf-b', ['op-b']))
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+
+    expect(toolParts(message)[0].state).toBe('done')
+    expect(toolParts(message)[0].canvasConfirmed).toBeUndefined()
+  })
+
+  it('does not deny the second of two uncorrelated writes one frame carried', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    let appliedLive = 0
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => 'awaiting',
+      () => appliedLive
+    )
+
+    transport.ingest(activeTab(WORKFLOW_ID))
+    appliedLive += 1
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID))
+    transport.ingest(toolCall('add_node', 'success', 'write-a'))
+    transport.ingest(toolCall('add_node', 'success', 'write-b'))
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+
+    expect(toolParts(message).map((part) => part.state)).toEqual([
+      'done',
+      'done'
+    ])
+    expect(
+      toolParts(message).map((part) => part.canvasConfirmed)
+    ).not.toContain(false)
   })
 
   it('settles immediately and unconfirmed when confirmation is impossible', () => {
@@ -1897,7 +1956,12 @@ describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1
     const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(activeTab(WORKFLOW_ID))
-    transport.ingest(toolCall('add_node', 'success'))
+    transport.ingest(
+      toolCall('add_node', 'success', undefined, undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-add']
+      })
+    )
     transport.dispose()
 
     expect(toolParts(message)[0]).toMatchObject({
