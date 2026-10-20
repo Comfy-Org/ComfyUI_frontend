@@ -97,6 +97,15 @@ export async function screenshotRegion(
   }
 }
 
+/** Screenshot assertion of the whole viewport, for tests whose subject is the full app layout. */
+export async function expectPageScreenshot(
+  page: Page,
+  name: string,
+  options?: ScreenshotOptions
+): Promise<void> {
+  await expect(page).toHaveScreenshot(name, options)
+}
+
 /** Screenshot assertion limited to one element's box. */
 export async function expectElementScreenshot(
   element: Locator,
