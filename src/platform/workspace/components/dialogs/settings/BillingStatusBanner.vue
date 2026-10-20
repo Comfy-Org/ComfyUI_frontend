@@ -119,7 +119,7 @@ const { section } = defineProps<{
 }>()
 
 const { t, d } = useI18n()
-const { renewalDate, subscription } = useBillingContext()
+const { renewalDate, subscription, billingStatus } = useBillingContext()
 const { permissions, canReactivatePlan, workspaceType } = useWorkspaceUI()
 const { canTopUp, topUpDenial, canManageBilling } = useBillingCapabilities()
 const { kind, audience, dismiss } = useBillingBanner()
@@ -254,18 +254,39 @@ const planEndedView = (): BannerView => {
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
   cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
 
+const pastDueOwnerView = (): BannerView => ({
+  muted: false,
+  title: t(`${bs}.outOfCredits.title`),
+  body: t(`${bs}.outOfCredits.pastDueBody`),
+  action: 'updatePayment',
+  dismissible: true
+})
+
+const pausedMemberView = (): BannerView => ({
+  muted: true,
+  title: t('subscription.paymentRecovery.title'),
+  body: t('subscription.paymentRecovery.memberDescription'),
+  action: null,
+  dismissible: false
+})
+
+const paymentFailedMemberView = (): BannerView => ({
+  muted: false,
+  title: t('subscription.paymentRecovery.paymentFailedMemberTitle'),
+  body: t('subscription.paymentRecovery.paymentFailedMemberDescription'),
+  action: null,
+  dismissible: true
+})
+
+const pastDueView = (): BannerView => {
+  if (canManageBilling.value) return pastDueOwnerView()
+  return billingStatus.value === 'paused'
+    ? pausedMemberView()
+    : paymentFailedMemberView()
+}
+
 const outOfCreditsView = (): BannerView | null => {
-  if (isTopUpDeniedPastDue(topUpDenial.value)) {
-    return {
-      muted: false,
-      title: t(`${bs}.outOfCredits.title`),
-      body: canManageBilling.value
-        ? t(`${bs}.outOfCredits.pastDueBody`)
-        : t('subscription.paymentRecovery.paymentFailedMemberDescription'),
-      action: canManageBilling.value ? 'updatePayment' : null,
-      dismissible: true
-    }
-  }
+  if (isTopUpDeniedPastDue(topUpDenial.value)) return pastDueView()
   if (!canManage.value) {
     return {
       muted: false,

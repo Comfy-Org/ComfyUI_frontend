@@ -187,6 +187,11 @@ const i18n = createI18n({
           enterprise: { name: 'Enterprise' }
         },
         paymentRecovery: {
+          title: 'Subscription paused',
+          memberDescription:
+            "Ask your workspace owner to restore the workspace's subscription.",
+          paymentFailedMemberTitle:
+            "This workspace's payment didn't go through",
           paymentFailedMemberDescription:
             "Ask your workspace owner to update the workspace's payment method."
         }
@@ -314,32 +319,80 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
+  const PAST_DUE_OWNER = {
+    title: 'Out of credits',
+    body: "You've used all your credits. Update your payment method to add credits.",
+    buttons: ['Dismiss', 'Update payment']
+  }
+  const PAYMENT_FAILED_MEMBER = {
+    title: "This workspace's payment didn't go through",
+    body: "Ask your workspace owner to update the workspace's payment method.",
+    buttons: ['Dismiss']
+  }
+  const PAUSED_MEMBER = {
+    title: 'Subscription paused',
+    body: "Ask your workspace owner to restore the workspace's subscription.",
+    buttons: []
+  }
+
   it.for([
     {
       denial: 'payment_past_due',
+      billingStatus: 'payment_failed',
       canTopUp: false,
       canManageBilling: true,
-      body: "You've used all your credits. Update your payment method to add credits.",
-      actions: ['Update payment']
+      ...PAST_DUE_OWNER
     },
     {
       denial: 'payment_past_due',
+      billingStatus: 'paused',
+      canTopUp: false,
+      canManageBilling: true,
+      ...PAST_DUE_OWNER
+    },
+    {
+      denial: 'payment_past_due',
+      billingStatus: 'payment_failed',
       canTopUp: false,
       canManageBilling: false,
-      body: "Ask your workspace owner to update the workspace's payment method.",
-      actions: []
+      ...PAYMENT_FAILED_MEMBER
+    },
+    {
+      denial: 'payment_past_due',
+      billingStatus: null,
+      canTopUp: false,
+      canManageBilling: false,
+      ...PAYMENT_FAILED_MEMBER
+    },
+    {
+      denial: 'payment_past_due',
+      billingStatus: 'paused',
+      canTopUp: false,
+      canManageBilling: false,
+      ...PAUSED_MEMBER
     },
     {
       denial: undefined,
+      billingStatus: 'paid',
       canTopUp: true,
       canManageBilling: true,
+      title: 'Out of credits',
       body: 'Your team has used all its credits. Add more credits.',
-      actions: ['Add credits']
+      buttons: ['Dismiss', 'Add credits']
     }
   ] as const)(
-    'shows the out-of-credits copy for a top-up denied as $denial with billing management $canManageBilling',
-    ({ denial, canTopUp, canManageBilling, body, actions }) => {
+    'shows "$title" for a top-up denied as $denial on billing status $billingStatus with billing management $canManageBilling',
+    ({
+      denial,
+      billingStatus,
+      canTopUp,
+      canManageBilling,
+      title,
+      body,
+      buttons
+    }) => {
       exhausted()
+      state.billingStatus = billingStatus
       useBillingCapabilities().canTopUp = computed(() => canTopUp)
       useBillingCapabilities().topUpDenial = computed(() => denial)
       useBillingCapabilities().canManageBilling =
@@ -347,12 +400,14 @@ describe('BillingStatusBanner', () => {
 
       renderBanner()
 
-      expect(screen.getByRole('status')).toHaveTextContent(body)
-      const actionNames = screen
-        .getAllByRole('button')
-        .map((button) => button.textContent.trim())
-        .filter((name) => name !== 'Dismiss')
-      expect(actionNames).toEqual(actions)
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent(title)
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen
+          .queryAllByRole('button')
+          .map((button) => button.textContent.trim())
+      ).toEqual(buttons)
     }
   )
 
