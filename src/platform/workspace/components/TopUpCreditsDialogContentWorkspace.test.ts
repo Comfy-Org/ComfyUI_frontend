@@ -1126,6 +1126,40 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(mockClearPendingTopup).not.toHaveBeenCalled()
     })
 
+    it('closes the hand-off when the balance was not loaded before checkout opened', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      stubCheckoutTab()
+      const billing = mockBillingContext()
+      const balanceMicros = ref<number | null>(null)
+      Object.assign(billing, {
+        balance: computed(() =>
+          balanceMicros.value === null
+            ? null
+            : { amountMicros: balanceMicros.value, currency: 'usd' }
+        )
+      })
+      const continueButton = (await payAndGetRefused()).continueButton
+      vi.mocked(billing.fetchBalance).mockImplementation(async () => {
+        balanceMicros.value = 1_000_000
+      })
+      await userEvent.click(continueButton)
+      await screen.findByRole('heading', {
+        name: 'Checkout opened in a new tab'
+      })
+
+      vi.mocked(billing.fetchBalance).mockImplementation(async () => {
+        balanceMicros.value = 2_000_000
+      })
+      window.dispatchEvent(new Event('focus'))
+
+      await waitFor(() =>
+        expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+          key: 'top-up-credits'
+        })
+      )
+    })
+
     it.for([
       { control: 'the header close icon', index: 0 },
       { control: 'the Close button', index: 1 }
