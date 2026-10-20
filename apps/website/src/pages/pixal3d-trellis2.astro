@@ -1035,8 +1035,8 @@ const faqJsonLd = {
       try {
         const [THREE, { OrbitControls }, { GLTFLoader }] = await Promise.all([
           import('three'),
-          import('three/examples/jsm/controls/OrbitControls'),
-          import('three/examples/jsm/loaders/GLTFLoader')
+          import('three/examples/jsm/controls/OrbitControls.js'),
+          import('three/examples/jsm/loaders/GLTFLoader.js')
         ])
         if (!canvas.isConnected) return
 

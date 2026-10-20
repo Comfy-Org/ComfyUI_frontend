@@ -483,6 +483,7 @@
     },
     {
       "files": [
+        "apps/website/**",
         "packages/account-core/**",
         "packages/billing-contract/**",
         "packages/design-system/src/css/**",
