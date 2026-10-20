@@ -380,7 +380,7 @@ export function compareBaseline(
   ]
   if (liveDefects !== ceiling) {
     errors.push(
-      `Live-defect count ${liveDefects} must equal LIVE_DEFECT_CEILING (${ceiling}); lower the ceiling when a pin is fixed.`
+      `Live-defect count ${liveDefects} must equal LIVE_DEFECT_CEILING (${ceiling}); lower it when a pin is fixed or raise it to admit a new live defect.`
     )
   }
   return {

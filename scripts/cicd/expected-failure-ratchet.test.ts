@@ -241,7 +241,7 @@ describe('expected failure baseline comparison', () => {
       entries: [entry('a')],
       ceiling: 2,
       errors: [
-        'Live-defect count 1 must equal LIVE_DEFECT_CEILING (2); lower the ceiling when a pin is fixed.'
+        'Live-defect count 1 must equal LIVE_DEFECT_CEILING (2); lower it when a pin is fixed or raise it to admit a new live defect.'
       ]
     },
     {
@@ -250,7 +250,7 @@ describe('expected failure baseline comparison', () => {
       entries: [entry('a'), entry('b')],
       ceiling: 1,
       errors: [
-        'Live-defect count 2 must equal LIVE_DEFECT_CEILING (1); lower the ceiling when a pin is fixed.'
+        'Live-defect count 2 must equal LIVE_DEFECT_CEILING (1); lower it when a pin is fixed or raise it to admit a new live defect.'
       ]
     }
   ])('$name', ({ inventory, entries, ceiling, errors }) => {
