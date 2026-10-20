@@ -29,15 +29,15 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { PERSIST_DEBOUNCE_MS } from '../base/draftTypes'
-import type { StartupOutcome } from '../base/draftTypes'
+import { PERSIST_DEBOUNCE_MS } from '@/platform/workflow/persistence/base/draftTypes'
+import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   clearAllWorkspaceStorage,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
-} from '../base/storageIO'
-import { useWorkflowDraftStoreV2 } from '../stores/workflowDraftStoreV2'
+} from '@/platform/workflow/persistence/base/storageIO'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'

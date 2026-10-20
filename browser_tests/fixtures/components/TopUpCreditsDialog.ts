@@ -23,7 +23,7 @@ export class TopUpCreditsDialog extends BaseDialog {
       page,
       page.getByRole('dialog').filter({
         has: page.getByRole('heading', {
-          name: /Add more credits|Confirm|Verify your payment/
+          name: /Add more credits|Confirm|Verify your payment|Checkout opened in a new tab|didn't open/
         })
       })
     )

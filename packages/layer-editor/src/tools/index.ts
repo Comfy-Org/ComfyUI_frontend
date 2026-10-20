@@ -1,4 +1,4 @@
-import { registerTool } from '../tool'
+import { registerTool } from '#/tool'
 import { makeSelectToolDef } from './selectTool'
 import { makeTransformToolDef } from './transformTool'
 

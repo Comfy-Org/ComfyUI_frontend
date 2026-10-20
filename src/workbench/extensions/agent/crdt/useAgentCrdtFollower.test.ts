@@ -62,6 +62,7 @@ const bridgeState = vi.hoisted(() => {
     canReseed = vi.fn(() => false)
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
+    isSubscribeBaselineIntegrated = false
     follower = {
       updatesApplied: 0,
       doc: {
@@ -112,6 +113,11 @@ const projectionState = vi.hoisted(() => {
     unbind: vi.fn(),
     applyFrame: vi.fn((_update: unknown): FrameOutcome => applied()),
     applyCollected: vi.fn((_workflowId: string): FrameOutcome => applied()),
+    retryFailed: vi.fn(
+      (_workflowId: string): Extract<FrameOutcome, { applied: true }> | null =>
+        null
+    ),
+    hasPendingFailure: vi.fn((_workflowId: string) => false),
     revertRejected: vi.fn(
       (_workflowId: string, _ops: readonly Op[]): FrameOutcome => applied()
     ),
@@ -153,6 +159,8 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     unbind = projectionState.unbind
     applyFrame = projectionState.applyFrame
     applyCollected = projectionState.applyCollected
+    retryFailed = projectionState.retryFailed
+    hasPendingFailure = projectionState.hasPendingFailure
     revertRejected = projectionState.revertRejected
     replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending
@@ -321,6 +329,7 @@ describe('useAgentCrdtFollower', () => {
     expect(status()).toMatchObject({
       enabled: false,
       connected: false,
+      canvasMayBeStale: false,
       workflowId: null,
       updatesApplied: 0
     })
@@ -350,6 +359,7 @@ describe('useAgentCrdtFollower', () => {
     expect(status()).toMatchObject({
       enabled: false,
       connected: false,
+      canvasMayBeStale: false,
       workflowId: null
     })
 
@@ -582,10 +592,431 @@ describe('useAgentCrdtFollower', () => {
       dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
       expect(status().connected).toBe(true)
 
-      agentSocket.open()
+      agentSocket.drop()
 
       expect(status().connected).toBe(false)
+      expect(status().canvasMayBeStale).toBe(true)
       expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('keeps a stale canvas when a reconnect is permanently refused', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
+
+      refuseForGood()
+
+      expect(status().terminal).toBe('refused')
+      expect(status().canvasMayBeStale).toBe(true)
+      unmount()
+    })
+
+    it('clears a stale canvas only after reconnect catch-up projects without failures', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 2
+      })
+
+      expect(status().connected).toBe(true)
+      expect(status().canvasMayBeStale).toBe(true)
+
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 3,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('releases a failed catch-up after a live frame retries its projection', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 2
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      projectionState.retryFailed.mockReturnValueOnce(projectionState.applied())
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 3,
+        catchUp: false
+      })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('keeps a stale canvas through deferred catch-up until projection applies', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, status } = mountFollower('wf-1', true, () => graph.value)
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 2
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      projectionState.applyCollected.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
+      graph.value = fromPartial<LGraph>({})
+      await nextTick()
+
+      expect(projectionState.applyCollected).toHaveBeenCalledWith('wf-1')
+      expect(status().canvasMayBeStale).toBe(true)
+
+      graph.value = null
+      await nextTick()
+      graph.value = fromPartial<LGraph>({})
+      await nextTick()
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('keeps a stale canvas through a deferred live frame until projection applies', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, status } = mountFollower('wf-1', true, () => graph.value)
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: false
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      graph.value = fromPartial<LGraph>({})
+      await nextTick()
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('keeps a deferred live frame stale through a resubscribe while the graph is missing', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, status } = mountFollower('wf-1', true, () => graph.value)
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: false
+      })
+      expect(status().canvasMayBeStale).toBe(true)
+
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      graph.value = fromPartial<LGraph>({})
+      await nextTick()
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('keeps a deferred catch-up frame stale through a drop and an integrated ack', async () => {
+      const graph = shallowRef<LGraph | null>(null)
+      const { unmount, status } = mountFollower('wf-1', true, () => graph.value)
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: true
+      })
+      expect(status().canvasMayBeStale).toBe(true)
+
+      agentSocket.drop()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+      unmount()
+    })
+
+    it('keeps a subscribed canvas stale across a tab detour until catch-up applies', async () => {
+      const { unmount, status, isTargetActive } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      isTargetActive.value = false
+      await nextTick()
+      expect(status().canvasMayBeStale).toBe(true)
+
+      isTargetActive.value = true
+      await nextTick()
+      expect(status().canvasMayBeStale).toBe(true)
+
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 2
+      })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('clears a stale canvas when the workflow binding changes', async () => {
+      const { unmount, status, workflowId } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      expect(status().canvasMayBeStale).toBe(true)
+
+      workflowId.value = 'wf-2'
+      await nextTick()
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it.for([
+      { name: 'confirms', baseline: { seq: 0 } },
+      { name: 'omits', baseline: {} }
+    ])(
+      'clears a stale canvas when reconnect $name the empty document sequence',
+      ({ baseline }) => {
+        const { unmount, status } = mountFollower('wf-1')
+        dispatchFrame('doc_subscribed', {
+          ok: true,
+          workflow_id: 'wf-1',
+          seq: 1
+        })
+
+        agentSocket.drop()
+        agentSocket.open()
+        dispatchFrame('doc_subscribed', {
+          ok: true,
+          workflow_id: 'wf-1',
+          ...baseline
+        })
+
+        expect(status().connected).toBe(true)
+        expect(status().canvasMayBeStale).toBe(false)
+        unmount()
+      }
+    )
+
+    it('clears a stale canvas when reconnect confirms the integrated sequence', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: true
+      })
+
+      agentSocket.drop()
+      agentSocket.open()
+      bridge().isSubscribeBaselineIntegrated = true
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      expect(status().connected).toBe(true)
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('retries a failed projection before an integrated reconnect clears staleness', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      bridge().isSubscribeBaselineIntegrated = true
+      projectionState.retryFailed.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
+
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      expect(projectionState.retryFailed).toHaveBeenLastCalledWith('wf-1')
+      expect(status().canvasMayBeStale).toBe(true)
+
+      agentSocket.drop()
+      agentSocket.open()
+      projectionState.retryFailed.mockReturnValueOnce(projectionState.applied())
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      unmount()
+    })
+
+    it('keeps an integrated reconnect stale while a failed projection cannot retry', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+      bridge().isSubscribeBaselineIntegrated = true
+      projectionState.hasPendingFailure.mockReturnValue(true)
+
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+
+      expect(projectionState.retryFailed).toHaveBeenLastCalledWith('wf-1')
+      expect(status().canvasMayBeStale).toBe(true)
+      unmount()
+    })
+
+    it('withholds the canvas after a live projection failure until a later frame retries it', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 0
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], projectionState.NO_NODES, 1)
+      )
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 1,
+        catchUp: false
+      })
+
+      expect(status().canvasMayBeStale).toBe(true)
+
+      projectionState.retryFailed.mockReturnValueOnce(projectionState.applied())
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 2,
+        catchUp: false
+      })
+
+      expect(status().canvasMayBeStale).toBe(false)
       unmount()
     })
 
@@ -1151,6 +1582,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
 
     expect(status().connected).toBe(false)
+    expect(status().canvasMayBeStale).toBe(true)
     expect(status().workflowId).toBe('wf-1')
     expect(projectionState.discardPending).toHaveBeenCalledWith('wf-1')
     unmount()
@@ -1166,6 +1598,37 @@ describe('useAgentCrdtFollower', () => {
     expect(status().updatesApplied).toBe(3)
     expect(status().lastFrameType).toBe('doc_update')
     expect(projectionState.applyFrame).toHaveBeenCalledWith(update)
+    unmount()
+  })
+
+  it('reports exact workflow/op evidence after live and catch-up frames apply', () => {
+    const onAppliedUpdate = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onAppliedUpdate
+    })
+
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 7,
+      opIds: ['op-1', 'op-2']
+    })
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 8,
+      opIds: ['op-catch-up'],
+      catchUp: true
+    })
+
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(1, {
+      workflowId: 'wf-1',
+      opIds: ['op-1', 'op-2'],
+      isLive: true
+    })
+    expect(onAppliedUpdate).toHaveBeenNthCalledWith(2, {
+      workflowId: 'wf-1',
+      opIds: ['op-catch-up'],
+      isLive: false
+    })
     unmount()
   })
 
@@ -1239,8 +1702,12 @@ describe('useAgentCrdtFollower', () => {
     it('counts gap on the bridge doc_gap signal, which never becomes a doc_update', () => {
       const { unmount, status } = mountFollower('wf-1')
 
+      dispatchFrame('doc_subscribed', { ok: true })
+
       dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 3, received: 5 })
 
+      expect(status().connected).toBe(false)
+      expect(status().canvasMayBeStale).toBe(true)
       expect(status().outcomes.gap).toBe(1)
       expect(status().outcomes.received).toBe(0)
       expect(status().outcomes.applied).toBe(0)
@@ -1266,7 +1733,10 @@ describe('useAgentCrdtFollower', () => {
         seq: 43
       })
 
-      expect(status().outcomes.reset).toBe(1)
+      expect(status()).toMatchObject({
+        canvasMayBeStale: true,
+        outcomes: { reset: 1 }
+      })
       unmount()
     })
 
@@ -1602,6 +2072,51 @@ describe('useAgentCrdtFollower', () => {
           apply_failure_count: 2
         }
       ])
+      unmount()
+    })
+
+    it.for([
+      {
+        name: 'reports deferred op evidence once a later live frame applies it cleanly',
+        failureCount: 0,
+        expected: [
+          { workflowId: 'wf-1', opIds: ['op-b'], isLive: true },
+          { workflowId: 'wf-1', opIds: ['op-a'], isLive: true }
+        ]
+      },
+      {
+        name: 'withholds deferred op evidence when the later live frame fails to apply',
+        failureCount: 1,
+        expected: []
+      }
+    ])('$name', ({ failureCount, expected }) => {
+      const graph = shallowRef<LGraph | null>(null)
+      const onAppliedUpdate = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onAppliedUpdate
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn-a',
+        opIds: ['op-a']
+      })
+
+      graph.value = fakeGraph
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['3'], removed: [] }, failureCount)
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'agent:thread:turn-b',
+        opIds: ['op-b']
+      })
+
+      expect(onAppliedUpdate.mock.calls.flat()).toEqual(expected)
       unmount()
     })
 
@@ -2982,7 +3497,7 @@ describe('useAgentCrdtFollower', () => {
   ): AgentCrdtFollowerOptions['transport'] {
     return {
       ...agentSocket.transport,
-      onSocketOpen: () => () => {
+      onSocketStatus: () => () => {
         throw failure
       }
     }
@@ -3190,6 +3705,22 @@ describe('useAgentCrdtFollower', () => {
         code: 'stale_schema_reseed_refused'
       })
       expect(status().terminal).toBe('refused')
+      unmount()
+    })
+
+    it('keeps a stale canvas withheld while a reseed is in flight', () => {
+      const { unmount, status } = mountWithCanvas()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+      agentSocket.open()
+
+      refuseAsStale()
+
+      expect(status().canvasMayBeStale).toBe(true)
       unmount()
     })
 

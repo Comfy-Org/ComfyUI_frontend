@@ -37,7 +37,7 @@ import type {
   SessionSnapshot
 } from '@comfyorg/account-core/session'
 
-import type { BillingClient } from '../billingClient'
+import type { BillingClient } from '#/billing/billingClient'
 
 export const NOW = 1_000_000
 
