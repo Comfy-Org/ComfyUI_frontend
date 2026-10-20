@@ -47,6 +47,13 @@
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
+    <p
+      v-if="step === 'amount' || step === 'confirm'"
+      class="m-0 px-8 pb-4 text-sm text-muted-foreground"
+    >
+      {{ $t('credits.topUp.purchaseDisclosure') }}
+    </p>
+
     <template v-if="step === 'confirm'">
       <p class="m-0 px-8 text-sm text-muted-foreground">
         {{ $t('credits.topUp.confirmSubtitle') }}

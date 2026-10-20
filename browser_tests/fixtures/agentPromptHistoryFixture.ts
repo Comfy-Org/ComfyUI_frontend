@@ -47,14 +47,13 @@ export const promptHistoryTest = base.extend<{
     await use(new AgentPanel(page))
   },
   promptHistory: async ({ page, workflowSelection, getAgentSocket }, use) => {
-    // Workflow selection boots the app before these agent-specific routes.
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
     const messages: MockAgentMessage[] = []
     const historyRequestThreadIds: string[] = []
     let threadId = ''
     let historyReads = 0
-    await page.route('**/api/agent/threads', (route) => {
+    await page.route('**/api/agent/threads?*', (route) => {
       const threads: AgentThreadListResponse = {
         threads: threadId
           ? [
