@@ -44,13 +44,21 @@
     <div
       role="group"
       :aria-label="$t('g.actions')"
-      :class="
-        cn(
-          'pointer-events-none absolute top-0 right-0 z-10 flex gap-1 rounded-tr-md bg-linear-to-r from-transparent to-50% py-1.5 pr-1.5 pl-4 opacity-0 group-hover:opacity-100 focus-within:opacity-100',
-          isReadOnly ? 'to-input/50' : 'to-input'
-        )
-      "
+      class="pointer-events-none absolute top-0 right-0 z-10 flex gap-1 py-1.5 pr-1.5 pl-4 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
     >
+      <div
+        aria-hidden="true"
+        class="absolute inset-0 -z-10 scrollbar-gutter-stable overflow-hidden pr-3"
+      >
+        <div
+          :class="
+            cn(
+              'size-full bg-linear-to-r from-transparent to-50%',
+              isReadOnly ? 'to-input/50' : 'to-input'
+            )
+          "
+        />
+      </div>
       <Button
         v-if="isReadOnly"
         variant="tertiary"
