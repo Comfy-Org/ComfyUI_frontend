@@ -4343,8 +4343,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     try {
       localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
       localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
-    } catch {
+    } catch (error) {
       localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
+      reportError(error, {
+        errorType: 'error_writing_clipboard_storage',
+        surface: 'graph'
+      })
     }
     return serializedData
   }
