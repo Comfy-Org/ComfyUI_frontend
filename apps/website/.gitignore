@@ -7,4 +7,3 @@ results.json
 
 # Platform-specific Playwright snapshots (CI runs Linux)
 *-win32.png
-.cms-mock/
