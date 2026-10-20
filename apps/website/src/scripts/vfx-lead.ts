@@ -10,6 +10,14 @@ const UTM_KEYS = [
 ] as const
 const SUCCESS_EVENT = 'hs-form-event:on-submission:success'
 
+function submissionDetail(event: Event) {
+  if (!(event instanceof CustomEvent)) return
+  const detail: unknown = event.detail
+  if (!detail || typeof detail !== 'object') return
+  if (!('formId' in detail) || !('instanceId' in detail)) return
+  return detail
+}
+
 /** Updated HubSpot embeds emit this only after a successful submission. */
 export function mountVfxLeadTracking(formId: string): () => void {
   const parameters = new URL(window.location.href).searchParams
@@ -31,12 +39,9 @@ export function mountVfxLeadTracking(formId: string): () => void {
   }
   const submittedInstances = new Set<string>()
   function onSuccess(event: Event) {
-    if (!(event instanceof CustomEvent)) return
-    const detail: unknown = event.detail
-    if (!detail || typeof detail !== 'object') return
-    if (!('formId' in detail) || detail.formId !== formId) return
-    if (!('instanceId' in detail) || typeof detail.instanceId !== 'string')
-      return
+    const detail = submissionDetail(event)
+    if (!detail || detail.formId !== formId) return
+    if (typeof detail.instanceId !== 'string') return
     if (!detail.instanceId || submittedInstances.has(detail.instanceId)) return
     submittedInstances.add(detail.instanceId)
     captureVfxLeadSubmitted(properties)

@@ -39,6 +39,7 @@ import {
 } from '@/utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '@/utils/jsonLd'
 import JsonLdGraph from '@/components/common/JsonLdGraph.astro'
+import OpenGraphImages from '@/components/common/OpenGraphImages.astro'
 
 type PPFormulaFace =
   'Light' | 'Regular' | 'Medium' | 'Semibold' | 'Bold' | 'NarrowSemibold'
@@ -262,22 +263,7 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    {openGraphImages.map((image) => (
-      <>
-        <meta
-          property="og:image"
-          content={new URL(image.url, Astro.site ?? 'https://comfy.org').href}
-        />
-        {image.type && <meta property="og:image:type" content={image.type} />}
-        {image.width !== undefined && (
-          <meta property="og:image:width" content={String(image.width)} />
-        )}
-        {image.height !== undefined && (
-          <meta property="og:image:height" content={String(image.height)} />
-        )}
-        <meta property="og:image:alt" content={image.alt ?? ogImageAlt} />
-      </>
-    ))}
+    <OpenGraphImages images={openGraphImages} fallbackAlt={ogImageAlt} />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={openGraphLocale} />
     {openGraphLocaleAlternates.map((alternate) => (
