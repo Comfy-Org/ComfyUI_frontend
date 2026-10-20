@@ -4502,7 +4502,29 @@
     "nodeGraph": {
       "graphHint": "节点图的只读预览。在 Comfy Cloud 中打开或下载后即可编辑节点。",
       "previewNotice": "使用示例数据的设计预览。此页面不在 Hub 上。",
-      "runsWhere": "在 ComfyUI 中运行"
+      "runsWhere": "在 ComfyUI 中运行",
+      "tabOverview": "概览",
+      "about": "简介",
+      "readMore": "展开全文",
+      "readLess": "收起",
+      "provide": "你需要提供",
+      "runsHereTitle": "在 ComfyUI 中运行",
+      "runsHereCloud": "此工作流无法在本页面运行。你可以在 Comfy Cloud 中打开（已预先加载所需内容），或下载后在自己的 ComfyUI 中使用。",
+      "runsHereLocal": "此工作流仅能在你自己的 ComfyUI 中运行。下载后将文件拖放到画布上即可。",
+      "noExamples": "此工作流暂无示例输出。",
+      "sampleOf": "示例 {n}/{total}",
+      "tabApi": "API",
+      "faqHeading": "常见问题",
+      "api": {
+        "heading": "通过代码使用此工作流",
+        "hint": "每个 Comfy 工作流都是一张 JSON 图。在 ComfyUI 中导出其 API 格式，然后用 Python、TypeScript 或 cURL 运行。",
+        "export": "代码读取的是 API 格式：在 ComfyUI 中打开下载的工作流，选择「文件 → 导出 (API)」。",
+        "runsOnLocal": "你自己的 ComfyUI",
+        "keyCloud": "需要，来自你的 Comfy 账户",
+        "keyLocal": "在你自己的 ComfyUI 上无需密钥",
+        "customNodes": "自定义节点",
+        "customNodesNote": "运行该调用的 ComfyUI 上必须安装这些自定义节点。"
+      }
     },
     "api": {
       "body": "使用试用区的输入调用 Comfy Router。运行前请设置 COMFY_API_KEY，并检查本地文件路径。",

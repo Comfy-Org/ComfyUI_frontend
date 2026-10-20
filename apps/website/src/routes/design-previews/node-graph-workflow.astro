@@ -1,5 +1,5 @@
 ---
-import WorkflowNodeGraphPage from '@/components/workshop/WorkflowNodeGraphPage.vue'
+import NodeGraphWorkflowPreview from '@/components/design-previews/NodeGraphWorkflowPreview.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
 import { nodeGraphWorkflowSample as workflow } from '@/lib/hub/node-graph-workflow'
 ---
@@ -15,8 +15,7 @@ import { nodeGraphWorkflowSample as workflow } from '@/lib/hub/node-graph-workfl
   >
     {Astro.locals.t('workshop.nodeGraph.previewNotice')}
   </p>
-  <WorkflowNodeGraphPage
-    workflow={workflow}
+  <NodeGraphWorkflowPreview
     locale={Astro.currentLocale === 'zh-CN' ? 'zh-CN' : 'en'}
     client:load
   />

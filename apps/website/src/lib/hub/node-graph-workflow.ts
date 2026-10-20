@@ -1,3 +1,4 @@
+import type { FaqItem } from '@/components/common/FAQSection.vue'
 import type { PlaygroundExample } from '@/config/workshop-playground'
 
 /** A Hub workflow that runs only in ComfyUI, never on its own page. */
@@ -17,6 +18,7 @@ export interface NodeGraphWorkflow {
   readonly output?: string
   readonly author?: string
   readonly examples: readonly PlaygroundExample[]
+  readonly faq: readonly FaqItem[]
 }
 
 const MEDIA =
@@ -74,6 +76,28 @@ export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
       outputUrl: `${MEDIA}/space-courier-sheet.webp`,
       mediaKind: 'image',
       sampleOnly: true
+    }
+  ],
+  faq: [
+    {
+      question: 'What kind of reference image works best?',
+      answer:
+        'A full-body shot of one character on a plain background, facing the camera. Busy backgrounds and cropped limbs make the side and back views less consistent.'
+    },
+    {
+      question: 'Can I change which views go on the sheet?',
+      answer:
+        'Yes. Each view is its own prompt in the graph, so you can edit, remove or add views before you run it.'
+    },
+    {
+      question: 'Why does it need custom nodes?',
+      answer:
+        'The close-up crops and the final layout use nodes from ComfyUI-KJNodes and ComfyUI-Impact-Pack. Install them with ComfyUI Manager before you load the workflow.'
+    },
+    {
+      question: 'How do I keep a character consistent across runs?',
+      answer:
+        'Fix the seed and reuse the same reference image. Changing only the prompt then changes the details without changing who the character is.'
     }
   ]
 }
