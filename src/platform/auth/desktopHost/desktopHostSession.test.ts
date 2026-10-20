@@ -24,6 +24,12 @@ const SIGNED_IN: DesktopHostAuthState = {
   workspaceId: 'ws-1'
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((done) => (resolve = done))
+  return { promise, resolve }
+}
+
 function fakeBridge(initial: DesktopHostAuthState) {
   const listeners = new Set<(state: DesktopHostAuthState) => void>()
   const bridge = {
@@ -106,7 +112,10 @@ describe('desktopHostSession', () => {
     async ({ getPartnerNodeToken }) => {
       const { bridge } = fakeBridge(SIGNED_IN)
       await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
-      await expect(desktopHostPartnerNodeToken('ws-1')).resolves.toBeUndefined()
+      await expect(desktopHostPartnerNodeToken('ws-1')).resolves.toMatchObject({
+        status: 'failed',
+        error: expect.any(Error)
+      })
     }
   )
 
@@ -153,12 +162,6 @@ describe('desktopHostSession', () => {
   )
 
   describe('when Desktop changes state while a request is pending', () => {
-    function deferred<T>() {
-      let resolve!: (value: T) => void
-      const promise = new Promise<T>((done) => (resolve = done))
-      return { promise, resolve }
-    }
-
     it('keeps a change that arrives while the initial state is loading', async () => {
       const { bridge, push } = fakeBridge(SIGNED_IN)
       const initial = deferred<DesktopHostAuthState>()
@@ -271,11 +274,33 @@ describe('desktopHostSession', () => {
     })
   })
 
+  it.for([true, false])(
+    'handles same-identity broadcasts during mint: %s',
+    async (sameIdentity) => {
+      const { bridge, push } = fakeBridge(SIGNED_IN)
+      const pending = deferred<string | null>()
+      await startDesktopHostSession({
+        ...bridge,
+        getPartnerNodeToken: () => pending.promise
+      })
+      const request = desktopHostPartnerNodeToken('ws-1')
+      push(sameIdentity ? { ...SIGNED_IN } : { status: 'signed_out' })
+      pending.resolve('partner-token')
+      await expect(request).resolves.toEqual(
+        sameIdentity
+          ? { status: 'ready', token: 'partner-token' }
+          : { status: 'session_changed' }
+      )
+    }
+  )
+
   it('does not ask the native bridge for another workspace', async () => {
     const { bridge } = fakeBridge(SIGNED_IN)
     const getPartnerNodeToken = vi.fn(async () => 'partner-token')
     await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
-    await expect(desktopHostPartnerNodeToken('ws-2')).resolves.toBeUndefined()
+    await expect(desktopHostPartnerNodeToken('ws-2')).resolves.toEqual({
+      status: 'session_changed'
+    })
     expect(getPartnerNodeToken).not.toHaveBeenCalled()
   })
 
@@ -287,7 +312,10 @@ describe('desktopHostSession', () => {
     })
     const request = desktopHostPartnerNodeToken('ws-1')
     await vi.advanceTimersByTimeAsync(15_000)
-    await expect(request).resolves.toBeUndefined()
+    await expect(request).resolves.toMatchObject({
+      status: 'failed',
+      error: expect.any(Error)
+    })
   })
 
   it('does not start a Desktop sign-in while inactive', async () => {

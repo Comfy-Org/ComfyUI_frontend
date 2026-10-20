@@ -147,6 +147,30 @@ describe('queueAuthToken', () => {
     }
   )
 
+  it.for([undefined, 'ws-other'])(
+    'does not report a mint failure for workspace %s',
+    async (workspaceId) => {
+      vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
+      const getPartnerNodeToken = vi.fn(async () => 'unused')
+      await startDesktopHostSession(
+        fromPartial<DesktopHostAuthBridge>({
+          getState: async () => ({
+            status: 'signed_in',
+            userId: 'sso-user',
+            workspaceId
+          }),
+          onChanged: () => () => {},
+          getPartnerNodeToken
+        })
+      )
+      await expect(
+        queueAuthToken(WORKSPACE_TOKEN, 'ws-a')
+      ).resolves.toBeUndefined()
+      expect(getPartnerNodeToken).not.toHaveBeenCalled()
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
+
   it('reports a native partner credential failure', async () => {
     vi.mocked(useFeatureFlags().flags).partnerNodeTokenEnabled = true
     await startDesktopHostSession(

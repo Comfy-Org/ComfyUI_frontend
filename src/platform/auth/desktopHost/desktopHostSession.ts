@@ -36,7 +36,14 @@ function apply(state: DesktopHostAuthState): void {
     stopDesktopHostSession()
     return
   }
-  revision++
+  const previous = session.value
+  if (
+    previous.status !== 'signed_in' ||
+    next.status !== 'signed_in' ||
+    previous.user.id !== next.user.id ||
+    previous.user.workspaceId !== next.user.workspaceId
+  )
+    revision++
   session.value = next
 }
 
@@ -147,22 +154,52 @@ export function canDesktopHostMintPartnerNodeToken(): boolean {
   return bridge?.getPartnerNodeToken !== undefined
 }
 
-export function desktopHostPartnerNodeToken(
+type PartnerNodeTokenOutcome =
+  | { status: 'ready'; token: string }
+  | { status: 'session_changed' }
+  | { status: 'failed'; error: unknown }
+
+export async function desktopHostPartnerNodeToken(
   workspaceId: string
-): Promise<string | undefined> {
-  if (desktopHostUser.value?.workspaceId !== workspaceId)
-    return Promise.resolve(undefined)
-  return fetchToken(async (current) => {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    try {
-      return await Promise.race([
-        current.getPartnerNodeToken?.(workspaceId) ?? Promise.resolve(null),
-        new Promise<null>((resolve) => {
-          timer = setTimeout(() => resolve(null), 15_000)
-        })
-      ])
-    } finally {
-      clearTimeout(timer)
-    }
-  })
+): Promise<PartnerNodeTokenOutcome> {
+  const current = bridge
+  if (
+    !current?.getPartnerNodeToken ||
+    desktopHostUser.value?.workspaceId !== workspaceId
+  )
+    return { status: 'session_changed' }
+  const before = revision
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    const result = await Promise.race([
+      current
+        .getPartnerNodeToken(workspaceId)
+        .then(
+          (token): PartnerNodeTokenOutcome =>
+            token
+              ? { status: 'ready', token }
+              : {
+                  status: 'failed',
+                  error: new Error('Desktop partner credential unavailable')
+                }
+        ),
+      new Promise<PartnerNodeTokenOutcome>((resolve) => {
+        timer = setTimeout(
+          () =>
+            resolve({
+              status: 'failed',
+              error: new Error('Desktop partner credential timed out')
+            }),
+          15_000
+        )
+      })
+    ])
+    return revision === before ? result : { status: 'session_changed' }
+  } catch (error) {
+    return revision === before
+      ? { status: 'failed', error }
+      : { status: 'session_changed' }
+  } finally {
+    clearTimeout(timer)
+  }
 }

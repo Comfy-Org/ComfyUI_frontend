@@ -39,13 +39,13 @@ export async function queueAuthToken(
   if (!useFeatureFlags().flags.partnerNodeTokenEnabled) return workspaceToken
 
   if (desktopHostUser.value && canDesktopHostMintPartnerNodeToken()) {
-    const token = await desktopHostPartnerNodeToken(workspaceId)
-    if (!token)
-      reportError(new Error('Desktop partner credential unavailable'), {
+    const result = await desktopHostPartnerNodeToken(workspaceId)
+    if (result.status === 'failed')
+      reportError(result.error, {
         surface: 'auth',
         errorType: 'failure_minting_partner_node_token'
       })
-    return token
+    return result.status === 'ready' ? result.token : undefined
   }
 
   const target = mintTarget(workspaceId)
