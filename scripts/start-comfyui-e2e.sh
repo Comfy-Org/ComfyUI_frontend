@@ -80,8 +80,8 @@ if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
   if ! "${docker[@]}" image inspect "$image" >/dev/null 2>&1; then
     if ! "${docker[@]}" image inspect "$fallback_image" >/dev/null 2>&1; then
       echo "Building $fallback_image from public source"
-      "${docker[@]}" build --tag "$fallback_image" \
-        "https://github.com/Comfy-Org/comfyui-ci-container.git#v$version"
+      "${docker[@]}" build --platform linux/amd64 --tag "$fallback_image" \
+        "https://github.com/Comfy-Org/ComfyUI_frontend.git#ci-container/v$version:tools/ci-container"
     fi
     echo "Using source-built fallback $fallback_image; it may differ from the published CI image." >&2
     image="$fallback_image"
