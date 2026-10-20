@@ -101,28 +101,28 @@ function validateReplayExpiry(
 }
 
 function validateWorkflows(bundle: AgentReplayBundleV1, ctx: z.RefinementCtx) {
-  const workflows = new Set<string>()
+  const initialSequences = new Map<string, number>()
   for (const [
     index,
-    { workflow_id: workflowId }
+    { workflow_id: workflowId, initial_doc_seq: initialSequence }
   ] of bundle.workflows.entries()) {
-    if (workflows.has(workflowId))
+    if (initialSequences.has(workflowId))
       ctx.addIssue({
         code: 'custom',
         path: ['workflows', index, 'workflow_id'],
         message: 'workflow snapshots must have unique workflow_id values'
       })
-    workflows.add(workflowId)
+    initialSequences.set(workflowId, initialSequence)
   }
-  return workflows
+  return initialSequences
 }
 
 function validateEntries(
   bundle: AgentReplayBundleV1,
-  workflows: Set<string>,
+  workflows: Map<string, number>,
   ctx: z.RefinementCtx
 ) {
-  const lastDocumentSequence = new Map<string, number>()
+  const lastDocumentSequence = new Map(workflows)
   for (const [index, entry] of bundle.entries.entries()) {
     if (entry.kind === 'doc_frame') {
       if (!workflows.has(entry.workflow_id))
@@ -136,7 +136,8 @@ function validateEntries(
         ctx.addIssue({
           code: 'custom',
           path: ['entries', index, 'seq'],
-          message: 'document frame sequences must increase per workflow'
+          message:
+            'document frame sequences must increase per workflow, starting after initial_doc_seq'
         })
       lastDocumentSequence.set(entry.workflow_id, entry.seq)
     }
@@ -153,7 +154,7 @@ function validateEntries(
 
 function validateDigests(
   bundle: AgentReplayBundleV1,
-  workflows: Set<string>,
+  workflows: Map<string, number>,
   ctx: z.RefinementCtx
 ) {
   for (const workflowId of Object.keys(bundle.final_graph_digests))
@@ -162,6 +163,14 @@ function validateDigests(
         code: 'custom',
         path: ['final_graph_digests', workflowId],
         message: 'digest references an unknown workflow'
+      })
+  if (bundle.fidelity.level !== 'full') return
+  for (const workflowId of workflows.keys())
+    if (!Object.hasOwn(bundle.final_graph_digests, workflowId))
+      ctx.addIssue({
+        code: 'custom',
+        path: ['final_graph_digests', workflowId],
+        message: 'full fidelity requires a final digest for every workflow'
       })
 }
 
@@ -183,12 +192,13 @@ export function parseAgentReplayBundle(
     typeof value === 'object' &&
     value !== null &&
     'schema_version' in value &&
+    typeof value.schema_version === 'string' &&
     value.schema_version !== AGENT_REPLAY_BUNDLE_VERSION
   )
     return {
       ok: false,
       reason: 'unsupported_version',
-      detail: `unsupported replay bundle version: ${String(value.schema_version)}`
+      detail: `unsupported replay bundle version: ${value.schema_version}`
     }
 
   const parsed = zAgentReplayBundleV1.safeParse(value)

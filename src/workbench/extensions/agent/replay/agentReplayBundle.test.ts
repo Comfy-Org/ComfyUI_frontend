@@ -52,6 +52,33 @@ describe('parseAgentReplayBundle basic validation', () => {
     ).toMatchObject({ ok: false, reason: 'unsupported_version' })
   })
 
+  it('reports a non-string version as an invalid bundle', () => {
+    expect(
+      parseAgentReplayBundle({
+        ...completeBundle(),
+        schema_version: { toString: 1 }
+      })
+    ).toMatchObject({ ok: false, reason: 'invalid_bundle' })
+  })
+
+  it('requires a final digest for every workflow only at full fidelity', () => {
+    const missingDigests = { ...completeBundle(), final_graph_digests: {} }
+    expect(parseAgentReplayBundle(missingDigests)).toMatchObject({
+      ok: false,
+      reason: 'invalid_bundle'
+    })
+    expect(
+      parseAgentReplayBundle({
+        ...missingDigests,
+        fidelity: {
+          complete: false,
+          level: 'degraded',
+          reasons: ['final digest unavailable']
+        }
+      })
+    ).toMatchObject({ ok: true })
+  })
+
   it('rejects degraded fidelity without an explanation', () => {
     const input = completeBundle()
     input.fidelity = { complete: false, level: 'degraded', reasons: [] }
@@ -116,6 +143,18 @@ describe('parseAgentReplayBundle workflow validation', () => {
       ok: false,
       reason: 'invalid_bundle'
     })
+  })
+
+  it('rejects a first document frame already covered by the snapshot', () => {
+    const input = completeBundle()
+    input.workflows[0].initial_doc_seq = 5
+    input.entries[0].seq = 5
+    expect(parseAgentReplayBundle(input)).toMatchObject({
+      ok: false,
+      reason: 'invalid_bundle'
+    })
+    input.entries[0].seq = 6
+    expect(parseAgentReplayBundle(input)).toMatchObject({ ok: true })
   })
 
   it('rejects document frames that do not advance within a workflow', () => {
