@@ -97,7 +97,6 @@
       <div v-if="isSortable" class="flex justify-end px-6 pb-4">
         <AppSingleSelect
           v-model="sortField"
-          :accessible-label="sortAccessibleLabel"
           :label="$t('g.sort')"
           :options="availableSortOptions"
           class="w-48"
@@ -216,9 +215,6 @@ const { initialTab, initialPackId, onClose } = defineProps<{
 provide(OnCloseKey, onClose)
 
 const { t } = useI18n()
-const sortAccessibleLabel = computed(
-  () => t('g.sort') || t('g.singleSelectDropdown')
-)
 const { buildDocsUrl } = useExternalLink()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
