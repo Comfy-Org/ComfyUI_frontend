@@ -28,8 +28,12 @@ const {
 } = showcaseConfig(demo, t)
 ---
 
-<vfx-workflow-showcase data-vfx-demo={demo} class="vfx-connected">
-  <div class="vfx-showcase-view">
+<vfx-workflow-showcase
+  data-playback-group
+  data-vfx-demo={demo}
+  class="vfx-connected"
+>
+  <div class="vfx-showcase-view" data-playback-background>
     <div class="vfx-section-top">
       <SectionHeader align="start" headingSize="subsection">
         {t(`vfxV3.demos.${demo}.title`)}
@@ -102,7 +106,7 @@ const {
           aria-pressed={i === 0}
         >
           <WorkflowNode
-            node={workflowNode(mediaKind, id, label, `${id}.jpg`, true)}
+            node={workflowNode('image', id, label, `${id}.jpg`)}
             flow
             imageRoot={vfxMediaRoot}
           />

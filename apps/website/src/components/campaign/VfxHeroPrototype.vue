@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
-import {
-  useIntersectionObserver,
-  usePreferredReducedMotion
-} from '@vueuse/core'
+import { useIntersectionObserver } from '@vueuse/core'
+import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
 import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
 import VfxSampleScene from '@/components/campaign/VfxSampleScene.vue'
@@ -13,26 +11,15 @@ import '@/styles/workflow-canvas.css'
 import '@/styles/vfx-connected.css'
 import '@/styles/vfx-hero-prototype.css'
 
-const { locale, contactHref } = defineProps<{
+const { locale, contactHref, source, variants } = defineProps<{
   locale: Locale
   contactHref: string
+  source: string
+  variants: { id: string; label: string }[]
 }>()
 const { t } = translationsFor(locale)
-const variantIds = [
-  'relight_golden',
-  'relight_night',
-  'relight_blue',
-  'relight_rain',
-  'relight_snow',
-  'relight_day'
-] as const
-const variants = variantIds.map((id) => ({
-  id,
-  label: t(`vfxV3.variants.${id}`)
-}))
 const selected = ref<string>(variants[0].id)
 const time = ref(0)
-const motion = usePreferredReducedMotion()
 const paused = ref(false)
 const assembled = ref(false)
 const settled = ref(false)
@@ -51,7 +38,7 @@ useIntersectionObserver(
   { threshold: 0.2 }
 )
 onMounted(() => {
-  paused.value = motion.value === 'reduce'
+  paused.value = prefersReducedMotion()
 })
 onUnmounted(() => clearTimeout(assemblyTimer))
 </script>
@@ -89,6 +76,7 @@ onUnmounted(() => clearTimeout(assemblyTimer))
             v-model:time="time"
             v-model:paused="paused"
             :variants="variants"
+            :source="source"
             :original-label="t('vfxV3.originalFootage')"
             :slider-label="t('modelLaunch.beforeAfter.sliderLabel')"
             :choices-label="t('modelLaunch.beforeAfter.tabsLabel')"

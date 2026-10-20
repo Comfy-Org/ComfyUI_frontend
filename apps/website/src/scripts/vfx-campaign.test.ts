@@ -26,7 +26,7 @@ function mount(markup: string) {
 describe('VFX campaign journey', () => {
   it('plays a synchronized comparison as a pair and pauses outside videos', async () => {
     const root = mount(
-      '<video aria-label="Hero"></video><div data-synchronized-comparison><video aria-label="Original"></video><video aria-label="Result"></video></div>'
+      '<video aria-label="Hero"></video><div data-playback-group><video aria-label="Original"></video><video aria-label="Result"></video></div>'
     )
     const hero = within(root).getByLabelText<HTMLVideoElement>('Hero')
     const original = within(root).getByLabelText<HTMLVideoElement>('Original')
@@ -44,15 +44,15 @@ describe('VFX campaign journey', () => {
 
   it('plays canvas examples and their comparison together until an outside video starts', async () => {
     const root = mount(
-      '<video aria-label="Hero"></video><vfx-workflow-showcase><video aria-label="Preview" data-src="sample.mp4"></video><div data-synchronized-comparison><video aria-label="Original"></video><video aria-label="Result"></video></div></vfx-workflow-showcase>'
+      '<video aria-label="Hero"></video><section data-playback-group><div data-playback-background><video aria-label="Preview" data-src="sample.mp4"></video></div><div data-playback-group><video aria-label="Original"></video><video aria-label="Result"></video></div></section>'
     )
     const hero = within(root).getByLabelText<HTMLVideoElement>('Hero')
     const preview = within(root).getByLabelText<HTMLVideoElement>('Preview')
     const original = within(root).getByLabelText<HTMLVideoElement>('Original')
     const result = within(root).getByLabelText<HTMLVideoElement>('Result')
-    const otherCanvas = document.createElement('vfx-workflow-showcase')
+    const otherCanvas = document.createElement('section')
     const otherPreview = document.createElement('video')
-    otherPreview.dataset.src = 'other.mp4'
+    otherCanvas.dataset.playbackBackground = ''
     otherCanvas.append(otherPreview)
     root.append(otherCanvas)
     await original.play()
@@ -66,7 +66,7 @@ describe('VFX campaign journey', () => {
       otherPreview.paused
     ]).toEqual([false, false, false, false])
     const heroComparison = document.createElement('div')
-    heroComparison.dataset.synchronizedComparison = ''
+    heroComparison.dataset.playbackGroup = ''
     const heroOriginal = document.createElement('video')
     heroComparison.append(heroOriginal)
     root.append(heroComparison)

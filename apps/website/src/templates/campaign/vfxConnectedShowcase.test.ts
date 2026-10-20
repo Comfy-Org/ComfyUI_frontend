@@ -93,15 +93,15 @@ describe('showcaseConfig', () => {
 describe('workflowNode', () => {
   it.for([
     {
-      still: false,
+      mediaKind: 'video',
       media: { video: 'shot.mp4', poster: 'shot.jpg', loopVideo: true }
     },
-    { still: true, media: { image: 'shot.jpg' } }
-  ])('renders a video node with still=$still', ({ still, media }) => {
-    const node = workflowNode('video', 'shot', 'Shot', 'shot.jpg', still)
+    { mediaKind: 'image', media: { image: 'shot.jpg' } }
+  ] as const)('renders a $mediaKind node', ({ mediaKind, media }) => {
+    const node = workflowNode(mediaKind, 'shot', 'Shot', 'shot.jpg')
 
     expect(node).toMatchObject(media)
-    expect(node.video === undefined).toBe(still)
+    expect(node.video === undefined).toBe(mediaKind === 'image')
   })
 
   it('leaves media absent when none was supplied', () => {

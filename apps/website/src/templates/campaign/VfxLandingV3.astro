@@ -14,6 +14,7 @@ import { vfxWorkflows } from '@/data/vfxWorkflows'
 import { getRoutes, externalLinks } from '@/config/routes'
 import { pageContext } from '@/utils/jsonLd'
 import { vfxLandingV3 } from './vfxLandingV3'
+import { showcaseConfig } from './vfxConnectedShowcase'
 
 const { locale } = pageContext(
   Astro.site,
@@ -23,6 +24,7 @@ const { locale } = pageContext(
 const { t } = Astro.locals
 const routes = getRoutes(locale)
 const prefix = 'vfxV2.comfy'
+const hero = showcaseConfig('relight', t)
 const { contactHref, benefits, featuredWorkflows } = vfxLandingV3(locale, t)
 ---
 
@@ -34,7 +36,13 @@ const { contactHref, benefits, featuredWorkflows } = vfxLandingV3(locale, t)
   noindex
 >
   <div data-vfx-v3>
-    <VfxHeroPrototype locale={locale} contactHref={contactHref} client:load />
+    <VfxHeroPrototype
+      locale={locale}
+      contactHref={contactHref}
+      source={hero.source}
+      variants={hero.variants}
+      client:load
+    />
     <SocialProofBarSection />
     {(['relight', 'swap', 'reframe', 'sequence'] as const).map((demo) => (
       <VfxConnectedShowcase locale={locale} demo={demo} />

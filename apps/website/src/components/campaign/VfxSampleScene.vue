@@ -4,19 +4,20 @@ import { computed } from 'vue'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 
-const { variants, originalLabel, sliderLabel, choicesLabel } = defineProps<{
-  variants: { id: string; label: string }[]
-  originalLabel: string
-  sliderLabel: string
-  choicesLabel: string
-}>()
+const { source, variants, originalLabel, sliderLabel, choicesLabel } =
+  defineProps<{
+    source: string
+    variants: { id: string; label: string }[]
+    originalLabel: string
+    sliderLabel: string
+    choicesLabel: string
+  }>()
 const selected = defineModel<string>('selected', { required: true })
 const time = defineModel<number>('time', { required: true })
 const paused = defineModel<boolean>('paused', { required: true })
 const active = computed(
   () => variants.find((item) => item.id === selected.value) ?? variants[0]
 )
-const source = `${vfxMediaRoot}/diner.mp4`
 const result = computed(() => `${vfxMediaRoot}/${active.value.id}.mp4`)
 function selectVariant(id: string) {
   selected.value = id
@@ -32,9 +33,9 @@ function selectVariant(id: string) {
       comparison-style="workflow"
       synchronized-playback
       fit="cover"
-      :before-src="source"
+      :before-src="`${vfxMediaRoot}/${source}.mp4`"
       :after-src="result"
-      :before-poster-src="`${vfxMediaRoot}/diner.jpg`"
+      :before-poster-src="`${vfxMediaRoot}/${source}.jpg`"
       :after-poster-src="`${vfxMediaRoot}/${active.id}.jpg`"
       :before-label="originalLabel"
       :slider-label="sliderLabel"

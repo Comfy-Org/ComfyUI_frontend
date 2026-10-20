@@ -45,8 +45,7 @@ export function workflowNode(
   mediaKind: 'image' | 'video',
   id: string,
   label: string,
-  image?: string,
-  still = false
+  image?: string
 ): WorkflowGraphNode {
   return {
     id,
@@ -56,7 +55,7 @@ export function workflowNode(
     y: 0,
     width: 256,
     height: 144,
-    ...(image && mediaKind === 'video' && !still
+    ...(image && mediaKind === 'video'
       ? { video: image.replace('.jpg', '.mp4'), poster: image, loopVideo: true }
       : { image }),
     alt: label
@@ -83,11 +82,10 @@ export function showcaseConfig(demo: VfxShowcaseDemo, translate: typeof t) {
       `${source}.jpg`
     ),
     keyframe: workflowNode(
-      mediaKind,
+      'image',
       'keyframe',
       translate(keyframeLabel),
-      `${demo === 'sequence' ? source : firstVariant.id}.jpg`,
-      true
+      `${demo === 'sequence' ? source : firstVariant.id}.jpg`
     ),
     preview: workflowNode(
       mediaKind,

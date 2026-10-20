@@ -12,6 +12,7 @@ it('names the sample picker separately from the original footage', () => {
     defineComponent({
       setup: () => () =>
         h(VfxSampleScene, {
+          source: 'diner',
           variants: [
             { id: 'relight_golden', label: 'Golden hour' },
             { id: 'relight_night', label: 'Night' }

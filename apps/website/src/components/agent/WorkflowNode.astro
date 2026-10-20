@@ -6,13 +6,13 @@ type NodeMotion = ReturnType<
   typeof createWorkflowMotion
 >['scene']['nodes'][number]
 
-interface Props {
+type Props = {
   node: WorkflowGraphNode
-  motion?: NodeMotion
-  unit?: number
-  imageRoot?: string
-  flow?: boolean
-}
+  imageRoot: string
+} & (
+  | { flow: true; motion?: never; unit?: never }
+  | { flow?: false; motion: NodeMotion; unit: number }
+)
 
 const { node, motion, unit = 1, imageRoot = '', flow = false } = Astro.props
 const nodeKindClasses = {
@@ -29,7 +29,7 @@ const imageSizes = {
 } satisfies Record<WorkflowGraphNode['kind'], { width: number; height: number }>
 const imageSize = imageSizes[node.kind]
 const imageStyle = motion?.imageName
-  ? `--wf-animation:${motion?.imageName}`
+  ? `--wf-animation:${motion.imageName}`
   : undefined
 const ports = [node.input, node.output, ...(node.extraPorts ?? [])].filter(
   (port): port is Point => port !== undefined
@@ -116,7 +116,7 @@ const portStyle = (port: Point) =>
   {motion?.selectionName && (
     <span
       class="wf-selection"
-      style={`--wf-animation:${motion?.selectionName}`}
+      style={`--wf-animation:${motion.selectionName}`}
       aria-hidden="true"
     />
   )}

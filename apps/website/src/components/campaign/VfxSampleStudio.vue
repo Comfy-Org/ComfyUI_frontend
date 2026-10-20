@@ -65,6 +65,7 @@ useEventListener(
 
 function selectVariant(id: string) {
   selected.value = id
+  paused.value = prefersReducedMotion()
   const showcase = root.value?.closest<HTMLElement>('vfx-workflow-showcase')
   if (!showcase) return
   showcase.dataset.selectedVariant = id
@@ -189,7 +190,7 @@ useEventListener(
           <p class="text-sm text-primary-warm-gray">
             {{ t('vfxV3.studio.sourceHint') }}
           </p>
-          <BrandButton disabled variant="outline" class="font-bold opacity-50">
+          <BrandButton disabled variant="outline" class="font-bold">
             {{ t('vfxV3.studio.upload') }}
           </BrandButton>
         </div>
@@ -257,14 +258,10 @@ useEventListener(
               </li>
             </ol>
             <div class="flex flex-wrap gap-3">
-              <BrandButton
-                v-if="demo !== 'sequence'"
-                disabled
-                class="opacity-50"
-              >
+              <BrandButton v-if="demo !== 'sequence'" disabled>
                 {{ t('vfxV3.studio.adjust') }}
               </BrandButton>
-              <BrandButton disabled variant="outline" class="opacity-50">
+              <BrandButton disabled variant="outline">
                 {{ t('vfxV3.studio.generate') }}
               </BrandButton>
             </div>
@@ -301,7 +298,7 @@ useEventListener(
                 <span>{{ t('vfxV3.studio.copy') }}</span>
               </div>
 
-              <BrandButton disabled variant="outline" class="opacity-50"
+              <BrandButton disabled variant="outline"
                 >{{ t('vfxV3.studio.openAgent') }} ↗</BrandButton
               >
               <p class="text-sm text-primary-warm-gray">

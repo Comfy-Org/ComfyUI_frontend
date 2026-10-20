@@ -59,7 +59,11 @@ export function useComparisonPlayback(options: PlaybackOptions) {
     if (end <= 0) return
     const target = Math.max(0, time % end)
     for (const video of [options.before.value, options.after.value]) {
-      if (video && Math.abs(video.currentTime - target) > 1 / 24)
+      if (
+        video &&
+        !video.seeking &&
+        Math.abs(video.currentTime - target) > 0.25
+      )
         video.currentTime = target
     }
   }
@@ -70,7 +74,10 @@ export function useComparisonPlayback(options: PlaybackOptions) {
     if (!before || !after || state.value !== 'ready') return
     const end = duration()
     if (end > 0 && before.currentTime >= end - 0.025) seekPair(0)
-    else if (Math.abs(after.currentTime - before.currentTime) > 1 / 24)
+    else if (
+      !after.seeking &&
+      Math.abs(after.currentTime - before.currentTime) > 0.25
+    )
       after.currentTime = before.currentTime
     options.time.value = before.currentTime
   }
@@ -103,8 +110,8 @@ export function useComparisonPlayback(options: PlaybackOptions) {
     if (
       before &&
       after &&
-      before.readyState >= 3 &&
-      after.readyState >= 3 &&
+      before.readyState >= HTMLMediaElement.HAVE_METADATA &&
+      after.readyState >= HTMLMediaElement.HAVE_METADATA &&
       duration() > 0
     )
       state.value = 'ready'
@@ -125,7 +132,7 @@ export function useComparisonPlayback(options: PlaybackOptions) {
     options.paused.value = true
   }
 
-  useIntersectionObserver(
+  const visibilityObserver = useIntersectionObserver(
     options.container,
     ([entry]) => {
       const isVisible = entry.isIntersecting && entry.intersectionRatio >= 0.25
@@ -141,7 +148,13 @@ export function useComparisonPlayback(options: PlaybackOptions) {
       ['loadedmetadata', 'canplay', 'seeked'],
       refreshReadiness
     )
-    useEventListener(video, 'waiting', waitForPair)
+    useEventListener(video, 'waiting', () => {
+      if (!options.enabled()) return
+      rememberTime()
+      state.value = 'loading'
+      ticker.pause()
+    })
+    useEventListener(video, 'playing', refreshReadiness)
     useEventListener(video, 'error', failPair)
   }
   useEventListener(options.before, 'timeupdate', () => {
@@ -160,7 +173,18 @@ export function useComparisonPlayback(options: PlaybackOptions) {
   watch(options.time, (time) => {
     if (options.enabled()) seekPair(time)
   })
-  watch([options.beforeSrc, options.afterSrc], waitForPair)
+  watch([options.beforeSrc, options.afterSrc], () => {
+    const failed = state.value === 'error'
+    waitForPair()
+    if (failed && options.before.value?.error) options.before.value.load()
+  })
+  watch(options.enabled, (enabled) => {
+    if (enabled) visibilityObserver.resume()
+    else {
+      visibilityObserver.pause()
+      pausePair()
+    }
+  })
   watch(
     () => prefersReducedMotion(),
     (reduce) => {
@@ -176,13 +200,13 @@ export function useComparisonPlayback(options: PlaybackOptions) {
         options.paused.value ||
         !visible.value ||
         documentVisibility.value !== 'visible' ||
-        state.value !== 'ready'
+        state.value === 'error'
       ) {
         rememberTime()
         pausePair()
         return
       }
-      void playPair()
+      if (state.value === 'ready') void playPair()
     }
   )
   onScopeDispose(() => {

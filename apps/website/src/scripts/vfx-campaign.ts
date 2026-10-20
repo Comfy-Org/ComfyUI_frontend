@@ -11,10 +11,7 @@ function linkPlacement(
 }
 
 function isCanvasMedia(video: HTMLVideoElement) {
-  return (
-    video.closest('vfx-workflow-showcase') !== null &&
-    video.matches('video[data-src]')
-  )
+  return video.closest('[data-playback-background]') !== null
 }
 
 function playbackTarget(event: Event) {
@@ -23,10 +20,7 @@ function playbackTarget(event: Event) {
 }
 
 function playbackGroup(video: HTMLVideoElement) {
-  return (
-    video.closest('vfx-workflow-showcase') ??
-    video.closest('[data-synchronized-comparison]')
-  )
+  return video.closest('[data-playback-group]')
 }
 
 function belongsToPlaybackGroup(

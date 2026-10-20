@@ -46,6 +46,13 @@ const {
   class?: HTMLAttributes['class']
 }>()
 
+const mediaClass = computed(() =>
+  cn(
+    'absolute inset-0 size-full',
+    fit === 'contain' ? 'bg-primary-comfy-ink object-contain' : 'object-cover'
+  )
+)
+
 const position = defineModel<number>('position', { default: 50 })
 const time = defineModel<number>('time', { default: 0 })
 const paused = defineModel<boolean>('paused', { default: false })
@@ -128,6 +135,7 @@ function syncAfterToBefore() {
     ref="container"
     data-testid="video-compare-surface"
     :data-synchronized-comparison="synchronizedPlayback ? '' : undefined"
+    :data-playback-group="synchronizedPlayback ? '' : undefined"
     :class="
       cn(
         'relative isolate aspect-video w-full cursor-ew-resize touch-pan-y overflow-hidden bg-primary-comfy-ink select-none',
@@ -142,14 +150,7 @@ function syncAfterToBefore() {
       :alt="beforeLabel"
       loading="lazy"
       decoding="async"
-      :class="
-        cn(
-          'absolute inset-0 size-full',
-          fit === 'contain'
-            ? 'bg-primary-comfy-ink object-contain'
-            : 'object-cover'
-        )
-      "
+      :class="mediaClass"
     />
     <video
       v-else
@@ -164,14 +165,7 @@ function syncAfterToBefore() {
       muted
       playsinline
       aria-hidden="true"
-      :class="
-        cn(
-          'absolute inset-0 size-full',
-          fit === 'contain'
-            ? 'bg-primary-comfy-ink object-contain'
-            : 'object-cover'
-        )
-      "
+      :class="mediaClass"
       @timeupdate="syncAfterToBefore"
     />
     <img
@@ -180,14 +174,7 @@ function syncAfterToBefore() {
       :alt="afterLabel"
       loading="lazy"
       decoding="async"
-      :class="
-        cn(
-          'absolute inset-0 size-full',
-          fit === 'contain'
-            ? 'bg-primary-comfy-ink object-contain'
-            : 'object-cover'
-        )
-      "
+      :class="mediaClass"
       :style="{ clipPath: `inset(0 0 0 ${position}%)` }"
     />
     <video
@@ -203,14 +190,7 @@ function syncAfterToBefore() {
       muted
       playsinline
       aria-hidden="true"
-      :class="
-        cn(
-          'absolute inset-0 size-full',
-          fit === 'contain'
-            ? 'bg-primary-comfy-ink object-contain'
-            : 'object-cover'
-        )
-      "
+      :class="mediaClass"
       :style="{ clipPath: `inset(0 0 0 ${position}%)` }"
     />
 

@@ -131,7 +131,90 @@ describe('VideoCompareSlider', () => {
     expect(afterVideo.paused).toBe(true)
   })
 
+  it('starts metadata-only clips and keeps buffering media playing until recovery', async () => {
+    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+    const observers = stubIntersectionObserver()
+    const { surface, beforeVideo, afterVideo } = await renderSlider({
+      synchronizedPlayback: true
+    })
+    const observer = observers.instances[0]
+    assert.exists(observer)
+    const bounds = new DOMRect(0, 0, 400, 225)
+    observer.callback(
+      [
+        {
+          target: surface,
+          boundingClientRect: bounds,
+          intersectionRect: bounds,
+          rootBounds: null,
+          isIntersecting: true,
+          intersectionRatio: 1,
+          time: 0
+        }
+      ],
+      new IntersectionObserver(() => undefined)
+    )
+    await nextTick()
+    for (const video of [beforeVideo, afterVideo]) {
+      vi.spyOn(video, 'readyState', 'get').mockReturnValue(1)
+      vi.spyOn(video, 'duration', 'get').mockReturnValue(8)
+      video.dispatchEvent(new Event('loadedmetadata'))
+    }
+    await waitFor(() => {
+      expect(beforeVideo.paused).toBe(false)
+      expect(afterVideo.paused).toBe(false)
+    })
+    afterVideo.dispatchEvent(new Event('waiting'))
+    await nextTick()
+    expect(beforeVideo.paused).toBe(false)
+    expect(afterVideo.paused).toBe(false)
+    afterVideo.dispatchEvent(new Event('playing'))
+    await nextTick()
+    beforeVideo.currentTime = 2
+    afterVideo.currentTime = 1
+    const seeking = vi.spyOn(afterVideo, 'seeking', 'get').mockReturnValue(true)
+    beforeVideo.dispatchEvent(new Event('timeupdate'))
+    await nextTick()
+    expect(afterVideo.currentTime).toBe(1)
+    seeking.mockReturnValue(false)
+    beforeVideo.dispatchEvent(new Event('timeupdate'))
+    await nextTick()
+    expect(afterVideo.currentTime).toBe(2)
+    afterVideo.currentTime = 1.85
+    beforeVideo.dispatchEvent(new Event('timeupdate'))
+    await nextTick()
+    expect(afterVideo.currentTime).toBe(1.85)
+  })
+
+  it('starts observing when synchronized playback is enabled after mounting', async () => {
+    const observers = stubIntersectionObserver()
+    const enabled = ref(false)
+    render(
+      defineComponent({
+        setup: () => () =>
+          h(VideoCompareSlider, {
+            ...props,
+            synchronizedPlayback: enabled.value
+          })
+      })
+    )
+    await nextTick()
+    expect(observers.instances).toHaveLength(0)
+    enabled.value = true
+    await nextTick()
+    await nextTick()
+    expect(observers.instances[0]?.observed).toContain(
+      screen.getByTestId('video-compare-surface')
+    )
+  })
+
   beforeEach(() => {
+    vi.stubGlobal(
+      'HTMLMediaElement',
+      class extends HTMLMediaElement {
+        static override readonly HAVE_METADATA = 1
+      }
+    )
     motion.reduced = false
   })
 

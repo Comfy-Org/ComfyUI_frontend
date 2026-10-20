@@ -26,9 +26,9 @@ const resolvedRel = computed(() =>
 
 <template>
   <component
-    :is="props.href ? 'a' : 'button'"
-    :href="props.href"
-    :disabled="props.disabled"
+    :is="props.href && !props.disabled ? 'a' : 'button'"
+    :href="props.disabled ? undefined : props.href"
+    :disabled="props.href && !props.disabled ? undefined : props.disabled"
     :target="props.target"
     :rel="resolvedRel"
     :download="props.download"

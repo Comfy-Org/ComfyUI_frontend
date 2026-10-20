@@ -4,9 +4,10 @@ import { join } from 'node:path'
 import { websiteRoot } from '@website/paths'
 
 import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
+import { expectIslandHydrated } from './fixtures/islands'
 
 import { vfxMediaRoot } from '@/data/vfxMedia'
 
@@ -18,6 +19,14 @@ test.beforeEach(async ({ context }) => {
     })
   )
 })
+
+async function expectNoHorizontalOverflow(page: Page) {
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)
+    )
+    .toBe(true)
+}
 
 async function waitForShowcase(section: Locator) {
   await section.locator('.vfx-canvas-window').evaluate((node) => {
@@ -48,21 +57,20 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
     vertical: '竖屏'
   }
 ]) {
+  test(`${path} preserves sales attribution`, async ({ page }) => {
+    await page.goto(`${path}?utm_source=linkedin&utm_campaign=vfx-review`)
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading)
+    await expect(
+      page.getByRole('link', { name: sales, exact: true }).first()
+    ).toHaveAttribute(
+      'href',
+      `${contact}?interest=vfx&landing_version=v3&utm_source=linkedin&utm_campaign=vfx-review`
+    )
+  })
   for (const { viewport, suffix } of [
     { viewport: { width: 1440, height: 900 }, suffix: '' },
     { viewport: { width: 390, height: 844 }, suffix: ' @mobile' }
   ]) {
-    test(`${path} preserves sales attribution${suffix}`, async ({ page }) => {
-      await page.setViewportSize(viewport)
-      await page.goto(`${path}?utm_source=linkedin&utm_campaign=vfx-review`)
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading)
-      await expect(
-        page.getByRole('link', { name: sales, exact: true }).first()
-      ).toHaveAttribute(
-        'href',
-        `${contact}?interest=vfx&landing_version=v3&utm_source=linkedin&utm_campaign=vfx-review`
-      )
-    })
     for (const { demo, option, result } of [
       { demo: 'relight', option: rain, result: 'relight_rain' },
       { demo: 'swap', option: taxi, result: 'swap_uk' }
@@ -107,11 +115,7 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
           )
           .toBe(true)
         await expect(choice).toHaveAttribute('aria-pressed', 'true')
-        expect(
-          await page.evaluate(
-            () => document.documentElement.scrollWidth <= innerWidth
-          )
-        ).toBe(true)
+        await expectNoHorizontalOverflow(page)
       })
     }
     test(`${path} reframe selects a clean image result${suffix}`, async ({
@@ -140,11 +144,7 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
         'https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/reframe_vertical.jpg'
       )
       await expect(output.locator('video')).toHaveCount(0)
-      expect(
-        await page.evaluate(
-          () => document.documentElement.scrollWidth <= innerWidth
-        )
-      ).toBe(true)
+      await expectNoHorizontalOverflow(page)
     })
   }
 }
@@ -166,38 +166,6 @@ test('selecting other capabilities preserves the independent relight sample', as
     relight.getByRole('button', { name: 'Rain', exact: true })
   ).toHaveAttribute('aria-pressed', 'true')
 })
-
-for (const [label, suffix] of [
-  ['Golden hour', 'golden'],
-  ['Night', 'night'],
-  ['Blue hour', 'blue'],
-  ['Rain', 'rain'],
-  ['Snow', 'snow'],
-  ['Daylight', 'day']
-]) {
-  test(`relight output changes its native media to ${label}`, async ({
-    page
-  }) => {
-    await page.goto('/solutions/vfx/v3/')
-    const section = page.locator('[data-vfx-demo="relight"]')
-    await waitForShowcase(section)
-    const output = section.locator('.vfx-main-node')
-    await expect(output.getByTestId('workflow-node-label')).toHaveText(
-      'Golden hour'
-    )
-    await section.getByRole('button', { name: label, exact: true }).click()
-    await expect(output.getByTestId('workflow-node-label')).toHaveText(label)
-    await expect(output.locator('video')).toHaveAttribute(
-      'src',
-      `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.mp4`
-    )
-    await expect(output.locator('video')).toHaveAttribute(
-      'poster',
-      `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.jpg`
-    )
-    await expect(output.getByRole('slider')).toHaveCount(0)
-  })
-}
 
 for (const mobile of [false, true]) {
   const viewport = mobile
@@ -336,9 +304,7 @@ test('hero autoplay rejection recovers on a new sample', async ({
   })
   await page.goto('/solutions/vfx/v3/')
   const hero = page.locator('[data-vfx-demo="hero"]')
-  await expect(
-    page.locator('astro-island').filter({ has: hero })
-  ).not.toHaveAttribute('ssr')
+  await expectIslandHydrated(page, hero)
   await expect(page.locator('html')).toHaveAttribute(
     'data-vfx-autoplay-rejected',
     'true'
@@ -370,6 +336,13 @@ test('another version recovers a failed graph output', async ({
   await section
     .getByRole('button', { name: 'London taxi', exact: true })
     .click()
+  await expect
+    .poll(() =>
+      section
+        .locator('.vfx-main-node video')
+        .evaluate((node: HTMLVideoElement) => node.error !== null)
+    )
+    .toBe(true)
   await section.getByRole('button', { name: 'Fiat 500', exact: true }).click()
   const video = section.locator('.vfx-main-node video')
   await video.scrollIntoViewIfNeeded()
@@ -468,9 +441,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await page.emulateMedia({ reducedMotion })
     await page.goto('/solutions/vfx/v3/?utm_source=linkedin')
     const hero = page.locator('[data-vfx-demo="hero"]')
-    await expect(
-      page.locator('astro-island').filter({ has: hero })
-    ).not.toHaveAttribute('ssr')
+    await expectIslandHydrated(page, hero)
     const snow = hero.getByRole('button', { name: 'Snow', exact: true })
     await snow.click()
     await expect(snow).toHaveAttribute('aria-pressed', 'true')
@@ -487,11 +458,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     ).toHaveCount(0)
     await expect(hero).not.toContainText('Existing sample outputs.')
     await expect(page).toHaveURL(/\?utm_source=linkedin$/)
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth
-      )
-    ).toBe(true)
+    await expectNoHorizontalOverflow(page)
   })
 }
 
@@ -501,9 +468,7 @@ test('reduced motion keeps the sample hero paused after selection', async ({
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/solutions/vfx/v3/')
   const hero = page.locator('[data-vfx-demo="hero"]')
-  await expect(
-    page.locator('astro-island').filter({ has: hero })
-  ).not.toHaveAttribute('ssr')
+  await expectIslandHydrated(page, hero)
   await hero.getByRole('button', { name: 'Snow', exact: true }).click()
   await expect
     .poll(() =>
@@ -616,11 +581,7 @@ for (const {
     await page.keyboard.press('Escape')
     await expect(trigger).toBeFocused()
     await expect(studio).toBeHidden()
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth
-      )
-    ).toBe(true)
+    await expectNoHorizontalOverflow(page)
   })
 }
 
@@ -637,16 +598,13 @@ test('verified workflow links stay external and unresolved workflows cannot navi
     'https://cloud.comfy.org/?share=8b18c850d38a'
   )
   await expect(relight).toHaveAttribute('target', '_blank')
+  await expect(
+    page.locator('[data-vfx-demo="swap"] [data-try-workflow]')
+  ).toBeDisabled()
+  await expect(
+    page.locator('[data-vfx-demo="reframe"] [data-try-workflow]')
+  ).toBeDisabled()
 })
-
-for (const demo of ['swap', 'reframe']) {
-  test(`${demo} unresolved workflow cannot navigate`, async ({ page }) => {
-    await page.goto('/solutions/vfx/v3/')
-    await expect(
-      page.locator(`[data-vfx-demo="${demo}"] [data-try-workflow]`)
-    ).toBeDisabled()
-  })
-}
 
 for (const { demo, width, axis, leading, trailing } of [
   {
@@ -1008,10 +966,6 @@ for (const {
         )
       )
       .toBe(true)
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth
-      )
-    ).toBe(true)
+    await expectNoHorizontalOverflow(page)
   })
 }

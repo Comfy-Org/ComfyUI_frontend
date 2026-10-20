@@ -108,6 +108,7 @@ class VfxWorkflowShowcase extends HTMLElement {
     if (this.stage) gsap.set(this.stage, { x: this.pan })
   }
   private finish = () => {
+    this.reveal?.kill()
     this.timeline?.kill()
     gsap.set(this.steps, { opacity: 1 })
     gsap.set(this.querySelectorAll('svg path'), { strokeDashoffset: 0 })
@@ -253,7 +254,11 @@ class VfxWorkflowShowcase extends HTMLElement {
   private updateOutputVideo(id: string, label: string) {
     const video = this.querySelector<HTMLVideoElement>('.vfx-main-node video')
     if (!video) return
-    video.dataset.playbackTime = String(video.currentTime)
+    if (
+      video.readyState >= HTMLMediaElement.HAVE_METADATA ||
+      !video.dataset.playbackTime
+    )
+      video.dataset.playbackTime = String(video.currentTime)
     video.dataset.src = `${vfxMediaRoot}/${id}.mp4`
     video.poster = `${vfxMediaRoot}/${id}.jpg`
     video.setAttribute('aria-label', label)
@@ -438,6 +443,8 @@ class VfxWorkflowShowcase extends HTMLElement {
       this.querySelectorAll<HTMLVideoElement>('video').forEach((video) =>
         video.pause()
       )
+    else
+      this.visibleMedia.forEach((video) => this.updateVisibleMedia(video, true))
   }
   private observeVisibility(entry: IntersectionObserverEntry) {
     if (!(entry.target instanceof HTMLVideoElement)) return
@@ -471,8 +478,9 @@ class VfxWorkflowShowcase extends HTMLElement {
         observed.add(video)
         if (video.closest('[data-vfx-sequence-player]'))
           video.dataset.playbackTime =
-            this.querySelector<HTMLElement>('[data-playback-time]')?.dataset
-              .playbackTime ?? '0'
+            this.querySelector<HTMLElement>(
+              '.vfx-studio-view [data-vfx-studio]'
+            )?.dataset.playbackTime ?? '0'
         this.mediaObserver?.observe(video)
       })
     }

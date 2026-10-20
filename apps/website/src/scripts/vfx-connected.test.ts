@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import './vfx-connected'
+import { ScrollTrigger } from './gsapSetup'
 
 class ShowcaseResizeObserver implements ResizeObserver {
   static instances: ShowcaseResizeObserver[] = []
@@ -40,12 +41,23 @@ function mountShowcase() {
           </div>
         </div>
       </div>
-      <button data-workflow-variant="relight_golden" aria-label="Golden hour" aria-pressed="true">Golden hour</button>
-      <button data-workflow-variant="relight_night" aria-label="Night" aria-pressed="false">Night</button>
+      ${[
+        ['golden', 'Golden hour'],
+        ['night', 'Night'],
+        ['blue', 'Blue hour'],
+        ['rain', 'Rain'],
+        ['snow', 'Snow'],
+        ['day', 'Daylight']
+      ]
+        .map(
+          ([id, label]) =>
+            `<button data-workflow-variant="relight_${id}" aria-label="${label}" aria-pressed="${id === 'golden'}">${label}</button>`
+        )
+        .join('')}
     </div>
     <div class="vfx-studio-view" data-testid="studio" hidden inert>
       <button data-back-workflow>Back to examples</button>
-      <div data-playback-time="1.75"></div>
+      <div data-vfx-studio data-playback-time="1.75"></div>
     </div>
   `
   const view = within(root)
@@ -59,6 +71,12 @@ function mountShowcase() {
 }
 
 beforeEach(() => {
+  vi.stubGlobal(
+    'HTMLMediaElement',
+    class extends HTMLMediaElement {
+      static override readonly HAVE_METADATA = 1
+    }
+  )
   Object.defineProperty(document, 'fonts', {
     configurable: true,
     value: { ready: Promise.resolve() }
@@ -73,7 +91,6 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  document.body.replaceChildren()
   Reflect.deleteProperty(document, 'fonts')
 })
 
@@ -159,4 +176,87 @@ describe('VFX workflow canvas', () => {
     await user.keyboard('{Home}{ArrowLeft}')
     expect(stage.style.transform).toBe('translate(0, 0)')
   })
+})
+
+it('retains a pending output position across rapid source changes', async () => {
+  const user = userEvent.setup()
+  const { root, view } = mountShowcase()
+  const video = view.getByLabelText<HTMLVideoElement>('Result video')
+  root.dispatchEvent(
+    new CustomEvent('workflow-time-change', { detail: { time: 2.5 } })
+  )
+  await user.click(view.getByRole('button', { name: 'Night' }))
+  await user.click(view.getByRole('button', { name: 'Golden hour' }))
+  vi.spyOn(video, 'duration', 'get').mockReturnValue(8)
+  video.dispatchEvent(new Event('loadedmetadata'))
+  expect(video.currentTime).toBe(2.5)
+})
+
+it('seeds a new sequence player from the Studio rather than the hidden canvas', async () => {
+  const { view } = mountShowcase()
+  const canvasVideo = view.getByLabelText<HTMLVideoElement>('Result video')
+  canvasVideo.dataset.playbackTime = '0'
+  const studio = view.getByTestId('studio')
+  const player = document.createElement('div')
+  player.dataset.vfxSequencePlayer = ''
+  const video = document.createElement('video')
+  player.append(video)
+  studio.append(player)
+  await vi.waitFor(() => expect(video.dataset.playbackTime).toBe('1.75'))
+})
+
+it.for([
+  { suffix: 'golden', label: 'Golden hour' },
+  { suffix: 'night', label: 'Night' },
+  { suffix: 'blue', label: 'Blue hour' },
+  { suffix: 'rain', label: 'Rain' },
+  { suffix: 'snow', label: 'Snow' },
+  { suffix: 'day', label: 'Daylight' }
+])(
+  'selects the $label image, output video and poster',
+  async ({ suffix, label }) => {
+    const user = userEvent.setup()
+    const { view } = mountShowcase()
+    await user.click(view.getByRole('button', { name: label }))
+    expect(view.getByTestId('workflow-node-label')).toHaveTextContent(label)
+    expect(view.getByRole('img', { name: 'Key frame' })).toHaveAttribute(
+      'src',
+      `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.jpg`
+    )
+    const video = view.getByLabelText<HTMLVideoElement>(label, {
+      selector: 'video'
+    })
+    expect(video).toHaveAttribute(
+      'src',
+      `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.mp4`
+    )
+    expect(video).toHaveProperty(
+      'poster',
+      `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.jpg`
+    )
+  }
+)
+
+it('resumes visible canvas previews when reduced motion is turned off', async () => {
+  const observers = stubIntersectionObserver()
+  const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+  const matches = vi.spyOn(media, 'matches', 'get').mockReturnValue(true)
+  const { view } = mountShowcase()
+  const video = view.getByLabelText<HTMLVideoElement>('Result video')
+  observers.instances[0].intersect(true)
+  expect(video.paused).toBe(true)
+  matches.mockReturnValue(false)
+  media.dispatchEvent(new Event('change'))
+  await vi.waitFor(() => expect(video.paused).toBe(false))
+})
+
+it('cancels the pending canvas reveal when the user navigates the canvas', async () => {
+  const create = vi.spyOn(ScrollTrigger, 'create')
+  const user = userEvent.setup()
+  const { canvas } = mountShowcase()
+  const trigger = create.mock.results[0]?.value
+  const kill = vi.spyOn(trigger, 'kill')
+  canvas.focus()
+  await user.keyboard('{ArrowLeft}')
+  expect(kill).toHaveBeenCalled()
 })
