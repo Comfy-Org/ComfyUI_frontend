@@ -1,0 +1,134 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CreatorAvatar from '@/components/hub/CreatorAvatar.vue'
+import CreatorWorkflowGrid from '@/components/hub/CreatorWorkflowGrid.vue'
+import {
+  workshopEyebrowClass,
+  workshopHeadingClass
+} from '@/components/workshop/workshopHeadingClasses'
+import { HUB_MODELS_PATH } from '@/config/hub-models'
+import { creatorPaths } from '@/config/hub-creators'
+import type { HubCreator } from '@/lib/hub/creators'
+import {
+  FIRST_WORKFLOW_PAGE,
+  creatorEntityId,
+  creatorEntityNode,
+  creatorMetaDescription,
+  creatorWorkflowTemplate
+} from '@/lib/hub/creators'
+import { HUB_CREATORS_PATH, hubWorkflowUrl } from '@/lib/hub/routes'
+import { absoluteUrl, itemListNode, pageContext } from '@/utils/jsonLd'
+
+export const getStaticPaths = creatorPaths
+
+interface Props {
+  creator: HubCreator
+}
+
+const { creator } = Astro.props
+const { t } = Astro.locals
+const { url, siteUrl } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const name = creator.displayName
+const count = creator.workflows.length
+const description = creatorMetaDescription(
+  t('workshop.hub.creators.profileSummary', { count, name }, { plural: count }),
+  creator.description
+)
+const workflowsHeading = t('workshop.hub.creators.workflowsHeading', { name })
+---
+
+<BaseLayout
+  title={t('workshop.hub.creators.profileTitle', {
+    name,
+    username: creator.username
+  })}
+  description={description}
+  ogImage={creator.avatarUrl}
+  ogImageAlt={name}
+  pageType="ProfilePage"
+  mainEntityId={creatorEntityId(url)}
+  breadcrumbs={[
+    {
+      name: t('workshop.hub.creators.hub'),
+      url: absoluteUrl(Astro.site, HUB_MODELS_PATH)
+    },
+    {
+      name: t('workshop.hub.creators.title'),
+      url: absoluteUrl(Astro.site, HUB_CREATORS_PATH)
+    },
+    { name }
+  ]}
+  extraJsonLd={[
+    creatorEntityNode(creator, url, siteUrl),
+    itemListNode(
+      url,
+      workflowsHeading,
+      creator.workflows.map((workflow) => ({
+        url: hubWorkflowUrl(workflow.share_id),
+        name: workflow.name
+      }))
+    )
+  ]}
+>
+  <div class="mx-auto max-w-10xl px-6 pt-8 pb-24 max-sm:pt-5 lg:px-8 lg:pt-12">
+    <a
+      href={`${HUB_CREATORS_PATH}/`}
+      class="text-sm text-content-secondary hover:text-content"
+    >
+      ← {t('workshop.hub.creators.title')}
+    </a>
+    <header class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center">
+      <CreatorAvatar
+        name={name}
+        avatarUrl={creator.avatarUrl}
+        class="size-24 text-4xl"
+      />
+      <div class="min-w-0">
+        <p class={workshopEyebrowClass}>{t('workshop.hub.creators.eyebrow')}</p>
+        <h1 class={workshopHeadingClass}>{name}</h1>
+        <p class="mt-2 text-content-secondary">
+          @{creator.username} ·
+          {t(
+            'workshop.hub.creators.workflowCount',
+            { count },
+            { plural: count }
+          )}
+        </p>
+      </div>
+    </header>
+    {creator.description && <p
+      class="mt-6 max-w-3xl text-lg whitespace-pre-line text-content-secondary"
+    >
+      {creator.description}
+    </p>}
+    {creator.websiteUrls.length > 0 && <ul
+      class="mt-4 flex flex-wrap gap-x-6 gap-y-2"
+    >
+      {creator.websiteUrls.map((link) => <li>
+        <a
+          href={link}
+          target="_blank"
+          rel="noopener nofollow ugc"
+          class="text-sm text-brand hover:underline"
+        >
+          {new URL(link).hostname.replace(/^www\./, '')} ↗
+        </a>
+      </li>)}
+    </ul>}
+    <h2 class="mt-16 mb-6 text-2xl font-light text-content">
+      {workflowsHeading}
+    </h2>
+    <CreatorWorkflowGrid
+      templates={creator.workflows
+        .slice(0, FIRST_WORKFLOW_PAGE)
+        .map(creatorWorkflowTemplate)}
+      total={count}
+      moreUrl={`${HUB_CREATORS_PATH}/${encodeURIComponent(creator.username)}.json`}
+      client:visible
+    />
+  </div>
+</BaseLayout>

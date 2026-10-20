@@ -62,4 +62,24 @@ describe('HubWorkflowCard', () => {
 
     expect(screen.getByRole('link', { name: 'Comfy' })).toBeTruthy()
   })
+
+  it.for([
+    { username: 'purz', href: '/hub/creators/purz/' },
+    { username: 'ComfyUI', href: '/hub/creators/comfyui/' }
+  ])(
+    'links the author $username to their profile in the same tab',
+    ({ username, href }) => {
+      render(HubWorkflowCard, {
+        props: {
+          template: { ...template, username },
+          href: '/workflows/comparison-workflow',
+          tryNowLabel: 'Try now'
+        }
+      })
+
+      const author = screen.getByRole('link', { name: username })
+      expect(author.getAttribute('href')).toBe(href)
+      expect(author.getAttribute('target')).toBeNull()
+    }
+  )
 })

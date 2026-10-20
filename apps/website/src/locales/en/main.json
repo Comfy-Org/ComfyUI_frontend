@@ -565,7 +565,11 @@
         "directoryTitle": "ComfyUI workflow creators",
         "subtitle": "The artists, studios, and Comfy team members who publish workflows on the Comfy Hub.",
         "metaDescription": "Browse the creators who publish ComfyUI workflows on the Comfy Hub, from the official Comfy team to independent artists and studios.",
-        "workflowCount": "{count} workflow | {count} workflows"
+        "workflowCount": "{count} workflow | {count} workflows",
+        "eyebrow": "Creator",
+        "profileTitle": "{name} ({'@'}{username}): ComfyUI workflows - Comfy",
+        "profileSummary": "Browse {count} ComfyUI workflow by {name} on the Comfy Hub. | Browse {count} ComfyUI workflows by {name} on the Comfy Hub.",
+        "workflowsHeading": "Workflows by {name}"
       }
     },
     "workflow": {

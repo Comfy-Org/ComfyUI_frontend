@@ -4922,7 +4922,11 @@
         "directoryTitle": "ComfyUI 工作流创作者",
         "subtitle": "在 Comfy Hub 上发布工作流的艺术家、工作室和 Comfy 团队成员。",
         "metaDescription": "浏览在 Comfy Hub 上发布 ComfyUI 工作流的创作者，从 Comfy 官方团队到独立艺术家和工作室。",
-        "workflowCount": "{count} 个工作流"
+        "workflowCount": "{count} 个工作流",
+        "eyebrow": "创作者",
+        "profileTitle": "{name}（{'@'}{username}）：ComfyUI 工作流 - Comfy",
+        "profileSummary": "在 Comfy Hub 上浏览 {name} 的 {count} 个 ComfyUI 工作流。",
+        "workflowsHeading": "{name} 的工作流"
       }
     },
     "input": {

@@ -83,8 +83,6 @@ function openCard() {
         <a
           v-if="showAuthor"
           :href="creatorUrl"
-          target="_blank"
-          rel="noopener"
           class="flex w-fit min-w-0 items-center gap-2 text-content-secondary hover:text-content"
           @click.stop
         >
