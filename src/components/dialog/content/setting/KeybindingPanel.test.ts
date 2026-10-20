@@ -80,6 +80,14 @@ function getVisibleCommandIds(container: Element) {
 }
 
 describe('KeybindingPanel', () => {
+  it('names its search box after keybindings', async () => {
+    renderPanel()
+
+    expect(
+      await screen.findByRole('combobox', { name: 'Search Keybindings...' })
+    ).toBeInTheDocument()
+  })
+
   it('activates focused rows from the keyboard and exposes expansion', async () => {
     const user = userEvent.setup()
     registerCommand('command-multi', 'Multiple bindings', ['A', 'B'])

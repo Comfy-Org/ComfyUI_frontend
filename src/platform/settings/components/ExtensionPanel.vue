@@ -3,7 +3,9 @@
     <SearchInput
       v-model="searchQuery"
       :clear-label="$t('g.clear')"
-      :accessible-label="$t('g.search')"
+      :accessible-label="
+        $t('g.searchPlaceholder', { subject: $t('g.extensions') })
+      "
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
     <Message v-if="hasChanges" severity="info" class="max-h-96 overflow-y-auto">

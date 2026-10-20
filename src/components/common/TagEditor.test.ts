@@ -13,7 +13,7 @@ function renderEditor(props: InstanceType<typeof TagEditor>['$props'] = {}) {
         createI18n({
           legacy: false,
           locale: 'en',
-          messages: { en: { g: { removeTag: 'Remove tag' } } }
+          messages: { en: { g: { removeTagNamed: 'Remove {tag}' } } }
         })
       ]
     }
@@ -21,6 +21,17 @@ function renderEditor(props: InstanceType<typeof TagEditor>['$props'] = {}) {
 }
 
 describe('TagEditor', () => {
+  it('names each remove button after its tag', () => {
+    renderEditor({ modelValue: ['alpha', 'beta'] })
+
+    expect(
+      screen.getByRole('button', { name: 'Remove alpha' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Remove beta' })
+    ).toBeInTheDocument()
+  })
+
   it('activates editing and removes a tag with a translated control', async () => {
     const user = userEvent.setup()
     const update = vi.fn()
@@ -32,7 +43,7 @@ describe('TagEditor', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     await user.click(screen.getByText('alpha'))
     expect(screen.getByRole('textbox')).toHaveFocus()
-    await user.click(screen.getAllByRole('button', { name: 'Remove tag' })[0])
+    await user.click(screen.getByRole('button', { name: 'Remove alpha' }))
 
     expect(update).toHaveBeenLastCalledWith(['beta'])
   })
@@ -62,7 +73,7 @@ describe('TagEditor', () => {
     })
 
     await user.click(screen.getByText('alpha'))
-    await user.click(screen.getByRole('button', { name: 'Remove tag' }))
+    await user.click(screen.getByRole('button', { name: 'Remove alpha' }))
 
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(update).not.toHaveBeenCalled()

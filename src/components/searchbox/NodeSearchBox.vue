@@ -50,7 +50,7 @@
       ref="searchAutocomplete"
       v-model="currentQuery"
       :clear-label="$t('g.clear')"
-      :accessible-label="$t('g.search')"
+      :accessible-label="searchLabel"
       class="comfy-vue-node-search-box z-10 grow"
       anchor-class="h-auto min-h-8 flex-wrap"
       :content-style="{ maxHeight: '40vh' }"
@@ -140,11 +140,12 @@ const inputId = `comfy-vue-node-search-box-input-${Math.random()}`
 const suggestions = ref<ComfyNodeDefImpl[]>([])
 const hoveredSuggestion = ref<ComfyNodeDefImpl | null>(null)
 const currentQuery = ref('')
-const placeholder = computed(() => {
-  return filters.length === 0
-    ? t('g.searchPlaceholder', { subject: t('g.nodes') })
-    : ''
-})
+const searchLabel = computed(() =>
+  t('g.searchPlaceholder', { subject: t('g.nodes') })
+)
+const placeholder = computed(() =>
+  filters.length === 0 ? searchLabel.value : ''
+)
 
 const nodeDefStore = useNodeDefStore()
 const nodeFrequencyStore = useNodeFrequencyStore()

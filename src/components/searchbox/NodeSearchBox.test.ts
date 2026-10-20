@@ -66,6 +66,14 @@ function renderComponent() {
 }
 
 describe('NodeSearchBox', () => {
+  it('names its search box after nodes', () => {
+    renderComponent()
+
+    expect(
+      screen.getByRole('combobox', { name: 'Search nodes' })
+    ).toBeInTheDocument()
+  })
+
   it('uses the parent-owned filters after removing a filter', async () => {
     useNodeFrequencyStore().isLoaded = true
     const frequent = new ComfyNodeDefImpl({

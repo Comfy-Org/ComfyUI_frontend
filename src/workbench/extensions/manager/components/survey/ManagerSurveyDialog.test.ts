@@ -30,6 +30,16 @@ describe('ManagerSurveyDialog', () => {
     remoteConfig.value = {}
   })
 
+  it('keeps its fixed width in every state', () => {
+    // oxlint-disable-next-line testing-library/no-container
+    const { container } = renderDialog()
+    // oxlint-disable-next-line testing-library/no-node-access -- the panel root has no role; its width is the behavior under test
+    const panel = container.firstElementChild
+    // tailwind-merge keeps `w-full` next to `w-lg`; Tailwind emits `w-lg` later, so it wins
+    expect(panel).toHaveClass('w-lg', 'max-w-full')
+    expect(panel).not.toHaveClass('max-w-lg')
+  })
+
   it('embeds the configured survey URL with the logged-in user', () => {
     remoteConfig.value = { manager_survey_url: SURVEY_URL }
     useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-123' }))

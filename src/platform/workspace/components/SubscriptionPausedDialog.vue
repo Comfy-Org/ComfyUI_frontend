@@ -1,5 +1,5 @@
 <template>
-  <AppDialogPanel size="compact" @close="onClose">
+  <AppDialogPanel size="compact" class="w-90 max-w-full" @close="onClose">
     <template #title>
       {{ $t(titleKey) }}
     </template>

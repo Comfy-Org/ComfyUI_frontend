@@ -31,7 +31,7 @@ const { t } = useI18n()
       :class="typeof itemClass === 'function' ? itemClass(tag) : itemClass"
     >
       <TagsInputItemText />
-      <TagsInputItemDelete :aria-label="t('g.removeTag')" />
+      <TagsInputItemDelete :aria-label="t('g.removeTagNamed', { tag })" />
     </TagsInputItem>
     <slot name="input" :is-empty>
       <TagsInputInput :is-empty :placeholder />

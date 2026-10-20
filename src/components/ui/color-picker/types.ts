@@ -2,7 +2,8 @@ export interface ColorPickerProps {
   class?: string
   disabled?: boolean
   alpha?: boolean
-  accessibleLabel: string
+  /** Defaults to the trigger's visible color value. */
+  accessibleLabel?: string
   hexLabel: string
   rgbaLabel: string
   hueLabel: string

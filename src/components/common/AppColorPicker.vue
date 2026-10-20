@@ -10,8 +10,7 @@ const {
   disabled = false,
   accessibleLabel
 } = defineProps<
-  Pick<ColorPickerProps, 'class' | 'alpha' | 'disabled'> &
-    Partial<Pick<ColorPickerProps, 'accessibleLabel'>>
+  Pick<ColorPickerProps, 'class' | 'alpha' | 'disabled' | 'accessibleLabel'>
 >()
 
 const color = defineModel<string>({ default: '#000000' })
@@ -24,7 +23,7 @@ const { t } = useI18n()
     :class="className"
     :alpha
     :disabled
-    :accessible-label="accessibleLabel ?? `${t('g.color')} ${color}`"
+    :accessible-label="accessibleLabel"
     :hex-label="t('color.hex')"
     :rgba-label="t('color.rgba')"
     :hue-label="t('color.hue')"

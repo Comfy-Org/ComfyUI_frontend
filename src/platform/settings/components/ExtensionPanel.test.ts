@@ -18,6 +18,14 @@ function renderPanel() {
 }
 
 describe('ExtensionPanel', () => {
+  it('names its search box after extensions', () => {
+    renderPanel()
+
+    expect(
+      screen.getByRole('combobox', { name: 'Search Extensions...' })
+    ).toBeInTheDocument()
+  })
+
   it('preserves the selected filter when clicked again', async () => {
     const user = userEvent.setup()
     renderPanel()
