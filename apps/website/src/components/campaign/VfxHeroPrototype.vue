@@ -18,18 +18,19 @@ const { locale, contactHref } = defineProps<{
   contactHref: string
 }>()
 const { t } = translationsFor(locale)
-const variants = [
+const variantIds = [
   'relight_golden',
   'relight_night',
   'relight_blue',
   'relight_rain',
   'relight_snow',
   'relight_day'
-].map((id) => ({
+] as const
+const variants = variantIds.map((id) => ({
   id,
-  label: t(`vfxV3.variants.${id}` as Parameters<typeof t>[0])
+  label: t(`vfxV3.variants.${id}`)
 }))
-const selected = ref(variants[0].id)
+const selected = ref<string>(variants[0].id)
 const time = ref(0)
 const motion = usePreferredReducedMotion()
 const paused = ref(false)
@@ -90,6 +91,7 @@ onUnmounted(() => clearTimeout(assemblyTimer))
             :variants="variants"
             :original-label="t('vfxV3.originalFootage')"
             :slider-label="t('modelLaunch.beforeAfter.sliderLabel')"
+            :choices-label="t('modelLaunch.beforeAfter.tabsLabel')"
           />
         </div>
       </template>

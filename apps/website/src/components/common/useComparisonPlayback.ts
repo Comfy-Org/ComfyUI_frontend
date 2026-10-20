@@ -25,6 +25,7 @@ interface PlaybackOptions {
 export function useComparisonPlayback(options: PlaybackOptions) {
   const state = ref<ComparisonPlaybackState>('loading')
   const visible = ref(false)
+  const hasBeenVisible = ref(false)
   const documentVisibility = useDocumentVisibility()
   let generation = 0
   const issuedPauses = new WeakSet<HTMLVideoElement>()
@@ -127,7 +128,9 @@ export function useComparisonPlayback(options: PlaybackOptions) {
   useIntersectionObserver(
     options.container,
     ([entry]) => {
-      visible.value = entry.isIntersecting && entry.intersectionRatio >= 0.25
+      const isVisible = entry.isIntersecting && entry.intersectionRatio >= 0.25
+      visible.value = isVisible
+      if (isVisible) hasBeenVisible.value = true
     },
     { threshold: [0, 0.25], immediate: options.enabled() }
   )
@@ -187,5 +190,5 @@ export function useComparisonPlayback(options: PlaybackOptions) {
     rememberTime()
     pausePair()
   })
-  return state
+  return { state, hasBeenVisible }
 }

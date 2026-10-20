@@ -4,10 +4,11 @@ import { computed } from 'vue'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 
-const { variants, originalLabel, sliderLabel } = defineProps<{
+const { variants, originalLabel, sliderLabel, choicesLabel } = defineProps<{
   variants: { id: string; label: string }[]
   originalLabel: string
   sliderLabel: string
+  choicesLabel: string
 }>()
 const selected = defineModel<string>('selected', { required: true })
 const time = defineModel<number>('time', { required: true })
@@ -40,7 +41,7 @@ function selectVariant(id: string) {
       :after-label="active.label"
       class="vfx-sample-result w-full overflow-hidden rounded-3xl"
     />
-    <div class="vfx-sample-choices" role="group" :aria-label="originalLabel">
+    <div class="vfx-sample-choices" role="group" :aria-label="choicesLabel">
       <button
         v-for="variant in variants"
         :key="variant.id"

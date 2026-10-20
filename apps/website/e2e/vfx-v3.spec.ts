@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict'
 import { join } from 'node:path'
 
 import { websiteRoot } from '@website/paths'
@@ -7,14 +8,14 @@ import type { Locator } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 
+import { vfxMediaRoot } from '@/data/vfxMedia'
+
 test.beforeEach(async ({ context }) => {
-  await context.route(
-    'https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/*.mp4',
-    (route) =>
-      route.fulfill({
-        path: join(websiteRoot, 'e2e/assets/vfx-playback.mp4'),
-        headers: { 'Accept-Ranges': 'bytes', 'Content-Type': 'video/mp4' }
-      })
+  await context.route(`${vfxMediaRoot}/*.mp4`, (route) =>
+    route.fulfill({
+      path: join(websiteRoot, 'e2e/assets/vfx-playback.mp4'),
+      headers: { 'Accept-Ranges': 'bytes', 'Content-Type': 'video/mp4' }
+    })
   )
 })
 
@@ -47,11 +48,12 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
     vertical: '竖屏'
   }
 ]) {
-  for (const mobile of [false, true]) {
-    test(`${path} selects clean result previews and preserves sales attribution${mobile ? ' @mobile' : ''}`, async ({
-      page
-    }) => {
-      if (mobile) await page.setViewportSize({ width: 390, height: 844 })
+  for (const { viewport, suffix } of [
+    { viewport: { width: 1440, height: 900 }, suffix: '' },
+    { viewport: { width: 390, height: 844 }, suffix: ' @mobile' }
+  ]) {
+    test(`${path} preserves sales attribution${suffix}`, async ({ page }) => {
+      await page.setViewportSize(viewport)
       await page.goto(`${path}?utm_source=linkedin&utm_campaign=vfx-review`)
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading)
       await expect(
@@ -60,11 +62,16 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
         'href',
         `${contact}?interest=vfx&landing_version=v3&utm_source=linkedin&utm_campaign=vfx-review`
       )
-      for (const { demo, option, result } of [
-        { demo: 'relight', option: rain, result: 'relight_rain' },
-        { demo: 'swap', option: taxi, result: 'swap_uk' },
-        { demo: 'reframe', option: vertical, result: 'reframe_vertical' }
-      ]) {
+    })
+    for (const { demo, option, result } of [
+      { demo: 'relight', option: rain, result: 'relight_rain' },
+      { demo: 'swap', option: taxi, result: 'swap_uk' }
+    ]) {
+      test(`${path} ${demo} selects a clean playing result${suffix}`, async ({
+        page
+      }) => {
+        await page.setViewportSize(viewport)
+        await page.goto(path)
         const section = page.locator(`[data-vfx-demo="${demo}"]`)
         await waitForShowcase(section)
         const choice = section.getByRole('button', {
@@ -74,45 +81,65 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
         await choice.click()
         await expect(choice).toHaveAttribute('aria-pressed', 'true')
         const output = section.locator('.vfx-main-node')
-        await expect(
-          output.locator('.wf-node-heading .ppformula-text-center')
-        ).toHaveText(option)
+        await expect(output.getByTestId('workflow-node-label')).toHaveText(
+          option
+        )
         await expect(output.getByRole('slider')).toHaveCount(0)
         await expect(
           output.getByText(/^(BEFORE|AFTER|处理前|处理后)$/i)
         ).toHaveCount(0)
-        if (demo === 'reframe') {
-          await expect(output.locator('img')).toHaveAttribute(
-            'src',
-            `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/${result}.jpg`
-          )
-          await expect(output.locator('video')).toHaveCount(0)
-        } else {
-          const video = output.locator('video')
-          await video.scrollIntoViewIfNeeded()
-          await expect(video).toHaveAttribute(
-            'src',
-            `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/${result}.mp4`
-          )
-          await expect
-            .poll(() =>
-              video.evaluate(
-                (node: HTMLVideoElement) =>
-                  !node.paused &&
-                  node.currentTime > 0.1 &&
-                  node.muted &&
-                  node.loop &&
-                  node.playsInline
-              )
+        const video = output.locator('video')
+        await video.scrollIntoViewIfNeeded()
+        await expect(video).toHaveAttribute(
+          'src',
+          `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/${result}.mp4`
+        )
+        await expect
+          .poll(() =>
+            video.evaluate(
+              (node: HTMLVideoElement) =>
+                !node.paused &&
+                node.currentTime > 0.1 &&
+                node.muted &&
+                node.loop &&
+                node.playsInline
             )
-            .toBe(true)
-        }
-      }
+          )
+          .toBe(true)
+        await expect(choice).toHaveAttribute('aria-pressed', 'true')
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth
+          )
+        ).toBe(true)
+      })
+    }
+    test(`${path} reframe selects a clean image result${suffix}`, async ({
+      page
+    }) => {
+      await page.setViewportSize(viewport)
+      await page.goto(path)
+      const section = page.locator('[data-vfx-demo="reframe"]')
+      await waitForShowcase(section)
+      const choice = section.getByRole('button', {
+        name: vertical,
+        exact: true
+      })
+      await choice.click()
+      await expect(choice).toHaveAttribute('aria-pressed', 'true')
+      const output = section.locator('.vfx-main-node')
+      await expect(output.getByTestId('workflow-node-label')).toHaveText(
+        vertical
+      )
+      await expect(output.getByRole('slider')).toHaveCount(0)
       await expect(
-        page
-          .locator('[data-vfx-demo="relight"]')
-          .getByRole('button', { name: rain, exact: true })
-      ).toHaveAttribute('aria-pressed', 'true')
+        output.getByText(/^(BEFORE|AFTER|处理前|处理后)$/i)
+      ).toHaveCount(0)
+      await expect(output.locator('img')).toHaveAttribute(
+        'src',
+        'https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/reframe_vertical.jpg'
+      )
+      await expect(output.locator('video')).toHaveCount(0)
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth
@@ -122,28 +149,44 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
   }
 }
 
-test('relight output defaults to Golden hour and changes its native media for all six versions', async ({
+test('selecting other capabilities preserves the independent relight sample', async ({
   page
 }) => {
   await page.goto('/solutions/vfx/v3/')
-  const section = page.locator('[data-vfx-demo="relight"]')
-  await waitForShowcase(section)
-  const output = section.locator('.vfx-main-node')
+  const relight = page.locator('[data-vfx-demo="relight"]')
+  await waitForShowcase(relight)
+  await relight.getByRole('button', { name: 'Rain', exact: true }).click()
+  const swap = page.locator('[data-vfx-demo="swap"]')
+  await waitForShowcase(swap)
+  await swap.getByRole('button', { name: 'London taxi', exact: true }).click()
+  const reframe = page.locator('[data-vfx-demo="reframe"]')
+  await waitForShowcase(reframe)
+  await reframe.getByRole('button', { name: 'Vertical', exact: true }).click()
   await expect(
-    output.locator('.wf-node-heading .ppformula-text-center')
-  ).toHaveText('Golden hour')
-  for (const [label, suffix] of [
-    ['Golden hour', 'golden'],
-    ['Night', 'night'],
-    ['Blue hour', 'blue'],
-    ['Rain', 'rain'],
-    ['Snow', 'snow'],
-    ['Daylight', 'day']
-  ]) {
+    relight.getByRole('button', { name: 'Rain', exact: true })
+  ).toHaveAttribute('aria-pressed', 'true')
+})
+
+for (const [label, suffix] of [
+  ['Golden hour', 'golden'],
+  ['Night', 'night'],
+  ['Blue hour', 'blue'],
+  ['Rain', 'rain'],
+  ['Snow', 'snow'],
+  ['Daylight', 'day']
+]) {
+  test(`relight output changes its native media to ${label}`, async ({
+    page
+  }) => {
+    await page.goto('/solutions/vfx/v3/')
+    const section = page.locator('[data-vfx-demo="relight"]')
+    await waitForShowcase(section)
+    const output = section.locator('.vfx-main-node')
+    await expect(output.getByTestId('workflow-node-label')).toHaveText(
+      'Golden hour'
+    )
     await section.getByRole('button', { name: label, exact: true }).click()
-    await expect(
-      output.locator('.wf-node-heading .ppformula-text-center')
-    ).toHaveText(label)
+    await expect(output.getByTestId('workflow-node-label')).toHaveText(label)
     await expect(output.locator('video')).toHaveAttribute(
       'src',
       `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.mp4`
@@ -153,14 +196,17 @@ test('relight output defaults to Golden hour and changes its native media for al
       `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.jpg`
     )
     await expect(output.getByRole('slider')).toHaveCount(0)
-  }
-})
+  })
+}
 
 for (const mobile of [false, true]) {
+  const viewport = mobile
+    ? { width: 390, height: 844 }
+    : { width: 1440, height: 900 }
   test(`hero comparison stays synchronized through loops and version changes${mobile ? ' @mobile' : ''}`, async ({
     page
   }) => {
-    if (mobile) await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize(viewport)
     await page.goto('/solutions/vfx/v3/')
     const hero = page.locator('[data-vfx-demo="hero"]')
     const original = hero.getByTestId('video-compare-before')
@@ -415,11 +461,11 @@ test('reduced motion keeps graph output still after version selection', async ({
     page.getByRole('button', { name: /^(Pause|Play)$/ })
   ).toHaveCount(0)
 })
-for (const reduced of [false, true]) {
-  test(`sample hero keeps comparison controls without workflow actions${reduced ? ' with reduced motion' : ''}`, async ({
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  test(`sample hero keeps comparison controls without workflow actions with ${reducedMotion} motion`, async ({
     page
   }) => {
-    if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.emulateMedia({ reducedMotion })
     await page.goto('/solutions/vfx/v3/?utm_source=linkedin')
     const hero = page.locator('[data-vfx-demo="hero"]')
     await expect(
@@ -441,17 +487,6 @@ for (const reduced of [false, true]) {
     ).toHaveCount(0)
     await expect(hero).not.toContainText('Existing sample outputs.')
     await expect(page).toHaveURL(/\?utm_source=linkedin$/)
-    if (reduced) {
-      await expect
-        .poll(() =>
-          hero
-            .locator('video')
-            .evaluateAll((videos) =>
-              videos.every((video) => (video as HTMLVideoElement).paused)
-            )
-        )
-        .toBe(true)
-    }
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth
@@ -459,6 +494,29 @@ for (const reduced of [false, true]) {
     ).toBe(true)
   })
 }
+
+test('reduced motion keeps the sample hero paused after selection', async ({
+  page
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/solutions/vfx/v3/')
+  const hero = page.locator('[data-vfx-demo="hero"]')
+  await expect(
+    page.locator('astro-island').filter({ has: hero })
+  ).not.toHaveAttribute('ssr')
+  await hero.getByRole('button', { name: 'Snow', exact: true }).click()
+  await expect
+    .poll(() =>
+      hero
+        .locator('video')
+        .evaluateAll((videos) =>
+          videos.every(
+            (video) => video instanceof HTMLVideoElement && video.paused
+          )
+        )
+    )
+    .toBe(true)
+})
 
 for (const {
   path,
@@ -494,10 +552,13 @@ for (const {
     mobile: true
   }
 ]) {
+  const viewport = mobile
+    ? { width: 390, height: 844 }
+    : { width: 1440, height: 900 }
   test(`${path} ${demo} Studio preserves independent samples and editable settings${mobile ? ' @mobile' : ''}`, async ({
     page
   }) => {
-    if (mobile) await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize(viewport)
     await page.goto(path)
     const section = page.locator(`[data-vfx-demo="${demo}"]`)
     await waitForShowcase(section)
@@ -576,35 +637,87 @@ test('verified workflow links stay external and unresolved workflows cannot navi
     'https://cloud.comfy.org/?share=8b18c850d38a'
   )
   await expect(relight).toHaveAttribute('target', '_blank')
-  for (const demo of ['swap', 'reframe'])
+})
+
+for (const demo of ['swap', 'reframe']) {
+  test(`${demo} unresolved workflow cannot navigate`, async ({ page }) => {
+    await page.goto('/solutions/vfx/v3/')
     await expect(
       page.locator(`[data-vfx-demo="${demo}"] [data-try-workflow]`)
     ).toBeDisabled()
-})
+  })
+}
 
-for (const mobile of [false, true]) {
-  test(`capability sections alternate desktop columns with copy first on mobile${mobile ? ' @mobile' : ''}`, async ({
+for (const { demo, width, axis, leading, trailing } of [
+  {
+    demo: 'relight',
+    width: 1440,
+    axis: 'x',
+    leading: '.vfx-section-top',
+    trailing: '.vfx-canvas-window'
+  },
+  {
+    demo: 'swap',
+    width: 1440,
+    axis: 'x',
+    leading: '.vfx-canvas-window',
+    trailing: '.vfx-section-top'
+  },
+  {
+    demo: 'reframe',
+    width: 1440,
+    axis: 'x',
+    leading: '.vfx-section-top',
+    trailing: '.vfx-canvas-window'
+  },
+  {
+    demo: 'sequence',
+    width: 1440,
+    axis: 'x',
+    leading: '.vfx-canvas-window',
+    trailing: '.vfx-section-top'
+  },
+  {
+    demo: 'relight',
+    width: 390,
+    axis: 'y',
+    leading: '.vfx-section-top',
+    trailing: '.vfx-canvas-window'
+  },
+  {
+    demo: 'swap',
+    width: 390,
+    axis: 'y',
+    leading: '.vfx-section-top',
+    trailing: '.vfx-canvas-window'
+  },
+  {
+    demo: 'reframe',
+    width: 390,
+    axis: 'y',
+    leading: '.vfx-section-top',
+    trailing: '.vfx-canvas-window'
+  },
+  {
+    demo: 'sequence',
+    width: 390,
+    axis: 'y',
+    leading: '.vfx-section-top',
+    trailing: '.vfx-canvas-window'
+  }
+] as const) {
+  const dimension = axis === 'x' ? 'width' : 'height'
+  test(`${demo} capability columns follow reading order at ${width}px${width === 390 ? ' @mobile' : ''}`, async ({
     page
   }) => {
-    await page.setViewportSize({ width: mobile ? 390 : 1440, height: 1000 })
+    await page.setViewportSize({ width, height: 1000 })
     await page.goto('/solutions/vfx/v3/')
-    for (const [demo, reversed] of [
-      ['relight', false],
-      ['swap', true],
-      ['reframe', false],
-      ['sequence', true]
-    ] as const) {
-      const section = page.locator(`[data-vfx-demo="${demo}"]`)
-      const copy = await section.locator('.vfx-section-top').boundingBox()
-      const visual = await section.locator('.vfx-canvas-window').boundingBox()
-      expect(copy).not.toBeNull()
-      expect(visual).not.toBeNull()
-      if (!copy || !visual) continue
-      if (mobile) expect(copy.y + copy.height).toBeLessThanOrEqual(visual.y)
-      else if (reversed)
-        expect(visual.x + visual.width).toBeLessThanOrEqual(copy.x)
-      else expect(copy.x + copy.width).toBeLessThanOrEqual(visual.x)
-    }
+    const section = page.locator(`[data-vfx-demo="${demo}"]`)
+    const first = await section.locator(leading).boundingBox()
+    const second = await section.locator(trailing).boundingBox()
+    assert(first, 'Leading capability panel must have a bounding box')
+    assert(second, 'Trailing capability panel must have a bounding box')
+    expect(first[axis] + first[dimension]).toBeLessThanOrEqual(second[axis])
   })
 }
 
@@ -621,10 +734,8 @@ test('Studio returns to the same playback time after editing Settings', async ({
     )
     .toBeGreaterThanOrEqual(2)
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await section.evaluate((node) => {
-    node.dispatchEvent(
-      new CustomEvent('workflow-time-change', { detail: { time: 1.25 } })
-    )
+  await graphVideo.evaluate((video: HTMLVideoElement) => {
+    video.currentTime = 1.25
   })
   await expect
     .poll(() =>
@@ -655,15 +766,15 @@ test('Studio returns to the same playback time after editing Settings', async ({
     .toBeCloseTo(1.25, 1)
 })
 
-test('workflow wires follow socket centers and examples stay in a single whole-frame panel across resize', async ({
-  page
-}) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize({ width: 1440, height: 1000 })
-  await page.goto('/solutions/vfx/v3/')
+for (const demo of ['relight', 'swap', 'reframe', 'sequence']) {
   for (const width of [1440, 390]) {
-    await page.setViewportSize({ width, height: 1000 })
-    for (const demo of ['relight', 'swap', 'reframe', 'sequence']) {
+    test(`${demo} wires follow socket centers and preserve whole-frame media after resizing to ${width}px${width === 390 ? ' @mobile' : ''}`, async ({
+      page
+    }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' })
+      await page.setViewportSize({ width: 1440, height: 1000 })
+      await page.goto('/solutions/vfx/v3/')
+      await page.setViewportSize({ width, height: 1000 })
       const section = page.locator(`[data-vfx-demo="${demo}"]`)
       await waitForShowcase(section)
       const panel = section.locator('.vfx-visual-panel')
@@ -711,14 +822,26 @@ test('workflow wires follow socket centers and examples stay in a single whole-f
           })
         )
         .toBeLessThanOrEqual(1)
-      for (const media of await panel
-        .locator(
-          '.vfx-source-node video, .vfx-source-node img, .vfx-keyframe-node img, .vfx-main-node video, .vfx-main-node img, .vfx-versions img'
+      await expect
+        .poll(
+          async () =>
+            new Set(
+              await panel
+                .locator(
+                  '.vfx-source-node video, .vfx-source-node img, .vfx-keyframe-node img, .vfx-main-node video, .vfx-main-node img, .vfx-versions img'
+                )
+                .evaluateAll((media) =>
+                  media.map((node) => getComputedStyle(node).objectFit)
+                )
+            )
         )
-        .all())
-        await expect(media).toHaveCSS('object-fit', 'contain')
-    }
+        .toEqual(new Set(['contain']))
+    })
   }
+}
+
+test('hero comparison media fills its wide frame', async ({ page }) => {
+  await page.goto('/solutions/vfx/v3/')
   const hero = page.locator('[data-vfx-demo="hero"]')
   await expect(hero.getByTestId('video-compare-before')).toHaveCSS(
     'object-fit',
@@ -763,10 +886,13 @@ for (const {
     mobile: true
   }
 ]) {
+  const viewport = mobile
+    ? { width: 390, height: 844 }
+    : { width: 1440, height: 900 }
   test(`${path} sequence uses its reference and returns from the shared Studio with its selected shot${mobile ? ' @mobile' : ''}`, async ({
     page
   }) => {
-    if (mobile) await page.setViewportSize({ width: 390, height: 844 })
+    await page.setViewportSize(viewport)
     await page.goto(path)
     const section = page.locator('[data-vfx-demo="sequence"]')
     await waitForShowcase(section)
@@ -780,7 +906,7 @@ for (const {
       'https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/rain.jpg'
     )
     await expect(
-      section.locator('.vfx-keyframe-node .ppformula-text-center')
+      section.locator('.vfx-keyframe-node').getByTestId('workflow-node-label')
     ).toHaveText(reference)
     await section.getByRole('button', { name: push, exact: true }).click()
     await expect(section.locator('.vfx-main-node video')).toHaveAttribute(
@@ -788,7 +914,7 @@ for (const {
       'https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/seedance_push.mp4'
     )
     await expect(
-      section.locator('.vfx-main-node .ppformula-text-center')
+      section.locator('.vfx-main-node').getByTestId('workflow-node-label')
     ).toHaveText(push)
     await expect(referenceFrame).toHaveAttribute(
       'src',
@@ -864,7 +990,7 @@ for (const {
       'https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/seedance_orbit.mp4'
     )
     await expect(
-      section.locator('.vfx-main-node .ppformula-text-center')
+      section.locator('.vfx-main-node').getByTestId('workflow-node-label')
     ).toHaveText(orbit)
     await expect(referenceFrame).toHaveAttribute(
       'src',

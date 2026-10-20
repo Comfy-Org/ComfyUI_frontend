@@ -36,6 +36,7 @@ class VfxWorkflowShowcase extends HTMLElement {
     this.viewportWidth = scaled.offsetWidth
     this.scale = viewport.clientWidth / this.viewportWidth
     scaled.style.transform = `scale(${this.scale})`
+    this.move(this.pan)
     this.draw()
   }
   private alignOutput(node: HTMLElement) {
@@ -260,7 +261,9 @@ class VfxWorkflowShowcase extends HTMLElement {
     this.playVisible(video)
   }
   private updateOutput(id: string, label: string) {
-    const heading = this.querySelector('.vfx-main-node .ppformula-text-center')
+    const heading = this.querySelector(
+      '.vfx-main-node [data-testid="workflow-node-label"]'
+    )
     if (heading) heading.textContent = label
     this.updateOutputImage(id, label)
     this.updateOutputVideo(id, label)

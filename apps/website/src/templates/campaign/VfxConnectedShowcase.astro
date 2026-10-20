@@ -4,68 +4,28 @@ import BrandButton from '@/components/common/BrandButton.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import WorkflowNode from '@/components/agent/WorkflowNode.astro'
 import VfxSampleStudio from '@/components/campaign/VfxSampleStudio.vue'
-import type { WorkflowGraphNode } from '@/components/agent/workflowGraph'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import { showcaseConfig, workflowNode } from './vfxConnectedShowcase'
+import type { VfxShowcaseDemo } from './vfxConnectedShowcase'
 import '@/styles/workflow-canvas.css'
 import '@/styles/vfx-connected.css'
 
 interface Props {
   locale: Locale
-  demo?: 'relight' | 'swap' | 'reframe' | 'sequence'
+  demo?: VfxShowcaseDemo
 }
 const { locale, demo = 'relight' } = Astro.props
-const sources = {
-  relight: 'diner',
-  swap: 'backlot',
-  reframe: 'forest',
-  sequence: 'rain'
-}
-const source = sources[demo]
-const mediaKind = demo === 'reframe' ? 'image' : 'video'
 const { t } = translationsFor(locale)
-const variantIds = {
-  relight: [
-    'relight_golden',
-    'relight_night',
-    'relight_blue',
-    'relight_rain',
-    'relight_snow',
-    'relight_day'
-  ],
-  swap: ['swap_jp', 'swap_uk', 'swap_it'],
-  reframe: ['reframe_wide', 'reframe_vertical'],
-  sequence: ['seedance_multishot_rain', 'seedance_push', 'seedance_orbit']
-} as const
-const variants = variantIds[demo].map((id) => ({
-  id,
-  label: t(`vfxV3.variants.${id}`)
-}))
-const makeNode = (
-  id: string,
-  label: string,
-  image?: string,
-  still = false
-): WorkflowGraphNode => ({
-  id,
-  label,
-  kind: 'landscape',
-  x: 0,
-  y: 0,
-  width: 256,
-  height: 144,
-  ...(image && mediaKind === 'video' && !still
-    ? { video: image.replace('.jpg', '.mp4'), poster: image, loopVideo: true }
-    : { image }),
-  alt: label
-})
-const workflowHref =
-  demo === 'relight'
-    ? 'https://cloud.comfy.org/?share=8b18c850d38a'
-    : demo === 'sequence'
-      ? 'https://cloud.comfy.org/?share=c2191c018939'
-      : undefined
-const originalLabel = t('vfxV3.originalFootage')
+const {
+  source,
+  mediaKind,
+  workflowHref,
+  variants,
+  original,
+  keyframe,
+  preview
+} = showcaseConfig(demo, t)
 ---
 
 <vfx-workflow-showcase data-vfx-demo={demo} class="vfx-connected">
@@ -105,28 +65,11 @@ const originalLabel = t('vfxV3.originalFootage')
             <svg class="vfx-connections" aria-hidden="true"><g></g></svg>
             <div class="vfx-source-node" data-canvas-step>
               <span class="vfx-port vfx-port-out" aria-hidden="true" />
-              <WorkflowNode
-                node={makeNode('original', originalLabel, `${source}.jpg`)}
-                flow
-                imageRoot={vfxMediaRoot}
-              />
+              <WorkflowNode node={original} flow imageRoot={vfxMediaRoot} />
             </div>
             <div class="vfx-keyframe-node" data-canvas-step>
               <span class="vfx-port vfx-port-out" aria-hidden="true" />
-              <WorkflowNode
-                node={makeNode(
-                  'keyframe',
-                  t(
-                    demo === 'sequence'
-                      ? 'vfxV3.referenceFrame'
-                      : 'vfxV3.keyframe'
-                  ),
-                  `${demo === 'sequence' ? source : variants[0].id}.jpg`,
-                  true
-                )}
-                flow
-                imageRoot={vfxMediaRoot}
-              >
+              <WorkflowNode node={keyframe} flow imageRoot={vfxMediaRoot}>
                 <span
                   slot="input"
                   class="vfx-port vfx-port-in"
@@ -135,15 +78,7 @@ const originalLabel = t('vfxV3.originalFootage')
               </WorkflowNode>
             </div>
             <div class="vfx-main-node" data-canvas-step>
-              <WorkflowNode
-                node={makeNode(
-                  'preview',
-                  variants[0].label,
-                  `${variants[0].id}.jpg`
-                )}
-                flow
-                imageRoot={vfxMediaRoot}
-              >
+              <WorkflowNode node={preview} flow imageRoot={vfxMediaRoot}>
                 <span
                   slot="input"
                   class="vfx-port vfx-port-in"
@@ -167,7 +102,7 @@ const originalLabel = t('vfxV3.originalFootage')
           aria-pressed={i === 0}
         >
           <WorkflowNode
-            node={makeNode(id, label, `${id}.jpg`, true)}
+            node={workflowNode(mediaKind, id, label, `${id}.jpg`, true)}
             flow
             imageRoot={vfxMediaRoot}
           />

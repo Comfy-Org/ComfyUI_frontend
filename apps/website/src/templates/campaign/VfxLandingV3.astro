@@ -13,6 +13,7 @@ import CallToActionSection from '@/components/common/CallToActionSection.vue'
 import { vfxWorkflows } from '@/data/vfxWorkflows'
 import { getRoutes, externalLinks } from '@/config/routes'
 import { pageContext } from '@/utils/jsonLd'
+import { vfxLandingV3 } from './vfxLandingV3'
 
 const { locale } = pageContext(
   Astro.site,
@@ -22,13 +23,7 @@ const { locale } = pageContext(
 const { t } = Astro.locals
 const routes = getRoutes(locale)
 const prefix = 'vfxV2.comfy'
-const contactHref = `${routes.contact}?interest=vfx&landing_version=v3`
-const benefits = ([1, 2, 3, 4] as const).map((id) => ({
-  id: `pipeline-${id}`,
-  title:
-    id === 1 ? t('vfxV3.workstationTitle') : t(`vfxV2.pipeline.${id}.title`),
-  description: t(`vfxV2.pipeline.${id}.description`)
-}))
+const { contactHref, benefits, featuredWorkflows } = vfxLandingV3(locale, t)
 ---
 
 <BaseLayout
@@ -57,27 +52,7 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
         alignWithGrid
         strongScrim
         label={t('vfxV2.workflows.featured')}
-        items={[
-          {
-            title: t('vfx.workflows.storyboard'),
-            href: 'https://comfy.org/workflows/f4e29143100c-f4e29143100c/',
-            media:
-              'https://media.comfy.org/hub-media/video/34ea9f1a-1aac-4c6f-af48-b88cf154ec9b.mp4',
-            mediaType: 'video',
-            poster:
-              'https://media.comfy.org/hub-media/posters/34ea9f1a-1aac-4c6f-af48-b88cf154ec9b.jpg',
-            tags: ['Seedance 2.0', t('vfx.workflows.storyboarding')],
-            models: ['Seedance']
-          },
-          ...vfxWorkflows.slice(1, 3).map(({ template, href }) => ({
-            title: template.title,
-            href,
-            media: template.thumbnails[0],
-            mediaType: 'image' as const,
-            tags: template.tags,
-            models: template.models
-          }))
-        ]}
+        items={featuredWorkflows}
         client:visible
       />
       <section class="mx-auto max-w-9xl px-6 pb-12 lg:px-20 lg:pb-16">

@@ -53,7 +53,9 @@ const portStyle = (port: Point) =>
 >
   <div class="wf-node-heading">
     <slot name="input" />
-    <span class="ppformula-text-center">{node.label}</span>
+    <span data-testid="workflow-node-label" class="ppformula-text-center"
+      >{node.label}</span
+    >
   </div>
   {ports.map((port) => (
     <span class="wf-port" style={portStyle(port)} aria-hidden="true" />

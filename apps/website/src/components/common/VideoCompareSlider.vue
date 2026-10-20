@@ -60,7 +60,7 @@ const shouldAutoplay = computed(
   () => isMounted.value && !synchronizedPlayback && !prefersReducedMotion()
 )
 
-const playbackState = useComparisonPlayback({
+const { state: playbackState, hasBeenVisible } = useComparisonPlayback({
   enabled: () => synchronizedPlayback && mediaKind === 'video',
   beforeSrc: () => beforeSrc,
   afterSrc: () => afterSrc,
@@ -70,6 +70,12 @@ const playbackState = useComparisonPlayback({
   paused,
   time
 })
+const loadVideoSources = computed(
+  () => isMounted.value && (!synchronizedPlayback || hasBeenVisible.value)
+)
+const videoPreload = computed(() =>
+  synchronizedPlayback && hasBeenVisible.value ? 'auto' : 'none'
+)
 watch(playbackState, (state) => emit('playbackState', state), {
   immediate: true
 })
@@ -150,9 +156,9 @@ function syncAfterToBefore() {
       ref="beforeVideo"
       :key="beforeSrc"
       data-testid="video-compare-before"
-      :src="isMounted ? beforeSrc : undefined"
+      :src="loadVideoSources ? beforeSrc : undefined"
       :poster="beforePosterSrc"
-      :preload="synchronizedPlayback ? 'auto' : 'none'"
+      :preload="videoPreload"
       :autoplay="shouldAutoplay"
       loop
       muted
@@ -189,9 +195,9 @@ function syncAfterToBefore() {
       ref="afterVideo"
       :key="afterSrc"
       data-testid="video-compare-after"
-      :src="isMounted ? afterSrc : undefined"
+      :src="loadVideoSources ? afterSrc : undefined"
       :poster="afterPosterSrc"
-      :preload="synchronizedPlayback ? 'auto' : 'none'"
+      :preload="videoPreload"
       :autoplay="shouldAutoplay"
       loop
       muted
