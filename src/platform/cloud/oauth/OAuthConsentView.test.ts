@@ -43,11 +43,11 @@ const i18n = createI18n({
           redirectNotice: "You'll be redirected to",
           appTypeNative: 'Native app',
           appTypeWeb: 'Web app',
-          unverifiedBadge: 'Unverified app',
+          unverifiedBadge: 'Name not verified',
           unverifiedNotice:
-            'The name above was provided by the app developer. After you continue, your browser will be sent to {host}.',
+            'This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.',
           unverifiedNoticeNoHost:
-            'The name above was provided by the app developer and has not been verified by Comfy.',
+            'This name was provided by whoever registered this app and has not been verified by Comfy.',
           errorExpired:
             'This consent request has expired or has already been used.',
           errorScopeBroadening: SCOPE_BROADENING,
@@ -146,18 +146,28 @@ describe('OAuthConsentView', () => {
     ).not.toBeInTheDocument()
   })
 
+  // The badge claims only that the NAME is unverified, not that the app is
+  // untrusted. `client_provenance` is derived from the client_id prefix, so
+  // every client minted through RFC 7591 DCR is `dynamic` -- including the
+  // official claude.ai / chatgpt.com / figma.com connectors, which register
+  // that way and are admitted by the backend's OAUTH_DCR_HTTPS_HOSTS
+  // allowlist. Only the seeded `comfy-desktop` / `comfy-cli` clients are
+  // `first_party`. An "unverified app" verdict would therefore fire on every
+  // third-party connection we have deliberately vetted, which both misstates
+  // the case and trains users to ignore the badge. The redirect host in the
+  // notice is the discriminator the user can actually act on.
   it.for([
     {
       case: 'a dynamically registered client',
       overrides: { client_provenance: 'dynamic' },
       notice:
-        'The name above was provided by the app developer. After you continue, your browser will be sent to chatgpt.com.'
+        'This name was provided by whoever registered this app. After you continue, your browser will be sent to chatgpt.com — make sure you recognize it.'
     },
     {
       case: 'a client from a backend that omits provenance',
       overrides: { client_provenance: undefined },
       notice:
-        'The name above was provided by the app developer. After you continue, your browser will be sent to chatgpt.com.'
+        'This name was provided by whoever registered this app. After you continue, your browser will be sent to chatgpt.com — make sure you recognize it.'
     },
     {
       case: 'a dynamically registered client with a loopback redirect',
@@ -166,7 +176,7 @@ describe('OAuthConsentView', () => {
         redirect_uri: 'http://127.0.0.1:50632/cb'
       },
       notice:
-        'The name above was provided by the app developer and has not been verified by Comfy.'
+        'This name was provided by whoever registered this app and has not been verified by Comfy.'
     }
   ] satisfies {
     case: string
@@ -181,7 +191,7 @@ describe('OAuthConsentView', () => {
 
     expect(screen.getByText('ChatGPT Connector wants access')).toBeVisible()
     expect(screen.getByTestId('client-unverified')).toHaveTextContent(
-      'Unverified app'
+      'Name not verified'
     )
     expect(screen.getByTestId('client-unverified-notice')).toHaveTextContent(
       notice
