@@ -134,3 +134,94 @@ it('recovers from a failed original clip when another sample is selected', async
     expect(after.paused).toBe(false)
   })
 })
+
+async function renderVisibleStudio(isPaused: boolean) {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+  const showcase = document.createElement('vfx-workflow-showcase')
+  showcase.dataset.playbackPaused = String(isPaused)
+  const studioView = document.createElement('div')
+  studioView.className = 'vfx-studio-view'
+  showcase.append(studioView)
+  document.body.append(showcase)
+  const observers = stubIntersectionObserver()
+  render(VfxSampleStudio, {
+    container: studioView,
+    props: {
+      demo: 'relight',
+      source: 'diner',
+      mediaKind: 'video',
+      variants: [
+        { id: 'relight_golden', label: 'Golden hour' },
+        { id: 'relight_night', label: 'Night' }
+      ]
+    }
+  })
+  await nextTick()
+  const observer = observers.instances[0]
+  assert.exists(observer)
+  const surface = screen.getByTestId('video-compare-surface')
+  const bounds = new DOMRect(0, 0, 400, 225)
+  observer.callback(
+    [
+      {
+        target: surface,
+        boundingClientRect: bounds,
+        intersectionRect: bounds,
+        rootBounds: null,
+        isIntersecting: true,
+        intersectionRatio: 1,
+        time: 0
+      }
+    ],
+    new IntersectionObserver(() => undefined)
+  )
+  await nextTick()
+  const before = screen.getByTestId<HTMLVideoElement>('video-compare-before')
+  const after = screen.getByTestId<HTMLVideoElement>('video-compare-after')
+  vi.spyOn(before, 'readyState', 'get').mockReturnValue(3)
+  vi.spyOn(before, 'duration', 'get').mockReturnValue(8)
+  before.dispatchEvent(new Event('loadedmetadata'))
+  vi.spyOn(after, 'readyState', 'get').mockReturnValue(3)
+  vi.spyOn(after, 'duration', 'get').mockReturnValue(8)
+  after.dispatchEvent(new Event('loadedmetadata'))
+  await nextTick()
+  return { showcase, studioView, before, after }
+}
+
+it('keeps the showcase pause when selecting another Studio sample', async () => {
+  const user = userEvent.setup()
+  const { showcase, before } = await renderVisibleStudio(true)
+  await user.click(screen.getByRole('tab', { name: 'SETTINGS' }))
+  await user.click(screen.getByRole('button', { name: 'Night' }))
+  const after = screen.getByTestId<HTMLVideoElement>('video-compare-after')
+  vi.spyOn(after, 'readyState', 'get').mockReturnValue(3)
+  vi.spyOn(after, 'duration', 'get').mockReturnValue(8)
+  after.dispatchEvent(new Event('loadedmetadata'))
+  await nextTick()
+  expect(before.paused).toBe(true)
+  expect(after.paused).toBe(true)
+  showcase.dataset.playbackPaused = 'false'
+  showcase.dispatchEvent(
+    new CustomEvent('workflow-playback-change', { detail: { paused: false } })
+  )
+  await waitFor(() => {
+    expect(before.paused).toBe(false)
+    expect(after.paused).toBe(false)
+  })
+})
+
+it('keeps a hidden Studio pair paused when the canvas resumes before visibility updates', async () => {
+  const { showcase, studioView, before, after } =
+    await renderVisibleStudio(false)
+  await waitFor(() => expect(before.paused).toBe(false))
+  studioView.hidden = true
+  studioView.inert = true
+  before.pause()
+  after.pause()
+  showcase.dispatchEvent(
+    new CustomEvent('workflow-playback-change', { detail: { paused: false } })
+  )
+  await nextTick()
+  expect(before.paused).toBe(true)
+  expect(after.paused).toBe(true)
+})

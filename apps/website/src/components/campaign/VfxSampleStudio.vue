@@ -63,9 +63,19 @@ useEventListener(
   { capture: true }
 )
 
+function playbackPaused(requested?: boolean) {
+  const view = root.value?.closest<HTMLElement>('.vfx-studio-view')
+  if (view?.hidden || view?.inert) return true
+  if (requested !== undefined) return requested
+  const owner = root.value?.closest<HTMLElement>('vfx-workflow-showcase')
+  return owner?.dataset.playbackPaused === undefined
+    ? prefersReducedMotion()
+    : owner.dataset.playbackPaused === 'true'
+}
+
 function selectVariant(id: string) {
   selected.value = id
-  paused.value = prefersReducedMotion()
+  paused.value = playbackPaused()
   const showcase = root.value?.closest<HTMLElement>('vfx-workflow-showcase')
   if (!showcase) return
   showcase.dataset.selectedVariant = id
@@ -75,6 +85,7 @@ function selectVariant(id: string) {
 }
 
 onMounted(() => {
+  paused.value = playbackPaused()
   const id = root.value?.closest<HTMLElement>('vfx-workflow-showcase')?.dataset
     .selectedVariant
   if (id && variants.some((variant) => variant.id === id)) selected.value = id
@@ -113,7 +124,20 @@ useEventListener(
     if (!detail) return
     updateMode('mode' in detail ? detail.mode : undefined)
     updateTime('time' in detail ? detail.time : undefined)
-    paused.value = prefersReducedMotion()
+    paused.value = playbackPaused(
+      'paused' in detail && typeof detail.paused === 'boolean'
+        ? detail.paused
+        : undefined
+    )
+  }
+)
+useEventListener(
+  () => root.value?.closest('vfx-workflow-showcase'),
+  'workflow-playback-change',
+  (event: Event) => {
+    const detail = workflowDetail(event)
+    if (detail && 'paused' in detail && typeof detail.paused === 'boolean')
+      paused.value = playbackPaused(detail.paused)
   }
 )
 useEventListener(

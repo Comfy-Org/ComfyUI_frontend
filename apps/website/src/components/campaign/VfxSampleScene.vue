@@ -4,14 +4,21 @@ import { computed } from 'vue'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
 
-const { source, variants, originalLabel, sliderLabel, choicesLabel } =
-  defineProps<{
-    source: string
-    variants: { id: string; label: string }[]
-    originalLabel: string
-    sliderLabel: string
-    choicesLabel: string
-  }>()
+const {
+  source,
+  variants,
+  originalLabel,
+  sliderLabel,
+  choicesLabel,
+  playbackIntent = 'auto'
+} = defineProps<{
+  source: string
+  variants: { id: string; label: string }[]
+  originalLabel: string
+  sliderLabel: string
+  choicesLabel: string
+  playbackIntent?: 'auto' | 'play' | 'pause'
+}>()
 const selected = defineModel<string>('selected', { required: true })
 const time = defineModel<number>('time', { required: true })
 const paused = defineModel<boolean>('paused', { required: true })
@@ -21,7 +28,9 @@ const active = computed(
 const result = computed(() => `${vfxMediaRoot}/${active.value.id}.mp4`)
 function selectVariant(id: string) {
   selected.value = id
-  paused.value = prefersReducedMotion()
+  paused.value =
+    playbackIntent === 'pause' ||
+    (playbackIntent === 'auto' && prefersReducedMotion())
 }
 </script>
 

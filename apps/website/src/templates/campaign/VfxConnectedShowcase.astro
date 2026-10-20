@@ -56,6 +56,14 @@ const {
           aria-expanded="false"
           >{t('vfxV3.openStudio')}</BrandButton
         >
+        {mediaKind === 'video' && <BrandButton
+          data-vfx-playback
+          data-play-label={t('player.play')}
+          data-pause-label={t('player.pause')}
+          variant="outline"
+          aria-pressed="false"
+          >{t('player.pause')}</BrandButton
+        >}
       </div>
     </div>
     <div class="vfx-visual-panel">
@@ -115,10 +123,18 @@ const {
     </div>
   </div>
   <div class="vfx-studio-view" hidden inert>
-    <div class="vfx-workspace-toolbar mb-8">
+    <div class="vfx-workspace-toolbar mb-8 flex flex-wrap gap-3">
       <BrandButton data-back-workflow variant="outline"
         >← {t('vfxV3.prototype.back').toLocaleUpperCase(locale)}</BrandButton
       >
+      {mediaKind === 'video' && <BrandButton
+        data-vfx-playback
+        data-play-label={t('player.play')}
+        data-pause-label={t('player.pause')}
+        variant="outline"
+        aria-pressed="false"
+        >{t('player.pause')}</BrandButton
+      >}
     </div>
     <VfxSampleStudio
       demo={demo}

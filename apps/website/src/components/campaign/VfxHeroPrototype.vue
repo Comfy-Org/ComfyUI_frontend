@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
+import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
+import BrandButton from '@/components/common/BrandButton.vue'
 import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
 import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
 import VfxSampleScene from '@/components/campaign/VfxSampleScene.vue'
@@ -21,6 +22,20 @@ const { t } = translationsFor(locale)
 const selected = ref<string>(variants[0].id)
 const time = ref(0)
 const paused = ref(false)
+const playbackIntent = ref<'auto' | 'play' | 'pause'>('auto')
+function togglePlayback() {
+  paused.value = !paused.value
+  playbackIntent.value = paused.value ? 'pause' : 'play'
+}
+watch(
+  () => prefersReducedMotion(),
+  (reduce) => {
+    if (reduce) {
+      if (playbackIntent.value === 'play') playbackIntent.value = 'auto'
+      paused.value = true
+    } else if (playbackIntent.value === 'auto') paused.value = false
+  }
+)
 const assembled = ref(false)
 const settled = ref(false)
 let assemblyTimer: ReturnType<typeof setTimeout> | undefined
@@ -75,12 +90,21 @@ onUnmounted(() => clearTimeout(assemblyTimer))
             v-model:selected="selected"
             v-model:time="time"
             v-model:paused="paused"
+            :playback-intent="playbackIntent"
             :variants="variants"
             :source="source"
             :original-label="t('vfxV3.originalFootage')"
             :slider-label="t('modelLaunch.beforeAfter.sliderLabel')"
             :choices-label="t('modelLaunch.beforeAfter.tabsLabel')"
           />
+          <div class="mt-4 flex justify-end">
+            <BrandButton
+              variant="outline"
+              :aria-pressed="paused"
+              @click="togglePlayback"
+              >{{ paused ? t('player.play') : t('player.pause') }}</BrandButton
+            >
+          </div>
         </div>
       </template>
     </HeroSplit01>

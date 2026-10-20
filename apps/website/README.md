@@ -676,4 +676,6 @@ route, navigation entry, or launch date is enabled by this draft.
 
 `/solutions/vfx/` and `/zh-CN/solutions/vfx/` render the latest V2 design. This change publishes no agency-led or other vertical campaign routes. V1 remains saved on `codex/vfx-landing`.
 
-Contact links preserve incoming UTMs and record `website:vfx_link_clicked`. Link-click tracking does not establish form-submission tracking.
+The separate public campaign is `/solutions/vfx/v3/`, with a Chinese twin at `/zh-CN/solutions/vfx/v3/`. Both are indexable in production and use their own canonical URLs; preview deployments remain noindex through the existing build policy. The existing V2 routes and navigation remain unchanged.
+
+Contact links preserve incoming UTMs and record `website:vfx_link_clicked`. V3 contact links also carry `landing_version=v3`; the existing PostHog SDK includes the page pathname, so campaign traffic can be separated by `/solutions/vfx/v3/` and its Chinese twin without a new analytics integration. Tag traffic with `utm_source`, `utm_medium`, and `utm_campaign` to compare acquisition channels. Link-click tracking does not establish form-submission tracking.

@@ -60,6 +60,11 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
   test(`${path} preserves sales attribution`, async ({ page }) => {
     await page.goto(`${path}?utm_source=linkedin&utm_campaign=vfx-review`)
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(heading)
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      `https://comfy.org${path}`
+    )
+    await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
     await expect(
       page.getByRole('link', { name: sales, exact: true }).first()
     ).toHaveAttribute(
@@ -431,8 +436,8 @@ test('reduced motion keeps graph output still after version selection', async ({
       )
   ).toBe(true)
   await expect(
-    page.getByRole('button', { name: /^(Pause|Play)$/ })
-  ).toHaveCount(0)
+    section.getByRole('button', { name: 'Play', exact: true })
+  ).toBeVisible()
 })
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {
   test(`sample hero keeps comparison controls without workflow actions with ${reducedMotion} motion`, async ({
@@ -451,8 +456,11 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
       .poll(async () => (await preview.boundingBox())?.width ?? 0)
       .toBeGreaterThan(900)
     await expect(
-      page.getByRole('button', { name: /^(Pause|Play)$/ })
-    ).toHaveCount(0)
+      hero.getByRole('button', {
+        name: reducedMotion === 'reduce' ? 'Play' : 'Pause',
+        exact: true
+      })
+    ).toBeVisible()
     await expect(
       hero.getByRole('button', { name: /use workflow/i })
     ).toHaveCount(0)
@@ -967,5 +975,177 @@ for (const {
       )
       .toBe(true)
     await expectNoHorizontalOverflow(page)
+  })
+}
+
+async function startHeroPlayback(
+  hero: Locator,
+  comparison: Locator,
+  play: string,
+  reducedMotion: 'reduce' | 'no-preference'
+) {
+  if (reducedMotion === 'reduce')
+    await hero.getByRole('button', { name: play, exact: true }).click()
+  await comparison.scrollIntoViewIfNeeded()
+}
+
+for (const { path, pause, play, sample, reducedMotion, mobile } of [
+  {
+    path: '/solutions/vfx/v3/',
+    pause: 'Pause',
+    play: 'Play',
+    sample: 'Rain',
+    reducedMotion: 'no-preference',
+    mobile: false
+  },
+  {
+    path: '/zh-CN/solutions/vfx/v3/',
+    pause: '暂停',
+    play: '播放',
+    sample: '雨天',
+    reducedMotion: 'reduce',
+    mobile: true
+  }
+] as const) {
+  test(`${path} hero preserves visitor playback choice${mobile ? ' @mobile' : ''}`, async ({
+    page
+  }) => {
+    await page.emulateMedia({ reducedMotion })
+    await page.setViewportSize(
+      mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 }
+    )
+    await page.goto(path)
+    const hero = page.locator('[data-vfx-demo="hero"]')
+    await expectIslandHydrated(page, hero)
+    const comparison = hero.getByTestId('video-compare-surface')
+    await comparison.scrollIntoViewIfNeeded()
+    const control = hero.getByRole('button', { name: pause, exact: true })
+    await startHeroPlayback(hero, comparison, play, reducedMotion)
+    await expect
+      .poll(() =>
+        comparison
+          .locator('video')
+          .evaluateAll(
+            (videos) =>
+              videos.length === 2 &&
+              videos.every(
+                (video) =>
+                  video instanceof HTMLVideoElement &&
+                  !video.paused &&
+                  video.readyState >= 2
+              )
+          )
+      )
+      .toBe(true)
+    await control.click()
+    await hero.getByRole('button', { name: sample, exact: true }).click()
+    await comparison.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() =>
+        comparison
+          .locator('video')
+          .evaluateAll(
+            (videos) =>
+              videos.length === 2 &&
+              videos.every(
+                (video) => video instanceof HTMLVideoElement && video.paused
+              )
+          )
+      )
+      .toBe(true)
+    await expect(hero.getByRole('slider')).toHaveAttribute(
+      'aria-valuenow',
+      '50'
+    )
+    await hero.getByRole('button', { name: play, exact: true }).click()
+    await comparison.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() =>
+        comparison
+          .locator('video')
+          .evaluateAll(
+            (videos) =>
+              videos.length === 2 &&
+              videos.every(
+                (video) =>
+                  video instanceof HTMLVideoElement &&
+                  !video.paused &&
+                  video.readyState >= 2
+              )
+          )
+      )
+      .toBe(true)
+  })
+}
+
+for (const { demo, sample } of [
+  { demo: 'relight', sample: 'Rain' },
+  { demo: 'sequence', sample: 'Push-in' }
+]) {
+  test(`${demo} preserves visitor pause through sample and Studio transitions`, async ({
+    page
+  }) => {
+    await page.goto('/solutions/vfx/v3/')
+    const section = page.locator(`[data-vfx-demo="${demo}"]`)
+    await waitForShowcase(section)
+    const output = section.locator('.vfx-main-node video')
+    await output.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() =>
+        output.evaluate(
+          (video: HTMLVideoElement) => !video.paused && video.readyState >= 2
+        )
+      )
+      .toBe(true)
+    await section.getByRole('button', { name: 'Pause', exact: true }).click()
+    await section.getByRole('button', { name: sample, exact: true }).click()
+    await output.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() => output.evaluate((video: HTMLVideoElement) => video.paused))
+      .toBe(true)
+    await section
+      .getByRole('button', { name: 'OPEN STUDIO', exact: true })
+      .click()
+    const studio = section.locator('.vfx-studio-view')
+    await expect(studio).toBeVisible()
+    const media = studio.locator('video')
+    await expect
+      .poll(() =>
+        media.evaluateAll(
+          (videos) =>
+            videos.length > 0 &&
+            videos.every(
+              (video) => video instanceof HTMLVideoElement && video.paused
+            )
+        )
+      )
+      .toBe(true)
+    await section.getByRole('button', { name: 'Play', exact: true }).click()
+    await media.first().scrollIntoViewIfNeeded()
+    await expect
+      .poll(() =>
+        media.evaluateAll(
+          (videos) =>
+            videos.length > 0 &&
+            videos.every(
+              (video) =>
+                video instanceof HTMLVideoElement &&
+                !video.paused &&
+                video.readyState >= 2
+            )
+        )
+      )
+      .toBe(true)
+    await section.getByRole('button', { name: 'Pause', exact: true }).click()
+    await section
+      .getByRole('button', { name: '← BACK TO EXAMPLES', exact: true })
+      .click()
+    await output.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() => output.evaluate((video: HTMLVideoElement) => video.paused))
+      .toBe(true)
+    await expect(
+      section.getByRole('button', { name: 'Play', exact: true })
+    ).toBeVisible()
   })
 }
