@@ -66,6 +66,7 @@ export interface ClientDocFrame {
   ops: string[]
   opIds: string[]
   connection: number
+  comfyConnection: number
 }
 
 interface ParsedClientDocFrame {
@@ -91,23 +92,19 @@ function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' ? value : null
 }
 
-/**
- * Whether every writer the op claims, in its envelope and in its stamp, is the
- * human actor the agent derives for this frame's tab. The agent refuses the
- * whole batch otherwise (cloud `services/agent/server/doc_handler.go`,
- * `messages.HumanActor(userID, req.Tab)`), and the relay answers `forbidden`.
- */
-function claimsFrameActor(op: WireOpEnvelope, tab: string): boolean {
-  const { actor, stamp } = op as { actor?: unknown; stamp?: unknown }
-  return [actor, Array.isArray(stamp) ? stamp[1] : undefined].every(
-    (claimed) => {
-      if (typeof claimed !== 'string') return false
-      const [kind, user, claimedTab, ...rest] = claimed.split(':')
-      return (
-        kind === 'human' && !!user && claimedTab === tab && rest.length === 0
-      )
-    }
-  )
+function claimedWriter(op: WireOpEnvelope): string | null {
+  const actor = 'actor' in op ? op.actor : undefined
+  const stamp = 'stamp' in op ? op.stamp : undefined
+  const stampActor = Array.isArray(stamp) ? stamp[1] : undefined
+  return typeof actor === 'string' && actor === stampActor ? actor : null
+}
+
+function claimsOneFrameActor(ops: WireOpEnvelope[], tab: string): boolean {
+  const writers = new Set(ops.map(claimedWriter))
+  const [writer] = writers
+  if (writers.size !== 1 || !writer) return false
+  const [kind, user, claimedTab, ...rest] = writer.split(':')
+  return kind === 'human' && !!user && claimedTab === tab && rest.length === 0
 }
 
 function opLabel(op: WireOpEnvelope): string {
@@ -168,8 +165,6 @@ export class AgentFollowerHostSocket {
     await this.page.routeWebSocket(/\/ws/, (socket) => {
       this.comfySocket = socket
       this.comfyConnections += 1
-      // Cloud ingest mints a fresh session id for every /ws connection, so a
-      // reconnect hands the page a new `api.clientId`.
       const sid =
         this.comfyConnections === 1
           ? COMFY_SOCKET_SID
@@ -253,7 +248,8 @@ export class AgentFollowerHostSocket {
       stateVector: frame.stateVector,
       ops: ops.map((op) => opLabel(op)),
       opIds: ops.map((op) => op.op_id),
-      connection: this.connections
+      connection: this.connections,
+      comfyConnection: this.comfyConnections
     })
   }
 
@@ -263,7 +259,11 @@ export class AgentFollowerHostSocket {
       this.answerSubscribe(frame.stateVector)
       return
     }
-    if (frame.type === 'doc_ops' && this.unansweredHumanBatches > 0) {
+    if (
+      frame.type === 'doc_ops' &&
+      frame.opsResult.ok &&
+      this.unansweredHumanBatches > 0
+    ) {
       this.unansweredHumanBatches -= 1
       return
     }
@@ -341,28 +341,22 @@ export class AgentFollowerHostSocket {
     return this.refusedSubscribes
   }
 
-  /**
-   * Record the next `count` human `doc_ops` batches and never answer them, as
-   * when a result is lost in transit. The sender then resends the same ops
-   * after its result timeout, and the host judges that resend normally.
-   */
+  /** Records the next `count` well-formed human batches as lost in transit. */
   leaveHumanBatchesUnanswered(count = 1): void {
-    this.unansweredHumanBatches = count
+    this.unansweredHumanBatches += count
   }
 
   // The applier is the only judge of a structurally valid human batch; the
   // wire ops reach it in place, exactly as the relay hands them to the host.
-  // A batch that failed the envelope check, that cleared it but is empty or
-  // carries a duplicate `op_id`, or whose frame has no tab never reaches the
-  // applier at all — the relay itself rejects that frame as `invalid_frame`
-  // earlier. A batch claiming any writer other than the frame's human actor
-  // is refused whole as `forbidden`.
+  // A batch that failed the envelope check, or that cleared it but is empty
+  // or carries a duplicate `op_id`, never reaches the applier at all — the
+  // relay itself rejects that frame as `invalid_frame` earlier.
   private judgeHumanOps(opsResult: ParsedWireBatch, tab: string | null): void {
     if (!opsResult.ok || !tab || !isValidDocOpsBatch(opsResult.ops)) {
       this.send(this.invalidFrameResult())
       return
     }
-    if (!opsResult.ops.every((op) => claimsFrameActor(op, tab))) {
+    if (!claimsOneFrameActor(opsResult.ops, tab)) {
       this.send(this.forbiddenResult())
       return
     }
@@ -436,14 +430,12 @@ export class AgentFollowerHostSocket {
     await this.socket.close()
   }
 
-  /**
-   * Closes the routed `/ws` from the host side. The app reconnects on its own
-   * and receives a fresh session id, so `api.clientId` changes; the agent
-   * socket is untouched.
-   */
+  /** Closes `/ws`; the app reconnects with a fresh session id. */
   async disconnectComfySocket(): Promise<void> {
-    if (!this.comfySocket) throw new Error('the app has not opened /ws yet')
-    await this.comfySocket.close()
+    const socket = this.comfySocket
+    if (!socket) throw new Error('the app has not opened /ws yet')
+    this.comfySocket = null
+    await socket.close()
   }
 
   /** Every `doc_*` frame the page has sent so far, oldest first. */

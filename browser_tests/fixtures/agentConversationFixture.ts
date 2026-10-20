@@ -848,14 +848,14 @@ export class AgentConversationHarness {
     return this.hostSocket.subscribeCount()
   }
 
-  // The host drops the next human batch without a result, so the page resends
-  // the same ops after its result timeout.
+  humanOpFrames(): ClientDocFrame[] {
+    return this.clientDocFrames().filter((frame) => frame.type === 'doc_ops')
+  }
+
   leaveNextHumanBatchUnanswered(): void {
     this.hostSocket.leaveHumanBatchesUnanswered(1)
   }
 
-  // Closes the routed /ws; the app reconnects with a fresh session id, as it
-  // does on Cloud. The agent socket stays up.
   async reconnectComfySocket(): Promise<void> {
     await this.hostSocket.disconnectComfySocket()
   }

@@ -471,10 +471,6 @@ describe('a human edit made while the document connection is down', () => {
     })
   })
 
-  // The host refuses a batch whose actor is not human:<user>:<frame tab>, and
-  // the relay refuses an empty tab. Cloud reassigns api.clientId on every /ws
-  // reconnect, so wire identity must not follow it (FE #20883 review,
-  // https://github.com/Comfy-Org/ComfyUI_frontend/pull/20883#discussion_r4330424181).
   it('keeps the minted actor paired with the wire tab when the session id changes before a retry', async () => {
     api.clientId = 'sid-before-reconnect'
     onTestFinished(() => {

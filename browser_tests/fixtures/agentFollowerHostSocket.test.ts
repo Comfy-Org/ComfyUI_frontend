@@ -191,8 +191,6 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
     node: { id: nodeId, type: 'TestNode', pos: [10, 20] }
   })
 
-  // The relay refuses a frame without a tab, and the agent refuses a batch
-  // whose ops claim a writer other than human:<user>:<frame tab>.
   it.for([
     {
       label: 'a missing tab',
@@ -206,6 +204,13 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
       tab: 'tab-2',
       actor: 'human:test-user:tab-1',
       stampActor: 'human:test-user:tab-1',
+      code: 'forbidden'
+    },
+    {
+      label: 'a stamp minted for another user',
+      tab: 'tab-1',
+      actor: 'human:test-user:tab-1',
+      stampActor: 'human:other-user:tab-1',
       code: 'forbidden'
     },
     {
