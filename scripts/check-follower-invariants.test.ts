@@ -46,6 +46,21 @@ describe('follower invariant guard', () => {
       line: 5
     },
     {
+      name: 'forbidden-local-update-alias.ts',
+      message: 'only FollowerDoc.applyRemoteUpdate',
+      line: 5
+    },
+    {
+      name: 'forbidden-destructured-update-alias.ts',
+      message: 'only FollowerDoc.applyRemoteUpdate',
+      line: 5
+    },
+    {
+      name: 'forbidden-text-apply-delta.ts',
+      message: 'must not call applyDelta',
+      line: 5
+    },
+    {
       name: 'forbidden-destructured-doc-set.ts',
       message: 'must not call set',
       line: 6
