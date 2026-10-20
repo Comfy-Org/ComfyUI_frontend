@@ -1,3 +1,4 @@
+import { reportError } from '@/platform/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   canDesktopHostMintPartnerNodeToken,
@@ -29,11 +30,7 @@ function mintTarget(workspaceId: string): PartnerNodeTokenTarget | undefined {
   return { ownerUid, workspaceId, credential: () => authStore.getIdToken() }
 }
 
-/**
- * The credential a Local prompt carries in `auth_token_comfy_org`: a
- * partner-node token for the workspace when the flag is on and the mint
- * succeeds, otherwise the workspace token unchanged.
- */
+/** Returns a Local prompt credential; native mint failures return undefined. */
 export async function queueAuthToken(
   workspaceToken: string | undefined,
   workspaceId: string | null
@@ -42,7 +39,13 @@ export async function queueAuthToken(
   if (!useFeatureFlags().flags.partnerNodeTokenEnabled) return workspaceToken
 
   if (desktopHostUser.value && canDesktopHostMintPartnerNodeToken()) {
-    return desktopHostPartnerNodeToken(workspaceId)
+    const token = await desktopHostPartnerNodeToken(workspaceId)
+    if (!token)
+      reportError(new Error('Desktop partner credential unavailable'), {
+        surface: 'auth',
+        errorType: 'failure_minting_partner_node_token'
+      })
+    return token
   }
 
   const target = mintTarget(workspaceId)

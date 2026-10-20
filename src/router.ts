@@ -240,7 +240,7 @@ if (isCloud) {
       signIn === 'signed_in' &&
       authStore.currentUser === null &&
       !authStore.signedInWithSso &&
-      hasPendingDesktopLoginCode()
+      hasPendingDesktopLoginCode(true)
     const isLoggedIn = signIn === 'signed_in' && !needsFirebaseForDesktopCode
     preserveLoggedOutShareAuthAttribution(to.query, isLoggedIn)
 

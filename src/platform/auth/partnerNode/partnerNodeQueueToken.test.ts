@@ -143,6 +143,11 @@ describe('queueAuthToken', () => {
         token ?? undefined
       )
       expect(getPartnerNodeToken).toHaveBeenCalledExactlyOnceWith('ws-a')
+      if (!token)
+        expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+          surface: 'auth',
+          errorType: 'failure_minting_partner_node_token'
+        })
       expect(fetchRequests(MINT_URL)).toHaveLength(0)
     }
   )

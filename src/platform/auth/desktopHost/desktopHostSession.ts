@@ -150,7 +150,19 @@ export function canDesktopHostMintPartnerNodeToken(): boolean {
 export function desktopHostPartnerNodeToken(
   workspaceId: string
 ): Promise<string | undefined> {
-  return fetchToken(
-    async (current) => current.getPartnerNodeToken?.(workspaceId) ?? null
-  )
+  if (desktopHostUser.value?.workspaceId !== workspaceId)
+    return Promise.resolve(undefined)
+  return fetchToken(async (current) => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      return await Promise.race([
+        current.getPartnerNodeToken?.(workspaceId) ?? Promise.resolve(null),
+        new Promise<null>((resolve) => {
+          timer = setTimeout(() => resolve(null), 15_000)
+        })
+      ])
+    } finally {
+      clearTimeout(timer)
+    }
+  })
 }

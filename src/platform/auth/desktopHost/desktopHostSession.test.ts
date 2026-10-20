@@ -271,6 +271,25 @@ describe('desktopHostSession', () => {
     })
   })
 
+  it('does not ask the native bridge for another workspace', async () => {
+    const { bridge } = fakeBridge(SIGNED_IN)
+    const getPartnerNodeToken = vi.fn(async () => 'partner-token')
+    await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
+    await expect(desktopHostPartnerNodeToken('ws-2')).resolves.toBeUndefined()
+    expect(getPartnerNodeToken).not.toHaveBeenCalled()
+  })
+
+  it('releases a stalled partner credential call at its deadline', async () => {
+    const { bridge } = fakeBridge(SIGNED_IN)
+    await startDesktopHostSession({
+      ...bridge,
+      getPartnerNodeToken: () => new Promise(() => {})
+    })
+    const request = desktopHostPartnerNodeToken('ws-1')
+    await vi.advanceTimersByTimeAsync(15_000)
+    await expect(request).resolves.toBeUndefined()
+  })
+
   it('does not start a Desktop sign-in while inactive', async () => {
     await expect(requestDesktopHostSignIn()).resolves.toBe(false)
   })
