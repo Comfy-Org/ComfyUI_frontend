@@ -103,11 +103,7 @@ import {
   selectedNodeKey,
   useCanvasSelection
 } from './composables/agent/useCanvasSelection'
-import type {
-  AgentActiveTabData,
-  AgentThreadSummary
-} from './schemas/agentApiSchema'
-import type { ChatSession } from './stores/agent/agentChatHistoryStore'
+import type { AgentActiveTabData } from './schemas/agentApiSchema'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
@@ -127,6 +123,7 @@ import {
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
+import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import {
   agentSocketAuthParams,
   ensureSignedIn,
@@ -876,7 +873,6 @@ const {
   status,
   notices,
   threadId,
-  listThreads,
   loadThread,
   boundWorkflowId,
   bindWorkflow,
@@ -1473,24 +1469,20 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   })
 }
 
-function toChatSession(thread: AgentThreadSummary): ChatSession {
-  const stamp = thread.last_message_at ?? thread.updated_at ?? thread.created_at
-  const updatedAt = stamp ? Date.parse(stamp) : Date.now()
-  return {
-    id: thread.id,
-    title: thread.title || thread.preview || t('agent.untitledChat'),
-    updatedAt: Number.isNaN(updatedAt) ? Date.now() : updatedAt,
-    titleSource: thread.title ? 'server' : 'fallback'
-  }
-}
-
-async function refreshHistory(): Promise<void> {
-  try {
-    history.replaceAll((await listThreads()).map(toChatSession))
-  } catch (error) {
+const { refreshHistory } = useAgentChatHistoryRefresh({
+  listThreads: rest.listThreads,
+  history,
+  untitledChat: () => t('agent.untitledChat'),
+  onFailure: (failure) => {
+    const error =
+      failure.status === 'failed'
+        ? failure.cause
+        : new Error('Agent thread list ended before its last page')
     reportError(error, {
       surface: 'agent',
-      errorType: 'agent_thread_list_load_failed'
+      errorType: 'agent_thread_list_load_failed',
+      tags:
+        failure.status === 'incomplete' ? { reason: failure.reason } : undefined
     })
     surfaceAgentError(
       'agent_api_failed',
@@ -1500,10 +1492,13 @@ async function refreshHistory(): Promise<void> {
       'thread_list_load_failed',
       'pre_acceptance',
       'error_overlay',
-      { retryable: isRetryableRequestFailure(error, false) }
+      {
+        retryable:
+          failure.status === 'failed' && isRetryableRequestFailure(error, false)
+      }
     )
   }
-}
+})
 
 const provisionalTitle = ref<string>()
 
