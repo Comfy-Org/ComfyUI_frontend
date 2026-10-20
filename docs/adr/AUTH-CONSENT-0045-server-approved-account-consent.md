@@ -21,7 +21,12 @@ CSRF value, redirect validation and cancel action.
 
 An absent mode keeps the existing workspace form. The client name and
 `first_party` label do not establish account authority. Unknown modes fail
-validation. Deploy this view before enabling backend account-grant issuance.
+validation. Account challenges require an absolute, non-executable registered
+redirect URI before consent is shown. Deploy this view before enabling backend
+account-grant issuance.
+
+The server rejects account approvals that include a workspace ID. This prevents
+a cached legacy form from presenting workspace approval for an account grant.
 
 ## Alternatives and consequences
 

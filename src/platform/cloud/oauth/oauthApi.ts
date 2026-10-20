@@ -102,7 +102,8 @@ function assertChallenge(
     typeof challenge.client_display_name !== 'string' ||
     (challenge.grant_mode === 'account' &&
       (typeof challenge.redirect_uri !== 'string' ||
-        !challenge.redirect_uri.trim())) ||
+        !URL.canParse(challenge.redirect_uri) ||
+        EXECUTABLE_SCHEMES.has(new URL(challenge.redirect_uri).protocol))) ||
     !zOAuthConsentChallenge.pick({ grant_mode: true }).safeParse(challenge)
       .success ||
     !Array.isArray(challenge.scopes) ||

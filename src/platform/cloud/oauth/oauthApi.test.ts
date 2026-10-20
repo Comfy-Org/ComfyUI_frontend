@@ -378,7 +378,16 @@ describe('submitOAuthConsentDecision', () => {
 })
 
 describe('account grant contract', () => {
-  it.for([undefined, null, 42, '', ' '])(
+  it.for([
+    undefined,
+    null,
+    42,
+    '',
+    ' ',
+    'not a url',
+    '/cb',
+    'javascript:alert(1)'
+  ])(
     'rejects an account challenge with redirect URI %j',
     async (redirectUri) => {
       vi.mocked(fetch).mockResolvedValue(
