@@ -5,8 +5,11 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 
-import { listSkillPacks, SkillPacksApiError } from '../api/skillsApi'
-import type { SkillPack } from '../types'
+import {
+  listSkillPacks,
+  SkillPacksApiError
+} from '@/platform/skills/api/skillsApi'
+import type { SkillPack } from '@/platform/skills/types'
 import { useSkillPacksStore } from './skillPacksStore'
 
 const mocks = vi.hoisted(() => ({
@@ -28,7 +31,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
-vi.mock(import('../api/skillsApi'), { spy: true })
+vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 
 function makePack(overrides: Partial<SkillPack> = {}): SkillPack {
   return {

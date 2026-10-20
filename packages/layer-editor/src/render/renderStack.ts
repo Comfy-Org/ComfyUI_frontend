@@ -3,13 +3,13 @@ import type {
   CompositeInput,
   FBOHandle,
   NodeTexture
-} from '../compositor'
-import type { ContentStore } from '../content'
-import type { Document } from '../document'
-import { resolveMode } from '../mode'
-import type { GroupData, Rect, SceneNode, Transform } from '../node'
-import type { RenderNodeCtx } from '../nodeKind'
-import { getNodeKind } from '../nodeKind'
+} from '#/compositor'
+import type { ContentStore } from '#/content'
+import type { Document } from '#/document'
+import { resolveMode } from '#/mode'
+import type { GroupData, Rect, SceneNode, Transform } from '#/node'
+import type { RenderNodeCtx } from '#/nodeKind'
+import { getNodeKind } from '#/nodeKind'
 import type { Bitmap } from './place'
 import { placeBitmap } from './place'
 

@@ -10,10 +10,10 @@ import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 
-import type { INodeInputSlot } from '../types/slots'
-import { slotFloatingLinks } from '../LLink'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
 
-import { NodeSlotType } from '../types/globalEnums'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 /**
  * Store-backed reads over the links attached to a node's slots.
  * These replace the `output.links[]` / `input.link` mirrors: the link

@@ -307,7 +307,9 @@ describe('LightInfo toolbar', () => {
 
       await user.hover(screen.getByRole('button', { name: button }))
 
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(button)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        button
+      )
     }
   )
 

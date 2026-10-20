@@ -9025,7 +9025,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('second message')
 
     expect(bodies[1]).toMatchObject({ workflow_id: 'wf-42' })
-    expect(bodies[1]).not.toHaveProperty('draft')
+    expect(bodies[1]).toHaveProperty('draft')
   })
 
   it('keeps an explicitly detached workflow after a remount', async () => {
@@ -10963,7 +10963,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     })
 
-    it('keeps withholding the draft across an ordinary reconnect', async () => {
+    it('keeps seeding the draft across an ordinary reconnect', async () => {
       const bodies = await bindAndSettle()
       ws.emit('doc_subscribed', {
         v: 1,
@@ -10977,10 +10977,26 @@ describe('AgentPanelRoot workflow binding', () => {
       await sendFromComposer('second message')
 
       expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
+      expect(bodies[1]).toHaveProperty('draft')
+    })
+
+    it('withholds a bound canvas after its subscribed socket drops', async () => {
+      const bodies = await bindAndSettle()
+      ws.emit('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: true,
+        seq: 1
+      })
+
+      agentSocket.drop()
+      await sendFromComposer('second message')
+
+      expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
       expect(bodies[1]).not.toHaveProperty('draft')
     })
 
-    it('withholds the draft for a bound document while the agent identity is still pending', async () => {
+    it('seeds the draft for a bound document while the agent identity is still pending', async () => {
       vi.mocked(resolveAgentIdentity).mockReturnValue({
         state: ref<AgentIdentityState>({ status: 'pending' }),
         reset: vi.fn(),
@@ -10991,10 +11007,10 @@ describe('AgentPanelRoot workflow binding', () => {
       await sendFromComposer('second message')
 
       expect(bodies[1]).toHaveProperty('workflow_id', 'wf-42')
-      expect(bodies[1]).not.toHaveProperty('draft')
+      expect(bodies[1]).toHaveProperty('draft')
     })
 
-    it('starts the follower without seeding a draft once a retried identity lookup resolves', async () => {
+    it('keeps seeding the draft once a retried identity lookup resolves and the follower subscribes', async () => {
       const state = ref<AgentIdentityState>({ status: 'pending' })
       vi.mocked(resolveAgentIdentity).mockReturnValue({
         state,
@@ -11012,8 +11028,8 @@ describe('AgentPanelRoot workflow binding', () => {
       await vi.waitFor(() => expect(subscribedWorkflowIds()).toEqual(['wf-42']))
       await sendFromComposer('third message')
       expect(bodies.slice(1)).toEqual([
-        expect.not.objectContaining({ draft: expect.anything() }),
-        expect.not.objectContaining({ draft: expect.anything() })
+        expect.objectContaining({ draft: expect.anything() }),
+        expect.objectContaining({ draft: expect.anything() })
       ])
     })
 
@@ -11076,7 +11092,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('second message')
 
     expect(bodies[1]).toMatchObject({ workflow_id: 'wf-42' })
-    expect(bodies[1]).not.toHaveProperty('draft')
+    expect(bodies[1]).toHaveProperty('draft')
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-42')).toBe(
       origin.path
     )

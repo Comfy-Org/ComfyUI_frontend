@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { Dirty, History } from '../history'
+import { Dirty, History } from '#/history'
 import { PropCommand } from './prop'
 
 describe('PropCommand', () => {

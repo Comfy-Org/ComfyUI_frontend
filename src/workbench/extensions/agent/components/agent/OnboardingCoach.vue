@@ -21,11 +21,11 @@ import {
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentOnboardingAction } from '@/platform/telemetry/types'
-import type { CoachStep } from '../../composables/agent/useOnboarding'
+import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 import {
   reportMissingCoachTarget,
   useOnboarding
-} from '../../composables/agent/useOnboarding'
+} from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 /** Long enough for any panel layout to settle; a target still absent is a regression. */
 const TARGET_MISSING_AFTER_MS = 8000
