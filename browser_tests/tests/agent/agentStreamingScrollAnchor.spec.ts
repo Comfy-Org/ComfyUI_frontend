@@ -1,26 +1,18 @@
-import type { WebSocketRoute } from '@playwright/test'
 import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
-  MESSAGE_DELTA_EVENT,
-  agentTest
+  MESSAGE_DONE_EVENT,
+  TOOL_CALL_EVENT,
+  agentTest,
+  finishWorkedTurnAfterLongReply,
+  pushDelta,
+  pushThinking
 } from '@e2e/tests/agent/agentPanelMocks'
 
 const test = mergeTests(agentTest, webSocketFixture)
-
-function pushDelta(socket: WebSocketRoute, delta: string): void {
-  if (MESSAGE_DELTA_EVENT.type !== 'agent_message_delta')
-    throw new Error('message delta fixture has the wrong event type')
-  const event: AgentWsEvent = {
-    type: 'agent_message_delta',
-    data: { ...MESSAGE_DELTA_EVENT.data, delta }
-  }
-  socket.send(JSON.stringify(event))
-}
 
 test.describe(
   'Agent streaming scroll anchor',
@@ -94,6 +86,219 @@ test.describe(
       await expect(
         agentPanel.root.getByRole('button', { name: enMessages.agent.latest })
       ).toBeVisible()
+    })
+
+    test('keeps a completed Worked summary in place while its trace expands and collapses', async ({
+      agentPanel,
+      getWebSocket
+    }) => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      const socket = await getWebSocket()
+      await agentPanel.sendMessage('Plan this workflow')
+      await expect(
+        agentPanel.root.getByTestId('user-message-bubble')
+      ).toHaveText('Plan this workflow')
+      pushThinking(
+        socket,
+        Array.from(
+          { length: 80 },
+          (_, index) => `Step ${index + 1}: check the graph.`
+        ).join('\n\n')
+      )
+      socket.send(JSON.stringify(TOOL_CALL_EVENT))
+      pushDelta(socket, 'Done.')
+      socket.send(JSON.stringify(MESSAGE_DONE_EVENT))
+
+      const summary = agentPanel.workSummary
+      await expect(summary).toHaveAttribute('aria-expanded', 'false')
+      await agentPanel.waitForConversationToSettle()
+      await expect(agentPanel.latestButton).toBeHidden()
+      const before = await agentPanel.workSummaryTop()
+
+      await summary.click()
+      await expect(
+        agentPanel.root.getByText('Step 80: check the graph.')
+      ).toBeAttached()
+      await agentPanel.waitForConversationToSettle()
+
+      await expect
+        .poll(() =>
+          agentPanel.conversationScroll.evaluate(
+            (element) => element.scrollHeight > element.clientHeight
+          )
+        )
+        .toBe(true)
+      expect(await agentPanel.workSummaryTop()).toBeCloseTo(before, 0)
+      await expect(agentPanel.latestButton).toBeVisible()
+
+      await summary.click()
+      await expect(summary).toHaveAttribute('aria-expanded', 'false')
+      await agentPanel.waitForConversationToSettle()
+
+      expect(await agentPanel.workSummaryTop()).toBeCloseTo(before, 0)
+      await expect(agentPanel.latestButton).toBeHidden()
+    })
+
+    test('keeps a Worked summary in place when its trace expands at the bottom of a chat that scrolls', async ({
+      acceptedTurns,
+      agentPanel,
+      getWebSocket
+    }) => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      const socket = await getWebSocket()
+      await finishWorkedTurnAfterLongReply({
+        acceptedTurns,
+        agentPanel,
+        socket
+      })
+      const summary = agentPanel.workSummary
+      await expect(
+        agentPanel.root.getByText('Done.', { exact: true })
+      ).toBeInViewport()
+      await expect(agentPanel.latestButton).toBeHidden()
+      const before = await agentPanel.workSummaryTop()
+
+      await summary.click()
+      await expect(
+        agentPanel.root.getByText('Step 3: check the graph.')
+      ).toBeVisible()
+      await agentPanel.waitForConversationToSettle()
+
+      expect(await agentPanel.workSummaryTop()).toBeCloseTo(before, 0)
+      await expect(agentPanel.latestButton).toBeVisible()
+
+      await summary.click()
+      await expect(summary).toHaveAttribute('aria-expanded', 'false')
+      await agentPanel.waitForConversationToSettle()
+      await expect(agentPanel.latestButton).toBeHidden()
+    })
+
+    test('follows a new reply after a trace collapses at the end of a long chat', async ({
+      acceptedTurns,
+      agentPanel,
+      getWebSocket
+    }) => {
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      const socket = await getWebSocket()
+      await finishWorkedTurnAfterLongReply({
+        acceptedTurns,
+        agentPanel,
+        socket
+      })
+      const summary = agentPanel.workSummary
+      await expect(summary).toBeInViewport()
+      await expect(agentPanel.latestButton).toBeHidden()
+
+      await summary.click()
+      await expect(
+        agentPanel.root.getByText('Step 3: check the graph.')
+      ).toBeVisible()
+      await agentPanel.waitForConversationToSettle()
+      await expect(agentPanel.latestButton).toBeVisible()
+
+      await summary.click()
+      await expect(summary).toHaveAttribute('aria-expanded', 'false')
+      await agentPanel.waitForConversationToSettle()
+      await expect(agentPanel.latestButton).toBeHidden()
+
+      const userMessages = agentPanel.root.getByTestId('user-message-bubble')
+      await agentPanel.sendMessage('Explain the next step in detail')
+      await expect(userMessages).toHaveText([
+        'Explain this workflow in detail',
+        'Plan this workflow',
+        'Explain the next step in detail'
+      ])
+      expect(acceptedTurns).toHaveLength(3)
+      pushDelta(
+        socket,
+        Array.from(
+          { length: 50 },
+          (_, index) => `Next step ${index + 1}: more detail.\n\n`
+        ).join(''),
+        acceptedTurns[2].message_id
+      )
+
+      await expect(
+        agentPanel.root.getByText('Next step 50: more detail.', {
+          exact: true
+        })
+      ).toBeInViewport()
+      await expect(agentPanel.latestButton).toBeHidden()
+    })
+
+    test.describe('with room for an expanded trace', () => {
+      test.use({ viewport: { width: 1280, height: 1000 } })
+
+      test('follows a new reply once a fitting Worked trace finishes expanding', async ({
+        acceptedTurns,
+        agentPanel,
+        getWebSocket
+      }) => {
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+
+        const socket = await getWebSocket()
+        const userMessages = agentPanel.root.getByTestId('user-message-bubble')
+        await agentPanel.sendMessage('Plan this workflow')
+        await expect(userMessages).toHaveText(['Plan this workflow'])
+        pushThinking(
+          socket,
+          Array.from(
+            { length: 3 },
+            (_, index) => `Step ${index + 1}: check the graph.`
+          ).join('\n\n')
+        )
+        socket.send(JSON.stringify(TOOL_CALL_EVENT))
+        pushDelta(socket, 'Done.')
+        socket.send(JSON.stringify(MESSAGE_DONE_EVENT))
+
+        const summary = agentPanel.workSummary
+        await expect(summary).toHaveAttribute('aria-expanded', 'false')
+        await agentPanel.waitForConversationToSettle()
+
+        await summary.click()
+        await expect(
+          agentPanel.root.getByText('Step 3: check the graph.')
+        ).toBeVisible()
+        await agentPanel.waitForConversationToSettle()
+        await expect
+          .poll(
+            () =>
+              agentPanel.conversationScroll.evaluate(
+                (element) => element.scrollHeight > element.clientHeight
+              ),
+            { message: 'the expanded trace must still fit the panel' }
+          )
+          .toBe(false)
+
+        await agentPanel.sendMessage('Explain this workflow in detail')
+        await expect(userMessages).toHaveText([
+          'Plan this workflow',
+          'Explain this workflow in detail'
+        ])
+        expect(acceptedTurns).toHaveLength(2)
+        pushDelta(
+          socket,
+          Array.from(
+            { length: 50 },
+            (_, index) => `Paragraph ${index + 1}: workflow detail.\n\n`
+          ).join(''),
+          acceptedTurns[1].message_id
+        )
+
+        await expect(
+          agentPanel.root.getByText('Paragraph 50: workflow detail.', {
+            exact: true
+          })
+        ).toBeInViewport()
+        await expect(agentPanel.latestButton).toBeHidden()
+      })
     })
   }
 )
