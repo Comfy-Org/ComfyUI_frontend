@@ -877,15 +877,15 @@ function isNoPaymentMethodRefusal(error: unknown): boolean {
 
 let unmounted = false
 let stopDefaultCardReturnRefresh: (() => void) | null = null
-const dialogScope = new AbortController()
+let checkoutScope: AbortController | null = null
 watch(
   () => workspaceStore.workspaceTransitionGeneration,
-  () => dialogScope.abort(),
+  () => checkoutScope?.abort(),
   { flush: 'sync' }
 )
 onUnmounted(() => {
   unmounted = true
-  dialogScope.abort()
+  checkoutScope?.abort()
   stopDefaultCardReturnRefresh?.()
 })
 
@@ -1010,15 +1010,17 @@ async function openCheckoutInReservedTab(): Promise<
     step.value = 'checkoutBlocked'
     return 'blocked'
   }
+  const scope = new AbortController()
+  checkoutScope = scope
   loading.value = true
   try {
     if (!balance.value) await Promise.allSettled([fetchBalance()])
     const checkoutUrl = await createHostedCheckout(
       payAmount.value * 100,
       returnUrl,
-      dialogScope.signal
+      scope.signal
     )
-    if (dialogScope.signal.aborted) {
+    if (unmounted || scope.signal.aborted) {
       checkoutTab.close()
       return 'abandoned'
     }
@@ -1028,8 +1030,9 @@ async function openCheckoutInReservedTab(): Promise<
   } catch (error) {
     checkoutTab.close()
     console.error('Hosted top-up checkout failed to open', error)
-    return dialogScope.signal.aborted ? 'abandoned' : 'failed'
+    return unmounted || scope.signal.aborted ? 'abandoned' : 'failed'
   } finally {
+    if (checkoutScope === scope) checkoutScope = null
     loading.value = false
   }
 }

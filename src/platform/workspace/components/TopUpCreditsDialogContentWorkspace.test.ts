@@ -1047,20 +1047,27 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
-    it('abandons a checkout still opening once this tab starts switching workspace', async () => {
+    it('abandons a checkout still opening once this tab starts switching workspace, then opens the next attempt', async () => {
       refuseForNoPaymentMethod()
       const handedSignals: AbortSignal[] = []
-      vi.spyOn(workspaceApi, 'createTopupCheckout').mockImplementation(
-        (_amountCents, _returnUrl, signal) => {
+      vi.spyOn(workspaceApi, 'createTopupCheckout')
+        .mockImplementationOnce((_amountCents, _returnUrl, signal) => {
           if (signal) handedSignals.push(signal)
           return new Promise((_resolve, reject) =>
             signal?.addEventListener('abort', () => reject(signal.reason))
           )
-        }
-      )
-      const tab = newCheckoutTab()
-      vi.spyOn(window, 'open').mockReturnValue(tab as never)
-      await userEvent.click((await payAndGetRefused()).continueButton)
+        })
+        .mockImplementationOnce(async (_amountCents, _returnUrl, signal) => {
+          if (signal) handedSignals.push(signal)
+          return { checkout_url: checkoutUrl }
+        })
+      const abandonedTab = newCheckoutTab()
+      const nextTab = newCheckoutTab()
+      vi.spyOn(window, 'open')
+        .mockReturnValueOnce(abandonedTab as never)
+        .mockReturnValueOnce(nextTab as never)
+      const { continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
       await waitFor(() => expect(handedSignals).toHaveLength(1))
 
       Object.assign(useTeamWorkspaceStore(), {
@@ -1068,9 +1075,16 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       })
 
       expect(handedSignals[0].aborted).toBe(true)
-      await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
-      expect(tab.location.href).toBe('')
+      await waitFor(() => expect(abandonedTab.close).toHaveBeenCalledOnce())
+      expect(abandonedTab.location.href).toBe('')
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Continue to checkout' })
+      )
+
+      await waitFor(() => expect(nextTab.location.href).toBe(checkoutUrl))
+      expect(handedSignals[1].aborted).toBe(false)
     })
 
     describe('reopening checkout from the hand-off', () => {
