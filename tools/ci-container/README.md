@@ -170,8 +170,8 @@ a new version when a rebuild is needed. To pause releases, set
 `CI_CONTAINER_PUBLISH_ENABLED=false` and let the active run finish.
 
 Publishing and consumer adoption remain separate stages of
-[FE-3237](https://linear.app/comfyorg/issue/FE-3237). Existing consumers still use
-`ghcr.io/comfy-org/comfyui-ci-container:0.0.27`. Changing the updater to discover
+[FE-3237](https://linear.app/comfyorg/issue/FE-3237). Consumers use
+`ghcr.io/comfy-org/comfyui-ci-container:0.0.28`, the first monorepo release. Changing the updater to discover
 monorepo source tags, updating consumers, and archiving the old repository
 belong to FE-3240. Keep the old package versions available for rollback.
 Keep the archived repository readable: every publication checks that its
