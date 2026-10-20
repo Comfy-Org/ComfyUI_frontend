@@ -4,6 +4,7 @@ import {
   clearRevealedLinks,
   setRevealedLinks
 } from '@/lib/litegraph/src/canvas/linkRevealState'
+import type { LinkRevealKind } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { app } from '@/scripts/app'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -14,7 +15,7 @@ interface SlotLinkRevealOptions {
   nodeId?: NodeId
   index: number
   type: 'input' | 'output'
-  source?: 'hover' | 'drag'
+  kind?: LinkRevealKind
 }
 
 export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
@@ -42,7 +43,7 @@ export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
         ? [link.id]
         : []
     )
-    if (setRevealedLinks(scope.rootGraphId, linkIds, owner, options.source)) {
+    if (setRevealedLinks(scope.rootGraphId, linkIds, owner, options.kind)) {
       app.canvas.setDirty(false, true)
     }
   }

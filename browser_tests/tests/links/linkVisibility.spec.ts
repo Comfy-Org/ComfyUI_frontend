@@ -86,6 +86,23 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     })
   })
 
+  test('a hidden link snaps back and settles behind its badge', async ({
+    comfyPage,
+    linkVisibility
+  }) => {
+    await linkVisibility.hideFirstLink()
+
+    await expect
+      .poll(async () =>
+        Object.values(
+          (await comfyPage.workflow.getExportedWorkflow()).extra
+            ?.linkPresentation ?? {}
+        )
+      )
+      .toEqual([{ hidden: true }])
+    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+  })
+
   test('persists a hidden renamed link through graph load and browser reload', async ({
     comfyPage,
     linkVisibility
@@ -137,8 +154,9 @@ test.describe(
   'Hidden link Vue slot reveal',
   { tag: ['@canvas', '@vue-nodes', '@screenshot'] },
   () => {
-    test('reveals the link while connected input and output slots are hovered', async ({
+    test('reveals the link while connected input and output slots are hovered or dragged', async ({
       comfyPage,
+      comfyMouse,
       linkVisibility
     }) => {
       await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
@@ -187,45 +205,39 @@ test.describe(
         await linkVisibility.parkPointer()
         await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
       })
-    })
 
-    test('keeps the link revealed while a drag from its output leaves the slot', async ({
-      comfyPage,
-      comfyMouse,
-      linkVisibility
-    }) => {
-      await comfyPage.workflow.loadWorkflow('reroute/native_reroute')
-
-      const sourceNode =
-        await comfyPage.vueNodes.getFixtureByTitle('Load Checkpoint')
-      const outputSlot = sourceNode.getSlot('VAE')
-      await expect(outputSlot).toBeVisible()
-
-      await linkVisibility.hideLinkBetween({
-        sourceTitle: 'Load Checkpoint',
-        outputName: 'VAE',
-        targetTitle: 'VAE Decode',
-        inputName: 'vae'
-      })
-      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
-
-      const box = await outputSlot.boundingBox()
-      if (!box) throw new Error('Output slot has no bounding box')
-      const start = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-
-      await comfyMouse.move(start)
-      await comfyMouse.drag({ x: start.x + 160, y: start.y + 120 })
-      try {
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-link-revealed-while-dragging-output.png'
-        )
-      } finally {
-        await comfyMouse.move(start)
-        await comfyMouse.drop()
+      const outputBox = (await outputSlot.boundingBox())!
+      const inputBox = (await inputSlot.boundingBox())!
+      const start = {
+        x: outputBox.x + outputBox.width / 2,
+        y: outputBox.y + outputBox.height / 2
+      }
+      const dragTo = { x: start.x + 160, y: start.y + 120 }
+      const margin = 40
+      const left = Math.min(start.x, inputBox.x) - margin
+      const top = Math.min(start.y, inputBox.y) - margin
+      const linkRegion = {
+        x: left,
+        y: top,
+        width: Math.max(dragTo.x, inputBox.x + inputBox.width) + margin - left,
+        height: Math.max(dragTo.y, inputBox.y + inputBox.height) + margin - top
       }
 
-      await linkVisibility.parkPointer()
-      await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+      await test.step('Dragging away from the output keeps the link revealed', async () => {
+        await comfyMouse.move(start)
+        await comfyMouse.drag(dragTo)
+        await expect(comfyPage.page).toHaveScreenshot(
+          'vue-link-revealed-while-dragging-output.png',
+          { clip: linkRegion }
+        )
+      })
+
+      await test.step('Dropping the drag hides the link again', async () => {
+        await comfyMouse.move(start)
+        await comfyMouse.drop()
+        await linkVisibility.parkPointer()
+        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+      })
     })
   }
 )

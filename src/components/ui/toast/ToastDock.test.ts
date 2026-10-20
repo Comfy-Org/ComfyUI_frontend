@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { ConfigProvider } from 'reka-ui'
 import { describe, expect, it } from 'vitest'
 
-import Popover from '../Popover.vue'
+import Popover from '@/components/ui/Popover.vue'
 import ToastDock from './ToastDock.vue'
 
 describe('ToastDock', () => {

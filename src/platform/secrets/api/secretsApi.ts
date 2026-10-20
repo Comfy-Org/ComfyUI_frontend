@@ -12,8 +12,8 @@ import type {
   SecretMetadata,
   SecretProviderInfo,
   SecretUpdateRequest
-} from '../types'
-import { SECRET_ERROR_CODES } from '../types'
+} from '@/platform/secrets/types'
+import { SECRET_ERROR_CODES } from '@/platform/secrets/types'
 
 export class SecretsApiError extends Error {
   constructor(

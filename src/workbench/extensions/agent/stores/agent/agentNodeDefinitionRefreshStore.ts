@@ -6,7 +6,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 function isSuccessfulRestart(event: AgentWsEvent): boolean {
   return (

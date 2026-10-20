@@ -2,20 +2,11 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import NumberField from './NumberField.vue'
 import NumberFieldDecrement from './NumberFieldDecrement.vue'
 import NumberFieldIncrement from './NumberFieldIncrement.vue'
 import NumberFieldInput from './NumberFieldInput.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-})
 
 function renderNumberField(rootAttrs: string, initialValue: number | null) {
   const value = ref(initialValue)
@@ -36,13 +27,13 @@ function renderNumberField(rootAttrs: string, initialValue: number | null) {
     }),
     template: `
       <NumberField :model-value="value" ${rootAttrs} @update:model-value="onUpdate">
-        <NumberFieldDecrement />
+        <NumberFieldDecrement aria-label="Decrement" />
         <NumberFieldInput aria-label="Amount" />
-        <NumberFieldIncrement />
+        <NumberFieldIncrement aria-label="Increment" />
       </NumberField>
     `
   })
-  render(Harness, { global: { plugins: [i18n] } })
+  render(Harness)
   return { value, updates, input: screen.getByRole('spinbutton') }
 }
 

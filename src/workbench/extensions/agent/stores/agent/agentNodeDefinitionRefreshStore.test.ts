@@ -5,7 +5,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/stores/commandStore'
 
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentNodeDefinitionRefreshStore } from './agentNodeDefinitionRefreshStore'
 
 vi.mock(import('@/platform/telemetry/reportError'))

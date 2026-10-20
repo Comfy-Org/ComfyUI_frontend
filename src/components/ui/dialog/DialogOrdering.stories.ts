@@ -51,7 +51,7 @@ const meta: Meta = {
           <DialogContent data-testid="dialog-a" class="gap-4 p-6" @pointer-down-outside.prevent>
             <DialogTitle>Dialog A</DialogTitle>
             <input aria-label="Dialog input" class="rounded border p-2" placeholder="Dialog input" />
-            <SingleSelect v-model="selected" label="Choose a value" :options />
+            <SingleSelect v-model="selected" label="Choose a value" accessible-label="Choose a value" :options />
             <Menu :items><template #trigger><Button>Open menu</Button></template></Menu>
             <Popover><template #button><Button>Open popover</Button></template><Button>Popover action</Button></Popover>
             <div class="flex gap-2">

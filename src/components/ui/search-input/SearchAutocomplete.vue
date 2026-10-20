@@ -27,7 +27,7 @@
         :class="cn('absolute', sizeConfig.clearPos)"
         variant="textonly"
         size="icon-sm"
-        :aria-label="$t('g.clear')"
+        :aria-label="clearLabel"
         @click.stop="clearSearch"
       >
         <i :class="cn('icon-[lucide--x]', sizeConfig.icon)" />
@@ -65,7 +65,8 @@
             sizeConfig.inputText
           )
         "
-        :placeholder="placeholderText"
+        :placeholder
+        :aria-label="accessibleLabel"
         :auto-focus="autofocus"
         @compositionstart="isComposing = true"
         @compositionend="isComposing = false"
@@ -122,7 +123,6 @@ import {
   ComboboxPortal
 } from 'reka-ui'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { SearchInputVariants } from './searchInput.variants'
@@ -131,10 +131,10 @@ import {
   searchInputVariants
 } from './searchInput.variants'
 
-const { t } = useI18n()
-
 const {
   placeholder,
+  accessibleLabel,
+  clearLabel,
   icon = 'icon-[lucide--search]',
   autofocus = false,
   inputId,
@@ -151,6 +151,8 @@ const {
   contentStyle
 } = defineProps<{
   placeholder?: string
+  accessibleLabel: string
+  clearLabel: string
   icon?: string
   autofocus?: boolean
   inputId?: string
@@ -190,10 +192,6 @@ function open() {
 }
 
 defineExpose({ focus, open })
-
-const placeholderText = computed(
-  () => placeholder ?? t('g.searchPlaceholder', { subject: '' })
-)
 
 function clearSearch() {
   modelValue.value = ''

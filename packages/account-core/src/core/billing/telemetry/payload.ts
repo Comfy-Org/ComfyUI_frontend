@@ -1,7 +1,7 @@
 import type {
   BillingSurface,
   BillingTelemetryEvent
-} from './billingTelemetryEvent.js'
+} from './billingTelemetryEvent'
 
 type BillingTelemetryPayload = Record<string, unknown>
 

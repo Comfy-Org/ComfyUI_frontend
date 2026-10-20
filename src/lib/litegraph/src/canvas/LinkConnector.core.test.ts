@@ -26,8 +26,8 @@ import {
   createMockNodeOutputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
 
-import { registerLinkTopology } from '../LLink'
-import { registerRerouteChain } from '../Reroute'
+import { registerLinkTopology } from '@/lib/litegraph/src/LLink'
+import { registerRerouteChain } from '@/lib/litegraph/src/Reroute'
 
 interface TestContext {
   network: LinkNetwork & {
