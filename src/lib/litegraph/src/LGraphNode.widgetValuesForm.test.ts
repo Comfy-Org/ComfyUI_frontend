@@ -28,7 +28,7 @@ describe('widget values form serialization', () => {
 
   function installPolicy(layoutDependsOnValues = false) {
     setWidgetValuesFormPolicy({
-      widgetLayoutDependsOnValues: vi.fn(() => layoutDependsOnValues)
+      widgetLayoutDependsOnValues: () => layoutDependsOnValues
     })
   }
 

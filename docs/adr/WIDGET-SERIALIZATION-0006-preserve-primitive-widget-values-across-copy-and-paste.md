@@ -12,8 +12,8 @@ Core serialization declares `widgets_values_form: { order: string[] }` only
 when it can prove the final `widgets_values` array is the one core produced
 from the live serializable widgets. A declared form is authoritative to
 readers, so a wrong form is worse than no form. Serializers that replace the
-values must declare their own form; the serializer reports object-shaped
-values that arrive without one.
+values must declare their own form; object-shaped values that arrive without
+one stay undeclared.
 
 A declared form is closed, so core does not declare one for a node whose
 definition makes its widget set depend on its values, including dynamic

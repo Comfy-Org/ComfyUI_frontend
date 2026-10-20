@@ -17,7 +17,6 @@ import {
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { installLegacyObjectSerializer } from '@e2e/fixtures/helpers/legacyObjectSerializer'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -199,6 +198,32 @@ const canvasSeed: ComfyWorkflowJSON = {
   ],
   links: [],
   version: 0.4
+}
+
+/**
+ * Replaces the added node's `widgets_values` with a plain object and no
+ * form, the shape VideoHelperSuite's `onSerialize` produces. Core leaves such
+ * a payload undeclared, so the host has no order for it and refuses the add.
+ */
+async function installLegacyObjectSerializer(
+  page: Page,
+  nodeType: string
+): Promise<void> {
+  await page.evaluate((nodeType) => {
+    window.app!.registerExtension({
+      name: 'AgentRejectedNodeLegacyObjectSerializer',
+      nodeCreated(node) {
+        if (node.constructor.comfyClass !== nodeType) return
+        node.onSerialize = (data) => {
+          const values = data.widgets_values
+          Reflect.set(data, 'widgets_values', {
+            text: Array.isArray(values) ? values[0] : ''
+          })
+          delete data.widgets_values_form
+        }
+      }
+    })
+  }, nodeType)
 }
 
 function nodeIdsOfType(page: Page, type: string): Promise<string[]> {
