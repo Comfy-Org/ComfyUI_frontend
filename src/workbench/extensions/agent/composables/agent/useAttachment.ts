@@ -347,8 +347,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     const previewUrl = await options
       .resolveStoredPreview(file, ref)
       .catch(() => undefined)
-    if (previewUrl && options.staged().some((item) => item.id === id))
-      options.update(id, { previewUrl })
+    if (previewUrl) options.update(id, { previewUrl })
   }
 
   function cancelUpload(id: string): void {
