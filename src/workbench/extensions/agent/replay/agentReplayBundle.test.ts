@@ -61,6 +61,19 @@ describe('parseAgentReplayBundle basic validation', () => {
     })
   })
 
+  it('rejects full fidelity that still lists degradation reasons', () => {
+    expect(
+      parseAgentReplayBundle({
+        ...completeBundle(),
+        fidelity: {
+          complete: true,
+          level: 'full',
+          reasons: ['missing node definitions']
+        }
+      })
+    ).toMatchObject({ ok: false, reason: 'invalid_bundle' })
+  })
+
   it('rejects document frames for workflows absent from the snapshot set', () => {
     const input = completeBundle()
     input.entries[0].workflow_id = 'missing'

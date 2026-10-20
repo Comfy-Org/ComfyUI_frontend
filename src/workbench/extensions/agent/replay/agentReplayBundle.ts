@@ -18,11 +18,12 @@ const zAgentReplayFidelity = z
         path: ['complete'],
         message: 'complete must be true exactly when fidelity level is full'
       })
-    if (value.level === 'degraded' && value.reasons.length === 0)
+    if ((value.level === 'degraded') !== value.reasons.length > 0)
       ctx.addIssue({
         code: 'custom',
         path: ['reasons'],
-        message: 'degraded fidelity requires at least one reason'
+        message:
+          'reasons must be non-empty exactly when fidelity level is degraded'
       })
   })
 
