@@ -392,11 +392,11 @@ describe('VideoCompareSlider', () => {
   })
 })
 
-function pointerCapabilities(fine: boolean) {
+function pointerCapabilities(fine: boolean, primaryFine = fine) {
   vi.spyOn(window, 'matchMedia').mockImplementation((media) =>
     Object.assign(new EventTarget(), {
       media,
-      matches: fine,
+      matches: media.includes('any-') ? fine : primaryFine,
       onchange: null,
       addListener: vi.fn(),
       removeListener: vi.fn()
@@ -405,13 +405,19 @@ function pointerCapabilities(fine: boolean) {
 }
 
 it.for([
-  { clientX: 200, expected: '25' },
-  { clientX: 50, expected: '0' },
-  { clientX: 600, expected: '100' }
+  { scenario: 'mouse hover', clientX: 200, expected: '25', primaryFine: true },
+  { scenario: 'left edge', clientX: 50, expected: '0', primaryFine: true },
+  { scenario: 'right edge', clientX: 600, expected: '100', primaryFine: true },
+  {
+    scenario: 'mouse attached to a touch-first device',
+    clientX: 200,
+    expected: '25',
+    primaryFine: false
+  }
 ])(
-  'follows a fine mouse pointer to $expected without pressing or preventing scroll',
-  async ({ clientX, expected }) => {
-    pointerCapabilities(true)
+  '$scenario follows to $expected without pressing or preventing scroll',
+  async ({ clientX, expected, primaryFine }) => {
+    pointerCapabilities(true, primaryFine)
     const { surface, slider } = await renderSlider({
       followPointerOnHover: true
     })
