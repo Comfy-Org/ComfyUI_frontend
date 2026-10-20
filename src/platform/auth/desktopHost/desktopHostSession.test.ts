@@ -7,6 +7,7 @@ import type {
 import {
   canDesktopHostSwitchWorkspace,
   desktopHostUser,
+  desktopHostPartnerNodeToken,
   desktopHostWorkspaceToken,
   isDesktopHostSessionActive,
   requestDesktopHostSignIn,
@@ -88,6 +89,26 @@ describe('desktopHostSession', () => {
     await expect(desktopHostWorkspaceToken('ws-1')).resolves.toBe('host-token')
     expect(bridge.getWorkspaceToken).toHaveBeenCalledWith('ws-1')
   })
+
+  it.for([
+    {
+      name: 'throws',
+      getPartnerNodeToken: () => {
+        throw new Error('ipc failed')
+      }
+    },
+    {
+      name: 'rejects',
+      getPartnerNodeToken: () => Promise.reject(new Error('ipc failed'))
+    }
+  ])(
+    'returns no partner token when the bridge $name',
+    async ({ getPartnerNodeToken }) => {
+      const { bridge } = fakeBridge(SIGNED_IN)
+      await startDesktopHostSession({ ...bridge, getPartnerNodeToken })
+      await expect(desktopHostPartnerNodeToken('ws-1')).resolves.toBeUndefined()
+    }
+  )
 
   it('is active but signed out, with no token, when Desktop has no account', async () => {
     const { bridge } = fakeBridge({ status: 'signed_out' })

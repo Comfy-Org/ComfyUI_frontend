@@ -151,7 +151,6 @@ export function desktopHostPartnerNodeToken(
   workspaceId: string
 ): Promise<string | undefined> {
   return fetchToken(
-    (current) =>
-      current.getPartnerNodeToken?.(workspaceId) ?? Promise.resolve(null)
+    async (current) => current.getPartnerNodeToken?.(workspaceId) ?? null
   )
 }
