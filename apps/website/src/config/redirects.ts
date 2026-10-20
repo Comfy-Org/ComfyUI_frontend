@@ -51,7 +51,7 @@ const SUPPORTED_MODELS_PATH = '/p/supported-models'
 
 const SUPPORTED_NODES_PATH = '/cloud/supported-nodes'
 
-/** The maintained answer to "which custom nodes are on Cloud". */
+/** The maintained answer to "which custom nodes are on Cloud"; the HTML routes land here, the Markdown twins stay on /cloud.md. */
 const CUSTOM_NODES_ON_CLOUD_ARTICLE =
   'https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud'
 
@@ -134,15 +134,15 @@ const supportedNodesRedirects: readonly SiteRedirect[] = (
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}.md`,
-    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
+    destination: `${locale}/cloud.md`
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}/llms.txt`,
-    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
+    destination: `${locale}/cloud.md`
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}/:pack.md`,
-    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
+    destination: `${locale}/cloud.md`
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}/:path+`,

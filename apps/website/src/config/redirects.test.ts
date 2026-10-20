@@ -309,13 +309,7 @@ describe('the retired supported-nodes pages', () => {
     '/cloud/supported-nodes/:path+',
     '/zh-CN/cloud/supported-nodes',
     '/zh-CN/cloud/supported-nodes/',
-    '/zh-CN/cloud/supported-nodes/:path+',
-    '/cloud/supported-nodes.md',
-    '/cloud/supported-nodes/llms.txt',
-    '/cloud/supported-nodes/:pack.md',
-    '/zh-CN/cloud/supported-nodes.md',
-    '/zh-CN/cloud/supported-nodes/llms.txt',
-    '/zh-CN/cloud/supported-nodes/:pack.md'
+    '/zh-CN/cloud/supported-nodes/:path+'
   ])('sends %s to the Custom nodes on Cloud article with a 308', (source) => {
     expect(find(source)).toEqual({
       source,
@@ -324,7 +318,21 @@ describe('the retired supported-nodes pages', () => {
     })
   })
 
-  it('sends the pack Markdown twins ahead of the catch-all', () => {
+  it.for([
+    ['/cloud/supported-nodes.md', '/cloud.md'],
+    ['/cloud/supported-nodes/llms.txt', '/cloud.md'],
+    ['/cloud/supported-nodes/:pack.md', '/cloud.md'],
+    ['/zh-CN/cloud/supported-nodes.md', '/zh-CN/cloud.md'],
+    ['/zh-CN/cloud/supported-nodes/llms.txt', '/zh-CN/cloud.md'],
+    ['/zh-CN/cloud/supported-nodes/:pack.md', '/zh-CN/cloud.md']
+  ])(
+    'keeps Markdown readers on the Cloud twin: %s to %s',
+    ([source, destination]) => {
+      expect(find(source)).toEqual({ source, destination, permanent: true })
+    }
+  )
+
+  it('sends the pack Markdown twins to the Cloud twin before the catch-all', () => {
     const order = vercelRedirects.map(({ source }) => source)
     expect(order.indexOf('/cloud/supported-nodes/:pack.md')).toBeLessThan(
       order.indexOf('/cloud/supported-nodes/:path+')
@@ -334,12 +342,9 @@ describe('the retired supported-nodes pages', () => {
     )
   })
 
-  it('leaves no supported-nodes row pointing anywhere else', () => {
-    expect(
-      siteRedirects
-        .filter(({ source }) => source.includes('/cloud/supported-nodes'))
-        .filter(({ destination }) => destination !== article)
-    ).toEqual([])
+  it('points the Markdown twins at pages that exist', () => {
+    expect(pageExistsAt('/cloud/')).toBe(true)
+    expect(pageExistsAt('/zh-CN/cloud/')).toBe(true)
   })
 
   it('ships no Astro stub under the retired address', () => {
