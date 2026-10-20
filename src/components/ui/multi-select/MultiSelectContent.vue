@@ -29,7 +29,7 @@
           :class="actionsClass"
         >
           <span
-            v-if="showSelectedCount"
+            v-if="formatSelectedCount"
             class="px-1 text-sm text-muted-foreground"
           >
             {{ formatSelectedCount(selectedItems.length) }}
@@ -81,7 +81,7 @@
           :class="actionsClass"
         >
           <span
-            v-if="showSelectedCount"
+            v-if="formatSelectedCount"
             class="px-1 text-sm text-muted-foreground"
           >
             {{ formatSelectedCount(selectedItems.length) }}
@@ -134,7 +134,6 @@ const {
   clearAllLabel,
   formatSelectedCount,
   showSearchBox,
-  showSelectedCount,
   showClearButton,
   actionsPlacement,
   searchPlaceholder,
@@ -143,13 +142,12 @@ const {
   contentStyle,
   liftedContentStyle
 } = defineProps<{
-  searchLabel: string
+  searchLabel?: string
   emptyText: string
-  clearAllLabel: string
-  formatSelectedCount: (count: number) => string
+  clearAllLabel?: string
+  formatSelectedCount?: (count: number) => string
   options: SelectOption[]
   showSearchBox: boolean
-  showSelectedCount: boolean
   showClearButton: boolean
   actionsPlacement: 'header' | 'footer'
   searchPlaceholder?: string
@@ -166,7 +164,9 @@ const emit = defineEmits<{
 const selectedItems = defineModel<SelectOption[]>({ required: true })
 const searchQuery = defineModel<string>('searchQuery', { required: true })
 
-const hasActions = computed(() => showSelectedCount || showClearButton)
+const hasActions = computed(
+  () => Boolean(formatSelectedCount) || showClearButton
+)
 const actionsClass = computed(() =>
   cn(
     'flex shrink-0 items-center justify-between',

@@ -2,12 +2,13 @@ import { render, screen } from '@testing-library/vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import userEvent from '@testing-library/user-event'
 import { FocusScope } from 'reka-ui'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, expectTypeOf, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import MultiSelect from './MultiSelect.vue'
+import type { MultiSelectProps } from './types'
 
 const options = [
   { name: 'Option A', value: 'a' },
@@ -76,6 +77,53 @@ afterEach(() => {
 })
 
 describe('MultiSelect', () => {
+  it('requires copy independently for each enabled feature', () => {
+    type Base = { accessibleLabel: string; emptyText: string }
+    expectTypeOf<
+      Base & { showSearchBox: true }
+    >().not.toMatchTypeOf<MultiSelectProps>()
+    expectTypeOf<
+      Base & { showClearButton: true }
+    >().not.toMatchTypeOf<MultiSelectProps>()
+    expectTypeOf<
+      Base & { showSelectedCount: true }
+    >().not.toMatchTypeOf<MultiSelectProps>()
+    expectTypeOf<{
+      accessibleLabel: string
+    }>().not.toMatchTypeOf<MultiSelectProps>()
+    expectTypeOf<
+      Base & {
+        showSearchBox: boolean
+        searchLabel: string
+        showClearButton: boolean
+        clearAllLabel: string
+        showSelectedCount: boolean
+        formatSelectedCount: (count: number) => string
+      }
+    >().toMatchTypeOf<MultiSelectProps>()
+  })
+
+  it.for([undefined, false] as const)(
+    'allows omitted feature copy with flags=%s',
+    async (enabled) => {
+      const props = {
+        accessibleLabel: 'Choose options',
+        emptyText: 'Nothing available',
+        showSearchBox: enabled,
+        showClearButton: enabled,
+        showSelectedCount: enabled,
+        modelValue: []
+      } satisfies MultiSelectProps & { modelValue: [] }
+      render(MultiSelect, { props })
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Choose options' }))
+      expect(screen.getByText('Nothing available')).toBeVisible()
+      expect(screen.queryByRole('combobox')).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Clear all' })).toBeNull()
+    }
+  )
+
   it.for(['header', 'footer'] as const)(
     'renders caller text and updates formatted counts in the %s',
     async (actionsPlacement) => {

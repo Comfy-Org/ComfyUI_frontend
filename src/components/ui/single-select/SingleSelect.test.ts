@@ -1,12 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'vue-component-type-helpers'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, expectTypeOf, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import SingleSelect from './SingleSelect.vue'
+import type { SingleSelectProps } from './types'
 
 const options = [
   { name: 'Option A', value: 'a' },
@@ -86,6 +87,48 @@ afterEach(() => {
 })
 
 describe('SingleSelect', () => {
+  it('requires search copy only when searching can be enabled', () => {
+    expectTypeOf<{
+      accessibleLabel: string
+      searchable: true
+    }>().not.toMatchTypeOf<SingleSelectProps>()
+    expectTypeOf<{
+      accessibleLabel: string
+      searchable: true
+      searchLabel: string
+    }>().not.toMatchTypeOf<SingleSelectProps>()
+    expectTypeOf<{
+      accessibleLabel: string
+      searchable: boolean
+      emptyText: string
+    }>().not.toMatchTypeOf<SingleSelectProps>()
+    expectTypeOf<{
+      accessibleLabel: string
+      searchable: boolean
+      searchLabel: string
+      emptyText: string
+    }>().toMatchTypeOf<SingleSelectProps>()
+    expectTypeOf<{
+      searchable: false
+    }>().not.toMatchTypeOf<SingleSelectProps>()
+  })
+
+  it.for([undefined, false] as const)(
+    'allows omitted search copy with searchable=%s',
+    async (searchable) => {
+      const props = {
+        accessibleLabel: 'Choose an option',
+        searchable,
+        options,
+        modelValue: undefined
+      } satisfies SingleSelectProps & { modelValue: undefined }
+      render(SingleSelect, { props })
+      await openSelect(screen.getByLabelText('Choose an option'))
+      expect(screen.getByRole('option', { name: 'Option A' })).toBeVisible()
+      expect(screen.queryByRole('combobox', { name: 'Search' })).toBeNull()
+    }
+  )
+
   it('renders caller search and empty text without an i18n plugin', async () => {
     const user = userEvent.setup()
     render(SingleSelect, {

@@ -26,14 +26,15 @@
       v-model:search-query="searchQuery"
       :options
       :show-search-box
-      :show-selected-count
       :show-clear-button
       :actions-placement
       :search-placeholder
       :search-label
       :empty-text
       :clear-all-label
-      :format-selected-count
+      :format-selected-count="
+        showSelectedCount ? formatSelectedCount : undefined
+      "
       :list-max-height
       :popover-style
       :content-style

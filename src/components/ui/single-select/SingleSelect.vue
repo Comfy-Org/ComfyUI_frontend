@@ -1,6 +1,6 @@
 <template>
   <SearchableSingleSelect
-    v-if="searchable"
+    v-if="searchable && searchLabel !== undefined && emptyText !== undefined"
     v-model="selectedItem"
     v-bind="attrsWithoutClass"
     :class="attrsClass"

@@ -4,6 +4,7 @@ import { ref } from 'vue'
 import type { SelectOption } from '@/components/ui/select/types'
 
 import MultiSelect from './MultiSelect.vue'
+import type { MultiSelectProps } from './types'
 
 const meta: Meta<typeof MultiSelect> = {
   title: 'Components/Select/MultiSelect',
@@ -42,7 +43,7 @@ const meta: Meta<typeof MultiSelect> = {
 }
 
 export default meta
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<MultiSelectProps>
 
 const sampleOptions: SelectOption[] = [
   { name: 'Vue', value: 'vue' },
@@ -52,7 +53,7 @@ const sampleOptions: SelectOption[] = [
 ]
 
 export const Default: Story = {
-  render: (args) => ({
+  render: (args: MultiSelectProps) => ({
     components: { MultiSelect },
     setup() {
       const selected = ref<SelectOption[]>([])
@@ -128,8 +129,8 @@ export const ChipsViaValueSlot: Story = {
 }
 
 export const WithSearchBox: Story = {
-  args: { showSearchBox: true },
-  render: (args) => ({
+  args: { showSearchBox: true, searchLabel: 'Search categories' },
+  render: (args: MultiSelectProps) => ({
     components: { MultiSelect },
     setup() {
       const selected = ref<SelectOption[]>([])
@@ -143,10 +144,13 @@ export const WithSearchBox: Story = {
 export const AllHeaderFeatures: Story = {
   args: {
     showSearchBox: true,
+    searchLabel: 'Search categories',
     showSelectedCount: true,
-    showClearButton: true
+    formatSelectedCount: (count: number) => `${count} selected`,
+    showClearButton: true,
+    clearAllLabel: 'Clear all'
   },
-  render: (args) => ({
+  render: (args: MultiSelectProps) => ({
     components: { MultiSelect },
     setup() {
       const selected = ref<SelectOption[]>([])
