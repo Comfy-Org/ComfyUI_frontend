@@ -1,41 +1,9 @@
 <template>
   <div class="flex flex-col gap-6" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
-    <div
-      v-if="isPaused"
-      role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 sm:flex-row sm:items-center sm:gap-2"
-      data-testid="billing-paused-banner"
-    >
-      <div class="flex min-w-0 flex-1 flex-col gap-1">
-        <div class="flex items-center gap-2">
-          <i
-            :class="
-              cn(
-                'size-4 shrink-0',
-                paused.muted
-                  ? 'icon-[lucide--circle-alert] text-muted-foreground'
-                  : 'icon-[lucide--triangle-alert] text-warning'
-              )
-            "
-          />
-          <span class="text-sm text-foreground">{{ $t(paused.titleKey) }}</span>
-        </div>
-        <p class="m-0 pl-6 text-sm text-muted-foreground">
-          {{ $t(paused.bodyKey) }}
-        </p>
-      </div>
-      <Button
-        v-if="paused.action === 'updatePayment'"
-        variant="inverted"
-        size="lg"
-        class="shrink-0"
-        :loading="isUpdatingPayment"
-        @click="updatePayment"
-      >
-        {{ $t('workspacePanel.billingStatus.updatePayment') }}
-      </Button>
-    </div>
+    <BillingPausedBanner
+      :can-manage-billing="capabilities.canManageBilling.value"
+    />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -100,7 +68,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -111,6 +78,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
+import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
@@ -121,11 +89,6 @@ import {
 import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import {
-  pausedBannerCopy,
-  usePausedBanner
-} from '@/platform/workspace/composables/usePausedBanner'
-import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const billing = useBillingContext()
@@ -135,11 +98,6 @@ const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
-const { isPaused } = usePausedBanner()
-const paused = computed(() =>
-  pausedBannerCopy(capabilities.canManageBilling.value)
-)
-const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 
 const HANDOFF_PATH = {
   owner: '/profile/billing',
