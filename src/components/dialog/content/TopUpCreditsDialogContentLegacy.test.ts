@@ -99,7 +99,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     vi.spyOn(window, 'open').mockImplementation(() => window)
   })
 
-  it('explains the Cloud plan requirement before continuing to payment', async () => {
+  it('shows the purchase disclosure before navigating to settings when subscription features are unavailable', async () => {
     useBillingContext().canAccessSubscriptionFeatures = computed(() => false)
     renderDialog({ source: 'deep_link' })
 
