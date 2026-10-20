@@ -214,6 +214,11 @@ test.describe(
         content: 'Build a product photo workflow',
         client_message_id: expect.stringMatching(
           /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+        ),
+        // The served bundle's version and commit, within what the server
+        // keeps: at most 64 bytes of [A-Za-z0-9.+-].
+        client_version: expect.stringMatching(
+          /^(?=.{1,64}$)[A-Za-z0-9.-]+\+([0-9a-f]{40}|unknown)$/
         )
       })
     })

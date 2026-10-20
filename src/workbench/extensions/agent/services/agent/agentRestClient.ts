@@ -240,51 +240,16 @@ export interface PostMessageInput {
 }
 
 /**
- * The turn POST body, plus `frontend_build_sha`.
+ * The bundle submitting this turn, sent as `client_version` so the agent can
+ * attribute the turn to the frontend build the browser is actually running.
+ * Production serves a weighted canary beside stable from the same package
+ * version, so the commit is what tells the two arms apart.
  *
- * Widened here rather than in `agentApiSchema.ts` because the generated types are
- * published from the cloud repo's `openapi.yaml`, so the field is only typed
- * locally until the next package release carries it. One line to delete then.
+ * The server keeps the value only if it is at most 64 bytes of
+ * `[A-Za-z0-9.+-]` and otherwise drops it without failing the turn. A
+ * `'unknown'` commit (a build with no git metadata) still satisfies that.
  */
-type TurnPostBody = AgentPostMessageRequest & {
-  frontend_build_sha?: string
-}
-
-/**
- * The commit of the frontend bundle submitting this turn, reported so the
- * server-emitted `agent_turn_completed` can be attributed to the build the
- * browser is actually running.
- *
- * R-461: that event's `frontend_build_sha` property arrives empty on every
- * event, because the agent service fills it from its own `FRONTEND_BUILD_SHA`
- * configuration — a single process-wide constant, and unset in production.
- * Production serves two frontend arms at once (a weighted canary beside
- * stable), so no value the agent service knows about itself can separate them:
- * a canary-only regression is diluted by the stable arm's share of the
- * denominator before it can reach its alert threshold. The arm identity is a
- * property of the submitting bundle, so the turn submission is the only place
- * it can come from.
- *
- * Why the body and not a request header: the browser reaches the agent service
- * through the ingest proxy, which deliberately forwards only `Content-Type`
- * plus the trusted identity headers it injects itself, and proxies the body
- * verbatim. A header would be dropped at that hop unless ingest's whitelist
- * were widened to pass a client-controlled one, which is a security boundary
- * doing its job. `client_message_id` above is the established precedent for a
- * client-supplied, telemetry-only string riding this body.
- *
- * Named exactly like the PostHog property it lands on, so the wire field and
- * the event property are the same name rather than a mapping to memorize.
- *
- * `__COMFYUI_FRONTEND_COMMIT__` is the literal `'unknown'` when the build had
- * no git metadata to read, and empty only if a build injects an empty
- * `FRONTEND_COMMIT_HASH`. Empty is omitted, since it is indistinguishable from
- * sending nothing; `'unknown'` is deliberately sent, because it separates "this
- * client does not report its build" from "it reports, and this build has no
- * commit identity" — which is what tells a reader whether the reporting path
- * itself works.
- */
-const FRONTEND_BUILD_SHA = __COMFYUI_FRONTEND_COMMIT__ || undefined
+const CLIENT_VERSION = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
 
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
@@ -711,7 +676,7 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body = withoutUndefined<TurnPostBody>({
+    const body = withoutUndefined<AgentPostMessageRequest>({
       content: req.content,
       ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: req.workflowId,
@@ -728,7 +693,7 @@ export function createAgentRestClient() {
       // events reach this canvas (PM-1875). Read ambiently rather than taken
       // from `req` because it belongs to the socket, not to the message.
       client_id: api.clientId,
-      frontend_build_sha: FRONTEND_BUILD_SHA
+      client_version: CLIENT_VERSION
     })
     return request(
       'post_thread_message',
