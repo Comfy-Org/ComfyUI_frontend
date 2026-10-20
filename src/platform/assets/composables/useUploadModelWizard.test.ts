@@ -55,6 +55,14 @@ vi.mock<unknown>(import('@/i18n'), () => ({
   d: (date: Date) => date.toISOString()
 }))
 
+function assetDownloadListener() {
+  const listener = vi
+    .mocked(api.addEventListener)
+    .mock.calls.findLast(([type]) => type === 'asset_download')?.[1]
+  if (typeof listener !== 'function') throw new Error('no listener')
+  return listener
+}
+
 describe('useUploadModelWizard', () => {
   const modelTypes = ref([{ name: 'Checkpoint', value: 'checkpoints' }])
   const mountedApps: App<Element>[] = []
@@ -354,10 +362,7 @@ describe('useUploadModelWizard', () => {
       status: 'completed' as const
     }
     const event = new CustomEvent('asset_download', { detail })
-    const handler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.find((c) => c[0] === 'asset_download')?.[1]
-    if (typeof handler !== 'function') throw new Error('no listener')
+    const handler = assetDownloadListener()
     handler(event)
 
     await nextTick()
@@ -387,9 +392,7 @@ describe('useUploadModelWizard', () => {
     expect(wizard.uploadStatus.value).toBe('processing')
 
     // Simulate WebSocket: download fails
-    const handler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.find((c) => c[0] === 'asset_download')?.[1]
+    const handler = assetDownloadListener()
 
     const failEvent = new CustomEvent('asset_download', {
       detail: {
@@ -404,7 +407,6 @@ describe('useUploadModelWizard', () => {
       }
     })
 
-    if (typeof handler !== 'function') throw new Error('no listener')
     handler(failEvent)
 
     await nextTick()
@@ -452,10 +454,7 @@ describe('useUploadModelWizard', () => {
     wizard.selectedModelType.value = 'checkpoints'
     await wizard.uploadModel()
 
-    const handler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
-    if (typeof handler !== 'function') throw new Error('no listener')
+    const handler = assetDownloadListener()
     handler(
       new CustomEvent('asset_download', {
         detail: {
@@ -528,10 +527,7 @@ describe('useUploadModelWizard', () => {
     wizard.selectedModelType.value = 'checkpoints'
     await wizard.uploadModel()
 
-    const handler = vi
-      .mocked(api.addEventListener)
-      .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
-    if (typeof handler !== 'function') throw new Error('no listener')
+    const handler = assetDownloadListener()
 
     await useAssetDownloadStore().cancelDownload('task-cancelled')
     await nextTick()
@@ -586,10 +582,7 @@ describe('useUploadModelWizard', () => {
       wizard.selectedModelType.value = 'checkpoints'
       await wizard.uploadModel()
 
-      const handler = vi
-        .mocked(api.addEventListener)
-        .mock.calls.findLast((call) => call[0] === 'asset_download')?.[1]
-      if (typeof handler !== 'function') throw new Error('no listener')
+      const handler = assetDownloadListener()
 
       const dispatchDownload = (
         detail: Partial<AssetDownloadWsMessage> &

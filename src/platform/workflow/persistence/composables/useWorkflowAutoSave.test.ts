@@ -6,10 +6,19 @@ import { render } from '@testing-library/vue'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { api } from '@/scripts/api'
+import { blankGraph } from '@/scripts/defaultGraph'
 
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
+
+function fireGraphChanged() {
+  const listener = vi
+    .mocked(api.addEventListener)
+    .mock.calls.find(([type]) => type === 'graphChanged')?.[1]
+  if (typeof listener !== 'function') throw new Error('no listener')
+  listener(new CustomEvent('graphChanged', { detail: blankGraph }))
+}
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
@@ -120,16 +129,11 @@ describe('useWorkflowAutoSave', () => {
       }
     })
 
-    const graphChangedCallback = vi.mocked(api.addEventListener).mock
-      .calls[0][1]
-    if (typeof graphChangedCallback !== 'function')
-      throw new Error('no listener')
-
-    graphChangedCallback({} as Parameters<typeof graphChangedCallback>[0])
+    fireGraphChanged()
 
     vi.advanceTimersByTime(500)
 
-    graphChangedCallback({} as Parameters<typeof graphChangedCallback>[0])
+    fireGraphChanged()
 
     vi.advanceTimersByTime(1999)
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
@@ -196,11 +200,7 @@ describe('useWorkflowAutoSave', () => {
 
     vi.advanceTimersByTime(1000)
 
-    const graphChangedCallback = vi.mocked(api.addEventListener).mock
-      .calls[0][1]
-    if (typeof graphChangedCallback !== 'function')
-      throw new Error('no listener')
-    graphChangedCallback({} as Parameters<typeof graphChangedCallback>[0])
+    fireGraphChanged()
 
     resolveSave!(true)
     await Promise.resolve()
@@ -247,11 +247,7 @@ describe('useWorkflowAutoSave', () => {
 
     useSettingStore().settingValues['Comfy.Workflow.AutoSaveDelay'] = -500
 
-    const graphChangedCallback = vi.mocked(api.addEventListener).mock
-      .calls[0][1]
-    if (typeof graphChangedCallback !== 'function')
-      throw new Error('no listener')
-    graphChangedCallback({} as Parameters<typeof graphChangedCallback>[0])
+    fireGraphChanged()
 
     await vi.runAllTimersAsync()
 
