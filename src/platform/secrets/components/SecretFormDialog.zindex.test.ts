@@ -1,27 +1,31 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { raiseModalLayer } from '@/utils/modalLayerStack'
+
 import SecretFormDialog from './SecretFormDialog.vue'
 
-vi.mock<unknown>(import('../composables/useSecretForm'), () => ({
-  useSecretForm: () => ({
-    form: { provider: '', name: '', secretValue: '' },
-    errors: {},
-    loading: false,
-    apiError: '',
-    providerOptions: [],
-    providerHelp: '',
-    selectedInputType: ref('text'),
-    credentialOptions: ref([]),
-    credentialType: ref<string | null>(null),
-    fileName: ref(''),
-    loadSecretFromFile: vi.fn(),
-    handleSubmit: vi.fn()
+vi.mock<unknown>(
+  import('@/platform/secrets/composables/useSecretForm'),
+  () => ({
+    useSecretForm: () => ({
+      form: { provider: '', name: '', secretValue: '' },
+      errors: {},
+      loading: false,
+      apiError: '',
+      providerOptions: [],
+      providerHelp: '',
+      selectedInputType: ref('text'),
+      credentialOptions: ref([]),
+      credentialType: ref<string | null>(null),
+      fileName: ref(''),
+      loadSecretFromFile: vi.fn(),
+      handleSubmit: vi.fn()
+    })
   })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -36,7 +40,7 @@ describe('SecretFormDialog z-index stacking', () => {
 
   beforeEach(() => {
     const openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
+    raiseModalLayer(openModal)
     openModalZIndex = Number(openModal.style.zIndex)
   })
 

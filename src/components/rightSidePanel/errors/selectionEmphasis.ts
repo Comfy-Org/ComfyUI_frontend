@@ -4,7 +4,7 @@ import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 
 // The negative margin and matching padding cancel out, so the background
 // bleeds 6px past the content without shifting the text.
-const EMPHASIS_CLASS = 'rounded-sm bg-blue-selection -mx-1.5 px-1.5'
+const EMPHASIS_CLASS = 'rounded-sm bg-primary/30 -mx-1.5 px-1.5'
 
 // Present even when unhighlighted so the emphasis animates both ways.
 const TRANSITION_CLASS =

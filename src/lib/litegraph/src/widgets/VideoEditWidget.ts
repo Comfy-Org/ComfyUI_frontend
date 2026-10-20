@@ -1,4 +1,4 @@
-import type { IVideoEditWidget } from '../types/widgets'
+import type { IVideoEditWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from './BaseWidget'
 import type { WidgetEventOptions } from './BaseWidget'
 

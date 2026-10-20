@@ -18,7 +18,7 @@
       v-if="
         ['in_progress', 'paused', 'completed'].includes(download.status ?? '')
       "
-      class="mt-2 flex flex-row items-center gap-2"
+      class="mt-2 flex items-center gap-2"
     >
       <div
         role="progressbar"
@@ -28,9 +28,9 @@
         aria-valuemax="100"
         class="flex-1"
       >
-        <div class="h-5 overflow-hidden rounded-full bg-secondary-background">
+        <div class="h-5 overflow-hidden rounded-full bg-secondary">
           <div
-            class="h-full bg-primary-background transition-[width]"
+            class="h-full bg-primary transition-[width]"
             :style="{ width: `${downloadProgressPercent}%` }"
           />
         </div>

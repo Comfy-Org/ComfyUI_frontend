@@ -1,14 +1,20 @@
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 import type {
+  AskUserResolution,
   AssistantMessage,
-  RunApprovalPart,
   TextPart,
   ThinkingPart,
   ToolPart
 } from './agentMessageParts'
-import { snapshotMessage } from './agentMessageParts'
+import {
+  askIdOf,
+  retireAskParts,
+  snapshotMessage,
+  toAskOrNoticePart,
+  toAskResolution
+} from './agentMessageParts'
 import type {
   UndeliverableAskContext,
   UndeliverableAskReason
@@ -84,13 +90,7 @@ export interface AgentEventTransport {
   notifyCanvasCaughtUp: () => void
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
-  /**
-   * PM-1658: drops a run-approval part the way an `agent_ask_resolved` frame
-   * would, for an ask resolved out of band. The transport owns the message
-   * every later emit republishes, so editing the store's copy alone lets a
-   * dismissed card reappear the next time this one snapshots.
-   */
-  dropAskPart: (askId: string) => void
+  retireAskPart: (askId: string, resolution: AskUserResolution) => void
   /**
    * Tears the transport down for a reason other than natural completion
    * (abort, drop, reset, hydrate). Flushes any tool-call parts held pending
@@ -325,35 +325,26 @@ export function createAgentEventTransport(
     return true
   }
 
-  /**
-   * Applies one `agent_ask` frame. Only the `run_approval` kind renders a
-   * part; returns `false` for any other kind, mirroring `ingest`'s early
-   * `return` for that case.
-   *
-   * That `false` reaches a live turn and still shows the user nothing, while
-   * the server parks waiting for an answer — the same dead-panel outcome as an
-   * ask dropped in routing, so it is reported the same way. Generated-contract
-   * kinds without a client renderer are tagged separately from unknown input.
-   */
+  function reportUnrenderedAsk(data: AgentAskEvent['data']): void {
+    reportUndeliverableAsk(
+      data,
+      data.kind === 'unknown' ? 'unknown-kind' : 'unrendered-kind'
+    )
+  }
+
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
-    if (data.kind !== 'run_approval') {
-      reportUndeliverableAsk(
-        data,
-        data.kind === 'ask_user' ? 'unrendered-kind' : 'unknown-kind'
-      )
+    const shown = message.parts.find((part) => askIdOf(part) === data.ask_id)
+    if (shown) {
+      if (shown.type === 'askUnavailable') reportUnrenderedAsk(data)
       return false
     }
+    const part = toAskOrNoticePart(data)
+    if (part.type === 'askUnavailable') reportUnrenderedAsk(data)
     dropDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
-    const part: RunApprovalPart = {
-      type: 'runApproval',
-      askId: data.ask_id,
-      workflowId: data.context?.workflow_id || undefined,
-      workflowName: data.context?.workflow_name || undefined
-    }
     message.parts.push(part)
     return true
   }
@@ -367,12 +358,17 @@ export function createAgentEventTransport(
     message.thinkingText = openThinking?.text
   }
 
-  /** Applies one `agent_ask_resolved` frame: drops the matching run-approval
-   * part, since its ask is no longer pending. */
-  function handleAskResolvedEvent(data: AgentAskResolvedEvent['data']): void {
-    message.parts = message.parts.filter(
-      (part) => part.type !== 'runApproval' || part.askId !== data.ask_id
+  function handleAskResolvedEvent(
+    data: AgentAskResolvedEvent['data']
+  ): boolean {
+    const parts = retireAskParts(
+      message.parts,
+      data.ask_id,
+      toAskResolution(data)
     )
+    if (parts === message.parts) return false
+    message.parts = parts
+    return true
   }
 
   /** Applies one `agent_message_delta` frame: appends its delta to the open
@@ -446,14 +442,6 @@ export function createAgentEventTransport(
     return part
   }
 
-  /**
-   * Applies one chat event to `message` by dispatching to the per-type
-   * handler above, and reports whether `ingest` should emit a fresh
-   * snapshot afterwards. Most event types always want a snapshot; a
-   * repeated `agent_active_tab` or a non-`run_approval` `agent_ask` is a
-   * no-op (mirroring their handlers' own `false` return), and
-   * `agent_message_done` already emits via `settle()` so it says no too.
-   */
   function applyChatEvent(event: AgentChatEvent): boolean {
     switch (event.type) {
       case 'agent_thinking':
@@ -472,8 +460,7 @@ export function createAgentEventTransport(
       case 'agent_ask':
         return handleAskEvent(event.data)
       case 'agent_ask_resolved':
-        handleAskResolvedEvent(event.data)
-        return true
+        return handleAskResolvedEvent(event.data)
       case 'agent_message_delta':
         handleMessageDeltaEvent(event.data)
         return true
@@ -507,11 +494,9 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  function dropAskPart(askId: string): void {
-    const parts = message.parts.filter(
-      (part) => part.type !== 'runApproval' || part.askId !== askId
-    )
-    if (parts.length === message.parts.length) return
+  function retireAskPart(askId: string, resolution: AskUserResolution): void {
+    const parts = retireAskParts(message.parts, askId, resolution)
+    if (parts === message.parts) return
     message.parts = parts
     emit(snapshotMessage(message))
   }
@@ -522,6 +507,6 @@ export function createAgentEventTransport(
     notifyCanvasCaughtUp,
     hasPendingCanvasSync,
     dispose,
-    dropAskPart
+    retireAskPart
   }
 }

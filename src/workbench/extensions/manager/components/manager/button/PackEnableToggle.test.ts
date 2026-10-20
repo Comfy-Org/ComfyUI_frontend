@@ -1,6 +1,5 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { debounce } from 'es-toolkit/compat'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -121,7 +120,7 @@ describe('PackEnableToggle', () => {
         ...props
       },
       global: {
-        plugins: [PrimeVue, i18n]
+        plugins: [i18n]
       }
     })
   }
@@ -255,7 +254,9 @@ describe('PackEnableToggle', () => {
 
       const warningButton = screen.getByRole('button', { name: warningLabel })
       await user.hover(warningButton)
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(warningLabel)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        warningLabel
+      )
       await user.click(warningButton)
 
       expect(mockShowImportFailedDialog).toHaveBeenCalledOnce()

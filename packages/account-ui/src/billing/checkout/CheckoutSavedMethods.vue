@@ -5,7 +5,7 @@
     </span>
     <div
       v-if="methods.length === 1"
-      class="flex h-10 items-center gap-3 rounded-lg bg-secondary-background px-4"
+      class="flex h-10 items-center gap-3 rounded-lg bg-secondary px-4"
     >
       <i
         :class="
@@ -17,7 +17,7 @@
           )
         "
       />
-      <span class="text-sm text-base-foreground tabular-nums">
+      <span class="text-sm text-foreground tabular-nums">
         {{ methodLabel(methods[0]) }}
       </span>
       <CheckoutButton

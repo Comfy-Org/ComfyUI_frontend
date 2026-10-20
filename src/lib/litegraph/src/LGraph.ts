@@ -1,3 +1,4 @@
+import type { LGraphCanvas } from '@/lib/litegraph/src/types/entityRegistry'
 import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
@@ -32,6 +33,7 @@ import {
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
+import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
@@ -108,7 +110,8 @@ import {
 } from './utils/namedValuesShadowDiffTelemetry'
 
 import type { DragAndScaleState } from './DragAndScale'
-import { LGraphCanvas } from './LGraphCanvas'
+
+import { canvasClass } from './canvas/canvasClassAccess'
 import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
@@ -120,7 +123,7 @@ import {
   unregisterLinkTopology
 } from './LLink'
 import { LinkMap } from './LinkMap'
-import type { LinkId } from './LLink'
+import type { LinkId } from '@/types/linkId'
 import { MapProxyHandler } from './MapProxyHandler'
 import {
   registerRerouteChain,
@@ -128,7 +131,7 @@ import {
   unregisterAllRerouteChains,
   unregisterRerouteChain
 } from './Reroute'
-import type { RerouteId } from './Reroute'
+import type { RerouteId } from '@/types/rerouteId'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
@@ -145,7 +148,8 @@ import type {
 } from './interfaces'
 import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
 import type { LinkNetwork } from './types/linkNetwork'
-import { LiteGraph, SubgraphNode } from './litegraph'
+import { LiteGraph } from './litegraphInstance'
+import { SubgraphNode } from './subgraph/SubgraphNode'
 import {
   alignOutsideContainer,
   alignToContainer,
@@ -157,6 +161,7 @@ import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
+import { provideSubgraphGuard } from './subgraph/subgraphTypeGuards'
 import {
   captureUnpackedTargetInput,
   findUnavailableSubgraphNodeType,
@@ -940,7 +945,7 @@ export class LGraph
    * Attach Canvas to this graph
    */
   attachCanvas(canvas: LGraphCanvas): void {
-    if (!(canvas instanceof LGraphCanvas)) {
+    if (!(canvas instanceof canvasClass)) {
       throw new TypeError('attachCanvas expects an LGraphCanvas instance')
     }
 
@@ -1525,7 +1530,7 @@ export class LGraph
     if (node instanceof LGraphGroup) {
       if (!this._groups.includes(node)) return
 
-      this.canvasAction((c) => c.deselect(node))
+      this.canvasAction((c) => changeCanvasSelection(c, [node], false))
       useSelectionStore().apply(graphScopeOf(this), {
         type: 'selection.remove',
         key: toSelectableKey('group', node.id)
@@ -1613,8 +1618,7 @@ export class LGraph
         const { list_of_graphcanvas } = this
         if (list_of_graphcanvas) {
           for (const canvas of list_of_graphcanvas) {
-            delete canvas.selected_nodes[node.id]
-            canvas.deselect(node)
+            changeCanvasSelection(canvas, [node], false)
           }
         }
         useSelectionStore().apply(graphScopeOf(this), {
@@ -2087,7 +2091,7 @@ export class LGraph
     const reroute = reroutes.get(id)
     if (!reroute) return
 
-    this.canvasAction((c) => c.deselect(reroute))
+    this.canvasAction((c) => changeCanvasSelection(c, [reroute], false))
     useSelectionStore().apply(graphScopeOf(this), {
       type: 'selection.remove',
       key: toSelectableKey('reroute', reroute.id)
@@ -3805,4 +3809,26 @@ export class Subgraph
       extra: this.extra
     }
   }
+}
+
+provideSubgraphGuard((value): value is Subgraph => value instanceof Subgraph)
+
+type RegisteredLGraphConfig = LGraphConfig
+type RegisteredLGraphExtra = LGraphExtra
+type RegisteredLGraph = LGraph
+type RegisteredSubgraph = Subgraph
+type RegisteredSubgraphId = SubgraphId
+type RegisteredGraphOrSubgraph = GraphOrSubgraph
+type RegisteredBaseLGraph = BaseLGraph
+
+declare module './types/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    SubgraphId: RegisteredSubgraphId
+    GraphOrSubgraph: RegisteredGraphOrSubgraph
+  }
+  interface LGraphConfig extends RegisteredLGraphConfig {}
+  interface LGraphExtra extends RegisteredLGraphExtra {}
+  interface LGraph extends RegisteredLGraph {}
+  interface Subgraph extends RegisteredSubgraph {}
+  interface BaseLGraph extends RegisteredBaseLGraph {}
 }

@@ -1,4 +1,4 @@
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -23,10 +23,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 import { i18n } from '@/i18n'
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import { toTurnId } from '../../schemas/agentApiSchema'
-import type { WorkflowReference } from '../../types/workflowReference'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 import AgentPanel from './AgentPanel.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
@@ -141,6 +141,7 @@ const suggestedPromptAttribution: AgentStarterPromptAttribution = {
   promptId: 'slot_1',
   promptIndex: 0,
   promptCount: 5,
+  visiblePromptCount: 5,
   promptTextHash: 'a62d17a3',
   locale: 'en'
 }
@@ -283,7 +284,6 @@ describe('AgentPanel', () => {
       },
       global: {
         plugins: [i18n],
-        directives: { tooltip: {} },
         stubs: { WorkflowSelectorChip: true }
       }
     })
@@ -525,7 +525,6 @@ describe('AgentPanel', () => {
       props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
         plugins: [pinia, i18n],
-        directives: { tooltip: {} },
         stubs: {
           WorkflowSelectorChip: true
         }
@@ -578,7 +577,6 @@ describe('AgentPanel', () => {
         },
         global: {
           plugins: [pinia, i18n],
-          directives: { tooltip: {} },
           stubs: { WorkflowSelectorChip: true }
         }
       })

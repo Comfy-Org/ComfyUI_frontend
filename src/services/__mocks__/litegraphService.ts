@@ -1,9 +1,11 @@
 import { vi } from 'vitest'
 
+import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
+
 import type {
   getExtraOptionsForWidget as realGetExtraOptionsForWidget,
   useLitegraphService as realUseLitegraphService
-} from '../litegraphService'
+} from '@/services/litegraphService'
 
 export const CONFIG = Symbol()
 export const GET_CONFIG = Symbol()
@@ -26,3 +28,5 @@ const litegraphService: ReturnType<typeof realUseLitegraphService> = {
 }
 
 export const useLitegraphService = vi.fn(() => litegraphService)
+
+provideLitegraphService(useLitegraphService)

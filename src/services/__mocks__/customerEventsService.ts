@@ -1,7 +1,7 @@
 import { onTestFinished, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type * as real from '../customerEventsService'
+import type * as real from '@/services/customerEventsService'
 
 type CustomerEventsService = ReturnType<typeof real.useCustomerEventsService>
 
