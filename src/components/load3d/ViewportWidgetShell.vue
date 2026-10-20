@@ -17,7 +17,7 @@
     <div class="pointer-events-none absolute inset-x-0 top-0">
       <div
         ref="toolbar"
-        class="pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2"
+        class="pointer-events-auto flex h-10 items-center gap-1 bg-popover px-2"
         @wheel.stop
       >
         <slot name="top" />
@@ -30,7 +30,7 @@
       <div
         :class="
           cn(
-            'pointer-events-auto flex h-10 items-center gap-1 bg-interface-menu-surface px-2',
+            'pointer-events-auto flex h-10 items-center gap-1 bg-popover px-2',
             bottomClass
           )
         "

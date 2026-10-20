@@ -12,18 +12,18 @@
       }}
     </template>
 
-    <div class="p-4">
+    <div class="p-4 text-sm text-muted-foreground">
       <template v-if="isPromotion">
-        <p class="m-0 text-sm text-muted-foreground">
+        <p class="m-0">
           {{ $t('workspacePanel.changeRoleDialog.promoteIntro') }}
         </p>
-        <ul class="m-0 mt-1 list-disc ps-5 text-sm text-muted-foreground">
+        <ul class="m-0 mt-1 list-disc ps-5">
           <li v-for="permission in promotePermissions" :key="permission">
             {{ permission }}
           </li>
         </ul>
       </template>
-      <p v-else class="m-0 text-sm text-muted-foreground">
+      <p v-else class="m-0">
         {{ $t('workspacePanel.changeRoleDialog.demoteMessage') }}
       </p>
     </div>

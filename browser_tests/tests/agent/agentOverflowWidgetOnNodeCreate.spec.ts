@@ -31,7 +31,6 @@ const NODE_ID = 503
 const WORKFLOW_ID = '4b2d8f6a-1c3e-4a5b-9d7f-2e8c0a1b3d5f'
 const THREAD_ID = 'c7d8e9fa-0b1c-4d2e-8f3a-4b5c6d7e8f90'
 const MESSAGE_ID = 'f0e1d2c3-b4a5-4968-8778-9a0b1c2d3e4f'
-const SOCKET_SID = '2a3b4c5d-6e7f-4809-9a1b-2c3d4e5f6071'
 
 function intSlider(value: number): InputSpec {
   return [
@@ -122,12 +121,7 @@ test.describe(
       )
 
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-      const hostSocket = new AgentFollowerHostSocket(
-        page,
-        WORKFLOW_ID,
-        host,
-        SOCKET_SID
-      )
+      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
       await hostSocket.install()
 
       const threadList: AgentThreadListResponse = {
@@ -178,9 +172,7 @@ test.describe(
       })
 
       await test.step('send a turn so the session binds the workflow', async () => {
-        const composer = panel.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
+        const composer = agentPanel.composer
         await composer.fill('hello')
         await panel.getByRole('button', { name: enMessages.agent.send }).click()
         await expect(panel.getByText('hello').first()).toBeVisible()

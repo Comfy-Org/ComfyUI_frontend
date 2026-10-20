@@ -6,7 +6,7 @@
   >
     <PasswordFields />
 
-    <Button type="submit" class="mt-4 h-10 font-medium" :loading="loading">
+    <Button type="submit" class="mt-4 h-10" :loading="loading">
       {{ $t('userSettings.updatePassword') }}
     </Button>
   </form>

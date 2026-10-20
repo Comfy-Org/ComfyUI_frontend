@@ -21,7 +21,7 @@
       :class="cn(formPanelClass, 'w-56')"
     >
       <div class="flex flex-col gap-2 p-1">
-        <span class="text-sm text-base-foreground">{{
+        <span class="text-sm text-foreground">{{
           t('load3d.lightIntensity')
         }}</span>
         <Slider
@@ -29,7 +29,6 @@
           :min="sliderMin"
           :max="sliderMax"
           :step="sliderStep"
-          class="w-full"
           @update:model-value="onIntensityUpdate"
         />
       </div>

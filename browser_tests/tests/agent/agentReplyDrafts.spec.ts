@@ -1,4 +1,4 @@
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -13,6 +13,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
@@ -22,7 +23,6 @@ import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 const WORKFLOW_ID = 'b4d7e1f2-8a3c-4d5e-9f60-7a1b2c3d4e5f'
 const THREAD_ID = 'd8c7b6a5-9e1f-4a2b-8c3d-4e5f6a7b8c9d'
 const MESSAGE_ID = '1e2d3c4b-5a69-4788-9a7b-6c5d4e3f2a1b'
-const SOCKET_SID = '8e2f3a4b-5c6d-4e7f-9a01-2b3c4d5e6f70'
 const CATALOG: WidgetCatalog = { types: {} }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
@@ -58,12 +58,12 @@ interface Turn {
 // the document subscription the way the host does, so every frame after it is
 // the agent's.
 async function startTurn(page: Page, prompt: string): Promise<Turn> {
-  const host = new HostDoc(WORKFLOW_ID, SEED, CATALOG)
-  let socket: WebSocketRoute | null = null
-  const send = (frame: AgentWsEvent | HostFrame): void => {
-    if (!socket) throw new Error('the app has not opened /ws yet')
-    socket.send(JSON.stringify(frame))
-  }
+  const hostSocket = new AgentFollowerHostSocket(
+    page,
+    WORKFLOW_ID,
+    new HostDoc(WORKFLOW_ID, SEED, CATALOG)
+  )
+  const send = (frame: AgentWsEvent | HostFrame): void => hostSocket.send(frame)
 
   await page.route('**/api/agent/threads', (route) =>
     route.fulfill(jsonRoute({ threads: [] }))
@@ -78,30 +78,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
     }
     return route.fulfill(jsonRoute([]))
   })
-  await page.routeWebSocket(/\/ws/, (ws) => {
-    socket = ws
-    ws.send(
-      JSON.stringify({
-        type: 'status',
-        data: { status: { exec_info: { queue_remaining: 0 } }, sid: SOCKET_SID }
-      })
-    )
-    ws.onMessage((raw) => {
-      const frame: unknown = JSON.parse(raw.toString())
-      if (typeof frame !== 'object' || frame === null) return
-      const { type, data } = frame as { type?: unknown; data?: unknown }
-      if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
-        return
-      const { workflow_id, state_vector_b64 } = data as {
-        workflow_id?: unknown
-        state_vector_b64?: unknown
-      }
-      if (workflow_id !== WORKFLOW_ID || typeof state_vector_b64 !== 'string')
-        return
-      send(host.subscribed())
-      send(host.catchUp(state_vector_b64))
-    })
-  })
+  await hostSocket.install()
 
   await bootAgentApp(page, true, {
     settings: { 'Comfy.Graph.CanvasInfo': false }
@@ -165,7 +142,7 @@ async function startTurn(page: Page, prompt: string): Promise<Turn> {
     .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
     .click()
   await expect(picker).toHaveText('Unsaved Workflow')
-  await expect.poll(() => socket !== null).toBe(true)
+  await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
   await panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL }).fill(prompt)
   await panel.getByRole('button', { name: SEND_LABEL }).click()
@@ -270,12 +247,20 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       test.setTimeout(60_000)
       const askId = `${MESSAGE_ID}:call-${selection}`
       const answeredRequests: Array<{ url: string; selected: string[] }> = []
+      let releaseAnswer = (): void => {}
+      const answerCanFinish =
+        selection === 'cancel'
+          ? new Promise<void>((resolve) => {
+              releaseAnswer = resolve
+            })
+          : Promise.resolve()
       await page.route(
         '**/api/agent/threads/*/asks/*/answer',
         async (route) => {
           const request = route.request()
           const body = zAgentAnswerRequest.parse(request.postDataJSON())
           answeredRequests.push({ url: request.url(), selected: body.selected })
+          await answerCanFinish
           await route.fulfill({
             ...jsonRoute({ status: 'answered' }),
             status: 202
@@ -318,8 +303,8 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
       await action.click()
 
       test.fail(
-        true,
-        'The approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint.'
+        selection === 'run',
+        'The run approval card remains visible after its turn completes, but its action no longer reaches the answer endpoint. The cancel path reaches it again since the agent events socket landed.'
       )
       await expect
         .poll(() => answeredRequests)
@@ -332,15 +317,7 @@ test.describe('Agent reply drafts', { tag: ['@cloud', '@agent'] }, () => {
           }
         ])
       await expect(action).toHaveAttribute('aria-busy', 'true')
-      send({
-        type: 'agent_ask_resolved',
-        data: {
-          ...ids,
-          ask_id: askId,
-          status: 'answered',
-          selected: [selection]
-        }
-      })
+      releaseAnswer()
       await expect(action).toHaveCount(0)
     })
   }

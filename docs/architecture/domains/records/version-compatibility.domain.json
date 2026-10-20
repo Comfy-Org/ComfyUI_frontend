@@ -4,19 +4,7 @@
   "description": "Compares the running frontend version with the backend-required frontend version from system stats and shows the dismissible mismatch warning toast.",
   "modules": [
     {
-      "path": "src/platform/updates/common/versionCompatibilityStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/updates/common/versionCompatibilityStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/updates/common/useFrontendVersionMismatchWarning.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/updates/common/useFrontendVersionMismatchWarning.test.ts",
+      "path": "src/platform/updates/common/**",
       "role": "application"
     }
   ],

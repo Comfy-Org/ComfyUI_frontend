@@ -4,196 +4,8 @@
   "description": "Load3D, Preview3D, and Save mesh model viewing: model loading and format adapters, animation, gizmo, HDRI, recording, export, node configuration and serialization, viewer dialog, and node widget presentation. The shared three.js viewport (camera, controls, events, lighting, scene, view helper, render loop, context-menu guard, viewport sizing, shared interfaces), ViewportWidgetShell, menu bar styles, useViewportNodeWiring, and camera or light authoring nodes remain outside this capability.",
   "modules": [
     {
-      "path": "src/extensions/core/load3d/constants.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/constants.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/nodeTypes.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/nodeTypes.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/cameraFromMatrices.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/cameraFromMatrices.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/model3dOutput.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/model3dOutput.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/load3d/Load3d.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/Load3d.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/createLoad3d.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/createLoad3d.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/Load3dUtils.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/Load3dUtils.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/AnimationManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/AnimationManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/GizmoManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/GizmoManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/HDRIManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/HDRIManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/LoaderManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/LoaderManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/RecordingManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/RecordingManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SceneModelManager.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SceneModelManager.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ModelAdapter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ModelAdapter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/MeshModelAdapter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/MeshModelAdapter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/MeshModelAdapter.obj.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/PointCloudModelAdapter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/PointCloudModelAdapter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SplatModelAdapter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/SplatModelAdapter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ModelExporter.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/ModelExporter.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/loader/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/load3d/quadWireframe/**",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/composables/useLoad3d.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLoad3d.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLoad3dDrag.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLoad3dDrag.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLoad3dViewer.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/useLoad3dViewer.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/load3dService.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/services/load3dService.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/load3d/modelThumbnail.ts",
-      "role": "application"
+      "path": "src/components/load3d/**",
+      "role": "presentation"
     },
     {
       "path": "src/components/load3d/modelThumbnail.deferredImport.test.ts",
@@ -204,163 +16,35 @@
       "role": "application"
     },
     {
-      "path": "src/components/load3d/Load3D.vue",
-      "role": "presentation"
+      "path": "src/components/load3d/modelThumbnail.ts",
+      "role": "application"
     },
     {
-      "path": "src/components/load3d/Load3D.test.ts",
-      "role": "presentation"
+      "path": "src/composables/useLoad3d.test.ts",
+      "role": "application"
     },
     {
-      "path": "src/components/load3d/Load3DAdvanced.vue",
-      "role": "presentation"
+      "path": "src/composables/useLoad3d.ts",
+      "role": "application"
     },
     {
-      "path": "src/components/load3d/Load3DAdvanced.test.ts",
-      "role": "presentation"
+      "path": "src/composables/useLoad3dDrag.test.ts",
+      "role": "application"
     },
     {
-      "path": "src/components/load3d/Load3DControls.vue",
-      "role": "presentation"
+      "path": "src/composables/useLoad3dDrag.ts",
+      "role": "application"
     },
     {
-      "path": "src/components/load3d/Load3DControls.test.ts",
-      "role": "presentation"
+      "path": "src/composables/useLoad3dViewer.test.ts",
+      "role": "application"
     },
     {
-      "path": "src/components/load3d/Load3DMenuBar.vue",
-      "role": "presentation"
+      "path": "src/composables/useLoad3dViewer.ts",
+      "role": "application"
     },
     {
-      "path": "src/components/load3d/Load3DMenuBar.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/Load3DScene.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/Load3DScene.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/Load3dViewerContent.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/Load3dViewerContent.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/formatAnimationTime.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/formatAnimationTime.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/load3dViewerDialog.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/controls/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/AnimationMenuStrip.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/AnimationMenuStrip.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/CameraMenuGroup.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/CameraMenuGroup.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/GizmoMenuGroup.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/GizmoMenuGroup.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/HdriMenuGroup.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/HdriMenuGroup.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/LightMenuGroup.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/LightMenuGroup.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/ModelMenuGroup.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/ModelMenuGroup.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/RecordMenuControl.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/RecordMenuControl.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/SceneMenuGroup.vue",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/SceneMenuGroup.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/usePopoverExclusivity.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/load3d/menubar/usePopoverExclusivity.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/extensions/core/load3d/Load3DConfiguration.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/Load3DConfiguration.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dSerialize.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/load3dSerialize.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/exportMenuHelper.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/extensions/core/load3d/exportMenuHelper.test.ts",
+      "path": "src/extensions/core/load3d.test.ts",
       "role": "integration"
     },
     {
@@ -368,11 +52,187 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3d.test.ts",
+      "path": "src/extensions/core/load3d/AnimationManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/AnimationManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/GizmoManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/GizmoManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/HDRIManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/HDRIManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/Load3DConfiguration.test.ts",
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3dLazy.ts",
+      "path": "src/extensions/core/load3d/Load3DConfiguration.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/Load3d.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/Load3d.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/Load3dUtils.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/Load3dUtils.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/LoaderManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/LoaderManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/MeshModelAdapter.obj.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/MeshModelAdapter.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/MeshModelAdapter.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/ModelAdapter.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/ModelAdapter.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/ModelExporter.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/ModelExporter.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/PointCloudModelAdapter.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/PointCloudModelAdapter.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/RecordingManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/RecordingManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/SceneModelManager.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/SceneModelManager.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/SplatModelAdapter.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/SplatModelAdapter.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/cameraFromMatrices.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/cameraFromMatrices.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/constants.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/constants.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/createLoad3d.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/createLoad3d.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/exportMenuHelper.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/exportMenuHelper.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/load3dSerialize.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/load3dSerialize.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/extensions/core/load3d/loader/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3d/model3dOutput.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/model3dOutput.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/nodeTypes.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/nodeTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/extensions/core/load3d/quadWireframe/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/extensions/core/load3dAdvanced.ts",
       "role": "integration"
     },
     {
@@ -380,7 +240,7 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3dPreviewExtensions.ts",
+      "path": "src/extensions/core/load3dLazy.ts",
       "role": "integration"
     },
     {
@@ -388,7 +248,7 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/saveMesh.ts",
+      "path": "src/extensions/core/load3dPreviewExtensions.ts",
       "role": "integration"
     },
     {
@@ -396,8 +256,16 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/load3dAdvanced.ts",
+      "path": "src/extensions/core/saveMesh.ts",
       "role": "integration"
+    },
+    {
+      "path": "src/services/load3dService.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/load3dService.ts",
+      "role": "application"
     }
   ],
   "publicEntryPoints": [],

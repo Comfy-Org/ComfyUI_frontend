@@ -8,14 +8,14 @@
       <p class="m-0 text-sm text-muted-foreground">
         {{ $t('workspacePanel.createWorkspaceDialog.message') }}
       </p>
-      <div class="flex flex-col gap-2">
-        <label class="text-sm text-muted-foreground">
+      <div class="flex flex-col gap-2 text-sm">
+        <label class="text-muted-foreground">
           {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
         </label>
         <input
           v-model="workspaceName"
           type="text"
-          class="h-10 w-full rounded-lg border-none bg-secondary-background px-4 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border-default focus:outline-none"
+          class="h-10 w-full rounded-lg border-none bg-secondary px-4 placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
           :placeholder="
             $t('workspacePanel.createWorkspaceDialog.namePlaceholder')
           "
