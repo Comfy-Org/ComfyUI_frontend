@@ -58,11 +58,6 @@ export function useTopupOperation() {
     return billingContext.topup(amountCents)
   }
 
-  /**
-   * The Stripe-hosted Checkout URL for a one-off purchase of `amountCents`.
-   * A refusal the contract settles with a new purchase key is retried; each
-   * attempt mints its own key.
-   */
   async function createHostedCheckout(
     amountCents: number,
     returnUrl: string

@@ -268,27 +268,34 @@ describe('useTopupOperation', () => {
       }
     )
 
-    it.for([
-      {
-        name: 'a refusal outside the retryable set',
-        outcomes: [{ status: 503, code: 'TOPUP_CHECKOUT_UNAVAILABLE' }],
-        attempts: 1
-      },
-      {
-        name: 'the last retryable refusal',
-        outcomes: [busy, busy, busy],
-        attempts: 3
+    it.for(
+      rails.flatMap((rail) => [
+        {
+          ...rail,
+          name: 'a refusal outside the retryable set',
+          outcomes: [{ status: 503, code: 'TOPUP_CHECKOUT_UNAVAILABLE' }],
+          attempts: 1
+        },
+        {
+          ...rail,
+          name: 'the last retryable refusal',
+          outcomes: [busy, busy, busy],
+          attempts: 3
+        }
+      ])
+    )(
+      'surfaces $name on the $rail rail',
+      async ({ flagOn, mint, outcomes, attempts }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const mintCheckout = mint(outcomes)
+
+        const outcome = await settle(
+          useTopupOperation().createHostedCheckout(1000, returnUrl)
+        )
+
+        expect(outcome).toEqual({ error: expect.any(WorkspaceApiError) })
+        expect(mintCheckout).toHaveBeenCalledTimes(attempts)
       }
-    ])('surfaces $name', async ({ outcomes, attempts }) => {
-      flagState.billingSdkTopupEnabled = false
-      const mintCheckout = rails[0].mint(outcomes)
-
-      const outcome = await settle(
-        useTopupOperation().createHostedCheckout(1000, returnUrl)
-      )
-
-      expect(outcome).toEqual({ error: expect.any(WorkspaceApiError) })
-      expect(mintCheckout).toHaveBeenCalledTimes(attempts)
-    })
+    )
   })
 })
