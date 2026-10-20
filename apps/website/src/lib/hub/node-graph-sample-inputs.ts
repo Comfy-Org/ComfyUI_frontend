@@ -1,23 +1,18 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-import type { NodeGraphInput } from './node-graph-inputs'
+import type { NodeGraphWorkflow } from './node-graph-workflow'
+import { nodeGraphWorkflowSample } from './node-graph-workflow'
 import { nodeGraphInputs } from './node-graph-inputs'
-import type { SampleKey } from './node-graph-workflow'
-import { nodeGraphSamples } from './node-graph-workflow'
 
-async function inputsOf(source: string): Promise<NodeGraphInput[]> {
-  const file = await readFile(join(process.cwd(), 'public', source), 'utf8')
-  return nodeGraphInputs(JSON.parse(file))
-}
-
-/** Each design preview sample's inputs, read from its graph at build time. */
-export async function nodeGraphSampleInputs(): Promise<
-  Record<SampleKey, NodeGraphInput[]>
-> {
-  const [turnaround, fasth3] = await Promise.all([
-    inputsOf(nodeGraphSamples.turnaround.graph.source),
-    inputsOf(nodeGraphSamples.fasth3.graph.source)
-  ])
-  return { turnaround, fasth3 }
+/** The design preview's sample, with its inputs read from its graph at build time. */
+export async function nodeGraphSampleWithInputs(): Promise<NodeGraphWorkflow> {
+  const file = await readFile(
+    join(process.cwd(), 'public', nodeGraphWorkflowSample.graph.source),
+    'utf8'
+  )
+  return {
+    ...nodeGraphWorkflowSample,
+    inputs: nodeGraphInputs(JSON.parse(file))
+  }
 }

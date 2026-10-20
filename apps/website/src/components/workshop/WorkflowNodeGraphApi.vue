@@ -13,29 +13,21 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { CodeLang } from '@/lib/highlight'
 import type { NodeGraphWorkflow } from '@/lib/hub/node-graph-workflow'
-import {
-  LOCAL_COMFY_BASE_URL,
-  nodeGraphSnippet
-} from '@/lib/hub/node-graph-snippets'
+import { nodeGraphSnippet } from '@/lib/hub/node-graph-snippets'
 
 import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
 import SectionHeading from './SectionHeading.vue'
 
-const {
-  workflow,
-  cloud,
-  locale = 'en'
-} = defineProps<{
+const { workflow, locale = 'en' } = defineProps<{
   workflow: NodeGraphWorkflow
-  cloud: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
 
 const language = ref<SnippetLanguage>('python')
 const { onKeydown } = useTablist(() => SNIPPET_LANGUAGES, language)
-const code = computed(() => nodeGraphSnippet(language.value, cloud))
+const code = computed(() => nodeGraphSnippet(language.value))
 const languageLabel: Record<SnippetLanguage, string> = {
   python: 'Python',
   typescript: 'TypeScript',
@@ -47,23 +39,16 @@ const highlightLanguage = {
   curl: 'shell'
 } satisfies Record<SnippetLanguage, CodeLang>
 
-const endpoint = computed(
-  () => `${cloud ? WORKSHOP_CLOUD_BASE_URL : LOCAL_COMFY_BASE_URL}/api/prompt`
-)
 const facts = computed(() => [
   {
     label: t('workshop.api.needsEndpoint'),
-    value: endpoint.value,
+    value: `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`,
     mono: true,
     copyLabel: t('workshop.api.copyEndpoint')
   },
   {
     label: t('workshop.api.needsKey'),
-    value: t(
-      cloud
-        ? 'workshop.nodeGraph.api.keyCloud'
-        : 'workshop.nodeGraph.api.keyLocal'
-    )
+    value: t('workshop.nodeGraph.api.keyCloud')
   },
   ...(workflow.customNodes.length
     ? [
@@ -96,7 +81,6 @@ const stepNumberClass =
         class="flex w-full flex-col gap-3 lg:sticky lg:top-24 lg:w-95 lg:shrink-0"
       >
         <Button
-          v-if="cloud"
           as="a"
           :href="apiKeysLink({ onboarding: 'models' })"
           target="_blank"
@@ -119,9 +103,7 @@ const stepNumberClass =
           :class="stepClass"
         >
           <template #prepend>
-            <span :class="stepNumberClass" aria-hidden="true">{{
-              cloud ? 2 : 1
-            }}</span>
+            <span :class="stepNumberClass" aria-hidden="true">2</span>
           </template>
           {{ t('workshop.workflow.downloadShort') }}
           <template #append><span aria-hidden="true">↓</span></template>
@@ -130,11 +112,7 @@ const stepNumberClass =
           {{ t('workshop.nodeGraph.api.export') }}
         </p>
         <ApiFacts
-          :where="
-            cloud
-              ? t('workshop.api.runsOnCloud')
-              : t('workshop.nodeGraph.api.runsOnLocal')
-          "
+          :where="t('workshop.api.runsOnCloud')"
           :rows="facts"
           :note="
             workflow.customNodes.length

@@ -6,19 +6,8 @@ import { translationsFor } from '@/i18n/translations'
 import type { NodeGraphInputMedia } from '@/lib/hub/node-graph-inputs'
 import type { NodeGraphWorkflow } from '@/lib/hub/node-graph-workflow'
 
-import WorkflowNodeGraphAboutFooter from './WorkflowNodeGraphAboutFooter.vue'
-
-const {
-  workflow,
-  cloudHref,
-  active,
-  showAction = true,
-  locale = 'en'
-} = defineProps<{
+const { workflow, locale = 'en' } = defineProps<{
   workflow: NodeGraphWorkflow
-  cloudHref?: string
-  active: boolean
-  showAction?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -87,12 +76,14 @@ const more = computed(() => workflow.description.slice(1))
       </div>
     </div>
 
-    <WorkflowNodeGraphAboutFooter
-      :cloud-href="cloudHref"
-      :download-url="workflow.downloadUrl"
-      :active="active"
-      :show-action="showAction"
-      :locale="locale"
-    />
+    <p
+      class="mt-auto rounded-b-2xl border-t border-transparency-white-t8 px-5 py-4 text-sm text-primary-warm-gray"
+      data-testid="node-graph-footer"
+    >
+      <span class="font-bold text-primary-comfy-canvas"
+        >{{ t('workshop.nodeGraph.runsHereTitle') }}.</span
+      >
+      {{ t('workshop.nodeGraph.runsHereCloud') }}
+    </p>
   </section>
 </template>

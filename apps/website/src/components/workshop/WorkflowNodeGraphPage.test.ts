@@ -10,17 +10,15 @@ const workflow = {
   inputs: [{ media: 'image', title: 'Character image' }, { media: 'video' }]
 } as const
 
-function renderPage(
-  props: { cloudAvailable?: boolean; primaryAction?: 'panel' | 'header' } = {}
-) {
+function renderPage() {
   return render(WorkflowNodeGraphPage, {
-    props: { workflow, ...props },
+    props: { workflow },
     global: { stubs: { WorkflowGraph: true } }
   })
 }
 
 describe('WorkflowNodeGraphPage', () => {
-  it('offers Download and Try in Cloud under the title', () => {
+  it('offers Download and the primary Try in Cloud under the title', () => {
     renderPage()
 
     const actions = screen.getByTestId('workflow-actions')
@@ -38,26 +36,6 @@ describe('WorkflowNodeGraphPage', () => {
       `${WORKSHOP_CLOUD_BASE_URL}/?template=templates-character_sheet`
     )
     expect(cloud.getAttribute('target')).toBe('_blank')
-  })
-
-  it('orders the header actions like a runnable workflow page', () => {
-    renderPage()
-
-    const [first, second] = within(
-      screen.getByTestId('workflow-actions')
-    ).getAllByRole('link')
-    expect(first).toBe(screen.getByTestId('node-graph-download'))
-    expect(second).toBe(screen.getByTestId('node-graph-try-cloud'))
-  })
-
-  it('offers only Download when the workflow cannot open in Cloud', () => {
-    renderPage({ cloudAvailable: false })
-
-    expect(screen.queryByTestId('node-graph-try-cloud')).toBeNull()
-    expect(screen.getByTestId('node-graph-download')).toBeTruthy()
-    expect(screen.getByTestId('node-graph-footer').textContent).toContain(
-      'Download workflow'
-    )
   })
 
   it('mirrors the runnable tabs as Overview, Details and API', () => {
@@ -113,21 +91,14 @@ describe('WorkflowNodeGraphPage', () => {
     expect(screen.getByTestId('workflow-facts').textContent).toContain('Author')
   })
 
-  it('points the API at Cloud with a key, or at a local ComfyUI without one', async () => {
-    const { unmount } = renderPage()
-    const cloudApi = screen.getByTestId('node-graph-api')
-    expect(within(cloudApi).getByTestId('node-graph-api-key')).toBeTruthy()
-    expect(
-      within(cloudApi).getByTestId('node-graph-api-snippet').textContent
-    ).toContain(WORKSHOP_CLOUD_BASE_URL)
-    unmount()
+  it('points the API at Comfy Cloud, starting from an API key', () => {
+    renderPage()
 
-    renderPage({ cloudAvailable: false })
-    const localApi = screen.getByTestId('node-graph-api')
-    expect(within(localApi).queryByTestId('node-graph-api-key')).toBeNull()
+    const api = screen.getByTestId('node-graph-api')
+    expect(within(api).getByTestId('node-graph-api-key')).toBeTruthy()
     expect(
-      within(localApi).getByTestId('node-graph-api-snippet').textContent
-    ).toContain('http://127.0.0.1:8188')
+      within(api).getByTestId('node-graph-api-snippet').textContent
+    ).toContain(WORKSHOP_CLOUD_BASE_URL)
   })
 
   it('answers the workflow FAQ below the tabs', () => {
@@ -137,19 +108,11 @@ describe('WorkflowNodeGraphPage', () => {
       expect(screen.getByText(question)).toBeTruthy()
   })
 
-  it('moves the only Try in Cloud to the header when the header leads', () => {
-    renderPage({ primaryAction: 'header' })
+  it('leaves the About footer to the Runs in ComfyUI note, with no button', () => {
+    renderPage()
 
-    expect(
-      within(screen.getByTestId('workflow-actions')).getByRole('link', {
-        name: /Try in Cloud/i
-      })
-    ).toBeTruthy()
-    expect(
-      within(screen.getByTestId('node-graph-footer')).queryByRole('link')
-    ).toBeNull()
-    expect(screen.getByTestId('node-graph-footer').textContent).toContain(
-      'Runs in ComfyUI'
-    )
+    const footer = screen.getByTestId('node-graph-footer')
+    expect(within(footer).queryByRole('link')).toBeNull()
+    expect(footer.textContent).toContain('Runs in ComfyUI')
   })
 })

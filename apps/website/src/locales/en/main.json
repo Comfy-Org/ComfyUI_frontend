@@ -24,7 +24,6 @@
       "provide": "What you provide",
       "runsHereTitle": "Runs in ComfyUI",
       "runsHereCloud": "This workflow can't run on this page. Open it in Comfy Cloud with everything loaded, or download it for your own ComfyUI.",
-      "runsHereLocal": "This workflow runs on your own ComfyUI only. Download it and drop the file onto the canvas.",
       "noExamples": "No sample outputs for this workflow yet.",
       "sampleOf": "Sample {n} of {total}",
       "tabApi": "API",
@@ -33,9 +32,7 @@
         "heading": "Use this workflow from code",
         "hint": "Every Comfy workflow is a JSON graph. Export its API format from ComfyUI, then run it from Python, TypeScript or cURL.",
         "export": "The code reads the API format: open the downloaded workflow in ComfyUI and choose File → Export (API).",
-        "runsOnLocal": "Your own ComfyUI",
         "keyCloud": "Required, from your Comfy account",
-        "keyLocal": "Not needed on your own ComfyUI",
         "customNodes": "Custom nodes",
         "customNodesNote": "The custom nodes must be installed on the ComfyUI that runs the call."
       }

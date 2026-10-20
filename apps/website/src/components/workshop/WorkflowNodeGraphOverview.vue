@@ -9,17 +9,8 @@ import type { NodeGraphWorkflow } from '@/lib/hub/node-graph-workflow'
 import ExamplesTab from './ExamplesTab.vue'
 import WorkflowNodeGraphAbout from './WorkflowNodeGraphAbout.vue'
 
-const {
-  workflow,
-  cloudHref,
-  active,
-  showAction = true,
-  locale = 'en'
-} = defineProps<{
+const { workflow, locale = 'en' } = defineProps<{
   workflow: NodeGraphWorkflow
-  cloudHref?: string
-  active: boolean
-  showAction?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -41,9 +32,6 @@ function openExample(id: string) {
     <div class="grid gap-8 lg:grid-cols-12">
       <WorkflowNodeGraphAbout
         :workflow="workflow"
-        :cloud-href="cloudHref"
-        :active="active"
-        :show-action="showAction"
         :locale="locale"
         class="lg:col-span-5"
       />

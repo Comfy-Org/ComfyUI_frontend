@@ -17,26 +17,16 @@ import WorkflowNodeGraphApi from './WorkflowNodeGraphApi.vue'
 import WorkflowNodeGraphFacts from './WorkflowNodeGraphFacts.vue'
 import WorkflowNodeGraphOverview from './WorkflowNodeGraphOverview.vue'
 
-const {
-  workflow,
-  locale = 'en',
-  cloudAvailable = true,
-  primaryAction = 'panel'
-} = defineProps<{
+const { workflow, locale = 'en' } = defineProps<{
   workflow: NodeGraphWorkflow
   locale?: Locale
-  /** False when a licence keeps the workflow off Comfy Cloud. */
-  cloudAvailable?: boolean
-  /** Where the page's one primary button sits: the About panel or the header. */
-  primaryAction?: 'panel' | 'header'
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes()
 
-const cloudHref = computed(() =>
-  cloudAvailable
-    ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(workflow.templateId)}`
-    : undefined
+const cloudHref = computed(
+  () =>
+    `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(workflow.templateId)}`
 )
 const samples = computed(() =>
   workflow.examples
@@ -101,24 +91,18 @@ const pillClass =
           as="a"
           :href="workflow.downloadUrl"
           download
-          :variant="
-            primaryAction === 'header' && !cloudHref
-              ? 'default'
-              : 'secondaryOutline'
-          "
+          variant="secondaryOutline"
           class="h-auto min-h-11 max-w-full whitespace-normal"
           :aria-label="t('workshop.workflow.download')"
           data-testid="node-graph-download"
           >{{ t('workshop.workflow.downloadShort') }}</Button
         >
         <Button
-          v-if="cloudHref"
           as="a"
           :href="cloudHref"
           target="_blank"
           rel="noopener"
-          :variant="primaryAction === 'header' ? 'default' : 'ghost'"
-          class="h-auto min-h-11 max-w-full font-bold tracking-wider whitespace-normal uppercase"
+          class="h-auto min-h-11 max-w-full font-bold tracking-wider whitespace-normal"
           data-testid="node-graph-try-cloud"
           >{{ t('workshop.workflow.tryCloud') }}
           <template #append>
@@ -156,9 +140,6 @@ const pillClass =
       role="tabpanel"
       aria-labelledby="workflow-tab-overview"
       :workflow="workflow"
-      :cloud-href="cloudHref"
-      :active="section === 'overview'"
-      :show-action="primaryAction === 'panel'"
       :locale="locale"
     />
 
@@ -199,11 +180,7 @@ const pillClass =
       role="tabpanel"
       aria-labelledby="workflow-tab-api"
     >
-      <WorkflowNodeGraphApi
-        :workflow="workflow"
-        :cloud="cloudAvailable"
-        :locale="locale"
-      />
+      <WorkflowNodeGraphApi :workflow="workflow" :locale="locale" />
     </div>
   </div>
   <FAQSection
