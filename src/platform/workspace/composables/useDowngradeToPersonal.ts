@@ -25,6 +25,7 @@ import { useSubscriptionRail } from '@/platform/workspace/composables/useSubscri
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { openBillingUrl } from '@/platform/workspace/billing/billingTab'
 
 export interface DowngradePreview {
   preview: PreviewSubscribeResponse
@@ -341,8 +342,7 @@ export function useDowngradeToPersonal({
           }
           throw new Error(t('subscription.downgrade.paymentMethodRequired'))
         }
-        const paymentTab = window.open(response.payment_method_url, '_blank')
-        if (!paymentTab) {
+        if (!openBillingUrl(response.payment_method_url)) {
           telemetryFailure = {
             failure_category: 'redirect',
             error_code: 'payment_popup_blocked'
