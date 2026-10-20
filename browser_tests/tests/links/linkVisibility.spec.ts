@@ -3,6 +3,7 @@ import { toRerouteId } from '@/types/rerouteId'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { test } from '@e2e/fixtures/linkVisibilityFixture'
+import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({
   initialSettings: { 'Comfy.UseNewMenu': 'Disabled' }
@@ -62,28 +63,34 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     comfyPage,
     linkVisibility
   }) => {
-    await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
+    const clip = await screenshotRegion(
+      await comfyPage.nodeOps.getAllNodeRefs()
+    )
+    await expect(comfyPage.page).toHaveScreenshot('link-visible.png', { clip })
 
     await test.step('Hide the link', async () => {
       await linkVisibility.hideFirstLink()
-      await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+      await expect(comfyPage.page).toHaveScreenshot('link-hidden.png', { clip })
     })
 
     await test.step('Hovering the badge reveals the hidden link', async () => {
       await linkVisibility.hoverFirstHiddenLink()
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-hidden-revealed.png'
+      await expect(comfyPage.page).toHaveScreenshot(
+        'link-hidden-revealed.png',
+        { clip }
       )
     })
 
     await test.step('Leaving the badge hides the link again', async () => {
       await linkVisibility.parkPointer()
-      await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+      await expect(comfyPage.page).toHaveScreenshot('link-hidden.png', { clip })
     })
 
     await test.step('Show the link', async () => {
       await linkVisibility.showFirstHiddenLink()
-      await expect(comfyPage.canvas).toHaveScreenshot('link-visible.png')
+      await expect(comfyPage.page).toHaveScreenshot('link-visible.png', {
+        clip
+      })
     })
   })
 
@@ -123,7 +130,9 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     await comfyPage.workflow.loadGraphData(serialized)
     await comfyPage.nextFrame()
 
-    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+    await expect(comfyPage.page).toHaveScreenshot('link-hidden.png', {
+      clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
+    })
 
     await linkVisibility.openRenamePrompt()
 
@@ -248,6 +257,18 @@ test.describe(
       await expect(inputSlot).toBeVisible()
       await expect(outputSlot).toBeVisible()
 
+      const outputBox = (await outputSlot.boundingBox())!
+      const start = {
+        x: outputBox.x + outputBox.width / 2,
+        y: outputBox.y + outputBox.height / 2
+      }
+      const dragTo = { x: start.x + 160, y: start.y + 120 }
+      const clip = await screenshotRegion([
+        sourceNode.root,
+        targetNode.root,
+        dragTo
+      ])
+
       await test.step('Hide the link', async () => {
         await linkVisibility.hideLinkBetween({
           sourceTitle: 'Load Checkpoint',
@@ -255,58 +276,49 @@ test.describe(
           targetTitle: 'VAE Decode',
           inputName: 'vae'
         })
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await expect(comfyPage.page).toHaveScreenshot('vue-link-hidden.png', {
+          clip
+        })
       })
 
       await test.step('Input hover reveals the hidden link', async () => {
         await inputSlot.hover()
         await comfyPage.nextFrame()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-link-revealed-from-input.png'
+        await expect(comfyPage.page).toHaveScreenshot(
+          'vue-link-revealed-from-input.png',
+          { clip }
         )
       })
 
       await test.step('Leaving the input hides the link again', async () => {
         await linkVisibility.parkPointer()
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await expect(comfyPage.page).toHaveScreenshot('vue-link-hidden.png', {
+          clip
+        })
       })
 
       await test.step('Output hover reveals the hidden link', async () => {
         await outputSlot.hover()
         await comfyPage.nextFrame()
-        await expect(comfyPage.canvas).toHaveScreenshot(
-          'vue-link-revealed-from-output.png'
+        await expect(comfyPage.page).toHaveScreenshot(
+          'vue-link-revealed-from-output.png',
+          { clip }
         )
       })
 
       await test.step('Leaving the output hides the link again', async () => {
         await linkVisibility.parkPointer()
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await expect(comfyPage.page).toHaveScreenshot('vue-link-hidden.png', {
+          clip
+        })
       })
-
-      const outputBox = (await outputSlot.boundingBox())!
-      const inputBox = (await inputSlot.boundingBox())!
-      const start = {
-        x: outputBox.x + outputBox.width / 2,
-        y: outputBox.y + outputBox.height / 2
-      }
-      const dragTo = { x: start.x + 160, y: start.y + 120 }
-      const margin = 40
-      const left = Math.min(start.x, inputBox.x) - margin
-      const top = Math.min(start.y, inputBox.y) - margin
-      const linkRegion = {
-        x: left,
-        y: top,
-        width: Math.max(dragTo.x, inputBox.x + inputBox.width) + margin - left,
-        height: Math.max(dragTo.y, inputBox.y + inputBox.height) + margin - top
-      }
 
       await test.step('Dragging away from the output keeps the link revealed', async () => {
         await comfyMouse.move(start)
         await comfyMouse.drag(dragTo)
         await expect(comfyPage.page).toHaveScreenshot(
           'vue-link-revealed-while-dragging-output.png',
-          { clip: linkRegion }
+          { clip }
         )
       })
 
@@ -314,7 +326,9 @@ test.describe(
         await comfyMouse.move(start)
         await comfyMouse.drop()
         await linkVisibility.parkPointer()
-        await expect(comfyPage.canvas).toHaveScreenshot('vue-link-hidden.png')
+        await expect(comfyPage.page).toHaveScreenshot('vue-link-hidden.png', {
+          clip
+        })
       })
     })
   }

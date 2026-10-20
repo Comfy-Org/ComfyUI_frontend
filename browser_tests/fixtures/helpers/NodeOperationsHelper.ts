@@ -110,6 +110,14 @@ export class NodeOperationsHelper {
     return this.getNodeRefById(id)
   }
 
+  /** Every node in the graph currently shown on the canvas. */
+  async getAllNodeRefs(): Promise<NodeReference[]> {
+    const ids = await this.page.evaluate(() =>
+      window.app!.canvas.graph!.nodes.map((n: LGraphNode) => n.id)
+    )
+    return ids.map((id) => new NodeReference(id, this.comfyPage))
+  }
+
   async getNodeRefById(id: SerializedNodeId): Promise<NodeReference> {
     return new NodeReference(toNodeId(id), this.comfyPage)
   }
