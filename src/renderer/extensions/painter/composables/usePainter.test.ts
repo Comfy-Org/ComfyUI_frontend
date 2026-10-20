@@ -20,6 +20,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -127,7 +128,8 @@ type PainterResult = ReturnType<typeof usePainter>
 function mountPainter(
   nodeId: NodeId = toNodeId('test-node'),
   initialModelValue = '',
-  widget: LocatedWidget = { name: 'mask' }
+  widget: LocatedWidget = { name: 'mask' },
+  historyScope?: () => WidgetHistoryScope | null
 ) {
   let painter!: PainterResult
   const canvasEl = ref<HTMLCanvasElement | null>(null)
@@ -140,7 +142,8 @@ function mountPainter(
         widget,
         canvasEl,
         cursorEl,
-        modelValue
+        modelValue,
+        historyScope
       })
       return {}
     },
@@ -278,7 +281,7 @@ describe('usePainter', () => {
   })
 
   describe('restoreSettingsFromProperties', () => {
-    it('restores tool and brush settings from node properties on init', () => {
+    it('restores tool and brush settings from node properties on init', async () => {
       const { node } = makePaintNode()
       node.properties.painterTool = 'eraser'
       node.properties.painterBrushSize = 42
@@ -295,7 +298,7 @@ describe('usePainter', () => {
       expect(painter.brushHardness.value).toBe(0.8)
     })
 
-    it('restores backgroundColor from the bg_color widget', () => {
+    it('restores backgroundColor from the bg_color widget', async () => {
       makePaintNode([{ name: 'bg_color', type: 'color', value: '#123456' }])
 
       const { painter } = mountPainter()
@@ -694,6 +697,139 @@ describe('usePainter', () => {
       painter.handleClear()
 
       expect(modelValue.value).toBe('')
+    })
+  })
+
+  describe('node history', () => {
+    const historyScope = fromAny<WidgetHistoryScope, unknown>({
+      rootGraphId: 'root',
+      widgetId: 'root:test-node:mask'
+    })
+
+    function mountWithHistory() {
+      makePaintNode([
+        { name: 'mask', type: 'string', value: '' },
+        { name: 'width', type: 'number', value: 2 },
+        { name: 'height', type: 'number', value: 2 }
+      ])
+      const painted: { width: number; height: number; x: number; y: number }[] =
+        []
+      const ctx = fromPartial<CanvasRenderingContext2D>({
+        save: vi.fn(),
+        restore: vi.fn(),
+        clearRect: vi.fn(),
+        drawImage: fromAny<CanvasRenderingContext2D['drawImage'], unknown>(
+          (image: HTMLCanvasElement, x: number, y: number) => {
+            painted.push({ width: image.width, height: image.height, x, y })
+          }
+        )
+      })
+      const mounted = mountPainter(
+        toNodeId('test-node'),
+        '',
+        { name: 'mask' },
+        () => historyScope
+      )
+      const canvas = fromPartial<HTMLCanvasElement>({
+        width: 2,
+        height: 2,
+        getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(() => ctx)
+      })
+      Object.assign(ctx, { canvas })
+      mounted.canvasEl.value = canvas
+      const createElement = document.createElement.bind(document)
+      vi.spyOn(document, 'createElement').mockImplementation((tag: string) =>
+        tag === 'canvas'
+          ? fromPartial<HTMLCanvasElement>({
+              width: 0,
+              height: 0,
+              getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
+                () =>
+                  fromPartial<CanvasRenderingContext2D>({ drawImage: vi.fn() })
+              )
+            })
+          : createElement(tag)
+      )
+      return { ...mounted, painted }
+    }
+
+    it('undoes a clear by repainting the whole canvas', async () => {
+      const { painter, painted } = mountWithHistory()
+
+      painter.handleClear()
+      expect(painter.canUndo.value).toBe(true)
+
+      await painter.undo()
+      expect(painted).toContainEqual({ width: 2, height: 2, x: 0, y: 0 })
+      expect(painter.canRedo.value).toBe(true)
+    })
+
+    it('undoes a stroke by repainting only the area it covered', async () => {
+      const { painter, canvasEl, painted } = mountWithHistory()
+      const drawingCtx = fromPartial<CanvasRenderingContext2D>({
+        save: vi.fn(),
+        restore: vi.fn(),
+        clearRect: vi.fn(),
+        drawImage: vi.fn(),
+        beginPath: vi.fn(),
+        arc: vi.fn(),
+        fill: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        stroke: vi.fn()
+      })
+      vi.spyOn(document, 'createElement').mockImplementation(() =>
+        fromPartial<HTMLCanvasElement>({
+          width: 0,
+          height: 0,
+          getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(
+            () => drawingCtx
+          )
+        })
+      )
+      const canvas = canvasEl.value!
+      canvas.width = 100
+      canvas.height = 100
+      canvas.getBoundingClientRect = () =>
+        fromPartial<DOMRect>({ left: 0, top: 0, width: 100, height: 100 })
+      painter.brushSize.value = 10
+      const target = {
+        setPointerCapture: vi.fn(),
+        releasePointerCapture: vi.fn()
+      }
+      const pointer = (type: string, at: number) => {
+        const event = new PointerEvent(type, {
+          button: 0,
+          clientX: at,
+          clientY: at
+        })
+        Object.defineProperty(event, 'target', { value: target })
+        return event
+      }
+
+      painter.handlePointerDown(pointer('pointerdown', 50))
+      painter.handlePointerMove(pointer('pointermove', 60))
+      painter.handlePointerUp(pointer('pointerup', 60))
+      await painter.undo()
+
+      expect(painted).toContainEqual({ width: 20, height: 20, x: 45, y: 45 })
+    })
+
+    it('drops the history when the canvas size changes', async () => {
+      const { painter } = mountWithHistory()
+      painter.handleClear()
+      vi.spyOn(document, 'createElement').mockReturnValue(
+        fromPartial<HTMLCanvasElement>({
+          getContext: fromAny<HTMLCanvasElement['getContext'], unknown>(() =>
+            fromPartial<CanvasRenderingContext2D>({ drawImage: vi.fn() })
+          )
+        })
+      )
+
+      painter.canvasWidth.value = 4
+      await nextTick()
+
+      expect(painter.canUndo.value).toBe(false)
     })
   })
 

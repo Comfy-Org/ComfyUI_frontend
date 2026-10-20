@@ -257,21 +257,24 @@
         </div>
       </template>
 
-      <Button
-        variant="secondary"
-        size="md"
-        data-testid="painter-clear-button"
-        :class="
-          cn(
-            'gap-2 rounded-lg border border-node-border bg-node text-muted-foreground hover:text-foreground',
-            !compact && 'col-span-2'
-          )
-        "
-        @click="handleClear"
-      >
-        <i class="icon-[lucide--undo-2]" />
-        {{ $t('painter.clear') }}
-      </Button>
+      <div :class="cn('flex items-center gap-1', !compact && 'col-span-2')">
+        <Button
+          variant="secondary"
+          size="md"
+          data-testid="painter-clear-button"
+          class="flex-1 border border-node-border bg-node text-muted-foreground hover:text-foreground"
+          @click="handleClear"
+        >
+          <i class="icon-[lucide--eraser]" />
+          {{ $t('painter.clear') }}
+        </Button>
+        <WidgetHistoryButtons
+          :can-undo
+          :can-redo
+          @undo="undo"
+          @redo="redo"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -282,10 +285,12 @@ import { computed, useTemplateRef } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Slider from '@comfyorg/design-system/slider/Slider'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
 import {
   PAINTER_TOOLS,
   usePainter
 } from '@/renderer/extensions/painter/composables/usePainter'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { toHexFromFormat } from '@comfyorg/shared-frontend-utils/colorUtil'
@@ -325,8 +330,18 @@ const {
   handlePointerEnter,
   handlePointerLeave,
   handleInputImageLoad,
-  handleClear
-} = usePainter(nodeId, { widget, canvasEl, cursorEl, modelValue })
+  handleClear,
+  canUndo,
+  canRedo,
+  undo,
+  redo
+} = usePainter(nodeId, {
+  widget,
+  canvasEl,
+  cursorEl,
+  modelValue,
+  historyScope: () => widgetHistoryScope(widget, nodeId)
+})
 
 const canvasContainerStyle = computed(() => ({
   aspectRatio: `${canvasWidth.value} / ${canvasHeight.value}`,

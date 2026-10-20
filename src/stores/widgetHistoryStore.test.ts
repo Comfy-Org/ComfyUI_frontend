@@ -49,6 +49,7 @@ describe(ownsNodeHistory, () => {
     { type: 'curve', owns: true },
     { type: 'imagecrop', owns: true },
     { type: 'lightinfo', owns: true },
+    { type: 'painter', owns: true },
     { type: 'range', owns: true },
     { type: 'videoedit', owns: true },
     { type: 'number', owns: false },
@@ -79,6 +80,47 @@ describe(useWidgetHistoryStore, () => {
     expect(store.baselineOf(scope)).toEqual({ value: 'shown' })
     store.forget(scope)
     expect(store.baselineOf(scope)).toBeUndefined()
+  })
+
+  it.for([
+    { case: 'a frozen value by reference', freeze: true, same: true },
+    { case: 'a mutable value as a copy', freeze: false, same: false }
+  ])('stores $case', ({ freeze, same }) => {
+    const store = useWidgetHistoryStore()
+    const value = { pixels: [1, 2, 3] }
+    store.record(scope, freeze ? Object.freeze(value) : value)
+
+    const step = store.undo(scope, 'after')
+
+    expect(step?.value === value).toBe(same)
+    expect(step?.value).toEqual(value)
+  })
+
+  it('lists the steps it keeps and drops one of them', () => {
+    const store = useWidgetHistoryStore()
+    const other = scopeOf('root-a', 2)
+    store.record(scope, 'first')
+    store.record(scope, 'second')
+    store.undo(scope, 'redone')
+    store.record(other, 'elsewhere')
+
+    store.dropStep(scope, 'first')
+
+    expect(store.storedSteps()).toEqual([
+      { scope, value: 'redone' },
+      { scope: other, value: 'elsewhere' }
+    ])
+  })
+
+  it('peeks at the next step in each direction without taking it', () => {
+    const store = useWidgetHistoryStore()
+    store.record(scope, 'before')
+    store.undo(scope, 'after')
+    store.record(scope, 'other')
+
+    expect(store.peek(scope, 'undo')).toEqual({ value: 'other' })
+    expect(store.peek(scope, 'redo')).toBeUndefined()
+    expect(store.canUndo(scope)).toBe(true)
   })
 
   it.for(['undo', 'redo'] as const)(
