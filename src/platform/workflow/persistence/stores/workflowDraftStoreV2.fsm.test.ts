@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-import { MAX_DRAFTS } from '../base/draftTypes'
+import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import { useWorkflowDraftStoreV2 } from './workflowDraftStoreV2'
 
 vi.mock(import('@/scripts/api'))

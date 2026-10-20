@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ComposerReference } from '../../../types/composerPrompt'
-import CatalogSkillReference from '../CatalogSkillReference.vue'
+import type { ComposerReference } from '@/workbench/extensions/agent/types/composerPrompt'
+import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
 
 const { skill } = defineProps<{
   skill: Extract<ComposerReference, { kind: 'skill' }>

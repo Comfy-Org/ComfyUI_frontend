@@ -1,13 +1,13 @@
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { storeToRefs } from 'pinia'
 import { computed, getCurrentScope, onScopeDispose } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
 import { useTelemetry } from '@/platform/telemetry'
 
-import { composerPromptForSubmission } from '../../utils/composerPrompt'
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 
 export interface UseComposerOptions {
   onSend: (text: string, attachments: ComposerAttachment[]) => void

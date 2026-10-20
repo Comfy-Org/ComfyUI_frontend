@@ -17,8 +17,8 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'
 
-import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
-import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
+import type { AgentRunModeValue } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
+import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()
@@ -138,7 +138,9 @@ const options: {
           :model-value="store.mode"
           :aria-label="t('agent.runPermissions')"
           class="flex flex-col gap-1"
-          @update:model-value="onSelectMode"
+          @update:model-value="
+            typeof $event === 'string' && onSelectMode($event)
+          "
         >
           <DropdownMenuRadioItem
             v-for="option in options"

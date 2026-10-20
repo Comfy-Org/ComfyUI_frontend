@@ -4,7 +4,10 @@ import type {
   SubgraphOutput
 } from '@/lib/litegraph/src/types/entityRegistry'
 
-import type { INodeInputSlot, INodeOutputSlot } from '../types/slots'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
 
 export let isSubgraph: (value: unknown) => value is Subgraph
 export let isSubgraphInput: (slot: unknown) => slot is SubgraphInput
