@@ -9,14 +9,14 @@ import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 
-import type { LGraphState } from '../LGraph'
+import type { LGraphState } from '@/lib/litegraph/src/LGraph'
 import type {
   ExportedSubgraph,
   ISerialisedGroup,
   ISerialisedNode,
   SerialisableLLink,
   SerialisableReroute
-} from '../types/serialisation'
+} from '@/lib/litegraph/src/types/serialisation'
 
 import {
   deduplicateSubgraphGroupIds,

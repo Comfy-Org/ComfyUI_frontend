@@ -62,8 +62,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { parseIsoDateSafe } from '@/utils/dateTimeUtil'
 
-import { getProviderLabel, getProviderLogo } from '../providers'
-import type { SecretMetadata } from '../types'
+import { getProviderLabel, getProviderLogo } from '@/platform/secrets/providers'
+import type { SecretMetadata } from '@/platform/secrets/types'
 
 const {
   secret,

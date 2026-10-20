@@ -16,7 +16,7 @@ import MenuSubTrigger from '@comfyorg/design-system/menu/MenuSubTrigger'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import type { WorkflowReferenceOption } from '../../../types/workflowReference'
+import type { WorkflowReferenceOption } from '@/workbench/extensions/agent/types/workflowReference'
 
 const {
   canAttach,
@@ -62,7 +62,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         <span class="icon-[lucide--plus] size-4" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuPortal>
+    <DropdownMenuPortal :key="Number(addMenuOpen)">
       <MenuContent
         side="top"
         align="start"
@@ -96,9 +96,8 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
             </span>
             <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
           </MenuSubTrigger>
-          <DropdownMenuPortal>
+          <DropdownMenuPortal :key="Number(workflowSubmenuOpen)">
             <MenuSubContent
-              :open="workflowSubmenuOpen"
               :side-offset="4"
               width="compact"
               max-height="compact"

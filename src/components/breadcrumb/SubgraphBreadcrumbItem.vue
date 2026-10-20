@@ -53,7 +53,7 @@
     ref="itemInputRef"
     v-model="itemLabel"
     data-testid="subgraph-breadcrumb-rename-input"
-    class="fixed z-10000 w-50 p-2 text-[.8rem]"
+    class="fixed z-overlay w-50 p-2 text-[.8rem]"
     @blur="inputBlur(false)"
     @click.stop
     @keydown.enter="inputBlur(true)"

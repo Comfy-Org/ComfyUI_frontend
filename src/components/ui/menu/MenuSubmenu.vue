@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DropdownMenuPortal, DropdownMenuSub } from 'reka-ui'
+import { DropdownMenuSub, DropdownMenuPortal } from 'reka-ui'
 import { computed, toValue } from 'vue'
 
 import MenuRadioGroup from './MenuRadioGroup.vue'
@@ -28,9 +28,8 @@ const disabled = computed(
     >
       <slot />
     </MenuSubTrigger>
-    <DropdownMenuPortal>
+    <DropdownMenuPortal :key="Number(open)">
       <MenuSubContent
-        :open
         :data-menu-owner="ownerId"
         :side-offset="2"
         :align-offset="-5"

@@ -1,8 +1,8 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index />
-      <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
+      <DialogOverlay />
+      <DialogContent size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{
@@ -11,7 +11,7 @@
                 : $t('secrets.editSecret')
             }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <form
           class="flex flex-col gap-4 px-4 py-2"
@@ -123,7 +123,7 @@
                 :aria-invalid="!!errors.secretValue"
               />
             </template>
-            <PasswordInput
+            <AppPasswordInput
               v-else
               id="secret-value"
               v-model="form.secretValue"
@@ -151,7 +151,7 @@
             >
               {{ $t('g.cancel') }}
             </Button>
-            <Button type="submit" tabindex="0" :loading="loading">
+            <Button type="submit" tabindex="0" :loading>
               {{ $t('g.save') }}
             </Button>
           </div>
@@ -173,13 +173,12 @@ import DialogHeader from '@comfyorg/design-system/dialog/DialogHeader'
 import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Field from '@comfyorg/design-system/field/Field'
 import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
 import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import Select from '@comfyorg/design-system/select/Select'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
@@ -187,8 +186,11 @@ import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
-import { useSecretForm } from '../composables/useSecretForm'
-import type { SecretMetadata, SecretProviderInfo } from '../types'
+import { useSecretForm } from '@/platform/secrets/composables/useSecretForm'
+import type {
+  SecretMetadata,
+  SecretProviderInfo
+} from '@/platform/secrets/types'
 
 const {
   secret,

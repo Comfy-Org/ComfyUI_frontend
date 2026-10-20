@@ -2,7 +2,12 @@
   <div class="flex min-w-0 flex-col">
     <!-- Search bar + collapse toggle -->
     <div class="flex min-w-0 shrink-0 items-center border-b px-4 pt-1 pb-4">
-      <AsyncSearchInput v-model="searchQuery" />
+      <AsyncSearchInput
+        v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+        :accessible-label="$t('g.search')"
+      />
       <CollapseToggleButton
         v-model="isAllCollapsed"
         :show="!isSearching && allErrorGroups.length > 1"
@@ -394,7 +399,7 @@ import { useManagerDialog } from '@/workbench/extensions/manager/composables/use
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
-import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
+import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorCardSection from './ErrorCardSection.vue'

@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@comfyorg/design-system/slider/Slider'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import NumberField from '@comfyorg/design-system/number-field/NumberField'
 import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -15,7 +15,7 @@ import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/com
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import FieldSwitch from './FieldSwitch.vue'
 import LayoutField from './LayoutField.vue'
 
@@ -166,7 +166,7 @@ function openFullSettings() {
       </template>
       <div class="space-y-4 px-4 py-3">
         <LayoutField :label="t('rightSidePanel.globalSettings.linkShape')">
-          <SingleSelect
+          <AppSingleSelect
             v-model="linkShape"
             :options="linkShapeOptions"
             :label="t('rightSidePanel.globalSettings.linkShape')"

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import { DialogPortal } from 'reka-ui'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from './TooltipContent.vue'
@@ -11,8 +11,13 @@ import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
 const TooltipHarness = defineComponent({
-  components: { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger },
-  directives: { RekaZIndex: vRekaZIndex },
+  components: {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+    DialogPortal
+  },
   props: {
     delayDuration: { type: Number, default: 0 },
     disabled: { type: Boolean, default: false },
@@ -30,7 +35,7 @@ const TooltipHarness = defineComponent({
         <TooltipContent>Helpful text</TooltipContent>
       </Tooltip>
       <button @click="dialogs++">Open dialog</button>
-      <div v-for="n in dialogs" :key="n" v-reka-z-index data-testid="dialog" />
+      <DialogPortal v-for="n in dialogs" :key="n"><div data-testid="dialog" class="fixed z-overlay" /></DialogPortal>
     </TooltipProvider>
   `
 })
@@ -262,19 +267,23 @@ describe('Tooltip', () => {
     render(TooltipHarness)
     const trigger = screen.getByRole('button', { name: 'Trigger' })
     const openDialog = screen.getByRole('button', { name: 'Open dialog' })
-    const contentZIndex = async () =>
-      Number((await screen.findByTestId('tooltip-content')).style.zIndex)
-    const topDialogZIndex = () =>
-      Math.max(
-        ...screen.getAllByTestId('dialog').map((el) => Number(el.style.zIndex))
-      )
+    await user.click(openDialog)
+    await user.hover(trigger)
+    const firstContent = await screen.findByTestId('tooltip-content')
+    expect(
+      screen.getByTestId('dialog').compareDocumentPosition(firstContent)
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
 
     await user.click(openDialog)
     await user.hover(trigger)
-    expect(await contentZIndex()).toBe(topDialogZIndex() + 1)
-
-    await user.click(openDialog)
-    await user.hover(trigger)
-    expect(await contentZIndex()).toBe(topDialogZIndex() + 1)
+    const reopenedContent = await screen.findByTestId('tooltip-content')
+    expect(
+      screen
+        .getAllByTestId('dialog')
+        .map((dialog) => dialog.compareDocumentPosition(reopenedContent))
+    ).toEqual([
+      Node.DOCUMENT_POSITION_FOLLOWING,
+      Node.DOCUMENT_POSITION_FOLLOWING
+    ])
   })
 })

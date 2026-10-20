@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Преобразует текст в речь. Поддерживает указания эмоций в тексте ([happy], [whispering] в s2.1-pro; (happy) в s1) и диалоги с несколькими говорящими через теги {'@'}Voice1/{'@'}Voice2 при подключении нескольких голосов.",
+    "description": "Преобразует текст в речь. Поддерживает маркеры эмоций в тексте ([happy], [whispering] в s2.1-pro; (happy) в s1), [указания] на естественном языке и теги слов `<whisper>...</whisper>` в drama-3, а также диалог нескольких говорящих с помощью тегов {'@'}Voice1/{'@'}Voice2 при подключении нескольких голосов.",
     "display_name": "Fish Audio: текст в речь",
     "inputs": {
       "control_after_generate": {
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Преобразует видео с новыми персонажами, локациями или стилями из референсных изображений, сохраняя движение, перемещение камеры и тайминг.",
+    "display_name": "Перенос движения Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель для использования."
+      },
+      "model_prompt": {
+        "name": "запрос"
+      },
+      "model_resolution": {
+        "name": "разрешение"
+      },
+      "model_seed": {
+        "name": "сид"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Увеличение разрешения низкокачественных изображений до сверхвысокого, устранение артефактов и шума. Максимальный выход: 32 мегапикселя.",
     "display_name": "HitPaw General Image Enhance",
@@ -9263,6 +9290,28 @@
       },
       "rotation": {
         "name": "вращение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "Расширяет диапазон яркости sRGB до Rec.2020 HLG HDR. Сохраняйте результат с выбранным цветовым пространством HDR. Альфа-канал сохраняется.",
+    "display_name": "Преобразовать SDR в HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "алгоритм",
+        "tooltip": "Рациональное расширение в стиле Lottes, смешанное с калиброванной монотонной кривой логарифмического усиления."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "изображение",
+        "tooltip": "Изображения SDR в sRGB."
       }
     },
     "outputs": {

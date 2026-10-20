@@ -1,20 +1,11 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, onTestFinished } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
-
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
 import HoverCardContent from './HoverCardContent.vue'
 import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'
-
-function openModalLayer() {
-  const layer = document.createElement('div')
-  raiseModalLayer(layer)
-  onTestFinished(() => releaseModalLayer(layer))
-  return Number(layer.style.zIndex)
-}
 
 async function hoverOpen() {
   const user = userEvent.setup()
@@ -46,10 +37,16 @@ describe('HoverCard', () => {
   })
 
   it('lifts above the top modal layer', async () => {
-    const dialogZIndex = openModalLayer()
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
 
     const { content } = await hoverOpen()
 
-    expect(Number(content.style.zIndex)).toBe(dialogZIndex + 1)
+    expect(dialog.compareDocumentPosition(content)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 })

@@ -11,8 +11,8 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 
-import type { AttachmentValidationError } from '../../../types/composerAttachment'
-import type { AssetPreviewMode } from '../../../types/assetPreview'
+import type { AttachmentValidationError } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 import AssetHoverPreview from './AssetHoverPreview.vue'
 import AssetThumbnail from './AssetThumbnail.vue'
 
@@ -130,7 +130,7 @@ const validationMessage = computed(
       </span>
     </AssetHoverPreview>
     <TagRemoveButton
-      :label="$t('agent.removeAsset', { name })"
+      :aria-label="$t('agent.removeAsset', { name })"
       class="pointer-events-none absolute top-1 right-1 size-5 shrink-0 rounded-full bg-background text-foreground opacity-0 ring-1 ring-border/50 group-focus-within/attachment:pointer-events-auto group-focus-within/attachment:opacity-100 group-hover/attachment:pointer-events-auto group-hover/attachment:opacity-100 hover:bg-accent touch:pointer-events-auto touch:size-7 touch:opacity-100"
       @click="emit('remove')"
     />

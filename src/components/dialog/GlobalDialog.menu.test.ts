@@ -28,7 +28,7 @@ const DialogBodyWithMenu = defineComponent({
   setup: () => () =>
     h(
       Menu,
-      { items },
+      { items, removeLabel: 'Remove' },
       {
         trigger: () => h(Button, null, () => 'Open menu')
       }

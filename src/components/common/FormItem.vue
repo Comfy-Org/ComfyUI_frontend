@@ -43,7 +43,7 @@ import InputKnob from '@/components/common/InputKnob.vue'
 import InputSlider from '@/components/common/InputSlider.vue'
 import UrlInput from '@/components/common/UrlInput.vue'
 import Input from '@comfyorg/design-system/input/Input'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import Switch from '@comfyorg/design-system/switch/Switch'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
@@ -108,7 +108,7 @@ function getFormComponent(item: FormItem): Component {
     case 'knob':
       return InputKnob
     case 'combo':
-      return SingleSelect
+      return AppSingleSelect
     case 'radio':
       return FormRadioGroup
     case 'image':

@@ -176,10 +176,10 @@
           {{ $t('workspacePanel.activity.fullActivity') }}
         </a>
       </div>
-      <Pagination
+      <AppPagination
         v-model:page="page"
-        :total="total"
-        :items-per-page="itemsPerPage"
+        :total
+        :items-per-page
         class="@2xl:ml-auto"
       />
     </div>
@@ -193,7 +193,7 @@ import { useI18n } from 'vue-i18n'
 import HoverCard from '@comfyorg/design-system/hover-card/HoverCard'
 import HoverCardContent from '@/components/ui/hover-card/HoverCardContent.vue'
 import HoverCardTrigger from '@comfyorg/design-system/hover-card/HoverCardTrigger'
-import Pagination from '@/components/ui/pagination/Pagination.vue'
+import AppPagination from '@/components/common/AppPagination.vue'
 import Table from '@comfyorg/design-system/table/Table'
 import TableBody from '@comfyorg/design-system/table/TableBody'
 import TableCell from '@comfyorg/design-system/table/TableCell'

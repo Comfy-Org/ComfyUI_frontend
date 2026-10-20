@@ -1,6 +1,6 @@
 <template>
   <div class="node-help-content mx-auto w-full">
-    <Spinner v-if="isLoading" class="m-auto" :aria-label="$t('g.loading')" />
+    <AppSpinner v-if="isLoading" class="m-auto" />
     <SanitizedHtml
       v-else-if="!error"
       class="comfy-markdown-content overflow-visible [--comfy-markdown-font-size:var(--text-sm)] [&_table]:block [&_table]:overflow-x-auto"
@@ -73,7 +73,7 @@
 import { computed } from 'vue'
 
 import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useNodeHelpContent } from '@/composables/useNodeHelpContent'
 import { flattenInputSpecs } from '@/schemas/nodeDef/inputSpecUtil'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'

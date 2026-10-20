@@ -7,7 +7,7 @@
       class="flex items-center gap-4"
       data-component-id="asset-filter-bar-left"
     >
-      <MultiSelect
+      <AppMultiSelect
         v-if="availableFileFormats.length > 0"
         v-model="activeFileFormatObjects"
         :label="$t('assetBrowser.fileFormats')"
@@ -17,7 +17,7 @@
         @update:model-value="handleFilterChange"
       />
 
-      <MultiSelect
+      <AppMultiSelect
         v-if="availableBaseModels.length > 0"
         v-model="activeBaseModelObjects"
         :label="$t('assetBrowser.baseModels')"
@@ -27,7 +27,7 @@
         @update:model-value="handleFilterChange"
       />
 
-      <SingleSelect
+      <AppSingleSelect
         v-if="showOwnershipFilter"
         v-model="ownership"
         :label="$t('assetBrowser.ownership')"
@@ -39,7 +39,7 @@
     </div>
 
     <div class="flex items-center" data-component-id="asset-filter-bar-right">
-      <SingleSelect
+      <AppSingleSelect
         v-model="sortBy"
         :label="$t('assetBrowser.sortBy')"
         :options="sortOptions"
@@ -50,7 +50,7 @@
         <template #icon>
           <i class="icon-[lucide--arrow-up-down]" />
         </template>
-      </SingleSelect>
+      </AppSingleSelect>
     </div>
   </div>
 </template>
@@ -59,9 +59,9 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type {

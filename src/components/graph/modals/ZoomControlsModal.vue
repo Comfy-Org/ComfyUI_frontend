@@ -41,19 +41,20 @@
           <span class="text-[9px]">{{ zoomToFitCommandText }}</span>
         </div>
 
-        <NumberField
+        <FormNumberField
+          class="w-full"
           :model-value="canvasStore.appScalePercentage"
           :min="1"
           :max="1000"
           :format-options="{ useGrouping: false, maximumFractionDigits: 0 }"
+          :aria-label="$t('zoomControls.zoomPercentage')"
           data-testid="zoom-percentage-input"
           @update:model-value="canvasStore.setAppZoomFromPercentage"
         >
-          <NumberFieldDecrement />
-          <NumberFieldInput :aria-label="$t('zoomControls.zoomPercentage')" />
-          <span class="shrink-0 text-sm">%</span>
-          <NumberFieldIncrement />
-        </NumberField>
+          <template #suffix>
+            <span class="shrink-0 text-sm">%</span>
+          </template>
+        </FormNumberField>
       </div>
     </div>
   </div>
@@ -62,10 +63,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 
-import NumberField from '@comfyorg/design-system/number-field/NumberField'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
+import FormNumberField from '@/components/common/FormNumberField.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'

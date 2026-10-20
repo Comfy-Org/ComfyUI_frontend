@@ -2,7 +2,7 @@
   <ComboboxAnchor as-child>
     <ComboboxTrigger
       v-bind="$attrs"
-      :aria-label="label || fallbackLabel"
+      :aria-label="accessibleLabel"
       :class="
         cn(
           selectTriggerVariants({
@@ -63,13 +63,13 @@ defineOptions({ inheritAttrs: false })
 const {
   class: className,
   label,
-  fallbackLabel,
+  accessibleLabel,
   selectedItems,
   size
 } = defineProps<{
   class?: ClassValue
   label?: string
-  fallbackLabel: string
+  accessibleLabel: string
   selectedItems: SelectOption[]
   size: 'lg' | 'md'
 }>()

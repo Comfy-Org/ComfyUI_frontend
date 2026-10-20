@@ -1,5 +1,5 @@
-import type { CanvasColour, ISlotType } from '../interfaces'
-import { litegraph } from '../litegraphInstance'
+import type { CanvasColour, ISlotType } from '@/lib/litegraph/src/interfaces'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 
 /**
  * Resolve the colour used while rendering or previewing a connection of a given slot type.

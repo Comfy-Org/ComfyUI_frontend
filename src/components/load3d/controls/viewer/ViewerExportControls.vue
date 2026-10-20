@@ -34,7 +34,7 @@ import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
-import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
+import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
 
 const { sourceFormat = null } = defineProps<{
   sourceFormat?: string | null

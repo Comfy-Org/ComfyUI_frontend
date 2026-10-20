@@ -21,7 +21,7 @@
         <i v-else class="pi pi-palette text-lg" />
       </ToggleGroupItem>
     </ToggleGroup>
-    <ColorPicker
+    <AppColorPicker
       v-if="selectedColorName === '_custom'"
       v-model="customColorValue"
     />
@@ -32,7 +32,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 

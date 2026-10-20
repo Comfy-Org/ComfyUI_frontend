@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import type { Bounds } from '@/renderer/core/layout/types'
@@ -10,14 +10,34 @@ function createLock(
   source: { width: number; height: number } = { width: 1920, height: 1080 }
 ) {
   const bounds = ref<Bounds>(initial)
+  const onEditEnd = vi.fn()
   const lock = useCropRatioLock(bounds, {
     sourceWidth: ref(source.width),
-    sourceHeight: ref(source.height)
+    sourceHeight: ref(source.height),
+    onEditEnd
   })
-  return { bounds, ...lock }
+  return { bounds, onEditEnd, ...lock }
 }
 
 describe('useCropRatioLock', () => {
+  it.for([
+    { key: '1:1', source: { width: 1920, height: 1080 }, calls: 1 },
+    { key: 'custom', source: { width: 1920, height: 1080 }, calls: 0 },
+    { key: '1:1', source: { width: 0, height: 0 }, calls: 0 }
+  ])(
+    'reports $calls edit end(s) when $key is chosen on a $source.width-wide source',
+    ({ key, source, calls }) => {
+      const { selectedRatio, onEditEnd } = createLock(
+        { x: 0, y: 0, width: 600, height: 500 },
+        source
+      )
+
+      selectedRatio.value = key
+
+      expect(onEditEnd).toHaveBeenCalledTimes(calls)
+    }
+  )
+
   it('exposes the preset keys including custom', () => {
     const { ratioKeys } = createLock({ x: 0, y: 0, width: 640, height: 360 })
 

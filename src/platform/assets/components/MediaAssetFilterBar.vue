@@ -3,6 +3,8 @@
     <SidebarTopArea>
       <SearchInput
         v-model="searchQuery"
+        :clear-label="$t('g.clear')"
+        :accessible-label="$t('g.search')"
         :placeholder="
           $t('g.searchPlaceholder', {
             subject: $t('sideToolbar.labels.assets')

@@ -144,7 +144,7 @@
   <Teleport to="body">
     <div
       v-if="marqueeStyle"
-      class="pointer-events-none fixed z-9999 border border-primary bg-primary/20"
+      class="pointer-events-none fixed z-overlay border border-primary bg-primary/20"
       :style="marqueeStyle"
     />
   </Teleport>

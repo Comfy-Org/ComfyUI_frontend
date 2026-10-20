@@ -7,7 +7,7 @@ import MenuAction from './MenuAction.vue'
 import MenuItemContent from './MenuItemContent.vue'
 import MenuSeparator from '@comfyorg/design-system/menu/MenuSeparator'
 import MenuSubmenu from './MenuSubmenu.vue'
-import type { MenuItem } from './types'
+import type { MenuItem, MenuItemAction } from './types'
 
 defineOptions({ name: 'MenuItems' })
 
@@ -27,6 +27,7 @@ const { itemContent, items, ownerId } = defineProps<{
 
 const emit = defineEmits<{
   select: []
+  activate: [item: MenuItemAction]
 }>()
 
 const visibleItems = computed(() =>
@@ -58,6 +59,7 @@ const visibleItems = computed(() =>
           :item-content="itemContent ?? $slots.item"
           :owner-id
           @select="emit('select')"
+          @activate="emit('activate', $event)"
         />
       </template>
     </MenuSubmenu>
@@ -66,6 +68,7 @@ const visibleItems = computed(() =>
       :item
       :allow-commandless="Boolean(itemContent ?? $slots.item)"
       @select="emit('select')"
+      @activate="emit('activate', $event)"
     >
       <ReuseItemContent :item :has-submenu="false" />
     </MenuAction>

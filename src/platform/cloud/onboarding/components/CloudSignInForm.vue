@@ -26,7 +26,7 @@
         >
           {{ t('auth.login.passwordLabel') }}
         </FieldLabel>
-        <PasswordInput
+        <AppPasswordInput
           v-bind="componentField"
           id="cloud-sign-in-password"
           autocomplete="current-password"
@@ -72,7 +72,7 @@ import Field from '@comfyorg/design-system/field/Field'
 import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import Message from '@/components/ui/message/Message.vue'
 import {
   CLOUD_AUTH_FIELD_CLASS,

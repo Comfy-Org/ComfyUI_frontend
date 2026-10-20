@@ -20,7 +20,8 @@
     "src/button.variants.ts",
     "src/select.variants.ts",
     "src/tag.variants.ts",
-    "src/workspaceAvatar.ts"
+    "src/workspaceAvatar.ts",
+    "dist-types/**/*.d.ts"
   ],
   "type": "module",
   "exports": {
@@ -33,10 +34,22 @@
     "./components.css": "./dist/components.css",
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
-    "./button.variants": "./src/button.variants.ts",
-    "./select.variants": "./src/select.variants.ts",
-    "./tag.variants": "./src/tag.variants.ts",
-    "./workspaceAvatar": "./src/workspaceAvatar.ts"
+    "./button.variants": {
+      "types": "./dist-types/button.variants.d.ts",
+      "default": "./src/button.variants.ts"
+    },
+    "./select.variants": {
+      "types": "./dist-types/select.variants.d.ts",
+      "default": "./src/select.variants.ts"
+    },
+    "./tag.variants": {
+      "types": "./dist-types/tag.variants.d.ts",
+      "default": "./src/tag.variants.ts"
+    },
+    "./workspaceAvatar": {
+      "types": "./dist-types/workspaceAvatar.d.ts",
+      "default": "./src/workspaceAvatar.ts"
+    }
   },
   "publishConfig": {
     "exports": {
@@ -67,16 +80,28 @@
       "./components.css": "./dist/components.css",
       "./css/*": "./src/css/*",
       "./icons/*": "./src/icons/*",
-      "./button.variants": "./src/button.variants.ts",
-      "./select.variants": "./src/select.variants.ts",
-      "./tag.variants": "./src/tag.variants.ts",
-      "./workspaceAvatar": "./src/workspaceAvatar.ts"
+      "./button.variants": {
+        "types": "./dist-types/button.variants.d.ts",
+        "default": "./src/button.variants.ts"
+      },
+      "./select.variants": {
+        "types": "./dist-types/select.variants.d.ts",
+        "default": "./src/select.variants.ts"
+      },
+      "./tag.variants": {
+        "types": "./dist-types/tag.variants.d.ts",
+        "default": "./src/tag.variants.ts"
+      },
+      "./workspaceAvatar": {
+        "types": "./dist-types/workspaceAvatar.d.ts",
+        "default": "./src/workspaceAvatar.ts"
+      }
     },
     "access": "public"
   },
   "scripts": {
-    "build": "vite build",
-    "prepack": "pnpm run build",
+    "build": "vite build && tsc -b tsconfig.declarations.json",
+    "prepack": "pnpm build",
     "format": "oxfmt --write",
     "format:check": "oxfmt --check",
     "test": "vitest run",
@@ -110,7 +135,7 @@
     "vue-component-type-helpers": "^3.3.0"
   },
   "peerDependencies": {
-    "reka-ui": "^2.6.2",
+    "reka-ui": "^2.11.0",
     "tailwindcss": "^4.1.0",
     "vue": "^3.5.40",
     "vue-component-type-helpers": "^3.3.0"

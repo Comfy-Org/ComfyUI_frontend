@@ -140,7 +140,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@comfyorg/design-system/slider/Slider'
-import type { SceneConfig } from '@/extensions/core/load3d/interfaces'
+import type { SceneConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {
   compact = false,

@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false">
+  <ContextMenuRoot :modal="false" @update:open="menuOpen = $event">
     <ContextMenuTrigger as-child :disabled="!showContextMenu">
       <TreeRoot
         v-model:expanded="expandedKeys"
@@ -40,7 +40,7 @@
         </TreeVirtualizer>
       </TreeRoot>
     </ContextMenuTrigger>
-    <ContextMenuPortal>
+    <ContextMenuPortal :key="Number(menuOpen)">
       <ContextMenuContent :class="menuContentClass">
         <MenuItems :items="menuItems" />
       </ContextMenuContent>
@@ -49,15 +49,15 @@
 </template>
 
 <script setup lang="ts">
-import type { FlattenedItem } from 'reka-ui'
 import {
+  ContextMenuPortal,
   ContextMenuRoot,
   ContextMenuTrigger,
-  ContextMenuPortal,
   ContextMenuContent,
   TreeRoot,
   TreeVirtualizer
 } from 'reka-ui'
+import type { FlattenedItem } from 'reka-ui'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -76,6 +76,8 @@ const { showContextMenu = false } = defineProps<{
   root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
   showContextMenu?: boolean
 }>()
+
+const menuOpen = ref(false)
 
 const expandedKeys = defineModel<string[]>('expandedKeys', {
   default: () => []

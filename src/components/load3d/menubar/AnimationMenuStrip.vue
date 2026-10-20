@@ -137,7 +137,7 @@ import {
   selectedMenuButtonClass
 } from '@comfyorg/design-system/lib/menu/menuStyles'
 import Slider from '@comfyorg/design-system/slider/Slider'
-import type { AnimationItem } from '@/extensions/core/load3d/interfaces'
+import type { AnimationItem } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {
   animations = [],

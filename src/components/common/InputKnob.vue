@@ -6,11 +6,11 @@
       :max
       :step
       :disabled
-      :aria-label="ariaLabel"
-      :aria-labelledby="ariaLabelledby"
+      :aria-label
+      :aria-labelledby
       v-bind="$attrs"
     />
-    <NumberField
+    <FormNumberField
       v-model="modelValue"
       class="w-32"
       :format-options="{ maximumFractionDigits: 3 }"
@@ -19,20 +19,15 @@
       :step
       :step-snapping="step !== 0"
       :disabled
-    >
-      <NumberFieldDecrement />
-      <NumberFieldInput :aria-label :aria-labelledby="ariaLabelledby" />
-      <NumberFieldIncrement />
-    </NumberField>
+      :aria-label
+      :aria-labelledby
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import Knob from '@comfyorg/design-system/knob/Knob'
-import NumberField from '@comfyorg/design-system/number-field/NumberField'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@comfyorg/design-system/number-field/NumberFieldInput'
+import FormNumberField from '@/components/common/FormNumberField.vue'
 
 defineProps<{
   ariaLabel?: string

@@ -43,8 +43,7 @@
       </PopoverTrigger>
       <PopoverContent
         :side-offset="8"
-        :class="cn(menuContentClass, 'z-1700 flex w-auto min-w-20 flex-col')"
-        :style="zoomContentStyle"
+        :class="cn(menuContentClass, 'z-overlay flex w-auto min-w-20 flex-col')"
       >
         <button
           v-for="item in zoomItems"
@@ -106,7 +105,6 @@ import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useLayerEditorExport } from '@/renderer/extensions/layerEditor/composables/useLayerEditorExport'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
@@ -116,7 +114,6 @@ const { pointerMode, canUndo, canRedo, zoomRatio } = session
 const { exporting, exportPsd } = useLayerEditorExport(session)
 
 const zoomOpen = ref(false)
-const zoomContentStyle = useModalLiftedZIndex(zoomOpen)
 
 const zoomItems = [
   { label: '25%', ratio: 0.25 },

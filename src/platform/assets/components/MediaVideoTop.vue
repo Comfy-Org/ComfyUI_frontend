@@ -36,7 +36,7 @@
 import { computed, ref } from 'vue'
 
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 
 import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
 

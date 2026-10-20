@@ -32,3 +32,6 @@ export interface SlotTypeDefaultNodeOpts {}
 export interface LinkReleaseContextExtended {}
 export interface RenderLink {}
 export interface SubgraphIONode {}
+export type ExecutableLGraphNode =
+  LitegraphEntityRegistry['ExecutableLGraphNode']
+export type ExecutionId = LitegraphEntityRegistry['ExecutionId']

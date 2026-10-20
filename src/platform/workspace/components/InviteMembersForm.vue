@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-2">
-    <TagsInput
+    <TagEditor
       always-editing
       add-on-paste
       add-on-blur
@@ -8,30 +8,25 @@
       :convert-value="normalizeEmail"
       :model-value="emails"
       :class="cn('max-h-48 overflow-y-auto', tagsInputClass)"
-      @update:model-value="onEmailsUpdate"
-    >
-      <TagsInputItem
-        v-for="email in emails"
-        :key="email"
-        :value="email"
-        :class="
+      :item-class="
+        (email) =>
           cn(
             'rounded-full',
             !isValidEmail(email) && 'bg-destructive/20 text-destructive'
           )
-        "
-      >
-        <TagsInputItemText />
-        <TagsInputItemDelete />
-      </TagsInputItem>
-      <TagsInputInput
-        :auto-focus="autoFocus"
-        class="min-w-0 text-sm"
-        :aria-label="placeholder"
-        :aria-describedby="describedBy"
-        :placeholder="emails.length === 0 ? placeholder : undefined"
-      />
-    </TagsInput>
+      "
+      @update:model-value="onEmailsUpdate"
+    >
+      <template #input>
+        <TagsInputInput
+          :auto-focus
+          class="min-w-0 text-sm"
+          :aria-label="placeholder"
+          :aria-describedby="describedBy"
+          :placeholder="emails.length === 0 ? placeholder : undefined"
+        />
+      </template>
+    </TagEditor>
 
     <p
       v-for="hint in validationHints"
@@ -82,11 +77,8 @@ import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
-import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
+import TagEditor from '@/components/common/TagEditor.vue'
 import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
-import TagsInputItem from '@comfyorg/design-system/tags-input/TagsInputItem'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
-import TagsInputItemText from '@comfyorg/design-system/tags-input/TagsInputItemText'
 import { useTelemetry } from '@/platform/telemetry'
 import type { WorkspaceInviteMetadata } from '@/platform/telemetry/types'
 import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'

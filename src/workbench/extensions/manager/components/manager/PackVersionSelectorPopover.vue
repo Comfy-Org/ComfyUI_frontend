@@ -9,7 +9,7 @@
       v-if="isBusy"
       class="flex flex-col items-center py-4 text-center text-muted-foreground"
     >
-      <Spinner class="mb-2 size-8" />
+      <AppSpinner class="mb-2 size-8" />
       {{ $t('manager.loadingVersions') }}
     </div>
     <div v-else-if="versionOptions.length === 0" class="py-2">
@@ -105,7 +105,7 @@ import ContentDivider from '@comfyorg/design-system/common/ContentDivider'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VerifiedIcon from '@comfyorg/design-system/icon/VerifiedIcon'
 import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'

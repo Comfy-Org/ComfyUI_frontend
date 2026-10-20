@@ -22,22 +22,22 @@ import type {
   BillingFailure,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import { matchesServerCode } from './billingContracts.js'
-import type { CapabilitiesReader } from './capabilities.js'
-import type { CapabilityDenialReason } from './capabilityDenials.js'
-import type { CreditsReader } from './credits.js'
+} from './billingContracts'
+import { matchesServerCode } from './billingContracts'
+import type { CapabilitiesReader } from './capabilities'
+import type { CapabilityDenialReason } from './capabilityDenials'
+import type { CreditsReader } from './credits'
 import type {
   BillingOperationLifecycle,
   IssuedBillingOperation
-} from './operationLifecycle.js'
+} from './operationLifecycle'
 import type {
   BillingOperationState,
   FailedBillingOperation
-} from './operationState.js'
-import { isTerminal, validateActionUrl } from './operationState.js'
-import { readValidatedBillingResponse } from './sharedRead.js'
-import { wireCents } from './wireCents.js'
+} from './operationState'
+import { isTerminal, validateActionUrl } from './operationState'
+import { readValidatedBillingResponse } from './sharedRead'
+import { wireCents } from './wireCents'
 
 export const TOPUP_ROUTE = '/billing/topup'
 /**
@@ -433,6 +433,8 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
     if (refused) return refused
 
     const baseline = await credits.read()
+    if (input.signal?.aborted)
+      return { status: 'error', code: 'REQUEST_FAILED' }
     const session = await issueHostedCheckout(input)
     if (session.status === 'error') {
       return session.httpStatus === 404 ? NOT_AVAILABLE : session

@@ -1,5 +1,8 @@
 <template>
-  <div ref="overlayRef" class="pointer-events-none fixed inset-0">
+  <div
+    data-testid="coach-overlay"
+    class="pointer-events-none fixed inset-0 z-tour"
+  >
     <svg
       v-if="useMaskScrim"
       aria-hidden="true"
@@ -153,19 +156,10 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  ref,
-  useId,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import CoachmarkCard from '@comfyorg/design-system/card/CoachmarkCard'
 import {
@@ -220,7 +214,6 @@ const bodyId = useId()
 const subtitleId = useId()
 const titleId = useId()
 
-const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -260,19 +253,6 @@ useEventListener(
   { capture: true }
 )
 
-async function raiseOverlay() {
-  await nextTick()
-  const el = overlayRef.value
-  if (!el) return
-  raiseModalLayer(el)
-}
-
-watch(
-  () => step,
-  () => void raiseOverlay(),
-  { immediate: true }
-)
-
 watch(
   [() => step, () => waitingForTarget],
   () => {
@@ -280,10 +260,6 @@ watch(
   },
   { immediate: true }
 )
-
-onBeforeUnmount(() => {
-  if (overlayRef.value) releaseModalLayer(overlayRef.value)
-})
 
 function viewport() {
   return { width: windowWidth.value, height: windowHeight.value }

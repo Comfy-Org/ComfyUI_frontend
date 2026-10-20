@@ -50,7 +50,7 @@ export const Default: Story = {
       <TagsInput v-model="tags" :disabled="args.disabled" class="w-80" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
-          <TagsInputItemDelete />
+          <TagsInputItemDelete aria-label="Remove tag" />
         </TagsInputItem>
         <TagsInputInput :is-empty="isEmpty" placeholder="Add tag..." />
       </TagsInput>
@@ -85,7 +85,7 @@ export const Empty: Story = {
       <TagsInput v-model="tags" :disabled="args.disabled" class="w-80" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
-          <TagsInputItemDelete />
+          <TagsInputItemDelete aria-label="Remove tag" />
         </TagsInputItem>
         <TagsInputInput :is-empty="isEmpty" placeholder="Start typing to add tags..." />
       </TagsInput>
@@ -119,7 +119,7 @@ export const ManyTags: Story = {
       <TagsInput v-model="tags" :disabled="args.disabled" class="w-96" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
-          <TagsInputItemDelete />
+          <TagsInputItemDelete aria-label="Remove tag" />
         </TagsInputItem>
         <TagsInputInput :is-empty="isEmpty" placeholder="Add technology..." />
       </TagsInput>
@@ -148,7 +148,7 @@ export const Disabled: Story = {
       <TagsInput v-model="tags" :disabled="args.disabled" class="w-80" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
-          <TagsInputItemDelete />
+          <TagsInputItemDelete aria-label="Remove tag" />
         </TagsInputItem>
         <TagsInputInput :is-empty="isEmpty" placeholder="Cannot add tags..." />
       </TagsInput>
@@ -173,7 +173,7 @@ export const CustomWidth: Story = {
       <TagsInput v-model="tags" :disabled="args.disabled" class="w-full" v-slot="{ isEmpty }">
         <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
           <TagsInputItemText />
-          <TagsInputItemDelete />
+          <TagsInputItemDelete aria-label="Remove tag" />
         </TagsInputItem>
         <TagsInputInput :is-empty="isEmpty" placeholder="Add tag..." />
       </TagsInput>

@@ -39,7 +39,7 @@
               {{ t('auth.login.forgotPassword') }}
             </Button>
           </div>
-          <PasswordInput
+          <AppPasswordInput
             v-bind="componentField"
             id="comfy-org-sign-in-password"
             autocomplete="current-password"
@@ -51,7 +51,7 @@
       </VeeField>
     </FieldGroup>
 
-    <Spinner v-if="loading" class="mx-auto size-8" />
+    <AppSpinner v-if="loading" class="mx-auto size-8" />
     <Button v-else type="submit" class="h-10" :disabled="!meta.valid">
       {{ t('auth.login.loginButton') }}
     </Button>
@@ -72,8 +72,8 @@ import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldGroup from '@comfyorg/design-system/field/FieldGroup'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'

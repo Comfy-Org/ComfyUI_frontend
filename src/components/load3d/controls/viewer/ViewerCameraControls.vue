@@ -42,7 +42,7 @@ import SelectItem from '@comfyorg/design-system/select/SelectItem'
 import SelectTrigger from '@comfyorg/design-system/select/SelectTrigger'
 import SelectValue from '@comfyorg/design-system/select/SelectValue'
 import Slider from '@comfyorg/design-system/slider/Slider'
-import type { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const { t } = useI18n()
 const cameras = [

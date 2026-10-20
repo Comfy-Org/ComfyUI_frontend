@@ -33,11 +33,11 @@
  * The payment form with the checkout's pay button: the card entry both the
  * cloud app and billing-web show when no saved method stands in for it.
  */
-import StripePaymentForm from '../stripe/StripePaymentForm.vue'
+import StripePaymentForm from '#/billing/stripe/StripePaymentForm.vue'
 import type {
   StripePaymentCopy,
   StripePaymentPhase
-} from '../stripe/stripePaymentPhase'
+} from '#/billing/stripe/stripePaymentPhase'
 import CheckoutButton from './CheckoutButton.vue'
 
 const {

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <MultiSelect
+    <AppMultiSelect
       v-model="selectedOptions"
       :options="options"
       show-search-box
@@ -20,7 +20,7 @@
           </Badge>
         </div>
       </template>
-    </MultiSelect>
+    </AppMultiSelect>
   </div>
 </template>
 
@@ -28,7 +28,7 @@
 import Badge from '@/components/ui/badge/Badge.vue'
 import { computed } from 'vue'
 
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@comfyorg/design-system/lib/select/types'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/types/domWidget'

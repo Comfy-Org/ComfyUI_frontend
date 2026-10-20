@@ -31,25 +31,14 @@
       <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.tagsDescription') }}
       </span>
-      <TagsInput
-        v-slot="{ isEmpty }"
+      <TagEditor
         data-testid="publish-tags-input"
         always-editing
         class="bg-secondary select-none"
+        item-class="backdrop-blur-none"
         :model-value="tags"
-        @update:model-value="$emit('update:tags', $event as string[])"
-      >
-        <TagsInputItem
-          v-for="tag in tags"
-          :key="tag"
-          :value="tag"
-          class="backdrop-blur-none"
-        >
-          <TagsInputItemText />
-          <TagsInputItemDelete />
-        </TagsInputItem>
-        <TagsInputInput :is-empty />
-      </TagsInput>
+        @update:model-value="$emit('update:tags', $event)"
+      />
     </label>
     <TagsInput disabled class="p-0 hover:bg-transparent">
       <div
@@ -90,9 +79,8 @@
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@comfyorg/design-system/input/Input'
 import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
-import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
+import TagEditor from '@/components/common/TagEditor.vue'
 import TagsInputItem from '@comfyorg/design-system/tags-input/TagsInputItem'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
 import TagsInputItemText from '@comfyorg/design-system/tags-input/TagsInputItemText'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
