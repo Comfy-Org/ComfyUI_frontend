@@ -209,10 +209,6 @@ async function driveThroughToolCallDone(
     }
   })
 
-  // The doc host records the op on its authoritative document as soon as the
-  // tool actually executes -- this is not a race the agent lost, the op is
-  // real -- independent of when its broadcast reaches this client relative
-  // to the tool call's own terminal frame, which `order` controls below.
   const unrelatedUpdate = includeUnrelatedUpdate
     ? host.apply([
         {
@@ -328,8 +324,6 @@ async function driveThroughToolCallDone(
     sendUnrelatedDocUpdate: () => {
       if (unrelatedUpdate) hostSocket.send(unrelatedUpdate)
     },
-    // A no-op once `order` already sent it above -- resending the same
-    // update twice is not part of what either ordering means to exercise.
     sendDelayedDocUpdate: () => {
       if (order !== 'docUpdateBeforeToolCall') hostSocket.send(update)
     },
