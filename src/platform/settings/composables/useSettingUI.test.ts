@@ -291,6 +291,16 @@ describe('useSettingUI', () => {
       }
     )
 
+    it('hides the Secrets panel on cloud when signed out', () => {
+      env.state.isCloud = true
+      useCurrentUser().isLoggedIn = computed(() => false)
+      const { navGroups } = useSettingUI()
+
+      expect(
+        navGroups.value.flatMap((group) => group.items.map(({ id }) => id))
+      ).not.toContain('secrets')
+    })
+
     it('keeps the hidden legacy Credits panel reachable by deep link', () => {
       const { defaultCategory, navGroups } = useSettingUI('credits')
 

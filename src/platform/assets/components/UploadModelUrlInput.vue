@@ -58,7 +58,7 @@
     </div>
 
     <div class="flex flex-col gap-6 text-muted-foreground">
-      <div>
+      <div v-if="showSecretsHint">
         <i18n-t keypath="assetBrowser.apiKeyHint" tag="span">
           <template #link>
             <Button
@@ -84,9 +84,14 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
+const { isLoggedIn } = useCurrentUser()
 const settingsDialog = useSettingsDialog()
+
+const showSecretsHint = computed(() => isCloud && isLoggedIn.value)
 
 function openSecretsSettings() {
   settingsDialog.show('secrets')
