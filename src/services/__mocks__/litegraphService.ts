@@ -7,9 +7,6 @@ import type {
   useLitegraphService as realUseLitegraphService
 } from '@/services/litegraphService'
 
-export const CONFIG = Symbol()
-export const GET_CONFIG = Symbol()
-
 export const getExtraOptionsForWidget = vi.fn<
   typeof realGetExtraOptionsForWidget
 >(() => [])

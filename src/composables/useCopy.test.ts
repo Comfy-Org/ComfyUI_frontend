@@ -15,6 +15,12 @@ import {
   CANVAS_CLIPBOARD_KEY
 } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 const copyMocks = {
@@ -112,6 +118,23 @@ describe('useCopy', () => {
     expect(readClipboardPayload(dataTransfer)).toEqual(
       JSON.parse(serializedData)
     )
+  })
+
+  it('writes to the clipboard when localStorage throws', () => {
+    const graph = createTestRootGraph()
+    const node = createTestNode(graph)
+    const canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
+    canvas.selectItems([node])
+    useCanvasStore().canvas = canvas
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+
+    const dataTransfer = dispatchCopy()
+
+    expect(readClipboardPayload(dataTransfer)).toMatchObject({
+      nodes: [{ type: node.type }]
+    })
   })
 
   describe('copy on a target the canvas ignores', () => {

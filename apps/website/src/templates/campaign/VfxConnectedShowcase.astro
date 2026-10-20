@@ -1,0 +1,152 @@
+---
+import { vfxMediaRoot } from '@/data/vfxMedia'
+import BrandButton from '@/components/common/BrandButton.vue'
+import SectionHeader from '@/components/common/SectionHeader.vue'
+import WorkflowNode from '@/components/agent/WorkflowNode.astro'
+import VfxSampleStudio from '@/components/campaign/VfxSampleStudio.vue'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
+import { showcaseConfig, workflowNode } from './vfxConnectedShowcase'
+import type { VfxShowcaseDemo } from './vfxConnectedShowcase'
+import '@/styles/workflow-canvas.css'
+import '@/styles/vfx-connected.css'
+
+interface Props {
+  locale: Locale
+  demo?: VfxShowcaseDemo
+}
+const { locale, demo = 'relight' } = Astro.props
+const { t } = translationsFor(locale)
+const {
+  source,
+  mediaKind,
+  workflowHref,
+  variants,
+  original,
+  keyframe,
+  preview
+} = showcaseConfig(demo, t)
+---
+
+<vfx-workflow-showcase
+  data-playback-group
+  data-vfx-demo={demo}
+  class="vfx-connected"
+>
+  <div class="vfx-showcase-view" data-playback-background>
+    <div class="vfx-section-top">
+      <SectionHeader align="start" headingSize="subsection">
+        {t(`vfxV3.demos.${demo}.title`)}
+        <p slot="subtitle" class="mt-6 text-sm text-primary-comfy-canvas/70">
+          {t(`vfxV3.demos.${demo}.description`)}
+        </p>
+      </SectionHeader>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <BrandButton
+          href={workflowHref}
+          target={workflowHref ? '_blank' : undefined}
+          disabled={!workflowHref}
+          data-try-workflow
+          title={!workflowHref ? t('vfxV3.workflowUnavailable') : undefined}
+          >{t('vfxV3.tryWorkflow')}</BrandButton
+        >
+        <BrandButton
+          data-open-studio="settings"
+          variant="outline"
+          aria-expanded="false"
+          >{t('vfxV3.openStudio')}</BrandButton
+        >
+        {mediaKind === 'video' && <BrandButton
+          data-vfx-playback
+          data-play-label={t('player.play')}
+          data-pause-label={t('player.pause')}
+          variant="outline"
+          aria-pressed="false"
+          >{t('player.pause')}</BrandButton
+        >}
+      </div>
+    </div>
+    <div class="vfx-visual-panel">
+      <div
+        class="vfx-canvas-window"
+        tabindex="0"
+        aria-label={t(`vfxV3.demos.${demo}.title`)}
+      >
+        <div class="vfx-canvas-scale">
+          <div class="vfx-scene-stage">
+            <svg class="vfx-connections" aria-hidden="true"><g></g></svg>
+            <div class="vfx-source-node" data-canvas-step>
+              <span class="vfx-port vfx-port-out" aria-hidden="true" />
+              <WorkflowNode node={original} flow imageRoot={vfxMediaRoot} />
+            </div>
+            <div class="vfx-keyframe-node" data-canvas-step>
+              <span class="vfx-port vfx-port-out" aria-hidden="true" />
+              <WorkflowNode node={keyframe} flow imageRoot={vfxMediaRoot}>
+                <span
+                  slot="input"
+                  class="vfx-port vfx-port-in"
+                  aria-hidden="true"
+                />
+              </WorkflowNode>
+            </div>
+            <div class="vfx-main-node" data-canvas-step>
+              <WorkflowNode node={preview} flow imageRoot={vfxMediaRoot}>
+                <span
+                  slot="input"
+                  class="vfx-port vfx-port-in"
+                  aria-hidden="true"
+                />
+              </WorkflowNode>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        class="vfx-versions"
+        role="group"
+        aria-label={t('modelLaunch.beforeAfter.tabsLabel')}
+      >
+        {variants.map(({ id, label }, i) => <button
+          type="button"
+          class="vfx-version-node"
+          data-workflow-variant={id}
+          aria-label={label}
+          aria-pressed={i === 0}
+        >
+          <WorkflowNode
+            node={workflowNode('image', id, label, `${id}.jpg`)}
+            flow
+            imageRoot={vfxMediaRoot}
+          />
+        </button>)}
+      </div>
+    </div>
+  </div>
+  <div class="vfx-studio-view" hidden inert>
+    <div class="vfx-workspace-toolbar mb-8 flex flex-wrap gap-3">
+      <BrandButton data-back-workflow variant="outline"
+        >← {t('vfxV3.prototype.back').toLocaleUpperCase(locale)}</BrandButton
+      >
+      {mediaKind === 'video' && <BrandButton
+        data-vfx-playback
+        data-play-label={t('player.play')}
+        data-pause-label={t('player.pause')}
+        variant="outline"
+        aria-pressed="false"
+        >{t('player.pause')}</BrandButton
+      >}
+    </div>
+    <VfxSampleStudio
+      demo={demo}
+      source={source}
+      mediaKind={mediaKind}
+      variants={variants}
+      locale={locale}
+      workflowHref={workflowHref}
+      client:load
+    />
+  </div>
+</vfx-workflow-showcase>
+<script>
+  import '@/scripts/vfx-connected'
+</script>

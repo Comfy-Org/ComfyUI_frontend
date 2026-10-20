@@ -495,6 +495,28 @@ function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
   return rows.size
 }
 
+function deferredRowCounts(
+  node: LGraphNode,
+  constructed: readonly IBaseWidget[],
+  widgets: DocNode['widgets']
+): ReadonlySet<string> {
+  if (
+    widgets === undefined ||
+    Array.isArray(widgets) ||
+    supportsDynamicWidgetOverflow(node)
+  )
+    return new Set()
+  return new Set(
+    constructed
+      .filter(
+        (widget) =>
+          isDynamicGroupController(widget) &&
+          Object.hasOwn(widgets, widget.name)
+      )
+      .map((widget) => widget.name)
+  )
+}
+
 /**
  * Document entries for widgets that only exist after `configure`: aliases past
  * the constructed list, and names the constructor did not build but the node
@@ -505,13 +527,14 @@ function mountedWidgetValues(
   node: LGraphNode,
   widgets: DocNode['widgets'],
   constructed: readonly IBaseWidget[],
-  constructedNames: ReadonlySet<string>
+  constructedNames: ReadonlySet<string>,
+  deferred: ReadonlySet<string>
 ): Record<string, unknown> | undefined {
   if (widgets === undefined || Array.isArray(widgets)) return undefined
   const mounted = Object.entries(widgets).filter(([name]) => {
     const index = overflowWidgetIndex(name)
     return index === null
-      ? !constructedNames.has(name)
+      ? !constructedNames.has(name) || deferred.has(name)
       : overflowWidget(node, name) === undefined || index >= constructed.length
   })
   return mounted.length === 0 ? undefined : Object.fromEntries(mounted)
@@ -525,7 +548,8 @@ function mountedWidgetValues(
  */
 function positionalWidgetValues(
   node: LGraphNode,
-  widgets: DocNode['widgets']
+  widgets: DocNode['widgets'],
+  deferred: ReadonlySet<string>
 ): WidgetValue[] | undefined {
   if (widgets === undefined) return undefined
   if (Array.isArray(widgets)) {
@@ -534,6 +558,7 @@ function positionalWidgetValues(
     )
   }
   return serializableWidgets(node).map((widget, index) => {
+    if (deferred.has(widget.name)) return widget.value
     const alias = `_extra_${index}`
     const name = Object.hasOwn(widgets, widget.name)
       ? widget.name
@@ -657,20 +682,15 @@ export class LiveGraphApplier {
     }
   }
 
-  /**
-   * One frame is one change: the same `before-change`/`after-change` bracket
-   * a multi-step human edit emits, so the change tracker records a single
-   * undo entry and flips `isModified` once.
-   */
   private write<T>(graph: LGraph, context: RemoteApplyContext, fn: () => T): T {
     const withActor = this.deps.withRemoteActor ?? ((_, run) => run())
     return withActor(context.actor, () => {
-      graph.canvasAction((canvas) => canvas.emitBeforeChange())
+      this.deps.getCanvas?.()?.emitBeforeChange()
       try {
         return withGraphIntentSource('agent-remote', fn)
       } finally {
         graph.setDirtyCanvas(true, true)
-        graph.canvasAction((canvas) => canvas.emitAfterChange())
+        this.deps.getCanvas?.()?.emitAfterChange()
       }
     })
   }
@@ -842,15 +862,21 @@ export class LiveGraphApplier {
         const constructedNames = new Set(
           node.widgets?.map((widget) => widget.name)
         )
+        const deferred = deferredRowCounts(node, constructed, docNode.widgets)
         node.configure({
           ...info,
-          widgets_values: positionalWidgetValues(node, docNode.widgets)
+          widgets_values: positionalWidgetValues(
+            node,
+            docNode.widgets,
+            deferred
+          )
         })
         const mounted = mountedWidgetValues(
           node,
           docNode.widgets,
           constructed,
-          constructedNames
+          constructedNames,
+          deferred
         )
         if (mounted)
           this.applyWidgets(node, mounted, mode, {

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -8,11 +6,13 @@ import Card from '@/components/ui/card/Card.vue'
 import CardFooter from '@/components/ui/card/CardFooter.vue'
 import CardHeader from '@/components/ui/card/CardHeader.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import type { DialogPanelProps } from '@/components/ui/dialog/types'
 
-const { class: className, onClose } = defineProps<{
-  class?: HTMLAttributes['class']
-  onClose?: () => void
-}>()
+const {
+  class: className,
+  onClose,
+  closeLabel
+} = defineProps<DialogPanelProps>()
 </script>
 
 <template>
@@ -25,7 +25,7 @@ const { class: className, onClose } = defineProps<{
         v-if="onClose"
         size="icon"
         variant="muted-textonly"
-        :aria-label="$t('g.close')"
+        :aria-label="closeLabel"
         @click="onClose"
       >
         <i class="icon-[lucide--x] size-4" />
