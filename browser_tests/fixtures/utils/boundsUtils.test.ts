@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 
 import { clipAround } from '@e2e/fixtures/utils/boundsUtils'
 
@@ -10,6 +10,12 @@ describe('clipAround', () => {
         { x: 100, y: 5 }
       ])
     ).toEqual({ x: 10, y: 5, width: 90, height: 55 })
+  })
+
+  it('rejects an empty list at compile time', () => {
+    expectTypeOf(clipAround).toBeCallableWith([{ x: 0, y: 0 }])
+    // @ts-expect-error an empty list has no rectangle to cover
+    expectTypeOf(clipAround).toBeCallableWith([])
   })
 
   it('grows the covered rectangle by the margin on every side', () => {

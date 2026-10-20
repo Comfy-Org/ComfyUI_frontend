@@ -118,7 +118,7 @@ interface Area {
 }
 
 /** The rectangle covering every box or point, grown by `margin` on each side; pass it as `toHaveScreenshot`'s `clip`. */
-export function clipAround(areas: readonly Area[], margin = 0) {
+export function clipAround(areas: readonly [Area, ...Area[]], margin = 0) {
   const left = Math.min(...areas.map(({ x }) => x)) - margin
   const top = Math.min(...areas.map(({ y }) => y)) - margin
   const right = Math.max(...areas.map(({ x, width = 0 }) => x + width)) + margin
