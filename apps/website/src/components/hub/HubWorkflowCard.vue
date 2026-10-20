@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import { hubCreatorUrl } from '@/lib/hub/routes'
 import type { HubTemplate } from '@/lib/hub/types'
 import type { Locale } from '@/i18n/translations'
+import CreatorAvatar from './CreatorAvatar.vue'
 import HubWorkflowThumbnail from './HubWorkflowThumbnail.vue'
 import TagRow from './TagRow.vue'
 
@@ -87,20 +88,12 @@ function openCard() {
           class="flex w-fit min-w-0 items-center gap-2 text-content-secondary hover:text-content"
           @click.stop
         >
-          <img
-            v-if="creatorAvatarUrl"
-            :src="creatorAvatarUrl"
-            :alt="creatorName"
+          <CreatorAvatar
+            :name="authorName"
+            :avatar-url="creatorAvatarUrl"
             loading="lazy"
-            class="size-5 shrink-0 rounded-full object-cover"
+            class="size-5 text-2xs"
           />
-          <span
-            v-else
-            class="grid size-5 shrink-0 place-items-center rounded-full bg-brand text-2xs font-bold text-page"
-            aria-hidden="true"
-          >
-            {{ authorName.charAt(0).toUpperCase() }}
-          </span>
           <span class="truncate text-sm">{{ creatorName }}</span>
         </a>
         <a

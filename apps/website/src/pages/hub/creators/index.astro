@@ -1,0 +1,82 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CreatorAvatar from '@/components/hub/CreatorAvatar.vue'
+import {
+  workshopEyebrowClass,
+  workshopHeadingClass
+} from '@/components/workshop/workshopHeadingClasses'
+import { HUB_MODELS_PATH } from '@/config/hub-models'
+import { creators } from '@/config/hub-creators'
+import { hubCreatorUrl } from '@/lib/hub/routes'
+import {
+  absoluteUrl,
+  itemListNode,
+  jsonLdId,
+  pageContext
+} from '@/utils/jsonLd'
+
+const { t } = Astro.locals
+const { url } = pageContext(Astro.site, Astro.url.pathname, Astro.currentLocale)
+const title = t('workshop.hub.creators.directoryTitle')
+---
+
+<BaseLayout
+  title={`${title} - Comfy`}
+  description={t('workshop.hub.creators.metaDescription')}
+  pageType="CollectionPage"
+  mainEntityId={jsonLdId(url, 'itemlist')}
+  breadcrumbs={[
+    {
+      name: t('workshop.hub.creators.hub'),
+      url: absoluteUrl(Astro.site, HUB_MODELS_PATH)
+    },
+    { name: t('workshop.hub.creators.title') }
+  ]}
+  extraJsonLd={[
+    itemListNode(
+      url,
+      title,
+      creators.map((creator) => ({
+        url: absoluteUrl(Astro.site, hubCreatorUrl(creator.username)),
+        name: creator.displayName
+      }))
+    )
+  ]}
+>
+  <div class="mx-auto max-w-10xl px-6 pt-8 pb-24 max-sm:pt-5 lg:px-8 lg:pt-12">
+    <header class="mb-10">
+      <p class={workshopEyebrowClass}>{t('workshop.hub.creators.title')}</p>
+      <h1 class={workshopHeadingClass}>{title}</h1>
+      <p class="mt-4 max-w-2xl text-lg text-content-secondary">
+        {t('workshop.hub.creators.subtitle')}
+      </p>
+    </header>
+    <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {creators.map((creator) => <li>
+        <a
+          href={hubCreatorUrl(creator.username)}
+          class="flex h-full items-center gap-4 rounded-4xl bg-hub-surface p-5 transition-colors hover:bg-hub-surface-hover"
+        >
+          <CreatorAvatar
+            name={creator.displayName}
+            avatarUrl={creator.avatarUrl}
+            class="size-16 text-2xl"
+          />
+          <span class="flex min-w-0 flex-col gap-1">
+            <span class="truncate text-lg text-content">
+              {creator.displayName}
+            </span>
+            <span class="truncate text-sm text-content-secondary">
+              @{creator.username} ·{' '}
+              {t(
+                'workshop.hub.creators.workflowCount',
+                { count: creator.workflows.length },
+                { plural: creator.workflows.length }
+              )}
+            </span>
+          </span>
+        </a>
+      </li>)}
+    </ul>
+  </div>
+</BaseLayout>

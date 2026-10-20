@@ -4915,7 +4915,15 @@
       },
       "title": "浏览模型",
       "tryNow": "立即试用",
-      "workflows": "工作流"
+      "workflows": "工作流",
+      "creators": {
+        "hub": "Hub",
+        "title": "创作者",
+        "directoryTitle": "ComfyUI 工作流创作者",
+        "subtitle": "在 Comfy Hub 上发布工作流的艺术家、工作室和 Comfy 团队成员。",
+        "metaDescription": "浏览在 Comfy Hub 上发布 ComfyUI 工作流的创作者，从 Comfy 官方团队到独立艺术家和工作室。",
+        "workflowCount": "{count} 个工作流"
+      }
     },
     "input": {
       "title": "输入"

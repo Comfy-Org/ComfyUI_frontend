@@ -48,4 +48,18 @@ describe('HubWorkflowCard', () => {
     await user.keyboard('{Home}{ArrowLeft}')
     expect(slider.getAttribute('aria-valuenow')).toBe('0')
   })
+
+  it('names the author link once when the author has an avatar', () => {
+    render(HubWorkflowCard, {
+      props: {
+        template,
+        href: '/workflows/comparison-workflow',
+        tryNowLabel: 'Try now',
+        creatorDisplayName: 'Comfy',
+        creatorAvatarUrl: '/comfy.png'
+      }
+    })
+
+    expect(screen.getByRole('link', { name: 'Comfy' })).toBeTruthy()
+  })
 })
