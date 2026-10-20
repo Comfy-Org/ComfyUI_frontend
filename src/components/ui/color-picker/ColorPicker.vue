@@ -7,6 +7,7 @@ import {
 } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 
+import type { ColorPickerProps } from '@/components/ui/color-picker/types'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import type { HSVA } from '@/utils/colorUtil'
 import { hexToHsva, hsbToRgb, hsvaToHex, rgbToHex } from '@/utils/colorUtil'
@@ -14,21 +15,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import ColorPickerPanel from './ColorPickerPanel.vue'
 
-const { alpha = true, accessibleLabel } = defineProps<{
-  class?: string
-  disabled?: boolean
-  alpha?: boolean
-  accessibleLabel: string
-  hexLabel: string
-  rgbaLabel: string
-  hueLabel: string
-  alphaLabel: string
-  redLabel: string
-  greenLabel: string
-  blueLabel: string
-  saturationBrightnessLabel: string
-  formatLabel: string
-}>()
+const { alpha = true, accessibleLabel } = defineProps<ColorPickerProps>()
 
 const modelValue = defineModel<string>({ default: '#000000' })
 

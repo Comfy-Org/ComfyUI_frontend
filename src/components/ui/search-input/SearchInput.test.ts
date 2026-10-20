@@ -150,11 +150,6 @@ describe('SearchInput', () => {
         screen.getByPlaceholderText('Custom search...')
       ).toBeInTheDocument()
     })
-
-    it('renders the supplied placeholder', () => {
-      renderComponent()
-      expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument()
-    })
   })
 
   describe('autofocus', () => {

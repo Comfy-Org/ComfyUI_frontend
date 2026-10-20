@@ -3,20 +3,14 @@
     <!-- This will render the nested route components -->
     <RouterView />
   </CloudTemplate>
-  <Toaster
-    :close-label="$t('g.close')"
-    :region-label="$t('toastMessages.notificationsLabel')"
-    :format-viewport-label="
-      (hotkey) => $t('toastMessages.notificationsViewportLabel', { hotkey })
-    "
-  />
+  <AppToaster />
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
-import Toaster from '@/components/ui/toast/Toaster.vue'
+import AppToaster from '@/components/common/AppToaster.vue'
 
 import CloudTemplate from './CloudTemplate.vue'
 

@@ -1,3 +1,11 @@
+<script lang="ts">
+export interface ToasterProps {
+  regionLabel: string
+  closeLabel: string
+  formatViewportLabel: (hotkey: string) => string
+}
+</script>
+
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import { ToastProvider } from 'reka-ui'
@@ -16,11 +24,8 @@ import ToastViewport from './ToastViewport.vue'
 import { useToast } from './toastStore'
 import type { Toast } from './toastStore'
 
-const { regionLabel, closeLabel, formatViewportLabel } = defineProps<{
-  regionLabel: string
-  closeLabel: string
-  formatViewportLabel: (hotkey: string) => string
-}>()
+const { regionLabel, closeLabel, formatViewportLabel } =
+  defineProps<ToasterProps>()
 
 const toast = useToast()
 const { held, toasts } = storeToRefs(toast)

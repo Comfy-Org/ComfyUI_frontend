@@ -51,12 +51,7 @@ const visibleItems = computed(() =>
     :key="item.key ?? toValue(item.label) ?? index"
   >
     <MenuSeparator v-if="item.separator" />
-    <MenuSubmenu
-      v-else-if="item.items || item.radioGroup"
-      :item
-      :owner-id
-      :new-label
-    >
+    <MenuSubmenu v-else-if="item.items || item.radioGroup" :item :owner-id>
       <ReuseItemContent :item :has-submenu="true" />
       <template #content="{ items: childItems }">
         <MenuItems

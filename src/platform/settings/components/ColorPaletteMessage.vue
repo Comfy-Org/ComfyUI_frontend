@@ -1,5 +1,5 @@
 <template>
-  <Message :close-label="$t('g.close')" severity="info">
+  <Message severity="info">
     <template #icon>
       <i class="pi pi-palette" />
     </template>

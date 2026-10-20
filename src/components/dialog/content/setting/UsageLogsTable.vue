@@ -4,9 +4,7 @@
       <Spinner :loading-label="$t('g.loading')" />
     </div>
     <div v-else-if="error" class="p-4">
-      <Message :close-label="$t('g.close')" severity="error">{{
-        error
-      }}</Message>
+      <Message severity="error">{{ error }}</Message>
     </div>
     <template v-else>
       <Table>

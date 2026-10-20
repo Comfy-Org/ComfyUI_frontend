@@ -50,11 +50,7 @@
                 icon="icon-[lucide--settings-2]"
               />
             </template>
-            <MenuRadioGroup
-              v-model="sortOrder"
-              :new-label="$t('contextMenu.new')"
-              :options="sortingOptions"
-            />
+            <MenuRadioGroup v-model="sortOrder" :options="sortingOptions" />
           </Menu>
         </template>
       </SidebarTopArea>

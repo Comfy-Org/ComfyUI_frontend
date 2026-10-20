@@ -8,11 +8,12 @@ import Switch from '@/components/ui/switch/Switch.vue'
 
 import type { MenuItem } from './types'
 
-const { hasSubmenu, item, newLabel } = defineProps<{
-  newLabel: string
-  hasSubmenu: boolean
-  item: MenuItem
-}>()
+const { hasSubmenu, item, newLabel } = defineProps<
+  { hasSubmenu: boolean } & (
+    | { item: MenuItem; newLabel: string }
+    | { item: MenuItem & { new?: false }; newLabel?: string }
+  )
+>()
 </script>
 
 <template>

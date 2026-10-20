@@ -29,7 +29,7 @@
             :label="$t('userSelect.selectUser')"
             :disabled="createNewUser"
           />
-          <Message v-if="error" :close-label="$t('g.close')" severity="error">
+          <Message v-if="error" severity="error">
             {{ error }}
           </Message>
         </div>

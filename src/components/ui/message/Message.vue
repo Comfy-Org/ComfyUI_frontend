@@ -11,14 +11,17 @@ import { messageVariants } from './message.variants'
 const {
   severity,
   closeLabel,
-  closable = false,
+  closable,
   class: customClass = ''
-} = defineProps<{
-  severity?: MessageVariants['severity']
-  closeLabel: string
-  closable?: boolean
-  class?: HTMLAttributes['class']
-}>()
+} = defineProps<
+  {
+    severity?: MessageVariants['severity']
+    class?: HTMLAttributes['class']
+  } & (
+    | { closable: true; closeLabel: string }
+    | { closable?: false; closeLabel?: string }
+  )
+>()
 
 const emit = defineEmits<{ close: [event: MouseEvent] }>()
 const visible = defineModel<boolean>('visible', { default: true })

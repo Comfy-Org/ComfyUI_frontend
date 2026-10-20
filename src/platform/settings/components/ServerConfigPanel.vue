@@ -1,10 +1,6 @@
 <template>
   <div class="server-config-panel flex flex-col gap-2">
-    <Message
-      v-if="modifiedConfigs.length > 0"
-      :close-label="$t('g.close')"
-      severity="info"
-    >
+    <Message v-if="modifiedConfigs.length > 0" severity="info">
       <p>
         {{ $t('serverConfig.modifiedConfigs') }}
       </p>
@@ -22,11 +18,7 @@
         </Button>
       </div>
     </Message>
-    <Message
-      v-if="commandLineArgs"
-      :close-label="$t('g.close')"
-      severity="secondary"
-    >
+    <Message v-if="commandLineArgs" severity="secondary">
       <template #icon>
         <i class="icon-[lucide--terminal] text-xl font-bold" />
       </template>

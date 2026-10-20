@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import type { DialogPanelProps } from '@/components/ui/dialog/types'
 
 const {
   size = 'default',
@@ -12,13 +13,13 @@ const {
   bodyClass,
   unpadded = false,
   onClose
-} = defineProps<{
-  size?: 'compact' | 'default'
-  class?: HTMLAttributes['class']
-  bodyClass?: HTMLAttributes['class']
-  unpadded?: boolean
-  onClose?: () => void
-}>()
+} = defineProps<
+  Omit<DialogPanelProps, 'closeLabel'> & {
+    size?: 'compact' | 'default'
+    bodyClass?: HTMLAttributes['class']
+    unpadded?: boolean
+  }
+>()
 
 const { t } = useI18n()
 </script>

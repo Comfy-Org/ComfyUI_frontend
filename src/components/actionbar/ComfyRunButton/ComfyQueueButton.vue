@@ -43,7 +43,6 @@
         </Button>
       </template>
       <MenuRadioGroup
-        :new-label="$t('contextMenu.new')"
         :model-value="selectedQueueMode"
         :options="queueModeMenuItems"
         @select.prevent

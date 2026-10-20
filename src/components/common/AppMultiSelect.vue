@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { ComponentProps } from 'vue-component-type-helpers'
 
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import type { MultiSelectProps } from '@/components/ui/multi-select/types'
+import type { SelectOption } from '@/components/ui/select/types'
 
-type PrimitiveProps = ComponentProps<typeof MultiSelect>
+type TranslatedProps =
+  | 'accessibleLabel'
+  | 'searchLabel'
+  | 'emptyText'
+  | 'clearAllLabel'
+  | 'formatSelectedCount'
 
 const {
   label,
@@ -15,31 +21,15 @@ const {
   clearAllLabel,
   formatSelectedCount,
   ...restProps
-} = defineProps<{
-  label?: PrimitiveProps['label']
-  accessibleLabel?: PrimitiveProps['accessibleLabel']
-  searchLabel?: PrimitiveProps['searchLabel']
-  searchPlaceholder?: PrimitiveProps['searchPlaceholder']
-  emptyText?: PrimitiveProps['emptyText']
-  clearAllLabel?: PrimitiveProps['clearAllLabel']
-  formatSelectedCount?: PrimitiveProps['formatSelectedCount']
-  options?: PrimitiveProps['options']
-  size?: PrimitiveProps['size']
-  disabled?: PrimitiveProps['disabled']
-  showSearchBox?: PrimitiveProps['showSearchBox']
-  showSelectedCount?: PrimitiveProps['showSelectedCount']
-  showClearButton?: PrimitiveProps['showClearButton']
-  actionsPlacement?: PrimitiveProps['actionsPlacement']
-  listMaxHeight?: PrimitiveProps['listMaxHeight']
-  popoverMinWidth?: PrimitiveProps['popoverMinWidth']
-  popoverMaxWidth?: PrimitiveProps['popoverMaxWidth']
-  contentStyle?: PrimitiveProps['contentStyle']
-}>()
+} = defineProps<
+  Omit<MultiSelectProps, TranslatedProps> &
+    Partial<Pick<MultiSelectProps, TranslatedProps>>
+>()
 
-const selectedItems = defineModel<PrimitiveProps['modelValue']>({
+const selectedItems = defineModel<SelectOption[]>({
   required: true
 })
-const searchQuery = defineModel<PrimitiveProps['searchQuery']>('searchQuery', {
+const searchQuery = defineModel<string>('searchQuery', {
   default: ''
 })
 const { t } = useI18n()

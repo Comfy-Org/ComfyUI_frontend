@@ -82,7 +82,6 @@
       </div>
 
       <Message
-        :close-label="$t('g.close')"
         :visible="isUnmatchedLegacyManagerSearch"
         severity="info"
         class="mx-6 mb-4 w-auto"

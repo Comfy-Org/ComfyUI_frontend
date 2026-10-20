@@ -19,21 +19,11 @@
       <span v-if="freeRunsSuffix">{{ ' ' + freeRunsSuffix }}</span>
     </p>
 
-    <Message
-      v-if="!isSecureContext"
-      :close-label="$t('g.close')"
-      severity="warning"
-      class="mt-4 w-full"
-    >
+    <Message v-if="!isSecureContext" severity="warning" class="mt-4 w-full">
       {{ t('auth.login.insecureContextWarning') }}
     </Message>
 
-    <Message
-      v-if="ssoErrorKey"
-      :close-label="$t('g.close')"
-      severity="error"
-      class="mt-4 w-full"
-    >
+    <Message v-if="ssoErrorKey" severity="error" class="mt-4 w-full">
       {{ t(ssoErrorKey) }}
     </Message>
 

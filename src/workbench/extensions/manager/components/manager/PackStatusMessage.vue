@@ -1,6 +1,5 @@
 <template>
   <Message
-    :close-label="$t('g.close')"
     :severity="statusSeverity"
     class="w-fit rounded-xl px-2 py-0.5 text-xs wrap-break-word"
   >

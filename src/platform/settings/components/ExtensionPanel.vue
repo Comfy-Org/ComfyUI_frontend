@@ -6,12 +6,7 @@
       :accessible-label="$t('g.search')"
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
-    <Message
-      v-if="hasChanges"
-      :close-label="$t('g.close')"
-      severity="info"
-      class="max-h-96 overflow-y-auto"
-    >
+    <Message v-if="hasChanges" severity="info" class="max-h-96 overflow-y-auto">
       <ul>
         <li v-for="ext in changedExtensions" :key="ext.name">
           <span>

@@ -108,7 +108,6 @@ import {
   SelectViewport
 } from 'reka-ui'
 import { ref } from 'vue'
-import type { StyleValue } from 'vue'
 
 import {
   selectContentClass,
@@ -117,7 +116,7 @@ import {
   selectTriggerVariants,
   stopEscapeToDocument
 } from '@comfyorg/design-system/select.variants'
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SingleSelectProps } from '@/components/ui/single-select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
@@ -146,30 +145,7 @@ const {
   popoverMinWidth,
   popoverMaxWidth,
   contentStyle
-} = defineProps<{
-  label?: string
-  accessibleLabel: string
-  searchLabel: string
-  emptyText: string
-  options?: SelectOption<string | number>[]
-  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
-  size?: 'lg' | 'md'
-  /** Show invalid (destructive) border */
-  invalid?: boolean
-  /** Show loading spinner instead of chevron */
-  loading?: boolean
-  /** Disable the select */
-  disabled?: boolean
-  searchable?: boolean
-  searchPlaceholder?: string
-  /** Maximum height of the dropdown panel (default: 28rem) */
-  listMaxHeight?: string
-  /** Minimum width of the popover (default: auto) */
-  popoverMinWidth?: string
-  /** Maximum width of the popover (default: auto) */
-  popoverMaxWidth?: string
-  contentStyle?: StyleValue
-}>()
+} = defineProps<SingleSelectProps>()
 
 const selectedItem = defineModel<string | number | undefined>({
   required: true

@@ -46,10 +46,10 @@
 <script setup lang="ts">
 import { ComboboxRoot } from 'reka-ui'
 import { ref } from 'vue'
-import type { StyleValue } from 'vue'
 
 import MultiSelectContent from '@/components/ui/multi-select/MultiSelectContent.vue'
 import MultiSelectTrigger from '@/components/ui/multi-select/MultiSelectTrigger.vue'
+import type { MultiSelectProps } from '@/components/ui/multi-select/types'
 
 import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
@@ -81,37 +81,7 @@ const {
   popoverMinWidth,
   popoverMaxWidth,
   contentStyle
-} = defineProps<{
-  accessibleLabel: string
-  searchLabel: string
-  emptyText: string
-  clearAllLabel: string
-  formatSelectedCount: (count: number) => string
-  /** Input label shown on the trigger button */
-  label?: string
-  /** Available options */
-  options?: SelectOption[]
-  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
-  size?: 'lg' | 'md'
-  /** Disable the select */
-  disabled?: boolean
-  /** Show search box in the panel header */
-  showSearchBox?: boolean
-  /** Show selected count text in the panel header */
-  showSelectedCount?: boolean
-  /** Show "Clear all" action in the panel header */
-  showClearButton?: boolean
-  actionsPlacement?: 'header' | 'footer'
-  /** Placeholder for the search input */
-  searchPlaceholder?: string
-  /** Maximum height of the dropdown panel (default: 28rem) */
-  listMaxHeight?: string
-  /** Minimum width of the popover (default: auto) */
-  popoverMinWidth?: string
-  /** Maximum width of the popover (default: auto) */
-  popoverMaxWidth?: string
-  contentStyle?: StyleValue
-}>()
+} = defineProps<MultiSelectProps>()
 
 const selectedItems = defineModel<SelectOption[]>({
   required: true

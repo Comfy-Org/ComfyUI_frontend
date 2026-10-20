@@ -1,22 +1,18 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { ComponentProps } from 'vue-component-type-helpers'
 
 import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
-
-type ColorPickerProps = ComponentProps<typeof ColorPicker>
+import type { ColorPickerProps } from '@/components/ui/color-picker/types'
 
 const {
   class: className,
   alpha = true,
   disabled = false,
   accessibleLabel
-} = defineProps<{
-  class?: ColorPickerProps['class']
-  alpha?: ColorPickerProps['alpha']
-  disabled?: ColorPickerProps['disabled']
-  accessibleLabel?: ColorPickerProps['accessibleLabel']
-}>()
+} = defineProps<
+  Pick<ColorPickerProps, 'class' | 'alpha' | 'disabled'> &
+    Partial<Pick<ColorPickerProps, 'accessibleLabel'>>
+>()
 
 const color = defineModel<string>({ default: '#000000' })
 const { t } = useI18n()

@@ -20,13 +20,7 @@
     </template>
   </div>
 
-  <Toaster
-    :close-label="$t('g.close')"
-    :region-label="$t('toastMessages.notificationsLabel')"
-    :format-viewport-label="
-      (hotkey) => $t('toastMessages.notificationsViewportLabel', { hotkey })
-    "
-  />
+  <AppToaster />
   <ToastDock>
     <ModelImportProgressDialog />
     <AssetExportProgressDialog />
@@ -60,7 +54,7 @@ import UnloadWindowConfirmDialog from '@/components/dialog/UnloadWindowConfirmDi
 import GraphCanvas from '@/components/graph/GraphCanvas.vue'
 import PartnerNodesEducationCard from '@/components/actionbar/PartnerNodesEducationCard.vue'
 import ToastDock from '@/components/ui/toast/ToastDock.vue'
-import Toaster from '@/components/ui/toast/Toaster.vue'
+import AppToaster from '@/components/common/AppToaster.vue'
 import TourOverlay from '@/platform/onboarding/TourOverlay.vue'
 import FirstRunTour from '@/renderer/extensions/firstRunTour/FirstRunTour.vue'
 import { registerCoreBottomPanelTabs } from '@/composables/bottomPanelTabs/registerCoreBottomPanelTabs'

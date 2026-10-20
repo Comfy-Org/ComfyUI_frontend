@@ -201,7 +201,6 @@ const menuEntries = computed<MenuItem[]>(() => [
         </template>
         <MenuRadioGroup
           v-model="activeWorkflowPath"
-          :new-label="$t('contextMenu.new')"
           :options="workflowOptions"
         />
       </Menu>

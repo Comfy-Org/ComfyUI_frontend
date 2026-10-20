@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import type { ComponentProps } from 'vue-component-type-helpers'
 
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import type { SingleSelectProps } from '@/components/ui/single-select/types'
 
-type PrimitiveProps = ComponentProps<typeof SingleSelect>
+type TranslatedProps = 'accessibleLabel' | 'searchLabel' | 'emptyText'
 
 const {
   label,
@@ -13,25 +13,12 @@ const {
   searchPlaceholder,
   emptyText,
   ...restProps
-} = defineProps<{
-  label?: PrimitiveProps['label']
-  accessibleLabel?: PrimitiveProps['accessibleLabel']
-  searchLabel?: PrimitiveProps['searchLabel']
-  searchPlaceholder?: PrimitiveProps['searchPlaceholder']
-  emptyText?: PrimitiveProps['emptyText']
-  options?: PrimitiveProps['options']
-  size?: PrimitiveProps['size']
-  invalid?: PrimitiveProps['invalid']
-  loading?: PrimitiveProps['loading']
-  disabled?: PrimitiveProps['disabled']
-  searchable?: PrimitiveProps['searchable']
-  listMaxHeight?: PrimitiveProps['listMaxHeight']
-  popoverMinWidth?: PrimitiveProps['popoverMinWidth']
-  popoverMaxWidth?: PrimitiveProps['popoverMaxWidth']
-  contentStyle?: PrimitiveProps['contentStyle']
-}>()
+} = defineProps<
+  Omit<SingleSelectProps, TranslatedProps> &
+    Partial<Pick<SingleSelectProps, TranslatedProps>>
+>()
 
-const selectedItem = defineModel<PrimitiveProps['modelValue']>({
+const selectedItem = defineModel<string | number | undefined>({
   required: true
 })
 const { t } = useI18n()

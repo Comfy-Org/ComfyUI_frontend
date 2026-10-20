@@ -47,7 +47,7 @@
       </Field>
     </VeeField>
 
-    <Message v-if="authError" :close-label="$t('g.close')" severity="error">
+    <Message v-if="authError" severity="error">
       {{ authError }}
     </Message>
 

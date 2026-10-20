@@ -26,7 +26,6 @@
         </template>
         <MenuRadioGroup
           v-model="selectedWorkflowFilter"
-          :new-label="$t('contextMenu.new')"
           :options="workflowFilterOptions"
         />
       </Menu>
@@ -41,11 +40,7 @@
             :indicator="selectedSortMode !== 'mostRecent'"
           />
         </template>
-        <MenuRadioGroup
-          v-model="selectedSortMode"
-          :new-label="$t('contextMenu.new')"
-          :options="sortOptions"
-        />
+        <MenuRadioGroup v-model="selectedSortMode" :options="sortOptions" />
       </Menu>
       <Button
         v-if="showAssetsAction"

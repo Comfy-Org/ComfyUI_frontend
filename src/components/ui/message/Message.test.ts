@@ -10,7 +10,7 @@ describe('Message', () => {
     'announces %s messages as alerts',
     (severity) => {
       render(Message, {
-        props: { severity, closeLabel: 'Close' },
+        props: { severity },
         slots: { default: 'Could not save' }
       })
 
@@ -24,7 +24,6 @@ describe('Message', () => {
 
   it('keeps its icon decorative', () => {
     render(Message, {
-      props: { closeLabel: 'Close' },
       slots: {
         default: 'Helpful information',
         icon: '<svg role="img" aria-label="Information" />'

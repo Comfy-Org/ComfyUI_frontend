@@ -27,12 +27,7 @@
         </p>
       </div>
 
-      <Message
-        v-if="!isSecureContext"
-        :close-label="$t('g.close')"
-        severity="warning"
-        class="mb-4"
-      >
+      <Message v-if="!isSecureContext" severity="warning" class="mb-4">
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
@@ -50,7 +45,6 @@
         </div>
         <Message
           v-else-if="regionStatus === 'blocked'"
-          :close-label="$t('g.close')"
           severity="warning"
           class="mb-4"
         >

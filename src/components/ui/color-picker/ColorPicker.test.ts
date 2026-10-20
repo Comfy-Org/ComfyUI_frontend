@@ -11,15 +11,15 @@ describe('ColorPicker', () => {
       props: {
         modelValue: '#ff0000',
         accessibleLabel: 'Light color',
-        hexLabel: 'Hex',
-        rgbaLabel: 'RGBA',
-        hueLabel: 'Hue',
-        alphaLabel: 'Alpha',
-        redLabel: 'Red',
-        greenLabel: 'Green',
-        blueLabel: 'Blue',
-        saturationBrightnessLabel: 'Saturation and brightness',
-        formatLabel: 'Color format'
+        hexLabel: 'Hexadecimal value',
+        rgbaLabel: 'Channel values',
+        hueLabel: 'Hue angle',
+        alphaLabel: 'Opacity level',
+        redLabel: 'Crimson channel',
+        greenLabel: 'Emerald channel',
+        blueLabel: 'Azure channel',
+        saturationBrightnessLabel: 'Color intensity and luminance',
+        formatLabel: 'Value representation'
       }
     })
 
@@ -27,18 +27,32 @@ describe('ColorPicker', () => {
       screen.getByRole('button', { name: 'Light color' })
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Light color' }))
-    expect(screen.getByRole('slider', { name: 'Hue' })).toBeInTheDocument()
-    expect(screen.getByRole('slider', { name: 'Alpha' })).toBeInTheDocument()
     expect(
-      screen.getByRole('slider', { name: 'Saturation and brightness' })
+      screen.getByRole('slider', { name: 'Hue angle' })
     ).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Hex' })).toBeInTheDocument()
-    await user.click(screen.getByRole('combobox', { name: 'Color format' }))
-    await user.click(await screen.findByRole('option', { name: 'RGBA' }))
-    expect(screen.getByRole('spinbutton', { name: 'Red' })).toBeInTheDocument()
     expect(
-      screen.getByRole('spinbutton', { name: 'Green' })
+      screen.getByRole('slider', { name: 'Opacity level' })
     ).toBeInTheDocument()
-    expect(screen.getByRole('spinbutton', { name: 'Blue' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('slider', { name: 'Color intensity and luminance' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('textbox', { name: 'Hexadecimal value' })
+    ).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('combobox', { name: 'Value representation' })
+    )
+    await user.click(
+      await screen.findByRole('option', { name: 'Channel values' })
+    )
+    expect(
+      screen.getByRole('spinbutton', { name: 'Crimson channel' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('spinbutton', { name: 'Emerald channel' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('spinbutton', { name: 'Azure channel' })
+    ).toBeInTheDocument()
   })
 })

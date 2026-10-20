@@ -1,11 +1,6 @@
 <template>
   <div class="node-help-content mx-auto w-full">
-    <Spinner
-      v-if="isLoading"
-      :loading-label="$t('g.loading')"
-      class="m-auto"
-      :aria-label="$t('g.loading')"
-    />
+    <Spinner v-if="isLoading" :loading-label="$t('g.loading')" class="m-auto" />
     <SanitizedHtml
       v-else-if="!error"
       class="comfy-markdown-content overflow-visible [--comfy-markdown-font-size:var(--text-sm)] [&_table]:block [&_table]:overflow-x-auto"
