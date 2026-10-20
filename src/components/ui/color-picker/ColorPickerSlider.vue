@@ -4,14 +4,12 @@ import { computed } from 'vue'
 import { hsbToRgb, rgbToHex } from '@/utils/colorUtil'
 
 const {
-  accessibleLabel,
   type,
   hue = 0,
   saturation = 100,
   brightness = 100
 } = defineProps<{
   type: 'hue' | 'alpha'
-  accessibleLabel: string
   hue?: number
   saturation?: number
   brightness?: number
@@ -68,7 +66,6 @@ function handlePointerMove(e: PointerEvent) {
 <template>
   <div
     role="slider"
-    :aria-label="accessibleLabel"
     :aria-valuemin="0"
     :aria-valuemax="max"
     :aria-valuenow="modelValue"

@@ -107,7 +107,7 @@ describe('Toaster', () => {
   })
 
   it('uses caller labels for notification regions and close buttons', async () => {
-    render(Toaster, {
+    const { rerender } = render(Toaster, {
       props: {
         closeLabel: 'Fermer',
         regionLabel: 'Notification FR',
@@ -125,6 +125,12 @@ describe('Toaster', () => {
     expect(
       screen.getByRole('status', { name: 'Notification FR' })
     ).toHaveTextContent('Enregistré')
+
+    await rerender({ closeLabel: 'Dismiss notification' })
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Dismiss notification' })
+    )
+    expect(useToast().toasts).toEqual([])
   })
 
   it('keeps a notification above a dialog opened after it', async () => {

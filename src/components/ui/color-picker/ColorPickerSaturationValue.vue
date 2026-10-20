@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-const { hue, accessibleLabel } = defineProps<{
+const { hue } = defineProps<{
   hue: number
-  accessibleLabel: string
 }>()
 
 const saturation = defineModel<number>('saturation', { required: true })
@@ -42,7 +41,6 @@ function handlePointerMove(e: PointerEvent) {
   <div
     ref="containerRef"
     role="slider"
-    :aria-label="accessibleLabel"
     :aria-valuetext="`${saturation}%, ${value}%`"
     class="relative aspect-square w-full cursor-crosshair rounded-sm"
     :style="{ backgroundColor: hueBackground, touchAction: 'none' }"

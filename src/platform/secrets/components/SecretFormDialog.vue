@@ -11,7 +11,7 @@
                 : $t('secrets.editSecret')
             }}
           </DialogTitle>
-          <DialogClose :close-label="$t('g.close')" />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <form
           class="flex flex-col gap-4 px-4 py-2"

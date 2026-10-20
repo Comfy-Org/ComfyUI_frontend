@@ -1,8 +1,8 @@
 <template>
   <NumberField :id v-model="modelValue" :min :max :step :disabled class="w-32">
-    <NumberFieldDecrement :decrement-label="$t('g.decrement')" />
+    <NumberFieldDecrement :aria-label="$t('g.decrement')" />
     <NumberFieldInput :aria-labelledby="ariaLabelledby" />
-    <NumberFieldIncrement :increment-label="$t('g.increment')" />
+    <NumberFieldIncrement :aria-label="$t('g.increment')" />
   </NumberField>
 </template>
 

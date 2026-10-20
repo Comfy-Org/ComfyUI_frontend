@@ -27,9 +27,9 @@ function renderNumberField(rootAttrs: string, initialValue: number | null) {
     }),
     template: `
       <NumberField :model-value="value" ${rootAttrs} @update:model-value="onUpdate">
-        <NumberFieldDecrement decrement-label="Decrement" />
+        <NumberFieldDecrement aria-label="Decrement" />
         <NumberFieldInput aria-label="Amount" />
-        <NumberFieldIncrement increment-label="Increment" />
+        <NumberFieldIncrement aria-label="Increment" />
       </NumberField>
     `
   })

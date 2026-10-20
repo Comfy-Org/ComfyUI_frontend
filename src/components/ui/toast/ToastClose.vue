@@ -7,12 +7,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 
-const {
-  class: className,
-  accessibleLabel,
-  ...restProps
-} = defineProps<
-  ToastCloseProps & { class?: HTMLAttributes['class']; accessibleLabel: string }
+const { class: className, ...restProps } = defineProps<
+  ToastCloseProps & { class?: HTMLAttributes['class'] }
 >()
 const forwardedProps = useForwardProps(restProps)
 </script>
@@ -22,7 +18,6 @@ const forwardedProps = useForwardProps(restProps)
     <Button
       variant="muted-textonly"
       size="icon-sm"
-      :aria-label="accessibleLabel"
       :class="cn('ml-auto', className)"
     >
       <i class="icon-[lucide--x] size-4" aria-hidden="true" />

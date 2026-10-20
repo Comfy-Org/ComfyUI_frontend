@@ -10,7 +10,7 @@
         class="flex items-center gap-2"
         role="group"
       />
-      <DialogClose :close-label="$t('g.close')">
+      <DialogClose :aria-label="$t('g.close')">
         <Button variant="outline" size="md">
           {{ t('g.close') }}
           <i class="icon-[lucide--x] size-4" />

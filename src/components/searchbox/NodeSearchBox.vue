@@ -37,7 +37,7 @@
         >
           <DialogHeader>
             <DialogTitle>{{ $t('g.addNodeFilterCondition') }}</DialogTitle>
-            <DialogClose :close-label="$t('g.close')" />
+            <DialogClose :aria-label="$t('g.close')" />
           </DialogHeader>
           <div class="px-4 py-2">
             <NodeSearchFilter @add-filter="onAddFilter" />

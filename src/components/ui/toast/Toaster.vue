@@ -112,7 +112,7 @@ const icons = {
       <ToastTitle class="col-start-2 row-start-1">{{ item.title }}</ToastTitle>
       <ToastClose
         v-if="item.closable"
-        :accessible-label="closeLabel"
+        :aria-label="closeLabel"
         class="col-start-3 row-start-1"
         data-testid="toast-close"
       />

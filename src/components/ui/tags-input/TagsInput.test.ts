@@ -48,7 +48,7 @@ describe('TagsInput with child components', () => {
           ...tags.map((tag) =>
             h(TagsInputItem, { key: tag, value: tag }, () => [
               h(TagsInputItemText),
-              h(TagsInputItemDelete, { removeLabel: 'Remove tag' })
+              h(TagsInputItemDelete, { 'aria-label': `Remove ${tag}` })
             ])
           ),
           h(TagsInputInput, { placeholder: 'Add tag...' })
@@ -67,7 +67,7 @@ describe('TagsInput with child components', () => {
     expect(screen.getByText('tag2')).toBeInTheDocument()
 
     const deleteButtons = tags.map((tag) =>
-      screen.getByRole('button', { name: tag })
+      screen.getByRole('button', { name: `Remove ${tag}` })
     )
     expect(deleteButtons).toHaveLength(tags.length)
   })
@@ -80,7 +80,7 @@ describe('TagsInput with child components', () => {
 
     await user.click(screen.getByText('first'))
     await nextTick()
-    await user.click(screen.getByRole('button', { name: 'first' }))
+    await user.click(screen.getByRole('button', { name: 'Remove first' }))
 
     expect(onUpdate).toHaveBeenCalledWith(['second'])
   })

@@ -25,9 +25,9 @@
       :disabled
       @update:model-value="(value) => emit('update:modelValue', value)"
     >
-      <NumberFieldDecrement :decrement-label="$t('g.decrement')" />
+      <NumberFieldDecrement :aria-label="$t('g.decrement')" />
       <NumberFieldInput :aria-label :aria-labelledby="ariaLabelledby" />
-      <NumberFieldIncrement :increment-label="$t('g.increment')" />
+      <NumberFieldIncrement :aria-label="$t('g.increment')" />
     </NumberField>
   </div>
 </template>

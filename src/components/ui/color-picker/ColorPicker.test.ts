@@ -7,7 +7,7 @@ import ColorPicker from './ColorPicker.vue'
 describe('ColorPicker', () => {
   it('labels the trigger and panel controls with caller text', async () => {
     const user = userEvent.setup()
-    render(ColorPicker, {
+    const { rerender } = render(ColorPicker, {
       props: {
         modelValue: '#ff0000',
         accessibleLabel: 'Light color',
@@ -54,5 +54,18 @@ describe('ColorPicker', () => {
     expect(
       screen.getByRole('spinbutton', { name: 'Azure channel' })
     ).toBeInTheDocument()
+
+    await rerender({
+      hueLabel: 'Updated hue',
+      alphaLabel: 'Updated opacity',
+      saturationBrightnessLabel: 'Updated intensity'
+    })
+    expect(screen.getByRole('slider', { name: 'Updated hue' })).toBeVisible()
+    expect(
+      screen.getByRole('slider', { name: 'Updated opacity' })
+    ).toBeVisible()
+    expect(
+      screen.getByRole('slider', { name: 'Updated intensity' })
+    ).toBeVisible()
   })
 })

@@ -13,7 +13,7 @@
         @pointer-down-outside.prevent
         @open-auto-focus="onOpenAutoFocus"
       >
-        <DialogClose :close-label="$t('g.close')" as-child>
+        <DialogClose :aria-label="$t('g.close')" as-child>
           <Button
             variant="muted-textonly"
             size="icon"

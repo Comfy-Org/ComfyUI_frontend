@@ -6,13 +6,9 @@
       v-model:saturation="hsva.s"
       v-model:value="hsva.v"
       :hue="hsva.h"
-      :accessible-label="saturationBrightnessLabel"
+      :aria-label="saturationBrightnessLabel"
     />
-    <ColorPickerSlider
-      v-model="hsva.h"
-      type="hue"
-      :accessible-label="hueLabel"
-    />
+    <ColorPickerSlider v-model="hsva.h" type="hue" :aria-label="hueLabel" />
     <ColorPickerSlider
       v-if="alpha"
       v-model="hsva.a"
@@ -20,7 +16,7 @@
       :hue="hsva.h"
       :saturation="hsva.s"
       :brightness="hsva.v"
-      :accessible-label="alphaLabel"
+      :aria-label="alphaLabel"
     />
     <div class="flex items-center gap-1">
       <Select v-model="displayMode">

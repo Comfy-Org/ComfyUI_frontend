@@ -5,14 +5,9 @@ import type { HTMLAttributes } from 'vue'
 
 import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
 
-const {
-  class: className,
-  removeLabel,
-  ...restProps
-} = defineProps<
+const { class: className, ...restProps } = defineProps<
   TagsInputItemDeleteProps & {
     class?: HTMLAttributes['class']
-    removeLabel: string
   }
 >()
 
@@ -23,7 +18,7 @@ const forwardedProps = useForwardProps(restProps)
   <TagsInputItemDelete
     v-bind="forwardedProps"
     :as="TagRemoveButton"
-    :label="removeLabel"
+    :aria-labelledby="undefined"
     :class="className"
   >
     <slot>

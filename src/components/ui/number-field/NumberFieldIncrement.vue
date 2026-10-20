@@ -5,14 +5,9 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const {
-  class: className,
-  incrementLabel,
-  ...restProps
-} = defineProps<
+const { class: className, ...restProps } = defineProps<
   NumberFieldIncrementProps & {
     class?: HTMLAttributes['class']
-    incrementLabel: string
   }
 >()
 const forwarded = useForwardProps(restProps)
@@ -22,7 +17,6 @@ const forwarded = useForwardProps(restProps)
   <NumberFieldIncrement
     v-bind="forwarded"
     data-slot="number-field-increment"
-    :aria-label="incrementLabel"
     :class="
       cn(
         'flex h-full w-6 shrink-0 cursor-pointer items-center justify-center rounded-r-lg border-none bg-transparent text-muted-foreground hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset disabled:pointer-events-none disabled:opacity-30',
