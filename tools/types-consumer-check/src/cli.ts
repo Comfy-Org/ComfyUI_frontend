@@ -62,12 +62,16 @@ try {
     .map((alias) => alias.name.text)
   const diagnostics = ts.getPreEmitDiagnostics(program, source)
 
-  if (diagnostics.length) console.error(format(diagnostics, root))
+  if (diagnostics.length) process.stderr.write(format(diagnostics, root))
   if (unresolved.length) {
-    console.error(`Published types resolve to any: ${unresolved.join(', ')}`)
+    process.stderr.write(
+      `Published types resolve to any: ${unresolved.join(', ')}\n`
+    )
   }
   if (diagnostics.length || unresolved.length) process.exitCode = 1
-  else console.log(`Published types resolve for consumers: ${bundle}`)
+  else {
+    process.stdout.write(`Published types resolve for consumers: ${bundle}\n`)
+  }
 } finally {
   rmSync(root, { recursive: true, force: true })
 }
