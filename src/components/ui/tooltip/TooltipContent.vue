@@ -67,7 +67,7 @@ const forwarded = useForwardPropsEmits(
         "
         @escape-key-down="rootContext.onClose()"
       >
-        <div ref="text"><slot /></div>
+        <div ref="text" data-testid="tooltip-text"><slot /></div>
         <TooltipArrow
           :width="10"
           :height="5"
