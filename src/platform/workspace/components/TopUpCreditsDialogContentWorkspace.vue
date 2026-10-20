@@ -877,8 +877,10 @@ function isNoPaymentMethodRefusal(error: unknown): boolean {
 
 let unmounted = false
 let stopDefaultCardReturnRefresh: (() => void) | null = null
+const dialogScope = new AbortController()
 onUnmounted(() => {
   unmounted = true
+  dialogScope.abort()
   stopDefaultCardReturnRefresh?.()
 })
 
@@ -1008,7 +1010,8 @@ async function openCheckoutInReservedTab(): Promise<
     if (!balance.value) await Promise.allSettled([fetchBalance()])
     const checkoutUrl = await createHostedCheckout(
       payAmount.value * 100,
-      returnUrl
+      returnUrl,
+      dialogScope.signal
     )
     if (unmounted) {
       checkoutTab.close()

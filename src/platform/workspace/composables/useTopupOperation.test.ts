@@ -16,6 +16,7 @@ import type { BillingSdk } from '@/platform/workspace/billing/sdk/createBillingS
 import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
 import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'))
@@ -295,6 +296,75 @@ describe('useTopupOperation', () => {
 
         expect(outcome).toEqual({ error: expect.any(WorkspaceApiError) })
         expect(mintCheckout).toHaveBeenCalledTimes(attempts)
+      }
+    )
+
+    const teamWorkspace = {
+      id: 'ws-team',
+      name: 'Team',
+      type: 'team',
+      role: 'owner'
+    } as const
+
+    it.for(
+      rails.flatMap((rail) => [
+        {
+          ...rail,
+          name: 'the dialog is abandoned',
+          interrupt: (scope: AbortController) => scope.abort()
+        },
+        {
+          ...rail,
+          name: 'the tab switches workspace',
+          interrupt: () => {
+            useWorkspaceAuthStore().currentWorkspace = {
+              ...teamWorkspace,
+              id: 'ws-other'
+            }
+          }
+        }
+      ])
+    )(
+      'sends no retry once $name during the backoff on the $rail rail',
+      async ({ flagOn, mint, interrupt }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        useWorkspaceAuthStore().currentWorkspace = teamWorkspace
+        const mintCheckout = mint([busy, 'https://stripe/other-scope'])
+        const scope = new AbortController()
+
+        const checkout = useTopupOperation()
+          .createHostedCheckout(1000, returnUrl, scope.signal)
+          .then(
+            (url) => ({ url }),
+            (error: unknown) => ({ error })
+          )
+        await vi.advanceTimersByTimeAsync(500)
+        interrupt(scope)
+        await vi.runAllTimersAsync()
+
+        expect(await checkout).toEqual({ error: expect.anything() })
+        expect(mintCheckout).toHaveBeenCalledTimes(1)
+      }
+    )
+
+    it.for(rails)(
+      'hands the dialog scope to the $rail checkout request',
+      async ({ flagOn, mint }) => {
+        flagState.billingSdkTopupEnabled = flagOn
+        const mintCheckout = mint(['https://stripe/new'])
+        const scope = new AbortController()
+
+        await useTopupOperation().createHostedCheckout(
+          1000,
+          returnUrl,
+          scope.signal
+        )
+
+        expect(mintCheckout.mock.lastCall).toContainEqual(
+          flagOn
+            ? { amountCents: 1000, returnUrl, signal: scope.signal }
+            : scope.signal
+        )
       }
     )
   })

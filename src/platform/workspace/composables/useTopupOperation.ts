@@ -13,6 +13,7 @@ import {
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 
 const RETRYABLE_CHECKOUT_CODES: ReadonlySet<string | undefined> = new Set([
   'TOPUP_CHECKOUT_BUSY',
@@ -42,6 +43,7 @@ export function useTopupOperation() {
     : null
   const operationStore = useBillingOperationStore()
   const billingContext = useBillingContext()
+  const workspaceAuthStore = useWorkspaceAuthStore()
   const billingClient: BillingClient = sdkStore ? 'sdk' : 'legacy'
 
   const isAddingCredits = computed(() =>
@@ -60,29 +62,36 @@ export function useTopupOperation() {
 
   async function createHostedCheckout(
     amountCents: number,
-    returnUrl: string
+    returnUrl: string,
+    signal?: AbortSignal
   ): Promise<string> {
+    const originWorkspaceId = workspaceAuthStore.currentWorkspace?.id
     for (const retryDelayMs of CHECKOUT_RETRY_DELAYS_MS) {
       try {
-        return await mintHostedCheckout(amountCents, returnUrl)
+        return await mintHostedCheckout(amountCents, returnUrl, signal)
       } catch (error) {
         if (!isRetryableCheckoutRefusal(error)) throw error
-        await delay(retryDelayMs)
+        await delay(retryDelayMs, { signal })
+        if (workspaceAuthStore.currentWorkspace?.id !== originWorkspaceId) {
+          throw error
+        }
       }
     }
-    return mintHostedCheckout(amountCents, returnUrl)
+    return mintHostedCheckout(amountCents, returnUrl, signal)
   }
 
   async function mintHostedCheckout(
     amountCents: number,
-    returnUrl: string
+    returnUrl: string,
+    signal: AbortSignal | undefined
   ): Promise<string> {
     if (sdkStore) {
-      return sdkStore.createHostedTopupCheckout(amountCents, returnUrl)
+      return sdkStore.createHostedTopupCheckout(amountCents, returnUrl, signal)
     }
     const { checkout_url } = await workspaceApi.createTopupCheckout(
       amountCents,
-      returnUrl
+      returnUrl,
+      signal
     )
     return checkout_url
   }

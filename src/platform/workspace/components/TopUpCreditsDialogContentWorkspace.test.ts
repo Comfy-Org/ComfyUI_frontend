@@ -760,7 +760,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
       await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
-      expect(createCheckout).toHaveBeenCalledWith(5000, window.location.href)
+      expect(createCheckout).toHaveBeenCalledWith(
+        5000,
+        window.location.href,
+        expect.any(AbortSignal)
+      )
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(
         screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
@@ -901,7 +905,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         ).toBeInTheDocument()
         expect(createCheckout).toHaveBeenCalledWith(
           5000,
-          'https://testbilling.comfy.org/return/topup'
+          'https://testbilling.comfy.org/return/topup',
+          expect.any(AbortSignal)
         )
         expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
         expect(window.location.href).toBe(appUrl)
@@ -2310,7 +2315,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       expect(harness.sdk.topup.createHostedTopupCheckout).toHaveBeenCalledWith({
         amountCents: 5000,
-        returnUrl: window.location.href
+        returnUrl: window.location.href,
+        signal: expect.any(AbortSignal)
       })
     })
   })
