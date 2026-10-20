@@ -86,6 +86,23 @@ test.describe('Hidden link badges', { tag: ['@canvas', '@screenshot'] }, () => {
     })
   })
 
+  test('a hidden link snaps back and settles behind its badge', async ({
+    comfyPage,
+    linkVisibility
+  }) => {
+    await linkVisibility.hideFirstLink()
+
+    await expect
+      .poll(async () =>
+        Object.values(
+          (await comfyPage.workflow.getExportedWorkflow()).extra
+            ?.linkPresentation ?? {}
+        )
+      )
+      .toEqual([{ hidden: true }])
+    await expect(comfyPage.canvas).toHaveScreenshot('link-hidden.png')
+  })
+
   test('persists a hidden renamed link through graph load and browser reload', async ({
     comfyPage,
     linkVisibility
