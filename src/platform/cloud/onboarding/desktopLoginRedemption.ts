@@ -3,7 +3,6 @@ import { classifyWebSessionFailure } from '@comfyorg/account-core/webSession'
 import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
 
 import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import type { Router } from 'vue-router'
 
 import { t } from '@/i18n'
@@ -219,7 +218,7 @@ async function accountScope(
       })
     ])
     if (!result.ok) {
-      if (useAuthStore().currentUser || webSessionUser.value) {
+      if (useAuthStore().currentUser || useAuthStore().sessionUser) {
         state.attempts++
         handleTransientFailure(code, state, 'account session unavailable')
       }
@@ -236,7 +235,7 @@ function unavailableAccountSession(
   code: string,
   state: CodeRedemptionState
 ): void {
-  if (!useAuthStore().currentUser && !webSessionUser.value) return
+  if (!useAuthStore().currentUser && !useAuthStore().sessionUser) return
   settle(code, state)
   useToast().error(t('desktopLogin.failedSummary'), {
     description: t('desktopLogin.failedDetail'),
@@ -372,7 +371,7 @@ function installAuthWatcherOnce(): void {
   authWatcherInstalled = true
   const auth = useAuthStore()
   watch(
-    () => [auth.currentUser, webSessionUser.value],
+    () => [auth.currentUser, auth.sessionUser],
     () => {
       void redeemPendingDesktopLoginCode()
     }
