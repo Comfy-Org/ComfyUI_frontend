@@ -6,7 +6,7 @@ import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 
-type LocatedWidget = Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
+export type LocatedWidget = Pick<SimplifiedWidget, 'name' | 'nodeLocatorId'>
 
 export function locateWidgetNode(
   widget: LocatedWidget,
