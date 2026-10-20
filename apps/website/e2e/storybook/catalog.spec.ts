@@ -11,13 +11,21 @@ declare global {
 }
 
 const fixtures = [
-  ['website-common-nodebadge--with-logo', 'WORKS'],
-  ['website-ui-badge--accent', 'Available now'],
-  ['website-ui-badge--callout', 'Featured'],
-  ['website-common-productherobadge--default', 'DESKTOP'],
-  ['website-blocks-cardarticle01--default', 'Connect coding agents to ComfyUI'],
-  ['website-guidelines-proposed-components--status', 'Proposals only.'],
-  ['website-guidelines-buttons-and-arrows--cta-buttons', 'GET AN API KEY']
+  ['website-common-nodebadge--with-logo', 'WORKS', true],
+  ['website-ui-badge--accent', 'Available now', false],
+  ['website-ui-badge--callout', 'Featured', false],
+  ['website-common-productherobadge--default', 'DESKTOP', false],
+  [
+    'website-blocks-cardarticle01--default',
+    'Connect coding agents to ComfyUI',
+    true
+  ],
+  ['website-guidelines-proposed-components--status', 'Proposals only.', false],
+  [
+    'website-guidelines-buttons-and-arrows--cta-buttons',
+    'GET AN API KEY',
+    false
+  ]
 ] as const
 
 test.describe('Marketing catalog', { tag: '@smoke' }, () => {
@@ -28,7 +36,7 @@ test.describe('Marketing catalog', { tag: '@smoke' }, () => {
     )
   })
 
-  for (const [id, text] of fixtures) {
+  for (const [id, text, expectsImages] of fixtures) {
     test(id, async ({ page }, testInfo) => {
       await page.goto(
         `/iframe.html?id=${id}&viewMode=story&globals=a11y.manual:true`
@@ -36,7 +44,7 @@ test.describe('Marketing catalog', { tag: '@smoke' }, () => {
       await expect(page.getByText(text, { exact: false }).first()).toBeVisible()
       await page.evaluate(async () => document.fonts.ready)
       const images = page.locator('#storybook-root img')
-      if (await images.count()) {
+      if (expectsImages) {
         await expect
           .poll(() =>
             images.evaluateAll(
@@ -51,11 +59,6 @@ test.describe('Marketing catalog', { tag: '@smoke' }, () => {
             )
           )
           .toBe(true)
-      } else {
-        testInfo.annotations.push({
-          type: 'media',
-          description: 'This fixture contains no image elements.'
-        })
       }
       await page.addScriptTag({ content: axe.source })
       await expect(async () => {

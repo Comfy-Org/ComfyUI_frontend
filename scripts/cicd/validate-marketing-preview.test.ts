@@ -88,6 +88,24 @@ function freshnessScript(): string {
 }
 
 describe('marketing push freshness', () => {
+  it('fails when the checkout cannot resolve HEAD', async () => {
+    const root = await preview()
+    await writeFile(join(root, 'output'), '')
+    expect(() =>
+      execFileSync('bash', ['-e', '-c', freshnessScript()], {
+        cwd: root,
+        env: {
+          ...process.env,
+          GITHUB_OUTPUT: join(root, 'output'),
+          GITHUB_STEP_SUMMARY: join(root, 'summary'),
+          SOURCE_SHA: '0'.repeat(40)
+        },
+        stdio: 'pipe'
+      })
+    ).toThrow()
+    expect(readFileSync(join(root, 'output'), 'utf8')).toBe('')
+  })
+
   it.for([true, false])(
     'handles current=%s without failing deployment verification',
     async (current) => {
@@ -116,10 +134,15 @@ describe('marketing push freshness', () => {
         env: {
           ...process.env,
           SOURCE_SHA: current ? head : '0'.repeat(40),
-          GITHUB_OUTPUT: output
+          GITHUB_OUTPUT: output,
+          GITHUB_STEP_SUMMARY: join(root, 'summary')
         }
       })
       expect(readFileSync(output, 'utf8')).toBe(current ? '' : 'skip=true\n')
+      if (!current)
+        expect(readFileSync(join(root, 'summary'), 'utf8')).toContain(
+          'previously published catalog remains live'
+        )
     }
   )
 })

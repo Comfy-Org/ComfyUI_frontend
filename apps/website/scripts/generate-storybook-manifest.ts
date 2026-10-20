@@ -10,7 +10,8 @@ import {
   componentImport,
   portablePath,
   storyId,
-  storyTags
+  storyTags,
+  showcaseComponentImports
 } from './storybook-metadata'
 
 type ComponentManifestEntry = {
@@ -33,7 +34,7 @@ type ComponentManifestEntry = {
     storybookPath: string
     docsPath: string
     states: string[]
-    hasInteractionTest: boolean
+    hasPlayFunction: boolean
     hasResponsiveStories: boolean
     compositionSafe: boolean
   }
@@ -158,6 +159,19 @@ function componentSource(storyFile: string, componentPath: string): string {
   return portablePath(relative(websiteRoot, absolutePath))
 }
 
+function manifestComponent(storyFile: string, contents: string) {
+  const component = componentImport(contents)
+  if (component) return component
+  const showcase =
+    portablePath(relative(websiteRoot, storyFile)).startsWith(
+      'src/storybook/'
+    ) || showcaseComponentImports(contents).length > 0
+  if (showcase) return undefined
+  throw new Error(
+    `Missing component or parameters.catalog.components in ${storyFile}`
+  )
+}
+
 async function manifestEntry(
   storyFile: string
 ): Promise<ComponentManifestEntry | undefined> {
@@ -165,7 +179,7 @@ async function manifestEntry(
   const title = [...contents.matchAll(/title:\s*'([^']+)'/g)]
     .map(([, value]) => value)
     .find((value) => value.startsWith('Website/'))
-  const importedComponent = componentImport(contents)
+  const importedComponent = manifestComponent(storyFile, contents)
   const exports = [...contents.matchAll(/^export const (\w+):/gm)].map(
     ([, exportName]) => exportName
   )
@@ -182,6 +196,7 @@ async function manifestEntry(
   const tags = storyTags(contents)
   const needsTests = tags.includes('needs-tests')
   const stable = tags.includes('stable')
+  const compositionSafe = catalogStatus(needsTests, stable) === 'stable'
   const source = componentSource(storyFile, componentPath)
 
   return {
@@ -192,7 +207,7 @@ async function manifestEntry(
     status: catalogStatus(needsTests, stable),
     category: title.split('/').slice(1, -1).join('/').toLowerCase(),
     capabilities: capabilities(component),
-    testEligible: !needsTests,
+    testEligible: compositionSafe,
     limitations: catalogLimitations(needsTests),
     provenance: {
       implementation: 'shipped-website',
@@ -204,11 +219,11 @@ async function manifestEntry(
       storybookPath: `/?path=/story/${storyId(title, exports[0])}`,
       docsPath: `/?path=/docs/${storyId(title, 'docs')}`,
       states: exports,
-      hasInteractionTest: /\bplay\s*:/.test(contents),
+      hasPlayFunction: /\bplay\s*:/.test(contents),
       hasResponsiveStories: exports.some((name) =>
         /Mobile|Desktop|Tablet/.test(name)
       ),
-      compositionSafe: catalogStatus(needsTests, stable) === 'stable'
+      compositionSafe
     },
     stories: exports.map((exportName) => ({
       exportName,
@@ -221,8 +236,24 @@ const storyFiles = await discoverCatalogStories(websiteRoot)
 const components = (
   await Promise.all(storyFiles.sort().map(manifestEntry))
 ).filter((entry) => entry !== undefined)
+const showcases = (
+  await Promise.all(
+    storyFiles.map(async (storyFile) => {
+      const contents = await readFile(storyFile, 'utf8')
+      if (componentImport(contents)) return []
+      return [
+        {
+          storyFile: portablePath(relative(websiteRoot, storyFile)),
+          sources: showcaseComponentImports(contents).map(({ componentPath }) =>
+            componentSource(storyFile, componentPath)
+          )
+        }
+      ]
+    })
+  )
+).flat()
 const manifest = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   generatedFrom: catalogStoryPatterns
     .map((pattern) => `apps/website/${pattern}`)
     .join(', '),
@@ -244,6 +275,7 @@ const manifest = {
     0
   ),
   components,
+  showcases,
   recipes: [
     {
       name: 'Product landing',
@@ -282,7 +314,10 @@ const manifest = {
     }
   ]
 }
-const documentedSources = new Set(components.map(({ source }) => source))
+const documentedSources = new Set([
+  ...components.map(({ source }) => source),
+  ...showcases.flatMap(({ sources }) => sources)
+])
 const vueComponents = (await findVueFiles(sourceRoot)).map((path) =>
   portablePath(relative(websiteRoot, path))
 )
@@ -299,7 +334,7 @@ const dispositionCounts = Object.fromEntries(
     ])
 )
 const coverage = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   componentCount: vueComponents.length,
   documentedComponentCount: documentedSources.size,
   missingStoryCount: vueComponents.length - documentedSources.size,

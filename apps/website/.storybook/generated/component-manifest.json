@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "generatedFrom": "apps/website/src/**/*.stories.ts",
   "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
   "usagePolicy": {
@@ -35,7 +35,7 @@
         "storybookPath": "/?path=/story/website-blocks-addtocalendarbutton--default",
         "docsPath": "/?path=/docs/website-blocks-addtocalendarbutton--docs",
         "states": ["Default"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -54,7 +54,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -75,7 +75,7 @@
           "TwoColumnsUnnumbered",
           "Mobile"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -122,7 +122,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -134,7 +134,7 @@
         "storybookPath": "/?path=/story/website-blocks-brandassetsgrid01--default",
         "docsPath": "/?path=/docs/website-blocks-brandassetsgrid01--docs",
         "states": ["Default", "TwoAssets", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -181,7 +181,7 @@
           "ConfiguratorTablet",
           "ConfiguratorMobile"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -224,7 +224,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["linked-content"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -236,7 +236,7 @@
         "storybookPath": "/?path=/story/website-blocks-cardarticle01--default",
         "docsPath": "/?path=/docs/website-blocks-cardarticle01--docs",
         "states": ["Default", "WithAuthor", "Minimal", "LongTitleClamped"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -273,7 +273,7 @@
         "pagination",
         "responsive-layout"
       ],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -291,7 +291,7 @@
           "MixedLayout",
           "Mobile"
         ],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -326,7 +326,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["linked-content", "responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -338,7 +338,7 @@
         "storybookPath": "/?path=/story/website-blocks-cardsplitcontent01--default",
         "docsPath": "/?path=/docs/website-blocks-cardsplitcontent01--docs",
         "states": ["Default", "WithoutTags", "SingleCta", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -369,7 +369,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["linked-content", "responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -381,7 +381,7 @@
         "storybookPath": "/?path=/story/website-blocks-cardsplitcontent02--default",
         "docsPath": "/?path=/docs/website-blocks-cardsplitcontent02--docs",
         "states": ["Default", "Reversed"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -404,7 +404,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["linked-content"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -416,7 +416,7 @@
         "storybookPath": "/?path=/story/website-blocks-cardworkflow01--default",
         "docsPath": "/?path=/docs/website-blocks-cardworkflow01--docs",
         "states": ["Default", "ImageMedia", "Compact", "TitleOnly"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -451,7 +451,7 @@
         "linked-content",
         "responsive-layout"
       ],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -463,7 +463,7 @@
         "storybookPath": "/?path=/story/website-blocks-cardworkflowgallery01--default",
         "docsPath": "/?path=/docs/website-blocks-cardworkflowgallery01--docs",
         "states": ["Default", "NoTitle", "LinkedCards"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -490,7 +490,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -502,7 +502,7 @@
         "storybookPath": "/?path=/story/website-blocks-checklistsplit01--default",
         "docsPath": "/?path=/docs/website-blocks-checklistsplit01--docs",
         "states": ["Default", "WithoutHeading", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -529,7 +529,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -541,7 +541,7 @@
         "storybookPath": "/?path=/story/website-blocks-comparetable01--default",
         "docsPath": "/?path=/docs/website-blocks-comparetable01--docs",
         "states": ["Default", "WithoutSubtitle", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -568,7 +568,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -586,7 +586,7 @@
           "Highlight",
           "Mobile"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -621,7 +621,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -633,7 +633,7 @@
         "storybookPath": "/?path=/story/website-blocks-ctacenter01--default",
         "docsPath": "/?path=/docs/website-blocks-ctacenter01--docs",
         "states": ["Default", "PrimaryOnly", "HeadingAndAction", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -680,7 +680,7 @@
         "storybookPath": "/?path=/story/website-blocks-faqsplit01--default",
         "docsPath": "/?path=/docs/website-blocks-faqsplit01--docs",
         "states": ["Default", "Mobile"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -703,7 +703,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -715,7 +715,7 @@
         "storybookPath": "/?path=/story/website-blocks-featuregrid02--default",
         "docsPath": "/?path=/docs/website-blocks-featuregrid02--docs",
         "states": ["Default", "WithoutActions", "TwoSteps", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -758,7 +758,7 @@
         "storybookPath": "/?path=/story/website-blocks-featurerows01--default",
         "docsPath": "/?path=/docs/website-blocks-featurerows01--docs",
         "states": ["Default", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -781,7 +781,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -793,7 +793,7 @@
         "storybookPath": "/?path=/story/website-blocks-featurerows02--default",
         "docsPath": "/?path=/docs/website-blocks-featurerows02--docs",
         "states": ["Default", "WithFootnote"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -816,7 +816,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["carousel-navigation", "responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -828,7 +828,7 @@
         "storybookPath": "/?path=/story/website-blocks-featuredcarousel01--default",
         "docsPath": "/?path=/docs/website-blocks-featuredcarousel01--docs",
         "states": ["Default", "SingleSlide", "TitleHidden", "Mobile"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -859,7 +859,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["carousel-navigation", "responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -871,7 +871,7 @@
         "storybookPath": "/?path=/story/website-blocks-featuredcarousel02--default",
         "docsPath": "/?path=/docs/website-blocks-featuredcarousel02--docs",
         "states": ["Default", "SingleSlide", "ImageSlides"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -916,7 +916,7 @@
           "NoBackdrop",
           "Mobile"
         ],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -951,7 +951,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -963,7 +963,7 @@
         "storybookPath": "/?path=/story/website-blocks-herocentered01--default",
         "docsPath": "/?path=/docs/website-blocks-herocentered01--docs",
         "states": ["Default", "WithoutEyebrow", "TitleOnly"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1010,7 +1010,7 @@
           "ManagedBuildsTablet",
           "ManagedBuildsMobile"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -1072,7 +1072,7 @@
           "EnterpriseTablet",
           "EnterpriseMobile"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -1111,7 +1111,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1123,7 +1123,7 @@
         "storybookPath": "/?path=/story/website-blocks-mappins01--default",
         "docsPath": "/?path=/docs/website-blocks-mappins01--docs",
         "states": ["Default", "SingleMarker", "Empty"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1171,7 +1171,7 @@
           "TwoUpHeaderlessDesktop",
           "TwoUpHeaderlessMobile"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -1218,7 +1218,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1230,7 +1230,7 @@
         "storybookPath": "/?path=/story/website-blocks-prizetiers01--default",
         "docsPath": "/?path=/docs/website-blocks-prizetiers01--docs",
         "states": ["Default", "WithCallToAction"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1265,7 +1265,7 @@
         "storybookPath": "/?path=/story/website-blocks-reasonssplit01--default",
         "docsPath": "/?path=/docs/website-blocks-reasonssplit01--docs",
         "states": ["Default", "WithoutHighlight"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -1300,7 +1300,7 @@
         "storybookPath": "/?path=/story/website-blocks-sectionintro01--desktop",
         "docsPath": "/?path=/docs/website-blocks-sectionintro01--docs",
         "states": ["Desktop", "HeadingOnly", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -1327,7 +1327,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1339,7 +1339,7 @@
         "storybookPath": "/?path=/story/website-blocks-stepsaccordion01--default",
         "docsPath": "/?path=/docs/website-blocks-stepsaccordion01--docs",
         "states": ["Default", "SecondStepOpen", "WithoutCta", "Empty"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1370,7 +1370,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["linked-content"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1382,7 +1382,7 @@
         "storybookPath": "/?path=/story/website-blocks-stepscards01--default",
         "docsPath": "/?path=/docs/website-blocks-stepscards01--docs",
         "states": ["Default"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1413,7 +1413,7 @@
         "storybookPath": "/?path=/story/website-blocks-stepsgrid01--even-step-count",
         "docsPath": "/?path=/docs/website-blocks-stepsgrid01--docs",
         "states": ["EvenStepCount", "OddStepCount", "Timeline"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -1445,7 +1445,7 @@
         "keyboard-dismissal",
         "responsive-layout"
       ],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1457,7 +1457,7 @@
         "storybookPath": "/?path=/story/website-blocks-teamgrid01--default",
         "docsPath": "/?path=/docs/website-blocks-teamgrid01--docs",
         "states": ["Default", "CardsOnly", "WithoutWorkflows", "Mobile"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -1488,7 +1488,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["dialog", "focus-management", "keyboard-dismissal"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1500,7 +1500,7 @@
         "storybookPath": "/?path=/story/website-blocks-teammemberdialog01--default",
         "docsPath": "/?path=/docs/website-blocks-teammemberdialog01--docs",
         "states": ["Default", "WithoutTags", "WithoutWorkflows"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1527,7 +1527,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["linked-content"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1539,7 +1539,7 @@
         "storybookPath": "/?path=/story/website-blocks-watchauthorcard--default",
         "docsPath": "/?path=/docs/website-blocks-watchauthorcard--docs",
         "states": ["Default", "WithoutAvatar", "NameOnly"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1566,7 +1566,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1578,7 +1578,7 @@
         "storybookPath": "/?path=/story/website-blocks-watchpagelayout--default",
         "docsPath": "/?path=/docs/website-blocks-watchpagelayout--docs",
         "states": ["Default", "TitleOnly"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1601,7 +1601,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["linked-content"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1613,7 +1613,7 @@
         "storybookPath": "/?path=/story/website-blocks-watchrecommendedcard--default",
         "docsPath": "/?path=/docs/website-blocks-watchrecommendedcard--docs",
         "states": ["Default", "WithoutTag"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1636,7 +1636,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": ["linked-content"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1648,7 +1648,7 @@
         "storybookPath": "/?path=/story/website-blocks-watchrelatedcard--default",
         "docsPath": "/?path=/docs/website-blocks-watchrelatedcard--docs",
         "states": ["Default", "WithTitle"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1671,7 +1671,7 @@
       "status": "documented",
       "category": "blocks",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1683,7 +1683,7 @@
         "storybookPath": "/?path=/story/website-blocks-watchrelatedstrip--default",
         "docsPath": "/?path=/docs/website-blocks-watchrelatedstrip--docs",
         "states": ["Default", "Empty"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1718,7 +1718,7 @@
         "storybookPath": "/?path=/story/website-common-audioplayer--default",
         "docsPath": "/?path=/docs/website-common-audioplayer--docs",
         "states": ["Default", "KeyboardSeek", "Mobile"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -1745,7 +1745,7 @@
       "status": "documented",
       "category": "common",
       "capabilities": ["activation", "keyboard-focus"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1765,7 +1765,7 @@
           "AsButton",
           "AllVariants"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1808,7 +1808,7 @@
       "status": "documented",
       "category": "common",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1820,7 +1820,7 @@
         "storybookPath": "/?path=/story/website-common-breadcrumbbar--default",
         "docsPath": "/?path=/docs/website-common-breadcrumbbar--docs",
         "states": ["Default", "WithoutUpdatedDate", "LongTrail", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -1851,7 +1851,7 @@
       "status": "documented",
       "category": "common",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1863,7 +1863,7 @@
         "storybookPath": "/?path=/story/website-common-calltoactionsection--default",
         "docsPath": "/?path=/docs/website-common-calltoactionsection--docs",
         "states": ["Default", "PrimaryOnly", "Chinese", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -1894,7 +1894,7 @@
       "status": "documented",
       "category": "common",
       "capabilities": ["linked-content"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1906,7 +1906,7 @@
         "storybookPath": "/?path=/story/website-common-cardarrow--default",
         "docsPath": "/?path=/docs/website-common-cardarrow--docs",
         "states": ["Default", "GroupHover", "Compact"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -1945,7 +1945,7 @@
         "storybookPath": "/?path=/story/website-common-categorynav--default",
         "docsPath": "/?path=/docs/website-common-categorynav--docs",
         "states": ["Default", "SelectedVideo"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -1972,7 +1972,7 @@
         "keyboard-activation",
         "responsive-layout"
       ],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -1984,7 +1984,7 @@
         "storybookPath": "/?path=/story/website-common-faqsection--default",
         "docsPath": "/?path=/docs/website-common-faqsection--docs",
         "states": ["Default", "ManyItems", "Mobile"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -2023,7 +2023,7 @@
         "storybookPath": "/?path=/story/website-common-footerlinkcolumn--default",
         "docsPath": "/?path=/docs/website-common-footerlinkcolumn--docs",
         "states": ["Default", "WithExternalLinks"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2046,7 +2046,7 @@
       "status": "documented",
       "category": "common",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -2058,7 +2058,7 @@
         "storybookPath": "/?path=/story/website-common-footersociallinks--default",
         "docsPath": "/?path=/docs/website-common-footersociallinks--docs",
         "states": ["Default"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -2089,7 +2089,7 @@
         "storybookPath": "/?path=/story/website-common-headermain--default",
         "docsPath": "/?path=/docs/website-common-headermain--docs",
         "states": ["Default", "WithoutGitHubStars", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -2128,7 +2128,7 @@
         "storybookPath": "/?path=/story/website-common-nodebadge--text-only",
         "docsPath": "/?path=/docs/website-common-nodebadge--docs",
         "states": ["TextOnly", "MultipleSegments", "WithLogo"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2167,7 +2167,7 @@
         "storybookPath": "/?path=/story/website-common-playpausebutton--play",
         "docsPath": "/?path=/docs/website-common-playpausebutton--docs",
         "states": ["Play", "Pause", "Small"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2194,7 +2194,7 @@
       "status": "documented",
       "category": "common",
       "capabilities": ["linked-content"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -2206,7 +2206,7 @@
         "storybookPath": "/?path=/story/website-common-productcard--default",
         "docsPath": "/?path=/docs/website-common-productcard--docs",
         "states": ["Default", "AllCards"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -2241,7 +2241,7 @@
         "storybookPath": "/?path=/story/website-common-productherobadge--default",
         "docsPath": "/?path=/docs/website-common-productherobadge--docs",
         "states": ["Default", "Cloud", "CustomProduct"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2268,7 +2268,7 @@
       "status": "documented",
       "category": "common",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -2286,7 +2286,7 @@
           "WithoutLabel",
           "Mobile"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -2321,7 +2321,7 @@
       "status": "documented",
       "category": "common",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -2333,7 +2333,7 @@
         "storybookPath": "/?path=/story/website-common-sectionlabel--default",
         "docsPath": "/?path=/docs/website-common-sectionlabel--docs",
         "states": ["Default", "LongLabel"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -2368,7 +2368,7 @@
         "storybookPath": "/?path=/story/website-common-sitefooter--default",
         "docsPath": "/?path=/docs/website-common-sitefooter--docs",
         "states": ["Default", "Mobile"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -2403,7 +2403,7 @@
         "storybookPath": "/?path=/story/website-common-sitevideo--with-controls",
         "docsPath": "/?path=/docs/website-common-sitevideo--docs",
         "states": ["WithControls", "DecorativeAutoplay", "Mp4Only"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2430,7 +2430,7 @@
       "status": "documented",
       "category": "common",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -2442,7 +2442,7 @@
         "storybookPath": "/?path=/story/website-common-socialproofbarsection--desktop",
         "docsPath": "/?path=/docs/website-common-socialproofbarsection--docs",
         "states": ["Desktop", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": false
       },
@@ -2485,7 +2485,7 @@
           "Contained",
           "ReducedMotionPreview"
         ],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2528,7 +2528,7 @@
       "status": "documented",
       "category": "product",
       "capabilities": ["responsive-layout"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -2540,7 +2540,7 @@
         "storybookPath": "/?path=/story/website-product-reasonsection--default",
         "docsPath": "/?path=/docs/website-product-reasonsection--docs",
         "states": ["Default", "FewReasons"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -2575,7 +2575,7 @@
         "storybookPath": "/?path=/story/website-ui-accordion--single",
         "docsPath": "/?path=/docs/website-ui-accordion--docs",
         "states": ["Single", "Multiple"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2610,7 +2610,7 @@
         "storybookPath": "/?path=/story/website-ui-badge--default",
         "docsPath": "/?path=/docs/website-ui-badge--docs",
         "states": ["Default", "Category", "Accent", "Callout"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2641,7 +2641,7 @@
       "status": "documented",
       "category": "ui",
       "capabilities": ["activation", "keyboard-focus"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -2663,7 +2663,7 @@
           "Disabled",
           "AllVariants"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -2714,7 +2714,7 @@
       "status": "documented",
       "category": "ui",
       "capabilities": ["activation", "keyboard-focus"],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -2737,7 +2737,7 @@
           "Disabled",
           "AllVariants"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -2804,7 +2804,7 @@
         "storybookPath": "/?path=/story/website-ui-button--playground",
         "docsPath": "/?path=/docs/website-ui-button--docs",
         "states": ["Playground", "ActionVariants", "InContext"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2843,7 +2843,7 @@
         "storybookPath": "/?path=/story/website-ui-card--default",
         "docsPath": "/?path=/docs/website-ui-card--docs",
         "states": ["Default", "Compact"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2878,7 +2878,7 @@
         "storybookPath": "/?path=/story/website-ui-copytextbutton--default",
         "docsPath": "/?path=/docs/website-ui-copytextbutton--docs",
         "states": ["Default"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2909,7 +2909,7 @@
         "storybookPath": "/?path=/story/website-ui-copyablefield--single-line",
         "docsPath": "/?path=/docs/website-ui-copyablefield--docs",
         "states": ["SingleLine", "Multiline"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2944,7 +2944,7 @@
         "storybookPath": "/?path=/story/website-ui-dialog--default",
         "docsPath": "/?path=/docs/website-ui-dialog--docs",
         "states": ["Default"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -2975,7 +2975,7 @@
         "storybookPath": "/?path=/story/website-ui-navigationmenu--default",
         "docsPath": "/?path=/docs/website-ui-navigationmenu--docs",
         "states": ["Default", "WithoutViewport"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -3010,7 +3010,7 @@
         "storybookPath": "/?path=/story/website-ui-slider--default",
         "docsPath": "/?path=/docs/website-ui-slider--docs",
         "states": ["Default", "WithTicks", "Range", "Disabled"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -3053,7 +3053,7 @@
         "storybookPath": "/?path=/story/website-ui-togglegroup--single",
         "docsPath": "/?path=/docs/website-ui-togglegroup--docs",
         "states": ["Single", "Separated", "Multiple"],
-        "hasInteractionTest": true,
+        "hasPlayFunction": true,
         "hasResponsiveStories": false,
         "compositionSafe": true
       },
@@ -3080,7 +3080,7 @@
       "status": "documented",
       "category": "workshop",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -3103,7 +3103,7 @@
           "EveryWait",
           "EveryRefusal"
         ],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -3158,7 +3158,7 @@
       "status": "documented",
       "category": "workshop/appeditor",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -3170,7 +3170,7 @@
         "storybookPath": "/?path=/story/website-workshop-appeditor-appeditorshell--editing",
         "docsPath": "/?path=/docs/website-workshop-appeditor-appeditorshell--docs",
         "states": ["Editing", "Empty", "Result"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -3197,7 +3197,7 @@
       "status": "documented",
       "category": "workshop/appeditor",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -3209,7 +3209,7 @@
         "storybookPath": "/?path=/story/website-workshop-appeditor-dock--editing",
         "docsPath": "/?path=/docs/website-workshop-appeditor-dock--docs",
         "states": ["Editing", "Result"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -3232,7 +3232,7 @@
       "status": "documented",
       "category": "workshop/appeditor",
       "capabilities": [],
-      "testEligible": true,
+      "testEligible": false,
       "limitations": [],
       "provenance": {
         "implementation": "shipped-website",
@@ -3244,7 +3244,7 @@
         "storybookPath": "/?path=/story/website-workshop-appeditor-result--default",
         "docsPath": "/?path=/docs/website-workshop-appeditor-result--docs",
         "states": ["Default", "Running"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": false,
         "compositionSafe": false
       },
@@ -3279,7 +3279,7 @@
         "storybookPath": "/?path=/story/website-common-announcementbanner--desktop",
         "docsPath": "/?path=/docs/website-common-announcementbanner--docs",
         "states": ["Desktop", "Tablet", "Mobile"],
-        "hasInteractionTest": false,
+        "hasPlayFunction": false,
         "hasResponsiveStories": true,
         "compositionSafe": true
       },
@@ -3297,6 +3297,47 @@
           "storyId": "website-common-announcementbanner--mobile"
         }
       ]
+    }
+  ],
+  "showcases": [
+    {
+      "storyFile": "src/components/workshop/app-editor/EditorFields.stories.ts",
+      "sources": [
+        "src/components/workshop/app-editor/EditorAlert.vue",
+        "src/components/workshop/app-editor/EditorChip.vue",
+        "src/components/workshop/app-editor/EditorCollapsible.vue",
+        "src/components/workshop/app-editor/EditorHint.vue",
+        "src/components/workshop/app-editor/EditorIconButton.vue",
+        "src/components/workshop/app-editor/EditorMenuButton.vue",
+        "src/components/workshop/app-editor/EditorNumberField.vue",
+        "src/components/workshop/app-editor/EditorOutput.vue",
+        "src/components/workshop/app-editor/EditorPanelRow.vue",
+        "src/components/workshop/app-editor/EditorSeedField.vue",
+        "src/components/workshop/app-editor/EditorSegmented.vue",
+        "src/components/workshop/app-editor/EditorSelect.vue",
+        "src/components/workshop/app-editor/EditorSourceTile.vue",
+        "src/components/workshop/app-editor/EditorSwitch.vue"
+      ]
+    },
+    {
+      "storyFile": "src/storybook/ButtonsAndArrows.stories.ts",
+      "sources": []
+    },
+    {
+      "storyFile": "src/storybook/EventsLanding.stories.ts",
+      "sources": []
+    },
+    {
+      "storyFile": "src/storybook/PageRecipes.stories.ts",
+      "sources": []
+    },
+    {
+      "storyFile": "src/storybook/ProposedComponents.stories.ts",
+      "sources": []
+    },
+    {
+      "storyFile": "src/storybook/WebsitePageShell.stories.ts",
+      "sources": []
     }
   ],
   "recipes": [

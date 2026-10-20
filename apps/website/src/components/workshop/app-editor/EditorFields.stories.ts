@@ -25,6 +25,26 @@ import EditorSwitch from './EditorSwitch.vue'
 const meta: Meta = {
   title: 'Website/Workshop/AppEditor/Fields',
   tags: ['autodocs'],
+  parameters: {
+    catalog: {
+      components: {
+        EditorAlert,
+        EditorChip,
+        EditorCollapsible,
+        EditorHint,
+        EditorIconButton,
+        EditorMenuButton,
+        EditorNumberField,
+        EditorOutput,
+        EditorPanelRow,
+        EditorSeedField,
+        EditorSegmented,
+        EditorSelect,
+        EditorSourceTile,
+        EditorSwitch
+      }
+    }
+  },
   decorators: [
     () => ({
       template: '<div class="bg-primary-comfy-ink p-8"><story /></div>'

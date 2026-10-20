@@ -1,13 +1,13 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "componentCount": 592,
-  "documentedComponentCount": 77,
-  "missingStoryCount": 515,
+  "documentedComponentCount": 91,
+  "missingStoryCount": 501,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 3,
-    "page-local": 328,
+    "page-local": 314,
     "reusable-candidate": 24,
     "template-local": 127
   },
@@ -1333,22 +1333,7 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/workshop/app-editor/EditorAlert.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/workshop/app-editor/EditorBusy.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorChip.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorCollapsible.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -1398,37 +1383,7 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/workshop/app-editor/EditorHint.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/workshop/app-editor/EditorHistory.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorIconButton.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorMenuButton.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorNumberField.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorOutput.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorPanelRow.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -1463,37 +1418,12 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/workshop/app-editor/EditorSeedField.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorSegmented.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorSelect.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/workshop/app-editor/EditorSlider.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/workshop/app-editor/EditorSourceTile.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/workshop/app-editor/EditorSplitLine.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorSwitch.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -2853,10 +2783,7 @@
     "src/components/workshop/WorkshopSearchPanel.vue",
     "src/components/workshop/WorkshopSections.vue",
     "src/components/workshop/WorkshopSortMenu.vue",
-    "src/components/workshop/app-editor/EditorAlert.vue",
     "src/components/workshop/app-editor/EditorBusy.vue",
-    "src/components/workshop/app-editor/EditorChip.vue",
-    "src/components/workshop/app-editor/EditorCollapsible.vue",
     "src/components/workshop/app-editor/EditorColorPicker.vue",
     "src/components/workshop/app-editor/EditorCompare.vue",
     "src/components/workshop/app-editor/EditorCompareToggle.vue",
@@ -2866,26 +2793,15 @@
     "src/components/workshop/app-editor/EditorEmpty.vue",
     "src/components/workshop/app-editor/EditorFloatingPanel.vue",
     "src/components/workshop/app-editor/EditorFrame.vue",
-    "src/components/workshop/app-editor/EditorHint.vue",
     "src/components/workshop/app-editor/EditorHistory.vue",
-    "src/components/workshop/app-editor/EditorIconButton.vue",
-    "src/components/workshop/app-editor/EditorMenuButton.vue",
-    "src/components/workshop/app-editor/EditorNumberField.vue",
-    "src/components/workshop/app-editor/EditorOutput.vue",
-    "src/components/workshop/app-editor/EditorPanelRow.vue",
     "src/components/workshop/app-editor/EditorPicker.vue",
     "src/components/workshop/app-editor/EditorPickerRow.vue",
     "src/components/workshop/app-editor/EditorPopover.vue",
     "src/components/workshop/app-editor/EditorResultDock.vue",
     "src/components/workshop/app-editor/EditorRun.vue",
     "src/components/workshop/app-editor/EditorRunCancel.vue",
-    "src/components/workshop/app-editor/EditorSeedField.vue",
-    "src/components/workshop/app-editor/EditorSegmented.vue",
-    "src/components/workshop/app-editor/EditorSelect.vue",
     "src/components/workshop/app-editor/EditorSlider.vue",
-    "src/components/workshop/app-editor/EditorSourceTile.vue",
     "src/components/workshop/app-editor/EditorSplitLine.vue",
-    "src/components/workshop/app-editor/EditorSwitch.vue",
     "src/components/workshop/app-editor/EditorTextArea.vue",
     "src/components/workshop/app-editor/EditorTile.vue",
     "src/components/workshop/app-editor/EditorTiles.vue",

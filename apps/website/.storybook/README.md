@@ -47,3 +47,8 @@ produce component-manifest entries. Import paths retain their `.vue` extension.
 Story `play` functions are documented examples, not automated interaction checks.
 Dedicated marketing Chromatic baselines are a non-blocking follow-up; website
 stories are no longer snapshotted by the root Chromatic catalogue.
+
+Manifest schema 3 records multi-component showcases separately, including their
+explicit `parameters.catalog.components`, so coverage does not report them as undocumented.
+`testEligible` identifies components covered by the certified-render suite;
+`hasPlayFunction` identifies documented interaction examples only.

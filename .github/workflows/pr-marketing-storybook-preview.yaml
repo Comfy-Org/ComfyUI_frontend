@@ -37,9 +37,11 @@ jobs:
         env:
           SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          if [[ "$(git rev-parse HEAD)" != "$SOURCE_SHA" ]]; then
+          CURRENT_SHA=$(git rev-parse HEAD)
+          if [[ "$CURRENT_SHA" != "$SOURCE_SHA" ]]; then
             echo '::notice::Skipping superseded marketing build; main advanced during verification.'
             echo 'skip=true' >> "$GITHUB_OUTPUT"
+            echo 'Marketing deployment skipped: main advanced during verification. The previously published catalog remains live.' >> "$GITHUB_STEP_SUMMARY"
           fi
       - uses: actions/download-artifact@v8
         if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'

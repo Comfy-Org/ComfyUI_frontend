@@ -4,7 +4,8 @@ import {
   componentImport,
   portablePath,
   storyId,
-  storyTags
+  storyTags,
+  showcaseComponentImports
 } from './storybook-metadata'
 
 describe('Storybook manifest metadata', () => {
@@ -20,6 +21,31 @@ describe('Storybook manifest metadata', () => {
       component: 'WatchPageLayout',
       componentPath: './WatchPageLayout.vue'
     })
+  })
+
+  it('ignores nested and unrelated component properties', () => {
+    expect(
+      componentImport(`
+      import Badge from './Badge.vue'
+      const usage = 'Usage'
+      const meta = { component: Badge, parameters: { docs: { description: { component: usage } } } } satisfies Meta
+      const unrelated = { component: usage }
+      export default meta
+    `)
+    ).toEqual({ component: 'Badge', componentPath: './Badge.vue' })
+  })
+
+  it('records explicitly declared showcase subcomponents', () => {
+    expect(
+      showcaseComponentImports(`
+      import EditorSwitch from './EditorSwitch.vue'
+      import EditorAlert from './EditorAlert.vue'
+      export default { parameters: { catalog: { components: { EditorSwitch, Alert: EditorAlert } } } }
+    `)
+    ).toEqual([
+      { component: 'EditorSwitch', componentPath: './EditorSwitch.vue' },
+      { component: 'EditorAlert', componentPath: './EditorAlert.vue' }
+    ])
   })
 
   it.for([

@@ -62,7 +62,7 @@
     "storybook": "pnpm storybook:manifest && storybook dev -p 6008",
     "build-storybook": "pnpm storybook:manifest && storybook build -o dist/storybook",
     "storybook:manifest": "tsx scripts/generate-storybook-manifest.ts && cd ../.. && pnpm exec oxfmt --write apps/website/.storybook/generated/*.json",
-    "typecheck:storybook": "astro sync && tsx ../../scripts/vue-tsc-native.ts --noEmit --composite false -p tsconfig.stories.json",
+    "typecheck:storybook": "astro sync && tsx ../../scripts/vue-tsc-native.ts --noEmit -p tsconfig.stories.json",
     "test:storybook": "pnpm build-storybook && pnpm test:storybook:built",
     "test:storybook:built": "playwright test --config .storybook/playwright.config.ts"
   },
