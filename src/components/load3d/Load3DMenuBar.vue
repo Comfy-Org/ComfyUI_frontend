@@ -95,6 +95,10 @@
 
     <div class="relative min-h-0 flex-1 overflow-hidden">
       <slot />
+      <ModelStatsOverlay
+        v-if="modelStats && hasGeometry(modelStats)"
+        :stats="modelStats"
+      />
       <div
         v-if="isRecording"
         class="pointer-events-none absolute inset-0 border-2 border-primary"
@@ -209,6 +213,7 @@ import {
   menuPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
+import ModelStatsOverlay from '@/components/load3d/menubar/ModelStatsOverlay.vue'
 import RecordMenuControl from '@/components/load3d/menubar/RecordMenuControl.vue'
 import SceneMenuGroup from '@/components/load3d/menubar/SceneMenuGroup.vue'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
@@ -221,7 +226,9 @@ import {
   selectedMenuButtonClass
 } from '@/components/ui/menu/menuStyles'
 import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
+import { hasGeometry } from '@/extensions/core/load3d/modelStats'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ModelStats } from '@/extensions/core/load3d/modelStats'
 import type {
   AnimationItem,
   CameraConfig,
@@ -247,6 +254,7 @@ const {
   node = null,
   materialModes = ['original', 'clay', 'normal', 'wireframe'],
   hasSkeleton = false,
+  modelStats = null,
   sourceFormat = null
 } = defineProps<{
   animations?: AnimationItem[]
@@ -263,6 +271,7 @@ const {
   node?: LGraphNode | null
   materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
+  modelStats?: ModelStats | null
   sourceFormat?: string | null
 }>()
 
