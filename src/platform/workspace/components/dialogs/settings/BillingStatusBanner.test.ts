@@ -133,7 +133,11 @@ const i18n = createI18n({
             personalBodyNoDate:
               "You've used all your credits. Add more credits.",
             pastDueBody:
-              "You've used all your credits. Update your payment method to add credits.",
+              'Your team has used all its credits. Update your payment method to add more.',
+            pastDueMemberBody:
+              'Your team has used all its credits. Ask your workspace owner to update the payment method.',
+            pastDuePersonalBody:
+              "You've used all your credits. Update your payment method to add more.",
             memberBody:
               'Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.',
             memberBodyNoDate:
@@ -169,6 +173,9 @@ const i18n = createI18n({
             salesBody: 'Contact sales to start a new plan.',
             salesMemberBody: 'Ask your workspace owner to contact sales.'
           },
+          paused: {
+            body: "This workspace's subscription is paused. Update payment to resume."
+          },
           planChange: {
             title: 'Your plan changes to {plan} on {date}.',
             body: 'Your current plan stays active until then.'
@@ -187,10 +194,9 @@ const i18n = createI18n({
           enterprise: { name: 'Enterprise' }
         },
         paymentRecovery: {
-          paymentFailedMemberTitle:
-            "This workspace's payment didn't go through",
-          paymentFailedMemberDescription:
-            "Ask your workspace owner to update the workspace's payment method."
+          title: 'Subscription paused',
+          memberDescription:
+            "Ask your workspace owner to restore the workspace's subscription."
         }
       }
     }
@@ -318,42 +324,44 @@ describe('BillingStatusBanner', () => {
 
   it.for([
     {
-      denial: 'payment_past_due',
-      canTopUp: false,
+      audience: 'team',
       canManageBilling: true,
-      title: 'Out of credits',
-      body: "You've used all your credits. Update your payment method to add credits.",
+      body: 'Your team has used all its credits. Update your payment method to add more.',
       buttons: ['Dismiss', 'Update payment']
     },
     {
-      denial: 'payment_past_due',
-      canTopUp: false,
+      audience: 'team',
       canManageBilling: false,
-      title: "This workspace's payment didn't go through",
-      body: "Ask your workspace owner to update the workspace's payment method.",
+      body: 'Your team has used all its credits. Ask your workspace owner to update the payment method.',
       buttons: ['Dismiss']
     },
     {
-      denial: undefined,
-      canTopUp: true,
+      audience: 'personal',
       canManageBilling: true,
-      title: 'Out of credits',
-      body: 'Your team has used all its credits. Add more credits.',
-      buttons: ['Dismiss', 'Add credits']
+      body: "You've used all your credits. Update your payment method to add more.",
+      buttons: ['Dismiss', 'Update payment']
     }
   ] as const)(
-    'shows "$title" for a top-up denied as $denial with billing management $canManageBilling',
-    ({ denial, canTopUp, canManageBilling, title, body, buttons }) => {
-      exhausted()
-      useBillingCapabilities().canTopUp = computed(() => canTopUp)
-      useBillingCapabilities().topUpDenial = computed(() => denial)
+    'shows the past-due out-of-credits copy for a $audience workspace with billing management $canManageBilling',
+    ({ audience, canManageBilling, body, buttons }) => {
+      if (audience === 'personal') personalProWorkspace()
+      state.subscription = {
+        hasFunds: false,
+        isCancelled: false,
+        endDate: null,
+        scheduledChange: null,
+        tier: audience === 'personal' ? 'PRO' : undefined
+      }
+      state.renewalDate = '2026-11-01T00:00:00Z'
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
       useBillingCapabilities().canManageBilling =
         canManageBillingFact(canManageBilling)
 
       renderBanner()
 
       const banner = screen.getByRole('status')
-      expect(banner).toHaveTextContent(title)
+      expect(banner).toHaveTextContent('Out of credits')
       expect(banner).toHaveTextContent(body)
       expect(
         screen
@@ -461,28 +469,100 @@ describe('BillingStatusBanner', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
-  it.for([
-    { name: 'paused in a team workspace', enter: pausedState },
-    { name: 'payment failed in a team workspace', enter: paymentFailedState },
+  const PAUSED_OWNER = {
+    body: "This workspace's subscription is paused. Update payment to resume.",
+    buttons: ['Update payment']
+  }
+  const PAUSED_MEMBER = {
+    body: "Ask your workspace owner to restore the workspace's subscription.",
+    buttons: []
+  }
+
+  it.for<{
+    name: string
+    personal?: boolean
+    exhausted?: boolean
+    planEnded?: boolean
+    canManageBilling: boolean
+    body: string
+    buttons: string[]
+  }>([
+    { name: 'a team owner', canManageBilling: true, ...PAUSED_OWNER },
+    { name: 'a team member', canManageBilling: false, ...PAUSED_MEMBER },
     {
-      name: 'paused in a personal workspace',
-      enter: () => {
-        personalProWorkspace()
-        pausedState()
-      }
+      name: 'a personal owner',
+      personal: true,
+      canManageBilling: true,
+      ...PAUSED_OWNER
     },
     {
-      name: 'payment failed in a personal workspace',
+      name: 'an exhausted team owner',
+      exhausted: true,
+      canManageBilling: true,
+      ...PAUSED_OWNER
+    },
+    {
+      name: 'a team owner whose plan ended',
+      planEnded: true,
+      canManageBilling: true,
+      ...PAUSED_OWNER
+    }
+  ])(
+    'shows the Subscription paused banner to $name',
+    ({
+      personal,
+      exhausted: isExhausted,
+      planEnded,
+      canManageBilling,
+      body,
+      buttons
+    }) => {
+      if (personal) personalProWorkspace()
+      if (isExhausted) exhausted()
+      if (planEnded) state.subscriptionStatus = 'ended'
+      pausedState()
+      useBillingCapabilities().canManageBilling =
+        canManageBillingFact(canManageBilling)
+
+      renderBanner()
+
+      const banner = screen.getByRole('status')
+      expect(banner).toHaveTextContent('Subscription paused')
+      expect(banner).toHaveTextContent(body)
+      expect(
+        screen
+          .queryAllByRole('button')
+          .map((button) => button.textContent.trim())
+      ).toEqual(buttons)
+    }
+  )
+
+  it.for([
+    { name: 'a team workspace', enter: paymentFailedState },
+    {
+      name: 'a personal workspace',
       enter: () => {
         personalProWorkspace()
         paymentFailedState()
       }
     }
-  ])('shows no Paused banner when $name', ({ enter }) => {
+  ])('shows no banner for payment failed in $name', ({ enter }) => {
     enter()
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it('opens the billing portal from the paused banner', async () => {
+    pausedState()
+    useBillingCapabilities().canManageBilling = canManageBillingFact(true)
+
+    renderBanner()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+
+    expect(state.manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('lets a promoted owner reactivate an ending plan', async () => {

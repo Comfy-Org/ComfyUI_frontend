@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
@@ -11,7 +11,7 @@ import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type { BillingStatus, Plan } from '@/platform/workspace/api/workspaceApi'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
@@ -22,6 +22,12 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 
 import BillingTab from './BillingTab.vue'
 
+const distribution = vi.hoisted(() => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -64,6 +70,7 @@ interface Scenario {
   autoTopUpFlag?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
+  billingStatus?: BillingStatus
 }
 
 function arrange(scenario: Scenario = {}) {
@@ -71,6 +78,7 @@ function arrange(scenario: Scenario = {}) {
   const refresh = vi.fn(async () => {})
   const fetchStatus = vi.fn(async () => {})
   const resubscribe = vi.fn(scenario.resubscribe ?? (async () => {}))
+  const manageSubscription = vi.fn(async () => ({ ok: true as const }))
 
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
@@ -87,7 +95,11 @@ function arrange(scenario: Scenario = {}) {
           ? 'active'
           : scenario.subscriptionStatus
       ),
-      billingStatus: computed(() => 'paid'),
+      billingStatus: computed(() => scenario.billingStatus ?? 'paid'),
+      canAccessSubscriptionFeatures: computed(
+        () => (scenario.billingStatus ?? 'paid') === 'paid'
+      ),
+      manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
         fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
@@ -158,10 +170,76 @@ function arrange(scenario: Scenario = {}) {
     }
   })
 
-  return { initialize, refresh, fetchStatus, resubscribe }
+  return { initialize, refresh, fetchStatus, resubscribe, manageSubscription }
 }
 
 describe('BillingTab', () => {
+  describe('Subscription paused banner', () => {
+    it.for([
+      {
+        name: 'an owner',
+        canManageBilling: true,
+        body: "This workspace's subscription is paused. Update payment to resume.",
+        buttons: ['Update payment']
+      },
+      {
+        name: 'a member',
+        canManageBilling: false,
+        body: "Ask your workspace owner to restore the workspace's subscription.",
+        buttons: []
+      }
+    ])(
+      'shows $name the paused banner at the top of the tab',
+      ({ canManageBilling, body, buttons }) => {
+        arrange({ billingStatus: 'paused', canManageBilling })
+
+        const banner = screen.getByTestId('billing-paused-banner')
+        expect(banner).toHaveTextContent('Subscription paused')
+        expect(banner).toHaveTextContent(body)
+        expect(
+          within(banner)
+            .queryAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(buttons)
+      }
+    )
+
+    it('opens the billing portal from Update payment', async () => {
+      const { manageSubscription } = arrange({ billingStatus: 'paused' })
+
+      await userEvent.click(
+        within(screen.getByTestId('billing-paused-banner')).getByRole(
+          'button',
+          { name: 'Update payment' }
+        )
+      )
+
+      expect(manageSubscription).toHaveBeenCalledOnce()
+    })
+
+    it.for<{ name: string; billingStatus: BillingStatus; isCloud: boolean }>([
+      { name: 'a paid Cloud workspace', billingStatus: 'paid', isCloud: true },
+      {
+        name: 'a payment-failed Cloud workspace',
+        billingStatus: 'payment_failed',
+        isCloud: true
+      },
+      {
+        name: 'a paused local install',
+        billingStatus: 'paused',
+        isCloud: false
+      }
+    ])('shows no paused banner for $name', ({ billingStatus, isCloud }) => {
+      distribution.isCloud = isCloud
+      arrange({ billingStatus })
+
+      expect(
+        screen.queryByTestId('billing-paused-banner')
+      ).not.toBeInTheDocument()
+      distribution.isCloud = true
+    })
+  })
+
   it('shows a skeleton and no plan row while billing loads', () => {
     arrange({ isInitialized: false })
 

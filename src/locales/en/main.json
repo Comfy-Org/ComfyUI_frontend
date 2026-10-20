@@ -3690,7 +3690,9 @@
         "bodyNoDate": "Your team has used all its credits. Add more credits.",
         "personalBody": "You've used all your credits. Add more credits or wait until credits refill on {date}.",
         "personalBodyNoDate": "You've used all your credits. Add more credits.",
-        "pastDueBody": "You've used all your credits. Update your payment method to add credits.",
+        "pastDueBody": "Your team has used all its credits. Update your payment method to add more.",
+        "pastDueMemberBody": "Your team has used all its credits. Ask your workspace owner to update the payment method.",
+        "pastDuePersonalBody": "You've used all your credits. Update your payment method to add more.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
@@ -3706,6 +3708,9 @@
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume plan",
         "contactSales": "Contact sales"
+      },
+      "paused": {
+        "body": "This workspace's subscription is paused. Update payment to resume."
       },
       "planEnded": {
         "teamTitle": "Your Team plan ended on {date}",

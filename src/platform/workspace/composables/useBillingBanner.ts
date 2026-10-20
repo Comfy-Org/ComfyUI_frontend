@@ -6,11 +6,15 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isWithinEnterpriseEndingNotice } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionInfo } from '@/composables/billing/types'
-import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingStatus,
+  SubscriptionTier
+} from '@/platform/workspace/api/workspaceApi'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 export type BillingBannerKind =
+  | 'paused'
   | 'planEnded'
   | 'outOfCredits'
   | 'ending'
@@ -18,12 +22,37 @@ export type BillingBannerKind =
 
 export type BillingBannerAudience = 'team' | 'personal'
 
+export interface PausedBannerCopy {
+  muted: boolean
+  titleKey: string
+  bodyKey: string
+  action: 'updatePayment' | null
+}
+
+/** The paused banner every billing surface renders, chosen by `can_manage_billing` as received. */
+export function pausedBannerCopy(canManageBilling: boolean): PausedBannerCopy {
+  return canManageBilling
+    ? {
+        muted: false,
+        titleKey: 'subscription.paymentRecovery.title',
+        bodyKey: 'workspacePanel.billingStatus.paused.body',
+        action: 'updatePayment'
+      }
+    : {
+        muted: true,
+        titleKey: 'subscription.paymentRecovery.title',
+        bodyKey: 'subscription.paymentRecovery.memberDescription',
+        action: null
+      }
+}
+
 export interface BillingBannerInputs {
   billingControlEnabled: boolean
   isTeamPlan: boolean
   isEnterprise: boolean
   isKnownPersonalTier: boolean
   isLoaded: boolean
+  billingStatus: BillingStatus | null
   canAccessSubscriptionFeatures: boolean
   hasFunds: boolean | null
   isCancelled: boolean
@@ -120,6 +149,7 @@ export function deriveBillingBanner(
   inputs: BillingBannerInputs,
   now: number = Date.now()
 ): BillingBannerKind | null {
+  if (inputs.billingStatus === 'paused') return 'paused'
   if (!inputs.isLoaded) return null
   const audience = billingBannerAudience(inputs)
   if (hasPlanEnded(inputs, audience)) {
@@ -161,8 +191,12 @@ function readSubscriptionInputs(
 }
 
 function useBillingBannerInternal() {
-  const { canAccessSubscriptionFeatures, subscription, isTeamPlan } =
-    useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    subscription,
+    isTeamPlan,
+    billingStatus
+  } = useBillingContext()
   const { permissions } = useWorkspaceUI()
   const { flags } = useFeatureFlags()
 
@@ -176,6 +210,7 @@ function useBillingBannerInternal() {
   const bannerInputs = computed<BillingBannerInputs>(() => ({
     billingControlEnabled: flags.billingControlEnabled,
     isTeamPlan: isTeamPlan.value,
+    billingStatus: billingStatus.value,
     canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
     canManage: permissions.value.canManageSubscription,
     isPlanEnded: isPlanEnded.value,

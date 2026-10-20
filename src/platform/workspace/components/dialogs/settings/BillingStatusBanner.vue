@@ -90,7 +90,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
+import {
+  pausedBannerCopy,
+  useBillingBanner
+} from '@/platform/workspace/composables/useBillingBanner'
 import type {
   BillingBannerAudience,
   BillingBannerKind
@@ -254,24 +257,32 @@ const planEndedView = (): BannerView => {
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
   cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
 
-const pastDueOwnerView = (): BannerView => ({
+const pausedView = (): BannerView => {
+  const paused = pausedBannerCopy(canManageBilling.value)
+  return {
+    muted: paused.muted,
+    title: t(paused.titleKey),
+    body: t(paused.bodyKey),
+    action: paused.action,
+    dismissible: false
+  }
+}
+
+function pastDueBodyKey(): string {
+  if (audience.value === 'personal')
+    return `${bs}.outOfCredits.pastDuePersonalBody`
+  return canManageBilling.value
+    ? `${bs}.outOfCredits.pastDueBody`
+    : `${bs}.outOfCredits.pastDueMemberBody`
+}
+
+const pastDueView = (): BannerView => ({
   muted: false,
   title: t(`${bs}.outOfCredits.title`),
-  body: t(`${bs}.outOfCredits.pastDueBody`),
-  action: 'updatePayment',
+  body: t(pastDueBodyKey()),
+  action: canManageBilling.value ? 'updatePayment' : null,
   dismissible: true
 })
-
-const paymentFailedMemberView = (): BannerView => ({
-  muted: false,
-  title: t('subscription.paymentRecovery.paymentFailedMemberTitle'),
-  body: t('subscription.paymentRecovery.paymentFailedMemberDescription'),
-  action: null,
-  dismissible: true
-})
-
-const pastDueView = (): BannerView =>
-  canManageBilling.value ? pastDueOwnerView() : paymentFailedMemberView()
 
 const outOfCreditsView = (): BannerView | null => {
   if (isTopUpDeniedPastDue(topUpDenial.value)) return pastDueView()
@@ -344,6 +355,7 @@ const planChangeView = (): BannerView | null =>
     : null
 
 const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
+  paused: pausedView,
   planEnded: planEndedView,
   outOfCredits: outOfCreditsView,
   ending: endingView,
