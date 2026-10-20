@@ -14,13 +14,7 @@ export interface CoreWidgetSerialization {
   widgets_values_named: Record<string, TWidgetValue>
 }
 
-interface WidgetSerializationFormReport {
-  nodeId: string
-  nodeType: string
-}
-
 export interface WidgetValuesFormPolicy {
-  reportMissingDeclaration(report: WidgetSerializationFormReport): void
   widgetLayoutDependsOnValues(node: LGraphNode): boolean
 }
 
@@ -45,17 +39,6 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
     return false
   const prototype = Object.getPrototypeOf(value)
   return prototype === Object.prototype || prototype === null
-}
-
-const reportedMissingWidgetForms = new WeakSet<object>()
-
-function reportMissingWidgetForm(node: LGraphNode): void {
-  if (reportedMissingWidgetForms.has(node)) return
-  reportedMissingWidgetForms.add(node)
-  policy?.reportMissingDeclaration({
-    nodeId: String(node.id),
-    nodeType: node.type
-  })
 }
 
 function assertWidgetValuesForm(
@@ -152,7 +135,4 @@ export function finalizeWidgetValuesForm(
 
   if (!validateWidgetValuesForm(node, serialised, widgetOrderBeforeHook))
     delete serialised.widgets_values_form
-
-  if (serialised.widgets_values_form === undefined && isPlainRecord(values))
-    reportMissingWidgetForm(node)
 }

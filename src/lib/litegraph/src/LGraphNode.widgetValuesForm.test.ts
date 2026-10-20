@@ -27,7 +27,6 @@ describe('widget values form serialization', () => {
 
   function installPolicy(layoutDependsOnValues = false) {
     const policy = {
-      reportMissingDeclaration: vi.fn(),
       widgetLayoutDependsOnValues: vi.fn(() => layoutDependsOnValues)
     }
     setWidgetValuesFormPolicy(policy)
@@ -152,24 +151,17 @@ describe('widget values form serialization', () => {
     expect(Object.hasOwn(restored, 'widgets_values_form')).toBe(false)
   })
 
-  it('reports object-shaped values without a declared form once per node', () => {
-    const { reportMissingDeclaration } = installPolicy()
-    const [node, other] = [0, 1].map(() => {
-      const created = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
-      created.onSerialize = (data) => {
-        Reflect.set(data, 'widgets_values', { prompt: 'hello' })
-      }
-      return created
+  it('leaves an undeclared object serializer opaque', () => {
+    installPolicy()
+    const node = nodeWithWidgets([{ name: 'prompt', value: 'hello' }])
+    node.onSerialize = (data) => {
+      Reflect.set(data, 'widgets_values', { prompt: 'hello' })
+    }
+
+    expect(node.serialize()).toMatchObject({
+      widgets_values: { prompt: 'hello' }
     })
-
     expect(node.serialize()).not.toHaveProperty('widgets_values_form')
-    node.serialize()
-    other.serialize()
-
-    expect(reportMissingDeclaration.mock.calls).toEqual([
-      [{ nodeId: String(node.id), nodeType: node.type }],
-      [{ nodeId: String(other.id), nodeType: other.type }]
-    ])
   })
 
   it.for([
