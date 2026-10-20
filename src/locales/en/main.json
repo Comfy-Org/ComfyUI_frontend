@@ -551,6 +551,7 @@
     "totalNodes": "Total Nodes",
     "discoverCommunityContent": "Discover community-made Node Packs, Extensions, and more...",
     "errorConnecting": "Error connecting to the Comfy Node Registry.",
+    "loadMoreFailed": "Couldn't load more results.",
     "noResultsFound": "No results found matching your search.",
     "tryDifferentSearch": "Please try a different search query.",
     "emptyState": {

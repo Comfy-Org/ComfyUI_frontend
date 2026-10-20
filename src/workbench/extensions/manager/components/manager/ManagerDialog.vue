@@ -120,25 +120,41 @@
         :button-label="retryLabel"
         @action="retrySearch"
       />
-      <div v-else class="size-full" @click="handleGridContainerClick">
-        <VirtualGrid
-          id="results-grid"
-          :items="resultsWithKeys"
-          :buffer-rows="4"
-          :grid-style="GRID_STYLE"
-          :on-load-more="loadMorePacks"
-          :can-load-more="canLoadMorePacks"
+      <div v-else class="flex size-full flex-col">
+        <div class="min-h-0 flex-1" @click="handleGridContainerClick">
+          <VirtualGrid
+            id="results-grid"
+            :items="resultsWithKeys"
+            :buffer-rows="4"
+            :grid-style="GRID_STYLE"
+            :on-load-more="loadMorePacks"
+            :can-load-more="canLoadMorePacks"
+          >
+            <template #item="{ item }">
+              <PackCard
+                :node-pack="item"
+                :is-selected="
+                  selectedNodePacks.some((pack) => pack.id === item.id)
+                "
+                @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
+              />
+            </template>
+          </VirtualGrid>
+        </div>
+        <div
+          v-if="isNextPageFailed"
+          role="status"
+          class="flex items-center justify-center gap-3 p-4 text-sm text-muted-foreground"
         >
-          <template #item="{ item }">
-            <PackCard
-              :node-pack="item"
-              :is-selected="
-                selectedNodePacks.some((pack) => pack.id === item.id)
-              "
-              @click.stop="(event: MouseEvent) => selectNodePack(item, event)"
-            />
-          </template>
-        </VirtualGrid>
+          {{ $t('manager.loadMoreFailed') }}
+          <Button
+            variant="secondary"
+            :disabled="isSearchLoading"
+            @click="retryNextPage"
+          >
+            {{ $t('g.retry') }}
+          </Button>
+        </div>
       </div>
     </template>
 
@@ -414,6 +430,13 @@ const isSearchFailed = computed(
     isFirstPageForInput.value &&
     packs.firstPage.value.status === 'failed'
 )
+const isNextPageFailed = computed(
+  () =>
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    packs.isNextPageFailed.value
+)
+const retryNextPage = () => void packs.retryNextPage()
 const isFirstPagePending = computed(
   () =>
     isSearchBacked.value &&
