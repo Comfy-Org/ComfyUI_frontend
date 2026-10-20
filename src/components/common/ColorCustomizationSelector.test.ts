@@ -77,15 +77,15 @@ describe('ColorCustomizationSelector', () => {
     await nextTick()
 
     expect(
-      screen.queryByRole('button', { name: 'Color' })
+      screen.queryByRole('button', { name: 'Color #0d6efd' })
     ).not.toBeInTheDocument()
     const toggleButtons = getToggleButtons()
     await user.click(toggleButtons[toggleButtons.length - 1])
     await nextTick()
 
-    expect(screen.getByRole('button', { name: 'Color' })).toHaveTextContent(
-      '#0d6efd'
-    )
+    expect(
+      screen.getByRole('button', { name: 'Color #0d6efd' })
+    ).toHaveTextContent('#0d6efd')
   })
 
   it('keeps the custom color picker when custom is selected again', async () => {
@@ -96,9 +96,9 @@ describe('ColorCustomizationSelector', () => {
     await user.click(customButton)
 
     expect(customButton).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Color' })).toHaveTextContent(
-      '#0d6efd'
-    )
+    expect(
+      screen.getByRole('button', { name: 'Color #0d6efd' })
+    ).toHaveTextContent('#0d6efd')
   })
 
   it('emits update when predefined color is selected', async () => {
