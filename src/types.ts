@@ -682,7 +682,9 @@ export interface WorkflowNode {
    * `widgets_values` is decomposed by this declaration instead of by the
    * pinned catalog's class-level `widget_order`, which is what makes an
    * uncatalogued class and a duplicate widget name addressable and what
-   * preserves an object-shaped custom serializer's non-widget keys.
+   * preserves an object-shaped custom serializer's non-widget keys. For an
+   * array form, Amendment A25 overlays pinned dynamic-combo children onto
+   * that producer-local order after a winning selector write.
    *
    * Typed as `unknown` deliberately: it arrives as untrusted input and is
    * validated by `parseWidgetValuesForm`, which refuses an unrecognised key

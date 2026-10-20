@@ -57,11 +57,13 @@
  * merge corruption cannot arise and the residue cannot drift from the values
  * (it never holds one).
  *
- * It does not relax KA-12. A self-described node does not consult the catalog
- * because it does not need to: the name↔position mapping arrived WITH the
- * node from the only party that knows it. KA-12 exists to stop this package
- * guessing a mapping it was never given, and a declaration is not a guess. An
- * undeclared node is unaffected — same catalog, same rejections.
+ * It does not relax KA-12. The declaration supplies the producer-owned
+ * name↔position mapping, so an object/custom-serializer form is closed and
+ * needs no catalog. Amendment A25 lets an ARRAY form additionally compose
+ * with catalog-owned dynamic-combo children; that overlay uses only the
+ * pinned catalog and persists the resulting realized order back into this
+ * same form. An undeclared node is unaffected — same catalog, same
+ * rejections.
  */
 
 import type * as Y from "yjs";
