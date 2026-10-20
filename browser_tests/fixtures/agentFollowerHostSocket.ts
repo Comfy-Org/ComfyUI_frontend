@@ -265,15 +265,6 @@ export class AgentFollowerHostSocket {
     return batch
   }
 
-  /**
-   * Make the host REFUSE subscribes, as it does when `docService` is nil,
-   * when it is overloaded, or at the per-session document cap. No catch-up
-   * follows a refusal, so the follower gets no canvas frame at all.
-   *
-   * `times` bounds the refusal: a finite count models a transient overload
-   * that the follower's own subscribe-retry ladder is meant to ride out, and
-   * the default (unbounded) models a host that never recovers.
-   */
   refuseSubscribes(
     reason = 'overloaded',
     times = Number.POSITIVE_INFINITY
@@ -290,7 +281,11 @@ export class AgentFollowerHostSocket {
     if (this.refuseReason !== null && this.refusalsLeft > 0) {
       this.refusalsLeft -= 1
       this.refusedSubscribes += 1
-      this.send(this.host.subscribeRefused(this.refuseReason))
+      const refusal = this.host.subscribeRefused(this.refuseReason)
+      this.send({
+        ...refusal,
+        data: { ...refusal.data, code: this.refuseReason }
+      })
       this.resolveSubscribed?.()
       return
     }

@@ -1,6 +1,7 @@
 import { upperFirst } from 'es-toolkit'
 
-import type { PartState } from './agentMessageParts'
+import type { PartState, ToolPart } from './agentMessageParts'
+import { isUnconfirmedCanvasWrite } from './agentMessageParts'
 
 interface KnownTool {
   labelKey: string
@@ -56,9 +57,10 @@ export function toolLabel(
 export function toolGlyph(
   name: string,
   state: PartState,
-  ok?: boolean
+  outcome: Pick<ToolPart, 'ok' | 'canvasConfirmed'> = {}
 ): string {
   if (state === 'streaming') return 'animate-spin icon-[lucide--loader-circle]'
-  if (ok === false) return 'icon-[lucide--circle-x]'
+  if (outcome.ok === false) return 'icon-[lucide--circle-x]'
+  if (isUnconfirmedCanvasWrite(outcome)) return 'icon-[lucide--triangle-alert]'
   return knownTool(name)?.icon ?? 'icon-[lucide--wrench]'
 }

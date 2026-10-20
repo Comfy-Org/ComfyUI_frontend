@@ -6217,9 +6217,8 @@ describe('AgentPanelRoot lifecycle', () => {
     // PM-1575: the gate is reset to the always-safe default even though a
     // step three places ahead of it threw.
     expect(setCanvasSyncGate).toHaveBeenCalledOnce()
-    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
-    expect(gate?.()).toBe(false)
-    expect(outcomeCount?.()).toBe(0)
+    const [gate] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe('none')
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({ message: 'detach failed' }),
       expect.objectContaining({
@@ -6258,9 +6257,8 @@ describe('AgentPanelRoot lifecycle', () => {
     panel.unmount()
 
     expect(setCanvasSyncGate).toHaveBeenCalledOnce()
-    const [gate, outcomeCount] = setCanvasSyncGate.mock.lastCall ?? []
-    expect(gate?.()).toBe(false)
-    expect(outcomeCount?.()).toBe(0)
+    const [gate] = setCanvasSyncGate.mock.lastCall ?? []
+    expect(gate?.()).toBe('none')
     expect(errorHandler).not.toHaveBeenCalled()
   })
 
@@ -9094,6 +9092,81 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       await screen.findByText(i18n.global.t('agent.working'))
     ).toBeInTheDocument()
+  })
+
+  it('marks a mismatched or switched-away canvas unavailable', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    const setCanvasSyncGate = vi.spyOn(
+      useAgentConversationStore(),
+      'setCanvasSyncGate'
+    )
+
+    await renderAndSend('add a node')
+
+    const [gate] = setCanvasSyncGate.mock.calls.at(-1) ?? []
+    expect(gate?.('wf-other')).toBe('unavailable')
+
+    workflowStore.activeWorkflow = addTab('workflows/other.json')
+    await nextTick()
+
+    expect(gate?.('wf-42')).toBe('unavailable')
+  })
+
+  it('clears an empty-canvas correction when the thread changes', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('inspect this canvas')
+    dispatchApiEvent('agent_tool_call', {
+      tool_call_id: 'call-print-workflow',
+      tool_name: 'print_workflow',
+      status: 'success',
+      duration_ms: 90,
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+
+    expect(
+      await screen.findByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+    ).toBeVisible()
+
+    useAgentConversationStore().setThreadId('th-next')
+    await nextTick()
+
+    expect(
+      screen.queryByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not contradict an empty canvas after a turn that cleared it', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('clear the canvas')
+    dispatchApiEvent('agent_tool_call', {
+      tool_call_id: 'call-clear-canvas',
+      tool_name: 'clear_canvas',
+      status: 'success',
+      duration_ms: 90,
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+
+    expect(
+      await screen.findByRole('button', { name: i18n.global.t('agent.worked') })
+    ).toBeVisible()
+    expect(
+      screen.queryByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+    ).not.toBeInTheDocument()
   })
 
   it('shows a sticky error toast when the doc-host permanently refuses the subscribe', async () => {

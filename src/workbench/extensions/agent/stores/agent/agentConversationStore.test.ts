@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, watch } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -11,7 +11,10 @@ import {
   zAgentMessages,
   zAgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import type { AgentChatEvent } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
+import type {
+  AgentChatEvent,
+  CanvasSyncEvidence
+} from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type { AssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { askIdOf } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
@@ -30,17 +33,27 @@ const delta = (id: string, text: string): AgentChatEvent =>
     type: 'agent_message_delta',
     data: { delta: text, message_id: id, thread_id: 'th' }
   })
-const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
+const toolCall = (
+  id: string,
+  name: string,
+  status: string,
+  correlation?: { workflow_id: string; op_ids: string[] }
+): AgentChatEvent =>
   chat({
     type: 'agent_tool_call',
     data: {
       tool_call_id: `call-${name}`,
       tool_name: name,
       status,
+      ...correlation,
       message_id: id,
       thread_id: 'th'
     }
   })
+const liveCanvasEvidence = (
+  workflowId: string,
+  opIds: readonly string[] = []
+): CanvasSyncEvidence => ({ workflowId, opIds, isLive: true })
 const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
@@ -330,7 +343,9 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       name: 'add_node',
       ok: true
@@ -346,25 +361,37 @@ describe('useAgentConversationStore', () => {
   // seconds later than the canvas actually caught up.
   it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(
+      toolCall('t1', 'add_node', 'success', {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    store.ingest(activeTab(laterWorkflowId, 't1'))
     store.ingest(done('t1'))
 
     // The turn is settled (message.streaming is false), but the tool part
     // itself is held at 'streaming' -- the spinner -- pending canvas catch-up.
     expect(store.messages[0].streaming).toBe(false)
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'streaming'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'streaming' })
+      ])
+    )
 
-    store.notifyCanvasCaughtUp()
+    store.notifyCanvasCaughtUp(
+      liveCanvasEvidence(workflowId.toUpperCase(), ['op-add'])
+    )
 
-    expect(store.messages[0].parts[0]).toMatchObject({
-      type: 'tool',
-      state: 'done'
-    })
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'tool', state: 'done' })
+      ])
+    )
   })
 
   // PM-1575 regression (finding #1/#9, high): the normal ordering on a
@@ -377,7 +404,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     let outcomeCount = 0
     store.setCanvasSyncGate(
-      () => true,
+      () => 'awaiting',
       () => outcomeCount
     )
     store.startTurn(T1)
@@ -386,11 +413,43 @@ describe('useAgentConversationStore', () => {
     outcomeCount += 1
     store.ingest(toolCall('t1', 'add_node', 'success'))
 
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       state: 'done'
     })
   })
+
+  it.for([
+    {
+      mismatch: 'workflow',
+      evidence: liveCanvasEvidence('different-workflow', ['op-add'])
+    },
+    {
+      mismatch: 'operation',
+      evidence: liveCanvasEvidence('workflow', ['different-op'])
+    }
+  ])(
+    'keeps a held tool call waiting when the $mismatch does not match',
+    ({ evidence }) => {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.startTurn(T1)
+      store.ingest(
+        toolCall('t1', 'add_node', 'success', {
+          workflow_id: 'workflow',
+          op_ids: ['op-add']
+        })
+      )
+
+      store.notifyCanvasCaughtUp(evidence)
+
+      expect(
+        store.messages[0].parts.find((part) => part.type === 'tool')
+      ).toMatchObject({ state: 'streaming' })
+    }
+  )
 
   // PM-1575 regression (finding #3, medium): settleActiveTurn used to keep
   // only a single "settled but still holding" transport reachable. A second
@@ -399,23 +458,30 @@ describe('useAgentConversationStore', () => {
   // STALE_AFTER_MS fallback.
   it('keeps an earlier settled turn reachable after a second turn also settles with a held part', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'awaiting')
 
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
 
     store.startTurn(T2)
+    store.ingest(activeTab(workflowId, 't2'))
     store.ingest(toolCall('t2', 'add_node', 'success'))
     store.ingest(done('t2'))
 
     store.notifyCanvasCaughtUp()
 
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       state: 'done'
     })
-    expect(store.messages[1].parts[0]).toMatchObject({
+    expect(
+      store.messages[1].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       type: 'tool',
       state: 'done'
     })
@@ -428,14 +494,24 @@ describe('useAgentConversationStore', () => {
   // a turn nobody is tracking anymore.
   it('flushes a held tool-call part immediately when its turn is aborted', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+    store.ingest(
+      toolCall('t1', 'add_node', 'success', {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'streaming' })
 
     store.abortActiveTurn()
 
-    expect(store.messages[0].parts[0]).toMatchObject({
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({
       state: 'done',
       ok: true
     })
@@ -723,17 +799,23 @@ describe('useAgentConversationStore', () => {
   // settling the moment it is clear nothing will ever resume it.
   it('flushes a held tool-call part immediately when a settled background turn is resumed but not reactivated', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'awaiting')
     store.setThreadId('th')
     store.startTurn(T1)
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.stashActiveTurn()
     store.ingest(done('t1'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'streaming' })
 
     store.resumeBackgroundTurn()
 
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'done' })
   })
 
   // PM-1575 regression (finding #5, medium): nothing cancelled a held tool
@@ -743,7 +825,7 @@ describe('useAgentConversationStore', () => {
   // with the disposed transport's own stale snapshot.
   it('does not let an orphaned canvas-sync timer overwrite hydrated content under the same turn id', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
     store.ingest(toolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
@@ -764,47 +846,17 @@ describe('useAgentConversationStore', () => {
   // remount) never reached a transport created before it.
   it('routes a later setCanvasSyncGate() call to a transport created before it', () => {
     const store = useAgentConversationStore()
-    store.setCanvasSyncGate(() => false)
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    store.setCanvasSyncGate(() => 'none')
     store.startTurn(T1)
 
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
+    store.ingest(activeTab(workflowId, 't1'))
     store.ingest(toolCall('t1', 'add_node', 'success'))
 
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-  })
-
-  // PM-1575 regression (finding #10, medium): the source watcher this
-  // guards -- AgentPanelRoot.vue's `watch(() => crdtStatus.value.outcomes
-  // .applied, ...)` -- treated ANY change to the counter as catch-up,
-  // including a decrease. `useAgentCrdtFollower` resets `outcomes.applied`
-  // to 0 when its follower is torn down (e.g. toggling the panel mid-turn)
-  // and a restarted follower counts from 0 again, so that watcher's own
-  // guard, reproduced here against the real store, is what stops a mere
-  // reset from incorrectly releasing every held tool call.
-  it('does not release a held tool call when the applied counter decreases, only when it increases', () => {
-    const store = useAgentConversationStore()
-    const applied = ref(5)
-    store.setCanvasSyncGate(
-      () => true,
-      () => applied.value
-    )
-    store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-
-    watch(
-      applied,
-      (value, previous) => {
-        if (value > previous) store.notifyCanvasCaughtUp()
-      },
-      { flush: 'sync' }
-    )
-
-    applied.value = 0
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-
-    applied.value = 6
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+    expect(
+      store.messages[0].parts.find((part) => part.type === 'tool')
+    ).toMatchObject({ state: 'streaming' })
   })
 
   it('restores a pending run approval as the live turn and continues after it resolves', () => {
@@ -1965,21 +2017,43 @@ describe('useAgentConversationStore', () => {
 
   it('keeps a successful tool pending until canvas catch-up after background settlement', () => {
     const store = useAgentConversationStore()
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const laterWorkflowId = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
     store.setThreadId('th')
-    store.setCanvasSyncGate(() => true)
+    store.setCanvasSyncGate(() => 'awaiting')
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(
+      toolCall('t1', 'add_node', 'success', {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    store.ingest(activeTab(laterWorkflowId, 't1'))
     store.stashActiveTurn()
 
     store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
 
-    expect(store.messages[0].parts).toMatchObject([
-      { type: 'tool', name: 'add_node', state: 'streaming', ok: true }
-    ])
-    store.notifyCanvasCaughtUp()
-    expect(store.messages[0].parts).toMatchObject([
-      { type: 'tool', name: 'add_node', state: 'done', ok: true }
-    ])
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'streaming',
+          ok: true
+        })
+      ])
+    )
+    store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+    expect(store.messages[0].parts).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: 'tool',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        })
+      ])
+    )
   })
 
   it.for<{

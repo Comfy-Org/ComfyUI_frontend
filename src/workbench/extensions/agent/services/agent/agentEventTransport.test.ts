@@ -16,7 +16,7 @@ import {
 import { normalizeAgentTranscript } from './agentTranscript'
 
 import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
-import type { AgentChatEvent } from './agentEventTransport'
+import type { AgentChatEvent, CanvasSyncEvidence } from './agentEventTransport'
 import { createAgentEventTransport } from './agentEventTransport'
 import type {
   AssistantMessage,
@@ -59,6 +59,7 @@ function chatEventsFor(fixture: string, messageId: string): AgentChatEvent[] {
 }
 
 const T = toTurnId('t1')
+const WORKFLOW_ID = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
 
 function drive(events: AgentChatEvent[]): AssistantMessage {
   const message = createAssistantMessage(T)
@@ -137,6 +138,13 @@ function activeTab(
       thread_id: 't'
     }
   }
+}
+
+function liveCanvasEvidence(
+  workflowId: string,
+  opIds: readonly string[] = []
+): CanvasSyncEvidence {
+  return { workflowId, opIds, isLive: true }
 }
 
 function runApproval(
@@ -1097,22 +1105,27 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('holds a successful tool call at streaming until the canvas catches up', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
+    transport.ingest(activeTab(WORKFLOW_ID))
     transport.ingest(toolCall('add_node', 'success'))
     expect(toolParts(message)[0]).toMatchObject({
       ok: true,
       state: 'streaming'
     })
 
-    transport.notifyCanvasCaughtUp()
-    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID))
+    expect(toolParts(message)[0]).toMatchObject({
+      ok: true,
+      state: 'done',
+      canvasConfirmed: true
+    })
   })
 
   it('does not release an uncorrelated tool call for a catch-up frame', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(toolCall('add_node', 'success'))
     transport.notifyCanvasCaughtUp({
@@ -1133,7 +1146,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('releases only the held call whose workflow and op ids materialized', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(
       toolCall('add_node', 'success', 'call-add', undefined, {
@@ -1172,7 +1185,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('releases a correlated call when matching catch-up evidence materializes', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(
       toolCall('add_node', 'success', 'call-add', undefined, {
@@ -1192,7 +1205,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('remembers exact op evidence that arrives before the terminal tool frame', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.notifyCanvasCaughtUp({
       workflowId: 'wf-a',
@@ -1212,7 +1225,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('holds a multi-op call until its final op applies after the terminal frame', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(
       toolCall('apply_ops', 'success', 'call-ops', undefined, {
@@ -1246,7 +1259,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('holds a multi-op call whose earlier evidence covered only some ops', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.notifyCanvasCaughtUp({
       workflowId: 'wf-a',
@@ -1282,7 +1295,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('settles an errored tool call immediately, even while the gate is open', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(toolCall('validate', 'error'))
 
@@ -1292,7 +1305,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('does not defer when the gate is closed', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => false)
+    const transport = createAgentEventTransport(message, emit, () => 'none')
 
     transport.ingest(toolCall('add_node', 'success'))
 
@@ -1302,10 +1315,8 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('does not hold correlated work for a workflow the follower cannot observe', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(
-      message,
-      emit,
-      (workflowId) => workflowId !== 'background-workflow'
+    const transport = createAgentEventTransport(message, emit, (workflowId) =>
+      workflowId === 'background-workflow' ? 'unavailable' : 'awaiting'
     )
 
     transport.ingest(
@@ -1329,7 +1340,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('settles a successful read-only tool call immediately, even while the gate is open', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     transport.ingest(toolCall('switch_tab', 'success'))
     transport.ingest(toolCall('print_workflow', 'success', 'call-2'))
@@ -1355,20 +1366,16 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('settles immediately when the matching doc_update already applied before the terminal frame arrives', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    let outcomeCount = 0
-    const transport = createAgentEventTransport(
-      message,
-      emit,
-      () => true,
-      () => outcomeCount
-    )
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
-    transport.ingest(toolCall('add_node', 'running'))
-    // The matching doc_update lands while the tool is still running.
-    outcomeCount += 1
-    // No notifyCanvasCaughtUp() call in between: nothing was pending yet for
-    // it to release.
-    transport.ingest(toolCall('add_node', 'success'))
+    const correlation = { workflow_id: WORKFLOW_ID, op_ids: ['op-add'] }
+    transport.ingest(
+      toolCall('add_node', 'running', 'call-add_node', undefined, correlation)
+    )
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID, ['op-add']))
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add_node', undefined, correlation)
+    )
 
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
@@ -1376,14 +1383,9 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('still defers when the outcome counter has not moved since the tool started', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const outcomeCount = 3
-    const transport = createAgentEventTransport(
-      message,
-      emit,
-      () => true,
-      () => outcomeCount
-    )
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
+    transport.ingest(activeTab(WORKFLOW_ID))
     transport.ingest(toolCall('add_node', 'running'))
     transport.ingest(toolCall('add_node', 'success'))
 
@@ -1392,8 +1394,65 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
       state: 'streaming'
     })
 
-    transport.notifyCanvasCaughtUp()
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID))
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('does not reuse an extra observed frame to confirm a later write', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    const first = { workflow_id: WORKFLOW_ID, op_ids: ['op-1'] }
+    transport.ingest(
+      toolCall('add_node', 'running', 'write-1', undefined, first)
+    )
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID, ['op-1']))
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-1', undefined, first)
+    )
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-2', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-2']
+      })
+    )
+
+    expect(toolParts(message)).toMatchObject([
+      { state: 'done', canvasConfirmed: true },
+      { state: 'streaming' }
+    ])
+  })
+
+  it('confirms every pending write covered by one coalesced canvas outcome', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    const first = { workflow_id: WORKFLOW_ID, op_ids: ['op-1'] }
+    const second = { workflow_id: WORKFLOW_ID, op_ids: ['op-2'] }
+    transport.ingest(
+      toolCall('add_node', 'running', 'write-1', undefined, first)
+    )
+    transport.ingest(
+      toolCall('set_widget', 'running', 'write-2', undefined, second)
+    )
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-1', undefined, first)
+    )
+    transport.ingest(
+      toolCall('set_widget', 'success', 'write-2', undefined, second)
+    )
+
+    transport.notifyCanvasCaughtUp(
+      liveCanvasEvidence(WORKFLOW_ID, ['op-1', 'op-2'])
+    )
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+
+    expect(toolParts(message)).toMatchObject([
+      { state: 'done', canvasConfirmed: true },
+      { state: 'done', canvasConfirmed: true }
+    ])
   })
 
   // PM-1575 regression (finding #6, medium): a duplicate or redelivered
@@ -1404,8 +1463,9 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('does not settle early from an orphaned timer left by a redelivered terminal frame', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
+    transport.ingest(activeTab(WORKFLOW_ID))
     transport.ingest(toolCall('add_node', 'success', 'call-1'))
     expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
 
@@ -1422,13 +1482,276 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('hasPendingCanvasSync reflects whether a tool call is held back', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
     expect(transport.hasPendingCanvasSync()).toBe(false)
+    transport.ingest(activeTab(WORKFLOW_ID))
     transport.ingest(toolCall('add_node', 'success'))
     expect(transport.hasPendingCanvasSync()).toBe(true)
-    transport.notifyCanvasCaughtUp()
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID))
     expect(transport.hasPendingCanvasSync()).toBe(false)
+  })
+
+  it('ignores a canvas update from a different workflow', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+    const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'write', undefined, {
+        workflow_id: workflowId,
+        op_ids: ['op-add']
+      })
+    )
+    transport.notifyCanvasCaughtUp(
+      liveCanvasEvidence('8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f', ['op-add'])
+    )
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+    transport.notifyCanvasCaughtUp(
+      liveCanvasEvidence(workflowId.toUpperCase(), ['op-add'])
+    )
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: true
+    })
+  })
+
+  it('matches each pending write to the workflow that produced it', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+    const workflowA = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+    const workflowB = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-a', undefined, {
+        workflow_id: workflowA,
+        op_ids: ['op-a']
+      })
+    )
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-b', undefined, {
+        workflow_id: workflowB,
+        op_ids: ['op-b']
+      })
+    )
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(workflowB, ['op-b']))
+
+    expect(
+      emit.mock.calls.at(-1)?.[0].parts.filter((part) => part.type === 'tool')
+    ).toMatchObject([
+      { state: 'streaming' },
+      { state: 'done', canvasConfirmed: true }
+    ])
+
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(workflowA, ['op-a']))
+    expect(
+      emit.mock.calls.at(-1)?.[0].parts.filter((part) => part.type === 'tool')
+    ).toMatchObject([
+      { state: 'done', canvasConfirmed: true },
+      { state: 'done', canvasConfirmed: true }
+    ])
+  })
+
+  it('matches observations that arrive before parallel terminal-only writes', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID, ['op-1']))
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID, ['op-2']))
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-1', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-1']
+      })
+    )
+    transport.ingest(
+      toolCall('set_widget', 'success', 'write-2', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-2']
+      })
+    )
+
+    expect(toolParts(message)).toMatchObject([
+      { state: 'done', canvasConfirmed: true },
+      { state: 'done', canvasConfirmed: true }
+    ])
+  })
+
+  it('matches a coalesced observation delta to parallel terminal-only writes', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.notifyCanvasCaughtUp(
+      liveCanvasEvidence(WORKFLOW_ID, ['op-1', 'op-2'])
+    )
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-1', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-1']
+      })
+    )
+    transport.ingest(
+      toolCall('set_widget', 'success', 'write-2', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-2']
+      })
+    )
+
+    expect(toolParts(message)).toMatchObject([
+      { state: 'done', canvasConfirmed: true },
+      { state: 'done', canvasConfirmed: true }
+    ])
+  })
+
+  it('does not bank coalesced observations already spent on held writes', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-1', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-1']
+      })
+    )
+    transport.ingest(
+      toolCall('set_widget', 'success', 'write-2', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-2']
+      })
+    )
+    transport.notifyCanvasCaughtUp(
+      liveCanvasEvidence(WORKFLOW_ID, ['op-1', 'op-2'])
+    )
+    transport.ingest(
+      toolCall('connect', 'success', 'write-3', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-3']
+      })
+    )
+
+    expect(toolParts(message)).toMatchObject([
+      { state: 'done', canvasConfirmed: true },
+      { state: 'done', canvasConfirmed: true },
+      { state: 'streaming' }
+    ])
+  })
+
+  it('does not spend an earlier observation on a call with a running frame', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID, ['op-1']))
+    transport.ingest(
+      toolCall('add_node', 'running', 'write', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-2']
+      })
+    )
+    transport.ingest(
+      toolCall('add_node', 'success', 'write', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-2']
+      })
+    )
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+    expect(toolParts(message)[0].canvasConfirmed).toBeUndefined()
+  })
+
+  it('uses terminal correlation for a hydrated running call', () => {
+    const workflowB = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
+    const message = createAssistantMessage(T)
+    message.parts.push({
+      type: 'tool',
+      callId: 'hydrated-write',
+      name: 'add_node',
+      state: 'streaming'
+    })
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.ingest(toolCall('add_node', 'running', 'hydrated-write'))
+    transport.ingest(
+      toolCall('add_node', 'success', 'hydrated-write', undefined, {
+        workflow_id: workflowB,
+        op_ids: ['op-b']
+      })
+    )
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(workflowB, ['op-b']))
+
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: true
+    })
+  })
+
+  it('does not fold non-UUID workflow ids when banking observations', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence('workflow-a', ['op-add']))
+    transport.ingest(
+      toolCall('add_node', 'success', 'write', undefined, {
+        workflow_id: 'WORKFLOW-A',
+        op_ids: ['op-add']
+      })
+    )
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+    expect(toolParts(message)[0].canvasConfirmed).toBeUndefined()
+  })
+
+  it('keeps the workflow captured when a tool first appears', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+    const workflowB = '8c6d5e4f-3a2b-4c1d-9e8f-7a6b5c4d3e2f'
+
+    const correlation = { workflow_id: WORKFLOW_ID, op_ids: ['op-add'] }
+    transport.ingest(
+      toolCall('add_node', 'running', 'write', undefined, correlation)
+    )
+    transport.ingest(activeTab(workflowB))
+    transport.ingest(
+      toolCall('add_node', 'success', 'write', undefined, correlation)
+    )
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(workflowB, ['op-add']))
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID, ['op-add']))
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: true
+    })
+  })
+
+  it('does not downgrade a confirmed write on terminal-frame redelivery', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    const correlation = { workflow_id: WORKFLOW_ID, op_ids: ['op-add'] }
+    transport.ingest(
+      toolCall('add_node', 'success', 'write', undefined, correlation)
+    )
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID, ['op-add']))
+    transport.ingest(
+      toolCall('add_node', 'success', 'write', undefined, correlation)
+    )
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: true
+    })
   })
 
   // PM-1575 (findings #4/#5): a transport torn down for a reason other than
@@ -1439,8 +1762,9 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
   it('dispose flushes held parts to done and cancels their timers', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
-    const transport = createAgentEventTransport(message, emit, () => true)
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
 
+    transport.ingest(activeTab(WORKFLOW_ID))
     transport.ingest(toolCall('add_node', 'success'))
     expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
 
@@ -1451,6 +1775,135 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const callsAfterDispose = emit.mock.calls.length
     vi.advanceTimersByTime(STALE_AFTER_MS)
     expect(emit.mock.calls.length).toBe(callsAfterDispose)
+  })
+})
+
+describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1343)', () => {
+  it('marks a timed-out canvas write unconfirmed rather than done-successful', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.ingest(activeTab(WORKFLOW_ID))
+    transport.ingest(toolCall('add_node', 'success'))
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+
+    expect(toolParts(message)[0]).toMatchObject({
+      ok: true,
+      state: 'done',
+      canvasConfirmed: false
+    })
+  })
+
+  it('settles immediately and unconfirmed when confirmation is impossible', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => 'unavailable'
+    )
+
+    transport.ingest(toolCall('add_node', 'success'))
+
+    expect(transport.hasPendingCanvasSync()).toBe(false)
+    expect(toolParts(message)[0]).toMatchObject({
+      ok: true,
+      state: 'done',
+      canvasConfirmed: false
+    })
+  })
+
+  it('says nothing about the canvas when there is no canvas to speak of', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'none')
+
+    transport.ingest(toolCall('add_node', 'success'))
+
+    expect(toolParts(message)[0].canvasConfirmed).toBeUndefined()
+    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
+  })
+
+  it('leaves a read-only tool call outside the contract when confirmation is impossible', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => 'unavailable'
+    )
+
+    transport.ingest(toolCall('print_workflow', 'success'))
+
+    expect(toolParts(message)[0].canvasConfirmed).toBeUndefined()
+  })
+
+  it('does not let a later write upgrade an earlier unconfirmed write', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-a', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-a']
+      })
+    )
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: false
+    })
+
+    transport.ingest(
+      toolCall('add_node', 'success', 'write-b', undefined, {
+        workflow_id: WORKFLOW_ID,
+        op_ids: ['op-b']
+      })
+    )
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID, ['op-b']))
+
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: false
+    })
+    expect(toolParts(message)[1]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: true
+    })
+  })
+
+  it('does not upgrade a failed write when the canvas is later observed to change', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => 'unavailable'
+    )
+
+    transport.ingest(activeTab(WORKFLOW_ID))
+    transport.ingest(toolCall('add_node', 'error'))
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID))
+
+    expect(toolParts(message)[0]).toMatchObject({ ok: false })
+    expect(toolParts(message)[0].canvasConfirmed).not.toBe(true)
+  })
+
+  it('releases a held part as unconfirmed on dispose', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => 'awaiting')
+
+    transport.ingest(activeTab(WORKFLOW_ID))
+    transport.ingest(toolCall('add_node', 'success'))
+    transport.dispose()
+
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: false
+    })
   })
 })
 

@@ -1441,11 +1441,6 @@
       "count": 1
     }
   },
-  "src/workbench/extensions/agent/services/agent/agentToolGlyph.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/workbench/extensions/agent/stores/agent/agentConversationStore.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1

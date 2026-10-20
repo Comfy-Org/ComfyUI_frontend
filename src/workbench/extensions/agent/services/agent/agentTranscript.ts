@@ -16,6 +16,7 @@ import {
   isOpenAskPart,
   toAskOrNoticePart
 } from './agentMessageParts'
+import { toolCanMutateCanvas } from './agentToolClassification'
 
 type AttachmentKind = 'image' | 'video' | 'audio'
 
@@ -271,18 +272,6 @@ function toolPartOptionalFields(
   }
 }
 
-/**
- * Validates one `content.tool_calls` entry against `zPersistedToolCallSummary`,
- * picking only the fields this function actually reads (`id`/`tool_call_id`,
- * `tool_name`, `status`, `duration_ms`, `skill`) so an unrelated field a real
- * historical row gets wrong or omits (e.g. `started_at`/`finished_at`,
- * which are never read) can't sink an otherwise-usable entry. Maps a valid
- * entry onto the same `ToolPart` the live WebSocket path builds from
- * `agent_tool_call` events, so a reloaded transcript renders through the
- * identical work-summary UI as a live turn. `undefined` for anything that
- * doesn't validate (missing `id`/`tool_name`, wrong types, ...) or for a live
- * row's id-only entry (see `isLiveEntryMissingToolCallId`).
- */
 function parseToolCallEntry(
   entry: unknown,
   isLive: boolean
@@ -314,16 +303,13 @@ function parseToolCallEntry(
     status,
     part: {
       type: 'tool',
-      // A live `agent_tool_call` frame keys its update on `tool_call_id`, not
-      // this row's own `id` — prefer it so a restored part matches a live
-      // frame that arrives for it later. Falls back to `id` only for rows
-      // recorded before `tool_call_id` existed; `||`, not `??`, so an empty
-      // string (as genuinely id-less as a missing field) falls back too
-      // instead of colliding every empty-`tool_call_id` entry on `''`.
       callId: toolCallId || id,
       name: toolName,
       state,
-      ...toolPartOptionalFields(ok, skill, durationMs)
+      ...toolPartOptionalFields(ok, skill, durationMs),
+      ...(ok === true && toolCanMutateCanvas(toolName)
+        ? { canvasConfirmed: false }
+        : {})
     }
   }
 }

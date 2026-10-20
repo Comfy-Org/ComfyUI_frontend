@@ -254,7 +254,12 @@ test.describe(
       await expect(panel.getByRole('button', { name: STOP_LABEL })).toHaveCount(
         0
       )
-      await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
+      await expect(
+        panel.getByRole('button', {
+          name: enMessages.agent.workedNotConfirmedOnCanvas,
+          exact: true
+        })
+      ).toBeVisible()
 
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
     })

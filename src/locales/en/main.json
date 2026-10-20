@@ -5787,6 +5787,7 @@
     "viewingDifferentWorkflow": "You’re viewing a different workflow from the target.",
     "showTarget": "Show target",
     "targetWorkflowUnavailable": "The target workflow is no longer available.",
+    "canvasIsEmptyAfterTurn": "This canvas is empty — nothing was added to it. There is nothing here to run, save or export yet.",
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
@@ -5962,6 +5963,8 @@
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
     "worked": "Worked",
+    "workedNotConfirmedOnCanvas": "Changes not confirmed on your canvas",
+    "toolNotConfirmedOnCanvas": "{tool} — not confirmed on your canvas",
     "workedForSeconds": "Worked for {seconds} seconds",
     "workedForMinutes": "Worked for {minutes}m {seconds}s",
     "copy": "Copy",

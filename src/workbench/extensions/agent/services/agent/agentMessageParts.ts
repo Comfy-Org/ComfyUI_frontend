@@ -28,6 +28,14 @@ export interface ToolPart {
   state: PartState
   ok?: boolean
   durationMs?: number
+  /** Whether a successful canvas write was observed on the bound canvas. */
+  canvasConfirmed?: boolean
+}
+
+export function isUnconfirmedCanvasWrite(
+  part: Pick<ToolPart, 'ok' | 'canvasConfirmed'>
+): boolean {
+  return part.ok !== false && part.canvasConfirmed === false
 }
 
 export interface ThinkingPart {
