@@ -3,6 +3,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { useDialogService as realUseDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
+import type {
+  WebSessionRequests,
+  WebSessionRequestScope
+} from '@/platform/auth/session/webSessionFetch'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
@@ -676,6 +680,68 @@ describe('installDesktopLoginRedemption', () => {
 
     expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
     expect(fetch).toHaveBeenCalledTimes(1)
+  })
+  it.for([
+    { provider: 'password', firebase: true },
+    { provider: 'sso-only', firebase: false }
+  ])(
+    'redeems an account code through the shared session for $provider',
+    async ({ firebase }) => {
+      const { trigger, seedStash, stashedCode } = await setup()
+      mockAuthStore.currentUser = firebase ? mockAuthStore.currentUser : null
+      const { provideWebSessionRequests } =
+        await import('@/platform/auth/session/webSessionFetch')
+      const scope = fromPartial<WebSessionRequestScope>({
+        epoch: 1,
+        session: { user: { id: 'comfy-user' } }
+      })
+      const send = vi.fn(async () => okResponse())
+      provideWebSessionRequests(
+        fromPartial<WebSessionRequests>({ scope: async () => scope, send })
+      )
+      const code = `dls_${'A'.repeat(43)}`
+      seedStash(code)
+      await trigger()
+      expect(send).toHaveBeenCalledExactlyOnceWith(
+        REDEEM_URL,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+          signal: expect.any(AbortSignal)
+        },
+        scope
+      )
+      expect(mockUserGetIdToken).not.toHaveBeenCalled()
+      expect(stashedCode()).toBeUndefined()
+    }
+  )
+
+  it('does not redeem an account code after the session changes during approval', async () => {
+    const { trigger, seedStash, stashedCode } = await setup()
+    const { provideWebSessionRequests } =
+      await import('@/platform/auth/session/webSessionFetch')
+    const scope = fromPartial<WebSessionRequestScope>({
+      epoch: 1,
+      session: { user: { id: 'first-user' } }
+    })
+    let current = scope
+    const send = vi.fn(async () => okResponse())
+    provideWebSessionRequests(
+      fromPartial<WebSessionRequests>({ scope: async () => current, send })
+    )
+    vi.mocked(useDialogService().confirm).mockImplementation(async () => {
+      current = fromPartial<WebSessionRequestScope>({
+        epoch: 2,
+        session: { user: { id: 'second-user' } }
+      })
+      return true
+    })
+    const code = `dls_${'A'.repeat(43)}`
+    seedStash(code)
+    await trigger()
+    expect(send).not.toHaveBeenCalled()
+    expect(stashedCode()).toBe(code)
   })
 })
 vi.mock(import('firebase/auth'))

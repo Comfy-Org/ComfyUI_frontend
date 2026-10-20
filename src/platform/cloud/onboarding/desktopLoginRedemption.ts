@@ -1,4 +1,7 @@
 import { watch } from 'vue'
+
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { webSessionUser } from '@/platform/auth/session/webSessionUser'
 import type { Router } from 'vue-router'
 
 import { t } from '@/i18n'
@@ -17,7 +20,7 @@ const DESKTOP_LOGIN_CODE_KEY = 'desktop_login_code'
 
 // The backend issues "dlc_" + 43 base64url chars; bounds are loose so the
 // backend stays the authority on exact code length.
-const DESKTOP_LOGIN_CODE_PATTERN = /^dlc_[A-Za-z0-9_-]{20,256}$/
+const DESKTOP_LOGIN_CODE_PATTERN = /^dl[cs]_[A-Za-z0-9_-]{20,256}$/
 
 // Statuses that mean the desktop app must start a fresh sign-in, so the code
 // is dropped. 401 stays transient: the session may still be settling.
@@ -141,38 +144,31 @@ function settledForSsoSession(
 async function redeemCode(code: string): Promise<void> {
   const state = getCodeState(code)
   if (state.settled) {
-    // A later navigation can re-capture an already-settled code; drop it.
     clearStashIfHolds(code)
     return
   }
 
+  if (code.startsWith('dls_')) {
+    await redeemAccountCode(code, state)
+    return
+  }
   if (settledForSsoSession(code, state)) return
 
-  // No session yet (e.g. code captured on the login page): keep the stash and
-  // let a post-login trigger redeem it.
   const user = useAuthStore().currentUser
   if (!user) return
 
-  // Mid-handoff the imminent hard reload would destroy an open dialog; keep
-  // the stash and let the reloaded app prompt on a stable route.
   if (onAuthHandoffRoute()) return
 
   if (!(await confirmRedemption(state, user.uid))) {
-    // Declined/dismissed: drop the code without an error.
     settle(code, state)
     return
   }
 
-  // Approval binds the code to one account: if the session changed while the
-  // dialog was open, keep the code stashed and let the (replayed) auth-change
-  // trigger re-prompt under the now-current account.
   const approvedUser = useAuthStore().currentUser
   if (!approvedUser || approvedUser.uid !== state.approvedUserUid) return
 
   state.attempts++
 
-  // Token comes straight from the Firebase user: authStore.getIdToken()
-  // surfaces failures through a modal dialog this background flow must avoid.
   let idToken: string
   try {
     idToken = await approvedUser.getIdToken(state.forceTokenRefresh)
@@ -189,8 +185,6 @@ async function redeemCode(code: string): Promise<void> {
         Authorization: `Bearer ${idToken}`,
         'Content-Type': 'application/json'
       },
-      // TODO(@comfyorg/ingest-types): type the payload with the generated
-      // request type once the desktop-login-codes openapi addition propagates.
       body: JSON.stringify({ code }),
       signal: AbortSignal.timeout(REDEEM_TIMEOUT_MS)
     })
@@ -205,6 +199,53 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
+  finishRedemption(code, state, response)
+}
+
+async function redeemAccountCode(
+  code: string,
+  state: CodeRedemptionState
+): Promise<void> {
+  if (onAuthHandoffRoute()) return
+  const requests = webSessionRequests()
+  const scope = await requests?.scope()
+  if (!requests || !scope) return
+  if (!(await confirmRedemption(state, scope.session.user.id))) {
+    settle(code, state)
+    return
+  }
+  const current = await requests.scope()
+  if (
+    !current ||
+    current.epoch !== scope.epoch ||
+    current.session.user.id !== state.approvedUserUid
+  )
+    return
+  state.attempts++
+  let response: Response
+  try {
+    response = await requests.send(
+      api.apiURL('/auth/desktop-login-codes/redeem'),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+        signal: AbortSignal.timeout(REDEEM_TIMEOUT_MS)
+      },
+      current
+    )
+  } catch {
+    handleTransientFailure(code, state, 'account session request failed')
+    return
+  }
+  finishRedemption(code, state, response)
+}
+
+function finishRedemption(
+  code: string,
+  state: CodeRedemptionState,
+  response: Response
+): void {
   if (response.ok) {
     settle(code, state)
     useToast().success(t('desktopLogin.successSummary'), {
@@ -223,7 +264,6 @@ async function redeemCode(code: string): Promise<void> {
     return
   }
 
-  // A 401 usually means a stale cached id token; mint a fresh one on retry.
   if (response.status === 401) state.forceTokenRefresh = true
   handleTransientFailure(code, state, `status ${response.status}`)
 }
@@ -263,10 +303,8 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
 function installAuthWatcherOnce(): void {
   if (authWatcherInstalled) return
   authWatcherInstalled = true
-  // A session can appear without a navigation (e.g. dialog-based sign-in).
-  // Installed lazily because pinia is not active when router.ts evaluates.
   watch(
-    () => useAuthStore().currentUser,
+    () => [useAuthStore().currentUser, webSessionUser.value],
     () => {
       void redeemPendingDesktopLoginCode()
     }

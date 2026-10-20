@@ -1,5 +1,7 @@
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
+  canDesktopHostMintPartnerNodeToken,
+  desktopHostPartnerNodeToken,
   desktopHostUser,
   desktopHostWorkspaceToken
 } from '@/platform/auth/desktopHost/desktopHostSession'
@@ -38,6 +40,10 @@ export async function queueAuthToken(
 ): Promise<string | undefined> {
   if (!workspaceToken || !workspaceId || isCloud) return workspaceToken
   if (!useFeatureFlags().flags.partnerNodeTokenEnabled) return workspaceToken
+
+  if (desktopHostUser.value && canDesktopHostMintPartnerNodeToken()) {
+    return desktopHostPartnerNodeToken(workspaceId)
+  }
 
   const target = mintTarget(workspaceId)
   if (!target) return workspaceToken
