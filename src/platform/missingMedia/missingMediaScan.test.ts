@@ -142,6 +142,30 @@ function disableAssetApi() {
 describe('scanNodeMediaCandidates', () => {
   beforeEach(disableAssetApi)
 
+  it.for([
+    'preview.png [temp]',
+    'preview.png[temp]',
+    'preview.png [TEMP]',
+    'preview.png[TEMP] '
+  ])('excludes explicit temp inputs (%s)', (value) => {
+    const node = makeMediaNode(1, 'LoadImage', [makeMediaCombo('image', value)])
+    const candidates = scanNodeMediaCandidates(makeGraph([node]), node)
+    expect(candidates).toEqual([])
+  })
+
+  it.for([
+    'ComfyUI_temp_abc_00001_.png',
+    'ComfyUI_temp_abc_00001_.png [output]',
+    'asset-hash.png',
+    'preview [temp] copy.png'
+  ])('keeps inputs without a temp suffix (%s)', (value) => {
+    const node = makeMediaNode(1, 'LoadImage', [makeMediaCombo('image', value)])
+
+    const candidates = scanNodeMediaCandidates(makeGraph([node]), node)
+
+    expect(candidates).toEqual([expect.objectContaining({ name: value })])
+  })
+
   it('does not report a regular media widget whose input value comes from a link', () => {
     const graph = new LGraph()
     const upstream = new LGraphNode('ImageSource')
@@ -321,11 +345,6 @@ describe('scanNodeMediaCandidates', () => {
       nodeType: 'LoadAudio',
       widgetName: 'audio',
       value: 'sound.wav [output]'
-    },
-    {
-      nodeType: 'LoadImage',
-      widgetName: 'image',
-      value: 'preview.png [temp]'
     }
   ])(
     'leaves OSS $nodeType $value pending when not in options',

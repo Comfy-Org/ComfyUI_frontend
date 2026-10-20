@@ -4,7 +4,7 @@ type CustomerEventsResponse =
   operations['GetCustomerEvents']['responses']['200']['content']['application/json']
 
 /** Badge text the Activity table renders for each mocked event. */
-export const AGENT_USAGE_EVENT_TYPE = 'agent_usage'
+export const AGENT_USAGE_EVENT_TYPE = 'Agent Usage'
 export const PARTNER_NODE_USAGE_EVENT_TYPE = 'Partner Node Usage'
 
 /** `/customers/events` page with a numeric and a non-numeric `charge_micro_usd`. */

@@ -128,10 +128,7 @@ import {
 } from '@/renderer/extensions/layerEditor/composables/layerPanelDnd'
 import { DEFAULT_BACKGROUND_COLOR } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type {
-  RasterData,
-  SceneNode
-} from '@/renderer/extensions/layerEditor/engine/node'
+import type { RasterData, SceneNode } from '@comfyorg/layer-editor/node'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()

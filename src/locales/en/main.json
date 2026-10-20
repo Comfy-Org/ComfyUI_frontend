@@ -2021,6 +2021,7 @@
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
+    "Higgsfield": "Higgsfield",
     "HitPaw": "HitPaw",
     "Tencent": "Tencent",
     "Ideogram": "Ideogram",
@@ -2497,7 +2498,9 @@
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
     "colors": "color_palette",
-    "grid": "Grid",
+    "grid": "Grid"
+  },
+  "widgetHistory": {
     "undo": "Undo",
     "redo": "Redo"
   },
@@ -2960,9 +2963,15 @@
       "checkoutBlockedTitle": "Checkout didn't open",
       "checkoutBlockedBody": "Your browser blocked the new tab. Open checkout to finish paying.",
       "openCheckout": "Open checkout",
+      "checkoutOpenedTitle": "Checkout opened in a new tab",
+      "checkoutOpenedBody": "Credits are added to this workspace as soon as your payment goes through.",
+      "reopenCheckout": "Reopen checkout",
       "checkoutOpenFailed": "The payment page couldn't open. Nothing was charged. Try again.",
       "setDefaultCard": "Set a default card",
       "setDefaultCardError": "Couldn't open card settings",
+      "defaultCardBlockedTitle": "Payment page didn't open",
+      "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
+      "openPaymentPage": "Open payment page",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2988,6 +2997,7 @@
       "maximumAmount": "${amount} max.",
       "minRequired": "{credits} credits minimum",
       "maxAllowed": "{credits} credits maximum.",
+      "negativeBalanceNotice": "Your balance is −{credits} credit. This top-up covers that first. | Your balance is −{credits} credits. This top-up covers that first.",
       "creditsPerDollar": "credits per dollar",
       "amountToPayLabel": "Amount to pay in dollars",
       "creditsToReceiveLabel": "Credits to receive",
@@ -3013,7 +3023,8 @@
       "accountCreated": "Account Created",
       "apiUsage": "API Usage",
       "gpuUsage": "GPU Usage",
-      "apiNodeUsage": "Partner Node Usage"
+      "apiNodeUsage": "Partner Node Usage",
+      "agentUsage": "Agent Usage"
     },
     "unified": {
       "message": "Credits have been unified",
@@ -6017,10 +6028,19 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "editRejected": {
-      "widgetWrite": "Widget edit was rejected and was not saved. Your typed value exists on the canvas only — reload the workflow to see the value that was kept.",
-      "generic": "Your edit was rejected and was not saved. The workflow may no longer match its canvas — reload the workflow to see what was kept.",
-      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. Your typed value exists on the canvas only — reload the workflow to see the values that were kept.",
-      "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. The workflow may no longer match its canvas — reload the workflow to see what was kept."
+      "widgetWrite": "Widget edit was rejected and was not saved. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
+      "generic": "Your edit was rejected and was not saved. Reload the workflow if the canvas still shows it.",
+      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
+      "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. Reload the workflow if the canvas still shows the rejected part.",
+      "withReason": "{notice} Rejected: {target} ({code})",
+      "withReasonTarget": "{notice} Rejected: {target}",
+      "withReasonCode": "{notice} Reason: {code}",
+      "targets": {
+        "node": "node {id}",
+        "nodeField": "node {id} {field}",
+        "link": "link {id}",
+        "clear": "clearing the workflow"
+      }
     },
     "consent": {
       "title": "Meet Comfy Agent",

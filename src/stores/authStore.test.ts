@@ -31,7 +31,6 @@ import {
   requestOnboardingReplay
 } from '@/platform/onboarding/onboardingReplay'
 import {
-  cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
@@ -2403,7 +2402,7 @@ describe('useAuthStore', () => {
         .mockImplementationOnce(async (_route, options) => {
           options?.onAuthHeader?.(true)
           return new Response(
-            JSON.stringify({ legacy_billing_migration_enabled: false }),
+            JSON.stringify({ subscription_required: false }),
             { status: 200 }
           )
         })
@@ -2414,19 +2413,16 @@ describe('useAuthStore', () => {
       authStateCallback(accountB)
       expect(accountASignal?.aborted).toBe(true)
       expect(remoteConfigState.value).toBe('unloaded')
-      expect(cachedLegacyBillingMigrationEnabled.value).toBeUndefined()
 
       await refreshRemoteConfig()
       resolveAccountA?.(
-        new Response(
-          JSON.stringify({ legacy_billing_migration_enabled: true }),
-          { status: 200 }
-        )
+        new Response(JSON.stringify({ subscription_required: true }), {
+          status: 200
+        })
       )
       await accountARefresh
 
-      expect(remoteConfig.value.legacy_billing_migration_enabled).toBe(false)
-      expect(cachedLegacyBillingMigrationEnabled.value).toBe(false)
+      expect(remoteConfig.value.subscription_required).toBe(false)
     })
 
     it('does not reconnect on a same-account token refresh', () => {
