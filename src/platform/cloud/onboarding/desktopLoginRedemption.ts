@@ -243,6 +243,7 @@ async function redeemAccountCode(
   }
   const initial = await accountScope(requests)
   if (!initial.ok) {
+    if (!useAuthStore().currentUser && !webSessionUser.value) return
     state.attempts++
     handleTransientFailure(code, state, 'account session unavailable')
     return
