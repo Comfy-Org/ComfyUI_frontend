@@ -46,7 +46,7 @@
     </Button>
 
     <template v-if="showSortOptions">
-      <div class="my-1 w-full border-b border-border-subtle" />
+      <div class="my-1 w-full border-b border-border/50" />
 
       <Button
         variant="textonly"

@@ -62,8 +62,7 @@ describe('isAgentAttachable', () => {
     'env.hdr',
     'track.aac',
     'track.aiff',
-    'track.wma',
-    'plate.exr'
+    'track.wma'
   ])('rejects %s', (name) => {
     expect(isAgentAttachable(fileNamed(name))).toBe(false)
   })
@@ -121,6 +120,7 @@ describe('agentAttachCapability', () => {
     ['cloud.spz', 'reference'],
     ['cloud.splat', 'reference'],
     ['cloud.ksplat', 'reference'],
+    ['plate.exr', 'reference'],
     ['photo.avif', 'retain']
   ] as const)('reports %s as %s', ([name, capability]) => {
     expect(agentAttachCapability(name)).toBe(capability)

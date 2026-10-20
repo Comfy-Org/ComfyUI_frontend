@@ -22,6 +22,7 @@ function apiPlan(
   priceCents = 2000
 ): Plan {
   return {
+    action: 'subscribe',
     availability: { available: true },
     credits_cents: creditsCents,
     duration,

@@ -12,7 +12,7 @@ const meta: Meta<typeof AttachmentChip> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope flex max-w-64 flex-wrap gap-2 bg-secondary-background p-4"><story /></div>'
+        '<div class="agent-scope flex max-w-64 flex-wrap gap-2 bg-secondary p-4"><story /></div>'
     })
   ]
 }

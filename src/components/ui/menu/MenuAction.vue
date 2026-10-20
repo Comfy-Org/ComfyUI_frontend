@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { createReusableTemplate } from '@vueuse/core'
 import { DropdownMenuCheckboxItem, DropdownMenuItem } from 'reka-ui'
-import { onBeforeUnmount, toValue } from 'vue'
+import { computed, onBeforeUnmount, toValue } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -21,6 +21,16 @@ const emit = defineEmits<{
 }>()
 
 const [DefineItem, ReuseItem] = createReusableTemplate()
+
+const disabled = computed(() => toValue(item.disabled) === true)
+const focusableDisabled = computed(
+  () => disabled.value && item.focusableWhenDisabled === true
+)
+const unfocusable = computed(() =>
+  disabled.value
+    ? !item.focusableWhenDisabled
+    : !item.command && !allowCommandless
+)
 
 let pointerRepeating = false
 let stopRepeating: (() => void) | undefined
@@ -49,7 +59,7 @@ function mouseDown(event: MouseEvent) {
 }
 
 function select(event: Event) {
-  if (!item.command) {
+  if (disabled.value || !item.command) {
     event.preventDefault()
     return
   }
@@ -81,11 +91,13 @@ function select(event: Event) {
       "
       :aria-label="toValue(item.label)"
       :aria-description="toValue(item.description)"
-      :disabled="toValue(item.disabled) || (!item.command && !allowCommandless)"
+      :disabled="unfocusable"
+      :as-child="focusableDisabled"
       :class="
         cn(
           menuItemClass,
-          item.variant === 'destructive' && 'text-destructive-background',
+          item.variant === 'destructive' && 'text-destructive',
+          focusableDisabled && 'opacity-50',
           toValue(item.class)
         )
       "
@@ -94,7 +106,10 @@ function select(event: Event) {
       @keydown.capture="pointerRepeating = false"
       @select="select"
     >
-      <slot />
+      <div v-if="focusableDisabled" aria-disabled="true">
+        <slot />
+      </div>
+      <slot v-else />
     </component>
   </DefineItem>
   <TextTooltip v-if="item.tooltip" :text="item.tooltip" side="right">

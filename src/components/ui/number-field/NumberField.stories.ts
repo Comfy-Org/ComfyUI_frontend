@@ -85,7 +85,7 @@ export const WithPrefix: Story = {
   render: renderNumberField(
     `
       <NumberFieldDecrement />
-      <span class="shrink-0 text-base font-semibold text-base-foreground">$</span>
+      <span class="shrink-0 text-base font-semibold text-foreground">$</span>
       <NumberFieldInput aria-label="Amount in dollars" />
       <NumberFieldIncrement />
     `,

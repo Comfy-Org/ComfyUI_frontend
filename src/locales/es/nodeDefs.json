@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "Convierte texto a voz. Admite indicaciones de emoción en el texto ([happy], [whispering] en s2.1-pro; (happy) en s1) y diálogos con varios hablantes mediante etiquetas {'@'}Voice1/{'@'}Voice2 con varias voces conectadas.",
+    "description": "Convierte texto en voz. Admite indicaciones de emoción en el texto ([happy], [whispering] en s2.1-pro; (happy) en s1), [directions] en lenguaje natural y etiquetas de palabras `<whisper>...</whisper>` en drama-3, así como diálogos con varios hablantes mediante etiquetas {'@'}Voice1/{'@'}Voice2 con varias voces conectadas.",
     "display_name": "Fish Audio Texto a voz",
     "inputs": {
       "control_after_generate": {
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "Recrea un vídeo con nuevos personajes, ubicaciones o estilos a partir de imágenes de referencia, manteniendo su movimiento, movimiento de cámara y sincronización.",
+    "display_name": "Transferencia de movimiento Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "model": {
+        "name": "Modelo",
+        "tooltip": "Modelo que se usará."
+      },
+      "model_prompt": {
+        "name": "Indicación"
+      },
+      "model_resolution": {
+        "name": "Resolución"
+      },
+      "model_seed": {
+        "name": "Semilla"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "Aumenta la resolución de imágenes de baja calidad a superresolución, elimina artefactos y ruido. Salida máxima: 32 megapíxeles.",
     "display_name": "HitPaw mejora general de imagen",
@@ -9263,6 +9290,28 @@
       },
       "rotation": {
         "name": "rotación"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "Expande el brillo sRGB a HDR HLG Rec.2020. Guarda el resultado con el espacio de color HDR seleccionado. Se conserva el alfa.",
+    "display_name": "Convertir SDR a HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "Algoritmo",
+        "tooltip": "Expansión racional estilo Lottes combinada con una curva monótona de ganancia logarítmica calibrada."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "Imagen",
+        "tooltip": "Imagen(es) SDR en sRGB."
       }
     },
     "outputs": {

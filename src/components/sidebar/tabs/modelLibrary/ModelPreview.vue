@@ -48,9 +48,9 @@ const modelDef = props.modelDef
 </script>
 <style scoped>
 .model_preview {
-  background-color: var(--comfy-menu-bg);
-  color: var(--descrip-text);
-  border: 1px solid var(--descrip-text);
+  background-color: var(--background);
+  color: var(--muted-foreground);
+  border: 1px solid var(--muted-foreground);
   min-width: 300px;
   max-width: 500px;
   width: fit-content;

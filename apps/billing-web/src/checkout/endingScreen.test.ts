@@ -130,6 +130,20 @@ describe('endingOf', () => {
       }
     },
     {
+      name: 'a tier that is not self-serve',
+      page: { kind: 'refused', reason: 'tier_not_self_serve' },
+      screen: {
+        kind: 'refused',
+        code: 'TIER_NOT_SELF_SERVE',
+        copy: 'sales_managed'
+      }
+    },
+    {
+      name: 'a plan the sales team manages',
+      page: { kind: 'refused', reason: 'sales_managed' },
+      screen: { kind: 'refused', code: 'SALES_MANAGED', copy: 'sales_managed' }
+    },
+    {
       name: 'a checkout that could not load',
       page: { kind: 'unavailable', cause: 'quote', code: 'REQUEST_FAILED' },
       screen: { kind: 'load_failed', cause: 'quote', code: 'REQUEST_FAILED' }

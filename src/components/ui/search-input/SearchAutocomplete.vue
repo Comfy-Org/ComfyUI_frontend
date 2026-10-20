@@ -82,7 +82,7 @@
         :class="
           cn(
             'z-3000 max-h-60 w-(--reka-combobox-trigger-width) overflow-y-auto',
-            'rounded-lg border border-border-default bg-base-background p-1 shadow-lg'
+            'rounded-lg border bg-background p-1 shadow-lg'
           )
         "
       >
@@ -95,7 +95,7 @@
           :class="
             cn(
               'cursor-pointer rounded-sm px-3 py-2 text-sm outline-none',
-              'data-highlighted:bg-secondary-background-hover'
+              'data-highlighted:bg-accent'
             )
           "
           @select.prevent="onSelectSuggestion(suggestion)"

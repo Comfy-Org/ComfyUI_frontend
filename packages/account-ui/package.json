@@ -21,18 +21,54 @@
   "type": "module",
   "sideEffects": false,
   "exports": {
-    "./billing": "./src/billing/index.ts",
-    "./billing/stripe": "./src/billing/stripe/index.ts",
-    "./billing/checkout": "./src/billing/checkout/index.ts",
-    "./billing/catalog": "./src/billing/catalog.ts",
-    "./auth/PasswordRules": "./src/auth/PasswordRules.vue",
-    "./auth/SocialAuthButtons": "./src/auth/SocialAuthButtons.vue",
-    "./auth/TurnstileWidget": "./src/auth/TurnstileWidget.vue",
-    "./auth/regionGate": "./src/auth/regionGate.ts",
-    "./auth/regionProbe": "./src/auth/regionProbe.ts",
-    "./auth/turnstileGate": "./src/auth/turnstileGate.ts",
-    "./auth/lifecycleScope": "./src/auth/lifecycleScope.ts",
-    "./auth/useGenerationGuard": "./src/auth/useGenerationGuard.ts",
+    "./billing": {
+      "types": "./dist-types/billing/index.d.ts",
+      "default": "./src/billing/index.ts"
+    },
+    "./billing/stripe": {
+      "types": "./dist-types/billing/stripe/index.d.ts",
+      "default": "./src/billing/stripe/index.ts"
+    },
+    "./billing/checkout": {
+      "types": "./dist-types/billing/checkout/index.d.ts",
+      "default": "./src/billing/checkout/index.ts"
+    },
+    "./billing/catalog": {
+      "types": "./dist-types/billing/catalog.d.ts",
+      "default": "./src/billing/catalog.ts"
+    },
+    "./auth/PasswordRules": {
+      "types": "./dist-types/auth/PasswordRules.vue.d.ts",
+      "default": "./src/auth/PasswordRules.vue"
+    },
+    "./auth/SocialAuthButtons": {
+      "types": "./dist-types/auth/SocialAuthButtons.vue.d.ts",
+      "default": "./src/auth/SocialAuthButtons.vue"
+    },
+    "./auth/TurnstileWidget": {
+      "types": "./dist-types/auth/TurnstileWidget.vue.d.ts",
+      "default": "./src/auth/TurnstileWidget.vue"
+    },
+    "./auth/regionGate": {
+      "types": "./dist-types/auth/regionGate.d.ts",
+      "default": "./src/auth/regionGate.ts"
+    },
+    "./auth/regionProbe": {
+      "types": "./dist-types/auth/regionProbe.d.ts",
+      "default": "./src/auth/regionProbe.ts"
+    },
+    "./auth/turnstileGate": {
+      "types": "./dist-types/auth/turnstileGate.d.ts",
+      "default": "./src/auth/turnstileGate.ts"
+    },
+    "./auth/lifecycleScope": {
+      "types": "./dist-types/auth/lifecycleScope.d.ts",
+      "default": "./src/auth/lifecycleScope.ts"
+    },
+    "./auth/useGenerationGuard": {
+      "types": "./dist-types/auth/useGenerationGuard.d.ts",
+      "default": "./src/auth/useGenerationGuard.ts"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

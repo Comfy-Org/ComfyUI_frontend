@@ -4,7 +4,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'flex items-center gap-2 pr-2 pl-3 not-disabled:hover:bg-component-node-widget-background-hovered',
+          'flex items-center gap-2 pr-2 pl-3 not-disabled:hover:bg-muted',
           useWidgetHeight()
         )
       "

@@ -1,25 +1,34 @@
+import type {
+  BaseLGraph,
+  LGraph,
+  SubgraphId,
+  LGraphCanvas,
+  ResolvedConnection,
+  GraphOrSubgraph,
+  Subgraph,
+  SubgraphInput
+} from '@/lib/litegraph/src/types/entityRegistry'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
-import type { BaseLGraph, LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
+
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { DrawTitleBoxOptions } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
+
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type { IWidgetLocator } from '@/lib/litegraph/src/interfaces'
-import type { ISubgraphInput } from '@/lib/litegraph/src/types/slots'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
+import type { IWidgetLocator, ISlotType } from '@/lib/litegraph/src/interfaces'
+import type {
+  ISubgraphInput,
+  INodeInputSlot
+} from '@/lib/litegraph/src/types/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type {
-  GraphOrSubgraph,
-  Subgraph
-} from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+
 import type {
   ExportedSubgraphInstance,
   ISerialisedNode
@@ -31,7 +40,10 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
+import {
+  coerceRestoredWidgetValue,
+  deriveWidgetRenderState
+} from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -53,7 +65,7 @@ import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
 import { createPromotedWidgetStoreProjection } from './promotedWidgetStoreProjection'
-import type { SubgraphInput } from './SubgraphInput'
+
 import { createBitmapCache } from './svgBitmapCache'
 
 const workflowSvg = new Image()
@@ -496,8 +508,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const value = quarantineValuesByInputName.has(input.name)
         ? quarantineValuesByInputName.get(input.name)
         : widgetValues?.[valueIndex]
-      if (value !== undefined) {
-        useWidgetValueStore().setValue(input.widgetId, value)
+      const state = useWidgetValueStore().getWidget(input.widgetId)
+      if (value !== undefined && state) {
+        useWidgetValueStore().setValue(
+          input.widgetId,
+          coerceRestoredWidgetValue(state, value)
+        )
       }
       valueIndex += 1
     }
@@ -811,6 +827,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return super.getWidgetFromSlot(slot)
   }
 
+  resolvePromotedTarget(
+    inputName: string
+  ): { nodeId: NodeId; widgetName: string } | undefined {
+    return resolveSubgraphInputTarget(this, inputName)
+  }
+
   override getInputLink(slot: number): LLink | null {
     const innerLink = this.subgraph.outputNode.slots[slot].getLinks().at(0)
     if (!innerLink) {
@@ -1051,4 +1073,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (extraInput) shapes.push(extraInput.shape)
     return shapes.every((shape) => shape === shapes[0]) ? shapes[0] : undefined
   }
+}
+
+type RegisteredSubgraphNode = SubgraphNode
+
+declare module '../types/entityRegistry' {
+  interface SubgraphNode extends RegisteredSubgraphNode {}
 }

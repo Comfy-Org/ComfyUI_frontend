@@ -1,10 +1,10 @@
+import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
 import { truncate } from 'es-toolkit/compat'
 
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphIconOptions } from './LGraphIcon'
-import type { LGraphNode } from './LGraphNode'
 
 const CORE_TEXT_LIMIT = 31
 

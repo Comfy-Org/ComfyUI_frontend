@@ -66,9 +66,7 @@ const colorOptions: NodeColorOption[] = [
   }))
 ]
 
-const isLightTheme = computed(
-  () => colorPaletteStore.completedActivePalette.light_theme
-)
+const isLightTheme = computed(() => colorPaletteStore.colorScheme === 'light')
 
 const nodeColor = computed<NodeColorOption['name'] | null>({
   get() {
@@ -111,7 +109,7 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
 <template>
   <LayoutField :label="t('rightSidePanel.color')">
     <div
-      class="grid grid-cols-5 justify-items-center gap-1 rounded-lg border-none bg-secondary-background p-1"
+      class="grid grid-cols-5 justify-items-center gap-1 rounded-lg bg-secondary p-1"
     >
       <Tooltip v-for="option of colorOptions" :key="option.name">
         <TooltipTrigger as-child>
@@ -120,9 +118,7 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
             :class="
               cn(
                 'flex size-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-transparent text-left ring-0 outline-0',
-                option.name === nodeColor
-                  ? 'bg-interface-menu-component-surface-selected'
-                  : 'hover:bg-interface-menu-component-surface-selected'
+                option.name === nodeColor ? 'bg-muted' : 'hover:bg-muted'
               )
             "
             @click="nodeColor = option.name"
