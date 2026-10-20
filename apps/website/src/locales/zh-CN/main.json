@@ -5613,5 +5613,131 @@
     "runOptions": {
       "subtitle": "在浏览器中构建工作流，在自己的硬件上探索 ComfyUI，或通过 API 连接创作流程。"
     }
+  },
+  "vfxV3": {
+    "referenceFrame": "参考帧",
+    "originalFootage": "原始素材",
+    "badge": "视觉特效",
+    "heading": "一个镜头，更多可能。",
+    "description": "调整光线、替换物体、扩展画面。使用 Comfy 构建可重复使用的视觉特效工作流，并融入工作室的制作流程。",
+    "sales": "联系销售",
+    "browse": "探索工作流",
+    "workflow": "查看工作流",
+    "sequenceHeading": "一次拍摄，新的视角。",
+    "sequenceDescription": "查看 Seedance 基于参考视频生成的多镜头序列。打开工作流，了解序列的构建方式。",
+    "sequenceTitle": "从参考视频到多镜头序列",
+    "contactHeading": "您的工作室可以用 Comfy 实现什么？",
+    "demos": {
+      "sequence": {
+        "title": "一次拍摄，新的视角。",
+        "rowTitle": "从参考视频到多镜头序列",
+        "description": "查看基于同一段雨中街道参考视频生成的多镜头序列、推进镜头和环绕镜头。"
+      },
+      "relight": {
+        "title": "改变光线与天气。",
+        "rowTitle": "同一镜头，不同光线与天气。",
+        "description": "对比同一镜头在黄金时刻、夜晚、蓝调时刻、雨天、雪天和白天的效果。选择一个版本即可观看播放效果。"
+      },
+      "swap": {
+        "title": "替换画面中的汽车。",
+        "rowTitle": "为不同市场调整镜头。",
+        "description": "观看原始镜头与丰田 Century、伦敦出租车和菲亚特 500 版本的对比。"
+      },
+      "reframe": {
+        "title": "扩展画面边界。",
+        "rowTitle": "一次拍摄，多种交付格式。",
+        "description": "将超宽屏和竖屏格式与原始横屏画面对比。"
+      }
+    },
+    "sampleCaption": "预先生成的示例画面。拖动画布探索，拖动分隔线进行对比。",
+    "variants": {
+      "seedance_multishot_rain": "多镜头序列",
+      "seedance_push": "推进镜头",
+      "seedance_orbit": "环绕镜头",
+      "relight_night": "夜景",
+      "relight_rain": "雨天",
+      "relight_day": "白天",
+      "swap_jp": "丰田 Century",
+      "swap_uk": "伦敦出租车",
+      "swap_it": "菲亚特 500",
+      "reframe_wide": "超宽屏",
+      "reframe_vertical": "竖屏",
+      "relight_golden": "黄金时刻",
+      "relight_blue": "蓝调时刻",
+      "relight_snow": "雪天"
+    },
+    "workstationTitle": "工作站与渲染",
+    "videoCaption": "预先生成的示例。拖动画布探索，选择版本后拖动分隔线进行对比。",
+    "tryWorkflow": "体验工作流",
+    "prototype": {
+      "back": "返回示例",
+      "heading": "重新布光工作流",
+      "use": "使用工作流",
+      "customize": "在 Comfy Cloud 中自定义",
+      "sample": "示例工作区 · 切换已渲染的效果。打开 Comfy Cloud 即可自定义并运行此工作流。",
+      "examples": "现有示例效果。选择一种风格，然后探索对应的工作流。"
+    },
+    "customizeNow": "立即定制",
+    "openStudio": "打开工作室",
+    "keyframe": "关键帧",
+    "workflowUnavailable": "Cloud 工作流链接正在核实。",
+    "studio": {
+      "sequence": {
+        "title": "从参考视频到多镜头序列",
+        "source": "示例 · 雨中街道",
+        "presets": "选择序列或运镜方式",
+        "description": "夜晚，一名撑着黑伞的男子走在巴黎的雨中街道上。咖啡馆的灯光映在湿润的鹅卵石路面上。",
+        "stepOne": "使用参考视频确定主体和场景。",
+        "stepTwo": "描述镜头序列或运镜方式，然后在 Comfy Cloud 中运行 Seedance 工作流。",
+        "look": "描述镜头序列或运镜方式"
+      },
+      "footage": "原始素材",
+      "mode": "工作室视图",
+      "settings": "设置",
+      "workflow": "工作流",
+      "sampleOnly": "示例工作室。浏览现有输出并准备工作流需求。上传和生成功能尚未连接。",
+      "upload": "上传素材",
+      "shot": "描述镜头",
+      "adjust": "调整关键帧",
+      "generate": "运行工作流",
+      "expose": "查看工作流",
+      "request": "修改工作流",
+      "requestHelp": "复制此需求，在 Comfy Cloud 中自定义工作流时使用。",
+      "requestText": "{task}\n所选示例：{look}\n镜头描述：{description}",
+      "copy": "复制需求",
+      "copied": "已复制",
+      "copyFailed": "复制失败。请选中并复制上方需求。",
+      "relight": {
+        "title": "调整时间、天气与光线",
+        "source": "示例 · Starlite Diner",
+        "presets": "时间、天气或光线",
+        "description": "路边餐厅外景，Starlite Diner 招牌发光。一辆青绿色轿车停在湿润的柏油路面上。",
+        "stepOne": "调整关键帧，设定光线与天气。",
+        "stepTwo": "以原始素材作为运动参考，将关键帧的视觉效果应用到整个镜头。",
+        "look": "描述光线和天气"
+      },
+      "swap": {
+        "title": "更换车辆",
+        "source": "示例 · 雪中外景片场",
+        "presets": "选择替换车辆",
+        "description": "电影外景片场中的欧洲雪街。一位穿红色外套的女子走向镜头。一辆老式汽车停在街道尽头。",
+        "stepOne": "替换关键帧中的车辆。",
+        "stepTwo": "跟踪整个镜头中的物体遮罩，并重新渲染选定区域。",
+        "look": "描述替换对象"
+      },
+      "reframe": {
+        "title": "扩展画面",
+        "source": "示例 · 森林",
+        "presets": "选择画幅",
+        "description": "一张横向森林图像。扩展原始画面以适配所选交付格式。",
+        "stepOne": "选择新的画幅。",
+        "stepTwo": "向原图边缘之外扩图，填充扩展后的画面。",
+        "look": "描述要扩展的内容"
+      },
+      "openAgent": "使用 COMFY AGENT 打开",
+      "agentUnavailable": "此示例尚未连接 Agent。",
+      "sourceHint": "使用提供的示例探索工作流。",
+      "videoMetadata": "1280 × 720 · 24 帧/秒 · 121 帧"
+    }
   }
 }

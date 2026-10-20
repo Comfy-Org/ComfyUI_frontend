@@ -67,6 +67,12 @@ ffmpeg -f lavfi -i color=c=black:s=16x16:r=1 -t 16 -c:v libx264 -pix_fmt yuv420p
 ffmpeg -f lavfi -i color=c=black:s=700x394:r=1 -t 1 -c:v libvpx-vp9 -b:v 1k -an e2e/assets/validation-700px.webm
 ```
 
+`assets/vfx-playback.mp4` is an eight-second, 64×36 generated test pattern at 24 fps. VFX comparison tests use it for playback, looping and seeking without downloading campaign media. Regenerate it with:
+
+```sh
+ffmpeg -f lavfi -i testsrc2=size=64x36:rate=24 -t 8 -c:v libx264 -pix_fmt yuv420p -g 24 -keyint_min 24 -sc_threshold 0 -bf 0 -crf 32 -movflags +faststart e2e/assets/vfx-playback.mp4
+```
+
 ## Font fixture
 
 `assets/inter-latin.woff2` is the unmodified Inter Latin font from the website's
