@@ -68,7 +68,7 @@
         </div>
         <Button
           v-if="state.kind === 'noPlan' && canTopUp"
-          variant="secondary"
+          :variant="addCreditsVariant"
           class="shrink-0"
           @click="emit('addCredits')"
         >
@@ -123,7 +123,7 @@
           </div>
           <Button
             v-if="canTopUp"
-            variant="secondary"
+            :variant="addCreditsVariant"
             class="shrink-0"
             @click="emit('addCredits')"
           >
@@ -149,9 +149,14 @@ import {
 import Button from '@/components/ui/button/Button.vue'
 import type { CreditsCardState } from '@/platform/workspace/components/dialogs/settings/billing/creditsCard'
 
-const { state, canTopUp } = defineProps<{
+const {
+  state,
+  canTopUp,
+  addCreditsVariant = 'secondary'
+} = defineProps<{
   state: CreditsCardState
   canTopUp: boolean
+  addCreditsVariant?: 'secondary' | 'inverted'
 }>()
 
 const emit = defineEmits<{

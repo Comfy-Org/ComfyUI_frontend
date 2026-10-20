@@ -28,7 +28,7 @@
         </Button>
         <Button
           v-if="banner.kind === 'failed' && canTopUp"
-          variant="secondary"
+          :variant="emphasis"
           size="lg"
           @click="emit('addCredits')"
         >
@@ -77,23 +77,28 @@
 
 <script setup lang="ts">
 import type { BillingOpReceiptPlan } from '@comfyorg/ingest-types'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { addCreditsEmphasis } from '@/platform/workspace/components/dialogs/settings/billing/topupCheckoutBanner'
 import { pickCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/subscriptionCheckoutBanner'
 import type { CheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/subscriptionCheckoutBanner'
 import { useSubscriptionCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/useSubscriptionCheckoutBanner'
 import { useTopupCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/useTopupCheckoutBanner'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 
-const { canTopUp, canSubscribeSelfServe } = defineProps<{
+const { canTopUp, canSubscribeSelfServe, availableCents } = defineProps<{
   canTopUp: boolean
   canSubscribeSelfServe: boolean
+  availableCents: number | null
 }>()
-const emit = defineEmits<{ addCredits: [] }>()
+const emit = defineEmits<{
+  addCredits: []
+  emphasis: ['secondary' | 'inverted']
+}>()
 
 const prefix = 'workspacePanel.billingTab.topupCheckout'
 
@@ -106,6 +111,17 @@ const subscription = useSubscriptionCheckoutBanner(fetchStatus)
 const banner = computed(() =>
   pickCheckoutBanner([subscription.banner.value, topup.banner.value])
 )
+const emphasis = computed(() => {
+  const shown = banner.value
+  const topupBanner =
+    shown?.kind === 'failed' ||
+    shown?.kind === 'processing' ||
+    shown?.kind === 'creditsApplying'
+      ? shown
+      : null
+  return addCreditsEmphasis(availableCents, topupBanner)
+})
+watch(emphasis, (variant) => emit('emphasis', variant), { immediate: true })
 
 const checkoutAction = computed(() => {
   const shown = banner.value

@@ -659,6 +659,43 @@ describe('BillingTab', () => {
       }
     )
 
+    const zeroBalance: BalanceInfo = {
+      amountMicros: 0,
+      currency: 'usd',
+      effectiveBalanceMicros: 0,
+      effectiveBalanceAuthoritative: true,
+      prepaidBalanceMicros: 0,
+      cloudCreditBalanceMicros: 0
+    }
+
+    it('turns both Add credits buttons white when Available is 0 and the top-up failed', async () => {
+      servedCheckouts(checkout('failed'))
+      arrange({ balance: zeroBalance })
+
+      const banner = await screen.findByTestId('billing-checkout-banner')
+      const buttons = [
+        within(banner).getByRole('button', { name: 'Add credits' }),
+        within(screen.getByTestId('billing-credits-card')).getByRole('button', {
+          name: 'Add credits'
+        })
+      ]
+      for (const button of buttons) {
+        expect(button.className).toContain('bg-foreground')
+      }
+    })
+
+    it('keeps Add credits grey at 0 while the payment is processing', async () => {
+      servedCheckouts(checkout('payment_processing'))
+      arrange({ balance: zeroBalance })
+
+      await screen.findByTestId('billing-checkout-banner')
+      expect(
+        within(screen.getByTestId('billing-credits-card')).getByRole('button', {
+          name: 'Add credits'
+        }).className
+      ).not.toContain('bg-foreground')
+    })
+
     it('offers no Add credits on a failed top-up when the server withholds can_top_up', async () => {
       servedCheckouts(checkout('failed'))
       arrange({ canTopUp: false })

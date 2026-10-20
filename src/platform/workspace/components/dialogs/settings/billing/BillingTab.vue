@@ -3,9 +3,11 @@
     <WorkspaceHeaderMenu />
     <BillingCheckoutBanner
       v-if="capabilities.canManageBilling.value"
+      :available-cents="availableCents"
       :can-top-up="capabilities.canTopUp.value"
       :can-subscribe-self-serve="capabilities.canSubscribeSelfServe.value"
       @add-credits="addCredits"
+      @emphasis="addCreditsVariant = $event"
     />
     <div
       v-if="load === 'loading'"
@@ -36,6 +38,7 @@
         :can-manage-subscription="capabilities.canManageSubscription.value"
       />
       <BillingCreditsCard
+        :add-credits-variant="addCreditsVariant"
         :state="creditsCard"
         :can-top-up="capabilities.canTopUp.value"
         @retry="retryBalance"
@@ -71,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
@@ -99,6 +102,12 @@ const capabilities = useBillingCapabilities()
 const { flags } = useFeatureFlags()
 const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
+const availableCents = computed(() =>
+  creditsCard.value.kind === 'unavailable'
+    ? null
+    : creditsCard.value.availableCents
+)
+const addCreditsVariant = ref<'secondary' | 'inverted'>('secondary')
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
 
