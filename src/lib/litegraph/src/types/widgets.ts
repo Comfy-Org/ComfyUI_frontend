@@ -6,7 +6,7 @@ import type { Bounds } from '@/renderer/core/layout/types'
 import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
-import type { LightInfoEntry } from '@/types/lightInfo'
+import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import type { WidgetValue } from '@/types/widgetValue'
 import type { WidgetId } from '@/types/widgetId'
 import type {

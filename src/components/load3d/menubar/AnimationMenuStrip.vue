@@ -137,7 +137,7 @@ import {
   selectedMenuButtonClass
 } from '@/components/ui/menu/menuStyles'
 import Slider from '@/components/ui/slider/Slider.vue'
-import type { AnimationItem } from '@/extensions/core/load3d/interfaces'
+import type { AnimationItem } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {
   animations = [],

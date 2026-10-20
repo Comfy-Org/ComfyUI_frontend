@@ -518,18 +518,12 @@ importers:
       '@comfyorg/design-system':
         specifier: workspace:*
         version: link:packages/design-system
-      '@comfyorg/fbx-exporter-three':
-        specifier: ^1.0.1
-        version: 1.0.1(@types/three@0.186.0)(three@0.186.1)
       '@comfyorg/layer-editor':
         specifier: workspace:*
         version: link:packages/layer-editor
       '@comfyorg/object-info-parser':
         specifier: workspace:*
         version: link:packages/object-info-parser
-      '@comfyorg/quad-wireframe-three':
-        specifier: ^0.1.0
-        version: 0.1.0(three@0.186.1)
       '@comfyorg/registry-types':
         specifier: workspace:*
         version: link:packages/registry-types
@@ -539,6 +533,9 @@ importers:
       '@comfyorg/tailwind-utils':
         specifier: workspace:*
         version: link:packages/tailwind-utils
+      '@comfyorg/viewport3d':
+        specifier: workspace:*
+        version: link:packages/viewport3d
       '@customerio/cdp-analytics-browser':
         specifier: 'catalog:'
         version: 0.5.6
@@ -557,9 +554,6 @@ importers:
       '@sentry/vue':
         specifier: 'catalog:'
         version: 10.65.0(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(vue@3.5.42(typescript@6.0.3))
-      '@sparkjsdev/spark':
-        specifier: 'catalog:'
-        version: 2.3.1(three@0.186.1)
       '@stripe/stripe-js':
         specifier: 'catalog:'
         version: 9.12.1
@@ -686,9 +680,6 @@ importers:
       vue-router:
         specifier: 'catalog:'
         version: 5.2.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.1)(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.42(typescript@6.0.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))(vue@3.5.42(typescript@6.0.3))
-      wwobjloader2:
-        specifier: 'catalog:'
-        version: 6.2.1(three@0.186.1)
       yjs:
         specifier: 'catalog:'
         version: 13.6.32
@@ -1515,6 +1506,52 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
+
+  packages/viewport3d:
+    dependencies:
+      '@comfyorg/fbx-exporter-three':
+        specifier: ^1.0.1
+        version: 1.0.1(@types/three@0.186.0)(three@0.186.1)
+      '@comfyorg/quad-wireframe-three':
+        specifier: ^0.1.0
+        version: 0.1.0(three@0.186.1)
+      '@sparkjsdev/spark':
+        specifier: 'catalog:'
+        version: 2.3.1(three@0.186.1)
+      es-toolkit:
+        specifier: 'catalog:'
+        version: 1.49.0
+      three:
+        specifier: 'catalog:'
+        version: 0.186.1
+      wwobjloader2:
+        specifier: 'catalog:'
+        version: 6.2.1(three@0.186.1)
+    devDependencies:
+      '@comfyorg/shared-frontend-utils':
+        specifier: workspace:*
+        version: link:../shared-frontend-utils
+      '@total-typescript/shoehorn':
+        specifier: 'catalog:'
+        version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
+      '@types/three':
+        specifier: 'catalog:'
+        version: 0.186.0
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 5.0.2(vitest@5.0.2)
+      happy-dom:
+        specifier: 'catalog:'
+        version: 20.14.5
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: ^8.2.2
+        version: 8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0)
       vitest:
         specifier: 'catalog:'
         version: 5.0.2(@types/node@25.9.5)(@vitest/coverage-v8@5.0.2)(@vitest/ui@5.0.2)(happy-dom@20.14.5)(jsdom@29.1.1)(vite@8.2.2(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(tsx@4.23.1)(yaml@2.9.0))
