@@ -105,8 +105,7 @@ export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
   ]
 }
 
-/** A second sample: core nodes only, a video output and an untitled image loader. */
-export const nodeGraphFastH3Sample: NodeGraphWorkflow = {
+const nodeGraphFastH3Sample: NodeGraphWorkflow = {
   slug: 'node-graph-preview-fasth3',
   name: 'FastVideo FastH3: Image to Video',
   summary:
