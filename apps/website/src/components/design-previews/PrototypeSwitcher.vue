@@ -12,8 +12,6 @@ export interface PrototypeField<Key extends string> {
   }[]
 }
 
-// Prototype chrome, after the Team Billing mock switcher (itself after Nuxt
-// DevTools): a frosted pill that stays out of the page's way until opened.
 const { fields } = defineProps<{ fields: readonly PrototypeField<K>[] }>()
 const state = defineModel<Record<K, string>>({ required: true })
 const collapsed = ref(true)

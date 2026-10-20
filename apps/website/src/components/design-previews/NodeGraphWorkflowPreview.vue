@@ -7,6 +7,7 @@ import { nodeGraphWorkflowSample } from '@/lib/hub/node-graph-workflow'
 
 import type { PrototypeField } from './PrototypeSwitcher.vue'
 import PrototypeSwitcher from './PrototypeSwitcher.vue'
+import { resolvePrototypeState } from './prototype-state'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -64,29 +65,29 @@ function readSaved(): Partial<Record<Key, string>> {
   }
 }
 
-// Read once from the URL, falling back to this tab's last choice; every
-// change is written back so a state can be shared as a link.
-onMounted(() => {
-  const params = new URLSearchParams(window.location.search)
-  const saved = readSaved()
-  const next = { ...defaults }
-  for (const field of fields) {
-    const value = params.get(field.key) ?? saved[field.key]
-    if (value && field.options.some((option) => option.value === value))
-      next[field.key] = value
+function writeSaved(value: Record<Key, string>): boolean {
+  try {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(value))
+    return true
+  } catch {
+    return false
   }
-  state.value = next
+}
+
+onMounted(() => {
+  state.value = resolvePrototypeState(
+    fields,
+    defaults,
+    new URLSearchParams(window.location.search),
+    readSaved()
+  )
 })
 
 watch(state, (value) => {
   const url = new URL(window.location.href)
   for (const field of fields) url.searchParams.set(field.key, value[field.key])
   history.replaceState(history.state, '', url)
-  try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(value))
-  } catch {
-    // Storage can be unavailable; the URL still holds the state.
-  }
+  writeSaved(value)
 })
 
 const workflow = computed(() => ({

@@ -22,8 +22,6 @@ import ApiFacts from './ApiFacts.vue'
 import HighlightedCode from './HighlightedCode.vue'
 import SectionHeading from './SectionHeading.vue'
 
-// The runnable API tab's layout. There is no prepared request here, so the
-// steps start from the downloaded graph instead of the Playground's inputs.
 const {
   workflow,
   cloud,

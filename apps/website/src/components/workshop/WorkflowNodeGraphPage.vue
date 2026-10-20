@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { ArrowUpRight, ChevronLeft, Download, ImageIcon } from '@lucide/vue'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { ArrowUpRight, ChevronLeft } from '@lucide/vue'
+import { computed, ref } from 'vue'
 
 import FAQSection from '@/components/common/FAQSection.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useStickyFooterScrollPadding } from '@/composables/useStickyFooterScrollPadding'
 import { useTablist } from '@/composables/useTablist'
 import { getRoutes } from '@/config/routes'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
@@ -12,11 +11,11 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import type { NodeGraphWorkflow } from '@/lib/hub/node-graph-workflow'
 
-import ExamplesTab from './ExamplesTab.vue'
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
 import WorkflowNodeGraphApi from './WorkflowNodeGraphApi.vue'
 import WorkflowNodeGraphFacts from './WorkflowNodeGraphFacts.vue'
+import WorkflowNodeGraphOverview from './WorkflowNodeGraphOverview.vue'
 
 const {
   workflow,
@@ -43,8 +42,6 @@ const samples = computed(() =>
     .map((example) => example.outputUrl)
 )
 
-// The same tabs as a runnable workflow. The Playground becomes an Overview
-// of what the workflow makes, since it cannot run here.
 const sections = ['overview', 'workflow', 'api'] as const
 const section = ref<(typeof sections)[number]>('overview')
 const { onKeydown } = useTablist(() => sections, section)
@@ -53,30 +50,9 @@ const sectionLabels = {
   workflow: 'workshop.model.tabs.details',
   api: 'workshop.nodeGraph.tabApi'
 } as const
-// Like Run, the footer's action stays in view while the panel scrolls past.
-const footer = useTemplateRef<HTMLElement>('footer')
-useStickyFooterScrollPadding(footer, () => section.value === 'overview')
-
-const selectedExample = ref(0)
-watch(
-  () => workflow.examples.length,
-  () => (selectedExample.value = 0)
-)
-const shown = computed(() => workflow.examples[selectedExample.value])
-function openExample(id: string) {
-  const index = workflow.examples.findIndex((example) => example.id === id)
-  if (index !== -1) selectedExample.value = index
-}
-
-const expanded = ref(false)
-const [lead, ...more] = workflow.description
 
 const pillClass =
   'inline-flex h-7 items-center rounded-full border border-transparency-white-t20 px-3 text-xs leading-none text-primary-comfy-canvas transition-colors hover:border-primary-comfy-yellow hover:text-primary-comfy-yellow'
-const panelHeadingClass =
-  'border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
-const labelClass =
-  'text-2xs font-bold tracking-wider text-primary-warm-gray uppercase'
 </script>
 
 <template>
@@ -114,8 +90,6 @@ const labelClass =
       >
         {{ workflow.summary }}
       </p>
-      <!-- Try in Cloud leads when Cloud can open it; otherwise Download is
-        the only way in, so it takes the primary style. -->
       <div
         class="mt-6 flex flex-wrap items-center gap-2"
         data-testid="workflow-actions"
@@ -168,183 +142,16 @@ const labelClass =
       </button>
     </div>
 
-    <!-- Overview: the Playground's two panels, read-only. -->
-    <div
+    <WorkflowNodeGraphOverview
       v-show="section === 'overview'"
       id="workflow-panel-overview"
       role="tabpanel"
       aria-labelledby="workflow-tab-overview"
-      data-testid="node-graph-overview"
-    >
-      <div class="grid gap-8 lg:grid-cols-12">
-        <section
-          class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-5"
-          aria-labelledby="workflow-about-heading"
-          data-testid="node-graph-about"
-        >
-          <h2 id="workflow-about-heading" :class="panelHeadingClass">
-            {{ t('workshop.nodeGraph.about') }}
-          </h2>
-          <div class="space-y-6 p-5">
-            <div class="space-y-3 text-sm/relaxed text-primary-comfy-canvas">
-              <p>{{ lead }}</p>
-              <template v-if="expanded">
-                <p v-for="paragraph in more" :key="paragraph">
-                  {{ paragraph }}
-                </p>
-              </template>
-              <button
-                v-if="more.length"
-                type="button"
-                class="cursor-pointer text-sm text-primary-warm-gray underline underline-offset-4 hover:text-primary-comfy-yellow"
-                :aria-expanded="expanded"
-                @click="expanded = !expanded"
-              >
-                {{
-                  t(
-                    expanded
-                      ? 'workshop.nodeGraph.readLess'
-                      : 'workshop.nodeGraph.readMore'
-                  )
-                }}
-              </button>
-            </div>
-
-            <div v-if="workflow.inputs.length" data-testid="node-graph-inputs">
-              <h3 :class="labelClass">{{ t('workshop.nodeGraph.provide') }}</h3>
-              <ul class="mt-3 flex flex-wrap gap-2">
-                <li
-                  v-for="input in workflow.inputs"
-                  :key="input"
-                  class="inline-flex h-8 items-center rounded-lg border border-transparency-white-t8 bg-transparency-white-t4 px-3 text-sm text-primary-comfy-canvas"
-                >
-                  {{ input }}
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          <!-- Where the Playground has Run. -->
-          <div
-            ref="footer"
-            class="sticky bottom-0 z-10 mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
-            data-testid="node-graph-footer"
-          >
-            <p class="px-1 text-sm text-primary-warm-gray">
-              <span class="font-bold text-primary-comfy-canvas"
-                >{{ t('workshop.nodeGraph.runsHereTitle') }}.</span
-              >
-              {{
-                t(
-                  cloudHref
-                    ? 'workshop.nodeGraph.runsHereCloud'
-                    : 'workshop.nodeGraph.runsHereLocal'
-                )
-              }}
-            </p>
-            <Button
-              v-if="cloudHref"
-              as="a"
-              :href="cloudHref"
-              target="_blank"
-              rel="noopener"
-              class="min-h-11 w-full font-bold tracking-wider"
-              >{{ t('workshop.workflow.tryCloud') }}
-              <template #append>
-                <ArrowUpRight aria-hidden="true" />
-              </template>
-            </Button>
-            <Button
-              v-else
-              as="a"
-              :href="workflow.downloadUrl"
-              download
-              class="min-h-11 w-full"
-              >{{ t('workshop.workflow.downloadShort') }}
-              <template #append>
-                <Download aria-hidden="true" />
-              </template>
-            </Button>
-          </div>
-        </section>
-
-        <section
-          class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 max-lg:order-first lg:sticky lg:top-24 lg:col-span-7 lg:self-start"
-          data-testid="node-graph-output"
-        >
-          <header
-            class="flex items-center justify-between border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
-          >
-            <span>{{ t('workshop.output.title') }}</span>
-            <span
-              v-if="workflow.examples.length > 1"
-              class="font-normal tracking-normal text-primary-warm-gray normal-case tabular-nums"
-            >
-              {{
-                t('workshop.nodeGraph.sampleOf', {
-                  n: selectedExample + 1,
-                  total: workflow.examples.length
-                })
-              }}
-            </span>
-          </header>
-          <figure v-if="shown" class="relative bg-primary-comfy-ink-light">
-            <span
-              class="absolute top-3 right-3 z-20 inline-flex h-6 items-center rounded-lg bg-black/40 px-2 text-2xs font-bold tracking-wider text-white uppercase backdrop-blur-md"
-            >
-              {{ t('workshop.output.example') }}
-            </span>
-            <video
-              v-if="shown.mediaKind === 'video'"
-              :key="shown.id"
-              :src="shown.outputUrl"
-              class="max-h-[70vh] w-full object-contain"
-              autoplay
-              muted
-              loop
-              playsinline
-            />
-            <img
-              v-else
-              :key="shown.id"
-              :src="shown.outputUrl"
-              :alt="shown.title"
-              class="max-h-[70vh] w-full object-contain"
-            />
-            <figcaption
-              class="border-t border-transparency-white-t8 bg-page px-5 py-3 text-sm text-primary-comfy-canvas"
-            >
-              {{ shown.title }}
-            </figcaption>
-          </figure>
-          <div
-            v-else
-            class="flex min-h-80 flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
-            data-testid="node-graph-no-examples"
-          >
-            <span
-              class="grid size-12 place-items-center rounded-2xl border border-dashed border-transparency-white-t20 text-primary-warm-gray"
-              aria-hidden="true"
-            >
-              <ImageIcon class="size-5" />
-            </span>
-            <p class="text-sm text-primary-warm-gray">
-              {{ t('workshop.nodeGraph.noExamples') }}
-            </p>
-          </div>
-        </section>
-      </div>
-
-      <section v-if="workflow.examples.length > 1" class="mt-14">
-        <ExamplesTab
-          :examples="workflow.examples"
-          :gallery-label="workflow.name"
-          :active-id="shown?.id"
-          :locale="locale"
-          @open="openExample($event.id)"
-        />
-      </section>
-    </div>
+      :workflow="workflow"
+      :cloud-href="cloudHref"
+      :active="section === 'overview'"
+      :locale="locale"
+    />
 
     <section
       v-show="section === 'workflow'"
