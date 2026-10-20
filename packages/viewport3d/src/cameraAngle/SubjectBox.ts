@@ -1,7 +1,7 @@
 import * as THREE from 'three'
 
-import { computeSubjectTransform } from '../cameraInfo/cameraTransform'
-import type { SceneOverlay } from '../load3d/interfaces'
+import { computeSubjectTransform } from '#/cameraInfo/cameraTransform'
+import type { SceneOverlay } from '#/load3d/interfaces'
 
 import { clampState, toOrbitCameraInfoState } from './cameraAngleMath'
 import {

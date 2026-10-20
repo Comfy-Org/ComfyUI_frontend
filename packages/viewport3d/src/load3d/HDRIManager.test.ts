@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 
-import { createRendererViewState } from '../three/sharedWebGLRenderer'
+import { createRendererViewState } from '#/three/sharedWebGLRenderer'
 
 import { HDRIManager } from './HDRIManager'
 

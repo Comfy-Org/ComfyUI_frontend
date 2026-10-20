@@ -3,18 +3,18 @@ import * as THREE from 'three'
 import {
   OrbitHandles,
   isOrbitHandleType
-} from '../cameraInfo/handles/OrbitHandles'
-import type { OrbitHandleType } from '../cameraInfo/handles/OrbitHandles'
-import { TargetHandle } from '../cameraInfo/handles/TargetHandle'
-import { pickHandleAtPointer } from '../cameraInfo/handles/handlePicking'
+} from '#/cameraInfo/handles/OrbitHandles'
+import type { OrbitHandleType } from '#/cameraInfo/handles/OrbitHandles'
+import { TargetHandle } from '#/cameraInfo/handles/TargetHandle'
+import { pickHandleAtPointer } from '#/cameraInfo/handles/handlePicking'
 import {
   pointToDistance,
   pointToPitchAngle,
   pointToYawAngle
-} from '../cameraInfo/handles/orbitDragMath'
-import type { Viewport3d } from '../load3d/Viewport3d'
-import { createViewport3d } from '../load3d/createViewport3d'
-import type { Load3DOptions } from '../load3d/interfaces'
+} from '#/cameraInfo/handles/orbitDragMath'
+import type { Viewport3d } from '#/load3d/Viewport3d'
+import { createViewport3d } from '#/load3d/createViewport3d'
+import type { Load3DOptions } from '#/load3d/interfaces'
 
 import { LightInfoOverlay } from './LightInfoOverlay'
 import {

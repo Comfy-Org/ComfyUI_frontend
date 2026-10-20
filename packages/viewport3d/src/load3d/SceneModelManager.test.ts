@@ -2,7 +2,7 @@ import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { createRendererViewState } from '../three/sharedWebGLRenderer'
+import { createRendererViewState } from '#/three/sharedWebGLRenderer'
 
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapterCapabilities } from './ModelAdapter'

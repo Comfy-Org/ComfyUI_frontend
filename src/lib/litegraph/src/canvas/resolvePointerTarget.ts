@@ -9,11 +9,18 @@ import type {
   SubgraphOutputNode
 } from '@/lib/litegraph/src/types/entityRegistry'
 
-import type { LinkSegment, Point, Positionable } from '../interfaces'
-import { isInRectangle } from '../measure'
+import type {
+  LinkSegment,
+  Point,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
+import { isInRectangle } from '@/lib/litegraph/src/measure'
 
-import { LinkMarkerShape, LinkRenderType } from '../types/globalEnums'
-import type { CanvasPointerEvent } from '../types/events'
+import {
+  LinkMarkerShape,
+  LinkRenderType
+} from '@/lib/litegraph/src/types/globalEnums'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { Transform } from '../node'
+import type { Transform } from '#/node'
 import {
   alignedTo,
   applyMove,

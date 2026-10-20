@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import { computeSubjectTransform } from '../cameraInfo/cameraTransform'
+import { computeSubjectTransform } from '#/cameraInfo/cameraTransform'
 
 import { toHandleOrbitState } from './cameraAngleMath'
 import { ORBIT_SPHERE_RADIUS, SUBJECT_CENTER } from './types'

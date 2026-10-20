@@ -3,18 +3,18 @@ import * as THREE from 'three'
 import {
   OrbitHandles,
   isOrbitHandleType
-} from '../cameraInfo/handles/OrbitHandles'
-import type { OrbitHandleType } from '../cameraInfo/handles/OrbitHandles'
-import { pickHandleAtPointer } from '../cameraInfo/handles/handlePicking'
-import { PointerInteraction } from '../cameraInfo/handles/pointerInteraction'
-import type { PointerPosition } from '../cameraInfo/handles/pointerInteraction'
+} from '#/cameraInfo/handles/OrbitHandles'
+import type { OrbitHandleType } from '#/cameraInfo/handles/OrbitHandles'
+import { pickHandleAtPointer } from '#/cameraInfo/handles/handlePicking'
+import { PointerInteraction } from '#/cameraInfo/handles/pointerInteraction'
+import type { PointerPosition } from '#/cameraInfo/handles/pointerInteraction'
 import {
   fitCameraAspect,
   renderInsetPreview
-} from '../cameraInfo/subjectCameraPreview'
-import type { Viewport3d } from '../load3d/Viewport3d'
-import { createViewport3d } from '../load3d/createViewport3d'
-import type { Load3DOptions } from '../load3d/interfaces'
+} from '#/cameraInfo/subjectCameraPreview'
+import type { Viewport3d } from '#/load3d/Viewport3d'
+import { createViewport3d } from '#/load3d/createViewport3d'
+import type { Load3DOptions } from '#/load3d/interfaces'
 
 import { SubjectBox } from './SubjectBox'
 import type { SubjectBoxOptions } from './SubjectBox'

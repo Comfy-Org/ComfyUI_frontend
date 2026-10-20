@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 
-import type { RendererViewState } from '../three/sharedWebGLRenderer'
+import type { RendererViewState } from '#/three/sharedWebGLRenderer'
 
 import type { EventManagerInterface } from './interfaces'
 

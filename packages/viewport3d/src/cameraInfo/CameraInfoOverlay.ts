@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 
-import type { SceneOverlay } from '../load3d/interfaces'
+import type { SceneOverlay } from '#/load3d/interfaces'
 
 import { computeSubjectTransform } from './cameraTransform'
 import { DEFAULT_CAMERA_INFO_STATE } from './types'

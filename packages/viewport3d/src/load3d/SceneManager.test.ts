@@ -4,8 +4,8 @@ import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { RendererView } from '../three/RendererView'
-import { createRendererViewState } from '../three/sharedWebGLRenderer'
+import type { RendererView } from '#/three/RendererView'
+import { createRendererViewState } from '#/three/sharedWebGLRenderer'
 
 import type { EventManagerInterface } from './interfaces'
 import { SceneManager } from './SceneManager'

@@ -6,8 +6,11 @@ import { nextTick } from 'vue'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 
-import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
-import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+import {
+  toTurnId,
+  zAgentWsEvent
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({

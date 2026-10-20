@@ -26,7 +26,7 @@ import { useExtensionStore } from '@/stores/extensionStore'
 import type {
   AssistantMessage,
   ToolPart
-} from '../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'

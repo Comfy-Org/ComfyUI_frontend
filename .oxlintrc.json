@@ -589,6 +589,20 @@
       }
     },
     {
+      "files": [
+        "src/**",
+        "packages/layer-editor/src/**",
+        "packages/viewport3d/src/**"
+      ],
+      "excludeFiles": [
+        "src/config/viteSeo.test.ts",
+        "src/stores/nodeDefStore.frequency.test.ts"
+      ],
+      "rules": {
+        "import/no-relative-parent-imports": "error"
+      }
+    },
+    {
       "files": ["apps/website/**"],
       "rules": {
         "comfy/no-relative-parent-paths": "error",

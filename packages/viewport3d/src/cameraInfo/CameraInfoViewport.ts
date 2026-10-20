@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 
-import type { Viewport3d } from '../load3d/Viewport3d'
-import { createViewport3d } from '../load3d/createViewport3d'
-import type { Load3DOptions } from '../load3d/interfaces'
+import type { Viewport3d } from '#/load3d/Viewport3d'
+import { createViewport3d } from '#/load3d/createViewport3d'
+import type { Load3DOptions } from '#/load3d/interfaces'
 
 import { CameraInfoOverlay } from './CameraInfoOverlay'
 import { computeSubjectTransform } from './cameraTransform'

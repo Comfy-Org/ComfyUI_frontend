@@ -6,7 +6,7 @@ import { i18n } from '@/i18n'
 import type {
   ChatSession,
   HistoryGroups
-} from '../../stores/agent/agentChatHistoryStore'
+} from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 

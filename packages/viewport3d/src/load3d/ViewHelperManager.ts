@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 
-import type { RendererView } from '../three/RendererView'
+import type { RendererView } from '#/three/RendererView'
 
 import type {
   CameraState,

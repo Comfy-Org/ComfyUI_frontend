@@ -1,6 +1,6 @@
 import { TestRunner, assert, vi } from 'vitest'
 
-import type { api as RealApi } from '../api'
+import type { api as RealApi } from '@/scripts/api'
 
 type ApiState = Pick<
   typeof RealApi,

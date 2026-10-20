@@ -7,13 +7,13 @@ import { useExtensionStore } from '@/stores/extensionStore'
 import { api } from '@/scripts/api'
 import { toNodeId } from '@/types/nodeId'
 
-import { toTurnId } from '../schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AssistantMessage,
   MessagePart,
   ToolPart
-} from '../services/agent/agentMessageParts'
-import { createAssistantMessage } from '../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { createAssistantMessage } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { reportError } = vi.hoisted(() => ({
   reportError: vi.fn()

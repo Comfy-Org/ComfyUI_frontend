@@ -2,7 +2,7 @@ import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
-import type { RendererViewState } from '../three/sharedWebGLRenderer'
+import type { RendererViewState } from '#/three/sharedWebGLRenderer'
 
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapterCapabilities } from './ModelAdapter'

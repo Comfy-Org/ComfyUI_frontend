@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { TransformControls } from 'three/examples/jsm/controls/TransformControls'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import type { SceneOverlay } from '../load3d/interfaces'
+import type { SceneOverlay } from '#/load3d/interfaces'
 
 import {
   LightInfoViewport,
@@ -10,7 +10,7 @@ import {
   targetApplies
 } from './LightInfoViewport'
 import type { LightTransformGizmoMode } from './LightInfoViewport'
-import type { TargetHandle } from '../cameraInfo/handles/TargetHandle'
+import type { TargetHandle } from '#/cameraInfo/handles/TargetHandle'
 import { createDefaultLight } from './types'
 import type { LightInfoEntry, LightInfoType } from './types'
 
@@ -18,7 +18,7 @@ const { createViewport3dMock } = vi.hoisted(() => ({
   createViewport3dMock: vi.fn()
 }))
 
-vi.mock(import('../load3d/createViewport3d'), () => ({
+vi.mock(import('#/load3d/createViewport3d'), () => ({
   createViewport3d: createViewport3dMock
 }))
 

@@ -1,14 +1,14 @@
 import { DOMParser, DOMSerializer } from '@tiptap/pm/model'
 
-import { agentMessageText } from '../../../utils/agentMessageText'
-import type { ComposerReference } from '../../../types/composerPrompt'
-import { promptReferenceParts } from '../../../utils/promptReferenceParts'
-import { composerPromptForSend } from '../../../utils/composerPrompt'
+import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
+import type { ComposerReference } from '@/workbench/extensions/agent/types/composerPrompt'
+import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
+import { composerPromptForSend } from '@/workbench/extensions/agent/utils/composerPrompt'
 import {
   inlinePromptSchema,
   promptDocument,
   promptDraft
-} from '../composer/inlinePrompt'
+} from '@/workbench/extensions/agent/components/agent/composer/inlinePrompt'
 
 export function userMessageClipboard(
   message: Parameters<typeof agentMessageText>[0]
