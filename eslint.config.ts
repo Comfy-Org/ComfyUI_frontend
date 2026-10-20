@@ -108,6 +108,37 @@ const noTooltipDirective = {
     'Use the Button tooltip prop or the design-system Tooltip compound instead of v-tooltip.'
 }
 
+const agentPlatformChannelRestrictions = [
+  {
+    selector:
+      "MemberExpression:matches([object.name='navigator'], [object.object.name='window'][object.property.name='navigator']):matches([computed=false][property.name='clipboard'], [computed=true][property.value='clipboard'])",
+    message: 'Use the shared clipboard composables.'
+  },
+  {
+    selector:
+      "CallExpression:matches([callee.name='getServerFeature'], [callee.property.name='getServerFeature'])",
+    message: 'Read server flags through useFeatureFlags.'
+  },
+  {
+    selector:
+      ":matches(AssignmentExpression > MemberExpression.left, UpdateExpression > MemberExpression.argument):matches([object.property.name='ds'], [object.object.property.name='ds'])",
+    message: 'Use the canvas viewport methods.'
+  },
+  {
+    // Syntax cannot tell a Date from a number, and the platform owns both:
+    // src/utils/dateTimeUtil.ts, src/utils/numberUtil.ts, and vue-i18n d()/n().
+    selector:
+      'CallExpression[callee.property.name=/^toLocale(Date|Time)?String$/]',
+    message:
+      'Format dates and numbers with the platform formatting utilities or vue-i18n.'
+  },
+  {
+    selector:
+      "ImportDeclaration[source.value='@/i18n'] > ImportSpecifier[imported.name='t']",
+    message: 'Use useI18n in composition scope or a platform service.'
+  }
+]
+
 const oxlintConfigs = oxlint.buildFromOxlintConfigFile(
   path.resolve(import.meta.dirname, '.oxlintrc.json')
 )
@@ -278,7 +309,7 @@ export default defineConfig([
     name: 'comfy/agent-shared-deadlines',
     files: [
       'src/workbench/extensions/agent/composables/agent/useAttachment.ts',
-      'src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.ts'
+      'src/workbench/extensions/agent/services/agent/agentEventSource.ts'
     ],
     rules: {
       'no-restricted-globals': ['error', 'setTimeout', 'clearTimeout'],
@@ -288,23 +319,6 @@ export default defineConfig([
         {
           property: 'clearTimeout',
           message: 'Use VueUse or es-toolkit timers.'
-        }
-      ]
-    }
-  },
-  {
-    name: 'comfy/agent-shared-filenames',
-    files: [
-      'src/workbench/extensions/agent/utils/attachableFiles.ts',
-      'src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts'
-    ],
-    rules: {
-      'no-restricted-properties': [
-        'error',
-        { property: 'split', message: 'Use the platform filename utilities.' },
-        {
-          property: 'lastIndexOf',
-          message: 'Use the platform filename utilities.'
         }
       ]
     }
@@ -572,42 +586,32 @@ export default defineConfig([
     ignores: [
       '**/*.test.ts',
       '**/*.stories.ts',
-      '**/crdtDebugGate.ts',
       '**/CrdtDevPanel.vue',
-      '**/schemaGuard.ts',
-      '**/docFrameClient.ts',
       '**/restoreOpMinter.ts',
-      '**/CodeBlock.vue',
       '**/crdtLog.ts'
     ],
     rules: {
       'no-console': 'error',
+      'no-restricted-syntax': ['error', ...agentPlatformChannelRestrictions]
+    }
+  },
+  {
+    // After the channels block: flat config replaces a rule's options per
+    // file, so this entry repeats the channel restrictions and adds its own.
+    name: 'comfy/agent-shared-filenames',
+    files: [
+      'src/workbench/extensions/agent/utils/attachableFiles.ts',
+      'src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts'
+    ],
+    rules: {
       'no-restricted-syntax': [
         'error',
+        ...agentPlatformChannelRestrictions,
         {
           selector:
-            "MemberExpression:matches([object.name='navigator'], [object.object.name='window'][object.property.name='navigator']):matches([computed=false][property.name='clipboard'], [computed=true][property.value='clipboard'])",
-          message: 'Use the shared clipboard composables.'
-        },
-        {
-          selector:
-            "CallExpression:matches([callee.name='getServerFeature'], [callee.property.name='getServerFeature'])",
-          message: 'Read server flags through useFeatureFlags.'
-        },
-        {
-          selector:
-            ":matches(AssignmentExpression > MemberExpression.left, UpdateExpression > MemberExpression.argument):matches([object.property.name='ds'], [object.object.property.name='ds'])",
-          message: 'Use the canvas viewport methods.'
-        },
-        {
-          selector:
-            'CallExpression[callee.property.name=/^toLocale(Date|Time)String$/]',
-          message: 'Use the platform date formatting utilities.'
-        },
-        {
-          selector:
-            "ImportDeclaration[source.value='@/i18n'] > ImportSpecifier[imported.name='t']",
-          message: 'Use useI18n in composition scope or a platform service.'
+            "CallExpression[callee.property.name=/^(split|lastIndexOf)$/]:matches([arguments.0.value='.'], [arguments.0.value='/'], [arguments.0.value='\\\\'])",
+          message:
+            'Use the platform filename utilities (getFilenameDetails, getPathDetails).'
         }
       ]
     }
