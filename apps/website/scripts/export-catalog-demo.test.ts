@@ -93,8 +93,10 @@ describe('explicit site snapshot export', () => {
           !item.inputsPreserved
       )
     ).toEqual([])
-    expect(converted.contents).toHaveLength(180)
-    expect(converted.media).toHaveLength(511)
+    expect(converted.contents).toHaveLength(entries.length)
+    expect(new Set(converted.media.map((media) => media.uid)).size).toBe(
+      converted.media.length
+    )
     expect(
       converted.contents.filter(
         (item) =>
