@@ -2,8 +2,8 @@
   <div ref="container" class="flex flex-wrap items-center gap-1">
     <ColorPicker
       v-for="(hex, i) in modelValue"
-      :hex-label="$t('color.hex')"
       :key="i"
+      :hex-label="$t('color.hex')"
       :rgba-label="$t('color.rgba')"
       :hue-label="$t('color.hue')"
       :alpha-label="$t('color.alpha')"

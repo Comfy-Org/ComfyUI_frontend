@@ -23,8 +23,8 @@
     </ToggleGroup>
     <ColorPicker
       v-if="selectedColorName === '_custom'"
-      :hex-label="$t('color.hex')"
       v-model="customColorValue"
+      :hex-label="$t('color.hex')"
       :rgba-label="$t('color.rgba')"
       :hue-label="$t('color.hue')"
       :alpha-label="$t('color.alpha')"

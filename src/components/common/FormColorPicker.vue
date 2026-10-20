@@ -2,8 +2,8 @@
   <div class="color-picker-wrapper flex items-center gap-2">
     <ColorPicker
       :id="id"
-      :hex-label="$t('color.hex')"
       v-model="hexValue"
+      :hex-label="$t('color.hex')"
       :rgba-label="$t('color.rgba')"
       :hue-label="$t('color.hue')"
       :alpha-label="$t('color.alpha')"
