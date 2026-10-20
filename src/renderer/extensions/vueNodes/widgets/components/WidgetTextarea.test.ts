@@ -215,20 +215,26 @@ describe('WidgetTextarea Value Binding', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('copy button has invisible class by default when read-only', () => {
+    it('copy button sits in an action group that is transparent by default when read-only', () => {
       const widget = createTextareaWidget('test', { read_only: true })
       renderComponent(widget, 'test')
 
-      const button = screen.getByRole('button', { name: 'g.copyToClipboard' })
-      expect(button.classList.contains('invisible')).toBe(true)
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(
+        within(actions).getByRole('button', { name: 'g.copyToClipboard' })
+      ).toBeInTheDocument()
+      expect(actions.classList.contains('opacity-0')).toBe(true)
     })
 
-    it('copy button has group-hover:visible class when read-only, and copies on click', async () => {
+    it('copy button is revealed on group hover when read-only, and copies on click', async () => {
       const widget = createTextareaWidget('test value', { read_only: true })
       renderComponent(widget, 'test value')
 
-      const button = screen.getByRole('button', { name: 'g.copyToClipboard' })
-      expect(button.classList.contains('group-hover:visible')).toBe(true)
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(actions.classList.contains('group-hover:opacity-100')).toBe(true)
+      const button = within(actions).getByRole('button', {
+        name: 'g.copyToClipboard'
+      })
 
       await userEvent.click(button)
 
@@ -416,15 +422,15 @@ describe('WidgetTextarea expand to editor', () => {
     ({ overrides, shown }) => {
       renderWithDialogHost(overrides)
 
-      const button = screen.queryByRole('button', {
-        name: 'textEditor.expand'
-      })
+      const actions = screen.getByRole('group', { name: 'g.actions' })
 
-      expect(Boolean(button)).toBe(shown)
-      if (button) {
-        expect(button.classList.contains('invisible')).toBe(true)
-        expect(button.classList.contains('group-hover:visible')).toBe(true)
-      }
+      expect(
+        Boolean(
+          within(actions).queryByRole('button', { name: 'textEditor.expand' })
+        )
+      ).toBe(shown)
+      expect(actions.classList.contains('opacity-0')).toBe(true)
+      expect(actions.classList.contains('group-hover:opacity-100')).toBe(true)
     }
   )
 
