@@ -35,13 +35,8 @@ This test-only node imports the unstable internal `_DynamicGroup` implementation
 from [ComfyUI #16811](https://github.com/Comfy-Org/ComfyUI/pull/16811).
 Backends without that internal class do not register it. The browser scenarios in
 [`dynamicGroup.spec.ts`](../../browser_tests/tests/vueNodes/widgets/dynamicGroup.spec.ts)
-use real `/object_info`, workflow storage and execution. Run them with
-`pnpm exec playwright test --config=playwright.dynamic-group.config.ts`.
-
-The dedicated `playwright-tests-dynamic-group` CI job records videos and runs
-ComfyUI `v0.41.2`, because the standard CI image still ships an older backend. Once that image includes
-the internal DynamicGroup implementation, remove the dedicated checkout and
-dependency installation, and use the shared server startup action in this job.
+use real `/object_info`, workflow storage and execution, and run in the regular
+E2E shards against the CI image's backend.
 
 ## Migration
 
