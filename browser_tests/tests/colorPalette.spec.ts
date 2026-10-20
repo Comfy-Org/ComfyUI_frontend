@@ -1,7 +1,11 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import {
+  expectElementScreenshot,
+  expectRegionScreenshot,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
@@ -169,24 +173,19 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     await comfyPage.setup()
 
     await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
-    const clip = await screenshotRegion(
+    const region = await screenshotRegion(
+      comfyPage.page,
       await comfyPage.nodeOps.getAllNodeRefs()
     )
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
-    await expect(comfyPage.page).toHaveScreenshot(
-      'custom-color-palette-obsidian-dark-all-colors.png',
-      { clip }
+    await region.expectScreenshot(
+      'custom-color-palette-obsidian-dark-all-colors.png'
     )
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light_red')
-    await expect(comfyPage.page).toHaveScreenshot(
-      'custom-color-palette-light-red.png',
-      { clip }
-    )
+    await region.expectScreenshot('custom-color-palette-light-red.png')
 
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'dark')
-    await expect(comfyPage.page).toHaveScreenshot('default-color-palette.png', {
-      clip
-    })
+    await region.expectScreenshot('default-color-palette.png')
   })
 
   test('Can add custom color palette', async ({ comfyPage }) => {
@@ -197,22 +196,17 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
     }, customColorPalettes.obsidian_dark)
     await expect(comfyPage.toast.toastErrors).toHaveCount(0)
 
-    const clip = await screenshotRegion(
+    const region = await screenshotRegion(
+      comfyPage.page,
       await comfyPage.nodeOps.getAllNodeRefs()
     )
     await comfyPage.settings.setSetting('Comfy.ColorPalette', 'obsidian_dark')
-    await expect(comfyPage.page).toHaveScreenshot(
-      'custom-color-palette-obsidian-dark.png',
-      { clip }
-    )
+    await region.expectScreenshot('custom-color-palette-obsidian-dark.png')
     await comfyPage.settings.setSetting(
       'Comfy.ColorPalette',
       'custom_obsidian_dark'
     )
-    await expect(comfyPage.page).toHaveScreenshot(
-      'custom-color-palette-obsidian-dark.png',
-      { clip }
-    )
+    await region.expectScreenshot('custom-color-palette-obsidian-dark.png')
   })
 
   test(
@@ -222,7 +216,7 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'nord')
       const node = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
-      await expect(node.root).toHaveScreenshot('vue-node-nord-load-image.png')
+      await expectElementScreenshot(node.root, 'vue-node-nord-load-image.png')
     }
   )
 
@@ -290,14 +284,10 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
           })
         )
         .toBe(true)
-      await expect(comfyPage.page).toHaveScreenshot(
-        'custom-light-palette-menu-open.png',
-        {
-          clip: await screenshotRegion([
-            menuButton,
-            comfyPage.contextMenu.ariaMenu
-          ])
-        }
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [menuButton, comfyPage.contextMenu.ariaMenu],
+        'custom-light-palette-menu-open.png'
       )
     })
 
@@ -342,24 +332,21 @@ test.describe(
     test('should adjust opacity via node opacity setting', async ({
       comfyPage
     }) => {
-      const clip = await screenshotRegion(
+      const region = await screenshotRegion(
+        comfyPage.page,
         await comfyPage.nodeOps.getAllNodeRefs()
       )
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 0.5)
 
       await comfyPage.page.mouse.move(0, 0)
       await comfyPage.nextFrame()
-      await expect(comfyPage.page).toHaveScreenshot('node-opacity-0.5.png', {
-        clip
-      })
+      await region.expectScreenshot('node-opacity-0.5.png')
 
       await comfyPage.settings.setSetting('Comfy.Node.Opacity', 1.0)
 
       await comfyPage.page.mouse.move(8, 8)
       await comfyPage.nextFrame()
-      await expect(comfyPage.page).toHaveScreenshot('node-opacity-1.png', {
-        clip
-      })
+      await region.expectScreenshot('node-opacity-1.png')
     })
 
     test('should persist color adjustments when changing themes', async ({
@@ -369,11 +356,10 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'arc')
       await comfyPage.page.mouse.move(0, 0)
       await comfyPage.nextFrame()
-      await expect(comfyPage.page).toHaveScreenshot(
-        'node-opacity-0.2-arc-theme.png',
-        {
-          clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
-        }
+      await expectRegionScreenshot(
+        comfyPage.page,
+        await comfyPage.nodeOps.getAllNodeRefs(),
+        'node-opacity-0.2-arc-theme.png'
       )
     })
 
@@ -420,11 +406,10 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
-      await expect(comfyPage.page).toHaveScreenshot(
-        'node-lightened-colors.png',
-        {
-          clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
-        }
+      await expectRegionScreenshot(
+        comfyPage.page,
+        await comfyPage.nodeOps.getAllNodeRefs(),
+        'node-lightened-colors.png'
       )
     })
 
@@ -451,9 +436,10 @@ test.describe(
         await comfyPage.contextMenu.waitForHidden()
         const node = await comfyPage.nodeOps.getFirstNodeRef()
         if (!node) throw new Error('Workflow should have a first node')
-        await expect(comfyPage.page).toHaveScreenshot(
-          'node-opacity-0.3-color-changed.png',
-          { clip: await screenshotRegion([node]) }
+        await expectRegionScreenshot(
+          comfyPage.page,
+          [node],
+          'node-opacity-0.3-color-changed.png'
         )
       })
 
@@ -466,9 +452,10 @@ test.describe(
         await comfyPage.contextMenu.waitForHidden()
         const node = await comfyPage.nodeOps.getFirstNodeRef()
         if (!node) throw new Error('Workflow should have a first node')
-        await expect(comfyPage.page).toHaveScreenshot(
-          'node-opacity-0.3-color-removed.png',
-          { clip: await screenshotRegion([node]) }
+        await expectRegionScreenshot(
+          comfyPage.page,
+          [node],
+          'node-opacity-0.3-color-removed.png'
         )
       })
     })

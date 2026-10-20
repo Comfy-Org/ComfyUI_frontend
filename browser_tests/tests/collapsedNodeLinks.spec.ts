@@ -85,17 +85,15 @@ test.describe(
 
       await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
 
-      const clip = await screenshotRegion(
+      const region = await screenshotRegion(
+        comfyPage.page,
         [
           ...(await comfyPage.vueNodes.nodes.all()),
           graphItems(comfyPage.page, 'subgraphIO')
         ],
-        8
+        { padding: 8 }
       )
-      await expect(comfyPage.page).toHaveScreenshot(
-        'subgraph-entry-collapsed-node-links.png',
-        { clip }
-      )
+      await region.expectScreenshot('subgraph-entry-collapsed-node-links.png')
     })
   }
 )

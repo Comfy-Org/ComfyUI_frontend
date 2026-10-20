@@ -4,7 +4,10 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
-import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import {
+  expectRegionScreenshot,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 async function waitForSearchInsertion(
   comfyPage: ComfyPage,
@@ -79,11 +82,11 @@ test.describe('Node search box', { tag: '@node' }, () => {
       exact: true
     })
     await waitForSearchInsertion(comfyPage, initialNodes.length)
-    await expect(comfyPage.page).toHaveScreenshot('added-node.png', {
-      clip: await screenshotRegion(
-        await getNodeRefsAddedSince(comfyPage, initialNodes)
-      )
-    })
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await getNodeRefsAddedSince(comfyPage, initialNodes),
+      'added-node.png'
+    )
   })
 
   test('Enter adds the top match after typing a query', async ({
@@ -120,13 +123,11 @@ test.describe('Node search box', { tag: '@node' }, () => {
       suggestionIndex: 0
     })
     await waitForSearchInsertion(comfyPage, initialNodes.length)
-    const clip = await screenshotRegion([
+    const region = await screenshotRegion(comfyPage.page, [
       ...(await comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple')),
       ...(await getNodeRefsAddedSince(comfyPage, initialNodes))
     ])
-    await expect(comfyPage.page).toHaveScreenshot('auto-linked-node.png', {
-      clip
-    })
+    await region.expectScreenshot('auto-linked-node.png')
   })
 
   test(
@@ -156,11 +157,10 @@ test.describe('Node search box', { tag: '@node' }, () => {
           comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple')
         )
         .toHaveLength(3)
-      await expect(comfyPage.page).toHaveScreenshot(
-        'auto-linked-node-batch.png',
-        {
-          clip: await screenshotRegion(await comfyPage.nodeOps.getAllNodeRefs())
-        }
+      await expectRegionScreenshot(
+        comfyPage.page,
+        await comfyPage.nodeOps.getAllNodeRefs(),
+        'auto-linked-node-batch.png'
       )
     }
   )
@@ -177,16 +177,13 @@ test.describe('Node search box', { tag: '@node' }, () => {
         exact: true
       })
       await waitForSearchInsertion(comfyPage, initialNodes.length)
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         ...(await comfyPage.nodeOps.getNodeRefsByType(
           'CheckpointLoaderSimple'
         )),
         ...(await getNodeRefsAddedSince(comfyPage, initialNodes))
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
-        'added-node-no-connection.png',
-        { clip }
-      )
+      await region.expectScreenshot('added-node-no-connection.png')
     }
   )
 
@@ -434,14 +431,11 @@ test.describe('Release context menu', { tag: '@node' }, () => {
       )
       await comfyPage.page.mouse.move(10, 10)
       await comfyPage.nextFrame()
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         contextMenu,
         ...(await comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple'))
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
-        'link-release-context-menu.png',
-        { clip }
-      )
+      await region.expectScreenshot('link-release-context-menu.png')
     }
   )
 
@@ -456,16 +450,13 @@ test.describe('Release context menu', { tag: '@node' }, () => {
       await comfyPage.nextFrame()
       await comfyPage.searchBox.fillAndSelectFirstNode('CLIP Prompt')
       await waitForSearchInsertion(comfyPage, initialNodes.length)
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         ...(await comfyPage.nodeOps.getNodeRefsByType(
           'CheckpointLoaderSimple'
         )),
         ...(await getNodeRefsAddedSince(comfyPage, initialNodes))
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
-        'link-context-menu-search.png',
-        { clip }
-      )
+      await region.expectScreenshot('link-context-menu-search.png')
     }
   )
 

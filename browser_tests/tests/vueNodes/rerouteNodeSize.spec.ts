@@ -1,7 +1,4 @@
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Vue Reroute Node Size', { tag: '@vue-nodes' }, () => {
@@ -15,11 +12,11 @@ test.describe('Vue Reroute Node Size', { tag: '@vue-nodes' }, () => {
     'reroute node visual appearance',
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
-      const clip = await screenshotRegion(await comfyPage.vueNodes.nodes.all())
-      await expect(comfyPage.page).toHaveScreenshot(
-        'vue-reroute-node-compact.png',
-        { clip }
+      const region = await screenshotRegion(
+        comfyPage.page,
+        await comfyPage.vueNodes.nodes.all()
       )
+      await region.expectScreenshot('vue-reroute-node-compact.png')
     }
   )
 })

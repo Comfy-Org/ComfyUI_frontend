@@ -58,14 +58,11 @@ test.describe(
       )
       await comfyPage.nextFrame()
 
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         comfyPage.vueNodes.getNodeByTitle('KSampler'),
         comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode')
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
-        'bring-to-front-overlapped-before.png',
-        { clip }
-      )
+      await region.expectScreenshot('bring-to-front-overlapped-before.png')
 
       await expect
         .poll(async () => {
@@ -96,10 +93,7 @@ test.describe(
       )
       expect(clipZ).toBe(Math.max(...allZIndexes))
 
-      await expect(comfyPage.page).toHaveScreenshot(
-        'bring-to-front-overlapped-after.png',
-        { clip }
-      )
+      await region.expectScreenshot('bring-to-front-overlapped-after.png')
     })
 
     test('should bring overlapped node to front when clicking on its widget', async ({
@@ -126,13 +120,12 @@ test.describe(
         })
         .toBeGreaterThan(0)
 
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         comfyPage.vueNodes.getNodeByTitle('VAE Decode'),
         comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode')
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
-        'bring-to-front-widget-overlapped-before.png',
-        { clip }
+      await region.expectScreenshot(
+        'bring-to-front-widget-overlapped-before.png'
       )
 
       const clipNode = comfyPage.vueNodes.getNodeByTitle('CLIP Text Encode')
@@ -149,9 +142,8 @@ test.describe(
         })
         .toBeGreaterThan(0)
 
-      await expect(comfyPage.page).toHaveScreenshot(
-        'bring-to-front-widget-overlapped-after.png',
-        { clip }
+      await region.expectScreenshot(
+        'bring-to-front-widget-overlapped-after.png'
       )
     })
   }

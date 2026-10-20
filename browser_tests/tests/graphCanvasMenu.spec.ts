@@ -20,15 +20,13 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
       const button = comfyPage.page.getByTestId(
         TestIds.canvas.toggleLinkVisibilityButton
       )
-      const clip = await screenshotRegion(
+      const region = await screenshotRegion(
+        comfyPage.page,
         await comfyPage.nodeOps.getAllNodeRefs()
       )
       await button.click()
       await comfyPage.nextFrame()
-      await expect(comfyPage.page).toHaveScreenshot(
-        'canvas-with-hidden-links.png',
-        { clip }
-      )
+      await region.expectScreenshot('canvas-with-hidden-links.png')
       const hiddenLinkRenderMode = await comfyPage.page.evaluate(() => {
         return window.LiteGraph!.HIDDEN_LINK
       })
@@ -38,10 +36,7 @@ test.describe('Graph Canvas Menu', { tag: ['@screenshot', '@canvas'] }, () => {
 
       await button.click()
       await comfyPage.nextFrame()
-      await expect(comfyPage.page).toHaveScreenshot(
-        'canvas-with-visible-links.png',
-        { clip }
-      )
+      await region.expectScreenshot('canvas-with-visible-links.png')
       await expect
         .poll(() => comfyPage.settings.getSetting('Comfy.LinkRenderMode'))
         .not.toBe(hiddenLinkRenderMode)

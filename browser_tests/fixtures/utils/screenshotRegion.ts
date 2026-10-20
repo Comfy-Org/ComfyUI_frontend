@@ -1,18 +1,24 @@
-import type { Locator, Page } from '@playwright/test'
+import type {
+  Locator,
+  Page,
+  PageAssertionsToHaveScreenshotOptions
+} from '@playwright/test'
 import { expect } from '@playwright/test'
 import { isEqual } from 'es-toolkit'
 
 import type { Position, Size } from '@e2e/fixtures/types'
+import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 
-type Rect = Position & Size
+type PageRect = Position & Size
 
 interface ClientBounded {
-  getClientBounding(): Promise<Rect>
+  getClientBounding(): Promise<PageRect>
 }
 
-type RegionTarget = Locator | ClientBounded | Rect | Position
+type RegionTarget = Locator | ClientBounded | PageRect | Position
 
-async function clientRectOf(target: RegionTarget): Promise<Rect> {
+async function clientRectOf(target: RegionTarget): Promise<PageRect> {
   if ('getClientBounding' in target) return target.getClientBounding()
   if ('boundingBox' in target) {
     await target.evaluate((element) =>
@@ -36,7 +42,7 @@ async function clientRectOf(target: RegionTarget): Promise<Rect> {
 async function enclosingRect(
   targets: RegionTarget[],
   padding: number
-): Promise<Rect> {
+): Promise<PageRect> {
   const rects = await Promise.all(targets.map(clientRectOf))
   const left = Math.floor(Math.min(...rects.map((r) => r.x)) - padding)
   const top = Math.floor(Math.min(...rects.map((r) => r.y)) - padding)
@@ -49,65 +55,113 @@ async function enclosingRect(
   return { x: left, y: top, width: right - left, height: bottom - top }
 }
 
+export type ScreenshotOptions = Omit<
+  PageAssertionsToHaveScreenshotOptions,
+  'clip' | 'fullPage'
+>
+
+interface RegionOptions {
+  padding?: number
+}
+
+export interface ScreenshotRegion {
+  expectScreenshot(name: string, options?: ScreenshotOptions): Promise<void>
+}
+
 /**
- * Page-space `clip` enclosing every target plus `padding` on each side, so a
- * `toHaveScreenshot` captures only the area under test. Waits until the
- * targets stop moving or resizing.
+ * Measures the area enclosing every target plus `padding` once the targets
+ * stop moving, for comparing one area across several screenshots.
  */
 export async function screenshotRegion(
+  page: Page,
   targets: RegionTarget[],
-  padding = 24
-): Promise<Rect> {
+  { padding = 24 }: RegionOptions = {}
+): Promise<ScreenshotRegion> {
   if (targets.length === 0) throw new Error('No targets to frame')
-  let current = await enclosingRect(targets, padding)
-  let previous: Rect | undefined
+  let clip = await enclosingRect(targets, padding)
+  let previous: PageRect | undefined
   await expect
     .poll(
       async () => {
         const sample = await enclosingRect(targets, padding)
         const settled = isEqual(previous, sample)
-        previous = current = sample
+        previous = clip = sample
         return settled
       },
       { intervals: [50], message: 'Screenshot region targets never settled' }
     )
     .toBe(true)
-  return current
+  return {
+    expectScreenshot: (name, options) =>
+      expect(page).toHaveScreenshot(name, { ...options, clip })
+  }
 }
 
-/** Region target enclosing the shown graph's groups, all positionable items, or subgraph IO nodes, measured live on each read. */
+/** Screenshot assertion limited to one element's box. */
+export async function expectElementScreenshot(
+  element: Locator,
+  name: string,
+  options?: ScreenshotOptions
+): Promise<void> {
+  await expect(element).toHaveScreenshot(name, options)
+}
+
+/** Screenshot assertion limited to the area enclosing every target. */
+export async function expectRegionScreenshot(
+  page: Page,
+  targets: RegionTarget[],
+  name: string,
+  { padding, ...options }: RegionOptions & ScreenshotOptions = {}
+): Promise<void> {
+  const region = await screenshotRegion(page, targets, { padding })
+  await region.expectScreenshot(name, options)
+}
+
+/** Region target enclosing the shown graph's groups, all positionable items, subgraph IO nodes, or multi-selection outline, measured live on each read. */
 export function graphItems(
   page: Page,
-  kind: 'groups' | 'all' | 'subgraphIO'
+  kind: 'groups' | 'all' | 'subgraphIO' | 'selection'
 ): ClientBounded {
   return {
     getClientBounding: () =>
-      page.evaluate((kind) => {
-        const app = window.app!
-        const graph = app.canvas.graph!
-        const items = (() => {
-          if (kind === 'groups') return graph.groups
-          if (kind === 'all') return [...graph.positionableItems()]
-          if (!('inputNode' in graph)) throw new Error('Not in a subgraph')
-          return [graph.inputNode, graph.outputNode]
-        })()
-        if (items.length === 0) throw new Error(`No ${kind} to frame`)
-        const rects = items.map((item) => {
-          if (!('measure' in item) || item.flags.collapsed)
-            return item.boundingRect
-          const bounds: [number, number, number, number] = [0, 0, 0, 0]
-          item.measure(bounds)
-          return bounds
-        })
-        const [left, top] = app.canvasPosToClientPos([
-          Math.min(...rects.map(([x]) => x)),
-          Math.min(...rects.map(([, y]) => y))
-        ])
-        const [right, bottom] = app.canvasPosToClientPos([
-          Math.max(...rects.map(([x, , width]) => x + width)),
-          Math.max(...rects.map(([, y, , height]) => y + height))
-        ])
-        return { x: left, y: top, width: right - left, height: bottom - top }
-      }, kind)
+      page.evaluate(
+        ([kind, selectionPadding]) => {
+          const app = window.app!
+          const graph = app.canvas.graph!
+          const items = (() => {
+            if (kind === 'groups') return graph.groups
+            if (kind === 'all') return [...graph.positionableItems()]
+            if (kind === 'selection') return [...app.canvas.selectedItems]
+            if (!('inputNode' in graph)) throw new Error('Not in a subgraph')
+            return [graph.inputNode, graph.outputNode]
+          })()
+          if (items.length === 0) throw new Error(`No ${kind} to frame`)
+
+          const rects = items.map((item) => {
+            if (
+              kind === 'selection' ||
+              !('measure' in item) ||
+              item.flags.collapsed
+            )
+              return item.boundingRect
+            const bounds: Rect = [0, 0, 0, 0]
+            item.measure(bounds)
+            return bounds
+          })
+          const padding = kind === 'selection' ? selectionPadding : 0
+
+          const [left, top] = app.canvasPosToClientPos([
+            Math.min(...rects.map(([x]) => x)) - padding,
+            Math.min(...rects.map(([, y]) => y)) - padding
+          ])
+          const [right, bottom] = app.canvasPosToClientPos([
+            Math.max(...rects.map(([x, , width]) => x + width)) + padding,
+            Math.max(...rects.map(([, y, , height]) => y + height)) + padding
+          ])
+
+          return { x: left, y: top, width: right - left, height: bottom - top }
+        },
+        [kind, SELECTION_BOUNDS_PADDING] as const
+      )
   }
 }

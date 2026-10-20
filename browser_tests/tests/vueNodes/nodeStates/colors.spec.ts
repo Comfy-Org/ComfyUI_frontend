@@ -4,7 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
-import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Vue Node Custom Colors',
@@ -41,18 +41,20 @@ test.describe(
         .getByTestId(TestIds.selectionToolbox.colorBlue)
         .click()
 
-      await expect(comfyPage.page).toHaveScreenshot(
-        'vue-node-custom-color-blue.png',
-        { clip: await screenshotRegion([loadCheckpointNode]) }
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [loadCheckpointNode],
+        'vue-node-custom-color-blue.png'
       )
     })
 
     test('should load node colors from workflow', async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
       await fitToViewInstant(comfyPage, { zoom: 0.6 })
-      await expect(comfyPage.page).toHaveScreenshot(
-        'vue-node-custom-colors-dark-all-colors.png',
-        { clip: await screenshotRegion(await comfyPage.vueNodes.nodes.all()) }
+      await expectRegionScreenshot(
+        comfyPage.page,
+        await comfyPage.vueNodes.nodes.all(),
+        'vue-node-custom-colors-dark-all-colors.png'
       )
     })
 
@@ -84,9 +86,10 @@ test.describe(
       await comfyPage.settings.setSetting('Comfy.ColorPalette', 'light')
       await comfyPage.workflow.loadWorkflow('nodes/every_node_color')
       await fitToViewInstant(comfyPage, { zoom: 0.6 })
-      await expect(comfyPage.page).toHaveScreenshot(
-        'vue-node-custom-colors-light-all-colors.png',
-        { clip: await screenshotRegion(await comfyPage.vueNodes.nodes.all()) }
+      await expectRegionScreenshot(
+        comfyPage.page,
+        await comfyPage.vueNodes.nodes.all(),
+        'vue-node-custom-colors-light-all-colors.png'
       )
     })
   }

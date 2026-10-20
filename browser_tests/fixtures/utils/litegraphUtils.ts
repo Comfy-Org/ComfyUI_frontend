@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
@@ -323,12 +324,15 @@ export class NodeReference {
       const app = window.app!
       const node = app.canvas.graph!.getNodeById(id)
       if (!node) throw new Error(`Node ${id} not found`)
-      const bounds: [number, number, number, number] = [0, 0, 0, 0]
+
+      const bounds: Rect = [0, 0, 0, 0]
       if (node.flags.collapsed) node.getBounding(bounds)
       else node.measure(bounds)
+
       const [x, y, width, height] = bounds
       const [left, top] = app.canvasPosToClientPos([x, y])
       const [right, bottom] = app.canvasPosToClientPos([x + width, y + height])
+
       return { x: left, y: top, width: right - left, height: bottom - top }
     }, this.id)
   }

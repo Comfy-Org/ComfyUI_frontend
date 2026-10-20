@@ -133,14 +133,11 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await comfyPage.command.executeCommand('Comfy.Graph.FitGroupToContents')
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await fitToViewInstant(comfyPage)
-    const clip = await screenshotRegion([
+    const region = await screenshotRegion(comfyPage.page, [
       graphItems(comfyPage.page, 'groups'),
       ...(await comfyPage.vueNodes.nodes.all())
     ])
-    await expect(comfyPage.page).toHaveScreenshot(
-      'vue-groups-fit-to-contents.png',
-      { clip }
-    )
+    await region.expectScreenshot('vue-groups-fit-to-contents.png')
   })
 
   test('should move nested groups together when dragging outer group', async ({

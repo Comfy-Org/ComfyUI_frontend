@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Vue Locked Widget Hover Styling',
@@ -42,7 +43,7 @@ test.describe(
 
       await expect(editableInput).toBeVisible()
       await editableInput.hover()
-      await comfyPage.expectScreenshot(
+      await expectElementScreenshot(
         sourceNode,
         'editable-widget-hover-color.png'
       )

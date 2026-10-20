@@ -141,14 +141,11 @@ test.describe(
 
       try {
         await expect(new Tooltip(comfyPage.page).open).toBeHidden()
-        const clip = await screenshotRegion([
+        const region = await screenshotRegion(comfyPage.page, [
           vueNodeOf(comfyPage, samplerNode.id),
           dragTarget
         ])
-        await expect(comfyPage.page).toHaveScreenshot(
-          'vue-node-dragging-link.png',
-          { clip }
-        )
+        await region.expectScreenshot('vue-node-dragging-link.png')
       } finally {
         await comfyMouse.drop()
       }
@@ -278,15 +275,12 @@ test.describe(
 
       await comfyMouse.move(vaeInputCenter)
       await comfyMouse.drag(dragTarget)
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         vueNodeOf(comfyPage, samplerNode.id),
         vueNodeOf(comfyPage, vaeNode.id),
         dragTarget
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
-        'vue-node-input-drag-reuses-origin.png',
-        { clip }
-      )
+      await region.expectScreenshot('vue-node-input-drag-reuses-origin.png')
       await comfyMouse.drop()
     })
 
@@ -329,15 +323,12 @@ test.describe(
 
       try {
         await comfyMouse.drag(dragTarget)
-        const clip = await screenshotRegion([
+        const region = await screenshotRegion(comfyPage.page, [
           vueNodeOf(comfyPage, samplerNode.id),
           vueNodeOf(comfyPage, vaeNode.id),
           dragTarget
         ])
-        await expect(comfyPage.page).toHaveScreenshot(
-          'vue-node-input-drag-ctrl-alt.png',
-          { clip }
-        )
+        await region.expectScreenshot('vue-node-input-drag-ctrl-alt.png')
       } finally {
         await comfyMouse.drop().catch(() => {})
         await comfyPage.page.keyboard.up('Alt').catch(() => {})
@@ -488,15 +479,12 @@ test.describe(
       try {
         await comfyMouse.move(vaeInputCenter)
         await comfyMouse.drag(dragTarget)
-        const clip = await screenshotRegion([
+        const region = await screenshotRegion(comfyPage.page, [
           vueNodeOf(comfyPage, samplerNode.id),
           vueNodeOf(comfyPage, vaeNode.id),
           dragTarget
         ])
-        await expect(comfyPage.page).toHaveScreenshot(
-          'vue-node-reroute-input-drag.png',
-          { clip }
-        )
+        await region.expectScreenshot('vue-node-reroute-input-drag.png')
         await comfyMouse.move(vaeInputCenter)
         await comfyMouse.drop()
       } catch (error) {
@@ -582,15 +570,12 @@ test.describe(
         shiftHeld = true
         dropPending = true
         await comfyMouse.drag(dragTarget)
-        const clip = await screenshotRegion([
+        const region = await screenshotRegion(comfyPage.page, [
           vueNodeOf(comfyPage, samplerNode.id),
           vueNodeOf(comfyPage, vaeNode.id),
           dragTarget
         ])
-        await expect(comfyPage.page).toHaveScreenshot(
-          'vue-node-reroute-output-shift-drag.png',
-          { clip }
-        )
+        await region.expectScreenshot('vue-node-reroute-output-shift-drag.png')
         await comfyMouse.move(outputCenter)
         await comfyMouse.drop()
         dropPending = false
@@ -713,15 +698,12 @@ test.describe(
         await comfyMouse.drag(dragTarget)
         dropPending = true
 
-        const clip = await screenshotRegion([
+        const region = await screenshotRegion(comfyPage.page, [
           vueNodeOf(comfyPage, clipNode.id),
           vueNodeOf(comfyPage, samplerNode.id),
           dragTarget
         ])
-        await expect(comfyPage.page).toHaveScreenshot(
-          'vue-node-shift-output-multi-link.png',
-          { clip }
-        )
+        await region.expectScreenshot('vue-node-shift-output-multi-link.png')
       } finally {
         if (dropPending) await comfyMouse.drop().catch(() => {})
         if (shiftHeld) await comfyPage.page.keyboard.up('Shift').catch(() => {})
@@ -751,14 +733,11 @@ test.describe(
       await comfyMouse.move(clipOutputCenter)
       await comfyMouse.drag(samplerCenter)
 
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         vueNodeOf(comfyPage, clipNode.id),
         samplerVue
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
-        'vue-node-snap-to-node.png',
-        { clip }
-      )
+      await region.expectScreenshot('vue-node-snap-to-node.png')
 
       await comfyMouse.drop()
 
@@ -805,14 +784,11 @@ test.describe(
       await comfyMouse.move(clipOutputCenter)
       await comfyMouse.drag(samplerInput3Center)
 
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         vueNodeOf(comfyPage, clipNode.id),
         vueNodeOf(comfyPage, samplerNode.id)
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
-        'vue-node-snap-to-slot.png',
-        { clip }
-      )
+      await region.expectScreenshot('vue-node-snap-to-slot.png')
 
       await comfyMouse.drop()
 

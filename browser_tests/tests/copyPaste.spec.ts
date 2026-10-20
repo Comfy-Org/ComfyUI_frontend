@@ -5,7 +5,11 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
-import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import {
+  expectElementScreenshot,
+  expectRegionScreenshot,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -63,7 +67,7 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.nextFrame()
     await comfyPage.clipboard.copy()
     await comfyPage.clipboard.paste()
-    await expect(comfyPage.canvas).toHaveScreenshot('copied-node.png')
+    await expectElementScreenshot(comfyPage.canvas, 'copied-node.png')
   })
 
   test('Can copy and paste node with link', async ({ comfyPage }) => {
@@ -77,13 +81,11 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await expect
       .poll(() => comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
       .toHaveLength(3)
-    const clip = await screenshotRegion([
+    const region = await screenshotRegion(comfyPage.page, [
       ...(await comfyPage.nodeOps.getNodeRefsByType('CheckpointLoaderSimple')),
       ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
     ])
-    await expect(comfyPage.page).toHaveScreenshot('copied-node-with-link.png', {
-      clip
-    })
+    await region.expectScreenshot('copied-node-with-link.png')
   })
 
   test('Can copy and paste text', async ({ comfyPage }) => {
@@ -115,11 +117,11 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     })
     await comfyPage.clipboard.paste(null)
     await comfyPage.page.keyboard.press('Enter')
-    await expect(comfyPage.page).toHaveScreenshot('copied-widget-value.png', {
-      clip: await screenshotRegion(
-        await comfyPage.nodeOps.getNodeRefsByType('EmptyLatentImage')
-      )
-    })
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getNodeRefsByType('EmptyLatentImage'),
+      'copied-widget-value.png'
+    )
   })
 
   /**
@@ -141,13 +143,12 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.clipboard.copy(null)
     await comfyPage.clipboard.paste(null)
     await comfyPage.clipboard.paste(null)
-    const clip = await screenshotRegion([
+    const region = await screenshotRegion(comfyPage.page, [
       ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')),
       ...(await comfyPage.nodeOps.getNodeRefsByType('EmptyLatentImage'))
     ])
-    await expect(comfyPage.page).toHaveScreenshot(
-      'paste-in-text-area-with-node-previously-copied.png',
-      { clip }
+    await region.expectScreenshot(
+      'paste-in-text-area-with-node-previously-copied.png'
     )
   })
 
@@ -160,13 +161,11 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     const pastePosition = { x: 10, y: 10 }
     await comfyPage.page.mouse.click(pastePosition.x, pastePosition.y)
     await comfyPage.clipboard.paste(null)
-    const clip = await screenshotRegion([
+    const region = await screenshotRegion(comfyPage.page, [
       pastePosition,
       ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
     ])
-    await expect(comfyPage.page).toHaveScreenshot('no-node-copied.png', {
-      clip
-    })
+    await region.expectScreenshot('no-node-copied.png')
   })
 
   test('Copy node by dragging + alt', async ({ comfyPage }) => {
@@ -176,11 +175,11 @@ test.describe('Copy Paste', { tag: ['@screenshot', '@workflow'] }, () => {
     await comfyPage.page.mouse.move(100, 100)
     await comfyPage.page.mouse.up()
     await comfyPage.page.keyboard.up('Alt')
-    await expect(comfyPage.page).toHaveScreenshot('drag-copy-copied-node.png', {
-      clip: await screenshotRegion(
-        await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-      )
-    })
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'),
+      'drag-copy-copied-node.png'
+    )
   })
 
   test('Repeated pastes never reuse node instances or IDs', async ({

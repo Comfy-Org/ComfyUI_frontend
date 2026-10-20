@@ -549,27 +549,6 @@ export class ComfyPage {
     return this.page.locator('.dom-widget')
   }
 
-  async expectScreenshot(
-    locator: Locator,
-    name: string | string[],
-    options?: {
-      animations?: 'disabled' | 'allow'
-      caret?: 'hide' | 'initial'
-      mask?: Array<Locator>
-      maskColor?: string
-      maxDiffPixelRatio?: number
-      maxDiffPixels?: number
-      omitBackground?: boolean
-      scale?: 'css' | 'device'
-      stylePath?: string | Array<string>
-      threshold?: number
-      timeout?: number
-    }
-  ): Promise<void> {
-    await this.nextFrame()
-    await comfyExpect(locator).toHaveScreenshot(name, options)
-  }
-
   async setFocusMode(focusMode: boolean) {
     await this.page.evaluate((focusMode) => {
       ;(window.app!.extensionManager as WorkspaceStore).focusMode = focusMode

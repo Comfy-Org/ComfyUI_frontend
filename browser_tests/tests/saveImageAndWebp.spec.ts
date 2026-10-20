@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Save Image and WEBM preview',
@@ -27,9 +27,10 @@ test.describe(
         timeout: 30000
       })
 
-      await expect(comfyPage.page).toHaveScreenshot(
-        'save-image-and-webm-preview.png',
-        { clip: await screenshotRegion([saveImageNode, saveWebmNode]) }
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [saveImageNode, saveWebmNode],
+        'save-image-and-webm-preview.png'
       )
     })
   }

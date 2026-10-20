@@ -113,9 +113,9 @@ await expect(async () => {
 
 - **Screenshots are Linux-only.** Don't commit local screenshots.
 - **To update baselines:** Add PR label `New Browser Test Expectations` (or comment `/update-playwright`); the images from the E2E run's failed screenshot assertions are committed without a rerun; the workflow fails if the run is missing or incomplete. Only the first stale screenshot of each test is captured, so comment `/update-playwright full` to rerun Playwright when one test takes several changed screenshots
-- **Mask dynamic content:**
+- **Capture only the area under test** with `expectElementScreenshot`, `expectRegionScreenshot`, or `screenshotRegion` from `@e2e/fixtures/utils/screenshotRegion`; lint rejects `toHaveScreenshot` in spec files. They accept the usual screenshot options, such as `mask` for dynamic content:
   ```typescript
-  await expect(comfyPage.canvas).toHaveScreenshot('page.png', {
+  await expectElementScreenshot(dialog, 'dialog.png', {
     mask: [page.locator('.timestamp')]
   })
   ```
@@ -168,6 +168,7 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '../fixtures/ComfyPage'
+import { expectRegionScreenshot } from '../fixtures/utils/screenshotRegion'
 
 test.describe('FeatureName', { tag: ['@canvas'] }, () => {
   test.afterEach(async ({ comfyPage }) => {
@@ -180,7 +181,7 @@ test.describe('FeatureName', { tag: ['@canvas'] }, () => {
     const node = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     // ... test logic
 
-    await expect(comfyPage.canvas).toHaveScreenshot('expected.png')
+    await expectRegionScreenshot(comfyPage.page, [node], 'expected.png')
   })
 })
 ```

@@ -1,7 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({
   initialSettings: {
@@ -31,8 +31,10 @@ test.describe('Record Audio Node', { tag: '@screenshot' }, () => {
 
     const [recordAudioNode] =
       await comfyPage.nodeOps.getNodeRefsByType('RecordAudio')
-    await expect(comfyPage.page).toHaveScreenshot('record_audio_node.png', {
-      clip: await screenshotRegion([recordAudioNode])
-    })
+    await expectRegionScreenshot(
+      comfyPage.page,
+      [recordAudioNode],
+      'record_audio_node.png'
+    )
   })
 })

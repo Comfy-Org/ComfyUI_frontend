@@ -6,7 +6,7 @@ import {
   setComboInputOptions
 } from '@e2e/fixtures/utils/objectInfo'
 import { assetPath } from '@e2e/fixtures/utils/paths'
-import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -63,11 +63,11 @@ test.describe(
           const request = await uploadRequestPromise
           expect(request.url()).toContain('/upload/')
         } else {
-          await expect(comfyPage.page).toHaveScreenshot(`${fileName}.png`, {
-            clip: await screenshotRegion(
-              await comfyPage.nodeOps.getAllNodeRefs()
-            )
-          })
+          await expectRegionScreenshot(
+            comfyPage.page,
+            await comfyPage.nodeOps.getAllNodeRefs(),
+            `${fileName}.png`
+          )
         }
       })
     })

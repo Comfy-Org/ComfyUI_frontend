@@ -165,13 +165,11 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
         )
         .toBe(true)
 
-      const clip = await screenshotRegion(
+      const region = await screenshotRegion(
+        comfyPage.page,
         await comfyPage.nodeOps.getAllNodeRefs()
       )
-      await expect(comfyPage.page).toHaveScreenshot(
-        'lod-comparison-low-quality.png',
-        { clip }
-      )
+      await region.expectScreenshot('lod-comparison-low-quality.png')
 
       await comfyPage.settings.setSetting(
         'LiteGraph.Canvas.MinFontSizeForLOD',
@@ -184,10 +182,7 @@ test.describe('LOD Threshold', { tag: ['@screenshot', '@canvas'] }, () => {
         )
         .toBe(false)
 
-      await expect(comfyPage.page).toHaveScreenshot(
-        'lod-comparison-high-quality.png',
-        { clip }
-      )
+      await region.expectScreenshot('lod-comparison-high-quality.png')
 
       await expect
         .poll(() => comfyPage.page.evaluate(() => window.app!.canvas.ds.scale))

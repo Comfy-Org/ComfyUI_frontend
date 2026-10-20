@@ -2,7 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const MUTE_HOTKEY = 'Control+m'
 const MUTE_OPACITY = '0.5'
@@ -22,11 +22,10 @@ test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
 
       await comfyPage.page.keyboard.press(MUTE_HOTKEY)
       await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
-      await expect(comfyPage.page).toHaveScreenshot(
-        'vue-node-muted-state.png',
-        {
-          clip: await screenshotRegion([checkpointNode])
-        }
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [checkpointNode],
+        'vue-node-muted-state.png'
       )
 
       await comfyPage.page.keyboard.press(MUTE_HOTKEY)

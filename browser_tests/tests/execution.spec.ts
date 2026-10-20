@@ -80,16 +80,13 @@ test.describe('Execution', { tag: ['@smoke', '@workflow'] }, () => {
         .getByTestId(TestIds.dialogs.errorOverlayDismiss)
         .click()
       await errorOverlay.waitFor({ state: 'hidden' })
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         ...(await comfyPage.nodeOps.getNodeRefsByType(
           'CheckpointLoaderSimple'
         )),
         ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
-        'execution-error-unconnected-slot.png',
-        { clip }
-      )
+      await region.expectScreenshot('execution-error-unconnected-slot.png')
     }
   )
 })

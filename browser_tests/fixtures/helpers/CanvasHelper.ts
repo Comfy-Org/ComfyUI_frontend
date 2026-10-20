@@ -233,13 +233,11 @@ export class CanvasHelper {
     await nextFrame(this.page)
   }
 
-  async getOffset(): Promise<[number, number]> {
-    return this.page.evaluate(
-      () => [...window.app!.canvas.ds.offset] as [number, number]
-    )
+  async getOffset(): Promise<Point> {
+    return this.page.evaluate(() => [...window.app!.canvas.ds.offset] as Point)
   }
 
-  async setOffset(offset: [number, number]): Promise<void> {
+  async setOffset(offset: Point): Promise<void> {
     await this.page.evaluate((offset) => {
       const canvas = window.app!.canvas
       canvas.ds.offset = offset

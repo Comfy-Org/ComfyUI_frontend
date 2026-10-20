@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 
@@ -35,7 +36,7 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
       await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.command.executeCommand('Workspace.ToggleFocusMode')
       await expect(comfyPage.menu.sideToolbar).toBeHidden()
-      await expect(comfyPage.canvas).toHaveScreenshot('focus-mode-on.png')
+      await expectElementScreenshot(comfyPage.canvas, 'focus-mode-on.png')
     }
   )
 

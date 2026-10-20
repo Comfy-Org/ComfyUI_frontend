@@ -105,13 +105,13 @@ test.describe(
       await comfyPage.contextMenu.openColorSubmenu()
       await expect(comfyPage.selectionToolbox).toBeVisible()
 
-      const clip = await screenshotRegion([
+      const region = await screenshotRegion(comfyPage.page, [
         graphItems(comfyPage.page, 'groups'),
         ...(await comfyPage.contextMenu.ariaMenu.all())
       ])
-      await expect(comfyPage.page).toHaveScreenshot(
+      await region.expectScreenshot(
         'group-color-right-click-matches-toolbar-swatch.png',
-        { maxDiffPixels: 25, clip }
+        { maxDiffPixels: 25 }
       )
     })
 

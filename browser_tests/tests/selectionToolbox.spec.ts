@@ -4,18 +4,21 @@ import type { Page } from '@playwright/test'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { screenshotRegion } from '@e2e/fixtures/utils/screenshotRegion'
+import {
+  expectRegionScreenshot,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
 
 const test = comfyPageFixture
 
 const BLUE_COLOR = 'rgb(51, 51, 85)'
 const RED_COLOR = 'rgb(85, 51, 51)'
 
-async function selectionRegion(comfyPage: ComfyPage, nodeTitles: string[]) {
+async function selectionTargets(comfyPage: ComfyPage, nodeTitles: string[]) {
   const nodes = await Promise.all(
     nodeTitles.map((title) => comfyPage.nodeOps.getNodeRefsByTitle(title))
   )
-  return screenshotRegion([...nodes.flat(), comfyPage.selectionToolbox])
+  return [...nodes.flat(), comfyPage.selectionToolbox]
 }
 
 const getColorPickerButton = (comfyPage: { page: Page }) =>
@@ -44,12 +47,11 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.nodeOps.selectNodes(selectedTitles)
 
     await expect(comfyPage.selectionToolbox).toBeVisible()
-    await expect(comfyPage.page).toHaveScreenshot(
+    await expectRegionScreenshot(
+      comfyPage.page,
+      await selectionTargets(comfyPage, selectedTitles),
       'selection-toolbox-multiple-nodes-border.png',
-      {
-        maxDiffPixels: 100,
-        clip: await selectionRegion(comfyPage, selectedTitles)
-      }
+      { maxDiffPixels: 100 }
     )
   })
 
@@ -100,30 +102,28 @@ test.describe('Selection Toolbox', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.nodeOps.selectNodes(['KSampler'])
 
     await expect(comfyPage.selectionToolbox).toBeVisible()
-    const clip = await selectionRegion(comfyPage, [
-      'KSampler',
-      'CLIP Text Encode (Prompt)'
-    ])
-    await expect(comfyPage.page).toHaveScreenshot(
-      'selection-toolbox-single-node-no-border.png',
-      { clip }
+    const region = await screenshotRegion(
+      comfyPage.page,
+      await selectionTargets(comfyPage, [
+        'KSampler',
+        'CLIP Text Encode (Prompt)'
+      ])
     )
+    await region.expectScreenshot('selection-toolbox-single-node-no-border.png')
 
     await comfyPage.nodeOps.selectNodes([
       'KSampler',
       'CLIP Text Encode (Prompt)'
     ])
 
-    await expect(comfyPage.page).toHaveScreenshot(
-      'selection-toolbox-multiple-selections-border.png',
-      { clip }
+    await region.expectScreenshot(
+      'selection-toolbox-multiple-selections-border.png'
     )
 
     await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
 
-    await expect(comfyPage.page).toHaveScreenshot(
-      'selection-toolbox-single-selection-no-border.png',
-      { clip }
+    await region.expectScreenshot(
+      'selection-toolbox-single-selection-no-border.png'
     )
   })
 
