@@ -664,7 +664,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'run it',
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      client_id: 'tab-socket-id'
+      client_id: 'tab-socket-id',
+      client_version: buildVersion
     })
   })
 
