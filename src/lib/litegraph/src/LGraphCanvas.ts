@@ -4340,8 +4340,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   copyToClipboard(items?: Iterable<Positionable>): string {
     const serializedData = JSON.stringify(this._serializeItems(items))
-    localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
-    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
+    try {
+      localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
+      localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
+    } catch {
+      localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
+    }
     return serializedData
   }
 
