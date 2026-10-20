@@ -1,0 +1,42 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import AgencyOverviewDraft from './AgencyOverviewDraft.vue'
+import AgencyDetailDraft from './AgencyDetailDraft.vue'
+import type { AgencyDraft, AgencyDraftLabels } from './draftTypes'
+
+type Props =
+  | {
+      mode: 'overview'
+      agencies: readonly AgencyDraft[]
+      labels: AgencyDraftLabels
+      title: string
+      subtitle: string
+    }
+  | {
+      mode: 'agency'
+      agency: AgencyDraft
+      labels: AgencyDraftLabels
+    }
+
+const props = Astro.props
+---
+
+<BaseLayout title={props.mode === 'overview' ? props.title : props.agency.name} noindex hideAnnouncementBanner>
+
+{
+  props.mode === 'overview' ? (
+    <AgencyOverviewDraft
+      agencies={props.agencies}
+      labels={props.labels}
+      title={props.title}
+      subtitle={props.subtitle}
+    />
+  ) : (
+    <AgencyDetailDraft
+      agency={props.agency}
+      labels={props.labels}
+    />
+  )
+}
+
+</BaseLayout>
