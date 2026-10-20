@@ -391,3 +391,100 @@ describe('VideoCompareSlider', () => {
     expect(play).toHaveBeenCalledOnce()
   })
 })
+
+function pointerCapabilities(fine: boolean) {
+  vi.spyOn(window, 'matchMedia').mockImplementation((media) =>
+    Object.assign(new EventTarget(), {
+      media,
+      matches: fine,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn()
+    })
+  )
+}
+
+it.for([
+  { clientX: 200, expected: '25' },
+  { clientX: 50, expected: '0' },
+  { clientX: 600, expected: '100' }
+])(
+  'follows a fine mouse pointer to $expected without pressing or preventing scroll',
+  async ({ clientX, expected }) => {
+    pointerCapabilities(true)
+    const { surface, slider } = await renderSlider({
+      followPointerOnHover: true
+    })
+    vi.spyOn(surface, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 0, 400, 225)
+    )
+    const event = new PointerEvent('pointermove', {
+      pointerType: 'mouse',
+      clientX,
+      bubbles: true,
+      cancelable: true
+    })
+    surface.dispatchEvent(event)
+    await nextTick()
+    expect(slider).toHaveAttribute('aria-valuenow', expected)
+    expect(event.defaultPrevented).toBe(false)
+  }
+)
+
+it.for([
+  { enabled: false, fine: true, pointerType: 'mouse', buttons: 0 },
+  { enabled: true, fine: false, pointerType: 'mouse', buttons: 0 },
+  { enabled: true, fine: true, pointerType: 'touch', buttons: 0 },
+  { enabled: true, fine: true, pointerType: 'mouse', buttons: 1 }
+])(
+  'does not hover-follow with $enabled/$fine/$pointerType/$buttons',
+  async ({ enabled, fine, pointerType, buttons }) => {
+    pointerCapabilities(fine)
+    const { surface, slider } = await renderSlider({
+      followPointerOnHover: enabled
+    })
+    vi.spyOn(surface, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 0, 400, 225)
+    )
+    surface.dispatchEvent(
+      new PointerEvent('pointermove', {
+        pointerType,
+        buttons,
+        clientX: 200,
+        bubbles: true
+      })
+    )
+    await nextTick()
+    expect(slider).toHaveAttribute('aria-valuenow', '50')
+  }
+)
+
+it('keeps touch dragging and keyboard adjustment when hover-follow is enabled', async () => {
+  pointerCapabilities(false)
+  const { surface, slider } = await renderSlider({ followPointerOnHover: true })
+  vi.spyOn(surface, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(100, 0, 400, 225)
+  )
+  surface.dispatchEvent(
+    new PointerEvent('pointerdown', {
+      pointerType: 'touch',
+      button: 0,
+      buttons: 1,
+      clientX: 200,
+      bubbles: true
+    })
+  )
+  window.dispatchEvent(
+    new PointerEvent('pointermove', {
+      pointerType: 'touch',
+      buttons: 1,
+      clientX: 400
+    })
+  )
+  window.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch' }))
+  await nextTick()
+  expect(slider).toHaveAttribute('aria-valuenow', '75')
+  slider.focus()
+  await userEvent.setup().keyboard('{ArrowRight}')
+  expect(slider).toHaveAttribute('aria-valuenow', '77')
+})

@@ -41,6 +41,7 @@ function selectVariant(id: string) {
       v-model:paused="paused"
       comparison-style="workflow"
       synchronized-playback
+      follow-pointer-on-hover
       fit="cover"
       :before-src="`${vfxMediaRoot}/${source}.mp4`"
       :after-src="result"

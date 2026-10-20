@@ -984,8 +984,11 @@ async function startHeroPlayback(
   play: string,
   reducedMotion: 'reduce' | 'no-preference'
 ) {
-  if (reducedMotion === 'reduce')
-    await hero.getByRole('button', { name: play, exact: true }).click()
+  if (reducedMotion === 'reduce') {
+    const control = hero.getByRole('button', { name: play, exact: true })
+    await control.focus()
+    await control.press('Space')
+  }
   await comparison.scrollIntoViewIfNeeded()
 }
 
@@ -1037,7 +1040,8 @@ for (const { path, pause, play, sample, reducedMotion, mobile } of [
           )
       )
       .toBe(true)
-    await control.click()
+    await control.focus()
+    await control.press('Space')
     await hero.getByRole('button', { name: sample, exact: true }).click()
     await comparison.scrollIntoViewIfNeeded()
     await expect
@@ -1057,7 +1061,9 @@ for (const { path, pause, play, sample, reducedMotion, mobile } of [
       'aria-valuenow',
       '50'
     )
-    await hero.getByRole('button', { name: play, exact: true }).click()
+    const resume = hero.getByRole('button', { name: play, exact: true })
+    await resume.focus()
+    await resume.press('Space')
     await comparison.scrollIntoViewIfNeeded()
     await expect
       .poll(() =>
@@ -1149,3 +1155,34 @@ for (const { demo, sample } of [
     ).toBeVisible()
   })
 }
+
+test('VFX hero follows fine-pointer hover without a press and preserves keyboard and page scrolling', async ({
+  page
+}) => {
+  await page.goto('/solutions/vfx/v3/')
+  const hero = page.locator('[data-vfx-demo="hero"]')
+  await expectIslandHydrated(page, hero)
+  const comparison = hero.getByTestId('video-compare-surface')
+  await comparison.scrollIntoViewIfNeeded()
+  const bounds = await comparison.boundingBox()
+  assert(bounds)
+  const slider = hero.getByRole('slider')
+  await page.mouse.move(
+    bounds.x + bounds.width * 0.25,
+    bounds.y + bounds.height / 2
+  )
+  await expect(slider).toHaveAttribute('aria-valuenow', '25')
+  await slider.focus()
+  await slider.press('ArrowRight')
+  await expect(slider).toHaveAttribute('aria-valuenow', '27')
+  await page.mouse.move(
+    bounds.x + bounds.width * 0.75,
+    bounds.y + bounds.height / 2
+  )
+  await expect(slider).toHaveAttribute('aria-valuenow', '75')
+  const beforeScroll = await page.evaluate(() => window.scrollY)
+  await page.mouse.wheel(0, 200)
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(beforeScroll)
+})
