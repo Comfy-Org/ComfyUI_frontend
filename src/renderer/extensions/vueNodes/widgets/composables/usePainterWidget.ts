@@ -5,6 +5,8 @@ import type { ComfyWidgetConstructorV2 } from '@/types/widgetConstructor'
 
 export const usePainterWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IBaseWidget => {
-    return node.addWidget('painter', inputSpec.name, inputSpec.default, null)
+    return node.addWidget('painter', inputSpec.name, inputSpec.default, null, {
+      hideInPanel: true
+    })
   }
 }

@@ -87,6 +87,7 @@ export interface WorkflowRuntime {
   markDraftUsed(path: string): void
   isDraftPersistenceEnabled(): boolean
   promptSave(workflow: ComfyWorkflow): Promise<string | null>
+  forgetNodeHistories(rootGraphId: string): void
 }
 
 let registeredRuntime: WorkflowRuntime | null = null
@@ -243,6 +244,8 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override unload(): void {
+    const rootGraphId = this.changeTracker?.activeState.id
+    if (rootGraphId) workflowRuntime().forgetNodeHistories(rootGraphId)
     this.changeTracker = null
     this.activeMode = null
     super.unload()

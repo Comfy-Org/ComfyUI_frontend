@@ -2,7 +2,7 @@
   <Transition name="fade">
     <div
       v-if="loading"
-      class="absolute inset-0 z-50 flex items-center justify-center bg-backdrop/50"
+      class="absolute inset-0 z-50 flex items-center justify-center bg-background/50"
       data-testid="loading-overlay"
     >
       <div class="flex flex-col items-center">
@@ -10,7 +10,7 @@
           <div
             :class="
               cn(
-                'col-start-1 row-start-1 animate-spin rounded-full border-muted-foreground border-t-base-foreground',
+                'col-start-1 row-start-1 animate-spin rounded-full border-muted-foreground border-t-foreground',
                 spinnerSizeClass
               )
             "
@@ -19,7 +19,7 @@
             <slot />
           </div>
         </div>
-        <div v-if="loadingMessage" class="mt-4 text-lg text-base-foreground">
+        <div v-if="loadingMessage" class="mt-4 text-lg text-foreground">
           {{ loadingMessage }}
         </div>
       </div>

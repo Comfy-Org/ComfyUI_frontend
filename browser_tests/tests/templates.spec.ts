@@ -446,7 +446,6 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await comfyPage.page.mouse.move(0, 0)
     await expect(disclosure).toBeHidden()
 
-    // Keyboard focus reveals the hidden tags — the gap PrimeVue's tooltip left.
     await overflow.focus()
     await expect(disclosure).toBeVisible()
     await expectOnTop()
@@ -532,7 +531,7 @@ test.describe(
       // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
       await comfyPage.setup({
         clearStorage: true,
-        url: '/?template=default'
+        url: '/?template=image_z_image_turbo'
       })
 
       await expect

@@ -91,9 +91,7 @@ test.describe('Settings Search functionality', { tag: '@settings' }, () => {
     if (categoryCount > 1) {
       await dialog.categories.nth(1).click()
 
-      await expect(dialog.categories.nth(1)).toHaveClass(
-        /bg-interface-menu-component-surface-selected/
-      )
+      await expect(dialog.categories.nth(1)).toHaveClass(/bg-muted/)
     }
   })
 

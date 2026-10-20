@@ -72,14 +72,15 @@ const ACTIVE_UNRECOGNIZED_TIER_STATUS = {
 
 async function setupSalesManagedWorkspace(
   page: Page,
-  billingStatus: BillingStatusResponse
+  billingStatus: BillingStatusResponse,
+  capabilities: Partial<BillingCapabilities> = SALES_MANAGED_CAPABILITIES
 ) {
   const workspace = new CloudWorkspaceMockHelper(page)
   await workspace.setup(
     DEFAULT_TEAM_MEMBERS,
     TEAM_WORKSPACE,
     billingStatus,
-    SALES_MANAGED_CAPABILITIES
+    capabilities
   )
   return workspace
 }
@@ -247,7 +248,8 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
   }) => {
     const workspace = await setupSalesManagedWorkspace(
       page,
-      ENDED_ENTERPRISE_STATUS
+      ENDED_ENTERPRISE_STATUS,
+      { ...SALES_MANAGED_CAPABILITIES, can_top_up: false }
     )
     const content = await workspace.openPlanAndCreditsSettings()
 
@@ -258,8 +260,6 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
       'Inactive'
     )
     await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
-    // Top-up is closed for a terminal sales-managed plan (cloud#8001), so the
-    // ended state offers no Add credits — restoring access goes through sales.
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toHaveCount(0)
@@ -330,7 +330,7 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     ).toBeVisible()
   })
 
-  test('keeps the pricing deep link available during a capability outage', async ({
+  test('withholds the pricing deep link during a capability outage', async ({
     page
   }) => {
     const workspace = new CloudWorkspaceMockHelper(page)
@@ -338,16 +338,22 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
     await page.route('**/api/billing/capabilities', (route) =>
       route.fulfill({ status: 503 })
     )
+    const capabilityResponse = page.waitForResponse(
+      '**/api/billing/capabilities'
+    )
 
     await page.goto(`${APP_URL}/?pricing=team`)
+    await capabilityResponse
+    await page.waitForURL((url) => !url.searchParams.has('pricing'), {
+      timeout: 45_000
+    })
 
     await expect(
       page.getByRole('heading', { name: 'Plans for Team Workspace' })
-    ).toBeVisible({ timeout: 45_000 })
-    await expect(page).not.toHaveURL(/[?&]pricing=/)
+    ).toBeHidden()
   })
 
-  test('keeps inactive credits disabled during a capability outage', async ({
+  test('keeps inactive credits locked during a capability outage', async ({
     page
   }) => {
     const workspace = new CloudWorkspaceMockHelper(page)
@@ -362,9 +368,7 @@ test.describe('Non-Enterprise billing regression', { tag: '@cloud' }, () => {
 
     const content = await workspace.openPlanAndCreditsSettings()
 
-    await expect(
-      content.getByText('Reactivate your plan to use these credits')
-    ).toBeVisible()
+    await expect(content.getByText('Total credits')).toBeVisible()
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toHaveCount(0)

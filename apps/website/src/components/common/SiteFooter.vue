@@ -106,7 +106,13 @@ const models: FooterColumn = {
       href: routes.qwenImage21
     },
     { label: t('footer.nanoBanana'), href: routes.nanoBanana },
-    { label: t('footer.flux3'), href: routes.flux3 }
+    { label: t('footer.flux3'), href: routes.flux3 },
+    { label: t('footer.fishAudio'), href: routes.fishAudio },
+    { label: t('footer.nvidiaVfx'), href: routes.nvidiaVfx },
+    {
+      label: t('footer.flux3ImageKlein'),
+      href: routes.flux3ImageKlein
+    }
   ]
 }
 
@@ -205,7 +211,7 @@ const columnGroups: FooterColumn[][] = [
 
 <template>
   <footer
-    class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas lg:px-20"
+    class="bg-primary-comfy-ink px-6 py-8 text-primary-comfy-canvas in-data-workshop-editor:hidden lg:px-20"
   >
     <div
       class="flex flex-col gap-12 border-t border-primary-warm-gray pt-16 lg:gap-6"

@@ -99,6 +99,9 @@ export class ComfyNodeSearchBoxV2 {
     await expect(this.results.first()).toContainText(query)
     await this.comfyPage.page.keyboard.press('Enter')
     await expect(this.dialog).toBeHidden()
+    await expect(this.comfyPage.page.getByTestId('dialog-overlay')).toHaveCount(
+      0
+    )
     await this.comfyPage.page.mouse.click(position.x, position.y)
   }
 

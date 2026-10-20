@@ -90,6 +90,10 @@
       "file": "src/scripts/utils.ts",
       "exports": ["applyTextReplacements", "addStylesheet"]
     },
+    {
+      "file": "src/scripts/pnginfo.ts",
+      "exports": ["getLatentMetadata"]
+    },
     // Public re-export of the ui/utils leaf; the comfyAPI shim only sees
     // declarations in ui.ts.
     { "file": "src/scripts/ui.ts", "exports": ["$el"] },
@@ -180,6 +184,7 @@
   },
 
   "rules": {
+    "boundary-violation": "warn",
     "dev-dependencies-in-production": "error"
   }
 }

@@ -82,7 +82,9 @@ describe('MessageFeedback', () => {
 
       await user.hover(action)
 
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(label)
+      expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+        label
+      )
     }
   )
 
@@ -103,7 +105,9 @@ describe('MessageFeedback', () => {
     await screen.findByRole('tooltip')
     await user.click(copy)
 
-    expect(await screen.findByRole('tooltip')).toHaveTextContent('Copied')
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      'Copied'
+    )
   })
 
   it('the chevron menu exposes only Copy as markdown and copies the raw source', async () => {

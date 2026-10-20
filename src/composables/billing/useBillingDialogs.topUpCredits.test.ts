@@ -13,6 +13,7 @@ import TopUpCreditsDialogContentWorkspace from '@/platform/workspace/components/
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 
 vi.mock(import('@/i18n'))
 
@@ -36,17 +37,30 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
+vi.mock(import('@/platform/workspace/composables/usePaymentRecoveryDialog'), {
+  spy: true
+})
+
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 
+const mockShowPaymentRecoveryDialog = vi.fn()
+
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     const billing = useBillingContext()
     billing.type = computed(() => 'workspace')
     vi.mocked(useBillingContext).mockReturnValue(billing)
+    vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
+      showPaymentRecoveryDialog: mockShowPaymentRecoveryDialog,
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn(async () => undefined)
+    })
 
     mockIsCloud.value = true
   })
@@ -87,6 +101,78 @@ describe('showTopUpCreditsDialog', () => {
       key: 'insufficient-credits-member'
     })
   })
+
+  it.for([
+    {
+      type: 'workspace',
+      canTopUp: false,
+      denial: 'payment_past_due',
+      opensRecovery: true,
+      storeDialogs: []
+    },
+    {
+      type: 'legacy',
+      canTopUp: false,
+      denial: 'payment_past_due',
+      opensRecovery: true,
+      storeDialogs: []
+    },
+    {
+      type: 'workspace',
+      canTopUp: false,
+      denial: 'not_workspace_owner',
+      opensRecovery: false,
+      storeDialogs: ['insufficient-credits-member']
+    },
+    {
+      type: 'workspace',
+      canTopUp: false,
+      denial: 'free_plan',
+      opensRecovery: false,
+      storeDialogs: ['insufficient-credits-member']
+    },
+    {
+      type: 'workspace',
+      canTopUp: false,
+      denial: undefined,
+      opensRecovery: false,
+      storeDialogs: ['insufficient-credits-member']
+    },
+    {
+      type: 'legacy',
+      canTopUp: false,
+      denial: 'subscription_ended',
+      opensRecovery: false,
+      storeDialogs: []
+    },
+    {
+      type: 'workspace',
+      canTopUp: true,
+      denial: undefined,
+      opensRecovery: false,
+      storeDialogs: ['top-up-credits']
+    }
+  ] as const)(
+    'routes a $type top-up denied as $denial (recovery: $opensRecovery, dialogs: $storeDialogs)',
+    async ({ type, canTopUp, denial, opensRecovery, storeDialogs }) => {
+      useBillingContext().type = computed(() => type)
+      useBillingCapabilities().canTopUp = computed(() => canTopUp)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+
+      await useBillingDialogs().showTopUpCreditsDialog({
+        isInsufficientCredits: true
+      })
+
+      const storeDialogKeys = vi
+        .mocked(useDialogStore().showDialog)
+        .mock.calls.map(([args]) => args.key)
+      expect(mockShowPaymentRecoveryDialog).toHaveBeenCalledTimes(
+        opensRecovery ? 1 : 0
+      )
+      expect(storeDialogKeys).toEqual(storeDialogs)
+      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+    }
+  )
 
   it('uses the server capability on legacy billing', async () => {
     useBillingContext().type = computed(() => 'legacy')
@@ -139,19 +225,8 @@ describe('showTopUpCreditsDialog', () => {
     expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
   })
 
-  it('routes self-serve subscribers to the subscription-required flow', async () => {
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-
-    await useBillingDialogs().showTopUpCreditsDialog()
-
-    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
-      reason: 'top_up_blocked'
-    })
-    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
-  })
-
-  it('keeps the insufficient-credits copy and still attributes the surface', async () => {
+  it('does not route a denied top-up to subscription even when self-serve subscribe is allowed', async () => {
+    useBillingContext().type = computed(() => 'legacy')
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
@@ -160,24 +235,8 @@ describe('showTopUpCreditsDialog', () => {
       source: 'agent_paywall'
     })
 
-    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
-      reason: 'out_of_credits',
-      paymentIntentSource: 'agent_paywall'
-    })
-  })
-
-  it('attributes the surface on the blocked path, which has no copy branch', async () => {
-    useBillingCapabilities().canTopUp = computed(() => false)
-    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
-
-    await useBillingDialogs().showTopUpCreditsDialog({
-      source: 'agent_paywall'
-    })
-
-    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
-      reason: 'agent_paywall',
-      paymentIntentSource: 'agent_paywall'
-    })
+    expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
+    expect(useDialogStore().showDialog).not.toHaveBeenCalled()
   })
 
   it('passes the surface to the workspace rail content', async () => {
@@ -271,32 +330,15 @@ describe('showTopUpCreditsDialog', () => {
       expect(mockRumAddAction).toHaveBeenCalledOnce()
     })
 
-    it.for([
-      {
-        name: 'a self-serve subscriber who is sent to the pricing table',
-        canTopUp: false,
-        canSubscribeSelfServe: true
-      },
-      {
-        name: 'a team member who cannot buy credits',
-        canTopUp: false,
-        canSubscribeSelfServe: false
-      }
-    ])(
-      'still reports the click of $name',
-      async ({ canTopUp, canSubscribeSelfServe }) => {
-        useBillingCapabilities().canTopUp = computed(() => canTopUp)
-        useBillingCapabilities().canSubscribeSelfServe = computed(
-          () => canSubscribeSelfServe
-        )
+    it('still reports the click when top-up is denied', async () => {
+      useBillingCapabilities().canTopUp = computed(() => false)
 
-        await useBillingDialogs().showTopUpCreditsDialog({
-          source: 'deep_link'
-        })
+      await useBillingDialogs().showTopUpCreditsDialog({
+        source: 'deep_link'
+      })
 
-        expect(mockRumAddAction).toHaveBeenCalledOnce()
-      }
-    )
+      expect(mockRumAddAction).toHaveBeenCalledOnce()
+    })
   })
 
   describe('non-cloud distribution', () => {

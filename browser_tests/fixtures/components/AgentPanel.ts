@@ -10,6 +10,7 @@ import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 type AgentAttachmentOutcome =
@@ -25,9 +26,9 @@ export class AgentPanel {
   public readonly attachmentChips: Locator
   public readonly closeButton: Locator
   public readonly composer: Locator
-  public readonly composerStack: Locator
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
+  public readonly composerStack: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
@@ -38,16 +39,18 @@ export class AgentPanel {
   public readonly fileInput: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly resizeHandle: Locator
   public readonly root: Locator
   public readonly scrollAssetsRight: Locator
   public readonly sendButton: Locator
   public readonly serverLogsSwitch: Locator
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
+  public readonly suggestedPrompts: Locator
+  private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
   public readonly workflowSwitch: Locator
   public readonly workSummary: Locator
-  private readonly toasts: ToastHelper
 
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
@@ -65,7 +68,9 @@ export class AgentPanel {
           exact: true
         })
       )
-    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.composer = this.root.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     this.composerStack = this.root.getByTestId('agent-composer-stack')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
@@ -88,6 +93,7 @@ export class AgentPanel {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
     this.scrollAssetsRight = this.root.getByRole('button', {
       name: enMessages.g.scrollRight
     })
@@ -102,6 +108,15 @@ export class AgentPanel {
       name: enMessages.agent.stop,
       exact: true
     })
+    /**
+     * Includes hidden buttons: the compact empty state keeps every suggestion
+     * in the DOM and hides the overflow, so a visible-only locator cannot tell
+     * "hidden" from "never rendered". Resolved by position rather than by
+     * prompt text, which varies with distribution and starter-prompt variant.
+     */
+    this.suggestedPrompts = this.root
+      .getByTestId('suggested-prompts')
+      .getByRole('button', { includeHidden: true })
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
@@ -298,6 +313,40 @@ export class AgentPanel {
     await expect(this.root).toHaveCount(0)
   }
 
+  /**
+   * Drags the resize handle until `target` is exactly `width` wide.
+   *
+   * Defaults to the panel root, the element the Agent container queries resolve
+   * against, so a breakpoint test measures what the CSS measures. Pass
+   * `dockedPanel` to size the outer dock the user drags instead.
+   */
+  async resizeTo(width: number, target: Locator = this.root): Promise<void> {
+    const [panelBox, handleBox] = await Promise.all([
+      target.boundingBox(),
+      this.resizeHandle.boundingBox()
+    ])
+    if (!panelBox || !handleBox) {
+      throw new Error('Agent panel and resize handle must be visible')
+    }
+
+    const handleCenterX = handleBox.x + handleBox.width / 2
+    const handleY = handleBox.y + 20
+    await this.page.mouse.move(handleCenterX, handleY)
+    await this.page.mouse.down()
+    await this.page.mouse.move(
+      handleCenterX - (width - panelBox.width),
+      handleY
+    )
+    await this.page.mouse.up()
+    await expect(target).toHaveCSS('width', `${width}px`)
+  }
+
+  async suggestedPromptVisibility(): Promise<boolean[]> {
+    return this.suggestedPrompts.evaluateAll((buttons) =>
+      buttons.map((button) => getComputedStyle(button).display !== 'none')
+    )
+  }
+
   async expectPanelSize(expected: { x: number; width: number }): Promise<void> {
     await expect
       .poll(async () => {
@@ -322,9 +371,7 @@ export class AgentPanel {
     await this.page.mouse.move(0, 0)
     await this.workflowPicker.blur()
     await expect(
-      this.page
-        .locator('.p-tooltip, [role="tooltip"]')
-        .filter({ visible: true })
+      this.page.getByRole('tooltip').filter({ visible: true })
     ).toHaveCount(0)
   }
 

@@ -12,7 +12,7 @@ const meta: Meta<typeof AttachmentChip> = {
   decorators: [
     () => ({
       template:
-        '<div class="agent-scope flex max-w-64 flex-wrap gap-2 bg-secondary-background p-4"><story /></div>'
+        '<div class="agent-scope flex max-w-64 flex-wrap gap-2 bg-secondary p-4"><story /></div>'
     })
   ]
 }
@@ -41,5 +41,19 @@ export const Uploading: Story = {
   args: {
     name: 'an-extremely-long-uploading-reference-image-filename.png',
     uploading: true
+  }
+}
+
+export const InvalidVideo: Story = {
+  args: {
+    name: 'broken.mov',
+    validationError: 'invalid-video'
+  }
+}
+
+export const UnsupportedType: Story = {
+  args: {
+    name: 'report.pdf',
+    validationError: 'unsupported-type'
   }
 }

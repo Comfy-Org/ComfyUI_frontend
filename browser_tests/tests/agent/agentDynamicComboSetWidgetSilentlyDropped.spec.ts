@@ -112,8 +112,6 @@ const seed: WorkflowJSON = {
   version: 0.4
 }
 
-const SOCKET_SID = '9c8b7a6f-5e4d-4c3b-8a1f-0d9e8c7b6a5f'
-
 test.describe(
   'Agent set_widget on a dynamic-combo widget',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
@@ -128,12 +126,7 @@ test.describe(
       )
 
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
-      const hostSocket = new AgentFollowerHostSocket(
-        page,
-        WORKFLOW_ID,
-        host,
-        SOCKET_SID
-      )
+      const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
       await hostSocket.install()
 
       const threadList: AgentThreadListResponse = {
@@ -224,9 +217,7 @@ test.describe(
       })
 
       await test.step('send a turn so the session binds the workflow', async () => {
-        const composer = panel.getByRole('textbox', {
-          name: /^Describe ideas/
-        })
+        const composer = agentPanel.composer
         await composer.fill('hello')
         await panel.getByRole('button', { name: enMessages.agent.send }).click()
         await expect(panel.getByText('hello').first()).toBeVisible()
