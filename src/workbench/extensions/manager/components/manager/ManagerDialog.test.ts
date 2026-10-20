@@ -634,7 +634,7 @@ describe('ManagerDialog failed next page', () => {
     await renderUntilSecondPageFails()
 
     expect(screen.getByText('GGUF One')).toBeInTheDocument()
-    expect(screen.getByRole('status')).toHaveTextContent(
+    expect(screen.getByRole('alert')).toHaveTextContent(
       enMessages.manager.loadMoreFailed
     )
     expect(
@@ -654,7 +654,7 @@ describe('ManagerDialog failed next page', () => {
     expect(screen.getAllByRole('listitem').map((li) => li.textContent)).toEqual(
       ['GGUF One', 'GGUF Two']
     )
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(
       vi
         .mocked(useRegistrySearchGateway().searchPacks)

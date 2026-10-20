@@ -141,20 +141,22 @@
             </template>
           </VirtualGrid>
         </div>
-        <div
-          v-if="isNextPageFailed"
-          role="status"
-          class="flex items-center justify-center gap-3 p-4 text-sm text-muted-foreground"
+        <Message
+          :visible="isNextPageFailed"
+          severity="warning"
+          class="mx-2 mt-2 w-auto items-center"
         >
-          {{ $t('manager.loadMoreFailed') }}
-          <Button
-            variant="secondary"
-            :disabled="isSearchLoading"
-            @click="retryNextPage"
-          >
-            {{ $t('g.retry') }}
-          </Button>
-        </div>
+          <div class="flex items-center justify-between gap-3">
+            {{ $t('manager.loadMoreFailed') }}
+            <Button
+              variant="secondary"
+              :disabled="isSearchLoading"
+              @click="retryNextPage"
+            >
+              {{ $t('g.retry') }}
+            </Button>
+          </div>
+        </Message>
       </div>
     </template>
 

@@ -850,7 +850,7 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
         ).toBeVisible()
       })
 
-      const failureNotice = dialog.getByRole('status').filter({
+      const failureNotice = dialog.getByRole('alert').filter({
         hasText: "Couldn't load more results."
       })
       await expect(failureNotice).toBeVisible()
