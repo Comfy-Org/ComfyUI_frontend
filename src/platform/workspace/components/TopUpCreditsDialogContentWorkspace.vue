@@ -319,7 +319,7 @@
         size="lg"
         class="w-full"
         :loading="loading"
-        @click="continueToCheckout"
+        @click="retryBlockedCheckout"
       >
         {{ $t('credits.topUp.openCheckout') }}
         <i class="icon-[lucide--external-link] size-4" />
@@ -589,6 +589,7 @@ const paymentSubmitted = ref(false)
 const checkoutRecovery = ref<'refused' | 'failed' | null>(null)
 const blockedDefaultCardUrl = ref<string | null>(null)
 const checkoutReopenFailed = ref(false)
+const stepBeforeCheckoutBlocked = ref<'confirm' | 'checkoutOpened'>('confirm')
 const step = ref<
   | 'amount'
   | 'confirm'
@@ -970,9 +971,17 @@ async function continueToCheckout() {
     return
   }
   if ((await openCheckoutInReservedTab()) === 'failed') {
-    step.value = 'confirm'
     checkoutRecovery.value = 'failed'
   }
+}
+
+async function retryBlockedCheckout() {
+  if (!canTopUp.value || loading.value) return
+  const returnStep = stepBeforeCheckoutBlocked.value
+  if ((await openCheckoutInReservedTab()) !== 'failed') return
+  step.value = returnStep
+  if (returnStep === 'checkoutOpened') checkoutReopenFailed.value = true
+  else checkoutRecovery.value = 'failed'
 }
 
 async function reopenCheckout() {
@@ -988,6 +997,9 @@ async function openCheckoutInReservedTab(): Promise<
   if (!returnUrl) return 'failed'
   const checkoutTab = reserveBillingTab()
   if (!checkoutTab) {
+    if (step.value === 'confirm' || step.value === 'checkoutOpened') {
+      stepBeforeCheckoutBlocked.value = step.value
+    }
     step.value = 'checkoutBlocked'
     return 'blocked'
   }
