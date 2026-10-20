@@ -171,7 +171,9 @@ function onSearchKeydown(event: KeyboardEvent): void {
           <DropdownMenuRadioGroup
             :model-value="current?.path ?? ''"
             class="max-h-52 overflow-y-auto"
-            @update:model-value="onSelectTab"
+            @update:model-value="
+              typeof $event === 'string' && onSelectTab($event)
+            "
           >
             <div
               v-for="section in tabSections"

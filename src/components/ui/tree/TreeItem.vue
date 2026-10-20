@@ -2,7 +2,7 @@
   <RekaTreeItem
     ref="item"
     v-slot="{ isExpanded, handleToggle }"
-    v-bind="forwarded"
+    v-bind="restProps"
     :class="cn(treeItemClass, className)"
     :style="treeItemIndent(restProps.level)"
     @select="emits('select', $event)"
@@ -36,11 +36,7 @@
 
 <script setup lang="ts" generic="T extends object">
 import type { TreeItemEmits, TreeItemProps, TreeItemToggleEvent } from 'reka-ui'
-import {
-  TreeItem as RekaTreeItem,
-  injectTreeRootContext,
-  useForwardProps
-} from 'reka-ui'
+import { TreeItem as RekaTreeItem, injectTreeRootContext } from 'reka-ui'
 import { useElementHover } from '@vueuse/core'
 import type { HTMLAttributes } from 'vue'
 import { computed, useTemplateRef } from 'vue'
@@ -57,8 +53,6 @@ const { class: className, ...restProps } = defineProps<
 >()
 
 const emits = defineEmits<TreeItemEmits<T>>()
-
-const forwarded = useForwardProps(restProps)
 
 const isHovered = useElementHover(useTemplateRef('item'))
 

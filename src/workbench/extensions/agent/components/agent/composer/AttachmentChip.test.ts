@@ -431,14 +431,18 @@ describe('AttachmentChip', () => {
       screen.queryByRole('button', { name: 'Preview bad.mov' })
     ).not.toBeInTheDocument()
     await user.hover(status)
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(errorMessage)
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      errorMessage
+    )
     await user.unhover(status)
     await waitFor(() =>
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
     )
     await user.tab()
     expect(status).toHaveFocus()
-    expect(await screen.findByRole('tooltip')).toHaveTextContent(errorMessage)
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      errorMessage
+    )
     await user.tab()
     expect(screen.getByRole('button', { name: 'Remove bad.mov' })).toHaveFocus()
     await user.keyboard('{Enter}')
