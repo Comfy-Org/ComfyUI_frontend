@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { isProxy, reactive } from 'vue'
 
 import {
@@ -347,6 +347,101 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
     expect(serialised.pos).toStrictEqual([10, 20])
     expect(Array.isArray(serialised.size)).toBe(true)
     expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('keeps a nested live geometry view as an array', () => {
+    const { node } = nodeInGraph()
+    node.onSerialize = function (o) {
+      o.properties = { savedSize: this.size }
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties?.savedSize).toStrictEqual([...node.size])
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('detaches a live geometry view written into a canonical field in place', () => {
+    const { node } = nodeInGraph()
+    node.properties.savedSize = [0, 0]
+    node.onSerialize = function (o) {
+      o.properties!.savedSize = this.size
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.properties?.savedSize).toStrictEqual([...node.size])
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('serializes a proxy over a typed array as an array', () => {
+    const { node } = nodeInGraph()
+    const position = new Proxy(new Float64Array([10, 20]), {})
+    node.onSerialize = (o) => {
+      Reflect.set(o, 'pos', position)
+    }
+
+    const serialised = node.serialize()
+
+    expect(serialised.pos).toStrictEqual([10, 20])
+    expect(() => structuredClone(serialised)).not.toThrow()
+  })
+
+  it('omits a canonical field when it cannot be safely detached', () => {
+    const { node } = nodeInGraph()
+    const cyclic = reactive<Record<string, unknown>>({})
+    cyclic.self = cyclic
+    node.onSerialize = (o) => {
+      Reflect.set(o, 'properties', cyclic)
+    }
+    const warn = vi.mocked(console.warn)
+
+    const serialised = node.serialize()
+
+    expect(serialised).not.toHaveProperty('properties')
+    expect(() => structuredClone(serialised)).not.toThrow()
+    expect(warn).toHaveBeenCalledWith(
+      'LiteGraph: ignoring non-serializable canonical field "properties"'
+    )
+  })
+
+  it('contains a throwing in-place canonical mutation', () => {
+    const { node } = nodeInGraph()
+    node.onSerialize = (o) => {
+      Object.defineProperty(o.properties!, 'broken', {
+        enumerable: true,
+        get(): never {
+          throw new Error('accessor failed')
+        }
+      })
+    }
+    const warn = vi.mocked(console.warn)
+
+    const serialised = node.serialize()
+
+    expect(serialised).not.toHaveProperty('properties')
+    expect(() => structuredClone(serialised)).not.toThrow()
+    expect(warn).toHaveBeenCalledWith(
+      'LiteGraph: ignoring non-serializable canonical field "properties"'
+    )
+  })
+
+  it('preserves JSON behavior for hook-provided class instances', () => {
+    const { node } = nodeInGraph()
+    class PersistedValue {
+      raw = 'ignored'
+
+      toJSON() {
+        return { saved: 'value' }
+      }
+    }
+    node.onSerialize = (o) => {
+      o.properties = { custom: new PersistedValue() }
+    }
+
+    expect(node.serialize().properties).toEqual({
+      custom: { saved: 'value' }
+    })
   })
 
   // frontend#8898: object widget values held by Vue reactivity broke structuredClone.

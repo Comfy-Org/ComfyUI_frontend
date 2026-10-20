@@ -1,5 +1,3 @@
-import { isProxy } from 'vue'
-
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -36,44 +34,93 @@ function safeCloneExtensionValue(value: unknown): JsonValue | undefined {
   return isJsonValue(clonedValue) ? clonedValue : undefined
 }
 
-function isIndexedArrayLike(value: object): value is ArrayLike<unknown> {
-  if (Array.isArray(value)) return false
-  const length: unknown = Reflect.get(value, 'length')
-  if (typeof length !== 'number' || !Number.isInteger(length) || length < 0)
-    return false
-  return Object.keys(value).every((key) => {
-    const index = Number(key)
-    return Number.isInteger(index) && index >= 0 && index < length
-  })
-}
-
-function containsVueProxy(value: unknown, seen = new Set<object>()): boolean {
-  if (value === null || typeof value !== 'object') return false
-  if (isProxy(value)) return true
-  if (seen.has(value)) return false
-  seen.add(value)
-  return Object.values(value).some((child) => containsVueProxy(child, seen))
-}
-
-function detachCanonicalValue(value: unknown): unknown {
-  if (value === null || typeof value !== 'object') return value
+function isTypedArrayProxy(value: object): boolean {
   try {
-    return structuredClone(value)
-  } catch (error) {
-    if (!(error instanceof Error) || error.name !== 'DataCloneError')
-      throw error
-  }
-  // Live geometry views (`pos`, `size`) are non-Vue proxies over typed arrays;
-  // JSON would turn them into `{ "0": x, "1": y }` instead of `[x, y]`.
-  if (isIndexedArrayLike(value))
-    return Array.from({ length: value.length }, (_, index) =>
-      detachCanonicalValue(value[index])
+    const prototype: object | null = Object.getPrototypeOf(value)
+    if (prototype === null) return false
+    const constructor: unknown = Reflect.get(prototype, 'constructor')
+    if (
+      (typeof constructor !== 'object' || constructor === null) &&
+      typeof constructor !== 'function'
     )
-  try {
-    return JSON.parse(JSON.stringify(value))
+      return false
+    return typeof Reflect.get(constructor, 'BYTES_PER_ELEMENT') === 'number'
   } catch {
-    return value
+    return false
   }
+}
+
+function readArrayLikeLength(value: object, indexedKeyCount: number): unknown {
+  try {
+    return Reflect.get(value, 'length')
+  } catch {
+    return isTypedArrayProxy(value) ? indexedKeyCount : undefined
+  }
+}
+
+function readIndexedArray(value: unknown): unknown[] | undefined {
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    return
+  try {
+    const keys = Object.keys(value)
+    if (keys.length === 0) return
+    if (keys.some((key, index) => key !== `${index}`)) return
+    if (readArrayLikeLength(value, keys.length) !== keys.length) return
+    return keys.map((key) => Reflect.get(value, key))
+  } catch {
+    return
+  }
+}
+
+type CanonicalCloneResult = { ok: true; value: unknown } | { ok: false }
+
+function detachCanonicalValue(value: unknown): CanonicalCloneResult {
+  if (
+    value === undefined ||
+    typeof value === 'function' ||
+    typeof value === 'symbol'
+  )
+    return { ok: true, value: undefined }
+  try {
+    const json = JSON.stringify(
+      value,
+      (_key, nestedValue: unknown) =>
+        readIndexedArray(nestedValue) ?? nestedValue
+    )
+    return {
+      ok: true,
+      value: JSON.parse(json)
+    }
+  } catch {
+    return { ok: false }
+  }
+}
+
+function isStructuredCloneable(value: unknown): boolean {
+  try {
+    structuredClone(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function writeDetachedCanonicalValue(
+  canonical: object,
+  key: string,
+  value: unknown,
+  before: unknown
+): void {
+  if (value === before && isStructuredCloneable(value)) return
+
+  const detached = detachCanonicalValue(value)
+  if (detached.ok) {
+    Reflect.set(canonical, key, detached.value)
+    return
+  }
+
+  Reflect.deleteProperty(canonical, key)
+  console.warn(`LiteGraph: ignoring non-serializable canonical field "${key}"`)
 }
 
 function readClonedEntry(source: object, key: string): JsonValue | undefined {
@@ -282,17 +329,8 @@ export const runExtensionSerializeHook = <T extends object>(
   for (const key of canonicalFields) {
     if (Object.hasOwn(view, key)) {
       const value: unknown = Reflect.get(view, key)
-      // A hook that hands back live state (e.g. `o.properties = this.properties`,
-      // a reactive proxy since node state moved into the store), whole or
-      // nested, must not leak into serialized output: structuredClone of that
-      // output would throw.
-      Reflect.set(
-        canonical,
-        key,
-        value !== before.get(key) || (hook && containsVueProxy(value))
-          ? detachCanonicalValue(value)
-          : value
-      )
+      if (hook)
+        writeDetachedCanonicalValue(canonical, key, value, before.get(key))
     } else {
       Reflect.deleteProperty(canonical, key)
     }
