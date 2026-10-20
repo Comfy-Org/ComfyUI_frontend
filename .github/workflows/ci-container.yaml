@@ -5,18 +5,12 @@ on:
     paths:
       - 'tools/ci-container/**'
       - '.github/workflows/ci-container.yaml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
       - '.nvmrc'
   push:
     branches: [main]
     paths:
       - 'tools/ci-container/**'
       - '.github/workflows/ci-container.yaml'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'pnpm-workspace.yaml'
       - '.nvmrc'
   workflow_dispatch:
 
@@ -28,62 +22,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      rebuild: ${{ steps.filter.outputs.rebuild }}
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - run: python3 -m pip install PyYAML==6.0.3
-
-      - name: Check container inputs
-        id: filter
-        env:
-          EVENT: ${{ github.event_name }}
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
-        shell: python
-        run: |
-          import json
-          import os
-          import subprocess
-          import yaml
-
-          def read(revision, path):
-              return subprocess.check_output(['git', 'show', f'{revision}:{path}'], text=True)
-
-          def runtime(revision):
-              package = json.loads(read(revision, 'package.json'))
-              lock = yaml.safe_load(read(revision, 'pnpm-lock.yaml'))
-              root = lock['importers']['.']
-              playwright = {
-                  name: dependency['version']
-                  for group in ('dependencies', 'devDependencies', 'optionalDependencies')
-                  for name, dependency in root.get(group, {}).items()
-                  if name in ('@playwright/test', 'playwright', 'playwright-core')
-              }
-              return package.get('engines'), package.get('packageManager'), playwright
-
-          rebuild = True
-          if os.environ['EVENT'] != 'workflow_dispatch':
-              base = os.environ['BASE']
-              paths = subprocess.check_output(
-                  ['git', 'diff', '--name-only', base, 'HEAD'], text=True
-              ).splitlines()
-              rebuild = any(
-                  path.startswith('tools/ci-container/')
-                  or path in ('.github/workflows/ci-container.yaml', '.nvmrc')
-                  for path in paths
-              ) or runtime(base) != runtime('HEAD')
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write(f'rebuild={str(rebuild).lower()}\n')
-
   validate:
-    needs: changes
-    if: needs.changes.outputs.rebuild == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
