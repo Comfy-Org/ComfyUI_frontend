@@ -104,11 +104,12 @@ it('recovers from a failed original clip when another sample is selected', async
   const initialAfter = screen.getByTestId<HTMLVideoElement>(
     'video-compare-after'
   )
-  for (const video of [before, initialAfter]) {
-    vi.spyOn(video, 'readyState', 'get').mockReturnValue(3)
-    vi.spyOn(video, 'duration', 'get').mockReturnValue(8)
-    video.dispatchEvent(new Event('loadedmetadata'))
-  }
+  vi.spyOn(before, 'readyState', 'get').mockReturnValue(3)
+  vi.spyOn(before, 'duration', 'get').mockReturnValue(8)
+  before.dispatchEvent(new Event('loadedmetadata'))
+  vi.spyOn(initialAfter, 'readyState', 'get').mockReturnValue(3)
+  vi.spyOn(initialAfter, 'duration', 'get').mockReturnValue(8)
+  initialAfter.dispatchEvent(new Event('loadedmetadata'))
   await waitFor(() => expect(before.paused).toBe(false))
   vi.spyOn(before, 'error', 'get').mockReturnValue({
     code: 2,

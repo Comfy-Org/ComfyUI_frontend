@@ -34,6 +34,39 @@ async function renderSlider(extraProps = {}) {
   return { slider, surface, beforeVideo, afterVideo }
 }
 
+async function renderVisibleMetadataSlider() {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
+  const observers = stubIntersectionObserver()
+  const { surface, beforeVideo, afterVideo } = await renderSlider({
+    synchronizedPlayback: true
+  })
+  const observer = observers.instances[0]
+  assert.exists(observer)
+  const bounds = new DOMRect(0, 0, 400, 225)
+  observer.callback(
+    [
+      {
+        target: surface,
+        boundingClientRect: bounds,
+        intersectionRect: bounds,
+        rootBounds: null,
+        isIntersecting: true,
+        intersectionRatio: 1,
+        time: 0
+      }
+    ],
+    new IntersectionObserver(() => undefined)
+  )
+  await nextTick()
+  vi.spyOn(beforeVideo, 'readyState', 'get').mockReturnValue(1)
+  vi.spyOn(beforeVideo, 'duration', 'get').mockReturnValue(8)
+  beforeVideo.dispatchEvent(new Event('loadedmetadata'))
+  vi.spyOn(afterVideo, 'readyState', 'get').mockReturnValue(1)
+  vi.spyOn(afterVideo, 'duration', 'get').mockReturnValue(8)
+  afterVideo.dispatchEvent(new Event('loadedmetadata'))
+  return { beforeVideo, afterVideo }
+}
+
 async function pressAt(
   user: ReturnType<typeof userEvent.setup>,
   surface: HTMLElement,
@@ -131,45 +164,26 @@ describe('VideoCompareSlider', () => {
     expect(afterVideo.paused).toBe(true)
   })
 
-  it('starts metadata-only clips and keeps buffering media playing until recovery', async () => {
-    vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
-    const observers = stubIntersectionObserver()
-    const { surface, beforeVideo, afterVideo } = await renderSlider({
-      synchronizedPlayback: true
-    })
-    const observer = observers.instances[0]
-    assert.exists(observer)
-    const bounds = new DOMRect(0, 0, 400, 225)
-    observer.callback(
-      [
-        {
-          target: surface,
-          boundingClientRect: bounds,
-          intersectionRect: bounds,
-          rootBounds: null,
-          isIntersecting: true,
-          intersectionRatio: 1,
-          time: 0
-        }
-      ],
-      new IntersectionObserver(() => undefined)
-    )
-    await nextTick()
-    for (const video of [beforeVideo, afterVideo]) {
-      vi.spyOn(video, 'readyState', 'get').mockReturnValue(1)
-      vi.spyOn(video, 'duration', 'get').mockReturnValue(8)
-      video.dispatchEvent(new Event('loadedmetadata'))
-    }
+  it('starts visible clips when only metadata is loaded', async () => {
+    const { beforeVideo, afterVideo } = await renderVisibleMetadataSlider()
     await waitFor(() => {
       expect(beforeVideo.paused).toBe(false)
       expect(afterVideo.paused).toBe(false)
     })
+  })
+
+  it('keeps both playing when the after clip waits for data', async () => {
+    const { beforeVideo, afterVideo } = await renderVisibleMetadataSlider()
+    await waitFor(() => expect(afterVideo.paused).toBe(false))
     afterVideo.dispatchEvent(new Event('waiting'))
     await nextTick()
     expect(beforeVideo.paused).toBe(false)
     expect(afterVideo.paused).toBe(false)
-    afterVideo.dispatchEvent(new Event('playing'))
-    await nextTick()
+  })
+
+  it('corrects drift only after the after clip finishes seeking', async () => {
+    const { beforeVideo, afterVideo } = await renderVisibleMetadataSlider()
+    await waitFor(() => expect(afterVideo.paused).toBe(false))
     beforeVideo.currentTime = 2
     afterVideo.currentTime = 1
     const seeking = vi.spyOn(afterVideo, 'seeking', 'get').mockReturnValue(true)
@@ -180,6 +194,12 @@ describe('VideoCompareSlider', () => {
     beforeVideo.dispatchEvent(new Event('timeupdate'))
     await nextTick()
     expect(afterVideo.currentTime).toBe(2)
+  })
+
+  it('tolerates small drift between synchronized clips', async () => {
+    const { beforeVideo, afterVideo } = await renderVisibleMetadataSlider()
+    await waitFor(() => expect(afterVideo.paused).toBe(false))
+    beforeVideo.currentTime = 2
     afterVideo.currentTime = 1.85
     beforeVideo.dispatchEvent(new Event('timeupdate'))
     await nextTick()
