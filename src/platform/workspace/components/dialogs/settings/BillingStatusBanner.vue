@@ -90,10 +90,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import {
-  pausedBannerCopy,
-  useBillingBanner
-} from '@/platform/workspace/composables/useBillingBanner'
+import { useBillingBanner } from '@/platform/workspace/composables/useBillingBanner'
 import type {
   BillingBannerAudience,
   BillingBannerKind
@@ -103,6 +100,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import { pausedBannerCopy } from '@/platform/workspace/composables/usePausedBanner'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'

@@ -11,7 +11,7 @@ import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
-import type { BillingStatus, Plan } from '@/platform/workspace/api/workspaceApi'
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
@@ -19,15 +19,13 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
 
 import BillingTab from './BillingTab.vue'
 
-const distribution = vi.hoisted(() => ({ isCloud: true }))
-vi.mock(import('@/platform/distribution/types'), () => ({
-  get isCloud() {
-    return distribution.isCloud
-  }
-}))
+vi.mock(import('@/platform/workspace/composables/usePausedBanner'), {
+  spy: true
+})
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -70,7 +68,7 @@ interface Scenario {
   autoTopUpFlag?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
-  billingStatus?: BillingStatus
+  isPaused?: boolean
 }
 
 function arrange(scenario: Scenario = {}) {
@@ -79,6 +77,9 @@ function arrange(scenario: Scenario = {}) {
   const fetchStatus = vi.fn(async () => {})
   const resubscribe = vi.fn(scenario.resubscribe ?? (async () => {}))
   const manageSubscription = vi.fn(async () => ({ ok: true as const }))
+  vi.mocked(usePausedBanner).mockReturnValue({
+    isPaused: computed(() => scenario.isPaused ?? false)
+  })
 
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
@@ -95,10 +96,7 @@ function arrange(scenario: Scenario = {}) {
           ? 'active'
           : scenario.subscriptionStatus
       ),
-      billingStatus: computed(() => scenario.billingStatus ?? 'paid'),
-      canAccessSubscriptionFeatures: computed(
-        () => (scenario.billingStatus ?? 'paid') === 'paid'
-      ),
+      billingStatus: computed(() => 'paid'),
       manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
@@ -191,7 +189,7 @@ describe('BillingTab', () => {
     ])(
       'shows $name the paused banner at the top of the tab',
       ({ canManageBilling, body, buttons }) => {
-        arrange({ billingStatus: 'paused', canManageBilling })
+        arrange({ isPaused: true, canManageBilling })
 
         const banner = screen.getByTestId('billing-paused-banner')
         expect(banner).toHaveTextContent('Subscription paused')
@@ -205,7 +203,7 @@ describe('BillingTab', () => {
     )
 
     it('opens the billing portal from Update payment', async () => {
-      const { manageSubscription } = arrange({ billingStatus: 'paused' })
+      const { manageSubscription } = arrange({ isPaused: true })
 
       await userEvent.click(
         within(screen.getByTestId('billing-paused-banner')).getByRole(
@@ -217,26 +215,12 @@ describe('BillingTab', () => {
       expect(manageSubscription).toHaveBeenCalledOnce()
     })
 
-    it.for<{ name: string; billingStatus: BillingStatus; isCloud: boolean }>([
-      { name: 'a paid Cloud workspace', billingStatus: 'paid', isCloud: true },
-      {
-        name: 'a payment-failed Cloud workspace',
-        billingStatus: 'payment_failed',
-        isCloud: true
-      },
-      {
-        name: 'a paused local install',
-        billingStatus: 'paused',
-        isCloud: false
-      }
-    ])('shows no paused banner for $name', ({ billingStatus, isCloud }) => {
-      distribution.isCloud = isCloud
-      arrange({ billingStatus })
+    it('shows no paused banner when the workspace is not paused', () => {
+      arrange()
 
       expect(
         screen.queryByTestId('billing-paused-banner')
       ).not.toBeInTheDocument()
-      distribution.isCloud = true
     })
   })
 

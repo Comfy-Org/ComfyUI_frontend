@@ -1,3 +1,4 @@
+import type { BillingStatus } from '@comfyorg/ingest-types'
 import { createSharedComposable, useTimestamp } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
@@ -6,10 +7,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isWithinEnterpriseEndingNotice } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionInfo } from '@/composables/billing/types'
-import type {
-  BillingStatus,
-  SubscriptionTier
-} from '@/platform/workspace/api/workspaceApi'
+import type { SubscriptionTier } from '@/platform/workspace/api/workspaceApi'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -21,30 +19,6 @@ export type BillingBannerKind =
   | 'planChange'
 
 export type BillingBannerAudience = 'team' | 'personal'
-
-export interface PausedBannerCopy {
-  muted: boolean
-  titleKey: string
-  bodyKey: string
-  action: 'updatePayment' | null
-}
-
-/** The paused banner every billing surface renders, chosen by `can_manage_billing` as received. */
-export function pausedBannerCopy(canManageBilling: boolean): PausedBannerCopy {
-  return canManageBilling
-    ? {
-        muted: false,
-        titleKey: 'subscription.paymentRecovery.title',
-        bodyKey: 'workspacePanel.billingStatus.paused.body',
-        action: 'updatePayment'
-      }
-    : {
-        muted: true,
-        titleKey: 'subscription.paymentRecovery.title',
-        bodyKey: 'subscription.paymentRecovery.memberDescription',
-        action: null
-      }
-}
 
 export interface BillingBannerInputs {
   billingControlEnabled: boolean

@@ -120,11 +120,11 @@ import {
 } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
 import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import {
   pausedBannerCopy,
-  useBillingBanner
-} from '@/platform/workspace/composables/useBillingBanner'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+  usePausedBanner
+} from '@/platform/workspace/composables/usePausedBanner'
 import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
 
@@ -135,13 +135,11 @@ const { state: planRow } = useBillingPlanRow()
 const { state: creditsCard } = useBillingCreditsCard(planRow)
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
-const { kind: bannerKind } = useBillingBanner()
-const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
-
-const isPaused = computed(() => bannerKind.value === 'paused')
+const { isPaused } = usePausedBanner()
 const paused = computed(() =>
   pausedBannerCopy(capabilities.canManageBilling.value)
 )
+const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 
 const HANDOFF_PATH = {
   owner: '/profile/billing',
