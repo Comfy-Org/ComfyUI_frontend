@@ -44,12 +44,11 @@ directory and stops before the checkout server starts. Python assertions stay
 enabled even if the image sets `PYTHONOPTIMIZE`. Failed checks print the
 backend logs.
 
-`.github/workflows/ci-container.yaml` builds and validates candidates when
-this directory, that workflow, `package.json`, `pnpm-lock.yaml`,
-`pnpm-workspace.yaml`, or `.nvmrc` changes. Dependency changes rebuild the image
-to catch Node and Playwright incompatibilities; ordinary frontend source changes
-do not. The workflow has read-only repository access and does not log in to a
-registry.
+Candidate validation rebuilds the image for container source, workflow, or Node
+version-file changes. Frontend dependency-only changes do not trigger candidate
+validation; use manual dispatch when a dependency update needs a compatibility
+check against the candidate image. The workflow has read-only repository access
+and does not log in to a registry.
 
 ## Runtime contract
 
@@ -170,8 +169,8 @@ a new version when a rebuild is needed. To pause releases, set
 `CI_CONTAINER_PUBLISH_ENABLED=false` and let the active run finish.
 
 Publishing and consumer adoption remain separate stages of
-[FE-3237](https://linear.app/comfyorg/issue/FE-3237). Existing consumers still use
-`ghcr.io/comfy-org/comfyui-ci-container:0.0.27`. Changing the updater to discover
+[FE-3237](https://linear.app/comfyorg/issue/FE-3237). Consumers use
+`ghcr.io/comfy-org/comfyui-ci-container:0.0.28`, the first monorepo release. Changing the updater to discover
 monorepo source tags, updating consumers, and archiving the old repository
 belong to FE-3240. Keep the old package versions available for rollback.
 Keep the archived repository readable: every publication checks that its

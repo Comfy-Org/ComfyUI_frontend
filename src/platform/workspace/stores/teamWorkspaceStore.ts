@@ -32,9 +32,12 @@ import type {
   PendingInvite as ApiPendingInvite,
   SubscriptionTier,
   WorkspaceWithRole
-} from '../api/workspaceApi'
-import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
-import { NoWorkspaceAccessError } from '../api/workspaceApiError'
+} from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
+import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 
 export interface WorkspaceMember {
   id: string

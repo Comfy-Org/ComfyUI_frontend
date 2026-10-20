@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { LAYER_MODES, defaultMode, resolveMode } from '../mode'
+import { LAYER_MODES, defaultMode, resolveMode } from '#/mode'
 import {
   BLEND_CODE,
   COMPOSITE_CODE,

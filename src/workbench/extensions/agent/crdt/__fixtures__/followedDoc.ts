@@ -3,7 +3,7 @@ import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { onTestFinished } from 'vitest'
 import * as Y from 'yjs'
 
-import { DocChangeCollector } from '../docChangeCollector'
+import { DocChangeCollector } from '@/workbench/extensions/agent/crdt/docChangeCollector'
 
 /**
  * A follower document that received the minted `workflow` as its catch-up

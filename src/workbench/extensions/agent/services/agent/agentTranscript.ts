@@ -1,12 +1,15 @@
-import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import type {
+  AgentMessages,
+  TurnId
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   toTurnId,
   zPersistedToolCallSummary
-} from '../../schemas/agentApiSchema'
-import type { WorkflowReference } from '../../types/workflowReference'
-import type { SkillReference } from '../../types/skillReference'
-import { parseSkillReferenceText } from '../../utils/skillReferenceText'
-import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
+import { parseWorkflowReferences } from '@/workbench/extensions/agent/utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
 import {
   createAssistantMessage,

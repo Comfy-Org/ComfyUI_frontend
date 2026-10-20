@@ -1,4 +1,4 @@
-import { registerNodeKind } from '../nodeKind'
+import { registerNodeKind } from '#/nodeKind'
 import { fillKind } from './fill'
 import { groupKind } from './group'
 import { rasterKind } from './raster'
