@@ -10,7 +10,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--extensions-blocks]" />
-      <h2 class="text-base text-base-foreground">{{ $t('manager.title') }}</h2>
+      <h2 class="text-base text-foreground">{{ $t('manager.title') }}</h2>
     </template>
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavId" :nav-items="navItems" />
@@ -57,20 +57,15 @@
         v-if="shouldShowManagerBanner"
         class="relative mx-6 mt-3 mb-4 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
       >
-        <i
-          class="icon-[lucide--triangle-alert] text-lg text-warning-background"
-        />
-        <div class="flex flex-1 flex-col gap-2">
-          <p class="m-0 text-sm font-bold">
+        <i class="icon-[lucide--triangle-alert] text-lg text-warning" />
+        <div class="flex flex-1 flex-col gap-2 text-sm">
+          <p class="m-0 font-bold">
             {{ $t('manager.conflicts.warningBanner.title') }}
           </p>
           <p class="m-0 text-xs">
             {{ $t('manager.conflicts.warningBanner.message') }}
           </p>
-          <p
-            class="m-0 cursor-pointer text-sm font-bold"
-            @click="onClickWarningLink"
-          >
+          <p class="m-0 cursor-pointer font-bold" @click="onClickWarningLink">
             {{ $t('manager.conflicts.warningBanner.button') }}
           </p>
         </div>
@@ -80,7 +75,7 @@
           size="icon"
           @click="dismissWarningBanner"
         >
-          <i class="pi pi-times text-xs text-base-foreground"></i>
+          <i class="pi pi-times text-xs text-foreground"></i>
         </Button>
       </div>
 
@@ -122,6 +117,8 @@
         v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
+        :button-label="retryLabel"
+        @action="retrySearch"
       />
       <div v-else class="size-full" @click="handleGridContainerClick">
         <VirtualGrid
@@ -362,13 +359,14 @@ const searchMode = ref<SearchMode>(
     : initialState.searchMode
 )
 const sortField = ref<string>(initialState.sortField)
+const trimmedSearchQuery = computed(() => searchQuery.value.trim())
 
 const isSearchBacked = computed(() => {
   const tab = selectedTab.value?.id
   return (
     tab === ManagerTab.All ||
     tab === ManagerTab.NotInstalled ||
-    (searchQuery.value !== '' && tab !== ManagerTab.Unresolved)
+    (trimmedSearchQuery.value !== '' && tab !== ManagerTab.Unresolved)
   )
 })
 const openingSearchQuery = searchQuery.value.trim()
@@ -376,7 +374,8 @@ const debouncedSearchQuery = refDebounced(searchQuery, SEARCH_DEBOUNCE_MS)
 const packs = useRegistrySearch({
   query: debouncedSearchQuery,
   searchMode,
-  isTypedQuery: () => debouncedSearchQuery.value.trim() !== openingSearchQuery
+  isTypedQuery: () => debouncedSearchQuery.value.trim() !== openingSearchQuery,
+  isVisible: isSearchBacked
 })
 const searchResults = computed(() => [...toValue(packs.items)])
 const isSearchLoading = computed(
@@ -402,21 +401,37 @@ const loadMorePacks = () => packs.loadMore()
 const canLoadMorePacks = computed(
   () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
 )
-const isInitialLoad = computed(
+const isFirstPageForInput = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    firstPage.status !== 'loading' &&
+    firstPage.query === trimmedSearchQuery.value
+  )
+})
+const isSearchFailed = computed(
+  () =>
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    packs.firstPage.value.status === 'failed'
+)
+const isFirstPagePending = computed(
   () =>
     isSearchBacked.value &&
     searchResults.value.length === 0 &&
-    searchQuery.value === ''
+    !isFirstPageForInput.value
 )
-// Use the new composable for tab-based display packs
 const {
   displayPacks,
   isSortable,
   isLoading: isTabLoading,
   workflowPacks
-} = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)
+} = useManagerDisplayPacks(
+  selectedNavId,
+  searchResults,
+  trimmedSearchQuery,
+  sortField
+)
 
-// Tab helpers for template
 const isUpdateAvailableTab = computed(
   () => selectedTab.value?.id === ManagerTab.UpdateAvailable
 )
@@ -427,7 +442,6 @@ const isUnresolvedTab = computed(
   () => selectedTab.value?.id === ManagerTab.Unresolved
 )
 
-// Map of tab IDs to their empty state i18n key suffixes
 const tabEmptyStateKeys: Record<string, string> = {
   [ManagerTab.AllInstalled]: 'allInstalled',
   [ManagerTab.UpdateAvailable]: 'updateAvailable',
@@ -451,10 +465,10 @@ const isManagerErrorRelevant = computed(() => {
   )
 })
 
-// Empty state messages based on current tab and search state
 const emptyStateTitle = computed(() => {
-  if (isManagerErrorRelevant.value) return t('manager.errorConnecting')
-  if (searchQuery.value) return t('manager.noResultsFound')
+  if (isManagerErrorRelevant.value || isSearchFailed.value)
+    return t('manager.errorConnecting')
+  if (trimmedSearchQuery.value) return t('manager.noResultsFound')
 
   const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
@@ -465,8 +479,9 @@ const emptyStateTitle = computed(() => {
 })
 
 const emptyStateMessage = computed(() => {
-  if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
-  if (searchQuery.value) return t('manager.tryDifferentSearch')
+  if (isManagerErrorRelevant.value || isSearchFailed.value)
+    return t('manager.tryAgainLater')
+  if (trimmedSearchQuery.value) return t('manager.tryDifferentSearch')
 
   const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
@@ -475,6 +490,12 @@ const emptyStateMessage = computed(() => {
     ? t(`manager.emptyState.${emptyStateKey}.message`)
     : t('manager.tryDifferentSearch')
 })
+
+const retryLabel = computed(() =>
+  isSearchFailed.value ? t('g.retry') : undefined
+)
+
+const retrySearch = () => void packs.loadNew()
 
 const onClickWarningLink = () => {
   window.open(
@@ -488,7 +509,7 @@ const onClickWarningLink = () => {
 const isLoading = computed(() => {
   if (isSearchLoading.value) return searchResults.value.length === 0
   if (isTabLoading.value) return true
-  return isInitialLoad.value
+  return isFirstPagePending.value
 })
 
 const isSettledWithNoPacks = computed(
@@ -504,7 +525,8 @@ const isUnmatchedLegacyManagerSearch = computed(() => {
   return (
     isNewManagerUI.value &&
     isSearchBacked.value &&
-    firstPage?.query === searchQuery.value.trim() &&
+    isFirstPageForInput.value &&
+    firstPage.status === 'loaded' &&
     isLegacyManagerQuery(firstPage.query) &&
     !displayPacks.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
     (firstPage.rawResultsEmpty || isSettledWithNoPacks.value)

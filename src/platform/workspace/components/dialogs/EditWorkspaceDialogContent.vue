@@ -5,14 +5,14 @@
     </template>
 
     <div class="flex flex-col gap-4 p-4">
-      <div class="flex flex-col gap-2">
-        <label class="text-sm text-base-foreground">
+      <div class="flex flex-col gap-2 text-sm">
+        <label>
           {{ $t('workspacePanel.editWorkspaceDialog.nameLabel') }}
         </label>
         <input
           v-model="newWorkspaceName"
           type="text"
-          class="w-full rounded-lg border border-border-default bg-transparent px-3 py-2 text-sm text-base-foreground placeholder:text-muted-foreground focus:ring-1 focus:ring-border-default focus:outline-none"
+          class="w-full rounded-lg border bg-transparent px-3 py-2 placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
           @keydown.enter="isValidName && onSave()"
         />
       </div>

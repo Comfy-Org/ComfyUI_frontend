@@ -9,7 +9,7 @@
     </template>
 
     <div class="p-4">
-      <p class="m-0 font-inter text-sm text-muted-foreground">
+      <p class="m-0 text-sm text-muted-foreground">
         {{ $t('credits.insufficient.memberDescription') }}
       </p>
     </div>

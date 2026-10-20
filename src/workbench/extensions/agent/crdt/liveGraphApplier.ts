@@ -2,7 +2,8 @@ import {
   linksMap,
   nodesMap,
   OPAQUE_WIDGETS_KEY,
-  readStamps
+  readStamps,
+  WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
 import { isEqual } from 'es-toolkit'
 import * as Y from 'yjs'
@@ -287,7 +288,7 @@ function readDocNode(
     } else if (key === OPAQUE_WIDGETS_KEY) {
       const opaque = plain(value)
       if (Array.isArray(opaque)) widgets = opaque
-    } else if (key !== 'id') {
+    } else if (key !== 'id' && key !== WIDGET_FORM_KEY) {
       fields[key] = plain(value)
     }
   })
@@ -483,6 +484,17 @@ function supersededOverflowAlias(
   return positional !== undefined && Object.hasOwn(document, positional.name)
 }
 
+/** Rows the document carries values for under the DynamicGroup `name`. */
+function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
+  if (widgets === undefined || Array.isArray(widgets)) return 0
+  const prefix = `${name}.`
+  const rows = new Set<string>()
+  for (const key of Object.keys(widgets)) {
+    if (key.startsWith(prefix)) rows.add(key.slice(prefix.length).split('.')[0])
+  }
+  return rows.size
+}
+
 /**
  * DynamicGroup controllers whose row count applies after `configure`, once the
  * document's row values can back it: counts stored by name on a node without
@@ -510,17 +522,6 @@ function deferredRowCounts(
       )
       .map((widget) => widget.name)
   )
-}
-
-/** Rows the document carries values for under the DynamicGroup `name`. */
-function documentedRowCount(name: string, widgets: DocNode['widgets']): number {
-  if (widgets === undefined || Array.isArray(widgets)) return 0
-  const prefix = `${name}.`
-  const rows = new Set<string>()
-  for (const key of Object.keys(widgets)) {
-    if (key.startsWith(prefix)) rows.add(key.slice(prefix.length).split('.')[0])
-  }
-  return rows.size
 }
 
 /**

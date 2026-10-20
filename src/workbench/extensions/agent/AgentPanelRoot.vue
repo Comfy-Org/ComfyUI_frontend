@@ -143,6 +143,7 @@ import {
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
 import {
   deriveSessionTitle,
@@ -369,8 +370,11 @@ const latestEntryHasPaywall = computed(() => {
     latestEntry.parts.some((part) => part.type === 'paywall')
   )
 })
+const threadHasUserMessage = computed(() =>
+  conversationEntries.value.some((entry) => entry.role === 'user')
+)
 const showStandingPaywall = computed(() => {
-  if (!creditsExhausted.value) return false
+  if (!creditsExhausted.value || !threadHasUserMessage.value) return false
   return !latestEntryHasPaywall.value
 })
 
@@ -739,21 +743,17 @@ function targetWorkflowDraft(origin?: TurnOrigin): DraftSnapshot | undefined {
   if (workflowDetached.value) return undefined
   const target = originWorkflow(origin)
   if (!target) return undefined
-  if (followerOwnsDocument(cloudIdFor(target))) return undefined
+  if (canvasMissedDocumentFrames(cloudIdFor(target))) return undefined
   const content = serializedCanvas(target)
   if (!content) return undefined
   return { content }
 }
 
-// A pending identity still withholds the draft: the seed replaces the server
-// document, and a canvas the follower has not caught up would undo agent edits.
-// Pending is bounded; the lookup settles as `rejected` after its retry budget.
-function followerOwnsDocument(documentId: string | undefined): boolean {
+function canvasMissedDocumentFrames(documentId: string | undefined): boolean {
   return (
     documentId !== undefined &&
     boundWorkflowId.value === documentId &&
-    crdtStatus.value.terminal === null &&
-    agentIdentity.state.value.status !== 'rejected'
+    crdtStatus.value.canvasMayBeStale
   )
 }
 
@@ -888,6 +888,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
+  onAgentEvent: useAgentNodeDefinitionRefreshStore().observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   refreshCredentialDuringTurns: !isCloud,
@@ -2112,7 +2113,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
     <div
       v-if="assetDragActive"
       role="status"
-      class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border-default bg-secondary-background/90 p-4 font-inter text-sm/5 text-base-foreground"
+      class="pointer-events-none absolute inset-2 z-20 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed bg-secondary/90 p-4 font-inter text-sm/5 text-foreground"
     >
       <span
         aria-hidden="true"

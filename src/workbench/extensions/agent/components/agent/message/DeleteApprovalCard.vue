@@ -44,17 +44,15 @@ const decision = computed(() => {
   <div
     role="group"
     :aria-label="t('agent.deleteApproval.card')"
-    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border border-component-node-border bg-secondary-background p-4 shadow-interface"
+    class="flex w-full flex-col gap-2 overflow-hidden rounded-lg border bg-secondary p-4 shadow-md"
   >
     <p
-      class="m-0 text-sm/5 wrap-break-word whitespace-pre-line text-base-foreground"
+      class="m-0 text-sm/5 wrap-break-word whitespace-pre-line text-foreground"
     >
       {{ part.prompt }}
     </p>
 
-    <div
-      class="flex flex-col gap-1 rounded-md bg-base-background p-2 text-xs/5"
-    >
+    <div class="flex flex-col gap-1 rounded-md bg-background p-2 text-xs/5">
       <ul
         :aria-label="t('agent.deleteApproval.nodes')"
         class="m-0 flex max-h-40 list-none flex-col gap-0.5 overflow-y-auto p-0"
@@ -64,7 +62,7 @@ const decision = computed(() => {
           :key="node.id"
           class="flex min-w-0 items-baseline gap-2"
         >
-          <span v-if="node.name" class="truncate text-base-foreground">
+          <span v-if="node.name" class="truncate text-foreground">
             {{ node.name }}
           </span>
           <span class="max-w-1/2 shrink-0 truncate text-muted-foreground">

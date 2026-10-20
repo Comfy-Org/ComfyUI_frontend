@@ -128,7 +128,7 @@ describe('Load3DMenuBar', () => {
     await openCategoryMenu(user)
     expect(
       screen.getByRole('button', { name: 'Scene', pressed: true })
-    ).toHaveClass('bg-secondary-background-selected')
+    ).toHaveClass('bg-muted')
   })
 
   it('toggles showGrid on the bound config when the grid button is clicked', async () => {

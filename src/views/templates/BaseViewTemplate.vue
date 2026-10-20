@@ -3,7 +3,7 @@
     class="flex h-svh w-screen flex-col font-sans"
     :class="[
       dark
-        ? 'dark-theme bg-neutral-900 text-neutral-300'
+        ? 'bg-neutral-900 text-neutral-300'
         : 'bg-neutral-300 text-neutral-900'
     ]"
   >

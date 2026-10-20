@@ -612,6 +612,31 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it('reports an agent event for a hydrating thread before the hydrate settles', async () => {
+    const onAgentEvent = vi.fn()
+    const rest = fakeRest({ getMessages: vi.fn(hangingGetMessages) })
+    const { source, emit } = fakeEvents()
+    useAgentConversationStore().setThreadId('th-1')
+    const session = useAgentSession({ rest, events: source, onAgentEvent })
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    const restartSucceeded = wire({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-restart',
+        tool_name: 'restart_comfyui',
+        status: 'success',
+        duration_ms: 900,
+        thread_id: 'th-1',
+        message_id: 'msg-1'
+      }
+    })
+
+    emit(restartSucceeded)
+
+    expect(onAgentEvent).toHaveBeenCalledExactlyOnceWith(restartSucceeded)
+  })
+
   it.for(['success', 'failure', 'new-chat', 'newer-chat', 'cancelled'])(
     'activates only a ready current selection after %s',
     async (outcome) => {

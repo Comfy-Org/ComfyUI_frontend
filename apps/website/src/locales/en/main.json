@@ -667,7 +667,22 @@
       "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
       "cancelError": "Could not request cancellation. Your generation may still be running."
     },
-    "cinematic": {}
+    "cinematic": {},
+    "videoTrim": {
+      "title": "Trim video",
+      "description": "Choose the part to use. It can be {min} to {max} seconds long.",
+      "play": "Play the selected part",
+      "pause": "Pause",
+      "start": "Start of the part to keep",
+      "end": "End of the part to keep",
+      "seek": "Seek within the selected part",
+      "selected": "{from} – {to} · {seconds} s of {total} s",
+      "tooShort": "This video is {seconds} s long. It needs to be at least {min} s.",
+      "unreadable": "This video could not be read. Try an MP4.",
+      "reading": "Reading the video",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    }
   },
   "auth": {
     "signIn": {
@@ -5285,7 +5300,10 @@
       "prototype": "Prototype",
       "reshoot": "Re-shoot a video",
       "reshootSummary": "Aim a new camera at your clip and generate the scene from that angle.",
-      "reshootMeta": "Video · MiniMax H3"
+      "reshootMeta": "Video · MiniMax H3",
+      "openjutsu": "Openjutsu",
+      "openjutsuSummary": "Swap a character in your video for one from a single image, and keep the scene and its sound.",
+      "openjutsuMeta": "Video · MiniMax H3"
     },
     "stage": {
       "longWait": "Still going. Some models take about a minute. Nothing is queued; yours already started.",
@@ -5371,7 +5389,7 @@
     "beta": "Beta",
     "repo": {
       "view": "View on GitHub",
-      "soon": "GitHub · Coming soon"
+      "org": "Comfy on GitHub"
     },
     "meta": {
       "description": "Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router."
@@ -5528,6 +5546,21 @@
       "yourPalette": "Your palette",
       "edit": "Edit palette",
       "done": "Done"
+    },
+    "download": {
+      "label": "Download",
+      "locked": "Run to download"
+    },
+    "zoom": {
+      "label": "Zoom",
+      "in": "Zoom in",
+      "out": "Zoom out",
+      "fit": "Fit to screen, now {n}%"
+    },
+    "compare": {
+      "label": "Compare",
+      "before": "Before",
+      "after": "After"
     }
   },
   "reshoot": {
@@ -5744,6 +5777,103 @@
     "noWebgl": "This preview needs WebGL2, which this browser does not offer.",
     "play": "Play",
     "pause": "Pause"
+  },
+  "openjutsu": {
+    "title": "Openjutsu",
+    "panel": "Swap settings",
+    "closed": "Openjutsu is not open yet",
+    "unavailable": "Openjutsu is not available right now. Try again later.",
+    "signIn": "Sign in to run a swap.",
+    "video": {
+      "add": "Upload video",
+      "limits": "MP4 or MOV · up to 15 s is used",
+      "remove": "Remove video",
+      "restore": "Undo remove video"
+    },
+    "target": {
+      "heading": "Extra direction (optional)",
+      "placeholder": "Optional: add character details or fix the last take, e.g. darker jacket, keep the glasses, less smiling.",
+      "empty": "No extra direction",
+      "anyone": "the person"
+    },
+    "seed": {
+      "shuffle": "Pick a random seed",
+      "placeholder": "Random seed"
+    },
+    "trim": {
+      "first": "Using the first {seconds} s",
+      "part": "Using {from}–{to} s",
+      "change": "Change",
+      "changeLabel": "Change the part used"
+    },
+    "needs": {
+      "video": "Add a video to start",
+      "character": "Add a character image"
+    },
+    "generate": {
+      "note": "The original sound is kept on the result. Each run also makes a first-frame image, charged separately.",
+      "busy": "Swapping. You can set up the next take meanwhile."
+    },
+    "phase": {
+      "uploading": "Uploading your files",
+      "starting": "Starting a server",
+      "queued": "Waiting for a server",
+      "running": "Swapping the character",
+      "fetching": "Fetching the result",
+      "elapsed": "{time} elapsed"
+    },
+    "take": {
+      "name": "Take {n}",
+      "source": "Source video",
+      "reuse": "Use these settings",
+      "retry": "Back to settings",
+      "detail": "Replaced {target}"
+    },
+    "examples": {
+      "title": "Start with an example",
+      "singer": {
+        "place": "Home studio",
+        "character": "Disco diva"
+      },
+      "boxer": {
+        "place": "Old gym",
+        "character": "Comfy fan"
+      },
+      "painter": {
+        "place": "Painter's studio",
+        "character": "Ronin"
+      },
+      "cowboy": {
+        "place": "Desert canyon",
+        "character": "Robot"
+      },
+      "failed": "That example could not be loaded. Try again, or add your own video."
+    },
+    "error": {
+      "swap": "The swap did not finish. Try again, or try a shorter part."
+    },
+    "sample": {
+      "banner": "Sample mode: this page is answering itself. No model runs and nothing is charged.",
+      "result": "Sample result: this is your own clip handed back unchanged, to show where a real swap will appear."
+    },
+    "size": {
+      "label": "Quality",
+      "768p": "768p · Sharper",
+      "480p": "480p · Faster"
+    },
+    "run": "Swap character",
+    "tools": "Result views",
+    "sheet": {
+      "expand": "Show swap settings",
+      "collapse": "Hide swap settings"
+    },
+    "compare": {
+      "slider": "Drag to compare the source and the result"
+    },
+    "peek": {
+      "seconds": "{seconds} s"
+    },
+    "noscript": "Openjutsu needs JavaScript to run."
   },
   "changelog": {
     "meta": {

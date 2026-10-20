@@ -24,7 +24,6 @@
             <Select v-model="form.provider" :disabled="mode === 'edit'">
               <SelectTrigger
                 id="secret-provider"
-                class="w-full"
                 autofocus
                 :invalid="!!errors.provider"
               >
@@ -60,7 +59,7 @@
               {{ $t('secrets.credentialType') }}
             </FieldLabel>
             <Select v-model="credentialType">
-              <SelectTrigger id="secret-credential-type" class="w-full">
+              <SelectTrigger id="secret-credential-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent disable-portal>

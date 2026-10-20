@@ -283,9 +283,7 @@ export class MultiAutogrowRealignHarness {
    * otherwise the frame is dropped and the turn never settles.
    */
   async sendTurn(text: string): Promise<void> {
-    await this.panel
-      .getByRole('textbox', { name: /^Describe ideas/ })
-      .fill(text)
+    await this.agentPanel.composer.fill(text)
     await this.panel
       .getByRole('button', { name: enMessages.agent.send })
       .click()
