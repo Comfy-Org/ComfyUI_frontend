@@ -27,16 +27,7 @@
       "
     >
       <label :class="FIELD_LABEL_CLASS">{{ $t('lightInfo.color') }}</label>
-      <ColorPicker
-        :hex-label="$t('color.hex')"
-        :rgba-label="$t('color.rgba')"
-        :hue-label="$t('color.hue')"
-        :alpha-label="$t('color.alpha')"
-        :red-label="$t('color.red')"
-        :green-label="$t('color.green')"
-        :blue-label="$t('color.blue')"
-        :saturation-brightness-label="$t('color.saturationBrightness')"
-        :format-label="$t('g.color')"
+      <AppColorPicker
         :model-value="light.color"
         :alpha="false"
         :accessible-label="$t('lightInfo.color')"
@@ -71,7 +62,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Switch from '@/components/ui/switch/Switch.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import {

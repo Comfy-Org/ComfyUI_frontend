@@ -1,13 +1,7 @@
 <template>
   <div>
-    <MultiSelect
+    <AppMultiSelect
       v-model="selectedOptions"
-      :search-label="$t('g.search')"
-      :search-placeholder="$t('g.search')"
-      :empty-text="$t('g.noResultsFound')"
-      :accessible-label="placeholder || $t('g.multiSelectDropdown')"
-      :clear-all-label="$t('g.clearAll')"
-      :format-selected-count="(count) => $t('g.itemsSelected', { count })"
       :options="options"
       show-search-box
       :label="placeholder"
@@ -18,7 +12,6 @@
           <Badge
             v-for="item in selected"
             :key="item.value"
-            :remove-label="$t('g.remove')"
             variant="square"
             severity="secondary"
             class="min-w-0 shrink"
@@ -27,7 +20,7 @@
           </Badge>
         </div>
       </template>
-    </MultiSelect>
+    </AppMultiSelect>
   </div>
 </template>
 
@@ -35,7 +28,7 @@
 import Badge from '@/components/ui/badge/Badge.vue'
 import { computed } from 'vue'
 
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@/components/ui/select/types'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComponentWidget } from '@/types/domWidget'

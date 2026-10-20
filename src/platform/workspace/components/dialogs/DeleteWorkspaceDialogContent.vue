@@ -1,24 +1,18 @@
 <template>
-  <DialogPanel
-    :close-label="$t('g.close')"
-    class="w-full max-w-[360px]"
-    @close="onCancel"
-  >
+  <AppDialogPanel size="compact" @close="onCancel">
     <template #title>
       {{ $t('workspacePanel.deleteDialog.title') }}
     </template>
 
-    <div class="p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{
-          workspaceName
-            ? $t('workspacePanel.deleteDialog.messageWithName', {
-                name: workspaceName
-              })
-            : $t('workspacePanel.deleteDialog.message')
-        }}
-      </p>
-    </div>
+    <p class="m-0 text-sm text-muted-foreground">
+      {{
+        workspaceName
+          ? $t('workspacePanel.deleteDialog.messageWithName', {
+              name: workspaceName
+            })
+          : $t('workspacePanel.deleteDialog.message')
+      }}
+    </p>
 
     <template #footer>
       <Button variant="muted-textonly" @click="onCancel">
@@ -28,11 +22,11 @@
         {{ $t('g.delete') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'

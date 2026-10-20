@@ -11,7 +11,6 @@
         />
         <Badge
           v-else-if="secret.provider"
-          :remove-label="$t('g.remove')"
           variant="square"
           severity="muted"
           class="px-2"

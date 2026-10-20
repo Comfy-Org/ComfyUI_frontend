@@ -1,18 +1,12 @@
 <template>
-  <DialogPanel
-    :close-label="$t('g.close')"
-    class="w-full max-w-[360px]"
-    @close="onCancel"
-  >
+  <AppDialogPanel size="compact" @close="onCancel">
     <template #title>
       {{ $t('workspacePanel.revokeInviteDialog.title') }}
     </template>
 
-    <div class="p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.revokeInviteDialog.message') }}
-      </p>
-    </div>
+    <p class="m-0 text-sm text-muted-foreground">
+      {{ $t('workspacePanel.revokeInviteDialog.message') }}
+    </p>
 
     <template #footer>
       <Button variant="muted-textonly" @click="onCancel">
@@ -22,11 +16,11 @@
         {{ $t('workspacePanel.revokeInviteDialog.revoke') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'

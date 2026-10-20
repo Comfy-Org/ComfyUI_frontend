@@ -17,7 +17,6 @@
         </span>
         <Badge
           v-if="showIdName"
-          :remove-label="$t('g.remove')"
           data-testid="node-id-badge"
           variant="square"
           severity="secondary"
@@ -91,18 +90,12 @@
     >
       <Badge
         v-if="nodeDef.deprecated"
-        :remove-label="$t('g.remove')"
         variant="square"
         class="bg-destructive/20 text-destructive"
       >
         {{ $t('g.deprecated') }}
       </Badge>
-      <Badge
-        v-if="nodeDef.experimental"
-        :remove-label="$t('g.remove')"
-        variant="square"
-        severity="info"
-      >
+      <Badge v-if="nodeDef.experimental" variant="square" severity="info">
         {{ $t('g.experimental') }}
       </Badge>
       <span

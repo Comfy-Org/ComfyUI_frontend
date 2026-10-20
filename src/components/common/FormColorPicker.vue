@@ -1,18 +1,8 @@
 <template>
   <div class="color-picker-wrapper flex items-center gap-2">
-    <ColorPicker
+    <AppColorPicker
       :id="id"
       v-model="hexValue"
-      :hex-label="$t('color.hex')"
-      :rgba-label="$t('color.rgba')"
-      :hue-label="$t('color.hue')"
-      :alpha-label="$t('color.alpha')"
-      :red-label="$t('color.red')"
-      :green-label="$t('color.green')"
-      :blue-label="$t('color.blue')"
-      :saturation-brightness-label="$t('color.saturationBrightness')"
-      :format-label="$t('g.color')"
-      :accessible-label="$t('g.color')"
       :disabled="disabled"
       :aria-labelledby="ariaLabelledby"
     />
@@ -30,7 +20,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Input from '@/components/ui/input/Input.vue'
 
 const modelValue = defineModel<string>('modelValue')

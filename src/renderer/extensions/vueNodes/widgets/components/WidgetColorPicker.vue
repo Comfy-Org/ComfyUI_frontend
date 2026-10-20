@@ -1,17 +1,7 @@
 <template>
   <WidgetLayoutField :widget="widget">
-    <ColorPicker
+    <AppColorPicker
       v-model="localValue"
-      :hex-label="$t('color.hex')"
-      :rgba-label="$t('color.rgba')"
-      :hue-label="$t('color.hue')"
-      :alpha-label="$t('color.alpha')"
-      :red-label="$t('color.red')"
-      :green-label="$t('color.green')"
-      :blue-label="$t('color.blue')"
-      :saturation-brightness-label="$t('color.saturationBrightness')"
-      :format-label="$t('g.color')"
-      :accessible-label="$t('g.color')"
       :alpha="format !== 'int'"
       @update:model-value="onUpdate"
     />
@@ -31,7 +21,7 @@ import {
 
 import type { IColorWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

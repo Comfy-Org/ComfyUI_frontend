@@ -1,9 +1,5 @@
 <template>
-  <DialogPanel
-    :close-label="$t('g.close')"
-    class="w-lg max-w-full"
-    @close="onClose"
-  >
+  <AppDialogPanel unpadded @close="onClose">
     <template #title>
       <i class="icon-[comfy--extensions-blocks]" />
       {{ $t('manager.survey.title') }}
@@ -48,14 +44,14 @@
         </div>
       </div>
     </main>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
 import { useEventListener, useTimeoutFn } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 

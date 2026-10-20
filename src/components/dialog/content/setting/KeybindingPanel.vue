@@ -22,7 +22,6 @@
         />
         <Menu
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :items="menuEntries"
           to="#keybinding-panel-actions"
           align="end"
@@ -90,7 +89,6 @@
     <ContextMenu
       ref="rowMenu"
       :new-label="$t('contextMenu.new')"
-      :remove-label="$t('g.remove')"
       :model="rowMenuItems"
       @hide="restoreRowFocus"
     />

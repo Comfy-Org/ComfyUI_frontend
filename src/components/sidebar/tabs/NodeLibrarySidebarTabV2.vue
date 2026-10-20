@@ -31,7 +31,6 @@
           <Menu
             v-if="selectedTab === 'essentials'"
             :new-label="$t('contextMenu.new')"
-            :remove-label="$t('g.remove')"
             :items="jumpMenuEntries"
             :label="$t('essentials.jumpTo')"
           >
@@ -43,11 +42,7 @@
               />
             </template>
           </Menu>
-          <Menu
-            v-else
-            :new-label="$t('contextMenu.new')"
-            :remove-label="$t('g.remove')"
-          >
+          <Menu v-else :new-label="$t('contextMenu.new')">
             <template #trigger>
               <Button
                 size="icon"
@@ -58,7 +53,6 @@
             <MenuRadioGroup
               v-model="sortOrder"
               :new-label="$t('contextMenu.new')"
-              :remove-label="$t('g.remove')"
               :options="sortingOptions"
             />
           </Menu>

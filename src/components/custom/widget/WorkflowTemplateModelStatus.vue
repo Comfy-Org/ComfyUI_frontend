@@ -40,12 +40,7 @@ const emit = defineEmits<{ download: [] }>()
     v-else-if="row.status"
     class="col-start-3 row-start-1 flex shrink-0 items-center gap-2"
   >
-    <Badge
-      :remove-label="$t('g.remove')"
-      severity="secondary"
-      variant="compact"
-      class="text-muted-foreground"
-    >
+    <Badge severity="secondary" variant="compact" class="text-muted-foreground">
       {{ row.status.label }}
     </Badge>
   </span>

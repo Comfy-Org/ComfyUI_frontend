@@ -95,7 +95,6 @@
         <Menu
           v-if="showOptionsButton"
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :items="menuItems"
         >
           <template #trigger>
@@ -126,7 +125,6 @@
             <MenuItemContent
               v-else
               :new-label="$t('contextMenu.new')"
-              :remove-label="$t('g.remove')"
               :item
               :has-submenu
             />

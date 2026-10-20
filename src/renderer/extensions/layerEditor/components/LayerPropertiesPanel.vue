@@ -183,20 +183,7 @@
       <div v-if="backgroundLayer" :class="sectionClass">
         <span :class="sectionLabelClass">{{ t('layerEditor.fill') }}</span>
         <div data-testid="background-color-swatch">
-          <ColorPicker
-            v-model="backgroundColorModel"
-            :hex-label="$t('color.hex')"
-            :rgba-label="$t('color.rgba')"
-            :hue-label="$t('color.hue')"
-            :alpha-label="$t('color.alpha')"
-            :red-label="$t('color.red')"
-            :green-label="$t('color.green')"
-            :blue-label="$t('color.blue')"
-            :saturation-brightness-label="$t('color.saturationBrightness')"
-            :format-label="$t('g.color')"
-            :accessible-label="$t('g.color')"
-            class="h-7"
-          />
+          <AppColorPicker v-model="backgroundColorModel" class="h-7" />
         </div>
       </div>
     </template>
@@ -210,7 +197,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PropertyNumberField from '@/renderer/extensions/layerEditor/components/PropertyNumberField.vue'
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'

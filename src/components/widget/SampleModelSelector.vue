@@ -30,7 +30,6 @@
         </Button>
         <Menu
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :items="moreMenuItems"
           align="end"
         >
@@ -48,17 +47,9 @@
 
     <template #contentFilter>
       <div class="relative flex gap-2 px-6 pb-4">
-        <MultiSelect
+        <AppMultiSelect
           v-model="selectedFrameworks"
           v-model:search-query="searchText"
-          :search-label="$t('g.search')"
-          :search-placeholder="$t('g.search')"
-          :empty-text="$t('g.noResultsFound')"
-          :accessible-label="
-            $t('assetBrowser.selectFrameworks') || $t('g.multiSelectDropdown')
-          "
-          :clear-all-label="$t('g.clearAll')"
-          :format-selected-count="(count) => $t('g.itemsSelected', { count })"
           class="w-[250px]"
           :label="$t('assetBrowser.selectFrameworks')"
           :options="frameworkOptions"
@@ -66,27 +57,13 @@
           :show-selected-count="true"
           :show-clear-button="true"
         />
-        <MultiSelect
+        <AppMultiSelect
           v-model="selectedProjects"
-          :search-label="$t('g.search')"
-          :search-placeholder="$t('g.search')"
-          :empty-text="$t('g.noResultsFound')"
-          :accessible-label="
-            $t('assetBrowser.selectProjects') || $t('g.multiSelectDropdown')
-          "
-          :clear-all-label="$t('g.clearAll')"
-          :format-selected-count="(count) => $t('g.itemsSelected', { count })"
           :label="$t('assetBrowser.selectProjects')"
           :options="projectOptions"
         />
-        <SingleSelect
+        <AppSingleSelect
           v-model="selectedSort"
-          :search-label="$t('g.search')"
-          :search-placeholder="$t('g.search')"
-          :empty-text="$t('g.noResultsFound')"
-          :accessible-label="
-            $t('assetBrowser.sortingType') || $t('g.singleSelectDropdown')
-          "
           :label="$t('assetBrowser.sortingType')"
           :options="sortOptions"
           class="w-[135px]"
@@ -94,7 +71,7 @@
           <template #icon>
             <i class="icon-[lucide--filter]" />
           </template>
-        </SingleSelect>
+        </AppSingleSelect>
       </div>
     </template>
 
@@ -151,8 +128,8 @@ import Tag from '@/components/chip/Tag.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import Button from '@/components/ui/button/Button.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'

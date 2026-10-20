@@ -2,7 +2,6 @@
   <div class="shrink-0 self-center">
     <Menu
       :new-label="$t('contextMenu.new')"
-      :remove-label="$t('g.remove')"
       :items="menuItems"
       max-height="viewport"
     >

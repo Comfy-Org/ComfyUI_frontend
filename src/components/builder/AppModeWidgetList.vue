@@ -199,7 +199,6 @@ defineExpose({ handleDragDrop })
       <div v-else class="flex-1" />
       <Menu
         :new-label="$t('contextMenu.new')"
-        :remove-label="$t('g.remove')"
         :class="cn('shrink-0', builderMode && 'pointer-events-auto')"
         :items="[
           {

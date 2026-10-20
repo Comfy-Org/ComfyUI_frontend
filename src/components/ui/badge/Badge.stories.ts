@@ -13,8 +13,7 @@ const meta: Meta<ComponentPropsAndSlots<typeof Badge>> = {
   args: {
     default: 'Badge',
     variant: 'tag',
-    severity: 'secondary',
-    removeLabel: 'Remove'
+    severity: 'secondary'
   },
   argTypes: {
     variant: {
@@ -55,11 +54,16 @@ const meta: Meta<ComponentPropsAndSlots<typeof Badge>> = {
 }
 
 export default meta
-type Story = StoryObj<typeof meta>
+type Story = StoryObj<ComponentPropsAndSlots<typeof Badge>>
 
 export const Default: Story = {}
 export const RemovableChip: Story = {
-  args: { variant: 'chip', removable: true, default: 'Filter' }
+  args: {
+    variant: 'chip',
+    removable: true,
+    removeLabel: 'Remove',
+    default: 'Filter'
+  }
 }
 export const Count: Story = { args: { variant: 'badge', default: '12' } }
 export const Dot: Story = { args: { variant: 'dot', default: '' } }
@@ -71,12 +75,12 @@ export const Severities: Story = {
     components: { Badge },
     template: `
       <div class="flex gap-2">
-        <Badge severity="primary" remove-label="Remove">Primary</Badge>
-        <Badge severity="secondary" remove-label="Remove">Secondary</Badge>
-        <Badge severity="danger" remove-label="Remove">Danger</Badge>
-        <Badge severity="info" remove-label="Remove">Info</Badge>
-        <Badge severity="success" remove-label="Remove">Success</Badge>
-        <Badge severity="warning" remove-label="Remove">Warning</Badge>
+        <Badge severity="primary">Primary</Badge>
+        <Badge severity="secondary">Secondary</Badge>
+        <Badge severity="danger">Danger</Badge>
+        <Badge severity="info">Info</Badge>
+        <Badge severity="success">Success</Badge>
+        <Badge severity="warning">Warning</Badge>
       </div>`
   })
 }

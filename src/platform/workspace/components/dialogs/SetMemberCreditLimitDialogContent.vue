@@ -1,9 +1,5 @@
 <template>
-  <DialogPanel
-    :close-label="$t('g.close')"
-    class="w-lg max-w-full"
-    @close="onClose"
-  >
+  <AppDialogPanel body-class="flex flex-col gap-6 text-sm" @close="onClose">
     <template #title>
       {{
         $t('workspacePanel.members.creditLimitDialog.title', {
@@ -12,72 +8,70 @@
       }}
     </template>
 
-    <div class="flex flex-col gap-6 p-4 text-sm">
-      <p class="m-0 text-muted-foreground">
-        {{ $t('workspacePanel.members.creditLimitDialog.description') }}
-      </p>
-      <div class="flex cursor-pointer flex-col gap-2 text-muted-foreground">
-        <div
-          class="flex items-start gap-2 rounded-lg p-2 transition-colors hover:bg-accent/30"
-          @click="mode = 'limited'"
-        >
-          <input
-            :id="`${modeGroupName}-limited`"
-            v-model="mode"
-            type="radio"
-            :name="modeGroupName"
-            value="limited"
-            class="mt-0.5 size-4 appearance-none rounded-full border border-muted checked:border-3 checked:bg-white focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          />
-          <span class="flex flex-1 flex-col gap-2">
-            <label :for="`${modeGroupName}-limited`">
-              {{ $t('workspacePanel.members.creditLimitDialog.limitOption') }}
-            </label>
-            <span
-              class="flex h-10 items-center gap-2 rounded-lg bg-secondary px-4"
-            >
-              <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
-              <input
-                v-model="limitModel"
-                inputmode="numeric"
-                :aria-label="
-                  $t('workspacePanel.members.creditLimitDialog.limitOption')
-                "
-                class="w-full border-none bg-transparent text-foreground tabular-nums outline-none"
-                @focus="mode = 'limited'"
-              />
-            </span>
-          </span>
-        </div>
-        <div
-          class="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-accent/30"
-          @click="mode = 'unlimited'"
-        >
-          <input
-            :id="`${modeGroupName}-unlimited`"
-            v-model="mode"
-            type="radio"
-            :name="modeGroupName"
-            value="unlimited"
-            class="size-4 appearance-none rounded-full border border-muted checked:border-3 checked:bg-white focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-          />
-          <label :for="`${modeGroupName}-unlimited`">
-            {{ $t('workspacePanel.members.creditLimitDialog.noLimit') }}
+    <p class="m-0 text-muted-foreground">
+      {{ $t('workspacePanel.members.creditLimitDialog.description') }}
+    </p>
+    <div class="flex cursor-pointer flex-col gap-2 text-muted-foreground">
+      <div
+        class="flex items-start gap-2 rounded-lg p-2 transition-colors hover:bg-accent/30"
+        @click="mode = 'limited'"
+      >
+        <input
+          :id="`${modeGroupName}-limited`"
+          v-model="mode"
+          type="radio"
+          :name="modeGroupName"
+          value="limited"
+          class="mt-0.5 size-4 appearance-none rounded-full border border-muted checked:border-3 checked:bg-white focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        />
+        <span class="flex flex-1 flex-col gap-2">
+          <label :for="`${modeGroupName}-limited`">
+            {{ $t('workspacePanel.members.creditLimitDialog.limitOption') }}
           </label>
-        </div>
+          <span
+            class="flex h-10 items-center gap-2 rounded-lg bg-secondary px-4"
+          >
+            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
+            <input
+              v-model="limitModel"
+              inputmode="numeric"
+              :aria-label="
+                $t('workspacePanel.members.creditLimitDialog.limitOption')
+              "
+              class="w-full border-none bg-transparent text-foreground tabular-nums outline-none"
+              @focus="mode = 'limited'"
+            />
+          </span>
+        </span>
       </div>
-      <p v-if="showWarning" class="m-0 flex gap-1 text-credit">
-        <i class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
-        {{
-          $t('workspacePanel.members.creditLimitDialog.warning', {
-            credits: $n(creditsUsed ?? 0)
-          })
-        }}
-      </p>
-      <p v-if="showError" class="m-0 text-destructive">
-        {{ $t('workspacePanel.members.creditLimitDialog.invalidLimit') }}
-      </p>
+      <div
+        class="flex items-center gap-2 rounded-lg p-2 transition-colors hover:bg-accent/30"
+        @click="mode = 'unlimited'"
+      >
+        <input
+          :id="`${modeGroupName}-unlimited`"
+          v-model="mode"
+          type="radio"
+          :name="modeGroupName"
+          value="unlimited"
+          class="size-4 appearance-none rounded-full border border-muted checked:border-3 checked:bg-white focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        />
+        <label :for="`${modeGroupName}-unlimited`">
+          {{ $t('workspacePanel.members.creditLimitDialog.noLimit') }}
+        </label>
+      </div>
     </div>
+    <p v-if="showWarning" class="m-0 flex gap-1 text-credit">
+      <i class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
+      {{
+        $t('workspacePanel.members.creditLimitDialog.warning', {
+          credits: $n(creditsUsed ?? 0)
+        })
+      }}
+    </p>
+    <p v-if="showError" class="m-0 text-destructive">
+      {{ $t('workspacePanel.members.creditLimitDialog.invalidLimit') }}
+    </p>
 
     <template #footer>
       <Button variant="muted-textonly" @click="onClose">
@@ -92,11 +86,11 @@
         {{ $t('workspacePanel.members.creditLimitDialog.update') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 

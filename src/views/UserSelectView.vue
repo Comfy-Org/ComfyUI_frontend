@@ -20,15 +20,9 @@
           <label id="existing-user-label" for="existing-user-select"
             >{{ $t('userSelect.existingUser') }}:</label
           >
-          <SingleSelect
+          <AppSingleSelect
             id="existing-user-select"
             v-model="selectedUserId"
-            :search-label="$t('g.search')"
-            :search-placeholder="$t('g.search')"
-            :empty-text="$t('g.noResultsFound')"
-            :accessible-label="
-              $t('userSelect.selectUser') || $t('g.singleSelectDropdown')
-            "
             aria-labelledby="existing-user-label"
             class="w-full"
             :options="userOptions"
@@ -54,7 +48,7 @@ import { useRouter } from 'vue-router'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Message from '@/components/ui/message/Message.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import type { User } from '@/stores/userStore'
 import { useUserStore } from '@/stores/userStore'
 import BaseViewTemplate from '@/views/templates/BaseViewTemplate.vue'

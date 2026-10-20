@@ -12,7 +12,6 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         newLabel: 'Nouveau',
-        removeLabel: 'Retirer',
         items: [{ label: 'More', items: [{ label: 'Run', new: true }] }]
       },
       slots: { trigger: '<button>Open</button>' }
@@ -33,7 +32,6 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         newLabel: 'New',
-        removeLabel: 'Remove',
         open: true,
         items: [{ label: 'Zoom', command, pressAndHoldInterval: 50 }]
       },
@@ -59,7 +57,6 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         newLabel: 'New',
-        removeLabel: 'Remove',
         open: true,
         items: [{ label: 'Zoom', command, pressAndHoldInterval: 50 }]
       },
@@ -87,7 +84,6 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         newLabel: 'New',
-        removeLabel: 'Remove',
         open: true,
         items: [
           { label: 'Zoom', command, disabled: true, pressAndHoldInterval: 50 }
@@ -117,7 +113,6 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         newLabel: 'New',
-        removeLabel: 'Remove',
         open: true,
         items: [{ label: 'Zoom', command, pressAndHoldInterval: 50 }]
       },
@@ -145,7 +140,7 @@ describe('Menu', () => {
   it('gives custom menu content keyboard selection and dismissal', async () => {
     const command = vi.fn()
     render(Menu, {
-      props: { label: 'Actions', newLabel: 'New', removeLabel: 'Remove' },
+      props: { label: 'Actions', newLabel: 'New' },
       slots: {
         trigger: '<button>Open</button>',
         default: () =>
@@ -171,8 +166,7 @@ describe('Menu', () => {
       props: {
         items: [{ label: 'Run' }],
         modal: false,
-        newLabel: 'New',
-        removeLabel: 'Remove'
+        newLabel: 'New'
       },
       slots: { trigger: '<button>Open</button>' }
     })
@@ -185,8 +179,7 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         items: [{ label: 'Unavailable' }],
-        newLabel: 'New',
-        removeLabel: 'Remove'
+        newLabel: 'New'
       },
       slots: { trigger: '<button>Open</button>' }
     })
@@ -208,8 +201,7 @@ describe('Menu', () => {
       render(Menu, {
         props: {
           items: [{ label, command }],
-          newLabel: 'New',
-          removeLabel: 'Remove'
+          newLabel: 'New'
         },
         slots: { trigger: '<button>Open</button>' }
       })
@@ -235,7 +227,6 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         newLabel: 'New',
-        removeLabel: 'Remove',
         items: [
           { label: 'Download' },
           { separator: true },
@@ -261,8 +252,7 @@ describe('Menu', () => {
       props: {
         items: [{ label: 'Run' }],
         open: true,
-        newLabel: 'New',
-        removeLabel: 'Remove'
+        newLabel: 'New'
       },
       slots: { trigger: '<button>Open</button>' }
     })
@@ -279,7 +269,6 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         newLabel: 'New',
-        removeLabel: 'Remove',
         items: [
           { label: 'Action', class: () => 'action-class' },
           {
@@ -309,7 +298,6 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         newLabel: 'New',
-        removeLabel: 'Remove',
         items: [
           {
             label: 'Grid',
@@ -342,7 +330,6 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         newLabel: 'New',
-        removeLabel: 'Remove',
         items: [
           {
             label: 'Density',
@@ -385,8 +372,7 @@ describe('Menu', () => {
     render(Menu, {
       props: {
         items: [{ label: 'Run' }],
-        newLabel: 'New',
-        removeLabel: 'Remove'
+        newLabel: 'New'
       },
       slots: { trigger: '<button>Open</button>' }
     })
@@ -411,8 +397,7 @@ describe('Menu', () => {
           h(ContextMenu, {
             model: [{ label: 'Inspect' }],
             ref: menu,
-            newLabel: 'New',
-            removeLabel: 'Remove'
+            newLabel: 'New'
           })
       })
     )
@@ -438,7 +423,7 @@ describe('Menu', () => {
           return { menu }
         },
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button @pointerdown.stop>Outside</button><ContextMenu ref="menu" new-label="New" remove-label="Remove" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button @pointerdown.stop>Outside</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -467,7 +452,7 @@ describe('Menu', () => {
           return { menu }
         },
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button>Outside</button><ContextMenu ref="menu" new-label="New" remove-label="Remove" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><button>Outside</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -498,7 +483,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu, selected }),
         template:
-          '<button @contextmenu.prevent.stop="selected = true; menu?.show($event)">Widget</button><button v-if="selected">Selection tools</button><ContextMenu ref="menu" new-label="New" remove-label="Remove" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent.stop="selected = true; menu?.show($event)">Widget</button><button v-if="selected">Selection tools</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     screen.getByRole('button', { name: 'Widget' }).dispatchEvent(
@@ -526,7 +511,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu }),
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" remove-label="Remove" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -550,7 +535,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu: ref<InstanceType<typeof ContextMenu>>() }),
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" remove-label="Remove" :model="[{ label: \'Inspect\' }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -574,7 +559,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu }),
         template:
-          '<button @click="menu?.toggle($event)" @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" remove-label="Remove" :model="[{ label: \'Inspect\' }]" />'
+          '<button @click="menu?.toggle($event)" @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'Inspect\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -597,7 +582,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ first, second }),
         template:
-          '<button @contextmenu.prevent="first?.show($event)">First</button><button @contextmenu.prevent="second?.show($event)">Second</button><ContextMenu ref="first" new-label="New" remove-label="Remove" :model="[{ label: \'First action\' }]" /><ContextMenu ref="second" new-label="New" remove-label="Remove" :model="[{ label: \'Second action\' }]" />'
+          '<button @contextmenu.prevent="first?.show($event)">First</button><button @contextmenu.prevent="second?.show($event)">Second</button><ContextMenu ref="first" new-label="New" :model="[{ label: \'First action\' }]" /><ContextMenu ref="second" new-label="New" :model="[{ label: \'Second action\' }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -627,7 +612,7 @@ describe('Menu', () => {
         components: { ContextMenu },
         setup: () => ({ menu }),
         template:
-          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" remove-label="Remove" :model="[{ label: \'More\', items: [{ label: \'Child\' }] }]" />'
+          '<button @contextmenu.prevent="menu?.show($event)">Target</button><ContextMenu ref="menu" new-label="New" :model="[{ label: \'More\', items: [{ label: \'Child\' }] }]" />'
       })
     )
     const user = userEvent.setup({ pointerEventsCheck: 0 })

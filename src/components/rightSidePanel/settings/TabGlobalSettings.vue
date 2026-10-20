@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import NumberField from '@/components/ui/number-field/NumberField.vue'
 import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -166,15 +166,8 @@ function openFullSettings() {
       </template>
       <div class="space-y-4 px-4 py-3">
         <LayoutField :label="t('rightSidePanel.globalSettings.linkShape')">
-          <SingleSelect
+          <AppSingleSelect
             v-model="linkShape"
-            :search-label="$t('g.search')"
-            :search-placeholder="$t('g.search')"
-            :empty-text="$t('g.noResultsFound')"
-            :accessible-label="
-              t('rightSidePanel.globalSettings.linkShape') ||
-              $t('g.singleSelectDropdown')
-            "
             :options="linkShapeOptions"
             :label="t('rightSidePanel.globalSettings.linkShape')"
             :class="cn(WidgetInputBaseClass, 'w-full text-xs')"

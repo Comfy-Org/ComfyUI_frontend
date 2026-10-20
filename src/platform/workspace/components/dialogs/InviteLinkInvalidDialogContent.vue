@@ -1,29 +1,23 @@
 <template>
-  <DialogPanel
-    :close-label="$t('g.close')"
-    class="w-full max-w-lg"
-    @close="onDismiss"
-  >
+  <AppDialogPanel @close="onDismiss">
     <template #title>
       {{ $t('workspacePanel.inviteLinks.invalidTitle') }}
     </template>
 
-    <div class="p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.inviteLinks.invalidBody') }}
-      </p>
-    </div>
+    <p class="m-0 text-sm text-muted-foreground">
+      {{ $t('workspacePanel.inviteLinks.invalidBody') }}
+    </p>
 
     <template #footer>
       <Button variant="secondary" size="lg" @click="onDismiss">
         {{ $t('workspacePanel.inviteLinks.invalidDismiss') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 

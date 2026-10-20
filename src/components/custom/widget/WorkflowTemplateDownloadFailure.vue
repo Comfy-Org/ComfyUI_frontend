@@ -31,7 +31,6 @@ function failureLabel(): string {
     <Tooltip :disabled="state.reason !== 'error'">
       <TooltipTrigger as-child>
         <Badge
-          :remove-label="$t('g.remove')"
           role="status"
           :aria-label="failureLabel()"
           severity="danger"

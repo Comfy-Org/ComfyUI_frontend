@@ -4,11 +4,7 @@
     @scroll="handlePanelScroll"
   >
     <DefineWorkspaceMenu>
-      <Menu
-        :new-label="$t('contextMenu.new')"
-        :remove-label="$t('g.remove')"
-        :items="menuEntries"
-      >
+      <Menu :new-label="$t('contextMenu.new')" :items="menuEntries">
         <template #trigger>
           <Button
             :tooltip="$t('g.moreOptions')"
@@ -211,7 +207,6 @@
                   </h3>
                   <Badge
                     v-if="planStatusBadge"
-                    :remove-label="$t('g.remove')"
                     data-testid="plan-status-badge"
                     variant="label"
                     :severity="planStatusBadge.severity"

@@ -69,7 +69,6 @@
         <ContextMenu
           ref="jobContextMenuRef"
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :model="jobMenuEntries"
         />
         <MediaLightbox

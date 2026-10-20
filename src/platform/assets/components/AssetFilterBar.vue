@@ -7,17 +7,9 @@
       class="flex items-center gap-4"
       data-component-id="asset-filter-bar-left"
     >
-      <MultiSelect
+      <AppMultiSelect
         v-if="availableFileFormats.length > 0"
         v-model="activeFileFormatObjects"
-        :search-label="$t('g.search')"
-        :search-placeholder="$t('g.search')"
-        :empty-text="$t('g.noResultsFound')"
-        :accessible-label="
-          $t('assetBrowser.fileFormats') || $t('g.multiSelectDropdown')
-        "
-        :clear-all-label="$t('g.clearAll')"
-        :format-selected-count="(count) => $t('g.itemsSelected', { count })"
         :label="$t('assetBrowser.fileFormats')"
         :options="availableFileFormats"
         class="min-w-32"
@@ -25,17 +17,9 @@
         @update:model-value="handleFilterChange"
       />
 
-      <MultiSelect
+      <AppMultiSelect
         v-if="availableBaseModels.length > 0"
         v-model="activeBaseModelObjects"
-        :search-label="$t('g.search')"
-        :search-placeholder="$t('g.search')"
-        :empty-text="$t('g.noResultsFound')"
-        :accessible-label="
-          $t('assetBrowser.baseModels') || $t('g.multiSelectDropdown')
-        "
-        :clear-all-label="$t('g.clearAll')"
-        :format-selected-count="(count) => $t('g.itemsSelected', { count })"
         :label="$t('assetBrowser.baseModels')"
         :options="availableBaseModels"
         class="min-w-32"
@@ -43,15 +27,9 @@
         @update:model-value="handleFilterChange"
       />
 
-      <SingleSelect
+      <AppSingleSelect
         v-if="showOwnershipFilter"
         v-model="ownership"
-        :search-label="$t('g.search')"
-        :search-placeholder="$t('g.search')"
-        :empty-text="$t('g.noResultsFound')"
-        :accessible-label="
-          $t('assetBrowser.ownership') || $t('g.singleSelectDropdown')
-        "
         :label="$t('assetBrowser.ownership')"
         :options="ownershipOptions"
         class="min-w-32"
@@ -61,14 +39,8 @@
     </div>
 
     <div class="flex items-center" data-component-id="asset-filter-bar-right">
-      <SingleSelect
+      <AppSingleSelect
         v-model="sortBy"
-        :search-label="$t('g.search')"
-        :search-placeholder="$t('g.search')"
-        :empty-text="$t('g.noResultsFound')"
-        :accessible-label="
-          $t('assetBrowser.sortBy') || $t('g.singleSelectDropdown')
-        "
         :label="$t('assetBrowser.sortBy')"
         :options="sortOptions"
         class="min-w-32"
@@ -78,7 +50,7 @@
         <template #icon>
           <i class="icon-[lucide--arrow-up-down]" />
         </template>
-      </SingleSelect>
+      </AppSingleSelect>
     </div>
   </div>
 </template>
@@ -87,9 +59,9 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@/components/ui/select/types'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type {

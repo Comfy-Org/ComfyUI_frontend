@@ -19,12 +19,8 @@
     <template #header>
       <div class="flex w-full items-center justify-between gap-2">
         <div class="flex w-full items-center gap-2">
-          <SingleSelect
+          <AppSingleSelect
             v-model="searchMode"
-            :search-label="$t('g.search')"
-            :search-placeholder="$t('g.search')"
-            :empty-text="$t('g.noResultsFound')"
-            :accessible-label="$t('g.singleSelectDropdown')"
             class="min-w-34"
             :options="filterOptions"
           />
@@ -99,11 +95,8 @@
 
       <!-- Sort Options -->
       <div v-if="isSortable" class="flex justify-end px-6 pb-4">
-        <SingleSelect
+        <AppSingleSelect
           v-model="sortField"
-          :search-label="$t('g.search')"
-          :search-placeholder="$t('g.search')"
-          :empty-text="$t('g.noResultsFound')"
           :accessible-label="sortAccessibleLabel"
           :label="$t('g.sort')"
           :options="availableSortOptions"
@@ -112,7 +105,7 @@
           <template #icon>
             <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
           </template>
-        </SingleSelect>
+        </AppSingleSelect>
       </div>
     </template>
 
@@ -181,7 +174,7 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'

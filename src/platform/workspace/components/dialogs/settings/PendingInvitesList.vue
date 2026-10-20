@@ -53,7 +53,6 @@
       <div class="flex items-center justify-end">
         <Menu
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :items="getInviteMenuItems(invite)"
           align="end"
         >

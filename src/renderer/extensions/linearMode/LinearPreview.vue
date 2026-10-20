@@ -142,7 +142,6 @@ async function rerun(e: Event) {
     <Menu
       v-if="selectedItem"
       :new-label="$t('contextMenu.new')"
-      :remove-label="$t('g.remove')"
       :items="selectedItemMenuEntries"
     >
       <template #trigger>

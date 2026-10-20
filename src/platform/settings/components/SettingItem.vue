@@ -8,13 +8,12 @@
     <template #name-prefix>
       <Badge
         v-if="setting.id === 'Comfy.Locale'"
-        :remove-label="$t('g.remove')"
         severity="primary"
         class="pi pi-language"
       />
       <Tooltip v-if="setting.experimental">
         <TooltipTrigger as-child>
-          <Badge :remove-label="$t('g.remove')" severity="primary">
+          <Badge severity="primary">
             <template #icon>
               <i-material-symbols:experiment-outline />
             </template>

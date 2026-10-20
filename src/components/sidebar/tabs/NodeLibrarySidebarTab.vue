@@ -154,18 +154,10 @@
             <template #node="{ node }">
               <TreeExplorerTreeNode :node>
                 <template #before-label>
-                  <Badge
-                    v-if="node.data?.experimental"
-                    :remove-label="$t('g.remove')"
-                    severity="primary"
-                  >
+                  <Badge v-if="node.data?.experimental" severity="primary">
                     {{ $t('g.experimental') }}
                   </Badge>
-                  <Badge
-                    v-if="node.data?.deprecated"
-                    :remove-label="$t('g.remove')"
-                    severity="danger"
-                  >
+                  <Badge v-if="node.data?.deprecated" severity="danger">
                     {{ $t('g.deprecated') }}
                   </Badge>
                 </template>

@@ -8,9 +8,8 @@ import Switch from '@/components/ui/switch/Switch.vue'
 
 import type { MenuItem } from './types'
 
-const { hasSubmenu, item, newLabel, removeLabel } = defineProps<{
+const { hasSubmenu, item, newLabel } = defineProps<{
   newLabel: string
-  removeLabel: string
   hasSubmenu: boolean
   item: MenuItem
 }>()
@@ -33,7 +32,6 @@ const { hasSubmenu, item, newLabel, removeLabel } = defineProps<{
   />
   <Badge
     v-if="item.badge"
-    :remove-label="removeLabel"
     variant="pill"
     severity="default"
     class="ml-3 px-1.5 uppercase"

@@ -19,7 +19,6 @@
       </p>
       <Badge
         v-if="subscriptionTierName"
-        :remove-label="$t('g.remove')"
         variant="pill"
         class="mt-2 bg-accent text-xs font-bold uppercase"
       >

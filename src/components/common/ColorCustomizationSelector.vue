@@ -21,19 +21,9 @@
         <i v-else class="pi pi-palette text-lg" />
       </ToggleGroupItem>
     </ToggleGroup>
-    <ColorPicker
+    <AppColorPicker
       v-if="selectedColorName === '_custom'"
       v-model="customColorValue"
-      :hex-label="$t('color.hex')"
-      :rgba-label="$t('color.rgba')"
-      :hue-label="$t('color.hue')"
-      :alpha-label="$t('color.alpha')"
-      :red-label="$t('color.red')"
-      :green-label="$t('color.green')"
-      :blue-label="$t('color.blue')"
-      :saturation-brightness-label="$t('color.saturationBrightness')"
-      :format-label="$t('g.color')"
-      :accessible-label="$t('g.color')"
     />
   </div>
 </template>
@@ -42,7 +32,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 
 const { t } = useI18n()

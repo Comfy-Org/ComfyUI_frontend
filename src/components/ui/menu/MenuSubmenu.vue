@@ -7,9 +7,8 @@ import MenuSubContent from './MenuSubContent.vue'
 import MenuSubTrigger from './MenuSubTrigger.vue'
 import type { MenuItemRadioGroup, MenuItemSubmenu } from './types'
 
-const { item, ownerId, newLabel, removeLabel } = defineProps<{
+const { item, ownerId, newLabel } = defineProps<{
   newLabel: string
-  removeLabel: string
   item: MenuItemSubmenu | MenuItemRadioGroup
   ownerId?: string
 }>()
@@ -41,7 +40,6 @@ const disabled = computed(
         <MenuRadioGroup
           v-else
           :new-label
-          :remove-label
           :model-value="toValue(item.radioGroup.value)"
           :options="item.radioGroup.options"
         />

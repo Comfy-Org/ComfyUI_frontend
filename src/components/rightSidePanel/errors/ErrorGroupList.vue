@@ -141,7 +141,6 @@
             <template #title-badge>
               <Badge
                 v-if="group.blockedLastRun"
-                :remove-label="$t('g.remove')"
                 data-testid="blocked-last-run-indicator"
                 variant="pill"
                 severity="warning"

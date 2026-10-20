@@ -77,7 +77,6 @@
               <span>{{ option.label }}</span>
               <Badge
                 v-if="option.value === 'yearly'"
-                :remove-label="$t('g.remove')"
                 variant="pill"
                 severity="default"
                 class="font-bold"

@@ -53,7 +53,6 @@
           <TableHead class="w-20 text-right">
             <Menu
               :new-label="$t('contextMenu.new')"
-              :remove-label="$t('g.remove')"
               :items="extensionActions"
               align="end"
             >
@@ -97,15 +96,10 @@
           </TableCell>
           <TableCell>
             {{ extension.name }}
-            <Badge
-              v-if="extensionStore.isCoreExtension(extension.name)"
-              :remove-label="$t('g.remove')"
-            >
+            <Badge v-if="extensionStore.isCoreExtension(extension.name)">
               {{ $t('g.core') }}
             </Badge>
-            <Badge v-else :remove-label="$t('g.remove')" severity="info">{{
-              $t('g.custom')
-            }}</Badge>
+            <Badge v-else severity="info">{{ $t('g.custom') }}</Badge>
           </TableCell>
           <TableCell class="text-right">
             <Switch

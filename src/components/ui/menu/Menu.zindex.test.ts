@@ -9,7 +9,7 @@ import Menu from './Menu.vue'
 
 function renderMenu(items: MenuItem[] = [{ label: 'Item A' }]) {
   return render(Menu, {
-    props: { items, newLabel: 'New', removeLabel: 'Remove' },
+    props: { items, newLabel: 'New' },
     slots: { trigger: '<button>Open</button>' }
   })
 }

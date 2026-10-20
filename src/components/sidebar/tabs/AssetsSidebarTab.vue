@@ -156,7 +156,6 @@
     :id="contextMenuId"
     ref="contextMenuRef"
     :new-label="$t('contextMenu.new')"
-    :remove-label="$t('g.remove')"
     :model="contextMenuItems"
   />
 </template>

@@ -1,9 +1,5 @@
 <template>
-  <DialogPanel
-    :close-label="$t('g.close')"
-    class="w-full max-w-lg"
-    @close="onClose"
-  >
+  <AppDialogPanel unpadded @close="onClose">
     <template #title>
       <template v-if="step === 'invited'">
         <i class="pi pi-check-circle size-4 text-success" />
@@ -88,11 +84,11 @@
         </Button>
       </div>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { refAutoReset } from '@vueuse/core'
 import { computed, ref } from 'vue'
 

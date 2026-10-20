@@ -56,7 +56,6 @@
           </span>
           <Badge
             v-if="activeJobsCount > 0"
-            :remove-label="$t('g.remove')"
             data-testid="active-jobs-indicator"
             variant="dot"
             severity="default"
@@ -67,7 +66,6 @@
         <ContextMenu
           ref="queueContextMenu"
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :model="queueContextMenuItems"
         />
       </div>

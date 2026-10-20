@@ -83,7 +83,6 @@
             )
           }}
           <Badge
-            :remove-label="$t('g.remove')"
             variant="square"
             severity="muted"
             class="text-xs/none text-foreground"

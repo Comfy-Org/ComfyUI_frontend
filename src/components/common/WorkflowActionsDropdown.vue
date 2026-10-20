@@ -158,7 +158,6 @@ onMounted(async () => {
   <Menu
     v-model:open="dropdownOpen"
     :new-label="$t('contextMenu.new')"
-    :remove-label="$t('g.remove')"
     :items="menuItems"
     :modal="false"
     :align

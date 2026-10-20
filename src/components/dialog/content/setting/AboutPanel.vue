@@ -14,7 +14,6 @@
         :title="badge.url"
       >
         <Badge
-          :remove-label="$t('g.remove')"
           class="mr-2"
           :severity="badge.severity === 'warn' ? 'warning' : badge.severity"
         >

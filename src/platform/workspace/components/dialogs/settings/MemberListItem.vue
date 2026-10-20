@@ -75,7 +75,6 @@
       <Menu
         v-if="menuItems.length > 0"
         :new-label="$t('contextMenu.new')"
-        :remove-label="$t('g.remove')"
         :items="menuItems"
       >
         <template #trigger>

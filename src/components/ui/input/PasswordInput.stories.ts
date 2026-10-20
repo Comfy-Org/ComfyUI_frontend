@@ -24,17 +24,19 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 
 export const Disabled: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { PasswordInput },
+    setup: () => ({ args }),
     template:
-      '<PasswordInput aria-label="Password" placeholder="Enter password" hide-password-label="Hide password" show-password-label="Show password" disabled />'
+      '<PasswordInput v-bind="args" aria-label="Password" placeholder="Enter password" disabled />'
   })
 }
 
 export const Invalid: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { PasswordInput },
+    setup: () => ({ args }),
     template:
-      '<PasswordInput aria-label="Password" placeholder="Enter password" hide-password-label="Hide password" show-password-label="Show password" aria-invalid="true" />'
+      '<PasswordInput v-bind="args" aria-label="Password" placeholder="Enter password" aria-invalid="true" />'
   })
 }

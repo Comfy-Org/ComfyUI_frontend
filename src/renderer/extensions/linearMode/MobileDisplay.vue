@@ -170,7 +170,6 @@ const menuEntries = computed<MenuItem[]>(() => [
     >
       <Menu
         :new-label="$t('contextMenu.new')"
-        :remove-label="$t('g.remove')"
         :items="menuEntries"
         :label="$t('linearMode.appModeToolbar.apps')"
       >
@@ -182,7 +181,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           />
         </template>
       </Menu>
-      <Menu :new-label="$t('contextMenu.new')" :remove-label="$t('g.remove')">
+      <Menu :new-label="$t('contextMenu.new')">
         <template #trigger>
           <Button
             variant="secondary"
@@ -203,7 +202,6 @@ const menuEntries = computed<MenuItem[]>(() => [
         <MenuRadioGroup
           v-model="activeWorkflowPath"
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :options="workflowOptions"
         />
       </Menu>

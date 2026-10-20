@@ -9,7 +9,6 @@
   <div v-else class="flex items-center gap-1">
     <Badge
       v-if="!showCreditsOnly"
-      :remove-label="$t('g.remove')"
       severity="secondary"
       class="rounded-full p-1 text-credit"
     >

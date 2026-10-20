@@ -13,7 +13,7 @@
       class="flex shrink-0 items-center gap-2"
       :class="{ 'ml-2': !showSearch }"
     >
-      <Menu :new-label="$t('contextMenu.new')" :remove-label="$t('g.remove')">
+      <Menu :new-label="$t('contextMenu.new')">
         <template #trigger>
           <Button
             :tooltip="t('sideToolbar.queueProgressOverlay.filterBy')"
@@ -27,11 +27,10 @@
         <MenuRadioGroup
           v-model="selectedWorkflowFilter"
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :options="workflowFilterOptions"
         />
       </Menu>
-      <Menu :new-label="$t('contextMenu.new')" :remove-label="$t('g.remove')">
+      <Menu :new-label="$t('contextMenu.new')">
         <template #trigger>
           <Button
             :tooltip="t('sideToolbar.queueProgressOverlay.sortBy')"
@@ -45,7 +44,6 @@
         <MenuRadioGroup
           v-model="selectedSortMode"
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :options="sortOptions"
         />
       </Menu>

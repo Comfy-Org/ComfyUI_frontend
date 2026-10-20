@@ -21,7 +21,6 @@
 
     <Menu
       :new-label="$t('contextMenu.new')"
-      :remove-label="$t('g.remove')"
       side="bottom"
       :side-offset="4"
       class="min-w-44"
@@ -45,7 +44,6 @@
       </template>
       <MenuRadioGroup
         :new-label="$t('contextMenu.new')"
-        :remove-label="$t('g.remove')"
         :model-value="selectedQueueMode"
         :options="queueModeMenuItems"
         @select.prevent

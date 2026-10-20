@@ -94,7 +94,6 @@ const entries = computed(() => {
     </div>
     <Menu
       :new-label="$t('contextMenu.new')"
-      :remove-label="$t('g.remove')"
       :items="entries"
       @close-auto-focus="isEditing && $event.preventDefault()"
     >

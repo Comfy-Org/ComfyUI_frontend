@@ -67,7 +67,6 @@
   <ContextMenu
     ref="menu"
     :new-label="$t('contextMenu.new')"
-    :remove-label="$t('g.remove')"
     :model="menuItems"
   />
 </template>

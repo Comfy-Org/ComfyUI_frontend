@@ -25,7 +25,6 @@
           >
             <TableCell>
               <Badge
-                :remove-label="$t('g.remove')"
                 variant="badge"
                 :severity="
                   customerEventService.getEventSeverity(event.event_type ?? '')

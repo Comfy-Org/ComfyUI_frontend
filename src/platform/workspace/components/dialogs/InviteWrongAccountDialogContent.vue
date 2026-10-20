@@ -1,24 +1,18 @@
 <template>
-  <DialogPanel
-    :close-label="$t('g.close')"
-    class="w-full max-w-lg"
-    @close="onDismiss"
-  >
+  <AppDialogPanel @close="onDismiss">
     <template #title>
       {{ $t('workspacePanel.inviteLinks.wrongAccountTitle') }}
     </template>
 
-    <div class="p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{
-          authStore.userEmail
-            ? $t('workspacePanel.inviteLinks.wrongAccountBody', {
-                email: authStore.userEmail
-              })
-            : $t('workspacePanel.inviteLinks.wrongAccountBodyGeneric')
-        }}
-      </p>
-    </div>
+    <p class="m-0 text-sm text-muted-foreground">
+      {{
+        authStore.userEmail
+          ? $t('workspacePanel.inviteLinks.wrongAccountBody', {
+              email: authStore.userEmail
+            })
+          : $t('workspacePanel.inviteLinks.wrongAccountBodyGeneric')
+      }}
+    </p>
 
     <template #footer>
       <Button variant="muted-textonly" @click="onDismiss">
@@ -28,11 +22,11 @@
         {{ $t('workspacePanel.inviteLinks.switchAccount') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'

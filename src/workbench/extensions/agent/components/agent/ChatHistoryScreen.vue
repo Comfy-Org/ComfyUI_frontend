@@ -211,7 +211,6 @@ function getSessionMenuItems(session: ChatSession): MenuItem[] {
             </Button>
             <Menu
               :new-label="$t('contextMenu.new')"
-              :remove-label="$t('g.remove')"
               :items="getSessionMenuItems(session)"
               side="bottom"
               align="end"

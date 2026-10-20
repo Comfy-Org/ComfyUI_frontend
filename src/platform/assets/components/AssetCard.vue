@@ -53,7 +53,6 @@
           v-if="showAssetOptions"
           v-model:open="assetMenuOpen"
           :new-label="$t('contextMenu.new')"
-          :remove-label="$t('g.remove')"
           :items="assetMenuItems"
           align="end"
         >
@@ -128,7 +127,6 @@
           {{ $t('g.use') }}
           <Badge
             v-if="isNewlyImported"
-            :remove-label="$t('g.remove')"
             variant="dot"
             severity="contrast"
             class="absolute -top-0.5 -right-0.5"

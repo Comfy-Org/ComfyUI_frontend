@@ -1,18 +1,8 @@
 <template>
   <div ref="container" class="flex flex-wrap items-center gap-1">
-    <ColorPicker
+    <AppColorPicker
       v-for="(hex, i) in modelValue"
       :key="i"
-      :hex-label="$t('color.hex')"
-      :rgba-label="$t('color.rgba')"
-      :hue-label="$t('color.hue')"
-      :alpha-label="$t('color.alpha')"
-      :red-label="$t('color.red')"
-      :green-label="$t('color.green')"
-      :blue-label="$t('color.blue')"
-      :saturation-brightness-label="$t('color.saturationBrightness')"
-      :format-label="$t('g.color')"
-      :accessible-label="$t('g.color')"
       :model-value="hex"
       :alpha="false"
       @update:model-value="(value) => updateAt(i, value)"
@@ -29,7 +19,7 @@
           @pointerdown="onPointerDown(i, $event)"
         />
       </template>
-    </ColorPicker>
+    </AppColorPicker>
     <button
       v-if="modelValue.length < max"
       type="button"
@@ -46,7 +36,7 @@
 import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import { usePaletteSwatchRow } from '@/composables/palette/usePaletteSwatchRow'
 
 const { max = 5 } = defineProps<{ max?: number }>()

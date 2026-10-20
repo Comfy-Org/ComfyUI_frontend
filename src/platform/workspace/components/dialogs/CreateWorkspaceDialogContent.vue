@@ -1,31 +1,25 @@
 <template>
-  <DialogPanel
-    :close-label="$t('g.close')"
-    class="w-full max-w-lg"
-    @close="onCancel"
-  >
+  <AppDialogPanel body-class="flex flex-col gap-4" @close="onCancel">
     <template #title>
       {{ $t('workspacePanel.createWorkspaceDialog.title') }}
     </template>
 
-    <div class="flex flex-col gap-4 p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.createWorkspaceDialog.message') }}
-      </p>
-      <div class="flex flex-col gap-2 text-sm">
-        <label class="text-muted-foreground">
-          {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
-        </label>
-        <input
-          v-model="workspaceName"
-          type="text"
-          class="h-10 w-full rounded-lg border-none bg-secondary px-4 placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
-          :placeholder="
-            $t('workspacePanel.createWorkspaceDialog.namePlaceholder')
-          "
-          @keydown.enter="isValidName && onCreate()"
-        />
-      </div>
+    <p class="m-0 text-sm text-muted-foreground">
+      {{ $t('workspacePanel.createWorkspaceDialog.message') }}
+    </p>
+    <div class="flex flex-col gap-2 text-sm">
+      <label class="text-muted-foreground">
+        {{ $t('workspacePanel.createWorkspaceDialog.nameLabel') }}
+      </label>
+      <input
+        v-model="workspaceName"
+        type="text"
+        class="h-10 w-full rounded-lg border-none bg-secondary px-4 placeholder:text-muted-foreground focus:ring-1 focus:ring-ring focus:outline-none"
+        :placeholder="
+          $t('workspacePanel.createWorkspaceDialog.namePlaceholder')
+        "
+        @keydown.enter="isValidName && onCreate()"
+      />
     </div>
 
     <template #footer>
@@ -42,11 +36,11 @@
         {{ $t('workspacePanel.createWorkspaceDialog.create') }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'

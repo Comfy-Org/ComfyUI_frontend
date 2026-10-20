@@ -1,13 +1,7 @@
 <template>
-  <MultiSelect
+  <AppMultiSelect
     v-model="selectedModels"
     v-model:search-query="modelSearchText"
-    :search-label="$t('g.search')"
-    :search-placeholder="$t('g.search')"
-    :empty-text="$t('g.noResultsFound')"
-    :accessible-label="modelFilterLabel || $t('g.multiSelectDropdown')"
-    :clear-all-label="$t('g.clearAll')"
-    :format-selected-count="(count) => $t('g.itemsSelected', { count })"
     size="md"
     :class="triggerClass"
     :label="modelFilterLabel"
@@ -18,14 +12,8 @@
     actions-placement="footer"
   />
 
-  <MultiSelect
+  <AppMultiSelect
     v-model="selectedUseCases"
-    :search-label="$t('g.search')"
-    :search-placeholder="$t('g.search')"
-    :empty-text="$t('g.noResultsFound')"
-    :accessible-label="useCaseFilterLabel || $t('g.multiSelectDropdown')"
-    :clear-all-label="$t('g.clearAll')"
-    :format-selected-count="(count) => $t('g.itemsSelected', { count })"
     size="md"
     :class="triggerClass"
     :label="useCaseFilterLabel"
@@ -36,14 +24,8 @@
     actions-placement="footer"
   />
 
-  <MultiSelect
+  <AppMultiSelect
     v-model="selectedRunsOn"
-    :search-label="$t('g.search')"
-    :search-placeholder="$t('g.search')"
-    :empty-text="$t('g.noResultsFound')"
-    :accessible-label="runsOnFilterLabel || $t('g.multiSelectDropdown')"
-    :clear-all-label="$t('g.clearAll')"
-    :format-selected-count="(count) => $t('g.itemsSelected', { count })"
     size="md"
     :class="triggerClass"
     :label="runsOnFilterLabel"
@@ -54,14 +36,8 @@
     actions-placement="footer"
   />
 
-  <SingleSelect
+  <AppSingleSelect
     v-model="sortSelection"
-    :search-label="$t('g.search')"
-    :search-placeholder="$t('g.search')"
-    :empty-text="$t('g.noResultsFound')"
-    :accessible-label="
-      $t('templateWorkflows.sorting') || $t('g.singleSelectDropdown')
-    "
     size="md"
     :class="triggerClass"
     :label="$t('templateWorkflows.sorting')"
@@ -70,13 +46,13 @@
     <template #icon>
       <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
     </template>
-  </SingleSelect>
+  </AppSingleSelect>
 </template>
 
 <script setup lang="ts">
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@/components/ui/select/types'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 
 const {

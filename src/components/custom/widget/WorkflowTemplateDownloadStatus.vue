@@ -177,7 +177,6 @@ function namedLabel(key: string): string {
   </span>
   <Badge
     v-else-if="status.downloadState.status === 'done'"
-    :remove-label="$t('g.remove')"
     role="status"
     :aria-label="t('templateWorkflows.detail.downloaded')"
     variant="compact"
