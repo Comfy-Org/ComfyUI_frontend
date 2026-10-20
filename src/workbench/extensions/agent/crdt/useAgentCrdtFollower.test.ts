@@ -2075,6 +2075,51 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it.for([
+      {
+        name: 'reports deferred op evidence once a later live frame applies it cleanly',
+        failureCount: 0,
+        expected: [
+          { workflowId: 'wf-1', opIds: ['op-b'], isLive: true },
+          { workflowId: 'wf-1', opIds: ['op-a'], isLive: true }
+        ]
+      },
+      {
+        name: 'withholds deferred op evidence when the later live frame fails to apply',
+        failureCount: 1,
+        expected: []
+      }
+    ])('$name', ({ failureCount, expected }) => {
+      const graph = shallowRef<LGraph | null>(null)
+      const onAppliedUpdate = vi.fn()
+      const { unmount } = mountFollower('wf-1', true, () => graph.value, {
+        onAppliedUpdate
+      })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:thread:turn-a',
+        opIds: ['op-a']
+      })
+
+      graph.value = fakeGraph
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['3'], removed: [] }, failureCount)
+      )
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 10,
+        actor: 'agent:thread:turn-b',
+        opIds: ['op-b']
+      })
+
+      expect(onAppliedUpdate.mock.calls.flat()).toEqual(expected)
+      unmount()
+    })
+
     it('does not let a trailing non-agent frame erase the deferred agent outcome', async () => {
       const graph = shallowRef<LGraph | null>(null)
       const { unmount } = mountFollower('wf-1', true, () => graph.value)

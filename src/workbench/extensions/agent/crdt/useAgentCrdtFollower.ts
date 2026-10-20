@@ -592,6 +592,29 @@ function startAgentCrdtFollower(
     for (const frame of frames ?? [])
       reportAgentProjection(frame, stage, outcome)
   }
+  const notifyPendingFramesApplied = (
+    workflowId: string,
+    frames: readonly ProjectionFrameId[]
+  ): void => {
+    for (const frame of frames) {
+      events.onAppliedUpdate?.({
+        workflowId,
+        opIds: frame.opIds ?? [],
+        isLive: frame.isLive ?? true
+      })
+    }
+  }
+  const flushPendingFrames = (
+    workflowId: string,
+    outcome: FrameOutcome
+  ): void => {
+    if (projectionAppliedCleanly(outcome))
+      notifyPendingFramesApplied(
+        workflowId,
+        pendingProjectionFrames.get(workflowId) ?? []
+      )
+    reportPendingFrames(workflowId, 'applied_deferred', outcome)
+  }
   const reportFrameProjection = (
     update: ClassifiedDocUpdate,
     outcome: FrameOutcome
@@ -609,21 +632,8 @@ function startAgentCrdtFollower(
       if (isAgentFrame(update.actor)) retainPendingFrame(update)
       return
     }
-    if (stage === 'applied')
-      reportPendingFrames(update.workflowId, 'applied_deferred', outcome)
+    if (stage === 'applied') flushPendingFrames(update.workflowId, outcome)
     else reportPendingFrames(update.workflowId, 'discarded', NOTHING_APPLIED)
-  }
-  const notifyPendingFramesApplied = (
-    workflowId: string,
-    frames: readonly ProjectionFrameId[]
-  ): void => {
-    for (const frame of frames) {
-      events.onAppliedUpdate?.({
-        workflowId,
-        opIds: frame.opIds ?? [],
-        isLive: frame.isLive ?? true
-      })
-    }
   }
   const settleCollectedProjection = (
     workflowId: string,
