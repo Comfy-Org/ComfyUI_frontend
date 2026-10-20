@@ -205,15 +205,14 @@ describe('useMediaAssetFiltering', () => {
     })
 
     it('reads created_at without a UTC offset as UTC', () => {
-      // The local server sends UTC timestamps without an offset.
       const originalTimeZone = process.env.TZ
       process.env.TZ = 'America/Los_Angeles'
       try {
-        vi.setSystemTime(Date.UTC(2026, 9, 14, 10)) // Oct 14, 03:00 local
+        vi.setSystemTime(Date.UTC(2026, 9, 14, 10))
         const previousDay = makeAsset({ id: 'previous-day', name: 'a.png' })
-        previousDay.created_at = '2026-10-14T05:00:00.123456' // Oct 13, 22:00 local
+        previousDay.created_at = '2026-10-14T05:00:00.123456'
         const sameDay = makeAsset({ id: 'same-day', name: 'b.png' })
-        sameDay.created_at = '2026-10-14T08:00:00' // Oct 14, 01:00 local
+        sameDay.created_at = '2026-10-14T08:00:00'
         const assets = ref<AssetItem[]>([previousDay, sameDay])
         const filtering = useMediaAssetFiltering(assets)
 

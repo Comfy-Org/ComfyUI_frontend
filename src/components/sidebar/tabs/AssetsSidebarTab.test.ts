@@ -7,8 +7,10 @@ import {
   within
 } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -79,6 +81,8 @@ vi.mock<unknown>(
   }
 )
 
+vi.mock(import('@/composables/useFeatureFlags'))
+
 vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
@@ -90,12 +94,16 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      assetBrowser: { jobId: 'Job ID' },
+      assetBrowser: { jobId: 'Job ID', filterBy: 'Filter by' },
       g: { copyJobId: 'Copy Job ID' },
       sideToolbar: {
         backToAssets: 'Back to all assets',
         closeSidebar: 'Close sidebar',
-        mediaAssets: { title: 'Media Assets' },
+        mediaAssets: {
+          title: 'Media Assets',
+          viewSettings: 'View settings',
+          sortNewestFirst: 'Newest first'
+        },
         labels: { generated: 'Generated', imported: 'Imported' }
       }
     }
@@ -128,15 +136,15 @@ const assetsGridStub = {
   `
 }
 
-function renderTab({ realTemplate = false } = {}) {
+function renderTab({ realTemplate = false, realFilterBar = false } = {}) {
   return render(AssetsSidebarTab, {
     global: {
       plugins: [i18n],
       stubs: {
         ...(realTemplate ? {} : { SidebarTabTemplate: sidebarTabTemplateStub }),
+        ...(realFilterBar ? {} : { MediaAssetFilterBar: true }),
         AssetsSidebarGridView: assetsGridStub,
         AssetsSidebarListView: true,
-        MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
         MediaLightbox: true
       }
@@ -187,6 +195,34 @@ describe('AssetsSidebarTab folder navigation', () => {
       screen.queryByRole('button', { name: 'Back to all assets' })
     ).not.toBeInTheDocument()
     expect(screen.queryByText('multi-output-job')).not.toBeInTheDocument()
+  })
+})
+
+describe('AssetsSidebarTab filter bar', () => {
+  async function renderWithAssetsFlag(assetsEnabled: boolean) {
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(JSON.stringify({ assets: [], has_more: false, total: 0 }))
+    )
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = assetsEnabled
+    await nextTick()
+    renderTab({ realFilterBar: true })
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'View settings' }))
+  }
+
+  it('shows filters and sorting when the Asset API is enabled', async () => {
+    await renderWithAssetsFlag(true)
+
+    expect(screen.getByRole('button', { name: 'Filter by' })).toBeVisible()
+    expect(screen.getByText('Newest first')).toBeVisible()
+  })
+
+  it('hides filters and sorting when the Asset API is disabled', async () => {
+    await renderWithAssetsFlag(false)
+
+    expect(screen.queryByRole('button', { name: 'Filter by' })).toBeNull()
+    expect(screen.queryByText('Newest first')).toBeNull()
   })
 })
 
