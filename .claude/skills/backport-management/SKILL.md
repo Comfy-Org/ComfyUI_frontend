@@ -137,7 +137,7 @@ When a PR's _mechanism_ relies on changes upstream that aren't on the older bran
 - `node.onXxx` callback assignments
 - Methods on `LGraphNode`, `LGraphCanvas`, `LGraph`, `Subgraph`
 - Public exports from `src/lib/litegraph/`
-- Type changes affecting `litegraph-augmentation.d.ts`
+- Types published from `src/types/index.ts`
 
 **Fix:** Add a backport-only compatibility shim that preserves the old contract while keeping the new fix. Document it explicitly in the commit body under a `## Backport-only compatibility fix` heading. Consult oracle for review before pushing — a bad shim is worse than no fix.
 
