@@ -166,6 +166,9 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await expect(
         dialog.getByRole('heading', { name: 'Mask Editor' })
       ).toBeVisible()
+      await dialog.getByTestId('pointer-zone').hover()
+      await comfyPage.page.mouse.move(0, 0)
+      await expect(dialog.getByTestId('brush-cursor')).toHaveCSS('opacity', '0')
 
       await expectElementScreenshot(
         dialog,
