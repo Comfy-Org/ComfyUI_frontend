@@ -5,6 +5,7 @@ import type {
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
@@ -166,6 +167,170 @@ describe(useInstallationDeploy, () => {
     await expect(deploy()).resolves.toBe(false)
 
     expect(state.value).toEqual({ status: 'tab_blocked', url: BUILDER_URL })
+  })
+
+  it.for([
+    { when: 'another account signs in', userId: 'account-b' },
+    { when: 'the user signs out', userId: null }
+  ])('hides the blocked link when $when', async ({ userId }) => {
+    const authStore = useAuthStore()
+    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
+    vi.mocked(window.open).mockReturnValueOnce(null)
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
+    const deployment = useInstallationDeploy()
+    await deployment.deploy()
+
+    authStore.currentUser = userId ? fromPartial<User>({ uid: userId }) : null
+
+    expect(deployment.state.value).toEqual({ status: 'idle' })
+    expect(useInstallationDeploy().state.value).toEqual({ status: 'idle' })
+  })
+
+  it('lets the next account upload with its own credential', async () => {
+    const authStore = useAuthStore()
+    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
+    vi.mocked(window.open).mockReturnValueOnce(null)
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(bundleCreated())
+      .mockResolvedValueOnce(bundleCreated())
+    await useInstallationDeploy().deploy()
+
+    authStore.currentUser = fromPartial<User>({ uid: 'account-b' })
+    vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(
+      'account-b-jwt'
+    )
+    const deployment = useInstallationDeploy()
+    expect(deployment.state.value).toEqual({ status: 'idle' })
+    await expect(deployment.deploy()).resolves.toBe(true)
+
+    expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    expect(api.fetchApi).toHaveBeenLastCalledWith(
+      '/deploy/bundle',
+      expect.objectContaining({
+        headers: {
+          Authorization: 'Bearer account-b-jwt',
+          'Content-Type': 'application/json'
+        }
+      })
+    )
+  })
+
+  it('keeps the blocked link when the same account refreshes its session', async () => {
+    const authStore = useAuthStore()
+    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
+    vi.mocked(window.open).mockReturnValueOnce(null)
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
+    const deployment = useInstallationDeploy()
+    await deployment.deploy()
+
+    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
+    vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(
+      'refreshed-jwt'
+    )
+
+    expect(deployment.state.value).toEqual({
+      status: 'tab_blocked',
+      url: BUILDER_URL
+    })
+    expect(api.fetchApi).toHaveBeenCalledOnce()
+  })
+
+  it('hides the blocked link when the stored API key changes', async () => {
+    const apiKey = ref(`comfyui-${'a'.repeat(64)}`)
+    const apiKeyStore = useApiKeyAuthStore()
+    vi.mocked(apiKeyStore.getApiKey).mockImplementation(() => apiKey.value)
+    vi.mocked(apiKeyStore.getAuthHeader).mockImplementation(() => ({
+      'X-API-KEY': apiKey.value
+    }))
+    vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(undefined)
+    vi.mocked(window.open).mockReturnValueOnce(null)
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
+    const deployment = useInstallationDeploy()
+    await deployment.deploy()
+
+    apiKey.value = `comfyui-${'b'.repeat(64)}`
+
+    expect(deployment.state.value).toEqual({ status: 'idle' })
+    expect(useInstallationDeploy().state.value).toEqual({ status: 'idle' })
+  })
+
+  it.for([
+    { when: 'another account signs in', userId: 'account-b' },
+    { when: 'the user signs out', userId: null }
+  ])('discards an upload that finishes after $when', async ({ userId }) => {
+    const authStore = useAuthStore()
+    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
+    let finishUpload: (response: Response) => void = () => {}
+    vi.mocked(api.fetchApi).mockImplementationOnce(
+      () =>
+        new Promise<Response>((resolve) => {
+          finishUpload = resolve
+        })
+    )
+    const deployment = useInstallationDeploy()
+    const pending = deployment.deploy()
+    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
+
+    authStore.currentUser = userId ? fromPartial<User>({ uid: userId }) : null
+    finishUpload(bundleCreated())
+
+    await expect(pending).resolves.toBe(false)
+    expect(window.open).not.toHaveBeenCalled()
+    expect(deployment.state.value).toEqual({ status: 'idle' })
+    expect(useToast().error).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('discards a credential resolved after the account changes', async () => {
+    const authStore = useAuthStore()
+    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
+    let finishToken: (token: string) => void = () => {}
+    vi.mocked(authStore.getWorkspaceAuthToken).mockImplementationOnce(
+      () =>
+        new Promise<string>((resolve) => {
+          finishToken = resolve
+        })
+    )
+    const deployment = useInstallationDeploy()
+    const pending = deployment.deploy()
+    await vi.waitFor(() =>
+      expect(authStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
+    )
+
+    authStore.currentUser = fromPartial<User>({ uid: 'account-b' })
+    finishToken('account-a-jwt')
+
+    await expect(pending).resolves.toBe(false)
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(window.open).not.toHaveBeenCalled()
+    expect(deployment.state.value).toEqual({ status: 'idle' })
+    expect(useToast().error).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('owns the blocked link with the account signed in through the prompt', async () => {
+    const authStore = useAuthStore()
+    vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(undefined)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
+      async () => {
+        authStore.currentUser = fromPartial<User>({ uid: 'signed-in-account' })
+        vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(
+          'signed-in-jwt'
+        )
+        return true
+      }
+    )
+    vi.mocked(window.open).mockReturnValueOnce(null)
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
+    const deployment = useInstallationDeploy()
+
+    await expect(deployment.deploy()).resolves.toBe(false)
+
+    expect(deployment.state.value).toEqual({
+      status: 'tab_blocked',
+      url: BUILDER_URL
+    })
+    expect(api.fetchApi).toHaveBeenCalledOnce()
   })
 
   it('keeps one upload across dialogs, so reopening neither uploads again nor loses the link', async () => {
