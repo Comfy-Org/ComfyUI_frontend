@@ -20,6 +20,7 @@
         )
       "
       @click="focus"
+      @keydown.capture="keepShiftSelectionNative"
     >
       <slot name="leading" />
       <Button
@@ -232,6 +233,10 @@ function onSelectSuggestion(item: T) {
 function onHighlight(payload: { ref: HTMLElement } | undefined) {
   const index = Number(payload?.ref.dataset.suggestionIndex)
   emit('highlight', Number.isInteger(index) ? suggestions[index] : undefined)
+}
+
+function keepShiftSelectionNative(e: KeyboardEvent) {
+  if (e.shiftKey && (e.key === 'Home' || e.key === 'End')) e.stopPropagation()
 }
 
 function onEnterKey(e: KeyboardEvent) {

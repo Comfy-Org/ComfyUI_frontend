@@ -627,6 +627,81 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
     ).toBeVisible()
   })
 
+  test.describe('Search input text selection', () => {
+    const QUERY = 'Test Pack'
+    const MOCK_ALGOLIA_WITH_SUGGESTIONS = {
+      results: [
+        ...MOCK_ALGOLIA_RESPONSE.results,
+        {
+          hits: [{ query: 'test pack a', popularity: 10 }],
+          nbHits: 1,
+          page: 0,
+          nbPages: 1,
+          hitsPerPage: 20
+        }
+      ]
+    }
+
+    const cases = [
+      {
+        state: 'open',
+        response: MOCK_ALGOLIA_WITH_SUGGESTIONS,
+        listboxVisible: true
+      },
+      {
+        state: 'closed',
+        response: MOCK_ALGOLIA_RESPONSE,
+        listboxVisible: false
+      }
+    ]
+
+    for (const { state, response, listboxVisible } of cases) {
+      test(`Shift+Home and Shift+End select the query while suggestions are ${state}`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.page.route('**/*.algolia.net/**', (route) =>
+          route.fulfill({ json: response })
+        )
+        await comfyPage.page.route('**/*.algolianet.com/**', (route) =>
+          route.fulfill({ json: response })
+        )
+
+        await openManagerDialog(comfyPage)
+        const dialog = comfyPage.page.getByRole('dialog')
+        const searchInput = dialog.getByRole('combobox', { name: 'Search' })
+        await searchInput.fill(QUERY)
+
+        const listbox = comfyPage.page.getByRole('listbox')
+        if (listboxVisible) {
+          await expect(listbox).toBeVisible()
+        } else {
+          await expect(dialog.getByText('Test Pack A')).toBeVisible()
+          await expect(listbox).toBeHidden()
+        }
+
+        const selection = () =>
+          searchInput.evaluate((input: HTMLInputElement) => [
+            input.selectionStart,
+            input.selectionEnd
+          ])
+
+        await test.step('Shift+Home selects back to the start', async () => {
+          await searchInput.press('End')
+          await expect.poll(selection).toEqual([QUERY.length, QUERY.length])
+          await searchInput.press('Shift+Home')
+          await expect.poll(selection).toEqual([0, QUERY.length])
+        })
+
+        await test.step('Shift+End selects forward to the end', async () => {
+          await searchInput.press('ArrowLeft')
+          await searchInput.press('ArrowRight')
+          await searchInput.press('Shift+End')
+          await expect.poll(selection).toEqual([1, QUERY.length])
+        })
+      })
+    }
+  })
+
   test.describe('Grid sizing', () => {
     test.beforeEach(async ({ comfyPage }) => {
       const algoliaResponse: AlgoliaSearchResponse = {

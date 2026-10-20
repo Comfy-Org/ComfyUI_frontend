@@ -125,6 +125,43 @@ describe('SearchAutocomplete', () => {
     await waitFor(() => expect(onHighlight).toHaveBeenCalledWith('bar'))
   })
 
+  it.for(['Home', 'End'])(
+    'leaves Shift+%s to the input instead of moving the highlight',
+    async (key) => {
+      const onHighlight = vi.fn()
+      const user = userEvent.setup()
+      render(SearchAutocomplete, {
+        global: { plugins: [i18n] },
+        props: {
+          modelValue: 'fo',
+          suggestions: ['foo', 'bar', 'baz'],
+          openOnFocus: true,
+          onHighlight
+        }
+      })
+
+      const input = screen.getByRole('combobox')
+      await user.click(input)
+      await user.keyboard('{ArrowDown}')
+      await waitFor(() => expect(onHighlight).toHaveBeenLastCalledWith('bar'))
+      onHighlight.mockClear()
+
+      const event = new KeyboardEvent('keydown', {
+        key,
+        shiftKey: true,
+        bubbles: true,
+        cancelable: true
+      })
+      input.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(false)
+      expect(onHighlight).not.toHaveBeenCalled()
+      expect(screen.getByRole('option', { name: 'bar' })).toHaveAttribute(
+        'data-highlighted'
+      )
+    }
+  )
+
   it('highlights the first suggestion when results change', async () => {
     const onHighlight = vi.fn()
     const { rerender } = render(SearchAutocomplete, {
