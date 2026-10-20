@@ -35,20 +35,28 @@ test.describe('Marketing catalog', { tag: '@smoke' }, () => {
       )
       await expect(page.getByText(text, { exact: false }).first()).toBeVisible()
       await page.evaluate(async () => document.fonts.ready)
-      await expect
-        .poll(() =>
-          page
-            .locator('#storybook-root img')
-            .evaluateAll((images) =>
-              images.every(
-                (image) =>
-                  image instanceof HTMLImageElement &&
-                  image.complete &&
-                  image.naturalWidth > 0
-              )
+      const images = page.locator('#storybook-root img')
+      if (await images.count()) {
+        await expect
+          .poll(() =>
+            images.evaluateAll(
+              (elements) =>
+                elements.length > 0 &&
+                elements.every(
+                  (element) =>
+                    element instanceof HTMLImageElement &&
+                    element.complete &&
+                    element.naturalWidth > 0
+                )
             )
-        )
-        .toBe(true)
+          )
+          .toBe(true)
+      } else {
+        testInfo.annotations.push({
+          type: 'media',
+          description: 'This fixture contains no image elements.'
+        })
+      }
       await page.addScriptTag({ content: axe.source })
       await expect(async () => {
         const violations = await page.evaluate(async () => {

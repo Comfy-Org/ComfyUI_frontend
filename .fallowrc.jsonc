@@ -20,7 +20,7 @@
       "enablers": ["fallow"],
       "entryPoints": [
         "**/.storybook/{main,preview}.ts",
-        "apps/website/src/**/*.mdx",
+        "apps/website/src/storybook/**/*.mdx",
         "apps/website/src/scripts/**/*.ts",
         "packages/ingest-types/openapi-ts.config.ts",
         "scripts/**/*.{js,ts}"

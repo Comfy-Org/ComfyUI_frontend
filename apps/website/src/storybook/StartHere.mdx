@@ -14,7 +14,7 @@ changing production pages.
 1. Start with **Stable** components when composing a new page.
 2. Open focused stories instead of inferring behavior from a default screenshot.
 3. Use the viewport toolbar to review narrow and desktop layouts.
-4. Use the Interactions panel to inspect supported behavior.
+4. Read story `play` functions as interaction examples.
 5. Use the Accessibility panel before approving a composition.
 6. Treat missing variants as gaps, not permission to invent new anatomy.
 
@@ -60,3 +60,9 @@ changing the shipped marketing palette is outside Storybook's scope.
 Stories demonstrate the shipped component API. Storybook-only fixtures,
 viewports, tests, and compositions are not production routes. A defect that
 requires changing a production component must be reviewed separately.
+
+Story `play` functions are documentation examples and are not run by this
+catalog's automation. Automated interaction and accessibility checks are the
+explicit Playwright catalog tests. The Accessibility panel can inspect other
+stories manually. Dedicated marketing Chromatic baselines are a non-blocking follow-up; attached screenshots are review artifacts,
+not visual-regression comparisons.

@@ -1,8 +1,11 @@
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { mkdtemp, mkdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
 import { describe, expect, it, onTestFinished } from 'vitest'
+import { isMap, isSeq, parseDocument } from 'yaml'
 
 import { validateMarketingPreview } from './validate-marketing-preview'
 
@@ -24,6 +27,14 @@ describe('marketing preview validation', () => {
     await expect(
       validateMarketingPreview(await preview(), sha)
     ).resolves.toBeUndefined()
+  })
+
+  it('reports a missing catalog iframe', async () => {
+    const root = await preview()
+    await rm(join(root, 'iframe.html'))
+    await expect(validateMarketingPreview(root, sha)).rejects.toThrow(
+      'Missing catalog iframe'
+    )
   })
 
   it('rejects artifacts from another commit', async () => {
@@ -55,4 +66,60 @@ describe('marketing preview validation', () => {
       'Forbidden'
     )
   })
+})
+
+function freshnessScript(): string {
+  const root = dirname(dirname(import.meta.dirname))
+  const workflow = parseDocument(
+    readFileSync(
+      join(root, '.github/workflows/pr-marketing-storybook-preview.yaml'),
+      'utf8'
+    )
+  )
+  const steps = workflow.getIn(['jobs', 'preview', 'steps'])
+  if (!isSeq(steps)) throw new Error('Missing deployment steps')
+  const step = steps.items.find(
+    (value) => isMap(value) && value.get('id') === 'freshness'
+  )
+  if (!isMap(step)) throw new Error('Missing freshness step')
+  const script = step.get('run')
+  if (typeof script !== 'string') throw new Error('Missing freshness script')
+  return script
+}
+
+describe('marketing push freshness', () => {
+  it.for([true, false])(
+    'handles current=%s without failing deployment verification',
+    async (current) => {
+      const root = await preview()
+      execFileSync('git', ['init', '--quiet', root])
+      execFileSync('git', [
+        '-C',
+        root,
+        '-c',
+        'user.name=Preview',
+        '-c',
+        'user.email=preview@example.test',
+        'commit',
+        '--quiet',
+        '--allow-empty',
+        '-m',
+        'Fixture'
+      ])
+      const head = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], {
+        encoding: 'utf8'
+      }).trim()
+      const output = join(root, 'output')
+      await writeFile(output, '')
+      execFileSync('bash', ['-e', '-c', freshnessScript()], {
+        cwd: root,
+        env: {
+          ...process.env,
+          SOURCE_SHA: current ? head : '0'.repeat(40),
+          GITHUB_OUTPUT: output
+        }
+      })
+      expect(readFileSync(output, 'utf8')).toBe(current ? '' : 'skip=true\n')
+    }
+  )
 })

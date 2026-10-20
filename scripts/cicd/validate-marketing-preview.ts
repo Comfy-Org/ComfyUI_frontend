@@ -19,8 +19,8 @@ function forbiddenEntry(entry: Dirent): boolean {
 }
 
 async function requireIframe(root: string): Promise<void> {
-  if (!(await lstat(join(root, 'iframe.html'))).isFile())
-    throw new Error('Missing catalog iframe')
+  const iframe = await lstat(join(root, 'iframe.html')).catch(() => undefined)
+  if (!iframe?.isFile()) throw new Error('Missing catalog iframe')
 }
 
 function matchesSource(metadata: unknown, sha: string): boolean {

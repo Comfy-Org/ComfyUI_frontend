@@ -40,3 +40,10 @@ shared video API without certifying production adoption.
 
 The static deployment serves the JSON catalog and story pages. The addon MCP
 endpoint requires the local development server; hosted MCP remains separate.
+
+Story discovery is shared with `tsconfig.stories.json`; every TypeScript story
+under `src` is loaded and typechecked. Only stories declaring a Vue component
+produce component-manifest entries. Import paths retain their `.vue` extension.
+Story `play` functions are documented examples, not automated interaction checks.
+Dedicated marketing Chromatic baselines are a non-blocking follow-up; website
+stories are no longer snapshotted by the root Chromatic catalogue.

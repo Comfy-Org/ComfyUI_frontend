@@ -5,6 +5,8 @@ import tailwindcss from '@tailwindcss/vite'
 import vue from '@vitejs/plugin-vue'
 import type { InlineConfig } from 'vite'
 
+import { catalogStoryPatterns } from './story-discovery'
+
 const websiteRoot = dirname(import.meta.dirname)
 const repositoryRoot = dirname(dirname(websiteRoot))
 const websiteSource = join(websiteRoot, 'src')
@@ -18,7 +20,7 @@ const isNamedPlugin = (plugin: unknown): plugin is { name: string } =>
 const config: StorybookConfig = {
   stories: [
     '../src/storybook/*.mdx',
-    '../src/{components/{blocks,common,ui,product,workshop},templates,storybook}/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+    ...catalogStoryPatterns.map((pattern) => `../${pattern}`)
   ],
   addons: [
     '@storybook/addon-docs',

@@ -3,6 +3,7 @@
   "generatedFrom": "apps/website/src/**/*.stories.ts",
   "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
   "usagePolicy": {
+    "interactionCoverage": "Story play functions are documented examples; automated interaction coverage is limited to the Playwright catalog tests.",
     "evidenceOrder": [
       "shipped website implementation",
       "component story and interaction contract",
@@ -11,8 +12,8 @@
     ],
     "unknownPattern": "Treat as a gap; do not invent a local substitute."
   },
-  "componentCount": 73,
-  "storyCount": 250,
+  "componentCount": 77,
+  "storyCount": 267,
   "components": [
     {
       "component": "AddToCalendarButton",
@@ -30,7 +31,7 @@
         "sourceOfTruth": "src/components/blocks/AddToCalendarButton.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/AddToCalendarButton",
+        "importPath": "@/components/blocks/AddToCalendarButton.vue",
         "storybookPath": "/?path=/story/website-blocks-addtocalendarbutton--default",
         "docsPath": "/?path=/docs/website-blocks-addtocalendarbutton--docs",
         "states": ["Default"],
@@ -61,7 +62,7 @@
         "sourceOfTruth": "src/components/blocks/BenefitsGrid01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/BenefitsGrid01",
+        "importPath": "@/components/blocks/BenefitsGrid01.vue",
         "storybookPath": "/?path=/story/website-blocks-benefitsgrid01--default",
         "docsPath": "/?path=/docs/website-blocks-benefitsgrid01--docs",
         "states": [
@@ -129,7 +130,7 @@
         "sourceOfTruth": "src/components/blocks/BrandAssetsGrid01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/BrandAssetsGrid01",
+        "importPath": "@/components/blocks/BrandAssetsGrid01.vue",
         "storybookPath": "/?path=/story/website-blocks-brandassetsgrid01--default",
         "docsPath": "/?path=/docs/website-blocks-brandassetsgrid01--docs",
         "states": ["Default", "TwoAssets", "Mobile"],
@@ -168,7 +169,7 @@
         "sourceOfTruth": "src/components/blocks/BuildConfiguratorSplit01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/BuildConfiguratorSplit01",
+        "importPath": "@/components/blocks/BuildConfiguratorSplit01.vue",
         "storybookPath": "/?path=/story/website-blocks-buildconfiguratorsplit01--default",
         "docsPath": "/?path=/docs/website-blocks-buildconfiguratorsplit01--docs",
         "states": [
@@ -231,7 +232,7 @@
         "sourceOfTruth": "src/components/blocks/CardArticle01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/CardArticle01",
+        "importPath": "@/components/blocks/CardArticle01.vue",
         "storybookPath": "/?path=/story/website-blocks-cardarticle01--default",
         "docsPath": "/?path=/docs/website-blocks-cardarticle01--docs",
         "states": ["Default", "WithAuthor", "Minimal", "LongTitleClamped"],
@@ -280,7 +281,7 @@
         "sourceOfTruth": "src/components/blocks/CardArticleGallery01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/CardArticleGallery01",
+        "importPath": "@/components/blocks/CardArticleGallery01.vue",
         "storybookPath": "/?path=/story/website-blocks-cardarticlegallery01--default",
         "docsPath": "/?path=/docs/website-blocks-cardarticlegallery01--docs",
         "states": [
@@ -333,7 +334,7 @@
         "sourceOfTruth": "src/components/blocks/CardSplitContent01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/CardSplitContent01",
+        "importPath": "@/components/blocks/CardSplitContent01.vue",
         "storybookPath": "/?path=/story/website-blocks-cardsplitcontent01--default",
         "docsPath": "/?path=/docs/website-blocks-cardsplitcontent01--docs",
         "states": ["Default", "WithoutTags", "SingleCta", "Mobile"],
@@ -376,7 +377,7 @@
         "sourceOfTruth": "src/components/blocks/CardSplitContent02.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/CardSplitContent02",
+        "importPath": "@/components/blocks/CardSplitContent02.vue",
         "storybookPath": "/?path=/story/website-blocks-cardsplitcontent02--default",
         "docsPath": "/?path=/docs/website-blocks-cardsplitcontent02--docs",
         "states": ["Default", "Reversed"],
@@ -411,7 +412,7 @@
         "sourceOfTruth": "src/components/blocks/CardWorkflow01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/CardWorkflow01",
+        "importPath": "@/components/blocks/CardWorkflow01.vue",
         "storybookPath": "/?path=/story/website-blocks-cardworkflow01--default",
         "docsPath": "/?path=/docs/website-blocks-cardworkflow01--docs",
         "states": ["Default", "ImageMedia", "Compact", "TitleOnly"],
@@ -458,7 +459,7 @@
         "sourceOfTruth": "src/components/blocks/CardWorkflowGallery01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/CardWorkflowGallery01",
+        "importPath": "@/components/blocks/CardWorkflowGallery01.vue",
         "storybookPath": "/?path=/story/website-blocks-cardworkflowgallery01--default",
         "docsPath": "/?path=/docs/website-blocks-cardworkflowgallery01--docs",
         "states": ["Default", "NoTitle", "LinkedCards"],
@@ -497,7 +498,7 @@
         "sourceOfTruth": "src/components/blocks/ChecklistSplit01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/ChecklistSplit01",
+        "importPath": "@/components/blocks/ChecklistSplit01.vue",
         "storybookPath": "/?path=/story/website-blocks-checklistsplit01--default",
         "docsPath": "/?path=/docs/website-blocks-checklistsplit01--docs",
         "states": ["Default", "WithoutHeading", "Mobile"],
@@ -536,7 +537,7 @@
         "sourceOfTruth": "src/components/blocks/CompareTable01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/CompareTable01",
+        "importPath": "@/components/blocks/CompareTable01.vue",
         "storybookPath": "/?path=/story/website-blocks-comparetable01--default",
         "docsPath": "/?path=/docs/website-blocks-comparetable01--docs",
         "states": ["Default", "WithoutSubtitle", "Mobile"],
@@ -575,7 +576,7 @@
         "sourceOfTruth": "src/components/blocks/CtaBands01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/CtaBands01",
+        "importPath": "@/components/blocks/CtaBands01.vue",
         "storybookPath": "/?path=/story/website-blocks-ctabands01--default",
         "docsPath": "/?path=/docs/website-blocks-ctabands01--docs",
         "states": [
@@ -628,7 +629,7 @@
         "sourceOfTruth": "src/components/blocks/CtaCenter01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/CtaCenter01",
+        "importPath": "@/components/blocks/CtaCenter01.vue",
         "storybookPath": "/?path=/story/website-blocks-ctacenter01--default",
         "docsPath": "/?path=/docs/website-blocks-ctacenter01--docs",
         "states": ["Default", "PrimaryOnly", "HeadingAndAction", "Mobile"],
@@ -675,7 +676,7 @@
         "sourceOfTruth": "src/components/blocks/FAQSplit01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/FAQSplit01",
+        "importPath": "@/components/blocks/FAQSplit01.vue",
         "storybookPath": "/?path=/story/website-blocks-faqsplit01--default",
         "docsPath": "/?path=/docs/website-blocks-faqsplit01--docs",
         "states": ["Default", "Mobile"],
@@ -710,7 +711,7 @@
         "sourceOfTruth": "src/components/blocks/FeatureGrid02.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/FeatureGrid02",
+        "importPath": "@/components/blocks/FeatureGrid02.vue",
         "storybookPath": "/?path=/story/website-blocks-featuregrid02--default",
         "docsPath": "/?path=/docs/website-blocks-featuregrid02--docs",
         "states": ["Default", "WithoutActions", "TwoSteps", "Mobile"],
@@ -753,7 +754,7 @@
         "sourceOfTruth": "src/components/blocks/FeatureRows01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/FeatureRows01",
+        "importPath": "@/components/blocks/FeatureRows01.vue",
         "storybookPath": "/?path=/story/website-blocks-featurerows01--default",
         "docsPath": "/?path=/docs/website-blocks-featurerows01--docs",
         "states": ["Default", "Mobile"],
@@ -788,7 +789,7 @@
         "sourceOfTruth": "src/components/blocks/FeatureRows02.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/FeatureRows02",
+        "importPath": "@/components/blocks/FeatureRows02.vue",
         "storybookPath": "/?path=/story/website-blocks-featurerows02--default",
         "docsPath": "/?path=/docs/website-blocks-featurerows02--docs",
         "states": ["Default", "WithFootnote"],
@@ -823,7 +824,7 @@
         "sourceOfTruth": "src/components/blocks/FeaturedCarousel01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/FeaturedCarousel01",
+        "importPath": "@/components/blocks/FeaturedCarousel01.vue",
         "storybookPath": "/?path=/story/website-blocks-featuredcarousel01--default",
         "docsPath": "/?path=/docs/website-blocks-featuredcarousel01--docs",
         "states": ["Default", "SingleSlide", "TitleHidden", "Mobile"],
@@ -866,7 +867,7 @@
         "sourceOfTruth": "src/components/blocks/FeaturedCarousel02.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/FeaturedCarousel02",
+        "importPath": "@/components/blocks/FeaturedCarousel02.vue",
         "storybookPath": "/?path=/story/website-blocks-featuredcarousel02--default",
         "docsPath": "/?path=/docs/website-blocks-featuredcarousel02--docs",
         "states": ["Default", "SingleSlide", "ImageSlides"],
@@ -905,7 +906,7 @@
         "sourceOfTruth": "src/components/blocks/HeroBackdrop01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/HeroBackdrop01",
+        "importPath": "@/components/blocks/HeroBackdrop01.vue",
         "storybookPath": "/?path=/story/website-blocks-herobackdrop01--default",
         "docsPath": "/?path=/docs/website-blocks-herobackdrop01--docs",
         "states": [
@@ -958,7 +959,7 @@
         "sourceOfTruth": "src/components/blocks/HeroCentered01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/HeroCentered01",
+        "importPath": "@/components/blocks/HeroCentered01.vue",
         "storybookPath": "/?path=/story/website-blocks-herocentered01--default",
         "docsPath": "/?path=/docs/website-blocks-herocentered01--docs",
         "states": ["Default", "WithoutEyebrow", "TitleOnly"],
@@ -997,7 +998,7 @@
         "sourceOfTruth": "src/components/blocks/HeroProduct01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/HeroProduct01",
+        "importPath": "@/components/blocks/HeroProduct01.vue",
         "storybookPath": "/?path=/story/website-blocks-heroproduct01--default",
         "docsPath": "/?path=/docs/website-blocks-heroproduct01--docs",
         "states": [
@@ -1060,7 +1061,7 @@
         "sourceOfTruth": "src/components/blocks/HeroSplit01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/HeroSplit01",
+        "importPath": "@/components/blocks/HeroSplit01.vue",
         "storybookPath": "/?path=/story/website-blocks-herosplit01--default",
         "docsPath": "/?path=/docs/website-blocks-herosplit01--docs",
         "states": [
@@ -1118,7 +1119,7 @@
         "sourceOfTruth": "src/components/blocks/MapPins01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/MapPins01",
+        "importPath": "@/components/blocks/MapPins01.vue",
         "storybookPath": "/?path=/story/website-blocks-mappins01--default",
         "docsPath": "/?path=/docs/website-blocks-mappins01--docs",
         "states": ["Default", "SingleMarker", "Empty"],
@@ -1157,7 +1158,7 @@
         "sourceOfTruth": "src/components/blocks/OfferGrid01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/OfferGrid01",
+        "importPath": "@/components/blocks/OfferGrid01.vue",
         "storybookPath": "/?path=/story/website-blocks-offergrid01--desktop",
         "docsPath": "/?path=/docs/website-blocks-offergrid01--docs",
         "states": [
@@ -1225,7 +1226,7 @@
         "sourceOfTruth": "src/components/blocks/PrizeTiers01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/PrizeTiers01",
+        "importPath": "@/components/blocks/PrizeTiers01.vue",
         "storybookPath": "/?path=/story/website-blocks-prizetiers01--default",
         "docsPath": "/?path=/docs/website-blocks-prizetiers01--docs",
         "states": ["Default", "WithCallToAction"],
@@ -1260,7 +1261,7 @@
         "sourceOfTruth": "src/components/blocks/ReasonsSplit01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/ReasonsSplit01",
+        "importPath": "@/components/blocks/ReasonsSplit01.vue",
         "storybookPath": "/?path=/story/website-blocks-reasonssplit01--default",
         "docsPath": "/?path=/docs/website-blocks-reasonssplit01--docs",
         "states": ["Default", "WithoutHighlight"],
@@ -1295,7 +1296,7 @@
         "sourceOfTruth": "src/components/blocks/SectionIntro01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/SectionIntro01",
+        "importPath": "@/components/blocks/SectionIntro01.vue",
         "storybookPath": "/?path=/story/website-blocks-sectionintro01--desktop",
         "docsPath": "/?path=/docs/website-blocks-sectionintro01--docs",
         "states": ["Desktop", "HeadingOnly", "Mobile"],
@@ -1334,7 +1335,7 @@
         "sourceOfTruth": "src/components/blocks/StepsAccordion01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/StepsAccordion01",
+        "importPath": "@/components/blocks/StepsAccordion01.vue",
         "storybookPath": "/?path=/story/website-blocks-stepsaccordion01--default",
         "docsPath": "/?path=/docs/website-blocks-stepsaccordion01--docs",
         "states": ["Default", "SecondStepOpen", "WithoutCta", "Empty"],
@@ -1377,7 +1378,7 @@
         "sourceOfTruth": "src/components/blocks/StepsCards01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/StepsCards01",
+        "importPath": "@/components/blocks/StepsCards01.vue",
         "storybookPath": "/?path=/story/website-blocks-stepscards01--default",
         "docsPath": "/?path=/docs/website-blocks-stepscards01--docs",
         "states": ["Default"],
@@ -1408,7 +1409,7 @@
         "sourceOfTruth": "src/components/blocks/StepsGrid01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/StepsGrid01",
+        "importPath": "@/components/blocks/StepsGrid01.vue",
         "storybookPath": "/?path=/story/website-blocks-stepsgrid01--even-step-count",
         "docsPath": "/?path=/docs/website-blocks-stepsgrid01--docs",
         "states": ["EvenStepCount", "OddStepCount", "Timeline"],
@@ -1452,7 +1453,7 @@
         "sourceOfTruth": "src/components/blocks/TeamGrid01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/TeamGrid01",
+        "importPath": "@/components/blocks/TeamGrid01.vue",
         "storybookPath": "/?path=/story/website-blocks-teamgrid01--default",
         "docsPath": "/?path=/docs/website-blocks-teamgrid01--docs",
         "states": ["Default", "CardsOnly", "WithoutWorkflows", "Mobile"],
@@ -1495,7 +1496,7 @@
         "sourceOfTruth": "src/components/blocks/TeamMemberDialog01.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/TeamMemberDialog01",
+        "importPath": "@/components/blocks/TeamMemberDialog01.vue",
         "storybookPath": "/?path=/story/website-blocks-teammemberdialog01--default",
         "docsPath": "/?path=/docs/website-blocks-teammemberdialog01--docs",
         "states": ["Default", "WithoutTags", "WithoutWorkflows"],
@@ -1534,7 +1535,7 @@
         "sourceOfTruth": "src/components/blocks/WatchAuthorCard.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/WatchAuthorCard",
+        "importPath": "@/components/blocks/WatchAuthorCard.vue",
         "storybookPath": "/?path=/story/website-blocks-watchauthorcard--default",
         "docsPath": "/?path=/docs/website-blocks-watchauthorcard--docs",
         "states": ["Default", "WithoutAvatar", "NameOnly"],
@@ -1573,7 +1574,7 @@
         "sourceOfTruth": "src/components/blocks/WatchPageLayout.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/WatchPageLayout",
+        "importPath": "@/components/blocks/WatchPageLayout.vue",
         "storybookPath": "/?path=/story/website-blocks-watchpagelayout--default",
         "docsPath": "/?path=/docs/website-blocks-watchpagelayout--docs",
         "states": ["Default", "TitleOnly"],
@@ -1608,7 +1609,7 @@
         "sourceOfTruth": "src/components/blocks/WatchRecommendedCard.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/WatchRecommendedCard",
+        "importPath": "@/components/blocks/WatchRecommendedCard.vue",
         "storybookPath": "/?path=/story/website-blocks-watchrecommendedcard--default",
         "docsPath": "/?path=/docs/website-blocks-watchrecommendedcard--docs",
         "states": ["Default", "WithoutTag"],
@@ -1643,7 +1644,7 @@
         "sourceOfTruth": "src/components/blocks/WatchRelatedCard.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/WatchRelatedCard",
+        "importPath": "@/components/blocks/WatchRelatedCard.vue",
         "storybookPath": "/?path=/story/website-blocks-watchrelatedcard--default",
         "docsPath": "/?path=/docs/website-blocks-watchrelatedcard--docs",
         "states": ["Default", "WithTitle"],
@@ -1678,7 +1679,7 @@
         "sourceOfTruth": "src/components/blocks/WatchRelatedStrip.vue"
       },
       "agent": {
-        "importPath": "@/components/blocks/WatchRelatedStrip",
+        "importPath": "@/components/blocks/WatchRelatedStrip.vue",
         "storybookPath": "/?path=/story/website-blocks-watchrelatedstrip--default",
         "docsPath": "/?path=/docs/website-blocks-watchrelatedstrip--docs",
         "states": ["Default", "Empty"],
@@ -1713,7 +1714,7 @@
         "sourceOfTruth": "src/components/common/AudioPlayer.vue"
       },
       "agent": {
-        "importPath": "@/components/common/AudioPlayer",
+        "importPath": "@/components/common/AudioPlayer.vue",
         "storybookPath": "/?path=/story/website-common-audioplayer--default",
         "docsPath": "/?path=/docs/website-common-audioplayer--docs",
         "states": ["Default", "KeyboardSeek", "Mobile"],
@@ -1752,7 +1753,7 @@
         "sourceOfTruth": "src/components/common/BrandButton.vue"
       },
       "agent": {
-        "importPath": "@/components/common/BrandButton",
+        "importPath": "@/components/common/BrandButton.vue",
         "storybookPath": "/?path=/story/website-common-brandbutton--solid",
         "docsPath": "/?path=/docs/website-common-brandbutton--docs",
         "states": [
@@ -1815,7 +1816,7 @@
         "sourceOfTruth": "src/components/common/BreadcrumbBar.vue"
       },
       "agent": {
-        "importPath": "@/components/common/BreadcrumbBar",
+        "importPath": "@/components/common/BreadcrumbBar.vue",
         "storybookPath": "/?path=/story/website-common-breadcrumbbar--default",
         "docsPath": "/?path=/docs/website-common-breadcrumbbar--docs",
         "states": ["Default", "WithoutUpdatedDate", "LongTrail", "Mobile"],
@@ -1858,7 +1859,7 @@
         "sourceOfTruth": "src/components/common/CallToActionSection.vue"
       },
       "agent": {
-        "importPath": "@/components/common/CallToActionSection",
+        "importPath": "@/components/common/CallToActionSection.vue",
         "storybookPath": "/?path=/story/website-common-calltoactionsection--default",
         "docsPath": "/?path=/docs/website-common-calltoactionsection--docs",
         "states": ["Default", "PrimaryOnly", "Chinese", "Mobile"],
@@ -1901,7 +1902,7 @@
         "sourceOfTruth": "src/components/common/CardArrow.vue"
       },
       "agent": {
-        "importPath": "@/components/common/CardArrow",
+        "importPath": "@/components/common/CardArrow.vue",
         "storybookPath": "/?path=/story/website-common-cardarrow--default",
         "docsPath": "/?path=/docs/website-common-cardarrow--docs",
         "states": ["Default", "GroupHover", "Compact"],
@@ -1940,7 +1941,7 @@
         "sourceOfTruth": "src/components/common/CategoryNav.vue"
       },
       "agent": {
-        "importPath": "@/components/common/CategoryNav",
+        "importPath": "@/components/common/CategoryNav.vue",
         "storybookPath": "/?path=/story/website-common-categorynav--default",
         "docsPath": "/?path=/docs/website-common-categorynav--docs",
         "states": ["Default", "SelectedVideo"],
@@ -1979,7 +1980,7 @@
         "sourceOfTruth": "src/components/common/FAQSection.vue"
       },
       "agent": {
-        "importPath": "@/components/common/FAQSection",
+        "importPath": "@/components/common/FAQSection.vue",
         "storybookPath": "/?path=/story/website-common-faqsection--default",
         "docsPath": "/?path=/docs/website-common-faqsection--docs",
         "states": ["Default", "ManyItems", "Mobile"],
@@ -2018,7 +2019,7 @@
         "sourceOfTruth": "src/components/common/FooterLinkColumn.vue"
       },
       "agent": {
-        "importPath": "@/components/common/FooterLinkColumn",
+        "importPath": "@/components/common/FooterLinkColumn.vue",
         "storybookPath": "/?path=/story/website-common-footerlinkcolumn--default",
         "docsPath": "/?path=/docs/website-common-footerlinkcolumn--docs",
         "states": ["Default", "WithExternalLinks"],
@@ -2053,7 +2054,7 @@
         "sourceOfTruth": "src/components/common/FooterSocialLinks.vue"
       },
       "agent": {
-        "importPath": "@/components/common/FooterSocialLinks",
+        "importPath": "@/components/common/FooterSocialLinks.vue",
         "storybookPath": "/?path=/story/website-common-footersociallinks--default",
         "docsPath": "/?path=/docs/website-common-footersociallinks--docs",
         "states": ["Default"],
@@ -2084,7 +2085,7 @@
         "sourceOfTruth": "src/components/common/HeaderMain/HeaderMain.vue"
       },
       "agent": {
-        "importPath": "@/components/common/HeaderMain/HeaderMain",
+        "importPath": "@/components/common/HeaderMain/HeaderMain.vue",
         "storybookPath": "/?path=/story/website-common-headermain--default",
         "docsPath": "/?path=/docs/website-common-headermain--docs",
         "states": ["Default", "WithoutGitHubStars", "Mobile"],
@@ -2123,7 +2124,7 @@
         "sourceOfTruth": "src/components/common/NodeBadge.vue"
       },
       "agent": {
-        "importPath": "@/components/common/NodeBadge",
+        "importPath": "@/components/common/NodeBadge.vue",
         "storybookPath": "/?path=/story/website-common-nodebadge--text-only",
         "docsPath": "/?path=/docs/website-common-nodebadge--docs",
         "states": ["TextOnly", "MultipleSegments", "WithLogo"],
@@ -2162,7 +2163,7 @@
         "sourceOfTruth": "src/components/common/PlayPauseButton.vue"
       },
       "agent": {
-        "importPath": "@/components/common/PlayPauseButton",
+        "importPath": "@/components/common/PlayPauseButton.vue",
         "storybookPath": "/?path=/story/website-common-playpausebutton--play",
         "docsPath": "/?path=/docs/website-common-playpausebutton--docs",
         "states": ["Play", "Pause", "Small"],
@@ -2201,7 +2202,7 @@
         "sourceOfTruth": "src/components/common/ProductCard.vue"
       },
       "agent": {
-        "importPath": "@/components/common/ProductCard",
+        "importPath": "@/components/common/ProductCard.vue",
         "storybookPath": "/?path=/story/website-common-productcard--default",
         "docsPath": "/?path=/docs/website-common-productcard--docs",
         "states": ["Default", "AllCards"],
@@ -2236,7 +2237,7 @@
         "sourceOfTruth": "src/components/common/ProductHeroBadge.vue"
       },
       "agent": {
-        "importPath": "@/components/common/ProductHeroBadge",
+        "importPath": "@/components/common/ProductHeroBadge.vue",
         "storybookPath": "/?path=/story/website-common-productherobadge--default",
         "docsPath": "/?path=/docs/website-common-productherobadge--docs",
         "states": ["Default", "Cloud", "CustomProduct"],
@@ -2275,7 +2276,7 @@
         "sourceOfTruth": "src/components/common/SectionHeader.vue"
       },
       "agent": {
-        "importPath": "@/components/common/SectionHeader",
+        "importPath": "@/components/common/SectionHeader.vue",
         "storybookPath": "/?path=/story/website-common-sectionheader--default",
         "docsPath": "/?path=/docs/website-common-sectionheader--docs",
         "states": [
@@ -2328,7 +2329,7 @@
         "sourceOfTruth": "src/components/common/SectionLabel.vue"
       },
       "agent": {
-        "importPath": "@/components/common/SectionLabel",
+        "importPath": "@/components/common/SectionLabel.vue",
         "storybookPath": "/?path=/story/website-common-sectionlabel--default",
         "docsPath": "/?path=/docs/website-common-sectionlabel--docs",
         "states": ["Default", "LongLabel"],
@@ -2363,7 +2364,7 @@
         "sourceOfTruth": "src/components/common/SiteFooter.vue"
       },
       "agent": {
-        "importPath": "@/components/common/SiteFooter",
+        "importPath": "@/components/common/SiteFooter.vue",
         "storybookPath": "/?path=/story/website-common-sitefooter--default",
         "docsPath": "/?path=/docs/website-common-sitefooter--docs",
         "states": ["Default", "Mobile"],
@@ -2398,7 +2399,7 @@
         "sourceOfTruth": "src/components/common/SiteVideo.vue"
       },
       "agent": {
-        "importPath": "@/components/common/SiteVideo",
+        "importPath": "@/components/common/SiteVideo.vue",
         "storybookPath": "/?path=/story/website-common-sitevideo--with-controls",
         "docsPath": "/?path=/docs/website-common-sitevideo--docs",
         "states": ["WithControls", "DecorativeAutoplay", "Mp4Only"],
@@ -2437,7 +2438,7 @@
         "sourceOfTruth": "src/components/common/SocialProofBarSection.vue"
       },
       "agent": {
-        "importPath": "@/components/common/SocialProofBarSection",
+        "importPath": "@/components/common/SocialProofBarSection.vue",
         "storybookPath": "/?path=/story/website-common-socialproofbarsection--desktop",
         "docsPath": "/?path=/docs/website-common-socialproofbarsection--docs",
         "states": ["Desktop", "Mobile"],
@@ -2472,7 +2473,7 @@
         "sourceOfTruth": "src/components/common/VideoPlayer.vue"
       },
       "agent": {
-        "importPath": "@/components/common/VideoPlayer",
+        "importPath": "@/components/common/VideoPlayer.vue",
         "storybookPath": "/?path=/story/website-common-videoplayer--default",
         "docsPath": "/?path=/docs/website-common-videoplayer--docs",
         "states": [
@@ -2535,7 +2536,7 @@
         "sourceOfTruth": "src/components/product/shared/ReasonSection.vue"
       },
       "agent": {
-        "importPath": "@/components/product/shared/ReasonSection",
+        "importPath": "@/components/product/shared/ReasonSection.vue",
         "storybookPath": "/?path=/story/website-product-reasonsection--default",
         "docsPath": "/?path=/docs/website-product-reasonsection--docs",
         "states": ["Default", "FewReasons"],
@@ -2570,7 +2571,7 @@
         "sourceOfTruth": "src/components/ui/accordion/Accordion.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/accordion/Accordion",
+        "importPath": "@/components/ui/accordion/Accordion.vue",
         "storybookPath": "/?path=/story/website-ui-accordion--single",
         "docsPath": "/?path=/docs/website-ui-accordion--docs",
         "states": ["Single", "Multiple"],
@@ -2605,7 +2606,7 @@
         "sourceOfTruth": "src/components/ui/badge/Badge.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/badge/Badge",
+        "importPath": "@/components/ui/badge/Badge.vue",
         "storybookPath": "/?path=/story/website-ui-badge--default",
         "docsPath": "/?path=/docs/website-ui-badge--docs",
         "states": ["Default", "Category", "Accent", "Callout"],
@@ -2648,7 +2649,7 @@
         "sourceOfTruth": "src/components/ui/button-mask/ButtonMask.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/button-mask/ButtonMask",
+        "importPath": "@/components/ui/button-mask/ButtonMask.vue",
         "storybookPath": "/?path=/story/website-ui-buttonmask--default",
         "docsPath": "/?path=/docs/website-ui-buttonmask--docs",
         "states": [
@@ -2721,7 +2722,7 @@
         "sourceOfTruth": "src/components/ui/button-pill/ButtonPill.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/button-pill/ButtonPill",
+        "importPath": "@/components/ui/button-pill/ButtonPill.vue",
         "storybookPath": "/?path=/story/website-ui-buttonpill--as-anchor",
         "docsPath": "/?path=/docs/website-ui-buttonpill--docs",
         "states": [
@@ -2799,7 +2800,7 @@
         "sourceOfTruth": "src/components/ui/button/Button.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/button/Button",
+        "importPath": "@/components/ui/button/Button.vue",
         "storybookPath": "/?path=/story/website-ui-button--playground",
         "docsPath": "/?path=/docs/website-ui-button--docs",
         "states": ["Playground", "ActionVariants", "InContext"],
@@ -2838,7 +2839,7 @@
         "sourceOfTruth": "src/components/ui/card/Card.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/card/Card",
+        "importPath": "@/components/ui/card/Card.vue",
         "storybookPath": "/?path=/story/website-ui-card--default",
         "docsPath": "/?path=/docs/website-ui-card--docs",
         "states": ["Default", "Compact"],
@@ -2873,7 +2874,7 @@
         "sourceOfTruth": "src/components/ui/copy-text-button/CopyTextButton.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/copy-text-button/CopyTextButton",
+        "importPath": "@/components/ui/copy-text-button/CopyTextButton.vue",
         "storybookPath": "/?path=/story/website-ui-copytextbutton--default",
         "docsPath": "/?path=/docs/website-ui-copytextbutton--docs",
         "states": ["Default"],
@@ -2904,7 +2905,7 @@
         "sourceOfTruth": "src/components/ui/copyable-field/CopyableField.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/copyable-field/CopyableField",
+        "importPath": "@/components/ui/copyable-field/CopyableField.vue",
         "storybookPath": "/?path=/story/website-ui-copyablefield--single-line",
         "docsPath": "/?path=/docs/website-ui-copyablefield--docs",
         "states": ["SingleLine", "Multiline"],
@@ -2939,7 +2940,7 @@
         "sourceOfTruth": "src/components/ui/dialog/Dialog.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/dialog/Dialog",
+        "importPath": "@/components/ui/dialog/Dialog.vue",
         "storybookPath": "/?path=/story/website-ui-dialog--default",
         "docsPath": "/?path=/docs/website-ui-dialog--docs",
         "states": ["Default"],
@@ -2970,7 +2971,7 @@
         "sourceOfTruth": "src/components/ui/navigation-menu/NavigationMenu.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/navigation-menu/NavigationMenu",
+        "importPath": "@/components/ui/navigation-menu/NavigationMenu.vue",
         "storybookPath": "/?path=/story/website-ui-navigationmenu--default",
         "docsPath": "/?path=/docs/website-ui-navigationmenu--docs",
         "states": ["Default", "WithoutViewport"],
@@ -3005,7 +3006,7 @@
         "sourceOfTruth": "src/components/ui/slider/Slider.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/slider/Slider",
+        "importPath": "@/components/ui/slider/Slider.vue",
         "storybookPath": "/?path=/story/website-ui-slider--default",
         "docsPath": "/?path=/docs/website-ui-slider--docs",
         "states": ["Default", "WithTicks", "Range", "Disabled"],
@@ -3048,7 +3049,7 @@
         "sourceOfTruth": "src/components/ui/toggle-group/ToggleGroup.vue"
       },
       "agent": {
-        "importPath": "@/components/ui/toggle-group/ToggleGroup",
+        "importPath": "@/components/ui/toggle-group/ToggleGroup.vue",
         "storybookPath": "/?path=/story/website-ui-togglegroup--single",
         "docsPath": "/?path=/docs/website-ui-togglegroup--docs",
         "states": ["Single", "Separated", "Multiple"],
@@ -3072,6 +3073,193 @@
       ]
     },
     {
+      "component": "PlaygroundOutput",
+      "source": "src/components/workshop/PlaygroundOutput.vue",
+      "storyFile": "src/components/workshop/PlaygroundOutput.stories.ts",
+      "title": "Website/Workshop/PlaygroundOutput",
+      "status": "documented",
+      "category": "workshop",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/workshop/PlaygroundOutput.vue"
+      },
+      "agent": {
+        "importPath": "@/components/workshop/PlaygroundOutput.vue",
+        "storybookPath": "/?path=/story/website-workshop-playgroundoutput--idle",
+        "docsPath": "/?path=/docs/website-workshop-playgroundoutput--docs",
+        "states": [
+          "Idle",
+          "Example",
+          "Succeeded",
+          "SucceededVideo",
+          "SucceededSensitive",
+          "Expired",
+          "Cancelled",
+          "CancelledWorkflow",
+          "EveryWait",
+          "EveryRefusal"
+        ],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": false
+      },
+      "stories": [
+        {
+          "exportName": "Idle",
+          "storyId": "website-workshop-playgroundoutput--idle"
+        },
+        {
+          "exportName": "Example",
+          "storyId": "website-workshop-playgroundoutput--example"
+        },
+        {
+          "exportName": "Succeeded",
+          "storyId": "website-workshop-playgroundoutput--succeeded"
+        },
+        {
+          "exportName": "SucceededVideo",
+          "storyId": "website-workshop-playgroundoutput--succeeded-video"
+        },
+        {
+          "exportName": "SucceededSensitive",
+          "storyId": "website-workshop-playgroundoutput--succeeded-sensitive"
+        },
+        {
+          "exportName": "Expired",
+          "storyId": "website-workshop-playgroundoutput--expired"
+        },
+        {
+          "exportName": "Cancelled",
+          "storyId": "website-workshop-playgroundoutput--cancelled"
+        },
+        {
+          "exportName": "CancelledWorkflow",
+          "storyId": "website-workshop-playgroundoutput--cancelled-workflow"
+        },
+        {
+          "exportName": "EveryWait",
+          "storyId": "website-workshop-playgroundoutput--every-wait"
+        },
+        {
+          "exportName": "EveryRefusal",
+          "storyId": "website-workshop-playgroundoutput--every-refusal"
+        }
+      ]
+    },
+    {
+      "component": "AppEditorShell",
+      "source": "src/components/workshop/app-editor/AppEditorShell.vue",
+      "storyFile": "src/components/workshop/app-editor/AppEditorShell.stories.ts",
+      "title": "Website/Workshop/AppEditor/AppEditorShell",
+      "status": "documented",
+      "category": "workshop/appeditor",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/workshop/app-editor/AppEditorShell.vue"
+      },
+      "agent": {
+        "importPath": "@/components/workshop/app-editor/AppEditorShell.vue",
+        "storybookPath": "/?path=/story/website-workshop-appeditor-appeditorshell--editing",
+        "docsPath": "/?path=/docs/website-workshop-appeditor-appeditorshell--docs",
+        "states": ["Editing", "Empty", "Result"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": false
+      },
+      "stories": [
+        {
+          "exportName": "Editing",
+          "storyId": "website-workshop-appeditor-appeditorshell--editing"
+        },
+        {
+          "exportName": "Empty",
+          "storyId": "website-workshop-appeditor-appeditorshell--empty"
+        },
+        {
+          "exportName": "Result",
+          "storyId": "website-workshop-appeditor-appeditorshell--result"
+        }
+      ]
+    },
+    {
+      "component": "EditorDock",
+      "source": "src/components/workshop/app-editor/EditorDock.vue",
+      "storyFile": "src/components/workshop/app-editor/EditorDock.stories.ts",
+      "title": "Website/Workshop/AppEditor/Dock",
+      "status": "documented",
+      "category": "workshop/appeditor",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/workshop/app-editor/EditorDock.vue"
+      },
+      "agent": {
+        "importPath": "@/components/workshop/app-editor/EditorDock.vue",
+        "storybookPath": "/?path=/story/website-workshop-appeditor-dock--editing",
+        "docsPath": "/?path=/docs/website-workshop-appeditor-dock--docs",
+        "states": ["Editing", "Result"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": false
+      },
+      "stories": [
+        {
+          "exportName": "Editing",
+          "storyId": "website-workshop-appeditor-dock--editing"
+        },
+        {
+          "exportName": "Result",
+          "storyId": "website-workshop-appeditor-dock--result"
+        }
+      ]
+    },
+    {
+      "component": "EditorResult",
+      "source": "src/components/workshop/app-editor/EditorResult.vue",
+      "storyFile": "src/components/workshop/app-editor/EditorResult.stories.ts",
+      "title": "Website/Workshop/AppEditor/Result",
+      "status": "documented",
+      "category": "workshop/appeditor",
+      "capabilities": [],
+      "testEligible": true,
+      "limitations": [],
+      "provenance": {
+        "implementation": "shipped-website",
+        "figma": "https://www.figma.com/design/11vkE4FAn4plEYpawd57zS/Comfy----Website-Design?node-id=1-9",
+        "sourceOfTruth": "src/components/workshop/app-editor/EditorResult.vue"
+      },
+      "agent": {
+        "importPath": "@/components/workshop/app-editor/EditorResult.vue",
+        "storybookPath": "/?path=/story/website-workshop-appeditor-result--default",
+        "docsPath": "/?path=/docs/website-workshop-appeditor-result--docs",
+        "states": ["Default", "Running"],
+        "hasInteractionTest": false,
+        "hasResponsiveStories": false,
+        "compositionSafe": false
+      },
+      "stories": [
+        {
+          "exportName": "Default",
+          "storyId": "website-workshop-appeditor-result--default"
+        },
+        {
+          "exportName": "Running",
+          "storyId": "website-workshop-appeditor-result--running"
+        }
+      ]
+    },
+    {
       "component": "AnnouncementBanner",
       "source": "src/templates/drops/AnnouncementBanner.vue",
       "storyFile": "src/templates/drops/AnnouncementBanner.stories.ts",
@@ -3087,7 +3275,7 @@
         "sourceOfTruth": "src/templates/drops/AnnouncementBanner.vue"
       },
       "agent": {
-        "importPath": "@/templates/drops/AnnouncementBanner",
+        "importPath": "@/templates/drops/AnnouncementBanner.vue",
         "storybookPath": "/?path=/story/website-common-announcementbanner--desktop",
         "docsPath": "/?path=/docs/website-common-announcementbanner--docs",
         "states": ["Desktop", "Tablet", "Mobile"],

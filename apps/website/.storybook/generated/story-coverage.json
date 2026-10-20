@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
   "componentCount": 592,
-  "documentedComponentCount": 73,
-  "missingStoryCount": 519,
+  "documentedComponentCount": 77,
+  "missingStoryCount": 515,
   "dispositionCounts": {
     "compound-part": 28,
     "icon": 5,
     "integration": 3,
-    "page-local": 332,
+    "page-local": 328,
     "reusable-candidate": 24,
     "template-local": 127
   },
@@ -1113,11 +1113,6 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/workshop/PlaygroundOutput.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/workshop/RunLeaveDialog.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -1338,11 +1333,6 @@
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
     {
-      "source": "src/components/workshop/app-editor/AppEditorShell.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
       "source": "src/components/workshop/app-editor/EditorAlert.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
@@ -1379,11 +1369,6 @@
     },
     {
       "source": "src/components/workshop/app-editor/EditorDivider.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorDock.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -1459,11 +1444,6 @@
     },
     {
       "source": "src/components/workshop/app-editor/EditorPopover.vue",
-      "disposition": "page-local",
-      "reason": "Feature or page-specific section; not an independent design-system primitive."
-    },
-    {
-      "source": "src/components/workshop/app-editor/EditorResult.vue",
       "disposition": "page-local",
       "reason": "Feature or page-specific section; not an independent design-system primitive."
     },
@@ -2829,7 +2809,6 @@
     "src/components/workshop/OutputTransport.vue",
     "src/components/workshop/PlaygroundField.vue",
     "src/components/workshop/PlaygroundForm.vue",
-    "src/components/workshop/PlaygroundOutput.vue",
     "src/components/workshop/RunLeaveDialog.vue",
     "src/components/workshop/SavedAssetMedia.vue",
     "src/components/workshop/SavedAssetPager.vue",
@@ -2874,7 +2853,6 @@
     "src/components/workshop/WorkshopSearchPanel.vue",
     "src/components/workshop/WorkshopSections.vue",
     "src/components/workshop/WorkshopSortMenu.vue",
-    "src/components/workshop/app-editor/AppEditorShell.vue",
     "src/components/workshop/app-editor/EditorAlert.vue",
     "src/components/workshop/app-editor/EditorBusy.vue",
     "src/components/workshop/app-editor/EditorChip.vue",
@@ -2883,7 +2861,6 @@
     "src/components/workshop/app-editor/EditorCompare.vue",
     "src/components/workshop/app-editor/EditorCompareToggle.vue",
     "src/components/workshop/app-editor/EditorDivider.vue",
-    "src/components/workshop/app-editor/EditorDock.vue",
     "src/components/workshop/app-editor/EditorDownload.vue",
     "src/components/workshop/app-editor/EditorDropZone.vue",
     "src/components/workshop/app-editor/EditorEmpty.vue",
@@ -2899,7 +2876,6 @@
     "src/components/workshop/app-editor/EditorPicker.vue",
     "src/components/workshop/app-editor/EditorPickerRow.vue",
     "src/components/workshop/app-editor/EditorPopover.vue",
-    "src/components/workshop/app-editor/EditorResult.vue",
     "src/components/workshop/app-editor/EditorResultDock.vue",
     "src/components/workshop/app-editor/EditorRun.vue",
     "src/components/workshop/app-editor/EditorRunCancel.vue",

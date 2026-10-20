@@ -2,6 +2,11 @@ import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 
 import {
+  catalogStoryPatterns,
+  discoverCatalogStories
+} from '@website/.storybook/story-discovery'
+
+import {
   componentImport,
   portablePath,
   storyId,
@@ -66,18 +71,6 @@ const capabilityRules: Array<[RegExp, string[]]> = [
   [/Hero|Grid|Layout|Section|Split|Bands/, ['responsive-layout']],
   [/Card/, ['linked-content']]
 ]
-
-async function findStoryFiles(directory: string): Promise<string[]> {
-  const entries = await readdir(directory, { withFileTypes: true })
-  const paths = await Promise.all(
-    entries.map(async (entry) => {
-      const path = join(directory, entry.name)
-      if (entry.isDirectory()) return findStoryFiles(path)
-      return entry.name.endsWith('.stories.ts') ? [path] : []
-    })
-  )
-  return paths.flat()
-}
 
 async function findVueFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true })
@@ -167,7 +160,7 @@ function componentSource(storyFile: string, componentPath: string): string {
 
 async function manifestEntry(
   storyFile: string
-): Promise<ComponentManifestEntry> {
+): Promise<ComponentManifestEntry | undefined> {
   const contents = await readFile(storyFile, 'utf8')
   const title = [...contents.matchAll(/title:\s*'([^']+)'/g)]
     .map(([, value]) => value)
@@ -180,9 +173,7 @@ async function manifestEntry(
   if (!title) {
     throw new Error(`Missing Storybook title in ${storyFile}`)
   }
-  if (!importedComponent) {
-    throw new Error(`Missing component import in ${storyFile}`)
-  }
+  if (!importedComponent) return undefined
   if (exports.length === 0) {
     throw new Error(`Unable to derive Storybook metadata from ${storyFile}`)
   }
@@ -209,9 +200,9 @@ async function manifestEntry(
       sourceOfTruth: source
     },
     agent: {
-      importPath: `@/${source.replace(/^src\//, '').replace(/\.vue$/, '')}`,
+      importPath: `@/${source.replace(/^src\//, '')}`,
       storybookPath: `/?path=/story/${storyId(title, exports[0])}`,
-      docsPath: `/?path=/docs/${storyId(title, 'docs').replace(/--docs$/, '--docs')}`,
+      docsPath: `/?path=/docs/${storyId(title, 'docs')}`,
       states: exports,
       hasInteractionTest: /\bplay\s*:/.test(contents),
       hasResponsiveStories: exports.some((name) =>
@@ -226,17 +217,19 @@ async function manifestEntry(
   }
 }
 
-const storyFiles = (await findStoryFiles(sourceRoot)).filter(
-  (path) =>
-    !path.includes(join('src', 'storybook')) &&
-    !path.includes(join('src', 'components', 'workshop'))
-)
-const components = await Promise.all(storyFiles.sort().map(manifestEntry))
+const storyFiles = await discoverCatalogStories(websiteRoot)
+const components = (
+  await Promise.all(storyFiles.sort().map(manifestEntry))
+).filter((entry) => entry !== undefined)
 const manifest = {
   schemaVersion: 2,
-  generatedFrom: 'apps/website/src/**/*.stories.ts',
+  generatedFrom: catalogStoryPatterns
+    .map((pattern) => `apps/website/${pattern}`)
+    .join(', '),
   figma: figmaUrl,
   usagePolicy: {
+    interactionCoverage:
+      'Story play functions are documented examples; automated interaction coverage is limited to the Playwright catalog tests.',
     evidenceOrder: [
       'shipped website implementation',
       'component story and interaction contract',

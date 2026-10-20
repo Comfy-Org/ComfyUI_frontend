@@ -31,34 +31,40 @@ jobs:
         if: github.event.workflow_run.event == 'pull_request'
         id: pr
         uses: ./.github/actions/resolve-pr-from-workflow-run
+      - name: Check push freshness
+        id: freshness
+        if: github.event.workflow_run.event == 'push'
+        env:
+          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$SOURCE_SHA" ]]; then
+            echo '::notice::Skipping superseded marketing build; main advanced during verification.'
+            echo 'skip=true' >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/download-artifact@v8
-        if: steps.pr.outputs.skip != 'true'
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
         with:
           name: marketing-storybook-static
           path: marketing-storybook-static
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ github.token }}
       - uses: actions/setup-node@v6
-        if: steps.pr.outputs.skip != 'true'
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
         with:
           node-version: '24'
       - name: Validate static preview
-        if: steps.pr.outputs.skip != 'true'
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
         env:
           SOURCE_SHA: ${{ steps.pr.outputs.head-sha || github.event.workflow_run.head_sha }}
-          SOURCE_EVENT: ${{ github.event.workflow_run.event }}
         run: |
-          if [[ "$SOURCE_EVENT" == 'push' ]]; then
-            test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
-          fi
           node scripts/cicd/validate-marketing-preview.ts marketing-storybook-static "$SOURCE_SHA"
       - uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271
-        if: steps.pr.outputs.skip != 'true'
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
         with:
           version: 11.13.1
           run_install: false
       - name: Deploy isolated preview
-        if: steps.pr.outputs.skip != 'true'
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
         id: deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -80,14 +86,14 @@ jobs:
           printf '{"commit":"%s","url":"%s"}\n' "$SOURCE_SHA" "$URL" > marketing-preview.json
           printf '### Marketing Storybook\n[Component catalog preview](%s)\nSource commit: `%s`\n' "$URL" "$SOURCE_SHA" > marketing-preview.md
       - uses: actions/upload-artifact@v6
-        if: steps.pr.outputs.skip != 'true'
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true'
         with:
           name: marketing-storybook-preview
           path: marketing-preview.json
           if-no-files-found: error
           retention-days: 7
       - uses: ./.github/actions/post-pr-report-comment
-        if: steps.pr.outputs.skip != 'true' && github.event.workflow_run.event == 'pull_request'
+        if: steps.pr.outputs.skip != 'true' && steps.freshness.outputs.skip != 'true' && github.event.workflow_run.event == 'pull_request'
         with:
           pr-number: ${{ steps.pr.outputs.number }}
           report-file: marketing-preview.md
