@@ -318,21 +318,23 @@ export const runExtensionSerializeHook = <T extends object>(
     return canonical
 
   const view = canonical
-  const before = new Map(
-    [...canonicalFields].map((key) => [key, Reflect.get(view, key)])
-  )
   Object.assign(view, structuredClone(state.legacy), {
     extensions: structuredClone({ ...state.namespaced, ...state.legacy })
   })
-  hook?.(view)
 
-  for (const key of canonicalFields) {
-    if (Object.hasOwn(view, key)) {
-      const value: unknown = Reflect.get(view, key)
-      if (hook)
-        writeDetachedCanonicalValue(canonical, key, value, before.get(key))
-    } else {
-      Reflect.deleteProperty(canonical, key)
+  if (hook) {
+    const before = new Map(
+      [...canonicalFields].map((key) => [key, Reflect.get(view, key)])
+    )
+    hook(view)
+    for (const key of canonicalFields) {
+      if (Object.hasOwn(view, key))
+        writeDetachedCanonicalValue(
+          canonical,
+          key,
+          Reflect.get(view, key),
+          before.get(key)
+        )
     }
   }
 
