@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
-import { CredentialResponseSchema } from './exchange.js'
-import type { AccountCredential } from './sessionContracts.js'
+import { CredentialResponseSchema } from './exchange'
+import type { AccountCredential } from './sessionContracts'
 
 /**
  * Raw string storage for the credential cache. Hosts wrap their medium —

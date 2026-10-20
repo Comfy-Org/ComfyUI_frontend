@@ -9,7 +9,7 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
 
-import { zTemplateInput } from '../schemas/templateSchema'
+import { zTemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
 
 const INPUT_BASE =
   'https://raw.githubusercontent.com/Comfy-Org/workflow_templates/'

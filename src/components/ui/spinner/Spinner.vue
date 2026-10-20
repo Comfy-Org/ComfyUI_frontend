@@ -11,7 +11,6 @@ const { class: customClass = '' } = defineProps<{
 <template>
   <svg
     role="progressbar"
-    :aria-label="$t('g.loading')"
     :class="cn('size-6 animate-spin text-muted-foreground', customClass)"
     viewBox="0 0 24 24"
     fill="none"

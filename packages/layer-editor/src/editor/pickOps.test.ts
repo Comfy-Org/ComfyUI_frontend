@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ContentStore } from '../content'
-import type { RasterData, SceneNode } from '../node'
+import type { ContentStore } from '#/content'
+import type { RasterData, SceneNode } from '#/node'
 import { PICK_OPACITY_THRESHOLD, layerOpacityAt, pickLayerAt } from './pickOps'
 
 function mkRaster(

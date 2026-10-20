@@ -1,14 +1,12 @@
 <template>
-  <DialogPanel class="w-90 max-w-full" @close="onClose">
+  <AppDialogPanel size="compact" @close="onClose">
     <template #title>
       {{ $t(titleKey) }}
     </template>
 
-    <div class="p-4">
-      <p class="m-0 font-inter text-sm text-muted-foreground">
-        {{ $t(descriptionKey) }}
-      </p>
-    </div>
+    <p class="m-0 font-inter text-sm text-muted-foreground">
+      {{ $t(descriptionKey) }}
+    </p>
 
     <template #footer>
       <Button
@@ -30,11 +28,11 @@
         }}
       </Button>
     </template>
-  </DialogPanel>
+  </AppDialogPanel>
 </template>
 
 <script setup lang="ts">
-import DialogPanel from '@/components/ui/dialog/DialogPanel.vue'
+import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
