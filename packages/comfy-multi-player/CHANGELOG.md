@@ -7,6 +7,21 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+This tree is unreleased. `package.json` still names 0.3.10, the last npm
+release (standalone `86aecb9`); the source here matches standalone `main` at
+`c12150d` and differs from the npm 0.3.10 tarball by the entries below.
+
+### Fixed
+
+- Compose a node-local widget order with dynamic-combo selections, and keep
+  dynamic values across compaction (#288).
+
+### Changed
+
+- Moved into `ComfyUI_frontend` at `packages/comfy-multi-player`, built and
+  tested with pnpm. Internal re-exports that duplicated root exports were
+  removed; the root public API is unchanged.
+
 ## 0.3.10 - 2026-10-04
 
 ### Fixed
