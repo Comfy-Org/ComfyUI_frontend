@@ -5,7 +5,6 @@ import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 const { name, previewUrl, mediaKind, variant } = defineProps<{
   name: string
