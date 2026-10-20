@@ -86,10 +86,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.nextFrame()
     await expectRegionScreenshot(
       comfyPage.page,
-      [
-        await comfyPage.nodeOps.getNodeRefById(EMPTY_LATENT_NODE_ID),
-        comfyPage.page.locator('#node-panel')
-      ],
+      [await emptyLatentNode(comfyPage), comfyPage.page.locator('#node-panel')],
       'right-click-node-properties-panel.png'
     )
   })
@@ -166,12 +163,9 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
 
-    const emptyLatentNode =
-      await comfyPage.nodeOps.getNodeRefById(EMPTY_LATENT_NODE_ID)
-    const pinnedRegion = await screenshotRegion(comfyPage.page, [
-      emptyLatentNode
-    ])
-    const titlePos = await emptyLatentNode.getTitlePosition()
+    const latentNode = await emptyLatentNode(comfyPage)
+    const pinnedRegion = await screenshotRegion(comfyPage.page, [latentNode])
+    const titlePos = await latentNode.getTitlePosition()
     await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 16, y: 16 })
     await pinnedRegion.expectScreenshot('node-pinned.png')
     await comfyPage.canvas.click({
@@ -209,13 +203,12 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
     await comfyPage.contextMenu.waitForHidden()
     await comfyPage.nextFrame()
 
-    // Get EmptyLatentImage node title position dynamically (for dragging)
-    const emptyLatentNode = await comfyPage.nodeOps.getNodeRefById(5)
-    const originalPosition = await emptyLatentNode.getPosition()
-    const titlePos = await emptyLatentNode.getTitlePosition()
+    const latentNode = await emptyLatentNode(comfyPage)
+    const originalPosition = await latentNode.getPosition()
+    const titlePos = await latentNode.getTitlePosition()
     await comfyPage.canvasOps.dragAndDrop(titlePos, { x: 200, y: 590 })
     await expect
-      .poll(() => emptyLatentNode.getPosition())
+      .poll(() => latentNode.getPosition())
       .not.toEqual(originalPosition)
   })
 
@@ -224,7 +217,7 @@ test.describe('Node Right Click Menu', { tag: ['@screenshot', '@ui'] }, () => {
       ...(await comfyPage.nodeOps.getNodeRefsByTitle(
         'CLIP Text Encode (Prompt)'
       )),
-      await comfyPage.nodeOps.getNodeRefById(EMPTY_LATENT_NODE_ID)
+      await emptyLatentNode(comfyPage)
     ]
     await comfyPage.nodeOps.selectNodes(['CLIP Text Encode (Prompt)'])
     await comfyPage.page.keyboard.down('Control')
