@@ -455,6 +455,10 @@ export type SetWidgetOp = TopLevelSetWidgetOp | InteriorSetWidgetOp;
 
 export interface DeleteNodeOp extends OpBase {
   op: "delete_node";
+  /** Non-empty instance route when deleting inside a subgraph definition. */
+  path?: [NodeId, ...NodeId[]];
+  /** Lifetime of the first instance in `path`; absent means legacy life 0. */
+  container_incarnation?: string;
   node_id: NodeId;
   /** Link ids severed by this delete (recorded at mint time). */
   removed_links: NodeId[];

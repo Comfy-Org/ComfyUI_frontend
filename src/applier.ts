@@ -139,6 +139,7 @@ import {
   type GrowConnectOp,
   type ImportedLinkState,
   type InteriorSetWidgetOp,
+  type NodeId,
   LINK_STATE_DESCRIPTOR_VERSION,
   type LinkTuple,
   type CanonicalOpInspection,
@@ -578,7 +579,7 @@ function dispatch(doc: Y.Doc, op: Op, catalog?: WidgetCatalog): SuccessfulOutcom
     case "disconnect":
       return applyDisconnect(doc, op);
     case "delete_node":
-      return applyDeleteNode(doc, op);
+      return applyDeleteNode(doc, op, catalog);
     case "clear":
       return applyClear(doc, op);
     case "define_subgraph":
@@ -2425,7 +2426,7 @@ function resolveVisibleInteriorHost(
 /** Resolve the definition owned by an instance route for an interior graph edit. */
 function resolveInteriorGraphScope(
   doc: Y.Doc,
-  op: Pick<ConnectOp | AddNodeOp, "path" | "node_incarnation">,
+  op: { path?: readonly NodeId[]; node_incarnation?: string },
   catalog?: WidgetCatalog,
   operation = "connect",
   rejectMissingHead = false,
@@ -3250,6 +3251,23 @@ function removeLinkInScope(scope: InteriorGraphScope, linkId: unknown): void {
   if (Array.isArray(linkOrder)) {
     mset(scope.definition, "link_order", removeInteriorLinkOrder(linkOrder, key));
   }
+  for (const side of ["inputs", "outputs"]) scrubDefinitionSlotLinkIds(scope.definition, side, key);
+}
+
+/** Drop a removed interior link from the definition's own subgraph input/output `linkIds`. */
+function scrubDefinitionSlotLinkIds(definition: Y.Map<unknown>, side: string, key: string): void {
+  const slots = definition.get(side);
+  if (!Array.isArray(slots)) return;
+  let changed = false;
+  const next = slots.map((slot: unknown) => {
+    const linkIds = (slot as { linkIds?: unknown } | null)?.linkIds;
+    if (!Array.isArray(linkIds)) return slot;
+    const kept = linkIds.filter((id: unknown) => String(id) !== key);
+    if (kept.length === linkIds.length) return slot;
+    changed = true;
+    return { ...(slot as Record<string, unknown>), linkIds: kept };
+  });
+  if (changed) mset(definition, side, next);
 }
 
 /** Scrub input/output references selected by one shared link-id predicate. */
@@ -3390,9 +3408,16 @@ function writeNodeField(target: Y.Map<unknown>, key: string, value: unknown): vo
   else mset(target, key, value);
 }
 
-function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): SuccessfulOutcome {
+/** Every `delete_node` precondition that reads only the op, checked before any document read (KA-4). */
+function requireDeleteNodeValid(op: DeleteNodeOp): Iterable<NodeId> {
   if (op.node_id === undefined) {
     throw new OpRejectedError("malformed_op", "delete_node: missing node_id");
+  }
+  if (op.path !== undefined && (!Array.isArray(op.path) || op.path.length === 0)) {
+    throw new OpRejectedError("malformed_op", "delete_node: path must be a non-empty array when present");
+  }
+  if (op.container_incarnation !== undefined && (typeof op.container_incarnation !== "string" || op.container_incarnation.length === 0)) {
+    throw new OpRejectedError("malformed_op", "delete_node: container_incarnation must be a non-empty string");
   }
   // `new Set(op.removed_links ?? [])` throws on anything non-iterable, and it
   // used to be evaluated AFTER the node had been deleted: the op reported
@@ -3407,6 +3432,17 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): SuccessfulOutcome {
       `delete_node: removed_links must be iterable, got ${typeof removedLinks}`,
     );
   }
+  return removedLinks;
+}
+
+function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp, catalog?: WidgetCatalog): SuccessfulOutcome {
+  const removedLinks = requireDeleteNodeValid(op);
+  const route: { path?: readonly NodeId[]; node_incarnation?: string } = op.path ? { path: op.path } : {};
+  if (op.container_incarnation !== undefined) route.node_incarnation = op.container_incarnation;
+  const interiorScope = op.path
+    ? resolveInteriorGraphScope(doc, route, catalog, "delete_node", true, true)
+    : null;
+  if (interiorScope) return applyInteriorDeleteNode(doc, op, interiorScope, removedLinks);
   const nodes = nodesMap(doc);
   const key = String(op.node_id);
   const stamps = stampsMap(doc);
@@ -3456,6 +3492,47 @@ function applyDeleteNode(doc: Y.Doc, op: DeleteNodeOp): SuccessfulOutcome {
   scrubDanglingLinkRefs(doc);
   if (!presenceWon && toDelete.length === 0 && !retiredStranded) return "lww-dropped";
   return nodeWasPresent || toDelete.length > 0 || retiredStranded ? "applied" : "no-op";
+}
+
+function applyInteriorDeleteNode(
+  doc: Y.Doc,
+  op: DeleteNodeOp,
+  scope: InteriorGraphScope,
+  removedLinks: Iterable<NodeId>,
+): SuccessfulOutcome {
+  const nodeKey = String(op.node_id);
+  const stamps = stampsMap(doc);
+  const targetKey = stampTargetKey(op);
+  const prior = stamps.get(targetKey) as StampKey | undefined;
+  const stamp = stampKey(op);
+  const presenceWon = prior == null || compareStampKeys(stamp, prior) > 0;
+  const nodeWasPresent = scope.nodes.has(nodeKey);
+  if (presenceWon) {
+    mset(stamps, targetKey, stamp);
+    if (nodeWasPresent) mdel(scope.nodes, nodeKey);
+    // `node_order` keeps the id: projection filters absent nodes, and pruning
+    // it would make a later winning re-add sort as a new addition only on
+    // replicas where this delete arrived first (KA-4).
+  }
+
+  const named = new Set([...removedLinks].map(String));
+  const toDelete = new Set<string>();
+  scope.links.forEach((raw: unknown, linkKey: string) => {
+    if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return;
+    const link = raw as Record<string, unknown>;
+    const id = String(link.id ?? linkKey);
+    if (named.has(id)) {
+      toDelete.add(linkKey);
+      return;
+    }
+    if (presenceWon && (String(link.origin_id) === nodeKey || String(link.target_id) === nodeKey)) {
+      toDelete.add(linkKey);
+    }
+  });
+  for (const linkKey of toDelete) removeLinkInScope(scope, linkKey);
+
+  if (!presenceWon && toDelete.size === 0) return "lww-dropped";
+  return nodeWasPresent || toDelete.size > 0 ? "applied" : "no-op";
 }
 
 function retireStrandedLinks(doc: Y.Doc, removedIds: Set<string>): boolean {
