@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowUpRight, Download } from '@lucide/vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -13,17 +14,19 @@ const {
   workflow,
   cloudHref,
   active,
+  showAction = true,
   locale = 'en'
 } = defineProps<{
   workflow: NodeGraphWorkflow
   cloudHref?: string
   active: boolean
+  showAction?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
 
 const footer = useTemplateRef<HTMLElement>('footer')
-useStickyFooterScrollPadding(footer, () => active)
+useStickyFooterScrollPadding(footer, () => active && showAction)
 
 const mediaLabels = {
   image: 'workshop.output.kindImage',
@@ -91,7 +94,12 @@ const more = computed(() => workflow.description.slice(1))
 
     <div
       ref="footer"
-      class="sticky bottom-0 z-10 mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+      :class="
+        cn(
+          'mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 p-3',
+          showAction && 'sticky bottom-0 z-10 bg-page/85 backdrop-blur-sm'
+        )
+      "
       data-testid="node-graph-footer"
     >
       <p class="px-1 text-sm text-primary-warm-gray">
@@ -106,29 +114,31 @@ const more = computed(() => workflow.description.slice(1))
           )
         }}
       </p>
-      <Button
-        v-if="cloudHref"
-        as="a"
-        :href="cloudHref"
-        target="_blank"
-        rel="noopener"
-        class="min-h-11 w-full font-bold tracking-wider"
-        >{{ t('workshop.workflow.tryCloud') }}
-        <template #append>
-          <ArrowUpRight aria-hidden="true" />
-        </template>
-      </Button>
-      <Button
-        v-else
-        as="a"
-        :href="workflow.downloadUrl"
-        download
-        class="min-h-11 w-full"
-        >{{ t('workshop.workflow.downloadShort') }}
-        <template #append>
-          <Download aria-hidden="true" />
-        </template>
-      </Button>
+      <template v-if="showAction">
+        <Button
+          v-if="cloudHref"
+          as="a"
+          :href="cloudHref"
+          target="_blank"
+          rel="noopener"
+          class="min-h-11 w-full font-bold tracking-wider"
+          >{{ t('workshop.workflow.tryCloud') }}
+          <template #append>
+            <ArrowUpRight aria-hidden="true" />
+          </template>
+        </Button>
+        <Button
+          v-else
+          as="a"
+          :href="workflow.downloadUrl"
+          download
+          class="min-h-11 w-full"
+          >{{ t('workshop.workflow.downloadShort') }}
+          <template #append>
+            <Download aria-hidden="true" />
+          </template>
+        </Button>
+      </template>
     </div>
   </section>
 </template>

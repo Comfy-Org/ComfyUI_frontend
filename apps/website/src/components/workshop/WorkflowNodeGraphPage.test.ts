@@ -10,7 +10,9 @@ const workflow = {
   inputs: [{ media: 'image', title: 'Character image' }, { media: 'video' }]
 } as const
 
-function renderPage(props: { cloudAvailable?: boolean } = {}) {
+function renderPage(
+  props: { cloudAvailable?: boolean; primaryAction?: 'panel' | 'header' } = {}
+) {
   return render(WorkflowNodeGraphPage, {
     props: { workflow, ...props },
     global: { stubs: { WorkflowGraph: true } }
@@ -133,5 +135,21 @@ describe('WorkflowNodeGraphPage', () => {
 
     for (const { question } of nodeGraphWorkflowSample.faq)
       expect(screen.getByText(question)).toBeTruthy()
+  })
+
+  it('moves the only Try in Cloud to the header when the header leads', () => {
+    renderPage({ primaryAction: 'header' })
+
+    expect(
+      within(screen.getByTestId('workflow-actions')).getByRole('link', {
+        name: /Try in Cloud/i
+      })
+    ).toBeTruthy()
+    expect(
+      within(screen.getByTestId('node-graph-footer')).queryByRole('link')
+    ).toBeNull()
+    expect(screen.getByTestId('node-graph-footer').textContent).toContain(
+      'Runs in ComfyUI'
+    )
   })
 })

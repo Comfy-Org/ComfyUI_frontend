@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 
 import WorkflowNodeGraphPage from '@/components/workshop/WorkflowNodeGraphPage.vue'
 import type { Locale } from '@/i18n/translations'
@@ -16,58 +16,19 @@ const { locale = 'en', inputs } = defineProps<{
   inputs: Readonly<Record<SampleKey, readonly NodeGraphInput[]>>
 }>()
 
-type Key = 'workflow' | 'cloud' | 'examples' | 'nodes' | 'faq'
+type Key = 'version'
 const fields: readonly PrototypeField<Key>[] = [
   {
-    key: 'workflow',
-    label: 'Workflow',
+    key: 'version',
+    label: 'Try in Cloud',
     options: [
-      { value: 'turnaround', label: 'Character turnaround' },
-      { value: 'fasth3', label: 'FastH3 image to video' }
-    ]
-  },
-  {
-    key: 'cloud',
-    label: 'Availability',
-    options: [
-      { value: 'yes', label: 'Try in Cloud' },
-      { value: 'no', label: 'Local only' }
-    ]
-  },
-  {
-    key: 'examples',
-    label: 'Sample outputs',
-    options: [
-      { value: '3', label: '3 samples' },
-      { value: '1', label: '1 sample' },
-      { value: '0', label: 'No samples' }
-    ]
-  },
-  {
-    key: 'nodes',
-    label: 'Custom nodes',
-    options: [
-      { value: 'yes', label: 'Needs custom nodes' },
-      { value: 'no', label: 'Core nodes only' }
-    ]
-  },
-  {
-    key: 'faq',
-    label: 'FAQ',
-    options: [
-      { value: 'yes', label: 'FAQ' },
-      { value: 'no', label: 'No FAQ' }
+      { value: 'a', label: 'A: secondary at top, yellow in About' },
+      { value: 'b', label: 'B: yellow at top only' }
     ]
   }
 ]
-const defaults: Record<Key, string> = {
-  workflow: 'turnaround',
-  cloud: 'yes',
-  examples: '3',
-  nodes: 'yes',
-  faq: 'yes'
-}
-const STORAGE_KEY = 'hub-preview:node-graph'
+const defaults: Record<Key, string> = { version: 'a' }
+const STORAGE_KEY = 'hub-preview:node-graph-cta'
 
 const state = ref<Record<Key, string>>({ ...defaults })
 
@@ -99,31 +60,23 @@ onMounted(() => {
 
 watch(state, (value) => {
   const url = new URL(window.location.href)
+  url.search = ''
   for (const field of fields) url.searchParams.set(field.key, value[field.key])
   history.replaceState(history.state, '', url)
   writeSaved(value)
 })
 
-const workflow = computed(() => {
-  const key: SampleKey =
-    state.value.workflow === 'fasth3' ? 'fasth3' : 'turnaround'
-  const sample = nodeGraphSamples[key]
-  return {
-    ...sample,
-    inputs: inputs[key],
-    examples: sample.examples.slice(0, Number(state.value.examples)),
-    customNodes: state.value.nodes === 'yes' ? sample.customNodes : [],
-    faq: state.value.faq === 'yes' ? sample.faq : []
-  }
-})
+const workflow = {
+  ...nodeGraphSamples.turnaround,
+  inputs: inputs.turnaround
+}
 </script>
 
 <template>
   <WorkflowNodeGraphPage
-    :key="workflow.slug"
     :workflow="workflow"
     :locale="locale"
-    :cloud-available="state.cloud === 'yes'"
+    :primary-action="state.version === 'b' ? 'header' : 'panel'"
   />
   <PrototypeSwitcher v-model="state" :fields="fields" />
 </template>

@@ -20,12 +20,15 @@ import WorkflowNodeGraphOverview from './WorkflowNodeGraphOverview.vue'
 const {
   workflow,
   locale = 'en',
-  cloudAvailable = true
+  cloudAvailable = true,
+  primaryAction = 'panel'
 } = defineProps<{
   workflow: NodeGraphWorkflow
   locale?: Locale
   /** False when a licence keeps the workflow off Comfy Cloud. */
   cloudAvailable?: boolean
+  /** Where the page's one primary button sits: the About panel or the header. */
+  primaryAction?: 'panel' | 'header'
 }>()
 const { t } = translationsFor(locale)
 const routes = getRoutes()
@@ -98,7 +101,11 @@ const pillClass =
           as="a"
           :href="workflow.downloadUrl"
           download
-          variant="secondaryOutline"
+          :variant="
+            primaryAction === 'header' && !cloudHref
+              ? 'default'
+              : 'secondaryOutline'
+          "
           class="h-auto min-h-11 max-w-full whitespace-normal"
           :aria-label="t('workshop.workflow.download')"
           data-testid="node-graph-download"
@@ -110,7 +117,7 @@ const pillClass =
           :href="cloudHref"
           target="_blank"
           rel="noopener"
-          variant="ghost"
+          :variant="primaryAction === 'header' ? 'default' : 'ghost'"
           class="h-auto min-h-11 max-w-full font-bold tracking-wider whitespace-normal uppercase"
           data-testid="node-graph-try-cloud"
           >{{ t('workshop.workflow.tryCloud') }}
@@ -151,6 +158,7 @@ const pillClass =
       :workflow="workflow"
       :cloud-href="cloudHref"
       :active="section === 'overview'"
+      :show-action="primaryAction === 'panel'"
       :locale="locale"
     />
 

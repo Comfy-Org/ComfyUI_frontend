@@ -13,11 +13,13 @@ const {
   workflow,
   cloudHref,
   active,
+  showAction = true,
   locale = 'en'
 } = defineProps<{
   workflow: NodeGraphWorkflow
   cloudHref?: string
   active: boolean
+  showAction?: boolean
   locale?: Locale
 }>()
 const { t } = translationsFor(locale)
@@ -41,6 +43,7 @@ function openExample(id: string) {
         :workflow="workflow"
         :cloud-href="cloudHref"
         :active="active"
+        :show-action="showAction"
         :locale="locale"
         class="lg:col-span-5"
       />
