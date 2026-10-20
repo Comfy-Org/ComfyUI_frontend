@@ -4,14 +4,14 @@ import type {
   Reroute
 } from '@/lib/litegraph/src/types/entityRegistry'
 import { st, t } from '@/i18n'
-import type { IContextMenuValue } from '../types/contextMenu'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
-import { Subgraph } from '../subgraph/Subgraph'
-import type { CanvasPointerEvent } from '../types/events'
+import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 
 export interface LinkMutationHost {
   emitBeforeChange(): void

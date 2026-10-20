@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import type { SecretMetadata } from '../types'
+import type { SecretMetadata } from '@/platform/secrets/types'
 import SecretListItem from './SecretListItem.vue'
 
 const sampleSecret: SecretMetadata = {

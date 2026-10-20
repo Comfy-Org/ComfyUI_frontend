@@ -34,14 +34,14 @@ import {
   updatePassword
 } from 'firebase/auth'
 
-import type { AccountIdentity } from '../core/identity.js'
-import { brandIdentity } from '../core/identity.js'
-import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
-import type { CloudFeatures } from './configSource.js'
-import { fetchCloudFeatures } from './configSource.js'
-import { runWatchedPopup, watchedPopupRedirectResolver } from './popupWatch.js'
+import type { AccountIdentity } from '#/core/identity'
+import { brandIdentity } from '#/core/identity'
+import { isFirebaseAuthErrorLike } from '#/firebaseAuthError'
+import type { CloudFeatures } from './configSource'
+import { fetchCloudFeatures } from './configSource'
+import { runWatchedPopup, watchedPopupRedirectResolver } from './popupWatch'
 
-export { watchedPopupRedirectResolver } from './popupWatch.js'
+export { watchedPopupRedirectResolver } from './popupWatch'
 
 export interface FirebaseIdentityAppConfig {
   readonly options: FirebaseOptions | (() => FirebaseOptions)

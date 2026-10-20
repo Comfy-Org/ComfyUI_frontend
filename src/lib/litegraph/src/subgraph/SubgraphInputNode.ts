@@ -8,7 +8,10 @@ import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 
 import type { NodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import { linkIdReservations, mintLinkId } from '../idAllocation'
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
 import type { RerouteId } from '@/types/rerouteId'
 
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'

@@ -482,13 +482,7 @@
       }
     },
     {
-      "files": [
-        "packages/account-core/**",
-        "packages/billing-contract/**",
-        "packages/design-system/src/css/**",
-        "packages/ingest-types/**",
-        "tools/devtools/web/**"
-      ],
+      "files": ["packages/design-system/src/css/**", "tools/devtools/web/**"],
       "rules": {
         "comfy/no-js-extension-imports": "off"
       }
@@ -599,6 +593,16 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "files": ["src/**", "packages/*/src/**"],
+      "excludeFiles": [
+        "src/config/viteSeo.test.ts",
+        "src/stores/nodeDefStore.frequency.test.ts"
+      ],
+      "rules": {
+        "import/no-relative-parent-imports": "error"
       }
     },
     {

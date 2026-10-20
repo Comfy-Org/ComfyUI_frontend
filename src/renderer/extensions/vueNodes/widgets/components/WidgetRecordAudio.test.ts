@@ -25,17 +25,26 @@ const appMock = vi.hoisted(() => ({
 }))
 const isDOMWidgetMock = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock(import('../composables/audio/useAudioRecorder'), () => ({
-  useAudioRecorder: useAudioRecorderMock
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'),
+  () => ({
+    useAudioRecorder: useAudioRecorderMock
+  })
+)
 
-vi.mock(import('../composables/audio/useAudioPlayback'), () => ({
-  useAudioPlayback: useAudioPlaybackMock
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'),
+  () => ({
+    useAudioPlayback: useAudioPlaybackMock
+  })
+)
 
-vi.mock(import('../composables/audio/useAudioWaveform'), () => ({
-  useAudioWaveform: useAudioWaveformMock
-}))
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'),
+  () => ({
+    useAudioWaveform: useAudioWaveformMock
+  })
+)
 
 vi.mock<unknown>(import('@/scripts/app'), () => appMock)
 
@@ -43,9 +52,9 @@ vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
-import type { useAudioPlayback } from '../composables/audio/useAudioPlayback'
-import { useAudioRecorder } from '../composables/audio/useAudioRecorder'
-import type { useAudioWaveform } from '../composables/audio/useAudioWaveform'
+import type { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
+import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
+import type { useAudioWaveform } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
 
 type RecorderOptions = NonNullable<Parameters<typeof useAudioRecorder>[0]>

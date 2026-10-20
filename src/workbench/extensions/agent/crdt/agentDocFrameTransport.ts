@@ -1,4 +1,4 @@
-import type { AgentEventSocket } from '../services/agent/agentEventSource'
+import type { AgentEventSocket } from '@/workbench/extensions/agent/services/agent/agentEventSource'
 import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
 import type { DocFrameTransport } from './docFrameClient'
 

@@ -6,6 +6,9 @@
   "type": "module",
   "main": "./src/index.ts",
   "types": "./dist/index.d.ts",
+  "imports": {
+    "#/*": "./src/*.ts"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
