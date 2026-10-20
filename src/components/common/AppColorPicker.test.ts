@@ -30,7 +30,7 @@ it('translates the real picker and synchronizes its color model', async () => {
 
   await user.click(screen.getByRole('button', { name: 'Color' }))
   expect(screen.getByRole('slider', { name: 'Hue' })).toBeVisible()
-  const input = screen.getByRole('textbox', { name: en.color.hex })
+  const input = screen.getByRole('textbox', { name: 'Hex' })
   await user.clear(input)
   await user.type(input, '336699')
   await user.tab()
