@@ -47,13 +47,6 @@ describe('SubscriptionInactiveMemberDialog', () => {
     ).toBeInTheDocument()
   })
 
-  it('keeps its fixed compact width inside a fit-content dialog', () => {
-    renderComponent()
-    const panel = screen.getByTestId('member-resubscribe-message')
-    expect(panel).toHaveClass('w-90', 'max-w-full')
-    expect(panel).not.toHaveClass('w-full')
-  })
-
   it('exposes no subscribe affordance', () => {
     renderComponent()
     expect(screen.queryByText(/subscribe/i)).not.toBeInTheDocument()

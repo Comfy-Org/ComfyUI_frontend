@@ -1,10 +1,5 @@
 <template>
-  <AppDialogPanel
-    unpadded
-    class="w-lg max-w-full"
-    data-testid="manager-survey-dialog"
-    @close="onClose"
-  >
+  <AppDialogPanel unpadded class="w-lg max-w-full" @close="onClose">
     <template #title>
       <i class="icon-[comfy--extensions-blocks]" />
       {{ $t('manager.survey.title') }}

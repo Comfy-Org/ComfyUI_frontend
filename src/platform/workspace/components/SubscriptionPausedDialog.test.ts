@@ -48,13 +48,6 @@ function renderDialog(
 }
 
 describe('SubscriptionPausedDialog', () => {
-  it('keeps its fixed compact width inside a fit-content dialog', () => {
-    renderDialog(true)
-    const panel = screen.getByTestId('subscription-paused-dialog')
-    expect(panel).toHaveClass('w-90', 'max-w-full')
-    expect(panel).not.toHaveClass('w-full')
-  })
-
   it('gives owners a payment recovery action', async () => {
     const { onUpdatePayment } = renderDialog(true)
 

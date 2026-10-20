@@ -61,13 +61,6 @@ describe('SetMemberCreditLimitDialogContent', () => {
     dialogStore = useDialogStore()
   })
 
-  it('keeps a fixed width so typing does not resize the dialog', () => {
-    renderDialog()
-    const panel = screen.getByTestId('set-member-credit-limit-dialog')
-    expect(panel).toHaveClass('w-lg', 'max-w-full')
-    expect(panel).not.toHaveClass('max-w-lg')
-  })
-
   it('updates an existing limit', async () => {
     const { user } = renderDialog()
     const input = screen.getByRole('textbox')

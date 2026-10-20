@@ -18,14 +18,6 @@ function renderPanel() {
 }
 
 describe('ExtensionPanel', () => {
-  it('names its search box after extensions', () => {
-    renderPanel()
-
-    expect(
-      screen.getByRole('combobox', { name: 'Search Extensions...' })
-    ).toBeInTheDocument()
-  })
-
   it('preserves the selected filter when clicked again', async () => {
     const user = userEvent.setup()
     renderPanel()
@@ -102,7 +94,9 @@ describe('ExtensionPanel', () => {
     registerExtensions('Alpha', 'Zebra')
     const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
     renderPanel()
-    const search = screen.getByRole('combobox')
+    const search = screen.getByRole('combobox', {
+      name: 'Search Extensions...'
+    })
     const selectAll = () => screen.getByRole('checkbox', { name: 'Select All' })
 
     await user.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))

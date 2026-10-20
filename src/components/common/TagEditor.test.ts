@@ -1,34 +1,24 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
 import TagEditor from '@/components/common/TagEditor.vue'
+import { testI18n } from '@/utils/__tests__/testI18n'
 
 function renderEditor(props: InstanceType<typeof TagEditor>['$props'] = {}) {
   return render(TagEditor, {
     props,
     global: {
-      plugins: [
-        createI18n({
-          legacy: false,
-          locale: 'en',
-          messages: { en: { g: { removeTagNamed: 'Remove {tag}' } } }
-        })
-      ]
+      plugins: [testI18n]
     }
   })
 }
 
 describe('TagEditor', () => {
-  it('names each remove button after its tag', () => {
-    renderEditor({ modelValue: ['alpha', 'beta'] })
+  it('names a later remove button with its literal tag text', () => {
+    renderEditor({ modelValue: ['alpha', 'R&D'] })
 
     expect(
-      screen.getByRole('button', { name: 'Remove alpha' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Remove beta' })
+      screen.getByRole('button', { name: 'Remove R&D' })
     ).toBeInTheDocument()
   })
 

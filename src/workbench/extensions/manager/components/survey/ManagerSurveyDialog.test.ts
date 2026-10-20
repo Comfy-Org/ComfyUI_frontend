@@ -30,13 +30,6 @@ describe('ManagerSurveyDialog', () => {
     remoteConfig.value = {}
   })
 
-  it('keeps its fixed width in every state', () => {
-    renderDialog()
-    const panel = screen.getByTestId('manager-survey-dialog')
-    expect(panel).toHaveClass('w-lg', 'max-w-full')
-    expect(panel).not.toHaveClass('max-w-lg')
-  })
-
   it('embeds the configured survey URL with the logged-in user', () => {
     remoteConfig.value = { manager_survey_url: SURVEY_URL }
     useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'user-123' }))

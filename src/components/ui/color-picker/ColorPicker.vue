@@ -64,13 +64,6 @@ const previewColor = computed(() => {
 
 const displayHex = computed(() => rgbToHex(baseRgb.value).toLowerCase())
 
-const triggerLabel = computed(() => {
-  const { r, g, b } = baseRgb.value
-  const value =
-    displayMode.value === 'hex' ? displayHex.value : `${r} ${g} ${b}`
-  return alpha ? `${value} ${hsva.value.a}%` : value
-})
-
 const isOpen = ref(false)
 const contentStyle = useModalLiftedZIndex(isOpen)
 </script>
@@ -82,7 +75,7 @@ const contentStyle = useModalLiftedZIndex(isOpen)
         <button
           type="button"
           :disabled="$props.disabled"
-          :aria-label="accessibleLabel ?? triggerLabel"
+          :aria-label="accessibleLabel"
           :class="
             cn(
               'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-secondary pr-2 outline-none hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50',

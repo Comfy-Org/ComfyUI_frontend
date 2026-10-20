@@ -2,7 +2,6 @@
   <AppDialogPanel
     size="compact"
     class="w-90"
-    data-testid="queue-clear-history-dialog"
     body-class="flex flex-col gap-4 text-[14px] text-muted-foreground"
     @close="onCancel"
   >
