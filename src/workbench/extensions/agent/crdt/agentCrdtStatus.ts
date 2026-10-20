@@ -54,6 +54,7 @@ export type AgentCrdtTerminalState =
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
+  canvasMayBeStale: boolean
   workflowId: string | null
   terminal: AgentCrdtTerminalState
   /**
