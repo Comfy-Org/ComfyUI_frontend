@@ -21,7 +21,7 @@
         </Button>
         <Button
           v-if="banner.kind === 'failed' && canTopUp"
-          variant="secondary"
+          :variant="addCreditsEmphasis(availableCents, banner)"
           size="lg"
           @click="emit('addCredits')"
         >
@@ -33,21 +33,32 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
+import { addCreditsEmphasis } from '@/platform/workspace/components/dialogs/settings/billing/topupCheckoutBanner'
 import type { TopupCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/topupCheckoutBanner'
 import { useTopupCheckoutBanner } from '@/platform/workspace/components/dialogs/settings/billing/useTopupCheckoutBanner'
 
-const { canTopUp } = defineProps<{ canTopUp: boolean }>()
-const emit = defineEmits<{ addCredits: [] }>()
+const { canTopUp, availableCents } = defineProps<{
+  canTopUp: boolean
+  availableCents: number | null
+}>()
+const emit = defineEmits<{
+  addCredits: []
+  emphasis: ['secondary' | 'inverted']
+}>()
 
 const prefix = 'workspacePanel.billingTab.topupCheckout'
 
 const { t, locale } = useI18n()
 const { banner, dismiss } = useTopupCheckoutBanner()
+const emphasis = computed(() =>
+  addCreditsEmphasis(availableCents, banner.value)
+)
+watch(emphasis, (variant) => emit('emphasis', variant), { immediate: true })
 
 function usd(cents: number) {
   return formatUsdFromCents({
