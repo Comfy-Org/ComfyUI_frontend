@@ -54,7 +54,6 @@
       >
         <CurrentUserPopoverWorkspace
           v-if="showWorkspacePopover"
-          ref="workspacePopoverContent"
           :account-actions-only="initState !== 'ready'"
           @close="closePopover"
         />
@@ -70,7 +69,7 @@ import { PopoverTrigger } from 'reka-ui'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { unrefElement } from '@vueuse/core'
-import { computed, defineAsyncComponent, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
@@ -125,19 +124,8 @@ const workspaceName = computed(() => {
 const open = ref(false)
 const buttonRef = ref<InstanceType<typeof Button> | null>(null)
 usePopoverViewportDismiss(open, () => unrefElement(buttonRef))
-const workspacePopoverContent = ref<{
-  refreshBalance: () => void
-} | null>(null)
 
 function closePopover() {
   open.value = false
 }
-
-watch(
-  open,
-  (value) => {
-    if (value) workspacePopoverContent.value?.refreshBalance()
-  },
-  { flush: 'sync' }
-)
 </script>
