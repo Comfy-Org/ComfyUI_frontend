@@ -1045,6 +1045,7 @@ export function useSubscriptionCheckout(
       if (submittingJourney) {
         trackCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
       }
+      const stopReleasing = releaseSubmitOnceParked(mutationToken)
       const response = await subscribe(planSlug, {
         returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
         cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`,
@@ -1053,7 +1054,7 @@ export function useSubscriptionCheckout(
           ? previewData.value.proration_at
           : undefined,
         attemptStartedAt
-      })
+      }).finally(stopReleasing)
 
       if (response) {
         linkSubmittingJourneyToOperation(
@@ -1447,6 +1448,27 @@ export function useSubscriptionCheckout(
     }
   }
 
+  // The SDK rail's subscribe resolves only once the operation settles, which a
+  // checkout parked on the customer does not do until they act on it.
+  function releaseSubmitOnceParked(mutationToken: number): () => void {
+    if (!subscriptionRail) return () => {}
+    const before = subscriptionRail.subscriptionActionOperation
+    return watch(
+      () => subscriptionRail.subscriptionActionOperation,
+      (operation) => {
+        if (
+          !operation ||
+          (operation.opId === before?.opId &&
+            operation.actionUrl === before.actionUrl)
+        ) {
+          return
+        }
+        isSubscribing.value = false
+        finishCheckoutMutation(mutationToken)
+      }
+    )
+  }
+
   async function handleTeamSubscription(confirmReactivation = false) {
     if (
       isLoadingPreview.value ||
@@ -1495,6 +1517,7 @@ export function useSubscriptionCheckout(
       if (submittingJourney) {
         trackCheckoutJourneyPhase(submittingJourney, { phase: 'submitted' })
       }
+      const stopReleasing = releaseSubmitOnceParked(mutationToken)
       const response = await subscribe(planSlug, {
         teamCreditStopId: stop.id,
         billingCycle,
@@ -1505,7 +1528,7 @@ export function useSubscriptionCheckout(
           ? previewData.value.proration_at
           : undefined,
         attemptStartedAt
-      })
+      }).finally(stopReleasing)
 
       if (response) {
         linkSubmittingJourneyToOperation(
