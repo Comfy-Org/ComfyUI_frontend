@@ -407,7 +407,7 @@ export class ComfyPage {
     await this.page.waitForFunction(() => document.fonts.ready)
     await this.waitForAppReady()
     if ((await this.settings.getSetting('Comfy.UseNewMenu')) === 'Disabled')
-      await this.closeMenu()
+      await this.startInFocusMode()
   }
 
   /**
@@ -526,7 +526,7 @@ export class ComfyPage {
     })
   }
 
-  async closeMenu() {
+  private async startInFocusMode() {
     await this.page.locator('button.comfy-close-menu-btn').click()
     await this.nextFrame()
   }
