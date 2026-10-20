@@ -155,6 +155,11 @@ describe('WorkflowTab - workflow status indicator', () => {
     expect(trigger).toHaveFocus()
 
     await user.unhover(tab)
+    await user.hover(screen.getByRole('dialog'))
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.unhover(screen.getByRole('dialog'))
     await vi.advanceTimersByTimeAsync(99)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     await vi.advanceTimersByTimeAsync(1)
