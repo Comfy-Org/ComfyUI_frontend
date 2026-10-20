@@ -29,10 +29,10 @@ export type SerializationNode = Parameters<
 export type CurveValue = ICurveWidget['value']
 `
 
-function format(diagnostics: readonly ts.Diagnostic[], root: string) {
+function format(diagnostics: readonly ts.Diagnostic[]) {
   return ts.formatDiagnostics(diagnostics, {
     getCanonicalFileName: (fileName) => fileName,
-    getCurrentDirectory: () => root,
+    getCurrentDirectory: () => process.cwd(),
     getNewLine: () => '\n'
   })
 }
@@ -44,7 +44,7 @@ try {
   const program = ts.createProgram([consumerFile], {
     strict: true,
     noEmit: true,
-    skipLibCheck: true,
+    skipLibCheck: false,
     module: ts.ModuleKind.ESNext,
     moduleResolution: ts.ModuleResolutionKind.Bundler,
     target: ts.ScriptTarget.ESNext,
@@ -60,9 +60,9 @@ try {
       (alias) => checker.getTypeAtLocation(alias.name).flags & ts.TypeFlags.Any
     )
     .map((alias) => alias.name.text)
-  const diagnostics = ts.getPreEmitDiagnostics(program, source)
+  const diagnostics = ts.getPreEmitDiagnostics(program)
 
-  if (diagnostics.length) process.stderr.write(format(diagnostics, root))
+  if (diagnostics.length) process.stderr.write(format(diagnostics))
   if (unresolved.length) {
     process.stderr.write(
       `Published types resolve to any: ${unresolved.join(', ')}\n`
