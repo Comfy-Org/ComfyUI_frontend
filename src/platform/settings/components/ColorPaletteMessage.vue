@@ -8,7 +8,7 @@
         {{ $t('settingsCategories.ColorPalette') }}
       </div>
       <div class="actions">
-        <SingleSelect
+        <AppSingleSelect
           v-model="activePaletteId"
           class="w-44"
           :options="paletteOptions"
@@ -49,7 +49,7 @@ import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

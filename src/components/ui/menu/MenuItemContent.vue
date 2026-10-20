@@ -61,12 +61,6 @@ const { hasSubmenu, item } = defineProps<{
     "
   />
   <span
-    v-if="item.new && !toValue(item.checked) && !hasSubmenu"
-    class="shrink-0 rounded-full bg-primary px-1 text-2xs leading-none font-bold"
-  >
-    {{ $t('contextMenu.new') }}
-  </span>
-  <span
     v-if="!hasSubmenu && toValue(item.shortcut)"
     class="ml-auto rounded-sm border bg-secondary p-1 text-xs text-nowrap text-muted-foreground"
   >
