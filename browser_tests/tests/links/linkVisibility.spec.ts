@@ -182,14 +182,14 @@ test.describe(
       comfyPage,
       linkVisibility
     }) => {
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-stack-collapsed.png'
-      )
+      const region = await screenshotRegion(comfyPage.page, [
+        await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+        ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+      ])
+      await region.expectScreenshot('link-stack-collapsed.png')
 
       await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
-      await expect(comfyPage.canvas).toHaveScreenshot(
-        'link-stack-hover-reveals-all.png'
-      )
+      await region.expectScreenshot('link-stack-hover-reveals-all.png')
     })
 
     test('expands on click and hovering one label reveals only that link', async ({
@@ -199,7 +199,12 @@ test.describe(
       await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
       await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 1)
 
-      await expect(comfyPage.canvas).toHaveScreenshot(
+      await expectRegionScreenshot(
+        comfyPage.page,
+        [
+          await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+          ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+        ],
         'link-stack-expanded-hover-one.png'
       )
     })
