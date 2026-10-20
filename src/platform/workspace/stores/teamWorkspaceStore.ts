@@ -1,4 +1,3 @@
-import { zWorkspaceWithRole } from '@comfyorg/ingest-types/zod'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
@@ -161,21 +160,6 @@ function setLastWorkspaceId(workspaceId: string): void {
     localStorage.setItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID, workspaceId)
   } catch {
     console.warn('Failed to persist last workspace ID to localStorage')
-  }
-}
-
-function getTabWorkspaceId(): string | null {
-  try {
-    const stored = sessionStorage.getItem(
-      WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
-    )
-    if (!stored) return null
-    const parsed = zWorkspaceWithRole
-      .pick({ id: true })
-      .safeParse(JSON.parse(stored))
-    return parsed.success ? parsed.data.id : null
-  } catch {
-    return null
   }
 }
 
@@ -405,7 +389,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const workspaceAuthStore = useWorkspaceAuthStore()
     const isApiKeySession = useCurrentUserAccess().isApiKeyLogin.value
     const switchTargetId = takeSwitchTargetId()
-    const tabWorkspaceId = getTabWorkspaceId()
+    const tabWorkspaceId = workspaceAuthStore.bootTabWorkspaceId
 
     let sessionRevokedRetries = 0
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {

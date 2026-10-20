@@ -171,6 +171,7 @@ beforeEach(() => {
   useCurrentUser().userEmail = computed(() => null)
 
   Object.assign(useWorkspaceAuthStore(), {
+    bootTabWorkspaceId: null,
     currentWorkspace: null,
     workspaceToken: null,
     isLoading: false,
@@ -373,17 +374,8 @@ describe('useTeamWorkspaceStore', () => {
             switchTarget
           )
         }
-        if (tabWorkspace) {
-          sessionStorage.setItem(
-            WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
-            JSON.stringify(tabWorkspace)
-          )
-        }
-        vi.mocked(
-          useWorkspaceAuthStore().initializeFromSession
-        ).mockImplementation(() => {
-          sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
-          return false
+        Object.assign(useWorkspaceAuthStore(), {
+          bootTabWorkspaceId: tabWorkspace?.id ?? null
         })
         mockWorkspaceApi.list.mockResolvedValue({
           workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
@@ -399,15 +391,8 @@ describe('useTeamWorkspaceStore', () => {
 
     it("keeps this tab's workspace when a transient failure retries initialization", async () => {
       mockLocalStorage.getItem.mockReturnValue(mockPersonalWorkspace.id)
-      sessionStorage.setItem(
-        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
-        JSON.stringify(mockTeamWorkspace)
-      )
-      vi.mocked(
-        useWorkspaceAuthStore().initializeFromSession
-      ).mockImplementation(() => {
-        sessionStorage.removeItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
-        return false
+      Object.assign(useWorkspaceAuthStore(), {
+        bootTabWorkspaceId: mockTeamWorkspace.id
       })
       mockWorkspaceApi.list
         .mockRejectedValueOnce(new Error('Network error'))
