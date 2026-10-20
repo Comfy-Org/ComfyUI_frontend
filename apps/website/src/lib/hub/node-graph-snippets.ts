@@ -8,6 +8,8 @@ function curlSnippet(): string {
   return [
     '# Bash or zsh. Set COMFY_API_KEY first: it stays out of the command line,',
     '# and partner nodes read it from extra_data.',
+    ': "${COMFY_API_KEY:?Set COMFY_API_KEY}"',
+    'export COMFY_API_KEY',
     `jq '{prompt: ., extra_data: {api_key_comfy_org: env.COMFY_API_KEY}}' ${API_GRAPH_FILE} |`,
     `  curl --fail-with-body --request POST '${WORKSHOP_CLOUD_BASE_URL}/api/prompt' \\`,
     `    --header @<(printf 'X-API-Key: %s\\n' "$COMFY_API_KEY") \\`,
