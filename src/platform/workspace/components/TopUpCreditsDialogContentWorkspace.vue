@@ -168,6 +168,13 @@
           ${{ amount }}
         </Button>
       </div>
+      <p
+        v-if="planCreditHint"
+        class="m-0 pt-3 text-sm text-muted-foreground"
+        data-testid="top-up-plan-credit-hint"
+      >
+        {{ $t(`workspacePanel.billingTab.credits.${planCreditHint}`) }}
+      </p>
     </div>
     <!-- Amount (USD) / Credits -->
     <div v-if="step === 'amount'" class="flex gap-2 px-8 pt-8">
@@ -435,6 +442,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
+import { topUpPlanCreditHint } from '@/platform/workspace/components/topUpPlanCreditHint'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -481,9 +489,16 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { balance, fetchBalance, fetchStatus } = useBillingContext()
+const { balance, fetchBalance, fetchStatus, subscriptionStatus } =
+  useBillingContext()
 const billingCapabilities = useBillingCapabilities()
 const { canTopUp } = billingCapabilities
+const planCreditHint = computed(() =>
+  topUpPlanCreditHint({
+    isCloud,
+    subscriptionStatus: subscriptionStatus.value
+  })
+)
 
 const workspaceStore = useTeamWorkspaceStore()
 
