@@ -167,6 +167,26 @@ describe('shiftDown', () => {
     }
   )
 
+  it('clears Shift when a child stops a pointer move that reports it released', async () => {
+    const store = await workspaceAfterEffects()
+    dispatchShiftKey('keydown', true)
+    expect(store.shiftDown).toBe(true)
+
+    const child = document.createElement('div')
+    document.body.append(child)
+    child.addEventListener('pointermove', (event) => {
+      event.stopPropagation()
+    })
+    try {
+      child.dispatchEvent(
+        new PointerEvent('pointermove', { bubbles: true, shiftKey: false })
+      )
+      expect(store.shiftDown).toBe(false)
+    } finally {
+      child.remove()
+    }
+  })
+
   it.for(pointerEventTypes)(
     'keeps Shift pressed when %s reports shiftKey true',
     async (type) => {
