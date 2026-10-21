@@ -410,6 +410,14 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
   })
 
+  it('still stops on Escape with a draft while the turn waits on a card', async () => {
+    const { emitted } = mount({ streaming: true, askOpen: true })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make it red instead')
+    await userEvent.keyboard('{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
   it('keeps Stop available while a workflow reference is saving', async () => {
     const { emitted } = mount({ streaming: true, workflowSelecting: true })
     const stop = screen.getByRole('button', { name: 'Stop' })

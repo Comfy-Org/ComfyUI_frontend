@@ -1273,8 +1273,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
-      // The host resolves an open card while it takes this message, and its
-      // resolution can arrive before the reply, so grey the card out first.
       conversationStore.dismissOpenAsks()
       const ack = await postTurn(
         threadAtSend,

@@ -437,7 +437,6 @@ export const useAgentConversationStore = defineStore(
       setAskAnswering(askId, false)
     }
 
-    /** The user sent a message instead of answering: every open card greys out. */
     function dismissOpenAsks(): void {
       messages.value = messages.value.map((message) => {
         const parts = dismissAskParts(message.parts)
@@ -1259,7 +1258,6 @@ export const useAgentConversationStore = defineStore(
 
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
-    /** The running turn is waiting on a card, so a new message may dismiss it. */
     const activeAskOpen = computed(
       () => activeMessage.value?.parts.some(isPendingAskPart) ?? false
     )

@@ -97,8 +97,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const skills = useSkillPacksStore()
 
-// While the turn waits on a card, a typed message dismisses the card and is
-// sent; with nothing typed the button stays Stop.
+const turnRunning = computed(() => streaming || submitting)
 const running = computed(
   () => submitting || (streaming && !(askOpen && composer.canSend.value))
 )
@@ -311,7 +310,7 @@ function requestKeyboardDescription(event: KeyboardEvent): void {
 }
 
 function stopRunOnEscape(event: KeyboardEvent): void {
-  if (event.key !== 'Escape' || !running.value) return
+  if (event.key !== 'Escape' || !turnRunning.value) return
   if (event.isComposing || event.repeat) return
   event.preventDefault()
   event.stopPropagation()
@@ -465,7 +464,7 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
 // full-screen overlay pre-empt everything else. This handler only ever runs
 // when none of those more specific handlers claimed the event first.
 function handleEscapeOverride(event: KeyboardEvent): boolean {
-  if (event.key !== 'Escape' || !running.value || event.isComposing)
+  if (event.key !== 'Escape' || !turnRunning.value || event.isComposing)
     return false
   if (event.defaultPrevented) return false
 
