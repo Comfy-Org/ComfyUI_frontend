@@ -997,7 +997,6 @@
     "noGeneratedFiles": "No generated files found",
     "generatedAssetsHeader": "Generated assets",
     "importedAssetsHeader": "Imported assets",
-    "activeJobStatus": "Active job: {status}",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -3667,22 +3666,6 @@
       },
       "tryAgain": "Try again"
     },
-    "activity": {
-      "columns": {
-        "creditsUsed": "Credits",
-        "date": "Date",
-        "eventDetails": "Event details",
-        "eventType": "Event type",
-        "user": "User"
-      },
-      "empty": "No activity yet.",
-      "fullActivity": "Full activity",
-      "hoverCard": {
-        "lastActivity": "Last activity",
-        "partnerNodeUsed": "Partner node used",
-        "totalCreditsUsed": "Total credits used"
-      }
-    },
     "billingStatus": {
       "outOfCredits": {
         "title": "Out of credits",
@@ -3753,12 +3736,6 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "activity": {
-        "daysAgo": "{count} day ago | {count} days ago",
-        "hoursAgo": "{n} hr ago",
-        "justNow": "just now",
-        "minutesAgo": "{n} min ago"
-      },
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
