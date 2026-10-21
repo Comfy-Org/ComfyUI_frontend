@@ -1,13 +1,16 @@
 import { expect } from '@playwright/test'
 
 import { insertOverlapTest as test } from '@e2e/fixtures/agentInsertWorkflowOverlapFixture'
-import { PM_2232_SOURCE } from '@e2e/fixtures/data/agentInsertWorkflowOverlap'
 
 test.describe(
   'Agent insert_workflow into a populated tab (PM-2232)',
   {
     tag: ['@cloud', '@agent', '@canvas', '@vue-nodes'],
-    annotation: { type: 'issue', description: PM_2232_SOURCE }
+    annotation: {
+      type: 'issue',
+      description:
+        'https://linear.app/comfyorg/issue/PM-2232/workflow-inserted-into-an-existing-tab-lands-on-top-of-the-existing'
+    }
   },
   () => {
     test.use({ connectWebSocketToServer: false })

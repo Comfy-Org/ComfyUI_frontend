@@ -46,9 +46,8 @@ const CATALOG: WidgetCatalog = {
   types: { TestSource: { widget_order: ['steps', 'seed'] } }
 }
 
-type FrameClassification = Pick<ClassifiedDocUpdate, 'actor'> & {
-  catchUp?: boolean
-}
+type FrameClassification = Pick<ClassifiedDocUpdate, 'actor'> &
+  Partial<Pick<ClassifiedDocUpdate, 'catchUp'>>
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
   return {
@@ -179,7 +178,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     },
     {
       name: 'live human frame',
-      actor: 'user:test',
+      actor: 'human:test:tab-1',
       catchUp: false,
       expected: [20, 30]
     },

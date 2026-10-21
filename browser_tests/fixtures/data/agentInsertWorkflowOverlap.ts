@@ -1,7 +1,5 @@
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
 
-export const PM_2232_SOURCE =
-  'https://linear.app/comfyorg/issue/PM-2232/workflow-inserted-into-an-existing-tab-lands-on-top-of-the-existing'
 export const WORKFLOW_ID = 'b3e7d9c1-0000-4000-8000-000000000020'
 export const MESSAGE_ID = 'b3e7d9c1-0000-4000-8000-000000000021'
 export const THREAD_ID = 'b3e7d9c1-0000-4000-8000-000000000022'
