@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
-import type { ToolPart } from '../../../services/agent/agentMessageParts'
+import type { ToolPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import ActivityTrace from './ActivityTrace.vue'
 import WorkSummary from './WorkSummary.vue'

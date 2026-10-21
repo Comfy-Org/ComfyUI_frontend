@@ -23,12 +23,24 @@ export function isTopUpDeniedPastDue(denial: string | undefined): boolean {
 /** Opens the Update payment dialog, offering the portal only with `can_manage_billing`. */
 export function usePaymentRecoveryDialog() {
   const { manageSubscription } = useBillingContext()
-  const { canManageBilling } = useBillingCapabilities()
+  const {
+    canManageBilling,
+    paymentRecoveryAvailable,
+    runDeniedPaymentPastDue,
+    refresh: refreshCapabilities
+  } = useBillingCapabilities()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const { toastErrorHandler } = useErrorHandling()
 
   const isUpdatingPayment = computed(() => paymentPortalRequest.value !== null)
+  const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
+    paymentRecoveryAvailable.value
+      ? 'owner'
+      : runDeniedPaymentPastDue.value
+        ? 'member'
+        : null
+  )
 
   function closePaymentRecoveryDialog() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -70,7 +82,13 @@ export function usePaymentRecoveryDialog() {
     return paymentPortalRequest.value
   }
 
-  function showPaymentRecoveryDialog() {
+  async function updatePaymentFromDialog(onPortalOpened?: () => void) {
+    const outcome = await updatePayment()
+    if (outcome.ok) onPortalOpened?.()
+  }
+
+  /** `onPortalOpened` runs each time the billing portal opens from this dialog. */
+  function showPaymentRecoveryDialog(onPortalOpened?: () => void) {
     return dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component: SubscriptionPausedDialog,
@@ -79,7 +97,7 @@ export function usePaymentRecoveryDialog() {
         status: 'payment_failed',
         isUpdatingPayment: isUpdatingPayment.value,
         onClose: closePaymentRecoveryDialog,
-        onUpdatePayment: updatePayment
+        onUpdatePayment: () => updatePaymentFromDialog(onPortalOpened)
       },
       dialogComponentProps: {
         headless: true
@@ -87,5 +105,11 @@ export function usePaymentRecoveryDialog() {
     })
   }
 
-  return { showPaymentRecoveryDialog, updatePayment, isUpdatingPayment }
+  return {
+    showPaymentRecoveryDialog,
+    updatePayment,
+    isUpdatingPayment,
+    paymentRecoveryLock,
+    refreshCapabilities
+  }
 }

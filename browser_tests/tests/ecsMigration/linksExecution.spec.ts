@@ -30,10 +30,6 @@ test.describe(
       }
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('muting a middle node excludes it from the API prompt before queueing', async ({
       comfyPage
     }) => {
@@ -138,7 +134,6 @@ test.describe(
         .poll(() => comfyPage.canvasOps.getScale())
         .not.toBe(scaleBefore)
 
-      await comfyPage.canvasOps.resetView()
       const position = await checkpoint.getPosition()
       const from = await comfyPage.canvasOps.toAbsolute({
         x: position.x - 20,

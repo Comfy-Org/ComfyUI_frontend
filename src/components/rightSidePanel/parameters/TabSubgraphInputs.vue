@@ -19,8 +19,8 @@ import {
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 
-import { searchWidgets } from '../shared'
-import type { NodeWidgetsList } from '../shared'
+import { searchWidgets } from '@/components/rightSidePanel/shared'
+import type { NodeWidgetsList } from '@/components/rightSidePanel/shared'
 import PanelSearchHeader from './PanelSearchHeader.vue'
 import SectionWidgets from './SectionWidgets.vue'
 

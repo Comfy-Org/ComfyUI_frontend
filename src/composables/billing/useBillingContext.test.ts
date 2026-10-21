@@ -363,6 +363,7 @@ describe('useBillingContext', () => {
       ...DEFAULT_BILLING_STATUS,
       billing_status: 'payment_failed',
       subscription_status: 'ended',
+      subscription_state: 'activating',
       team_credit_stop: {
         id: 'stop-1',
         credits_monthly: 1000,
@@ -370,11 +371,16 @@ describe('useBillingContext', () => {
       }
     }
 
-    const { billingStatus, subscriptionStatus, currentTeamCreditStop } =
-      useBillingContext()
+    const {
+      billingStatus,
+      subscriptionStatus,
+      subscriptionState,
+      currentTeamCreditStop
+    } = useBillingContext()
 
     expect(billingStatus.value).toBe('payment_failed')
     expect(subscriptionStatus.value).toBe('ended')
+    expect(subscriptionState.value).toBe('activating')
     expect(currentTeamCreditStop.value).toEqual({
       id: 'stop-1',
       credits_monthly: 1000,
@@ -467,11 +473,10 @@ describe('useBillingContext', () => {
     expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(5)
   })
 
-  it('routes migrated legacy Stripe topups through workspace billing', async () => {
-    remoteConfig.value = { legacy_billing_migration_enabled: true }
+  it('routes migrated Stripe topups through workspace billing', async () => {
     remoteConfigState.value = 'authenticated'
     authenticatedRemoteConfigState.value = 'authenticated'
-    mockBillingRail.value = 'legacy_stripe'
+    mockBillingRail.value = 'stripe'
 
     const context = useBillingContext()
     await nextTick()

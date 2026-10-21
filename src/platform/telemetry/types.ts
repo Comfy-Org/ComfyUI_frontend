@@ -683,7 +683,7 @@ export interface AgentConsentNotOfferedMetadata extends Record<
  * must split by `exit`; a total is not a quantity.**
  *
  * Correctly not needed: `consent_already_accepted`, `card_already_seen`,
- * `already_offered`.
+ * `already_offered`, `consent_declined`.
  * Owed and not made: everything else.
  *
  * There is deliberately no value for "the agent flag is off". Every exit here
@@ -724,6 +724,8 @@ export type AgentConsentOfferExit =
   | 'already_offered'
   /** The first-run startup probe rejected. */
   | 'startup_probe_failed'
+  /** A prior explicit rejection suppressed this automatic offer. */
+  | 'consent_declined'
   /**
    * The consent scope moved while it was being resolved - a different account,
    * a workspace transition, or a switch that started - so the read that would

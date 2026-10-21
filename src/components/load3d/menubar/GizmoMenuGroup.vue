@@ -110,7 +110,7 @@ import {
 import type {
   GizmoMode,
   ModelConfig
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 
 const { compact = false } = defineProps<{
   compact?: boolean

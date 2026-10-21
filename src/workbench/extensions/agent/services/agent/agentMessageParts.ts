@@ -9,8 +9,8 @@ import type {
   AgentMessages,
   RenderedAskKind,
   TurnId
-} from '../../schemas/agentApiSchema'
-import { RENDERED_ASK_KINDS } from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { RENDERED_ASK_KINDS } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 export type PartState = 'streaming' | 'done'
 

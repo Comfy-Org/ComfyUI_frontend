@@ -10,7 +10,7 @@ import type {
   MinimapLinkData,
   MinimapNodeData,
   MinimapNodeProgressStates
-} from '../types'
+} from '@/renderer/extensions/minimap/types'
 
 export class MinimapDataSource {
   constructor(

@@ -1,6 +1,9 @@
 <template>
   <div class="flex flex-col gap-6" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
+    <BillingPausedBanner
+      :can-manage-billing="capabilities.canManageBilling.value"
+    />
     <div
       v-if="load === 'loading'"
       class="flex flex-col gap-2"
@@ -51,11 +54,12 @@
       </span>
       <Button
         as="a"
-        :href="handoffUrl"
+        :href="handoffHref"
         target="_blank"
         rel="noopener"
         variant="secondary"
         class="shrink-0"
+        @click="trackHandoff"
       >
         {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.action`) }}
         <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
@@ -75,6 +79,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
+import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
@@ -85,7 +90,7 @@ import {
 import { useBillingCreditsCard } from '@/platform/workspace/components/dialogs/settings/billing/useBillingCreditsCard'
 import { useBillingPlanRow } from '@/platform/workspace/components/dialogs/settings/billing/useBillingPlanRow'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 const billing = useBillingContext()
 const capabilities = useBillingCapabilities()
@@ -95,9 +100,9 @@ const { state: creditsCard } = useBillingCreditsCard(planRow)
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
 
-const HANDOFF_PATH = {
-  owner: '/profile/billing',
-  member: '/profile/usage'
+const HANDOFF = {
+  owner: { path: '/profile/billing', target: 'open_billing' },
+  member: { path: '/profile/usage', target: 'usage' }
 } as const
 
 const handoffAudience = computed(() =>
@@ -119,8 +124,9 @@ const action = computed(() =>
   })
 )
 
-const handoffUrl = computed(() =>
-  platformLink(HANDOFF_PATH[handoffAudience.value])
+const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
+  () => HANDOFF[handoffAudience.value].path,
+  () => ({ target: HANDOFF[handoffAudience.value].target })
 )
 
 async function retryBalance() {

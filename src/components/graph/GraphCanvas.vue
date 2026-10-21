@@ -493,6 +493,11 @@ watch(
   }
 )
 
+watch(
+  () => canvasStore.selectedNodeIds,
+  () => canvasStore.canvas?.setDirty(true, true)
+)
+
 useEventListener(
   canvasRef,
   'litegraph:no-items-selected',

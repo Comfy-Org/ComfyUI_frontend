@@ -108,12 +108,12 @@ import {
   distanceTerm,
   horizontalTerm,
   verticalTerm
-} from '@/extensions/core/cameraAngle/cameraAngleMath'
-import type { CameraAngleTerm } from '@/extensions/core/cameraAngle/cameraAngleMath'
+} from '@comfyorg/viewport3d/cameraAngle/cameraAngleMath'
+import type { CameraAngleTerm } from '@comfyorg/viewport3d/cameraAngle/cameraAngleMath'
 import type {
   CameraAngleField,
   CameraAngleViewMode
-} from '@/extensions/core/cameraAngle/types'
+} from '@comfyorg/viewport3d/cameraAngle/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'

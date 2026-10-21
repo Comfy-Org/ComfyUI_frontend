@@ -159,6 +159,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     if (legacyCanAccessSubscriptionFeatures.value) return 'active'
     return null
   })
+  const subscriptionState = computed(
+    () => legacySubscriptionStatus.value?.subscription_state ?? null
+  )
   const tier = computed(() => subscriptionTier.value)
   const renewalDate = computed(
     () => legacySubscriptionStatus.value?.renewal_date ?? null
@@ -293,6 +296,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     isFreeTier,
     billingStatus,
     subscriptionStatus,
+    subscriptionState,
     tier,
     renewalDate,
     renewalInvoice: computed(

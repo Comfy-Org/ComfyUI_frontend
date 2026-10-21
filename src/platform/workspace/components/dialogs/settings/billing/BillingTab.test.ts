@@ -1,9 +1,11 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import type { SubscriptionState } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -13,15 +15,20 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
 
 import BillingTab from './BillingTab.vue'
 
+vi.mock(import('@/platform/workspace/composables/usePausedBanner'), {
+  spy: true
+})
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -29,9 +36,11 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/cloud/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string) => `https://platform.test${path}?workspace=ws_1`
+  platformLink: (path: string, correlationId?: string) =>
+    `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`
 }))
 
 const activeSubscription: SubscriptionInfo = {
@@ -50,6 +59,7 @@ const activeSubscription: SubscriptionInfo = {
 interface Scenario {
   subscription?: SubscriptionInfo | null
   subscriptionStatus?: 'active' | 'canceled' | 'ended' | null
+  subscriptionState?: SubscriptionState | null
   isInitialized?: boolean
   error?: string | null
   canManageSubscription?: boolean
@@ -64,6 +74,13 @@ interface Scenario {
   autoTopUpFlag?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
+  isPaused?: boolean
+}
+
+function correlationIdOf(link: HTMLElement) {
+  return new URL(link.getAttribute('href') ?? '').searchParams.get(
+    'correlation_id'
+  )
 }
 
 function arrange(scenario: Scenario = {}) {
@@ -71,6 +88,10 @@ function arrange(scenario: Scenario = {}) {
   const refresh = vi.fn(async () => {})
   const fetchStatus = vi.fn(async () => {})
   const resubscribe = vi.fn(scenario.resubscribe ?? (async () => {}))
+  const manageSubscription = vi.fn(async () => ({ ok: true as const }))
+  vi.mocked(usePausedBanner).mockReturnValue({
+    isPaused: computed(() => scenario.isPaused ?? false)
+  })
 
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
@@ -87,7 +108,9 @@ function arrange(scenario: Scenario = {}) {
           ? 'active'
           : scenario.subscriptionStatus
       ),
+      subscriptionState: computed(() => scenario.subscriptionState ?? null),
       billingStatus: computed(() => 'paid'),
+      manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
         fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
@@ -158,10 +181,62 @@ function arrange(scenario: Scenario = {}) {
     }
   })
 
-  return { initialize, refresh, fetchStatus, resubscribe }
+  return { initialize, refresh, fetchStatus, resubscribe, manageSubscription }
 }
 
 describe('BillingTab', () => {
+  describe('Subscription paused banner', () => {
+    it.for([
+      {
+        name: 'an owner',
+        canManageBilling: true,
+        body: "This workspace's subscription is paused. Update payment to resume.",
+        buttons: ['Update payment']
+      },
+      {
+        name: 'a member',
+        canManageBilling: false,
+        body: "Ask your workspace owner to restore the workspace's subscription.",
+        buttons: []
+      }
+    ])(
+      'shows $name the paused banner at the top of the tab',
+      ({ canManageBilling, body, buttons }) => {
+        arrange({ isPaused: true, canManageBilling })
+
+        const banner = screen.getByTestId('billing-paused-banner')
+        expect(banner).toHaveTextContent('Subscription paused')
+        expect(banner).toHaveTextContent(body)
+        expect(
+          within(banner)
+            .queryAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(buttons)
+      }
+    )
+
+    it('opens the billing portal from Update payment', async () => {
+      const { manageSubscription } = arrange({ isPaused: true })
+
+      await userEvent.click(
+        within(screen.getByTestId('billing-paused-banner')).getByRole(
+          'button',
+          { name: 'Update payment' }
+        )
+      )
+
+      expect(manageSubscription).toHaveBeenCalledOnce()
+    })
+
+    it('shows no paused banner when the workspace is not paused', () => {
+      arrange()
+
+      expect(
+        screen.queryByTestId('billing-paused-banner')
+      ).not.toBeInTheDocument()
+    })
+  })
+
   it('shows a skeleton and no plan row while billing loads', () => {
     arrange({ isInitialized: false })
 
@@ -189,6 +264,25 @@ describe('BillingTab', () => {
     expect(screen.getByRole('alert')).toBeInTheDocument()
   })
 
+  it('reads Activating while subscription_state is activating', () => {
+    arrange({ subscriptionState: 'activating' })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      'Activating your Pro plan…'
+    )
+    expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument()
+  })
+
+  it('returns to the served status when subscription_state is no longer activating', () => {
+    arrange({ subscriptionState: 'active' })
+
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      'Billed monthly. Next invoice November 15.'
+    )
+    expect(screen.queryByText(/Activating your/)).not.toBeInTheDocument()
+  })
+
   it('renders an active plan with Manage and the owner handoff linked to the billing site', () => {
     arrange()
 
@@ -198,11 +292,15 @@ describe('BillingTab', () => {
     )
     expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
       'href',
-      'https://platform.test/profile/billing/plans?workspace=ws_1'
+      expect.stringMatching(
+        /^https:\/\/platform\.test\/profile\/billing\/plans\?workspace=ws_1&correlation_id=.+$/
+      )
     )
     expect(screen.getByRole('link', { name: 'Open billing' })).toHaveAttribute(
       'href',
-      'https://platform.test/profile/billing?workspace=ws_1'
+      expect.stringMatching(
+        /^https:\/\/platform\.test\/profile\/billing\?workspace=ws_1&correlation_id=.+$/
+      )
     )
   })
 
@@ -226,7 +324,9 @@ describe('BillingTab', () => {
     )
     expect(screen.getByRole('link', { name: 'View usage' })).toHaveAttribute(
       'href',
-      'https://platform.test/profile/usage?workspace=ws_1'
+      expect.stringMatching(
+        /^https:\/\/platform\.test\/profile\/usage\?workspace=ws_1&correlation_id=.+$/
+      )
     )
     expect(
       screen.queryByRole('link', { name: 'Open billing' })
@@ -263,8 +363,54 @@ describe('BillingTab', () => {
 
       expect(screen.getByRole('link', { name: link })).toHaveAttribute(
         'href',
-        `https://platform.test${path}?workspace=ws_1`
+        expect.stringContaining(`https://platform.test${path}?workspace=ws_1`)
       )
+    }
+  )
+
+  it.for([
+    {
+      name: 'the plan action',
+      scenario: { canManageBilling: true },
+      link: 'Manage',
+      destination: { target: 'plans' }
+    },
+    {
+      name: 'the owner handoff',
+      scenario: { canManageBilling: true },
+      link: 'Open billing',
+      destination: { target: 'open_billing' }
+    },
+    {
+      name: 'the member handoff',
+      scenario: {
+        canManageBilling: false,
+        canManageSubscription: false,
+        canSubscribeSelfServe: false
+      },
+      link: 'View usage',
+      destination: { target: 'usage' }
+    }
+  ] as const)(
+    'reports a click on $name with the journey its link carried, then rotates it',
+    async ({ scenario, link: name, destination }) => {
+      arrange(scenario)
+      const link = screen.getByRole('link', { name })
+      const clickedId = correlationIdOf(link)
+      link.addEventListener('click', (event) => event.preventDefault())
+
+      await userEvent.click(link)
+
+      expect(vi.mocked(useTelemetry)()?.trackBillingEvent).toHaveBeenCalledWith(
+        {
+          operation: 'platform_handoff',
+          stage: 'opened',
+          outcome: 'pending',
+          correlation_id: clickedId,
+          ...destination
+        }
+      )
+      await vi.waitFor(() => expect(correlationIdOf(link)).not.toBe(clickedId))
     }
   )
 

@@ -6,7 +6,6 @@ import { normalizeHostedBillingDestination } from '@/config/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
-  cachedLegacyBillingMigrationEnabled,
   cachedV1PaymentRecovery,
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -139,6 +138,12 @@ export function useFeatureFlags() {
     get supportsManagerV4() {
       return api.getServerFeature(ServerFeatureFlag.MANAGER_SUPPORTS_V4)
     },
+    /** ComfyUI's `agent` server feature; callers validate `state`. */
+    get agent() {
+      return api.getServerFeature<{ state?: unknown } | null | undefined>(
+        ServerFeatureFlag.AGENT
+      )
+    },
     get modelUploadButtonEnabled() {
       return resolveFlag(
         ServerFeatureFlag.MODEL_UPLOAD_BUTTON_ENABLED,
@@ -203,6 +208,9 @@ export function useFeatureFlags() {
     },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get deployToCloud() {
+      return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
     },
     get nodeLibraryEssentialsEnabled() {
       return resolveFlag(
@@ -286,13 +294,6 @@ export function useFeatureFlags() {
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED,
         remoteConfig.value.member_credit_limits_enabled
-      )
-    },
-    get legacyBillingMigrationEnabled() {
-      return resolveAuthGatedFlag(
-        ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED,
-        remoteConfig.value.legacy_billing_migration_enabled,
-        cachedLegacyBillingMigrationEnabled
       )
     },
     get billingSdkTopupEnabled() {
@@ -414,8 +415,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
-      [ServerFeatureFlag.LEGACY_BILLING_MIGRATION_ENABLED]:
-        flags.legacyBillingMigrationEnabled,
       [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
         flags.billingSdkTopupEnabled,
       [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
