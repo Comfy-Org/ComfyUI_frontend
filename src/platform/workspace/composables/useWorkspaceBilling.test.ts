@@ -284,6 +284,25 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isFreeTier.value).toBe(false)
     })
 
+    it.for([
+      { served: 'activating' as const, expected: 'activating' as const },
+      { served: undefined, expected: null }
+    ])(
+      'renders subscription_state $served as $expected',
+      async ({ served, expected }) => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+          ...activeStatus,
+          ...(served === undefined ? {} : { subscription_state: served })
+        })
+
+        const billing = setupBilling()
+        await billing.fetchStatus()
+
+        expect(billing.subscriptionState.value).toBe(expected)
+        expect(billing.subscription.value?.isActive).toBe(true)
+      }
+    )
+
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,

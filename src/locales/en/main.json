@@ -3637,6 +3637,7 @@
           "stay": "Stay on {plan}",
           "subscribe": "Subscribe"
         },
+        "activating": "Activating your {plan} plan…",
         "active": {
           "monthly": "Billed monthly. Next invoice {date}.",
           "yearly": "Billed yearly. Next invoice {date}."

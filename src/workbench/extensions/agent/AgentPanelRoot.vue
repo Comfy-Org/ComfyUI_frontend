@@ -373,8 +373,45 @@ const latestEntryHasPaywall = computed(() => {
 const threadHasUserMessage = computed(() =>
   conversationEntries.value.some((entry) => entry.role === 'user')
 )
+async function sendWithFundsRecheck(
+  send: (onAccepted: () => void) => Promise<boolean>
+): Promise<boolean> {
+  if (billingType.value !== 'workspace' || agentHasFunds.value !== false)
+    return send(() => undefined)
+  let recheckId: number | undefined
+  let stopAdoptionWatch: (() => void) | undefined
+  const settle = () => {
+    if (recheckId !== undefined) agentPanelStore.finishFundsRecheck(recheckId)
+  }
+  let admitted = false
+  let sent: boolean
+  try {
+    sent = await send(() => {
+      admitted = true
+      recheckId = agentPanelStore.beginFundsRecheck(billingIdentity.value, () =>
+        stopAdoptionWatch?.()
+      )
+      stopAdoptionWatch = watch([subscription, billingIdentity], settle, {
+        flush: 'sync'
+      })
+    })
+  } finally {
+    if (!admitted) settle()
+  }
+  if (!admitted) return sent
+  void refreshBillingStatus().catch((error: unknown) => {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'error_refreshing_agent_billing_status'
+    })
+  })
+  return sent
+}
+
 const showStandingPaywall = computed(() => {
   if (!creditsExhausted.value || !threadHasUserMessage.value) return false
+  if (agentPanelStore.hasPendingFundsRecheck(billingIdentity.value))
+    return false
   return !latestEntryHasPaywall.value
 })
 
@@ -382,6 +419,7 @@ const agentPanelStore = useAgentPanelStore()
 const billingIdentity = useBillingIdentity()
 
 watch(billingIdentity, () => {
+  agentPanelStore.cancelFundsRechecks()
   agentPanelStore.reportedExhaustionIdentity = null
 })
 
@@ -1651,14 +1689,20 @@ const { submit: onSend } = useAgentDraftSubmission({
     }
     const selectionWorkflow = selectedTarget.value
     try {
-      return await sendMessage(
-        text,
-        attachments,
-        nodes,
-        references,
-        () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-
-        meta.clientMessageId
+      return await sendWithFundsRecheck((onAccepted) =>
+        sendMessage(
+          text,
+          attachments,
+          nodes,
+          references,
+          () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+          // The same id reported on app:agent_message_sent just above. Sent to
+          // the server so it can echo it onto agent_turn_started, which is what
+          // makes the message -> turn step attributable instead of only
+          // countable.
+          meta.clientMessageId,
+          onAccepted
+        )
       )
     } finally {
       reportPendingSend()

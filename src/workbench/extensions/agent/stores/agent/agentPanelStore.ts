@@ -1,7 +1,15 @@
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
-import { computed, readonly, ref, shallowRef, toRaw, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  readonly,
+  ref,
+  shallowRef,
+  toRaw,
+  watch
+} from 'vue'
 
 import {
   SIDEBAR_MIN_WIDTH,
@@ -25,6 +33,7 @@ import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
+const FUNDS_RECHECK_TIMEOUT_MS = 10_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
@@ -97,6 +106,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const reportedExhaustionIdentity = ref<string | null>(null)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
+  const fundsRechecks = ref(new Map<number, string>())
+  const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
+  const fundsRecheckFinished = new Map<number, () => void>()
+  let nextFundsRecheckId = 0
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
@@ -383,6 +396,38 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     dispatchCreditTransitionNotice({ type: 'dismissed', identity })
   }
 
+  function beginFundsRecheck(
+    identity: string,
+    onFinished?: () => void
+  ): number {
+    const id = ++nextFundsRecheckId
+    fundsRechecks.value.set(id, identity)
+    if (onFinished) fundsRecheckFinished.set(id, onFinished)
+    fundsRecheckTimeouts.set(
+      id,
+      setTimeout(() => finishFundsRecheck(id), FUNDS_RECHECK_TIMEOUT_MS)
+    )
+    return id
+  }
+
+  function finishFundsRecheck(id: number): void {
+    clearTimeout(fundsRecheckTimeouts.get(id))
+    fundsRecheckTimeouts.delete(id)
+    fundsRechecks.value.delete(id)
+    fundsRecheckFinished.get(id)?.()
+    fundsRecheckFinished.delete(id)
+  }
+
+  function cancelFundsRechecks(): void {
+    for (const id of fundsRechecks.value.keys()) finishFundsRecheck(id)
+  }
+
+  function hasPendingFundsRecheck(identity: string): boolean {
+    return [...fundsRechecks.value.values()].includes(identity)
+  }
+
+  onScopeDispose(cancelFundsRechecks)
+
   return {
     enabled,
     consentAccepted,
@@ -401,6 +446,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
+    beginFundsRecheck,
+    finishFundsRecheck,
+    cancelFundsRechecks,
+    hasPendingFundsRecheck,
     width,
     requestedWidth,
     isOverlay,
