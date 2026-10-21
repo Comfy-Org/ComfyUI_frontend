@@ -445,6 +445,37 @@ describe('useDeploymentPickStore', () => {
     expect(reload).toHaveBeenCalledOnce()
   })
 
+  it('locks out other switches while it drops an own pick of the default itself', async () => {
+    const ownPickOfDefault = {
+      ...listing,
+      picked_deployment_id: 'dep-2',
+      pick_source: 'browser',
+      default_deployment_id: 'dep-2'
+    } satisfies WorkspaceDeploymentList
+    mockWorkspaceApi.listDeployments
+      .mockResolvedValueOnce(ownPickOfDefault)
+      .mockResolvedValue({
+        ...ownPickOfDefault,
+        pick_source: 'workspace_default'
+      })
+    const cleared = deferred<void>()
+    mockWorkspaceApi.clearDeployment.mockReturnValue(cleared.promise)
+    const store = useDeploymentPickStore()
+    await store.load()
+
+    const following = store.followWorkspace()
+
+    expect(store.isSwitching).toBe(true)
+    await expect(store.pick('dep-1')).resolves.toBeNull()
+    expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
+
+    cleared.resolve()
+    await expect(following).resolves.toBeNull()
+    expect(store.isSwitching).toBe(false)
+    expect(store.followsWorkspace).toBe(true)
+    expect(reload).not.toHaveBeenCalled()
+  })
+
   it('an owner sets the picked deployment as the workspace default and the listing refreshes', async () => {
     Object.assign(useTeamWorkspaceStore(), {
       workspaceId: 'ws-1',

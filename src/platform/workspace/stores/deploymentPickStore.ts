@@ -380,11 +380,15 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   }
 
   async function followInPlace(workspaceId: string): Promise<string | null> {
+    dispatch({ type: 'switchStarted', target: pickedDeploymentId.value })
     try {
       await workspaceApi.clearDeployment(workspaceId, { follow: 'workspace' })
     } catch (err) {
+      dispatch({ type: 'switchFailed' })
       return errorMessage(err)
     }
+    lastApplied = latestRequest
+    dispatch({ type: 'followedInPlace' })
     await load()
     return null
   }
