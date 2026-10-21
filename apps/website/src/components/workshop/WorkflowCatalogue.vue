@@ -134,6 +134,25 @@ function readAddress(search: string, preserveQuery = false) {
   if (serverPage)
     sort.value = params.get('sort') === 'name' ? 'name' : 'popular'
 }
+function filterAddress() {
+  const params = new URLSearchParams(initialSearch ?? location.search)
+  for (const key of [
+    'q',
+    'category',
+    'model',
+    'capability',
+    'sort',
+    'p',
+    'cursor'
+  ])
+    params.delete(key)
+  if (query.value) params.set('q', query.value)
+  for (const value of selected.value) params.append('category', value)
+  for (const value of runsOn.value) params.append('model', value)
+  for (const value of capabilities.value) params.append('capability', value)
+  if (sort.value !== 'popular') params.set('sort', sort.value)
+  return params.toString()
+}
 let searchReady = false
 let requestedQuery: string | undefined
 let searchTimer: ReturnType<typeof setTimeout> | undefined
@@ -163,23 +182,7 @@ watch(
     if (!serverPage || !searchReady) return
     clearTimeout(searchTimer)
     searchTimer = setTimeout(() => {
-      const params = new URLSearchParams(initialSearch ?? location.search)
-      for (const key of [
-        'q',
-        'category',
-        'model',
-        'capability',
-        'sort',
-        'p',
-        'cursor'
-      ])
-        params.delete(key)
-      if (query.value) params.set('q', query.value)
-      for (const value of selected.value) params.append('category', value)
-      for (const value of runsOn.value) params.append('model', value)
-      for (const value of capabilities.value) params.append('capability', value)
-      if (sort.value !== 'popular') params.set('sort', sort.value)
-      const search = params.toString()
+      const search = filterAddress()
       const current = new URLSearchParams(initialSearch ?? location.search)
       current.delete('p')
       current.delete('cursor')
