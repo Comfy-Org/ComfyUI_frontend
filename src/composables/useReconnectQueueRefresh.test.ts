@@ -273,6 +273,29 @@ describe('useReconnectQueueRefresh', () => {
       expect(executionStore.queuedJobs).toEqual({})
     })
 
+    it('localizes a failed run whose stored error is unavailable', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-1'] = { nodes: {} }
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...finishedJob,
+        status: 'failed'
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutionFrames()).toEqual([
+        [
+          'execution_error',
+          expect.objectContaining({
+            prompt_id: 'job-1',
+            exception_message:
+              'The job failed while the live connection was unavailable.',
+            exception_type: ''
+          })
+        ]
+      ])
+    })
+
     it('dispatches a cancelled run through the normal interruption handler', async () => {
       const executionStore = useExecutionStore()
       executionStore.queuedJobs['job-1'] = { nodes: {} }

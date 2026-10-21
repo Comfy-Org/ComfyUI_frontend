@@ -2235,6 +2235,7 @@
     "noStackTrace": "No stacktrace available",
     "extensionFileHint": "This may be due to the following script",
     "promptExecutionError": "Prompt execution failed",
+    "executionFailedWhileDisconnected": "The job failed while the live connection was unavailable.",
     "accessRestrictedTitle": "Access Restricted",
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "workspaceChangedDuringExecution": "Your active workspace changed while preparing this execution. Run the workflow again to use the current workspace."

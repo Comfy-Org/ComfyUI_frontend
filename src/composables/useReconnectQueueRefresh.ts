@@ -1,5 +1,6 @@
 import { Semaphore, delay, withTimeout } from 'es-toolkit'
 
+import { t } from '@/i18n'
 import type {
   ExecutionError,
   JobDetail
@@ -32,13 +33,15 @@ const DETAIL_TIMEOUT_MS = 5_000
 const DETAIL_RETRY_DELAY_MS = 1_000
 const DETAIL_CONCURRENCY = 4
 const MAX_UNREADABLE_REFRESHES = 3
-const UNKNOWN_EXECUTION_ERROR: ExecutionError = {
-  node_id: '',
-  node_type: '',
-  exception_message:
-    'The job failed while the live connection was unavailable.',
-  exception_type: 'JobExecutionError',
-  traceback: []
+
+function unknownExecutionError(): ExecutionError {
+  return {
+    node_id: '',
+    node_type: '',
+    exception_message: t('errorDialog.executionFailedWhileDisconnected'),
+    exception_type: '',
+    traceback: []
+  }
 }
 
 /**
@@ -174,7 +177,7 @@ export function useReconnectQueueRefresh() {
     timestamp: number,
     error: ExecutionError | undefined
   ) {
-    const normalizedError = error ?? UNKNOWN_EXECUTION_ERROR
+    const normalizedError = error ?? unknownExecutionError()
     api.dispatchCustomEvent('execution_error', {
       prompt_id: jobId,
       timestamp,
