@@ -8,8 +8,8 @@ import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 
 const { asset, title } = defineProps<{ asset: ReplyAsset; title: string }>()
 

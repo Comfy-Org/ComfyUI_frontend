@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { workspaceApi as realWorkspaceApi } from '../workspaceApi'
+import type { workspaceApi as realWorkspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 export class WorkspaceApiError extends Error {
   constructor(

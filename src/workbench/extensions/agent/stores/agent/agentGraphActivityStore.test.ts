@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
-import { toTurnId } from '../../schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentGraphActivityStore } from './agentGraphActivityStore'
 
 const ROOT_GRAPH_ID = toRootGraphId('graph-1')

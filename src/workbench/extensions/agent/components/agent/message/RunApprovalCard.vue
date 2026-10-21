@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
 
-import type { RunApprovalPart } from '../../../services/agent/agentMessageParts'
-import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
+import type { RunApprovalPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { agentBoundWorkflowIdKey } from '@/workbench/extensions/agent/components/agent/agentBoundWorkflowId'
 
 const { part, answering = false } = defineProps<{
   part: RunApprovalPart

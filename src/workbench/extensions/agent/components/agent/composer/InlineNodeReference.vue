@@ -16,6 +16,6 @@ const emit = defineEmits<{ remove: [] }>()
     <span aria-hidden="true" class="icon-[comfy--node] size-3 shrink-0" />
     <span class="max-w-56 min-w-0 truncate">{{ title }}</span>
     <span class="shrink-0 text-muted-foreground">{{ ` #${nodeId}` }}</span>
-    <TagRemoveButton :label="removeLabel" @click.stop="emit('remove')" />
+    <TagRemoveButton :aria-label="removeLabel" @click.stop="emit('remove')" />
   </span>
 </template>

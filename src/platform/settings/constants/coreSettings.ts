@@ -6,6 +6,7 @@ import {
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
+import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
 import type { Keybinding } from '@/platform/keybindings/types'
@@ -300,6 +301,12 @@ export const CORE_SETTINGS: SettingParams[] = [
   {
     id: 'Comfy.Desktop.CloudNotificationShown',
     name: 'Cloud notification shown',
+    type: 'hidden',
+    defaultValue: false
+  },
+  {
+    id: AGENT_CONSENT_OFFER_DECLINED_SETTING_ID,
+    name: 'Agent consent offer declined',
     type: 'hidden',
     defaultValue: false
   },

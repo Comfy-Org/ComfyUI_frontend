@@ -12,6 +12,7 @@ const props = defineProps<{
   href?: string
   target?: string
   rel?: string
+  disabled?: boolean
   download?: AnchorHTMLAttributes['download']
   variant?: BrandButtonVariants['variant']
   size?: BrandButtonVariants['size']
@@ -25,8 +26,9 @@ const resolvedRel = computed(() =>
 
 <template>
   <component
-    :is="props.href ? 'a' : 'button'"
-    :href="props.href"
+    :is="props.href && !props.disabled ? 'a' : 'button'"
+    :href="props.disabled ? undefined : props.href"
+    :disabled="props.href && !props.disabled ? undefined : props.disabled"
     :target="props.target"
     :rel="resolvedRel"
     :download="props.download"

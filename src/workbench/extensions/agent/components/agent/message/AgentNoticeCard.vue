@@ -7,7 +7,7 @@ import Message from '@/components/ui/message/Message.vue'
 import type {
   AskUnavailablePart,
   NoticePart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 const { part } = defineProps<{ part: NoticePart | AskUnavailablePart }>()
 

@@ -18,8 +18,8 @@ import {
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ReplyAsset } from '../../../utils/replyAssets'
-import { replyAssetResultItem } from '../../../utils/replyAssets'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
+import { replyAssetResultItem } from '@/workbench/extensions/agent/utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
 const { assets } = defineProps<{ assets: ReplyAsset[] }>()

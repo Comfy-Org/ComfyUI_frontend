@@ -13,8 +13,8 @@ import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import { resolveReplyAssetDownload } from '@/workbench/extensions/agent/utils/resolveReplyAssetDownload'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 
 const { markdown, assets = [] } = defineProps<{
   markdown: string

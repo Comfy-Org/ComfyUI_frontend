@@ -8,10 +8,12 @@ import Message from '@/components/ui/message/Message.vue'
 const {
   expanded = false,
   workflowName,
+  genericNoticeReady = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
+  genericNoticeReady?: boolean
   context?: 'following' | 'mismatch' | 'unavailable'
 }>()
 
@@ -25,11 +27,16 @@ const contextMessages = {
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
+const visible = computed(
+  () =>
+    Boolean(context) ||
+    (!dismissed.value && Boolean(workflowName || genericNoticeReady))
+)
 </script>
 
 <template>
   <Message
-    v-if="context || !dismissed"
+    v-if="visible"
     severity="secondary"
     role="note"
     :aria-live="context ? 'polite' : 'off'"

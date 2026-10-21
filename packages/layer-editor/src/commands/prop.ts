@@ -1,4 +1,4 @@
-import type { Command, Direction } from '../history'
+import type { Command, Direction } from '#/history'
 
 export class PropCommand<T> implements Command {
   constructor(

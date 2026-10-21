@@ -11,13 +11,13 @@ import {
   resolveMarkdownUrl
 } from '@/utils/markdownRendererUtil'
 
-import type { ReplyAsset } from '../../../utils/replyAssets'
+import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 import {
   classifyAssetUrl,
   replyAssetResultItem,
   rewriteAgentAssetHtml,
   tokenReplyAssets
-} from '../../../utils/replyAssets'
+} from '@/workbench/extensions/agent/utils/replyAssets'
 import CodeBlock from './CodeBlock.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 

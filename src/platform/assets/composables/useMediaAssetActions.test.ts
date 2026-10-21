@@ -21,10 +21,10 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
 import { useLitegraphService } from '@/services/litegraphService'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
-import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
-import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
-import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
-import { resolveOutputAssetItems } from '../utils/outputAssetUtil'
+import { clearDeletedAssetWidgetValues } from '@/platform/assets/utils/clearDeletedAssetWidgetValues'
+import { clearNodePreviewCacheForValues } from '@/platform/assets/utils/clearNodePreviewCacheForValues'
+import { markDeletedAssetsAsMissingMedia } from '@/platform/assets/utils/markDeletedAssetsAsMissingMedia'
+import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useMediaAssetActions as createMediaAssetActions } from './useMediaAssetActions'
 
 // Use vi.hoisted to create a mutable reference for isCloud
@@ -104,11 +104,14 @@ const mockGetOutputAssetMetadata = vi.hoisted(() =>
     ) => Record<string, unknown> | null
   >(() => null)
 )
-vi.mock<unknown>(import('../schemas/assetMetadataSchema'), () => ({
-  getOutputAssetMetadata: mockGetOutputAssetMetadata
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/schemas/assetMetadataSchema'),
+  () => ({
+    getOutputAssetMetadata: mockGetOutputAssetMetadata
+  })
+)
 
-vi.mock(import('../utils/outputAssetUtil'))
+vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 const mockResolveOutputAssetItems = vi.mocked(resolveOutputAssetItems)
 
 const mockDeleteAsset = vi.hoisted(() =>
@@ -121,7 +124,7 @@ const mockCreateAssetExport = vi.hoisted(() =>
     ) => Promise<{ task_id: string; status: string; message?: string }>
   >(async () => ({ task_id: 'test-task-id', status: 'pending' }))
 )
-vi.mock<unknown>(import('../services/assetService'), () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     deleteAsset: mockDeleteAsset,
     createAssetExport: mockCreateAssetExport
@@ -167,16 +170,22 @@ const mockRemoveNodeOutputsForNode = vi.hoisted(() => vi.fn())
 
 const mockCaptureCanvasState = vi.hoisted(() => vi.fn())
 
-vi.mock(import('../utils/clearNodePreviewCacheForValues'), { spy: true })
+vi.mock(import('@/platform/assets/utils/clearNodePreviewCacheForValues'), {
+  spy: true
+})
 const mockClearNodePreviewCache = vi.mocked(clearNodePreviewCacheForValues)
 
-vi.mock(import('../utils/clearDeletedAssetWidgetValues'), { spy: true })
+vi.mock(import('@/platform/assets/utils/clearDeletedAssetWidgetValues'), {
+  spy: true
+})
 const mockClearWidgetValues = vi.mocked(clearDeletedAssetWidgetValues)
 
 vi.mock(import('@/platform/missingMedia/missingMediaScan'), { spy: true })
 const mockScanNodeMediaCandidates = vi.mocked(scanNodeMediaCandidates)
 
-vi.mock(import('../utils/markDeletedAssetsAsMissingMedia'), { spy: true })
+vi.mock(import('@/platform/assets/utils/markDeletedAssetsAsMissingMedia'), {
+  spy: true
+})
 const mockMarkMissingMedia = vi.mocked(markDeletedAssetsAsMissingMedia)
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {

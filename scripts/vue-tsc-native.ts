@@ -11,7 +11,7 @@ const packages = fileURLToPath(
 )
 const build = spawnSync(
   process.execPath,
-  [require.resolve('typescript/bin/tsc'), '-b', packages],
+  [require.resolve('vue-tsc/bin/vue-tsc.js'), '-b', packages],
   {
     stdio: 'inherit'
   }

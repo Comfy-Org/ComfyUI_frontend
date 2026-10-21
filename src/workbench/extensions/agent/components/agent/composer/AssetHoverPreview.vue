@@ -13,7 +13,7 @@ import Button from '@/components/ui/button/Button.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { AssetPreviewMode } from '../../../types/assetPreview'
+import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 
 const { name, previewUrl, mediaUrl, mediaKind } = defineProps<{
   name: string
@@ -127,7 +127,7 @@ function onInteractOutside(event: Event): void {
       :collision-padding="16"
       :class="
         cn(
-          'max-w-[calc(100vw-2rem)] overflow-hidden p-0',
+          'z-overlay max-w-[calc(100vw-2rem)] overflow-hidden p-0',
           playableKind === 'audio' ? 'w-86' : 'w-80'
         )
       "

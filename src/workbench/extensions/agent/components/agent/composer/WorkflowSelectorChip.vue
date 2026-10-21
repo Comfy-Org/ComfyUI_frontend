@@ -11,7 +11,7 @@ import MenuRadioItem from '@/components/ui/menu/MenuRadioItem.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
-import type { ActiveTab } from '../../../types/activeTab'
+import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 
 const {
   activeTab,

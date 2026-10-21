@@ -2,9 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useLoad3dViewer } from '@/composables/useLoad3dViewer'
-import Load3d from '@/extensions/core/load3d/Load3d'
+import Load3d from '@comfyorg/viewport3d/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
+import { createLoad3d } from '@comfyorg/viewport3d/load3d/createLoad3d'
+import { load3dHost } from '@/extensions/core/load3d/load3dHost'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -42,11 +43,11 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   persistThumbnail
 }))
 
-vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
+vi.mock(import('@comfyorg/viewport3d/load3d/Load3d'), () => ({
   default: vi.fn()
 }))
 
-vi.mock(import('@/extensions/core/load3d/createLoad3d'), () => ({
+vi.mock(import('@comfyorg/viewport3d/load3d/createLoad3d'), () => ({
   createLoad3d: vi.fn()
 }))
 
@@ -189,7 +190,7 @@ describe('useLoad3dViewer', () => {
 
       await viewer.initializeViewer(containerRef, mockSourceLoad3d as Load3d)
 
-      expect(createLoad3d).toHaveBeenCalledWith(containerRef, {
+      expect(createLoad3d).toHaveBeenCalledWith(containerRef, load3dHost, {
         width: undefined,
         height: undefined,
         getDimensions: undefined,

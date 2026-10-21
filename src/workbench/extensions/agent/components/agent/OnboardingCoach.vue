@@ -10,7 +10,6 @@ import {
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
@@ -24,11 +23,11 @@ import {
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentOnboardingAction } from '@/platform/telemetry/types'
-import type { CoachStep } from '../../composables/agent/useOnboarding'
+import type { CoachStep } from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 import {
   reportMissingCoachTarget,
   useOnboarding
-} from '../../composables/agent/useOnboarding'
+} from '@/workbench/extensions/agent/composables/agent/useOnboarding'
 
 /** Long enough for any panel layout to settle; a target still absent is a regression. */
 const TARGET_MISSING_AFTER_MS = 8000
@@ -245,7 +244,7 @@ useEventListener(
 
 <template>
   <Teleport to="body">
-    <div v-if="visible" v-reka-z-index class="agent-scope fixed inset-0">
+    <div v-if="visible" class="agent-scope fixed inset-0 z-tour">
       <div class="absolute inset-0" />
       <div
         aria-hidden="true"

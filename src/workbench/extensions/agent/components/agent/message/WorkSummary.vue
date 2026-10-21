@@ -7,7 +7,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type { ActivityPart } from '../../../services/agent/agentMessageParts'
+import type { ActivityPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import ActivityTrace from './ActivityTrace.vue'
 

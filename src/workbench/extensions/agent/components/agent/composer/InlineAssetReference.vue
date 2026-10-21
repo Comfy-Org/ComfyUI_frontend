@@ -41,6 +41,6 @@ onBeforeUnmount(() => emit('highlight', false))
       class="size-4 shrink-0"
     />
     <span class="max-w-56 min-w-0 truncate">{{ name }}</span>
-    <TagRemoveButton :label="removeLabel" @click.stop="emit('remove')" />
+    <TagRemoveButton :aria-label="removeLabel" @click.stop="emit('remove')" />
   </span>
 </template>

@@ -7,11 +7,10 @@ import DialogContent from '@/components/ui/dialog/DialogContent.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-import { FREE_USE_VARIANTS } from '../../experiments/freeUsePlacement'
-import { toTurnId } from '../../schemas/agentApiSchema'
-import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
-import '../../agentPanel.css'
+import { FREE_USE_VARIANTS } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import AgentPanel from './AgentPanel.vue'
 
@@ -89,7 +88,6 @@ export const InDialog: Story = {
       DialogPortal,
       DialogTitle
     },
-    directives: { rekaZIndex: vRekaZIndex },
     setup() {
       const open = ref(true)
       return { args, open }
@@ -97,8 +95,8 @@ export const InDialog: Story = {
     template: `
       <Dialog v-model:open="open">
         <DialogPortal>
-          <DialogOverlay v-reka-z-index />
-          <DialogContent v-reka-z-index class="h-180 overflow-hidden p-0">
+          <DialogOverlay />
+          <DialogContent class="h-180 overflow-hidden p-0">
             <DialogTitle class="sr-only">Agent</DialogTitle>
             <AgentPanel v-bind="args" />
           </DialogContent>

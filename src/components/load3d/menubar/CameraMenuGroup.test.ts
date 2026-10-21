@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import CameraMenuGroup from '@/components/load3d/menubar/CameraMenuGroup.vue'
-import type { CameraConfig } from '@/extensions/core/load3d/interfaces'
+import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const i18n = createI18n({

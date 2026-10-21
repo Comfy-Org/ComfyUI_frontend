@@ -43,7 +43,7 @@ function open(): void {
       <span class="max-w-56 min-w-0 truncate">{{ name }}</span>
     </Button>
     <TagRemoveButton
-      :label="t('agent.removeWorkflowReference', { name })"
+      :aria-label="t('agent.removeWorkflowReference', { name })"
       @click.stop="emit('remove')"
     />
   </span>

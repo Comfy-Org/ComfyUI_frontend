@@ -395,6 +395,27 @@ describe('useWorkspaceAuthStore', () => {
       expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBeNull()
     })
 
+    it('keeps the workspace this tab loaded on after a mint persists another one', async () => {
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+        JSON.stringify({ ...mockWorkspaceWithRole, id: 'workspace-tab' })
+      )
+      vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
+        'firebase-token-xyz'
+      )
+      vi.mocked(fetch).mockImplementation(async () =>
+        Response.json(mockTokenResponse)
+      )
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-123')
+
+      expect(
+        sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
+      ).toBe(JSON.stringify(mockWorkspaceWithRole))
+      expect(store.bootTabWorkspaceId).toBe('workspace-tab')
+    })
+
     it('stores workspace data in sessionStorage', async () => {
       vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
         'firebase-token-xyz'

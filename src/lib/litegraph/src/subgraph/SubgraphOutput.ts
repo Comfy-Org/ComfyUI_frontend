@@ -5,7 +5,10 @@ import type {
 } from '@/lib/litegraph/src/types/entityRegistry'
 
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
-import { linkIdReservations, mintLinkId } from '../idAllocation'
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/types/rerouteId'
 import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'

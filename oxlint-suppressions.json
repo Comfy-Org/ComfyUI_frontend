@@ -144,6 +144,21 @@
       "count": 1
     }
   },
+  "packages/viewport3d/src/load3d/HDRIManager.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 2
+    }
+  },
+  "packages/viewport3d/src/load3d/SceneManager.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
+  "packages/viewport3d/src/load3d/createLoad3d.test.ts": {
+    "comfy/no-unread-hoisted-mock-state": {
+      "count": 1
+    }
+  },
   "scripts/agentConversationFromLangfuse.test.ts": {
     "comfy/prefer-array-containing": {
       "count": 1
@@ -372,58 +387,8 @@
       "count": 1
     }
   },
-  "src/extensions/core/lightInfo/types.ts": {
-    "comfy/no-reexports": {
-      "count": 2
-    }
-  },
-  "src/extensions/core/load3d/HDRIManager.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 2
-    }
-  },
-  "src/extensions/core/load3d/Load3d.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 4
-    }
-  },
   "src/extensions/core/load3d/Load3dUtils.ts": {
     "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/ModelAdapter.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/ModelExporter.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 2
-    }
-  },
-  "src/extensions/core/load3d/RecordingManager.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/SceneManager.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/SceneModelManager.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/cameraFromMatrices.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 3
-    }
-  },
-  "src/extensions/core/load3d/createLoad3d.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
       "count": 1
     }
   },
@@ -434,11 +399,6 @@
   },
   "src/extensions/core/load3d/load3dSerialize.test.ts": {
     "comfy/prefer-array-containing": {
-      "count": 1
-    }
-  },
-  "src/extensions/core/load3d/loader/FastPLYLoader.ts": {
-    "comfy/no-new-error-throw": {
       "count": 1
     }
   },
@@ -975,11 +935,6 @@
       "count": 2
     }
   },
-  "src/platform/workspace/composables/useAutoPageSize.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
   "src/platform/workspace/composables/useDowngradeToPersonal.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 2
@@ -1215,11 +1170,6 @@
       "count": 10
     }
   },
-  "src/renderer/three/RendererView.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    }
-  },
   "src/scripts/api.ts": {
     "comfy/no-new-error-throw": {
       "count": 8
@@ -1368,7 +1318,7 @@
   },
   "src/types/index.ts": {
     "comfy/no-reexports": {
-      "count": 36
+      "count": 67
     }
   },
   "src/types/nodeState.ts": {

@@ -1,8 +1,8 @@
-import type { ContentStore } from '../content'
-import type { Document } from '../document'
-import { Dirty } from '../history'
-import type { Command, Direction } from '../history'
-import type { ChannelData } from '../node'
+import type { ContentStore } from '#/content'
+import type { Document } from '#/document'
+import { Dirty } from '#/history'
+import type { Command, Direction } from '#/history'
+import type { ChannelData } from '#/node'
 
 export interface SelectionSnapshot {
   channel: ChannelData | null

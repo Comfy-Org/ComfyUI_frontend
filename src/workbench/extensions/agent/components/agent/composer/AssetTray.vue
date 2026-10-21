@@ -7,8 +7,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 
-import type { ComposerAttachment } from '../../../types/composerAttachment'
-import type { AssetPreviewMode } from '../../../types/assetPreview'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 import AttachmentChip from './AttachmentChip.vue'
 
 const { attachments, highlightedIds = [] } = defineProps<{

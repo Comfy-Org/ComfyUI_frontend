@@ -14,7 +14,7 @@ import { toNodeId } from '@/types/nodeId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import AgentGraphActivityBar from './AgentGraphActivityBar.vue'
-import { useAgentGraphActivityStore } from '../stores/agent/agentGraphActivityStore'
+import { useAgentGraphActivityStore } from '@/workbench/extensions/agent/stores/agent/agentGraphActivityStore'
 
 const graph = fromPartial<LGraph>({ id: 'graph-1' })
 const node = fromPartial<LGraphNode>({})
