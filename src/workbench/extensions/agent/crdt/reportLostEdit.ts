@@ -21,6 +21,8 @@ export function reportLostEdit(
     workflowId?: string
     graphId?: string
     nodeId?: string | number
+    message?: string
+    failedIndex?: number
   }
 ): void {
   const { errorType = `failure_syncing_agent_edit_${kind}`, ...detail } = cause

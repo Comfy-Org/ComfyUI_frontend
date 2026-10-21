@@ -19,6 +19,7 @@ import type { AgentGraphProjectionStage } from '@/platform/telemetry/types'
 import { api } from '@/scripts/api'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type {
@@ -399,8 +400,8 @@ function startAgentCrdtFollower(
       terminal.value = reason
     }
   )
-  const ownActor = (): string =>
-    `human:${userId() ?? 'anonymous'}:${api.clientId ?? ''}`
+  const tabId = createUuidv4()
+  const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
@@ -527,7 +528,7 @@ function startAgentCrdtFollower(
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
     get tab() {
-      return api.clientId ?? ''
+      return tabId
     },
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,

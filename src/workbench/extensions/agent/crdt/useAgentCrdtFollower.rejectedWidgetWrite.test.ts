@@ -424,12 +424,15 @@ describe('a human edit the doc host rejects', () => {
     ])
   })
 
-  it('shows a later rejection after the user dismisses the notice', async () => {
+  it('shows a later rejection after the throttle window', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const { submit } = mountFollower()
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
-    useToast().dismiss(useToast().toasts[0].id)
-    expect(toastDescriptions()).toEqual([])
+    await vi.advanceTimersByTimeAsync(10_001)
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
 
     expect(toastDescriptions()).toEqual([

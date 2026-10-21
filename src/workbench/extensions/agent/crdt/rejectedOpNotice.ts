@@ -1,3 +1,5 @@
+import { throttle } from 'es-toolkit'
+import type { ThrottledFunction } from 'es-toolkit'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -122,41 +124,62 @@ function noticeKey(widgetWrite: boolean, partial: boolean): string {
 }
 
 export function createRejectedOpNotifier() {
-  function showToast(description: string): void {
-    useToast().error(i18n.global.t('g.error'), {
-      id: NOTICE_ID,
-      description,
-      duration: NOTICE_LIFE_MS
-    })
+  const throttledToasts = new Map<
+    string,
+    ThrottledFunction<(description: string) => void>
+  >()
+
+  function showToast(kind: string, description: string): void {
+    const toast = throttledToasts.get(kind)
+    if (toast) return toast(description)
+    const throttled = throttle(
+      (detail: string) =>
+        useToast().error(i18n.global.t('g.error'), {
+          id: NOTICE_ID,
+          description: detail,
+          duration: NOTICE_LIFE_MS
+        }),
+      NOTICE_LIFE_MS,
+      { edges: ['leading'] }
+    )
+    throttledToasts.set(kind, throttled)
+    throttled(description)
+  }
+
+  function notifyRejected(ops: readonly Op[], result: OpsResultView): void {
+    const { failed } = result
+    const widgetWrite = isRejectedWidgetWrite(ops, failed)
+    const code = failed?.code ?? result.code ?? 'unspecified'
+    const accepted = new Set([...result.applied, ...result.skipped])
+    reportLostEdit(
+      'host_rejected',
+      ops.filter((op) => !accepted.has(op.op_id)),
+      {
+        code,
+        workflowId: result.workflowId,
+        message: failed?.message,
+        failedIndex: failed?.index,
+        errorType: widgetWrite
+          ? 'error_applying_agent_widget_edit'
+          : 'error_applying_agent_graph_edit'
+      }
+    )
+    const partial = result.applied.length > 0 && failed !== undefined
+    const kind = noticeKey(widgetWrite, partial)
+    const notice = i18n.global.t(kind)
+    const target = failed && rejectedTarget(rejectedOp(ops, failed))
+    showToast(kind, withReason(notice, target, code))
   }
 
   return {
     notify(ops: readonly Op[], result: OpsResultView) {
       if (result.ok) return
-      const { failed } = result
-      const widgetWrite = isRejectedWidgetWrite(ops, failed)
-      const code = failed?.code ?? result.code ?? 'unspecified'
-      const accepted = new Set([...result.applied, ...result.skipped])
-      reportLostEdit(
-        'host_rejected',
-        ops.filter((op) => !accepted.has(op.op_id)),
-        {
-          code,
-          workflowId: result.workflowId,
-          errorType: widgetWrite
-            ? 'error_applying_agent_widget_edit'
-            : 'error_applying_agent_graph_edit'
-        }
-      )
-      const partial = result.applied.length > 0 && failed !== undefined
-      const kind = noticeKey(widgetWrite, partial)
-      const notice = i18n.global.t(kind)
-      const target = failed && rejectedTarget(rejectedOp(ops, failed))
-      showToast(withReason(notice, target, code))
+      notifyRejected(ops, result)
     },
     notifyWidgetWriteRefused(nodeId: string | number, widgetName: string) {
       const notice = i18n.global.t('agent.editRejected.widgetWrite')
       showToast(
+        'agent.editRejected.widgetWrite',
         withReason(notice, nodeFieldTarget(nodeId, widgetName), 'unspecified')
       )
     }
