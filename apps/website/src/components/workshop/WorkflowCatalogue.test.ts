@@ -278,4 +278,94 @@ describe('workflow catalogue ordering and shared links', () => {
       '/models/workflows/connect/'
     ])
   })
+
+  it('restores a known capability from a shared URL and drops one no workflow has', async () => {
+    history.replaceState(
+      null,
+      '',
+      '/hub/workflows/?capability=Upscale&capability=Unknown'
+    )
+    render(WorkflowCatalogue, {
+      props: {
+        models: [
+          { ...models[0], capabilities: ['Upscale'] },
+          ...models.slice(1)
+        ]
+      }
+    })
+    await waitFor(() =>
+      expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+        'Upscale'
+      )
+    )
+    expect(screen.getByTestId('workshop-filter-chips')).not.toHaveTextContent(
+      'Unknown'
+    )
+    expect(visibleOutcomes()).toEqual(['/models/workflows/restore/'])
+  })
+})
+
+describe('workflow catalogue capability address on the server-filtered list', () => {
+  const serverPage = {
+    mode: 'cursor' as const,
+    page: 1,
+    pageSize: 24,
+    count: 2,
+    hasPrevious: false,
+    hasNext: false
+  }
+  const serverFacets = { categories: [], models: [] }
+
+  it('opens the capability and search from the address as results, and keeps both in sync', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(WorkflowCatalogue, {
+      props: {
+        models: [models[1], models[2]],
+        initialSearch: '?q=flux&capability=Image+Edit',
+        serverPage,
+        serverFacets
+      }
+    })
+    await waitFor(() =>
+      expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+        'Image Edit'
+      )
+    )
+    expect(screen.getByRole('searchbox')).toHaveValue('flux')
+    expect(screen.getByTestId('workflow-search-results')).toBeInTheDocument()
+
+    await user.click(screen.getByTestId('workshop-sort'))
+    await user.click(screen.getByTestId('sort-name'))
+    await waitFor(() =>
+      expect(emitted('search').at(-1)).toEqual([
+        'q=flux&capability=Image+Edit&sort=name'
+      ])
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Remove Image Edit' }))
+    await waitFor(() =>
+      expect(emitted('search').at(-1)).toEqual(['q=flux&sort=name'])
+    )
+  })
+
+  it('shows the empty result for a capability the server does not know, and clears it', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(WorkflowCatalogue, {
+      props: {
+        models: [],
+        initialSearch: '?capability=Not+A+Capability',
+        serverPage: { ...serverPage, count: 0 },
+        serverFacets
+      }
+    })
+    expect(
+      await screen.findByText('No workflows match your search and filters.')
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('workshop-filter-chips')).toHaveTextContent(
+      'Not A Capability'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Clear' }))
+    await waitFor(() => expect(emitted('search').at(-1)).toEqual(['']))
+  })
 })

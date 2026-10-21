@@ -65,6 +65,7 @@ const { t } = translationsFor(locale)
 const query = ref('')
 const selected = ref<string[]>([])
 const runsOn = ref<string[]>([])
+const capabilities = ref<string[]>([])
 const sort = ref<SortOrder>('popular')
 const filterMenu =
   useTemplateRef<ComponentExposed<typeof WorkshopFilterMenu>>('filterMenu')
@@ -123,6 +124,13 @@ function readAddress(search: string, preserveQuery = false) {
         ? serverFacets.models.some((model) => model.value === name)
         : models.some((model) => model.models?.includes(name))
     )
+  capabilities.value = params
+    .getAll('capability')
+    .filter((value) =>
+      serverPage
+        ? value.trim()
+        : models.some((model) => model.capabilities.includes(value))
+    )
   if (serverPage)
     sort.value = params.get('sort') === 'name' ? 'name' : 'popular'
 }
@@ -150,17 +158,26 @@ watch(
   }
 )
 watch(
-  [query, selected, runsOn, sort],
+  [query, selected, runsOn, capabilities, sort],
   () => {
     if (!serverPage || !searchReady) return
     clearTimeout(searchTimer)
     searchTimer = setTimeout(() => {
       const params = new URLSearchParams(initialSearch ?? location.search)
-      for (const key of ['q', 'category', 'model', 'sort', 'p', 'cursor'])
+      for (const key of [
+        'q',
+        'category',
+        'model',
+        'capability',
+        'sort',
+        'p',
+        'cursor'
+      ])
         params.delete(key)
       if (query.value) params.set('q', query.value)
       for (const value of selected.value) params.append('category', value)
       for (const value of runsOn.value) params.append('model', value)
+      for (const value of capabilities.value) params.append('capability', value)
       if (sort.value !== 'popular') params.set('sort', sort.value)
       const search = params.toString()
       const current = new URLSearchParams(initialSearch ?? location.search)
@@ -231,11 +248,19 @@ const modelOptions = computed(() => {
 const matchingCategories = computed(() =>
   rows.value.flatMap((category) =>
     !selected.value.length || selected.value.includes(category.id)
-      ? category.models.filter(
-          (model) =>
-            !runsOn.value.length ||
-            model.models?.some((name) => runsOn.value.includes(name))
-        )
+      ? category.models
+          .filter(
+            (model) =>
+              !runsOn.value.length ||
+              model.models?.some((name) => runsOn.value.includes(name))
+          )
+          .filter(
+            (model) =>
+              !capabilities.value.length ||
+              model.capabilities.some((value) =>
+                capabilities.value.includes(value)
+              )
+          )
       : []
   )
 )
@@ -256,6 +281,7 @@ const browsing = computed(
     !query.value.trim() &&
     !selected.value.length &&
     !runsOn.value.length &&
+    !capabilities.value.length &&
     !browseAll.value
 )
 const featured = computed(() =>
@@ -279,6 +305,10 @@ const chips = computed<FilterChip[]>(() => [
         modelOptions.value.find((option) => option.value === name)?.label ??
         name
     })
+  })),
+  ...capabilities.value.map((value) => ({
+    key: `capability:${value}`,
+    label: value
   }))
 ])
 
@@ -287,12 +317,15 @@ function removeChip(key: string) {
   const value = rest.join(':')
   if (kind === 'use')
     selected.value = selected.value.filter((id) => id !== value)
+  else if (kind === 'capability')
+    capabilities.value = capabilities.value.filter((name) => name !== value)
   else runsOn.value = runsOn.value.filter((name) => name !== value)
 }
 
 function clearFilters() {
   selected.value = []
   runsOn.value = []
+  capabilities.value = []
 }
 
 function clear() {
