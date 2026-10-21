@@ -2614,6 +2614,8 @@
       {
         "name": "selection-toolbox/domain",
         "patterns": [
+          "src/components/graph/selectionGrid/selectionGridLayout.test.ts",
+          "src/components/graph/selectionGrid/selectionGridLayout.ts",
           "src/composables/graph/contextMenuConverter.test.ts",
           "src/composables/graph/contextMenuConverter.ts",
           "src/utils/coreMediaMenuActionUtils.test.ts",
@@ -2629,7 +2631,6 @@
           "src/components/graph/NodeContextMenu.vue",
           "src/components/graph/SelectionToolbox.test.ts",
           "src/components/graph/SelectionToolbox.vue",
-          "src/components/graph/selectionToolbox/ArrangeButton.vue",
           "src/components/graph/selectionToolbox/BypassButton.test.ts",
           "src/components/graph/selectionToolbox/BypassButton.vue",
           "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
@@ -2649,16 +2650,17 @@
           "src/components/graph/selectionToolbox/NodeOptionsButton.vue",
           "src/components/graph/selectionToolbox/RefreshSelectionButton.vue",
           "src/components/graph/selectionToolbox/SaveToSubgraphLibrary.vue",
+          "src/components/graph/selectionToolbox/TidyUpButton.vue",
           "src/components/graph/selectionToolbox/VerticalDivider.vue"
         ]
       },
       {
         "name": "selection-toolbox/integration",
         "patterns": [
-          "src/composables/graph/useArrangeNodes.test.ts",
-          "src/composables/graph/useArrangeNodes.ts",
-          "src/composables/graph/useArrangeSession.test.ts",
-          "src/composables/graph/useArrangeSession.ts",
+          "src/components/graph/selectionGrid/useSelectionGrid.test.ts",
+          "src/components/graph/selectionGrid/useSelectionGrid.ts",
+          "src/components/graph/selectionGrid/useTidySession.test.ts",
+          "src/components/graph/selectionGrid/useTidySession.ts",
           "src/composables/graph/useCanvasRefresh.ts",
           "src/composables/graph/useFrameNodes.ts",
           "src/composables/graph/useGroupContextMenu.test.ts",

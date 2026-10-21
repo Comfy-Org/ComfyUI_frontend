@@ -20,8 +20,28 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/graph/selectionToolbox/ArrangeButton.vue",
-      "role": "presentation"
+      "path": "src/components/graph/selectionGrid/selectionGridLayout.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/graph/selectionGrid/selectionGridLayout.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/graph/selectionGrid/useSelectionGrid.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/selectionGrid/useSelectionGrid.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/selectionGrid/useTidySession.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/components/graph/selectionGrid/useTidySession.ts",
+      "role": "integration"
     },
     {
       "path": "src/components/graph/selectionToolbox/BypassButton.test.ts",
@@ -100,6 +120,10 @@
       "role": "presentation"
     },
     {
+      "path": "src/components/graph/selectionToolbox/TidyUpButton.vue",
+      "role": "presentation"
+    },
+    {
       "path": "src/components/graph/selectionToolbox/VerticalDivider.vue",
       "role": "presentation"
     },
@@ -114,22 +138,6 @@
     {
       "path": "src/composables/graph/contextMenuConverter.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/composables/graph/useArrangeNodes.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/graph/useArrangeNodes.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/graph/useArrangeSession.test.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/composables/graph/useArrangeSession.ts",
-      "role": "integration"
     },
     {
       "path": "src/composables/graph/useCanvasRefresh.ts",
@@ -292,8 +300,9 @@
     {
       "name": "Selection operations arrange nodes, guard deletes, and convert or unpack subgraphs",
       "checks": [
-        "src/composables/graph/useArrangeNodes.test.ts",
-        "src/composables/graph/useArrangeSession.test.ts",
+        "src/components/graph/selectionGrid/selectionGridLayout.test.ts",
+        "src/components/graph/selectionGrid/useTidySession.test.ts",
+        "src/components/graph/selectionGrid/useSelectionGrid.test.ts",
         "src/composables/graph/useSelectionOperations.deleteGuard.test.ts",
         "src/composables/graph/useSubgraphOperations.test.ts"
       ]

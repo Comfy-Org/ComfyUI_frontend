@@ -1,5 +1,6 @@
 import { useI18n } from 'vue-i18n'
 
+import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { useFrameNodes } from './useFrameNodes'
@@ -28,6 +29,8 @@ export function useSelectionMenuOptions() {
     useSubgraphOperations()
 
   const { frameNodes } = useFrameNodes()
+
+  const { canTidy, tidyUp } = useSelectionGrid()
 
   const getBasicSelectionOptions = (): MenuOption[] => [
     {
@@ -115,6 +118,12 @@ export function useSelectionMenuOptions() {
         action: () => applyDistribute(distribute)
       })),
       action: () => {}
+    },
+    {
+      label: t('g.tidyUp'),
+      icon: 'icon-[lucide--layout-dashboard]',
+      disabled: !canTidy.value,
+      action: () => tidyUp()
     }
   ]
 
