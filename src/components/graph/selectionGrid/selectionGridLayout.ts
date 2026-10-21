@@ -38,8 +38,10 @@ interface AxisSpan {
   size: number
 }
 
+const AXES = ['x', 'y'] as const
 const GRID_ALIGN_TOLERANCE = 16
 const OVERLAP_TOLERANCE = 0.5
+const POSITION_TOLERANCE = 0.5
 
 function crossAxisOf(axis: GapAxis): GapAxis {
   return axis === 'x' ? 'y' : 'x'
@@ -145,8 +147,8 @@ function assignCells(
 
 function spansOverlap(a: AxisSpan, b: AxisSpan): boolean {
   return (
-    a.start < b.start + b.size - OVERLAP_TOLERANCE &&
-    b.start < a.start + a.size - OVERLAP_TOLERANCE
+    a.start < endOf(b) - OVERLAP_TOLERANCE &&
+    b.start < endOf(a) - OVERLAP_TOLERANCE
   )
 }
 
@@ -157,10 +159,11 @@ function boxesIntersect(a: LayoutBox, b: LayoutBox): boolean {
   )
 }
 
-function anyIntersect(boxes: LayoutBox[]): boolean {
-  return boxes.some((a, i) =>
-    boxes.slice(i + 1).some((b) => boxesIntersect(a, b))
-  )
+function anyPair(
+  boxes: LayoutBox[],
+  matches: (a: LayoutBox, b: LayoutBox) => boolean
+): boolean {
+  return boxes.some((a, i) => boxes.slice(i + 1).some((b) => matches(a, b)))
 }
 
 function neighbourPairs(
@@ -203,7 +206,13 @@ function classify(
   columnCount: number
 ): SelectionLayoutKind {
   if (cells.length < 2) return 'scattered'
-  if (anyIntersect(cells.map((cell) => cell.box))) return 'scattered'
+  if (
+    anyPair(
+      cells.map((cell) => cell.box),
+      boxesIntersect
+    )
+  )
+    return 'scattered'
   if (rowCount === 1) return 'row'
   if (columnCount === 1) return 'column'
   const aligned =
@@ -371,8 +380,6 @@ function roundedMedian(values: number[]): number | undefined {
   )
 }
 
-const AXES = ['x', 'y'] as const
-
 function crowds(a: LayoutBox, b: LayoutBox, gap: number): boolean {
   const grown = (span: AxisSpan): AxisSpan => ({
     start: span.start - gap,
@@ -387,37 +394,32 @@ function crowds(a: LayoutBox, b: LayoutBox, gap: number): boolean {
   })
 }
 
-function layoutOf(grid: SelectionGrid, gap: number): BoxPosition[] {
+function placeCells(
+  grid: SelectionGrid,
+  offsetsAlong: (axis: GapAxis) => number[]
+): BoxPosition[] {
   const anchor = topLeftCell(grid.cells)
-  const place = (offsetsAlong: (axis: GapAxis) => number[]): BoxPosition[] => {
-    const startsAlong = (axis: GapAxis) => {
-      const offsets = offsetsAlong(axis)
-      const shift =
-        startAlong(anchor, axis) - offsets[trackIndexOf(anchor, axis)]
-      return offsets.map((offset) => offset + shift)
-    }
-    const columnX = startsAlong('x')
-    const rowY = startsAlong('y')
-    return grid.cells.map(({ box, row, column }) => ({
-      id: box.id,
-      x: columnX[column],
-      y: rowY[row]
-    }))
+  const startsAlong = (axis: GapAxis) => {
+    const offsets = offsetsAlong(axis)
+    const shift = startAlong(anchor, axis) - offsets[trackIndexOf(anchor, axis)]
+    return offsets.map((offset) => offset + shift)
   }
-
-  const packed = place((axis) => packedOffsets(grid, axis, gap))
-  const packedBoxes = grid.cells.map(({ box }, i) => ({
-    ...box,
-    x: packed[i].x,
-    y: packed[i].y
+  const columnX = startsAlong('x')
+  const rowY = startsAlong('y')
+  return grid.cells.map(({ box, row, column }) => ({
+    id: box.id,
+    x: columnX[column],
+    y: rowY[row]
   }))
-  const crowded = packedBoxes.some((a, i) =>
-    packedBoxes.slice(i + 1).some((b) => crowds(a, b, gap))
-  )
-  return crowded ? place((axis) => uniformOffsets(grid, axis, gap)) : packed
 }
 
-const POSITION_TOLERANCE = 0.5
+function layoutOf(grid: SelectionGrid, gap: number): BoxPosition[] {
+  const packed = placeCells(grid, (axis) => packedOffsets(grid, axis, gap))
+  const packedBoxes = grid.cells.map(({ box }, i) => ({ ...box, ...packed[i] }))
+  return anyPair(packedBoxes, (a, b) => crowds(a, b, gap))
+    ? placeCells(grid, (axis) => uniformOffsets(grid, axis, gap))
+    : packed
+}
 
 function isLaidOutAt(grid: SelectionGrid, gap: number): boolean {
   return layoutOf(grid, gap).every(
@@ -439,7 +441,7 @@ function gapOf(grid: SelectionGrid): number {
     (gap) => gap !== undefined && gap >= 0 && isLaidOutAt(grid, gap)
   )
   if (keptGap !== undefined) return keptGap
-  return packedGap < 0 ? DEFAULT_TIDY_GAP : Math.max(0, packedGap)
+  return packedGap < 0 ? DEFAULT_TIDY_GAP : packedGap
 }
 
 function safeGapOf(gap: number): number {
