@@ -2,7 +2,7 @@ interface ModelOverride {
   docsUrl?: string
   blogUrl?: string
   featured?: boolean
-  // Hub list search term; matches comfy-router's target for the old family page.
+  // Hub list search term. Use comfy-router's term when it maps the old family page.
   hubSearch?: string
   // When set, the model page's "What is {name}" paragraph links the leading
   // occurrence of displayName to this URL. See [slug].astro.
@@ -104,9 +104,11 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: false
   },
   'luma-dream-machine': {
+    hubSearch: 'luma',
     featured: false
   },
   moonvalley: {
+    hubSearch: 'moonvalley',
     featured: false
   },
   'magnific-ai': {
@@ -118,6 +120,7 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: false
   },
   'rodin-3d': {
+    hubSearch: 'rodin',
     featured: false
   },
   recraft: {
@@ -125,6 +128,7 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: false
   },
   'bria-ai': {
+    hubSearch: 'bria',
     featured: false
   },
   'topaz-labs': {
@@ -140,9 +144,11 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: false
   },
   'veo-2': {
+    hubSearch: 'veo',
     featured: false
   },
   'veo-3': {
+    hubSearch: 'veo',
     featured: false
   },
   'flux-2-api': {
@@ -160,6 +166,7 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: false
   },
   'omnigen2-fp16': {
+    hubSearch: 'omnigen',
     featured: false
   },
   'sd-xl-base-1-0': {
@@ -184,9 +191,11 @@ export const modelMetadata: Record<string, ModelOverride> = {
     featured: false
   },
   'ltx-2-19b-dev-fp8': {
+    hubSearch: 'ltx',
     featured: false
   },
   'ltx-2-19b-distilled': {
+    hubSearch: 'ltx',
     featured: false
   },
   'flux1-fill-dev': {
