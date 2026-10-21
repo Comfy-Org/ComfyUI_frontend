@@ -703,6 +703,20 @@ describe('ManagerDialog failed next page', () => {
     expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
   })
 
+  it('returns focus to Retry when the retried page fails again', async () => {
+    const user = await renderUntilSecondPageFails()
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
+      failed('search unavailable')
+    )
+
+    await user.click(screen.getByRole('button', { name: enMessages.g.retry }))
+    await settleSearch()
+
+    expect(
+      screen.getByRole('button', { name: enMessages.g.retry })
+    ).toHaveFocus()
+  })
+
   it('appends the failed page below the loaded packs when retried', async () => {
     const user = await renderUntilSecondPageFails()
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(

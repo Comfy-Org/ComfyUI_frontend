@@ -148,7 +148,11 @@
         >
           <div class="flex items-center justify-between gap-3">
             {{ $t('manager.loadMoreFailed') }}
-            <Button variant="secondary" @click="retryNextPage">
+            <Button
+              ref="retryButton"
+              variant="secondary"
+              @click="retryNextPage"
+            >
               {{ $t('g.retry') }}
             </Button>
           </div>
@@ -171,12 +175,14 @@ import { refDebounced, until, whenever } from '@vueuse/core'
 import { merge } from 'es-toolkit/compat'
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   onUnmounted,
   provide,
   ref,
   toValue,
+  useTemplateRef,
   watch,
   watchEffect
 } from 'vue'
@@ -434,7 +440,14 @@ const isNextPageFailed = computed(
     isFirstPageForInput.value &&
     packs.isNextPageFailed.value
 )
-const retryNextPage = () => void packs.retryNextPage()
+const retryButton = useTemplateRef<InstanceType<typeof Button>>('retryButton')
+async function retryNextPage() {
+  await packs.retryNextPage()
+  if (!isNextPageFailed.value) return
+  await nextTick()
+  const button: HTMLElement | undefined = retryButton.value?.$el
+  button?.focus()
+}
 const hasPendingPages = computed(
   () =>
     isSearchBacked.value && (hasMorePacks.value || packs.isNextPageFailed.value)
