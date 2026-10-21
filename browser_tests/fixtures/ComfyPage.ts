@@ -528,6 +528,7 @@ export class ComfyPage {
 
   private async startInFocusMode() {
     await this.page.locator('button.comfy-close-menu-btn').click()
+    await this.canvasOps.moveMouseToEmptyArea()
     await this.nextFrame()
   }
 
