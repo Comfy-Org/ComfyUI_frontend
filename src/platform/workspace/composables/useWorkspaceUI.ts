@@ -7,15 +7,23 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
-import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import type {
+  WorkspaceRole,
+  WorkspaceType
+} from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+
+type BillingCapabilities = ReturnType<typeof useBillingCapabilities>
+
+interface ServedPermissionFacts {
+  canManageSubscription: BillingCapabilities['canManageSubscription']['value']
+  canDowngradeToPersonal: BillingCapabilities['canDowngradeToPersonal']['value']
+}
 
 /** Permission flags for workspace actions */
 interface WorkspacePermissions {
   canViewOtherMembers: boolean
   canViewPendingInvites: boolean
-  canLeaveWorkspace: boolean
-  canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
   canManageSubscriptionLifecycle: boolean
   canDowngradeToPersonal: boolean
@@ -31,7 +39,6 @@ interface WorkspaceUIConfig {
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
-  showEditWorkspaceMenuItem: boolean
   workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
 }
@@ -39,31 +46,18 @@ interface WorkspaceUIConfig {
 function getPermissions(
   type: WorkspaceType,
   role: WorkspaceRole,
-  isOriginalOwner: boolean,
-  isOriginalOwnerResolved: boolean,
-  hasActiveWorkspace: boolean,
-  isTeamPlan: boolean
+  { canManageSubscription, canDowngradeToPersonal }: ServedPermissionFacts
 ): WorkspacePermissions {
-  const canManageBilling = hasActiveWorkspace && role === 'owner'
-  const canLeaveWorkspace =
-    hasActiveWorkspace &&
-    (type === 'personal'
-      ? isTeamPlan &&
-        !isOriginalOwner &&
-        (role === 'member' || isOriginalOwnerResolved)
-      : true)
   const billingPermissions = {
-    canManageSubscription: canManageBilling,
-    canManageSubscriptionLifecycle: canManageBilling,
-    canDowngradeToPersonal: canManageBilling && isTeamPlan && isOriginalOwner
+    canManageSubscription,
+    canManageSubscriptionLifecycle: canManageSubscription,
+    canDowngradeToPersonal
   }
 
   if (role === 'member') {
     return {
       canViewOtherMembers: true,
       canViewPendingInvites: false,
-      canLeaveWorkspace,
-      canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
     }
   }
@@ -72,8 +66,6 @@ function getPermissions(
     return {
       canViewOtherMembers: false,
       canViewPendingInvites: false,
-      canLeaveWorkspace,
-      canAccessWorkspaceMenu: canLeaveWorkspace,
       ...billingPermissions
     }
   }
@@ -81,8 +73,6 @@ function getPermissions(
   return {
     canViewOtherMembers: true,
     canViewPendingInvites: true,
-    canLeaveWorkspace,
-    canAccessWorkspaceMenu: true,
     ...billingPermissions
   }
 }
@@ -101,7 +91,6 @@ function getUIConfig(
       membersGridCols: 'grid-cols-[1fr_auto]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[1fr_auto]',
-      showEditWorkspaceMenuItem: false,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
@@ -117,7 +106,6 @@ function getUIConfig(
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
-      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
@@ -132,7 +120,6 @@ function getUIConfig(
     membersGridCols: 'grid-cols-[50%_40%_10%]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[50%_40%_10%]',
-    showEditWorkspaceMenuItem: true,
     workspaceMenuAction: 'delete',
     workspaceMenuDisabledTooltip:
       'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
@@ -170,45 +157,27 @@ function useWorkspaceUIInternal() {
   )
 
   const { shouldUseWorkspaceBilling } = useBillingRouting()
-  const { canReactivate, canSubscribeSelfServe, snapshotAuthoritative } =
-    useBillingCapabilities()
+  const {
+    canReactivate,
+    canSubscribeSelfServe,
+    snapshotAuthoritative,
+    canManageSubscription,
+    canDowngradeToPersonal
+  } = useBillingCapabilities()
 
   const permissions = computed<WorkspacePermissions>(() =>
-    getPermissions(
-      workspaceType.value,
-      workspaceRole.value,
-      store.isCurrentUserOriginalOwner,
-      store.originalOwnerId !== null,
-      store.activeWorkspace !== null,
-      isTeamPlan.value
-    )
+    getPermissions(workspaceType.value, workspaceRole.value, {
+      canManageSubscription: canManageSubscription.value,
+      canDowngradeToPersonal: canDowngradeToPersonal.value
+    })
   )
 
-  // legacy_stripe workspaces have no capability projection row, so the
-  // server-resolved can_reactivate is false for them and cannot gate the
-  // action; that rail stays on the membership check.
-  //
-  // Every reactivation surface reads this — the affordances and the handlers
-  // that execute them. They must not diverge: an affordance shown on a
-  // condition the handler does not share offers an action that silently fails,
-  // and the reverse hides a working one.
   const canReactivatePlan = computed(() =>
     isCloud && shouldUseWorkspaceBilling.value
       ? canReactivate.value
       : permissions.value.canManageSubscriptionLifecycle
   )
 
-  // Whether the self-serve pricing catalog applies to this workspace at all.
-  // The server resolves can_subscribe_self_serve false for sales-managed tiers
-  // (Enterprise, unrecognized), so every pricing-table entry point — menu
-  // items, settings links, and the ?pricing= deep link — reads this one value.
-  // Same rail split as canReactivatePlan: legacy_stripe has no capability
-  // projection row and stays on the membership check.
-  //
-  // Opening the catalog is navigation, not a billing write — every checkout
-  // endpoint enforces its own policy — so an absent snapshot falls back to
-  // membership rather than stranding a self-serve owner with no route to a
-  // plan. This mirrors canTopUp, which already fails open for owners.
   const canOpenPricingSurface = computed(() => {
     if (!isCloud || !shouldUseWorkspaceBilling.value)
       return permissions.value.canManageSubscription
@@ -233,14 +202,16 @@ function useWorkspaceUIInternal() {
     }
   })
 
-  const isOriginalOwner = computed(() => store.isCurrentUserOriginalOwner)
-
   const isSubscriptionCancelled = computed(
     () => subscription.value?.isCancelled ?? false
   )
 
   const isTeamPlanCancelled = computed(
     () => isTeamPlan.value && isSubscriptionCancelled.value
+  )
+
+  const isWorkspaceMenuInHeader = computed(
+    () => flags.unifiedBillingSettingsEnabled
   )
 
   return {
@@ -253,9 +224,9 @@ function useWorkspaceUIInternal() {
     isInPersonalWorkspace,
     isWorkspaceSubscribed,
     canAccessSubscriptionFeatures,
-    isOriginalOwner,
     isSubscriptionCancelled,
-    isTeamPlanCancelled
+    isTeamPlanCancelled,
+    isWorkspaceMenuInHeader
   }
 }
 

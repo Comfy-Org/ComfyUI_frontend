@@ -1,3 +1,5 @@
+import type { SubscriptionState } from '@comfyorg/ingest-types'
+
 import type {
   BillingStatus,
   BillingSubscriptionStatus,
@@ -8,6 +10,7 @@ type BillingCadence = 'monthly' | 'yearly'
 
 export interface PlanRowFacts {
   subscriptionStatus: BillingSubscriptionStatus | null
+  subscriptionState: SubscriptionState | null
   billingStatus: BillingStatus | null
   duration: SubscriptionDuration | null
   planName: string | null
@@ -18,6 +21,7 @@ export interface PlanRowFacts {
 }
 
 export type PlanRowState =
+  | { kind: 'activating'; planName: string }
   | {
       kind: 'active'
       planName: string
@@ -60,6 +64,9 @@ function toCadence(
 /** Maps the served status fields onto the plan row; whatever they cannot render is `unknown`. */
 export function derivePlanRow(facts: PlanRowFacts): PlanRowState {
   const { subscriptionStatus, planName, renewalDate, endDate } = facts
+  if (facts.subscriptionState === 'activating' && planName !== null) {
+    return { kind: 'activating', planName }
+  }
   if (subscriptionStatus === null) {
     return { kind: 'noPlan', freeRuns: facts.freeRuns }
   }
@@ -100,6 +107,7 @@ export function planRowAction(
 ): PlanRowAction | null {
   if (!canSubscribeSelfServe) return null
   switch (state.kind) {
+    case 'activating':
     case 'active':
     case 'unknown':
       return 'manage'

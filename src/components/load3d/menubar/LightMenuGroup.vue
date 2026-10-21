@@ -21,7 +21,7 @@
       :class="cn(formPanelClass, 'w-56')"
     >
       <div class="flex flex-col gap-2 p-1">
-        <span class="text-sm text-base-foreground">{{
+        <span class="text-sm text-foreground">{{
           t('load3d.lightIntensity')
         }}</span>
         <Slider
@@ -52,7 +52,7 @@ import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { LightConfig } from '@/extensions/core/load3d/interfaces'
+import type { LightConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverTrigger } from 'reka-ui'

@@ -10,10 +10,11 @@ import {
 import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
+import { isVfxV3Path, vfxNavCloudHref } from '@/utils/vfxNavCampaign'
 import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath.ts'
 import type { Locale } from '@/i18n/translations.ts'
 import { translationsFor } from '@/i18n/translations.ts'
-import { externalLinks, getRoutes } from '@/config/routes.ts'
+import { getRoutes } from '@/config/routes.ts'
 import type { WorkshopBuyCreditsTrigger } from '@/config/workshop-buy-credits.ts'
 import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits.ts'
 import { WORKSHOP_CREDITS_URL } from '@/config/workshop-env.ts'
@@ -31,6 +32,7 @@ import {
 import { isWorkshopModelShown } from '@/scripts/workshop-model-flags.ts'
 import type { HubApp, HubSections } from '@/data/mainNavigation.ts'
 import GitHubStarBadge from '@/components/common/GitHubStarBadge.vue'
+import WorkshopAccount from '@/components/workshop/WorkshopAccount.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
 import LogoContextMenu from './LogoContextMenu.vue'
@@ -38,11 +40,13 @@ import Button from '@/components/ui/button/Button.vue'
 
 const {
   locale = 'en',
+  pagePath = '',
   githubStars = '',
   workshopInBuild = false,
   hubApps = []
 } = defineProps<{
   locale?: Locale
+  pagePath?: string
   githubStars?: string
   workshopInBuild?: boolean
   hubApps?: readonly HubApp[]
@@ -68,17 +72,6 @@ const hubSections = computed<HubSections>(() => ({
 const showAccount = computed(
   () => showWorkshop.value && workshopAuthEnabled.value
 )
-// Each loader waits for the account source, so a visitor the web session
-// knows never mounts an island that would start Firebase.
-const HeaderAccount = defineAsyncComponent(async () => {
-  const [source, firebaseHeader] = await Promise.all([
-    resolveWorkshopAccountSource(),
-    import('@/components/workshop/HeaderAccount.vue')
-  ])
-  return source === 'session'
-    ? import('@/components/workshop/HeaderSessionAccount.vue')
-    : firebaseHeader
-})
 const BuyCreditsDialog = defineAsyncComponent<Component>(async () => {
   const [source, dialog] = await Promise.all([
     resolveWorkshopAccountSource(),
@@ -194,6 +187,7 @@ watch(
 )
 
 const currentPath = useCurrentPath()
+const navPath = computed(() => currentPath.value || pagePath)
 const ctaButtons = computed(() =>
   [
     {
@@ -201,13 +195,15 @@ const ctaButtons = computed(() =>
       short: t('nav.ctaDesktopCore'),
       ariaLabel: t('nav.downloadLocal'),
       href: routes.download,
-      primary: false
+      primary: false,
+      utmPolicy: undefined
     },
     {
       full: t('nav.launchCloud'),
       short: t('nav.ctaCloudCore'),
       ariaLabel: t('nav.launchCloud'),
-      href: externalLinks.cloudCta('nav_try_cloud'),
+      href: vfxNavCloudHref(navPath.value),
+      utmPolicy: isVfxV3Path(navPath.value) ? '' : undefined,
       primary: true
     }
   ].filter((cta) => !isHrefActive(cta.href, currentPath.value))
@@ -216,7 +212,7 @@ const ctaButtons = computed(() =>
 
 <template>
   <nav
-    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
+    class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 in-data-workshop-editor:hidden lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
     <LogoContextMenu :locale>
@@ -253,7 +249,7 @@ const ctaButtons = computed(() =>
       class="flex shrink-0 items-center gap-2"
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
-      <HeaderAccount v-if="showAccount" :locale="locale" />
+      <WorkshopAccount v-if="showAccount" :locale />
       <HeaderMainMobile :locale :hub-sections />
     </div>
 
@@ -272,13 +268,14 @@ const ctaButtons = computed(() =>
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.ariaLabel"
+        :data-vfx-nav-no-utm="cta.utmPolicy"
       >
         <span>
           <span class="hidden min-[1800px]:inline-block">{{ cta.full }}</span>
           <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
-      <HeaderAccount v-if="showAccount" :locale="locale" />
+      <WorkshopAccount v-if="showAccount" :locale />
     </div>
   </nav>
   <BuyCreditsDialog

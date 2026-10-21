@@ -24,6 +24,10 @@ import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
 import { WORKSHOP_CLOUD_ENV } from '@/config/workshop-env'
+import type {
+  FlagVariantRead,
+  NavFeaturedCardEventProperties
+} from '@/utils/navFeaturedCard'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 import { captureWorkshopHealth } from './workshop-datadog'
 
@@ -45,7 +49,10 @@ const ANALYTICS_EVENT = {
   routerRoadmapCardExpanded: 'website:router_roadmap_card_expanded',
   agentFaqExpanded: 'website:agent_faq_expanded',
   agentUsecaseVideoPlayed: 'website:agent_usecase_video_played',
+  navFeaturedCardViewed: 'website:nav_featured_card_viewed',
+  navFeaturedCardClicked: 'website:nav_featured_card_clicked',
   vfxLinkClicked: 'website:vfx_link_clicked',
+  vfxLeadSubmitted: 'website:vfx_lead_submitted',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -68,8 +75,23 @@ export type CliClientId =
 
 export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case' | 'byok'
 
+export interface VfxLeadProperties {
+  form_id: string
+  landing_version: 'v2' | 'v3'
+  interest: 'vfx'
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  utm_content?: string
+  utm_term?: string
+}
+
 type AnalyticsEvent =
   | WebSessionTelemetryEvent
+  | {
+      name: typeof ANALYTICS_EVENT.vfxLeadSubmitted
+      properties: VfxLeadProperties
+    }
   | {
       name: typeof ANALYTICS_EVENT.vfxLinkClicked
       properties: VfxLinkProperties
@@ -108,6 +130,12 @@ type AnalyticsEvent =
   | {
       name: typeof ANALYTICS_EVENT.agentUsecaseVideoPlayed
       properties: { video: string }
+    }
+  | {
+      name:
+        | typeof ANALYTICS_EVENT.navFeaturedCardViewed
+        | typeof ANALYTICS_EVENT.navFeaturedCardClicked
+      properties: NavFeaturedCardEventProperties
     }
   | {
       name:
@@ -244,6 +272,20 @@ export function useWorkshopFlag(name: string): Readonly<Ref<boolean>> {
   return readonly(flag)
 }
 
+export function readFlagVariant(name: string): FlagVariantRead {
+  if (!initialized) return { state: 'not_loaded' }
+  if (!namedFlagsAnswered) return { state: 'unanswered' }
+  try {
+    const value = posthog.getFeatureFlag(name, { send_event: false })
+    return typeof value === 'string'
+      ? { state: 'answered', key: value }
+      : { state: 'no_flag' }
+  } catch (error) {
+    console.error(`PostHog flag read failed for ${name}`, error)
+    return { state: 'no_flag' }
+  }
+}
+
 export function useWorkshopEnabledSettled(): Readonly<Ref<boolean>> {
   return unlessExcluded(workshopEnabledSettled, EXCLUDED_SETTLED)
 }
@@ -376,6 +418,7 @@ export function initPostHog() {
       before_send: createPostHogBeforeSend()
     })
     initialized = true
+    document.addEventListener('astro:page-load', resetNavFeaturedCardViews)
     tagFlagEnvironment(true)
     const persistedAnswer = posthog.isFeatureEnabled(WORKSHOP_ENABLED_FLAG, {
       send_event: false
@@ -450,6 +493,10 @@ export function capturePageview(): void {
   captureEvent({ name: ANALYTICS_EVENT.pageview })
 }
 
+export function captureVfxLeadSubmitted(properties: VfxLeadProperties): void {
+  captureEvent({ name: ANALYTICS_EVENT.vfxLeadSubmitted, properties })
+}
+
 export function captureVfxLinkClick(properties: VfxLinkProperties): void {
   captureEvent({ name: ANALYTICS_EVENT.vfxLinkClicked, properties })
 }
@@ -518,6 +565,33 @@ export function captureAgentUsecaseVideoPlayed(video: string): void {
     name: ANALYTICS_EVENT.agentUsecaseVideoPlayed,
     properties: { video }
   })
+}
+
+const viewedNavFeaturedPlacements = new Set<string>()
+
+const UNRESOLVED_VARIANT_SOURCES: readonly string[] = [
+  'not_loaded',
+  'unanswered'
+]
+
+function resetNavFeaturedCardViews(): void {
+  viewedNavFeaturedPlacements.clear()
+}
+
+export function captureNavFeaturedCardViewed(
+  properties: NavFeaturedCardEventProperties
+): void {
+  if (!initialized || viewedNavFeaturedPlacements.has(properties.placement))
+    return
+  if (!UNRESOLVED_VARIANT_SOURCES.includes(properties.variant_source))
+    viewedNavFeaturedPlacements.add(properties.placement)
+  captureEvent({ name: ANALYTICS_EVENT.navFeaturedCardViewed, properties })
+}
+
+export function captureNavFeaturedCardClicked(
+  properties: NavFeaturedCardEventProperties
+): void {
+  captureEvent({ name: ANALYTICS_EVENT.navFeaturedCardClicked, properties })
 }
 
 export function captureAuthRefreshSucceeded(): void {

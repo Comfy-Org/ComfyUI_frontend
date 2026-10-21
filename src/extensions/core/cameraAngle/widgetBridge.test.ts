@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { DEFAULT_CAMERA_ANGLE_STATE } from './types'
+import { DEFAULT_CAMERA_ANGLE_STATE } from '@comfyorg/viewport3d/cameraAngle/types'
 import {
   isViewMode,
   readStateFromWidgets,

@@ -26,6 +26,7 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
+  BillingPortalOutcome,
   CancelRail,
   BillingState,
   SubscriptionInfo
@@ -211,6 +212,9 @@ function useBillingContextInternal(): BillingContext {
   const subscriptionStatus = computed(() =>
     toValue(activeContext.value.subscriptionStatus)
   )
+  const subscriptionState = computed(() =>
+    toValue(activeContext.value.subscriptionState)
+  )
   const tier = computed(() => toValue(activeContext.value.tier))
   const renewalDate = computed(() => toValue(activeContext.value.renewalDate))
   const renewalInvoice = computed(() =>
@@ -395,8 +399,10 @@ function useBillingContextInternal(): BillingContext {
     return checkoutContext.value.previewSubscribe(planSlug, options)
   }
 
-  async function manageSubscription() {
-    if (!(await whenRoutingKnown())) return
+  async function manageSubscription(): Promise<BillingPortalOutcome> {
+    if (!(await whenRoutingKnown())) {
+      return { ok: false, reason: 'routing_unavailable' }
+    }
     return activeContext.value.manageSubscription()
   }
 
@@ -454,6 +460,7 @@ function useBillingContextInternal(): BillingContext {
     isTeamPlan,
     billingStatus,
     subscriptionStatus,
+    subscriptionState,
     tier,
     renewalDate,
     renewalInvoice,

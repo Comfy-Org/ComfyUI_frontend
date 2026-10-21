@@ -8,8 +8,8 @@ import { FALLBACK_LOCALE } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import type { AgentStarterPromptAssignment } from '@/platform/telemetry/types'
 
-import type { AgentStarterPromptAttribution } from '../../utils/starterPrompts'
-import { starterPromptAttribution } from '../../utils/starterPrompts'
+import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 const {
   userName,

@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick } from 'vue'
+import { nextTick, reactive } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
@@ -17,10 +18,12 @@ import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
 import '@/scripts/changeTracker'
+import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { widgetId } from '@/types/widgetId'
 import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -147,6 +150,58 @@ describe('useWorkflowStore', () => {
       expect(workflow.size).toBe(2)
     })
 
+    describe('node widget histories', () => {
+      const rootGraphId = '00000000-0000-4000-8000-0000000000a1'
+
+      async function loadSyncedWorkflow() {
+        await syncRemoteWorkflowsWithMeta([
+          { path: 'a.json', modified: 100, size: 1 }
+        ])
+        const workflow = store.getWorkflowByPath('workflows/a.json')
+        assert(workflow)
+        vi.mocked(api.getUserData).mockResolvedValue(
+          fromPartial<Response>({
+            status: 200,
+            text: () =>
+              Promise.resolve(
+                JSON.stringify({ ...defaultGraph, id: rootGraphId })
+              )
+          })
+        )
+        await workflow.load()
+        return workflow
+      }
+
+      function recordNodeHistory() {
+        const scope = {
+          rootGraphId,
+          widgetId: widgetId(rootGraphId, toNodeId(1), 'bboxes')
+        }
+        useWidgetHistoryStore().record(scope, [])
+        return () => useWidgetHistoryStore().canUndo(scope)
+      }
+
+      it('forgets them when a remote change unloads the workflow', async () => {
+        await loadSyncedWorkflow()
+        const hasHistory = recordNodeHistory()
+
+        await syncRemoteWorkflowsWithMeta([
+          { path: 'a.json', modified: 200, size: 2 }
+        ])
+
+        expect(hasHistory()).toBe(false)
+      })
+
+      it('forgets them when the workflow file is deleted remotely', async () => {
+        await loadSyncedWorkflow()
+        const hasHistory = recordNodeHistory()
+
+        await syncRemoteWorkflowsWithMeta([])
+
+        expect(hasHistory()).toBe(false)
+      })
+    })
+
     it('should not unload a loaded workflow if metadata has not changed', async () => {
       await syncRemoteWorkflowsWithMeta([
         { path: 'a.json', modified: 100, size: 1 }
@@ -242,6 +297,23 @@ describe('useWorkflowStore', () => {
       expect(isValidUuid(state.id)).toBe(true)
       expect(workflow.legacyId).toBe('video-point-prompt-example')
       expect(workflowData).toEqual(originalData)
+    })
+
+    it('accepts workflow data holding a reactive proxy', () => {
+      const workflowData = fromPartial<ComfyWorkflowJSON>({
+        ...structuredClone(defaultGraph),
+        extra: {
+          linearData: {
+            inputs: [reactive<LinearInput>(['1', 'seed'])],
+            outputs: []
+          }
+        }
+      })
+
+      const workflow = store.createNewTemporary('proxy.json', workflowData)
+      const state = JSON.parse(workflow.content!)
+
+      expect(state.extra.linearData.inputs).toEqual([['1', 'seed']])
     })
 
     it.for([
@@ -619,6 +691,28 @@ describe('useWorkflowStore', () => {
       await store.closeWorkflow(workflow)
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
+    })
+    it('forgets the node histories of the closed workflow only', async () => {
+      const workflow = store.createTemporary('test.json')
+      await store.openWorkflow(workflow)
+      const rootGraphId = workflow.activeState?.id
+      assert(rootGraphId)
+      const histories = useWidgetHistoryStore()
+      const closed = {
+        rootGraphId,
+        widgetId: widgetId(rootGraphId, toNodeId(1), 'b')
+      }
+      const other = {
+        rootGraphId: 'other',
+        widgetId: widgetId('other', toNodeId(1), 'b')
+      }
+      histories.record(closed, [])
+      histories.record(other, [])
+
+      await store.closeWorkflow(workflow)
+
+      expect(histories.canUndo(closed)).toBe(false)
+      expect(histories.canUndo(other)).toBe(true)
     })
   })
 

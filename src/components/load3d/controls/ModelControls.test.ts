@@ -8,7 +8,7 @@ import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import type {
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 
 const i18n = createI18n({
   legacy: false,

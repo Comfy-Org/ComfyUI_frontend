@@ -363,6 +363,7 @@ describe('useBillingContext', () => {
       ...DEFAULT_BILLING_STATUS,
       billing_status: 'payment_failed',
       subscription_status: 'ended',
+      subscription_state: 'activating',
       team_credit_stop: {
         id: 'stop-1',
         credits_monthly: 1000,
@@ -370,11 +371,16 @@ describe('useBillingContext', () => {
       }
     }
 
-    const { billingStatus, subscriptionStatus, currentTeamCreditStop } =
-      useBillingContext()
+    const {
+      billingStatus,
+      subscriptionStatus,
+      subscriptionState,
+      currentTeamCreditStop
+    } = useBillingContext()
 
     expect(billingStatus.value).toBe('payment_failed')
     expect(subscriptionStatus.value).toBe('ended')
+    expect(subscriptionState.value).toBe('activating')
     expect(currentTeamCreditStop.value).toEqual({
       id: 'stop-1',
       credits_monthly: 1000,
@@ -404,10 +410,10 @@ describe('useBillingContext', () => {
     })
   })
 
-  it('exposes manageSubscription action', async () => {
+  it('reports the legacy billing portal as opened', async () => {
     mockBillingRail.value = 'legacy_stripe'
     const { manageSubscription } = useBillingContext()
-    await expect(manageSubscription()).resolves.toBeUndefined()
+    await expect(manageSubscription()).resolves.toEqual({ ok: true })
   })
 
   it('converts topup cents to whole dollars for the legacy credit endpoint', async () => {
@@ -428,6 +434,7 @@ describe('useBillingContext', () => {
         price_cents: 33600,
         credits_cents: 42086,
         max_seats: 1,
+        action: 'subscribe',
         availability: { available: true },
         seat_summary: {
           seat_count: 1,
@@ -466,11 +473,10 @@ describe('useBillingContext', () => {
     expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(5)
   })
 
-  it('routes migrated legacy Stripe topups through workspace billing', async () => {
-    remoteConfig.value = { legacy_billing_migration_enabled: true }
+  it('routes migrated Stripe topups through workspace billing', async () => {
     remoteConfigState.value = 'authenticated'
     authenticatedRemoteConfigState.value = 'authenticated'
-    mockBillingRail.value = 'legacy_stripe'
+    mockBillingRail.value = 'stripe'
 
     const context = useBillingContext()
     await nextTick()
@@ -715,6 +721,25 @@ describe('useBillingContext', () => {
       expect(workspaceApi.createTopup).not.toHaveBeenCalled()
     })
 
+    it('reports the billing portal as not opened if the workspace never loads', async () => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      holdWorkspaceUnloaded('team')
+      const context = useBillingContext()
+      vi.clearAllMocks()
+
+      const outcome = context.manageSubscription()
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      await expect(outcome).resolves.toEqual({
+        ok: false,
+        reason: 'routing_unavailable'
+      })
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledOnce()
+    })
+
     it.for([
       {
         name: 'cancelSubscription',
@@ -926,6 +951,7 @@ describe('useBillingContext', () => {
           price_cents: 10000,
           credits_cents: 2110000,
           max_seats: 50,
+          action: 'subscribe',
           availability: { available: true },
           seat_summary: {
             seat_count: 1,

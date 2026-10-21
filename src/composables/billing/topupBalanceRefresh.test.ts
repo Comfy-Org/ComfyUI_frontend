@@ -143,4 +143,44 @@ describe('watchForTopupBalanceUpdate', () => {
       vi.mocked(useAuthStore().fetchBalance).mock.calls.length
     ).toBeGreaterThan(1)
   })
+
+  it('refreshes dependents once when the balance rises', async () => {
+    const onBalanceIncreased = vi.fn(async () => {})
+    vi.mocked(useAuthStore().fetchBalance).mockResolvedValue({
+      currency: 'usd',
+      amount_micros: 6_000
+    })
+
+    watchForTopupBalanceUpdate({ onBalanceIncreased })
+    returnToApp()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(onBalanceIncreased).toHaveBeenCalledOnce()
+  })
+
+  it('leaves dependents alone while the balance is unchanged', async () => {
+    const onBalanceIncreased = vi.fn(async () => {})
+
+    watchForTopupBalanceUpdate({ onBalanceIncreased })
+    returnToApp()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(onBalanceIncreased).not.toHaveBeenCalled()
+  })
+
+  it('stops the watch even when the dependent refresh rejects', async () => {
+    vi.mocked(useAuthStore().fetchBalance).mockResolvedValue({
+      currency: 'usd',
+      amount_micros: 6_000
+    })
+
+    watchForTopupBalanceUpdate({
+      onBalanceIncreased: () => Promise.reject(new Error('status down'))
+    })
+    returnToApp()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(useAuthStore().fetchBalance).toHaveBeenCalledTimes(1)
+    expect(console.warn).toHaveBeenCalled()
+  })
 })

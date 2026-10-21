@@ -1,4 +1,4 @@
-import type { HostedBillingIntent, PaymentIntentSource } from './vocabulary.js'
+import type { HostedBillingIntent, PaymentIntentSource } from './vocabulary'
 
 /** Mirrors `BillingProduct` in `@comfyorg/billing-contract`; a type test there fails when the two drift. */
 export type WebEntryProduct = 'comfyui' | 'platform' | 'workshop' | 'models'

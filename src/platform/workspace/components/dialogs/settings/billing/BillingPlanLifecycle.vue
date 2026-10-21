@@ -34,14 +34,14 @@
       >
         <DialogHeader>
           <DialogTitle>{{ copy.title }}</DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <div class="flex flex-col gap-2 px-4 py-2">
           <DialogDescription>{{ copy.body }}</DialogDescription>
           <p
             v-if="confirm.phase === 'refused'"
             role="alert"
-            class="m-0 text-sm wrap-break-word text-destructive-background"
+            class="m-0 text-sm wrap-break-word text-destructive"
           >
             {{
               confirm.serverMessage ??

@@ -65,7 +65,6 @@ export function withFreeTierEnabled(): SubscriptionOperator {
     ...config,
     features: {
       ...config.features,
-      free_tier_job_allowance_enabled: true,
       free_tier_balance: {
         allowance: 100,
         used: 0,

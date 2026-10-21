@@ -16,9 +16,7 @@
         {{ $t('assetBrowser.processingModelDescription') }}
       </p>
 
-      <div
-        class="flex items-center gap-3 rounded-lg bg-modal-card-background p-4"
-      >
+      <div class="flex items-center gap-3 rounded-lg bg-secondary p-4">
         <img
           v-if="previewImage"
           :src="previewImage"
@@ -28,7 +26,7 @@
         <div
           class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"
         >
-          <p class="m-0 w-full truncate text-base-foreground">
+          <p class="m-0 w-full truncate text-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
           <p class="m-0">
@@ -47,9 +45,7 @@
         {{ $t('assetBrowser.findInLibrary', { type: modelType }) }}
       </p>
 
-      <div
-        class="flex items-center gap-3 rounded-lg bg-modal-card-background p-4"
-      >
+      <div class="flex items-center gap-3 rounded-lg bg-secondary p-4">
         <img
           v-if="previewImage"
           :src="previewImage"
@@ -59,7 +55,7 @@
         <div
           class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"
         >
-          <p class="m-0 w-full truncate text-base-foreground">
+          <p class="m-0 w-full truncate text-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
           <p class="m-0">
@@ -76,7 +72,7 @@
     >
       <i
         aria-hidden="true"
-        class="text-error"
+        class="text-destructive"
         :class="
           typeMismatch
             ? 'icon-[lucide--circle-alert] size-12'
@@ -111,7 +107,7 @@
         <i18n-t
           keypath="assetBrowser.missingModelImportTypeMismatchNextAction"
           tag="p"
-          class="m-0 text-sm text-base-foreground"
+          class="m-0 text-sm text-foreground"
         >
           <template #required>
             <span>{{ typeMismatch.requiredModelTypeLabel }}</span>

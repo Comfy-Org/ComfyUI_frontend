@@ -1,8 +1,8 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index />
-      <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
+      <DialogOverlay />
+      <DialogContent size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{
@@ -11,7 +11,7 @@
                 : $t('secrets.editSecret')
             }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <form
           class="flex flex-col gap-4 px-4 py-2"
@@ -24,7 +24,6 @@
             <Select v-model="form.provider" :disabled="mode === 'edit'">
               <SelectTrigger
                 id="secret-provider"
-                class="w-full"
                 autofocus
                 :invalid="!!errors.provider"
               >
@@ -60,7 +59,7 @@
               {{ $t('secrets.credentialType') }}
             </FieldLabel>
             <Select v-model="credentialType">
-              <SelectTrigger id="secret-credential-type" class="w-full">
+              <SelectTrigger id="secret-credential-type">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent disable-portal>
@@ -124,7 +123,7 @@
                 :aria-invalid="!!errors.secretValue"
               />
             </template>
-            <PasswordInput
+            <AppPasswordInput
               v-else
               id="secret-value"
               v-model="form.secretValue"
@@ -152,7 +151,7 @@
             >
               {{ $t('g.cancel') }}
             </Button>
-            <Button type="submit" tabindex="0" :loading="loading">
+            <Button type="submit" tabindex="0" :loading>
               {{ $t('g.save') }}
             </Button>
           </div>
@@ -174,13 +173,12 @@ import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Field from '@/components/ui/field/Field.vue'
 import FieldDescription from '@/components/ui/field/FieldDescription.vue'
 import FieldError from '@/components/ui/field/FieldError.vue'
 import FieldLabel from '@/components/ui/field/FieldLabel.vue'
 import Input from '@/components/ui/input/Input.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
@@ -188,8 +186,11 @@ import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
-import { useSecretForm } from '../composables/useSecretForm'
-import type { SecretMetadata, SecretProviderInfo } from '../types'
+import { useSecretForm } from '@/platform/secrets/composables/useSecretForm'
+import type {
+  SecretMetadata,
+  SecretProviderInfo
+} from '@/platform/secrets/types'
 
 const {
   secret,

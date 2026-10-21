@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "將文字轉換為語音。支援文字中的情緒提示（s2.1-pro 使用 [happy]、[whispering]；s1 使用 (happy)），並可透過 {'@'}Voice1/{'@'}Voice2 標籤搭配多個已連接的語音進行多說話者對話。",
+    "description": "將文字轉換為語音。支援文字中的情緒提示（s2.1-pro 使用 [happy]、[whispering]；s1 使用 (happy)）、drama-3 中的自然語言 [directions] 與 `<whisper>...</whisper>` 詞語標籤，以及透過 {'@'}Voice1/{'@'}Voice2 標籤並搭配多個已連接語音的多說話者對話。",
     "display_name": "Fish Audio 文字轉語音",
     "inputs": {
       "control_after_generate": {
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "使用參考影像中的新角色、地點或風格重新詮釋影片，同時保留其動作、鏡頭運動與時間節奏。",
+    "display_name": "Higgsfield Genjutsu 動作轉移",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "要使用的模型。"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "將低解析度影像升級為超高解析度，消除雜訊與失真。最大輸出：32 百萬像素。",
     "display_name": "HitPaw 通用影像增強",
@@ -9263,6 +9290,28 @@
       },
       "rotation": {
         "name": "旋轉"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "將 sRGB 亮度擴展至 Rec.2020 HLG HDR。請在選取 HDR 色彩空間的情況下儲存結果。保留 Alpha。",
+    "display_name": "將 SDR 轉換為 HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "演算法",
+        "tooltip": "Lottes 風格的有理函數擴展，與經校準的單調對數增益曲線混合。"
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "sRGB 中的 SDR 影像。"
       }
     },
     "outputs": {

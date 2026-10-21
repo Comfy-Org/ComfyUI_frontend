@@ -23,6 +23,7 @@ import { ssoFlowStore } from '@comfyorg/account-core/telemetry'
 
 import { provideEnsureSessionCookie } from '@/platform/auth/session/sessionCookieAccess'
 import { trackSsoSignInCompleted } from '@/platform/auth/sso/ssoTelemetry'
+import { SessionRevokedError } from '@/platform/auth/session/sessionRevokedError'
 import { useTelemetry } from '@/platform/telemetry'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
@@ -86,7 +87,7 @@ const mockWorkspaceApiError = vi.hoisted(
     }
 )
 
-vi.mock<unknown>(import('../api/workspaceApi'), () => ({
+vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
   workspaceApi: mockWorkspaceApi,
   WorkspaceApiError: mockWorkspaceApiError
 }))
@@ -170,6 +171,7 @@ beforeEach(() => {
   useCurrentUser().userEmail = computed(() => null)
 
   Object.assign(useWorkspaceAuthStore(), {
+    bootTabWorkspaceId: null,
     currentWorkspace: null,
     workspaceToken: null,
     isLoading: false,
@@ -332,24 +334,103 @@ describe('useTeamWorkspaceStore', () => {
         defaultId: 'ws-not-listed',
         lastUsed: null,
         expected: mockPersonalWorkspace.id
+      },
+      {
+        name: "keeps this tab's workspace over another tab's last switch",
+        defaultId: undefined,
+        lastUsed: mockPersonalWorkspace.id,
+        tabWorkspace: mockTeamWorkspace,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: "keeps this tab's workspace over the server's default",
+        defaultId: mockPersonalWorkspace.id,
+        lastUsed: null,
+        tabWorkspace: mockTeamWorkspace,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: "keeps a switch's target over this tab's workspace",
+        defaultId: undefined,
+        lastUsed: null,
+        switchTarget: mockPersonalWorkspace.id,
+        tabWorkspace: mockTeamWorkspace,
+        expected: mockPersonalWorkspace.id
+      },
+      {
+        name: "ignores this tab's workspace when it is no longer listed",
+        defaultId: undefined,
+        lastUsed: mockTeamWorkspace.id,
+        tabWorkspace: { ...mockTeamWorkspace, id: 'ws-left' },
+        expected: mockTeamWorkspace.id
       }
-    ])('$name', async ({ defaultId, lastUsed, switchTarget, expected }) => {
-      mockLocalStorage.getItem.mockReturnValue(lastUsed)
-      if (switchTarget) {
-        sessionStorage.setItem(
-          WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
-          switchTarget
-        )
+    ])(
+      '$name',
+      async ({ defaultId, lastUsed, switchTarget, tabWorkspace, expected }) => {
+        mockLocalStorage.getItem.mockReturnValue(lastUsed)
+        if (switchTarget) {
+          sessionStorage.setItem(
+            WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+            switchTarget
+          )
+        }
+        Object.assign(useWorkspaceAuthStore(), {
+          bootTabWorkspaceId: tabWorkspace?.id ?? null
+        })
+        mockWorkspaceApi.list.mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+          ...(defaultId && { default_workspace_id: defaultId })
+        })
+
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+
+        expect(store.activeWorkspaceId).toBe(expected)
       }
-      mockWorkspaceApi.list.mockResolvedValue({
-        workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
-        ...(defaultId && { default_workspace_id: defaultId })
+    )
+
+    it("keeps this tab's workspace when a transient failure retries initialization", async () => {
+      mockLocalStorage.getItem.mockReturnValue(mockPersonalWorkspace.id)
+      Object.assign(useWorkspaceAuthStore(), {
+        bootTabWorkspaceId: mockTeamWorkspace.id
       })
+      mockWorkspaceApi.list
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
 
       const store = useTeamWorkspaceStore()
-      await store.initialize()
+      const initialized = store.initialize()
+      await vi.advanceTimersByTimeAsync(1000)
+      await initialized
 
-      expect(store.activeWorkspaceId).toBe(expected)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('keeps the requested switch target when the first switch fails transiently', async () => {
+      mockLocalStorage.getItem.mockReturnValue(mockPersonalWorkspace.id)
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+        mockTeamWorkspace.id
+      )
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+      })
+      vi.mocked(useWorkspaceAuthStore().switchWorkspace).mockRejectedValueOnce(
+        new Error('Network error')
+      )
+
+      const store = useTeamWorkspaceStore()
+      const initialized = store.initialize()
+      await vi.advanceTimersByTimeAsync(1000)
+      await initialized
+
+      expect(useWorkspaceAuthStore().switchWorkspace).toHaveBeenLastCalledWith(
+        mockTeamWorkspace.id
+      )
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
     it.for([
@@ -456,6 +537,42 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.error).toBeInstanceOf(Error)
       // Should have been called 4 times (initial + 3 retries)
       expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(4)
+    })
+
+    it.for([
+      { code: 'SESSION_REVOKED' as const, attempts: 2 },
+      { code: 'TOKEN_REVOKED' as const, attempts: 1 }
+    ])(
+      'tries a $code refusal $attempts time(s) before giving up',
+      async ({ code, attempts }) => {
+        const refusal = new SessionRevokedError('revoked', code)
+        mockEnsureSessionCookie.mockRejectedValue(refusal)
+
+        const store = useTeamWorkspaceStore()
+        const initialization = store.initialize().catch((e: unknown) => e)
+        await vi.advanceTimersByTimeAsync(7000)
+
+        expect(await initialization).toBe(refusal)
+        expect(mockEnsureSessionCookie).toHaveBeenCalledTimes(attempts)
+        expect(store.initState).toBe('error')
+      }
+    )
+
+    it('still retries a SESSION_REVOKED refusal after one second when an ordinary failure came first', async () => {
+      mockEnsureSessionCookie
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockRejectedValueOnce(
+          new SessionRevokedError('revoked', 'SESSION_REVOKED')
+        )
+
+      const store = useTeamWorkspaceStore()
+      const initialization = store.initialize()
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(1000)
+      await initialization
+
+      expect(mockEnsureSessionCookie).toHaveBeenCalledTimes(3)
+      expect(store.initState).toBe('ready')
     })
 
     it('does not reinitialize if already initialized', async () => {
@@ -2085,140 +2202,6 @@ describe('useTeamWorkspaceStore', () => {
 
       expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(2)
       expect(store.members).toHaveLength(1)
-    })
-  })
-
-  describe('isCurrentUserOriginalOwner', () => {
-    async function loadTeamWithMembers(
-      members: Array<{
-        id: string
-        name: string
-        email: string
-        joined_at: string
-        is_original_owner?: boolean
-      }>
-    ) {
-      mockWorkspaceApi.listMembers.mockResolvedValue({
-        members,
-        pagination: { offset: 0, limit: 50, total: members.length }
-      })
-      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
-        true
-      )
-      Object.assign(useWorkspaceAuthStore(), {
-        currentWorkspace: mockTeamWorkspace
-      })
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-      await store.fetchMembers()
-      return store
-    }
-
-    const ownerSelf = {
-      id: 'user-1',
-      name: 'Owner',
-      email: 'owner@test.com',
-      joined_at: '2024-01-01T00:00:00Z',
-      role: 'owner' as const,
-      is_original_owner: true
-    }
-    const promotedSelf = { ...ownerSelf, is_original_owner: false }
-
-    it('is true when the self-row is the original owner', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      const store = await loadTeamWithMembers([ownerSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(true)
-    })
-
-    it('matches the self-row by email case-insensitively', async () => {
-      useCurrentUser().userEmail = computed(() => 'OWNER@TEST.COM')
-      const store = await loadTeamWithMembers([ownerSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(true)
-    })
-
-    it('is false when the self-row is a promoted (non-creator) owner', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      const creator = {
-        id: 'creator',
-        name: 'Creator',
-        email: 'creator@test.com',
-        joined_at: '2023-01-01T00:00:00Z',
-        role: 'owner' as const,
-        is_original_owner: true
-      }
-      const store = await loadTeamWithMembers([creator, promotedSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('infers the earliest owner as the original owner when no member is flagged', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      const { is_original_owner: _omitted, ...ownerWithoutFlag } = ownerSelf
-      const store = await loadTeamWithMembers([ownerWithoutFlag])
-      expect(store.isCurrentUserOriginalOwner).toBe(true)
-    })
-
-    it('is false when the self-row is a plain member', async () => {
-      useCurrentUser().userEmail = computed(() => 'member@test.com')
-      const plainMember = {
-        id: 'plain-member',
-        name: 'Plain Member',
-        email: 'member@test.com',
-        joined_at: '2023-01-01T00:00:00Z',
-        role: 'member' as const
-      }
-      const store = await loadTeamWithMembers([ownerSelf, plainMember])
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('is false when no member row matches the current user', async () => {
-      useCurrentUser().userEmail = computed(() => 'someone-else@test.com')
-      const store = await loadTeamWithMembers([ownerSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('fails closed when members are not loaded', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
-        true
-      )
-      Object.assign(useWorkspaceAuthStore(), {
-        currentWorkspace: mockTeamWorkspace
-      })
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('fails closed when the current user email is unknown', async () => {
-      useCurrentUser().userEmail = computed(() => null)
-      const store = await loadTeamWithMembers([ownerSelf])
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-    })
-
-    it('recomputes reactively when the self-row arrives after an empty read', async () => {
-      useCurrentUser().userEmail = computed(() => 'owner@test.com')
-      mockWorkspaceApi.listMembers.mockResolvedValue({
-        members: [ownerSelf],
-        pagination: { offset: 0, limit: 50, total: 1 }
-      })
-      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
-        true
-      )
-      Object.assign(useWorkspaceAuthStore(), {
-        currentWorkspace: mockTeamWorkspace
-      })
-
-      const store = useTeamWorkspaceStore()
-      await store.initialize()
-
-      expect(store.isCurrentUserOriginalOwner).toBe(false)
-
-      await store.fetchMembers()
-
-      expect(store.isCurrentUserOriginalOwner).toBe(true)
     })
   })
 

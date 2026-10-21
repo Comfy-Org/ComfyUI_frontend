@@ -11,6 +11,7 @@ import {
   zAgentPendingAskBase,
   zAgentRunMode as zGeneratedAgentRunMode,
   zAgentThreadListResponse as zGeneratedAgentThreadListResponse,
+  zAgentToolCallData as zGeneratedAgentToolCallData,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
   zToolCallSummary,
   zWorkflowListResponse
@@ -240,16 +241,15 @@ const zAgentThinkingData = z
   })
   .passthrough()
 
-const zAgentToolCallData = z
-  .object({
-    tool_call_id: z.string(),
-    tool_name: z.string(),
-    status: z.enum(['running', 'success', 'error']),
+const zAgentToolCallData = zGeneratedAgentToolCallData
+  .extend({
     skill: zSkillName,
     args: z.never().optional(),
-    duration_ms: z.number().optional(),
-    message_id: z.string(),
-    thread_id: z.string()
+    workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
+    op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
+    doc_seq: zGeneratedAgentToolCallData.shape.doc_seq.catch(undefined),
+    doc_lineage_seq:
+      zGeneratedAgentToolCallData.shape.doc_lineage_seq.catch(undefined)
   })
   .passthrough()
 

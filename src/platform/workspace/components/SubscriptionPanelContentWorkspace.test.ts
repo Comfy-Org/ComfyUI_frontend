@@ -75,14 +75,30 @@ const teamCreditStops: TeamCreditStops = {
     {
       id: 'team_700',
       credits: 147700,
-      monthly: { list_price_cents: 70000, price_cents: 66500 },
-      yearly: { list_price_cents: 70000, price_cents: 63000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 70000,
+        price_cents: 66500
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 70000,
+        price_cents: 63000
+      }
     },
     {
       id: 'team_2500',
       credits: 527500,
-      monthly: { list_price_cents: 250000, price_cents: 225000 },
-      yearly: { list_price_cents: 250000, price_cents: 200000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 250000,
+        price_cents: 225000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 250000,
+        price_cents: 200000
+      }
     }
   ]
 }
@@ -124,28 +140,25 @@ const mockCurrentTeamCreditStop = ref<TeamCreditStopSummary | null>({
 })
 
 type MenuUiConfig = {
-  showEditWorkspaceMenuItem: boolean
   workspaceMenuAction: 'delete' | null
   workspaceMenuDisabledTooltip: string | null
 }
 
 const ownerUiConfig: MenuUiConfig = {
-  showEditWorkspaceMenuItem: true,
   workspaceMenuAction: 'delete',
   workspaceMenuDisabledTooltip:
     'workspacePanel.menu.deleteWorkspaceDisabledTooltip'
 }
 const memberUiConfig: MenuUiConfig = {
-  showEditWorkspaceMenuItem: false,
   workspaceMenuAction: null,
   workspaceMenuDisabledTooltip: null
 }
 const personalUiConfig: MenuUiConfig = {
-  showEditWorkspaceMenuItem: true,
   workspaceMenuAction: null,
   workspaceMenuDisabledTooltip: null
 }
 const mockUiConfig = ref<MenuUiConfig>(ownerUiConfig)
+const mockCanEditWorkspace = ref(true)
 
 const mockSubscriptionTier = ref<SubscriptionInfo['tier']>('PRO')
 const mockPlanSlug = ref('team-monthly')
@@ -158,6 +171,7 @@ const mockPlans = ref<Plan[]>([
     price_cents: 96000,
     credits_cents: 253200,
     max_seats: 1,
+    action: 'subscribe',
     availability: { available: true },
     seat_summary: {
       seat_count: 1,
@@ -230,9 +244,9 @@ const SubscriptionFooterLinksStub = {
     '<div data-testid="subscription-footer-links" :data-show-invoice-history="String(showInvoiceHistory)" />'
 }
 
-const StatusBadgeStub = {
-  props: ['label', 'severity'],
-  template: '<span :data-severity="severity">{{ label }}</span>'
+const BadgeStub = {
+  props: ['severity'],
+  template: '<span :data-severity="severity"><slot /></span>'
 }
 
 function renderComponent({ stubFooter = true } = {}) {
@@ -244,7 +258,7 @@ function renderComponent({ stubFooter = true } = {}) {
         ...(stubFooter
           ? { SubscriptionFooterLinks: SubscriptionFooterLinksStub }
           : {}),
-        StatusBadge: StatusBadgeStub
+        Badge: BadgeStub
       }
     }
   })
@@ -280,9 +294,17 @@ describe('SubscriptionPanelContentWorkspace', () => {
     workspaceUI.permissions = computed(() => ({
       ...defaultPermissions,
       canManageSubscription: mockCanManageSubscription.value,
-      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value,
-      canLeaveWorkspace: mockCanLeaveWorkspace.value
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value
     }))
+    useBillingCapabilities().canLeaveWorkspace = computed(() =>
+      receiveServerFact('can_leave_workspace', mockCanLeaveWorkspace.value)
+    )
+    useBillingCapabilities().leaveWorkspaceDenial = computed(() =>
+      mockCanLeaveWorkspace.value ? undefined : 'personal_workspace_creator'
+    )
+    useBillingCapabilities().canEditWorkspace = computed(() =>
+      receiveServerFact('can_edit_workspace', mockCanEditWorkspace.value)
+    )
     workspaceUI.canReactivatePlan = computed(() => mockCanReactivatePlan.value)
     workspaceUI.canOpenPricingSurface = computed(
       () => mockCanOpenPricingSurface.value
@@ -331,6 +353,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanOpenPricingSurface.value = true
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = ownerUiConfig
+    mockCanEditWorkspace.value = true
     mockSubscriptionTier.value = 'PRO'
     mockPlanSlug.value = 'team-monthly'
     mockHasTeamPlan.value = true
@@ -347,6 +370,19 @@ describe('SubscriptionPanelContentWorkspace', () => {
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: undefined
     })
+  })
+
+  it('does not render Activating or Contact sales on the Plan & credits panel', () => {
+    mockSubscriptionStatus.value = 'active'
+    renderComponent()
+
+    expect(screen.queryByText(/Activating your/)).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'Contact sales' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Contact sales' })
+    ).not.toBeInTheDocument()
   })
 
   it('keeps verification available in settings without exposing its URL', async () => {
@@ -796,8 +832,16 @@ describe('SubscriptionPanelContentWorkspace', () => {
         {
           id: 'team_700',
           credits: 147700,
-          monthly: { list_price_cents: 70000, price_cents: 66550 },
-          yearly: { list_price_cents: 70000, price_cents: 63000 }
+          monthly: {
+            action: 'subscribe',
+            list_price_cents: 70000,
+            price_cents: 66550
+          },
+          yearly: {
+            action: 'subscribe',
+            list_price_cents: 70000,
+            price_cents: 63000
+          }
         }
       ]
     }
@@ -857,6 +901,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockCanLeaveWorkspace.value = true
     mockUiConfig.value = memberUiConfig
+    mockCanEditWorkspace.value = false
     renderComponent()
 
     expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
@@ -1467,6 +1512,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       () => 'not_workspace_owner'
     )
     mockUiConfig.value = memberUiConfig
+    mockCanEditWorkspace.value = false
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))
@@ -1493,6 +1539,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     useBillingCapabilities().canChangeSeats = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
     mockUiConfig.value = memberUiConfig
+    mockCanEditWorkspace.value = false
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'More Options' }))

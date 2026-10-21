@@ -18,6 +18,7 @@
     "assetNotAttachable": "می‌توان تصاویر، ویدیو، صدا، مدل‌های سه‌بعدی و فایل‌های متنی را پیوست کرد",
     "attach": "پیوست کردن فایل",
     "attachFiles": "تصاویر یا فایل‌ها را بارگذاری کنید",
+    "attachmentInvalidVideo": "{name} یک فایل ویدیویی معتبر نیست. آن را حذف کنید و فایل دیگری را امتحان کنید.",
     "attachmentTooLarge": "{name} بزرگ‌تر از {limit} است",
     "attachmentUploadFailed": "{name} بارگذاری نشد",
     "attachmentsAlreadyAdded": "{name} از قبل در سینی دارایی‌ها قرار دارد | از {count} دارایی تکراری صرف‌نظر شد",
@@ -173,6 +174,7 @@
     "selectWorkflowForNodes": "لطفاً ابتدا یک workflow انتخاب کنید",
     "selectWorkflowToGenerate": "یک workflow برای تولید انتخاب کنید",
     "send": "ارسال",
+    "sendBlockedByInvalidVideo": "{name} یک ویدیوی معتبر نیست. برای ارسال، آن را حذف کنید. | {count} فایل ویدیوی معتبر نیستند. برای ارسال، آن‌ها را حذف کنید.",
     "sendBusy": "پیامی در حال ارسال است",
     "sendFailed": "ارسال پیام ناموفق بود",
     "sendTurnInProgress": "این چت همچنان در حال دریافت پاسخ است. صبر کنید تا تمام شود، یا آن را متوقف کنید، سپس دوباره ارسال کنید.",
@@ -3415,6 +3417,7 @@
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
+    "Higgsfield": "Higgsfield",
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
@@ -4390,7 +4393,6 @@
     "viewControls": "کنترل‌های نمایش"
   },
   "sideToolbar": {
-    "activeJobStatus": "وضعیت کار فعال: {status}",
     "assets": "دارایی‌ها",
     "backToAssets": "بازگشت به همه دارایی‌ها",
     "browseTemplates": "مرور قالب‌های نمونه",
@@ -5547,22 +5549,6 @@
     "retry": "تلاش مجدد"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "اعتبار مصرف‌شده",
-        "date": "تاریخ",
-        "eventDetails": "جزئیات رویداد",
-        "eventType": "نوع رویداد",
-        "user": "کاربر"
-      },
-      "empty": "هنوز فعالیتی وجود ندارد.",
-      "fullActivity": "تمام فعالیت‌ها",
-      "hoverCard": {
-        "lastActivity": "آخرین فعالیت",
-        "partnerNodeUsed": "گره شریک استفاده‌شده",
-        "totalCreditsUsed": "مجموع اعتبار مصرف‌شده"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "دیگر هزینه‌ای از شما دریافت نخواهد شد. اعضا تا آن زمان دسترسی کامل خواهند داشت. برای حفظ اعتبارهای مشترک تیم خود، طرح‌تان را از سر بگیرید.",
@@ -5698,12 +5684,6 @@
         "removeMember": "حذف عضو",
         "resendInvite": "ارسال مجدد دعوت‌نامه",
         "setCreditLimit": "تنظیم سقف اعتبار"
-      },
-      "activity": {
-        "daysAgo": "{count} روز پیش",
-        "hoursAgo": "{n} ساعت پیش",
-        "justNow": "همین حالا",
-        "minutesAgo": "{n} دقیقه پیش"
       },
       "columns": {
         "creditsUsed": "اعتبار استفاده‌شده در این ماه",
