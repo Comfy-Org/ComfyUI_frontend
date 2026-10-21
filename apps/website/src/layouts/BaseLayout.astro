@@ -340,6 +340,7 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
       </div>
     ) : (
       <HeaderMain
+        page-path={Astro.url.pathname}
         locale={locale}
         github-stars={githubStars}
         workshop-in-build={isWorkshopInBuild()}
