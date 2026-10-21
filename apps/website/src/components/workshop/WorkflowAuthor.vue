@@ -12,6 +12,7 @@ const { name, avatar, href } = defineProps<{
     :is="href ? 'a' : 'span'"
     :href
     :class="cn('flex items-center gap-2', href && 'hover:underline')"
+    data-testid="workflow-author"
   >
     <img
       v-if="avatar"

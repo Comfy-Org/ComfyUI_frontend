@@ -117,7 +117,7 @@ function authorDetails(d: Document, locale: string) {
       : undefined
   return {
     author: name ?? unavailable,
-    ...authorUsername(matches, resolved.username),
+    ...(name ? authorUsername(resolved.username) : {}),
     ...authorAvatar(matches, resolved.avatar_url)
   }
 }
@@ -126,8 +126,8 @@ function trimmedText(value: unknown) {
   return typeof value === 'string' ? value.trim() || undefined : undefined
 }
 
-function authorUsername(matches: boolean, value: unknown) {
-  const username = matches ? trimmedText(value) : undefined
+function authorUsername(value: unknown) {
+  const username = trimmedText(value)
   return username && isCreatorUsername(username)
     ? { authorUsername: username }
     : {}

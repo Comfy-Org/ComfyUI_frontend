@@ -168,6 +168,29 @@ describe('native CONTENT presentation', () => {
     expect(invalidAvatar).not.toHaveProperty('catalogDetails.authorAvatarURL')
     expect(invalidAvatar).not.toHaveProperty('catalogDetails.authorUsername')
   })
+  it.for([
+    { case: 'no name', name: {} },
+    { case: 'a blank name', name: { name: '   ' } }
+  ])(
+    'links no creator page when the matching author record has $case',
+    ({ name }) => {
+      const uid = '00000000-0000-4000-8000-000000000097'
+      const view = detailSchema.parse(
+        catalogPresentation({
+          ...record,
+          data: {
+            ...record.data,
+            author_uid: uid,
+            website_author: { uid, ...name, username: 'comfy-creator' }
+          }
+        })
+      )
+      expect(view).toMatchObject({
+        catalogDetails: { author: 'Author unavailable' }
+      })
+      expect(view).not.toHaveProperty('catalogDetails.authorUsername')
+    }
+  )
   it('uses only named pair zero: download graph and independent API prompt for Run', () => {
     const download = '00000000-0000-4000-8000-000000000080'
     const api = '00000000-0000-4000-8000-000000000081'

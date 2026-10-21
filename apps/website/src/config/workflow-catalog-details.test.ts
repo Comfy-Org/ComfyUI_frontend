@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   validCloudShareURL,
   validDocumentationURL,
-  validWorkflowDownloadURL
+  validWorkflowDownloadURL,
+  workflowCatalogDetailsSchema
 } from './workflow-catalog-details'
 
 describe('workflow action URL boundaries', () => {
@@ -49,4 +50,21 @@ describe('workflow action URL boundaries', () => {
       false
     )
   })
+})
+
+describe('workflowCatalogDetailsSchema', () => {
+  const details = { locale: 'en', faqs: [], models: [] }
+
+  it.for([
+    { authorUsername: 'comfy-creator', success: true },
+    { authorUsername: '../x', success: false }
+  ])(
+    'parses the author username $authorUsername: $success',
+    ({ authorUsername, success }) => {
+      expect(
+        workflowCatalogDetailsSchema.safeParse({ ...details, authorUsername })
+          .success
+      ).toBe(success)
+    }
+  )
 })

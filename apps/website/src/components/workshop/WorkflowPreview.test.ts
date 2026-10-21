@@ -89,7 +89,7 @@ describe('WorkflowPreview', () => {
     )
     expect(avatar).toHaveAttribute('referrerpolicy', 'no-referrer')
     expect(avatar).toHaveAttribute('alt', '')
-    expect(screen.queryByRole('link', { name: 'Ben Cooley' })).toBeNull()
+    expect(screen.getByTestId('workflow-author').tagName).toBe('SPAN')
   })
   it.for([
     { locale: 'en', href: '/hub/creators/comfy-creator/' },
