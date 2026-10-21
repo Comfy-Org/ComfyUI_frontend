@@ -989,6 +989,7 @@ const {
   docInputNames,
   docPromotedWidgets,
   mayWritePromotedHost,
+  docHasSubgraphDefinition,
   notifyWidgetWriteRefused,
   subscriptionSent
 } = useAgentCrdtFollower(boundWorkflowId, {
@@ -1055,6 +1056,7 @@ const docOpMinter = attachDocOpMinter({
   docInputNames,
   docPromotedWidgets,
   mayWritePromotedHost,
+  docHasSubgraphDefinition,
   onWidgetWriteRefused: notifyWidgetWriteRefused
 })
 const restoreOpMinter = attachRestoreOpMinter({
