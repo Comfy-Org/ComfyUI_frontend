@@ -1285,8 +1285,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
       accepted = true
-      onAccepted?.()
-      if (generation !== loadGeneration) return false
+      if (!observeAcceptedTurn(generation, onAccepted)) return false
       acceptTurn(
         ack,
         text,
@@ -1312,6 +1311,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
       return false
     }
+  }
+
+  function observeAcceptedTurn(
+    generation: number,
+    onAccepted?: () => void
+  ): boolean {
+    onAccepted?.()
+    return generation === loadGeneration
   }
 
   function workflowTargetChanged(
