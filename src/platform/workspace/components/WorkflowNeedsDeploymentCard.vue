@@ -1,15 +1,21 @@
 <template>
-  <CustomDeploymentCard :pitch="pitch" />
+  <SwitchDeploymentCard
+    v-if="offer.kind === 'switch'"
+    :choices="offer.choices"
+    :missing="missing"
+  />
+  <CustomDeploymentCard v-else :pitch="pitch" />
 </template>
 
 <script setup lang="ts">
 import { uniqBy } from 'es-toolkit'
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import CustomDeploymentCard from '@/platform/workspace/components/CustomDeploymentCard.vue'
+import SwitchDeploymentCard from '@/platform/workspace/components/SwitchDeploymentCard.vue'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import type {
   CustomDeploymentPitch,
@@ -21,29 +27,32 @@ import {
   missingPacksOf,
   nodesNeedingDeployment
 } from '@/platform/workspace/missingForDeployment'
+import { openWorkflowForCheck } from '@/platform/workspace/openWorkflowForCheck'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
 
 const NAMES_SHOWN = 3
 
 const { t } = useI18n()
-const missingNodesErrorStore = useMissingNodesErrorStore()
-const missingModelStore = useMissingModelStore()
+const { markFor } = useDeploymentCompatibility()
 
-const packs = computed(() =>
-  missingPacksOf(
-    nodesNeedingDeployment(
-      missingNodesErrorStore.missingNodesError?.nodeTypes ?? []
-    )
-  )
+const missingNodes = nodesNeedingDeployment(
+  useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
 )
-const models = computed<MissingBuildModel[]>(() =>
-  uniqBy(
-    missingModelStore.visibleMissingModelCandidates ?? [],
-    (candidate) => candidate.name
-  ).map((candidate) => ({
-    name: candidate.name,
-    directory: candidate.directory ?? null,
-    url: candidate.url
-  }))
+const packs = missingPacksOf(missingNodes)
+const models: MissingBuildModel[] = uniqBy(
+  useMissingModelStore().visibleMissingModelCandidates ?? [],
+  (candidate) => candidate.name
+).map((candidate) => ({
+  name: candidate.name,
+  directory: candidate.directory ?? null,
+  url: candidate.url
+}))
+
+const offer = workflowDeploymentOffer(
+  useDeploymentPickStore().deployments,
+  markFor,
+  openWorkflowForCheck(missingNodes)
 )
 
 function listed(names: readonly string[]): string {
@@ -62,25 +71,30 @@ function row(key: string, names: readonly string[]): MissingItemsRow[] {
   return [{ label: t(key, names.length), names: listed(names) }]
 }
 
-const missing = computed<MissingItemsRow[]>(() => [
+const missing: MissingItemsRow[] = [
   ...row(
     'deploymentSwitcher.workflowNeedsDeployment.missingPacks',
-    packs.value.flatMap((pack) => (pack.packId === null ? [] : [pack.packId]))
+    packs.flatMap((pack) => (pack.packId === null ? [] : [pack.packId]))
   ),
   ...row(
     'deploymentSwitcher.workflowNeedsDeployment.missingNodes',
-    packs.value.flatMap((pack) => (pack.packId === null ? pack.nodeTypes : []))
+    packs.flatMap((pack) => (pack.packId === null ? pack.nodeTypes : []))
   ),
   ...row(
     'deploymentSwitcher.workflowNeedsDeployment.missingModels',
-    models.value.map((model) => model.name)
+    models.map((model) => model.name)
   )
-])
+]
 
-const pitch = computed<CustomDeploymentPitch>(() => ({
+const pitch: CustomDeploymentPitch = {
   ...customDeploymentPitch(),
-  title: t('deploymentSwitcher.workflowNeedsDeployment.title'),
-  brief: workflowDeploymentBrief(packs.value, models.value),
-  missing: missing.value
-}))
+  brief: workflowDeploymentBrief(packs, models),
+  missing,
+  ...(offer.kind === 'noneRunIt'
+    ? {
+        title: t('deploymentSwitcher.workflowNeedsDeployment.titleNoneRunIt'),
+        note: t('deploymentSwitcher.workflowNeedsDeployment.noneRunIt')
+      }
+    : { title: t('deploymentSwitcher.workflowNeedsDeployment.title') })
+}
 </script>

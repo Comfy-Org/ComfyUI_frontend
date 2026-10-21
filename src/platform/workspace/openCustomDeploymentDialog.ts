@@ -1,3 +1,4 @@
+import { nextTick } from 'vue'
 import type { Component } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -76,12 +77,30 @@ export function openDeployCustomNodesDialog(): Promise<boolean> {
   })
 }
 
-/** Opens the needs-a-custom-deployment dialog; false if it could not load. */
-export function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+const WORKFLOW_NEEDS_DEPLOYMENT_KEY = 'global-workflow-needs-deployment'
+
+function loadWorkflowNeedsDeploymentCard() {
+  return import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue')
+}
+
+/** Loads the dialog a workflow that needs a custom deployment shows, so opening it later does not wait; false when it could not load. */
+export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+  return loadWorkflowNeedsDeploymentCard().then(
+    () => true,
+    () => false
+  )
+}
+
+/** Opens the dialog a workflow opened on Comfy Cloud shows when it needs a custom deployment, in place of one already open for an earlier workflow; false when it could not load. */
+export async function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+  const dialogStore = useDialogStore()
+  if (dialogStore.isDialogOpen(WORKFLOW_NEEDS_DEPLOYMENT_KEY)) {
+    dialogStore.closeDialog({ key: WORKFLOW_NEEDS_DEPLOYMENT_KEY })
+    await nextTick()
+  }
   return openCardDialog(
-    'global-workflow-needs-deployment',
-    () =>
-      import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue'),
+    WORKFLOW_NEEDS_DEPLOYMENT_KEY,
+    loadWorkflowNeedsDeploymentCard,
     {}
   )
 }

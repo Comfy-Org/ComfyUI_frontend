@@ -1,0 +1,25 @@
+<template>
+  <Button
+    variant="link"
+    size="link"
+    class="w-fit"
+    as="a"
+    :href="docsUrl"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    {{ $t('deployToComfyApi.readDocs') }}
+    <i
+      class="icon-[lucide--square-arrow-out-up-right] size-4"
+      aria-hidden="true"
+    />
+  </Button>
+</template>
+
+<script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
+import { useExternalLink } from '@/composables/useExternalLink'
+
+const { buildDocsUrl } = useExternalLink()
+const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
+</script>

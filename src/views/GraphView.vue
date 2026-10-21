@@ -95,6 +95,8 @@ import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/ge
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useDeploymentPickAtBoot } from '@/platform/workspace/composables/useDeploymentPickAtBoot'
+import { setMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
@@ -131,7 +133,12 @@ useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
 useDesktopCloudNotification()
-if (isCloud) useDeploymentCompatibility()
+if (isCloud) {
+  const { markFor } = useDeploymentCompatibility()
+  onBeforeUnmount(
+    setMissingNodesNotice((nodeTypes) => noticeMissingNodes(nodeTypes, markFor))
+  )
+}
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()

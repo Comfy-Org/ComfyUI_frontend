@@ -1,38 +1,84 @@
+import { until } from '@vueuse/core'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
-import { useCustomDeploymentOffered } from '@/platform/workspace/composables/useCustomDeploymentOffered'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
-import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+import { nodesNeedingDeployment } from '@/platform/workspace/missingForDeployment'
+import {
+  openWorkflowNeedsDeploymentDialog,
+  preloadWorkflowNeedsDeploymentDialog
+} from '@/platform/workspace/openCustomDeploymentDialog'
+import { openWorkflowForCheck } from '@/platform/workspace/openWorkflowForCheck'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { answersForWorkflow } from '@/platform/workspace/workflowDeploymentOffer'
+import type {
+  CheckedWorkflow,
+  MarkFor
+} from '@/platform/workspace/workflowDeploymentOffer'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
-function waitForListing(): Promise<void> {
-  let timeout: ReturnType<typeof setTimeout> | undefined
-  return Promise.race([
-    useDeploymentPickStore().loadOnce(),
-    new Promise<void>((resolve) => {
-      timeout = setTimeout(resolve, DEPLOYMENT_LISTING_MISSING_NODES_WAIT_MS)
-    })
-  ]).finally(() => clearTimeout(timeout))
+/** How long the dialog waits for the compatibility check before it opens without it. */
+export const COMPATIBILITY_WAIT_MS = 3000
+
+type Offered = 'dialog' | 'overlay' | 'superseded'
+
+async function compatibilityAnswered(
+  markFor: MarkFor,
+  workflow: CheckedWorkflow
+): Promise<void> {
+  const asks =
+    useFeatureFlags().flags.deploymentCompatibilityMarksEnabled &&
+    useDeploymentPickStore().deployments.length > 0
+  if (!asks) return
+  await until(() => answersForWorkflow(markFor, workflow)).toBe(true, {
+    timeout: COMPATIBILITY_WAIT_MS
+  })
 }
 
-async function offerCustomDeployment(): Promise<void> {
-  const offered = useCustomDeploymentOffered(null)
-  await waitForListing()
-  if (offered.value) await openWorkflowNeedsDeploymentDialog()
+async function offerCustomDeployment(
+  missingNodes: readonly MissingNodeType[],
+  markFor: MarkFor
+): Promise<Offered> {
+  const workflowStore = useWorkflowStore()
+  const noticedWorkflow = workflowStore.activeWorkflow
+  const checkedWorkflow = openWorkflowForCheck(missingNodes)
+  const cardLoaded = preloadWorkflowNeedsDeploymentDialog()
+  const store = useDeploymentPickStore()
+  await store.loadOnce()
+  if (!store.isVisible || store.bootDeployment !== null) return 'overlay'
+  await compatibilityAnswered(markFor, checkedWorkflow)
+  await cardLoaded
+  if (workflowStore.activeWorkflow !== noticedWorkflow) return 'superseded'
+  return (await openWorkflowNeedsDeploymentDialog()) ? 'dialog' : 'overlay'
 }
 
 /**
- * Shows the error overlay for the open workflow's missing nodes and, to a Comfy
- * Cloud workspace with no deployments, the custom deployment dialog over it.
+ * Tells the user that a workflow just opened needs nodes this editor lacks.
+ * On Comfy Cloud, to an account served the deployments listing, nodes with no
+ * replacement open the custom deployment dialog; otherwise the error overlay.
  */
-export async function noticeMissingNodes(): Promise<void> {
-  useExecutionErrorStore().showErrorOverlay()
-  if (!useDeploymentSwitcherOffered().value) return
-  await offerCustomDeployment().catch((error: unknown) => {
-    reportError(error, {
-      errorType: 'error_offering_custom_deployment',
-      surface: 'platform'
-    })
-  })
+export function noticeMissingNodes(
+  nodeTypes: readonly MissingNodeType[],
+  markFor: MarkFor
+): void {
+  const showOverlay = () => useExecutionErrorStore().showErrorOverlay()
+  const missingNodes = nodesNeedingDeployment(nodeTypes)
+  if (!useDeploymentSwitcherOffered().value || missingNodes.length === 0) {
+    showOverlay()
+    return
+  }
+  offerCustomDeployment(missingNodes, markFor).then(
+    (offered) => {
+      if (offered === 'overlay') showOverlay()
+    },
+    (error: unknown) => {
+      reportError(error, {
+        errorType: 'error_offering_custom_deployment',
+        surface: 'platform'
+      })
+      showOverlay()
+    }
+  )
 }
