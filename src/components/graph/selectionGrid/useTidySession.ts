@@ -3,12 +3,15 @@ import { readonly, ref } from 'vue'
 
 import { DEFAULT_TIDY_GAP } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 export function useTidySession() {
-  const { tidyUp } = useSelectionGrid()
+  const { gridNodes, tidyUp, recordUndoStep } = useSelectionGrid()
 
   const gap = ref(DEFAULT_TIDY_GAP)
+  let nodes: LGraphNode[] = []
   let committedGap = DEFAULT_TIDY_GAP
+  let appliedGap = DEFAULT_TIDY_GAP
   let pendingFrame: number | null = null
 
   const dropPendingPreview = () => {
@@ -17,9 +20,16 @@ export function useTidySession() {
     pendingFrame = null
   }
 
+  const applyGap = (nextGap: number) => {
+    tidyUp(nodes, { gap: nextGap, captureUndo: false })
+    appliedGap = nextGap
+  }
+
   const start = () => {
     dropPendingPreview()
-    committedGap = tidyUp()
+    nodes = [...gridNodes.value]
+    committedGap = tidyUp(nodes)
+    appliedGap = committedGap
     gap.value = committedGap
   }
 
@@ -28,23 +38,25 @@ export function useTidySession() {
     dropPendingPreview()
     pendingFrame = requestAnimationFrame(() => {
       pendingFrame = null
-      tidyUp({ gap: nextGap, captureUndo: false })
+      applyGap(nextGap)
     })
   }
 
   const commitGap = (nextGap: number) => {
     dropPendingPreview()
-    committedGap = nextGap
     gap.value = nextGap
-    tidyUp({ gap: nextGap, captureUndo: true })
+    applyGap(nextGap)
+    committedGap = nextGap
+    recordUndoStep()
   }
 
   const finish = () => {
-    if (gap.value === committedGap) dropPendingPreview()
+    const isSettled = gap.value === committedGap && appliedGap === committedGap
+    if (isSettled) dropPendingPreview()
     else commitGap(gap.value)
   }
 
-  tryOnScopeDispose(dropPendingPreview)
+  tryOnScopeDispose(finish)
 
   return { gap: readonly(gap), start, previewGap, commitGap, finish }
 }

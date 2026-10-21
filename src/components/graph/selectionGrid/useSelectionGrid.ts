@@ -40,18 +40,28 @@ export function useSelectionGrid() {
     () => gridNodes.value.length >= 2 && !canvasStore.isReadOnly
   )
 
-  const measure = (): LayoutBox[] =>
-    gridNodes.value.map((node) =>
-      measureDrawnBox(node, canvasStore.canvas?.ctx)
-    )
+  const isMovable = (node: LGraphNode) =>
+    !node.pinned && node.graph === canvasStore.canvas?.graph
+
+  const measure = (nodes: LGraphNode[] = gridNodes.value): LayoutBox[] =>
+    nodes
+      .filter(isMovable)
+      .map((node) => measureDrawnBox(node, canvasStore.canvas?.ctx))
+
+  const recordUndoStep = () => {
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+  }
 
   const moveBoxes = (
+    nodes: LGraphNode[],
     positions: BoxPosition[],
     { captureUndo }: { captureUndo: boolean }
   ) => {
     const { rootGraphId, isReadOnly } = canvasStore
     if (!rootGraphId || isReadOnly || positions.length === 0) return
-    const nodesById = new Map(gridNodes.value.map((node) => [node.id, node]))
+    const nodesById = new Map(
+      nodes.filter(isMovable).map((node) => [node.id, node])
+    )
     const updates = positions.flatMap(({ id, x, y }) => {
       const node = nodesById.get(id)
       if (!node) return []
@@ -69,20 +79,18 @@ export function useSelectionGrid() {
 
     mutations.batchMoveNodes(rootGraphId, updates)
     canvasStore.canvas?.setDirty(true, true)
-    if (captureUndo) {
-      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
-    }
+    if (captureUndo) recordUndoStep()
   }
 
-  const tidyUp = ({
-    gap,
-    captureUndo = true
-  }: { gap?: number; captureUndo?: boolean } = {}): number => {
-    const boxes = measure()
+  const tidyUp = (
+    nodes: LGraphNode[] = gridNodes.value,
+    { gap, captureUndo = true }: { gap?: number; captureUndo?: boolean } = {}
+  ): number => {
+    const boxes = measure(nodes)
     const tidyGap = gap ?? tidyGapOf(boxes)
-    moveBoxes(computeTidyLayout(boxes, tidyGap), { captureUndo })
+    moveBoxes(nodes, computeTidyLayout(boxes, tidyGap), { captureUndo })
     return tidyGap
   }
 
-  return { gridNodes, canTidy, measure, moveBoxes, tidyUp }
+  return { gridNodes, canTidy, measure, moveBoxes, recordUndoStep, tidyUp }
 }
