@@ -155,7 +155,8 @@ function onSearchKeydown(event: KeyboardEvent): void {
         v-model="query"
         :disabled="selectingTabPath !== null"
         :placeholder="t('agent.searchWorkflows')"
-        :aria-label="t('agent.searchWorkflows')"
+        :accessible-label="t('agent.searchWorkflows')"
+        :clear-label="t('g.clear')"
         class="mb-1"
         @keydown="onSearchKeydown"
       />

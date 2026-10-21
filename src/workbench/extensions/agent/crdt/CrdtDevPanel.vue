@@ -786,6 +786,7 @@ function fmtTime(at: number): string {
           <SingleSelect
             v-model="level"
             :label="t(`${i18nKey}.verbosity`)"
+            :accessible-label="t(`${i18nKey}.verbosity`)"
             :options="verbosityOptions"
             size="md"
             class="w-24"
@@ -904,6 +905,7 @@ function fmtTime(at: number): string {
             <SingleSelect
               v-model="scopeFilter"
               :label="t(`${i18nKey}.scopeFilter`)"
+              :accessible-label="t(`${i18nKey}.scopeFilter`)"
               :options="scopeOptions"
               size="md"
               class="w-28"
@@ -912,6 +914,7 @@ function fmtTime(at: number): string {
             <SingleSelect
               v-model="levelFilter"
               :label="t(`${i18nKey}.levelFilter`)"
+              :accessible-label="t(`${i18nKey}.levelFilter`)"
               :options="levelOptions"
               size="md"
               class="w-28"
@@ -920,6 +923,7 @@ function fmtTime(at: number): string {
             <SingleSelect
               v-model="kindFilter"
               :label="t(`${i18nKey}.kindFilter`)"
+              :accessible-label="t(`${i18nKey}.kindFilter`)"
               :options="kindOptions"
               size="md"
               class="min-w-32 flex-1"
@@ -1011,6 +1015,7 @@ function fmtTime(at: number): string {
           <SingleSelect
             v-model="scenarioId"
             :label="t(`${i18nKey}.scenario`)"
+            :accessible-label="t(`${i18nKey}.scenario`)"
             :options="scenarioOptions"
             class="w-full"
             data-testid="crdt-dev-panel-scenario"

@@ -6,6 +6,7 @@ import type { AgentCrdtStatus } from './agentCrdtStatus'
 const status: AgentCrdtStatus = {
   enabled: true,
   connected: true,
+  canvasMayBeStale: false,
   terminal: null,
   workflowId: 'workflow-debug-42',
   updatesApplied: 17,
