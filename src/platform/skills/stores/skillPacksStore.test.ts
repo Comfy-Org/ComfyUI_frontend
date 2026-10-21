@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 
@@ -26,6 +27,7 @@ vi.mock<unknown>(import('posthog-js'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
@@ -329,6 +331,52 @@ describe('skillPacksStore', () => {
       expect(listSkillPacks).not.toHaveBeenCalled()
     }
   )
+
+  function hostAgent(state: 'starting' | 'ready' | 'failed'): void {
+    const flags = useFeatureFlags().flags as { agent?: unknown }
+    flags.agent = { state, reason: null }
+  }
+
+  it('enables the surface for an agent hosted by ComfyUI without PostHog flags', async () => {
+    mocks.isFeatureEnabled.mockReturnValue(undefined)
+    hostAgent('ready')
+    const store = useSkillPacksStore()
+
+    await store.startFlagGate()
+
+    expect(store.enabled).toBe(true)
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+  })
+
+  it('probes the routes once the hosted agent becomes ready after the gate starts', async () => {
+    mocks.isFeatureEnabled.mockReturnValue(undefined)
+    hostAgent('starting')
+    const store = useSkillPacksStore()
+
+    await store.startFlagGate()
+    expect(store.enabled).toBe(false)
+    expect(listSkillPacks).not.toHaveBeenCalled()
+
+    hostAgent('ready')
+    await nextTick()
+
+    expect(store.enabled).toBe(true)
+    expect(listSkillPacks).toHaveBeenCalledOnce()
+  })
+
+  it('hides the hosted-agent surface when its routes answer 404', async () => {
+    mocks.isFeatureEnabled.mockReturnValue(undefined)
+    vi.mocked(listSkillPacks).mockRejectedValue(
+      new SkillPacksApiError('not found', 404)
+    )
+    hostAgent('ready')
+    const store = useSkillPacksStore()
+
+    await store.startFlagGate()
+    await vi.waitFor(() => expect(store.routesAvailable).toBe(false))
+
+    expect(store.enabled).toBe(false)
+  })
 
   it('allows the feature gate to retry after setup fails', async () => {
     const failure = new Error('subscription failed')
