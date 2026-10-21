@@ -256,11 +256,13 @@ describe('independent video workflow', () => {
 const fs = require('node:fs')
 const args = process.argv.slice(2)
 fs.appendFileSync('calls.jsonl', JSON.stringify(args) + '\\n')
-const blob =
-  process.env.PLAYWRIGHT_BLOB_OUTPUT_FILE ??
-  (process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ?? 'blob-report') + '/report-cloud-0666423.zip'
-fs.mkdirSync(require('node:path').dirname(blob), { recursive: true })
-fs.writeFileSync(blob, '')
+const dir = process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR
+if (dir) {
+  const blob =
+    process.env.PLAYWRIGHT_BLOB_OUTPUT_FILE ?? dir + '/report-cloud-0666423.zip'
+  fs.mkdirSync(require('node:path').dirname(blob), { recursive: true })
+  fs.writeFileSync(blob, 'blob')
+}
 process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
 `,
           { mode: 0o755 }

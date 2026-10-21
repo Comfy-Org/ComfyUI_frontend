@@ -205,8 +205,9 @@ jobs:
           mkdir -p blob-report
           STATUS=0
           while IFS=$'\t' read -r KEY FILE; do
-            if PLAYWRIGHT_BLOB_OUTPUT_FILE="blob-report/$KEY.zip" pnpm exec playwright test \
-              --project="$PROJECT" --timeout=180000 --retries=0 "$FILE" < /dev/null; then
+            if PLAYWRIGHT_BLOB_OUTPUT_DIR=blob-report PLAYWRIGHT_BLOB_OUTPUT_FILE="blob-report/$KEY.zip" \
+              pnpm exec playwright test --project="$PROJECT" --timeout=180000 --retries=0 "$FILE" < /dev/null \
+              && test -s "blob-report/$KEY.zip"; then
               touch "blob-report/$KEY.pass"
             else
               STATUS=1
@@ -266,7 +267,10 @@ jobs:
             cp "previous-cache/$KEY.zip" video-blobs/
             cp "previous-cache/$KEY.zip" video-cache/
           done
-          find video-blobs -name '*.pass' -exec sh -c 'cp "${1%.pass}.zip" video-cache/' _ {} \;
+          for PASS in video-blobs/*.pass; do
+            [ -e "$PASS" ] || continue
+            cp "${PASS%.pass}.zip" video-cache/
+          done
           find video-cache -name '*.zip' -printf '%f\n' | sed 's/\.zip$//' > video-cache-index.txt
 
       - name: Merge video reports
