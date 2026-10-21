@@ -29,9 +29,10 @@ const test = mergeTests(agentTest, webSocketFixture)
  * node ids). Duplicate-insert-with-no-dedup is intentional frontend behavior
  * (`agentInsertWorkflow.templates.test.ts`'s "the same template inserted
  * twice produces two independent, fully-wired pipelines"), so this repro
- * does not treat that half as a defect -- it documents the VISUAL overlap
- * that duplication produces on a real canvas, which no test asserted before,
- * and then the FRONTEND-observable half of the actual complaint: a widget
+ * does not treat that half as a defect. It used to document the VISUAL
+ * overlap that duplication produced; since PM-2232 the second copy lands
+ * beside the first, so both are visible. Then it pins the
+ * FRONTEND-observable half of the actual complaint: a widget
  * write the doc host rejects with an `opaque_widgets`-shaped failure
  * (`<node> is absent from the pinned catalog, so its widgets_values is
  * stored opaquely (schema §1.2) and is not name-addressable`). The follower
@@ -191,11 +192,13 @@ function templateWorkflow(): Extract<
 function insertWorkflowOp(
   opId: string
 ): Extract<Op, { op: 'insert_workflow' }> {
+  // A grammar-valid agent turn actor (agent:<thread>:<turn>), as cloud stamps
+  // it; the follower drops attribution that fails the grammar.
   return {
     op_id: opId.padEnd(32, '0'),
-    actor: 'agent:e2e',
+    actor: 'agent:e2e:turn-1',
     base_version: 1,
-    stamp: [1, 'agent:e2e'],
+    stamp: [1, 'agent:e2e:turn-1'],
     op: 'insert_workflow',
     workflow: templateWorkflow()
   }
@@ -409,7 +412,7 @@ test.describe(
     test.use({ connectWebSocketToServer: false })
     test.describe.configure({ timeout: 60_000 })
 
-    test('two insert_workflow calls with different op ids leave two fully overlapping, visually indistinguishable copies of the template', async ({
+    test('two insert_workflow calls with different op ids leave two copies of the template side by side', async ({
       page,
       getAgentSocket
     }) => {
@@ -452,13 +455,16 @@ test.describe(
         })
         .toBe(true)
 
-      // Nobody previously asserted the resulting VISUAL overlap: the same
-      // template inserted twice renders both copies at pixel-identical
-      // positions, so a human cannot tell them apart on canvas.
+      // Both copies carry the same baked-in coordinates. Before PM-2232 the
+      // second rendered at pixel-identical positions on top of the first, so
+      // a human could not tell them apart; it now lands beside it.
       const boxA = await vueNodes.getNodeLocator(copyANodeId).boundingBox()
       const boxB = await vueNodes.getNodeLocator(copyBNodeId).boundingBox()
       expect(boxA).not.toBeNull()
-      expect(boxB).toEqual(boxA)
+      expect(boxB).not.toBeNull()
+      expect(boxB!.width).toBeCloseTo(boxA!.width, 0)
+      expect(boxB!.y).toBeCloseTo(boxA!.y, 0)
+      expect(boxB!.x).toBeGreaterThan(boxA!.x + boxA!.width)
     })
 
     test('a rejected widget edit is reported and rolled back to the value the shared document kept', async ({

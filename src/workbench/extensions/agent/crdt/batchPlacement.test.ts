@@ -69,6 +69,39 @@ describe('placementOffset', () => {
     ).toEqual({ dx: 200 + PLACEMENT_GUTTER_PX - 9000, dy: -9000 })
   })
 
+  // PM-2232: a template inserted into a populated tab arrives at its baked-in
+  // coordinates, which can sit right on top of the user's existing nodes.
+  it.for([
+    { name: 'no viewport known', viewport: null },
+    {
+      name: 'the collision visible on screen',
+      viewport: rect(0, 0, 2000, 1500)
+    }
+  ])(
+    'moves a batch that lands on an existing node beside existing content, $name',
+    ({ viewport }) => {
+      expect(
+        placementOffset({
+          existing: [rect(0, 0), rect(300, 0)],
+          viewport,
+          incoming: [rect(-400, 50), rect(350, 60), rect(1000, 400)],
+          moveCollisions: true
+        })
+      ).toEqual({ dx: 500 + PLACEMENT_GUTTER_PX + 400, dy: -50 })
+    }
+  )
+
+  it('leaves a batch inside the existing hull that touches no node', () => {
+    expect(
+      placementOffset({
+        existing: [rect(0, 0), rect(600, 400)],
+        viewport: null,
+        incoming: [rect(300, 150)],
+        moveCollisions: true
+      })
+    ).toBeNull()
+  })
+
   it('fires at exactly the gap threshold', () => {
     expect(
       placementOffset({

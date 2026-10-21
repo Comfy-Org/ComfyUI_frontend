@@ -13,6 +13,12 @@ from `graphMutations`' prepare/commit batch and its `SemanticPlacementPort` to
 `LiveGraphApplier.#placeBatch`, which runs after each frame's nodes are created
 on the live graph.
 
+Amended 2026-10-21 by
+[PM-2232](https://linear.app/comfyorg/issue/PM-2232/workflow-inserted-into-an-existing-tab-lands-on-top-of-the-existing):
+in a live frame written by an agent turn, a batch with a node that lands on an
+existing node now also moves, by the same offset, whatever the viewport shows.
+See "Trigger".
+
 ## Context
 
 The in-app agent inserts nodes through the CRDT follower: the server emits
@@ -108,17 +114,33 @@ also owns not splitting.
 
 ### Trigger
 
-Reposition only when all of the following hold:
+Nothing moves unless the scope already contains at least one node before the
+batch. An empty canvas keeps the template's own layout, matching the human
+template flow. Otherwise the batch moves in either of two cases.
 
-1. The scope already contains at least one node before the batch. An empty
-   canvas keeps the template's own layout, matching the human template flow.
-2. The incoming batch's bounding box is disjoint from the existing graph's
-   bounding box inflated by `DISCONNECTED_GAP_PX` (600). Content placed near,
-   overlapping, or interleaved with existing content is never touched.
-3. The incoming bounding box does not intersect the current viewport, when a
+**Collision.** The frame is a live write by an agent turn (its `actor` is
+`agent:…` and it is not a subscribe catch-up), and any incoming node's rect
+intersects any existing node's rect. A template inserted into a populated tab
+arrives at its baked-in coordinates, which commonly sit on top of the user's
+graph (PM-2232: the Z-Image template's nodes span x −420 to 1350, the same
+region as the default workflow). The agent does not overlap nodes on purpose,
+so the viewport does not veto this case. A batch that sits inside or near the
+existing hull without touching any node is not a collision and is left alone.
+
+Catch-up frames, changes applied on tab return (`applyCollected`) and human
+writes never move for a collision: a replay can recreate a node a human
+deliberately pasted over another, and moving it would undo the human's
+placement.
+
+**Lost.** All of the following hold:
+
+1. The incoming batch's bounding box is disjoint from the existing graph's
+   bounding box inflated by `DISCONNECTED_GAP_PX` (600). Content placed near
+   or interleaved with existing content is not lost.
+2. The incoming bounding box does not intersect the current viewport, when a
    viewport is known for this scope (see `viewportBounds` above). Content the
    user can already see is not "lost", so it stays where the writer put it. An
-   unavailable viewport does not veto: condition 2 alone decides.
+   unavailable viewport does not veto: condition 1 alone decides.
 
 The anchor is existing content, not the user's current viewport — an explicit
 choice. Landing beside the nodes the batch relates to keeps the association
@@ -127,10 +149,11 @@ have parked the viewport could drop a template into empty space unrelated to
 anything, and requires a viewport that background-workflow applies do not
 have.
 
-The rule applies to every agent `add_node` batch, single- or multi-node. The
-geometric predicate — disjoint beyond the gap _and_ offscreen — is the actual
-discriminator between "lost" and "deliberate"; node count is only a proxy for
-it, and a single far offscreen node is exactly as lost as forty.
+The rule applies to every agent batch, single- or multi-node, whether it
+arrived as `add_node` ops or as one `insert_workflow`. The geometric
+predicates — a node-on-node collision, or disjoint beyond the gap _and_
+offscreen — are the actual discriminators; node count is only a proxy for
+them, and a single far offscreen node is exactly as lost as forty.
 
 ### Offset
 
@@ -201,7 +224,17 @@ change, and no protocol change. The doc keeps the server's coordinates.
   Accepted: post-insert geometry is already local-first.
 - The gap and gutter values are heuristics. Chosen conservative so only
   clearly-lost content moves; a legitimate placement between 0 and 600 px of
-  gap is never touched, and anything visible on screen is never touched.
+  gap is never touched, and anything visible on screen is touched only when
+  it lands on an existing node.
+- An agent that deliberately places a new node on top of an existing one, for
+  example to stand in for a node it deletes in a later frame, sees the new
+  node moved beside the graph instead. A delete and add in the same frame is
+  unaffected, because the deleted node is gone before placement runs.
+- An agent insert that lands while its tab is inactive is applied on tab
+  return without collision placement, so it can still overlap. The collected
+  changes do not record which writer made them.
+- Collision uses node body rects (`pos`/`size`), not title bars, so two
+  nodes that touch only through a title bar are not a collision.
 - Existing-node bounds are the live nodes' `pos`/`size`, which for a node
   created earlier in the same frame is its configured size before first
   render (see the measurement amendment in

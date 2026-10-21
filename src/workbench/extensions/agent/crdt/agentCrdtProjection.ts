@@ -154,7 +154,7 @@ export class AgentCrdtProjection {
    * Applies one delivered frame's changes to the live graph. Without a graph
    * the changes stay collected for `applyCollected` once one appears.
    */
-  applyFrame(update: DocUpdate): FrameOutcome {
+  applyFrame(update: DocUpdate & { catchUp?: boolean }): FrameOutcome {
     const target = this.targets.get(update.workflowId)
     if (!target) return { applied: false, nodes: EMPTY_DELTA }
     if (!this.getGraph()) {
@@ -169,7 +169,9 @@ export class AgentCrdtProjection {
       changes,
       {
         actor: update.actor ?? 'agent-remote',
-        opIds: update.opIds?.filter((id) => id.length > 0) ?? []
+        opIds: update.opIds?.filter((id) => id.length > 0) ?? [],
+        liveAgentTurn:
+          !update.catchUp && update.actor?.startsWith('agent:') === true
       },
       this.takeApplyMode(update.workflowId)
     )

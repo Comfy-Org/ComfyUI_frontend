@@ -78,6 +78,12 @@ export interface FrameChanges {
 export interface RemoteApplyContext {
   actor: string
   opIds: readonly string[]
+  /**
+   * The frame is a live write by an agent turn, not a catch-up replay. Only
+   * then does a created batch that lands on existing nodes move clear of them:
+   * a replay can recreate a node a human deliberately placed over another.
+   */
+  liveAgentTurn?: boolean
 }
 
 export interface LiveGraphApplierDeps {
@@ -652,7 +658,8 @@ export class LiveGraphApplier {
         this.applyInteriors(graph, doc, changes, context, mode)
 
         this.applyLinks(graph, doc, [...changes.links], context)
-        if (mode === 'merge') this.placeBatch(graph, created)
+        if (mode === 'merge')
+          this.placeBatch(graph, created, context.liveAgentTurn === true)
         return {
           createdNodeIds: created,
           failureCount: this.currentFailureCount()
@@ -1408,7 +1415,11 @@ export class LiveGraphApplier {
     return created ? 'connected' : 'refused'
   }
 
-  private placeBatch(graph: LGraph, created: readonly NodeId[]): void {
+  private placeBatch(
+    graph: LGraph,
+    created: readonly NodeId[],
+    moveCollisions: boolean
+  ): void {
     if (created.length === 0) return
     const createdSet = new Set(created)
     const rect = (node: LGraphNode): PlacementRect => ({
@@ -1423,7 +1434,8 @@ export class LiveGraphApplier {
         .filter((node) => !createdSet.has(node.id))
         .map(rect),
       viewport: this.deps.viewportBounds?.() ?? null,
-      incoming: incoming.map(rect)
+      incoming: incoming.map(rect),
+      moveCollisions
     })
     if (!offset) return
     for (const node of incoming) {
