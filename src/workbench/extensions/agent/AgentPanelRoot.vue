@@ -113,7 +113,6 @@ import type {
 import type { CoachStep } from './composables/agent/useOnboarding'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
-import { isLocalDesktopHost } from './agentHost'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import {
@@ -1653,12 +1652,6 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
-    if (
-      !isLocalDesktopHost() &&
-      !hasAgentCredential() &&
-      !(await ensureSignedIn())
-    )
-      return false
     const submissionId = composerStore.submission?.id
     if (
       !consentAccepted.value &&

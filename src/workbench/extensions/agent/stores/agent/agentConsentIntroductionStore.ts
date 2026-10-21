@@ -7,7 +7,7 @@ export const useAgentConsentIntroductionStore = defineStore(
   () => {
     const isContinuingSignIn = ref(false)
     const hasResponded = useStorage(
-      'Comfy.AgentConsent.DesktopResponded',
+      'Comfy.AgentConsent.IntroductionResponded',
       false,
       undefined,
       { writeDefaults: false, flush: 'sync' }

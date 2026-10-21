@@ -15,6 +15,7 @@ import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentPanelCloseSource,
@@ -36,6 +37,27 @@ const PANEL_MAX_WIDTH = 960
 const FUNDS_RECHECK_TIMEOUT_MS = 10_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
+
+interface AgentOnboardingPolicy {
+  startup: 'activationVisits' | 'lockedUntilConsent'
+  offerMemory: 'shown' | 'answered'
+  agentButton: 'requestConsent' | 'togglePanel'
+  persistSkipAsRefusal: boolean
+}
+
+const CLOUD_ONBOARDING: AgentOnboardingPolicy = {
+  startup: 'activationVisits',
+  offerMemory: 'shown',
+  agentButton: 'requestConsent',
+  persistSkipAsRefusal: true
+}
+
+const LOCAL_ONBOARDING: AgentOnboardingPolicy = {
+  startup: 'lockedUntilConsent',
+  offerMemory: 'answered',
+  agentButton: 'togglePanel',
+  persistSkipAsRefusal: false
+}
 
 type TargetTracking =
   | { mode: 'uninitialized' }
@@ -85,6 +107,9 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
+  const onboarding = computed(() =>
+    isCloud ? CLOUD_ONBOARDING : LOCAL_ONBOARDING
+  )
   /** The server's `agent` feature; undefined unless its state is known. */
   const comfyAgent = computed(() => {
     if (import.meta.env.VITE_AGENT_STANDALONE === 'true') return undefined
@@ -439,6 +464,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     interruptHistorySelection,
     flagsSettled,
     comfyAgent,
+    onboarding,
     reportedExhaustionIdentity,
     reportedFreeUseExposure,
     reportedFreeUseImpression,

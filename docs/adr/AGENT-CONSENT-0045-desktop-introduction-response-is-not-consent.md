@@ -33,9 +33,11 @@ does not write that preference, and an existing Cloud refusal does not suppress
 the Desktop introduction or recurring locked panel. Neither preference records
 audited server consent.
 
-Desktop 2 hosts the localhost frontend distribution, so this policy also checks
-its local host bridge. The legacy desktop build remains supported; Cloud builds
-and remote Desktop views do not use this introduction policy.
+`agentPanelStore` selects one onboarding policy for the whole frontend: Cloud
+builds keep the Cloud policy and every other build, including Desktop, Desktop 2
+local and remote views, and browser tabs on a local Core, uses this Local
+policy. No other module checks the host. The policy should move to the server's
+`agent` feature once the backend reports it.
 
 Agree while signed out continues through sign-in and confirmed server consent
 registration within that request. Canceling sign-in discards the pending choice;
@@ -43,7 +45,8 @@ a later manual Agent request asks for consent again. Existing server readiness,
 account/workspace ownership and consent persistence checks still gate Agent use.
 An in-memory continuation flag prevents the automatic introduction from racing
 this request during authentication. It is cleared on every ending and never
-stored across launches. A scope change closes a still-undecided Desktop card.
+stored across launches. A scope change closes a still-undecided card under
+every policy.
 
 ## Alternatives and Consequences
 
