@@ -63,7 +63,7 @@ describe('SiteFooter', () => {
     ['en', 'Workflows', externalLinks.workflows],
     ['en', 'Use Cases', externalLinks.workflowUseCases],
     ['zh-CN', '工作流', externalLinks.workflows],
-    ['zh-CN', '用例', 'https://comfy.org/workflows/use-cases/']
+    ['zh-CN', '用例', 'https://comfy.org/hub/workflows/']
   ] as const)(
     'links the Comfy Workflows hub in the same tab (%s: %s)',
     ([locale, name, href]) => {

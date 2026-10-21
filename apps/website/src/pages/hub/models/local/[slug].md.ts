@@ -9,6 +9,7 @@ import {
   isPartnerModel
 } from '@/config/model-descriptions'
 import { buildPricingFact } from '@/config/model-pricing'
+import { hubModelUrl, hubWorkflowsUrl } from '@/lib/hub/routes'
 import {
   LOCAL_MODELS_PATH,
   localModelPath,
@@ -27,9 +28,9 @@ export const GET: APIRoute = ({ props, site }) => {
   const model = props.model as Model
   const base = site ?? 'https://comfy.org'
   const pageUrl = new URL(localModelPath(model.slug), base).href
-  const workflowsUrl = model.hubSlug
-    ? `https://comfy.org/workflows/model/${model.hubSlug}/`
-    : 'https://comfy.org/workflows/'
+  const workflowsUrl = model.hubSearch
+    ? hubModelUrl(model.hubSearch)
+    : hubWorkflowsUrl()
 
   const description = buildWhatIsDescription(model)
   const summary = description.split('. ')[0]

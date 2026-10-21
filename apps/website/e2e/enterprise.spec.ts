@@ -130,7 +130,7 @@ test.describe('Enterprise pages @smoke', () => {
     }
     await expect(
       page.getByRole('link', { name: 'EXPLORE WORKFLOWS' })
-    ).toHaveAttribute('href', 'https://comfy.org/workflows/')
+    ).toHaveAttribute('href', 'https://comfy.org/hub/workflows/')
     for (const security of [
       'SOC 2',
       'Identity',
@@ -320,7 +320,7 @@ test.describe('Enterprise pages @smoke', () => {
     }
     await expect(
       page.getByRole('link', { name: 'EXPLORE WORKFLOWS' })
-    ).toHaveAttribute('href', 'https://comfy.org/workflows/')
+    ).toHaveAttribute('href', 'https://comfy.org/hub/workflows/')
     await expect(
       page.getByText(/For teams that need ComfyUI to move between people/)
     ).toHaveCount(0)

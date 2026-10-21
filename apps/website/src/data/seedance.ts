@@ -4,6 +4,7 @@ import type {
 } from '@/templates/model-launch/types'
 
 import { externalLinks } from '@/config/routes'
+import { hubModelUrl } from '@/lib/hub/routes'
 
 // Reference-to-video is the workflow people reach for first (Zhixiong), so every
 // "run Seedance" CTA opens that one on Cloud. The free-draft CTA in the steps
@@ -15,7 +16,7 @@ const seedanceLinks = {
   // (text to video, reference to video, first-last frame and the rest). The
   // "try workflows" CTA pointed at the hub root, which makes the reader find
   // them, the same fix /ltx-2.5 already carries.
-  hubModel: new URL('model/seedance/', externalLinks.workflows).href
+  hubModel: hubModelUrl('seedance')
 } as const
 
 // Seedance 2.5 renders, encoded to the site's web video profile (VP9 webm,

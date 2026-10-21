@@ -14,6 +14,7 @@ import { vfxWorkflows } from '@/data/vfxWorkflows'
 import { vfxContent } from '@/data/vfx'
 import { getCustomerVideoStory } from '@/data/customerVideos'
 import { getRoutes, externalLinks } from '@/config/routes'
+import { hubTagUrl } from '@/lib/hub/routes'
 import { pageContext } from '@/utils/jsonLd'
 
 const { locale } = pageContext(
@@ -106,7 +107,7 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
         </div>
         <div class="mt-10 flex justify-center">
           <BrandButton
-            href="https://comfy.org/workflows/tag/visual-effects/"
+            href={hubTagUrl('Visual Effects')}
             variant="outline"
             class="uppercase"
           >

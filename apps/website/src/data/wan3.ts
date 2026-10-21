@@ -1,6 +1,7 @@
 import type { ModelLaunchPage } from '@/templates/model-launch/types'
 
 import { externalLinks } from '@/config/routes'
+import { hubModelUrl } from '@/lib/hub/routes'
 
 // Wan 3.0 runs through partner nodes rather than open weights. There is no
 // Wan 3.0 docs page yet, so nothing here links to one.
@@ -8,7 +9,7 @@ const wan3Links = {
   cloudRunTextToVideo: 'https://cloud.comfy.org/?template=api_wan3_0_t2v',
   cloudRunImageToVideo: 'https://cloud.comfy.org/?template=api_wan3_0_i2v',
   cloudRunReferenceToVideo: 'https://cloud.comfy.org/?template=api_wan3_0_r2v',
-  hubModel: new URL('model/wan/', externalLinks.workflows).href
+  hubModel: hubModelUrl('wan')
 } as const
 
 // The hero clip is ~10 MB, so below 768px ModelLaunchHeroSection plays this

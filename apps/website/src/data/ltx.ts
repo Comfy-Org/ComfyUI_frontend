@@ -4,11 +4,12 @@ import type {
 } from '@/templates/model-launch/types'
 
 import { externalLinks } from '@/config/routes'
+import { hubModelUrl } from '@/lib/hub/routes'
 
 const ltxLinks = {
   cloudRun: 'https://cloud.comfy.org/?template=video_ltx2_5_i2v',
   cloudRunPremium: 'https://cloud.comfy.org/?template=api_ltx2_5_flf2v',
-  hubModel: new URL('model/ltx/', externalLinks.workflows).href,
+  hubModel: hubModelUrl('ltx'),
   hfModel: 'https://huggingface.co/Lightricks/LTX-2.5',
   blogPost: 'https://blog.comfy.org/p/ltx-25-day-0-support-in-comfyui',
   docs: 'https://docs.comfy.org/tutorials/video/ltx/ltx-2-5',

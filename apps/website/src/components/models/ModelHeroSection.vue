@@ -2,6 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import BrandButton from '@/components/common/BrandButton.vue'
 import { translationsFor } from '@/i18n/translations'
+import { hubModelUrl } from '@/lib/hub/routes'
 
 const { t } = translationsFor('en')
 const {
@@ -9,7 +10,7 @@ const {
   huggingFaceUrl,
   docsUrl,
   blogUrl,
-  hubSlug,
+  hubSearch,
   workflowCount,
   directory
 } = defineProps<{
@@ -17,14 +18,12 @@ const {
   huggingFaceUrl: string
   docsUrl?: string
   blogUrl?: string
-  hubSlug?: string
+  hubSearch?: string
   workflowCount: number
   directory: string
 }>()
 
-const workflowsUrl = hubSlug
-  ? `https://comfy.org/workflows/model/${hubSlug}/`
-  : null
+const workflowsUrl = hubSearch ? hubModelUrl(hubSearch) : null
 
 const dirDisplayMap: Record<string, string> = {
   diffusion_models: 'Diffusion Model',

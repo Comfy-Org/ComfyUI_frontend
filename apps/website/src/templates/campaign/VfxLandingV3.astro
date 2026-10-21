@@ -12,6 +12,7 @@ import BrandButton from '@/components/common/BrandButton.vue'
 import CallToActionSection from '@/components/common/CallToActionSection.vue'
 import { vfxWorkflows } from '@/data/vfxWorkflows'
 import { getRoutes, externalLinks } from '@/config/routes'
+import { hubTagUrl } from '@/lib/hub/routes'
 import { pageContext } from '@/utils/jsonLd'
 import { vfxLandingV3 } from './vfxLandingV3'
 import { showcaseConfig } from './vfxConnectedShowcase'
@@ -84,7 +85,7 @@ const { contactHref, benefits, featuredWorkflows, shareImages } = vfxLandingV3(
         </div>
         <div class="mt-10 flex justify-center">
           <BrandButton
-            href="https://comfy.org/workflows/tag/visual-effects/"
+            href={hubTagUrl('Visual Effects')}
             variant="outline"
             class="uppercase"
           >

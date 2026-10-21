@@ -5,6 +5,7 @@ import type { GalleryItem } from '@/data/gallery'
 import type { Locale } from '@/i18n/translations'
 
 import { translationsFor } from '@/i18n/translations'
+import { hubModelUrl } from '@/lib/hub/routes'
 import BrandButton from '@/components/common/BrandButton.vue'
 import GalleryCard from '@/components/gallery/GalleryCard.vue'
 import GalleryDetailModal from '@/components/gallery/GalleryDetailModal.vue'
@@ -13,7 +14,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const { t } = translationsFor(locale)
 
 const modelName = 'Grok'
-const ctaHref = 'https://comfy.org/workflows/model/grok/'
+const ctaHref = hubModelUrl('grok')
 
 const items: GalleryItem[] = [
   {

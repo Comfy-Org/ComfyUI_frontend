@@ -4,6 +4,7 @@ import type {
 } from '@/templates/model-launch/types'
 
 import { externalLinks } from '@/config/routes'
+import { hubModelUrl } from '@/lib/hub/routes'
 
 const qwenImage21Links = {
   cloud:
@@ -11,7 +12,7 @@ const qwenImage21Links = {
   cloudEdit:
     'https://cloud.comfy.org/?template=image_qwen_image_2_1_image_edit&utm_source=comfy.org&utm_medium=referral&utm_campaign=qwen-image-2-1',
   docs: 'https://docs.comfy.org/tutorials/image/qwen/qwen-image',
-  hubModel: new URL('model/qwen/', externalLinks.workflows).href,
+  hubModel: hubModelUrl('qwen'),
   license: 'https://huggingface.co/Qwen/Qwen-Image-2.1/blob/main/LICENSE'
 } as const
 

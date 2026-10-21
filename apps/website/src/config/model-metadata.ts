@@ -2,8 +2,8 @@ interface ModelOverride {
   docsUrl?: string
   blogUrl?: string
   featured?: boolean
-  // Slug used on comfy.org/workflows/model/{hubSlug}. Only set when the page exists.
-  hubSlug?: string
+  // Hub list search term; matches comfy-router's target for the old family page.
+  hubSearch?: string
   // When set, the model page's "What is {name}" paragraph links the leading
   // occurrence of displayName to this URL. See [slug].astro.
   whatIsBacklinkUrl?: string
@@ -16,63 +16,63 @@ export const modelMetadata: Record<string, ModelOverride> = {
   'nano-banana': {
     docsUrl:
       'https://docs.comfy.org/tutorials/partner-nodes/google/nano-banana-pro',
-    hubSlug: 'nano-banana',
+    hubSearch: 'nano banana',
     featured: true
   },
   'kling-ai': {
     docsUrl:
       'https://docs.comfy.org/tutorials/partner-nodes/kling/kling-motion-control',
-    hubSlug: 'kling',
+    hubSearch: 'kling',
     featured: true
   },
   'meshy-ai': {
     docsUrl: 'https://docs.comfy.org/tutorials/partner-nodes/meshy/meshy-6',
-    hubSlug: 'meshy',
+    hubSearch: 'meshy',
     featured: true
   },
   'openai-dall-e': {
     docsUrl: 'https://docs.comfy.org/tutorials/partner-nodes/openai/dall-e-3',
-    hubSlug: 'openai',
+    hubSearch: 'openai',
     featured: true
   },
   'ltxv-api': {
     docsUrl: 'https://docs.comfy.org/tutorials/video/ltxv',
-    hubSlug: 'ltx-2-3',
+    hubSearch: 'ltx',
     featured: true
   },
   'wan-api': {
     docsUrl: 'https://docs.comfy.org/tutorials/video/wan/wan2_2',
-    hubSlug: 'wan',
+    hubSearch: 'wan',
     featured: true
   },
   'wan-2-2': {
     docsUrl: 'https://docs.comfy.org/tutorials/video/wan/wan2_2',
-    hubSlug: 'wan',
+    hubSearch: 'wan',
     featured: true
   },
   'wan-2-1': {
     docsUrl: 'https://docs.comfy.org/tutorials/video/wan/wan-video',
-    hubSlug: 'wan',
+    hubSearch: 'wan',
     featured: true
   },
   'flux-1-kontext-dev': {
     docsUrl:
       'https://docs.comfy.org/tutorials/partner-nodes/black-forest-labs/flux-1-kontext',
-    hubSlug: 'flux-1-kontext',
+    hubSearch: 'flux',
     featured: true
   },
   'flux1-dev': {
     docsUrl: 'https://docs.comfy.org/tutorials/flux/flux-1-text-to-image',
-    hubSlug: 'flux-1',
+    hubSearch: 'flux',
     featured: true
   },
   'flux1-schnell': {
-    hubSlug: 'flux-1',
+    hubSearch: 'flux',
     featured: true
   },
   'hunyuan-video': {
     docsUrl: 'https://docs.comfy.org/tutorials/video/hunyuan/hunyuan-video',
-    hubSlug: 'hunyuan-video',
+    hubSearch: 'hunyuan video',
     featured: true
   },
   'hunyuan-3d': {
@@ -80,138 +80,129 @@ export const modelMetadata: Record<string, ModelOverride> = {
     // The hub spells this family without the hyphen, and unlike the other
     // mismatches here it is not a variant alias the hub redirects, so the
     // hyphenated URL 404s rather than resolving.
-    hubSlug: 'hunyuan3d',
+    hubSearch: 'hunyuan3d',
     featured: true
   },
   vidu: {
-    hubSlug: 'vidu',
+    hubSearch: 'vidu',
     featured: true
   },
   runway: {
-    hubSlug: 'runway',
+    hubSearch: 'runway',
     featured: true
   },
   'stability-ai': {
-    hubSlug: 'stability',
+    hubSearch: 'stability',
     featured: true
   },
   'seedance-bytedance': {
-    hubSlug: 'seedance',
+    hubSearch: 'seedance',
     featured: true
   },
   'grok-imagine': {
-    hubSlug: 'grok',
+    hubSearch: 'grok',
     featured: false
   },
   'luma-dream-machine': {
-    hubSlug: 'luma',
     featured: false
   },
   moonvalley: {
-    hubSlug: 'moonvalley',
     featured: false
   },
   'magnific-ai': {
-    hubSlug: 'magnific',
+    hubSearch: 'magnific',
     featured: false
   },
   pixverse: {
-    hubSlug: 'pixverse',
+    hubSearch: 'pixverse',
     featured: false
   },
   'rodin-3d': {
-    hubSlug: 'rodin',
     featured: false
   },
   recraft: {
-    hubSlug: 'recraft',
+    hubSearch: 'recraft',
     featured: false
   },
   'bria-ai': {
-    hubSlug: 'bria',
     featured: false
   },
   'topaz-labs': {
-    hubSlug: 'topaz',
+    hubSearch: 'topaz',
     featured: false
   },
   wavespeed: {
-    hubSlug: 'wavespeed',
+    hubSearch: 'wavespeed',
     featured: false
   },
   ideogram: {
-    hubSlug: 'ideogram',
+    hubSearch: 'ideogram',
     featured: false
   },
   'veo-2': {
-    hubSlug: 'veo',
     featured: false
   },
   'veo-3': {
-    hubSlug: 'veo',
     featured: false
   },
   'flux-2-api': {
-    hubSlug: 'flux-2',
+    hubSearch: 'flux',
     featured: false
   },
   'ace-step-v1-3-5b': {
     docsUrl: 'https://docs.comfy.org/tutorials/audio/ace-step/ace-step-v1',
-    hubSlug: 'ace-step',
+    hubSearch: 'ace-step',
     featured: false
   },
   'hidream-i1-dev-fp8': {
     docsUrl: 'https://docs.comfy.org/tutorials/image/hidream/hidream-i1',
-    hubSlug: 'hidream',
+    hubSearch: 'hidream',
     featured: false
   },
   'omnigen2-fp16': {
-    hubSlug: 'omnigen',
     featured: false
   },
   'sd-xl-base-1-0': {
-    hubSlug: 'sdxl',
+    hubSearch: 'stable',
     featured: false
   },
   'z-image-bf16': {
-    hubSlug: 'z-image',
+    hubSearch: 'z-image',
     featured: false
   },
   'z-image-turbo-bf16': {
-    hubSlug: 'z-image',
+    hubSearch: 'z-image',
     featured: false
   },
   'svd-xt': {
-    hubSlug: 'svd',
+    hubSearch: 'svd',
     featured: false
   },
   'flux1-dev-kontext-fp8-scaled': {
     docsUrl: 'https://docs.comfy.org/tutorials/flux/flux-1-kontext-dev',
-    hubSlug: 'flux-1-kontext',
+    hubSearch: 'flux',
     featured: false
   },
   'ltx-2-19b-dev-fp8': {
-    hubSlug: 'ltx-2',
     featured: false
   },
   'ltx-2-19b-distilled': {
-    hubSlug: 'ltx-2',
     featured: false
   },
   'flux1-fill-dev': {
-    hubSlug: 'flux-1',
+    hubSearch: 'flux',
     featured: false
   },
   'flux-2-klein-base-9b-fp8': {
-    hubSlug: 'flux-2',
+    hubSearch: 'flux',
     featured: false
   },
   'qwen-image-fp8-e4m3fn': {
-    hubSlug: 'qwen',
+    hubSearch: 'qwen',
     featured: false
   },
   'qwen-image-edit-2509-fp8-e4m3fn': {
-    hubSlug: 'qwen',
+    hubSearch: 'qwen',
     featured: false
   }
 }
