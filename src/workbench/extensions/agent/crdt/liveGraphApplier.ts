@@ -330,7 +330,13 @@ function readDocNode(
     order,
     mode
   }
-  return { id, type: serialised.type, serialised, widgets, widgetRecord }
+  return {
+    id,
+    type: serialised.type,
+    serialised,
+    widgets,
+    widgetRecord: widgets === undefined ? widgetRecord : undefined
+  }
 }
 
 function readDocLink(doc: Y.Doc, key: string): DocLink | null {
