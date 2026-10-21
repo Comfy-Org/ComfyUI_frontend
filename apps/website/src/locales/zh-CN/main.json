@@ -82,6 +82,11 @@
         "TEMPLATE_SET": "模板集"
       },
       "filterLabel": "按类型筛选",
+      "sortLabel": "排序",
+      "sort": {
+        "NAME": "名称（A–Z）",
+        "LATEST": "最近更改"
+      },
       "search": "搜索标题、创作者或分享 ID",
       "columns": {
         "change": "更改",

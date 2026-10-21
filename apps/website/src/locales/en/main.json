@@ -82,6 +82,11 @@
         "TEMPLATE_SET": "Template sets"
       },
       "filterLabel": "Filter by type",
+      "sortLabel": "Sort",
+      "sort": {
+        "NAME": "Name (A–Z)",
+        "LATEST": "Latest change"
+      },
       "search": "Search title, creator or share ID",
       "columns": {
         "change": "Change",
