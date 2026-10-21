@@ -17,6 +17,8 @@ import { useVisualViewport } from '@/composables/useVisualViewport'
 import type { UseCase } from '@/config/models-catalogue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import type { ModelAccess } from '@/lib/workshop/explorer/model-access'
+import { toggleOption } from '@/lib/workshop/facet-toggle'
 import { filterLabel } from '@/lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 
@@ -31,15 +33,21 @@ const WorkshopFilterPanel = defineAsyncComponent(
 )
 
 const {
-  useCaseOptions,
+  useCaseOptions = [],
   modelOptions,
+  accessOptions = [],
+  title,
   resultCount,
   kind = 'models',
   locale = 'en'
 } = defineProps<{
-  useCaseOptions: readonly FacetMenuOption<T>[]
+  useCaseOptions?: readonly FacetMenuOption<T>[]
   /** The models the listing runs on, where it stands on more than its own. */
   modelOptions?: readonly FacetMenuOption<string>[]
+  /** How a model can be used: run here or called by API. */
+  accessOptions?: readonly FacetMenuOption<ModelAccess>[]
+  /** Names the control whatever its groups; without one a single group names it. */
+  title?: string
   /** What the catalogue holds under the current choices, for the way out. */
   resultCount: number
   kind?: 'models' | 'workflows'
@@ -47,8 +55,9 @@ const {
 }>()
 const { t } = translationsFor(locale)
 
-const useCases = defineModel<T[]>('useCases', { required: true })
+const useCases = defineModel<T[]>('useCases', { default: () => [] })
 const models = defineModel<string[]>('models', { default: () => [] })
+const access = defineModel<ModelAccess[]>('access', { default: () => [] })
 
 const open = ref(false)
 // A dropdown anchored to a crowded toolbar leaves a phone no room, so there
@@ -84,16 +93,20 @@ watchEffect((onCleanup) => {
 })
 
 const groups = computed<FacetSheetGroup[]>(() => [
-  {
-    key: 'useCase',
-    label: t(
-      kind === 'workflows'
-        ? 'workshop.catalogue.categories'
-        : 'workshop.launch.label'
-    ),
-    options: useCaseOptions,
-    selected: useCases.value
-  },
+  ...(useCaseOptions.length
+    ? [
+        {
+          key: 'useCase',
+          label: t(
+            kind === 'workflows'
+              ? 'workshop.catalogue.categories'
+              : 'workshop.launch.label'
+          ),
+          options: useCaseOptions,
+          selected: useCases.value
+        }
+      ]
+    : []),
   ...(modelOptions?.length
     ? [
         {
@@ -103,6 +116,16 @@ const groups = computed<FacetSheetGroup[]>(() => [
           selected: models.value
         }
       ]
+    : []),
+  ...(accessOptions.length
+    ? [
+        {
+          key: 'access',
+          label: t('workshop.explorer.filter.label'),
+          options: accessOptions,
+          selected: access.value
+        }
+      ]
     : [])
 ])
 
@@ -110,8 +133,8 @@ const selectedCount = computed(() =>
   groups.value.reduce((total, group) => total + group.selected.length, 0)
 )
 
-const label = computed(() =>
-  filterLabel(groups.value, t('workshop.filter.label'))
+const label = computed(
+  () => title ?? filterLabel(groups.value, t('workshop.filter.label'))
 )
 
 function toggle(facet: string, value: string) {
@@ -119,6 +142,10 @@ function toggle(facet: string, value: string) {
     models.value = models.value.includes(value)
       ? models.value.filter((item) => item !== value)
       : [...models.value, value]
+    return
+  }
+  if (facet === 'access') {
+    access.value = toggleOption(accessOptions, access.value, value)
     return
   }
   const useCase = useCaseOptions.find((option) => option.value === value)?.value
@@ -131,6 +158,7 @@ function toggle(facet: string, value: string) {
 function clearAll() {
   useCases.value = []
   models.value = []
+  access.value = []
 }
 
 defineExpose({ focus: () => trigger.value?.focus() })

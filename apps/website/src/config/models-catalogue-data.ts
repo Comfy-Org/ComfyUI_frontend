@@ -1,6 +1,7 @@
 import { z } from 'astro/zod'
 
 import { MODALITIES, USE_CASES } from './models-catalogue'
+import { RESOLUTIONS } from '@/lib/workshop/resolution'
 
 const presentationSchema = z.object({
   slug: z.string(),
@@ -21,8 +22,10 @@ const presentationSchema = z.object({
     ])
     .optional(),
   capabilities: z.array(z.string()),
+  resolutions: z.array(z.enum(RESOLUTIONS)).optional(),
   creditsPerRun: z.number().optional(),
   priceUsdFrom: z.number().optional(),
+  priceEstimate: z.string().optional(),
   thumbnailUrl: z.string().optional(),
   thumbnailLabel: z.string().optional(),
   thumbnail: z

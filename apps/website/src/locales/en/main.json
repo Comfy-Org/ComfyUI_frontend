@@ -5604,14 +5604,18 @@
       "refreshLink": "Refresh download link"
     },
     "preview": {
-      "label": "Preview controls",
-      "community": "From the community",
-      "homePickRemixRun": "Home: Pick · Remix · Run banner",
-      "taskSidebar": "Hub: task sidebar",
-      "workflowsByModality": "Hub: workflows by modality",
-      "workflowsFlat": "Hub: workflows like Models",
-      "workflowsModalityTask": "Hub: workflows by modality › task",
-      "fullCatalogueMock": "Hub: full catalogue mock (Workflows)"
+      "label": "Design tweaks",
+      "homePickRemixRun": "Pick · Remix · Run banner",
+      "taskSidebar": "Browse by task",
+      "note": "Only on preview links, never on comfy.org. Your choices stay in this browser.",
+      "pages": {
+        "home": "comfy.org home",
+        "models": "Hub · Models"
+      },
+      "homePickRemixRunHint": "Shows the three-step banner in the Hub section of the home page.",
+      "taskSidebarHint": "Swaps the category tabs for a sidebar of tasks, like Generate images or Upscale.",
+      "compare": "Compare models",
+      "compareHint": "Lets visitors pick up to 4 models and see them side by side."
     },
     "proto": {
       "version": {
@@ -5868,6 +5872,110 @@
       "tryCloud": "Try in Cloud",
       "explore": "Explore the possibilities",
       "opensInNewTab": "(opens in a new tab)"
+    },
+    "explorer": {
+      "allModelsLink": "Browse open weights",
+      "badge": {
+        "api": "API",
+        "run": "Run"
+      },
+      "compare": {
+        "access": "How you use it",
+        "add": "Add model",
+        "addSlot": "Add a model",
+        "api": "API",
+        "apiFor": "{name} API",
+        "clear": "Clear",
+        "copied": "Link copied",
+        "copyLink": "Copy link",
+        "full": "You can compare up to 4 models",
+        "label": "Compare",
+        "noSample": "No sample for this prompt",
+        "open": "Compare {count} model | Compare {count} models",
+        "openShort": "Compare {count}",
+        "picked": "{count} of {max}",
+        "prompt": "Prompt",
+        "promptTypes": "Prompt types",
+        "provider": "Provider",
+        "remove": "Remove {name} from compare",
+        "samePrompt": "Same prompt, every model",
+        "samePromptNote": "Each row gave every model the same prompt. Made with Magnific, which runs these same models.",
+        "sampleAlt": "{model} output for: {prompt}",
+        "task": "What it does",
+        "toggle": "Compare {name}",
+        "trayLabel": "Models to compare",
+        "try": "Try {name}",
+        "tryShort": "Try",
+        "upTo": "up to {max}",
+        "viewTitle": "Compare {count} models",
+        "types": {
+          "all": "All",
+          "portraits": "Portraits",
+          "product": "Product",
+          "illustration": "Illustration",
+          "typography": "Typography",
+          "fusion": "Fusion & detail"
+        }
+      },
+      "filter": {
+        "api": "API",
+        "run": "Run here",
+        "label": "How you use it"
+      },
+      "tabs": {
+        "3d": "3D",
+        "all": "All",
+        "audio": "Audio",
+        "edit": "Edit",
+        "groups": {
+          "task": "Task",
+          "type": "Type"
+        },
+        "image": "Image",
+        "label": "Model categories",
+        "llm": "LLM",
+        "upscale": "Upscale",
+        "video": "Video"
+      }
+    },
+    "featured": {
+      "comfyWorkflow": "Comfy workflow",
+      "new": "New",
+      "openWorkflow": "Open workflow",
+      "openWorkflowNamed": "Open workflow {name}",
+      "tryModel": "Try model"
+    },
+    "modelsHub": {
+      "back": {
+        "access": {
+          "api": "Models with an API",
+          "run": "Models you can run here"
+        },
+        "search": "results for “{query}”",
+        "tab": {
+          "3d": "3D models",
+          "audio": "Audio models",
+          "edit": "Edit models",
+          "image": "Image models",
+          "llm": "Language models",
+          "upscale": "Upscale models",
+          "video": "Video models"
+        }
+      },
+      "subtitle": "Call the latest models through one API, try them here first or download open weights for ComfyUI."
+    },
+    "resolution": {
+      "all": "All resolutions",
+      "label": "Resolution"
+    },
+    "taskSidebar": {
+      "editImages": "Edit images",
+      "editVideos": "Edit videos",
+      "generateImages": "Generate images",
+      "generateVideos": "Generate videos",
+      "imageToVideo": "Image to video",
+      "label": "Browse by task",
+      "seeAll": "See all ({n})"
     }
   }
 }

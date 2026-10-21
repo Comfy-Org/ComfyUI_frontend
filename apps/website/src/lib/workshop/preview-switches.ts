@@ -4,24 +4,47 @@ import type { ComputedRef } from 'vue'
 import type { TranslationKey } from '@/i18n/translations'
 import { useWorkshopFlag } from '@/scripts/posthog'
 
+type PreviewPage = 'home' | 'models'
+
 const PREVIEW_SWITCHES = [
-  { id: 'hub-home-community', labelKey: 'workshop.preview.community' },
   {
     id: 'home-hub-pick-remix-run',
-    labelKey: 'workshop.preview.homePickRemixRun'
-  },
-  { id: 'hub-task-sidebar', labelKey: 'workshop.preview.taskSidebar' },
-  { id: 'hub-facet-sidebar', labelKey: 'workshop.preview.workflowsByModality' },
-  { id: 'hub-workflows-flat', labelKey: 'workshop.preview.workflowsFlat' },
-  {
-    id: 'hub-workflows-modality-task',
-    labelKey: 'workshop.preview.workflowsModalityTask'
+    page: 'home',
+    labelKey: 'workshop.preview.homePickRemixRun',
+    hintKey: 'workshop.preview.homePickRemixRunHint'
   },
   {
-    id: 'hub-workflows-full-catalogue-mock',
-    labelKey: 'workshop.preview.fullCatalogueMock'
+    id: 'hub-task-sidebar',
+    page: 'models',
+    labelKey: 'workshop.preview.taskSidebar',
+    hintKey: 'workshop.preview.taskSidebarHint'
+  },
+  {
+    id: 'hub-models-compare',
+    page: 'models',
+    labelKey: 'workshop.preview.compare',
+    hintKey: 'workshop.preview.compareHint'
   }
-] as const satisfies readonly { id: string; labelKey: TranslationKey }[]
+] as const satisfies readonly {
+  id: string
+  page: PreviewPage
+  labelKey: TranslationKey
+  hintKey: TranslationKey
+}[]
+
+const PREVIEW_PAGES = [
+  { page: 'home', labelKey: 'workshop.preview.pages.home' },
+  { page: 'models', labelKey: 'workshop.preview.pages.models' }
+] as const satisfies readonly { page: PreviewPage; labelKey: TranslationKey }[]
+
+/** The preview switches grouped under the page each one changes, in page order. */
+export const PREVIEW_SWITCH_GROUPS = PREVIEW_PAGES.map(
+  ({ page, labelKey }) => ({
+    page,
+    labelKey,
+    switches: PREVIEW_SWITCHES.filter((entry) => entry.page === page)
+  })
+)
 
 export type PreviewSwitchId = (typeof PREVIEW_SWITCHES)[number]['id']
 

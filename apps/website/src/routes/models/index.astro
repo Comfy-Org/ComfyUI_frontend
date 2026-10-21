@@ -1,5 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import PreviewControls from '@/components/workshop/PreviewControls.vue'
+import { isProductionBuild } from '@/config/build-env'
 import { workshopModels } from '@/config/workshop-browse-content'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
@@ -107,4 +109,9 @@ const jsonLd = modelsHubJsonLd({
       </div>
     </details>
   </section>
+  <PreviewControls
+    enabled={!isProductionBuild()}
+    client:idle
+    transition:persist="preview-controls"
+  />
 </BaseLayout>
