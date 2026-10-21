@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { unrefElement, whenever } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
-import Popover from '@comfyorg/design-system/popover/Popover'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -135,7 +134,7 @@ async function cancelDownload(taskId: TaskId) {
           {{ t('progressToast.importingModels') }}
         </h3>
         <div class="flex items-center gap-2">
-          <Popover v-model:open="isFilterOpen">
+          <PopoverRoot v-model:open="isFilterOpen">
             <PopoverTrigger as-child>
               <Button
                 ref="filterAnchor"
@@ -173,7 +172,7 @@ async function cancelDownload(taskId: TaskId) {
                 </Button>
               </div>
             </PopoverContent>
-          </Popover>
+          </PopoverRoot>
         </div>
       </div>
 

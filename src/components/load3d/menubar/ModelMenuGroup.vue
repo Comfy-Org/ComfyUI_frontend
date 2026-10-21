@@ -1,5 +1,5 @@
 <template>
-  <Popover v-model:open="upDirectionOpen">
+  <PopoverRoot v-model:open="upDirectionOpen">
     <PopoverTrigger as-child>
       <Button
         variant="textonly"
@@ -33,9 +33,9 @@
         {{ d.toUpperCase() }}
       </button>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 
-  <Popover v-if="materialModes.length" v-model:open="materialOpen">
+  <PopoverRoot v-if="materialModes.length" v-model:open="materialOpen">
     <PopoverTrigger as-child>
       <Button
         variant="textonly"
@@ -69,7 +69,7 @@
         {{ t(`load3d.materialModes.${m}`) }}
       </button>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 
   <Button
     v-if="hasSkeleton"
@@ -89,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -101,7 +101,6 @@ import {
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Button from '@comfyorg/design-system/button/Button'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuButtonClass,

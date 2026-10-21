@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import type { UserEvent } from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
-import Popover from '@comfyorg/design-system/popover/ButtonPopover'
+import Popover from '@comfyorg/design-system/popover/Popover'
 
 function renderPopover() {
   render({

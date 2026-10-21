@@ -1,5 +1,5 @@
 <template>
-  <Popover v-model:open="isOpen">
+  <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <Button
         ref="buttonRef"
@@ -94,13 +94,12 @@
         </button>
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
-import Popover from '@comfyorg/design-system/popover/Popover'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'

@@ -256,7 +256,7 @@
 import PricingTierHeading from '@/platform/workspace/components/PricingTierHeading.vue'
 import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
-import Popover from '@comfyorg/design-system/popover/ButtonPopover'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

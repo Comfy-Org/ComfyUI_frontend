@@ -1,5 +1,5 @@
 <template>
-  <Popover :open="isOpen" @update:open="onOpenChange">
+  <PopoverRoot :open="isOpen" @update:open="onOpenChange">
     <PopoverContent
       v-if="hasReference"
       :reference="referenceElement ?? undefined"
@@ -25,14 +25,14 @@
         :workflow-id="workflowId"
       />
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
+import { PopoverRoot } from 'reka-ui'
 import { computed } from 'vue'
 
 import JobDetailsPopover from '@/components/queue/job/JobDetailsPopover.vue'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 
 const {

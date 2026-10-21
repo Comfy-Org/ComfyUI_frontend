@@ -5,12 +5,11 @@ import {
   unrefElement,
   useEventListener
 } from '@vueuse/core'
-import { PopoverAnchor } from 'reka-ui'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -332,7 +331,7 @@ function showPicker() {
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
-    <Popover v-model:open="isOpen">
+    <PopoverRoot v-model:open="isOpen">
       <PopoverAnchor as="template" :reference="triggerAnchorRef ?? undefined" />
       <PopoverContent
         align="start"
@@ -371,6 +370,6 @@ function showPicker() {
           @show-picker="showPicker"
         />
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
   </div>
 </template>

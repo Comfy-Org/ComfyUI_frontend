@@ -1,5 +1,5 @@
 <template>
-  <Popover v-model:open="open">
+  <PopoverRoot v-model:open="open">
     <PopoverAnchor as-child>
       <Button
         v-if="!isLoggedIn"
@@ -40,14 +40,13 @@
         >
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
 import { unrefElement, useTimeoutFn } from '@vueuse/core'
-import { PopoverAnchor } from 'reka-ui'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'

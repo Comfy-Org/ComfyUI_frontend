@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Popover
+    <PopoverRoot
       :open="isVersionSelectorOpen"
       @update:open="isVersionSelectorOpen = $event && !isDisabled"
     >
@@ -40,7 +40,7 @@
           @submit="closeVersionSelector"
         />
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
   </div>
 </template>
 
@@ -51,8 +51,7 @@ import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { PopoverTrigger } from 'reka-ui'
-import Popover from '@comfyorg/design-system/popover/Popover'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import Button from '@comfyorg/design-system/button/Button'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'

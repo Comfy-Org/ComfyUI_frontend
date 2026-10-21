@@ -37,7 +37,7 @@
       {{ formatAnimationTime(animationDuration) }}
     </span>
 
-    <Popover v-model:open="speedOpen">
+    <PopoverRoot v-model:open="speedOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -73,9 +73,9 @@
           {{ formatSpeed(speed) }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
-    <Popover v-model:open="clipOpen">
+    <PopoverRoot v-model:open="clipOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -112,12 +112,12 @@
           <span class="truncate">{{ clip.name }}</span>
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
   </div>
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -130,7 +130,6 @@ import {
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Button from '@comfyorg/design-system/button/Button'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuButtonClass,

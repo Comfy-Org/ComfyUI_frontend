@@ -5,7 +5,7 @@
       class="flex h-10 shrink-0 items-center gap-1 bg-popover px-2"
       @wheel.stop
     >
-      <Popover v-model:open="categoryMenuOpen">
+      <PopoverRoot v-model:open="categoryMenuOpen">
         <PopoverTrigger as-child>
           <Button
             variant="textonly"
@@ -45,7 +45,7 @@
             {{ c.label }}
           </button>
         </PopoverContent>
-      </Popover>
+      </PopoverRoot>
 
       <div class="mx-1 h-5 w-px shrink-0 bg-border" />
 
@@ -157,7 +157,7 @@
         >
           <i class="icon-[lucide--crosshair] size-4" />
         </Button>
-        <Popover v-if="canExport" v-model:open="exportOpen">
+        <PopoverRoot v-if="canExport" v-model:open="exportOpen">
           <PopoverTrigger as-child>
             <Button
               variant="textonly"
@@ -185,7 +185,7 @@
               {{ format.label }}
             </button>
           </PopoverContent>
-        </Popover>
+        </PopoverRoot>
       </div>
     </div>
   </div>
@@ -193,7 +193,7 @@
 
 <script setup lang="ts">
 import { useElementSize } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -214,7 +214,6 @@ import SceneMenuGroup from '@/components/load3d/menubar/SceneMenuGroup.vue'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Button from '@comfyorg/design-system/button/Button'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuButtonClass,

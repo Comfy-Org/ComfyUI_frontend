@@ -224,7 +224,7 @@ import PricingTierHeading from '@/platform/workspace/components/PricingTierHeadi
 import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import Popover from '@comfyorg/design-system/popover/ButtonPopover'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

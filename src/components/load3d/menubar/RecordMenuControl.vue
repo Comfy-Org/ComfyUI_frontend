@@ -17,7 +17,7 @@
     v-else-if="hasRecording"
     class="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted py-0.5 pr-0.5 pl-1 text-sm text-foreground"
   >
-    <Popover v-model:open="menuOpen">
+    <PopoverRoot v-model:open="menuOpen">
       <PopoverTrigger as-child>
         <Button
           variant="textonly"
@@ -59,7 +59,7 @@
           {{ t('load3d.menuBar.deleteRecording') }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
     <Button
       variant="textonly"
       size="unset"
@@ -89,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -98,7 +98,6 @@ import {
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Button from '@comfyorg/design-system/button/Button'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { menuButtonClass } from '@comfyorg/design-system/lib/menu/menuStyles'
 

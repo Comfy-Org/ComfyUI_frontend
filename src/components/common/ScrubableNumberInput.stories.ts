@@ -6,7 +6,7 @@ import type {
 import { ref, toRefs } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import Popover from '@comfyorg/design-system/popover/ButtonPopover'
+import Popover from '@comfyorg/design-system/popover/Popover'
 
 import ScrubableNumberInput from './ScrubableNumberInput.vue'
 

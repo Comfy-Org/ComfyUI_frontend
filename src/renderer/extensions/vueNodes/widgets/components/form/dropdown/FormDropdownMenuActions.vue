@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { unrefElement } from '@vueuse/core'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import type {
@@ -130,7 +129,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       {{ t('widgets.uploadSelect.topResult', { result: candidateLabel }) }}
     </span>
 
-    <Popover v-model:open="isSortPopoverOpen">
+    <PopoverRoot v-model:open="isSortPopoverOpen">
       <PopoverTrigger as-child>
         <Button
           ref="sortTriggerRef"
@@ -182,9 +181,9 @@ function handleSearchEnter(event: KeyboardEvent) {
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
-    <Popover
+    <PopoverRoot
       v-if="showOwnershipFilter && ownershipOptions?.length"
       v-model:open="isOwnershipPopoverOpen"
     >
@@ -239,9 +238,9 @@ function handleSearchEnter(event: KeyboardEvent) {
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
-    <Popover
+    <PopoverRoot
       v-if="showBaseModelFilter && baseModelOptions?.length"
       v-model:open="isBaseModelPopoverOpen"
     >
@@ -305,7 +304,7 @@ function handleSearchEnter(event: KeyboardEvent) {
           </Button>
         </div>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
     <div
       :class="

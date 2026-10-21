@@ -25,7 +25,7 @@
       </ToggleGroupItem>
     </ToggleGroup>
 
-    <Popover v-model:open="zoomOpen">
+    <PopoverRoot v-model:open="zoomOpen">
       <PopoverTrigger as-child>
         <button
           :class="
@@ -57,7 +57,7 @@
           {{ t('layerEditor.fitView') }}
         </button>
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
 
     <button
       :class="toolButtonClass(false)"
@@ -91,11 +91,10 @@
 
 <script setup lang="ts">
 import type { AcceptableValue } from 'reka-ui'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import {
   menuContentClass,

@@ -266,7 +266,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Popover from '@comfyorg/design-system/popover/ButtonPopover'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import type { Ref } from 'vue'
 import {
   computed,

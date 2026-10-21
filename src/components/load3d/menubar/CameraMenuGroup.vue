@@ -35,7 +35,7 @@
     <span v-if="!compact">{{ upLabel }}</span>
   </Button>
 
-  <Popover v-if="isPerspective" v-model:open="fovOpen">
+  <PopoverRoot v-if="isPerspective" v-model:open="fovOpen">
     <PopoverTrigger as-child>
       <Button
         variant="textonly"
@@ -67,11 +67,11 @@
         />
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -83,7 +83,6 @@ import {
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
 import Button from '@comfyorg/design-system/button/Button'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import Slider from '@comfyorg/design-system/slider/Slider'
 import type { CameraConfig } from '@comfyorg/viewport3d/load3d/interfaces'

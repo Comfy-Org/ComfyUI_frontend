@@ -1,5 +1,5 @@
 <template>
-  <Popover v-model:open="open">
+  <PopoverRoot v-model:open="open">
     <PopoverAnchor as="template" :reference="anchor ?? undefined" />
     <PopoverContent
       side="bottom"
@@ -32,14 +32,13 @@
         </div>
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>
 
 <script setup lang="ts">
 import { useTimeoutFn } from '@vueuse/core'
-import { PopoverAnchor } from 'reka-ui'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { ref, toRefs, watch } from 'vue'
 

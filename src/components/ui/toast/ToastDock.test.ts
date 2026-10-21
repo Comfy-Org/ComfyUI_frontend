@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { ConfigProvider } from 'reka-ui'
 import { describe, expect, it } from 'vitest'
 
-import Popover from '@comfyorg/design-system/popover/ButtonPopover'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 
 describe('ToastDock', () => {

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <Popover v-model:open="open">
+    <PopoverRoot v-model:open="open">
       <PopoverTrigger as-child>
         <Button
           v-if="isLoggedIn"
@@ -59,14 +59,13 @@
         />
         <CurrentUserPopoverLegacy v-else @close="closePopover" />
       </PopoverContent>
-    </Popover>
+    </PopoverRoot>
   </div>
 </template>
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { PopoverTrigger } from 'reka-ui'
-import Popover from '@comfyorg/design-system/popover/Popover'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { unrefElement } from '@vueuse/core'
 import { computed, defineAsyncComponent, ref } from 'vue'

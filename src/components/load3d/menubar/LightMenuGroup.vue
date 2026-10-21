@@ -1,5 +1,5 @@
 <template>
-  <Popover v-if="isOriginalMaterial" v-model:open="intensityOpen">
+  <PopoverRoot v-if="isOriginalMaterial" v-model:open="intensityOpen">
     <PopoverTrigger as-child>
       <Button
         variant="textonly"
@@ -33,7 +33,7 @@
         />
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
   <span v-else class="px-2 text-sm text-muted-foreground">{{
     t('load3d.menuBar.originalMaterialOnly')
   }}</span>
@@ -48,14 +48,13 @@ import {
   formPanelClass
 } from '@/components/load3d/menubar/menuBarStyles'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
-import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import Slider from '@comfyorg/design-system/slider/Slider'
 import Button from '@comfyorg/design-system/button/Button'
 import type { LightConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 
 const { compact = false, isOriginalMaterial = false } = defineProps<{
   compact?: boolean

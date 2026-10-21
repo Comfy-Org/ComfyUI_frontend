@@ -2,7 +2,7 @@
 import { defineAsyncComponent, ref, watch } from 'vue'
 import type { Component } from 'vue'
 
-import Popover from '@comfyorg/design-system/popover/ButtonPopover'
+import Popover from '@comfyorg/design-system/popover/Popover'
 import type {
   SimplifiedControlWidget,
   WidgetValue
