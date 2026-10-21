@@ -1868,10 +1868,6 @@ describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1
     transport.ingest(toolCall('add_node', 'success', 'write-b'))
     vi.advanceTimersByTime(STALE_AFTER_MS)
 
-    expect(toolParts(message).map((part) => part.state)).toEqual([
-      'done',
-      'done'
-    ])
     expect(
       toolParts(message).map(({ state, canvasConfirmed }) => ({
         state,
