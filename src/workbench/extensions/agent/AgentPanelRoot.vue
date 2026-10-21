@@ -376,6 +376,7 @@ async function sendWithFundsRecheck(
   if (billingType.value !== 'workspace' || agentHasFunds.value !== false)
     return send(() => undefined)
   let recheckId: number | undefined
+  let stopAdoptionWatch: (() => void) | undefined
   const settle = () => {
     if (recheckId !== undefined) agentPanelStore.finishFundsRecheck(recheckId)
   }
@@ -384,20 +385,23 @@ async function sendWithFundsRecheck(
   try {
     sent = await send(() => {
       admitted = true
-      recheckId = agentPanelStore.beginFundsRecheck(billingIdentity.value)
+      recheckId = agentPanelStore.beginFundsRecheck(billingIdentity.value, () =>
+        stopAdoptionWatch?.()
+      )
+      stopAdoptionWatch = watch([subscription, billingIdentity], settle, {
+        flush: 'sync'
+      })
     })
   } finally {
     if (!admitted) settle()
   }
   if (!admitted) return sent
-  void refreshBillingStatus()
-    .catch((error: unknown) => {
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'error_refreshing_agent_billing_status'
-      })
+  void refreshBillingStatus().catch((error: unknown) => {
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'error_refreshing_agent_billing_status'
     })
-    .finally(settle)
+  })
   return sent
 }
 

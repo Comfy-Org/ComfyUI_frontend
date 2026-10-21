@@ -100,6 +100,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const reportedFreeUseImpression = ref(false)
   const fundsRechecks = ref(new Map<number, string>())
   const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
+  const fundsRecheckFinished = new Map<number, () => void>()
   let nextFundsRecheckId = 0
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
@@ -387,9 +388,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     dispatchCreditTransitionNotice({ type: 'dismissed', identity })
   }
 
-  function beginFundsRecheck(identity: string): number {
+  function beginFundsRecheck(
+    identity: string,
+    onFinished?: () => void
+  ): number {
     const id = ++nextFundsRecheckId
     fundsRechecks.value.set(id, identity)
+    if (onFinished) fundsRecheckFinished.set(id, onFinished)
     fundsRecheckTimeouts.set(
       id,
       setTimeout(() => finishFundsRecheck(id), FUNDS_RECHECK_TIMEOUT_MS)
@@ -401,12 +406,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     clearTimeout(fundsRecheckTimeouts.get(id))
     fundsRecheckTimeouts.delete(id)
     fundsRechecks.value.delete(id)
+    fundsRecheckFinished.get(id)?.()
+    fundsRecheckFinished.delete(id)
   }
 
   function cancelFundsRechecks(): void {
-    for (const timeout of fundsRecheckTimeouts.values()) clearTimeout(timeout)
-    fundsRecheckTimeouts.clear()
-    fundsRechecks.value.clear()
+    for (const id of fundsRechecks.value.keys()) finishFundsRecheck(id)
   }
 
   function hasPendingFundsRecheck(identity: string): boolean {
