@@ -1,16 +1,32 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { basename, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import ts from 'typescript'
 
-export const FOLLOWER_SOURCE_PATHS = [
-  'src/workbench/extensions/agent/crdt/followerDoc.ts',
-  'src/workbench/extensions/agent/crdt/useAgentCrdtFollower.ts',
-  'src/workbench/extensions/agent/crdt/agentCrdtProjection.ts',
-  'src/workbench/extensions/agent/crdt/liveGraphApplier.ts',
-  'src/workbench/extensions/agent/crdt/docChangeCollector.ts'
-] as const
+const FOLLOWER_CORE_DIRECTORY = 'src/workbench/extensions/agent/crdt'
+
+const FOLLOWER_SEAM_PATH = `${FOLLOWER_CORE_DIRECTORY}/followerDoc.ts`
+
+// The merge laboratory replays op streams into scratch documents it creates
+// itself; it never holds the follower document.
+const EXEMPT_FOLLOWER_SOURCES = new Set(['mergeScenarios.ts'])
+
+function followerSourcePaths(repositoryRoot: string): string[] {
+  const directory = join(repositoryRoot, FOLLOWER_CORE_DIRECTORY)
+  const discovered = existsSync(directory)
+    ? readdirSync(directory)
+        .filter(
+          (name) =>
+            name.endsWith('.ts') &&
+            !name.endsWith('.test.ts') &&
+            !name.endsWith('.d.ts') &&
+            !EXEMPT_FOLLOWER_SOURCES.has(name)
+        )
+        .map((name) => `${FOLLOWER_CORE_DIRECTORY}/${name}`)
+    : []
+  return [...new Set([FOLLOWER_SEAM_PATH, ...discovered])].sort()
+}
 
 const MUTATING_METHODS = new Set([
   'applyDelta',
@@ -28,14 +44,14 @@ const MUTATING_METHODS = new Set([
   'unshift'
 ])
 
-export type FollowerInvariantViolation = {
+type FollowerInvariantViolation = {
   column: number
   line: number
   message: string
   path: string
 }
 
-export type FollowerSource = {
+type FollowerSource = {
   contents: string
   path: string
 }
@@ -49,6 +65,7 @@ function unwrapped(expression: ts.Expression): ts.Expression {
   while (
     ts.isParenthesizedExpression(current) ||
     ts.isAsExpression(current) ||
+    ts.isSatisfiesExpression(current) ||
     ts.isTypeAssertionExpression(current) ||
     ts.isNonNullExpression(current)
   )
@@ -77,18 +94,16 @@ function isNewYDoc(expression: ts.Expression | undefined): boolean {
   )
 }
 
-function hasAncestorMethod(
-  source: ts.SourceFile,
-  node: ts.Node,
-  name: string
+function isFollowerDocApplyRemoteUpdate(
+  method: ts.SignatureDeclaration | undefined
 ): boolean {
-  let current = node.parent
-  while (current !== source) {
-    if (ts.isMethodDeclaration(current) && propertyName(current.name) === name)
-      return true
-    current = current.parent
-  }
-  return false
+  return (
+    method !== undefined &&
+    ts.isMethodDeclaration(method) &&
+    propertyName(method.name) === 'applyRemoteUpdate' &&
+    ts.isClassDeclaration(method.parent) &&
+    method.parent.name?.text === 'FollowerDoc'
+  )
 }
 
 function isThisDoc(expression: ts.Expression): boolean {
@@ -119,14 +134,16 @@ function namedImports(
   return bindings && ts.isNamedImports(bindings) ? bindings.elements : []
 }
 
-function isYApplyUpdate(
-  expression: ts.Expression,
-  applyUpdateNames: ReadonlySet<string>
-): boolean {
+function isYApplyUpdate(expression: ts.Expression, aliases: Tracking): boolean {
   const value = unwrapped(expression)
-  if (ts.isIdentifier(value)) return applyUpdateNames.has(value.text)
+  if (ts.isIdentifier(value))
+    return Y_APPLY_UPDATES.has(value.text) || isTracked(aliases, value)
+  if (ts.isPropertyAccessExpression(value))
+    return Y_APPLY_UPDATES.has(value.name.text)
   return (
-    ts.isPropertyAccessExpression(value) && Y_APPLY_UPDATES.has(value.name.text)
+    ts.isElementAccessExpression(value) &&
+    ts.isStringLiteralLike(value.argumentExpression) &&
+    Y_APPLY_UPDATES.has(value.argumentExpression.text)
   )
 }
 
@@ -136,7 +153,7 @@ function isAllowedFollowerApply(
 ): boolean {
   return (
     basename(source.fileName) === 'followerDoc.ts' &&
-    hasAncestorMethod(source, call, 'applyRemoteUpdate') &&
+    isFollowerDocApplyRemoteUpdate(ts.findAncestor(call, ts.isFunctionLike)) &&
     call.arguments.length >= 2 &&
     isThisDoc(call.arguments[0])
   )
@@ -263,7 +280,7 @@ function addParseDiagnostics(
 
 function sourceDeclarations(source: ts.SourceFile): SupportedDeclaration[] {
   const declarations: SupportedDeclaration[] = []
-  const collect = (node: ts.Node): void => {
+  function collect(node: ts.Node): void {
     if (
       ts.isVariableDeclaration(node) ||
       ts.isBindingElement(node) ||
@@ -296,7 +313,7 @@ function isTracked({ checker, tracked }: Tracking, node: ts.Node): boolean {
 }
 
 function trackedDocReference(tracking: Tracking) {
-  const references = (expression: ts.Expression): boolean => {
+  function references(expression: ts.Expression): boolean {
     const value = unwrapped(expression)
     if (ts.isIdentifier(value)) return isTracked(tracking, value)
     if (isThisDoc(value) || isFollowerDocAccess(value)) return true
@@ -304,6 +321,7 @@ function trackedDocReference(tracking: Tracking) {
       return value.expression.kind === ts.SyntaxKind.ThisKeyword
         ? isTracked(tracking, value.name)
         : references(value.expression)
+    if (ts.isElementAccessExpression(value)) return references(value.expression)
     if (ts.isCallExpression(value))
       return [value.expression, ...value.arguments].some(references)
     return false
@@ -402,7 +420,7 @@ function instanceofSharedTypeDeclarations(
   checker: ts.TypeChecker
 ): Set<ts.Node> {
   const declarations = new Set<ts.Node>()
-  const collect = (node: ts.Node): void => {
+  function collect(node: ts.Node): void {
     if (
       ts.isBinaryExpression(node) &&
       node.operatorToken.kind === ts.SyntaxKind.InstanceOfKeyword &&
@@ -441,34 +459,34 @@ function trackedDocs(source: ts.SourceFile, checker: ts.TypeChecker): Tracking {
   return tracking
 }
 
-function applyUpdateAlias(
+function isApplyUpdateAlias(
   declaration: SupportedDeclaration,
-  applyUpdateNames: ReadonlySet<string>
-): string | null {
-  if (!ts.isIdentifier(declaration.name)) return null
+  aliases: Tracking
+): boolean {
+  if (!ts.isIdentifier(declaration.name)) return false
   if (ts.isBindingElement(declaration))
     return Y_APPLY_UPDATES.has(boundPropertyName(declaration) ?? '')
-      ? declaration.name.text
-      : null
-  return ts.isVariableDeclaration(declaration) &&
+  return (
+    ts.isVariableDeclaration(declaration) &&
     declaration.initializer !== undefined &&
-    isYApplyUpdate(declaration.initializer, applyUpdateNames)
-    ? declaration.name.text
-    : null
+    isYApplyUpdate(declaration.initializer, aliases)
+  )
 }
 
-function yApplyUpdateNames(source: ts.SourceFile): ReadonlySet<string> {
-  const names = new Set(Y_APPLY_UPDATES)
+function yApplyUpdateAliases(
+  source: ts.SourceFile,
+  checker: ts.TypeChecker
+): Tracking {
+  const aliases: Tracking = { checker, tracked: new Set() }
   for (const element of source.statements
     .filter(isYjsImport)
     .flatMap(namedImports))
     if (Y_APPLY_UPDATES.has((element.propertyName ?? element.name).text))
-      names.add(element.name.text)
-  for (const declaration of sourceDeclarations(source)) {
-    const alias = applyUpdateAlias(declaration, names)
-    if (alias !== null) names.add(alias)
-  }
-  return names
+      aliases.tracked.add(element)
+  for (const declaration of sourceDeclarations(source))
+    if (isApplyUpdateAlias(declaration, aliases))
+      aliases.tracked.add(declaration)
+  return aliases
 }
 
 function inspectCalls(
@@ -477,11 +495,11 @@ function inspectCalls(
   violations: FollowerInvariantViolation[]
 ): void {
   const referencesTrackedDoc = trackedDocReference(tracking)
-  const applyUpdateNames = yApplyUpdateNames(source)
-  const inspect = (node: ts.Node): void => {
+  const applyUpdateAliases = yApplyUpdateAliases(source, tracking.checker)
+  function inspect(node: ts.Node): void {
     if (ts.isCallExpression(node)) {
       if (
-        isYApplyUpdate(node.expression, applyUpdateNames) &&
+        isYApplyUpdate(node.expression, applyUpdateAliases) &&
         !isAllowedFollowerApply(source, node)
       )
         addViolation(
@@ -509,7 +527,9 @@ function inspectCalls(
   inspect(source)
 }
 
-function scanSource(sourceInput: FollowerSource): FollowerInvariantViolation[] {
+export function scanFollowerInvariantSource(
+  sourceInput: FollowerSource
+): FollowerInvariantViolation[] {
   const source = sourceFile(sourceInput)
   const violations: FollowerInvariantViolation[] = []
   addParseDiagnostics(violations, source, sourceInput.contents)
@@ -518,12 +538,11 @@ function scanSource(sourceInput: FollowerSource): FollowerInvariantViolation[] {
 }
 
 export function scanFollowerInvariantSources(
-  repositoryRoot: string,
-  sourcePaths: readonly string[] = FOLLOWER_SOURCE_PATHS
+  repositoryRoot: string
 ): FollowerInvariantViolation[] {
   const sources: FollowerSource[] = []
   const violations: FollowerInvariantViolation[] = []
-  for (const sourcePath of sourcePaths) {
+  for (const sourcePath of followerSourcePaths(repositoryRoot)) {
     const absolutePath = join(repositoryRoot, sourcePath)
     if (!existsSync(absolutePath)) {
       violations.push({
@@ -539,12 +558,10 @@ export function scanFollowerInvariantSources(
       contents: readFileSync(absolutePath, 'utf8')
     })
   }
-  return [...violations, ...sources.flatMap(scanSource)]
+  return [...violations, ...sources.flatMap(scanFollowerInvariantSource)]
 }
 
-export const scanFollowerInvariantSource = scanSource
-
-export function formatFollowerInvariantViolations(
+function formatFollowerInvariantViolations(
   repositoryRoot: string,
   violations: readonly FollowerInvariantViolation[]
 ): string {
