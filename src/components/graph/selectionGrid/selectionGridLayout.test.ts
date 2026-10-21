@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  MAX_TIDY_GAP,
   computeTidyLayout,
-  detectSelectionGrid
+  detectSelectionGrid,
+  tidyGapOf
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import type {
   BoxPosition,
@@ -480,5 +482,13 @@ describe('computeTidyLayout', () => {
     { name: 'one node', boxes: [box('a', 0, 0, 100, 100)] }
   ])('returns nothing for $name', ({ boxes }) => {
     expect(computeTidyLayout(boxes)).toEqual([])
+  })
+})
+
+describe('tidyGapOf', () => {
+  it('keeps a wide gap within the slider range', () => {
+    const row = [box('a', 0, 0, 100, 100), box('b', 300, 0, 100, 100)]
+
+    expect(tidyGapOf(row)).toBe(MAX_TIDY_GAP)
   })
 })

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, effectScope } from 'vue'
 
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
@@ -73,13 +73,40 @@ describe('useTidySession', () => {
     expect(tidyUp).toHaveBeenCalledWith({ gap: 20, captureUndo: true })
   })
 
-  it('drops a pending preview when cancelled', () => {
+  it('commits a previewed gap that was never released when the bar closes', () => {
     const session = useTidySession()
     session.start()
     tidyUp.mockClear()
 
     session.previewGap(18)
-    session.cancel()
+    session.finish()
+    flushFrames()
+
+    expect(tidyUp).toHaveBeenCalledTimes(1)
+    expect(tidyUp).toHaveBeenCalledWith({ gap: 18, captureUndo: true })
+  })
+
+  it('closes without moving nodes when the last gap was committed', () => {
+    const session = useTidySession()
+    session.start()
+    session.commitGap(20)
+    tidyUp.mockClear()
+
+    session.finish()
+    flushFrames()
+
+    expect(tidyUp).not.toHaveBeenCalled()
+  })
+
+  it('drops a pending preview when its owner goes away', () => {
+    const scope = effectScope()
+    const session = scope.run(() => useTidySession())
+    if (!session) throw new Error('the session did not start in its scope')
+    session.start()
+    tidyUp.mockClear()
+
+    session.previewGap(18)
+    scope.stop()
     flushFrames()
 
     expect(tidyUp).not.toHaveBeenCalled()

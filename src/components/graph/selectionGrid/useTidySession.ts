@@ -1,3 +1,4 @@
+import { tryOnScopeDispose } from '@vueuse/core'
 import { readonly, ref } from 'vue'
 
 import { DEFAULT_TIDY_GAP } from '@/components/graph/selectionGrid/selectionGridLayout'
@@ -7,22 +8,24 @@ export function useTidySession() {
   const { tidyUp } = useSelectionGrid()
 
   const gap = ref(DEFAULT_TIDY_GAP)
+  let committedGap = DEFAULT_TIDY_GAP
   let pendingFrame: number | null = null
 
-  const cancel = () => {
+  const dropPendingPreview = () => {
     if (pendingFrame === null) return
     cancelAnimationFrame(pendingFrame)
     pendingFrame = null
   }
 
   const start = () => {
-    cancel()
-    gap.value = tidyUp()
+    dropPendingPreview()
+    committedGap = tidyUp()
+    gap.value = committedGap
   }
 
   const previewGap = (nextGap: number) => {
     gap.value = nextGap
-    cancel()
+    dropPendingPreview()
     pendingFrame = requestAnimationFrame(() => {
       pendingFrame = null
       tidyUp({ gap: nextGap, captureUndo: false })
@@ -30,10 +33,18 @@ export function useTidySession() {
   }
 
   const commitGap = (nextGap: number) => {
-    cancel()
+    dropPendingPreview()
+    committedGap = nextGap
     gap.value = nextGap
     tidyUp({ gap: nextGap, captureUndo: true })
   }
 
-  return { gap: readonly(gap), start, previewGap, commitGap, cancel }
+  const finish = () => {
+    if (gap.value === committedGap) dropPendingPreview()
+    else commitGap(gap.value)
+  }
+
+  tryOnScopeDispose(dropPendingPreview)
+
+  return { gap: readonly(gap), start, previewGap, commitGap, finish }
 }

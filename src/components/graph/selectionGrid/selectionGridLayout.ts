@@ -1,3 +1,5 @@
+import { clamp } from 'es-toolkit'
+
 import type { NodeId } from '@/types/nodeId'
 
 export const DEFAULT_TIDY_GAP = 12
@@ -478,9 +480,9 @@ function isFinitePosition({ x, y }: BoxPosition): boolean {
   return Number.isFinite(x) && Number.isFinite(y)
 }
 
-/** The gap Tidy up uses for `boxes` when it is not given one. */
+/** The gap Tidy up uses for `boxes` when it is not given one, within the slider range. */
 export function tidyGapOf(boxes: LayoutBox[]): number {
-  return gapOf(detectSelectionGrid(boxes))
+  return clamp(gapOf(detectSelectionGrid(boxes)), MIN_TIDY_GAP, MAX_TIDY_GAP)
 }
 
 /**

@@ -62,13 +62,13 @@ const BAR_SIDE_OFFSET = TOOLBOX_INSET + BAR_GAP_BELOW_TOOLBOX
 
 const { t } = useI18n()
 const { canTidy } = useSelectionGrid()
-const { gap, start, previewGap, commitGap, cancel } = useTidySession()
+const { gap, start, previewGap, commitGap, finish } = useTidySession()
 
 const isOpen = ref(false)
 
 watch(isOpen, (open) => {
   if (open) start()
-  else cancel()
+  else finish()
 })
 
 const firstValue = (value: number[] | undefined): number | undefined =>

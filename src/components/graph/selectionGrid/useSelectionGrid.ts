@@ -36,7 +36,9 @@ export function useSelectionGrid() {
   const gridNodes = computed(() =>
     selectedNodes.value.filter((node) => !node.pinned)
   )
-  const canTidy = computed(() => gridNodes.value.length >= 2)
+  const canTidy = computed(
+    () => gridNodes.value.length >= 2 && !canvasStore.isReadOnly
+  )
 
   const measure = (): LayoutBox[] =>
     gridNodes.value.map((node) =>
@@ -47,8 +49,8 @@ export function useSelectionGrid() {
     positions: BoxPosition[],
     { captureUndo }: { captureUndo: boolean }
   ) => {
-    const { rootGraphId } = canvasStore
-    if (!rootGraphId || positions.length === 0) return
+    const { rootGraphId, isReadOnly } = canvasStore
+    if (!rootGraphId || isReadOnly || positions.length === 0) return
     const nodesById = new Map(gridNodes.value.map((node) => [node.id, node]))
     const updates = positions.flatMap(({ id, x, y }) => {
       const node = nodesById.get(id)

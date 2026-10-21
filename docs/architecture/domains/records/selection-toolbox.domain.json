@@ -28,6 +28,10 @@
       "role": "domain"
     },
     {
+      "path": "src/components/graph/selectionGrid/useSelectionGrid.test.ts",
+      "role": "integration"
+    },
+    {
       "path": "src/components/graph/selectionGrid/useSelectionGrid.ts",
       "role": "integration"
     },
@@ -298,6 +302,7 @@
       "checks": [
         "src/components/graph/selectionGrid/selectionGridLayout.test.ts",
         "src/components/graph/selectionGrid/useTidySession.test.ts",
+        "src/components/graph/selectionGrid/useSelectionGrid.test.ts",
         "src/composables/graph/useSelectionOperations.deleteGuard.test.ts",
         "src/composables/graph/useSubgraphOperations.test.ts"
       ]
