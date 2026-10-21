@@ -6142,7 +6142,11 @@
       "tryCloud": "在 Cloud 中试用",
       "zoomIn": "放大",
       "zoomOut": "缩小",
-      "zoomReset": "重置"
+      "zoomReset": "重置",
+      "meta": {
+        "title": "{name} 工作流 - Comfy",
+        "hub": "Comfy Hub 上的 ComfyUI 工作流。"
+      }
     }
   },
   "eventChallenge": {

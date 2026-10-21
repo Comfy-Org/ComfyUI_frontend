@@ -55,6 +55,10 @@ export function validWorkflowDownloadURL(value: string) {
   )
 }
 
+export function validCreatorUsername(raw: string) {
+  return /^[a-z0-9][a-z0-9_.-]{0,63}$/i.test(raw)
+}
+
 export function validAuthorAvatarURL(raw: string) {
   try {
     const url = new URL(raw)
@@ -110,6 +114,7 @@ export const workflowCatalogDetailsSchema = z.object({
     z.object({ uid: z.string(), name: z.string(), href: z.string().optional() })
   ),
   author: z.string().optional(),
+  authorUsername: z.string().refine(validCreatorUsername).optional(),
   authorAvatarURL: z.string().refine(validAuthorAvatarURL).optional(),
   runs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   downloads: z

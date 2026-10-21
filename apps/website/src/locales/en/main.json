@@ -1079,7 +1079,11 @@
       "lostContact": "This page lost contact with the run. It may still be running on Cloud and using credits. Reconnect to see its current status.",
       "browserUnavailable": "Running workflows from this page is not available yet.",
       "tryCloud": "Try in Cloud",
-      "explore": "Explore the possibilities"
+      "explore": "Explore the possibilities",
+      "meta": {
+        "title": "{name} Workflow - Comfy",
+        "hub": "A ComfyUI workflow on Comfy Hub."
+      }
     },
     "catalogue": {
       "apps": "Apps",

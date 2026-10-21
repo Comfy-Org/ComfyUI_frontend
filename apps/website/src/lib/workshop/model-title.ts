@@ -23,3 +23,10 @@ export function modelTitle(model: { name: string }, locale: Locale = 'en') {
   const nameBudget = TITLE_MAX - t(apiKey, { name: '' }).length
   return t(apiKey, { name: shortenAtWord(model.name, nameBudget) })
 }
+
+export function workflowTitle(model: { name: string }, locale: Locale = 'en') {
+  const { t } = translationsFor(locale)
+  const key = 'workshop.workflow.meta.title'
+  const nameBudget = TITLE_MAX - t(key, { name: '' }).length
+  return t(key, { name: shortenAtWord(model.name, nameBudget) })
+}

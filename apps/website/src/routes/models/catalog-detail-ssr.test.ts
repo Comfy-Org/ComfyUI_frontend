@@ -12,6 +12,8 @@ import {
 } from '@/lib/cms/detail-page-server'
 import type { AuthoringSession } from '@/lib/cms/authoring-session'
 import { auditCatalogDetailBody } from '@website/scripts/models-html-audit'
+import { validateHtml } from '@website/scripts/validate-jsonld'
+import { buildPageGraph, webPageName } from '@/utils/jsonLd'
 import { entries } from '@website/scripts/export-cms-seed'
 
 const SITE = new URL('https://comfy.org')
@@ -96,6 +98,124 @@ function serveNativeWorkflow(data: Record<string, unknown>) {
     })
   )
 }
+
+const authoredWorkflow = {
+  ...nativeWorkflow,
+  author_uid: '00000000-0000-4000-8000-000000000096',
+  website_author: {
+    uid: '00000000-0000-4000-8000-000000000096',
+    name: 'Comfy Creator',
+    username: 'Comfy-Creator'
+  }
+}
+
+type DetailHead = ReturnType<typeof catalogDetailHead>
+
+function headHtml(head: DetailHead) {
+  const url = new URL(head.canonicalPath, SITE).href
+  const graph = buildPageGraph(
+    { siteUrl: SITE.origin, locale: 'en' },
+    {
+      url,
+      name: webPageName(head.title),
+      description: head.description,
+      type: head.jsonLd.pageType,
+      crumbs: head.jsonLd.breadcrumbs,
+      mainEntityId: head.jsonLd.mainEntityId
+    },
+    ...head.jsonLd.extraJsonLd
+  )
+  return `<link rel="canonical" href="${url}"><script type="application/ld+json">${JSON.stringify(graph)}</script>`
+}
+
+function graphNode(head: DetailHead, type: string) {
+  const html = headHtml(head)
+  const graph = JSON.parse(
+    html.slice(html.indexOf('{'), html.lastIndexOf('}') + 1)
+  ) as { '@graph': Record<string, unknown>[] }
+  return graph['@graph'].find((node) => node['@type'] === type)
+}
+
+async function workflowHead(data: Record<string, unknown>) {
+  serveNativeWorkflow(data)
+  const pathname = '/hub/workflows/native-workflow/'
+  const load = await loadCatalogDetailPage({}, pathname, 'en')
+  if (load.status !== 'ok') throw new Error(load.status)
+  return catalogDetailHead(load.page, pathname, SITE, 'en', 'en')
+}
+
+async function seedHead(slug: string) {
+  serveCatalog()
+  const load = await loadCatalogDetailPage({}, `${slug}/`, 'en')
+  if (load.status !== 'ok') throw new Error(`record ${slug} ${load.status}`)
+  return catalogDetailHead(load.page, `${slug}/`, SITE, 'en', 'en')
+}
+
+describe('catalog workflow page structured data and meta', () => {
+  const slugs = records.flatMap((entry) => (entry.slug ? [entry.slug] : []))
+  const workflowSlugs = slugs.filter((slug) =>
+    slug.startsWith('/hub/workflows/')
+  )
+
+  it.for(workflowSlugs)(
+    'gives %s valid JSON-LD and a meta description of at most 160 characters',
+    async (slug) => {
+      const head = await seedHead(slug)
+      expect(validateHtml(headHtml(head), `${slug}/`)).toEqual([])
+      expect(head.description.length).toBeLessThanOrEqual(160)
+      expect(graphNode(head, 'SoftwareSourceCode')).toMatchObject({
+        '@id': head.jsonLd.mainEntityId
+      })
+    }
+  )
+
+  it('gives every catalog record a unique title', async () => {
+    const titles = await Promise.all(
+      slugs.map(async (slug) => (await seedHead(slug)).title)
+    )
+    expect(new Set(titles).size).toBe(records.length)
+  })
+
+  it('names a CCC workflow as source code by its creator, under the workflows crumb', async () => {
+    const head = await workflowHead(authoredWorkflow)
+    expect(
+      validateHtml(headHtml(head), '/hub/workflows/native-workflow/')
+    ).toEqual([])
+    const creatorUrl = 'https://comfy.org/hub/creators/comfy-creator/'
+    expect(graphNode(head, 'SoftwareSourceCode')).toMatchObject({
+      name: 'Native workflow',
+      description: authoredWorkflow.description,
+      author: { '@id': `${creatorUrl}#creator` }
+    })
+    expect(graphNode(head, 'Person')).toMatchObject({
+      '@id': `${creatorUrl}#creator`,
+      name: 'Comfy Creator',
+      url: creatorUrl
+    })
+    expect(head.jsonLd.breadcrumbs.map((crumb) => crumb.url)).toEqual([
+      'https://comfy.org/',
+      'https://comfy.org/hub/workflows/',
+      undefined
+    ])
+  })
+
+  it('names no author for a CCC workflow without a creator username', async () => {
+    const head = await workflowHead(nativeWorkflow)
+    expect(graphNode(head, 'SoftwareSourceCode')).not.toHaveProperty('author')
+    expect(graphNode(head, 'Person')).toBeUndefined()
+  })
+
+  it('cuts a long workflow summary at a word to 160 characters', async () => {
+    const head = await workflowHead({
+      ...nativeWorkflow,
+      description: 'Turn one product photo into a studio scene. '.repeat(6)
+    })
+    expect(head.description.length).toBeLessThanOrEqual(160)
+    expect(head.description).toMatch(
+      /^Native workflow: Turn one product photo .*…$/
+    )
+  })
+})
 
 describe('catalog detail pages in server HTML (SEO audit)', () => {
   it('covers both workflow and model records', () => {

@@ -5,6 +5,7 @@ import { splitPriceLabel } from './price-label'
 
 const META_DESCRIPTION_TARGET = 160
 const META_DESCRIPTION_MAX = 170
+const WORKFLOW_DESCRIPTION_MAX = 160
 const SINGLE_CREDIT_FIGURE = /^(~?\d+(?:\.\d+)?) credits$/
 
 function nameCarriesProvider(name: string, provider: string) {
@@ -90,4 +91,22 @@ export function modelMetaDescription(
   return cut.length <= META_DESCRIPTION_MAX
     ? cut
     : cutAtWord(cut, META_DESCRIPTION_MAX)
+}
+
+export function workflowMetaDescription(
+  model: { name: string; summary?: string },
+  locale: Locale = 'en'
+) {
+  const { t } = translationsFor(locale)
+  const summary = cleanSummary(model.summary)
+  const lead = summary
+    ? t('workshop.model.meta.lead', { who: model.name, summary })
+    : t('workshop.model.meta.leadNoSummary', { who: model.name })
+  const full = [lead, t('workshop.workflow.meta.hub')].join(
+    locale === 'en' ? ' ' : ''
+  )
+  return (
+    [full, lead].find((text) => text.length <= WORKFLOW_DESCRIPTION_MAX) ??
+    cutAtWord(lead, WORKFLOW_DESCRIPTION_MAX)
+  )
 }

@@ -4895,7 +4895,11 @@
       "tryCloud": "Cloudで試す",
       "zoomIn": "拡大",
       "zoomOut": "縮小",
-      "zoomReset": "リセット"
+      "zoomReset": "リセット",
+      "meta": {
+        "title": "{name} ワークフロー - Comfy",
+        "hub": "Comfy HubのComfyUIワークフローです。"
+      }
     }
   }
 }
