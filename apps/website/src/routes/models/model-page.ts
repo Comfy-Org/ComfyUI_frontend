@@ -14,6 +14,7 @@ import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { describesCapability } from '@/lib/workshop/model-tags'
 import { useCaseLabelKey } from '@/lib/workshop/use-case-label'
+import { withStaticRunForm } from '@/lib/cms/static-run-form'
 
 const TAGS_SHOWN = 3
 
@@ -38,9 +39,9 @@ type PageCatalog = {
 
 function pageModel(slug: string | undefined, catalog?: PageCatalog) {
   if (!slug) return undefined
-  return catalog
-    ? catalog.details.find((item) => item.slug === slug)
-    : getWorkshopPageDetail(slug)
+  if (!catalog) return getWorkshopPageDetail(slug)
+  const model = catalog.details.find((item) => item.slug === slug)
+  return model && withStaticRunForm(model)
 }
 
 function successor(model: WorkshopModel, catalog?: PageCatalog) {
