@@ -3,7 +3,8 @@ import { z } from 'zod'
 import type { HubCreatorSummary } from '@/lib/hub/creators'
 import { hubAvatarUrl } from '@/lib/hub/creators'
 import { cmsEnabled } from './cms-enabled'
-import { boundedBody } from './editor-server'
+import { fetchCatalogJson } from './catalog'
+import { everyCursorPage } from './catalog-list-all'
 
 const CREATORS_PATH = '/api/v1/catalog/creators'
 const DIRECTORY_PAGE_LIMIT = 100
@@ -24,21 +25,6 @@ const creatorsPageSchema = z.object({
     .max(DIRECTORY_PAGE_LIMIT),
   next_cursor: text
 })
-
-async function readCatalogJson(url: URL) {
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(5000),
-    cache: 'no-store'
-  })
-  if (!response.ok) {
-    await response.body?.cancel()
-    return { status: response.status } as const
-  }
-  const bytes = await boundedBody(response, 1 << 20)
-  if (!bytes) return { status: 502 } as const
-  const data: unknown = JSON.parse(new TextDecoder().decode(bytes))
-  return { status: response.status, data } as const
-}
 
 function catalogOrigin() {
   const origin = process.env.SITE_CATALOG_API_URL
@@ -92,27 +78,21 @@ export async function loadCatalogCreators() {
   const unavailable = { ok: false, status: 503 } as const
   const origin = catalogOrigin()
   if (!origin) return unavailable
-  const items: DirectoryItem[] = []
-  const visited = new Set<string>()
-  let cursor: string | undefined
-  try {
-    for (let page = 0; page < MAX_DIRECTORY_PAGES; page++) {
-      const url = new URL(CREATORS_PATH, origin)
-      url.searchParams.set('limit', String(DIRECTORY_PAGE_LIMIT))
-      if (cursor) url.searchParams.set('cursor', cursor)
-      const parsed = creatorsPageSchema.safeParse(
-        (await readCatalogJson(url)).data
-      )
-      if (!parsed.success) return unavailable
-      items.push(...parsed.data.items)
-      cursor = parsed.data.next_cursor ?? undefined
-      if (!cursor)
-        return { ok: true, creators: mergedByUsername(items) } as const
-      if (visited.has(cursor)) return unavailable
-      visited.add(cursor)
-    }
-  } catch {
-    return unavailable
-  }
-  return unavailable
+  const items = await everyCursorPage(async (cursor) => {
+    const url = new URL(CREATORS_PATH, origin)
+    url.searchParams.set('limit', String(DIRECTORY_PAGE_LIMIT))
+    if (cursor) url.searchParams.set('cursor', cursor)
+    const page = creatorsPageSchema.safeParse(
+      (await fetchCatalogJson(url)).data
+    )
+    return page.success
+      ? {
+          items: page.data.items,
+          nextCursor: page.data.next_cursor ?? undefined
+        }
+      : undefined
+  }, MAX_DIRECTORY_PAGES)
+  return items
+    ? ({ ok: true, creators: mergedByUsername(items) } as const)
+    : unavailable
 }

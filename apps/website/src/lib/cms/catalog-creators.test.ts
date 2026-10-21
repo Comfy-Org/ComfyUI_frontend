@@ -92,7 +92,12 @@ describe('loadCatalogCreators', () => {
       avatar: 'https://tracker.example/purz.png',
       expected: undefined
     },
-    { case: 'drops an empty avatar', avatar: '', expected: undefined }
+    { case: 'drops an empty avatar', avatar: '', expected: undefined },
+    {
+      case: 'drops an avatar with credentials',
+      avatar: 'https://user:pass@comfy-hub-assets.comfy.org/uploads/purz.png',
+      expected: undefined
+    }
   ])('$case', async ({ avatar, expected }) => {
     serve({
       '/api/v1/catalog/creators': () =>
@@ -127,5 +132,59 @@ describe('loadCatalogCreators', () => {
     })
 
     expect(await loadCatalogCreators()).toEqual({ ok: false, status: 503 })
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('stops at the page cap even when the catalog has another page', async () => {
+    let page = 0
+    serve({
+      '/api/v1/catalog/creators': () =>
+        Response.json({
+          items: [summary(`creator${page}`, 1)],
+          next_cursor: `page-${++page}`
+        })
+    })
+
+    expect(await loadCatalogCreators()).toEqual({ ok: false, status: 503 })
+    expect(fetch).toHaveBeenCalledTimes(20)
+  })
+
+  it('leaves out creators with no workflows and names a creator by username when the display name is empty', async () => {
+    serve({
+      '/api/v1/catalog/creators': () =>
+        Response.json({
+          items: [
+            summary('idle', 0, { display_name: 'Idle' }),
+            summary('purz', 1, { display_name: '' })
+          ]
+        })
+    })
+
+    const result = await loadCatalogCreators()
+
+    assert.isTrue(result.ok)
+    expect(result.creators).toEqual([
+      { username: 'purz', displayName: 'purz', workflowCount: 1 }
+    ])
+  })
+
+  it('reports the directory unavailable on an error status with a JSON body', async () => {
+    serve({
+      '/api/v1/catalog/creators': () =>
+        Response.json({ items: [summary('purz', 1)] }, { status: 500 })
+    })
+
+    expect(await loadCatalogCreators()).toEqual({ ok: false, status: 503 })
+  })
+
+  it('reads nothing when the CMS is off', async () => {
+    serve({
+      '/api/v1/catalog/creators': () =>
+        Response.json({ items: [summary('purz', 1)] })
+    })
+    vi.stubEnv('VERCEL_ENV', 'production')
+
+    expect(await loadCatalogCreators()).toEqual({ ok: false, status: 503 })
+    expect(fetch).not.toHaveBeenCalled()
   })
 })
