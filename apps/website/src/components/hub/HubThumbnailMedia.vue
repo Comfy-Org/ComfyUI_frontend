@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import { ref, useTemplateRef } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 
 import {
   COMPARE_MAX,
@@ -29,6 +29,16 @@ const {
   insideLink?: boolean
 }>()
 const { t } = translationsFor(locale)
+const alts = computed(() =>
+  insideLink
+    ? { after: '', before: '', first: '', second: '' }
+    : {
+        after: `${title} - ${t('modelLaunch.beforeAfter.after')}`,
+        before: `${title} - ${t('modelLaunch.beforeAfter.before')}`,
+        first: `${title} - 1`,
+        second: `${title} - 2`
+      }
+)
 
 const compareRoot = useTemplateRef<HTMLElement>('compareRoot')
 const comparePosition = ref(50)
@@ -71,9 +81,7 @@ function onCompareKeydown(event: KeyboardEvent) {
   >
     <img
       :src="primaryUrl"
-      :alt="
-        insideLink ? '' : `${title} - ${t('modelLaunch.beforeAfter.after')}`
-      "
+      :alt="alts.after"
       loading="lazy"
       decoding="async"
       draggable="false"
@@ -85,9 +93,7 @@ function onCompareKeydown(event: KeyboardEvent) {
     >
       <img
         :src="secondaryUrl"
-        :alt="
-          insideLink ? '' : `${title} - ${t('modelLaunch.beforeAfter.before')}`
-        "
+        :alt="alts.before"
         loading="lazy"
         decoding="async"
         draggable="false"
@@ -123,7 +129,7 @@ function onCompareKeydown(event: KeyboardEvent) {
   >
     <img
       :src="primaryUrl"
-      :alt="insideLink ? '' : `${title} - 1`"
+      :alt="alts.first"
       loading="lazy"
       decoding="async"
       draggable="false"
@@ -131,7 +137,7 @@ function onCompareKeydown(event: KeyboardEvent) {
     />
     <img
       :src="secondaryUrl"
-      :alt="insideLink ? '' : `${title} - 2`"
+      :alt="alts.second"
       loading="lazy"
       decoding="async"
       draggable="false"
