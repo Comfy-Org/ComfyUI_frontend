@@ -2108,6 +2108,7 @@
     "migrate": "Migrer",
     "missing": "Manquant",
     "missingNodeTypesInGroup": "manquants : {types}",
+    "mixedGaps": "Mixte",
     "modifyKeybinding": "Modifier le raccourci clavier",
     "more": "Plus",
     "moreOptions": "Plus d'options",

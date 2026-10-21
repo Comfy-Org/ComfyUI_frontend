@@ -2108,6 +2108,7 @@
     "migrate": "이전(migrate)",
     "missing": "누락됨",
     "missingNodeTypesInGroup": "누락됨: {types}",
+    "mixedGaps": "혼합",
     "modifyKeybinding": "단축키 수정",
     "more": "더보기",
     "moreOptions": "추가 옵션",

@@ -2108,6 +2108,7 @@
     "migrate": "Мигрировать",
     "missing": "Отсутствует",
     "missingNodeTypesInGroup": "отсутствуют: {types}",
+    "mixedGaps": "Разные",
     "modifyKeybinding": "Изменить сочетание клавиш",
     "more": "Больше",
     "moreOptions": "Больше опций",

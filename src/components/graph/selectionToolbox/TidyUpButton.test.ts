@@ -42,7 +42,7 @@ function renderButton() {
           ])
         )
     }),
-    { global: { plugins: [i18n] } }
+    { global: { plugins: [i18n], stubs: { SelectionGapHandles: true } } }
   )
 }
 

@@ -2108,6 +2108,7 @@
     "migrate": "移行する",
     "missing": "不足している",
     "missingNodeTypesInGroup": "不足: {types}",
+    "mixedGaps": "混在",
     "modifyKeybinding": "キーバインドを変更",
     "more": "もっと見る",
     "moreOptions": "その他のオプション",

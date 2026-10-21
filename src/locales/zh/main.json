@@ -2108,6 +2108,7 @@
     "migrate": "迁移",
     "missing": "缺失",
     "missingNodeTypesInGroup": "缺少：{types}",
+    "mixedGaps": "混合",
     "modifyKeybinding": "修改快捷键",
     "more": "更多",
     "moreOptions": "更多选项",

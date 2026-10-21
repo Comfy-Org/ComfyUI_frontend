@@ -29,15 +29,20 @@
             @update:model-value="onSliderUpdate"
             @value-commit="onSliderCommit"
           />
-          <span class="w-6 shrink-0 text-right text-xs tabular-nums">
-            {{ gap }}
+          <span class="min-w-6 shrink-0 text-right text-xs tabular-nums">
+            {{ hasMixedGaps ? t('g.mixedGaps') : gap }}
           </span>
         </div>
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>
   <Teleport to="body">
-    <SelectionGapHandles v-if="isOpen" />
+    <SelectionGapHandles
+      v-if="isOpen && canTidy"
+      @edit-start="finish"
+      @edited="checkGaps"
+      @dismiss="isOpen = false"
+    />
   </Teleport>
 </template>
 
@@ -55,7 +60,8 @@ import { useI18n } from 'vue-i18n'
 import SelectionGapHandles from '@/components/graph/selectionGrid/SelectionGapHandles.vue'
 import {
   MAX_TIDY_GAP,
-  MIN_TIDY_GAP
+  MIN_TIDY_GAP,
+  isTidyAt
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
@@ -72,14 +78,20 @@ const BAR_SIDE_OFFSET = TOOLBOX_INSET + BAR_GAP_BELOW_TOOLBOX
 const LIFT_WHILE_OPEN = BAR_SIDE_OFFSET + BAR_INSET + TRIGGER_HEIGHT
 
 const { t } = useI18n()
-const { canTidy, gridNodes } = useSelectionGrid()
+const { canTidy, gridNodes, measure } = useSelectionGrid()
 const { gap, start, previewGap, commitGap, finish } = useTidySession()
 const { lift } = useSelectionToolboxLift()
 
 const isOpen = ref(false)
+const hasMixedGaps = ref(false)
+
+const checkGaps = () => {
+  hasMixedGaps.value = !isTidyAt(measure(), gap.value)
+}
 
 watch(isOpen, (open) => {
   lift.value = open ? LIFT_WHILE_OPEN : 0
+  hasMixedGaps.value = false
   if (open) start()
   else finish()
 })
@@ -117,11 +129,15 @@ const firstValue = (value: number[] | undefined): number | undefined =>
 
 const onSliderUpdate = (value: number[] | undefined) => {
   const next = firstValue(value)
-  if (next !== undefined) previewGap(next)
+  if (next === undefined) return
+  hasMixedGaps.value = false
+  previewGap(next)
 }
 
 const onSliderCommit = (value: number[]) => {
   const next = firstValue(value)
-  if (next !== undefined) commitGap(next)
+  if (next === undefined) return
+  hasMixedGaps.value = false
+  commitGap(next)
 }
 </script>

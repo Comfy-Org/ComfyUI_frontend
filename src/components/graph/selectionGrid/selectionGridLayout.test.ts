@@ -6,6 +6,7 @@ import {
   computeGapLayout,
   computeTidyLayout,
   detectSelectionGrid,
+  isTidyAt,
   tidyGapOf
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import type {
@@ -487,6 +488,18 @@ describe('computeTidyLayout', () => {
     { name: 'one node', boxes: [box('a', 0, 0, 100, 100)] }
   ])('returns nothing for $name', ({ boxes }) => {
     expect(computeTidyLayout(boxes)).toEqual([])
+  })
+})
+
+describe('isTidyAt', () => {
+  it('tells a tidy selection from one with a gap changed by hand', () => {
+    const tidied = moved(messyGrid, computeTidyLayout(messyGrid, 20))
+    const widened = tidied.map((b) =>
+      b.id === 'd' ? { ...b, x: b.x + 30 } : b
+    )
+
+    expect(isTidyAt(tidied, 20)).toBe(true)
+    expect(isTidyAt(widened, 20)).toBe(false)
   })
 })
 

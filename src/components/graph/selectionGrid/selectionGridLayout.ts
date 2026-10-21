@@ -499,6 +499,11 @@ export function tidyGapOf(boxes: LayoutBox[]): number {
   return clamp(gapOf(detectSelectionGrid(boxes)), MIN_TIDY_GAP, MAX_TIDY_GAP)
 }
 
+/** Whether `boxes` already sit where Tidy up with `gap` would put them. */
+export function isTidyAt(boxes: LayoutBox[], gap: number): boolean {
+  return boxes.length < 2 || isLaidOutAt(detectSelectionGrid(boxes), gap)
+}
+
 /**
  * Lines boxes up into rows and columns with facing nodes `gap` apart and the
  * top-left box in place; without `gap`, a tidy selection keeps its own gap.

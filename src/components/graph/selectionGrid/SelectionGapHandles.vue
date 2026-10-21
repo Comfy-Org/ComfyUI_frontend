@@ -23,6 +23,7 @@
       :style="{ left: `${bar.left}px`, top: `${bar.top}px` }"
       @pointerdown="onPointerDown($event, bar)"
       @keydown="onKeyDown($event, bar)"
+      @keyup="onKeyUp($event, bar)"
       @wheel="canvasInteractions.forwardEventToCanvas"
     >
       <span
@@ -66,6 +67,7 @@ import type {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useGapDragSession } from '@/components/graph/selectionGrid/useGapDragSession'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
+import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -82,11 +84,18 @@ interface ScreenBar extends GapBar {
   top: number
 }
 
+const emit = defineEmits<{
+  editStart: []
+  edited: []
+  dismiss: []
+}>()
+
 const { t } = useI18n()
 const canvas = useCanvasStore().getCanvas()
 const canvasInteractions = useCanvasInteractions()
 const { gridNodes, measure } = useSelectionGrid()
-const { drag, start, preview, commit, cancel, nudge } = useGapDragSession()
+const { drag, start, preview, commit, cancel, nudge, commitNudges } =
+  useGapDragSession()
 
 const canvasBounds = useElementBounding(canvas.canvas)
 
@@ -137,6 +146,7 @@ const { pause, resume } = useRafFn(
     if (!isSameViewport(nextViewport, viewport.value)) {
       viewport.value = nextViewport
     }
+    if (nextViewport.lowQuality || isDraggingNodes.value) return
 
     const boxes = measure()
     const unchanged =
@@ -182,8 +192,12 @@ const screenBars = computed((): ScreenBar[] => {
     )
 })
 
-const pointerAlong = (event: PointerEvent, axis: GapAxis) =>
-  axis === 'x' ? event.clientX : event.clientY
+const graphPointAlong = (event: PointerEvent, axis: GapAxis) => {
+  const { scale, offset } = canvas.ds
+  return axis === 'x'
+    ? (event.clientX - canvasBounds.left.value) / scale - offset[0]
+    : (event.clientY - canvasBounds.top.value) / scale - offset[1]
+}
 
 let dragListeners: AbortController | undefined
 
@@ -193,50 +207,59 @@ const stopDragListeners = () => {
 }
 
 function onPointerDown(event: PointerEvent, bar: ScreenBar) {
-  if (event.button !== 0) return
+  if (event.button !== 0 || drag.value) return
   event.preventDefault()
   event.stopPropagation()
   if (event.currentTarget instanceof HTMLElement) {
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
-  const origin = pointerAlong(event, bar.axis)
-  const { scale } = canvas.ds
+  const { pointerId } = event
+  const origin = graphPointAlong(event, bar.axis)
+  emit('editStart')
   start(bar)
 
   stopDragListeners()
   dragListeners = new AbortController()
   const { signal } = dragListeners
+  const isDragPointer = (pointerEvent: PointerEvent) =>
+    pointerEvent.pointerId === pointerId
+  const endDrag = (end: () => void) => {
+    stopDragListeners()
+    end()
+    emit('edited')
+  }
   window.addEventListener(
     'pointermove',
-    (moveEvent) =>
-      preview((pointerAlong(moveEvent, bar.axis) - origin) / scale),
+    (moveEvent) => {
+      if (!isDragPointer(moveEvent)) return
+      if (moveEvent.buttons === 0) endDrag(commit)
+      else preview(graphPointAlong(moveEvent, bar.axis) - origin)
+    },
     { signal }
   )
   window.addEventListener(
     'pointerup',
-    () => {
-      stopDragListeners()
-      commit()
+    (upEvent) => {
+      if (isDragPointer(upEvent)) endDrag(commit)
     },
-    { signal }
+    { signal, capture: true }
   )
   window.addEventListener(
     'pointercancel',
-    () => {
-      stopDragListeners()
-      cancel()
+    (cancelEvent) => {
+      if (isDragPointer(cancelEvent)) endDrag(cancel)
     },
-    { signal }
+    { signal, capture: true }
   )
+  window.addEventListener('blur', () => endDrag(cancel), { signal })
   window.addEventListener(
     'keydown',
     (keyEvent) => {
       if (keyEvent.key !== 'Escape') return
       keyEvent.preventDefault()
       keyEvent.stopImmediatePropagation()
-      stopDragListeners()
-      cancel()
+      endDrag(cancel)
     },
     { signal, capture: true }
   )
@@ -248,17 +271,36 @@ const NUDGE_KEYS: Record<GapAxis, [decrease: string, increase: string]> = {
 }
 
 function onKeyDown(event: KeyboardEvent, bar: ScreenBar) {
+  if (drag.value) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    emit('dismiss')
+    return
+  }
   const [decrease, increase] = NUDGE_KEYS[bar.axis]
   const direction = event.key === increase ? 1 : event.key === decrease ? -1 : 0
   if (direction === 0) return
   event.preventDefault()
   event.stopPropagation()
+  if (!event.repeat) emit('editStart')
   const step = event.shiftKey ? 10 : 1
   nudge(bar, direction * step)
 }
 
+function onKeyUp(event: KeyboardEvent, bar: ScreenBar) {
+  if (!NUDGE_KEYS[bar.axis].includes(event.key)) return
+  commitNudges()
+  emit('edited')
+}
+
+const unregisterEscapeOverride = registerEscapeOverride(
+  (event) =>
+    event.target instanceof Element &&
+    event.target.closest('[data-gap-handle]') !== null
+)
+
 onBeforeUnmount(() => {
+  unregisterEscapeOverride()
   stopDragListeners()
-  cancel()
 })
 </script>
