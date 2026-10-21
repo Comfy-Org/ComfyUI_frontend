@@ -370,13 +370,6 @@ const latestEntryHasPaywall = computed(() => {
 const threadHasUserMessage = computed(() =>
   conversationEntries.value.some((entry) => entry.role === 'user')
 )
-/**
- * Pre-turn admission can grant the account's first Agent credits inside the
- * send itself (a new account, or the Local Agent grant), so a "no funds" read
- * taken before the send can be disproved by the turn it gated. Hold the
- * standing card from such a send until a read taken after its admission
- * settles; a refused send leaves the verdict to its inline card.
- */
 const fundsRecheckPending = ref(false)
 let fundsRecheckGeneration = 0
 
