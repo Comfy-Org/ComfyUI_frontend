@@ -45,7 +45,6 @@ export const zAgentAnswerReceipt = zAgentAnswerAccepted
     selected: true
   })
   .extend({
-    /** An answer to a card on a finished turn can start the next turn. */
     message_id: z.string().optional(),
     text: z.string().optional()
   })

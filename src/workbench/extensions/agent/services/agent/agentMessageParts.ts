@@ -68,7 +68,6 @@ export interface RunApprovalPart {
   askId: string
   workflowId?: string
   workflowName?: string
-  /** The user sent a message instead of answering: the card stays, greyed out. */
   dismissed?: boolean
 }
 
@@ -182,10 +181,6 @@ export function retireAskParts(
     : next
 }
 
-/**
- * Marks every open card in `parts` as dismissed because the user sent a
- * message instead of answering: a Run card greys out, a question closes.
- */
 export function dismissAskParts(parts: MessagePart[]): MessagePart[] {
   if (!parts.some(isPendingAskPart)) return parts
   return parts.map((part): MessagePart => {

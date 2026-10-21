@@ -106,9 +106,7 @@ export interface AgentEventTransport {
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
   retireAskPart: (askId: string, resolution: AskUserResolution) => void
-  /** Greys out this turn's open cards: the user sent a message instead. */
   dismissAsks: () => void
-  /** The assistant message this transport writes. */
   messageId: string
   /**
    * Tears the transport down for a reason other than natural completion
