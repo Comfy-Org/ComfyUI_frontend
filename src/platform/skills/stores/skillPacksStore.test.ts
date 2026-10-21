@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 
@@ -27,7 +26,6 @@ vi.mock<unknown>(import('posthog-js'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
-vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
@@ -332,9 +330,15 @@ describe('skillPacksStore', () => {
     }
   )
 
-  function hostAgent(state: 'starting' | 'ready' | 'failed'): void {
-    const flags = useFeatureFlags().flags as { agent?: unknown }
-    flags.agent = { state, reason: null }
+  function hostAgent(
+    state: 'starting' | 'ready' | 'failed'
+  ): Ref<{ state: string; reason: null }> {
+    const agent = ref({ state, reason: null })
+    vi.mocked(api.getServerFeature).mockImplementation(
+      <T>(name: string, fallback?: T) =>
+        (name === 'agent' ? agent.value : fallback)
+    )
+    return agent
   }
 
   it('enables the surface for an agent hosted by ComfyUI without PostHog flags', async () => {
@@ -350,14 +354,14 @@ describe('skillPacksStore', () => {
 
   it('probes the routes once the hosted agent becomes ready after the gate starts', async () => {
     mocks.isFeatureEnabled.mockReturnValue(undefined)
-    hostAgent('starting')
+    const agent = hostAgent('starting')
     const store = useSkillPacksStore()
 
     await store.startFlagGate()
     expect(store.enabled).toBe(false)
     expect(listSkillPacks).not.toHaveBeenCalled()
 
-    hostAgent('ready')
+    agent.value = { state: 'ready', reason: null }
     await nextTick()
 
     expect(store.enabled).toBe(true)

@@ -34,8 +34,6 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   const routesAvailable = ref(true)
 
   const { flags: featureFlags } = useFeatureFlags()
-  // PostHog runs only on Cloud. A panel served by ComfyUI's agent feature has
-  // no cohort flags to read, so a ready local agent opens the surface itself.
   const agentHosted = computed(() => featureFlags.agent?.state === 'ready')
   const surfaceEnabled = computed(() => flagsEnabled.value || agentHosted.value)
   const enabled = computed(() => surfaceEnabled.value && routesAvailable.value)
@@ -82,7 +80,6 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     surfaceEnabled,
     (isEnabled, wasEnabled) => {
       if (wasEnabled && !isEnabled) invalidateCatalog()
-      // Probe because backend availability can disagree with the gate.
       if (!wasEnabled && isEnabled && catalogRequested) {
         void fetchPacks().catch(reportFetchFailure)
       }
