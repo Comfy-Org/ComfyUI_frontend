@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -20,7 +20,7 @@ const apps: WorkshopModel[] = [
   {
     type: 'APP',
     appId: 'studio',
-    slug: 'cinematic-studio',
+    slug: 'apps/cinematic-studio',
     name: 'Cinematic Studio',
     href: '/hub/apps/cinematic-studio/',
     workflowCount: 0,
@@ -51,10 +51,33 @@ describe('the Apps half of the catalogue', () => {
   })
 
   it('swaps in the Hub catalogue once the flag answers for this visitor', async () => {
-    hubHome.value = true
     renderApps()
+    expect(await screen.findByTestId('workshop-toolbar')).toBeTruthy()
+
+    hubHome.value = true
 
     expect(await screen.findByTestId('app-grid')).toBeTruthy()
     expect(screen.queryByTestId('workshop-toolbar')).toBeNull()
+    expect(screen.queryByTestId('app-shelf')).toBeNull()
+  })
+
+  it('keeps the tabs to the other catalogues above the Hub grid', async () => {
+    hubHome.value = true
+    renderApps()
+
+    const tabs = await screen.findByTestId('hub-apps-tabs')
+    expect(within(tabs).getByRole('link', { name: /Models/ })).toBeTruthy()
+  })
+
+  it('describes the open apps in the Hub catalogue words', async () => {
+    hubHome.value = true
+    renderApps()
+
+    const card = (await screen.findAllByTestId('workshop-app-card'))[0]
+    expect(card.textContent).toContain(
+      'Direct every shot. Pick the camera, lens, light and grade.'
+    )
+    expect(card.textContent).not.toContain('Direct your shot like a film set')
+    expect(card.textContent).toContain('Image · 5 models')
   })
 })

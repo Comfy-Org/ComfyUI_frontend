@@ -1,6 +1,7 @@
-import type { WorkshopModel } from '@/config/models-catalogue'
 import type { Locale, LocalizedText, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+
+import type { CatalogueApp } from './catalogue-apps'
 
 /**
  * Copy for the Apps half only. It ships with that half's lazy chunk rather
@@ -8,12 +9,10 @@ import { translationsFor } from '@/i18n/translations'
  */
 const copy = {
   apps: { en: 'Apps', 'zh-CN': '应用' },
-  studioName: { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
   studioTask: {
     en: 'Direct every shot. Pick the camera, lens, light and grade.',
     'zh-CN': '执导每一个镜头。选择摄影机、镜头、光线和调色。'
   },
-  reshootName: { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
   reshootTask: {
     en: 'Upload a shot and re-frame it from a new camera angle.',
     'zh-CN': '上传一个镜头，从新的机位角度重新取景。'
@@ -59,24 +58,31 @@ export function ac(key: keyof typeof copy, locale: Locale = 'en'): string {
   return copy[key][locale === 'zh-CN' ? locale : 'en']
 }
 
-const APP_META = new Map<string, TranslationKey>([
-  ['apps/cinematic-studio', 'cinematic.hub.studioMeta'],
-  ['apps/reshoot', 'cinematic.hub.reshootMeta']
-])
-
-/** The line under an open app's summary: what it makes and what runs it. */
-export function appMeta(
-  key: string,
-  locale: Locale = 'en'
-): string | undefined {
-  const meta = APP_META.get(key)
-  return meta && translationsFor(locale).t(meta)
+/** A card on the Hub's app grid. An app still being built has no `href`. */
+export interface HubCatalogueApp extends Omit<CatalogueApp, 'href'> {
+  readonly href?: string
 }
 
-export interface CatalogueApp {
-  readonly key: string
-  readonly name: string
-  readonly task: string
-  readonly href?: string
-  readonly thumbnail?: WorkshopModel['thumbnail']
+const OPEN_APPS = new Map<
+  string,
+  { task: 'studioTask' | 'reshootTask'; meta: TranslationKey }
+>([
+  [
+    'apps/cinematic-studio',
+    { task: 'studioTask', meta: 'cinematic.hub.studioMeta' }
+  ],
+  ['apps/reshoot', { task: 'reshootTask', meta: 'cinematic.hub.reshootMeta' }]
+])
+
+/** An open app in the Hub's words: its summary and what it makes and runs on. */
+export function hubOpenApp(
+  app: CatalogueApp,
+  locale: Locale = 'en'
+): { app: HubCatalogueApp; meta?: string } {
+  const words = OPEN_APPS.get(app.key)
+  if (!words) return { app }
+  return {
+    app: { ...app, task: ac(words.task, locale) },
+    meta: translationsFor(locale).t(words.meta)
+  }
 }

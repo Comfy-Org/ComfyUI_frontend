@@ -1,5 +1,5 @@
 import type { Locale } from '@/i18n/translations'
-import type { CatalogueApp } from './hub-catalogue-apps'
+import type { HubCatalogueApp } from './hub-catalogue-apps'
 import { ac } from './hub-catalogue-apps'
 
 const UPCOMING = [
@@ -25,7 +25,7 @@ const UPCOMING = [
 ] as const
 
 /** Apps still being built, listed without a page of their own yet. */
-export function upcomingApps(locale: Locale): readonly CatalogueApp[] {
+export function upcomingApps(locale: Locale): readonly HubCatalogueApp[] {
   return UPCOMING.map(([key, copy, url]) => ({
     key,
     name: ac(`${copy}Name`, locale),

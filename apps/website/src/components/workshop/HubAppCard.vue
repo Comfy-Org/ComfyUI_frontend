@@ -5,7 +5,7 @@ import Badge from '@/components/ui/badge/Badge.vue'
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import { COMFY_LOGO_PATH } from '@/lib/hub/model-logos'
-import type { CatalogueApp } from '@/lib/workshop/hub-catalogue-apps'
+import type { HubCatalogueApp } from '@/lib/workshop/hub-catalogue-apps'
 
 import WorkshopCardMark from './WorkshopCardMark.vue'
 import WorkshopCardMedia from './WorkshopCardMedia.vue'
@@ -15,7 +15,7 @@ const {
   meta,
   locale = 'en'
 } = defineProps<{
-  app: CatalogueApp
+  app: HubCatalogueApp
   meta?: string
   locale?: Locale
 }>()
@@ -28,12 +28,11 @@ const { t } = translationsFor(locale)
     :href="app.href"
     :target="app.href && '_blank'"
     :rel="app.href && 'noopener'"
-    :aria-disabled="app.href ? undefined : 'true'"
     :class="
       cn(
-        'group flex h-full flex-col gap-3 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-5',
+        'flex h-full flex-col gap-3 overflow-hidden rounded-4xl bg-hub-surface px-2 pt-2 pb-5',
         app.href
-          ? 'cursor-pointer transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50'
+          ? 'group cursor-pointer transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50'
           : 'opacity-60'
       )
     "
