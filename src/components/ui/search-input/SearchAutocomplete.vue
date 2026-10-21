@@ -236,6 +236,7 @@ function onHighlight(payload: { ref: HTMLElement } | undefined) {
 }
 
 function keepShiftSelectionNative(e: KeyboardEvent) {
+  if (e.target !== inputRef.value?.$el) return
   if (e.shiftKey && (e.key === 'Home' || e.key === 'End')) e.stopPropagation()
 }
 

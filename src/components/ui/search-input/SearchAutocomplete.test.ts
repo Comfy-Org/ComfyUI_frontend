@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import SearchAutocomplete from './SearchAutocomplete.vue'
@@ -161,6 +162,27 @@ describe('SearchAutocomplete', () => {
       )
     }
   )
+
+  it('lets Shift+Home reach leading-slot controls', () => {
+    render(SearchAutocomplete, {
+      global: { plugins: [i18n] },
+      props: { modelValue: 'fo', suggestions: ['foo'] },
+      slots: { leading: () => h('button', 'Filter chip') }
+    })
+    const chip = screen.getByRole('button', { name: 'Filter chip' })
+    const onChipKeydown = vi.fn()
+    chip.addEventListener('keydown', onChipKeydown)
+
+    chip.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Home',
+        shiftKey: true,
+        bubbles: true
+      })
+    )
+
+    expect(onChipKeydown).toHaveBeenCalledOnce()
+  })
 
   it('highlights the first suggestion when results change', async () => {
     const onHighlight = vi.fn()
