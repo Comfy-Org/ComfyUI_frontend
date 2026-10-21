@@ -771,4 +771,5 @@ before building against this package.
 
 ## License
 
-GPL-3.0-only. See [`LICENSE`](LICENSE).
+MIT. See [`LICENSE`](LICENSE). Releases up to and including 0.3.10 were
+published under GPL-3.0-only; later releases are MIT.
