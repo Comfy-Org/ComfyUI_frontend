@@ -108,6 +108,14 @@ export function useSubscriptionCheckoutBanner(
       url && !tab
         ? { state: 'blocked', opId: response.billing_op_id, url }
         : { state: 'idle' }
+    const retained = operation.value
+    if (
+      response.status === 'subscribed' &&
+      retained?.status === 'failed' &&
+      response.billing_op_id !== retained.id
+    ) {
+      operation.value = null
+    }
     await Promise.allSettled([refresh(), onSubscribed()])
   }
 

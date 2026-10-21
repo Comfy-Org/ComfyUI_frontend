@@ -1041,6 +1041,53 @@ describe('BillingTab', () => {
         'op-parked'
       )
     })
+
+    it('hides the failed plan after Subscribe succeeds and status lists no operation', async () => {
+      servedOperation({
+        status: 'failed',
+        decline_reason: 'card_declined',
+        retryable: true
+      })
+      reservedTab()
+      arrange()
+      const banner = await screen.findByTestId('billing-checkout-banner')
+      expect(banner).toHaveTextContent("Your Creator plan didn't start")
+
+      vi.mocked(workspaceApi.subscribe).mockResolvedValue({
+        status: 'subscribed',
+        billing_op_id: 'op-new'
+      })
+      vi.mocked(workspaceApi.getBillingStatus).mockResolvedValue(
+        fromPartial<BillingStatusResponse>({})
+      )
+      await userEvent.click(
+        within(banner).getByRole('button', { name: 'Try again' })
+      )
+
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByText("Your Creator plan didn't start")
+        ).not.toBeInTheDocument()
+      )
+
+      const reads = vi.mocked(workspaceApi.getBillingStatus).mock.calls.length
+      const visibility = vi.spyOn(document, 'visibilityState', 'get')
+      visibility.mockReturnValue('hidden')
+      document.dispatchEvent(new Event('visibilitychange'))
+      visibility.mockReturnValue('visible')
+      document.dispatchEvent(new Event('visibilitychange'))
+      await vi.waitFor(() =>
+        expect(
+          vi.mocked(workspaceApi.getBillingStatus).mock.calls.length
+        ).toBeGreaterThan(reads)
+      )
+      expect(
+        screen.queryByText("Your Creator plan didn't start")
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('billing-checkout-banner')?.textContent ?? ''
+      ).not.toContain('Try again')
+    })
   })
 
   describe('Auto top-up card', () => {
