@@ -1652,6 +1652,12 @@ const { submit: onSend } = useAgentDraftSubmission({
   },
   // fallow-ignore-next-line complexity -- Existing PR logic; this lane changes only the composing panel test.
   send: async (text, attachments, nodes, references, meta) => {
+    if (
+      !agentPanelStore.onboarding.introduceBeforeSignIn &&
+      !hasAgentCredential() &&
+      !(await ensureSignedIn())
+    )
+      return false
     const submissionId = composerStore.submission?.id
     if (
       !consentAccepted.value &&

@@ -32,7 +32,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   },
-  isDesktop: false
+  isDesktop: true
 }))
 
 vi.mock(import('@/scripts/api'))

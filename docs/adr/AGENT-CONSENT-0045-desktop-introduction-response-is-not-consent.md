@@ -33,11 +33,12 @@ does not write that preference, and an existing Cloud refusal does not suppress
 the Desktop introduction or recurring locked panel. Neither preference records
 audited server consent.
 
-`agentPanelStore` selects one onboarding policy for the whole frontend: Cloud
-builds keep the Cloud policy and every other build, including Desktop, Desktop 2
-local and remote views, and browser tabs on a local Core, uses this Local
-policy. No other module checks the host. The policy should move to the server's
-`agent` feature once the backend reports it (BE-22051).
+`agentPanelStore` selects one onboarding policy for the whole frontend, and no
+other module checks the host. The legacy desktop build and a local Desktop 2
+window use this Desktop policy. Cloud, browser tabs on a local Core, and remote
+Desktop 2 views keep the default policy. Desktop 2 loads the standard localhost
+build, so the store recognizes it by its host bridge at runtime rather than at
+build time.
 
 Agree while signed out continues through sign-in and confirmed server consent
 registration within that request. Canceling sign-in discards the pending choice;

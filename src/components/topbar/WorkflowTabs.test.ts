@@ -163,6 +163,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  delete window.__comfyDesktop2
   vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
   consentChecking.value = false
   distribution.isCloud = false
@@ -346,21 +347,48 @@ describe('WorkflowTabs agent entry button', () => {
     expect(button).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('toggles the locked panel without consent outside Cloud', async () => {
+  it.for([
+    { host: 'the legacy Desktop build', desktop: true, bridge: undefined },
+    {
+      host: 'a local Desktop 2 window',
+      desktop: false,
+      bridge: { isRemote: () => false }
+    }
+  ])(
+    'toggles the locked panel without consent in $host',
+    async ({ desktop, bridge }) => {
+      distribution.isCloud = false
+      distribution.isDesktop = desktop
+      window.__comfyDesktop2 = bridge
+      const { user } = renderComponent()
+      const button = screen.getByRole('button', {
+        name: enMessages.agent.entryButton
+      })
+
+      await user.click(button)
+      expect(useAgentPanelStore().isVisible).toBe(true)
+      expect(useAgentPanelStore().consentAccepted).toBe(false)
+      expect(button).toHaveAttribute('aria-pressed', 'true')
+
+      await user.click(button)
+      expect(useAgentPanelStore().isVisible).toBe(false)
+      expect(withConsent).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { host: 'a browser tab on a local Core', bridge: undefined },
+    { host: 'a remote Desktop 2 view', bridge: { isRemote: () => true } }
+  ])('asks for consent from the entry button in $host', async ({ bridge }) => {
     distribution.isCloud = false
+    window.__comfyDesktop2 = bridge
     const { user } = renderComponent()
-    const button = screen.getByRole('button', {
-      name: enMessages.agent.entryButton
-    })
 
-    await user.click(button)
-    expect(useAgentPanelStore().isVisible).toBe(true)
-    expect(useAgentPanelStore().consentAccepted).toBe(false)
-    expect(button).toHaveAttribute('aria-pressed', 'true')
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    )
 
-    await user.click(button)
-    expect(useAgentPanelStore().isVisible).toBe(false)
-    expect(withConsent).not.toHaveBeenCalled()
+    expect(withConsent).toHaveBeenCalledOnce()
   })
 
   it('closes the visible panel when the entry button is clicked again', async () => {

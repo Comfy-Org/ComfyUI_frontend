@@ -233,7 +233,7 @@ const telemetry = vi.mocked(telemetryProvider)
 const nextClientMessageId = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('uuid'), () => ({ v4: nextClientMessageId }))
 
-const distribution = vi.hoisted(() => ({ isCloud: true }))
+const distribution = vi.hoisted(() => ({ isCloud: true, isDesktop: false }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
@@ -328,6 +328,7 @@ function syncFakeSelection() {
 
 beforeEach(() => {
   distribution.isCloud = true
+  distribution.isDesktop = false
   agentSocket = createFakeAgentSocket()
   agentSocket.send.mockImplementation((frame) => {
     socketSend(frame)
@@ -6616,8 +6617,29 @@ describe('AgentPanelRoot workflow binding', () => {
     await waitFor(() => expect(bodies).toHaveLength(1))
   })
 
-  it('asks signed-out Local users for consent before opening sign-in and keeps their draft on Skip', async () => {
+  it('asks signed-out users in a browser tab on a local Core to sign in before consent', async () => {
     distribution.isCloud = false
+    makeTab('wf-42')
+    useAuthStore().currentUser = null
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+
+    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+    expect(withConsent).not.toHaveBeenCalled()
+    expect(bodies).toHaveLength(0)
+  })
+
+  it('asks signed-out Desktop users for consent before opening sign-in and keeps their draft on Skip', async () => {
+    distribution.isCloud = false
+    distribution.isDesktop = true
     makeTab('wf-42')
     useAuthStore().currentUser = null
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
@@ -6667,12 +6689,13 @@ describe('AgentPanelRoot workflow binding', () => {
       scenario: 'the submission and consent scope remain current',
       change: () => undefined,
       sent: true,
-      messages: [{ content: 'hold this Local submission during sign-in' }]
+      messages: [{ content: 'hold this Desktop submission during sign-in' }]
     }
   ])(
-    'checks the pending Local send after sign-in when $scenario',
+    'checks the pending Desktop send after sign-in when $scenario',
     async ({ change, sent, messages }) => {
       distribution.isCloud = false
+      distribution.isDesktop = true
       makeTab('wf-42')
       Object.assign(useTeamWorkspaceStore(), {
         activeWorkspaceId: 'workspace-a'
@@ -6690,7 +6713,7 @@ describe('AgentPanelRoot workflow binding', () => {
       renderWithSelectedTarget()
 
       await userEvent.click(screen.getByRole('textbox'))
-      await userEvent.paste('hold this Local submission during sign-in')
+      await userEvent.paste('hold this Desktop submission during sign-in')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await waitFor(() =>
         expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
@@ -6714,8 +6737,9 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it('sends the original Local submission once after sign-in and consent persistence succeed', async () => {
+  it('sends the original Desktop submission once after sign-in and consent persistence succeed', async () => {
     distribution.isCloud = false
+    distribution.isDesktop = true
     makeTab('wf-42')
     currentUserInfo.value = null
     useCurrentUser().isLoggedIn = computed(() => currentUserInfo.value !== null)
@@ -6794,8 +6818,9 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
   })
 
-  it('restores a consent-held Local draft when its scope changes during the coach', async () => {
+  it('restores a consent-held Desktop draft when its scope changes during the coach', async () => {
     distribution.isCloud = false
+    distribution.isDesktop = true
     makeTab('wf-42')
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     localStorage.removeItem('Comfy.AgentPanel.onboarded')

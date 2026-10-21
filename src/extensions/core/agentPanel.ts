@@ -265,17 +265,21 @@ export function registerAgentPanelExtension(): void {
       }
       const offerEligible = (): boolean =>
         agentPanelStore.enabled &&
-        isAuthInitialized.value &&
+        (agentPanelStore.onboarding.introduceBeforeSignIn
+          ? isAuthInitialized.value
+          : isLoggedIn.value) &&
         !introductionStore.isContinuingSignIn &&
         !introductionAnswered() &&
         !consentStore.isChecking &&
         !consentStore.accepted
       const offerIneligibility = (): AgentConsentOfferExit | null =>
-        consentStore.isChecking
-          ? 'consent_unresolved'
-          : consentStore.accepted
-            ? 'consent_already_accepted'
-            : null
+        !agentPanelStore.onboarding.introduceBeforeSignIn && !isLoggedIn.value
+          ? 'signed_out'
+          : consentStore.isChecking
+            ? 'consent_unresolved'
+            : consentStore.accepted
+              ? 'consent_already_accepted'
+              : null
 
       const missingScopeExit = (
         userId: string | undefined
@@ -491,8 +495,13 @@ export function registerAgentPanelExtension(): void {
       }
 
       const loadConsentIfEligible = (): void => {
-        if (!agentPanelStore.enabled || !isAuthInitialized.value) return
-        if (!isLoggedIn.value) {
+        const { introduceBeforeSignIn } = agentPanelStore.onboarding
+        if (
+          !agentPanelStore.enabled ||
+          (introduceBeforeSignIn && !isAuthInitialized.value)
+        )
+          return
+        if (introduceBeforeSignIn && !isLoggedIn.value) {
           offerWhenStartupDecided()
           return
         }

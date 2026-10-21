@@ -15,9 +15,7 @@ import {
   SIDEBAR_MIN_WIDTH,
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
-import { isCloud } from '@/platform/distribution/types'
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
-import type { ServerFact } from '@/platform/serverFacts/serverFact'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentPanelCloseSource,
@@ -45,20 +43,31 @@ interface AgentOnboardingPolicy {
   offerMemory: 'shown' | 'answered'
   agentButton: 'requestConsent' | 'togglePanel'
   persistSkipAsRefusal: boolean
+  introduceBeforeSignIn: boolean
 }
 
-const CLOUD_ONBOARDING: AgentOnboardingPolicy = {
+const DEFAULT_ONBOARDING: AgentOnboardingPolicy = {
   startup: 'activationVisits',
   offerMemory: 'shown',
   agentButton: 'requestConsent',
-  persistSkipAsRefusal: true
+  persistSkipAsRefusal: true,
+  introduceBeforeSignIn: false
 }
 
-const LOCAL_ONBOARDING: AgentOnboardingPolicy = {
+const DESKTOP_ONBOARDING: AgentOnboardingPolicy = {
   startup: 'lockedUntilConsent',
   offerMemory: 'answered',
   agentButton: 'togglePanel',
-  persistSkipAsRefusal: false
+  persistSkipAsRefusal: false,
+  introduceBeforeSignIn: true
+}
+
+function isLocalDesktopApp(): boolean {
+  if (isCloud) return false
+  if (isDesktop) return true
+  const bridge = window.__comfyDesktop2
+  if (!bridge) return false
+  return !(bridge.isRemote?.() ?? window.__comfyDesktop2Remote ?? false)
 }
 
 type TargetTracking =
@@ -109,10 +118,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
-  const onboarding = computed<
-    ServerFact<'agent.onboarding', AgentOnboardingPolicy>
-  >(() =>
-    pendingServerFact('BE-22051', isCloud ? CLOUD_ONBOARDING : LOCAL_ONBOARDING)
+  const onboarding = computed(() =>
+    isLocalDesktopApp() ? DESKTOP_ONBOARDING : DEFAULT_ONBOARDING
   )
   /** The server's `agent` feature; undefined unless its state is known. */
   const comfyAgent = computed(() => {

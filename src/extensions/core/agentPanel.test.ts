@@ -107,7 +107,8 @@ vi.mock(
 
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
-  isCloud: true
+  isCloud: true,
+  isDesktop: false
 }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -116,7 +117,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return mocks.isCloud
   },
   isNightly: __IS_NIGHTLY__,
-  isDesktop: false
+  get isDesktop() {
+    return mocks.isDesktop
+  }
 }))
 
 vi.mock(
@@ -210,6 +213,7 @@ describe('AgentPanel extension flag gate', () => {
     )
     currentUserService.isLoggedIn = computed(() => currentUser.value !== null)
     mocks.isCloud = true
+    mocks.isDesktop = false
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
     isAuthInitialized.value = true
@@ -244,9 +248,10 @@ describe('AgentPanel extension flag gate', () => {
     })
   })
 
-  describe('Local consent introduction', () => {
+  describe('Desktop consent introduction', () => {
     beforeEach(() => {
       mocks.isCloud = false
+      mocks.isDesktop = true
       setAgentReady(true)
       Object.assign(consentStore, { accepted: false, isChecking: false })
       agentStore.isOpen = false
@@ -1296,6 +1301,23 @@ describe('AgentPanel extension flag gate', () => {
         expect(await notOffered()).not.toHaveBeenCalled()
       }
     )
+
+    it('reports a signed-out offer separately from an unresolved account', async () => {
+      setAgentReady(true)
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      const { useCurrentUser } =
+        await import('@/composables/auth/useCurrentUser')
+      vi.mocked(useCurrentUser()).isLoggedIn = computed(() => false)
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(await offerExited()).toHaveBeenCalledExactlyOnceWith({
+        exit: 'signed_out',
+        stage: 'offer',
+        retry_armed: false
+      })
+    })
 
     it('reports an account that went missing after the consent read succeeded', async () => {
       // `isLoggedIn` true with no resolved id is the API-key rail before its
