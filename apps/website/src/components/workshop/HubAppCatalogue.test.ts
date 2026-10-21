@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { CatalogueApp } from '@/lib/workshop/catalogue-apps'
 import { captureWorkshopEvent } from '@/scripts/posthog'
 import {
+  FakeIntersectionObserver,
   setAllIntersecting,
   stubIntersectionObserver
 } from '@/test/fakeIntersectionObserver'
@@ -107,28 +108,21 @@ describe('HubAppCatalogue', () => {
     })
   })
 
-  it('reports the grid it shows once it scrolls into view', async () => {
+  it('reports only the apps a visitor can open once the grid scrolls into view', async () => {
     render(HubAppCatalogue, { props: { apps } })
 
     await setAllIntersecting(true)
 
+    expect(FakeIntersectionObserver.instances[0].observed).toEqual([
+      screen.getByTestId('app-grid-row')
+    ])
     expect(captureWorkshopEvent).toHaveBeenCalledExactlyOnceWith({
       name: 'hub_row_viewed',
       properties: {
         surface: 'apps',
         source: 'app_grid',
-        item_count: 9,
-        row_slugs: [
-          'apps/cinematic-studio',
-          'apps/reshoot',
-          'move-anything',
-          'relight',
-          'hand-product-swap',
-          'background-removal',
-          'virtual-try-on',
-          'sprite-sheet',
-          'paparazzi-me'
-        ]
+        item_count: 2,
+        row_slugs: ['apps/cinematic-studio', 'apps/reshoot']
       }
     })
   })

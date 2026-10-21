@@ -120,7 +120,7 @@ export async function prepareModelPage(
       : undefined,
     priceEstimate: await modelPriceEstimate(model),
     useCaseLabel: useCase ? t(useCaseLabelKey[useCase]) : undefined,
-    providerModels: await providerModelRows(model),
+    providerModels: model.routerId ? await providerModelRows(model) : [],
     workflows: model.routerId ? workflowsUsingModel(model, workshopPages) : [],
     tags,
     ...splitShownTags(tags)

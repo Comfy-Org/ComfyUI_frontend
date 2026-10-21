@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import { IDBFactory } from 'fake-indexeddb'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import * as storage from '@/config/workshop-draft-storage'
 import { workshopExampleFile } from '@/config/workshop-example-file'
@@ -22,7 +23,7 @@ const schema: FieldSchema[] = [
   }
 ]
 
-function mountDraft() {
+function mountDraft(held?: Ref<boolean>) {
   const values = ref<FormValues>({ image: workshopExampleFile(original) })
   const view = render(
     defineComponent({
@@ -32,7 +33,8 @@ function mountDraft() {
           ref(schema),
           values,
           ref(false),
-          false
+          false,
+          { held }
         )
         return () =>
           h(
@@ -110,5 +112,34 @@ describe('workshop draft restoration', () => {
     expect(
       await storage.readWorkshopDraft('token', new AbortController().signal)
     ).toEqual({ image: saved })
+  })
+
+  it('leaves the whole draft for the page that takes over while held', async () => {
+    sessionStorage.setItem('comfy-workshop-form:draft-test', '{"seed":7}')
+    const view = mountDraft(ref(true))
+    await nextTick()
+    view.unmount()
+
+    expect(view.values.value.image).toMatchObject({ sourceUrl: original })
+    expect(sessionStorage.getItem('comfy-workshop-form:draft-test')).toBe(
+      '{"seed":7}'
+    )
+    expect(sessionStorage.getItem(mediaKey)).toBe('token')
+    expect(
+      await storage.readWorkshopDraft('token', new AbortController().signal)
+    ).toEqual({ image: saved })
+  })
+
+  it('restores the draft once the hold lifts', async () => {
+    const held = ref(true)
+    const view = mountDraft(held)
+    await nextTick()
+    expect(view.values.value.image).toMatchObject({ sourceUrl: original })
+
+    held.value = false
+
+    await waitFor(() =>
+      expect(view.values.value.image).toMatchObject({ sourceUrl: saved })
+    )
   })
 })
