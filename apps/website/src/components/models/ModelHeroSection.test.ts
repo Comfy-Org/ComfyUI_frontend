@@ -17,7 +17,7 @@ const familyPages = [
   ['ace-step-v1-3-5b', 'ace-step'],
   ['hidream-i1-dev-fp8', 'hidream'],
   ['omnigen2-fp16', 'omnigen'],
-  ['sd-xl-base-1-0', 'stable'],
+  ['sd-xl-base-1-0', 'sdxl'],
   ['z-image-bf16', 'z-image'],
   ['z-image-turbo-bf16', 'z-image'],
   ['svd-xt', 'svd'],
