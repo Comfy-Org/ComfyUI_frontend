@@ -122,7 +122,7 @@ export function useRegistrySearch(inputs: {
   }
 
   async function doLoadMore(): Promise<PageFreshness> {
-    if (!morePages.value) return 'current'
+    if (!morePages.value || isNextPageFailed.value) return 'current'
     const requestGeneration = generation
     const query = searchedQuery()
     const outcome = await searchPacks(query, {
@@ -169,7 +169,8 @@ export function useRegistrySearch(inputs: {
     return reload()
   }
 
-  function retryNextPage() {
+  async function retryNextPage() {
+    if (!isNextPageFailed.value) return false
     resetCircuits()
     isNextPageFailed.value = false
     return loadMore()

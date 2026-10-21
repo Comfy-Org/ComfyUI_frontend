@@ -725,6 +725,28 @@ describe('useRegistrySearch', () => {
       expect(toValue(search.hasMore)).toBe(false)
     })
 
+    it('does not request the failed page again from a scroll load while paused', async () => {
+      const search = await searchUntilSecondPageFails()
+
+      expect(await search.loadMore()).toBe(false)
+
+      expect(searchedPages()).toHaveLength(2)
+      expect(search.isNextPageFailed.value).toBe(true)
+    })
+
+    it('ignores a retry when no page failed', async () => {
+      vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
+        succeeded(firstPageResult)
+      )
+      const search = useRegistrySearch({ query: 'gguf', searchMode: 'packs' })
+      await until(search.isLoading).toBe(false)
+
+      expect(await search.retryNextPage()).toBe(false)
+
+      expect(useRegistrySearchGateway().resetCircuits).not.toHaveBeenCalled()
+      expect(searchedPages()).toHaveLength(1)
+    })
+
     it('loads the same page for the same search when retried', async () => {
       const search = await searchUntilSecondPageFails()
       vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
