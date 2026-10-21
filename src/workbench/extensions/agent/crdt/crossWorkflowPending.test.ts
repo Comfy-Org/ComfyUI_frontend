@@ -490,6 +490,7 @@ describe('a human edit made while the document connection is down', () => {
     expect(clientState.sent).toHaveLength(1)
     const [retried] = clientState.sent
     expect(retried.tab).toBe(firstTab)
+    expect(retried.ops[0].actor).toBe(clientState.attempts[0].ops[0].actor)
     expect(retried.ops[0].actor).toBe(`human:anonymous:${retried.tab}`)
   })
 

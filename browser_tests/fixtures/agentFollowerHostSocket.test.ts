@@ -257,6 +257,41 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
     }
   )
 
+  it('spends an unanswered slot only on a batch it would accept', async () => {
+    const host = new HostDoc(
+      WORKFLOW_ID,
+      { nodes: [], links: [] },
+      { types: {} }
+    )
+    const { page, emitClientFrame, sentFrames } = fakeRoutedPage()
+    const hostSocket = new AgentFollowerHostSocket(
+      page,
+      WORKFLOW_ID,
+      host,
+      'apply'
+    )
+    await hostSocket.install()
+    hostSocket.leaveHumanBatchesUnanswered(1)
+    const ops = [validOp('a'.repeat(32), 1)]
+
+    emitClientFrame({
+      type: 'doc_ops',
+      data: { workflow_id: WORKFLOW_ID, tab: 'tab-2', ops }
+    })
+    emitClientFrame({
+      type: 'doc_ops',
+      data: { workflow_id: WORKFLOW_ID, tab: 'tab-1', ops }
+    })
+
+    expect(sentFrames()).toEqual([
+      {
+        type: 'doc_ops_result',
+        data: expect.objectContaining({ ok: false, code: 'forbidden' })
+      }
+    ])
+    expect(hostSocket.humanOpOutcomes()).toEqual([])
+  })
+
   it('leaves a dropped batch unanswered and judges its resend', async () => {
     const host = new HostDoc(
       WORKFLOW_ID,

@@ -267,7 +267,7 @@ export class AgentFollowerHostSocket {
   }
 
   private receiveHumanOps(frame: ParsedClientDocFrame): void {
-    if (frame.opsResult.ok && this.unansweredHumanBatches > 0) {
+    if (this.unansweredHumanBatches > 0 && this.wouldAcceptHumanOps(frame)) {
       this.unansweredHumanBatches -= 1
       return
     }
@@ -348,6 +348,15 @@ export class AgentFollowerHostSocket {
   /** Records the next `count` well-formed human batches as lost in transit. */
   leaveHumanBatchesUnanswered(count = 1): void {
     this.unansweredHumanBatches += count
+  }
+
+  private wouldAcceptHumanOps({ opsResult, tab }: ParsedClientDocFrame) {
+    return (
+      opsResult.ok &&
+      !!tab &&
+      isValidDocOpsBatch(opsResult.ops) &&
+      claimsOneFrameActor(opsResult.ops, tab)
+    )
   }
 
   // The applier is the only judge of a structurally valid human batch; the
