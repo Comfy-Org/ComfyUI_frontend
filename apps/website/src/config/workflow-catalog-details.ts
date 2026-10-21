@@ -110,6 +110,7 @@ export const workflowCatalogDetailsSchema = z.object({
     z.object({ uid: z.string(), name: z.string(), href: z.string().optional() })
   ),
   author: z.string().optional(),
+  authorUsername: z.string().min(1).max(64).optional(),
   authorAvatarURL: z.string().refine(validAuthorAvatarURL).optional(),
   runs: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER).optional(),
   downloads: z

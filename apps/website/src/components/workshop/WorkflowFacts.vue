@@ -5,6 +5,7 @@ import type { TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import WorkflowModelLinks from './WorkflowModelLinks.vue'
 import WorkflowAuthor from './WorkflowAuthor.vue'
+import { hubCreatorPath } from '@/lib/hub/creators'
 const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
 const t = computed(
   () => translationsFor(model.catalogDetails?.locale ?? 'en').t
@@ -114,8 +115,26 @@ function catalogFacts(
         >
           <dt class="text-primary-warm-gray">{{ t(fact.label) }}</dt>
           <dd class="min-w-0 truncate text-primary-comfy-canvas tabular-nums">
+            <a
+              v-if="
+                fact.label === 'workshop.workflow.factAuthor' &&
+                model.catalogDetails?.authorUsername
+              "
+              :href="
+                hubCreatorPath(
+                  model.catalogDetails.authorUsername,
+                  model.catalogDetails.locale
+                )
+              "
+              class="hover:underline"
+            >
+              <WorkflowAuthor
+                :name="fact.value"
+                :avatar="model.catalogDetails.authorAvatarURL"
+              />
+            </a>
             <WorkflowAuthor
-              v-if="fact.label === 'workshop.workflow.factAuthor'"
+              v-else-if="fact.label === 'workshop.workflow.factAuthor'"
               :name="fact.value"
               :avatar="model.catalogDetails?.authorAvatarURL"
             />

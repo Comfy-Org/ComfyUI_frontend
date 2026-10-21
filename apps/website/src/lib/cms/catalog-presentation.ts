@@ -114,8 +114,10 @@ function authorDetails(d: Document, locale: string) {
           'cccWorkflow.authorUnavailable'
         )
       : undefined
+  const username = matches ? trimmedText(resolved.username) : undefined
   return {
     author: name ?? unavailable,
+    ...(username && { authorUsername: username }),
     ...authorAvatar(matches, resolved.avatar_url)
   }
 }

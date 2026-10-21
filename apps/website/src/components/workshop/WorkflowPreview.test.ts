@@ -89,7 +89,33 @@ describe('WorkflowPreview', () => {
     )
     expect(avatar).toHaveAttribute('referrerpolicy', 'no-referrer')
     expect(avatar).toHaveAttribute('alt', '')
+    expect(screen.queryByRole('link', { name: 'Ben Cooley' })).toBeNull()
   })
+  it.for([
+    { locale: 'en', href: '/hub/creators/comfy-creator/' },
+    { locale: 'zh-CN', href: '/zh-CN/hub/creators/comfy-creator/' }
+  ] as const)(
+    'links the author to their creator page in $locale',
+    ({ locale, href }) => {
+      render(WorkflowPreview, {
+        props: {
+          model: {
+            ...model,
+            catalogDetails: {
+              locale,
+              faqs: [],
+              models: [],
+              author: 'Comfy creator',
+              authorUsername: 'Comfy-Creator'
+            }
+          }
+        }
+      })
+      expect(
+        screen.getByRole('link', { name: 'Comfy creator' })
+      ).toHaveAttribute('href', href)
+    }
+  )
   it('picks among several declared files and draws the picked one', async () => {
     const uid = '00000000-0000-4000-8000-000000000080'
     const first = `/preview-media/7/${uid}/00000000-0000-4000-8000-000000000081`

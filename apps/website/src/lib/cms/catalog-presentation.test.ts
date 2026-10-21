@@ -136,6 +136,7 @@ describe('native CONTENT presentation', () => {
           website_author: {
             uid: 'other-account',
             name: 'Wrong person',
+            username: 'wrong-person',
             avatar_url: 'https://media.comfy.org/other.png'
           }
         }
@@ -145,6 +146,7 @@ describe('native CONTENT presentation', () => {
       catalogDetails: { author: 'Author unavailable' }
     })
     expect(view).not.toHaveProperty('catalogDetails.authorAvatarURL')
+    expect(view).not.toHaveProperty('catalogDetails.authorUsername')
     const invalidAvatar = detailSchema.parse(
       catalogPresentation({
         ...record,
@@ -546,6 +548,7 @@ describe('native CONTENT presentation', () => {
         runs: 0,
         downloads: 12,
         author: 'Comfy creator',
+        authorUsername: 'comfy-creator',
         authorAvatarURL: 'https://media.comfy.org/creator.png',
         models: [
           {
