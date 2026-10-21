@@ -1099,6 +1099,22 @@
       "directory": "All models by provider",
       "directoryCount": "{count} models"
     },
+    "hubSection": {
+      "workflows": {
+        "title": "ComfyUI Workflows: Multi-Step AI Image & Video Workflows - Comfy",
+        "description": "Browse ComfyUI workflows that chain AI models into finished images and videos, and run any of them right in your browser.",
+        "name": "ComfyUI workflows",
+        "introHeading": "What is a ComfyUI workflow?",
+        "intro": "A ComfyUI workflow is a graph of nodes that connects AI models, prompts and settings into one process. Each workflow on this page turns an input, such as a text prompt or an image, into a finished result. Open a workflow to see its steps and the models it uses, then run it in your browser."
+      },
+      "apps": {
+        "title": "ComfyUI Apps: Creative Tools Built from Workflows - Comfy",
+        "description": "Take on bigger ideas with ComfyUI apps that bring multiple workflows together, and open them right in your browser.",
+        "name": "ComfyUI apps",
+        "introHeading": "What is a ComfyUI app?",
+        "intro": "A ComfyUI app puts one or more workflows behind a simple interface, so you can get a result without building a node graph. Each app on this page does one creative task from start to finish. Open an app to see what it does, then use it in your browser."
+      }
+    },
     "assets": {
       "title": "Your assets",
       "seeAll": "See all in Cloud",

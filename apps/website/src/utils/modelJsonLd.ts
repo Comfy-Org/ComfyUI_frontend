@@ -1,3 +1,4 @@
+import { withCatalogLocalePrefix } from '@/config/catalog-locales'
 import { isIndexableModelPage } from '@/config/indexing'
 import { launchedModelPages } from '@/config/model-page-launch'
 import type { ModelPageLaunch } from '@/config/model-page-launch'
@@ -110,17 +111,37 @@ interface ModelsHubJsonLdInput {
   launched?: ModelPageLaunch
 }
 
+interface CollectionPageJsonLd {
+  pageType: 'CollectionPage'
+  mainEntityId?: string
+  breadcrumbs: Crumb[]
+  extraJsonLd: JsonLdNode[]
+}
+
+function collectionPageJsonLd(
+  name: string,
+  homeName: string,
+  listed: { name: string; url: string }[],
+  url: string,
+  siteUrl: string
+): CollectionPageJsonLd {
+  const breadcrumbs = [{ name: homeName, url: `${siteUrl}/` }, { name }]
+  if (listed.length === 0)
+    return { pageType: 'CollectionPage', breadcrumbs, extraJsonLd: [] }
+  return {
+    pageType: 'CollectionPage',
+    mainEntityId: jsonLdId(url, 'itemlist'),
+    breadcrumbs,
+    extraJsonLd: [itemListNode(url, name, listed)]
+  }
+}
+
 export function modelsHubJsonLd({
   models,
   url,
   siteUrl,
   launched = launchedModelPages
-}: ModelsHubJsonLdInput): {
-  pageType: 'CollectionPage'
-  mainEntityId?: string
-  breadcrumbs: Crumb[]
-  extraJsonLd: JsonLdNode[]
-} {
+}: ModelsHubJsonLdInput): CollectionPageJsonLd {
   const site = new URL(siteUrl)
   const listed = models.flatMap(({ name, href }) =>
     href !== undefined &&
@@ -129,16 +150,37 @@ export function modelsHubJsonLd({
       ? [{ name, url: absoluteUrl(site, href) }]
       : []
   )
-  const breadcrumbs = [
-    { name: t('breadcrumb.home'), url: `${siteUrl}/` },
-    { name: t('workshop.title') }
-  ]
-  if (listed.length === 0)
-    return { pageType: 'CollectionPage', breadcrumbs, extraJsonLd: [] }
-  return {
-    pageType: 'CollectionPage',
-    mainEntityId: jsonLdId(url, 'itemlist'),
-    breadcrumbs,
-    extraJsonLd: [itemListNode(url, t('workshop.title'), listed)]
-  }
+  return collectionPageJsonLd(
+    t('workshop.title'),
+    t('breadcrumb.home'),
+    listed,
+    url,
+    siteUrl
+  )
+}
+
+interface HubSectionJsonLdInput {
+  name: string
+  homeName: string
+  /** The catalog records the list shows, in page order. */
+  items: readonly { name: string; href: string }[]
+  url: string
+  siteUrl: string
+  locale: string
+}
+
+export function hubSectionJsonLd({
+  name,
+  homeName,
+  items,
+  url,
+  siteUrl,
+  locale
+}: HubSectionJsonLdInput): CollectionPageJsonLd {
+  const site = new URL(siteUrl)
+  const listed = items.map((item) => ({
+    name: item.name,
+    url: absoluteUrl(site, withCatalogLocalePrefix(item.href, locale))
+  }))
+  return collectionPageJsonLd(name, homeName, listed, url, siteUrl)
 }

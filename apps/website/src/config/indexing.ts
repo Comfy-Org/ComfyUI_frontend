@@ -103,6 +103,7 @@ export function isIndexableModelPage(
   workflowsLaunched: boolean = launchedWorkflowPages
 ): boolean {
   const kind = modelsUrlKind(pathname)
+  if (kind === 'section') return true
   if (kind === 'workflow') return workflowsLaunched
   if (kind !== 'model') return false
   const routerId = routerIdByModelPage.get(normalizePathname(pathname))

@@ -5537,6 +5537,22 @@
       "showWorkflows": "显示 {n} 个工作流",
       "workflowsSubtitle": "用由 AI 模型驱动的多步骤工作流，把你的想法变成完成的作品。"
     },
+    "hubSection": {
+      "workflows": {
+        "title": "ComfyUI 工作流：多步骤 AI 图像与视频工作流 - Comfy",
+        "description": "浏览把多个 AI 模型串联成完整图像和视频的 ComfyUI 工作流，并直接在浏览器中运行。",
+        "name": "ComfyUI 工作流",
+        "introHeading": "什么是 ComfyUI 工作流？",
+        "intro": "ComfyUI 工作流是由节点组成的图，它把 AI 模型、提示词和设置连接成一个完整的流程。本页的每个工作流都会把一个输入（例如文本提示词或图像）变成完成的作品。打开一个工作流，查看它的步骤和使用的模型，然后在浏览器中运行它。"
+      },
+      "apps": {
+        "title": "ComfyUI 应用：基于工作流构建的创意工具 - Comfy",
+        "description": "用把多个工作流组合在一起的 ComfyUI 应用挑战更大的想法，并直接在浏览器中打开。",
+        "name": "ComfyUI 应用",
+        "introHeading": "什么是 ComfyUI 应用？",
+        "intro": "ComfyUI 应用把一个或多个工作流放在简单的界面后面，你无需搭建节点图就能得到结果。本页的每个应用都从头到尾完成一项创意任务。打开一个应用，了解它的用途，然后在浏览器中使用它。"
+      }
+    },
     "cinematic": {},
     "videoTrim": {
       "title": "裁剪视频",
