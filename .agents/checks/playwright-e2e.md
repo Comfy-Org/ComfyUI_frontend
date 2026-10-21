@@ -86,7 +86,7 @@ Reference docs (read if you need full context):
 ## Rules
 
 - Only review `.spec.ts` files and supporting code in `browser_tests/`
-- Do NOT flag patterns in fixture/helper code (`browser_tests/fixtures/`) — those are shared infrastructure with different rules (exception: rule 20's imported-type requirement still applies to typed mock/data factories under `browser_tests/fixtures/data/`)
-- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-10), "minor" for convention violations (11-15), "nitpick" for test design (16-18), "medium" for structure/type/regression rules (19-23)
+- Do NOT flag patterns in fixture/helper code (`browser_tests/fixtures/`) — those are shared infrastructure with different rules (exception: rule 19's imported-type requirement still applies to typed mock/data factories under `browser_tests/fixtures/data/`)
+- "Major" for flakiness risks (items 1-7), "medium" for fixture misuse (8-10), "minor" for convention violations (11-14), "nitpick" for test design (15-17), "medium" for structure/type/regression rules (18-22)
 - When flagging missing fixture usage (item 8), confirm the helper exists by checking the fixture code — don't assume
 - Existing tests that predate conventions are acceptable to modify but not required to fix
