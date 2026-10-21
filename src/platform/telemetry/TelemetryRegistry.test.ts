@@ -431,6 +431,12 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentPanelClosed(panelClosedMetadata)
       },
       {
+        method: 'trackAgentPanelRenderStalled',
+        expected: { stage: 'root_unresolved' },
+        invoke: (registry) =>
+          registry.trackAgentPanelRenderStalled({ stage: 'root_unresolved' })
+      },
+      {
         method: 'trackAgentEntryButtonClicked',
         expected: { ...entryClickedMetadata },
         invoke: (registry) =>

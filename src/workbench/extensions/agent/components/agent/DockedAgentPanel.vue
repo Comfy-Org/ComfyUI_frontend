@@ -33,7 +33,8 @@
         "
       >
         <div class="size-full overflow-hidden rounded-lg border">
-          <AgentPanelRoot />
+          <AgentPanelLoadError v-if="mountFailed" :on-retry="retryMount" />
+          <AgentPanelRoot v-else :key="mountAttempt" />
         </div>
       </div>
     </div>
@@ -44,24 +45,31 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
+import type { PropType } from 'vue'
 import {
   computed,
   defineAsyncComponent,
   defineComponent,
   h,
   onBeforeUnmount,
+  onErrorCaptured,
   ref
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useWorkspaceInsetRight } from '@/composables/useWorkspaceInset'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useAgentPanelRenderStore } from '@/workbench/extensions/agent/stores/agent/agentPanelRenderStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 
 const AgentPanelLoadError = defineComponent({
   name: 'AgentPanelLoadError',
-  setup() {
+  props: {
+    onRetry: { type: Function as PropType<() => void>, default: undefined }
+  },
+  setup(props) {
     const { t } = useI18n()
     return () =>
       h('div', { class: 'size-full bg-background p-3' }, [
@@ -70,15 +78,32 @@ const AgentPanelLoadError = defineComponent({
           { id: 'agent-panel-title', class: 'sr-only' },
           t('agent.title')
         ),
-        h('p', { class: 'text-sm text-foreground' }, t('agent.loadFailed'))
+        h('p', { class: 'text-sm text-foreground' }, t('agent.loadFailed')),
+        props.onRetry &&
+          h(
+            Button,
+            {
+              class: 'mt-3',
+              variant: 'secondary',
+              size: 'sm',
+              onClick: props.onRetry
+            },
+            () => t('g.retry')
+          )
       ])
   }
 })
 
-// Only a failed chunk load is a load failure; runtime errors inside the
-// resolved panel keep their normal propagation.
+const agentPanelRenderStore = useAgentPanelRenderStore()
+agentPanelRenderStore.reach('root_unresolved')
+
 const AgentPanelRoot = defineAsyncComponent({
-  loader: () => import('@/workbench/extensions/agent/AgentPanelRoot.vue'),
+  loader: async () => {
+    const panelRoot =
+      await import('@/workbench/extensions/agent/AgentPanelRoot.vue')
+    agentPanelRenderStore.reach('root_resolved_not_mounted')
+    return panelRoot
+  },
   errorComponent: AgentPanelLoadError,
   onError: (error, _retry, fail) => {
     reportError(error, {
@@ -88,6 +113,24 @@ const AgentPanelRoot = defineAsyncComponent({
     fail()
   }
 })
+
+const mountAttempt = ref(0)
+const mountFailed = ref(false)
+
+onErrorCaptured((error) => {
+  if (agentPanelRenderStore.progress !== 'root_resolved_not_mounted') return
+  reportError(error, {
+    surface: 'agent',
+    errorType: 'failure_mounting_agent_panel'
+  })
+  mountFailed.value = true
+  return false
+})
+
+function retryMount(): void {
+  mountFailed.value = false
+  mountAttempt.value++
+}
 
 /** Set by the parent that lays out both this panel and its left neighbour. */
 const { hasOpaqueNeighbor = false } = defineProps<{

@@ -37,21 +37,44 @@ function jsonResponse(status: number, body: unknown): Response {
   })
 }
 
-const rootLiveness = vi.hoisted(() => ({ live: 0, maxLive: 0 }))
+const rootLiveness = vi.hoisted(() => ({
+  live: 0,
+  maxLive: 0,
+  setupFailures: 0
+}))
 
 vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
-  const { defineComponent, h, onUnmounted } = await import('vue')
+  const { defineComponent, h, onMounted, onUnmounted } = await import('vue')
+  const { useAgentPanelRenderStore } =
+    await import('@/workbench/extensions/agent/stores/agent/agentPanelRenderStore')
   return {
     __esModule: true,
     default: defineComponent({
       name: 'AgentPanelRoot',
       setup() {
+        if (rootLiveness.setupFailures > 0) {
+          rootLiveness.setupFailures--
+          throw new Error('panel root setup failed')
+        }
         rootLiveness.live++
         rootLiveness.maxLive = Math.max(rootLiveness.maxLive, rootLiveness.live)
         onUnmounted(() => {
           rootLiveness.live--
         })
-        return () => h('div', { 'data-testid': 'agent-panel-root-stub' })
+        const renderStore = useAgentPanelRenderStore()
+        onMounted(() => renderStore.reach('drawn'))
+        return () =>
+          h('div', { 'data-testid': 'agent-panel-root-stub' }, [
+            h(
+              'button',
+              {
+                onClick: () => {
+                  throw new Error('panel action failed')
+                }
+              },
+              'Fail action'
+            )
+          ])
       }
     })
   }
@@ -80,6 +103,7 @@ describe('DockedAgentPanel', () => {
     vi.mocked(reportError).mockClear()
     rootLiveness.live = 0
     rootLiveness.maxLive = 0
+    rootLiveness.setupFailures = 0
     vi.mocked(useBillingContext).mockReturnValue({
       ...billingContext,
       subscription: computed(() =>
@@ -181,6 +205,44 @@ describe('DockedAgentPanel', () => {
     await nextTick()
 
     expect(await screen.findByTestId('agent-panel-root-stub')).toBeTruthy()
+  })
+
+  it('replaces a panel root that throws while mounting with a reported, retryable error', async () => {
+    rootLiveness.setupFailures = 1
+    openPanel()
+    renderPanel()
+
+    const retry = await screen.findByRole('button', { name: 'Retry' })
+    expect(screen.getByText('The agent panel failed to load.')).toBeVisible()
+    expect(screen.queryByTestId('agent-panel-root-stub')).toBeNull()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ message: 'panel root setup failed' }),
+      { surface: 'agent', errorType: 'failure_mounting_agent_panel' }
+    )
+
+    await userEvent.click(retry)
+
+    expect(await screen.findByTestId('agent-panel-root-stub')).toBeVisible()
+    expect(screen.queryByText('The agent panel failed to load.')).toBeNull()
+  })
+
+  it('leaves errors raised after the panel root has drawn to the app handler', async () => {
+    const errorHandler = vi.fn()
+    openPanel()
+    render(DockedAgentPanel, {
+      global: { plugins: [i18n], config: { errorHandler } }
+    })
+    await screen.findByTestId('agent-panel-root-stub')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Fail action' }))
+
+    expect(errorHandler).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ message: 'panel action failed' }),
+      expect.anything(),
+      expect.anything()
+    )
+    expect(screen.getByTestId('agent-panel-root-stub')).toBeVisible()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('renders nothing while the feature is disabled', () => {

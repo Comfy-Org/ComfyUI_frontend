@@ -810,6 +810,17 @@ export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
 }
+/** How far the open panel got before its content was drawn. */
+export type AgentPanelRenderStage =
+  | 'dock_unresolved'
+  | 'root_unresolved'
+  | 'root_resolved_not_mounted'
+export interface AgentPanelRenderStalledMetadata extends Record<
+  string,
+  unknown
+> {
+  stage: AgentPanelRenderStage
+}
 export interface AgentEntryButtonClickedMetadata extends Record<
   string,
   unknown
@@ -1559,6 +1570,7 @@ export interface TelemetryProvider {
   trackAgentMessageFeedback?(metadata: AgentMessageFeedbackMetadata): void
   trackAgentPanelOpened?(metadata: AgentPanelOpenedMetadata): void
   trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
+  trackAgentPanelRenderStalled?(metadata: AgentPanelRenderStalledMetadata): void
   trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
   trackAgentCloseButtonClicked?(): void
   trackAgentConsentShown?(metadata: AgentConsentShownMetadata): void
@@ -1750,6 +1762,7 @@ export const TelemetryEvents = {
   AGENT_MESSAGE_FEEDBACK: 'app:agent_message_feedback',
   AGENT_PANEL_OPENED: 'app:agent_panel_opened',
   AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
+  AGENT_PANEL_RENDER_STALLED: 'app:agent_panel_render_stalled',
   AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
   AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
   AGENT_CONSENT_SHOWN: 'app:agent_consent_shown',

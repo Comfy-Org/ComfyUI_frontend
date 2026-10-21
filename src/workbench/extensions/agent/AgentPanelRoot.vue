@@ -150,6 +150,7 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNoticeState'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
+import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import {
   isCrdtDebugEnabled,
@@ -1970,6 +1971,9 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
   if (await attachment.addFiles(files))
     useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
 }
+
+const agentPanelRenderStore = useAgentPanelRenderStore()
+onMounted(() => agentPanelRenderStore.reach('drawn'))
 </script>
 
 <template>
