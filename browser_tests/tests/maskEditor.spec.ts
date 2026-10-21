@@ -5,6 +5,7 @@ import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { toNodeId } from '@/types/nodeId'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const wstest = mergeTests(test, webSocketFixture)
 
@@ -135,7 +136,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await dialog.getByText('Brush Settings').hover()
       await expect(dialog.getByTestId('brush-cursor')).toHaveCSS('opacity', '0')
 
-      await comfyPage.expectScreenshot(dialog, 'mask-editor-dialog-open.png')
+      await expectElementScreenshot(dialog, 'mask-editor-dialog-open.png')
     }
   )
 
@@ -165,8 +166,11 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await expect(
         dialog.getByRole('heading', { name: 'Mask Editor' })
       ).toBeVisible()
+      await dialog.getByTestId('pointer-zone').hover()
+      await comfyPage.page.mouse.move(0, 0)
+      await expect(dialog.getByTestId('brush-cursor')).toHaveCSS('opacity', '0')
 
-      await comfyPage.expectScreenshot(
+      await expectElementScreenshot(
         dialog,
         'mask-editor-dialog-from-context-menu.png',
         { maxDiffPixels: 25 }

@@ -52,6 +52,7 @@ const ANALYTICS_EVENT = {
   navFeaturedCardViewed: 'website:nav_featured_card_viewed',
   navFeaturedCardClicked: 'website:nav_featured_card_clicked',
   vfxLinkClicked: 'website:vfx_link_clicked',
+  vfxLeadSubmitted: 'website:vfx_lead_submitted',
   // Shared with the cloud app so one PostHog funnel covers auth outcomes
   // across every surface.
   authRefreshSucceeded: SESSION_TELEMETRY_EVENT.refreshSucceeded,
@@ -74,8 +75,23 @@ export type CliClientId =
 
 export type RouterRoadmapCardId = 'workflow' | 'strategy' | 'use-case' | 'byok'
 
+export interface VfxLeadProperties {
+  form_id: string
+  landing_version: 'v2' | 'v3'
+  interest: 'vfx'
+  utm_source?: string
+  utm_medium?: string
+  utm_campaign?: string
+  utm_content?: string
+  utm_term?: string
+}
+
 type AnalyticsEvent =
   | WebSessionTelemetryEvent
+  | {
+      name: typeof ANALYTICS_EVENT.vfxLeadSubmitted
+      properties: VfxLeadProperties
+    }
   | {
       name: typeof ANALYTICS_EVENT.vfxLinkClicked
       properties: VfxLinkProperties
@@ -475,6 +491,10 @@ function captureEvent(event: AnalyticsEvent): void {
 
 export function capturePageview(): void {
   captureEvent({ name: ANALYTICS_EVENT.pageview })
+}
+
+export function captureVfxLeadSubmitted(properties: VfxLeadProperties): void {
+  captureEvent({ name: ANALYTICS_EVENT.vfxLeadSubmitted, properties })
 }
 
 export function captureVfxLinkClick(properties: VfxLinkProperties): void {

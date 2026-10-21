@@ -1,90 +1,112 @@
 <template>
-  <Button
-    ref="buttonRef"
-    variant="secondary"
-    class="group rounded-none! bg-transparent p-0 transition-none! hover:rounded-lg! hover:bg-accent!"
-    :style="buttonStyles"
-    :aria-label="$t('graphCanvasMenu.canvasMode')"
-    aria-haspopup="menu"
-    :aria-expanded="isOpen"
-    @click="toggle"
-  >
-    <div class="flex items-center gap-1 pr-0.5">
-      <div class="rounded-lg bg-muted p-2 group-hover:bg-accent">
-        <i :class="currentModeIcon" class="block size-4" aria-hidden="true" />
-      </div>
-      <i
-        class="icon-[lucide--chevron-down] block size-4 pr-1.5"
-        aria-hidden="true"
-      />
-    </div>
-  </Button>
+  <Popover v-model:open="isOpen">
+    <PopoverTrigger as-child>
+      <Button
+        ref="buttonRef"
+        variant="secondary"
+        class="group rounded-none! bg-transparent p-0 transition-none! hover:rounded-lg! hover:bg-accent!"
+        :style="buttonStyles"
+        :aria-label="$t('graphCanvasMenu.canvasMode')"
+        aria-haspopup="menu"
+        :aria-expanded="isOpen"
+      >
+        <div class="flex items-center gap-1 pr-0.5">
+          <div class="rounded-lg bg-muted p-2 group-hover:bg-accent">
+            <i
+              :class="currentModeIcon"
+              class="block size-4"
+              aria-hidden="true"
+            />
+          </div>
+          <i
+            class="icon-[lucide--chevron-down] block size-4 pr-1.5"
+            aria-hidden="true"
+          />
+        </div>
+      </Button>
+    </PopoverTrigger>
 
-  <Popover
-    ref="popover"
-    side="top"
-    :side-offset="8"
-    :content-class="cn(menuContentClass, 'min-w-39 select-none')"
-    @show="onPopoverShow"
-    @hide="onPopoverHide"
-  >
-    <div
-      ref="menuRef"
-      class="flex flex-col"
-      role="menu"
-      :aria-label="$t('graphCanvasMenu.canvasMode')"
+    <PopoverContent
+      side="top"
+      :side-offset="8"
+      :collision-padding="8"
+      :class="
+        cn(
+          menuContentClass,
+          'max-h-(--reka-popover-content-available-height) w-auto max-w-(--reka-popover-content-available-width) min-w-39 select-none data-[state=closed]:animate-none data-[state=open]:animate-none'
+        )
+      "
+      @open-auto-focus.prevent="onPopoverShow"
     >
-      <button
-        type="button"
-        role="menuitemradio"
-        :aria-checked="!isCanvasReadOnly"
-        :tabindex="!isCanvasReadOnly ? 0 : -1"
-        :class="cn(menuButtonClass, 'justify-between')"
-        :aria-label="$t('graphCanvasMenu.select')"
-        @click="setMode('select')"
-        @keydown.arrow-down.prevent="focusNextItem"
-        @keydown.arrow-up.prevent="focusPrevItem"
-        @keydown.escape.prevent="closeAndRestoreFocus"
+      <div
+        ref="menuRef"
+        class="flex flex-col"
+        role="menu"
+        :aria-label="$t('graphCanvasMenu.canvasMode')"
       >
-        <div class="flex items-center gap-2">
-          <i class="icon-[lucide--mouse-pointer-2] size-4" aria-hidden="true" />
-          <span>{{ $t('graphCanvasMenu.select') }}</span>
-        </div>
-        <span class="text-[9px] text-foreground" data-testid="shortcut-hint">{{
-          unlockCommandText
-        }}</span>
-      </button>
+        <button
+          type="button"
+          role="menuitemradio"
+          :aria-checked="!isCanvasReadOnly"
+          :tabindex="!isCanvasReadOnly ? 0 : -1"
+          :class="cn(menuButtonClass, 'justify-between')"
+          :aria-label="$t('graphCanvasMenu.select')"
+          @click="setMode('select')"
+          @keydown.arrow-down.prevent="focusNextItem"
+          @keydown.arrow-up.prevent="focusPrevItem"
+          @keydown.escape.prevent="closeAndRestoreFocus"
+        >
+          <div class="flex items-center gap-2">
+            <i
+              class="icon-[lucide--mouse-pointer-2] size-4"
+              aria-hidden="true"
+            />
+            <span>{{ $t('graphCanvasMenu.select') }}</span>
+          </div>
+          <span
+            class="text-[9px] text-foreground"
+            data-testid="shortcut-hint"
+            >{{ unlockCommandText }}</span
+          >
+        </button>
 
-      <button
-        type="button"
-        role="menuitemradio"
-        :aria-checked="isCanvasReadOnly"
-        :tabindex="isCanvasReadOnly ? 0 : -1"
-        :class="cn(menuButtonClass, 'justify-between')"
-        :aria-label="$t('graphCanvasMenu.hand')"
-        @click="setMode('hand')"
-        @keydown.arrow-down.prevent="focusNextItem"
-        @keydown.arrow-up.prevent="focusPrevItem"
-        @keydown.escape.prevent="closeAndRestoreFocus"
-      >
-        <div class="flex items-center gap-2">
-          <i class="icon-[lucide--hand] size-4" aria-hidden="true" />
-          <span>{{ $t('graphCanvasMenu.hand') }}</span>
-        </div>
-        <span class="text-[9px] text-foreground" data-testid="shortcut-hint">{{
-          lockCommandText
-        }}</span>
-      </button>
-    </div>
+        <button
+          type="button"
+          role="menuitemradio"
+          :aria-checked="isCanvasReadOnly"
+          :tabindex="isCanvasReadOnly ? 0 : -1"
+          :class="cn(menuButtonClass, 'justify-between')"
+          :aria-label="$t('graphCanvasMenu.hand')"
+          @click="setMode('hand')"
+          @keydown.arrow-down.prevent="focusNextItem"
+          @keydown.arrow-up.prevent="focusPrevItem"
+          @keydown.escape.prevent="closeAndRestoreFocus"
+        >
+          <div class="flex items-center gap-2">
+            <i class="icon-[lucide--hand] size-4" aria-hidden="true" />
+            <span>{{ $t('graphCanvasMenu.hand') }}</span>
+          </div>
+          <span
+            class="text-[9px] text-foreground"
+            data-testid="shortcut-hint"
+            >{{ lockCommandText }}</span
+          >
+        </button>
+      </div>
+    </PopoverContent>
   </Popover>
 </template>
 
 <script setup lang="ts">
-import Popover from '@/components/common/ImperativePopover.vue'
+import { unrefElement } from '@vueuse/core'
+import { PopoverTrigger } from 'reka-ui'
+import Popover from '@/components/ui/popover/Popover.vue'
+import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
 import {
   menuButtonClass,
   menuContentClass
@@ -99,9 +121,9 @@ interface Props {
 
 defineProps<Props>()
 const buttonRef = ref<ComponentPublicInstance | null>(null)
-const popover = ref<InstanceType<typeof Popover>>()
 const menuRef = ref<HTMLElement | null>(null)
 const isOpen = ref(false)
+usePopoverViewportDismiss(isOpen, () => unrefElement(buttonRef))
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 
@@ -125,22 +147,16 @@ const lockCommandText = computed(() =>
     .toUpperCase()
 )
 
-const toggle = (event: Event) => {
-  const el = buttonRef.value?.$el || buttonRef.value
-  popover.value?.toggle(event, el)
-}
-
 const setMode = (mode: 'select' | 'hand') => {
   if (mode === 'select' && isCanvasReadOnly.value) {
     void commandStore.execute('Comfy.Canvas.Unlock')
   } else if (mode === 'hand' && !isCanvasReadOnly.value) {
     void commandStore.execute('Comfy.Canvas.Lock')
   }
-  popover.value?.hide()
+  isOpen.value = false
 }
 
 async function onPopoverShow() {
-  isOpen.value = true
   await nextTick()
   const checkedItem = menuRef.value?.querySelector<HTMLElement>(
     '[aria-checked="true"]'
@@ -148,14 +164,9 @@ async function onPopoverShow() {
   checkedItem?.focus()
 }
 
-function onPopoverHide() {
-  isOpen.value = false
-}
-
 function closeAndRestoreFocus() {
-  popover.value?.hide()
-  const el = buttonRef.value?.$el || buttonRef.value
-  ;(el as HTMLElement)?.focus()
+  isOpen.value = false
+  unrefElement(buttonRef)?.focus()
 }
 
 function focusNextItem(event: KeyboardEvent) {

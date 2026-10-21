@@ -59,8 +59,38 @@ jobs:
           echo "playwright-version=$(node -p 'require("@playwright/test/package.json").version')" >> "$GITHUB_OUTPUT"
           echo "$MATRIX" | jq . >> "$GITHUB_STEP_SUMMARY"
 
-  build:
+  wait-for-e2e:
     needs: plan
+    if: needs.plan.outputs.has-tests == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      actions: read
+    steps:
+      - name: Wait for CI Tests E2E to finish
+        continue-on-error: true
+        timeout-minutes: 45
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          find_run() {
+            gh run list --workflow ci-tests-e2e.yaml --event pull_request \
+              --commit "$HEAD_SHA" --limit 1 --json databaseId --jq '.[0].databaseId // empty'
+          }
+          echo "Looking for the CI: Tests E2E run on $HEAD_SHA"
+          RUN_ID=$(find_run)
+          until [ -n "$RUN_ID" ]; do
+            sleep 30
+            RUN_ID=$(find_run)
+          done
+          echo "Waiting for https://github.com/$GH_REPO/actions/runs/$RUN_ID"
+          gh run watch "$RUN_ID" --interval 60 > /dev/null
+          gh run view "$RUN_ID" --json conclusion --jq '"CI: Tests E2E finished: \(.conclusion)"'
+
+  build:
+    needs: [plan, wait-for-e2e]
     if: needs.plan.outputs.has-tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -155,7 +185,7 @@ jobs:
 
   report:
     needs: [plan, playwright-video-new-tests]
-    if: always() && needs.plan.outputs.has-tests == 'true'
+    if: ${{ !cancelled() && needs.plan.outputs.has-tests == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

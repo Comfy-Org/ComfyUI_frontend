@@ -619,8 +619,6 @@
       {
         "name": "billing/presentation",
         "patterns": [
-          "src/components/common/UserCredit.test.ts",
-          "src/components/common/UserCredit.vue",
           "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
           "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
           "src/components/dialog/content/credit/**",
@@ -1793,7 +1791,6 @@
           "src/stores/queueStore.loadWorkflow.test.ts",
           "src/stores/queueStore.test.ts",
           "src/stores/queueStore.ts",
-          "src/storybook/mocks/useJobActions.ts",
           "src/storybook/mocks/useJobList.ts"
         ]
       },
@@ -3479,10 +3476,6 @@
         "name": "workspace/domain",
         "patterns": [
           "src/platform/workspace/api/workspaceApiError.ts",
-          "src/platform/workspace/utils/badgeColor.test.ts",
-          "src/platform/workspace/utils/badgeColor.ts",
-          "src/platform/workspace/utils/relativeTime.test.ts",
-          "src/platform/workspace/utils/relativeTime.ts",
           "src/platform/workspace/workspaceConstants.ts",
           "src/platform/workspace/workspaceTypes.ts"
         ]
@@ -3492,8 +3485,6 @@
         "patterns": [
           "src/platform/workspace/composables/useMembersPanel.test.ts",
           "src/platform/workspace/composables/useMembersPanel.ts",
-          "src/platform/workspace/composables/useWorkspaceActivity.test.ts",
-          "src/platform/workspace/composables/useWorkspaceActivity.ts",
           "src/platform/workspace/composables/useWorkspaceDialogs.ts",
           "src/platform/workspace/composables/useWorkspaceMenuItems.test.ts",
           "src/platform/workspace/composables/useWorkspaceMenuItems.ts",
@@ -3535,13 +3526,9 @@
           "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue",
           "src/platform/workspace/components/InviteMembersForm.test.ts",
           "src/platform/workspace/components/InviteMembersForm.vue",
-          "src/platform/workspace/components/RoleBadge.test.ts",
-          "src/platform/workspace/components/RoleBadge.vue",
           "src/platform/workspace/components/WorkspaceProfilePic.vue",
           "src/platform/workspace/components/WorkspaceSwitcherPopover.test.ts",
-          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue",
-          "src/platform/workspace/composables/useAutoPageSize.test.ts",
-          "src/platform/workspace/composables/useAutoPageSize.ts"
+          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue"
         ]
       },
       {

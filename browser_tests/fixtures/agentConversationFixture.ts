@@ -848,6 +848,18 @@ export class AgentConversationHarness {
     return this.hostSocket.subscribeCount()
   }
 
+  humanOpFrames(): ClientDocFrame[] {
+    return this.clientDocFrames().filter((frame) => frame.type === 'doc_ops')
+  }
+
+  leaveNextHumanBatchUnanswered(): void {
+    this.hostSocket.leaveHumanBatchesUnanswered(1)
+  }
+
+  async disconnectComfySocket(): Promise<void> {
+    await this.hostSocket.disconnectComfySocket()
+  }
+
   async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {
     await this.hostSocket.disconnect()
     for (const entry of this.conversation.turns[turn].response) {

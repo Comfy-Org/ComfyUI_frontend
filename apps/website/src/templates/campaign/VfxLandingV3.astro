@@ -25,13 +25,18 @@ const { t } = Astro.locals
 const routes = getRoutes(locale)
 const prefix = 'vfxV2.comfy'
 const hero = showcaseConfig('relight', t)
-const { contactHref, benefits, featuredWorkflows } = vfxLandingV3(locale, t)
+const { contactHref, benefits, featuredWorkflows, shareImages } = vfxLandingV3(
+  locale,
+  t
+)
 ---
 
 <BaseLayout
   title={t('vfx.meta.title')}
   description={t(`${prefix}.heroDescription`)}
-  ogImage={vfxWorkflows[5].template.thumbnails[0]}
+  ogImage={shareImages[0].url}
+  ogImageAlt={shareImages[0].alt}
+  ogImages={shareImages}
   hideAnnouncementBanner
 >
   <div data-vfx-v3>
@@ -97,16 +102,22 @@ const { contactHref, benefits, featuredWorkflows } = vfxLandingV3(locale, t)
       <div
         class="mx-auto flex max-w-9xl flex-wrap justify-center gap-4 px-6 pb-12"
       >
-        <BrandButton href={routes.download} variant="outline" class="uppercase"
+        <BrandButton
+          href={routes.download}
+          variant="outline"
+          class="w-full uppercase sm:w-auto"
           >{t('vfxV2.pipeline.download')}</BrandButton
         >
         <BrandButton
           href={externalLinks.docsSdk}
           variant="outline"
-          class="uppercase"
+          class="w-full uppercase sm:w-auto"
           >{t('vfxV2.pipeline.sdk')}</BrandButton
         >
-        <BrandButton href={routes.platform} variant="outline" class="uppercase"
+        <BrandButton
+          href={routes.platform}
+          variant="outline"
+          class="w-full uppercase sm:w-auto"
           >{t('vfxV2.pipeline.platform')}</BrandButton
         >
       </div>
@@ -120,28 +131,30 @@ const { contactHref, benefits, featuredWorkflows } = vfxLandingV3(locale, t)
       </div>
     </div>
     <div id="studio" class="scroll-mt-28">
-      <VfxProductionPanel locale={locale} contactHref={contactHref} />
-      <div class="flex flex-wrap justify-center gap-4 px-6 pb-10">
-        <BrandButton
-          href={routes.enterprise}
-          variant="outline"
-          class="uppercase"
-          >{t('vfxV2.production.enterprise')}</BrandButton
-        >
-        <BrandButton
-          href={routes.minimaxLicense}
-          variant="outline"
-          class="uppercase"
-          >{t('vfxV2.production.licensing')}</BrandButton
-        >
-      </div>
+      <VfxProductionPanel
+        locale={locale}
+        contactHref={contactHref}
+        details={['licensing', 'capacity', 'security', 'billing']}
+        detailLinks={{
+          licensing: {
+            label: t('vfxV2.production.licensing'),
+            href: routes.minimaxLicense
+          },
+          billing: {
+            label: t('vfxV3.enterprisePlan'),
+            href: routes.enterprise
+          }
+        }}
+      />
     </div>
-    <div class="[&_a]:uppercase">
+    <div class="[&_a]:w-full [&_a]:uppercase sm:[&_a]:w-auto">
       <CallToActionSection
         locale={locale}
         headingKey="vfxV3.contactHeading"
         primaryLabelKey="vfxV3.sales"
         primaryHref={contactHref}
+        secondaryLabelKey="vfxV3.enterprisePlan"
+        secondaryHref={routes.enterprise}
       />
     </div>
   </div>

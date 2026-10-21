@@ -1,5 +1,5 @@
 ---
-import { vfxMediaRoot } from '@/data/vfxMedia'
+import { vfxMediaRoot, vfxVariantMedia } from '@/data/vfxMedia'
 import BrandButton from '@/components/common/BrandButton.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import WorkflowNode from '@/components/agent/WorkflowNode.astro'
@@ -17,6 +17,7 @@ interface Props {
 }
 const { locale, demo = 'relight' } = Astro.props
 const { t } = translationsFor(locale)
+const canvasHintId = `vfx-${demo}-canvas-hint`
 const {
   source,
   mediaKind,
@@ -26,6 +27,13 @@ const {
   keyframe,
   preview
 } = showcaseConfig(demo, t)
+function variantNode(id: string, label: string) {
+  const poster = new URL(vfxVariantMedia(id, 'jpg'))
+  return {
+    node: workflowNode('image', id, label, poster.pathname.split('/').pop()),
+    imageRoot: new URL('.', poster).href.slice(0, -1)
+  }
+}
 ---
 
 <vfx-workflow-showcase
@@ -56,14 +64,6 @@ const {
           aria-expanded="false"
           >{t('vfxV3.openStudio')}</BrandButton
         >
-        {mediaKind === 'video' && <BrandButton
-          data-vfx-playback
-          data-play-label={t('player.play')}
-          data-pause-label={t('player.pause')}
-          variant="outline"
-          aria-pressed="false"
-          >{t('player.pause')}</BrandButton
-        >}
       </div>
     </div>
     <div class="vfx-visual-panel">
@@ -71,6 +71,7 @@ const {
         class="vfx-canvas-window"
         tabindex="0"
         aria-label={t(`vfxV3.demos.${demo}.title`)}
+        aria-describedby={canvasHintId}
       >
         <div class="vfx-canvas-scale">
           <div class="vfx-scene-stage">
@@ -100,6 +101,13 @@ const {
             </div>
           </div>
         </div>
+        <p
+          id={canvasHintId}
+          class="pointer-events-none absolute right-4 bottom-4 text-xs text-primary-warm-gray"
+        >
+          {t('vfxV3.dragHint')}
+          <span class="sr-only">{t('vfxV3.keyboardHint')}</span>
+        </p>
       </div>
       <div
         class="vfx-versions"
@@ -113,28 +121,20 @@ const {
           aria-label={label}
           aria-pressed={i === 0}
         >
-          <WorkflowNode
-            node={workflowNode('image', id, label, `${id}.jpg`)}
-            flow
-            imageRoot={vfxMediaRoot}
-          />
+          <WorkflowNode {...variantNode(id, label)} flow />
         </button>)}
       </div>
     </div>
   </div>
   <div class="vfx-studio-view" hidden inert>
     <div class="vfx-workspace-toolbar mb-8 flex flex-wrap gap-3">
-      <BrandButton data-back-workflow variant="outline"
-        >← {t('vfxV3.prototype.back').toLocaleUpperCase(locale)}</BrandButton
+      <button
+        type="button"
+        data-back-workflow
+        class="inline-flex cursor-pointer items-center gap-2 text-sm font-semibold tracking-wider text-primary-comfy-yellow transition-opacity hover:opacity-80"
       >
-      {mediaKind === 'video' && <BrandButton
-        data-vfx-playback
-        data-play-label={t('player.play')}
-        data-pause-label={t('player.pause')}
-        variant="outline"
-        aria-pressed="false"
-        >{t('player.pause')}</BrandButton
-      >}
+        ← {t('vfxV3.prototype.back').toLocaleUpperCase(locale)}
+      </button>
     </div>
     <VfxSampleStudio
       demo={demo}

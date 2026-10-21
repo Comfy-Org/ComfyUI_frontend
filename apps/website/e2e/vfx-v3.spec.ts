@@ -9,9 +9,17 @@ import type { Locator, Page } from '@playwright/test'
 import { test } from './fixtures/blockExternalMedia'
 import { expectIslandHydrated } from './fixtures/islands'
 
-import { vfxMediaRoot } from '@/data/vfxMedia'
+import { vfxWorkflows } from '@/data/vfxWorkflows'
+import { DEFAULT_OG_IMAGE } from '@/utils/jsonLd'
+import { vfxRedSkyMedia, vfxMediaRoot } from '@/data/vfxMedia'
 
 test.beforeEach(async ({ context }) => {
+  await context.route(vfxRedSkyMedia.video, (route) =>
+    route.fulfill({
+      path: join(websiteRoot, 'e2e/assets/vfx-playback.mp4'),
+      headers: { 'Accept-Ranges': 'bytes', 'Content-Type': 'video/mp4' }
+    })
+  )
   await context.route(`${vfxMediaRoot}/*.mp4`, (route) =>
     route.fulfill({
       path: join(websiteRoot, 'e2e/assets/vfx-playback.mp4'),
@@ -37,24 +45,36 @@ async function waitForShowcase(section: Locator) {
   })
 }
 
-for (const { path, heading, sales, contact, rain, taxi, vertical } of [
+for (const {
+  path,
+  heading,
+  sales,
+  contact,
+  rain,
+  taxi,
+  vertical,
+  shareAlt
+} of [
   {
     path: '/solutions/vfx/v3/',
     heading: 'One shot. More possibilities.',
-    sales: 'TALK TO SALES',
+    sales: 'CONTACT US',
     contact: '/contact/',
     rain: 'Rain',
     taxi: 'London taxi',
-    vertical: 'Vertical'
+    vertical: 'Vertical',
+    shareAlt:
+      'A classic car outside the Starlite Diner beneath a red sky with meteors.'
   },
   {
     path: '/zh-CN/solutions/vfx/v3/',
     heading: '一个镜头，更多可能。',
-    sales: '联系销售',
+    sales: '联系我们',
     contact: '/zh-CN/contact/',
     rain: '雨天',
     taxi: '伦敦出租车',
-    vertical: '竖屏'
+    vertical: '竖屏',
+    shareAlt: '流星划过红色天空，经典汽车停在星光餐厅外。'
   }
 ]) {
   test(`${path} preserves sales attribution`, async ({ page }) => {
@@ -65,6 +85,32 @@ for (const { path, heading, sales, contact, rain, taxi, vertical } of [
       `https://comfy.org${path}`
     )
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
+    expect(
+      await page
+        .locator('meta[property^="og:image"]')
+        .evaluateAll((nodes) =>
+          nodes.map((node) => [
+            node.getAttribute('property'),
+            node.getAttribute('content')
+          ])
+        )
+    ).toEqual([
+      ['og:image', vfxRedSkyMedia.share],
+      ['og:image:type', 'image/gif'],
+      ['og:image:width', '1200'],
+      ['og:image:height', '630'],
+      ['og:image:alt', shareAlt],
+      ['og:image', vfxRedSkyMedia.poster],
+      ['og:image:type', 'image/jpeg'],
+      ['og:image:width', '1200'],
+      ['og:image:height', '630'],
+      ['og:image:alt', shareAlt]
+    ])
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute(
+      'content',
+      vfxRedSkyMedia.share
+    )
+
     await expect(
       page.getByRole('link', { name: sales, exact: true }).first()
     ).toHaveAttribute(
@@ -279,7 +325,7 @@ test('Studio comparison synchronizes selected samples and pauses when closed', a
   await page.keyboard.press('End')
   await expect(slider).toHaveAttribute('aria-valuenow', '100')
   await studio
-    .getByRole('button', { name: '← BACK TO EXAMPLES', exact: true })
+    .getByRole('button', { name: '← BACK TO VFX PAGE', exact: true })
     .click()
   await expect
     .poll(() => before.evaluate((video: HTMLVideoElement) => video.paused))
@@ -374,6 +420,9 @@ test('source and output previews pause offscreen while keyboard canvas explorati
   const canvas = section.locator('.vfx-canvas-window')
   const source = section.locator('.vfx-source-node video')
   const output = section.locator('.vfx-main-node video')
+  await expect(canvas).toHaveAccessibleDescription(
+    'Drag left or right to see full workflows Use the arrow keys, Home and End to move with the keyboard.'
+  )
   await expect
     .poll(() =>
       output.evaluate(
@@ -435,9 +484,6 @@ test('reduced motion keeps graph output still after version selection', async ({
         )
       )
   ).toBe(true)
-  await expect(
-    section.getByRole('button', { name: 'Play', exact: true })
-  ).toBeVisible()
 })
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {
   test(`sample hero keeps comparison controls without workflow actions with ${reducedMotion} motion`, async ({
@@ -507,7 +553,7 @@ for (const {
     demo: 'relight',
     option: 'Rain',
     open: 'OPEN STUDIO',
-    back: '← BACK TO EXAMPLES',
+    back: '← BACK TO VFX PAGE',
     settings: 'SETTINGS',
     workflow: 'WORKFLOW',
     shot: 'Describe the shot',
@@ -518,7 +564,7 @@ for (const {
     demo: 'swap',
     option: '伦敦出租车',
     open: '打开工作室',
-    back: '← 返回示例',
+    back: '← 返回视觉特效页面',
     settings: '设置',
     workflow: '工作流',
     shot: '描述镜头',
@@ -569,7 +615,12 @@ for (const {
     await expect(
       studio.getByRole('button', { name: option, exact: true })
     ).toHaveAttribute('aria-pressed', 'true')
-    await expect(studio.locator('button[disabled]')).toHaveCount(3)
+    await expect(
+      studio.getByRole('button', { name: /^(ADJUST KEY FRAME|调整关键帧)$/ })
+    ).toBeDisabled()
+    await expect(
+      studio.getByRole('button', { name: /^(RUN WORKFLOW|运行工作流)$/ })
+    ).toBeDisabled()
     await returnButton.click()
     await expect(trigger).toBeFocused()
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
@@ -593,7 +644,7 @@ for (const {
   })
 }
 
-test('verified workflow links stay external and unresolved workflows cannot navigate', async ({
+test('verified workflow links stay external and use the supplied destinations', async ({
   page
 }) => {
   await page.goto('/solutions/vfx/v3/')
@@ -608,10 +659,10 @@ test('verified workflow links stay external and unresolved workflows cannot navi
   await expect(relight).toHaveAttribute('target', '_blank')
   await expect(
     page.locator('[data-vfx-demo="swap"] [data-try-workflow]')
-  ).toBeDisabled()
+  ).toHaveAttribute('href', 'https://cloud.comfy.org/?share=28fa6219c110')
   await expect(
     page.locator('[data-vfx-demo="reframe"] [data-try-workflow]')
-  ).toBeDisabled()
+  ).toHaveAttribute('href', 'https://cloud.comfy.org/?share=ccfd0e7d75c3')
 })
 
 for (const { demo, width, axis, leading, trailing } of [
@@ -723,7 +774,7 @@ test('Studio returns to the same playback time after editing Settings', async ({
     .getByRole('textbox', { name: 'Describe the shot', exact: true })
     .fill('A snowy diner at dusk')
   await studio
-    .getByRole('button', { name: '← BACK TO EXAMPLES', exact: true })
+    .getByRole('button', { name: '← BACK TO VFX PAGE', exact: true })
     .click()
   await expect
     .poll(() =>
@@ -834,7 +885,7 @@ for (const {
     open: 'OPEN STUDIO',
     settings: 'SETTINGS',
     workflow: 'WORKFLOW',
-    back: '← BACK TO EXAMPLES',
+    back: '← BACK TO VFX PAGE',
     expose: 'EXPOSE WORKFLOW',
     reference: 'Reference frame',
     mobile: false
@@ -846,7 +897,7 @@ for (const {
     open: '打开工作室',
     settings: '设置',
     workflow: '工作流',
-    back: '← 返回示例',
+    back: '← 返回视觉特效页面',
     expose: '查看工作流',
     reference: '参考帧',
     mobile: true
@@ -902,7 +953,9 @@ for (const {
     await expect(
       studio.getByRole('button', { name: /ADJUST KEY FRAME|调整关键帧/ })
     ).toHaveCount(0)
-    await expect(studio.locator('button[disabled]')).toHaveCount(2)
+    await expect(
+      studio.getByRole('button', { name: /^(RUN WORKFLOW|运行工作流)$/ })
+    ).toBeDisabled()
     await studio.getByRole('button', { name: orbit, exact: true }).click()
     await expect(studio.locator('video')).toHaveAttribute(
       'src',
@@ -984,8 +1037,11 @@ async function startHeroPlayback(
   play: string,
   reducedMotion: 'reduce' | 'no-preference'
 ) {
-  if (reducedMotion === 'reduce')
-    await hero.getByRole('button', { name: play, exact: true }).click()
+  if (reducedMotion === 'reduce') {
+    const control = hero.getByRole('button', { name: play, exact: true })
+    await control.focus()
+    await control.press('Space')
+  }
   await comparison.scrollIntoViewIfNeeded()
 }
 
@@ -1037,7 +1093,8 @@ for (const { path, pause, play, sample, reducedMotion, mobile } of [
           )
       )
       .toBe(true)
-    await control.click()
+    await control.focus()
+    await control.press('Space')
     await hero.getByRole('button', { name: sample, exact: true }).click()
     await comparison.scrollIntoViewIfNeeded()
     await expect
@@ -1057,7 +1114,9 @@ for (const { path, pause, play, sample, reducedMotion, mobile } of [
       'aria-valuenow',
       '50'
     )
-    await hero.getByRole('button', { name: play, exact: true }).click()
+    const resume = hero.getByRole('button', { name: play, exact: true })
+    await resume.focus()
+    await resume.press('Space')
     await comparison.scrollIntoViewIfNeeded()
     await expect
       .poll(() =>
@@ -1078,74 +1137,181 @@ for (const { path, pause, play, sample, reducedMotion, mobile } of [
   })
 }
 
-for (const { demo, sample } of [
-  { demo: 'relight', sample: 'Rain' },
-  { demo: 'sequence', sample: 'Push-in' }
+test('VFX hero follows fine-pointer hover without a press and preserves keyboard and page scrolling', async ({
+  page
+}) => {
+  await page.goto('/solutions/vfx/v3/')
+  const hero = page.locator('[data-vfx-demo="hero"]')
+  await expectIslandHydrated(page, hero)
+  const comparison = hero.getByTestId('video-compare-surface')
+  await comparison.scrollIntoViewIfNeeded()
+  const bounds = await comparison.boundingBox()
+  assert(bounds)
+  const slider = hero.getByRole('slider')
+  await page.mouse.move(
+    bounds.x + bounds.width * 0.25,
+    bounds.y + bounds.height / 2
+  )
+  await expect(slider).toHaveAttribute('aria-valuenow', '25')
+  await slider.focus()
+  await slider.press('ArrowRight')
+  await expect(slider).toHaveAttribute('aria-valuenow', '27')
+  await page.mouse.move(
+    bounds.x + bounds.width * 0.75,
+    bounds.y + bounds.height / 2
+  )
+  await expect(slider).toHaveAttribute('aria-valuenow', '75')
+  const beforeScroll = await page.evaluate(() => window.scrollY)
+  await page.mouse.wheel(0, 200)
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(beforeScroll)
+})
+
+for (const { path, image, dimensions } of [
+  { path: '/', image: DEFAULT_OG_IMAGE, dimensions: 1 },
+  {
+    path: '/solutions/vfx/',
+    image: vfxWorkflows[5].template.thumbnails[0],
+    dimensions: 0
+  }
 ]) {
-  test(`${demo} preserves visitor pause through sample and Studio transitions`, async ({
+  test(`${path} keeps its existing share image when V3 uses animated metadata`, async ({
     page
   }) => {
-    await page.goto('/solutions/vfx/v3/')
-    const section = page.locator(`[data-vfx-demo="${demo}"]`)
+    await page.goto(path)
+    await expect(page.locator('meta[property="og:image"]')).toHaveCount(1)
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      'content',
+      image
+    )
+    await expect(page.locator('meta[name="twitter:image"]')).toHaveAttribute(
+      'content',
+      image
+    )
+    await expect(page.locator('meta[property="og:image:type"]')).toHaveCount(0)
+    await expect(page.locator('meta[property="og:image:width"]')).toHaveCount(
+      dimensions
+    )
+  })
+}
+
+for (const { path, redSky, daylight, openStudio } of [
+  {
+    path: '/solutions/vfx/v3/',
+    redSky: 'Red sky',
+    daylight: 'Daylight',
+    openStudio: 'OPEN STUDIO'
+  },
+  {
+    path: '/zh-CN/solutions/vfx/v3/',
+    redSky: '红色天空',
+    daylight: '白天',
+    openStudio: '打开工作室'
+  }
+]) {
+  test(`${path} replaces only Blue hour across hero, canvas and Studio`, async ({
+    page
+  }) => {
+    await page.goto(path)
+    const hero = page.locator('[data-vfx-demo="hero"]')
+    await hero.getByRole('button', { name: redSky, exact: true }).click()
+    const after = hero.getByTestId('video-compare-after')
+    await expect(after).toHaveAttribute('src', vfxRedSkyMedia.video)
+    await expect(after).toHaveAttribute('poster', vfxRedSkyMedia.poster)
+    await expect(hero.getByTestId('video-compare-before')).toHaveAttribute(
+      'src',
+      `${vfxMediaRoot}/diner.mp4`
+    )
+    await hero.getByRole('button', { name: daylight, exact: true }).click()
+    await expect(after).toHaveAttribute(
+      'src',
+      `${vfxMediaRoot}/relight_day.mp4`
+    )
+    const section = page.locator('[data-vfx-demo="relight"]')
     await waitForShowcase(section)
+    const choice = section.getByRole('button', { name: redSky, exact: true })
+    await expect(choice.locator('img')).toHaveAttribute(
+      'src',
+      vfxRedSkyMedia.poster
+    )
+    await choice.click()
     const output = section.locator('.vfx-main-node video')
-    await output.scrollIntoViewIfNeeded()
-    await expect
-      .poll(() =>
-        output.evaluate(
-          (video: HTMLVideoElement) => !video.paused && video.readyState >= 2
-        )
-      )
-      .toBe(true)
-    await section.getByRole('button', { name: 'Pause', exact: true }).click()
-    await section.getByRole('button', { name: sample, exact: true }).click()
-    await output.scrollIntoViewIfNeeded()
-    await expect
-      .poll(() => output.evaluate((video: HTMLVideoElement) => video.paused))
-      .toBe(true)
-    await section
-      .getByRole('button', { name: 'OPEN STUDIO', exact: true })
-      .click()
+    await expect(output).toHaveAttribute('src', vfxRedSkyMedia.video)
+    await expect(output).toHaveAttribute('poster', vfxRedSkyMedia.poster)
+    await expect(section.locator('.vfx-keyframe-node img')).toHaveAttribute(
+      'src',
+      vfxRedSkyMedia.poster
+    )
+    await section.getByRole('button', { name: openStudio, exact: true }).click()
     const studio = section.locator('.vfx-studio-view')
-    await expect(studio).toBeVisible()
-    const media = studio.locator('video')
-    await expect
-      .poll(() =>
-        media.evaluateAll(
-          (videos) =>
-            videos.length > 0 &&
-            videos.every(
-              (video) => video instanceof HTMLVideoElement && video.paused
-            )
-        )
-      )
-      .toBe(true)
-    await section.getByRole('button', { name: 'Play', exact: true }).click()
-    await media.first().scrollIntoViewIfNeeded()
-    await expect
-      .poll(() =>
-        media.evaluateAll(
-          (videos) =>
-            videos.length > 0 &&
-            videos.every(
-              (video) =>
-                video instanceof HTMLVideoElement &&
-                !video.paused &&
-                video.readyState >= 2
-            )
-        )
-      )
-      .toBe(true)
-    await section.getByRole('button', { name: 'Pause', exact: true }).click()
-    await section
-      .getByRole('button', { name: '← BACK TO EXAMPLES', exact: true })
-      .click()
-    await output.scrollIntoViewIfNeeded()
-    await expect
-      .poll(() => output.evaluate((video: HTMLVideoElement) => video.paused))
-      .toBe(true)
+    await expect(studio.getByTestId('video-compare-after')).toHaveAttribute(
+      'src',
+      vfxRedSkyMedia.video
+    )
+    await expect(studio.getByTestId('video-compare-before')).toHaveAttribute(
+      'src',
+      `${vfxMediaRoot}/diner.mp4`
+    )
+    await studio.getByRole('button', { name: daylight, exact: true }).click()
+    await expect(studio.getByTestId('video-compare-after')).toHaveAttribute(
+      'src',
+      `${vfxMediaRoot}/relight_day.mp4`
+    )
+  })
+}
+
+for (const { path, demo, share, open, workflow, expose } of [
+  {
+    path: '/solutions/vfx/v3/',
+    demo: 'swap',
+    share: '28fa6219c110',
+    open: 'OPEN STUDIO',
+    workflow: 'WORKFLOW',
+    expose: 'EXPOSE WORKFLOW ↗'
+  },
+  {
+    path: '/solutions/vfx/v3/',
+    demo: 'reframe',
+    share: 'ccfd0e7d75c3',
+    open: 'OPEN STUDIO',
+    workflow: 'WORKFLOW',
+    expose: 'EXPOSE WORKFLOW ↗'
+  },
+  {
+    path: '/zh-CN/solutions/vfx/v3/',
+    demo: 'swap',
+    share: '28fa6219c110',
+    open: '打开工作室',
+    workflow: '工作流',
+    expose: '查看工作流 ↗'
+  },
+  {
+    path: '/zh-CN/solutions/vfx/v3/',
+    demo: 'reframe',
+    share: 'ccfd0e7d75c3',
+    open: '打开工作室',
+    workflow: '工作流',
+    expose: '查看工作流 ↗'
+  }
+]) {
+  test(`${path} ${demo} uses its supplied workflow in the page and Studio`, async ({
+    page
+  }) => {
+    await page.goto(
+      `${path}?utm_source=linkedin&utm_campaign=vfx&utm_content=v3`
+    )
+    const section = page.locator(`[data-vfx-demo="${demo}"]`)
+    const expected = `https://cloud.comfy.org/?share=${share}&utm_source=linkedin&utm_campaign=vfx&utm_content=v3`
+    const cta = section.locator('[data-try-workflow]')
+    await expect(cta).toHaveAttribute('href', expected)
+    await expect(cta).toHaveAttribute('target', '_blank')
+    await waitForShowcase(section)
+    await section.getByRole('button', { name: open, exact: true }).click()
+    const studio = section.locator('[data-vfx-studio]')
+    await studio.getByRole('tab', { name: workflow, exact: true }).click()
     await expect(
-      section.getByRole('button', { name: 'Play', exact: true })
-    ).toBeVisible()
+      studio.getByRole('link', { name: expose, exact: true })
+    ).toHaveAttribute('href', expected)
   })
 }
