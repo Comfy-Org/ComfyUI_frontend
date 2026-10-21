@@ -238,9 +238,14 @@ function sourceChecker(source: ts.SourceFile): ts.TypeChecker {
     useCaseSensitiveFileNames: () => true,
     writeFile: () => undefined
   }
-  return ts
-    .createProgram([source.fileName], { noLib: true, noResolve: true }, host)
-    .getTypeChecker()
+  const program = ts.createProgram(
+    [source.fileName],
+    { noLib: true, noResolve: true },
+    host
+  )
+  if (!program.getSourceFiles().includes(source))
+    throw new Error(`cannot bind follower source ${source.fileName}`)
+  return program.getTypeChecker()
 }
 
 function addParseDiagnostics(
