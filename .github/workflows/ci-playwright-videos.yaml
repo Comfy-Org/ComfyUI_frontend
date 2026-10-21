@@ -261,22 +261,29 @@ jobs:
       - name: Combine cached and new recordings
         env:
           HITS: ${{ needs.plan.outputs.hits }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           mkdir -p video-blobs video-cache
-          for KEY in $(jq -r '.[]' <<< "$HITS"); do
+          jq -r '.[] | [.key, .sha] | @tsv' <<< "$HITS" > video-cache-index.txt
+          for KEY in $(jq -r '.[].key' <<< "$HITS"); do
             cp "previous-cache/$KEY.zip" video-blobs/
             cp "previous-cache/$KEY.zip" video-cache/
           done
           for PASS in video-blobs/*.pass; do
             [ -e "$PASS" ] || continue
             cp "${PASS%.pass}.zip" video-cache/
+            printf '%s\t%s\n' "$(basename "$PASS" .pass)" "$HEAD_SHA" >> video-cache-index.txt
           done
-          find video-cache -name '*.zip' -printf '%f\n' | sed 's/\.zip$//' > video-cache-index.txt
 
       - name: Merge video reports
         env:
           PLAYWRIGHT_VERSION: ${{ needs.plan.outputs.playwright-version }}
-        run: pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=html video-blobs
+          HITS: ${{ needs.plan.outputs.hits }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pnpm dlx "@playwright/test@$PLAYWRIGHT_VERSION" merge-reports --reporter=html video-blobs
+          jq -r --arg head "$HEAD_SHA" '.[] | select(.sha != $head) | [.project, .file, .sha] | @tsv' \
+            <<< "$HITS" > playwright-report/reused-recordings.tsv
 
       - name: Upload video report
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

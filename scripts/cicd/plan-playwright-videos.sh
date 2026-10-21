@@ -32,8 +32,9 @@ while IFS=$'\t' read -r project absolute tests; do
   file=${absolute#"$PWD"/}
   key=$(printf '%s\n' "$salt" "$project" "$file" "$(sha256sum < "$file")" |
     sha256sum | cut -c1-32)
-  if grep -qxF "$key" "$cache_index"; then
-    hits+=("$key")
+  sha=$(awk -F'\t' -v key="$key" '$1 == key { print $2; exit }' "$cache_index")
+  if [ -n "$sha" ]; then
+    hits+=("$key"$'\t'"$project"$'\t'"$file"$'\t'"$sha")
   else
     misses+=("$project"$'\t'"$file"$'\t'"$key"$'\t'"$tests")
   fi
@@ -59,6 +60,7 @@ printf '%s\n' ${misses[@]+"${misses[@]}"} | jq -Rsc --args '
         | {project: $project, shardIndex: (.key + 1), shardTotal: $total,
            specs: .value.specs}
       ]},
-      hits: $ARGS.positional
+      hits: ($ARGS.positional | map(split("\t")
+        | {key: .[0], project: .[1], file: .[2], sha: .[3]}))
     }
 ' ${hits[@]+"${hits[@]}"}

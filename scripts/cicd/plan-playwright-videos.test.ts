@@ -161,7 +161,7 @@ describe('Playwright video shard planning', () => {
       (shard: { project: string }) => shard.project === 'chromium'
     )
     const index = join(files.root, 'index.txt')
-    writeFileSync(index, `${chromium.specs[0].key}\n`)
+    writeFileSync(index, `${chromium.specs[0].key}\tabc1234\n`)
 
     const cached = JSON.parse(
       files.run({ VIDEO_CACHE_SALT: 'a', VIDEO_CACHE_INDEX: index }).stdout
@@ -170,7 +170,14 @@ describe('Playwright video shard planning', () => {
       files.run({ VIDEO_CACHE_SALT: 'b', VIDEO_CACHE_INDEX: index }).stdout
     )
 
-    expect(cached.hits).toEqual([chromium.specs[0].key])
+    expect(cached.hits).toEqual([
+      {
+        key: chromium.specs[0].key,
+        project: 'chromium',
+        file: chromium.specs[0].file,
+        sha: 'abc1234'
+      }
+    ])
     expect(
       cached.matrix.include.map((shard: { project: string }) => shard.project)
     ).toEqual(['cloud'])
@@ -311,11 +318,16 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
   )
 
   it.for([
-    [['fresh.zip', 'fresh.pass'], 0, ['fresh.zip', 'hit.zip']],
-    [['fresh.pass'], 1, ['hit.zip']]
-  ] satisfies [string[], number, string[]][])(
+    [
+      ['fresh.zip', 'fresh.pass'],
+      0,
+      ['fresh.zip', 'hit.zip'],
+      'hit\told1234\nfresh\thead567\n'
+    ],
+    [['fresh.pass'], 1, ['hit.zip'], 'hit\told1234\n']
+  ] satisfies [string[], number, string[], string][])(
     'combines recordings %j with exit status %i',
-    ([recorded, status, cached]) => {
+    ([recorded, status, cached, index]) => {
       const workflow = z
         .object({
           jobs: z.object({
@@ -348,13 +360,20 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
       const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
         cwd: root,
         encoding: 'utf8',
-        env: { ...process.env, HITS: '["hit"]' }
+        env: {
+          ...process.env,
+          HITS: '[{"key":"hit","sha":"old1234"}]',
+          HEAD_SHA: 'head567'
+        }
       })
 
       expect(result.status).toBe(status)
       const cache = readdirSync(join(root, 'video-cache'))
       expect(cache).toEqual(expect.arrayContaining(cached))
       expect(cache).toHaveLength(cached.length)
+      expect(readFileSync(join(root, 'video-cache-index.txt'), 'utf8')).toBe(
+        index
+      )
     }
   )
 
