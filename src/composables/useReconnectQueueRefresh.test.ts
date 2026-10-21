@@ -24,27 +24,8 @@ function makeJob(id: string, status: JobListItem['status']): JobListItem {
 
 vi.mock(import('@/scripts/api'))
 
-type ApiEventHandler = (event: CustomEvent) => void
-const apiEventHandlers = new Map<string, Set<ApiEventHandler>>()
-
 describe('useReconnectQueueRefresh', () => {
   beforeEach(() => {
-    apiEventHandlers.clear()
-    vi.mocked(api.addEventListener).mockImplementation((type, callback) => {
-      if (!callback) return
-      const handlers = apiEventHandlers.get(type) ?? new Set<ApiEventHandler>()
-      handlers.add(callback as ApiEventHandler)
-      apiEventHandlers.set(type, handlers)
-    })
-    vi.mocked(api.removeEventListener).mockImplementation((type, callback) => {
-      if (!callback) return
-      apiEventHandlers.get(type)?.delete(callback as ApiEventHandler)
-    })
-    vi.mocked(api.dispatchCustomEvent).mockImplementation((type, detail) => {
-      const event = new CustomEvent(type, { detail })
-      for (const handler of apiEventHandlers.get(type) ?? []) handler(event)
-      return true
-    })
     vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
     vi.mocked(api.getHistory).mockResolvedValue([])
     vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
