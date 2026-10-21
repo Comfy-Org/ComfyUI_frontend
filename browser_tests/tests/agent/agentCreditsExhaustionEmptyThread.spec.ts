@@ -51,5 +51,52 @@ test.describe(
         await expect(paywall).toHaveCount(0)
       })
     })
+
+    // Windows Local Agent QA, #comfy-agent-user-feedback 2026-10-21: a new
+    // account's first prompt showed "Out of credits" for the whole turn while
+    // the turn ran normally, because the pre-turn admission granted the free
+    // Agent credits after the panel had read billing.
+    test('keeps the card hidden when the first send is admitted on credits granted at admission', async ({
+      agentBilling,
+      agentPanel,
+      page
+    }) => {
+      const paywall = agentPanel.creditsExhaustedPaywall
+      let admitted = false
+
+      agentBilling.setFundingState('exhausted')
+      const exhaustedStatus = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'GET' &&
+          new URL(response.url()).pathname === '/api/billing/status'
+      )
+      await page.reload()
+      await waitForCloudApp(page)
+      await exhaustedStatus
+      await page.route('**/api/agent/threads/*/messages', (route) => {
+        if (route.request().method() === 'POST') {
+          agentBilling.setFundingState('funded')
+          admitted = true
+        }
+        return route.fallback()
+      })
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      await expect(agentPanel.composer).toBeVisible()
+
+      const statusAfterAdmission = page.waitForResponse(
+        (response) =>
+          admitted &&
+          response.request().method() === 'GET' &&
+          new URL(response.url()).pathname === '/api/billing/status'
+      )
+      await agentPanel.sendMessage('Generate a realistic portrait')
+      await expect(
+        agentPanel.root.getByTestId('user-message-bubble')
+      ).toHaveText(['Generate a realistic portrait'])
+      await expect(paywall).toHaveCount(0)
+      await statusAfterAdmission
+      await expect(paywall).toHaveCount(0)
+    })
   }
 )

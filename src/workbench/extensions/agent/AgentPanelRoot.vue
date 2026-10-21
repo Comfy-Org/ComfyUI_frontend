@@ -370,8 +370,47 @@ const latestEntryHasPaywall = computed(() => {
 const threadHasUserMessage = computed(() =>
   conversationEntries.value.some((entry) => entry.role === 'user')
 )
+/**
+ * Pre-turn admission can grant the account's first Agent credits inside the
+ * send itself (a new account, or the Local Agent grant), so a "no funds" read
+ * taken before the send can be disproved by the turn it gated. Hold the
+ * standing card from such a send until a read taken after its admission
+ * settles; a refused send leaves the verdict to its inline card.
+ */
+const fundsRecheckPending = ref(false)
+let fundsRecheckGeneration = 0
+
+async function sendWithFundsRecheck(
+  send: () => Promise<boolean>
+): Promise<boolean> {
+  if (billingType.value !== 'workspace' || agentHasFunds.value !== false)
+    return send()
+  const generation = ++fundsRecheckGeneration
+  const settle = () => {
+    if (generation === fundsRecheckGeneration) fundsRecheckPending.value = false
+  }
+  fundsRecheckPending.value = true
+  let admitted = false
+  try {
+    admitted = await send()
+  } finally {
+    if (!admitted) settle()
+  }
+  if (!admitted) return false
+  void refreshBillingStatus()
+    .catch((error: unknown) => {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'error_refreshing_agent_billing_status'
+      })
+    })
+    .finally(settle)
+  return true
+}
+
 const showStandingPaywall = computed(() => {
   if (!creditsExhausted.value || !threadHasUserMessage.value) return false
+  if (fundsRecheckPending.value) return false
   return !latestEntryHasPaywall.value
 })
 
@@ -1632,16 +1671,19 @@ const { submit: onSend } = useAgentDraftSubmission({
     }
     const selectionWorkflow = selectedTarget.value
     try {
-      return await sendMessage(
-        text,
-        attachments,
-        nodes,
-        references,
-        () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-        // The same id reported on app:agent_message_sent just above. Sent to the
-        // server so it can echo it onto agent_turn_started, which is what makes
-        // the message -> turn step attributable instead of only countable.
-        meta.clientMessageId
+      return await sendWithFundsRecheck(() =>
+        sendMessage(
+          text,
+          attachments,
+          nodes,
+          references,
+          () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+          // The same id reported on app:agent_message_sent just above. Sent to
+          // the server so it can echo it onto agent_turn_started, which is what
+          // makes the message -> turn step attributable instead of only
+          // countable.
+          meta.clientMessageId
+        )
       )
     } finally {
       // Normally already consumed by the refresh. A send rejected before it
