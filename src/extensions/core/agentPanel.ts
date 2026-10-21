@@ -4,6 +4,8 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type {
@@ -417,14 +419,14 @@ export function registerAgentPanelExtension(): void {
       }
 
       const offerWhenStartupDecided = (): void => {
-        // A boot that never reports forfeits this session's automatic offer
-        // rather than landing it on a late first-run screen.
         whenStartupDecided()
           .then((decided) => {
-            if (decided) {
-              // Once the discovery window is over, a closed panel is a
-              // persisted preference. Consent remains available from an
-              // already-open panel or explicit user action.
+            if (
+              useSettingStore().get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
+            ) {
+              reportOfferExit('consent_declined', 'startup')
+              dropHold()
+            } else if (decided) {
               if (
                 automaticActivationVisitsComplete() &&
                 !agentPanelStore.isOpen
@@ -436,9 +438,6 @@ export function registerAgentPanelExtension(): void {
               offerConsentUnprompted()
             } else if (offerEligible()) withholdOffer('boot_undecided')
             else {
-              // An undecided boot that is also ineligible reported nothing at
-              // all: `boot_undecided` is gated on eligibility, so the forfeited
-              // offer looked identical to one that was never owed.
               const ineligible = offerIneligibility()
               if (ineligible) reportOfferExit(ineligible, 'startup')
             }

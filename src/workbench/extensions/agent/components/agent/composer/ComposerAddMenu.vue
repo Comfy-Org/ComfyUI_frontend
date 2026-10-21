@@ -62,7 +62,7 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
         <span class="icon-[lucide--plus] size-4" />
       </Button>
     </DropdownMenuTrigger>
-    <DropdownMenuPortal>
+    <DropdownMenuPortal :key="Number(addMenuOpen)">
       <MenuContent
         side="top"
         align="start"
@@ -96,9 +96,8 @@ async function pickWorkflow(workflow: WorkflowReferenceOption): Promise<void> {
             </span>
             <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
           </MenuSubTrigger>
-          <DropdownMenuPortal>
+          <DropdownMenuPortal :key="Number(workflowSubmenuOpen)">
             <MenuSubContent
-              :open="workflowSubmenuOpen"
               :side-offset="4"
               width="compact"
               max-height="compact"

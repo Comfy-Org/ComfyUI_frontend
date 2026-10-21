@@ -398,6 +398,26 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.put).not.toHaveBeenCalled()
     })
 
+    it('does not mint a canceled top-up checkout when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const auth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(useAuthStore().getWorkspaceAuthHeaderOrThrow).mockReturnValue(
+        auth
+      )
+      const controller = new AbortController()
+      const checkout = workspaceApi.createTopupCheckout(
+        1000,
+        'https://cloud.comfy.org/topup-return',
+        controller.signal
+      )
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(checkout).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled()
+    })
+
     it('forwards deployment selection cancellation to the transport', async () => {
       mockAxiosInstance.put.mockResolvedValue({})
       const controller = new AbortController()

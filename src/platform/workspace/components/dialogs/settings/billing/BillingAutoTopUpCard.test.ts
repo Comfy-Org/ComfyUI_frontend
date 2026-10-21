@@ -115,7 +115,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'On hold',
       lines: [
         RULE,
-        'No default payment method. Add a card to resume auto top-up.'
+        'No default payment method. Set one to resume auto top-up.'
       ],
       action: 'Update payment'
     },

@@ -3,12 +3,12 @@
  * multi-distribution builds (Desktop, Localhost, Cloud)
  */
 
-export type Distribution = 'desktop' | 'localhost' | 'cloud'
-
 declare global {
-  const __DISTRIBUTION__: Distribution
+  const __DISTRIBUTION__: 'desktop' | 'localhost' | 'cloud'
   const __IS_NIGHTLY__: boolean
 }
+
+export type Distribution = typeof __DISTRIBUTION__
 
 export const DISTRIBUTION: Distribution = __DISTRIBUTION__
 

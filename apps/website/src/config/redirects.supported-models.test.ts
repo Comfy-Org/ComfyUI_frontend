@@ -27,8 +27,11 @@ function resolve(path: string) {
   for (const { source, destination, permanent } of vercelRedirects) {
     const group = /^(.*):slug\(([^)]+)\)(.*)$/.exec(source)
     if (!group) {
-      if (source.includes(':'))
-        throw new Error(`resolve() cannot match the pattern ${source}`)
+      if (source.includes(':')) {
+        if (source.startsWith(OLD))
+          throw new Error(`resolve() cannot match the pattern ${source}`)
+        continue
+      }
       if (source === path) return { destination, permanent }
       continue
     }

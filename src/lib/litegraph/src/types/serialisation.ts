@@ -25,6 +25,8 @@ import type { LiteGraphGlobal } from './entityRegistry'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'
 
+export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
+
 /**
  * An object that implements custom pre-serialization logic via {@link Serialisable.asSerialisable}.
  */

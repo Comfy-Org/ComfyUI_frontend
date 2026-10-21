@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { SubscriptionState } from '@comfyorg/ingest-types'
+
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
@@ -22,9 +24,13 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
 
 import BillingTab from './BillingTab.vue'
 
+vi.mock(import('@/platform/workspace/composables/usePausedBanner'), {
+  spy: true
+})
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -53,6 +59,7 @@ const activeSubscription: SubscriptionInfo = {
 interface Scenario {
   subscription?: SubscriptionInfo | null
   subscriptionStatus?: 'active' | 'canceled' | 'ended' | null
+  subscriptionState?: SubscriptionState | null
   isInitialized?: boolean
   error?: string | null
   canManageSubscription?: boolean
@@ -67,6 +74,7 @@ interface Scenario {
   autoTopUpFlag?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
+  isPaused?: boolean
 }
 
 function arrange(scenario: Scenario = {}) {
@@ -74,6 +82,10 @@ function arrange(scenario: Scenario = {}) {
   const refresh = vi.fn(async () => {})
   const fetchStatus = vi.fn(async () => {})
   const resubscribe = vi.fn(scenario.resubscribe ?? (async () => {}))
+  const manageSubscription = vi.fn(async () => ({ ok: true as const }))
+  vi.mocked(usePausedBanner).mockReturnValue({
+    isPaused: computed(() => scenario.isPaused ?? false)
+  })
 
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
@@ -90,7 +102,9 @@ function arrange(scenario: Scenario = {}) {
           ? 'active'
           : scenario.subscriptionStatus
       ),
+      subscriptionState: computed(() => scenario.subscriptionState ?? null),
       billingStatus: computed(() => 'paid'),
+      manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
         fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
@@ -161,10 +175,62 @@ function arrange(scenario: Scenario = {}) {
     }
   })
 
-  return { initialize, refresh, fetchStatus, resubscribe }
+  return { initialize, refresh, fetchStatus, resubscribe, manageSubscription }
 }
 
 describe('BillingTab', () => {
+  describe('Subscription paused banner', () => {
+    it.for([
+      {
+        name: 'an owner',
+        canManageBilling: true,
+        body: "This workspace's subscription is paused. Update payment to resume.",
+        buttons: ['Update payment']
+      },
+      {
+        name: 'a member',
+        canManageBilling: false,
+        body: "Ask your workspace owner to restore the workspace's subscription.",
+        buttons: []
+      }
+    ])(
+      'shows $name the paused banner at the top of the tab',
+      ({ canManageBilling, body, buttons }) => {
+        arrange({ isPaused: true, canManageBilling })
+
+        const banner = screen.getByTestId('billing-paused-banner')
+        expect(banner).toHaveTextContent('Subscription paused')
+        expect(banner).toHaveTextContent(body)
+        expect(
+          within(banner)
+            .queryAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(buttons)
+      }
+    )
+
+    it('opens the billing portal from Update payment', async () => {
+      const { manageSubscription } = arrange({ isPaused: true })
+
+      await userEvent.click(
+        within(screen.getByTestId('billing-paused-banner')).getByRole(
+          'button',
+          { name: 'Update payment' }
+        )
+      )
+
+      expect(manageSubscription).toHaveBeenCalledOnce()
+    })
+
+    it('shows no paused banner when the workspace is not paused', () => {
+      arrange()
+
+      expect(
+        screen.queryByTestId('billing-paused-banner')
+      ).not.toBeInTheDocument()
+    })
+  })
+
   it('shows a skeleton and no plan row while billing loads', () => {
     arrange({ isInitialized: false })
 
@@ -190,6 +256,25 @@ describe('BillingTab', () => {
     arrange({ capabilitiesResolved: false })
 
     expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('reads Activating while subscription_state is activating', () => {
+    arrange({ subscriptionState: 'activating' })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      'Activating your Pro plan…'
+    )
+    expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument()
+  })
+
+  it('returns to the served status when subscription_state is no longer activating', () => {
+    arrange({ subscriptionState: 'active' })
+
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      'Billed monthly. Next invoice November 15.'
+    )
+    expect(screen.queryByText(/Activating your/)).not.toBeInTheDocument()
   })
 
   it('renders an active plan with Manage and the owner handoff linked to the billing site', () => {
