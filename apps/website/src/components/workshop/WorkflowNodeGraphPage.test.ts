@@ -8,12 +8,13 @@ import WorkflowNodeGraphPage from './WorkflowNodeGraphPage.vue'
 
 const workflow = {
   ...nodeGraphWorkflowSample,
-  inputs: [{ media: 'image', title: 'Character image' }, { media: 'video' }]
+  inputs: [{ media: 'image', title: 'Character image' }, { media: 'video' }],
+  customNodes: ['ComfyUI-KJNodes', 'ComfyUI-Impact-Pack']
 } as const
 
-function renderPage() {
+function renderPage(overrides: { customNodes?: readonly string[] } = {}) {
   return render(WorkflowNodeGraphPage, {
-    props: { workflow },
+    props: { workflow: { ...workflow, ...overrides } },
     global: { stubs: { WorkflowGraph: true } }
   })
 }
@@ -94,6 +95,13 @@ describe('WorkflowNodeGraphPage', () => {
     ).toEqual([true, true, true, true])
   })
 
+  it('leaves out the custom nodes list when the workflow needs none', async () => {
+    renderPage({ customNodes: [] })
+    await openTab('Details')
+
+    expect(screen.queryByText('Requires custom nodes')).toBeNull()
+  })
+
   it('leaves Output and Author to the Details facts', () => {
     renderPage()
 
@@ -123,10 +131,9 @@ describe('WorkflowNodeGraphPage', () => {
       [
         'What kind of reference image works best?',
         'Can I change which views go on the sheet?',
-        'Why does it need custom nodes?',
         'How do I keep a character consistent across runs?'
       ].map((question) => screen.queryByText(question) !== null)
-    ).toEqual([true, true, true, true])
+    ).toEqual([true, true, true])
   })
 
   it('leaves the About footer to the Runs in ComfyUI note, with no button', () => {

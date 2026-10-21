@@ -1,9 +1,9 @@
 ---
 import WorkflowNodeGraphPage from '@/components/workshop/WorkflowNodeGraphPage.vue'
 import BaseLayout from '@/layouts/BaseLayout.astro'
-import { nodeGraphSampleWithInputs } from '@/lib/hub/node-graph-sample-inputs'
+import { nodeGraphSampleFromGraph } from '@/lib/hub/node-graph-sample-inputs'
 
-const workflow = await nodeGraphSampleWithInputs()
+const workflow = await nodeGraphSampleFromGraph()
 ---
 
 <BaseLayout

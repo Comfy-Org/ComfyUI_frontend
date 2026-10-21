@@ -18,6 +18,7 @@ export interface NodeGraphWorkflow {
   /** Read from the graph's loader nodes when the page is built. */
   readonly inputs: readonly NodeGraphInput[]
   readonly models: readonly string[]
+  /** Read from the graph's node packs when the page is built. */
   readonly customNodes: readonly string[]
   readonly output?: string
   readonly author?: string
@@ -46,7 +47,7 @@ export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
     'Create multiple character views and close-ups from one reference image.',
   description: [
     'This workflow takes one picture of a character and builds a full turnaround sheet from it: front, half turn, side profile and back, plus a row of close-ups of the face. Each view keeps the outfit, colours and proportions of the reference, so the sheet is ready to hand to an animator or a 3D artist.',
-    'It loads the reference with LoadImage, generates the full-body and close-up views in two branches, and stitches them into one sheet with ImageStitch. The graph uses custom nodes and models that are not available on this page, so it runs in ComfyUI: open it in Comfy Cloud, or download the JSON and drop it onto the canvas.'
+    'It loads the reference with LoadImage, generates the full-body and close-up views in two branches, and stitches them into one sheet with ImageStitch. The graph runs in ComfyUI rather than on this page: open it in Comfy Cloud, or download the JSON and drop it onto the canvas.'
   ],
   useCase: {
     label: 'Edit images',
@@ -60,7 +61,7 @@ export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
   templateId: 'templates-character_sheet',
   inputs: [],
   models: ['Nano Banana Pro'],
-  customNodes: ['ComfyUI-KJNodes', 'ComfyUI-Impact-Pack'],
+  customNodes: [],
   output: 'Image, 3 per run',
   author: 'ComfyUI',
   examples: [
@@ -102,11 +103,6 @@ export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
       question: 'Can I change which views go on the sheet?',
       answer:
         'Yes. Each view is its own prompt in the graph, so you can edit, remove or add views before you run it.'
-    },
-    {
-      question: 'Why does it need custom nodes?',
-      answer:
-        'The close-up crops and the final layout use nodes from ComfyUI-KJNodes and ComfyUI-Impact-Pack. Comfy Cloud has them installed. To run it in your own ComfyUI, install them with ComfyUI Manager first.'
     },
     {
       question: 'How do I keep a character consistent across runs?',

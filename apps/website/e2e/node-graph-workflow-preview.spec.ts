@@ -55,7 +55,8 @@ test.describe('Node graph workflow preview', () => {
     await page.getByRole('tab', { name: 'Details' }).click()
     const details = page.getByRole('tabpanel', { name: 'Details' })
     await expect(details).toBeVisible()
-    await expect(details.getByText('ComfyUI-KJNodes')).toBeVisible()
+    await expect(details.getByText('Nano Banana Pro')).toBeVisible()
+    await expect(details.getByText('Requires custom nodes')).toHaveCount(0)
 
     await page.getByRole('tab', { name: 'API' }).click()
     const api = page.getByRole('tabpanel', { name: 'API' })

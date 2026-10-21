@@ -25,7 +25,14 @@ function loaderMedia(type: string): NodeGraphInputMedia | undefined {
 const graphNodeSchema = z.object({
   type: z.string(),
   title: z.string().optional().catch(undefined),
-  mode: z.number().optional().catch(undefined)
+  mode: z.number().optional().catch(undefined),
+  properties: z
+    .object({
+      cnr_id: z.string().optional().catch(undefined),
+      aux_id: z.string().optional().catch(undefined)
+    })
+    .optional()
+    .catch(undefined)
 })
 type GraphNode = z.output<typeof graphNodeSchema>
 
@@ -86,8 +93,7 @@ function activeNodes(
   })
 }
 
-/** The active loader nodes of a workflow graph, including used subgraphs. */
-export function nodeGraphInputs(graph: unknown): NodeGraphInput[] {
+function activeGraphNodes(graph: unknown): GraphNode[] {
   const parsed = graphSchema.safeParse(graph)
   if (!parsed.success) return []
   const { nodes, definitions } = parsed.data
@@ -97,8 +103,45 @@ export function nodeGraphInputs(graph: unknown): NodeGraphInput[] {
       subgraph.nodes
     ])
   )
-  return activeNodes(nodes, subgraphs).flatMap((node) => {
+  return activeNodes(nodes, subgraphs)
+}
+
+/** The active loader nodes of a workflow graph, including used subgraphs. */
+export function nodeGraphInputs(graph: unknown): NodeGraphInput[] {
+  return activeGraphNodes(graph).flatMap((node) => {
     const media = loaderMedia(node.type)
     return media ? [{ media, title: labelFromTitle(node.title) }] : []
   })
+}
+
+const CORE_PACK = 'comfy-core'
+
+interface CustomPack {
+  readonly key: string
+  readonly name: string
+  readonly fromRepo: boolean
+}
+
+function customPackOf(node: GraphNode): CustomPack | undefined {
+  const { cnr_id: registryId, aux_id: repo } = node.properties ?? {}
+  if (registryId === CORE_PACK) return undefined
+  const repoName = repo?.split('/').pop()
+  const name = repoName || registryId
+  if (!name) return undefined
+  return {
+    key: (registryId ?? name).toLowerCase(),
+    name,
+    fromRepo: Boolean(repoName)
+  }
+}
+
+/** The custom node packs the active nodes of a workflow graph come from. */
+export function nodeGraphCustomNodes(graph: unknown): string[] {
+  const packs = new Map<string, CustomPack>()
+  for (const pack of activeGraphNodes(graph).map(customPackOf)) {
+    if (!pack) continue
+    const known = packs.get(pack.key)
+    if (!known || (pack.fromRepo && !known.fromRepo)) packs.set(pack.key, pack)
+  }
+  return [...packs.values()].map((pack) => pack.name)
 }

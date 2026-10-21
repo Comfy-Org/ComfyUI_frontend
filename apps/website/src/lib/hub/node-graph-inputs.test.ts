@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { nodeGraphInputs } from './node-graph-inputs'
+import { nodeGraphCustomNodes, nodeGraphInputs } from './node-graph-inputs'
 
 describe('nodeGraphInputs', () => {
   it.for([
@@ -98,5 +98,52 @@ describe('nodeGraphInputs', () => {
     }
   ])('$name', ({ graph, expected }) => {
     expect(nodeGraphInputs(graph)).toEqual(expected)
+  })
+})
+
+const node = (properties: Record<string, string>, mode = 0) => ({
+  type: 'SomeNode',
+  mode,
+  properties
+})
+
+describe('nodeGraphCustomNodes', () => {
+  it.for([
+    {
+      name: 'lists nothing for a graph of core nodes',
+      graph: { nodes: [node({ cnr_id: 'comfy-core' }), { type: 'Reroute' }] },
+      expected: []
+    },
+    {
+      name: 'names a pack by its repo, once, ahead of its registry id',
+      graph: {
+        nodes: [
+          node({ cnr_id: 'comfyui-kjnodes' }),
+          node({ cnr_id: 'comfyui-kjnodes', aux_id: 'kijai/ComfyUI-KJNodes' }),
+          node({ cnr_id: 'comfyui_essentials' })
+        ]
+      },
+      expected: ['ComfyUI-KJNodes', 'comfyui_essentials']
+    },
+    {
+      name: 'skips bypassed nodes and reads used subgraphs',
+      graph: {
+        nodes: [
+          node({ cnr_id: 'bypassed-pack' }, 4),
+          { type: 'video-subgraph' }
+        ],
+        definitions: {
+          subgraphs: [
+            {
+              id: 'video-subgraph',
+              nodes: [node({ aux_id: 'Lightricks/ComfyUI-LTXVideo' })]
+            }
+          ]
+        }
+      },
+      expected: ['ComfyUI-LTXVideo']
+    }
+  ])('$name', ({ graph, expected }) => {
+    expect(nodeGraphCustomNodes(graph)).toEqual(expected)
   })
 })
