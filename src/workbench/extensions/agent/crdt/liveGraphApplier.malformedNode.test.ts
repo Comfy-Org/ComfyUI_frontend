@@ -88,23 +88,23 @@ describe('LiveGraphApplier malformed node report', () => {
   })
 
   it.for<[Record<string, unknown>, string]>([
-    [{ name: 'image' }, 'absent'],
-    [{ name: 'image', type: undefined }, 'undefined'],
-    [{ name: 'image', type: null }, 'null'],
-    [{ name: 'image', type: true }, 'boolean'],
-    [{ name: 'image', type: [1] }, 'array:1'],
-    [{ name: 'image', type: {} }, 'object:0'],
-    [{ name: 'image', type: { name: 'IMAGE' } }, 'object:1']
+    [{ name: 'image' }, 'invalid_union absent'],
+    [{ name: 'image', type: undefined }, 'invalid_union undefined'],
+    [{ name: 'image', type: null }, 'invalid_union null'],
+    [{ name: 'image', type: true }, 'invalid_union boolean'],
+    [{ name: 'image', type: [] }, 'too_small array:0'],
+    [{ name: 'image', type: {} }, 'invalid_union object:0'],
+    [{ name: 'image', type: { name: 'IMAGE' } }, 'invalid_union object:1']
   ])(
     'separates %o, which zod collapses to one message, as %s',
-    ([slot, shape]) => {
+    ([slot, issue]) => {
       const { applyCollected } = setup({ nodes: [sinkNode(slot)], links: [] })
 
       applyCollected()
 
       const [, options] = onlyReport()
       expect(options).toMatchObject({
-        context: { valueShapes: `inputs.0.type invalid_union ${shape}` }
+        context: { valueShapes: `inputs.0.type ${issue}` }
       })
     }
   )
@@ -218,12 +218,12 @@ describe('LiveGraphApplier malformed node report', () => {
     }
 
     reslot({ name: 'image', type: 'IMAGE', link: null }, 'repaired')
-    reslot({ name: 'image', type: [1], link: null }, 'broken again')
+    reslot({ name: 'image', type: [], link: null }, 'broken again')
 
     const calls = vi.mocked(reportError).mock.calls
     expect(calls).toHaveLength(2)
     expect(calls[1]?.[1]).toMatchObject({
-      context: { valueShapes: 'inputs.0.type invalid_union array:1' }
+      context: { valueShapes: 'inputs.0.type too_small array:0' }
     })
   })
 })

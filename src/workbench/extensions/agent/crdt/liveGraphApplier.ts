@@ -172,7 +172,7 @@ function syncedFlags(flags: INodeFlags | undefined): INodeFlags {
 const zDocSlot = z
   .object({
     name: z.string(),
-    type: z.union([z.string(), z.array(z.string()), z.number()])
+    type: z.union([z.string(), z.array(z.string()).nonempty(), z.number()])
   })
   .passthrough()
 const zNodeProperty = z.union([
