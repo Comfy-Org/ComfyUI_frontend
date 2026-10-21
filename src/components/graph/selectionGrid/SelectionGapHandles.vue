@@ -10,14 +10,12 @@
       role="separator"
       tabindex="0"
       :aria-label="t('g.gapHandle')"
-      :aria-orientation="bar.axis === 'x' ? 'vertical' : 'horizontal'"
+      :aria-orientation="AXIS_STYLES[bar.axis].orientation"
       :aria-valuenow="Math.round(bar.gap)"
       :class="
         cn(
           'group pointer-events-auto absolute flex -translate-1/2 touch-none items-center justify-center rounded-full outline-none',
-          bar.axis === 'x'
-            ? 'h-8 w-3 cursor-ew-resize'
-            : 'h-3 w-8 cursor-ns-resize'
+          AXIS_STYLES[bar.axis].hitArea
         )
       "
       :style="{ left: `${bar.left}px`, top: `${bar.top}px` }"
@@ -30,21 +28,21 @@
         :class="
           cn(
             'rounded-full bg-smoke-400 shadow-sm ring-1 ring-background transition-transform group-hover:scale-125 group-focus-visible:scale-125',
-            bar.axis === 'x' ? 'h-7 w-1' : 'h-1 w-7',
-            drag?.barKey === bar.key && 'scale-125'
+            AXIS_STYLES[bar.axis].pill,
+            bar.draggedGap !== null && 'scale-125'
           )
         "
       />
       <span
-        v-if="drag?.barKey === bar.key"
+        v-if="bar.draggedGap !== null"
         :class="
           cn(
             'pointer-events-none absolute rounded-sm bg-smoke-400 px-1 text-xs text-background tabular-nums',
-            bar.axis === 'x' ? 'top-full mt-1' : 'left-full ml-1'
+            AXIS_STYLES[bar.axis].label
           )
         "
       >
-        {{ Math.round(drag.gap) }}
+        {{ bar.draggedGap }}
       </span>
     </div>
   </div>
@@ -82,6 +80,30 @@ interface Viewport {
 interface ScreenBar extends GapBar {
   left: number
   top: number
+  draggedGap: number | null
+}
+
+const AXIS_STYLES: Record<
+  GapAxis,
+  {
+    orientation: 'vertical' | 'horizontal'
+    hitArea: string
+    pill: string
+    label: string
+  }
+> = {
+  x: {
+    orientation: 'vertical',
+    hitArea: 'h-8 w-3 cursor-ew-resize',
+    pill: 'h-7 w-1',
+    label: 'top-full mt-1'
+  },
+  y: {
+    orientation: 'horizontal',
+    hitArea: 'h-3 w-8 cursor-ns-resize',
+    pill: 'h-1 w-7',
+    label: 'left-full ml-1'
+  }
 }
 
 const emit = defineEmits<{
@@ -181,7 +203,9 @@ const screenBars = computed((): ScreenBar[] => {
     .map((bar) => ({
       ...bar,
       left: (bar.x + offsetX) * scale + left.value,
-      top: (bar.y + offsetY) * scale + top.value
+      top: (bar.y + offsetY) * scale + top.value,
+      draggedGap:
+        drag.value?.barKey === bar.key ? Math.round(drag.value.gap) : null
     }))
     .filter(
       (bar) =>
