@@ -1,7 +1,12 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetTextarea from './WidgetTextarea.vue'
@@ -196,23 +201,31 @@ describe('WidgetTextarea Value Binding', () => {
       const widget = createTextareaWidget('test')
       renderComponent(widget, 'test')
 
-      expect(screen.queryByRole('button')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'g.copyToClipboard' })
+      ).not.toBeInTheDocument()
     })
 
-    it('copy button has invisible class by default when read-only', () => {
+    it('copy button sits in an action group that is transparent by default when read-only', () => {
       const widget = createTextareaWidget('test', { read_only: true })
       renderComponent(widget, 'test')
 
-      const button = screen.getByRole('button')
-      expect(button.classList.contains('invisible')).toBe(true)
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(
+        within(actions).getByRole('button', { name: 'g.copyToClipboard' })
+      ).toBeInTheDocument()
+      expect(actions.classList.contains('opacity-0')).toBe(true)
     })
 
-    it('copy button has group-hover:visible class when read-only, and copies on click', async () => {
+    it('copy button is revealed on group hover when read-only, and copies on click', async () => {
       const widget = createTextareaWidget('test value', { read_only: true })
       renderComponent(widget, 'test value')
 
-      const button = screen.getByRole('button')
-      expect(button.classList.contains('group-hover:visible')).toBe(true)
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+      expect(actions.classList.contains('group-hover:opacity-100')).toBe(true)
+      const button = within(actions).getByRole('button', {
+        name: 'g.copyToClipboard'
+      })
 
       await userEvent.click(button)
 
@@ -331,5 +344,84 @@ describe('WidgetTextarea contextmenu', () => {
 
     expect(preventDefaultSpy).not.toHaveBeenCalled()
     expect(stopPropagationSpy).toHaveBeenCalled()
+  })
+})
+
+describe('WidgetTextarea expand to the side panel', () => {
+  function renderOnNode(
+    widgetOverrides: Partial<SimplifiedWidget<string>> = {}
+  ) {
+    const graph = createTestRootGraph()
+    const node = new LGraphNode('CLIP Text Encode')
+    const nodeWidget = node.addWidget('text', 'text', 'a portrait', () => {})
+    graph.add(node)
+    useCanvasStore().currentGraph = graph
+    render(WidgetTextarea, {
+      props: {
+        widget: createMockWidget({
+          value: 'a portrait',
+          name: 'text',
+          ...widgetOverrides
+        }),
+        nodeId: node.id,
+        modelValue: 'a portrait'
+      },
+      global: { mocks: { $t: (msg: string) => msg } }
+    })
+    return { node, nodeWidget }
+  }
+
+  it.for<{
+    state: string
+    overrides: Partial<SimplifiedWidget<string>>
+    appMode?: boolean
+    shown: boolean
+  }>([
+    { state: 'editable', overrides: {}, shown: true },
+    {
+      state: 'read-only',
+      overrides: { options: { read_only: true } },
+      shown: true
+    },
+    {
+      state: 'linked',
+      overrides: {
+        options: { disabled: true },
+        linkedUpstream: { nodeId: toNodeId('upstream') }
+      },
+      shown: false
+    },
+    { state: 'in app mode', overrides: {}, appMode: true, shown: false }
+  ])(
+    'shows the expand button on hover when $state: $shown',
+    ({ overrides, appMode = false, shown }) => {
+      useCanvasStore().linearMode = appMode
+      renderOnNode(overrides)
+
+      const actions = screen.getByRole('group', { name: 'g.actions' })
+
+      expect(
+        Boolean(
+          within(actions).queryByRole('button', { name: 'textEditor.expand' })
+        )
+      ).toBe(shown)
+      expect(actions.classList.contains('opacity-0')).toBe(true)
+      expect(actions.classList.contains('group-hover:opacity-100')).toBe(true)
+    }
+  )
+
+  it('opens the Text tab of the side panel on its widget', async () => {
+    const { node, nodeWidget } = renderOnNode()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'textEditor.expand' })
+    )
+
+    const rightSidePanelStore = useRightSidePanelStore()
+    expect(rightSidePanelStore.isTextEditorActive).toBe(true)
+    expect(rightSidePanelStore.textEditorTarget).toEqual({
+      node,
+      widget: nodeWidget
+    })
   })
 })

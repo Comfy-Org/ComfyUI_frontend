@@ -42,6 +42,7 @@ import {
 } from './shared'
 import SubgraphEditor from './subgraph/SubgraphEditor.vue'
 import TabErrors from './errors/TabErrors.vue'
+import TabTextEditor from './textEditor/TabTextEditor.vue'
 import { useHasBlockingError } from './errors/useHasBlockingError'
 
 const canvasStore = useCanvasStore()
@@ -71,7 +72,8 @@ const { activeMissingMediaGraphIds } = storeToRefs(missingMediaStore)
 const { findParentGroup } = useGraphHierarchy()
 
 const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
-const { activeTab, isEditingSubgraph } = storeToRefs(rightSidePanelStore)
+const { activeTab, isEditingSubgraph, isTextEditorActive, textEditorTarget } =
+  storeToRefs(rightSidePanelStore)
 
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
@@ -275,6 +277,13 @@ const tabs = computed<RightSidePanelTabList>(() => {
     value: 'settings'
   })
 
+  if (textEditorTarget.value) {
+    list.push({
+      label: () => t('rightSidePanel.text'),
+      value: 'text'
+    })
+  }
+
   return list
 })
 
@@ -433,7 +442,12 @@ function handleTitleCancel() {
 
     <!-- Panel Content -->
     <div class="flex-1 scrollbar-thin overflow-y-auto">
-      <TabErrors v-if="activeTab === 'errors'" />
+      <TabTextEditor
+        v-if="isTextEditorActive && textEditorTarget"
+        :key="`${textEditorTarget.node.id}:${textEditorTarget.widget.name}`"
+        :target="textEditorTarget"
+      />
+      <TabErrors v-else-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
         <TabGlobalParameters
           v-if="activeTab === 'parameters'"

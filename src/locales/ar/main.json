@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "إخفاء المدخلات المتقدمة",
     "hideAdvancedShort": "إخفاء الخيارات المتقدمة",
     "info": "معلومات",
+    "text": "النص",
     "infoFor": "معلومات عن {item}",
     "inputs": "المدخلات",
     "inputsNone": "لا توجد مدخلات",
@@ -5456,6 +5457,11 @@
     "later": "لاحقًا",
     "learnMore": "اعرف المزيد",
     "noReleaseNotes": "لا توجد ملاحظات إصدار متاحة."
+  },
+  "textEditor": {
+    "close": "إغلاق المحرر",
+    "expand": "توسيع",
+    "showNode": "إظهار العقدة"
   },
   "widgetFileUpload": {
     "browseFiles": "تصفح الملفات",

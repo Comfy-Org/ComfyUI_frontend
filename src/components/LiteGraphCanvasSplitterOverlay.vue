@@ -220,7 +220,8 @@ import {
   SIDEBAR_MIN_SIZE,
   SIDEBAR_MIN_WIDTH,
   SIDE_PANEL_SIZE,
-  SIDE_TOOLBAR_WIDTH
+  SIDE_TOOLBAR_WIDTH,
+  TEXT_EDITOR_PANEL_WIDTH
 } from '@/constants/splitterConstants'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -420,7 +421,15 @@ const sidebarWidthKey = computed(() => {
       : 'Comfy.Sidebar.RightWidth'
   return unifiedWidth.value ? base : `${base}.${sidebarTabKey.value}`
 })
+const propertiesPanelWidthKey = computed(() =>
+  rightSidePanelStore.isTextEditorActive
+    ? 'Comfy.RightSidePanel.TextEditorWidth'
+    : 'Comfy.RightSidePanel.Width'
+)
 function defaultPanelWidth(isSidebarPanel: boolean) {
+  if (!isSidebarPanel && rightSidePanelStore.isTextEditorActive) {
+    return TEXT_EDITOR_PANEL_WIDTH
+  }
   const plainStateKey =
     sidebarLocation.value === 'left'
       ? sidebarTabKey.value
@@ -454,7 +463,7 @@ const {
       storageKey: () =>
         sidebarLocation.value === 'left'
           ? sidebarWidthKey.value
-          : 'Comfy.RightSidePanel.Width',
+          : propertiesPanelWidthKey.value,
       visible: () => firstPanelRendered.value && !isSelectMode.value,
       minWidth: () =>
         sidebarLocation.value === 'left'
@@ -467,7 +476,7 @@ const {
       storageKey: () =>
         sidebarLocation.value === 'right'
           ? sidebarWidthKey.value
-          : 'Comfy.RightSidePanel.Width',
+          : propertiesPanelWidthKey.value,
       visible: () => lastPanelRendered.value && !isSelectMode.value,
       minWidth: () =>
         sidebarLocation.value === 'right'

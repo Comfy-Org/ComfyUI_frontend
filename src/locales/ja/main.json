@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "詳細入力を非表示",
     "hideAdvancedShort": "詳細を非表示",
     "info": "情報",
+    "text": "テキスト",
     "infoFor": "{item} の情報",
     "inputs": "入力",
     "inputsNone": "入力なし",
@@ -5456,6 +5457,11 @@
     "later": "後で",
     "learnMore": "詳細はこちら",
     "noReleaseNotes": "リリースノートはありません。"
+  },
+  "textEditor": {
+    "close": "エディターを閉じる",
+    "expand": "拡大",
+    "showNode": "ノードを表示"
   },
   "widgetFileUpload": {
     "browseFiles": "ファイルを選択",

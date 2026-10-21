@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "Erweiterte Eingaben ausblenden",
     "hideAdvancedShort": "Erweitert ausblenden",
     "info": "Info",
+    "text": "Text",
     "infoFor": "Info für {item}",
     "inputs": "EINGÄNGE",
     "inputsNone": "KEINE EINGÄNGE",
@@ -5456,6 +5457,11 @@
     "later": "Später",
     "learnMore": "Mehr erfahren",
     "noReleaseNotes": "Keine Versionshinweise verfügbar."
+  },
+  "textEditor": {
+    "close": "Editor schließen",
+    "expand": "Vergrößern",
+    "showNode": "Node anzeigen"
   },
   "widgetFileUpload": {
     "browseFiles": "Dateien durchsuchen",

@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "고급 입력 숨기기",
     "hideAdvancedShort": "고급 설정 숨기기",
     "info": "정보",
+    "text": "텍스트",
     "infoFor": "{item} 정보",
     "inputs": "입력",
     "inputsNone": "입력 없음",
@@ -5456,6 +5457,11 @@
     "later": "나중에",
     "learnMore": "자세히 알아보기",
     "noReleaseNotes": "릴리스 노트가 없습니다."
+  },
+  "textEditor": {
+    "close": "편집기 닫기",
+    "expand": "크게 보기",
+    "showNode": "노드 보기"
   },
   "widgetFileUpload": {
     "browseFiles": "파일 찾아보기",

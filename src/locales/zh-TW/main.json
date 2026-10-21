@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "隱藏進階輸入",
     "hideAdvancedShort": "隱藏進階",
     "info": "資訊",
+    "text": "文字",
     "infoFor": "{item} 的資訊",
     "inputs": "輸入",
     "inputsNone": "無輸入",
@@ -5456,6 +5457,11 @@
     "later": "稍後",
     "learnMore": "了解更多",
     "noReleaseNotes": "沒有可用的發行說明。"
+  },
+  "textEditor": {
+    "close": "關閉編輯器",
+    "expand": "放大",
+    "showNode": "顯示節點"
   },
   "widgetFileUpload": {
     "browseFiles": "瀏覽檔案",

@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 export type RightSidePanelTab =
@@ -10,8 +13,14 @@ export type RightSidePanelTab =
   | 'info'
   | 'subgraph'
   | 'errors'
+  | 'text'
 
 type RightSidePanelSection = 'advanced-inputs'
+
+export interface TextEditorTarget {
+  node: LGraphNode
+  widget: IBaseWidget
+}
 
 /**
  * Store for managing the right side panel state.
@@ -39,6 +48,11 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
    * cleared by TabErrors after expanding the relevant error group.
    */
   const focusedErrorNodeId = ref<string | null>(null)
+  const textEditorTarget = shallowRef<TextEditorTarget | null>(null)
+  const isTextEditorActive = computed(
+    () => activeTab.value === 'text' && textEditorTarget.value !== null
+  )
+  const isTextEditorFocused = ref(false)
 
   // Auto-close panel when switching to legacy menu mode
   watch(isLegacyMenu, (legacy) => {
@@ -57,6 +71,39 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
 
   function closePanel() {
     isOpen.value = false
+  }
+
+  let releaseTextEditorTarget: (() => void) | undefined
+
+  /**
+   * Opens the panel's Text tab on a multiline text widget. The tab closes when
+   * the widget's node is removed or its graph reloads.
+   */
+  function openTextEditor(target: TextEditorTarget) {
+    closeTextEditor()
+    const graph: LGraph | null = target.node.graph
+    if (!graph) return
+
+    const onNodeRemoved = ({ detail }: CustomEvent<{ node: LGraphNode }>) => {
+      if (detail.node === target.node) closeTextEditor()
+    }
+    const rootEvents = graph.rootGraph.events
+    graph.events.addEventListener('node:removed', onNodeRemoved)
+    rootEvents.addEventListener('configured', closeTextEditor)
+    releaseTextEditorTarget = () => {
+      graph.events.removeEventListener('node:removed', onNodeRemoved)
+      rootEvents.removeEventListener('configured', closeTextEditor)
+    }
+
+    textEditorTarget.value = target
+    openPanel('text')
+  }
+
+  function closeTextEditor() {
+    releaseTextEditorTarget?.()
+    releaseTextEditorTarget = undefined
+    textEditorTarget.value = null
+    isTextEditorFocused.value = false
   }
 
   function togglePanel() {
@@ -86,8 +133,13 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
     isEditingSubgraph,
     focusedSection,
     focusedErrorNodeId,
+    textEditorTarget,
+    isTextEditorActive,
+    isTextEditorFocused,
     openPanel,
     closePanel,
+    openTextEditor,
+    closeTextEditor,
     togglePanel,
     focusSection,
     clearFocusedSection

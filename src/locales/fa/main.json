@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "مخفی کردن ورودی‌های پیشرفته",
     "hideAdvancedShort": "مخفی کردن پیشرفته",
     "info": "اطلاعات",
+    "text": "متن",
     "infoFor": "اطلاعات برای {item}",
     "inputs": "ورودی‌ها",
     "inputsNone": "بدون ورودی",
@@ -5456,6 +5457,11 @@
     "later": "بعداً",
     "learnMore": "بیشتر بدانید",
     "noReleaseNotes": "یادداشت نسخه‌ای موجود نیست."
+  },
+  "textEditor": {
+    "close": "بستن ویرایشگر",
+    "expand": "بزرگ کردن",
+    "showNode": "نمایش گره"
   },
   "widgetFileUpload": {
     "browseFiles": "انتخاب فایل‌ها",

@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "Скрыть расширенные параметры",
     "hideAdvancedShort": "Скрыть расширенные",
     "info": "Информация",
+    "text": "Текст",
     "infoFor": "Информация о {item}",
     "inputs": "ВХОДЫ",
     "inputsNone": "НЕТ ВХОДОВ",
@@ -5456,6 +5457,11 @@
     "later": "Позже",
     "learnMore": "Узнать больше",
     "noReleaseNotes": "Нет доступных примечаний к выпуску."
+  },
+  "textEditor": {
+    "close": "Закрыть редактор",
+    "expand": "Развернуть",
+    "showNode": "Показать узел"
   },
   "widgetFileUpload": {
     "browseFiles": "Выбрать файлы",

@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "הסתרת קלטים מתקדמים",
     "hideAdvancedShort": "הסתר מתקדמים",
     "info": "מידע",
+    "text": "טקסט",
     "infoFor": "מידע עבור {item}",
     "inputs": "קלטים",
     "inputsNone": "אין קלטים",
@@ -5456,6 +5457,11 @@
     "later": "מאוחר יותר",
     "learnMore": "מידע נוסף",
     "noReleaseNotes": "אין הערות גרסה זמינות."
+  },
+  "textEditor": {
+    "close": "סגור עורך",
+    "expand": "הגדלה",
+    "showNode": "הצג צומת"
   },
   "widgetFileUpload": {
     "browseFiles": "עיון בקבצים",

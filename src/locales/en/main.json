@@ -4076,6 +4076,11 @@
       "editSettings": "Edit control settings"
     }
   },
+  "textEditor": {
+    "close": "Close editor",
+    "expand": "Expand",
+    "showNode": "Show node"
+  },
   "widgetFileUpload": {
     "dropPrompt": "Drop your file or",
     "browseFiles": "Browse Files"
@@ -4871,6 +4876,7 @@
     "parameters": "Parameters",
     "nodes": "Nodes",
     "info": "Info",
+    "text": "Text",
     "infoFor": "Info for {item}",
     "color": "Node color",
     "pinned": "Pinned",

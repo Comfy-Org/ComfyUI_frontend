@@ -21,6 +21,7 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
 import { serializeNodeId } from '@/types/nodeId'
 import { isSelectOnly } from '@/utils/litegraphUtil'
@@ -710,8 +711,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
       }
     })
 
-    // Handle clicking DOM elements (e.g. widgets)
     window.addEventListener('mouseup', () => {
+      if (useRightSidePanelStore().isTextEditorFocused) return
       captureState()
     })
 

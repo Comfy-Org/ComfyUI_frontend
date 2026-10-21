@@ -53,7 +53,8 @@ const panelStubs = {
   TabInfo: true,
   TabList: { template: '<div><slot /></div>' },
   TabNormalInputs: true,
-  TabSettings: true
+  TabSettings: true,
+  TabTextEditor: true
 }
 
 function renderPanel(
@@ -271,5 +272,30 @@ describe('RightSidePanel global parameters tab', () => {
 
     expect(onTabGlobalParametersSetup).toHaveBeenCalledTimes(2)
     expect(screen.getByTestId('tab-global-parameters')).not.toBe(first)
+  })
+})
+
+describe('RightSidePanel Text tab', () => {
+  beforeEach(() => {
+    mockApp.rootGraph = null
+  })
+
+  it('lists the Text tab only while a text widget is open in it', async () => {
+    const { node, rightSidePanelStore } = renderPanel('parameters')
+
+    expect(screen.queryByTestId('panel-tab-text')).toBeNull()
+
+    const widget = node.addWidget('text', 'text', 'a portrait', () => {})
+    rightSidePanelStore.openTextEditor({ node, widget })
+    await nextTick()
+
+    expect(screen.getByTestId('panel-tab-text')).toHaveTextContent('Text')
+    expect(rightSidePanelStore.activeTab).toBe('text')
+
+    rightSidePanelStore.closeTextEditor()
+    await nextTick()
+
+    expect(screen.queryByTestId('panel-tab-text')).toBeNull()
+    expect(rightSidePanelStore.activeTab).toBe('parameters')
   })
 })

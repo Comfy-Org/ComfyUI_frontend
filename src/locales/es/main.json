@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "Ocultar entradas avanzadas",
     "hideAdvancedShort": "Ocultar avanzado",
     "info": "Información",
+    "text": "Texto",
     "infoFor": "Información para {item}",
     "inputs": "ENTRADAS",
     "inputsNone": "SIN ENTRADAS",
@@ -5456,6 +5457,11 @@
     "later": "Más tarde",
     "learnMore": "Aprende más",
     "noReleaseNotes": "No hay notas de la versión disponibles."
+  },
+  "textEditor": {
+    "close": "Cerrar editor",
+    "expand": "Ampliar",
+    "showNode": "Mostrar nodo"
   },
   "widgetFileUpload": {
     "browseFiles": "Buscar archivos",

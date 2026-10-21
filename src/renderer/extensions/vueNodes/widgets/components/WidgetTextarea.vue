@@ -11,7 +11,12 @@
     <label
       v-if="!hideLayoutField"
       :for="id"
-      class="pointer-events-none absolute top-1.5 left-3 z-10 text-2xs text-muted-foreground"
+      :class="
+        cn(
+          'pointer-events-none absolute top-1 left-2 z-10 rounded-sm px-1 text-2xs text-muted-foreground',
+          isReadOnly ? 'bg-input/50' : 'bg-input'
+        )
+      "
     >
       {{ displayName }}
     </label>
@@ -23,7 +28,7 @@
       :class="
         cn(
           WidgetInputBaseClass,
-          'size-full resize-none font-mono text-(length:--comfy-textarea-font-size) leading-normal',
+          'size-full resize-none pr-4 font-mono text-(length:--comfy-textarea-font-size) leading-normal',
           !hideLayoutField && 'pt-5',
           'overflow-hidden hover:overflow-auto focus:overflow-auto'
         )
@@ -36,18 +41,49 @@
       @pointerup.capture.stop
       @contextmenu.capture="handleContextMenu"
     />
-    <Button
-      v-if="isReadOnly"
-      variant="textonly"
-      size="icon"
-      class="invisible absolute top-1.5 right-1.5 z-10 group-focus-within:visible group-hover:visible hover:bg-foreground/10"
-      :title="$t('g.copyToClipboard')"
-      :aria-label="$t('g.copyToClipboard')"
-      @click="handleCopy"
-      @pointerdown.capture.stop
+    <div
+      role="group"
+      :aria-label="$t('g.actions')"
+      class="pointer-events-none absolute top-0 right-0 z-10 flex gap-1 py-1.5 pr-1.5 pl-4 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
     >
-      <i class="icon-[lucide--copy] size-4 text-foreground" />
-    </Button>
+      <div
+        aria-hidden="true"
+        class="absolute inset-0 -z-10 scrollbar-gutter-stable overflow-hidden pr-4"
+      >
+        <div
+          :class="
+            cn(
+              'size-full bg-linear-to-r from-transparent to-50%',
+              isReadOnly ? 'to-input/50' : 'to-input'
+            )
+          "
+        />
+      </div>
+      <Button
+        v-if="isReadOnly"
+        variant="tertiary"
+        size="unset"
+        :class="actionButtonClass"
+        :title="$t('g.copyToClipboard')"
+        :aria-label="$t('g.copyToClipboard')"
+        @click="handleCopy"
+        @pointerdown.capture.stop
+      >
+        <i class="icon-[lucide--copy] size-3" />
+      </Button>
+      <Button
+        v-if="!widget.linkedUpstream && !canvasStore.linearMode"
+        variant="tertiary"
+        size="unset"
+        :class="actionButtonClass"
+        :title="$t('textEditor.expand')"
+        :aria-label="$t('textEditor.expand')"
+        @click="openTextEditor"
+        @pointerdown.capture.stop
+      >
+        <i class="icon-[lucide--maximize-2] size-3" />
+      </Button>
+    </div>
   </div>
 </template>
 
@@ -58,9 +94,13 @@ import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isNodeOptionsOpen } from '@/composables/graph/useMoreOptionsMenu'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { useHideLayoutField } from '@/types/widgetTypes'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@comfyorg/tailwind-utils'
+import { resolveNode } from '@/utils/litegraphUtil'
 import {
   INPUT_EXCLUDED_PROPS,
   filterWidgetProps
@@ -68,8 +108,16 @@ import {
 
 import { WidgetInputBaseClass } from './layout'
 
-const { widget, placeholder = '' } = defineProps<{
+const actionButtonClass =
+  'pointer-events-none size-6 border border-solid border-border shadow-md group-hover:pointer-events-auto'
+
+const {
+  widget,
+  nodeId,
+  placeholder = ''
+} = defineProps<{
   widget: SimplifiedWidget<string>
+  nodeId?: NodeId
   placeholder?: string
 }>()
 
@@ -106,5 +154,16 @@ function handleContextMenu(e: MouseEvent) {
 
 function handleCopy() {
   copyToClipboard(modelValue.value)
+}
+
+const canvasStore = useCanvasStore()
+const rightSidePanelStore = useRightSidePanelStore()
+
+function openTextEditor() {
+  if (nodeId === undefined) return
+  const node = resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
+  const target = node?.widgets?.find(({ name }) => name === widget.name)
+  if (node && target)
+    rightSidePanelStore.openTextEditor({ node, widget: target })
 }
 </script>

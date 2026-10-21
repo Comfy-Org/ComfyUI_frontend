@@ -32,6 +32,7 @@ import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 import { useWidgetHistoryStore } from '@/stores/widgetHistoryStore'
+import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -357,6 +358,30 @@ describe('ChangeTracker', () => {
         expect(tracker.activeState).toEqual(changed)
       })
     })
+
+    it.for([
+      { textEditorFocused: false, captured: true },
+      { textEditorFocused: true, captured: false }
+    ])(
+      'captures canvas changes on mouseup when the panel text editor has focus: $textEditorFocused',
+      ({ textEditorFocused, captured }) => {
+        const events = new EventTarget()
+        vi.spyOn(window, 'addEventListener').mockImplementation(
+          (type, listener, options) =>
+            events.addEventListener(type, listener, options)
+        )
+        ChangeTracker.init()
+        const initial = createState(1)
+        const changed = createState(2)
+        const tracker = createTracker(initial)
+        mockCanvasState(changed)
+        useRightSidePanelStore().isTextEditorFocused = textEditorFocused
+
+        events.dispatchEvent(new MouseEvent('mouseup'))
+
+        expect(tracker.activeState).toEqual(captured ? changed : initial)
+      }
+    )
 
     it.for([
       { editor: 'INPUT', createElement: () => document.createElement('input') },

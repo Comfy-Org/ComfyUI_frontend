@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "Gelişmiş girişleri gizle",
     "hideAdvancedShort": "Gelişmişi gizle",
     "info": "Bilgi",
+    "text": "Metin",
     "infoFor": "{item} için Bilgi",
     "inputs": "GİRİŞLER",
     "inputsNone": "GİRİŞ YOK",
@@ -5456,6 +5457,11 @@
     "later": "Daha Sonra",
     "learnMore": "Daha fazla bilgi edinin",
     "noReleaseNotes": "Sürüm notu yok."
+  },
+  "textEditor": {
+    "close": "Düzenleyiciyi kapat",
+    "expand": "Genişlet",
+    "showNode": "Düğümü göster"
   },
   "widgetFileUpload": {
     "browseFiles": "Dosyalara Göz At",

@@ -3963,6 +3963,7 @@
     "hideAdvancedInputsButton": "隐藏高级输入",
     "hideAdvancedShort": "隐藏高级选项",
     "info": "信息",
+    "text": "文本",
     "infoFor": "{item} 信息",
     "inputs": "输入",
     "inputsNone": "无输入",
@@ -5456,6 +5457,11 @@
     "later": "Later",
     "learnMore": "了解更多",
     "noReleaseNotes": "暂无更新说明。"
+  },
+  "textEditor": {
+    "close": "关闭编辑器",
+    "expand": "放大",
+    "showNode": "显示节点"
   },
   "widgetFileUpload": {
     "browseFiles": "浏览文件",
