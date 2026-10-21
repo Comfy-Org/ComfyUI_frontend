@@ -1,5 +1,5 @@
 # Description: Manual workflow to refresh the apps/website Ashby roles and
-# cloud nodes and feature flag snapshots and open a PR. Merging the PR triggers the existing
+# feature flag snapshots and open a PR. Merging the PR triggers the existing
 # Vercel website production deploy via ci-vercel-website-preview.yaml.
 name: 'Release: Website'
 
@@ -31,11 +31,6 @@ jobs:
           api_key: ${{ secrets.WEBSITE_ASHBY_API_KEY }}
           job_board_name: ${{ secrets.WEBSITE_ASHBY_JOB_BOARD_NAME }}
 
-      - name: Refresh cloud nodes snapshot
-        uses: ./.github/actions/cloud-nodes-pull
-        with:
-          api_key: ${{ secrets.WEBSITE_CLOUD_API_KEY }}
-
       - name: Refresh feature flags snapshot
         run: pnpm --filter @comfyorg/website feature-flags:refresh-snapshot
 
@@ -51,8 +46,6 @@ jobs:
 
             - `apps/website/src/data/ashby-roles.snapshot.json` — Ashby job
               board API
-            - `apps/website/src/data/cloud-nodes.snapshot.json` — Comfy Cloud
-              `/api/object_info`
             - `apps/website/src/data/feature-flags.snapshot.json` — Comfy Cloud
               `/features`
 
@@ -62,10 +55,9 @@ jobs:
             3. `CI: Vercel Website Preview` deploys a preview for review.
             4. Merging to `main` triggers the production Vercel deploy.
 
-            The snapshot fallback in `apps/website/src/utils/ashby.ts` and
-            `apps/website/src/utils/cloudNodes.ts` remains intact: builds
-            without the respective API keys continue to use the committed
-            snapshot (with a warning annotation in CI).
+            The snapshot fallback in `apps/website/src/utils/ashby.ts` remains
+            intact: builds without the Ashby API key continue to use the
+            committed snapshot (with a warning annotation in CI).
 
             Triggered by workflow run `${{ github.run_id }}`.
           branch: chore/refresh-website-snapshots-${{ github.run_id }}

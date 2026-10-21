@@ -1,6 +1,6 @@
 <template>
   <WidgetLayoutField :widget="widget">
-    <ColorPicker
+    <AppColorPicker
       v-model="localValue"
       :alpha="format !== 'int'"
       @update:model-value="onUpdate"
@@ -21,7 +21,7 @@ import {
 
 import type { IColorWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

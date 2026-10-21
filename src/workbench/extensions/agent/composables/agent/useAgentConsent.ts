@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
+import { recordConsentOfferDeclined } from '@/workbench/extensions/agent/services/agent/consentOfferDeclined'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
@@ -199,6 +200,8 @@ export function useAgentConsent() {
           onAccept: () => void accept(),
           onReject: () => {
             reportOutcome('rejected')
+            if (expectedIdentity && identity.value === expectedIdentity)
+              void recordConsentOfferDeclined()
             closeWith(false)
           }
         },

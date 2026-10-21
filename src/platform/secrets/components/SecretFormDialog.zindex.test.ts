@@ -1,9 +1,7 @@
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-import { raiseModalLayer } from '@/utils/modalLayerStack'
 
 import SecretFormDialog from './SecretFormDialog.vue'
 
@@ -36,15 +34,12 @@ const i18n = createI18n({
 })
 
 describe('SecretFormDialog z-index stacking', () => {
-  let openModalZIndex: number
-
-  beforeEach(() => {
-    const openModal = document.createElement('div')
-    raiseModalLayer(openModal)
-    openModalZIndex = Number(openModal.style.zIndex)
-  })
-
   it('renders above a modal that is already open', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const openModal = screen.getByTestId('existing-overlay')
     render(SecretFormDialog, {
       global: { plugins: [i18n] },
       props: { visible: true }
@@ -52,6 +47,8 @@ describe('SecretFormDialog z-index stacking', () => {
 
     const content = await screen.findByRole('dialog')
 
-    expect(Number(content.style.zIndex)).toBeGreaterThan(openModalZIndex)
+    expect(openModal.compareDocumentPosition(content)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 })

@@ -1,12 +1,15 @@
 <template>
   <div class="flex flex-col gap-6" data-testid="billing-tab">
     <WorkspaceHeaderMenu />
+    <BillingPausedBanner
+      :can-manage-billing="capabilities.canManageBilling.value"
+    />
     <BillingCheckoutBanner
       v-if="capabilities.canManageBilling.value"
       :available-cents="availableCents"
       :can-top-up="capabilities.canTopUp.value"
       :can-subscribe-self-serve="capabilities.canSubscribeSelfServe.value"
-      @add-credits="addCredits"
+      @add-credits="addCreditsFromBanner"
       @emphasis="addCreditsVariant = $event"
     />
     <div
@@ -42,7 +45,7 @@
         :state="creditsCard"
         :can-top-up="capabilities.canTopUp.value"
         @retry="retryBalance"
-        @add-credits="addCredits"
+        @add-credits="addCreditsFromCard"
       />
       <template v-if="flags.autoTopUpEnabled">
         <template v-if="capabilities.canManageAutoTopUp.value">
@@ -82,11 +85,13 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AddCreditsClickMetadata } from '@/platform/telemetry/types'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import WorkspaceHeaderMenu from '@/platform/workspace/components/dialogs/settings/WorkspaceHeaderMenu.vue'
 import BillingAutoTopUpCard from '@/platform/workspace/components/dialogs/settings/billing/BillingAutoTopUpCard.vue'
 import BillingCreditsCard from '@/platform/workspace/components/dialogs/settings/billing/BillingCreditsCard.vue'
 import BillingCheckoutBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingCheckoutBanner.vue'
+import BillingPausedBanner from '@/platform/workspace/components/dialogs/settings/billing/BillingPausedBanner.vue'
 import BillingPlanRow from '@/platform/workspace/components/dialogs/settings/billing/BillingPlanRow.vue'
 import {
   deriveBillingTabLoad,
@@ -143,11 +148,19 @@ async function retryBalance() {
   await billing.fetchBalance().catch(() => undefined)
 }
 
-function addCredits() {
-  telemetry?.trackAddApiCreditButtonClicked({ source: 'credits_panel' })
+function addCredits(source: AddCreditsClickMetadata['source']) {
+  telemetry?.trackAddApiCreditButtonClicked({ source })
   void showTopUpCreditsDialog({
-    source: paymentIntentSourceForAddCreditsClick('credits_panel')
+    source: paymentIntentSourceForAddCreditsClick(source)
   })
+}
+
+function addCreditsFromCard() {
+  addCredits('credits_panel')
+}
+
+function addCreditsFromBanner() {
+  addCredits('settings_billing_panel')
 }
 
 async function retry() {

@@ -49,7 +49,7 @@ import { computed } from 'vue'
 
 import PopupSlider from '@/components/load3d/controls/PopupSlider.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { CameraType } from '@/extensions/core/load3d/interfaces'
+import type { CameraType } from '@comfyorg/viewport3d/load3d/interfaces'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { hasCustomUp = false } = defineProps<{

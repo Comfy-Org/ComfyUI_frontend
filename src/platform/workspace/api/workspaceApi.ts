@@ -972,9 +972,11 @@ export const workspaceApi = {
    */
   async createTopupCheckout(
     amountCents: number,
-    returnUrl: string
+    returnUrl: string,
+    signal?: AbortSignal
   ): Promise<CreateTopupCheckoutResponse> {
     const auth = await requestAuth()
+    signal?.throwIfAborted()
     try {
       const response =
         await workspaceApiClient.post<CreateTopupCheckoutResponse>(
@@ -984,7 +986,7 @@ export const workspaceApi = {
             return_url: returnUrl,
             idempotency_key: crypto.randomUUID()
           } satisfies CreateTopupCheckoutRequest,
-          auth
+          { ...auth, signal }
         )
       return response.data
     } catch (err) {

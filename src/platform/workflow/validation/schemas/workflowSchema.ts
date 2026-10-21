@@ -1,9 +1,9 @@
 import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
-import type { RendererType } from '@/lib/litegraph/src/LGraph'
 import type {
   ClipboardItems,
-  ExportedSubgraph
+  ExportedSubgraph,
+  RendererType
 } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'

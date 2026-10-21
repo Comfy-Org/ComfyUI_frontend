@@ -4393,7 +4393,6 @@
     "viewControls": "Ansichtssteuerung"
   },
   "sideToolbar": {
-    "activeJobStatus": "Aktiver Auftrag: {status}",
     "assets": "Assets",
     "backToAssets": "Zurück zu allen Assets",
     "browseTemplates": "Beispielvorlagen durchsuchen",
@@ -5550,22 +5549,6 @@
     "retry": "Erneut versuchen"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "Credits",
-        "date": "Datum",
-        "eventDetails": "Ereignisdetails",
-        "eventType": "Ereignistyp",
-        "user": "Benutzer"
-      },
-      "empty": "Noch keine Aktivität.",
-      "fullActivity": "Gesamte Aktivität",
-      "hoverCard": {
-        "lastActivity": "Letzte Aktivität",
-        "partnerNodeUsed": "Partner-Node verwendet",
-        "totalCreditsUsed": "Insgesamt verwendete Credits"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "Ihnen werden keine weiteren Kosten berechnet. Mitglieder behalten bis dahin vollen Zugriff. Setzen Sie Ihren Plan fort, um die gemeinsamen Credits Ihres Teams zu behalten.",
@@ -5701,12 +5684,6 @@
         "removeMember": "Mitglied entfernen",
         "resendInvite": "Einladung erneut senden",
         "setCreditLimit": "Credit-Limit festlegen"
-      },
-      "activity": {
-        "daysAgo": "vor {count} Tag | vor {count} Tagen",
-        "hoursAgo": "vor {n} Std.",
-        "justNow": "gerade eben",
-        "minutesAgo": "vor {n} Min."
       },
       "columns": {
         "creditsUsed": "Diesen Monat verbrauchte Credits",

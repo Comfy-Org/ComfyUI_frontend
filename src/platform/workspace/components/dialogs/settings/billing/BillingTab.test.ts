@@ -1,7 +1,7 @@
 import type {
   BillingOpReceiptPlan,
   BillingOpStatusResponse,
-  BillingStatusResponse
+  BillingStatusResponse,SubscriptionState
 } from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -10,12 +10,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
+import { useTelemetry } from '@/platform/telemetry'
 import type {
   HostedTopupCheckout,
   Plan
@@ -27,6 +29,7 @@ import {
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { usePausedBanner } from '@/platform/workspace/composables/usePausedBanner'
 
 import BillingTab from './BillingTab.vue'
 
@@ -46,6 +49,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return false
   }
 }))
+vi.mock(import('@/platform/workspace/composables/usePausedBanner'), {
+  spy: true
+})
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/billing/useBillingDialogs'))
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -53,6 +59,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 vi.mock(import('@/platform/cloud/subscription/composables/useFreeTierQuota'))
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/telemetry'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string) => `https://platform.test${path}?workspace=ws_1`
@@ -74,6 +81,7 @@ const activeSubscription: SubscriptionInfo = {
 interface Scenario {
   subscription?: SubscriptionInfo | null
   subscriptionStatus?: 'active' | 'canceled' | 'ended' | null
+  subscriptionState?: SubscriptionState | null
   isInitialized?: boolean
   error?: string | null
   canManageSubscription?: boolean
@@ -88,6 +96,7 @@ interface Scenario {
   autoTopUpFlag?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
+  isPaused?: boolean
 }
 
 function arrange(scenario: Scenario = {}) {
@@ -95,6 +104,10 @@ function arrange(scenario: Scenario = {}) {
   const refresh = vi.fn(async () => {})
   const fetchStatus = vi.fn(async () => {})
   const resubscribe = vi.fn(scenario.resubscribe ?? (async () => {}))
+  const manageSubscription = vi.fn(async () => ({ ok: true as const }))
+  vi.mocked(usePausedBanner).mockReturnValue({
+    isPaused: computed(() => scenario.isPaused ?? false)
+  })
 
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
@@ -111,7 +124,9 @@ function arrange(scenario: Scenario = {}) {
           ? 'active'
           : scenario.subscriptionStatus
       ),
+      subscriptionState: computed(() => scenario.subscriptionState ?? null),
       billingStatus: computed(() => 'paid'),
+      manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
         fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
@@ -182,10 +197,62 @@ function arrange(scenario: Scenario = {}) {
     }
   })
 
-  return { initialize, refresh, fetchStatus, resubscribe }
+  return { initialize, refresh, fetchStatus, resubscribe, manageSubscription }
 }
 
 describe('BillingTab', () => {
+  describe('Subscription paused banner', () => {
+    it.for([
+      {
+        name: 'an owner',
+        canManageBilling: true,
+        body: "This workspace's subscription is paused. Update payment to resume.",
+        buttons: ['Update payment']
+      },
+      {
+        name: 'a member',
+        canManageBilling: false,
+        body: "Ask your workspace owner to restore the workspace's subscription.",
+        buttons: []
+      }
+    ])(
+      'shows $name the paused banner at the top of the tab',
+      ({ canManageBilling, body, buttons }) => {
+        arrange({ isPaused: true, canManageBilling })
+
+        const banner = screen.getByTestId('billing-paused-banner')
+        expect(banner).toHaveTextContent('Subscription paused')
+        expect(banner).toHaveTextContent(body)
+        expect(
+          within(banner)
+            .queryAllByRole('button')
+            .map((button) => button.textContent.trim())
+        ).toEqual(buttons)
+      }
+    )
+
+    it('opens the billing portal from Update payment', async () => {
+      const { manageSubscription } = arrange({ isPaused: true })
+
+      await userEvent.click(
+        within(screen.getByTestId('billing-paused-banner')).getByRole(
+          'button',
+          { name: 'Update payment' }
+        )
+      )
+
+      expect(manageSubscription).toHaveBeenCalledOnce()
+    })
+
+    it('shows no paused banner when the workspace is not paused', () => {
+      arrange()
+
+      expect(
+        screen.queryByTestId('billing-paused-banner')
+      ).not.toBeInTheDocument()
+    })
+  })
+
   it('shows a skeleton and no plan row while billing loads', () => {
     arrange({ isInitialized: false })
 
@@ -211,6 +278,25 @@ describe('BillingTab', () => {
     arrange({ capabilitiesResolved: false })
 
     expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('reads Activating while subscription_state is activating', () => {
+    arrange({ subscriptionState: 'activating' })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      'Activating your Pro plan…'
+    )
+    expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument()
+  })
+
+  it('returns to the served status when subscription_state is no longer activating', () => {
+    arrange({ subscriptionState: 'active' })
+
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      'Billed monthly. Next invoice November 15.'
+    )
+    expect(screen.queryByText(/Activating your/)).not.toBeInTheDocument()
   })
 
   it('renders an active plan with Manage and the owner handoff linked to the billing site', () => {
@@ -557,6 +643,10 @@ describe('BillingTab', () => {
   })
 
   it('shows the served balance under the plan and opens top-up from Add credits', async () => {
+    const trackAddApiCreditButtonClicked = vi.fn()
+    vi.mocked(useTelemetry).mockReturnValueOnce(
+      fromPartial({ trackAddApiCreditButtonClicked })
+    )
     arrange({
       balance: {
         amountMicros: 1000,
@@ -574,7 +664,12 @@ describe('BillingTab', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
 
-    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalled()
+    expect(trackAddApiCreditButtonClicked).toHaveBeenCalledExactlyOnceWith({
+      source: 'credits_panel'
+    })
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledWith({
+      source: 'settings_billing_panel'
+    })
   })
 
   describe('Top-up checkout banner', () => {
@@ -645,6 +740,10 @@ describe('BillingTab', () => {
         servedCheckouts(
           checkout('failed', { payment_amount_cents: paymentAmountCents })
         )
+        const trackAddApiCreditButtonClicked = vi.fn()
+        vi.mocked(useTelemetry).mockReturnValueOnce(
+          fromPartial({ trackAddApiCreditButtonClicked })
+        )
         arrange()
 
         const banner = await screen.findByTestId('billing-checkout-banner')
@@ -655,7 +754,12 @@ describe('BillingTab', () => {
         await userEvent.click(
           within(banner).getByRole('button', { name: 'Add credits' })
         )
-        expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalled()
+        expect(trackAddApiCreditButtonClicked).toHaveBeenCalledExactlyOnceWith({
+          source: 'settings_billing_panel'
+        })
+        expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledWith(
+          { source: 'settings_billing_panel' }
+        )
       }
     )
 
@@ -673,15 +777,15 @@ describe('BillingTab', () => {
       arrange({ balance: zeroBalance })
 
       const banner = await screen.findByTestId('billing-checkout-banner')
-      const buttons = [
-        within(banner).getByRole('button', { name: 'Add credits' }),
-        within(screen.getByTestId('billing-credits-card')).getByRole('button', {
-          name: 'Add credits'
-        })
-      ]
-      for (const button of buttons) {
-        expect(button.className).toContain('bg-foreground')
-      }
+      expect(
+        [
+          within(banner).getByRole('button', { name: 'Add credits' }),
+          within(screen.getByTestId('billing-credits-card')).getByRole(
+            'button',
+            { name: 'Add credits' }
+          )
+        ].map((button) => button.getAttribute('data-variant'))
+      ).toEqual(['inverted', 'inverted'])
     })
 
     it('keeps Add credits grey at 0 while the payment is processing', async () => {
@@ -692,8 +796,8 @@ describe('BillingTab', () => {
       expect(
         within(screen.getByTestId('billing-credits-card')).getByRole('button', {
           name: 'Add credits'
-        }).className
-      ).not.toContain('bg-foreground')
+        })
+      ).toHaveAttribute('data-variant', 'secondary')
     })
 
     it('offers no Add credits on a failed top-up when the server withholds can_top_up', async () => {
@@ -783,6 +887,93 @@ describe('BillingTab', () => {
       expect(
         screen.queryByTestId('billing-checkout-banner')
       ).not.toBeInTheDocument()
+    })
+
+    it('keeps polling credits_applying after a newer failure takes the banner', async () => {
+      servedCheckouts(
+        checkout('failed', { session_id: 'cs_failed' }),
+        checkout('credits_applying', { session_id: 'cs_applying' })
+      )
+      arrange()
+
+      expect(
+        await screen.findByTestId('billing-checkout-banner')
+      ).toHaveTextContent("Your $25 top-up didn't go through")
+      vi.mocked(workspaceApi.getTopupCheckout).mockClear()
+
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      await vi.waitFor(() =>
+        expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith(
+          'cs_applying'
+        )
+      )
+    })
+
+    it('reports one unreadable session once while credits are still applying', async () => {
+      const unavailable = new WorkspaceApiError('Bad gateway', 502)
+      vi.mocked(workspaceApi.listTopupCheckouts).mockResolvedValue({
+        checkouts: [
+          {
+            session_id: 'cs_unreadable',
+            amount_cents: 500,
+            created_at: '2026-10-20T00:00:00Z'
+          },
+          {
+            session_id: 'cs_applying',
+            amount_cents: 2500,
+            created_at: '2026-10-19T00:00:00Z'
+          }
+        ],
+        next_cursor: null
+      })
+      vi.mocked(workspaceApi.getTopupCheckout).mockImplementation(
+        async (sessionId) => {
+          if (sessionId === 'cs_unreadable') throw unavailable
+          return checkout('credits_applying', { session_id: 'cs_applying' })
+        }
+      )
+      arrange()
+
+      await screen.findByTestId('billing-checkout-banner')
+      expect(reportError).toHaveBeenCalledTimes(1)
+      vi.mocked(reportError).mockClear()
+      vi.mocked(workspaceApi.getTopupCheckout).mockClear()
+
+      await vi.advanceTimersByTimeAsync(5_000)
+
+      await vi.waitFor(() =>
+        expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith(
+          'cs_unreadable'
+        )
+      )
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('reports a checkout list failure once until a later read succeeds', async () => {
+      servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
+      arrange()
+      await screen.findByTestId('billing-checkout-banner')
+
+      const unavailable = new WorkspaceApiError('Unavailable', 503)
+      vi.mocked(workspaceApi.listTopupCheckouts).mockRejectedValue(unavailable)
+      vi.mocked(reportError).mockClear()
+
+      await vi.advanceTimersByTimeAsync(5_000)
+      await vi.waitFor(() => expect(reportError).toHaveBeenCalledTimes(1))
+      await vi.advanceTimersByTimeAsync(5_000)
+      expect(reportError).toHaveBeenCalledTimes(1)
+
+      servedCheckouts(checkout('credits_applying', { session_id: 'cs_1' }))
+      vi.mocked(workspaceApi.getTopupCheckout).mockClear()
+      await vi.advanceTimersByTimeAsync(5_000)
+      await vi.waitFor(() =>
+        expect(workspaceApi.getTopupCheckout).toHaveBeenCalled()
+      )
+
+      vi.mocked(workspaceApi.listTopupCheckouts).mockRejectedValue(unavailable)
+      await vi.advanceTimersByTimeAsync(5_000)
+      await vi.waitFor(() => expect(reportError).toHaveBeenCalledTimes(2))
     })
 
     it('never reads checkouts for a member without can_manage_billing', () => {

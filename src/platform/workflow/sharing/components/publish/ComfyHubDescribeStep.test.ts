@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'
 
@@ -35,6 +36,13 @@ function renderStep(
       ...callbacks
     },
     global: {
+      plugins: [
+        createI18n({
+          legacy: false,
+          locale: 'en',
+          messages: { en: { g: { removeTag: 'Remove tag' } } }
+        })
+      ],
       mocks: {
         $t: (key: string) => key
       },

@@ -111,6 +111,9 @@ function handleSearchEnter(event: KeyboardEvent) {
   <div class="flex gap-2 px-4 text-muted-foreground">
     <AsyncSearchInput
       v-model="searchQuery"
+      :clear-label="$t('g.clear')"
+      :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+      :accessible-label="$t('g.search')"
       autofocus
       :class="
         cn(

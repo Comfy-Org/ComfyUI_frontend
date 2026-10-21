@@ -693,6 +693,7 @@
     "Add Node": "Add Node",
     "Hide Link": "Hide Link",
     "Show Link": "Show Link",
+    "Show Links": "Show Links",
     "Add Group": "Add Group",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",
@@ -996,7 +997,6 @@
     "noGeneratedFiles": "No generated files found",
     "generatedAssetsHeader": "Generated assets",
     "importedAssetsHeader": "Imported assets",
-    "activeJobStatus": "Active job: {status}",
     "noFilesFoundMessage": "Upload files or generate content to see them here",
     "browseTemplates": "Browse example templates",
     "openWorkflow": "Open workflow in local file system",
@@ -2605,7 +2605,6 @@
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
-    "failedToDownloadFile": "Failed to download file",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
     "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
@@ -2683,6 +2682,9 @@
       "redirectNotice": "You'll be redirected to",
       "appTypeNative": "Native app",
       "appTypeWeb": "Web app",
+      "unverifiedBadge": "Name not verified",
+      "unverifiedNotice": "This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} \u2014 make sure you recognize it.",
+      "unverifiedNoticeNoHost": "This name was provided by whoever registered this app and has not been verified by Comfy.",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
       "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
@@ -3068,7 +3070,7 @@
     "previewLoadFailed": "Failed to load subscription preview",
     "unableToSubscribe": "Unable to subscribe",
     "billingTabBlocked": "Couldn't open the billing page. Allow pop-ups for this site and try again.",
-    "billingPortalUnavailable": "Couldn't open the billing page. Try again in a moment.",
+    "billingPortalUnavailable": "Couldn't open billing. Try again.",
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",
@@ -3585,7 +3587,7 @@
         "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
         "limitTooltipNoDate": "Counts only auto top-up charges.",
         "off": "Refills credits when your balance runs low",
-        "onHold": "No default payment method. Add a card to resume auto top-up.",
+        "onHold": "No default payment method. Set one to resume auto top-up.",
         "paused": "Monthly limit reached. Resumes {date}.",
         "pausedNoDate": "Monthly limit reached.",
         "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
@@ -3635,6 +3637,7 @@
           "stay": "Stay on {plan}",
           "subscribe": "Subscribe"
         },
+        "activating": "Activating your {plan} plan…",
         "active": {
           "monthly": "Billed monthly. Next invoice {date}.",
           "yearly": "Billed yearly. Next invoice {date}."
@@ -3693,22 +3696,6 @@
       },
       "tryAgain": "Try again"
     },
-    "activity": {
-      "columns": {
-        "creditsUsed": "Credits",
-        "date": "Date",
-        "eventDetails": "Event details",
-        "eventType": "Event type",
-        "user": "User"
-      },
-      "empty": "No activity yet.",
-      "fullActivity": "Full activity",
-      "hoverCard": {
-        "lastActivity": "Last activity",
-        "partnerNodeUsed": "Partner node used",
-        "totalCreditsUsed": "Total credits used"
-      }
-    },
     "billingStatus": {
       "outOfCredits": {
         "title": "Out of credits",
@@ -3716,7 +3703,9 @@
         "bodyNoDate": "Your team has used all its credits. Add more credits.",
         "personalBody": "You've used all your credits. Add more credits or wait until credits refill on {date}.",
         "personalBodyNoDate": "You've used all your credits. Add more credits.",
-        "pastDueBody": "You've used all your credits. Update your payment method to add credits.",
+        "pastDueBody": "Your team has used all its credits. Update your payment method to add more.",
+        "pastDueMemberBody": "Your team has used all its credits. Ask your workspace owner to update the payment method.",
+        "pastDuePersonalBody": "You've used all your credits. Update your payment method to add more.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
@@ -3732,6 +3721,9 @@
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume plan",
         "contactSales": "Contact sales"
+      },
+      "paused": {
+        "body": "This workspace's subscription is paused. Update payment to resume."
       },
       "planEnded": {
         "teamTitle": "Your Team plan ended on {date}",
@@ -3774,12 +3766,6 @@
       "placeholder": "Dashboard workspace settings"
     },
     "members": {
-      "activity": {
-        "daysAgo": "{count} day ago | {count} days ago",
-        "hoursAgo": "{n} hr ago",
-        "justNow": "just now",
-        "minutesAgo": "{n} min ago"
-      },
       "membersCount": "{count} of {maxSeats} members",
       "pendingInvitesCount": "{count} pending invite | {count} pending invites",
       "tabs": {
