@@ -129,6 +129,17 @@ describe('detectSelectionGrid', () => {
       columns: 2
     },
     {
+      name: 'a tall node that overlaps a tall and a short node level with it',
+      boxes: [
+        box('sampler', 0, 0, 300, 262),
+        box('decode', 340, 0, 200, 46),
+        box('save', 580, 30, 300, 270)
+      ],
+      kind: 'row',
+      rows: 1,
+      columns: 3
+    },
+    {
       name: 'a column of mixed widths',
       boxes: [
         box('a', 0, 0, 300, 100),
@@ -331,13 +342,34 @@ describe('computeTidyLayout', () => {
     expect(overlapping(tidied)).toBe(false)
   })
 
-  it('leaves out a node whose geometry is not finite', () => {
-    const boxes = [...messyGrid, box('broken', Number.NaN, 0, 100, 100)]
-
-    const positions = computeTidyLayout(boxes)
+  it.for([
+    { name: 'is not finite', broken: box('broken', Number.NaN, 0, 100, 100) },
+    { name: 'has no width', broken: box('broken', 500, 0, 0, 100) },
+    { name: 'has a negative height', broken: box('broken', 500, 0, 100, -50) }
+  ])('leaves out a node whose geometry $name', ({ broken }) => {
+    const positions = computeTidyLayout([...messyGrid, broken])
 
     expect(positions.map((position) => position.id)).not.toContain('broken')
     expect(positions).toEqual(computeTidyLayout(messyGrid))
+  })
+
+  it.for([
+    {
+      name: 'a gap too large to add up',
+      boxes: [box('a', 0, 0, 1, 1), box('b', 2, 0, 1, 1), box('c', 4, 0, 1, 1)],
+      gap: 1e308
+    },
+    {
+      name: 'gaps too large to average',
+      boxes: [
+        box('a', -0.9 * Number.MAX_VALUE, 0, 1, 1),
+        box('b', 0, 0, 1, 1),
+        box('c', 0.9 * Number.MAX_VALUE, 0, 1, 1)
+      ],
+      gap: undefined
+    }
+  ])('returns nothing for $name', ({ boxes, gap }) => {
+    expect(computeTidyLayout(boxes, gap)).toEqual([])
   })
 
   it('keeps nodes that face each other a full gap apart', () => {

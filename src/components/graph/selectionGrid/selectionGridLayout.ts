@@ -39,8 +39,8 @@ interface AxisSpan {
 }
 
 interface Band {
-  start: number
-  end: number
+  sharedEnd: number
+  longest: AxisSpan
   members: LayoutBox[]
 }
 
@@ -70,11 +70,11 @@ function trackCountOf(grid: SelectionGrid, axis: GapAxis): number {
 }
 
 function joinsBand(band: Band, { start, size }: AxisSpan): boolean {
-  const offset = start - band.start
-  const sharedSize = band.end - band.start
-  const centreInBand = start + size / 2 <= band.end
-  const nearbyStart = offset <= Math.min(sharedSize, size) / 2
-  return centreInBand || nearbyStart
+  const { longest } = band
+  const overlapsEveryMember = start < band.sharedEnd
+  const centreInLongest = start + size / 2 <= longest.start + longest.size
+  const nearbyStart = start - longest.start <= Math.min(longest.size, size) / 2
+  return overlapsEveryMember && (centreInLongest || nearbyStart)
 }
 
 function clusterAlong(boxes: LayoutBox[], axis: GapAxis): LayoutBox[][] {
@@ -90,12 +90,12 @@ function clusterAlong(boxes: LayoutBox[], axis: GapAxis): LayoutBox[][] {
     const band = bands.at(-1)
     if (band && joinsBand(band, span)) {
       band.members.push(box)
-      band.start = span.start
-      band.end = Math.min(band.end, span.start + span.size)
+      band.sharedEnd = Math.min(band.sharedEnd, span.start + span.size)
+      if (span.size > band.longest.size) band.longest = span
     } else {
       bands.push({
-        start: span.start,
-        end: span.start + span.size,
+        sharedEnd: span.start + span.size,
+        longest: span,
         members: [box]
       })
     }
@@ -209,16 +209,16 @@ function classify(
   return aligned && linkedBothWays ? 'grid' : 'scattered'
 }
 
-function hasFiniteGeometry({ x, y, width, height }: LayoutBox): boolean {
-  return [x, y, width, height].every(Number.isFinite)
+function hasUsableGeometry({ x, y, width, height }: LayoutBox): boolean {
+  return [x, y, width, height].every(Number.isFinite) && width > 0 && height > 0
 }
 
 /**
- * Groups finite boxes into rows and columns, keeping their order, and says
- * whether they form a row, a column, an aligned grid or a scattered set.
+ * Groups boxes that have a finite position and a positive size into rows and
+ * columns, and says whether they form a row, column, aligned grid or scatter.
  */
 export function detectSelectionGrid(boxes: LayoutBox[]): SelectionGrid {
-  const placed = boxes.filter(hasFiniteGeometry)
+  const placed = boxes.filter(hasUsableGeometry)
   const rows = clusterAlong(placed, 'y')
   const { cells, columnCount } = assignCells(rows, clusterAlong(placed, 'x'))
   return {
@@ -440,10 +440,14 @@ function safeGapOf(gap: number): number {
   return Number.isFinite(gap) ? Math.max(0, gap) : DEFAULT_TIDY_GAP
 }
 
+function isFinitePosition({ x, y }: BoxPosition): boolean {
+  return Number.isFinite(x) && Number.isFinite(y)
+}
+
 /**
- * Lines boxes up into their detected rows and columns: rows align by top,
- * columns by left, and nodes that face each other sit `gap` apart. The
- * top-left box stays put. Without `gap`, an already tidy selection keeps its gap.
+ * Lines boxes up into rows and columns with facing nodes `gap` apart and the
+ * top-left box in place; without `gap`, a tidy selection keeps its own gap.
+ * Returns nothing when a position would not be finite.
  */
 export function computeTidyLayout(
   boxes: LayoutBox[],
@@ -451,5 +455,9 @@ export function computeTidyLayout(
 ): BoxPosition[] {
   const grid = detectSelectionGrid(boxes)
   if (grid.cells.length < 2) return []
-  return layoutOf(grid, gap === undefined ? gapOf(grid) : safeGapOf(gap))
+  const positions = layoutOf(
+    grid,
+    gap === undefined ? gapOf(grid) : safeGapOf(gap)
+  )
+  return positions.every(isFinitePosition) ? positions : []
 }
