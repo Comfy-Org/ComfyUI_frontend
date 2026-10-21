@@ -2659,6 +2659,8 @@
       {
         "name": "selection-toolbox/integration",
         "patterns": [
+          "src/components/graph/selectionGrid/useGapDragSession.test.ts",
+          "src/components/graph/selectionGrid/useGapDragSession.ts",
           "src/components/graph/selectionGrid/useSelectionGrid.test.ts",
           "src/components/graph/selectionGrid/useSelectionGrid.ts",
           "src/components/graph/selectionGrid/useTidySession.test.ts",
