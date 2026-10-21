@@ -13,15 +13,18 @@ function deployment(id: string): WorkspaceDeployment {
   }
 }
 
+const MISSING_NODE_TYPES = ['BiRefNet']
+
 const RUNS: DeploymentCompatibilityMark = { kind: 'runs' }
 const MISSING: DeploymentCompatibilityMark = {
   kind: 'missing',
-  nodeTypes: ['BiRefNet']
+  nodeTypes: MISSING_NODE_TYPES
 }
 const UNKNOWN: DeploymentCompatibilityMark = { kind: 'unknown' }
 
 interface OfferCase {
   when: string
+  cloud?: DeploymentCompatibilityMark | null
   marks: Record<string, DeploymentCompatibilityMark | null>
   offer: { kind: string; ids?: string[] }
 }
@@ -29,6 +32,7 @@ interface OfferCase {
 const CASES: OfferCase[] = [
   {
     when: 'the check has not answered',
+    cloud: null,
     marks: { a: null, b: null },
     offer: { kind: 'unchecked' }
   },
@@ -56,21 +60,37 @@ const CASES: OfferCase[] = [
     when: 'the workspace has no deployments',
     marks: {},
     offer: { kind: 'unchecked' }
+  },
+  {
+    when: 'the answer is for a workflow missing other nodes',
+    cloud: { kind: 'missing', nodeTypes: ['RMBG'] },
+    marks: { a: RUNS },
+    offer: { kind: 'unchecked' }
+  },
+  {
+    when: 'the check finds Comfy Cloud runs it',
+    cloud: RUNS,
+    marks: { a: RUNS },
+    offer: { kind: 'unchecked' }
   }
 ]
 
 describe(workflowDeploymentOffer, () => {
-  it.for(CASES)('offers $offer.kind when $when', ({ marks, offer }) => {
-    const result = workflowDeploymentOffer(
-      Object.keys(marks).map(deployment),
-      (id) => marks[id] ?? null
-    )
+  it.for(CASES)(
+    'offers $offer.kind when $when',
+    ({ cloud = MISSING, marks, offer }) => {
+      const result = workflowDeploymentOffer(
+        Object.keys(marks).map(deployment),
+        (id) => (id === null ? cloud : (marks[id] ?? null)),
+        MISSING_NODE_TYPES
+      )
 
-    expect({
-      kind: result.kind,
-      ...(result.kind === 'switch' && {
-        ids: result.choices.map((choice) => choice.deployment.deployment_id)
-      })
-    }).toEqual(offer)
-  })
+      expect({
+        kind: result.kind,
+        ...(result.kind === 'switch' && {
+          ids: result.choices.map((choice) => choice.deployment.deployment_id)
+        })
+      }).toEqual(offer)
+    }
+  )
 })

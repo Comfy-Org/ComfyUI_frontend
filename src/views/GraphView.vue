@@ -129,8 +129,10 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
-if (isCloud) useDeploymentCompatibility()
-if (isCloud) setMissingNodesNotice(noticeMissingNodes)
+if (isCloud) {
+  const { markFor } = useDeploymentCompatibility()
+  setMissingNodesNotice((nodeTypes) => noticeMissingNodes(nodeTypes, markFor))
+}
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()

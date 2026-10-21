@@ -3,32 +3,52 @@ import { until } from '@vueuse/core'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
-import { nodesNeedingDeployment } from '@/platform/workspace/missingForDeployment'
+import {
+  missingNodeTypeName,
+  nodesNeedingDeployment
+} from '@/platform/workspace/missingForDeployment'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { answersForMissingNodes } from '@/platform/workspace/workflowDeploymentOffer'
+import type { MarkFor } from '@/platform/workspace/workflowDeploymentOffer'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 /** How long the dialog waits for the compatibility check before it opens without it. */
 export const COMPATIBILITY_WAIT_MS = 3000
 
-async function compatibilityAnswered(): Promise<void> {
+type Offered = 'dialog' | 'overlay' | 'superseded'
+
+async function compatibilityAnswered(
+  markFor: MarkFor,
+  missingNodeTypes: readonly string[]
+): Promise<void> {
   const asks =
     useFeatureFlags().flags.deploymentCompatibilityMarksEnabled &&
     useDeploymentPickStore().deployments.length > 0
   if (!asks) return
-  await until(useDeploymentCompatibility().compatibility).toBeTruthy({
-    timeout: COMPATIBILITY_WAIT_MS
-  })
+  await until(() => answersForMissingNodes(markFor, missingNodeTypes)).toBe(
+    true,
+    { timeout: COMPATIBILITY_WAIT_MS }
+  )
 }
 
-async function offerCustomDeployment(): Promise<boolean> {
+async function offerCustomDeployment(
+  nodeTypes: readonly MissingNodeType[],
+  markFor: MarkFor
+): Promise<Offered> {
+  const workflowStore = useWorkflowStore()
+  const workflow = workflowStore.activeWorkflow
   const store = useDeploymentPickStore()
   await store.loadOnce()
-  if (!store.buildsVisible || store.bootDeployment !== null) return false
-  await compatibilityAnswered()
-  return openWorkflowNeedsDeploymentDialog()
+  if (!store.buildsVisible || store.bootDeployment !== null) return 'overlay'
+  await compatibilityAnswered(
+    markFor,
+    nodesNeedingDeployment(nodeTypes).map(missingNodeTypeName)
+  )
+  if (workflowStore.activeWorkflow !== workflow) return 'superseded'
+  return (await openWorkflowNeedsDeploymentDialog()) ? 'dialog' : 'overlay'
 }
 
 /**
@@ -37,7 +57,8 @@ async function offerCustomDeployment(): Promise<boolean> {
  * replacement open the custom deployment dialog; otherwise the error overlay.
  */
 export function noticeMissingNodes(
-  nodeTypes: readonly MissingNodeType[]
+  nodeTypes: readonly MissingNodeType[],
+  markFor: MarkFor
 ): void {
   const showOverlay = () => useExecutionErrorStore().showErrorOverlay()
   if (
@@ -47,9 +68,9 @@ export function noticeMissingNodes(
     showOverlay()
     return
   }
-  offerCustomDeployment().then(
-    (opened) => {
-      if (!opened) showOverlay()
+  offerCustomDeployment(nodeTypes, markFor).then(
+    (offered) => {
+      if (offered === 'overlay') showOverlay()
     },
     (error: unknown) => {
       reportError(error, {

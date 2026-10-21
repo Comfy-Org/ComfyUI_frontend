@@ -1,14 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, shallowRef } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
-import type {
-  DeploymentCompatibility,
-  WorkspaceDeployment
-} from '@/platform/workspace/api/workspaceApi'
-import type { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
+import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import {
   loadedEvent,
   reduceDeploymentPick
@@ -19,24 +17,10 @@ import {
 } from '@/platform/workspace/noticeMissingNodes'
 import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import type { MarkFor } from '@/platform/workspace/workflowDeploymentOffer'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 vi.mock(import('@/composables/useFeatureFlags'))
-
-const compatibility = await vi.hoisted(async () => {
-  const { shallowRef } = await import('vue')
-  return shallowRef<DeploymentCompatibility | null>(null)
-})
-vi.mock(
-  import('@/platform/workspace/composables/useDeploymentCompatibility'),
-  () => ({
-    workflowNodeTypes: vi.fn(() => []),
-    useDeploymentCompatibility: () =>
-      fromPartial<ReturnType<typeof useDeploymentCompatibility>>({
-        compatibility
-      })
-  })
-)
 
 const offered = vi.hoisted(() => ({ value: true }))
 vi.mock(
@@ -62,6 +46,9 @@ const UNSUPPORTED: MissingNodeType[] = [
   { type: 'BiRefNet', cnrId: 'comfyui-birefnet', isReplaceable: false }
 ]
 
+const cloudMark = shallowRef<DeploymentCompatibilityMark | null>(null)
+const markFor: MarkFor = (id) => (id === null ? cloudMark.value : null)
+
 function listing(
   buildsVisible: boolean,
   bootDeployment: WorkspaceDeployment | null,
@@ -78,7 +65,7 @@ function listing(
 describe(noticeMissingNodes, () => {
   beforeEach(() => {
     offered.value = true
-    compatibility.value = null
+    cloudMark.value = null
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockReset()
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockResolvedValue(true)
   })
@@ -91,32 +78,44 @@ describe(noticeMissingNodes, () => {
       listing(true, null, [deployment])
     })
 
-    it('opens the dialog once the check answers', async () => {
-      noticeMissingNodes(UNSUPPORTED)
+    it('opens the dialog once the check answers for this workflow', async () => {
+      noticeMissingNodes(UNSUPPORTED, markFor)
       await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS - 1)
       expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
 
-      compatibility.value = {
-        deployments: [{ deployment_id: 'dep-1', missing_node_types: [] }],
-        cloud: { missing_node_types: ['BiRefNet'] }
-      }
+      cloudMark.value = { kind: 'missing', nodeTypes: ['BiRefNet'] }
       await vi.advanceTimersByTimeAsync(0)
 
       expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
     })
 
-    it('opens the dialog without the check once it has waited long enough', async () => {
-      noticeMissingNodes(UNSUPPORTED)
-      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS)
+    it('waits past an answer for another workflow, then opens without the check', async () => {
+      cloudMark.value = { kind: 'missing', nodeTypes: ['RMBG'] }
+
+      noticeMissingNodes(UNSUPPORTED, markFor)
+      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS - 1)
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(1)
 
       expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
+    })
+
+    it('shows neither the dialog nor the overlay once another workflow is active', async () => {
+      noticeMissingNodes(UNSUPPORTED, markFor)
+      useWorkflowStore().activeWorkflow = fromPartial<
+        NonNullable<ReturnType<typeof useWorkflowStore>['activeWorkflow']>
+      >({ path: 'workflows/other.json' })
+      await vi.advanceTimersByTimeAsync(COMPATIBILITY_WAIT_MS)
+
+      expect(openWorkflowNeedsDeploymentDialog).not.toHaveBeenCalled()
+      expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
     })
   })
 
   it('offers a custom deployment instead of the overlay on Comfy Cloud, to an account that may create Builds', async () => {
     listing(true, null)
 
-    noticeMissingNodes(UNSUPPORTED)
+    noticeMissingNodes(UNSUPPORTED, markFor)
 
     await vi.waitFor(() =>
       expect(openWorkflowNeedsDeploymentDialog).toHaveBeenCalledOnce()
@@ -165,7 +164,7 @@ describe(noticeMissingNodes, () => {
       offered.value = offer
       listing(builds, boot)
 
-      noticeMissingNodes(nodes)
+      noticeMissingNodes(nodes, markFor)
 
       await vi.waitFor(() =>
         expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
@@ -178,7 +177,7 @@ describe(noticeMissingNodes, () => {
     vi.mocked(openWorkflowNeedsDeploymentDialog).mockResolvedValue(false)
     listing(true, null)
 
-    noticeMissingNodes(UNSUPPORTED)
+    noticeMissingNodes(UNSUPPORTED, markFor)
 
     await vi.waitFor(() =>
       expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)

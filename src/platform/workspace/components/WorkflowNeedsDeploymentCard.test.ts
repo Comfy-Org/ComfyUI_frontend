@@ -70,6 +70,12 @@ function renderCard(
   const pinia = getActivePinia()!
   marks.clear()
   for (const [id, mark] of Object.entries(checked)) marks.set(id, mark)
+  if (marks.size > 0) {
+    marks.set('', {
+      kind: 'missing',
+      nodeTypes: ['BiRefNet', 'RMBG', 'Impact', 'KJ', 'QwenImage21Cache']
+    })
+  }
   useDeploymentPickStore(pinia).state = reduceDeploymentPick(
     { phase: 'idle' },
     loadedEvent({

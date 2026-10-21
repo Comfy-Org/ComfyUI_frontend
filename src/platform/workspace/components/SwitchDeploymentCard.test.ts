@@ -9,7 +9,14 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
-import { NOTHING_DISCARDED } from '@/platform/workspace/deploymentSwitchReload'
+import {
+  loadedEvent,
+  reduceDeploymentPick
+} from '@/platform/workspace/deploymentPickState'
+import {
+  NOTHING_DISCARDED,
+  reloadForDeploymentSwitch
+} from '@/platform/workspace/deploymentSwitchReload'
 import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
@@ -30,6 +37,15 @@ vi.mock(import('@/composables/useExternalLink'), () => ({
 vi.mock(import('@/platform/workspace/settleUnsavedWorkBeforeSwitch'), () => ({
   settleUnsavedWorkBeforeSwitch: vi.fn(),
   unsavedWorkBeforeSwitch: vi.fn(() => [])
+}))
+
+vi.mock(import('@/platform/workspace/deploymentSwitchReload'), () => ({
+  NOTHING_DISCARDED: new Map(),
+  reloadForDeploymentSwitch: vi.fn(),
+  takeDeploymentSwitchDiscard: vi.fn(() => null),
+  discardableState: vi.fn(() => null),
+  wasDiscardedOnSwitch: vi.fn(() => false),
+  takeDeploymentSwitchLanding: vi.fn(() => false)
 }))
 
 const i18n = createI18n({
@@ -145,6 +161,27 @@ describe('SwitchDeploymentCard', () => {
     expect(
       screen.getByRole('option', { name: /Studio staging/ })
     ).not.toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('reloads onto the deployment when this browser has already picked it since the page loaded', async () => {
+    const { user } = renderCard()
+    const store = useDeploymentPickStore()
+    store.state = reduceDeploymentPick(
+      { phase: 'idle' },
+      loadedEvent({
+        builds_visible: true,
+        items: CHOICES.map((choice) => choice.deployment),
+        picked_deployment_id: 'dep-prod'
+      })
+    )
+    store.bootDeployment = null
+
+    await user.click(screen.getByRole('button', { name: 'Switch' }))
+
+    expect(reloadForDeploymentSwitch).toHaveBeenCalledWith(
+      NOTHING_DISCARDED,
+      expect.any(Function)
+    )
   })
 
   it('stays on Comfy Cloud when the user cancels the save prompt', async () => {

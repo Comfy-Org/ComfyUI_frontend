@@ -9,7 +9,6 @@
 
 <script setup lang="ts">
 import { uniqBy } from 'es-toolkit'
-import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -37,12 +36,7 @@ const NAMES_SHOWN = 3
 const { t } = useI18n()
 const missingNodesErrorStore = useMissingNodesErrorStore()
 const missingModelStore = useMissingModelStore()
-const { deployments } = storeToRefs(useDeploymentPickStore())
 const { markFor } = useDeploymentCompatibility()
-
-const offer = computed(() =>
-  workflowDeploymentOffer(deployments.value, markFor)
-)
 
 const packs = computed(() =>
   missingPacksOf(
@@ -50,6 +44,12 @@ const packs = computed(() =>
       missingNodesErrorStore.missingNodesError?.nodeTypes ?? []
     )
   )
+)
+
+const offer = workflowDeploymentOffer(
+  useDeploymentPickStore().deployments,
+  markFor,
+  packs.value.flatMap((pack) => pack.nodeTypes)
 )
 const models = computed<MissingBuildModel[]>(() =>
   uniqBy(
@@ -97,7 +97,7 @@ const pitch = computed<CustomDeploymentPitch>(() => ({
   ...customDeploymentPitch(),
   brief: workflowDeploymentBrief(packs.value, models.value),
   missing: missing.value,
-  ...(offer.value.kind === 'noneRunIt'
+  ...(offer.kind === 'noneRunIt'
     ? {
         title: t('deploymentSwitcher.workflowNeedsDeployment.titleNoneRunIt'),
         note: t('deploymentSwitcher.workflowNeedsDeployment.noneRunIt')

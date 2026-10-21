@@ -123,6 +123,8 @@ import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable
 import { useDeploymentLabels } from '@/platform/workspace/composables/useDeploymentLabels'
 import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { MissingItemsRow } from '@/platform/workspace/customDeploymentPitch'
+import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitchReload'
+import type { DiscardedWork } from '@/platform/workspace/deploymentSwitchReload'
 import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
@@ -140,7 +142,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const pickStore = useDeploymentPickStore()
-const { isSwitching: isPicking } = storeToRefs(pickStore)
+const { isSwitching: isPicking, changeSinceBoot } = storeToRefs(pickStore)
 const { deploymentTitle, deploymentRowSubtitle, deploymentFullLabel } =
   useDeploymentLabels()
 
@@ -177,6 +179,11 @@ function choose(value: AcceptableValue) {
 const isSettling = ref(false)
 const isSwitching = computed(() => isSettling.value || isPicking.value)
 
+function landWhenAlreadyPicked(discarded: DiscardedWork) {
+  if (isPicking.value || changeSinceBoot.value === null) return
+  reloadForDeploymentSwitch(discarded, () => void pickStore.load())
+}
+
 async function switchDeployment() {
   const deployment = selected.value?.deployment
   if (!deployment || isSwitching.value) return
@@ -187,7 +194,10 @@ async function switchDeployment() {
     )
     if (discarded === null) return
     const refusal = await pickStore.pick(deployment.deployment_id, discarded)
-    if (refusal === null) return
+    if (refusal === null) {
+      landWhenAlreadyPicked(discarded)
+      return
+    }
     useToast().error(t('deploymentSwitcher.failedToSwitch'), {
       description: refusal,
       duration: 8000
