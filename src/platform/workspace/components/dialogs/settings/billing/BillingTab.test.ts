@@ -1,7 +1,8 @@
 import type {
   BillingOpReceiptPlan,
   BillingOpStatusResponse,
-  BillingStatusResponse,SubscriptionState
+  BillingStatusResponse,
+  SubscriptionState
 } from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -9,7 +10,6 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-
 
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
