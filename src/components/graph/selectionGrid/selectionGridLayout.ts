@@ -20,7 +20,7 @@ export interface BoxPosition {
   y: number
 }
 
-type GapAxis = 'x' | 'y'
+export type GapAxis = 'x' | 'y'
 
 export type SelectionLayoutKind = 'row' | 'column' | 'grid' | 'scattered'
 
@@ -30,11 +30,21 @@ interface GridCell {
   column: number
 }
 
-interface SelectionGrid {
+export interface SelectionGrid {
   kind: SelectionLayoutKind
   cells: GridCell[]
   rowCount: number
   columnCount: number
+}
+
+export interface GapBar {
+  key: string
+  axis: GapAxis
+  gutter: number
+  clearance: number
+  x: number
+  y: number
+  gap: number
 }
 
 interface AxisSpan {
@@ -280,6 +290,10 @@ function startAlong(cell: GridCell, axis: GapAxis): number {
   return spanOf(cell.box, axis).start
 }
 
+function endAlong(cell: GridCell, axis: GapAxis): number {
+  return endOf(spanOf(cell.box, axis))
+}
+
 function reachBefore(
   grid: SelectionGrid,
   axis: GapAxis,
@@ -501,4 +515,95 @@ export function computeTidyLayout(
     gap === undefined ? gapOf(grid) : safeGapOf(gap)
   )
   return positions.every(isFinitePosition) ? positions : []
+}
+
+/**
+ * Moves every row or column after `boundary` along the axis by `shift`, so one
+ * gap changes and every other gap stays the same.
+ */
+export function computeGapLayout(
+  grid: SelectionGrid,
+  axis: GapAxis,
+  boundary: number,
+  shift: number
+): BoxPosition[] {
+  if (boundary < 0 || boundary >= trackCountOf(grid, axis) - 1) return []
+  return grid.cells.map((cell) => {
+    const offset = trackIndexOf(cell, axis) > boundary ? shift : 0
+    return axis === 'x'
+      ? { id: cell.box.id, x: cell.box.x + offset, y: cell.box.y }
+      : { id: cell.box.id, x: cell.box.x, y: cell.box.y + offset }
+  })
+}
+
+function clearanceAcross(
+  grid: SelectionGrid,
+  axis: GapAxis,
+  boundary: number
+): number {
+  const crossAxis = crossAxisOf(axis)
+  const before = grid.cells.filter(
+    (cell) => trackIndexOf(cell, axis) <= boundary
+  )
+  const after = grid.cells.filter((cell) => trackIndexOf(cell, axis) > boundary)
+  const facingGaps = after.flatMap((late) =>
+    before
+      .filter((early) =>
+        spansOverlap(spanOf(early.box, crossAxis), spanOf(late.box, crossAxis))
+      )
+      .map((early) => startAlong(late, axis) - endAlong(early, axis))
+  )
+  return Math.min(Number.POSITIVE_INFINITY, ...facingGaps)
+}
+
+function overlapCentre(a: AxisSpan, b: AxisSpan): number {
+  const start = Math.max(a.start, b.start)
+  const end = Math.min(endOf(a), endOf(b))
+  return start <= end
+    ? (start + end) / 2
+    : (a.start + a.size / 2 + b.start + b.size / 2) / 2
+}
+
+function barBetween(
+  before: GridCell,
+  after: GridCell,
+  axis: GapAxis,
+  clearance: number
+): GapBar {
+  const crossAxis = crossAxisOf(axis)
+  const gapStart = endAlong(before, axis)
+  const gapEnd = startAlong(after, axis)
+  const gap = gapEnd - gapStart
+  const along = (gapStart + gapEnd) / 2
+  const across = overlapCentre(
+    spanOf(before.box, crossAxis),
+    spanOf(after.box, crossAxis)
+  )
+  return {
+    key: JSON.stringify([axis, before.box.id, after.box.id]),
+    axis,
+    gutter: trackIndexOf(before, axis),
+    clearance: Math.max(0, Math.min(clearance, gap)),
+    x: axis === 'x' ? along : across,
+    y: axis === 'x' ? across : along,
+    gap
+  }
+}
+
+/**
+ * One handle per pair of neighbouring boxes, centred between them. `gap` is the
+ * space between the pair; `clearance` is how far that gap can shrink before it
+ * reaches zero or any nodes on either side touch.
+ */
+export function computeGapBars(grid: SelectionGrid): GapBar[] {
+  if (grid.kind === 'scattered') return []
+  return AXES.flatMap((axis) => {
+    const clearances = Array.from(
+      { length: Math.max(0, trackCountOf(grid, axis) - 1) },
+      (_, boundary) => clearanceAcross(grid, axis, boundary)
+    )
+    return neighbourPairs(grid.cells, axis).map(([before, after]) =>
+      barBetween(before, after, axis, clearances[trackIndexOf(before, axis)])
+    )
+  })
 }

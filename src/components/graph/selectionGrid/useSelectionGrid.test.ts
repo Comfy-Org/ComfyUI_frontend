@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
@@ -48,5 +48,22 @@ describe('useSelectionGrid', () => {
       b.id,
       unpinnedLater.id
     ])
+  })
+
+  it.for([
+    { nodes: 'a pinned node', pinned: true, moved: false },
+    { nodes: 'a movable node', pinned: false, moved: true }
+  ])('reports a move for $nodes: $moved', ({ pinned, moved }) => {
+    const graph = new LGraph()
+    const node = nodeIn(graph, 'Node')
+    node.flags.pinned = pinned
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph, setDirty: vi.fn() })
+    canvasStore.currentGraph = graph
+    const { moveBoxes } = useSelectionGrid()
+
+    expect(
+      moveBoxes([node], [{ id: node.id, x: 10, y: 10 }], { captureUndo: false })
+    ).toBe(moved)
   })
 })

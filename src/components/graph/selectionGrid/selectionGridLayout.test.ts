@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import {
   MAX_TIDY_GAP,
+  computeGapBars,
+  computeGapLayout,
   computeTidyLayout,
   detectSelectionGrid,
   tidyGapOf
@@ -56,6 +58,9 @@ const overlapping = (boxes: LayoutBox[]): boolean =>
           b.y < a.y + a.height
       )
   )
+
+const keyOf = (axis: 'x' | 'y', before: string, after: string) =>
+  JSON.stringify([axis, before, after])
 
 const messyGrid = [
   box('a', 0, 0, 200, 100),
@@ -490,5 +495,142 @@ describe('tidyGapOf', () => {
     const row = [box('a', 0, 0, 100, 100), box('b', 300, 0, 100, 100)]
 
     expect(tidyGapOf(row)).toBe(MAX_TIDY_GAP)
+  })
+})
+
+describe('computeGapLayout', () => {
+  const row = [
+    box('a', 100, 50, 200, 100),
+    box('b', 310, 60, 150, 300),
+    box('c', 520, 40, 180, 120)
+  ]
+
+  it('changes only the dragged gap in a row', () => {
+    const result = moved(
+      row,
+      computeGapLayout(detectSelectionGrid(row), 'x', 0, 20)
+    )
+
+    expect(byId(result, 'a')).toEqual(byId(row, 'a'))
+    expect([
+      gapBetween(result, 'a', 'b', 'x'),
+      gapBetween(result, 'b', 'c', 'x')
+    ]).toEqual([30, 60])
+  })
+
+  it.for([
+    { axis: 'x' as const, still: 'y' as const, fixed: ['a', 'c'] },
+    { axis: 'y' as const, still: 'x' as const, fixed: ['a', 'b'] }
+  ])(
+    'moves only the grid nodes after the gap, along $axis',
+    ({ axis, still, fixed }) => {
+      const result = moved(
+        alignedGrid,
+        computeGapLayout(detectSelectionGrid(alignedGrid), axis, 0, 75)
+      )
+
+      expect(result.map((b) => b[still])).toEqual(
+        alignedGrid.map((b) => b[still])
+      )
+      expect(fixed.map((id) => byId(result, id))).toEqual(
+        fixed.map((id) => byId(alignedGrid, id))
+      )
+    }
+  )
+
+  it('moves every node past the gap, in every row', () => {
+    const result = moved(
+      alignedGrid,
+      computeGapLayout(detectSelectionGrid(alignedGrid), 'x', 0, 30)
+    )
+
+    expect(byId(result, 'b').x).toBe(290)
+    expect(byId(result, 'd').x).toBe(290)
+  })
+
+  it('returns nothing for a gap index outside the grid', () => {
+    expect(computeGapLayout(detectSelectionGrid(row), 'y', 0, 30)).toEqual([])
+  })
+})
+
+describe('computeGapBars', () => {
+  it('puts a bar in each gap between neighbours of a grid', () => {
+    const bars = computeGapBars(
+      detectSelectionGrid([
+        box('a', 0, 0, 200, 100),
+        box('b', 240, 0, 200, 100),
+        box('c', 0, 140, 200, 100),
+        box('d', 240, 140, 200, 100)
+      ])
+    )
+
+    expect(bars.map(({ key, ...bar }) => bar)).toEqual([
+      { axis: 'x', gutter: 0, clearance: 40, x: 220, y: 50, gap: 40 },
+      { axis: 'x', gutter: 0, clearance: 40, x: 220, y: 190, gap: 40 },
+      { axis: 'y', gutter: 0, clearance: 40, x: 100, y: 120, gap: 40 },
+      { axis: 'y', gutter: 0, clearance: 40, x: 340, y: 120, gap: 40 }
+    ])
+  })
+
+  it('centres each bar between its own two nodes and limits it to the closest clearance across the gap', () => {
+    const bars = computeGapBars(detectSelectionGrid(alignedGrid))
+
+    expect(bars.find((bar) => bar.key === keyOf('x', 'a', 'b'))).toMatchObject({
+      x: 230,
+      gap: 60,
+      clearance: 20
+    })
+    expect(bars.find((bar) => bar.key === keyOf('y', 'b', 'd'))).toMatchObject({
+      y: 180,
+      gap: 40,
+      clearance: 40
+    })
+  })
+
+  it('gives a different key to each pair of neighbours, whatever their ids', () => {
+    const bars = computeGapBars(
+      detectSelectionGrid([
+        box('a:b', 0, 0, 100, 100),
+        box('c', 140, 0, 100, 100),
+        box('a', 280, 0, 100, 100),
+        box('b:c', 420, 0, 100, 100)
+      ])
+    )
+
+    expect(new Set(bars.map((bar) => bar.key)).size).toBe(bars.length)
+  })
+
+  it.for([
+    {
+      name: 'no nodes face each other across it',
+      boxes: [box('a', 0, 0, 100, 100), box('b', 150, 99.6, 100, 0.8)]
+    },
+    {
+      name: 'its own nodes do not face each other but others across it do',
+      boxes: [
+        box('a', 0, 0, 100, 100),
+        box('b', 150, 99.6, 100, 0.8),
+        box('c', 300, 50, 100, 50.4)
+      ]
+    }
+  ])('lets a gap close to zero when $name', ({ boxes }) => {
+    const bars = computeGapBars(detectSelectionGrid(boxes))
+
+    expect(bars.find((bar) => bar.key === keyOf('x', 'a', 'b'))).toMatchObject({
+      gap: 50,
+      clearance: 50
+    })
+  })
+
+  it('never lets a gap shrink further when its nodes already overlap a little', () => {
+    const boxes = [box('a', 0, 0, 100, 100), box('b', 99.8, 0, 100, 100)]
+
+    const [bar] = computeGapBars(detectSelectionGrid(boxes))
+
+    expect(bar.clearance).toBe(0)
+  })
+
+  it('shows no bars for a scattered selection', () => {
+    expect(computeGapBars(detectSelectionGrid(messyGrid))).toEqual([])
   })
 })
