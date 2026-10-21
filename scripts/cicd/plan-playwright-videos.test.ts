@@ -9,7 +9,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
@@ -20,7 +20,11 @@ const script = join(import.meta.dirname, 'plan-playwright-videos.sh')
 const bash = '/bin/bash'
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
 
-function fixture(chromiumCount: number, cloudCount = 0) {
+function fixture(
+  chromiumCount: number,
+  cloudCount = 0,
+  extraChromiumCounts: number[] = []
+) {
   const root = mkdtempSync(join(tmpdir(), 'playwright-video-plan-'))
   const config = join(root, 'playwright.config.ts')
   const spec = join(root, 'changed.spec.ts')
@@ -51,15 +55,24 @@ function fixture(chromiumCount: number, cloudCount = 0) {
       ].join('\n')
   )
   writeFileSync(join(root, 'unrelated.spec.ts'), imports + source(100))
+  const extraSpecs = extraChromiumCounts.map((count, i) => {
+    const file = join(root, `extra-${i}.spec.ts`)
+    writeFileSync(file, imports + source(count))
+    return file
+  })
 
   return {
     spec,
     root,
     run(env: Record<string, string> = {}) {
-      return spawnSync('bash', [script, '--config', config, spec], {
-        encoding: 'utf8',
-        env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: '', ...env }
-      })
+      return spawnSync(
+        'bash',
+        [script, '--config', config, spec, ...extraSpecs],
+        {
+          encoding: 'utf8',
+          env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: '', ...env }
+        }
+      )
     },
     [Symbol.dispose]() {
       rmSync(root, { recursive: true, force: true })
@@ -87,6 +100,39 @@ describe('Playwright video shard planning', () => {
           specs: [{ file: expect.any(String), key: expect.any(String) }]
         }))
       })
+    }
+  )
+
+  it.for([
+    [
+      'balances whole specs by test count',
+      60,
+      [30, 30, 10],
+      [
+        ['changed.spec.ts'],
+        ['extra-0.spec.ts', 'extra-2.spec.ts'],
+        ['extra-1.spec.ts']
+      ]
+    ],
+    [
+      'plans at most one shard per spec',
+      100,
+      [100],
+      [['changed.spec.ts'], ['extra-0.spec.ts']]
+    ]
+  ] satisfies [string, number, number[], string[][]][])(
+    '%s',
+    ([, changedCount, extraCounts, shards]) => {
+      using files = fixture(changedCount, 0, extraCounts)
+      const result = files.run()
+
+      expect(result).toMatchObject({ status: 0 })
+      expect(
+        JSON.parse(result.stdout).matrix.include.map(
+          (shard: { specs: { file: string }[] }) =>
+            shard.specs.map(({ file }) => basename(file))
+        )
+      ).toEqual(shards)
     }
   )
 
@@ -155,11 +201,21 @@ describe('Playwright video shard planning', () => {
 
 describe('independent video workflow', () => {
   it.for([
-    [['first.spec.ts', 'nested/a b.spec.ts'], [], 0],
-    [['first.spec.ts', 'failing.spec.ts'], ['failing.spec.ts'], 1]
-  ] satisfies [string[], string[], number][])(
+    [
+      ['first.spec.ts', 'nested/a b.spec.ts'],
+      [],
+      0,
+      ['key0.pass', 'key0.zip', 'key1.pass', 'key1.zip']
+    ],
+    [
+      ['first.spec.ts', 'failing.spec.ts'],
+      ['failing.spec.ts'],
+      1,
+      ['key0.pass', 'key0.zip', 'key1.zip']
+    ]
+  ] satisfies [string[], string[], number, string[]][])(
     'records %j one spec at a time and marks only passing specs cacheable',
-    ([files, failing, status]) => {
+    ([files, failing, status, expectedBlobs]) => {
       const workflow = z
         .object({
           jobs: z.object({
@@ -226,11 +282,6 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
             '--retries=0',
             file
           ])
-        )
-        const expectedBlobs = specs.flatMap(({ file, key }) =>
-          failing.includes(file)
-            ? [`${key}.zip`]
-            : [`${key}.pass`, `${key}.zip`]
         )
         const blobs = readdirSync(join(root, 'blob-report'))
         expect(blobs).toEqual(expect.arrayContaining(expectedBlobs))
