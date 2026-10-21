@@ -18,6 +18,35 @@ function useConsentedAgentPanelStore() {
   return store
 }
 
+describe('agentPanelStore funds rechecks', () => {
+  it('releases a stalled recheck after a bounded hold', () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const store = useAgentPanelStore()
+    store.beginFundsRecheck('account-a')
+
+    vi.advanceTimersByTime(9_999)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+
+    vi.advanceTimersByTime(1)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+  })
+
+  it('stays pending until every admitted recheck for an identity settles', () => {
+    const store = useAgentPanelStore()
+    const first = store.beginFundsRecheck('account-a')
+    const second = store.beginFundsRecheck('account-a')
+
+    store.finishFundsRecheck(second)
+
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+    store.finishFundsRecheck(first)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+  })
+})
+
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
