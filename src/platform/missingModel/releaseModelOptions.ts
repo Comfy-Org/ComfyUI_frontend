@@ -9,12 +9,11 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 /**
  * A loader input's model options in the node catalog this page booted with,
  * when it booted on a developer-platform deployment (FE-2434): ingest served
- * that catalog from the deployment's Release. Until the boot has settled
- * where the page runs, waits for the boot listing at most
- * `DEPLOYMENT_LISTING_BACKSTOP_MS` (its sign-in step can hang before the
- * request timeout starts), or until `signal` aborts; undefined on Comfy
- * Cloud, when the listing failed or did not answer in time, and when the
- * check was aborted.
+ * that catalog from the deployment's Release. Waits for the boot listing
+ * that says where the page runs, at most `DEPLOYMENT_LISTING_BACKSTOP_MS`
+ * (its sign-in step can hang before the request timeout starts), or until
+ * `signal` aborts; undefined on Comfy Cloud, when the listing failed or did
+ * not answer in time, and when the check was aborted.
  */
 export const releaseModelOptions: ReleaseModelOptions = async (
   nodeType,

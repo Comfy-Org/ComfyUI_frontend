@@ -20,17 +20,11 @@ export const DEPLOYMENT_LISTING_BACKSTOP_MS =
  * The pauses before each retry of the page's boot listing when it fails
  * without a definite answer (a 5xx, a 408 or 429, a network error, a
  * request timeout): three attempts in all. The editor's boot waits no
- * longer than `DEPLOYMENT_LISTING_BACKSTOP_MS` for them, or
- * `DEPLOYMENT_LISTING_NO_HINT_WAIT_MS` with no hint.
+ * longer than `DEPLOYMENT_LISTING_BACKSTOP_MS` for them.
  */
 export const DEPLOYMENT_LISTING_RETRY_DELAYS_MS: readonly number[] = [
   1_000, 2_000
 ]
 
-/**
- * How long the editor's boot waits for the listing when this browser has no
- * hint for the workspace and no deployment link opened the page. Past it the
- * page boots on Comfy Cloud's models, and says so only if the listing then
- * names a deployment.
- */
+/** How long the boot waits for the listing when this browser has no deployment hint or link. */
 export const DEPLOYMENT_LISTING_NO_HINT_WAIT_MS = 5_000

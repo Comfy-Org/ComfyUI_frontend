@@ -27,17 +27,8 @@ export function couldBootOnDeployment(): boolean {
 }
 
 /**
- * Waits for the boot listing to say which deployment this page booted on,
- * so the editor offers that deployment's models. True when it said so
- * (Comfy Cloud included), and at once on Comfy Cloud's models when this
- * browser last booted on Comfy Cloud and no link names a deployment
- * (`couldBootOnDeployment`). With a hint or a link naming a deployment it
- * waits at most `DEPLOYMENT_LISTING_BACKSTOP_MS`, and is false when the
- * listing failed after its retries or did not answer in time. With no hint
- * it waits at most `DEPLOYMENT_LISTING_NO_HINT_WAIT_MS` and is true either
- * way; `onLateDeployment` runs if a listing that answers after that names a
- * deployment. Whenever the listing did not say, the page boots on Comfy
- * Cloud's models (`bootOnComfyCloud`).
+ * Waits for the boot listing to say where this page runs: up to 5 s with no hint, 45 s when a hint or link names a deployment.
+ * `onLateDeployment` runs when a listing that answers after the 5 s names a deployment.
  */
 export async function waitForDeploymentPick(
   onLateDeployment: () => void = () => {}
