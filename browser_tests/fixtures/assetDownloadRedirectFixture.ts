@@ -14,13 +14,16 @@ interface AssetRedirect {
   bytes: Buffer
   requestHeaders: Record<string, string>[]
   storageCookies: (string | undefined)[]
+  assertStorageRejectsCredentials: () => Promise<void>
 }
 
 export const assetDownloadRedirectTest = webSessionTest.extend<{
+  rail: 'cookie' | 'token'
   assetRedirect: AssetRedirect
 }>({
+  rail: ['cookie', { option: true }],
   assetRedirect: [
-    async ({ page, networkPolicy, initialLocalStorage }, use) => {
+    async ({ page, networkPolicy, initialLocalStorage, rail }, use) => {
       const bytes = await readFile(assetPath('test_upload_image.png'))
       const requestHeaders: Record<string, string>[] = []
       const storageCookies: (string | undefined)[] = []
@@ -50,7 +53,33 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
       const storageOrigin = `http://127.0.0.1:${address.port}`
       networkPolicy.origins.add(storageOrigin)
 
+      const assertStorageRejectsCredentials = async () => {
+        const anonymousStatus = await page.evaluate(
+          async (origin) =>
+            (await fetch(`${origin}/signed.png`, { credentials: 'omit' }))
+              .status,
+          storageOrigin
+        )
+        const credentialed = await page.evaluate(async (origin) => {
+          try {
+            await fetch(`${origin}/signed.png`, { credentials: 'include' })
+            return 'resolved'
+          } catch {
+            return 'rejected'
+          }
+        }, storageOrigin)
+        storageCookies.length = 0
+        if (anonymousStatus !== 200 || credentialed !== 'rejected') {
+          throw new Error(
+            `storage stub must reject credentialed CORS; the redirect regression depends on it (omit: ${anonymousStatus}, include: ${credentialed})`
+          )
+        }
+      }
+
       try {
+        if (rail === 'token') {
+          await page.context().clearCookies({ name: WEB_SESSION_COOKIE.name })
+        }
         await page.context().addCookies([
           {
             name: 'storage_session',
@@ -83,6 +112,17 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
             const headers = await route.request().allHeaders()
             const cookie = new Headers(headers).get('cookie')
             requestHeaders.push(headers)
+            if (rail === 'token') {
+              await route.fulfill(
+                new Headers(headers).get('authorization')?.startsWith('Bearer ')
+                  ? {
+                      status: 302,
+                      headers: { Location: `${storageOrigin}/signed.png` }
+                    }
+                  : { status: 401 }
+              )
+              return
+            }
             const workspace =
               initialLocalStorage['Comfy.Workspace.LastWorkspaceId'] ??
               'ws-personal'
@@ -104,7 +144,12 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
             })
           }
         )
-        await use({ bytes, requestHeaders, storageCookies })
+        await use({
+          bytes,
+          requestHeaders,
+          storageCookies,
+          assertStorageRejectsCredentials
+        })
       } finally {
         networkPolicy.origins.delete(storageOrigin)
         await new Promise<void>((resolve) => storage.close(() => resolve()))
