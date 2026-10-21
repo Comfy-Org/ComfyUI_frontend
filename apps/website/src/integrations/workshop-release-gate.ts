@@ -12,6 +12,7 @@ import { workshopClientBoundary } from './workshop-client-boundary'
 
 import {
   HUB_APPS_PATH,
+  HUB_CREATORS_PATH,
   HUB_MODELS_PATH,
   HUB_WORKFLOWS_PATH,
   oldModelLinks
@@ -32,6 +33,12 @@ import {
 } from '@/config/workshop-release'
 
 const entry = (name: string) => join(websiteRoot, 'src/routes/models', name)
+const creatorsEntry = (name: string) =>
+  join(websiteRoot, 'src/routes/hub/creators', name)
+
+const CMS_HUB_ROUTES = [
+  { pattern: HUB_CREATORS_PATH, entrypoint: creatorsEntry('index.astro') }
+]
 
 const WORKSHOP_ONLY_ROUTES = [
   { pattern: '/checkout-opening', entrypoint: entry('checkout-opening.astro') },
@@ -162,9 +169,12 @@ function installCmsRoutes(
 function installLocalizedHubRoutes(
   injectRoute: HookParameters<'astro:config:setup'>['injectRoute']
 ) {
-  const hubRoutes = modelsBuildRoutes(isWorkshopInBuild()).filter((route) =>
-    route.pattern.startsWith('/hub/')
-  )
+  const hubRoutes = [
+    ...modelsBuildRoutes(isWorkshopInBuild()).filter((route) =>
+      route.pattern.startsWith('/hub/')
+    ),
+    ...CMS_HUB_ROUTES
+  ]
   for (const locale of PREFIXED_CATALOG_LOCALES)
     for (const route of hubRoutes)
       injectRoute({
@@ -222,7 +232,11 @@ export function workshopReleaseGate(): AstroIntegration {
             ...route,
             ...cmsRendering(route)
           })
-        if (cmsEnabled()) installLocalizedHubRoutes(injectRoute)
+        if (cmsEnabled()) {
+          for (const route of CMS_HUB_ROUTES)
+            injectRoute({ ...route, prerender: false })
+          installLocalizedHubRoutes(injectRoute)
+        }
       },
       'astro:build:start': () => {
         assertWorkshopCloudEnvForBuild()

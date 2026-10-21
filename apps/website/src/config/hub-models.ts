@@ -5,6 +5,7 @@ import { modelAliasUrls, modelPageUrls } from './model-urls'
 export const HUB_MODELS_PATH = '/hub/models'
 export const HUB_WORKFLOWS_PATH = '/hub/workflows'
 export const HUB_APPS_PATH = '/hub/apps'
+export const HUB_CREATORS_PATH = '/hub/creators'
 const WORKFLOW_SLUG_PREFIX = 'workflows/'
 const APP_SLUG_PREFIX = 'apps/'
 

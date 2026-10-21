@@ -146,6 +146,7 @@ const LOCALE_INVARIANT_EXTRA_PATHS = [
   '/hub/models',
   '/hub/workflows',
   '/hub/apps',
+  '/hub/creators',
   '/models'
 ]
 

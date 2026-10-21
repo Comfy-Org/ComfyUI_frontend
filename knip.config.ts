@@ -60,6 +60,7 @@ const config: KnipConfig = {
         'src/routes/models/*.{astro,ts}',
         'src/routes/admin/*.{astro,ts}',
         'src/routes/catalog/*.{astro,ts}',
+        'src/routes/hub/creators/*.astro',
         'scripts/export-cms*.ts',
         // CMS verification and local-demo CLIs, run by path with tsx.
         'scripts/{check,test}-*.ts',
