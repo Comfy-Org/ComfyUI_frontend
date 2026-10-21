@@ -1457,6 +1457,29 @@ describe('useWorkflowStore', () => {
         }
       )
 
+      // The production crashes (CLOUD-FRONTEND-PROD-2Z2/-2Z3) had a tracker
+      // with a null initial state and a draft as its active state: a stored
+      // `null` overlaid by a newer draft.
+      it('rejects stored null even when a newer draft exists, and keeps the draft', async () => {
+        enableWorkflowPersistence()
+        await syncRemoteWorkflowsWithMeta([
+          { path: 'a.json', modified: 100, size: 1 }
+        ])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        const draftStore = saveV2Draft(workflow.path, {
+          data: defaultGraphJSON,
+          name: 'a.json'
+        })
+        storedAs('null')
+
+        await expect(workflow.load()).rejects.toThrow('not a JSON object')
+
+        expect(workflow.changeTracker).toBeNull()
+        expect(workflow.initialState).toBeNull()
+        expect(workflow.activeState).toBeNull()
+        expect(draftStore.getDraft(workflow.path)?.data).toBe(defaultGraphJSON)
+      })
+
       it('reports the kind of content without including the path', async () => {
         await syncRemoteWorkflows(['secret-name.json'])
         const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
