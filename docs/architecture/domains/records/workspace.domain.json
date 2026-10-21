@@ -1,7 +1,7 @@
 {
   "id": "workspace",
   "capability": "Workspace collaboration",
-  "description": "Team workspace collaboration and membership: the workspace API client and web-session transport, the team workspace store, workspace switching, create, edit, delete, and leave flows, members, roles, invites and invite links, workspace deep links, partner-node access governance, member credit limits, activity history, and the workspace settings and user popover surfaces. Workspace-scoped credential minting belongs to authentication; plans, subscriptions, top-ups, invoices, and billing capabilities belong to billing.",
+  "description": "Team workspace collaboration and membership: the workspace API client and web-session transport, the team workspace store, workspace switching, create, edit, delete, and leave flows, members, roles, invites and invite links, workspace deep links, partner-node access governance, member credit limits, and the workspace settings and user popover surfaces. Workspace-scoped credential minting belongs to authentication; plans, subscriptions, top-ups, invoices, and billing capabilities belong to billing.",
   "modules": [
     {
       "path": "src/platform/workspace/api/__mocks__/**",
