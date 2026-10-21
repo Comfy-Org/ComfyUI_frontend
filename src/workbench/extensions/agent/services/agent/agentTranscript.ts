@@ -353,12 +353,6 @@ function parseToolCalls(
   return parsedByCallId.size > 0 ? [...parsedByCallId.values()] : undefined
 }
 
-/**
- * A completed row's `content.thinking` entries, each placed in front of the
- * tool call that its round made first, the way the live turn showed it. An
- * entry with no anchor, or one naming a call this transcript does not have,
- * follows the calls. A malformed entry is skipped rather than failing the row.
- */
 function insertThinking(
   parts: AssistantMessage['parts'],
   content: Record<string, unknown> | undefined

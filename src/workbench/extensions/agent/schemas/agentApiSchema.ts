@@ -144,10 +144,8 @@ export const zPersistedToolCallSummary = zToolCallSummary.extend({
 export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
- * One entry of a completed assistant row's `content.thinking`: the
- * `agent_thinking` text one model round showed live, persisted so a reload or
- * chat switch keeps it in the work summary. `tool_call_id` names the round's
- * first tool call; the final round has none.
+ * One persisted `content.thinking` entry: a model round's thinking text,
+ * anchored to that round's first tool call when it made one.
  */
 export const zPersistedThinkingEntry = z.object({
   text: z.string(),

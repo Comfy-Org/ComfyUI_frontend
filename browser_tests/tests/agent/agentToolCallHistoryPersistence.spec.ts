@@ -20,12 +20,6 @@ import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 // This test mimics that verbatim content pass-through (the shared fixture's
 // own GET mock does not carry tool_calls) and asserts the summary survives a
 // refresh.
-//
-// PM-717 / PM-1560 (Windows QA case Q4): the thinking the live turn showed in
-// that same trace vanished on chat switch while the tool calls stayed. A
-// completed row now carries it as `content.thinking`, one entry per model
-// round, anchored to the round's first `tool_call_id`; the trace must put each
-// entry back in front of its round's calls and the final round's after them.
 const THINKING_ROUND_1 =
   'The user wants a loader node, so I will search for one.'
 const THINKING_ROUND_2 = 'Found a match; adding it to the graph.'
@@ -43,7 +37,13 @@ test.use({ connectWebSocketToServer: false })
 
 test(
   'keeps a completed turn work summary, thinking included, after reload and chat switching',
-  { tag: ['@cloud', '@ui'] },
+  {
+    tag: ['@cloud', '@ui'],
+    annotation: {
+      type: 'source',
+      description: 'https://linear.app/comfyorg/issue/PM-717'
+    }
+  },
   async ({ page, promptHistory, workflowSelection }) => {
     await new AgentPanel(page).open()
     await page
