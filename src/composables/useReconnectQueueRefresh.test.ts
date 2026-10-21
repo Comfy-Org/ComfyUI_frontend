@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -25,11 +25,35 @@ function makeJob(id: string, status: JobListItem['status']): JobListItem {
 
 vi.mock(import('@/scripts/api'))
 
+type ApiEventHandler = (event: CustomEvent) => void
+const apiEventHandlers = new Map<string, Set<ApiEventHandler>>()
+
 describe('useReconnectQueueRefresh', () => {
   beforeEach(() => {
+    apiEventHandlers.clear()
+    vi.mocked(api.addEventListener).mockImplementation((type, callback) => {
+      if (!callback) return
+      const handlers = apiEventHandlers.get(type) ?? new Set<ApiEventHandler>()
+      handlers.add(callback as ApiEventHandler)
+      apiEventHandlers.set(type, handlers)
+    })
+    vi.mocked(api.removeEventListener).mockImplementation((type, callback) => {
+      if (!callback) return
+      apiEventHandlers.get(type)?.delete(callback as ApiEventHandler)
+    })
+    vi.mocked(api.dispatchCustomEvent).mockImplementation((type, detail) => {
+      const event = new CustomEvent(type, { detail })
+      for (const handler of apiEventHandlers.get(type) ?? []) handler(event)
+      return true
+    })
     vi.mocked(api.getQueue).mockResolvedValue({ Running: [], Pending: [] })
     vi.mocked(api.getHistory).mockResolvedValue([])
     vi.mocked(api.getJobDetail).mockResolvedValue(undefined)
+    useExecutionStore().bindExecutionEvents()
+  })
+
+  afterEach(() => {
+    useExecutionStore().unbindExecutionEvents()
   })
 
   it('forwards running+pending job ids to clearActiveJobIfStale', async () => {
@@ -105,6 +129,19 @@ describe('useReconnectQueueRefresh', () => {
         .mock.calls.filter(([type]) => type === 'executed')
     }
 
+    function replayedExecutionFrames() {
+      return vi
+        .mocked(api.dispatchCustomEvent)
+        .mock.calls.filter(([type]) =>
+          [
+            'executed',
+            'execution_success',
+            'execution_error',
+            'execution_interrupted'
+          ].includes(type)
+        )
+    }
+
     it('replays the finished run outputs as executed frames', async () => {
       followRun('job-1')
       vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
@@ -115,7 +152,7 @@ describe('useReconnectQueueRefresh', () => {
         'job-1',
         expect.any(AbortSignal)
       )
-      expect(replayedExecutedFrames()).toEqual([
+      expect(replayedExecutionFrames()).toEqual([
         [
           'executed',
           {
@@ -124,23 +161,25 @@ describe('useReconnectQueueRefresh', () => {
             output: { images: [image] },
             prompt_id: 'job-1'
           }
+        ],
+        [
+          'execution_success',
+          { prompt_id: 'job-1', timestamp: expect.any(Number) }
         ]
       ])
     })
 
-    it('replays before the finished run is cleared, so listeners can still attribute it', async () => {
+    it('lets the terminal event clear the run after its output event', async () => {
       followRun('job-1')
       vi.mocked(api.getJobDetail).mockResolvedValue(finishedJob)
       const executionStore = useExecutionStore()
-      let activeWhenReplayed: string | null = null
-      vi.mocked(api.dispatchCustomEvent).mockImplementation(() => {
-        activeWhenReplayed = executionStore.activeJobId
-        return true
-      })
 
       await useReconnectQueueRefresh()()
 
-      expect(activeWhenReplayed).toBe('job-1')
+      expect(replayedExecutionFrames().map(([type]) => type)).toEqual([
+        'executed',
+        'execution_success'
+      ])
       expect(executionStore.activeJobId).toBeNull()
       expect(executionStore.queuedJobs).toEqual({})
     })
@@ -223,17 +262,64 @@ describe('useReconnectQueueRefresh', () => {
       expect(useExecutionStore().activeJobId).toBe('job-1')
     })
 
-    it('does not replay outputs of a run that failed, and stops following it', async () => {
+    it('dispatches a stored failure through the normal error handler', async () => {
       const executionStore = useExecutionStore()
       executionStore.queuedJobs['job-1'] = { nodes: {} }
       vi.mocked(api.getJobDetail).mockResolvedValue({
         ...finishedJob,
-        status: 'failed'
+        status: 'failed',
+        execution_error: {
+          node_id: '9',
+          node_type: 'SaveImage',
+          exception_message: 'disk full',
+          exception_type: 'OSError',
+          traceback: ['trace']
+        }
       })
 
       await useReconnectQueueRefresh()()
 
       expect(replayedExecutedFrames()).toEqual([])
+      expect(replayedExecutionFrames()).toEqual([
+        [
+          'execution_error',
+          expect.objectContaining({
+            prompt_id: 'job-1',
+            node_id: '9',
+            node_type: 'SaveImage',
+            executed: [],
+            exception_message: 'disk full',
+            exception_type: 'OSError',
+            traceback: ['trace'],
+            timestamp: expect.any(Number)
+          })
+        ]
+      ])
+      expect(executionStore.queuedJobs).toEqual({})
+    })
+
+    it('dispatches a cancelled run through the normal interruption handler', async () => {
+      const executionStore = useExecutionStore()
+      executionStore.queuedJobs['job-1'] = { nodes: {} }
+      vi.mocked(api.getJobDetail).mockResolvedValue({
+        ...finishedJob,
+        status: 'cancelled'
+      })
+
+      await useReconnectQueueRefresh()()
+
+      expect(replayedExecutionFrames()).toEqual([
+        [
+          'execution_interrupted',
+          {
+            prompt_id: 'job-1',
+            timestamp: expect.any(Number),
+            node_id: '',
+            node_type: '',
+            executed: []
+          }
+        ]
+      ])
       expect(executionStore.queuedJobs).toEqual({})
     })
 
@@ -268,7 +354,7 @@ describe('useReconnectQueueRefresh', () => {
       expect(executionStore.queuedJobs).toEqual({})
     })
 
-    it('does not touch a run that started while the outputs were being fetched', async () => {
+    it('routes recovered output by job when another run starts during the fetch', async () => {
       followRun('job-1')
       const executionStore = useExecutionStore()
       vi.mocked(api.getJobDetail).mockImplementation(async () => {
@@ -279,7 +365,9 @@ describe('useReconnectQueueRefresh', () => {
 
       await useReconnectQueueRefresh()()
 
-      expect(replayedExecutedFrames()).toEqual([])
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+      ])
       expect(executionStore.activeJobId).toBe('job-new')
       expect(Object.keys(executionStore.queuedJobs)).toContain('job-new')
     })
@@ -338,7 +426,7 @@ describe('useReconnectQueueRefresh', () => {
       expect(open.changeTracker.nodeOutputs).toBeUndefined()
     })
 
-    it('keeps a background workflow run outputs with that workflow instead of the open graph', async () => {
+    it('dispatches background output without writing its change tracker directly', async () => {
       const background = fromPartial<ComfyWorkflow>({
         path: 'workflows/other.json',
         changeTracker: { nodeOutputs: undefined }
@@ -348,10 +436,10 @@ describe('useReconnectQueueRefresh', () => {
 
       await useReconnectQueueRefresh()()
 
-      expect(replayedExecutedFrames()).toEqual([])
-      expect(background.changeTracker?.nodeOutputs).toEqual({
-        '9': { images: [image] }
-      })
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+      ])
+      expect(background.changeTracker?.nodeOutputs).toBeUndefined()
     })
 
     it('keeps a submitted job that becomes active during the refresh', async () => {
@@ -401,7 +489,7 @@ describe('useReconnectQueueRefresh', () => {
       expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-0'])
     })
 
-    it('still files a background workflow run outputs when a new run took the open graph', async () => {
+    it('routes background output by job when a new run took the open graph', async () => {
       const background = fromPartial<ComfyWorkflow>({
         path: 'workflows/other.json',
         changeTracker: { nodeOutputs: undefined }
@@ -415,9 +503,10 @@ describe('useReconnectQueueRefresh', () => {
 
       await useReconnectQueueRefresh()()
 
-      expect(background.changeTracker?.nodeOutputs).toEqual({
-        '9': { images: [image] }
-      })
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+      ])
+      expect(background.changeTracker?.nodeOutputs).toBeUndefined()
     })
 
     it('restores a run that finished during an interrupted refresh on the rerun, once', async () => {
@@ -440,7 +529,7 @@ describe('useReconnectQueueRefresh', () => {
       expect(api.getQueue).toHaveBeenCalledTimes(2)
     })
 
-    it('does not replay onto a queued run that started during the refresh', async () => {
+    it('does not clear a queued run that started during the refresh', async () => {
       const executionStore = useExecutionStore()
       executionStore.queuedJobs['job-2'] = { nodes: {} }
       followRun('job-1')
@@ -452,11 +541,13 @@ describe('useReconnectQueueRefresh', () => {
 
       await useReconnectQueueRefresh()()
 
-      expect(replayedExecutedFrames()).toEqual([])
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+      ])
       expect(executionStore.activeJobId).toBe('job-2')
     })
 
-    it('does not replay onto the open graph while another followed run is still live', async () => {
+    it('does not clear another followed run that is still live', async () => {
       const executionStore = useExecutionStore()
       executionStore.queuedJobs['job-0'] = { nodes: {} }
       followRun('job-1')
@@ -471,7 +562,9 @@ describe('useReconnectQueueRefresh', () => {
 
       await useReconnectQueueRefresh()()
 
-      expect(replayedExecutedFrames()).toEqual([])
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-0' })]
+      ])
       expect(executionStore.activeJobId).toBe('job-1')
       expect(Object.keys(executionStore.queuedJobs)).toEqual(['job-1'])
     })
@@ -516,7 +609,7 @@ describe('useReconnectQueueRefresh', () => {
       ])
     })
 
-    it('does not replay over a run that started and finished during the refresh', async () => {
+    it('still dispatches by job when another run starts and finishes during the refresh', async () => {
       followRun('job-1')
       const executionStore = useExecutionStore()
       vi.mocked(api.getJobDetail).mockImplementation(async () => {
@@ -527,7 +620,9 @@ describe('useReconnectQueueRefresh', () => {
 
       await useReconnectQueueRefresh()()
 
-      expect(replayedExecutedFrames()).toEqual([])
+      expect(replayedExecutedFrames()).toEqual([
+        ['executed', expect.objectContaining({ prompt_id: 'job-1' })]
+      ])
     })
 
     it('does not replay a run the restored socket already finished during the refresh', async () => {
