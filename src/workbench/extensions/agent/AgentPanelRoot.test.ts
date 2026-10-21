@@ -6,6 +6,7 @@ import type {
   AgentThreadListResponse,
   AgentThreadSummary,
   BillingStatus,
+  GlobalSetting,
   PaginationInfo,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
@@ -31,9 +32,11 @@ vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 
 import { i18n } from '@/i18n'
+import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePromptEditorTestSetup'
+import { useAgentConsent } from './composables/agent/useAgentConsent'
 import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 
 setupInlinePromptEditorDom()
@@ -99,15 +102,12 @@ const getServerFeature = vi.hoisted(() =>
 const focusNodeInstance = vi.hoisted(() => vi.fn())
 const socketSend = vi.hoisted(() => vi.fn())
 let agentSocket: ReturnType<typeof createFakeAgentSocket>
-const withConsent = vi.hoisted(() =>
-  vi.fn<(trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>>(
-    async (_trigger, onAccept) => onAccept()
-  )
-)
+const currentUserInfo = ref<{ id: string } | null>(null)
+const withConsent = vi.fn<
+  (trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>
+>(async (_trigger, onAccept) => onAccept())
 
-vi.mock<unknown>(import('./composables/agent/useAgentConsent'), () => ({
-  useAgentConsent: () => ({ withConsent })
-}))
+vi.mock(import('./composables/agent/useAgentConsent'), { spy: true })
 
 vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
   useFocusNode: () => ({ focusNodeInstance })
@@ -350,10 +350,12 @@ beforeEach(() => {
   )
   useCurrentUser().isLoggedIn = computed(() => true)
   useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
-  useCurrentUser().resolvedUserInfo = computed(() => ({
-    id: 'account-a'
-  }))
+  currentUserInfo.value = { id: 'account-a' }
+  useCurrentUser().resolvedUserInfo = computed(() => currentUserInfo.value)
   Object.assign(useAgentConsentStore(), { accepted: true })
+  const consent = useAgentConsent()
+  consent.withConsent = withConsent
+  vi.mocked(useAgentConsent).mockReturnValue(consent)
   vi.mocked(validateComfyWorkflow).mockImplementation(async (content) =>
     fromPartial<ComfyWorkflowJSON>(
       typeof content === 'object' && content !== null ? content : {}
@@ -6554,41 +6556,85 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentComposerStore().draft).toBe('build me a workflow')
   })
 
-  it('resumes the original Desktop submission once after consent and sign-in finish', async () => {
+  it('sends the original Desktop submission once after sign-in and consent persistence succeed', async () => {
     distribution.isCloud = false
     distribution.isDesktop = true
     makeTab('wf-42')
+    currentUserInfo.value = null
+    useCurrentUser().isLoggedIn = computed(() => currentUserInfo.value !== null)
     useAuthStore().currentUser = null
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
-    Object.assign(useAgentConsentStore(), { accepted: false })
-    let finishConsent = () => {}
-    withConsent.mockImplementationOnce(
-      (_trigger, onAccept) =>
-        new Promise<void>((resolve) => {
-          finishConsent = () => {
-            useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
-            vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
-              Authorization: 'Bearer id-token'
-            })
-            Object.assign(useAgentConsentStore(), { accepted: true })
-            onAccept()
-            resolve()
-          }
-        })
+    Object.assign(useAgentConsentStore(), { accepted: undefined })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-a',
+      'true'
     )
+    let finishSignIn!: () => void
+    const signIn = new Promise<void>((resolve) => {
+      finishSignIn = resolve
+    })
+    let confirmPersistence!: (response: Response) => void
+    const persistence = new Promise<Response>((resolve) => {
+      confirmPersistence = resolve
+    })
+    vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
+      async () => {
+        await signIn
+        useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
+        vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
+          Authorization: 'Bearer id-token'
+        })
+        currentUserInfo.value = { id: 'account-a' }
+        return true
+      }
+    )
+    vi.mocked(useAgentConsent).mockReset()
     const bodies = mockMessagesEndpoint('wf-42')
+    const consentPost = { method: 'POST', url: /\/api\/global-settings$/ }
+    respondToFetch(consentPost, () => persistence)
     renderWithSelectedTarget()
+    render(GlobalDialog, { global: { plugins: [i18n] } })
 
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('continue this submission')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    const agree = await screen.findByRole('button', {
+      name: 'Agree and continue'
+    })
+    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+    expect(fetchRequests(consentPost)).toHaveLength(0)
     expect(bodies).toHaveLength(0)
-    finishConsent()
+
+    await userEvent.click(agree)
+    await waitFor(() =>
+      expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+    )
+    expect(fetchRequests(consentPost)).toHaveLength(0)
+    expect(bodies).toHaveLength(0)
+
+    finishSignIn()
+    await waitFor(() => expect(fetchRequests(consentPost)).toHaveLength(1))
+    expect(useAgentConsentStore().accepted).toBe(false)
+    expect(bodies).toHaveLength(0)
+
+    confirmPersistence(
+      json(200, {
+        key: 'Comfy.AgentPanel.ConsentAccepted',
+        value: true,
+        updated_at: '2026-10-21T00:00:00Z'
+      } satisfies GlobalSetting)
+    )
     await screen.findByRole('button', { name: 'Stop' })
 
     await waitFor(() => expect(bodies).toHaveLength(1))
-    expect(withConsent).toHaveBeenCalledOnce()
-    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+    expect(bodies[0]).toMatchObject({
+      content: 'continue this submission',
+      workflow_id: 'wf-42'
+    })
+    expect(useAgentConsentStore().accepted).toBe(true)
+    expect(fetchRequests(consentPost)).toHaveLength(1)
+    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
   })
 
   it('restores a consent-held Desktop draft when its scope changes during the coach', async () => {
