@@ -174,6 +174,48 @@ describe('candidate prerequisites', () => {
     }
   )
 
+  it.for([
+    ['skipped non-cloud suites', 'false', {}, 1],
+    ['skipped non-cloud suites', 'true', {}, 0],
+    ['a failing cloud suite', 'true', { CLOUD: 'failure' }, 1],
+    ['a cancelled cloud suite', 'true', { CLOUD: 'cancelled' }, 1],
+    ['a skipped cloud suite', 'true', { CLOUD: 'skipped' }, 1],
+    ['a failing chromium suite', 'true', { SHARDED: 'failure' }, 1]
+  ] satisfies [string, string, Record<string, string>, number][])(
+    'E2E status with %s (release push %s, %j) exits %s',
+    ([_name, releasePush, overrides, expected]) => {
+      expect(
+        verdict('e2e-status', {
+          PREFLIGHT: 'success',
+          CHANGES: 'success',
+          SHOULD_RUN: 'true',
+          RELEASE_PUSH: releasePush,
+          SHARDED: 'skipped',
+          CLOUD: 'success',
+          BROWSERS: 'skipped',
+          NATIVE_LORA: 'skipped',
+          ...overrides
+        })
+      ).toBe(expected)
+    }
+  )
+
+  it.for([
+    ['playwright-tests-chromium-sharded', true],
+    ['playwright-tests', true],
+    ['playwright-tests-native-lora', true],
+    ['upload-e2e-coverage', true],
+    ['playwright-tests-cloud-sharded', false],
+    ['setup', false]
+  ] satisfies [string, boolean][])(
+    '%s is skipped on release pushes: %s',
+    ([job, skipped]) => {
+      expect(pipeline.jobs[job].if?.includes('is-release-push') ?? false).toBe(
+        skipped
+      )
+    }
+  )
+
   it.for(['e2e-status', 'deploy-and-comment'])(
     '%s does not wait for videos',
     (job) => {
