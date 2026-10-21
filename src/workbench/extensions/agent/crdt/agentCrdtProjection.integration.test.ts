@@ -307,25 +307,34 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     expect(graph.links.size).toBe(0)
   })
 
-  it('keeps a group on retry once the document holds it again', () => {
+  it('keeps only the groups the document holds again when retrying', () => {
     const { graph } = buildLiveGraph()
-    const group = new LiteGraph.LGraphGroup('Prompt group')
-    graph.add(group)
-    const saved = structuredClone(graph.serialize())
-    const { host, hostEdit, projection, destroy } = bindAndCatchUp(graph, saved)
+    const restored = new LiteGraph.LGraphGroup('Prompt group')
+    const dropped = new LiteGraph.LGraphGroup('Output group')
+    graph.add(restored)
+    graph.add(dropped)
+    const { host, hostEdit, projection, destroy } = bindAndCatchUp(
+      graph,
+      structuredClone(graph.serialize())
+    )
     onTestFinished(destroy)
-    const groups = host.getMap('meta').get('groups')
+    const [restoredGroup] = host.getMap('meta').get('groups') as unknown[]
 
-    vi.spyOn(graph, 'remove').mockImplementationOnce(() => {
+    const fail = () => {
       throw new Error('remove failed')
-    })
+    }
+    vi.spyOn(graph, 'remove')
+      .mockImplementationOnce(fail)
+      .mockImplementationOnce(fail)
     hostEdit(() => host.getMap('meta').set('groups', []))
     expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(true)
+    expect(graph.groups).toEqual([restored, dropped])
 
-    hostEdit(() => host.getMap('meta').set('groups', groups))
+    hostEdit(() => host.getMap('meta').set('groups', [restoredGroup]))
     expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
       failureCount: 0
     })
-    expect(graph.groups).toEqual([group])
+    expect(graph.groups).toEqual([restored])
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(false)
   })
 })
