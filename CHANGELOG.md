@@ -7,6 +7,11 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+### Changed
+
+- Relicensed from GPL-3.0-only to MIT. Releases up to and including 0.3.10
+  remain available under GPL-3.0-only.
+
 ### Added
 
 - Accept a non-empty owner-instance `path` and optional
