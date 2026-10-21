@@ -564,7 +564,8 @@ function finishStartup(outcome: 'completed' | 'failed') {
 // lookup never blocks the editor. A browser that is on a deployment then
 // offers models its Release may not have (its nodes and jobs are still the
 // deployment's), so the toast says so and stays until closed, with a reload
-// to try again.
+// to try again: when the lookup fails for a browser whose hint or link
+// names a deployment, and with no hint only when a late answer names one.
 function showDeploymentLookupToast() {
   toast.error(t('deploymentSwitcher.lookupUnavailable'), {
     description: t('deploymentSwitcher.lookupUnavailableDetail'),

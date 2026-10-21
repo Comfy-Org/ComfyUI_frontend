@@ -13,11 +13,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import {
-  hasDeploymentLink,
-  readDeploymentHint,
-  setDeploymentHint
-} from '@/platform/workspace/deploymentHint'
+import { setDeploymentHint } from '@/platform/workspace/deploymentHint'
 import type {
   DeploymentPickEvent,
   DeploymentPickSource,
@@ -136,11 +132,10 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
   /**
    * The deployment this page booted on, from the first listing that
    * answered: null for Comfy Cloud (a gone pick, a rollout refusal, an ingest
-   * without these routes, a 503 that counts as Comfy Cloud, or a boot listing
-   * the editor gave up on; see `bootOnComfyCloud`), undefined before the
-   * model source is known. The editor's node catalog is that deployment's
-   * Release as it was at boot, since a pick or a workspace switch reloads
-   * the page.
+   * without these routes, or a boot listing the editor gave up on; see
+   * `bootOnComfyCloud`), undefined before the model source is known. The
+   * editor's node catalog is that deployment's Release as it was at boot,
+   * since a pick or a workspace switch reloads the page.
    */
   const bootDeployment = shallowRef<WorkspaceDeployment | null | undefined>(
     undefined
@@ -199,7 +194,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       id,
       retryDelaysMs,
       () => workspaceStore.workspaceId === id,
-      () => unavailableMeansCloud(id),
       reportListingFailure
     )
     if (workspaceStore.workspaceId !== id) return
@@ -230,14 +224,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       bootDeployment.value = null
     }
     rememberBootTarget(workspaceId)
-  }
-
-  function unavailableMeansCloud(workspaceId: string): boolean {
-    return (
-      !isVisible.value &&
-      !hasDeploymentLink() &&
-      readDeploymentHint(workspaceId) !== 'deployment'
-    )
   }
 
   function reportListingFailure(err: unknown) {
@@ -302,8 +288,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    * The page's first load, started at boot so the editor learns which
    * deployment it booted on; later calls wait on that same load. It retries
    * a failure with no definite answer (`DEPLOYMENT_LISTING_RETRY_DELAYS_MS`)
-   * and reports only the last one; a 503 counts as Comfy Cloud at once
-   * unless this browser's hint or a link names a deployment.
+   * and reports only the last one.
    */
   function loadOnce(): Promise<void> {
     if (!firstLoad && workspaceStore.workspaceId) {
@@ -510,7 +495,6 @@ async function listingEvent(
   workspaceId: string,
   retryDelaysMs: readonly number[],
   stillWanted: () => boolean,
-  unavailableIsCloud: () => boolean,
   report: (err: unknown) => void
 ): Promise<DeploymentPickEvent> {
   for (let attempt = 0; ; attempt++) {
@@ -518,9 +502,8 @@ async function listingEvent(
       return loadedEvent(await workspaceApi.listDeployments(workspaceId))
     } catch (err) {
       const retriesLeft = attempt < retryDelaysMs.length
-      const cloudAnswer = isUnavailable(err) && unavailableIsCloud()
-      if (!retriesLeft || cloudAnswer || !isTransient(err) || !stillWanted()) {
-        return loadFailure(err, cloudAnswer, report)
+      if (!retriesLeft || !isTransient(err) || !stillWanted()) {
+        return loadFailure(err, report)
       }
       await new Promise((resolve) =>
         setTimeout(resolve, retryDelaysMs[attempt])
@@ -543,10 +526,7 @@ function isTransient(err: unknown): boolean {
   )
 }
 
-/**
- * A 503: deployment picking is off in this environment, or ingest cannot
- * reach the deployment service.
- */
+/** A 503, reported once a page: ingest cannot reach the deployment service. */
 function isUnavailable(err: unknown): boolean {
   return err instanceof WorkspaceApiError && err.status === 503
 }
@@ -555,14 +535,11 @@ function isUnavailable(err: unknown): boolean {
  * A 403 means the account is outside the rollout, and a 404 that this
  * ingest has no deployment routes (or no such workspace): either way the
  * browser runs on Comfy Cloud, as it would without this feature, so neither
- * is reported. A 503 counts as Comfy Cloud too (`cloudAnswer`) when no
- * listing is shown and neither this browser's hint nor a link names a
- * deployment. Any other failure hides the switcher unless a listing is
- * already shown. Both are reported, a 503 once a page.
+ * is reported. Any other failure is reported (a 503 once a page) and hides
+ * the switcher unless a listing is already shown.
  */
 function loadFailure(
   err: unknown,
-  cloudAnswer: boolean,
   report: (err: unknown) => void
 ): DeploymentPickEvent {
   if (
@@ -572,7 +549,7 @@ function loadFailure(
     return { type: 'loadRefused' }
   }
   report(err)
-  return { type: cloudAnswer ? 'loadRefused' : 'loadFailed' }
+  return { type: 'loadFailed' }
 }
 
 function errorMessage(err: unknown): string {

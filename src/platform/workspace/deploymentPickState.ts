@@ -71,9 +71,8 @@ export type DeploymentPickState =
 export type DeploymentPickEvent =
   | ({ type: 'loaded' } & DeploymentListing)
   /**
-   * A 403 (the account is outside the rollout), a 404 (ingest without
-   * these routes), or a 503 for a browser not known to be on a deployment
-   * (picking is off in this environment): hidden, whatever was shown before.
+   * A 403 (the account is outside the rollout) or a 404 (ingest without
+   * these routes): hidden, whatever was shown before.
    */
   | { type: 'loadRefused' }
   /** Any other failure: keep a listing already shown, else stay hidden. */

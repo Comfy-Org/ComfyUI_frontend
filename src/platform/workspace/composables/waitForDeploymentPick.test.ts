@@ -294,11 +294,6 @@ describe('waitForDeploymentPick', () => {
           Promise.reject(new WorkspaceApiError('Outside rollout', 403))
       },
       {
-        answer: 'is a 503',
-        respond: () =>
-          Promise.reject(new WorkspaceApiError('Service unavailable', 503))
-      },
-      {
         answer: 'fails',
         respond: () => Promise.reject(new WorkspaceApiError('Bad request', 400))
       }
@@ -331,19 +326,5 @@ describe('waitForDeploymentPick', () => {
         expect(onLateDeployment).not.toHaveBeenCalled()
       }
     )
-
-    it('boots on Comfy Cloud at once, without retrying, on a 503', async () => {
-      mockWorkspaceApi.listDeployments.mockRejectedValue(
-        new WorkspaceApiError('Service unavailable', 503)
-      )
-
-      const confirmed = settledAt(waitForDeploymentPick())
-      await vi.advanceTimersByTimeAsync(0)
-
-      expect(confirmed.value).toBe(true)
-      expect(useDeploymentPickStore().bootDeployment).toBeNull()
-      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
-      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
-    })
   })
 })
