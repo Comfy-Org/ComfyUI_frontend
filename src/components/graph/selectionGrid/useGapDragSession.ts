@@ -32,7 +32,11 @@ interface DragStart {
 }
 
 function clampBarGap(bar: GapBar, gap: number): number {
-  return Math.max(Math.round(bar.gap - bar.clearance), gap)
+  const shrinkLimit = Math.min(
+    Math.ceil(bar.gap - bar.clearance),
+    Math.round(bar.gap)
+  )
+  return Math.max(shrinkLimit, gap)
 }
 
 function layoutAtGap(
@@ -164,12 +168,12 @@ export function useGapDragSession() {
     if (moved) hasUncommittedNudges = true
   }
 
-  const abandon = () => {
+  const leaveGraph = () => {
     end()
-    hasUncommittedNudges = false
+    commitNudges()
   }
 
-  watch(() => canvasStore.currentGraph, abandon)
+  watch(() => canvasStore.currentGraph, leaveGraph)
 
   tryOnScopeDispose(() => {
     cancel()

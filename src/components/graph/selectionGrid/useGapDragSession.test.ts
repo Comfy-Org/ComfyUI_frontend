@@ -305,6 +305,22 @@ describe('useGapDragSession', () => {
     expect(moveBoxes).not.toHaveBeenCalled()
   })
 
+  it('stops a fractional gap a whole step before the nodes beyond it would overlap', () => {
+    const fractionalGrid: LayoutBox[] = [
+      { id: toNodeId('a'), x: 0, y: 0, width: 200, height: 100 },
+      { id: toNodeId('b'), x: 260.4, y: 0, width: 120, height: 100 },
+      { id: toNodeId('c'), x: 0, y: 140, width: 240.3, height: 100 },
+      { id: toNodeId('d'), x: 260.4, y: 140, width: 120, height: 100 }
+    ]
+    selectBoxes(fractionalGrid)
+    const session = useGapDragSession()
+    session.start(firstBarOf(fractionalGrid))
+
+    session.preview(-100)
+
+    expect(session.drag.value?.gap).toBe(41)
+  })
+
   it('keeps the gap at zero or more', () => {
     const session = useGapDragSession()
     session.start(firstBarOf(row))
@@ -390,6 +406,17 @@ describe('useGapDragSession', () => {
       expect(session.commitNudges()).toBe(false)
       expect(moveBoxes).not.toHaveBeenCalled()
       expect(recordUndoStep).not.toHaveBeenCalled()
+    })
+
+    it('records its nudges when another graph is shown', async () => {
+      const session = useGapDragSession()
+      session.nudge(firstBarOf(row), 1)
+
+      useCanvasStore().currentGraph = new LGraph()
+      await nextTick()
+
+      expect(recordUndoStep).toHaveBeenCalledTimes(1)
+      expect(session.commitNudges()).toBe(false)
     })
 
     it('leaves the nodes alone when a press cannot shrink the gap by a whole step', () => {
