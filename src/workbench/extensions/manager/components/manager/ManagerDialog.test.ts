@@ -660,6 +660,23 @@ describe('ManagerDialog failed next page', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps the grid instead of an empty state while a retry loads on a tab that filters out every loaded pack', async () => {
+    vi.mocked(
+      useComfyManagerService().listInstalledPacks
+    ).mockResolvedValueOnce({
+      'gguf-1': { cnr_id: 'gguf-1', ver: '1.0.0', enabled: true }
+    })
+    const user = await renderUntilSecondPageFails(ManagerTab.NotInstalled)
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockReturnValueOnce(
+      new Promise(() => {})
+    )
+
+    await user.click(screen.getByRole('button', { name: enMessages.g.retry }))
+    await settleSearch()
+
+    expect(screen.getByRole('button', { name: LOAD_MORE })).toBeInTheDocument()
+  })
+
   it('appends the failed page below the loaded packs when retried', async () => {
     const user = await renderUntilSecondPageFails()
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(

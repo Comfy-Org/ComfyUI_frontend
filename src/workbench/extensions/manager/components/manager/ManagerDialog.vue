@@ -114,9 +114,7 @@
         :node-names="unresolvedNodeNames"
       />
       <NoResultsPlaceholder
-        v-else-if="
-          displayPacks.length === 0 && !canLoadMorePacks && !isNextPageFailed
-        "
+        v-else-if="displayPacks.length === 0 && !hasPendingPages"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
         :button-label="retryLabel"
@@ -441,6 +439,9 @@ const isNextPageFailed = computed(
     packs.isNextPageFailed.value
 )
 const retryNextPage = () => void packs.retryNextPage()
+const hasPendingPages = computed(
+  () => isSearchBacked.value && (hasMorePacks.value || isNextPageFailed.value)
+)
 const isFirstPagePending = computed(
   () =>
     isSearchBacked.value &&
