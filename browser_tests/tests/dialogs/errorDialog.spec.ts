@@ -221,6 +221,20 @@ test.describe('Error dialog', () => {
     ).toBeVisible()
   })
 
+  test('Should fall back to the default title for a blank title', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.evaluate(() => {
+      window.app!.extensionManager.dialog.showErrorDialog('Details', {
+        title: ''
+      })
+    })
+
+    await expect(
+      comfyPage.page.getByRole('dialog', { name: 'An error occurred' })
+    ).toBeVisible()
+  })
+
   test('Should name a reopened dialog after its new title', async ({
     comfyPage
   }) => {
