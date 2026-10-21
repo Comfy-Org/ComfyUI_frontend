@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex h-10 shrink-0 items-center gap-1 bg-interface-menu-surface px-2"
+    class="flex h-10 shrink-0 items-center gap-1 bg-popover px-2"
     data-testid="load3d-animation-strip"
     @wheel.stop
   >
@@ -30,7 +30,7 @@
 
     <span
       v-if="!compact"
-      class="shrink-0 text-xs text-base-foreground tabular-nums"
+      class="shrink-0 text-xs text-foreground tabular-nums"
       data-testid="load3d-animation-time"
     >
       {{ formatAnimationTime(currentTime) }} /
@@ -137,7 +137,7 @@ import {
   selectedMenuButtonClass
 } from '@/components/ui/menu/menuStyles'
 import Slider from '@/components/ui/slider/Slider.vue'
-import type { AnimationItem } from '@/extensions/core/load3d/interfaces'
+import type { AnimationItem } from '@comfyorg/viewport3d/load3d/interfaces'
 
 const {
   animations = [],

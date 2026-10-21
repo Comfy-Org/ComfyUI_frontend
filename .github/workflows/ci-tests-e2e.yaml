@@ -170,7 +170,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -199,10 +199,9 @@ jobs:
         with:
           node_cache: 'false'
 
-      # Run sharded tests (browsers pre-installed in container)
       - name: Run Playwright tests (Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm exec playwright test --project=chromium --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
           COLLECT_COVERAGE: 'true'
@@ -214,6 +213,17 @@ jobs:
           name: blob-report-chromium-${{ matrix.shardIndex }}
           path: blob-report/
           retention-days: 1
+
+      - name: Upload snapshot updates
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        continue-on-error: true
+        with:
+          name: snapshot-updates-chromium-${{ matrix.shardIndex }}
+          path: snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
+          overwrite: true
 
       - name: Upload shard coverage data
         if: always()
@@ -235,7 +245,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -266,7 +276,7 @@ jobs:
 
       - name: Run Playwright tests (cloud, Shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
         id: playwright
-        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        run: pnpm exec playwright test --project=cloud --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
 
@@ -278,6 +288,17 @@ jobs:
           path: blob-report/
           retention-days: 1
 
+      - name: Upload snapshot updates
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        continue-on-error: true
+        with:
+          name: snapshot-updates-cloud-${{ matrix.shardIndex }}
+          path: snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
+          overwrite: true
+
   playwright-tests:
     # Ideally, each shard runs test in 6 minutes, but allow up to 30 minutes
     timeout-minutes: 30
@@ -285,7 +306,7 @@ jobs:
     if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -323,12 +344,22 @@ jobs:
         with:
           node_cache: 'false'
 
-      # Run tests (browsers pre-installed in container)
       - name: Run Playwright tests (${{ matrix.browser }})
         id: playwright
-        run: pnpm exec playwright test --project=${{ matrix.browser }}
+        run: pnpm exec playwright test --project=${{ matrix.browser }} --add-reporter=./tools/snapshot-updates/src/snapshotUpdatesReporter.ts
         env:
           PLAYWRIGHT_BLOB_OUTPUT_DIR: ./blob-report
+
+      - name: Upload snapshot updates
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        continue-on-error: true
+        with:
+          name: snapshot-updates-${{ matrix.browser }}
+          path: snapshot-updates/
+          retention-days: 7
+          if-no-files-found: ignore
+          overwrite: true
 
       - name: Generate HTML and JSON reports
         if: always()
@@ -394,6 +425,59 @@ jobs:
           path: ./playwright-report/
           retention-days: 30
 
+  playwright-tests-native-lora:
+    needs: [changes, setup, preflight]
+    if: ${{ !cancelled() && needs.preflight.result == 'success' && needs.changes.outputs.should-run == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Download built frontend
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: frontend-dist-cloud
+          path: dist/
+
+      - name: Prepare tiny LoRAs and start the backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/native-lora/custom_nodes/ComfyUI_devtools"
+          cp -r ./tools/devtools/. "$RUNNER_TEMP/native-lora/custom_nodes/ComfyUI_devtools/"
+          cp -r ./browser_tests/fixtures/nativeLoraBackend "$RUNNER_TEMP/native-lora/custom_nodes/NativeLoraTest"
+          python3 browser_tests/fixtures/nativeLoraBackend/prepare.py "$RUNNER_TEMP/native-lora"
+          cd /ComfyUI && python3 main.py --base-directory "$RUNNER_TEMP/native-lora" --cpu --multi-user --front-end-root "$GITHUB_WORKSPACE/dist" &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Run native LoRA asset and execution tests
+        run: pnpm exec playwright test --config=playwright.native-lora.config.ts
+        env:
+          DISTRIBUTION: cloud
+
+      - name: Upload native LoRA report and videos
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: playwright-report-native-lora
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
   # Gate job — single required check that passes whether the matrix ran or was
   # skipped. Branch rulesets require this instead of the individual matrix-
   # expanded check names so PRs with no e2e-relevant changes aren't stuck.
@@ -405,7 +489,8 @@ jobs:
         preflight,
         playwright-tests-chromium-sharded,
         playwright-tests-cloud-sharded,
-        playwright-tests
+        playwright-tests,
+        playwright-tests-native-lora
       ]
     runs-on: ubuntu-latest
     steps:
@@ -417,14 +502,15 @@ jobs:
           SHARDED: ${{ needs.playwright-tests-chromium-sharded.result }}
           CLOUD: ${{ needs.playwright-tests-cloud-sharded.result }}
           BROWSERS: ${{ needs.playwright-tests.result }}
+          NATIVE_LORA: ${{ needs.playwright-tests-native-lora.result }}
         run: |
-          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED cloud=$CLOUD browsers=$BROWSERS"
+          echo "changes=$CHANGES should_run=$SHOULD_RUN sharded=$SHARDED cloud=$CLOUD browsers=$BROWSERS native_lora=$NATIVE_LORA"
           [[ "$PREFLIGHT" != "success" ]] && echo "CI prerequisites did not pass ($PREFLIGHT)" && exit 1
           [[ "$CHANGES" != "success" ]] && echo "changes gate did not complete ($CHANGES)" && exit 1
           [[ "$SHOULD_RUN" != "true" ]] && echo "E2E skipped" && exit 0
-          [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" ]] && echo "E2E failed" && exit 1
-          [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
-          [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "failure" || "$CLOUD" == "failure" || "$BROWSERS" == "failure" || "$NATIVE_LORA" == "failure" ]] && echo "E2E failed" && exit 1
+          [[ "$SHARDED" == "cancelled" || "$CLOUD" == "cancelled" || "$BROWSERS" == "cancelled" || "$NATIVE_LORA" == "cancelled" ]] && echo "E2E cancelled, not failed" && exit 1
+          [[ "$SHARDED" != "success" || "$CLOUD" != "success" || "$BROWSERS" != "success" || "$NATIVE_LORA" != "success" ]] && echo "E2E failed" && exit 1
           echo "E2E passed"
 
   upload-e2e-coverage:
@@ -507,12 +593,20 @@ jobs:
           pattern: playwright-report-*
           path: reports
 
+      - name: Download snapshot update manifests
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        continue-on-error: true
+        with:
+          pattern: snapshot-updates-*
+          path: snapshot-updates
+
       - name: Deploy reports and generate section
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.pull_request.head.sha }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           SUMMARY_FILE: playwright-section.md
           BRANCH_NAME: ${{ github.head_ref }}
         run: |

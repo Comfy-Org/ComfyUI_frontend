@@ -1,5 +1,6 @@
 import type {
   AcceptInviteResponse,
+  AutoReloadSettings,
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
   BillingEventsResponse,
@@ -10,6 +11,8 @@ import type {
   CancelSubscriptionRequest,
   CancelSubscriptionResponse,
   CreateInviteRequest,
+  CreateTopupCheckoutRequest,
+  CreateTopupCheckoutResponse,
   CreateTopupRequest,
   CreateTopupResponse,
   CreateWorkspaceRequest,
@@ -21,6 +24,7 @@ import type {
   PaymentPortalRequest,
   PaymentPortalResponse,
   PendingInvite,
+  PickWorkspaceDeploymentRequest,
   Plan,
   PreviewSubscribeRequest,
   PreviewSubscribeResponse,
@@ -31,6 +35,8 @@ import type {
   RetentionAcceptRequest,
   RetentionFlowEventRequest,
   RetentionFlowResponse,
+  RevertScheduledChangeRequest,
+  RevertScheduledChangeResponse,
   SavedPaymentMethod,
   ScheduledPlanChange,
   SubscribeRequest,
@@ -40,6 +46,8 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary,
   UpdateWorkspaceRequest,
+  WorkspaceDeployment,
+  WorkspaceDeploymentList,
   WorkspaceWithRole
 } from '@comfyorg/ingest-types'
 import {
@@ -59,6 +67,7 @@ import {
   errorResponseFromBody
 } from '@/platform/remote/comfyui/errors'
 import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import { DEPLOYMENT_LISTING_TIMEOUT_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 import type {
   WorkspaceId,
   WorkspaceInviteId
@@ -102,7 +111,6 @@ export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
-
 export interface SubscribeOptions {
   confirmationToken?: string
   promotionCode?: string
@@ -137,9 +145,14 @@ export type { BillingStatusResponse }
 export type { RenewalInvoice }
 export type { ScheduledPlanChange }
 
+export type { AutoReloadSettings }
 export type { BillingBalanceResponse }
 export type { BillingEventsResponse }
 export type { BillingCapabilitiesResponse }
+export type BillingCapabilitiesRead = Omit<
+  BillingCapabilitiesResponse,
+  'denied_reasons'
+> & { denied_reasons?: Readonly<Partial<Record<string, string>>> }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
@@ -155,6 +168,9 @@ export type BillingOperationPhase = NonNullable<
 export type BillingRecoveryAction = NonNullable<
   BillingOpStatusResponse['recovery_action']
 >
+
+export type { WorkspaceDeployment }
+export type { WorkspaceDeploymentList }
 
 interface GetBillingEventsParams {
   page?: number
@@ -303,6 +319,114 @@ export const workspaceApi = {
       return response.data
     } catch (err) {
       handleAxiosError(err, 'update')
+    }
+  },
+
+  /**
+   * List the developer-platform deployments this browser may pick, each
+   * with the Release it runs now, and which one it picked. 403 when the account is outside the rollout.
+   * Times out `DEPLOYMENT_LISTING_TIMEOUT_MS` after it is sent; the
+   * sign-in step before it is not covered and can hang.
+   * GET /api/workspaces/:id/deployments
+   */
+  async listDeployments(
+    workspaceId: WorkspaceId
+  ): Promise<WorkspaceDeploymentList> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<WorkspaceDeploymentList>(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployments`),
+        { ...auth, timeout: DEPLOYMENT_LISTING_TIMEOUT_MS }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'listDeployments')
+    }
+  },
+
+  /**
+   * Pick the deployment this browser runs on; it follows the deployment's
+   * updates to new Releases. The pick is a cookie on the
+   * response; nothing about the workspace changes.
+   * PUT /api/workspaces/:id/deployment
+   */
+  async pickDeployment(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceDeploymentRequest,
+    signal?: AbortSignal
+  ): Promise<void> {
+    const auth = await requestAuth()
+    signal?.throwIfAborted()
+    try {
+      await workspaceApiClient.put(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
+        payload,
+        { ...auth, ...(signal ? { signal } : {}) }
+      )
+    } catch (err) {
+      handleAxiosError(err, 'pickDeployment')
+    }
+  },
+
+  /**
+   * Clear the pick: this browser runs on Comfy Cloud, or with
+   * `follow: 'workspace'` on whatever the workspace says (its default
+   * deployment, or Comfy Cloud when it has none).
+   * DELETE /api/workspaces/:id/deployment
+   */
+  async clearDeployment(
+    workspaceId: WorkspaceId,
+    options: { follow?: 'workspace' } = {}
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.delete(
+        workspaceApiUrl(`/workspaces/${workspaceId}/deployment`),
+        {
+          ...auth,
+          params: options.follow ? { follow: options.follow } : undefined
+        }
+      )
+    } catch (err) {
+      handleAxiosError(err, 'clearDeployment')
+    }
+  },
+
+  /**
+   * Set the deployment members of the workspace run on when their browser has
+   * no pick of its own (BE-17480). Owner only.
+   * PUT /api/workspaces/:id/default-deployment
+   */
+  async setDefaultDeployment(
+    workspaceId: WorkspaceId,
+    payload: PickWorkspaceDeploymentRequest
+  ): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.put(
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
+        payload,
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'setDefaultDeployment')
+    }
+  },
+
+  /**
+   * Clear the workspace's default deployment; members with no pick are back on
+   * Comfy Cloud. Owner only.
+   * DELETE /api/workspaces/:id/default-deployment
+   */
+  async clearDefaultDeployment(workspaceId: WorkspaceId): Promise<void> {
+    const auth = await requestAuth()
+    try {
+      await workspaceApiClient.delete(
+        workspaceApiUrl(`/workspaces/${workspaceId}/default-deployment`),
+        auth
+      )
+    } catch (err) {
+      handleAxiosError(err, 'clearDefaultDeployment')
     }
   },
 
@@ -531,6 +655,23 @@ export const workspaceApi = {
   },
 
   /**
+   * Get automatic top-up settings and status for the current workspace
+   * GET /api/billing/auto-reload
+   */
+  async getBillingAutoReload(): Promise<AutoReloadSettings> {
+    const auth = await requestAuth()
+    try {
+      const response = await workspaceApiClient.get<AutoReloadSettings>(
+        workspaceApiUrl('/billing/auto-reload'),
+        { ...auth, timeout: 10_000 }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'getBillingAutoReload')
+    }
+  },
+
+  /**
    * Get available subscription plans
    * GET /api/billing/plans
    */
@@ -740,18 +881,45 @@ export const workspaceApi = {
   },
 
   /**
+   * Undo the pending scheduled plan change
+   * POST /api/billing/subscription/revert-scheduled-change
+   */
+  async revertScheduledChange(
+    idempotencyKey?: string
+  ): Promise<RevertScheduledChangeResponse> {
+    const auth = await requestAuth()
+    try {
+      const response =
+        await workspaceApiClient.post<RevertScheduledChangeResponse>(
+          workspaceApiUrl('/billing/subscription/revert-scheduled-change'),
+          {
+            idempotency_key: idempotencyKey
+          } satisfies RevertScheduledChangeRequest,
+          auth
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'revertScheduledChange')
+    }
+  },
+
+  /**
    * Get Stripe payment portal URL for managing payment methods
    * POST /api/billing/payment-portal
    */
   async getPaymentPortalUrl(
-    returnUrl?: string
+    returnUrl?: string,
+    flowType?: PaymentPortalRequest['flow_type']
   ): Promise<PaymentPortalResponse> {
     const auth = await requestAuth()
     try {
       const response = await workspaceApiClient.post<PaymentPortalResponse>(
         workspaceApiUrl('/billing/payment-portal'),
-        { return_url: returnUrl } satisfies PaymentPortalRequest,
-        auth
+        {
+          return_url: returnUrl,
+          flow_type: flowType
+        } satisfies PaymentPortalRequest,
+        { ...auth, timeout: 30_000 }
       )
       return response.data
     } catch (err) {
@@ -792,6 +960,34 @@ export const workspaceApi = {
       return response.data
     } catch (err) {
       handleAxiosError(err, 'createTopup')
+    }
+  },
+
+  /**
+   * Create a Stripe-hosted credit top-up checkout session
+   * POST /api/billing/topup/checkout
+   */
+  async createTopupCheckout(
+    amountCents: number,
+    returnUrl: string,
+    signal?: AbortSignal
+  ): Promise<CreateTopupCheckoutResponse> {
+    const auth = await requestAuth()
+    signal?.throwIfAborted()
+    try {
+      const response =
+        await workspaceApiClient.post<CreateTopupCheckoutResponse>(
+          workspaceApiUrl('/billing/topup/checkout'),
+          {
+            amount_cents: amountCents,
+            return_url: returnUrl,
+            idempotency_key: crypto.randomUUID()
+          } satisfies CreateTopupCheckoutRequest,
+          { ...auth, signal }
+        )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err, 'createTopupCheckout')
     }
   },
 

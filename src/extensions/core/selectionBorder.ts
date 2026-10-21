@@ -30,7 +30,7 @@ function drawSelectionBorder(
   ctx.lineWidth = borderWidth
   ctx.strokeStyle =
     getComputedStyle(document.documentElement)
-      .getPropertyValue('--border-color')
+      .getPropertyValue('--border')
       .trim() || '#ffffff66'
 
   // Create dash pattern that maintains visual size

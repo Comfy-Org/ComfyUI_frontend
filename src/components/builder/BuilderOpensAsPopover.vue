@@ -1,9 +1,9 @@
 <template>
-  <PopoverRoot>
+  <PopoverRoot v-slot="{ open }">
     <PopoverAnchor as-child>
       <div
         data-testid="builder-opens-as"
-        class="flex h-8 min-w-64 items-center justify-center gap-2 rounded-t-2xl bg-interface-builder-mode-footer-background px-4 text-sm text-interface-builder-mode-button-foreground"
+        class="flex h-8 min-w-64 items-center justify-center gap-2 rounded-t-2xl bg-ocean-900 px-4 text-sm text-white"
       >
         <i :class="cn(currentModeIcon, 'size-4')" aria-hidden="true" />
         <i18n-t
@@ -17,7 +17,7 @@
           <template #mode>
             <PopoverTrigger as-child>
               <Button
-                class="-ml-0.5 h-6 gap-1 rounded-md border-none bg-transparent px-1.5 text-sm text-interface-builder-mode-button-foreground hover:bg-interface-builder-mode-button-background/70"
+                class="-ml-0.5 h-6 gap-1 rounded-md bg-transparent px-1.5 text-sm text-white hover:bg-ocean-600/70"
               >
                 {{
                   isAppMode
@@ -32,12 +32,12 @@
             </PopoverTrigger>
           </template>
         </i18n-t>
-        <PopoverPortal>
+        <PopoverPortal :key="Number(open)">
           <PopoverContent
             side="top"
             :side-offset="5"
             :collision-padding="10"
-            class="z-1700 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity]"
+            class="z-overlay rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity]"
           >
             <ViewTypeRadioGroup
               :model-value="isAppMode"
@@ -53,14 +53,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import {
+  PopoverPortal,
   PopoverAnchor,
   PopoverContent,
-  PopoverPortal,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 

@@ -1,17 +1,17 @@
 <template>
   <div
-    class="mb-6 flex gap-3 rounded-2xl border border-warning-background bg-warning-background/20 p-4"
+    class="mb-6 flex gap-3 rounded-2xl border border-warning bg-warning/20 p-4"
   >
     <div
-      class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning-background"
+      class="flex size-8 shrink-0 items-center justify-center rounded-full text-warning"
     >
       <i class="pi pi-info-circle" />
     </div>
-    <div class="flex flex-col gap-2">
-      <p class="m-0 text-sm font-bold text-base-foreground">
+    <div class="flex flex-col gap-2 text-muted-foreground">
+      <p class="m-0 font-bold text-foreground">
         {{ title }}
       </p>
-      <p class="m-0 text-sm text-muted-foreground">
+      <p class="m-0">
         <span>
           <template v-for="(segment, index) in segments" :key="index">
             <span v-if="segment.emphasis" :class="amountClass">{{
@@ -21,15 +21,8 @@
           </template>
         </span>
       </p>
-      <label
-        v-if="checkboxLabel"
-        class="flex items-center gap-2 pt-1 text-sm text-muted-foreground"
-      >
-        <input
-          v-model="confirmed"
-          type="checkbox"
-          class="size-4 rounded-sm border-interface-stroke"
-        />
+      <label v-if="checkboxLabel" class="flex items-center gap-2 pt-1">
+        <input v-model="confirmed" type="checkbox" class="size-4 rounded-sm" />
         {{ checkboxLabel }}
       </label>
     </div>
@@ -57,7 +50,7 @@ const confirmed = defineModel<boolean>('confirmed', { required: true })
 
 const amountClass = computed(() =>
   cn(
-    'font-bold text-base-foreground',
+    'font-bold text-foreground',
     checkboxLabel !== null && 'text-base font-extrabold'
   )
 )

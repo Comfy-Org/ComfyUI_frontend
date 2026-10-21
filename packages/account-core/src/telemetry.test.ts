@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createWebSessionIdentity } from './core/webSessionIdentity.js'
-import type { SsoErrorCode } from './sso.js'
+import { createWebSessionIdentity } from './core/webSessionIdentity'
+import type { SsoErrorCode } from './sso'
 import type {
   SsoSignInFailureReason,
   WebSessionTelemetryEvent
-} from './telemetry.js'
+} from './telemetry'
 import {
   createSsoFlowStore,
   ssoFailureReason,
   webSessionTelemetryHooks
-} from './telemetry.js'
-import type { FakeWebSessionState } from './testing.js'
-import { createFakeWebSessionEndpoint, fakeWebSessionUser } from './testing.js'
+} from './telemetry'
+import type { FakeWebSessionState } from './testing'
+import { createFakeWebSessionEndpoint, fakeWebSessionUser } from './testing'
 
 const ORIGIN = 'https://www.comfy.example'
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0))

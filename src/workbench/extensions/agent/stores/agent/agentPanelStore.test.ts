@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -31,6 +31,31 @@ describe('agentPanelStore engagement telemetry', () => {
     api.serverFeatureFlagsSettled.value = true
     await nextTick()
     expect(store.flagsSettled).toBe(true)
+  })
+
+  it.for([null, false, '', {}, { state: 'unknown' }])(
+    'ignores an agent feature without a known state: %j',
+    (agent) => {
+      onTestFinished(() => {
+        api.serverFeatureFlags.value = {}
+      })
+      api.serverFeatureFlags.value = { agent }
+
+      expect(useAgentPanelStore().comfyAgent).toBeUndefined()
+    }
+  )
+
+  it("leaves the standalone harness on its own agent, not ComfyUI's", () => {
+    onTestFinished(() => {
+      api.serverFeatureFlags.value = {}
+    })
+    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+    api.serverFeatureFlags.value = {
+      agent: { state: 'ready' }
+    }
+    const store = useAgentPanelStore()
+
+    expect(store.comfyAgent).toBeUndefined()
   })
 
   it('emits a restored open only once the rehydrated panel actually docks', async () => {

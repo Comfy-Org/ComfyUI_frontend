@@ -20,12 +20,11 @@ export class AgentSharedHostFixture {
     this.host = new HostDoc(workflowId, seed, catalog)
   }
 
-  async attach(page: Page, socketSid: string): Promise<void> {
+  async attach(page: Page): Promise<void> {
     const socket = new AgentFollowerHostSocket(
       page,
       this.workflowId,
       this.host,
-      socketSid,
       'apply',
       (frame) => this.broadcast(frame)
     )

@@ -160,7 +160,7 @@ if (flags.ssoEnabled && ssoError) {
 
 const signInWithEmail = async (values: SignInData) => {
   authError.value = ''
-  if (flags.ssoEnabled && (await trySso(values.email))) return
+  if (flags.ssoEnabled && (await trySso(values.email, 'email-sign-in'))) return
   if (await authActions.signInWithEmail(values.email, values.password)) {
     await onAuthSuccess()
   }

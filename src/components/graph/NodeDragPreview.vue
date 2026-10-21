@@ -2,7 +2,7 @@
   <Teleport to="body">
     <div
       v-if="showGhost && rafPosition"
-      class="pointer-events-none fixed top-0 left-0 z-10000 will-change-transform"
+      class="pointer-events-none fixed top-0 left-0 z-overlay will-change-transform"
       :style="{
         transform: `translate(${rafPosition.x + 12}px, ${rafPosition.y + 12}px)`
       }"

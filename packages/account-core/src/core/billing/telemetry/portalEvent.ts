@@ -1,4 +1,4 @@
-import type { BillingFailed } from './stages.js'
+import type { BillingFailed } from './stages'
 
 /**
  * The part of the provider's hosted portal the customer was sent to.

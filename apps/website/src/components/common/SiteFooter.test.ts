@@ -26,7 +26,7 @@ describe('SiteFooter', () => {
   it.for([
     ['en', 'Changelog', 'Resources'],
     ['zh-CN', '更新日志', '资源'],
-    ['ja', 'Changelog', 'Resources']
+    ['ja', '変更履歴', 'リソース']
   ] as const)(
     'links the live changelog last in footer Resources (%s)',
     ([locale, name, resources]) => {
@@ -47,7 +47,7 @@ describe('SiteFooter', () => {
   it.for([
     ['en', 'ComfyUI Models'],
     ['zh-CN', 'ComfyUI 模型'],
-    ['ja', 'ComfyUI Models']
+    ['ja', 'ComfyUIモデル']
   ] as const)(
     'links the one model catalogue from every locale (%s)',
     ([locale, name]) => {
@@ -78,8 +78,6 @@ describe('SiteFooter', () => {
     }
   )
 
-  // The agent page gained a zh-CN twin, so the footer link has to follow the
-  // active locale rather than staying pinned to the canonical /agent path.
   it.for([
     ['en', 'Comfy Agent', '/agent/'],
     ['zh-CN', 'Comfy Agent', '/zh-CN/agent/']
@@ -96,6 +94,85 @@ describe('SiteFooter', () => {
     }
   )
 
+  it.for([
+    ['en', '/fish-audio/'],
+    ['zh-CN', '/zh-CN/fish-audio/']
+  ] as const)(
+    'links the Fish Audio page in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const fishAudio = models.find(
+        (link) => link.textContent.trim() === 'Fish Audio'
+      )
+      expect(fishAudio?.getAttribute('href')).toBe(href)
+    }
+  )
+
+  it.for([
+    ['en', '/nvidia-vfx/'],
+    ['zh-CN', '/zh-CN/nvidia-vfx/']
+  ] as const)(
+    'links the Nvidia VFX page in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const nvidiaVfx = models.find(
+        (link) => link.textContent.trim() === 'Nvidia VFX'
+      )
+      expect(nvidiaVfx?.getAttribute('href')).toBe(href)
+    }
+  )
+
+  it.for([
+    ['en', '/flux-3-image-klein/'],
+    ['zh-CN', '/zh-CN/flux-3-image-klein/']
+  ] as const)(
+    'links the FLUX 3 Image Klein page in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const klein = models.find(
+        (link) => link.textContent.trim() === 'FLUX 3 Image Klein'
+      )
+      expect(klein?.getAttribute('href')).toBe(href)
+    }
+  )
+
+  it.for([
+    ['en', '/krea-3/'],
+    ['zh-CN', '/zh-CN/krea-3/']
+  ] as const)(
+    'links the Krea 3 page last in footer Models (%s)',
+    ([locale, href]) => {
+      render(SiteFooter, { props: { locale } })
+
+      const models = within(
+        screen.getByRole('navigation', {
+          name: locale === 'en' ? 'Models' : '模型'
+        })
+      ).getAllByRole('link')
+      const last = models.at(-1)
+      expect(last?.textContent.trim()).toBe('Krea 3')
+      expect(last?.getAttribute('href')).toBe(href)
+    }
+  )
+
   it('links the MiniMax license page at its localized path for zh-CN', () => {
     render(SiteFooter, { props: { locale: 'zh-CN' } })
 
@@ -106,8 +183,6 @@ describe('SiteFooter', () => {
     }
   })
 
-  // The footer mirrors the top nav: same Products and Features columns, same
-  // order, with Pricing kept at the end of Products.
   it('lists the nav Products and Features links in nav order (en)', () => {
     render(SiteFooter)
     const routes = getRoutes()

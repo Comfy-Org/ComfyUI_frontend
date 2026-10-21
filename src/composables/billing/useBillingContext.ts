@@ -1,7 +1,7 @@
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
-import { computed, ref, shallowRef, toValue, watch } from 'vue'
+import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
 import { createSharedComposable, until } from '@vueuse/core'
 
 import {
@@ -15,15 +15,20 @@ import type {
   PreviewSubscribeOptions,
   SubscribeOptions
 } from '@/platform/workspace/api/workspaceApi'
+import {
+  onBillingRefresh,
+  provideCheckoutOperationReader
+} from '@/platform/workspace/billing/billingRefresh'
+import type { BillingRefreshScope } from '@/platform/workspace/billing/billingRefresh'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
+  BillingPortalOutcome,
   CancelRail,
   BillingState,
-  SubscriptionDialogOptions,
   SubscriptionInfo
 } from './types'
 import { useBillingRouting } from './useBillingRouting'
@@ -375,6 +380,14 @@ function useBillingContextInternal(): BillingContext {
     return workspace.readAndAdoptPendingOperation()
   }
 
+  function refreshFor(scope: BillingRefreshScope): Promise<unknown> {
+    if (scope === 'subscription') return reconcileSubscriptionSuccess()
+    return Promise.allSettled([fetchStatus(), fetchBalance()])
+  }
+
+  onScopeDispose(onBillingRefresh(refreshFor))
+  onScopeDispose(provideCheckoutOperationReader(readCheckoutOperation))
+
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
     if (!(await whenRoutingKnown())) return
     return checkoutContext.value.subscribe(planSlug, options)
@@ -388,8 +401,10 @@ function useBillingContextInternal(): BillingContext {
     return checkoutContext.value.previewSubscribe(planSlug, options)
   }
 
-  async function manageSubscription() {
-    if (!(await whenRoutingKnown())) return
+  async function manageSubscription(): Promise<BillingPortalOutcome> {
+    if (!(await whenRoutingKnown())) {
+      return { ok: false, reason: 'routing_unavailable' }
+    }
     return activeContext.value.manageSubscription()
   }
 
@@ -426,20 +441,6 @@ function useBillingContextInternal(): BillingContext {
     return checkoutContext.value.fetchPlans()
   }
 
-  async function requireActiveSubscription() {
-    if (!(await whenRoutingKnown())) return
-    return activeContext.value.requireActiveSubscription()
-  }
-
-  function showSubscriptionDialog(options?: SubscriptionDialogOptions) {
-    if (type.value !== 'unknown') {
-      return activeContext.value.showSubscriptionDialog(options)
-    }
-    void whenRoutingKnown().then((known) => {
-      if (known) activeContext.value.showSubscriptionDialog(options)
-    })
-  }
-
   return {
     type,
     isInitialized,
@@ -471,7 +472,6 @@ function useBillingContextInternal(): BillingContext {
     fetchStatusFresh,
     fetchBalance,
     reconcileSubscriptionSuccess,
-    readCheckoutOperation,
     subscribe,
     previewSubscribe,
     manageSubscription,
@@ -479,8 +479,7 @@ function useBillingContextInternal(): BillingContext {
     resubscribe,
     topup,
     fetchPlans,
-    requireActiveSubscription,
-    showSubscriptionDialog
+    whenRoutingKnown
   }
 }
 

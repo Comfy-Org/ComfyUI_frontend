@@ -2,7 +2,7 @@
   <Tabs v-model="bottomPanelStore.activeBottomPanelTabId" class="h-full gap-0">
     <TabsList variant="panel" class="w-full shrink-0">
       <div class="flex w-full justify-between">
-        <div class="tabs-container font-inter">
+        <div class="tabs-container">
           <TabsTrigger
             v-for="tab in bottomPanelStore.bottomPanelTabs"
             :key="tab.id"
@@ -42,16 +42,16 @@
         </div>
       </div>
     </TabsList>
-    <TabsContent
-      v-if="
-        bottomPanelStore.bottomPanelVisible &&
-        bottomPanelStore.activeBottomPanelTab
-      "
-      :value="bottomPanelStore.activeBottomPanelTab.id"
-      class="h-0 grow"
-    >
-      <ExtensionSlot :extension="bottomPanelStore.activeBottomPanelTab" />
-    </TabsContent>
+    <template v-if="bottomPanelStore.bottomPanelVisible">
+      <TabsContent
+        v-for="tab in bottomPanelStore.bottomPanelTabs"
+        :key="tab.id"
+        :value="tab.id"
+        class="h-0 grow"
+      >
+        <ExtensionSlot :extension="tab" />
+      </TabsContent>
+    </template>
   </Tabs>
 </template>
 

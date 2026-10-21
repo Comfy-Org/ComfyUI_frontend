@@ -1,11 +1,11 @@
 <template>
-  <div class="flex h-16 w-full items-stretch" @pointerdown.stop>
+  <div class="flex h-16 w-full" @pointerdown.stop>
     <div
       ref="trackRef"
       data-testid="trim-track"
       :class="
         cn(
-          'relative min-w-0 flex-1 rounded-lg bg-component-node-widget-background',
+          'relative min-w-0 flex-1 rounded-lg bg-input',
           disabled || totalFrames <= 1
             ? 'cursor-default'
             : isScrubDragging
@@ -33,12 +33,12 @@
         :style="playheadStyle"
       >
         <span
-          class="rounded-lg bg-interface-menu-surface px-2.5 py-1 text-sm font-semibold text-base-foreground tabular-nums"
+          class="rounded-lg bg-popover px-2.5 py-1 text-sm font-semibold text-foreground tabular-nums"
         >
           {{ playheadFrame }}
         </span>
         <span
-          class="size-0 border-x-[5px] border-t-[5px] border-x-transparent border-t-interface-menu-surface"
+          class="size-0 border-x-[5px] border-t-[5px] border-x-transparent border-t-popover"
         />
       </div>
 
@@ -49,18 +49,18 @@
         :style="activeHandleTooltipStyle"
       >
         <span
-          class="rounded-lg bg-interface-menu-surface px-2.5 py-1 text-sm font-semibold text-base-foreground tabular-nums"
+          class="rounded-lg bg-popover px-2.5 py-1 text-sm font-semibold text-foreground tabular-nums"
         >
           {{ activeHandleFrame }}
         </span>
         <span
-          class="size-0 border-x-[5px] border-t-[5px] border-x-transparent border-t-interface-menu-surface"
+          class="size-0 border-x-[5px] border-t-[5px] border-x-transparent border-t-popover"
         />
       </div>
 
       <div
         data-testid="filmstrip-track"
-        class="pointer-events-none absolute top-2 flex h-12 items-stretch overflow-hidden"
+        class="pointer-events-none absolute top-2 flex h-12 overflow-hidden"
         :style="{
           left: `${HANDLE_WIDTH_PX}px`,
           right: `${HANDLE_WIDTH_PX}px`
@@ -107,7 +107,7 @@
           :class="
             cn(
               'pointer-events-auto flex shrink-0 cursor-ew-resize',
-              'items-center justify-center bg-video-trim-selection-background',
+              'items-center justify-center bg-(--color-datatype-CLIP)',
               'rounded-l-lg border-none p-0'
             )
           "
@@ -115,7 +115,7 @@
           :aria-label="t('videoEdit.adjustStartFrame')"
           @pointerdown.stop="startDrag('min', $event)"
         >
-          <span class="h-4 w-px rounded-full bg-secondary-background" />
+          <span class="h-4 w-px rounded-full bg-secondary" />
         </button>
 
         <div class="flex min-w-0 flex-1 flex-col">
@@ -131,7 +131,7 @@
           :class="
             cn(
               'pointer-events-auto flex shrink-0 cursor-ew-resize',
-              'items-center justify-center bg-video-trim-selection-background',
+              'items-center justify-center bg-(--color-datatype-CLIP)',
               'rounded-r-lg border-none p-0'
             )
           "
@@ -139,7 +139,7 @@
           :aria-label="t('videoEdit.adjustEndFrame')"
           @pointerdown.stop="startDrag('max', $event)"
         >
-          <span class="h-4 w-px rounded-full bg-secondary-background" />
+          <span class="h-4 w-px rounded-full bg-secondary" />
         </button>
       </div>
 
@@ -154,9 +154,7 @@
         :style="playheadStyle"
         @pointerdown.stop="startScrubDrag"
       >
-        <div
-          class="pointer-events-none w-0.5 rounded-full bg-video-trim-playhead-background"
-        />
+        <div class="pointer-events-none w-0.5 rounded-full bg-destructive" />
       </div>
     </div>
   </div>
@@ -203,6 +201,7 @@ const playheadFrame = defineModel<number>('playheadFrame', { required: true })
 
 const emit = defineEmits<{
   scrub: [frame: number]
+  editEnd: []
 }>()
 
 const { t } = useI18n()
@@ -230,7 +229,8 @@ const { startDrag, activeHandle } = useRangeEditor({
   valueMax: frameMax,
   showMidpoint: toRef(() => false),
   contentInsetX,
-  handleCenterOffsetX: toRef(() => HANDLE_WIDTH_PX / 2)
+  handleCenterOffsetX: toRef(() => HANDLE_WIDTH_PX / 2),
+  onEditEnd: () => emit('editEnd')
 })
 
 const scrubMinFrame = computed(() => startFrame.value)
@@ -276,9 +276,7 @@ const tileWidthPx = computed(() => {
 })
 
 const trimSelectionBarClass = computed(() =>
-  isFilmstripLoading.value
-    ? 'bg-component-node-widget-background'
-    : 'bg-video-trim-selection-background'
+  isFilmstripLoading.value ? 'bg-input' : 'bg-(--color-datatype-CLIP)'
 )
 
 const startNorm = computed(() =>

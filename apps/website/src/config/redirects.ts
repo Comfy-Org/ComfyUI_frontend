@@ -22,8 +22,9 @@ import { partnerModelHubSlugs } from './partner-model-redirects'
 
 interface SiteRedirect {
   /**
-   * A path with no trailing slash, literal or with one `:slug(a|b)` group;
-   * both slash forms redirect, except for a `.md` or `.txt` file.
+   * A path with no trailing slash, literal or with one `:slug(a|b)` group, or
+   * the `:pack.md` and `:path+` patterns under the retired supported-nodes
+   * root; both slash forms redirect, except for a `.md` or `.txt` file.
    */
   readonly source: `/${string}`
   /** An internal destination ends in `/`, the form every page canonicalizes to. */
@@ -47,6 +48,12 @@ const RETIRED_PAGE_TEMPORARY_BECAUSE =
   'retired, may return: the gallery and launches pages can be restored from git history'
 
 const SUPPORTED_MODELS_PATH = '/p/supported-models'
+
+const SUPPORTED_NODES_PATH = '/cloud/supported-nodes'
+
+/** The maintained answer to "which custom nodes are on Cloud"; the HTML routes land here, the Markdown twins stay on /cloud.md. */
+const CUSTOM_NODES_ON_CLOUD_ARTICLE =
+  'https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud'
 
 /** Leaves room under Vercel's 2,048-character limit on a rule's source. */
 const MAX_SLUG_GROUP_LENGTH = 1900
@@ -118,6 +125,31 @@ const supportedModelRedirects: readonly SiteRedirect[] = [
   )
 ]
 
+const supportedNodesRedirects: readonly SiteRedirect[] = (
+  ['', '/zh-CN'] as const
+).flatMap((locale) => [
+  {
+    source: `${locale}${SUPPORTED_NODES_PATH}`,
+    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
+  },
+  {
+    source: `${locale}${SUPPORTED_NODES_PATH}.md`,
+    destination: `${locale}/cloud.md`
+  },
+  {
+    source: `${locale}${SUPPORTED_NODES_PATH}/llms.txt`,
+    destination: `${locale}/cloud.md`
+  },
+  {
+    source: `${locale}${SUPPORTED_NODES_PATH}/:pack.md`,
+    destination: `${locale}/cloud.md`
+  },
+  {
+    source: `${locale}${SUPPORTED_NODES_PATH}/:path+`,
+    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
+  }
+])
+
 // Permanent since comfy-router#46: prod serves /hub/models, /hub/workflows and /hub/apps from this site.
 // 308 tells search engines the move is permanent: confirm a new destination serves 200 first.
 // Literal rows only: hub pages fetch /models/<slug>/page.json, so a /models/:path* catch-all would break them.
@@ -143,6 +175,8 @@ const hubModelRedirects: readonly SiteRedirect[] = [
  * two drift, so edit this list and never `vercel.json` by hand.
  */
 export const siteRedirects: readonly SiteRedirect[] = [
+  { source: '/vfx', destination: '/solutions/vfx/' },
+  { source: '/zh-CN/vfx', destination: '/zh-CN/solutions/vfx/' },
   { source: '/career', destination: '/careers/' },
   { source: '/privacy', destination: '/privacy-policy/' },
   { source: '/press', destination: '/about/' },
@@ -156,6 +190,8 @@ export const siteRedirects: readonly SiteRedirect[] = [
     destination: '/zh-CN/about/',
     slashFormIsPageBecause: '/zh-CN/about/ is the About page'
   },
+  { source: '/nvidia-rtx', destination: '/nvidia-vfx/' },
+  { source: '/zh-CN/nvidia-rtx', destination: '/zh-CN/nvidia-vfx/' },
   { source: '/blog', destination: 'https://blog.comfy.org/' },
   { source: '/discord', destination: 'https://discord.com/invite/comfyorg' },
   {
@@ -252,6 +288,7 @@ export const siteRedirects: readonly SiteRedirect[] = [
   { source: '/zh-CN/affiliates', destination: '/affiliates/' },
   { source: '/zh-CN/affiliates/terms', destination: '/affiliates/terms/' },
   ...supportedModelRedirects,
+  ...supportedNodesRedirects,
   ...hubModelRedirects
 ]
 
@@ -261,7 +298,12 @@ export function isInternalDestination(destination: string): boolean {
 
 const isPermanent = (row: SiteRedirect) => row.temporaryBecause === undefined
 
-const RETIRED_ROOTS = ['/models', SUPPORTED_MODELS_PATH]
+const RETIRED_ROOTS = [
+  '/models',
+  SUPPORTED_MODELS_PATH,
+  SUPPORTED_NODES_PATH,
+  `/zh-CN${SUPPORTED_NODES_PATH}`
+]
 
 const isRetiredAddress = ({ source }: SiteRedirect) =>
   RETIRED_ROOTS.some(
@@ -305,7 +347,8 @@ export const linkStaleSources: readonly string[] = toVercelRedirects(
  * Astro cannot redirect off-site, and a stub for `/x` is the same file as a
  * page at `/x/`, so those rows live in `vercel.json` only, as do `.md` and
  * `.txt` file addresses. The retired /models and /p/supported-models
- * addresses are left out too, so the build ships no stub pages under them.
+ * addresses are left out too, so the build ships no stub pages under them
+ * (`/models`, `/p/supported-models` and `/cloud/supported-nodes`).
  */
 export const astroRedirects: Record<string, RedirectConfig> =
   Object.fromEntries(

@@ -14,7 +14,7 @@
       @keydown="handleSearchKeydown"
     />
   </div>
-  <DropdownMenuSeparator class="my-1 h-px bg-border-subtle" />
+  <DropdownMenuSeparator class="my-1 h-px bg-border/50" />
 
   <template v-if="isSearching">
     <template v-if="matchingMediaTypes.length">
@@ -71,7 +71,7 @@
     {{ $t('sideToolbar.mediaAssets.filterGroupAttribute') }}
   </DropdownMenuLabel>
 
-  <DropdownMenuSub v-if="!isSearching">
+  <DropdownMenuSub v-if="!isSearching" v-slot="{ open }">
     <DropdownMenuSubTrigger :class="menuItemClass">
       <i class="icon-[lucide--image] size-4 shrink-0 text-muted-foreground" />
       <span class="flex-1 text-left">
@@ -82,7 +82,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <DropdownMenuPortal>
+    <DropdownMenuPortal :key="Number(open)">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"
@@ -107,7 +107,7 @@
     </DropdownMenuPortal>
   </DropdownMenuSub>
 
-  <DropdownMenuSub v-if="!isSearching">
+  <DropdownMenuSub v-if="!isSearching" v-slot="{ open }">
     <DropdownMenuSubTrigger :class="menuItemClass">
       <i
         class="icon-[lucide--calendar] size-4 shrink-0 text-muted-foreground"
@@ -120,7 +120,7 @@
       />
     </DropdownMenuSubTrigger>
 
-    <DropdownMenuPortal>
+    <DropdownMenuPortal :key="Number(open)">
       <DropdownMenuSubContent
         :side-offset="8"
         :align-offset="-9"
@@ -150,10 +150,10 @@
 
 <script setup lang="ts">
 import {
+  DropdownMenuPortal,
   DropdownMenuCheckboxItem,
   DropdownMenuItemIndicator,
   DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,

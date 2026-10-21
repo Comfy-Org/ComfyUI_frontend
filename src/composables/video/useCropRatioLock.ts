@@ -10,13 +10,14 @@ import type { Bounds } from '@/renderer/core/layout/types'
 interface UseCropRatioLockOptions {
   sourceWidth: Ref<number>
   sourceHeight: Ref<number>
+  onEditEnd?: () => void
 }
 
 export function useCropRatioLock(
   bounds: Ref<Bounds>,
   options: UseCropRatioLockOptions
 ) {
-  const { sourceWidth, sourceHeight } = options
+  const { sourceWidth, sourceHeight, onEditEnd } = options
 
   const lockedRatio = ref<number | null>(null)
   const ratioKeys = Object.keys(ASPECT_RATIOS)
@@ -75,6 +76,7 @@ export function useCropRatioLock(
       lockedRatio.value =
         ASPECT_RATIOS[key as keyof typeof ASPECT_RATIOS] ?? null
       applyLockedRatio()
+      onEditEnd?.()
     }
   })
 
