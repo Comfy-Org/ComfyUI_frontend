@@ -2782,6 +2782,20 @@ describe('useExecutionStore - frames from a background workflow', () => {
       expect(store.queuedJobs['job-background']).toBeUndefined()
     }
   )
+
+  it('re-adopts the visible job once a late-owned job proves to belong elsewhere', async () => {
+    useWorkflowStore().activeWorkflow = backgroundWorkflow
+    await nextTick()
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-late', timestamp: 0 })
+    useWorkflowStore().activeWorkflow = visibleWorkflow
+    await nextTick()
+    expect(store.activeJobId).toBe('job-late')
+
+    queueJob('job-late', backgroundWorkflow)
+
+    expect(store.activeJobId).toBe('job-visible')
+  })
 })
 
 describe('useExecutionStore - storeJob and workflow path tracking', () => {
