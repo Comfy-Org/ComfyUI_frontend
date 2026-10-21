@@ -12,7 +12,7 @@ const qwenImage21Links = {
   cloudEdit:
     'https://cloud.comfy.org/?template=image_qwen_image_2_1_image_edit&utm_source=comfy.org&utm_medium=referral&utm_campaign=qwen-image-2-1',
   docs: 'https://docs.comfy.org/tutorials/image/qwen/qwen-image',
-  hubModel: hubModelUrl('qwen'),
+  hubModel: new URL(hubModelUrl('qwen'), externalLinks.workflows).href,
   license: 'https://huggingface.co/Qwen/Qwen-Image-2.1/blob/main/LICENSE'
 } as const
 

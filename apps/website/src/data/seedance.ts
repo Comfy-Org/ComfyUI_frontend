@@ -12,7 +12,7 @@ import { hubModelUrl } from '@/lib/hub/routes'
 const seedanceLinks = {
   cloudRun: 'https://cloud.comfy.org/?template=api_seedance2_5_r2v',
   freeDraft: 'https://cloud.comfy.org/?template=video_wan2_2_14B_t2v',
-  hubModel: hubModelUrl('seedance')
+  hubModel: new URL(hubModelUrl('seedance'), externalLinks.workflows).href
 } as const
 
 // Seedance 2.5 renders, encoded to the site's web video profile (VP9 webm,

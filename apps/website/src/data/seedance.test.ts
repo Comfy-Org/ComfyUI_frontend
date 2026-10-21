@@ -68,7 +68,7 @@ function pageCopy(locale: Locale): { label: string; text: string }[] {
 describe('seedance 2.5 workflow links', () => {
   it('sends "try workflows" to the Hub list searched for Seedance, not the unfiltered list', () => {
     expect(seedancePage.hero.secondaryCta?.href).toBe(
-      '/hub/workflows/?q=seedance'
+      'https://comfy.org/hub/workflows/?q=seedance'
     )
   })
 

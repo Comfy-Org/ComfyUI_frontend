@@ -49,7 +49,9 @@ test.describe('Cloud page @smoke', () => {
 
     const section = heading.locator('xpath=ancestor::section')
     const grid = section.locator('.grid')
-    const modelCards = grid.locator('a[href="/hub/workflows/"]')
+    const modelCards = grid.locator(
+      'a[href="https://comfy.org/hub/workflows/"]'
+    )
     await expect(modelCards).toHaveCount(6)
   })
 
@@ -58,7 +60,10 @@ test.describe('Cloud page @smoke', () => {
       name: /EXPLORE WORKFLOWS/i
     })
     await expect(cta.first()).toBeVisible()
-    await expect(cta.first()).toHaveAttribute('href', '/hub/workflows/')
+    await expect(cta.first()).toHaveAttribute(
+      'href',
+      'https://comfy.org/hub/workflows/'
+    )
   })
 
   test('AudienceSection heading and cards are visible', async ({ page }) => {

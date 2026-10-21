@@ -48,7 +48,9 @@ afterEach(() => {
 
 describe('wan 3.0 workflow links', () => {
   it('sends the secondary hero CTA to the Hub list searched for Wan, not the unfiltered list', () => {
-    expect(wan3Page.hero.secondaryCta?.href).toBe('/hub/workflows/?q=wan')
+    expect(wan3Page.hero.secondaryCta?.href).toBe(
+      'https://comfy.org/hub/workflows/?q=wan'
+    )
   })
 })
 

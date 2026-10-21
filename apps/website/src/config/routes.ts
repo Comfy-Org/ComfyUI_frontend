@@ -1,4 +1,3 @@
-import { hubWorkflowsUrl } from '@/lib/hub/routes'
 import {
   DEFAULT_LOCALE,
   LOCALES,
@@ -270,8 +269,8 @@ export const externalLinks = {
   wikidataComfyOrg: 'https://www.wikidata.org/wiki/Q130598554',
   wikidataComfyUi: 'https://www.wikidata.org/wiki/Q127798647',
   wikipediaComfyUi: 'https://en.wikipedia.org/wiki/ComfyUI',
-  workflows: hubWorkflowsUrl(),
-  workflowUseCases: hubWorkflowsUrl(),
+  workflows: `https://comfy.org${baseRoutes.hubWorkflows}`,
+  workflowUseCases: `https://comfy.org${baseRoutes.hubWorkflows}`,
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
