@@ -42,7 +42,7 @@ test.describe(
       expect(await agent.settledCanvasNodeIds()).toEqual([])
     })
 
-    test('a write the canvas did take reads as done, with no notice', async ({
+    test('a write the canvas took reads as done through a redelivered frame, with no notice', async ({
       page
     }) => {
       await page.clock.install()
