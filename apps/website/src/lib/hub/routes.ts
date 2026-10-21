@@ -1,7 +1,18 @@
-import { tagSlug } from './tag-aliases'
+const HUB = 'https://comfy.org/hub'
 
-const HUB = 'https://comfy.org/workflows'
+type HubWorkflowsFilter = { capability: string } | { q: string }
 
-export const hubTagUrl = (tag: string) => `${HUB}/tag/${tagSlug(tag)}/`
+/** Same shapes as the comfy-router redirects for the old `/workflows/*` pages. */
+export function hubWorkflowsUrl(filter?: HubWorkflowsFilter): string {
+  const query = filter
+    ? `?${Object.entries(filter)
+        .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+        .join('&')}`
+    : ''
+  return `${HUB}/workflows/${query}`
+}
+
+export const hubTagUrl = (tag: string) => hubWorkflowsUrl({ capability: tag })
+export const hubModelUrl = (family: string) => hubWorkflowsUrl({ q: family })
 export const hubCreatorUrl = (username: string) =>
-  `${HUB}/${encodeURIComponent(username)}/`
+  `${HUB}/creators/${encodeURIComponent(username)}/`
