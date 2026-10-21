@@ -18,6 +18,20 @@ function useConsentedAgentPanelStore() {
   return store
 }
 
+describe('agentPanelStore funds rechecks', () => {
+  it('stays pending until every admitted recheck for an identity settles', () => {
+    const store = useAgentPanelStore()
+    const first = store.beginFundsRecheck('account-a')
+    const second = store.beginFundsRecheck('account-a')
+
+    store.finishFundsRecheck(second)
+
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(true)
+    store.finishFundsRecheck(first)
+    expect(store.hasPendingFundsRecheck('account-a')).toBe(false)
+  })
+})
+
 describe('agentPanelStore engagement telemetry', () => {
   beforeEach(() => {
     localStorage.clear()
