@@ -115,7 +115,7 @@ const pillClass =
         class="absolute right-3 bottom-3 z-10"
       />
 
-      <WorkshopCardMedia :model :locale />
+      <WorkshopCardMedia :model />
 
       <span
         v-if="thumbnailLabel"

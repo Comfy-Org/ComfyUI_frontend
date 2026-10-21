@@ -71,7 +71,9 @@ function onCompareKeydown(event: KeyboardEvent) {
   >
     <img
       :src="primaryUrl"
-      :alt="`${title} - ${t('modelLaunch.beforeAfter.after')}`"
+      :alt="
+        insideLink ? '' : `${title} - ${t('modelLaunch.beforeAfter.after')}`
+      "
       loading="lazy"
       decoding="async"
       draggable="false"
@@ -83,7 +85,9 @@ function onCompareKeydown(event: KeyboardEvent) {
     >
       <img
         :src="secondaryUrl"
-        :alt="`${title} - ${t('modelLaunch.beforeAfter.before')}`"
+        :alt="
+          insideLink ? '' : `${title} - ${t('modelLaunch.beforeAfter.before')}`
+        "
         loading="lazy"
         decoding="async"
         draggable="false"
@@ -119,7 +123,7 @@ function onCompareKeydown(event: KeyboardEvent) {
   >
     <img
       :src="primaryUrl"
-      :alt="`${title} - 1`"
+      :alt="insideLink ? '' : `${title} - 1`"
       loading="lazy"
       decoding="async"
       draggable="false"
@@ -127,7 +131,7 @@ function onCompareKeydown(event: KeyboardEvent) {
     />
     <img
       :src="secondaryUrl"
-      :alt="`${title} - 2`"
+      :alt="insideLink ? '' : `${title} - 2`"
       loading="lazy"
       decoding="async"
       draggable="false"

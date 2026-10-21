@@ -54,20 +54,31 @@ describe('Hub browsing thumbnails', () => {
   } as const
 
   it.for([
-    { locale: 'en', after: 'Relight - After', before: 'Relight - Before' },
-    { locale: 'zh-CN', after: 'Relight - 处理后', before: 'Relight - 处理前' }
+    { variant: 'compareSlider', staticUrl: undefined, after: '/after.webp' },
+    {
+      variant: 'compareSlider',
+      staticUrl: '/still.webp',
+      after: '/still.webp'
+    },
+    { variant: 'hoverDissolve', staticUrl: undefined, after: '/after.webp' },
+    { variant: 'hoverDissolve', staticUrl: '/still.webp', after: '/still.webp' }
   ] as const)(
-    'names the compare stills in $locale',
-    ({ locale, after, before }) => {
-      render(WorkshopCardMedia, { props: { model: compare, locale } })
-      expect(screen.getByRole('img', { name: after })).toHaveProperty(
-        'src',
-        expect.stringContaining('/after.webp')
-      )
-      expect(screen.getByRole('img', { name: before })).toHaveProperty(
-        'src',
-        expect.stringContaining('/before.webp')
-      )
+    'loads $after and the original second image, unnamed, for a $variant card',
+    ({ variant, staticUrl, after }) => {
+      render(WorkshopCardMedia, {
+        props: {
+          model: {
+            ...compare,
+            thumbnail: { ...compare.thumbnail, variant, staticUrl }
+          }
+        }
+      })
+      const [first, second, ...rest] = screen.getAllByRole('img')
+      expect(rest).toHaveLength(0)
+      expect(first).toHaveAttribute('src', after)
+      expect(second).toHaveAttribute('src', '/before.webp')
+      expect(first).toHaveAttribute('alt', '')
+      expect(second).toHaveAttribute('alt', '')
     }
   )
 
@@ -101,33 +112,53 @@ describe('Hub browsing thumbnails', () => {
     expect(onClick).toHaveBeenCalledTimes(parts.length)
   })
 
-  it('keeps a sideways touch drag on the compare image', async () => {
-    render(WorkshopCardMedia, { props: { model: compare } })
-    await nextTick()
-    const after = screen.getByRole('img', { name: 'Relight - After' })
-    const dragged = new TouchEvent('touchmove', {
-      bubbles: true,
-      cancelable: true
-    })
-    after.dispatchEvent(dragged)
-    expect(dragged.defaultPrevented).toBe(true)
-  })
-
-  it('fades to the second still on a hover dissolve card', () => {
-    render(WorkshopCardMedia, {
-      props: {
-        model: {
-          ...compare,
-          thumbnail: { ...compare.thumbnail, variant: 'hoverDissolve' }
-        }
+  it.for([
+    {
+      drag: 'sideways',
+      points: [
+        [20, 75],
+        [90, 75],
+        [160, 75]
+      ],
+      line: '80%'
+    },
+    {
+      drag: 'vertical',
+      points: [
+        [50, 30],
+        [50, 80],
+        [50, 140]
+      ],
+      line: '25%'
+    }
+  ] as const)(
+    'holds the page and moves the line on a $drag touch drag',
+    async ({ points, line }) => {
+      vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 0, 200, 150)
+      )
+      render(WorkshopCardMedia, { props: { model: compare } })
+      await nextTick()
+      const handle = screen.getByTestId('compare-handle')
+      for (const [clientX, clientY] of points) {
+        const touch = new Touch({
+          identifier: 1,
+          target: handle,
+          clientX,
+          clientY
+        })
+        const moved = new TouchEvent('touchmove', {
+          bubbles: true,
+          cancelable: true,
+          touches: [touch]
+        })
+        handle.dispatchEvent(moved)
+        expect(moved.defaultPrevented).toBe(true)
       }
-    })
-    expect(screen.queryByRole('slider')).toBeNull()
-    expect(screen.getByRole('img', { name: 'Relight - 2' })).toHaveProperty(
-      'src',
-      expect.stringContaining('/before.webp')
-    )
-  })
+      await nextTick()
+      expect(handle).toHaveStyle({ left: line })
+    }
+  )
 
   it.for(['compareSlider', 'hoverDissolve'] as const)(
     'shows the card still for a %s card with no second image',

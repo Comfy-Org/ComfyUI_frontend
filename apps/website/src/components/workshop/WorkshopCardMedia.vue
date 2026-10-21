@@ -6,11 +6,9 @@ import { thumbnailImageClass } from '@/components/hub/thumbnailImageClass'
 
 import { usePreviewVideo } from '@/composables/usePreviewVideo'
 import type { WorkshopModel } from '@/config/models-catalogue'
-import type { Locale } from '@/i18n/translations'
 
-const { model, locale = 'en' } = defineProps<{
+const { model } = defineProps<{
   model: Pick<WorkshopModel, 'name' | 'thumbnail'>
-  locale?: Locale
 }>()
 const video = useTemplateRef<HTMLVideoElement>('video')
 const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
@@ -19,11 +17,10 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
 <template>
   <HubThumbnailMedia
     v-if="model.thumbnail?.primaryUrl && model.thumbnail.secondaryUrl"
-    :primary-url="model.thumbnail.primaryUrl"
+    :primary-url="model.thumbnail.staticUrl ?? model.thumbnail.primaryUrl"
     :secondary-url="model.thumbnail.secondaryUrl"
     :variant="model.thumbnail.variant"
     :title="model.name"
-    :locale
     inside-link
     data-testid="model-card-media"
   />
