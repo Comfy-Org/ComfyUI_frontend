@@ -2668,10 +2668,9 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     )
 
-    // startTurn aborts whatever turn preceded it, so a card left over from the
-    // dropped turn is detached by the NEW turn too — and an ask_resolved frame
-    // routed to the new turn's transport lands on a message with no such card.
-    it('dismisses itself when a newer turn has taken over the transport', async () => {
+    // Sending a new message while the turn waits on a card greys the card out
+    // as dismissed; it stays on its message but can no longer be answered.
+    it('greys out as dismissed when a newer turn is sent', async () => {
       const postMessage = vi
         .fn<
           (
@@ -2693,12 +2692,11 @@ describe('useAgentSession (v1 composition root)', () => {
       status(false)
       await session.sendMessage('actually, do this instead')
       expect(useAgentConversationStore().activeTurnId).toBe('msg-2')
-      expect(cardOnScreen()).toBe(true)
-
-      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
-
-      expect(cardOnScreen()).toBe(false)
-      expect(session.answeringAskIds.value.size).toBe(0)
+      expect(
+        useAgentConversationStore().messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toEqual([expect.objectContaining({ dismissed: true })])
     })
 
     // `asks.go` documents 5xx here as the retryable status and re-drives the

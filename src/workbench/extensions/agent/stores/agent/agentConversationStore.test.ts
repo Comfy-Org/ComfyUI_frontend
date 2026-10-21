@@ -2126,6 +2126,25 @@ describe('useAgentConversationStore', () => {
       'assistant'
     ])
   })
+  describe('a card the running turn waits on', () => {
+    it('greys out when a new turn is sent, and stays through its resolution', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+      expect(store.activeAskOpen).toBe(true)
+
+      store.dismissOpenAsks()
+      store.startTurn(T2)
+      store.retireAsk('turn-1:call-1', { status: 'closed' })
+
+      expect(store.activeAskOpen).toBe(false)
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({ type: 'runApproval', dismissed: true })
+      )
+    })
+  })
+
   describe('a dropped approval ask is reported', () => {
     it('reports when the socket-drop teardown left nothing to route the ask to', () => {
       const store = useAgentConversationStore()

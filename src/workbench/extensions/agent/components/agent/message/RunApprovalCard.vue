@@ -3,6 +3,7 @@ import Card from '@/components/ui/card/Card.vue'
 import { computed, inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 
 import type { RunApprovalPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
@@ -36,7 +37,13 @@ const workflowLabel = computed(
 <template>
   <Card
     surface="secondary"
-    class="flex w-full flex-col gap-2 overflow-hidden p-4 shadow-md"
+    :class="
+      cn(
+        'flex w-full flex-col gap-2 overflow-hidden p-4 shadow-md',
+        part.dismissed && 'opacity-50 shadow-none'
+      )
+    "
+    :aria-disabled="part.dismissed || undefined"
   >
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
       <p class="m-0">
@@ -80,7 +87,10 @@ const workflowLabel = computed(
       </p>
     </div>
 
-    <div class="flex h-6 w-full justify-end gap-2">
+    <p v-if="part.dismissed" class="m-0 text-sm/5 text-muted-foreground">
+      {{ t('agent.runApproval.dismissed') }}
+    </p>
+    <div v-else class="flex h-6 w-full justify-end gap-2">
       <Button
         variant="secondary"
         size="sm"

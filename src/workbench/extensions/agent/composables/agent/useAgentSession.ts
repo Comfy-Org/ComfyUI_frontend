@@ -1128,6 +1128,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       tags?.map((tag) => `${tag.title} #${tag.id}`),
       workflowReferences
     )
+    conversationStore.dismissOpenAsks()
     conversationStore.startTurn(turnId)
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
@@ -2026,6 +2027,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),
+    askOpen: computed(() => conversationStore.activeAskOpen),
     notices: computed(() => notices.value),
     threadId: computed(() => conversationStore.threadId)
   }

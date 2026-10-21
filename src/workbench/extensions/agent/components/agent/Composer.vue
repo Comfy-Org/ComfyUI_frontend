@@ -45,6 +45,7 @@ import RunModePopover from './composer/RunModePopover.vue'
 
 const {
   streaming = false,
+  askOpen = false,
   submitting = false,
   canAttach = false,
   canOpenAssets = false,
@@ -58,6 +59,8 @@ const {
   getMentionNodes = () => []
 } = defineProps<{
   streaming?: boolean
+  /** The running turn waits on a card: typing turns Stop back into Send. */
+  askOpen?: boolean
   submitting?: boolean
   canAttach?: boolean
   canOpenAssets?: boolean
@@ -94,7 +97,11 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const skills = useSkillPacksStore()
 
-const running = computed(() => streaming || submitting)
+// While the turn waits on a card, a typed message dismisses the card and is
+// sent; with nothing typed the button stays Stop.
+const running = computed(
+  () => submitting || (streaming && !(askOpen && composer.canSend.value))
+)
 
 const composer = useComposer({
   onSend: (_text, attachments) => {

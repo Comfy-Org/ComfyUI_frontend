@@ -400,6 +400,16 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('sends a typed message while the running turn waits on a card', async () => {
+    const { emitted } = mount({ streaming: true, askOpen: true })
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('make it red instead')
+    await userEvent.keyboard('{Enter}')
+    expect(emitted().send).toHaveLength(1)
+    expect(emitted().stop).toBeUndefined()
+  })
+
   it('keeps Stop available while a workflow reference is saving', async () => {
     const { emitted } = mount({ streaming: true, workflowSelecting: true })
     const stop = screen.getByRole('button', { name: 'Stop' })

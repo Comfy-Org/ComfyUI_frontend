@@ -52,6 +52,7 @@ const {
   entries,
   userName,
   streaming = false,
+  askOpen = false,
   submitting = false,
   canAttach = false,
   canOpenAssets = false,
@@ -87,6 +88,8 @@ const {
   entries: ConversationEntry[]
   userName?: string
   streaming?: boolean
+  /** The running turn waits on a card: a typed message dismisses it. */
+  askOpen?: boolean
   submitting?: boolean
   canAttach?: boolean
   canOpenAssets?: boolean
@@ -540,6 +543,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <Composer
             ref="composerRef"
             :streaming
+            :ask-open
             :submitting
             :can-attach
             :can-open-assets

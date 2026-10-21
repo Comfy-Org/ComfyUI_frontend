@@ -20,6 +20,7 @@ import type {
 import {
   askIdOf,
   createAssistantMessage,
+  dismissAskParts,
   isOpenAskPart,
   isPendingAskPart,
   retireAskParts,
@@ -434,6 +435,17 @@ export const useAgentConversationStore = defineStore(
       clearAskResolutionWatchdog(askId)
       submittedAskAnswers.delete(askId)
       setAskAnswering(askId, false)
+    }
+
+    /** The user sent a message instead of answering: every open card greys out. */
+    function dismissOpenAsks(): void {
+      messages.value = messages.value.map((message) => {
+        const parts = dismissAskParts(message.parts)
+        return parts === message.parts ? message : { ...message, parts }
+      })
+      activeSlot.value?.transport.dismissAsks()
+      for (const settledTransport of settledActiveTransports)
+        settledTransport.dismissAsks()
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
@@ -1247,6 +1259,10 @@ export const useAgentConversationStore = defineStore(
 
     const activeMessageId = computed(() => activeMessage.value?.id ?? null)
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
+    /** The running turn is waiting on a card, so a new message may dismiss it. */
+    const activeAskOpen = computed(
+      () => activeMessage.value?.parts.some(isPendingAskPart) ?? false
+    )
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
       if (!message?.streaming) return 'idle'
@@ -1260,6 +1276,7 @@ export const useAgentConversationStore = defineStore(
       activeMessageId,
       threadId,
       isStreaming,
+      activeAskOpen,
       status,
       latestWorkflowId,
       recordApprovalShown,
@@ -1278,6 +1295,7 @@ export const useAgentConversationStore = defineStore(
       takeSubmittedAskAnswer,
       commitAsk,
       retireAsk,
+      dismissOpenAsks,
       startTurn,
       ingest,
       setCanvasSyncGate,

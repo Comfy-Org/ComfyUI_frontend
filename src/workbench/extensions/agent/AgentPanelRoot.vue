@@ -908,6 +908,7 @@ const {
   entries,
   editableTurnId,
   isStreaming,
+  askOpen,
   status,
   notices,
   threadId,
@@ -2039,6 +2040,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :answering-ask-ids="answeringAskIds"
       :user-name="userName"
       :streaming="isStreaming"
+      :ask-open="askOpen"
       :submitting="isSending || status === 'thinking'"
       :can-attach="true"
       :can-open-assets="!isBuilderMode"
