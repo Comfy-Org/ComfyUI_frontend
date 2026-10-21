@@ -168,6 +168,75 @@ describe('native CONTENT presentation', () => {
     expect(invalidAvatar).not.toHaveProperty('catalogDetails.authorAvatarURL')
     expect(invalidAvatar).not.toHaveProperty('catalogDetails.authorUsername')
   })
+  it.for([
+    {
+      case: 'a Hub handle',
+      name: 'Actual author',
+      username: 'Comfy-Creator',
+      kept: true
+    },
+    {
+      case: 'a missing name',
+      name: undefined,
+      username: 'comfy-creator',
+      kept: false
+    },
+    {
+      case: 'a blank name',
+      name: '  ',
+      username: 'comfy-creator',
+      kept: false
+    },
+    {
+      case: 'a double dot',
+      name: 'Actual author',
+      username: 'a..',
+      kept: false
+    },
+    {
+      case: 'a dot and hyphen run',
+      name: 'Actual author',
+      username: 'a.-.',
+      kept: false
+    },
+    {
+      case: 'an underscore',
+      name: 'Actual author',
+      username: 'comfy_creator',
+      kept: false
+    },
+    {
+      case: 'a trailing hyphen',
+      name: 'Actual author',
+      username: 'comfy-',
+      kept: false
+    },
+    { case: 'a path', name: 'Actual author', username: '../admin', kept: false }
+  ])(
+    'decides whether to keep the creator username for $case',
+    ({ name, username, kept }) => {
+      const uid = '00000000-0000-4000-8000-000000000096'
+      const view = detailSchema.parse(
+        catalogPresentation({
+          ...record,
+          data: {
+            ...record.data,
+            author_uid: uid,
+            website_author: {
+              uid,
+              username,
+              ...(name === undefined ? {} : { name })
+            }
+          }
+        })
+      )
+      if (kept)
+        expect(view).toMatchObject({
+          catalogDetails: { authorUsername: username }
+        })
+      else expect(view).not.toHaveProperty('catalogDetails.authorUsername')
+    }
+  )
   it('uses only named pair zero: download graph and independent API prompt for Run', () => {
     const download = '00000000-0000-4000-8000-000000000080'
     const api = '00000000-0000-4000-8000-000000000081'

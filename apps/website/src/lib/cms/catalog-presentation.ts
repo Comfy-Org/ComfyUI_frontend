@@ -118,7 +118,7 @@ function authorDetails(d: Document, locale: string) {
   const username = matches ? trimmedText(resolved.username) : undefined
   return {
     author: name ?? unavailable,
-    ...(username && validCreatorUsername(username)
+    ...(name && username && validCreatorUsername(username)
       ? { authorUsername: username }
       : {}),
     ...authorAvatar(matches, resolved.avatar_url)
