@@ -1148,7 +1148,7 @@ describe('LiveGraphApplier', () => {
       ],
       links: []
     }
-    const storeRecord = (target: Y.Doc, record: Record<string, number>) => {
+    function storeRecord(target: Y.Doc, record: Record<string, number>) {
       const node = nodesMap(target).get('1')
       assert(node instanceof Y.Map)
       node.delete('widgets')
