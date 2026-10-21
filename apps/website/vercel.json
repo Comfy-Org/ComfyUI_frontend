@@ -964,12 +964,12 @@
     },
     {
       "source": "/cloud/supported-nodes",
-      "destination": "/cloud/",
+      "destination": "https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud",
       "permanent": true
     },
     {
       "source": "/cloud/supported-nodes/",
-      "destination": "/cloud/",
+      "destination": "https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud",
       "permanent": true
     },
     {
@@ -989,22 +989,22 @@
     },
     {
       "source": "/cloud/supported-nodes/:path+",
-      "destination": "/cloud/",
+      "destination": "https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud",
       "permanent": true
     },
     {
       "source": "/cloud/supported-nodes/:path+/",
-      "destination": "/cloud/",
+      "destination": "https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud",
       "permanent": true
     },
     {
       "source": "/zh-CN/cloud/supported-nodes",
-      "destination": "/zh-CN/cloud/",
+      "destination": "https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud",
       "permanent": true
     },
     {
       "source": "/zh-CN/cloud/supported-nodes/",
-      "destination": "/zh-CN/cloud/",
+      "destination": "https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud",
       "permanent": true
     },
     {
@@ -1024,12 +1024,12 @@
     },
     {
       "source": "/zh-CN/cloud/supported-nodes/:path+",
-      "destination": "/zh-CN/cloud/",
+      "destination": "https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud",
       "permanent": true
     },
     {
       "source": "/zh-CN/cloud/supported-nodes/:path+/",
-      "destination": "/zh-CN/cloud/",
+      "destination": "https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud",
       "permanent": true
     },
     {

@@ -4393,7 +4393,6 @@
     "viewControls": "Управление видом"
   },
   "sideToolbar": {
-    "activeJobStatus": "Активная задача: {status}",
     "assets": "Ассеты",
     "backToAssets": "Назад ко всем ассетам",
     "browseTemplates": "Просмотреть примеры шаблонов",
@@ -5550,22 +5549,6 @@
     "retry": "Попробовать снова"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "Кредиты",
-        "date": "Дата",
-        "eventDetails": "Детали события",
-        "eventType": "Тип события",
-        "user": "Пользователь"
-      },
-      "empty": "Активность отсутствует.",
-      "fullActivity": "Вся активность",
-      "hoverCard": {
-        "lastActivity": "Последняя активность",
-        "partnerNodeUsed": "Использован партнерский узел",
-        "totalCreditsUsed": "Всего использовано кредитов"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "С вас больше не будет взиматься плата. До этого момента участники сохраняют полный доступ. Возобновите тариф, чтобы сохранить общие кредиты вашей команды.",
@@ -5701,12 +5684,6 @@
         "removeMember": "Удалить участника",
         "resendInvite": "Повторно отправить приглашение",
         "setCreditLimit": "Установить лимит кредитов"
-      },
-      "activity": {
-        "daysAgo": "{count} день назад | {count} дней назад",
-        "hoursAgo": "{n} ч назад",
-        "justNow": "только что",
-        "minutesAgo": "{n} мин назад"
       },
       "columns": {
         "creditsUsed": "Кредитов использовано в этом месяце",

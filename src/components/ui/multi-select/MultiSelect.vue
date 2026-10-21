@@ -38,7 +38,6 @@
       :list-max-height
       :popover-style
       :content-style
-      :lifted-content-style
       @escape="isOpen = false"
     />
   </ComboboxRoot>
@@ -54,7 +53,6 @@ import type { MultiSelectProps } from '@/components/ui/multi-select/types'
 
 import type { SelectOption } from '@/components/ui/select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 
 defineOptions({
@@ -90,7 +88,6 @@ const selectedItems = defineModel<SelectOption[]>({
 const searchQuery = defineModel<string>('searchQuery', { default: '' })
 
 const isOpen = ref(false)
-const liftedContentStyle = useModalLiftedZIndex(isOpen)
 
 const popoverStyle = usePopoverSizing({
   minWidth: popoverMinWidth,

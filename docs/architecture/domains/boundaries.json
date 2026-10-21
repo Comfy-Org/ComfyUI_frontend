@@ -2,6 +2,14 @@
   "boundaries": {
     "zones": [
       {
+        "name": "comfyui-api/domain/public",
+        "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
+      },
+      {
+        "name": "node-definition/domain/public",
+        "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
+      },
+      {
         "name": "agent/domain",
         "patterns": [
           "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.test.ts",
@@ -611,8 +619,6 @@
       {
         "name": "billing/presentation",
         "patterns": [
-          "src/components/common/UserCredit.test.ts",
-          "src/components/common/UserCredit.vue",
           "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
           "src/components/dialog/content/TopUpCreditsDialogContentLegacy.vue",
           "src/components/dialog/content/credit/**",
@@ -989,8 +995,6 @@
           "src/composables/useCurveEditor.ts",
           "src/composables/useImageQuiet.ts",
           "src/composables/useIntersectionObserver.ts",
-          "src/composables/useModalLiftedZIndex.test.ts",
-          "src/composables/useModalLiftedZIndex.ts",
           "src/composables/usePopoverSizing.ts",
           "src/composables/useRangeEditor.test.ts",
           "src/composables/useRangeEditor.ts",
@@ -1231,11 +1235,7 @@
       },
       {
         "name": "extension-runtime/domain",
-        "patterns": [
-          "src/types/comfy.ts",
-          "src/types/extensionTypes.ts",
-          "src/types/litegraph-augmentation.d.ts"
-        ]
+        "patterns": ["src/types/comfy.ts", "src/types/extensionTypes.ts"]
       },
       {
         "name": "extension-runtime/application",
@@ -1293,8 +1293,7 @@
           "src/scripts/app.graphReadiness.test.ts",
           "src/scripts/app.test.ts",
           "src/scripts/app.ts",
-          "src/scripts/utils.ts",
-          "src/types/index.ts"
+          "src/scripts/utils.ts"
         ]
       },
       {
@@ -1792,7 +1791,6 @@
           "src/stores/queueStore.loadWorkflow.test.ts",
           "src/stores/queueStore.test.ts",
           "src/stores/queueStore.ts",
-          "src/storybook/mocks/useJobActions.ts",
           "src/storybook/mocks/useJobList.ts"
         ]
       },
@@ -3478,10 +3476,6 @@
         "name": "workspace/domain",
         "patterns": [
           "src/platform/workspace/api/workspaceApiError.ts",
-          "src/platform/workspace/utils/badgeColor.test.ts",
-          "src/platform/workspace/utils/badgeColor.ts",
-          "src/platform/workspace/utils/relativeTime.test.ts",
-          "src/platform/workspace/utils/relativeTime.ts",
           "src/platform/workspace/workspaceConstants.ts",
           "src/platform/workspace/workspaceTypes.ts"
         ]
@@ -3491,8 +3485,6 @@
         "patterns": [
           "src/platform/workspace/composables/useMembersPanel.test.ts",
           "src/platform/workspace/composables/useMembersPanel.ts",
-          "src/platform/workspace/composables/useWorkspaceActivity.test.ts",
-          "src/platform/workspace/composables/useWorkspaceActivity.ts",
           "src/platform/workspace/composables/useWorkspaceDialogs.ts",
           "src/platform/workspace/composables/useWorkspaceMenuItems.test.ts",
           "src/platform/workspace/composables/useWorkspaceMenuItems.ts",
@@ -3534,13 +3526,9 @@
           "src/platform/workspace/components/CurrentUserPopoverWorkspace.vue",
           "src/platform/workspace/components/InviteMembersForm.test.ts",
           "src/platform/workspace/components/InviteMembersForm.vue",
-          "src/platform/workspace/components/RoleBadge.test.ts",
-          "src/platform/workspace/components/RoleBadge.vue",
           "src/platform/workspace/components/WorkspaceProfilePic.vue",
           "src/platform/workspace/components/WorkspaceSwitcherPopover.test.ts",
-          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue",
-          "src/platform/workspace/composables/useAutoPageSize.test.ts",
-          "src/platform/workspace/composables/useAutoPageSize.ts"
+          "src/platform/workspace/components/WorkspaceSwitcherPopover.vue"
         ]
       },
       {
@@ -3990,6 +3978,24 @@
       }
     ],
     "rules": [
+      {
+        "from": "comfyui-api/domain/public",
+        "allow": [
+          "comfyui-api/domain/public",
+          "comfyui-api/domain",
+          "comfyui-api/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-definition/domain/public",
+        "allow": [
+          "node-definition/domain/public",
+          "node-definition/domain",
+          "node-definition/domain/outer-1",
+          "unclassified"
+        ]
+      },
       {
         "from": "agent/domain",
         "allow": [
@@ -4635,6 +4641,7 @@
       {
         "from": "comfyui-api/domain",
         "allow": [
+          "comfyui-api/domain/public",
           "comfyui-api/domain",
           "comfyui-api/domain/outer-2",
           "unclassified"
@@ -5014,40 +5021,64 @@
       {
         "from": "graph-model/domain",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "graph-model/application",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "graph-model/infrastructure",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "graph-model/integration",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
           "graph-model/integration",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -5622,6 +5653,7 @@
       {
         "from": "node-definition/domain",
         "allow": [
+          "node-definition/domain/public",
           "node-definition/domain",
           "node-definition/domain/outer-1",
           "unclassified"
@@ -7000,20 +7032,32 @@
       {
         "from": "graph-model/domain/outer-1",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "graph-model/integration/outer-1",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
           "graph-model/integration",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -7134,6 +7178,7 @@
       {
         "from": "node-definition/domain/outer-1",
         "allow": [
+          "node-definition/domain/public",
           "node-definition/domain",
           "node-definition/domain/outer-1",
           "unclassified"
@@ -7475,6 +7520,7 @@
       {
         "from": "comfyui-api/domain/outer-2",
         "allow": [
+          "comfyui-api/domain/public",
           "comfyui-api/domain",
           "comfyui-api/domain/outer-2",
           "unclassified"
@@ -7579,6 +7625,8 @@
       {
         "from": "unclassified",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",

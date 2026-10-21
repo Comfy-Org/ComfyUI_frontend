@@ -1,3 +1,4 @@
+import type { BillingStatus } from '@comfyorg/ingest-types'
 import { createSharedComposable, useTimestamp } from '@vueuse/core'
 import { computed, ref, watch } from 'vue'
 
@@ -11,6 +12,7 @@ import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 export type BillingBannerKind =
+  | 'paused'
   | 'planEnded'
   | 'outOfCredits'
   | 'ending'
@@ -24,6 +26,7 @@ export interface BillingBannerInputs {
   isEnterprise: boolean
   isKnownPersonalTier: boolean
   isLoaded: boolean
+  billingStatus: BillingStatus | null
   canAccessSubscriptionFeatures: boolean
   hasFunds: boolean | null
   isCancelled: boolean
@@ -120,6 +123,7 @@ export function deriveBillingBanner(
   inputs: BillingBannerInputs,
   now: number = Date.now()
 ): BillingBannerKind | null {
+  if (inputs.billingStatus === 'paused') return 'paused'
   if (!inputs.isLoaded) return null
   const audience = billingBannerAudience(inputs)
   if (hasPlanEnded(inputs, audience)) {
@@ -161,8 +165,12 @@ function readSubscriptionInputs(
 }
 
 function useBillingBannerInternal() {
-  const { canAccessSubscriptionFeatures, subscription, isTeamPlan } =
-    useBillingContext()
+  const {
+    canAccessSubscriptionFeatures,
+    subscription,
+    isTeamPlan,
+    billingStatus
+  } = useBillingContext()
   const { permissions } = useWorkspaceUI()
   const { flags } = useFeatureFlags()
 
@@ -176,6 +184,7 @@ function useBillingBannerInternal() {
   const bannerInputs = computed<BillingBannerInputs>(() => ({
     billingControlEnabled: flags.billingControlEnabled,
     isTeamPlan: isTeamPlan.value,
+    billingStatus: billingStatus.value,
     canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
     canManage: permissions.value.canManageSubscription,
     isPlanEnded: isPlanEnded.value,

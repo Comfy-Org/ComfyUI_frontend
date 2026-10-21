@@ -1,5 +1,5 @@
 <template>
-  <ContextMenuRoot :modal="false">
+  <ContextMenuRoot :modal="false" @update:open="menuOpen = $event">
     <ContextMenuTrigger as-child>
       <div
         ref="workflowTabRef"
@@ -104,7 +104,7 @@
         </Button>
       </div>
     </ContextMenuTrigger>
-    <ContextMenuPortal>
+    <ContextMenuPortal :key="Number(menuOpen)">
       <ContextMenuContent :class="cn(menuContentClass, 'min-w-56')">
         <MenuItems :items="contextMenuItems" />
       </ContextMenuContent>
@@ -120,8 +120,8 @@
 
 <script setup lang="ts">
 import {
-  ContextMenuContent,
   ContextMenuPortal,
+  ContextMenuContent,
   ContextMenuRoot,
   ContextMenuTrigger
 } from 'reka-ui'
@@ -183,6 +183,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const menuOpen = ref(false)
 const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()

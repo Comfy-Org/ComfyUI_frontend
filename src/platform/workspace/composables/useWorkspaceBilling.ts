@@ -266,6 +266,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const subscriptionStatus = computed(
     () => statusData.value?.subscription_status ?? null
   )
+  const subscriptionState = computed(
+    () => statusData.value?.subscription_state ?? null
+  )
   const tier = computed(() => statusData.value?.subscription_tier ?? null)
   const renewalDate = computed(() => statusData.value?.renewal_date ?? null)
   const renewalInvoice = computed(
@@ -858,6 +861,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     isFreeTier,
     billingStatus,
     subscriptionStatus,
+    subscriptionState,
     tier,
     renewalDate,
     renewalInvoice,

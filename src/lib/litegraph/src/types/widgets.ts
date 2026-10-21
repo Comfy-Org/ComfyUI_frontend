@@ -1,4 +1,5 @@
 import type {
+  ExecutableLGraphNode,
   LGraphCanvas,
   LGraphNode
 } from '@/lib/litegraph/src/types/entityRegistry'
@@ -14,6 +15,7 @@ import type {
   WidgetVisibilityComponent
 } from '@/types/widgetVisibility'
 import type { ColorFormat } from '@/utils/colorUtil'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 
 import type {
   CanvasColour,
@@ -26,6 +28,17 @@ import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { CanvasPointerEvent } from './events'
 
 export type { NodeBindable } from '@/lib/litegraph/src/utils/type'
+
+export const CONFIG = Symbol()
+export const GET_CONFIG = Symbol()
+
+/** Identifies the widget a slot is linked to. */
+export interface IWidgetLocator {
+  name: string
+  type?: string
+  [CONFIG]?: InputSpec
+  [GET_CONFIG]?: () => InputSpec | undefined
+}
 
 export interface IWidgetOptions<TValues = unknown> {
   on?: string
@@ -76,6 +89,16 @@ export interface IWidgetOptions<TValues = unknown> {
    * @see IBaseWidget.serialize — workflow persistence
    */
   serialize?: boolean
+  /**
+   * Rounding value for numeric float widgets.
+   */
+  round?: number
+  /**
+   * The minimum size of the node if the widget is present.
+   */
+  minNodeSize?: Size
+
+  advanced?: boolean
 
   values?: TValues
   /** Optional function to format values for display (e.g., hash → human-readable name) */
@@ -479,6 +502,10 @@ export function isWidgetValue(value: unknown): value is TWidgetValue {
   return typeof value === 'object'
 }
 
+export interface WidgetCallbackOptions {
+  isPartialExecution?: boolean
+}
+
 /**
  * The base type for all widgets.  Should not be implemented directly.
  * @template TValue The type of value this widget holds.
@@ -663,4 +690,19 @@ export interface IBaseWidget<
     node: LGraphNode,
     canvas: LGraphCanvas
   ): boolean
+
+  onRemove?(): void
+  beforeQueued?(options?: WidgetCallbackOptions): unknown
+  afterQueued?(options?: WidgetCallbackOptions): unknown
+  serializeValue?(
+    node: ExecutableLGraphNode | LGraphNode,
+    index: number
+  ): unknown
+
+  /**
+   * Refreshes the widget's value or options from its remote source.
+   */
+  refresh?(): unknown
+
+  dynamicPrompts?: boolean
 }
