@@ -1014,7 +1014,9 @@
         "profileTitle": "{name} ({'@'}{username}): ComfyUI workflows - Comfy",
         "profileSummary": "Browse ComfyUI workflows by {name} on the Comfy Hub.",
         "workflowsHeading": "Workflows by {name}",
-        "noWorkflows": "{name} has no public workflows yet."
+        "noWorkflows": "{name} has no public workflows yet.",
+        "empty": "No creators have public workflows yet.",
+        "loadMoreFailed": "Could not load more workflows. Try again."
       }
     },
     "workflow": {

@@ -290,6 +290,14 @@ describe('bounded website catalog transport', () => {
     expect(upstream).toHaveBeenCalledTimes(1)
   })
 
+  it('reads English cards for a site locale the catalog does not serve', async () => {
+    const upstream = setup()
+    const result = await loadSiteCatalogList(undefined, 'ja', 'workflows')
+    assert.isTrue(result.ok)
+    const url = new URL(String(upstream.mock.calls[0][0]))
+    expect(url.searchParams.get('locale')).toBe('en')
+  })
+
   it('rejects production before requesting data', async () => {
     const upstream = setup()
     vi.stubEnv('VERCEL_ENV', 'production')

@@ -26,6 +26,7 @@ const models = ref<readonly WorkshopModel[]>(initialModels)
 const nextCursor = ref(initialCursor)
 const page = ref(1)
 const loading = ref(false)
+const failed = ref(false)
 
 async function loadMore() {
   if (loading.value || !nextCursor.value) return
@@ -44,6 +45,7 @@ async function loadMore() {
       url,
       AbortSignal.timeout(10_000)
     ).catch(() => undefined)
+    failed.value = !result
     if (!result) return
     const shown = new Set(models.value.map(({ href }) => href))
     models.value = [
@@ -75,5 +77,8 @@ async function loadMore() {
       :disabled="loading"
       @click="loadMore"
     />
+    <p role="status" class="text-center text-sm text-content-secondary">
+      {{ failed ? t('workshop.hub.creators.loadMoreFailed') : '' }}
+    </p>
   </div>
 </template>

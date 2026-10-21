@@ -12,7 +12,6 @@ import { workshopClientBoundary } from './workshop-client-boundary'
 
 import {
   HUB_APPS_PATH,
-  HUB_CREATORS_PATH,
   HUB_MODELS_PATH,
   HUB_WORKFLOWS_PATH,
   oldModelLinks
@@ -21,6 +20,7 @@ import { websiteRoot } from '@website/paths'
 import { unregisteredModelsPaths } from '@/config/models-url-registry'
 import { markdownTwinPath } from '@/lib/markdown-twin-path'
 import { cmsEnabled } from '@/lib/cms/cms-enabled'
+import { HUB_CREATORS_PATH } from '@/lib/hub/creator-path'
 import {
   PREFIXED_CATALOG_LOCALES,
   catalogLocalePrefix

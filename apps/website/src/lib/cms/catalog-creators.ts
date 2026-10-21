@@ -1,11 +1,17 @@
 import { z } from 'zod'
 
 import type { HubCreator, HubCreatorSummary } from '@/lib/hub/creators'
-import { hubAvatarUrl, isWebUrl } from '@/lib/hub/creators'
+import { hubAvatarUrl, isHttpsUrl } from '@/lib/hub/creators'
+import {
+  CREATOR_USERNAME_MAX,
+  hubCreatorPath,
+  isCreatorUsername
+} from '@/lib/hub/creator-path'
 import type { AuthoringSession } from './authoring-session'
 import { loadSiteCatalogList } from './catalog-list'
 import { cmsEnabled } from './cms-enabled'
-import { boundedBody } from './editor-server'
+import { fetchCatalogJson } from './catalog'
+import { everyCursorPage } from './catalog-list-all'
 
 const CREATORS_PATH = '/api/v1/catalog/creators'
 const DIRECTORY_PAGE_LIMIT = 100
@@ -28,30 +34,15 @@ const creatorsPageSchema = z.object({
 })
 
 const creatorProfileSchema = z.object({
-  username: z.string().min(1).max(64),
+  username: z.string().min(1).max(CREATOR_USERNAME_MAX),
   display_name: text,
-  bio: text,
+  bio: z.string().max(5000).nullish(),
   avatar_url: text,
   links: z
     .array(z.object({ label: text, url: z.string().max(2048) }))
     .max(20)
     .nullish()
 })
-
-async function readCatalogJson(url: URL) {
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(5000),
-    cache: 'no-store'
-  })
-  if (!response.ok) {
-    await response.body?.cancel()
-    return { status: response.status } as const
-  }
-  const bytes = await boundedBody(response, 1 << 20)
-  if (!bytes) return { status: 502 } as const
-  const data: unknown = JSON.parse(new TextDecoder().decode(bytes))
-  return { status: response.status, data } as const
-}
 
 function catalogOrigin() {
   const origin = process.env.SITE_CATALOG_API_URL
@@ -105,29 +96,23 @@ export async function loadCatalogCreators() {
   const unavailable = { ok: false, status: 503 } as const
   const origin = catalogOrigin()
   if (!origin) return unavailable
-  const items: DirectoryItem[] = []
-  const visited = new Set<string>()
-  let cursor: string | undefined
-  try {
-    for (let page = 0; page < MAX_DIRECTORY_PAGES; page++) {
-      const url = new URL(CREATORS_PATH, origin)
-      url.searchParams.set('limit', String(DIRECTORY_PAGE_LIMIT))
-      if (cursor) url.searchParams.set('cursor', cursor)
-      const parsed = creatorsPageSchema.safeParse(
-        (await readCatalogJson(url)).data
-      )
-      if (!parsed.success) return unavailable
-      items.push(...parsed.data.items)
-      cursor = parsed.data.next_cursor ?? undefined
-      if (!cursor)
-        return { ok: true, creators: mergedByUsername(items) } as const
-      if (visited.has(cursor)) return unavailable
-      visited.add(cursor)
-    }
-  } catch {
-    return unavailable
-  }
-  return unavailable
+  const items = await everyCursorPage(async (cursor) => {
+    const url = new URL(CREATORS_PATH, origin)
+    url.searchParams.set('limit', String(DIRECTORY_PAGE_LIMIT))
+    if (cursor) url.searchParams.set('cursor', cursor)
+    const page = creatorsPageSchema.safeParse(
+      (await fetchCatalogJson(url)).data
+    )
+    return page.success
+      ? {
+          items: page.data.items,
+          nextCursor: page.data.next_cursor ?? undefined
+        }
+      : undefined
+  }, MAX_DIRECTORY_PAGES)
+  return items
+    ? ({ ok: true, creators: mergedByUsername(items) } as const)
+    : unavailable
 }
 
 function creatorFromProfile(
@@ -139,7 +124,7 @@ function creatorFromProfile(
     displayName: profile.display_name || profile.username,
     ...(profile.bio && { description: profile.bio }),
     ...(avatarUrl && { avatarUrl }),
-    websiteUrls: (profile.links ?? []).map(({ url }) => url).filter(isWebUrl)
+    websiteUrls: (profile.links ?? []).map(({ url }) => url).filter(isHttpsUrl)
   }
 }
 
@@ -151,27 +136,38 @@ export async function loadCatalogCreator(
   const unavailable = { status: 'unavailable' } as const
   const origin = catalogOrigin()
   if (!origin) return unavailable
-  try {
-    const read = await readCatalogJson(
-      new URL(`${CREATORS_PATH}/${encodeURIComponent(username)}`, origin)
-    )
-    if (read.status === 404) return { status: 'missing' } as const
-    const profile = creatorProfileSchema.safeParse(read.data)
-    if (!profile.success) return unavailable
-    const cards = await loadSiteCatalogList(
-      session,
-      locale,
-      'workflows',
-      new URLSearchParams({ author: profile.data.username })
-    )
-    if (!cards.ok) return unavailable
+  if (!isCreatorUsername(username)) return { status: 'missing' } as const
+  const read = await fetchCatalogJson(
+    new URL(`${CREATORS_PATH}/${encodeURIComponent(username)}`, origin)
+  )
+  if (read.status === 404) return { status: 'missing' } as const
+  const profile = creatorProfileSchema.safeParse(read.data)
+  if (!profile.success) return unavailable
+  const cards = await loadSiteCatalogList(
+    session,
+    locale,
+    'workflows',
+    new URLSearchParams({ author: profile.data.username })
+  )
+  if (!cards.ok) return unavailable
+  return {
+    status: 'ok',
+    creator: creatorFromProfile(profile.data),
+    workflows: cards.models,
+    nextCursor: cards.pages.workflows.nextCursor
+  } as const
+}
+
+/** The profile route's answer: a lowercase redirect, or the creator read. */
+export async function loadCreatorPage(
+  session: AuthoringSession | undefined,
+  locale: string,
+  username: string
+) {
+  if (username !== username.toLowerCase())
     return {
-      status: 'ok',
-      creator: creatorFromProfile(profile.data),
-      workflows: cards.models,
-      nextCursor: cards.pages.workflows.nextCursor
+      status: 'redirect',
+      location: hubCreatorPath(username, locale)
     } as const
-  } catch {
-    return unavailable
-  }
+  return loadCatalogCreator(session, locale, username)
 }

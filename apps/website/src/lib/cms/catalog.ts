@@ -11,13 +11,12 @@ import { cmsEnabled } from './cms-enabled'
 
 export { cmsEnabled }
 
-async function fetchDetail(
-  origin: string,
-  workflowSlug: string,
+/** One bounded JSON read from the catalog, as the staff session when given. */
+export async function fetchCatalogJson(
+  url: URL,
   session?: AuthoringSession
-) {
+): Promise<{ status: number; data?: unknown }> {
   try {
-    const url = detailURL(origin, workflowSlug, session)
     const response = await fetch(url, {
       ...(session
         ? { headers: { Authorization: `Bearer ${session.credential}` } }
@@ -25,14 +24,28 @@ async function fetchDetail(
       signal: AbortSignal.timeout(5000),
       cache: 'no-store'
     })
-    if (!response.ok) return
+    if (!response.ok) {
+      await response.body?.cancel()
+      return { status: response.status }
+    }
     const bytes = await boundedBody(response, 4 << 20)
-    if (!bytes) return
-    const data: unknown = JSON.parse(new TextDecoder().decode(bytes))
-    return data
+    if (!bytes) return { status: 502 }
+    return {
+      status: response.status,
+      data: JSON.parse(new TextDecoder().decode(bytes))
+    }
   } catch {
-    return undefined
+    return { status: 503 }
   }
+}
+async function fetchDetail(
+  origin: string,
+  workflowSlug: string,
+  session?: AuthoringSession
+) {
+  return (
+    await fetchCatalogJson(detailURL(origin, workflowSlug, session), session)
+  ).data
 }
 function detailURL(
   origin: string,

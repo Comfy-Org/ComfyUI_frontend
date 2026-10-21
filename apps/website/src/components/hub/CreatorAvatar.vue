@@ -17,6 +17,7 @@ const {
     alt=""
     :loading
     decoding="async"
+    referrerpolicy="no-referrer"
     class="shrink-0 rounded-full object-cover"
   />
   <span
