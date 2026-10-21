@@ -5622,6 +5622,7 @@
     "videoCaption": "预先生成的示例。拖动画布探索，选择版本后拖动分隔线进行对比。",
     "tryWorkflow": "免费试用",
     "dragHint": "左右拖动查看完整工作流",
+    "keyboardHint": "也可使用方向键、Home 和 End 键移动画布。",
     "enterprisePlan": "查看企业方案",
     "prototype": {
       "back": "返回视觉特效页面",

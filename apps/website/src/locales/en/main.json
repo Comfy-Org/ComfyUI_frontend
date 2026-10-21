@@ -6229,6 +6229,7 @@
     "videoCaption": "Pre-rendered examples. Drag the canvas to explore. Choose a version and drag the divider to compare.",
     "tryWorkflow": "TRY FOR FREE",
     "dragHint": "Drag left or right to see full workflows",
+    "keyboardHint": "Use the arrow keys, Home and End to move with the keyboard.",
     "enterprisePlan": "SEE ENTERPRISE PLAN",
     "prototype": {
       "back": "Back to VFX page",

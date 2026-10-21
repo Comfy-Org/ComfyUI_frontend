@@ -17,6 +17,7 @@ interface Props {
 }
 const { locale, demo = 'relight' } = Astro.props
 const { t } = translationsFor(locale)
+const canvasHintId = `vfx-${demo}-canvas-hint`
 const {
   source,
   mediaKind,
@@ -70,6 +71,7 @@ function variantNode(id: string, label: string) {
         class="vfx-canvas-window"
         tabindex="0"
         aria-label={t(`vfxV3.demos.${demo}.title`)}
+        aria-describedby={canvasHintId}
       >
         <div class="vfx-canvas-scale">
           <div class="vfx-scene-stage">
@@ -100,10 +102,11 @@ function variantNode(id: string, label: string) {
           </div>
         </div>
         <p
+          id={canvasHintId}
           class="pointer-events-none absolute right-4 bottom-4 text-xs text-primary-warm-gray"
-          aria-hidden="true"
         >
           {t('vfxV3.dragHint')}
+          <span class="sr-only">{t('vfxV3.keyboardHint')}</span>
         </p>
       </div>
       <div

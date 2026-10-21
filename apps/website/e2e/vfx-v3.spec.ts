@@ -420,6 +420,9 @@ test('source and output previews pause offscreen while keyboard canvas explorati
   const canvas = section.locator('.vfx-canvas-window')
   const source = section.locator('.vfx-source-node video')
   const output = section.locator('.vfx-main-node video')
+  await expect(canvas).toHaveAccessibleDescription(
+    'Drag left or right to see full workflows Use the arrow keys, Home and End to move with the keyboard.'
+  )
   await expect
     .poll(() =>
       output.evaluate(
