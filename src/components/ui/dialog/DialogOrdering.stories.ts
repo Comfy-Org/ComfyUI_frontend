@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { ref } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -8,7 +9,7 @@ import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import Menu from '@comfyorg/design-system/menu/Menu'
-import Popover from '@comfyorg/design-system/popover/Popover'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
 import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 
@@ -24,7 +25,9 @@ const meta: Meta = {
       DialogPortal,
       DialogTitle,
       Menu,
-      Popover,
+      PopoverContent,
+      PopoverRoot,
+      PopoverTrigger,
       SingleSelect,
       ToastDock
     },
@@ -53,7 +56,7 @@ const meta: Meta = {
             <input aria-label="Dialog input" class="rounded border p-2" placeholder="Dialog input" />
             <SingleSelect v-model="selected" label="Choose a value" accessible-label="Choose a value" :options />
             <Menu :items><template #trigger><Button>Open menu</Button></template></Menu>
-            <Popover><template #button><Button>Open popover</Button></template><Button>Popover action</Button></Popover>
+            <PopoverRoot><PopoverTrigger as-child><Button>Open popover</Button></PopoverTrigger><PopoverContent><Button>Popover action</Button></PopoverContent></PopoverRoot>
             <div class="flex gap-2">
               <Button @click="b = true">Open B above A</Button>
               <Button @click="a = false">Close A</Button>
@@ -74,10 +77,10 @@ const meta: Meta = {
       <ToastDock>
         <div class="flex items-center gap-4 rounded-lg border bg-background p-4 shadow-lg">
           <span>Upload complete</span>
-          <Popover>
-            <template #button><Button>Toast details</Button></template>
-            <Button>Toast popover action</Button>
-          </Popover>
+          <PopoverRoot>
+            <PopoverTrigger as-child><Button>Toast details</Button></PopoverTrigger>
+            <PopoverContent><Button>Toast popover action</Button></PopoverContent>
+          </PopoverRoot>
         </div>
       </ToastDock>
     `

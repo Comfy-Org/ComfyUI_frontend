@@ -1,22 +1,28 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { ConfigProvider } from 'reka-ui'
+import { ConfigProvider, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { describe, expect, it } from 'vitest'
 
-import Popover from '@comfyorg/design-system/popover/Popover'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 
 describe('ToastDock', () => {
   it('keeps descendant popovers in the toast tier and inherits provider direction', async () => {
     render({
-      components: { ConfigProvider, Popover, ToastDock },
+      components: {
+        ConfigProvider,
+        PopoverContent,
+        PopoverRoot,
+        PopoverTrigger,
+        ToastDock
+      },
       template: `
         <ConfigProvider dir="rtl">
           <ToastDock data-testid="dock">
-            <Popover>
-              <template #button><button>Details</button></template>
-              <button>Popover action</button>
-            </Popover>
+            <PopoverRoot>
+              <PopoverTrigger>Details</PopoverTrigger>
+              <PopoverContent><button>Popover action</button></PopoverContent>
+            </PopoverRoot>
           </ToastDock>
         </ConfigProvider>
       `

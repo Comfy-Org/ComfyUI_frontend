@@ -11,6 +11,8 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { usePopoverViewportDismiss } from './usePopoverViewportDismiss'
+
 defineOptions({
   inheritAttrs: false
 })
@@ -19,8 +21,14 @@ const {
   align = 'center',
   sideOffset = 4,
   class: className,
+  dismissOnViewportChange = false,
   ...restProps
-} = defineProps<PopoverContentProps & { class?: HTMLAttributes['class'] }>()
+} = defineProps<
+  PopoverContentProps & {
+    class?: HTMLAttributes['class']
+    dismissOnViewportChange?: boolean
+  }
+>()
 const emits = defineEmits<PopoverContentEmits>()
 
 const delegatedProps = computed(() => ({
@@ -31,6 +39,14 @@ const delegatedProps = computed(() => ({
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 const rootContext = injectPopoverRootContext()
+
+usePopoverViewportDismiss(
+  computed({
+    get: () => dismissOnViewportChange && rootContext.open.value,
+    set: (open) => rootContext.onOpenChange(open)
+  }),
+  rootContext.triggerElement
+)
 </script>
 
 <template>

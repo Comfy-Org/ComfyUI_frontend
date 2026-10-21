@@ -153,37 +153,38 @@
                     <i
                       class="pi pi-question-circle text-xs group-hover:text-foreground"
                     />
-                    <Popover
-                      :show-arrow="false"
-                      align="start"
-                      :side-offset="4"
-                      :collision-padding="8"
-                      class="max-h-(--reka-popover-content-available-height) max-w-sm overflow-auto p-4 shadow-lg data-[state=open]:animate-none"
-                    >
-                      <template #button>
+                    <PopoverRoot>
+                      <PopoverTrigger as-child>
                         <button
                           class="cursor-pointer border-0 bg-transparent p-0 text-sm font-normal group-hover:text-foreground"
                         >
                           {{ t('subscription.videoEstimateHelp') }}
                         </button>
-                      </template>
-                      <div class="flex flex-col gap-2">
-                        <p class="text-sm/normal text-foreground">
-                          {{ t('subscription.videoEstimateExplanation') }}
-                        </p>
-                        <a
-                          href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="flex gap-1 text-sm text-primary no-underline hover:text-primary/80"
-                        >
-                          <span class="underline">{{
-                            t('subscription.videoEstimateTryTemplate')
-                          }}</span>
-                          <span class="no-underline">→</span>
-                        </a>
-                      </div>
-                    </Popover>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="start"
+                        :collision-padding="8"
+                        dismiss-on-viewport-change
+                        class="max-h-(--reka-popover-content-available-height) w-auto max-w-sm overflow-auto shadow-lg data-[state=open]:animate-none"
+                      >
+                        <div class="flex flex-col gap-2">
+                          <p class="text-sm/normal text-foreground">
+                            {{ t('subscription.videoEstimateExplanation') }}
+                          </p>
+                          <a
+                            href="https://cloud.comfy.org/?template=video_wan2_2_14B_i2v"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="flex gap-1 text-sm text-primary no-underline hover:text-primary/80"
+                          >
+                            <span class="underline">{{
+                              t('subscription.videoEstimateTryTemplate')
+                            }}</span>
+                            <span class="no-underline">→</span>
+                          </a>
+                        </div>
+                      </PopoverContent>
+                    </PopoverRoot>
                   </div>
                 </div>
                 <span class="text-sm/normal font-bold tabular-nums">
@@ -224,7 +225,8 @@ import PricingTierHeading from '@/platform/workspace/components/PricingTierHeadi
 import { planCtaActionName } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
-import Popover from '@comfyorg/design-system/popover/Popover'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
+import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 

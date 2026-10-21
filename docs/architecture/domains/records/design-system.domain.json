@@ -342,8 +342,7 @@
         "src/components/ui/search-input/SearchAutocomplete.zindex.test.ts",
         "src/components/ui/popover/PopoverContent.test.ts",
         "src/components/ui/hover-card/HoverCard.test.ts",
-        "src/components/ui/tooltip/Tooltip.test.ts",
-        "src/components/ui/popover/Popover.test.ts"
+        "src/components/ui/tooltip/Tooltip.test.ts"
       ]
     },
     {
