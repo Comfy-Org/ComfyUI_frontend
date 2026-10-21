@@ -144,9 +144,10 @@ describe('Workshop release output', () => {
       expect(routes.some(({ pattern }) => pattern === '/admin/catalog')).toBe(
         rendersOnDemand
       )
-      expect(routes.some(({ pattern }) => pattern === '/hub/creators')).toBe(
-        rendersOnDemand
-      )
+      for (const creatorsRoute of ['/hub/creators', '/hub/creators/[username]'])
+        expect(routes.some(({ pattern }) => pattern === creatorsRoute)).toBe(
+          rendersOnDemand
+        )
       for (const prefix of ['/zh-CN/hub/', '/ja/hub/'])
         expect(routes.some(({ pattern }) => pattern.startsWith(prefix))).toBe(
           rendersOnDemand

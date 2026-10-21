@@ -14,7 +14,7 @@ function nameCarriesProvider(name: string, provider: string) {
   return providerWords.every((word) => nameWords.has(word))
 }
 
-function cutAtWord(text: string, maxLength: number) {
+export function cutAtWord(text: string, maxLength: number) {
   const cut = text
     .slice(0, Math.max(0, maxLength - 1))
     .replace(/[\uD800-\uDBFF]$/, '')

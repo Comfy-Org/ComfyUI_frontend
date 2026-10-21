@@ -1,7 +1,9 @@
 import { z } from 'zod'
 
-import type { HubCreatorSummary } from '@/lib/hub/creators'
-import { hubAvatarUrl } from '@/lib/hub/creators'
+import type { HubCreator, HubCreatorSummary } from '@/lib/hub/creators'
+import { hubAvatarUrl, isWebUrl } from '@/lib/hub/creators'
+import type { AuthoringSession } from './authoring-session'
+import { loadSiteCatalogList } from './catalog-list'
 import { cmsEnabled } from './cms-enabled'
 import { boundedBody } from './editor-server'
 
@@ -23,6 +25,17 @@ const creatorsPageSchema = z.object({
     )
     .max(DIRECTORY_PAGE_LIMIT),
   next_cursor: text
+})
+
+const creatorProfileSchema = z.object({
+  username: z.string().min(1).max(64),
+  display_name: text,
+  bio: text,
+  avatar_url: text,
+  links: z
+    .array(z.object({ label: text, url: z.string().max(2048) }))
+    .max(20)
+    .nullish()
 })
 
 async function readCatalogJson(url: URL) {
@@ -115,4 +128,50 @@ export async function loadCatalogCreators() {
     return unavailable
   }
   return unavailable
+}
+
+function creatorFromProfile(
+  profile: z.output<typeof creatorProfileSchema>
+): HubCreator {
+  const avatarUrl = hubAvatarUrl(profile.avatar_url)
+  return {
+    username: profile.username.toLowerCase(),
+    displayName: profile.display_name || profile.username,
+    ...(profile.bio && { description: profile.bio }),
+    ...(avatarUrl && { avatarUrl }),
+    websiteUrls: (profile.links ?? []).map(({ url }) => url).filter(isWebUrl)
+  }
+}
+
+export async function loadCatalogCreator(
+  session: AuthoringSession | undefined,
+  locale: string,
+  username: string
+) {
+  const unavailable = { status: 'unavailable' } as const
+  const origin = catalogOrigin()
+  if (!origin) return unavailable
+  try {
+    const read = await readCatalogJson(
+      new URL(`${CREATORS_PATH}/${encodeURIComponent(username)}`, origin)
+    )
+    if (read.status === 404) return { status: 'missing' } as const
+    const profile = creatorProfileSchema.safeParse(read.data)
+    if (!profile.success) return unavailable
+    const cards = await loadSiteCatalogList(
+      session,
+      locale,
+      'workflows',
+      new URLSearchParams({ author: profile.data.username })
+    )
+    if (!cards.ok) return unavailable
+    return {
+      status: 'ok',
+      creator: creatorFromProfile(profile.data),
+      workflows: cards.models,
+      nextCursor: cards.pages.workflows.nextCursor
+    } as const
+  } catch {
+    return unavailable
+  }
 }

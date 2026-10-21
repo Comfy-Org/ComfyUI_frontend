@@ -1,8 +1,34 @@
+import type { CccWebsiteCardsPage } from '@comfyorg/ingest-types'
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { loadCatalogCreators } from './catalog-creators'
+import { loadCatalogCreator, loadCatalogCreators } from './catalog-creators'
 
 const origin = 'http://localhost:8099'
+
+function cardsPage(): CccWebsiteCardsPage {
+  return {
+    revision_id: 4,
+    items: [
+      {
+        uid: '00000000-0000-4000-8000-000000000010',
+        edit_version: '00000000-0000-4000-8000-000000000011',
+        revision: 1,
+        deleted: false,
+        enabled: true,
+        visibility: 'PUBLIC',
+        kind: 'WORKFLOW',
+        slug: '/hub/workflows/purz-flow',
+        data: { type: 'workflow', title: 'Purz flow', slug: 'purz-flow' }
+      }
+    ],
+    page_size: 24,
+    has_more: true,
+    next_cursor: 'signed-next',
+    available_kinds: ['WORKFLOW'],
+    sort_orders: ['popular'],
+    facets: { categories: [], models: [], use_cases: [] }
+  }
+}
 
 function serve(routes: Partial<Record<string, () => Response>>) {
   vi.stubEnv('SITE_CATALOG_API_URL', origin)
@@ -127,5 +153,91 @@ describe('loadCatalogCreators', () => {
     })
 
     expect(await loadCatalogCreators()).toEqual({ ok: false, status: 503 })
+  })
+})
+
+describe('loadCatalogCreator', () => {
+  const profile = {
+    username: 'purz',
+    display_name: 'Purz',
+    bio: 'Live stream host',
+    avatar_url: 'https://comfy-hub-assets.comfy.org/uploads/purz.png',
+    links: [
+      { label: 'Site', url: 'https://purz.xyz' },
+      { label: 'Bad', url: 'javascript:alert(1)' },
+      { label: 'Bare', url: 'purz.xyz' }
+    ]
+  }
+
+  it('reads the profile and the first page of its public workflow cards', async () => {
+    const call = serve({
+      '/api/v1/catalog/creators/purz': () => Response.json(profile),
+      '/api/v1/catalog/cards': () => Response.json(cardsPage())
+    })
+
+    const result = await loadCatalogCreator(undefined, 'en', 'purz')
+
+    assert(result.status === 'ok')
+    expect(result.creator).toEqual({
+      username: 'purz',
+      displayName: 'Purz',
+      description: 'Live stream host',
+      avatarUrl:
+        'https://comfy-hub-assets.comfy.org/cdn-cgi/image/width=400,format=auto,quality=82/uploads/purz.png',
+      websiteUrls: ['https://purz.xyz']
+    })
+    expect(result.workflows.map(({ name }) => name)).toEqual(['Purz flow'])
+    expect(result.nextCursor).toBe('signed-next')
+    const cards = call(1)
+    expect(cards.pathname).toBe('/api/v1/catalog/cards')
+    expect(cards.searchParams.get('author')).toBe('purz')
+    expect(cards.searchParams.get('kind')).toBe('WORKFLOW')
+  })
+
+  it.for([
+    {
+      case: 'served over plain http',
+      avatar: 'http://comfy-hub-assets.comfy.org/uploads/purz.png'
+    },
+    { case: 'on another host', avatar: 'https://tracker.example/purz.png' },
+    { case: 'not a web URL', avatar: 'javascript:alert(1)' }
+  ])('drops an avatar $case', async ({ avatar }) => {
+    serve({
+      '/api/v1/catalog/creators/purz': () =>
+        Response.json({ ...profile, avatar_url: avatar }),
+      '/api/v1/catalog/cards': () => Response.json(cardsPage())
+    })
+
+    const result = await loadCatalogCreator(undefined, 'en', 'purz')
+
+    assert(result.status === 'ok')
+    expect(result.creator.avatarUrl).toBeUndefined()
+  })
+
+  it.for([
+    { status: 404, expected: 'missing' },
+    { status: 500, expected: 'unavailable' }
+  ])(
+    'reports a profile answered with $status as $expected',
+    async ({ status, expected }) => {
+      serve({
+        '/api/v1/catalog/creators/ghost': () => new Response(null, { status })
+      })
+
+      expect(await loadCatalogCreator(undefined, 'en', 'ghost')).toEqual({
+        status: expected
+      })
+    }
+  )
+
+  it('reports the page unavailable when the workflow cards cannot be read', async () => {
+    serve({
+      '/api/v1/catalog/creators/purz': () => Response.json(profile),
+      '/api/v1/catalog/cards': () => new Response(null, { status: 502 })
+    })
+
+    expect(await loadCatalogCreator(undefined, 'en', 'purz')).toEqual({
+      status: 'unavailable'
+    })
   })
 })

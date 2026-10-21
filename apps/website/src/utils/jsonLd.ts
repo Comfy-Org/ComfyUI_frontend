@@ -20,6 +20,7 @@ export type WebPageType =
   | 'AboutPage'
   | 'ContactPage'
   | 'CollectionPage'
+  | 'ProfilePage'
 
 export interface Crumb {
   name: string

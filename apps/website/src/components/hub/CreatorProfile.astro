@@ -1,0 +1,133 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro'
+import CreatorAvatar from '@/components/hub/CreatorAvatar.vue'
+import CreatorWorkflowGrid from '@/components/hub/CreatorWorkflowGrid.vue'
+import {
+  workshopEyebrowClass,
+  workshopHeadingClass
+} from '@/components/workshop/workshopHeadingClasses'
+import { catalogLocalePrefix } from '@/config/catalog-locales'
+import { HUB_CREATORS_PATH, HUB_MODELS_PATH } from '@/config/hub-models'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
+import type { HubCreator } from '@/lib/hub/creators'
+import {
+  creatorEntityId,
+  creatorEntityNode,
+  creatorMetaDescription
+} from '@/lib/hub/creators'
+import { absoluteUrl, itemListNode, pageContext } from '@/utils/jsonLd'
+
+interface Props {
+  creator: HubCreator
+  workflows: readonly WorkshopModel[]
+  nextCursor?: string
+  locale: Locale
+}
+
+const { creator, workflows, nextCursor, locale } = Astro.props
+const { t } = Astro.locals
+const { url, siteUrl } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
+const name = creator.displayName
+const description = creatorMetaDescription(
+  t('workshop.hub.creators.profileSummary', { name }),
+  creator.description
+)
+const workflowsHeading = t('workshop.hub.creators.workflowsHeading', { name })
+const directoryPath = `${catalogLocalePrefix(locale)}${HUB_CREATORS_PATH}/`
+---
+
+<BaseLayout
+  title={t('workshop.hub.creators.profileTitle', {
+    name,
+    username: creator.username
+  })}
+  description={description}
+  noindex={workflows.length === 0}
+  ogImage={creator.avatarUrl}
+  ogImageAlt={name}
+  pageType="ProfilePage"
+  mainEntityId={creatorEntityId(siteUrl, creator.username)}
+  breadcrumbs={[
+    {
+      name: t('workshop.hub.creators.hub'),
+      url: absoluteUrl(Astro.site, HUB_MODELS_PATH)
+    },
+    {
+      name: t('workshop.hub.creators.title'),
+      url: absoluteUrl(Astro.site, directoryPath)
+    },
+    { name }
+  ]}
+  extraJsonLd={[
+    creatorEntityNode(creator, url, siteUrl),
+    itemListNode(
+      url,
+      workflowsHeading,
+      workflows.flatMap(({ href, name }) =>
+        href ? [{ url: absoluteUrl(Astro.site, href), name }] : []
+      )
+    )
+  ]}
+>
+  <div class="mx-auto max-w-10xl px-6 pt-8 pb-24 max-sm:pt-5 lg:px-8 lg:pt-12">
+    <a
+      href={directoryPath}
+      class="text-sm text-content-secondary hover:text-content"
+    >
+      ← {t('workshop.hub.creators.title')}
+    </a>
+    <header class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start">
+      <CreatorAvatar
+        name={name}
+        avatarUrl={creator.avatarUrl}
+        loading="eager"
+        class="size-24 shrink-0 text-4xl"
+      />
+      <div class="min-w-0">
+        <p class={workshopEyebrowClass}>{t('workshop.hub.creators.eyebrow')}</p>
+        <h1 class={workshopHeadingClass}>{name}</h1>
+        <p class="mt-2 text-content-secondary">@{creator.username}</p>
+        {creator.description && <p
+          class="mt-4 max-w-3xl text-sm whitespace-pre-line text-content-secondary"
+        >
+          {creator.description}
+        </p>}
+        {creator.websiteUrls.length > 0 && <ul
+          class="mt-4 flex flex-wrap gap-x-6 gap-y-2"
+        >
+          {creator.websiteUrls.map((link) => <li>
+            <a
+              href={link}
+              target="_blank"
+              rel="noopener nofollow ugc"
+              class="text-sm text-brand hover:underline"
+            >
+              {new URL(link).hostname.replace(/^www\./, '')} ↗
+            </a>
+          </li>)}
+        </ul>}
+      </div>
+    </header>
+    <h2 class="mt-16 mb-6 text-2xl font-light text-content">
+      {workflowsHeading}
+    </h2>
+    {workflows.length > 0 ? (
+      <CreatorWorkflowGrid
+        initialModels={workflows}
+        nextCursor={nextCursor}
+        author={creator.username}
+        locale={locale}
+        client:visible
+      />
+    ) : (
+      <p class="text-content-secondary">
+        {t('workshop.hub.creators.noWorkflows', { name })}
+      </p>
+    )}
+  </div>
+</BaseLayout>

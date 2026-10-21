@@ -3,6 +3,7 @@ import type {
   ListCccWebsiteCardsData
 } from '@comfyorg/ingest-types'
 import { zListCccWebsiteCardsQuery } from '@comfyorg/ingest-types/zod'
+import { z } from 'zod'
 
 import { USE_CASES } from '@/config/models-catalogue'
 import type { UseCase, SortOrder } from '@/config/models-catalogue'
@@ -44,6 +45,9 @@ export interface CatalogListFacets {
 
 export type CatalogListPages = Record<CatalogListSection, CatalogListPage>
 const KINDS = { models: 'MODEL', workflows: 'WORKFLOW', apps: 'APP' } as const
+const cardQuerySchema = zListCccWebsiteCardsQuery.extend({
+  author: z.string().min(1).max(30).optional()
+})
 
 function pageNumber(value: string | null) {
   if (!value || !/^[1-9]\d*$/.test(value)) return 1
@@ -56,8 +60,9 @@ function cardQuery(
   section: CatalogListSection,
   locale: string
 ) {
-  return zListCccWebsiteCardsQuery.safeParse({
+  return cardQuerySchema.safeParse({
     kind: KINDS[section],
+    author: params.get('author') || undefined,
     limit: 24,
     locale,
     cursor: params.get('cursor') || undefined,

@@ -1,5 +1,8 @@
 import { catalogLocalePrefix } from '@/config/catalog-locales'
 import { HUB_CREATORS_PATH } from '@/config/hub-models'
+import { cutAtWord } from '@/lib/workshop/model-meta-description'
+import type { JsonLdNode } from '@/utils/jsonLd'
+import { organizationId } from '@/utils/jsonLd'
 
 export interface HubCreatorSummary {
   readonly username: string
@@ -8,10 +11,24 @@ export interface HubCreatorSummary {
   readonly workflowCount: number
 }
 
+export interface HubCreator {
+  readonly username: string
+  readonly displayName: string
+  readonly description?: string
+  readonly avatarUrl?: string
+  readonly websiteUrls: readonly string[]
+}
+
+const META_DESCRIPTION_MAX = 160
+const ORGANIZATION_CREATORS = new Set(['comfyui'])
 const HUB_ASSETS_HOST = 'comfy-hub-assets.comfy.org'
 
 export function hubCreatorPath(username: string, locale = 'en') {
   return `${catalogLocalePrefix(locale)}${HUB_CREATORS_PATH}/${encodeURIComponent(username.toLowerCase())}/`
+}
+
+export function isWebUrl(url: string) {
+  return URL.canParse(url) && /^https?:$/.test(new URL(url).protocol)
 }
 
 export function hubAvatarUrl(url: string | null | undefined) {
@@ -20,4 +37,40 @@ export function hubAvatarUrl(url: string | null | undefined) {
   return protocol === 'https:' && hostname === HUB_ASSETS_HOST
     ? `${origin}/cdn-cgi/image/width=400,format=auto,quality=82${pathname}`
     : undefined
+}
+
+export const creatorEntityId = (siteUrl: string, username: string) =>
+  `${siteUrl}${hubCreatorPath(username)}#creator`
+
+export function creatorEntityNode(
+  creator: HubCreator,
+  url: string,
+  siteUrl: string
+): JsonLdNode {
+  const isOrganization = ORGANIZATION_CREATORS.has(creator.username)
+  const sameAs = [
+    ...(isOrganization ? [organizationId(siteUrl)] : []),
+    ...creator.websiteUrls
+  ]
+  return {
+    '@type': isOrganization ? 'Organization' : 'Person',
+    '@id': creatorEntityId(siteUrl, creator.username),
+    name: creator.displayName,
+    alternateName: creator.username,
+    url,
+    ...(creator.description && { description: creator.description }),
+    ...(creator.avatarUrl && { image: creator.avatarUrl }),
+    ...(sameAs.length > 0 && { sameAs })
+  }
+}
+
+export function creatorMetaDescription(summary: string, bio?: string) {
+  const text = [summary, bio]
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return text.length > META_DESCRIPTION_MAX
+    ? cutAtWord(text, META_DESCRIPTION_MAX)
+    : text
 }

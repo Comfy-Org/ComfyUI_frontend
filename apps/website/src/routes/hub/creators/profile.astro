@@ -1,0 +1,36 @@
+---
+import CreatorProfile from '@/components/hub/CreatorProfile.astro'
+import { catalogUnavailable } from '@/lib/cms/catalog'
+import { loadCatalogCreator } from '@/lib/cms/catalog-creators'
+import { hubCreatorPath } from '@/lib/hub/creators'
+import NotFound from '@/pages/404.astro'
+
+const locale = Astro.locals.catalogLocale ?? 'en'
+const requested = Astro.params.username ?? ''
+const lowercasePath =
+  requested === requested.toLowerCase()
+    ? undefined
+    : hubCreatorPath(requested, locale)
+if (lowercasePath) return Astro.redirect(lowercasePath, 301)
+
+const profile = await loadCatalogCreator(
+  Astro.locals.catalogAuthoring,
+  locale,
+  requested
+)
+const failure =
+  profile.status === 'unavailable' ? catalogUnavailable() : undefined
+if (failure) return failure
+if (profile.status === 'missing') Astro.response.status = 404
+---
+
+{profile.status === 'ok' ? (
+  <CreatorProfile
+    creator={profile.creator}
+    workflows={profile.workflows}
+    nextCursor={profile.nextCursor}
+    locale={locale}
+  />
+) : (
+  <NotFound />
+)}

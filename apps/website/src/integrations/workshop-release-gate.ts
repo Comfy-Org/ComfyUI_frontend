@@ -37,7 +37,11 @@ const creatorsEntry = (name: string) =>
   join(websiteRoot, 'src/routes/hub/creators', name)
 
 const CMS_HUB_ROUTES = [
-  { pattern: HUB_CREATORS_PATH, entrypoint: creatorsEntry('index.astro') }
+  { pattern: HUB_CREATORS_PATH, entrypoint: creatorsEntry('index.astro') },
+  {
+    pattern: `${HUB_CREATORS_PATH}/[username]`,
+    entrypoint: creatorsEntry('profile.astro')
+  }
 ]
 
 const WORKSHOP_ONLY_ROUTES = [
