@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 
 type HubMediaType = 'image' | 'video' | 'audio' | '3d'
-type ThumbnailVariant =
+export type ThumbnailVariant =
   | 'compareSlider'
   | 'hoverDissolve'
   | 'zoomHover'
@@ -47,7 +47,7 @@ const hubMediaTypeSchema: z.ZodType<HubMediaType> = z.enum([
   'audio',
   '3d'
 ])
-const thumbnailVariantSchema: z.ZodType<ThumbnailVariant> = z.enum([
+export const thumbnailVariantSchema: z.ZodType<ThumbnailVariant> = z.enum([
   'compareSlider',
   'hoverDissolve',
   'zoomHover',

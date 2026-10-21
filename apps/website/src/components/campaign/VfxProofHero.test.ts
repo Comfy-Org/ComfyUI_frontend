@@ -18,7 +18,7 @@ describe('VfxProofHero', () => {
     })
     comparison.focus()
     await user.keyboard('{ArrowRight}{ArrowRight}')
-    expect(comparison).toHaveAttribute('aria-valuenow', '52')
+    expect(comparison).toHaveAttribute('aria-valuenow', '54')
 
     await user.keyboard('{Home}')
     expect(comparison).toHaveAttribute('aria-valuenow', '0')

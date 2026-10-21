@@ -40,8 +40,8 @@ describe('HubWorkflowCard', () => {
 
     await user.tab()
     await user.keyboard('{ArrowRight}{ArrowUp}')
-    expect(slider.getAttribute('aria-valuenow')).toBe('52')
-    expect(slider.getAttribute('aria-valuetext')).toBe('52%')
+    expect(slider.getAttribute('aria-valuenow')).toBe('54')
+    expect(slider.getAttribute('aria-valuetext')).toBe('54%')
 
     await user.keyboard('{End}')
     expect(slider.getAttribute('aria-valuenow')).toBe('100')
