@@ -5842,7 +5842,7 @@
       "line": "Build an app by 10/30. Win up to $10K.",
       "cta": "LEARN MORE"
     },
-    "description": "Higgsfield said they’d open source their platform. Let’s help. You have two weeks to rebuild their most popular apps and more on the Comfy Developer Platform.",
+    "description": "Higgsfield said they’d open source their platform. Let’s help. You have two weeks to rebuild their most popular apps and more with ComfyUI.",
     "submit": "Submit your entry",
     "signup": "Sign up now",
     "signupCredits": "First 200 signups get free credits",
@@ -5851,7 +5851,7 @@
     "examples": "You’ve seen the outputs. Now build the apps",
     "examplesBody": "Start with a recognizable output: a performance effect, a cinematic camera move, or a music-video transformation. Build a working app that makes it easy for someone else to create their own. These are inspiration prompts for your entry.",
     "enter": "How to enter",
-    "enterLead": "Create your favorite app and more using the Comfy Developer Platform. Submission deadline is October 30.",
+    "enterLead": "Create your favorite app and more with ComfyUI, running it wherever you like. Submission deadline is October 30.",
     "enterSignupTitle": "Sign up",
     "enterSignupBody": "The first 200 signups get free credits to use.",
     "enterSignupLink": "Sign up here",
@@ -5861,11 +5861,11 @@
     "enterSubmitTitle": "Submit",
     "enterSubmitBody": "Submit by October 30. Final winners will be announced November 6.",
     "enterIntro": "Every submission must include:",
-    "requirement1": "Your work must be built using the Comfy <a href=\"/platform/\" class=\"text-primary-comfy-yellow underline\">Developer Platform</a> (Comfy Router and/or <a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>)",
+    "requirement1": "Your work must be built with ComfyUI. Run it however you like: entirely local, Comfy Cloud, the <a href=\"/platform/\" class=\"text-primary-comfy-yellow underline\">Developer Platform</a>, Comfy Router, the <a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>, or any mix of them",
     "requirement2": "Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine",
     "requirement3": "Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video",
     "requirement4": "All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses",
-    "requirement5": "By submitting, you agree to allow ComfyUI, NVIDIA, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels",
+    "requirement5": "By submitting, you agree to allow ComfyUI, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels",
     "requirement6": "One submission per person",
     "enterRepo": "GitHub repo",
     "enterRepoBody": "Your app code, workflow files, an open-source license, and instructions to run it locally.",
@@ -6111,6 +6111,10 @@
         "security": {
           "question": "Identity & security review",
           "answer": "Discuss company identity, approved build access, private assets, and your studio’s security requirements with Comfy. Scope the review around your deployment plan."
+        },
+        "billing": {
+          "question": "Enterprise plan & billing",
+          "answer": "Pricing, seats, and usage terms are set in your enterprise agreement. Talk to Comfy about volume, billing, and what your team needs."
         }
       },
       "enterprise": "VIEW ENTERPRISE DETAILS",
@@ -6174,8 +6178,8 @@
     "badge": "VFX",
     "heading": "One shot. More possibilities.",
     "description": "Change the light, replace an object, extend the frame. Build repeatable VFX workflows with Comfy, then bring them into your studio’s pipeline.",
-    "sales": "TALK TO COMFY TEAM",
-    "browse": "Explore the workflows",
+    "sales": "CONTACT US",
+    "browse": "See VFX workflows",
     "workflow": "View workflow",
     "sequenceHeading": "One take. A new point of view.",
     "sequenceDescription": "Explore a multishot sequence generated with Seedance from a reference clip. Open the workflow to see how the sequence is built.",
@@ -6223,9 +6227,12 @@
     },
     "workstationTitle": "Workstations & rendering",
     "videoCaption": "Pre-rendered examples. Drag the canvas to explore. Choose a version and drag the divider to compare.",
-    "tryWorkflow": "TRY WORKFLOW",
+    "tryWorkflow": "TRY FOR FREE",
+    "dragHint": "Drag left or right to see full workflows",
+    "keyboardHint": "Use the arrow keys, Home and End to move with the keyboard.",
+    "enterprisePlan": "SEE ENTERPRISE PLAN",
     "prototype": {
-      "back": "Back to examples",
+      "back": "Back to VFX page",
       "heading": "Relight workflow",
       "use": "Use workflow",
       "customize": "Customize in Comfy Cloud",

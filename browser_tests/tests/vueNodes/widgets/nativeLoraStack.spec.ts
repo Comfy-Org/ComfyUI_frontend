@@ -19,7 +19,6 @@ test.describe(
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
-      await comfyPage.canvasOps.resetView()
     })
 
     test.describe('node creation and model drops', () => {

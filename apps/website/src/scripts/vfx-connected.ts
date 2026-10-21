@@ -4,12 +4,8 @@ import { gsap, ScrollTrigger } from './gsapSetup'
 class VfxWorkflowShowcase extends HTMLElement {
   private observer?: ResizeObserver
   private visibleMedia = new Set<HTMLVideoElement>()
-  private playbackIntent: 'auto' | 'play' | 'pause' = 'auto'
   private get playbackPaused() {
-    return (
-      this.playbackIntent === 'pause' ||
-      (this.playbackIntent === 'auto' && this.reduced.matches)
-    )
+    return this.reduced.matches
   }
   private mediaObserver?: IntersectionObserver
   private mediaAdditions?: MutationObserver
@@ -460,13 +456,6 @@ class VfxWorkflowShowcase extends HTMLElement {
   private syncPlayback() {
     const paused = this.playbackPaused
     this.dataset.playbackPaused = String(paused)
-    this.querySelectorAll<HTMLButtonElement>('[data-vfx-playback]').forEach(
-      (button) => {
-        button.textContent =
-          (paused ? button.dataset.playLabel : button.dataset.pauseLabel) ?? ''
-        button.setAttribute('aria-pressed', String(paused))
-      }
-    )
     this.dispatchEvent(
       new CustomEvent('workflow-playback-change', { detail: { paused } })
     )
@@ -477,18 +466,7 @@ class VfxWorkflowShowcase extends HTMLElement {
     else
       this.visibleMedia.forEach((video) => this.updateVisibleMedia(video, true))
   }
-  private togglePlayback = (event: Event) => {
-    if (!(event.target instanceof Element)) return
-    const button = event.target.closest('[data-vfx-playback]')
-    if (!button || !this.contains(button)) return
-    this.playbackIntent = this.playbackPaused ? 'play' : 'pause'
-    this.syncPlayback()
-  }
-  private pausePreviews = () => {
-    if (this.reduced.matches && this.playbackIntent === 'play')
-      this.playbackIntent = 'auto'
-    this.syncPlayback()
-  }
+  private followMotionPreference = () => this.syncPlayback()
   private observeVisibility(entry: IntersectionObserverEntry) {
     if (!(entry.target instanceof HTMLVideoElement)) return
     const video = entry.target
@@ -530,7 +508,7 @@ class VfxWorkflowShowcase extends HTMLElement {
     observeMedia()
     this.mediaAdditions = new MutationObserver(observeMedia)
     this.mediaAdditions.observe(this, { childList: true, subtree: true })
-    this.reduced.addEventListener('change', this.pausePreviews)
+    this.reduced.addEventListener('change', this.followMotionPreference)
     this.syncPlayback()
     this.draw()
     this.resize()
@@ -562,7 +540,6 @@ class VfxWorkflowShowcase extends HTMLElement {
     this.addEventListener('workflow-variant-change', this.syncVariant)
     this.addEventListener('click', this.select)
     this.addEventListener('click', this.workspace)
-    this.addEventListener('click', this.togglePlayback)
     this.addEventListener('keydown', this.escape)
     this.addEventListener('pointerdown', this.down)
     this.addEventListener('pointermove', this.pointer)
@@ -580,14 +557,13 @@ class VfxWorkflowShowcase extends HTMLElement {
     this.querySelectorAll<HTMLVideoElement>('video').forEach((video) =>
       video.pause()
     )
-    this.reduced.removeEventListener('change', this.pausePreviews)
+    this.reduced.removeEventListener('change', this.followMotionPreference)
     this.timeline?.kill()
     this.observer?.disconnect()
     this.reveal?.kill()
     this.removeEventListener('workflow-variant-change', this.syncVariant)
     this.removeEventListener('click', this.select)
     this.removeEventListener('click', this.workspace)
-    this.removeEventListener('click', this.togglePlayback)
     this.removeEventListener('keydown', this.escape)
     this.removeEventListener('pointerdown', this.down)
     this.removeEventListener('pointermove', this.pointer)

@@ -5235,7 +5235,7 @@
       "line": "10/30 前构建一个应用，赢取最高 1 万美元。",
       "cta": "了解更多"
     },
-    "description": "Higgsfield 说要开源他们的平台。我们来帮一把。你有两周时间，在 Comfy 开发者平台上重建他们最受欢迎的应用，以及更多。",
+    "description": "Higgsfield 说要开源他们的平台。我们来帮一把。你有两周时间，用 ComfyUI 重建他们最受欢迎的应用，以及更多。",
     "submit": "提交作品",
     "signup": "立即报名",
     "signupCredits": "前 200 名报名者可获得免费积分",
@@ -5244,7 +5244,7 @@
     "examples": "你见过这些效果。现在，亲手打造应用",
     "examplesBody": "从熟悉的效果开始：表演特效、电影镜头运动或音乐视频变换。打造一个可运行的应用，让其他人也能轻松创造自己的作品。这些示例为你的参赛作品提供灵感。",
     "enter": "如何参赛",
-    "enterLead": "使用 Comfy 开发者平台打造你最喜欢的应用，以及更多。提交截止日期为 10 月 30 日。",
+    "enterLead": "使用 ComfyUI 打造你最喜欢的应用，以及更多，运行方式随你选择。提交截止日期为 10 月 30 日。",
     "enterSignupTitle": "报名",
     "enterSignupBody": "前 200 名报名者可获得免费积分。",
     "enterSignupLink": "点此报名",
@@ -5254,11 +5254,11 @@
     "enterSubmitTitle": "提交",
     "enterSubmitBody": "请在 10 月 30 日前提交。最终获胜者将于 11 月 6 日公布。",
     "enterIntro": "每份参赛作品必须包含：",
-    "requirement1": "作品必须使用 Comfy <a href=\"/zh-CN/platform/\" class=\"text-primary-comfy-yellow underline\">开发者平台</a>构建（Comfy Router 和/或 <a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>）",
+    "requirement1": "作品必须使用 ComfyUI 构建。运行方式随你选择：完全本地、Comfy Cloud、<a href=\"/zh-CN/platform/\" class=\"text-primary-comfy-yellow underline\">开发者平台</a>、Comfy Router、<a href=\"{sdkDocsHref}\" target=\"_blank\" class=\"text-primary-comfy-yellow underline\">Comfy SDK</a>，或任意组合",
     "requirement2": "代码仓库必须包含开源许可证，以及足够详细的安装说明，让其他人能在自己的机器上运行",
     "requirement3": "可以结合使用任何其他工具、模型或技术，但必须在演示视频中加以说明",
     "requirement4": "所有参赛作品必须合法、适合公开场合观看（SFW），且不得包含未经授权的 IP 或肖像",
-    "requirement5": "提交作品即表示你同意 ComfyUI、NVIDIA、Runpod、LTX、Black Forest Labs 和 MiniMax 在各自渠道展示你的作品并署名",
+    "requirement5": "提交作品即表示你同意 ComfyUI、Runpod、LTX、Black Forest Labs 和 MiniMax 在各自渠道展示你的作品并署名",
     "requirement6": "每人限提交一份作品",
     "enterRepo": "GitHub 仓库",
     "enterRepoBody": "包含应用代码、工作流文件、开源许可证，以及本地运行说明。",
@@ -5504,6 +5504,10 @@
         "security": {
           "question": "身份管理与安全审查",
           "answer": "与 Comfy 讨论公司身份、已批准构建的访问权限、私有素材和工作室安全要求。围绕部署方案确定审查范围。"
+        },
+        "billing": {
+          "question": "企业方案与计费",
+          "answer": "价格、席位和使用条款将在企业协议中明确。与 Comfy 沟通用量、计费方式及团队需求。"
         }
       },
       "enterprise": "查看企业方案详情",
@@ -5567,8 +5571,8 @@
     "badge": "视觉特效",
     "heading": "一个镜头，更多可能。",
     "description": "调整光线、替换物体、扩展画面。使用 Comfy 构建可重复使用的视觉特效工作流，并融入工作室的制作流程。",
-    "sales": "联系 COMFY 团队",
-    "browse": "探索工作流",
+    "sales": "联系我们",
+    "browse": "查看视觉特效工作流",
     "workflow": "查看工作流",
     "sequenceHeading": "一次拍摄，新的视角。",
     "sequenceDescription": "查看 Seedance 基于参考视频生成的多镜头序列。打开工作流，了解序列的构建方式。",
@@ -5616,9 +5620,12 @@
     },
     "workstationTitle": "工作站与渲染",
     "videoCaption": "预先生成的示例。拖动画布探索，选择版本后拖动分隔线进行对比。",
-    "tryWorkflow": "体验工作流",
+    "tryWorkflow": "免费试用",
+    "dragHint": "左右拖动查看完整工作流",
+    "keyboardHint": "也可使用方向键、Home 和 End 键移动画布。",
+    "enterprisePlan": "查看企业方案",
     "prototype": {
-      "back": "返回示例",
+      "back": "返回视觉特效页面",
       "heading": "重新布光工作流",
       "use": "使用工作流",
       "customize": "在 Comfy Cloud 中自定义",

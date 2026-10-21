@@ -724,6 +724,17 @@
               }
             ]
           }
+        ],
+        "no-restricted-properties": [
+          "error",
+          {
+            "property": "continue",
+            "message": "Use route.fallback() so requests pass through the network policy."
+          },
+          {
+            "property": "toHaveScreenshot",
+            "message": "Use expectElementScreenshot, expectRegionScreenshot, or screenshotRegion from @e2e/fixtures/utils/screenshotRegion so the screenshot covers only the area under test."
+          }
         ]
       }
     },

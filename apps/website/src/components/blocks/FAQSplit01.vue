@@ -8,7 +8,12 @@ import AccordionContent from '@/components/ui/accordion/AccordionContent.vue'
 import AccordionItem from '@/components/ui/accordion/AccordionItem.vue'
 import AccordionTrigger from '@/components/ui/accordion/AccordionTrigger.vue'
 
-type Faq = { id: string; question: string; answer: string }
+type Faq = {
+  id: string
+  question: string
+  answer: string
+  link?: { label: string; href: string }
+}
 
 const { faqs, compact = false } = defineProps<{
   id?: string
@@ -76,6 +81,12 @@ const parsedFaqs = computed(() =>
                 <template v-else>{{ part.value }}</template>
               </template>
             </p>
+            <a
+              v-if="faq.link"
+              :href="faq.link.href"
+              class="mt-4 inline-block rounded-sm text-sm font-semibold tracking-wider text-primary-comfy-yellow underline underline-offset-2 transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none"
+              >{{ faq.link.label }}</a
+            >
           </AccordionContent>
         </AccordionItem>
       </Accordion>

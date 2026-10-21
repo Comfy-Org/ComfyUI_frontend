@@ -16,26 +16,84 @@
         >
           <i class="icon-[lucide--folder-plus] size-4" />
         </Button>
-        <Button
-          :tooltip="$t('sideToolbar.nodeLibraryTab.groupBy')"
-          tooltip-side="bottom"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
-          @click="groupingPopover?.toggle($event)"
+        <Popover
+          :show-arrow="false"
+          :side-offset="4"
+          :collision-padding="8"
+          class="max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-auto p-0 shadow-lg data-[state=open]:animate-none"
         >
-          <i :class="cn(selectedGroupingIcon, 'size-4')" />
-        </Button>
-        <Button
-          :tooltip="$t('sideToolbar.nodeLibraryTab.sortMode')"
-          tooltip-side="bottom"
-          variant="muted-textonly"
-          size="icon"
-          :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
-          @click="sortingPopover?.toggle($event)"
+          <template #button>
+            <Button
+              :tooltip="$t('sideToolbar.nodeLibraryTab.groupBy')"
+              tooltip-side="bottom"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="$t('sideToolbar.nodeLibraryTab.groupBy')"
+            >
+              <i :class="cn(selectedGroupingIcon, 'size-4')" />
+            </Button>
+          </template>
+          <template #default="{ close }">
+            <div class="flex flex-col gap-1 p-2">
+              <Button
+                v-for="option in groupingOptions"
+                :key="option.id"
+                :variant="
+                  selectedGroupingId === option.id ? 'primary' : 'textonly'
+                "
+                class="justify-start"
+                @click="
+                  () => {
+                    selectGrouping(option.id)
+                    close()
+                  }
+                "
+              >
+                <i :class="cn(option.icon, 'size-4')" />
+                {{ $t(option.label) }}
+              </Button>
+            </div>
+          </template>
+        </Popover>
+        <Popover
+          :show-arrow="false"
+          :side-offset="4"
+          :collision-padding="8"
+          class="max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-auto p-0 shadow-lg data-[state=open]:animate-none"
         >
-          <i :class="cn(selectedSortingIcon, 'size-4')" />
-        </Button>
+          <template #button>
+            <Button
+              :tooltip="$t('sideToolbar.nodeLibraryTab.sortMode')"
+              tooltip-side="bottom"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="$t('sideToolbar.nodeLibraryTab.sortMode')"
+            >
+              <i :class="cn(selectedSortingIcon, 'size-4')" />
+            </Button>
+          </template>
+          <template #default="{ close }">
+            <div class="flex flex-col gap-1 p-2">
+              <Button
+                v-for="option in sortingOptions"
+                :key="option.id"
+                :variant="
+                  selectedSortingId === option.id ? 'primary' : 'textonly'
+                "
+                class="justify-start"
+                @click="
+                  () => {
+                    selectSorting(option.id)
+                    close()
+                  }
+                "
+              >
+                <i :class="cn(option.icon, 'size-4')" />
+                {{ $t(option.label) }}
+              </Button>
+            </div>
+          </template>
+        </Popover>
         <Button
           :tooltip="$t('sideToolbar.nodeLibraryTab.resetView')"
           tooltip-side="bottom"
@@ -56,38 +114,6 @@
         >
           <i class="icon-[lucide--refresh-cw] size-4" />
         </Button>
-        <Popover ref="groupingPopover">
-          <div class="flex flex-col gap-1 p-2">
-            <Button
-              v-for="option in groupingOptions"
-              :key="option.id"
-              :variant="
-                selectedGroupingId === option.id ? 'primary' : 'textonly'
-              "
-              class="justify-start"
-              @click="selectGrouping(option.id)"
-            >
-              <i :class="cn(option.icon, 'size-4')" />
-              {{ $t(option.label) }}
-            </Button>
-          </div>
-        </Popover>
-        <Popover ref="sortingPopover">
-          <div class="flex flex-col gap-1 p-2">
-            <Button
-              v-for="option in sortingOptions"
-              :key="option.id"
-              :variant="
-                selectedSortingId === option.id ? 'primary' : 'textonly'
-              "
-              class="justify-start"
-              @click="selectSorting(option.id)"
-            >
-              <i :class="cn(option.icon, 'size-4')" />
-              {{ $t(option.label) }}
-            </Button>
-          </div>
-        </Popover>
       </template>
       <template #header>
         <SidebarTopArea>
@@ -102,15 +128,24 @@
             @search="handleSearch"
           />
           <template #actions>
-            <Button
-              variant="secondary"
-              size="icon"
-              class="filter-button"
-              :aria-label="$t('g.filter')"
-              @click="(e: Event) => searchFilter?.toggle(e)"
+            <Popover
+              :show-arrow="false"
+              :side-offset="4"
+              :collision-padding="8"
+              class="ml-[-13px] max-h-(--reka-popover-content-available-height) max-w-(--reka-popover-content-available-width) overflow-auto p-0 shadow-lg data-[state=open]:animate-none"
             >
-              <i class="icon-[lucide--list-filter] size-4" />
-            </Button>
+              <template #button>
+                <Button
+                  variant="secondary"
+                  size="icon"
+                  class="filter-button"
+                  :aria-label="$t('g.filter')"
+                >
+                  <i class="icon-[lucide--list-filter] size-4" />
+                </Button>
+              </template>
+              <NodeSearchFilter @add-filter="onAddFilter" />
+            </Popover>
           </template>
         </SidebarTopArea>
         <div class="px-4">
@@ -127,10 +162,6 @@
               @remove="onRemoveFilter(filter)"
             />
           </div>
-
-          <Popover ref="searchFilter" class="ml-[-13px]">
-            <NodeSearchFilter @add-filter="onAddFilter" />
-          </Popover>
         </div>
       </template>
       <template #body>
@@ -235,7 +266,7 @@
 <script setup lang="ts">
 import { useLocalStorage } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Popover from '@/components/common/ImperativePopover.vue'
+import Popover from '@/components/ui/Popover.vue'
 import type { Ref } from 'vue'
 import {
   computed,
@@ -304,9 +335,6 @@ onMounted(() => {
   searchBoxRef.value?.focus()
 })
 
-const searchFilter = ref<InstanceType<typeof Popover> | null>(null)
-const groupingPopover = ref<InstanceType<typeof Popover> | null>(null)
-const sortingPopover = ref<InstanceType<typeof Popover> | null>(null)
 const selectedGroupingId = useLocalStorage<GroupingStrategyId>(
   'Comfy.NodeLibrary.GroupBy',
   DEFAULT_GROUPING_ID
@@ -355,11 +383,9 @@ const selectedSortingIcon = computed(() =>
 
 const selectGrouping = (groupingId: string) => {
   selectedGroupingId.value = groupingId as GroupingStrategyId
-  groupingPopover.value?.hide()
 }
 const selectSorting = (sortingId: string) => {
   selectedSortingId.value = sortingId as SortingStrategyId
-  sortingPopover.value?.hide()
 }
 
 const resetOrganization = () => {

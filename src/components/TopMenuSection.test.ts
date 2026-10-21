@@ -19,7 +19,9 @@ import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
+import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
@@ -47,6 +49,12 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isNightly: false
 }))
+
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(
+  import('@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'),
+  () => ({ openDeployToComfyApiDialog: vi.fn(async () => {}) })
+)
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/composables/useConflictAcknowledgment'),
@@ -116,6 +124,9 @@ function createWrapper({
         },
         rightSidePanel: {
           togglePanel: 'Toggle properties panel'
+        },
+        deployToComfyApi: {
+          buttonLabel: 'Deploy to Comfy API'
         }
       }
     }
@@ -631,6 +642,79 @@ describe('TopMenuSection', () => {
     expect(container.querySelector('.actionbar-container')).not.toHaveClass(
       'w-0'
     )
+  })
+
+  describe('Deploy to Comfy API button', () => {
+    function enableDeployButton() {
+      Object.assign(useFeatureFlags().flags, { deployToCloud: true })
+    }
+
+    it.for([
+      { when: 'when the server allows it', deployToCloud: true, count: 1 },
+      { when: 'otherwise', deployToCloud: false, count: 0 }
+    ])('renders $count deploy button $when', ({ deployToCloud, count }) => {
+      Object.assign(useFeatureFlags().flags, { deployToCloud })
+
+      createWrapper({ stubs: { FreeTierQuota: true } })
+
+      expect(
+        screen.queryAllByRole('button', { name: 'Deploy to Comfy API' })
+      ).toHaveLength(count)
+    })
+
+    it('sits left of the panel toggle and opens the dialog for the installation', async () => {
+      enableDeployButton()
+      const { user } = createWrapper()
+      const deploy = screen.getByRole('button', {
+        name: 'Deploy to Comfy API'
+      })
+
+      expect(
+        deploy.compareDocumentPosition(
+          screen.getByRole('button', { name: 'Toggle properties panel' })
+        ) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy()
+      await user.click(deploy)
+
+      expect(openDeployToComfyApiDialog).toHaveBeenCalledExactlyOnceWith({
+        deploysInstallation: true
+      })
+    })
+
+    it('tracks deploy button clicks', async () => {
+      enableDeployButton()
+      const { user } = createWrapper()
+
+      await user.click(
+        screen.getByRole('button', { name: 'Deploy to Comfy API' })
+      )
+
+      expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+        button_id: 'run_bar_deploy_clicked',
+        element_group: 'top_menu'
+      })
+    })
+
+    it('keeps the floating actionbar container open for the deploy button', async () => {
+      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
+      useManagerState().shouldShowExtensionsButton = computed(() => false)
+      enableDeployButton()
+      const pinia = getActivePinia()
+      assert.exists(pinia)
+      vi.mocked(useSettingStore(pinia).get).mockImplementation((key) => {
+        if (key === 'Comfy.UseNewMenu') return 'Top'
+        if (key === 'Comfy.UI.TabBarLayout') return 'Integrated'
+        if (key === 'Comfy.RightSidePanel.IsOpen') return true
+        return undefined
+      })
+
+      const { container } = createWrapper({ pinia })
+      await nextTick()
+
+      expect(container.querySelector('.actionbar-container')).not.toHaveClass(
+        'w-0'
+      )
+    })
   })
 
   it('coalesces legacy topbar mutation scans to one check per frame', async () => {
