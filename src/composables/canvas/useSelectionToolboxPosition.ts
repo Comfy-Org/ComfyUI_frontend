@@ -157,6 +157,7 @@ export function useSelectionToolboxPosition(
 
     if (!anchor || isDragging.value) {
       visible.value = false
+      anchoredItems = new Set()
       return
     }
 

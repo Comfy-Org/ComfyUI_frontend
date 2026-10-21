@@ -38,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+import { useMousePressed } from '@vueuse/core'
 import {
   PopoverContent,
   PopoverPortal,
@@ -73,9 +74,14 @@ const { lift } = useSelectionToolboxLift()
 const isOpen = ref(false)
 
 watch(isOpen, (open) => {
-  lift.value = open ? LIFT_WHILE_OPEN : 0
   if (open) start()
   else finish()
+})
+
+const { pressed: isPressing } = useMousePressed()
+watch([isOpen, isPressing], ([open, pressing]) => {
+  if (open) lift.value = LIFT_WHILE_OPEN
+  else if (!pressing) lift.value = 0
 })
 
 const hasSameNodes = (nodes: LGraphNode[], previous: LGraphNode[]) => {

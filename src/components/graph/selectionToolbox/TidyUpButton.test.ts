@@ -5,6 +5,7 @@ import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
+import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
@@ -80,4 +81,21 @@ describe('TidyUpButton', () => {
       unmount()
     }
   )
+
+  it('keeps the toolbox lifted until a press that closes the bar is released', async () => {
+    const user = userEvent.setup()
+    setCanvasSelection([nodeWithId(1), nodeWithId(2)])
+    const { unmount } = renderButton()
+    const { lift } = useSelectionToolboxLift()
+    await user.click(screen.getByRole('button', { name: 'Tidy up' }))
+    await screen.findByRole('slider')
+
+    await user.pointer({ keys: '[MouseLeft>]', target: document.body })
+    await waitFor(() => expect(screen.queryByRole('slider')).toBeNull())
+    expect(lift.value).toBeGreaterThan(0)
+
+    await user.pointer({ keys: '[/MouseLeft]', target: document.body })
+    await waitFor(() => expect(lift.value).toBe(0))
+    unmount()
+  })
 })
