@@ -347,11 +347,31 @@ describe('useReconnectQueueRefresh', () => {
       expect(Object.keys(executionStore.queuedJobs)).toContain('job-new')
     })
 
-    it('restores the recovered run when a tab switch adopts that run during refresh', async () => {
+    it.for([
+      {
+        name: 'the recovered run is adopted',
+        updateActiveJob(executionStore: ReturnType<typeof useExecutionStore>) {
+          executionStore.activeJobId = 'job-1'
+        }
+      },
+      {
+        name: 'the active run ends',
+        updateActiveJob(executionStore: ReturnType<typeof useExecutionStore>) {
+          executionStore.activeJobId = null
+        }
+      },
+      {
+        name: 'another run starts and ends',
+        updateActiveJob(executionStore: ReturnType<typeof useExecutionStore>) {
+          executionStore.activeJobId = 'job-quick'
+          executionStore.activeJobId = null
+        }
+      }
+    ])('still restores output when $name during refresh', async (scenario) => {
+      followRun('job-1')
       const executionStore = useExecutionStore()
-      executionStore.queuedJobs['job-1'] = { nodes: {} }
       vi.mocked(api.getJobDetail).mockImplementation(async () => {
-        executionStore.activeJobId = 'job-1'
+        scenario.updateActiveJob(executionStore)
         return finishedJob
       })
 
