@@ -40,7 +40,7 @@ function onChange(event: Event) {
     <Button
       as="a"
       :href="selected"
-      :download="downloadName"
+      :download="downloadName === true ? '' : downloadName"
       variant="outline"
       class="h-auto min-h-11 max-w-full whitespace-normal"
       @click="emit('download')"

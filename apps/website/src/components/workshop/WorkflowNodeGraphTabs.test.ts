@@ -168,7 +168,7 @@ describe('WorkflowNodeGraphTabs', () => {
       { name: 'Version 1', href: '/v1.json' },
       { name: 'Version 2', href: '/v2.json' }
     ]
-    renderTabs({ files, graphSource: '/v2.json' })
+    renderTabs({ files, graphSource: '/v2.json', cloudHref: undefined })
     await openTab('Details')
 
     const versions = within(screen.getByTestId('workflow-versions'))
@@ -178,6 +178,12 @@ describe('WorkflowNodeGraphTabs', () => {
     expect(
       versions
         .getByRole('link', { name: /Download workflow/i })
+        .getAttribute('href')
+    ).toBe('/v1.json')
+    await openTab('Overview')
+    expect(
+      within(screen.getByTestId('node-graph-footer'))
+        .getByRole('link', { name: 'Download Workflow' })
         .getAttribute('href')
     ).toBe('/v1.json')
     await vi.waitFor(() =>

@@ -1,5 +1,5 @@
 import { render } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Ref } from 'vue'
 import { createSSRApp, defineComponent, h, nextTick, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -67,6 +67,44 @@ describe('useNodeGraphNeeds', () => {
     expect(fetch).not.toHaveBeenCalled()
     expect(needs?.value.status).toBe('loading')
   })
+
+  it('renders an empty list on the server when there is no graph', async () => {
+    let needs: Ref<NodeGraphNeeds> | undefined
+    const app = createSSRApp(
+      defineComponent({
+        setup() {
+          needs = useNodeGraphNeeds(undefined)
+          return () => h('div')
+        }
+      })
+    )
+
+    await renderToString(app)
+
+    expect(needs && statusOf(needs.value)).toEqual([])
+  })
+
+  it.for(['any', 'timeout'] as const)(
+    'still reads the graph where AbortSignal.%s is missing',
+    async (method) => {
+      const native = Object.getOwnPropertyDescriptor(AbortSignal, method)
+      Object.defineProperty(AbortSignal, method, {
+        configurable: true,
+        value: undefined
+      })
+      onTestFinished(() => {
+        if (native) Object.defineProperty(AbortSignal, method, native)
+        else Reflect.deleteProperty(AbortSignal, method)
+      })
+      const reads = deferFetch()
+      const { needs } = harness(ref('/graph.json'))
+      await nextTick()
+
+      reads[0].respond(Response.json(imageGraph))
+
+      await vi.waitFor(() => expect(statusOf(needs.value)).toEqual(['image']))
+    }
+  )
 
   it('reads the inputs once mounted', async () => {
     const reads = deferFetch()

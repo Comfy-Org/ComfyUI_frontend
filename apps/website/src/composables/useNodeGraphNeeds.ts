@@ -7,6 +7,7 @@ import {
   nodeGraphCustomNodes,
   nodeGraphInputs
 } from '@/lib/hub/node-graph-inputs'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 
 /** What the graph says a reader needs, or that it could not be read. */
 export type NodeGraphNeeds =
@@ -27,7 +28,10 @@ async function readNeeds(
 ): Promise<NodeGraphNeeds> {
   try {
     const response = await fetch(source, {
-      signal: AbortSignal.any([signal, AbortSignal.timeout(READ_TIMEOUT_MS)])
+      signal: combineAbortSignals([
+        signal,
+        createTimeoutSignal(READ_TIMEOUT_MS)
+      ])
     })
     if (!response.ok) return { status: 'failed' }
     const graph: unknown = await response.json()
@@ -50,11 +54,11 @@ export function useNodeGraphNeeds(
   watch(
     [mounted, () => toValue(source)] as const,
     async ([isMounted, current], _previous, onCleanup) => {
-      if (!isMounted) return
       if (!current) {
         needs.value = EMPTY
         return
       }
+      if (!isMounted) return
       const controller = new AbortController()
       onCleanup(() => controller.abort())
       needs.value = { status: 'loading' }

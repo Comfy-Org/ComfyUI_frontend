@@ -1083,7 +1083,6 @@
     },
     "nodeGraph": {
       "graphHint": "A read-only preview of the node graph. Open it in Comfy Cloud or download it to edit the nodes.",
-      "runsWhere": "Runs in ComfyUI",
       "tabOverview": "Overview",
       "about": "About",
       "readMore": "Read more",

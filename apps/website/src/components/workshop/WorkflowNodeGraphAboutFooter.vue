@@ -80,7 +80,7 @@ useStickyFooterScrollPadding(
       v-else-if="downloadUrl"
       as="a"
       :href="downloadUrl"
-      :download="downloadName"
+      :download="downloadName === true ? '' : downloadName"
       class="min-h-11 w-full"
       @click="emit('download')"
       >{{ t('workshop.workflow.downloadShort') }}

@@ -36,6 +36,11 @@ const graphSource = computed(
     workflow.graphSource
 )
 const needs = useNodeGraphNeeds(graphSource)
+const shownWorkflow = computed(() =>
+  selectedFile.value
+    ? { ...workflow, downloadUrl: graphSource.value }
+    : workflow
+)
 const samples = computed(() =>
   workflow.examples
     .filter((example) => sampleMedia(example) === 'image')
@@ -84,7 +89,7 @@ const sectionLabels = {
       id="workflow-panel-overview"
       role="tabpanel"
       aria-labelledby="workflow-tab-overview"
-      :workflow="workflow"
+      :workflow="shownWorkflow"
       :needs="needs"
       :active="section === 'overview'"
       :locale="locale"

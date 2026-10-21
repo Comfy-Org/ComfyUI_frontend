@@ -88,20 +88,33 @@ function activeNodes(
   nodes: readonly GraphNode[],
   subgraphs: ReadonlyMap<string, readonly GraphNode[]>
 ): GraphNode[] {
-  const found: GraphNode[] = []
-  const expanded = new Set<string>()
-  const pending = [...nodes]
-  while (pending.length && found.length < MAX_NODES) {
-    const node = pending.shift()
-    if (!node || !isActive(node)) continue
-    const inner = subgraphs.get(node.type)
-    if (!inner) found.push(node)
-    else if (!expanded.has(node.type)) {
-      expanded.add(node.type)
-      pending.push(...inner)
-    }
+  const leaves = new Map<string, readonly GraphNode[]>()
+  const expanding = new Set<string>()
+
+  function leavesOf(id: string, inner: readonly GraphNode[]) {
+    const known = leaves.get(id)
+    if (known) return known
+    if (expanding.has(id)) return []
+    expanding.add(id)
+    const found = expand(inner)
+    expanding.delete(id)
+    leaves.set(id, found)
+    return found
   }
-  return found
+
+  function expand(list: readonly GraphNode[]): GraphNode[] {
+    const found: GraphNode[] = []
+    for (const node of list) {
+      if (found.length >= MAX_NODES) break
+      if (!isActive(node)) continue
+      const inner = subgraphs.get(node.type)
+      const instance = inner ? leavesOf(node.type, inner) : [node]
+      found.push(...instance.slice(0, MAX_NODES - found.length))
+    }
+    return found
+  }
+
+  return expand(nodes)
 }
 
 function activeGraphNodes(graph: unknown): GraphNode[] {
@@ -117,7 +130,7 @@ function activeGraphNodes(graph: unknown): GraphNode[] {
   return activeNodes(nodes, subgraphs)
 }
 
-/** The active loader nodes of a workflow graph; each used subgraph is read once. */
+/** The active loader nodes of a workflow graph, once per subgraph instance. */
 export function nodeGraphInputs(graph: unknown): NodeGraphInput[] {
   return activeGraphNodes(graph).flatMap((node) => {
     const media = loaderMedia(node.type)
