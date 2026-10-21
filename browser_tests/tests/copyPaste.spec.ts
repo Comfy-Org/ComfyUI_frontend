@@ -21,10 +21,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('lands at the cursor', async ({ comfyPage }) => {
       const [node] = await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
       await node.centerOnNode()

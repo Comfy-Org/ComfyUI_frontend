@@ -47,16 +47,6 @@ export class CanvasHelper {
     private canvas: Locator
   ) {}
 
-  async resetView(): Promise<void> {
-    await this.page.evaluate(async () => {
-      const { setting, command } = window.app!.extensionManager
-      if (setting.get('Comfy.UseNewMenu') === 'Disabled')
-        await command.execute('Comfy.Canvas.ResetView')
-    })
-    await this.page.mouse.move(10, 10)
-    await nextFrame(this.page)
-  }
-
   async getMinimapRightInset(): Promise<number> {
     const canvasRight = await this.canvas.evaluate(
       (el) => el.getBoundingClientRect().right

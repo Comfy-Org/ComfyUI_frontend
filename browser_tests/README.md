@@ -463,8 +463,7 @@ Check for existing helpers before writing new ones — most needs are covered:
 
 - **ComfyPage** — main fixture; delegates to helper objects:
   `comfyPage.workflow.loadWorkflow()`, `comfyPage.settings.setSetting()`,
-  `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`,
-  `comfyPage.canvasOps.resetView()`.
+  `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`.
 - **Component page objects** — `fixtures/components/` (e.g. `Actionbar`,
   `ContextMenu`, `Templates`).
 - **Helper classes** — `fixtures/helpers/` (e.g. `CanvasHelper`,
@@ -775,14 +774,6 @@ Use a stateful mock when testing persistence across reloads.
 
 ```typescript
 comfyPage.deleteFileAfterTest({ filename: 'image.png' })
-```
-
-- Tests that manipulate canvas view should `resetView()` in `afterEach`:
-
-```typescript
-test.afterEach(async ({ comfyPage }) => {
-  await comfyPage.canvasOps.resetView()
-})
 ```
 
 ### Debug helpers (remove before committing)

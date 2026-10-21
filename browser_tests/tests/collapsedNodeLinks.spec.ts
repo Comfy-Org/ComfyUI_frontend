@@ -18,10 +18,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('default')
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('link endpoints stay within collapsed node bounds', async ({
       comfyPage
     }) => {

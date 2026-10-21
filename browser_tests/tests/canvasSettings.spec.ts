@@ -47,7 +47,6 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
 
         await test.step('Capture HUD region with setting off', async () => {
           await comfyPage.settings.setSetting('Comfy.Graph.CanvasInfo', false)
-          await comfyPage.canvasOps.resetView()
           await comfyPage.canvasOps.moveMouseToEmptyArea()
           await expectRegionScreenshot(
             comfyPage.page,
@@ -77,7 +76,6 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
 
     test('Ctrl+Shift+drag zooms canvas when enabled', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.Graph.CtrlShiftZoom', true)
-      await comfyPage.canvasOps.resetView()
       const initialScale = await comfyPage.canvasOps.getScale()
 
       await comfyPage.canvasOps.ctrlShiftDrag(
@@ -94,7 +92,6 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
       comfyPage
     }) => {
       await comfyPage.settings.setSetting('Comfy.Graph.CtrlShiftZoom', false)
-      await comfyPage.canvasOps.resetView()
       const initialScale = await comfyPage.canvasOps.getScale()
 
       await comfyPage.canvasOps.ctrlShiftDrag(
@@ -332,8 +329,6 @@ test.describe('Canvas settings', { tag: '@canvas' }, () => {
           'panning'
         )
       })
-
-      await comfyPage.canvasOps.resetView()
 
       const initialOffset = await comfyPage.canvasOps.getOffset()
       await comfyPage.canvasOps.dragAndDrop(
