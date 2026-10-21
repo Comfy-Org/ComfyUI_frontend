@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="showInput"
-    class="group-title-editor node-title-editor z-9999 p-1"
+    class="group-title-editor node-title-editor z-overlay p-1"
     :style="inputStyle"
   >
     <EditableText

@@ -1,4 +1,8 @@
 {
+  "apps/openjutsu": {
+    "flag": "workshop-openjutsu-app-enabled",
+    "reason": "Openjutsu runs on the app proxy (comfy-api BE-20545); shown only where PostHog turns it on. The flag hides the page, not the backend: the proxy id is public."
+  },
   "apps/reshoot": {
     "flag": "workshop-reshoot-app-enabled",
     "reason": "Re-shoot runs on the app proxy (comfy-api BE-17741/BE-17804); shown only where PostHog turns it on while it rolls out."

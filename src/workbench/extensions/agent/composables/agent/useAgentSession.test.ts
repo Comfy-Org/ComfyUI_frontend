@@ -26,35 +26,34 @@ import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentRunModePreference,
-  AgentThreadSummary,
   AgentTurnAccepted,
   TurnId
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
   zAgentTurnAccepted,
   zAgentWsEvent
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
   AgentApiError,
   AgentResponseUnreadableError,
   createAgentRestClient
-} from '../../services/agent/agentRestClient'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type {
   AgentRestClient,
   PostMessageInput
-} from '../../services/agent/agentRestClient'
-import type { AskUserResolution } from '../../services/agent/agentMessageParts'
-import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
-import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
+} from '@/workbench/extensions/agent/services/agent/agentRestClient'
+import type { AskUserResolution } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
 vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('../../services/agent/agentAuth'))
+vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
 vi.mock(import('@/platform/telemetry'))
@@ -73,7 +72,10 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     ),
     getIdentity: vi.fn(async () => ({ userId: 'user-test' })),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
-    listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
+    listThreads: vi.fn<AgentRestClient['listThreads']>(async () => ({
+      status: 'complete',
+      threads: []
+    })),
     getRunMode: vi.fn(
       async (): Promise<AgentRunModePreference> => ({
         mode: 'auto',
@@ -610,6 +612,31 @@ describe('useAgentSession (v1 composition root)', () => {
       ['first_open'],
       ['new_chat_button']
     ])
+  })
+
+  it('reports an agent event for a hydrating thread before the hydrate settles', async () => {
+    const onAgentEvent = vi.fn()
+    const rest = fakeRest({ getMessages: vi.fn(hangingGetMessages) })
+    const { source, emit } = fakeEvents()
+    useAgentConversationStore().setThreadId('th-1')
+    const session = useAgentSession({ rest, events: source, onAgentEvent })
+    session.start()
+    await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledOnce())
+    const restartSucceeded = wire({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-restart',
+        tool_name: 'restart_comfyui',
+        status: 'success',
+        duration_ms: 900,
+        thread_id: 'th-1',
+        message_id: 'msg-1'
+      }
+    })
+
+    emit(restartSucceeded)
+
+    expect(onAgentEvent).toHaveBeenCalledExactlyOnceWith(restartSucceeded)
   })
 
   it.for(['success', 'failure', 'new-chat', 'newer-chat', 'cancelled'])(
@@ -6769,31 +6796,6 @@ describe('thread resume (B17)', () => {
     session.start()
 
     expect(await session.loadThread('th-history')).toBe(false)
-  })
-
-  it('listThreads returns the REST client thread list', async () => {
-    const listThreads = vi.fn(
-      async (): Promise<AgentThreadSummary[]> => [
-        {
-          created_at: '2026-07-07T00:00:00Z',
-          id: 'th-9',
-          last_message_at: '2026-07-07T00:00:00Z',
-          message_count: 2,
-          preview: 'build a duck',
-          status: 'active',
-          title: 'build a duck',
-          updated_at: '2026-07-07T00:00:00Z',
-          workflow_id: 'wf-9'
-        }
-      ]
-    )
-    const session = useAgentSession({
-      rest: fakeRest({ listThreads }),
-      events: fakeEvents().source
-    })
-    const threads = await session.listThreads()
-    expect(threads).toHaveLength(1)
-    expect(threads[0]).toMatchObject({ id: 'th-9', title: 'build a duck' })
   })
 })
 

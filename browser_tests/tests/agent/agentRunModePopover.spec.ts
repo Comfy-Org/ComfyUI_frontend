@@ -35,6 +35,10 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
     const addToPrompt = panel.getByRole('button', {
       name: enMessages.agent.addToPrompt
     })
+    const reference = panel.getByRole('button', {
+      name: enMessages.agent.reference,
+      exact: true
+    })
     const runMode = panel.getByRole('button', {
       name: enMessages.agent.runModeTriggerAsk,
       exact: true
@@ -46,12 +50,15 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
 
     await expect(composer).toBeVisible()
     await expect(addToPrompt).toBeVisible()
+    await expect(reference).toBeVisible()
     await expect(runMode).toBeVisible()
     await expect(send).toBeVisible()
     await composer.fill('Make the image warmer')
     await composer.focus()
     await comfyPage.page.keyboard.press('Tab')
     await expect(addToPrompt).toBeFocused()
+    await comfyPage.page.keyboard.press('Tab')
+    await expect(reference).toBeFocused()
     await comfyPage.page.keyboard.press('Tab')
     await expect(runMode).toBeFocused()
     await comfyPage.page.keyboard.press('Tab')

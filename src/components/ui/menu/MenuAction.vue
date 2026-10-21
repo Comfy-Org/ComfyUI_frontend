@@ -18,6 +18,7 @@ const { allowCommandless = false, item } = defineProps<{
 
 const emit = defineEmits<{
   select: []
+  activate: [item: MenuItemAction]
 }>()
 
 const [DefineItem, ReuseItem] = createReusableTemplate()
@@ -50,8 +51,10 @@ function mouseDown(event: MouseEvent) {
   const { dispose } = whileMouseDown(
     event,
     () => {
+      const firstRepeat = !pointerRepeating
       pointerRepeating = true
       void item.command?.({ originalEvent: event, item })
+      if (firstRepeat) emit('activate', item)
     },
     item.pressAndHoldInterval
   )
@@ -63,17 +66,14 @@ function select(event: Event) {
     event.preventDefault()
     return
   }
-  if (item.checked !== undefined) {
-    event.preventDefault()
-    void item.command({ originalEvent: event, item })
-    return
-  }
   if (pointerRepeating) {
     pointerRepeating = false
     event.preventDefault()
     return
   }
+  if (item.checked !== undefined) event.preventDefault()
   void item.command({ originalEvent: event, item })
+  emit('activate', item)
   if (event.defaultPrevented) return
   if (item.pressAndHoldInterval !== undefined) {
     event.preventDefault()
@@ -96,7 +96,7 @@ function select(event: Event) {
       :class="
         cn(
           menuItemClass,
-          item.variant === 'destructive' && 'text-destructive-background',
+          item.variant === 'destructive' && 'text-destructive',
           focusableDisabled && 'opacity-50',
           toValue(item.class)
         )

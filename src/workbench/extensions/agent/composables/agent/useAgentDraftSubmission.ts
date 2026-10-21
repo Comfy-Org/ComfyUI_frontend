@@ -4,12 +4,12 @@ import { v4 as uuidv4 } from 'uuid'
 import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import type { WorkflowReference } from '../../types/workflowReference'
-import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
-import type { ComposerAttachment } from '../../types/composerAttachment'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean

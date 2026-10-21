@@ -400,10 +400,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
 
   async function createHostedTopupCheckout(
     amountCents: number,
-    returnUrl: string
+    returnUrl: string,
+    signal?: AbortSignal
   ): Promise<string> {
     return projectHostedTopupCheckoutResult(
-      await sdk.topup.createHostedTopupCheckout({ amountCents, returnUrl })
+      await sdk.topup.createHostedTopupCheckout({
+        amountCents,
+        returnUrl,
+        ...(signal === undefined ? {} : { signal })
+      })
     )
   }
 

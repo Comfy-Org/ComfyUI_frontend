@@ -12,7 +12,7 @@
       <div
         :class="
           cn(
-            'flex items-center justify-center gap-1 rounded-full hover:bg-interface-button-hover-surface',
+            'flex items-center justify-center gap-1 rounded-full hover:bg-accent',
             compact && 'size-full'
           )
         "
@@ -39,15 +39,13 @@
       align="end"
       :content-class="
         cn(
-          'overflow-visible border-border-default shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]',
+          'overflow-visible border-border shadow-md',
           showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
         )
       "
-      @show="onPopoverShow"
     >
       <CurrentUserPopoverWorkspace
         v-if="showWorkspacePopover"
-        ref="workspacePopoverContent"
         :account-actions-only="initState !== 'ready'"
         @close="closePopover"
       />
@@ -74,7 +72,7 @@ import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const CurrentUserPopoverWorkspace = defineAsyncComponent(
   () =>
-    import('../../platform/workspace/components/CurrentUserPopoverWorkspace.vue')
+    import('@/platform/workspace/components/CurrentUserPopoverWorkspace.vue')
 )
 
 const { showArrow = true, compact = false } = defineProps<{
@@ -111,15 +109,7 @@ const workspaceName = computed(() => {
 })
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
-const workspacePopoverContent = ref<{
-  refreshBalance: () => void
-} | null>(null)
-
 const closePopover = () => {
   popover.value?.hide()
-}
-
-const onPopoverShow = () => {
-  workspacePopoverContent.value?.refreshBalance()
 }
 </script>

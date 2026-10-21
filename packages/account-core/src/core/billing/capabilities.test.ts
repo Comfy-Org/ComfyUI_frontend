@@ -1,22 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { sessionBillingScopeSource } from './billingScope.js'
-import type { BillingSession, BillingTransport } from './billingContracts.js'
+import type { SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { sessionBillingScopeSource } from './billingScope'
+import type { BillingSession, BillingTransport } from './billingContracts'
 import {
   CAPABILITY_REVISION_HEADER,
   createCapabilitiesReader,
   readCapabilityRevision
-} from './capabilities.js'
-import { createSessionBillingTransport } from './transport.js'
+} from './capabilities'
+import { createSessionBillingTransport } from './transport'
 import {
   authenticated,
   credential,
   fakeTransport,
   httpOk
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
+} from './__fixtures__/billingTestFixtures'
+import type { SessionFake } from './__fixtures__/billingTestFixtures'
 
 function fakeSession(initial: SessionSnapshot = authenticated(credential())) {
   let snapshot = initial
@@ -52,6 +52,11 @@ const CAPABILITIES = {
   can_view_team_usage: false,
   can_reactivate: false,
   can_revert_scheduled_change: false,
+  can_edit_workspace: false,
+  can_manage_auto_top_up: false,
+  can_manage_subscription: false,
+  can_run_workflows: false,
+  can_upgrade: false,
   can_subscribe_self_serve: false,
   can_top_up: true
 }

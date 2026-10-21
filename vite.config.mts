@@ -100,12 +100,6 @@ const CRITICAL_COVERAGE_THRESHOLDS = {
   lines: 70
 }
 
-// WebGL2 / pixel-processing passes that need a real rendering context,
-// which happy-dom does not provide. TODO: cover via browser tests.
-const LAYER_EDITOR_GPU_COVERAGE_EXCLUDE = [
-  'src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts'
-]
-
 const NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE = [
   'src/lib/litegraph/imgs/**',
   'src/lib/litegraph/public/**',
@@ -221,7 +215,7 @@ const DEV_SEVER_FALLBACK_URL =
 
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
-const devAgentConfig = createDevAgentConfig(process.env)
+const devAgentConfig = createDevAgentConfig(process.env, DISTRIBUTION)
 
 const cloudProxyConfig =
   DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
@@ -928,7 +922,6 @@ export default defineConfig({
         'src/locales/**',
         'src/assets/**',
         'packages/**',
-        ...LAYER_EDITOR_GPU_COVERAGE_EXCLUDE,
         ...NON_CRITICAL_LITEGRAPH_COVERAGE_EXCLUDE
       ],
       thresholds: process.env.VITEST_SHARD

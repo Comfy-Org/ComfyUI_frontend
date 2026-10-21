@@ -7,6 +7,7 @@ export type WorkshopAppId = AppWorkshopModel['appId']
 
 export function workshopAppHref(app: WorkshopAppId, locale: Locale): string {
   const routes = getRoutes(locale)
+  if (app === 'openjutsu') return routes.openjutsu
   return app === 'reshoot' ? routes.reshoot : routes.cinematicStudio
 }
 
@@ -37,6 +38,12 @@ const appCopy = {
     summary: 'cinematic.hub.reshootSummary',
     badge: 'cinematic.hub.prototype',
     meta: 'cinematic.hub.reshootMeta'
+  },
+  openjutsu: {
+    name: 'cinematic.hub.openjutsu',
+    summary: 'cinematic.hub.openjutsuSummary',
+    badge: 'cinematic.hub.prototype',
+    meta: 'cinematic.hub.openjutsuMeta'
   }
 } as const satisfies Record<
   WorkshopAppId,

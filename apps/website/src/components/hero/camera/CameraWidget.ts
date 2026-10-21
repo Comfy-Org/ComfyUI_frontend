@@ -34,7 +34,7 @@ import {
   Vector3
 } from 'three'
 import type { Camera, Material } from 'three'
-import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer.js'
+import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer'
 
 import type { CameraPalette, CameraState, CameraWidgetOptions } from './types'
 

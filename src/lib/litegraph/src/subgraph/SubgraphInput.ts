@@ -6,7 +6,10 @@ import type {
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
-import { linkIdReservations, mintLinkId } from '../idAllocation'
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/types/rerouteId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'

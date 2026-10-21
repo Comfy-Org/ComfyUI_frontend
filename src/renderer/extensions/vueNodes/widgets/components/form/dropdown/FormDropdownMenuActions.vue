@@ -40,11 +40,11 @@ const baseModelSelected = defineModel<Set<string>>('baseModelSelected', {
 })
 
 const actionButtonStyle = cn(
-  'h-8 rounded-lg bg-zinc-500/20 outline-1 -outline-offset-1 outline-node-component-border transition-all duration-150'
+  'h-8 rounded-lg bg-zinc-500/20 outline-1 -outline-offset-1 outline-node-border transition-all duration-150'
 )
 
 const layoutSwitchItemStyle =
-  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-base-foreground active:scale-95'
+  'size-6 flex justify-center items-center rounded-sm cursor-pointer transition-all duration-150 hover:scale-108 hover:text-foreground active:scale-95'
 
 const sortPopoverRef = useTemplateRef('sortPopoverRef')
 const sortTriggerRef = useTemplateRef('sortTriggerRef')
@@ -111,12 +111,15 @@ function handleSearchEnter(event: KeyboardEvent) {
   <div class="flex gap-2 px-4 text-muted-foreground">
     <AsyncSearchInput
       v-model="searchQuery"
+      :clear-label="$t('g.clear')"
+      :placeholder="$t('g.searchPlaceholder', { subject: '' })"
+      :accessible-label="$t('g.search')"
       autofocus
       :class="
         cn(
           actionButtonStyle,
-          'hover:outline-component-node-widget-background-highlighted/80',
-          'focus-within:ring-0 focus-within:outline-component-node-widget-background-highlighted/80'
+          'hover:outline-muted-foreground/80',
+          'focus-within:ring-0 focus-within:outline-ring/80'
         )
       "
       @enter="handleSearchEnter"
@@ -140,14 +143,14 @@ function handleSearchEnter(event: KeyboardEvent) {
       :class="
         cn(
           actionButtonStyle,
-          'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
+          'relative w-8 hover:outline-muted-foreground active:scale-95'
         )
       "
       @click="toggleSortPopover"
     >
       <div
         v-if="sortSelected !== 'default'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
       />
       <i class="icon-[lucide--arrow-up-down] size-4" />
     </Button>
@@ -164,8 +167,8 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             'flex min-w-32 flex-col gap-2 p-2',
-            'bg-component-node-background',
-            'rounded-lg outline -outline-offset-1 outline-component-node-border'
+            'bg-node',
+            'rounded-lg outline -outline-offset-1 outline-node-border'
           )
         "
       >
@@ -196,14 +199,14 @@ function handleSearchEnter(event: KeyboardEvent) {
       :class="
         cn(
           actionButtonStyle,
-          'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
+          'relative w-8 hover:outline-muted-foreground active:scale-95'
         )
       "
       @click="toggleOwnershipPopover"
     >
       <div
         v-if="ownershipSelected !== 'all'"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
       />
       <i class="icon-[lucide--user] size-4" />
     </Button>
@@ -220,8 +223,8 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             'flex min-w-32 flex-col gap-2 p-2',
-            'bg-component-node-background',
-            'rounded-lg outline -outline-offset-1 outline-component-node-border'
+            'bg-node',
+            'rounded-lg outline -outline-offset-1 outline-node-border'
           )
         "
       >
@@ -252,14 +255,14 @@ function handleSearchEnter(event: KeyboardEvent) {
       :class="
         cn(
           actionButtonStyle,
-          'relative w-8 hover:outline-component-node-widget-background-highlighted active:scale-95'
+          'relative w-8 hover:outline-muted-foreground active:scale-95'
         )
       "
       @click="toggleBaseModelPopover"
     >
       <div
         v-if="baseModelSelected.size > 0"
-        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-component-node-widget-background-highlighted"
+        class="absolute top-[-2px] left-[-2px] size-2 rounded-full bg-muted-foreground"
       />
       <i class="icon-[comfy--ai-model] size-4" />
     </Button>
@@ -276,8 +279,8 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             'flex min-w-32 flex-col gap-2 p-2',
-            'bg-component-node-background',
-            'rounded-lg outline -outline-offset-1 outline-component-node-border'
+            'bg-node',
+            'rounded-lg outline -outline-offset-1 outline-node-border'
           )
         "
       >
@@ -295,7 +298,7 @@ function handleSearchEnter(event: KeyboardEvent) {
             class="icon-[lucide--check] size-4"
           />
         </Button>
-        <span class="h-0 w-full border-b border-border-default" />
+        <span class="h-0 w-full border-b" />
         <Button
           variant="textonly"
           size="unset"
@@ -311,7 +314,7 @@ function handleSearchEnter(event: KeyboardEvent) {
       :class="
         cn(
           actionButtonStyle,
-          'flex items-center justify-center gap-1 p-1 hover:outline-component-node-widget-background-highlighted'
+          'flex items-center justify-center gap-1 p-1 hover:outline-muted-foreground'
         )
       "
     >
@@ -323,7 +326,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             layoutSwitchItemStyle,
-            layoutMode === 'list' && 'bg-neutral-500/50 text-base-foreground'
+            layoutMode === 'list' && 'bg-muted text-foreground'
           )
         "
         @click="layoutMode = 'list'"
@@ -338,7 +341,7 @@ function handleSearchEnter(event: KeyboardEvent) {
         :class="
           cn(
             layoutSwitchItemStyle,
-            layoutMode === 'grid' && 'bg-neutral-500/50 text-base-foreground'
+            layoutMode === 'grid' && 'bg-muted text-foreground'
           )
         "
         @click="layoutMode = 'grid'"

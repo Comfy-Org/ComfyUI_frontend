@@ -1,4 +1,6 @@
+import { nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
+import type * as Y from 'yjs'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
@@ -23,6 +25,13 @@ interface BoundTarget {
   follower: FollowerDoc
   collector: DocChangeCollector
   reportedPendingNodes: Map<string, NodeChange>
+  failedProjections: FailedProjection[]
+}
+
+interface FailedProjection {
+  changes: FrameChanges
+  context: RemoteApplyContext
+  mode: ApplyMode
 }
 
 /**
@@ -55,6 +64,16 @@ function docNodeDelta(changes: FrameChanges): DocNodeDelta {
     else if (change === 'delete') removed.push(id)
   }
   return { added, removed }
+}
+
+function changesAgainstDoc(doc: Y.Doc, changes: FrameChanges): FrameChanges {
+  const docNodes = nodesMap(doc)
+  const nodes = new Map<string, NodeChange>()
+  for (const [id, change] of changes.nodes) {
+    if (!docNodes.has(id)) nodes.set(id, 'delete')
+    else nodes.set(id, change === 'delete' ? 'update' : change)
+  }
+  return { ...changes, nodes }
 }
 
 function pendingNodeDelta(target: BoundTarget, changes: FrameChanges) {
@@ -119,7 +138,8 @@ export class AgentCrdtProjection {
     this.targets.set(workflowId, {
       follower,
       collector: new DocChangeCollector(follower.doc),
-      reportedPendingNodes: new Map()
+      reportedPendingNodes: new Map(),
+      failedProjections: []
     })
   }
 
@@ -174,6 +194,41 @@ export class AgentCrdtProjection {
     )
   }
 
+  /** Replays failed frames oldest first until one fails again. */
+  retryFailed(workflowId: string): {
+    applied: true
+    createdNodeIds: NodeId[]
+    failureCount: number
+  } | null {
+    const target = this.targets.get(workflowId)
+    if (!target || target.failedProjections.length === 0 || !this.getGraph())
+      return null
+    const createdNodeIds: NodeId[] = []
+    while (target.failedProjections.length > 0) {
+      const failed = target.failedProjections[0]
+      const outcome = this.project(
+        workflowId,
+        target,
+        changesAgainstDoc(target.follower.doc, failed.changes),
+        failed.context,
+        failed.mode
+      )
+      createdNodeIds.push(...outcome.createdNodeIds)
+      if (outcome.failureCount > 0)
+        return {
+          applied: true,
+          createdNodeIds,
+          failureCount: outcome.failureCount
+        }
+      target.failedProjections.shift()
+    }
+    return { applied: true, createdNodeIds, failureCount: 0 }
+  }
+
+  hasPendingFailure(workflowId: string): boolean {
+    return (this.targets.get(workflowId)?.failedProjections.length ?? 0) > 0
+  }
+
   /**
    * Puts the registers a rejected human batch claimed back the way the
    * document has them. Only those registers are touched: the rejection says
@@ -203,8 +258,10 @@ export class AgentCrdtProjection {
    * nothing visible.
    */
   replaceOnNextFrame(workflowId: string): void {
-    this.targets.get(workflowId)?.collector.discard()
-    this.targets.get(workflowId)?.reportedPendingNodes.clear()
+    const target = this.targets.get(workflowId)
+    target?.collector.discard()
+    target?.reportedPendingNodes.clear()
+    if (target) target.failedProjections.length = 0
     this.replacedLineages.add(workflowId)
     this.localWrites.clear()
   }
@@ -242,6 +299,19 @@ export class AgentCrdtProjection {
     changes: FrameChanges,
     context: RemoteApplyContext,
     mode: ApplyMode = 'merge'
+  ): Extract<FrameOutcome, { applied: true }> {
+    const outcome = this.project(workflowId, target, changes, context, mode)
+    if (outcome.failureCount > 0)
+      target.failedProjections.push({ changes, context, mode })
+    return outcome
+  }
+
+  private project(
+    workflowId: string,
+    target: BoundTarget,
+    changes: FrameChanges,
+    context: RemoteApplyContext,
+    mode: ApplyMode
   ): Extract<FrameOutcome, { applied: true }> {
     const { createdNodeIds, failureCount } = this.applier.applyChanges(
       target.follower.doc,

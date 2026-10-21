@@ -40,6 +40,11 @@ describe('CheckoutEnding', () => {
       body: 'Your plan is managed by our team. Contact your account manager to make changes.'
     },
     {
+      reason: 'sales_managed_plan',
+      code: 'SALES_MANAGED_PLAN',
+      body: 'Your plan is managed by our team. Contact your account manager to make changes.'
+    },
+    {
       reason: 'subscription_not_started',
       code: 'SUBSCRIPTION_NOT_STARTED',
       body: 'A previous payment didn’t finish. Finish or cancel it in your billing settings.'

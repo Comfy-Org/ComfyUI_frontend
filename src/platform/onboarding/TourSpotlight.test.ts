@@ -1,16 +1,11 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, onTestFinished } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import {
-  raiseModalLayer,
-  releaseModalLayer,
-  topModalZIndex
-} from '@/utils/modalLayerStack'
 
 import { clearCoachmarks } from './coachmarkRegistry'
 import TourSpotlight from './TourSpotlight.vue'
@@ -21,13 +16,6 @@ const i18n = createI18n({
   locale: 'en',
   messages: { en: enMessages }
 })
-
-function openLaterLayer() {
-  const layer = document.createElement('div')
-  raiseModalLayer(layer)
-  onTestFinished(() => releaseModalLayer(layer))
-  return layer
-}
 
 function spotlightStep(overrides: Partial<SpotlightStep> = {}): SpotlightStep {
   return { kind: 'spotlight', name: 'run', placement: 'right', ...overrides }
@@ -87,33 +75,33 @@ describe('TourSpotlight', () => {
     expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
   })
 
-  it('claims the modal stack on mount and releases it on unmount', async () => {
+  it('removes the tour overlay on unmount', async () => {
     const { unmount } = renderSpotlight()
     await nextTick()
     await nextTick()
-    expect(topModalZIndex()).toBeGreaterThan(0)
+    expect(screen.getByTestId('coach-overlay')).toBeVisible()
 
     unmount()
-    expect(
-      topModalZIndex(),
-      'an overlay that never releases its entry leaves the modal stack raised'
-    ).toBe(0)
+    expect(screen.queryByTestId('coach-overlay')).not.toBeInTheDocument()
   })
 
-  it('rises above a later layer when the step changes', async () => {
+  it('keeps the tour tier when a later overlay opens and the step changes', async () => {
     const { rerender, unmount } = renderSpotlight()
     await nextTick()
     await nextTick()
-    const laterLayer = openLaterLayer()
-    const laterZIndex = topModalZIndex()
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const laterLayer = screen.getByTestId('existing-overlay')
 
     await rerender({ step: spotlightStep({ placement: 'left' }) })
     await nextTick()
     await nextTick()
-    expect(topModalZIndex()).toBeGreaterThan(laterZIndex)
+    expect(screen.getByTestId('coach-overlay')).toHaveClass('z-tour')
 
     unmount()
-    expect(topModalZIndex()).toBe(Number(laterLayer.style.zIndex))
+    expect(laterLayer).toBeInTheDocument()
   })
 
   it('leaves focus, z-order and travel alone when a step renames itself', async () => {
@@ -137,8 +125,10 @@ describe('TourSpotlight', () => {
 
     const skip = screen.getByRole('button', { name: 'Skip' })
     skip.focus()
-    openLaterLayer()
-    const topZIndex = topModalZIndex()
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
     const travel = screen.getByTestId('coach-card').className
 
     runState.value = 'succeeded'
@@ -153,10 +143,7 @@ describe('TourSpotlight', () => {
       skip,
       'a step renaming itself mid-run must not pull focus off what the user selected'
     ).toHaveFocus()
-    expect(
-      topModalZIndex(),
-      'a rename is not a new step, so the overlay must not re-raise'
-    ).toBe(topZIndex)
+    expect(screen.getByTestId('coach-overlay')).toHaveClass('z-tour')
     expect(
       screen.getByTestId('coach-card').className,
       'a rename is not a move, so the card must not re-arm its travel'

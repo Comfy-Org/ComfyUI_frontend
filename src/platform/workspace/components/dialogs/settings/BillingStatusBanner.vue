@@ -2,7 +2,7 @@
   <div v-if="banner" class="@container">
     <div
       role="status"
-      class="flex flex-col gap-3 rounded-2xl border border-interface-stroke/60 bg-base-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
+      class="flex flex-col gap-3 rounded-2xl border border-border/60 bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
       <div class="flex min-w-0 flex-1 flex-col gap-1">
         <div class="flex items-center gap-2">
@@ -12,11 +12,11 @@
                 'size-4 shrink-0',
                 banner.muted
                   ? 'icon-[lucide--circle-alert] text-muted-foreground'
-                  : 'icon-[lucide--triangle-alert] text-warning-background'
+                  : 'icon-[lucide--triangle-alert] text-warning'
               )
             "
           />
-          <span class="text-sm text-base-foreground">{{ banner.title }}</span>
+          <span class="text-sm text-foreground">{{ banner.title }}</span>
         </div>
         <p class="m-0 pl-6 text-sm text-muted-foreground">{{ banner.body }}</p>
       </div>
@@ -100,6 +100,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import { pausedBannerCopy } from '@/platform/workspace/composables/usePausedBanner'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
@@ -254,18 +255,35 @@ const planEndedView = (): BannerView => {
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
   cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
 
-const outOfCreditsView = (): BannerView | null => {
-  if (isTopUpDeniedPastDue(topUpDenial.value)) {
-    return {
-      muted: false,
-      title: t(`${bs}.outOfCredits.title`),
-      body: canManageBilling.value
-        ? t(`${bs}.outOfCredits.pastDueBody`)
-        : t('subscription.paymentRecovery.paymentFailedMemberDescription'),
-      action: canManageBilling.value ? 'updatePayment' : null,
-      dismissible: true
-    }
+const pausedView = (): BannerView => {
+  const paused = pausedBannerCopy(canManageBilling.value)
+  return {
+    muted: paused.muted,
+    title: t(paused.titleKey),
+    body: t(paused.bodyKey),
+    action: paused.action,
+    dismissible: false
   }
+}
+
+function pastDueBodyKey(): string {
+  if (audience.value === 'personal')
+    return `${bs}.outOfCredits.pastDuePersonalBody`
+  return canManageBilling.value
+    ? `${bs}.outOfCredits.pastDueBody`
+    : `${bs}.outOfCredits.pastDueMemberBody`
+}
+
+const pastDueView = (): BannerView => ({
+  muted: false,
+  title: t(`${bs}.outOfCredits.title`),
+  body: t(pastDueBodyKey()),
+  action: canManageBilling.value ? 'updatePayment' : null,
+  dismissible: true
+})
+
+const outOfCreditsView = (): BannerView | null => {
+  if (isTopUpDeniedPastDue(topUpDenial.value)) return pastDueView()
   if (!canManage.value) {
     return {
       muted: false,
@@ -335,6 +353,7 @@ const planChangeView = (): BannerView | null =>
     : null
 
 const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
+  paused: pausedView,
   planEnded: planEndedView,
   outOfCredits: outOfCreditsView,
   ending: endingView,

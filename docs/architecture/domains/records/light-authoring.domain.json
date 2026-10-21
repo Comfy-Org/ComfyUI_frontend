@@ -24,26 +24,6 @@
       "role": "integration"
     },
     {
-      "path": "src/extensions/core/lightInfo/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/extensions/core/lightInfo/LightInfoOverlay.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/lightInfo/LightInfoOverlay.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/extensions/core/lightInfo/LightInfoViewport.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/extensions/core/lightInfo/LightInfoViewport.ts",
-      "role": "application"
-    },
-    {
       "path": "src/lib/litegraph/src/widgets/LightInfoWidget.test.ts",
       "role": "integration"
     },
@@ -58,10 +38,6 @@
     {
       "path": "src/renderer/extensions/vueNodes/widgets/composables/useLightInfoWidget.ts",
       "role": "integration"
-    },
-    {
-      "path": "src/types/lightInfo.ts",
-      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
@@ -71,15 +47,15 @@
     {
       "name": "Light values normalize and light positions convert to and from orbit state",
       "checks": [
-        "src/extensions/core/lightInfo/lightsValue.test.ts",
-        "src/extensions/core/lightInfo/lightTransform.test.ts"
+        "packages/viewport3d/src/lightInfo/lightsValue.test.ts",
+        "packages/viewport3d/src/lightInfo/lightTransform.test.ts"
       ]
     },
     {
       "name": "Light viewport and overlay pick, drag, render, and dispose light gizmos",
       "checks": [
-        "src/extensions/core/lightInfo/LightInfoViewport.test.ts",
-        "src/extensions/core/lightInfo/LightInfoOverlay.test.ts"
+        "packages/viewport3d/src/lightInfo/LightInfoViewport.test.ts",
+        "packages/viewport3d/src/lightInfo/LightInfoOverlay.test.ts"
       ]
     },
     {

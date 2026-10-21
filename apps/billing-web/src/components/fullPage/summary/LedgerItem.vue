@@ -9,14 +9,14 @@ const { row } = defineProps<{ row: SummaryLedger['items'][number] }>()
 <template>
   <li class="flex flex-col gap-1">
     <div class="flex items-baseline justify-between gap-4">
-      <span class="text-sm font-semibold text-base-foreground">
+      <span class="text-sm font-semibold text-foreground">
         {{ row.label }}
       </span>
       <span
         :class="
           cn(
             'shrink-0 text-sm tabular-nums',
-            row.credit ? 'text-muted-foreground' : 'text-base-foreground'
+            row.credit ? 'text-muted-foreground' : 'text-foreground'
           )
         "
       >

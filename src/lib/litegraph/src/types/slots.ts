@@ -8,10 +8,14 @@ import type { RerouteId } from '@/types/rerouteId'
 import type { SlotIndex } from '@/types/slotId'
 import type { WidgetId } from '@/types/widgetId'
 
-import type { IWidgetLocator, ISlotType, INodeSlot, Point } from '../interfaces'
+import type {
+  ISlotType,
+  INodeSlot,
+  Point
+} from '@/lib/litegraph/src/interfaces'
 
 import type { LinkDirection } from './globalEnums'
-import type { IBaseWidget } from './widgets'
+import type { IBaseWidget, IWidgetLocator } from './widgets'
 
 interface IInputOrOutput {
   // If an input, this will be defined
@@ -65,6 +69,8 @@ export interface INodeOutputSlot extends INodeSlot {
    */
   links?: LinkId[] | null
   _data?: unknown
+  /** Widget config stored on its output by the Primitive node. */
+  widget?: IWidgetLocator
 }
 
 export interface ISubgraphInput extends INodeInputSlot {
