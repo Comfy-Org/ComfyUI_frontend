@@ -1876,7 +1876,7 @@ describe('LiveGraphApplier', () => {
     expect(positionOf(3)).toEqual([690, 0])
   })
 
-  it('moves a live agent batch off the nodes it lands on, but not a replayed one', () => {
+  it('moves a created batch off the nodes it lands on only for a live agent turn', () => {
     const { graph, doc, collector, applier, applyCollected } = setup({
       nodes: [sourceNode(1)],
       links: []

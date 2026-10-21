@@ -69,8 +69,6 @@ describe('placementOffset', () => {
     ).toEqual({ dx: 200 + PLACEMENT_GUTTER_PX - 9000, dy: -9000 })
   })
 
-  // PM-2232: a template inserted into a populated tab arrives at its baked-in
-  // coordinates, which can sit right on top of the user's existing nodes.
   it.for([
     { name: 'no viewport known', viewport: null },
     {
@@ -87,16 +85,27 @@ describe('placementOffset', () => {
           incoming: [rect(-400, 50), rect(350, 60), rect(1000, 400)],
           moveCollisions: true
         })
-      ).toEqual({ dx: 500 + PLACEMENT_GUTTER_PX + 400, dy: -50 })
+      ).toEqual({ dx: 980, dy: -50 })
     }
   )
 
-  it('leaves a batch inside the existing hull that touches no node', () => {
+  it.for([
+    {
+      name: 'inside the existing hull without touching a node',
+      existing: [rect(0, 0), rect(600, 400)],
+      incoming: [rect(300, 150)]
+    },
+    {
+      name: 'touching an existing node at its edge',
+      existing: [rect(0, 0)],
+      incoming: [rect(200, 0)]
+    }
+  ])('leaves a batch $name', ({ existing, incoming }) => {
     expect(
       placementOffset({
-        existing: [rect(0, 0), rect(600, 400)],
+        existing,
         viewport: null,
-        incoming: [rect(300, 150)],
+        incoming,
         moveCollisions: true
       })
     ).toBeNull()

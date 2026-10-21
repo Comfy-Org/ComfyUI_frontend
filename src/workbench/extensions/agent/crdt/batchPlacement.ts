@@ -14,7 +14,6 @@ interface PlacementInput {
   existing: readonly PlacementRect[]
   viewport: PlacementRect | null
   incoming: readonly PlacementRect[]
-  /** Whether a batch landing on an existing node moves; see placementOffset. */
   moveCollisions?: boolean
 }
 
@@ -63,13 +62,7 @@ function collides(
   })
 }
 
-/**
- * One shared translation that moves a batch of newly inserted nodes beside
- * the existing content's hull, or null when the batch should keep the
- * coordinates it arrived with. A batch moves when it is disconnected from
- * existing content and offscreen, or, with `moveCollisions`, when one of its
- * nodes lands on an existing node. See ADR-CRDT-PLACEMENT-0035.
- */
+/** Returns a batch translation, or null when its coordinates stay unchanged. */
 export function placementOffset(input: PlacementInput): PlacementOffset | null {
   if (input.existing.length === 0 || input.incoming.length === 0) return null
   const anchor = hull(input.existing)
