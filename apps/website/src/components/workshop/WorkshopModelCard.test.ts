@@ -41,7 +41,9 @@ describe('WorkshopModelCard', () => {
     render(WorkshopModelCard, {
       props: { model: { ...base, capabilities: ['upscale'] } }
     })
-    expect(screen.queryByTestId('model-card-task')).toBeNull()
+    expect(screen.getByTestId('model-card-task')).toHaveTextContent(
+      'Image to image'
+    )
     expect(screen.queryByText('upscale')).toBeNull()
     expect(screen.getByRole('link', { name: 'Use API' })).toHaveTextContent('⌘')
     expect(screen.getByRole('link', { name: 'Try model' })).toHaveAttribute(
@@ -73,7 +75,9 @@ describe('WorkshopModelCard', () => {
     expect(screen.getByTestId('model-card-provider')).toHaveTextContent(
       'Black Forest Labs'
     )
-    expect(screen.queryByTestId('model-card-task')).toBeNull()
+    expect(screen.getByTestId('model-card-task')).toHaveTextContent(
+      'Image to image'
+    )
     expect(screen.queryByText(/credits|\$/)).toBeNull()
     expect(screen.queryByTestId('model-incomplete-badge')).toBeNull()
     expect(screen.getByTestId('model-media-placeholder')).toBeTruthy()
@@ -95,7 +99,7 @@ describe('WorkshopModelCard', () => {
       }
     })
     expect(screen.getByTestId('workshop-model-card')).toHaveAccessibleName(
-      'Black Forest Labs Flux'
+      'Black Forest Labs Flux Image to image'
     )
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
   })
@@ -130,7 +134,7 @@ describe('WorkshopModelCard', () => {
   it('names a hub card with its kind badge after the provider', () => {
     render(WorkshopModelCard, { props: { model: base, providerBadge: true } })
     expect(screen.getByTestId('workshop-model-card')).toHaveAccessibleName(
-      'Black Forest Labs Models Flux'
+      'Black Forest Labs Models Flux Image to image'
     )
   })
 

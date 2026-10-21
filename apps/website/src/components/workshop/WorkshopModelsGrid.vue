@@ -316,6 +316,18 @@ watch(browseAll, (on) => on && resetFilters())
         </div>
       </div>
 
+      <div v-if="browsing" class="mb-4 flex justify-end">
+        <button
+          type="button"
+          class="flex cursor-pointer items-center gap-2 text-sm text-content hover:text-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          data-testid="browse-all-top"
+          @click="browseAll = true"
+        >
+          {{ t('workshop.sections.viewAll') }}
+          <ChevronRight class="size-4" aria-hidden="true" />
+        </button>
+      </div>
+
       <FeaturedBanner
         v-if="browsing && featured.length"
         :slides="featuredSlides"

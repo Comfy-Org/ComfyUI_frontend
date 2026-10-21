@@ -5074,6 +5074,7 @@
     "sections": {
       "allModels": "所有模型",
       "back": "返回所有类别",
+      "viewAll": "查看全部模型",
       "browseAll": "浏览所有模型",
       "count": "{n} 个模型",
       "featured": "精选",

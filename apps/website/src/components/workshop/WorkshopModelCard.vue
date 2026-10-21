@@ -63,9 +63,7 @@ const thumbnailLabel = computed(() =>
 
 const id = useId()
 const hasModelActions = computed(() => Boolean(model.routerId && model.href))
-const showsTask = computed(
-  () => !hasModelActions.value && (!workflow.value || !underHeading)
-)
+const showsTask = computed(() => !workflow.value || !underHeading)
 // The tags stay visible inside the link but out of its name.
 const labelledBy = computed(() =>
   [
@@ -163,6 +161,7 @@ const pillClass =
             {{ taskLabel }}
           </span>
           <TagRow
+            v-if="!hasModelActions"
             :tags="model.capabilities"
             :link-tags="false"
             class="min-w-0 flex-1"
@@ -173,7 +172,7 @@ const pillClass =
     <div v-if="hasModelActions" class="flex flex-wrap gap-2 px-3">
       <a
         :href="model.href"
-        class="inline-flex items-center rounded-full border border-transparency-white-t20 px-3 py-2 text-xs text-content-bright hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        class="inline-flex items-center rounded-full border border-transparency-white-t20 px-3 py-2 text-xs text-content-bright transition-colors group-focus-within:border-primary-comfy-yellow group-focus-within:bg-primary-comfy-yellow group-focus-within:text-primary-comfy-ink group-hover:border-primary-comfy-yellow group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         >{{ t('workshop.hub.tryModel') }}</a
       >
       <a
