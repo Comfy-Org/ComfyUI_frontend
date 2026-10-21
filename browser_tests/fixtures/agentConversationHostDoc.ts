@@ -1,4 +1,5 @@
 import {
+  OPAQUE_WIDGETS_KEY,
   SCHEMA_VERSION,
   applyOps,
   hasAppliedOp,
@@ -243,6 +244,25 @@ export class HostDoc {
       HOST_ACTOR,
       []
     )
+  }
+
+  /**
+   * Mirrors the doc host's `quarantineDictWidgets` step on mint: a node saved
+   * with a name-keyed `widgets_values` record and no declared form has its
+   * named widget map replaced by the same values as one plain object under
+   * `OPAQUE_WIDGETS_KEY`. Call it before the initial sync.
+   */
+  quarantineRecordWidgets(nodeId: number): void {
+    const node = nodesMap(this.doc).get(String(nodeId))
+    const widgets = node?.get('widgets')
+    if (!(node instanceof Y.Map) || !(widgets instanceof Y.Map)) {
+      throw new Error(`Host node ${String(nodeId)} has no named widget map`)
+    }
+    const record = widgets.toJSON()
+    this.doc.transact(() => {
+      node.delete('widgets')
+      node.set(OPAQUE_WIDGETS_KEY, record)
+    })
   }
 
   /** Test-only replacement preserving the caller's named-widget key order. */
