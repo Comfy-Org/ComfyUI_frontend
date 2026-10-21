@@ -1,10 +1,15 @@
-import { applyOps, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY
+} from '@comfyorg/comfy-multi-player'
 import type {
   Op,
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -85,6 +90,24 @@ describe('LiveGraphApplier malformed node report', () => {
       }
     })
     expect(nodesMap(doc).get('149')?.toJSON().inputs).toEqual([slot])
+  })
+
+  it('reports an opaque widget record with a length key instead of configuring from it', () => {
+    const { graph, doc, applyCollected } = setup({
+      nodes: [sinkNode({ name: 'image', type: 'IMAGE', link: null })],
+      links: []
+    })
+    const node = nodesMap(doc).get(String(NODE_ID))
+    assert(node instanceof Y.Map)
+    node.set(OPAQUE_WIDGETS_KEY, { length: 3, video: 'clip.mp4' })
+
+    applyCollected()
+
+    expect(graph.getNodeById(toNodeId(NODE_ID))).toBeNull()
+    const [, options] = onlyReport()
+    expect(options).toMatchObject({
+      context: { valueShapes: `${OPAQUE_WIDGETS_KEY} custom object:2` }
+    })
   })
 
   it.for<[Record<string, unknown>, string]>([

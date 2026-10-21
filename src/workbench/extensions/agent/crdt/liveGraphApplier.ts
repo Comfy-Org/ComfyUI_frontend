@@ -175,6 +175,9 @@ const zDocSlot = z
     type: z.union([z.string(), z.array(z.string()).nonempty(), z.number()])
   })
   .passthrough()
+const zWidgetRecord = z
+  .record(z.string(), z.unknown())
+  .refine((record) => !Object.hasOwn(record, 'length'), 'has a length key')
 const zNodeProperty = z.union([
   z.string(),
   z.number(),
@@ -201,7 +204,8 @@ const zDocNodeFields = zComfyNode
     title: z.string().optional(),
     inputs: z.array(zDocSlot).optional(),
     outputs: z.array(zDocSlot).optional(),
-    properties: z.record(z.string(), zNodeProperty.optional()).optional()
+    properties: z.record(z.string(), zNodeProperty.optional()).optional(),
+    [OPAQUE_WIDGETS_KEY]: zWidgetRecord.optional()
   })
 
 /**
@@ -286,18 +290,20 @@ function readDocNode(
 
   const fields: Record<string, unknown> = { id }
   let widgets: DocNode['widgets']
-  let widgetRecord: DocNode['widgetRecord']
+  let record: unknown
   source.forEach((value, key) => {
     if (key === 'widgets' && value instanceof Y.Map) {
       widgets = value.toJSON()
     } else if (key === OPAQUE_WIDGETS_KEY) {
       const opaque = plain(value)
       if (Array.isArray(opaque)) widgets = opaque
-      else if (isPlainObject(opaque)) widgetRecord = opaque
+      else if (isPlainObject(opaque)) record = opaque
     } else if (key !== 'id' && key !== WIDGET_FORM_KEY) {
       fields[key] = plain(value)
     }
   })
+  if (widgets === undefined && record !== undefined)
+    fields[OPAQUE_WIDGETS_KEY] = record
   const parsed = zDocNodeFields.safeParse(fields)
   if (!parsed.success) {
     const { error } = parsed
@@ -320,6 +326,7 @@ function readDocNode(
     flags,
     order = 0,
     mode = 0,
+    [OPAQUE_WIDGETS_KEY]: widgetRecord,
     ...rest
   } = parsed.data
   const serialised: ISerialisedNode = {
@@ -330,13 +337,7 @@ function readDocNode(
     order,
     mode
   }
-  return {
-    id,
-    type: serialised.type,
-    serialised,
-    widgets,
-    widgetRecord: widgets === undefined ? widgetRecord : undefined
-  }
+  return { id, type: serialised.type, serialised, widgets, widgetRecord }
 }
 
 function readDocLink(doc: Y.Doc, key: string): DocLink | null {
