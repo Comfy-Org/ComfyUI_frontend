@@ -871,6 +871,52 @@ describe('attachDocOpMinter', () => {
         doc.destroy()
       })
 
+      it('retargets a queued disconnect when an earlier grow is cancelled', async () => {
+        const sources = [new TestSource(), new TestSource()]
+        const sink = new TestAutogrowSink()
+        withGraphIntentSource('load', () => {
+          for (const source of sources) graph.add(source)
+          graph.add(sink)
+        })
+        const doc = mintDocFrom(graph)
+        docInputNames = (nodeId) =>
+          readDocSlotNames(doc, String(nodeId), 'inputs')
+        sources[0].connect(0, sink, 0)
+        await afterFlush()
+        applyMinted(doc, minted)
+        minted.length = 0
+        const unsent = new TestSource()
+        graph.add(unsent)
+        unsent.connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
+        const laterGrow = sink.inputs[2]
+        const laterLink = laterGrow.link
+        sink.disconnectInput(2)
+        graph.remove(unsent)
+        await afterFlush()
+
+        expect(minted).toEqual([
+          expect.objectContaining({
+            op: 'connect',
+            link_id: laterLink,
+            grow: expect.objectContaining({ name: laterGrow.name })
+          }),
+          {
+            op: 'disconnect',
+            link_id: laterLink,
+            to_node: sink.id,
+            to_slot: 1
+          }
+        ])
+        expect(applyMinted(doc, minted)).toEqual(['applied', 'applied'])
+        expect(docInputs(doc, sink.id)).toEqual([
+          { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+          { name: laterGrow.name, link: null }
+        ])
+        expect(reportError).not.toHaveBeenCalled()
+        doc.destroy()
+      })
+
       describe('with two grows on one node awaiting their echo', () => {
         async function mintTwoUnechoedGrows() {
           const sources = [new TestSource(), new TestSource(), new TestSource()]

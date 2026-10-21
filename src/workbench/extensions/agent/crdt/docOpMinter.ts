@@ -36,7 +36,6 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import {
@@ -217,7 +216,7 @@ function isValueWidget(
   return type !== 'button' && serialize !== false
 }
 
-function nodeKey(graphId: string, nodeId: NodeId): string {
+function nodeKey(graphId: string, nodeId: NodeId | WireNodeId): string {
   return `${graphId}:${String(nodeId)}`
 }
 
@@ -378,6 +377,23 @@ function withoutCancelledAdd(
       default:
         return true
     }
+  })
+}
+
+function withPredictedSlotsShifted(
+  pending: PendingOp[],
+  toNode: WireNodeId,
+  cancelledSlot: number
+): PendingOp[] {
+  return pending.map((entry) => {
+    if (entry.kind !== 'op') return entry
+    const { operation } = entry
+    if (operation.op !== 'connect' && operation.op !== 'disconnect')
+      return entry
+    const slot = operation.to_slot
+    if (operation.to_node !== toNode || typeof slot !== 'number') return entry
+    if (slot <= cancelledSlot) return entry
+    return { kind: 'op', operation: { ...operation, to_slot: slot - 1 } }
   })
 }
 
@@ -791,14 +807,23 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     for (const entry of pending) {
       if (entry.kind !== 'op' || entry.operation.op !== 'connect') continue
       const { from_node, to_node, grow } = entry.operation
-      if (!grow || (from_node !== nodeId && to_node !== nodeId)) continue
-      const key = nodeKey(graphId, toNodeId(to_node))
-      const grows = pendingGrows.get(key)
-      if (grows === undefined) continue
-      const names = grows.names.filter((name) => name !== grow.name)
-      if (names.length === 0) pendingGrows.delete(key)
-      else pendingGrows.set(key, { base: grows.base, names })
+      if (grow && (from_node === nodeId || to_node === nodeId))
+        forgetCancelledGrow(nodeKey(graphId, to_node), to_node, grow.name)
     }
+  }
+
+  function forgetCancelledGrow(
+    key: string,
+    toNode: WireNodeId,
+    name: string
+  ): void {
+    const grows = pendingGrows.get(key)
+    const index = grows?.names.indexOf(name) ?? -1
+    if (grows === undefined || index < 0) return
+    const names = grows.names.filter((other) => other !== name)
+    if (names.length === 0) pendingGrows.delete(key)
+    else pendingGrows.set(key, { base: grows.base, names })
+    pending = withPredictedSlotsShifted(pending, toNode, grows.base + index)
   }
 
   function resolveDocSlot(
