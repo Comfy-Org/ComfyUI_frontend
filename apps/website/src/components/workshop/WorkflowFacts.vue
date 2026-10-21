@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
 import type { TranslationKey } from '@/i18n/translations'
@@ -10,6 +11,12 @@ const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
 const t = computed(
   () => translationsFor(model.catalogDetails?.locale ?? 'en').t
 )
+const authorHref = computed(() => {
+  const details = model.catalogDetails
+  return details?.authorUsername
+    ? hubCreatorPath(details.authorUsername, details.locale)
+    : undefined
+})
 const models = computed(() =>
   model.catalogDetails
     ? model.catalogDetails.models.filter((item) => item.name.trim())
@@ -115,29 +122,17 @@ function catalogFacts(
         >
           <dt class="text-primary-warm-gray">{{ t(fact.label) }}</dt>
           <dd class="min-w-0 truncate text-primary-comfy-canvas tabular-nums">
-            <a
-              v-if="
-                fact.label === 'workshop.workflow.factAuthor' &&
-                model.catalogDetails?.authorUsername
-              "
-              :href="
-                hubCreatorPath(
-                  model.catalogDetails.authorUsername,
-                  model.catalogDetails.locale
-                )
-              "
-              class="hover:underline"
+            <component
+              :is="authorHref ? 'a' : 'span'"
+              v-if="fact.label === 'workshop.workflow.factAuthor'"
+              :href="authorHref"
+              :class="cn(authorHref && 'hover:underline')"
             >
               <WorkflowAuthor
                 :name="fact.value"
-                :avatar="model.catalogDetails.authorAvatarURL"
+                :avatar="model.catalogDetails?.authorAvatarURL"
               />
-            </a>
-            <WorkflowAuthor
-              v-else-if="fact.label === 'workshop.workflow.factAuthor'"
-              :name="fact.value"
-              :avatar="model.catalogDetails?.authorAvatarURL"
-            />
+            </component>
             <template v-else>{{ fact.value }}</template>
           </dd>
         </div>
