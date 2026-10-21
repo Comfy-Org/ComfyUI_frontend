@@ -394,23 +394,35 @@ function heroKind(urls: Document, types: Document, staticOnly: boolean) {
   )
 }
 
+function firstCompareImage(urls: Document, types: Document, thumbnail: string) {
+  const hero = urls['$.hero']
+  const stillShowsThumbnail = typeof hero !== 'string' || hero === thumbnail
+  return (stillShowsThumbnail && staticThumbnail(urls, types)) || thumbnail
+}
+
+function stillPair(urls: Document, types: Document) {
+  const thumbnail = urls['$.thumbnail']
+  const secondaryUrl = urls['$.thumbnail_comparison']
+  if (typeof thumbnail !== 'string' || typeof secondaryUrl !== 'string')
+    return undefined
+  if (
+    mediaKind(types, '$.thumbnail') !== 'image' ||
+    mediaKind(types, '$.thumbnail_comparison') !== 'image'
+  )
+    return undefined
+  return {
+    primaryUrl: firstCompareImage(urls, types, thumbnail),
+    secondaryUrl
+  }
+}
+
 function thumbnailVariant(d: Document, urls: Document, types: Document) {
   const variant = thumbnailVariantSchema.safeParse(d.thumbnail_variant)
   if (!variant.success) return {}
   if (variant.data === 'zoomHover' || variant.data === 'hoverZoom')
     return { variant: variant.data }
-  const thumbnail = urls['$.thumbnail']
-  const secondaryUrl = urls['$.thumbnail_comparison']
-  const hero = urls['$.hero']
-  const heroIsThumbnail = typeof hero !== 'string' || hero === thumbnail
-  const primaryUrl =
-    (heroIsThumbnail && staticThumbnail(urls, types)) || thumbnail
-  return typeof primaryUrl === 'string' &&
-    typeof secondaryUrl === 'string' &&
-    mediaKind(types, '$.thumbnail') === 'image' &&
-    mediaKind(types, '$.thumbnail_comparison') === 'image'
-    ? { variant: variant.data, primaryUrl, secondaryUrl }
-    : {}
+  const pair = stillPair(urls, types)
+  return pair ? { variant: variant.data, ...pair } : {}
 }
 
 function heroPresentation(d: Document, preserved: Document) {
