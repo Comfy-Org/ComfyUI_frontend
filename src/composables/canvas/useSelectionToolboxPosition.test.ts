@@ -186,6 +186,56 @@ describe('useSelectionToolboxPosition', () => {
     unmount()
   })
 
+  it('holds its place while lifted when a group joins the selection', async () => {
+    const node = addNode(graph, 100, 200)
+    canvas.select(node)
+    const { toolbox, unmount } = renderToolbox()
+    const { lift } = useSelectionToolboxLift()
+    onTestFinished(() => {
+      lift.value = 0
+    })
+    lift.value = 51
+    const liftedY = `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(liftedY)
+    )
+
+    canvas.select(addGroup(graph, [100, 0, 160, 80]))
+    await nextTick()
+
+    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(liftedY)
+    unmount()
+  })
+
+  it('moves to the selection when it reappears while the lift eases away', async () => {
+    const node = addNode(graph, 100, 200)
+    canvas.select(node)
+    const { toolbox, visible, unmount } = renderToolbox()
+    const { lift } = useSelectionToolboxLift()
+    onTestFinished(() => {
+      lift.value = 0
+    })
+    lift.value = 51
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+        `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+      )
+    )
+
+    lift.value = 0
+    canvas.state.draggingItems = true
+    node.pos = [100, 400]
+    await nextTick()
+    canvas.isDragging = false
+    await new Promise(requestAnimationFrame)
+
+    expect(visible.value).toBe(true)
+    expect(
+      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
+    ).toBeGreaterThanOrEqual(390 - LiteGraph.NODE_TITLE_HEIGHT - 51)
+    unmount()
+  })
+
   it('settles back down after reduced motion is switched off mid-lift', async () => {
     const reducedMotion = Object.assign(new EventTarget(), {
       matches: false,

@@ -78,9 +78,13 @@ watch(isOpen, (open) => {
   else finish()
 })
 
-const hasSameNodes = (nodes: LGraphNode[], previous: LGraphNode[]) =>
-  nodes.length === previous.length &&
-  nodes.every((node) => previous.includes(node))
+const hasSameNodes = (nodes: LGraphNode[], previous: LGraphNode[]) => {
+  const previousNodes = new Set(previous)
+  return (
+    nodes.length === previousNodes.size &&
+    nodes.every((node) => previousNodes.has(node))
+  )
+}
 
 watch(gridNodes, (nodes, previous) => {
   if (!hasSameNodes(nodes, previous)) isOpen.value = false

@@ -12,7 +12,11 @@ import type { Ref } from 'vue'
 import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import type {
+  Positionable,
+  ReadOnlyRect,
+  Rect
+} from '@/lib/litegraph/src/interfaces'
 import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -85,6 +89,7 @@ export function useSelectionToolboxPosition(
     easing: TransitionPresets.easeOutQuint
   })
   const isLifted = computed(() => lift.value !== 0 || easedLift.value !== 0)
+  let anchoredItems: ReadonlySet<Positionable> = new Set()
 
   useEventListener(
     lgCanvas.canvas,
@@ -136,7 +141,18 @@ export function useSelectionToolboxPosition(
       : undefined
   }
 
-  const updateSelectionBounds = ({ reanchor = !isLifted.value } = {}) => {
+  const isNewSelection = () => {
+    const items = canvasStore.selectedItems
+    return (
+      items.length !== anchoredItems.size ||
+      items.some((item) => !anchoredItems.has(item))
+    )
+  }
+
+  const shouldReanchor = () =>
+    !visible.value || !isLifted.value || (lift.value === 0 && isNewSelection())
+
+  const updateSelectionBounds = () => {
     const anchor = selectionAnchor()
 
     if (!anchor || isDragging.value) {
@@ -144,8 +160,11 @@ export function useSelectionToolboxPosition(
       return
     }
 
+    if (shouldReanchor()) {
+      worldPosition.value = anchor
+      anchoredItems = new Set(canvasStore.selectedItems)
+    }
     visible.value = true
-    if (reanchor) worldPosition.value = anchor
 
     updateTransform()
   }
@@ -197,11 +216,9 @@ export function useSelectionToolboxPosition(
       () => linkSelectionStore.selection
     ],
     ([selectedItems], [previousSelectedItems]) => {
-      const selectionChanged = selectedItems !== previousSelectedItems
-      if (selectionChanged) handleSelectionMembershipChange()
-      updateSelectionBounds({
-        reanchor: selectionChanged || !isLifted.value
-      })
+      if (selectedItems !== previousSelectedItems)
+        handleSelectionMembershipChange()
+      updateSelectionBounds()
     },
     { immediate: true }
   )
@@ -280,9 +297,7 @@ export function useSelectionToolboxPosition(
 
   watch(isDragging, handleDragStateChange)
 
-  watch(isLifted, (lifted) => {
-    if (!lifted) updateSelectionBounds()
-  })
+  watch([lift, isLifted], updateSelectionBounds)
 
   onUnmounted(() => {
     resetMoreOptionsState()
