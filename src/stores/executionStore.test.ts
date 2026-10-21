@@ -2750,6 +2750,38 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(store.activeJobId).toBe('job-elsewhere')
     expect(store.nodeProgressStates['1'].prompt_id).toBe('job-elsewhere')
   })
+
+  it.for([
+    ['execution_success', { timestamp: 0 }],
+    [
+      'execution_interrupted',
+      { node_id: '1', node_type: 't', executed: [], timestamp: 0 }
+    ],
+    [
+      'execution_error',
+      {
+        node_id: '1',
+        node_type: 't',
+        exception_message: 'boom',
+        exception_type: 'RuntimeError',
+        traceback: [],
+        timestamp: 0
+      }
+    ]
+  ] as const)(
+    'keeps painting the active job when a background job ends with %s',
+    ([event, detail]) => {
+      fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+      fireProgressState('job-visible', '1')
+      fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+
+      fire(event, { ...detail, prompt_id: 'job-background' })
+
+      expect(store.activeJobId).toBe('job-visible')
+      expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
+      expect(store.queuedJobs['job-background']).toBeUndefined()
+    }
+  )
 })
 
 describe('useExecutionStore - storeJob and workflow path tracking', () => {

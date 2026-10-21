@@ -936,15 +936,16 @@ export const useExecutionStore = defineStore('execution', () => {
    * Reset execution-related state after a run completes or is stopped.
    */
   function resetExecutionState(jobIdParam?: JobId | null) {
-    cancelPendingProgressUpdates()
-
-    executionIdToLocatorCache.clear()
-    nodeProgressStates.value = {}
     const jobId = jobIdParam ?? activeJobId.value ?? null
     const runErrorKey = jobId ? runErrorKeyForJob(jobId) : undefined
     if (jobId) forgetJob(jobId)
-    activeJobId.value = null
-    _executingNodeProgress.value = null
+    if (!activeJobId.value || jobId === activeJobId.value) {
+      cancelPendingProgressUpdates()
+      executionIdToLocatorCache.clear()
+      nodeProgressStates.value = {}
+      activeJobId.value = null
+      _executingNodeProgress.value = null
+    }
     executionErrorStore.clearPromptError(runErrorKey)
   }
 
