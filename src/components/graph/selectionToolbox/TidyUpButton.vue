@@ -17,7 +17,7 @@
         :collision-padding="10"
         update-position-strategy="always"
         class="z-overlay floating-panel will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
-        @interact-outside="keepOpenInsideToolbox"
+        @interact-outside="keepOpenForToolboxAndHandles"
       >
         <div class="flex h-8 w-44 items-center gap-2 pr-1 pl-3">
           <Slider
@@ -36,6 +36,9 @@
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>
+  <Teleport to="body">
+    <SelectionGapHandles v-if="isOpen" />
+  </Teleport>
 </template>
 
 <script setup lang="ts">
@@ -49,6 +52,7 @@ import {
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SelectionGapHandles from '@/components/graph/selectionGrid/SelectionGapHandles.vue'
 import {
   MAX_TIDY_GAP,
   MIN_TIDY_GAP
@@ -96,11 +100,14 @@ onBeforeUnmount(() => {
   lift.value = 0
 })
 
-const keepOpenInsideToolbox = (
+const keepOpenForToolboxAndHandles = (
   event: FocusOutsideEvent | PointerDownOutsideEvent
 ) => {
   const { target } = event.detail.originalEvent
-  if (target instanceof Element && target.closest('[data-selection-toolbox]')) {
+  if (
+    target instanceof Element &&
+    target.closest('[data-selection-toolbox], [data-gap-handle]')
+  ) {
     event.preventDefault()
   }
 }

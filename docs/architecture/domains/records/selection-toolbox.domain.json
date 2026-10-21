@@ -20,6 +20,10 @@
       "role": "presentation"
     },
     {
+      "path": "src/components/graph/selectionGrid/SelectionGapHandles.vue",
+      "role": "presentation"
+    },
+    {
       "path": "src/components/graph/selectionGrid/selectionGridLayout.test.ts",
       "role": "domain"
     },

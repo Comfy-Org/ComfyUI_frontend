@@ -2631,6 +2631,7 @@
           "src/components/graph/NodeContextMenu.vue",
           "src/components/graph/SelectionToolbox.test.ts",
           "src/components/graph/SelectionToolbox.vue",
+          "src/components/graph/selectionGrid/SelectionGapHandles.vue",
           "src/components/graph/selectionToolbox/BypassButton.test.ts",
           "src/components/graph/selectionToolbox/BypassButton.vue",
           "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",

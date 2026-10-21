@@ -2028,6 +2028,7 @@
     "galleryImagePosition": "صورة المعرض {index} من {total}",
     "galleryThumbnail": "صورة مصغرة للمعرض",
     "galleryThumbnailPosition": "صورة مصغّرة للمعرض {index} من {total}",
+    "gapHandle": "المسافة بين العقد",
     "getHelpAction": "الحصول على المساعدة",
     "goToNode": "الانتقال إلى العقدة",
     "graphNavigation": "التنقل في الرسم البياني",

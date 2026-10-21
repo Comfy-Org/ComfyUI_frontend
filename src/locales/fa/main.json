@@ -2028,6 +2028,7 @@
     "galleryImagePosition": "تصویر گالری {index} از {total}",
     "galleryThumbnail": "تصویر بندانگشتی گالری",
     "galleryThumbnailPosition": "بندانگشتی گالری {index} از {total}",
+    "gapHandle": "فاصله بین گره‌ها",
     "getHelpAction": "دریافت راهنما",
     "goToNode": "رفتن به node",
     "graphNavigation": "ناوبری گراف",

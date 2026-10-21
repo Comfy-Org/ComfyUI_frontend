@@ -2028,6 +2028,7 @@
     "galleryImagePosition": "ギャラリー画像 {index} / {total}",
     "galleryThumbnail": "ギャラリーサムネイル",
     "galleryThumbnailPosition": "ギャラリーサムネイル {index} / {total}",
+    "gapHandle": "ノード間の間隔",
     "getHelpAction": "ヘルプを受ける",
     "goToNode": "ノードに移動",
     "graphNavigation": "グラフナビゲーション",

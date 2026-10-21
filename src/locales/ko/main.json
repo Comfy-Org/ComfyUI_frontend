@@ -2028,6 +2028,7 @@
     "galleryImagePosition": "갤러리 이미지 {index}/{total}",
     "galleryThumbnail": "갤러리 썸네일",
     "galleryThumbnailPosition": "갤러리 썸네일 {index}/{total}",
+    "gapHandle": "노드 사이 간격",
     "getHelpAction": "도움 받기",
     "goToNode": "노드로 이동",
     "graphNavigation": "그래프 탐색",

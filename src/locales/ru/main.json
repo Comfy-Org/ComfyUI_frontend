@@ -2028,6 +2028,7 @@
     "galleryImagePosition": "Изображение галереи {index} из {total}",
     "galleryThumbnail": "Миниатюра галереи",
     "galleryThumbnailPosition": "Миниатюра галереи {index} из {total}",
+    "gapHandle": "Промежуток между узлами",
     "getHelpAction": "Получить помощь",
     "goToNode": "Перейти к ноде",
     "graphNavigation": "Навигация по графу",

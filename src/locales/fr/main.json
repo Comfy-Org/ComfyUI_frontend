@@ -2028,6 +2028,7 @@
     "galleryImagePosition": "Image de la galerie {index} sur {total}",
     "galleryThumbnail": "Miniature de la galerie",
     "galleryThumbnailPosition": "Miniature de la galerie {index} sur {total}",
+    "gapHandle": "Espacement entre les nœuds",
     "getHelpAction": "Obtenir de l'aide",
     "goToNode": "Aller au nœud",
     "graphNavigation": "Navigation dans le graphe",

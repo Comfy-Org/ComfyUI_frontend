@@ -2028,6 +2028,7 @@
     "galleryImagePosition": "Galeriebild {index} von {total}",
     "galleryThumbnail": "Galerie-Vorschaubild",
     "galleryThumbnailPosition": "Galerie-Thumbnail {index} von {total}",
+    "gapHandle": "Abstand zwischen Knoten",
     "getHelpAction": "Hilfe erhalten",
     "goToNode": "Zum Node wechseln",
     "graphNavigation": "Graph-Navigation",
