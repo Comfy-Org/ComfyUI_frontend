@@ -3,6 +3,7 @@ import { jsonObject } from './editor-document'
 import type { Document } from './editor-document'
 import { translationsFor } from '@/i18n/translations'
 import { resolveLocale } from '@/config/locales'
+import { isCreatorUsername } from '@/lib/hub/creator-path'
 import { USE_CASES } from '@/config/models-catalogue'
 import {
   workflowCatalogDetailsSchema,
@@ -115,9 +116,11 @@ function authorDetails(d: Document, locale: string) {
         )
       : undefined
   const username = matches ? trimmedText(resolved.username) : undefined
+  const validUsername =
+    username && isCreatorUsername(username) ? username : undefined
   return {
     author: name ?? unavailable,
-    ...(username && { authorUsername: username }),
+    ...(validUsername && { authorUsername: validUsername }),
     ...authorAvatar(matches, resolved.avatar_url)
   }
 }

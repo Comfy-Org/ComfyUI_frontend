@@ -5,7 +5,7 @@ import type { TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
 import WorkflowModelLinks from './WorkflowModelLinks.vue'
 import WorkflowAuthor from './WorkflowAuthor.vue'
-import { hubCreatorPath } from '@/lib/hub/creators'
+import { hubCreatorPath } from '@/lib/hub/creator-path'
 const { model } = defineProps<{ model: WorkflowWorkshopModelDetail }>()
 const t = computed(
   () => translationsFor(model.catalogDetails?.locale ?? 'en').t

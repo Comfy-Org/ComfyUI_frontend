@@ -156,6 +156,7 @@ describe('native CONTENT presentation', () => {
           website_author: {
             uid,
             name: 'Actual author',
+            username: '../admin',
             avatar_url: 'javascript:alert(1)'
           }
         }
@@ -165,6 +166,7 @@ describe('native CONTENT presentation', () => {
       catalogDetails: { author: 'Actual author' }
     })
     expect(invalidAvatar).not.toHaveProperty('catalogDetails.authorAvatarURL')
+    expect(invalidAvatar).not.toHaveProperty('catalogDetails.authorUsername')
   })
   it('uses only named pair zero: download graph and independent API prompt for Run', () => {
     const download = '00000000-0000-4000-8000-000000000080'
