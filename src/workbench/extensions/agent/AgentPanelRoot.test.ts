@@ -6643,6 +6643,80 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentComposerStore().draft).toBe('build me a workflow')
   })
 
+  it.for([
+    {
+      scenario: 'the pending submission is canceled',
+      change: () => useAgentComposerStore().invalidateSubmission(),
+      sent: false,
+      messages: []
+    },
+    {
+      scenario: 'consent is cleared',
+      change: () => Object.assign(useAgentConsentStore(), { accepted: false }),
+      sent: false,
+      messages: []
+    },
+    {
+      scenario: 'the workspace changes',
+      change: () =>
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: 'workspace-b'
+        }),
+      sent: false,
+      messages: []
+    },
+    {
+      scenario: 'the submission and consent scope remain current',
+      change: () => undefined,
+      sent: true,
+      messages: [{ content: 'hold this Desktop submission during sign-in' }]
+    }
+  ])(
+    'checks the pending Desktop send after sign-in when $scenario',
+    async ({ change, sent, messages }) => {
+      distribution.isCloud = false
+      distribution.isDesktop = true
+      makeTab('wf-42')
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-a'
+      })
+      useAuthStore().currentUser = null
+      vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
+      let finishSignIn!: (signedIn: boolean) => void
+      const signIn = new Promise<boolean>((resolve) => {
+        finishSignIn = resolve
+      })
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(signIn)
+      const composer = useAgentComposerStore()
+      const settleSubmission = vi.spyOn(composer, 'settleSubmission')
+      const bodies = mockMessagesEndpoint('wf-42')
+      renderWithSelectedTarget()
+
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('hold this Desktop submission during sign-in')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await waitFor(() =>
+        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+      )
+      assert.exists(composer.submission)
+      const submissionId = composer.submission.id
+      expect(settleSubmission).not.toHaveBeenCalled()
+      expect(bodies).toHaveLength(0)
+
+      change()
+      useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
+      vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
+        Authorization: 'Bearer renewed-id-token'
+      })
+      finishSignIn(true)
+
+      await waitFor(() =>
+        expect(settleSubmission).toHaveBeenCalledWith(submissionId, sent)
+      )
+      expect(bodies).toMatchObject(messages)
+    }
+  )
+
   it('sends the original Desktop submission once after sign-in and consent persistence succeed', async () => {
     distribution.isCloud = false
     distribution.isDesktop = true

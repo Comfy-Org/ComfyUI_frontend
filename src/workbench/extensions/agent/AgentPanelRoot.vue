@@ -1665,7 +1665,16 @@ const { submit: onSend } = useAgentDraftSubmission({
       !(await consentAllowsSubmission(submissionId))
     )
       return false
-    if (!hasAgentCredential() && !(await ensureSignedIn())) return false
+    if (!hasAgentCredential()) {
+      const identityBeforeSignIn = consentIdentity.value
+      if (!(await ensureSignedIn())) return false
+      if (
+        composerStore.submission?.id !== submissionId ||
+        !consentAccepted.value ||
+        consentIdentity.value !== identityBeforeSignIn
+      )
+        return false
+    }
 
     const originContext = targetWorkflowTurnContext()
     pendingSend = {
