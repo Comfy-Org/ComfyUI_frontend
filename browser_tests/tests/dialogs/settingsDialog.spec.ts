@@ -31,10 +31,14 @@ test.describe(
     }) => {
       const dialog = comfyPage.settingDialog
       await dialog.open()
+      await expect(dialog.searchBox).toBeFocused()
       await dialog.searchBox.blur()
       await expect(dialog.searchBox).not.toBeFocused()
 
-      await expect(dialog.leftPanel).toHaveScreenshot('settings-left-panel.png')
+      await expect(dialog.leftPanel).toHaveScreenshot(
+        'settings-left-panel.png',
+        { threshold: 0.05 }
+      )
     })
   }
 )

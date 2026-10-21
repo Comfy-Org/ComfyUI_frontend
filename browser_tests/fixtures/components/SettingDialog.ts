@@ -25,7 +25,9 @@ export class SettingDialog extends BaseDialog {
       .getByRole('columnheader')
       .getByRole('button', { name: 'More Options' })
     this.keybindingPanel = new KeybindingPanel(page, comfyPage)
-    this.leftPanel = this.root.locator('nav').first()
+    this.leftPanel = this.root
+      .getByRole('navigation')
+      .filter({ has: page.getByPlaceholder(/Search/) })
     this.searchBox = this.root.getByPlaceholder(/Search/)
   }
 
