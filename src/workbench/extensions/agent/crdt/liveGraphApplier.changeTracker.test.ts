@@ -366,6 +366,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
       docInputNames: () => [],
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {},
       enqueue
     })
@@ -617,6 +618,7 @@ describe('LiveGraphApplier with the real change tracker', () => {
       docInputNames: () => [],
       docPromotedWidgets: () => null,
       mayWritePromotedHost: () => true,
+      docHasSubgraphDefinition: () => true,
       onWidgetWriteRefused: () => {},
       enqueue
     })
