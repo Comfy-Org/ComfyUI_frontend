@@ -2526,6 +2526,7 @@
     "fishAudio": "Fish Audio",
     "nvidiaVfx": "Nvidia VFX",
     "flux3ImageKlein": "FLUX 3 Image Klein",
+    "krea3": "Krea 3",
     "cloudNodes": "Comfy Cloud Nodes",
     "modelCatalogue": "ComfyUI Models",
     "changelog": "Changelog"
@@ -6026,7 +6027,7 @@
       "heroDescription": "Remove objects, build mattes, restyle footage, and upscale shots in workflows you can inspect and extend. Run ComfyUI locally or connect it to your production pipeline.",
       "primaryCta": "EXPLORE VFX WORKFLOWS",
       "contactHeading": "Bring Comfy into your studio pipeline.",
-      "contactButton": "TALK TO COMFY"
+      "contactButton": "TALK TO COMFY TEAM"
     },
     "shared": {
       "secondaryCta": "SEE THE APPROACH"
@@ -6173,7 +6174,7 @@
     "badge": "VFX",
     "heading": "One shot. More possibilities.",
     "description": "Change the light, replace an object, extend the frame. Build repeatable VFX workflows with Comfy, then bring them into your studio’s pipeline.",
-    "sales": "TALK TO SALES",
+    "sales": "TALK TO COMFY TEAM",
     "browse": "Explore the workflows",
     "workflow": "View workflow",
     "sequenceHeading": "One take. A new point of view.",
@@ -6189,7 +6190,7 @@
       "relight": {
         "title": "Change the conditions.",
         "rowTitle": "One shot. Different light and weather.",
-        "description": "Compare golden hour, night, blue hour, rain, snow and daylight versions of the same shot. Choose a version to see it play."
+        "description": "Compare golden hour, night, red sky, rain, snow and daylight versions of the same shot. Choose a version to see it play."
       },
       "swap": {
         "title": "Change the car.",
@@ -6202,6 +6203,7 @@
         "description": "Compare ultra-wide and vertical formats with the landscape original."
       }
     },
+    "shareImageAlt": "A classic car outside the Starlite Diner beneath a red sky with meteors.",
     "sampleCaption": "Pre-rendered frames. Drag the canvas to explore and the divider to compare.",
     "variants": {
       "seedance_multishot_rain": "Multishot sequence",
@@ -6216,7 +6218,7 @@
       "reframe_wide": "Ultra-wide",
       "reframe_vertical": "Vertical",
       "relight_golden": "Golden hour",
-      "relight_blue": "Blue hour",
+      "relight_blue": "Red sky",
       "relight_snow": "Snow"
     },
     "workstationTitle": "Workstations & rendering",
@@ -6248,8 +6250,9 @@
       "mode": "Studio view",
       "settings": "SETTINGS",
       "workflow": "WORKFLOW",
-      "sampleOnly": "Sample studio. Explore the supplied outputs and prepare a workflow request. Upload and generation are not connected.",
-      "upload": "UPLOAD FOOTAGE",
+      "sampleOnly": "Sample studio. Explore the supplied outputs and prepare a workflow request.",
+      "upload": "SIGN UP TO TRY FREE",
+      "uploadHint": "Sign up to try Comfy Cloud with your own footage.",
       "shot": "Describe the shot",
       "adjust": "ADJUST KEY FRAME",
       "generate": "RUN WORKFLOW",

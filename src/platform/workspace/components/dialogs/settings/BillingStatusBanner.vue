@@ -100,6 +100,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
+import { pausedBannerCopy } from '@/platform/workspace/composables/usePausedBanner'
 import { usePlanEnded } from '@/platform/workspace/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
@@ -254,18 +255,35 @@ const planEndedView = (): BannerView => {
 const outOfCreditsBody = (key: string, noDateKey: string): string =>
   cycleResetDate.value ? t(key, { date: cycleResetDate.value }) : t(noDateKey)
 
-const outOfCreditsView = (): BannerView | null => {
-  if (isTopUpDeniedPastDue(topUpDenial.value)) {
-    return {
-      muted: false,
-      title: t(`${bs}.outOfCredits.title`),
-      body: canManageBilling.value
-        ? t(`${bs}.outOfCredits.pastDueBody`)
-        : t('subscription.paymentRecovery.paymentFailedMemberDescription'),
-      action: canManageBilling.value ? 'updatePayment' : null,
-      dismissible: true
-    }
+const pausedView = (): BannerView => {
+  const paused = pausedBannerCopy(canManageBilling.value)
+  return {
+    muted: paused.muted,
+    title: t(paused.titleKey),
+    body: t(paused.bodyKey),
+    action: paused.action,
+    dismissible: false
   }
+}
+
+function pastDueBodyKey(): string {
+  if (audience.value === 'personal')
+    return `${bs}.outOfCredits.pastDuePersonalBody`
+  return canManageBilling.value
+    ? `${bs}.outOfCredits.pastDueBody`
+    : `${bs}.outOfCredits.pastDueMemberBody`
+}
+
+const pastDueView = (): BannerView => ({
+  muted: false,
+  title: t(`${bs}.outOfCredits.title`),
+  body: t(pastDueBodyKey()),
+  action: canManageBilling.value ? 'updatePayment' : null,
+  dismissible: true
+})
+
+const outOfCreditsView = (): BannerView | null => {
+  if (isTopUpDeniedPastDue(topUpDenial.value)) return pastDueView()
   if (!canManage.value) {
     return {
       muted: false,
@@ -335,6 +353,7 @@ const planChangeView = (): BannerView | null =>
     : null
 
 const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
+  paused: pausedView,
   planEnded: planEndedView,
   outOfCredits: outOfCreditsView,
   ending: endingView,

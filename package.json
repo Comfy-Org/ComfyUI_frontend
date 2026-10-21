@@ -45,6 +45,7 @@
     "qa:desktop-frontend": "tsx scripts/qa-desktop-frontend.ts",
     "deps:audit": "depcruise src",
     "knip": "knip --cache",
+    "knip:components": "knip --production --workspace . --include files",
     "lint:fix:ci": "pnpm lint:fix --cache-strategy content",
     "lint:fix": "pnpm oxlint --fix && eslint --cache --concurrency auto --fix",
     "lint:server-facts": "tsx scripts/server-fact-gate.ts",

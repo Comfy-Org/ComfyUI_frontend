@@ -25,13 +25,18 @@ const { t } = Astro.locals
 const routes = getRoutes(locale)
 const prefix = 'vfxV2.comfy'
 const hero = showcaseConfig('relight', t)
-const { contactHref, benefits, featuredWorkflows } = vfxLandingV3(locale, t)
+const { contactHref, benefits, featuredWorkflows, shareImages } = vfxLandingV3(
+  locale,
+  t
+)
 ---
 
 <BaseLayout
   title={t('vfx.meta.title')}
   description={t(`${prefix}.heroDescription`)}
-  ogImage={vfxWorkflows[5].template.thumbnails[0]}
+  ogImage={shareImages[0].url}
+  ogImageAlt={shareImages[0].alt}
+  ogImages={shareImages}
   hideAnnouncementBanner
 >
   <div data-vfx-v3>

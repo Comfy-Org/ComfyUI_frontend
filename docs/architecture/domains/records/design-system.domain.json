@@ -4,10 +4,6 @@
   "description": "Feature-agnostic Vue controls and display primitives: the Reka-based components under ui/ (buttons, inputs, selects, menus, dialogs, popovers, tooltips, tables, tabs, trees, charts, color picker), the toast queue and its viewport, the card, chip, tab, loader, and icon kits, the generic common/ widgets (editable text, imperative popover, virtual grid, lazy and lightbox images, video and video-compare players, sanitized HTML, tickers, badges, spinners, URL and number inputs, avatars), and the value editors for curves, ranges, gradients, and palette swatches with their pure interpolation and gradient math. Feature-owned files in the same directories stay with their features: settings form fields, system stats, node library tree explorers and bookmark customization, workflow actions, node-search filter chips, credit display, the team-plan credit slider, asset download progress toasts, subgraph breadcrumbs, the execution error overlay, workflow template dialogs, and the node widget adapters WidgetCurve, WidgetRange, and WidgetColors.",
   "modules": [
     {
-      "path": "src/components/actionbar/TinyChevronIcon.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/button/**",
       "role": "presentation"
     },
@@ -44,10 +40,6 @@
       "role": "domain"
     },
     {
-      "path": "src/components/icons/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/loader/**",
       "role": "presentation"
     },
@@ -72,23 +64,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/tab/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/ui/Popover.vue",
       "role": "presentation"
     },
     {
-      "path": "src/components/ui/ZoomPane.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/ui/badge/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/ui/button-group/**",
       "role": "presentation"
     },
     {
@@ -112,10 +92,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/ui/field/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/ui/hover-card/**",
       "role": "presentation"
     },
@@ -129,10 +105,6 @@
     },
     {
       "path": "src/components/ui/knob/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/ui/label/**",
       "role": "presentation"
     },
     {
@@ -176,10 +148,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/ui/skeleton/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/ui/slider/**",
       "role": "presentation"
     },
@@ -188,19 +156,11 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/ui/splitter/**",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/ui/switch/**",
       "role": "presentation"
     },
     {
       "path": "src/components/ui/table/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/ui/tabs/**",
       "role": "presentation"
     },
     {
@@ -322,10 +282,6 @@
     {
       "path": "src/utils/mouseDownUtil.ts",
       "role": "presentation"
-    },
-    {
-      "path": "src/utils/textTickerUtils.ts",
-      "role": "domain"
     },
     {
       "path": "src/utils/treeUtil.test.ts",

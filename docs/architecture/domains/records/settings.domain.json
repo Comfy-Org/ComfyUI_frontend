@@ -8,10 +8,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/components/common/CustomFormValue.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/common/FormColorPicker.test.ts",
       "role": "presentation"
     },

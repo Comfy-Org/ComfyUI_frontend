@@ -4,7 +4,6 @@ import Button from '@comfyorg/design-system/button/Button'
 import Card from './Card.vue'
 import CardFooter from './CardFooter.vue'
 import CardHeader from './CardHeader.vue'
-import CardTitle from './CardTitle.vue'
 
 const meta: Meta<typeof Card> = {
   title: 'Components/Card',
@@ -15,12 +14,12 @@ const meta: Meta<typeof Card> = {
     surface: { control: 'select', options: ['background', 'secondary'] }
   },
   render: (args) => ({
-    components: { Button, Card, CardFooter, CardHeader, CardTitle },
+    components: { Button, Card, CardFooter, CardHeader },
     setup: () => ({ args }),
     template: `
       <Card v-bind="args" class="w-80">
         <CardHeader>
-          <CardTitle>Workspace</CardTitle>
+          <h2 class="m-0 text-sm font-normal">Workspace</h2>
         </CardHeader>
         <p class="m-0 p-4 text-sm text-muted-foreground">
           Members of this workspace share its credits and workflows.

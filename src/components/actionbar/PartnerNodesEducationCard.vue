@@ -145,7 +145,11 @@
                   />
                   <span class="sr-only">
                     {{ column.label }}:
-                    {{ t(`partnerNodesEducation.${column.status}`) }}
+                    {{
+                      column.status === 'included'
+                        ? t('partnerNodesEducation.included')
+                        : t('partnerNodesEducation.notIncluded')
+                    }}
                   </span>
                 </span>
               </div>
@@ -219,22 +223,21 @@ const audioControls = computed(() =>
     {
       side: 'open' as const,
       position: 'left-2',
-      muteLabel: 'partnerNodesEducation.muteOpen',
-      unmuteLabel: 'partnerNodesEducation.unmuteOpen'
+      muteLabel: t('partnerNodesEducation.muteOpen'),
+      unmuteLabel: t('partnerNodesEducation.unmuteOpen')
     },
     {
       side: 'partner' as const,
       position: 'right-2',
-      muteLabel: 'partnerNodesEducation.mutePartner',
-      unmuteLabel: 'partnerNodesEducation.unmutePartner'
+      muteLabel: t('partnerNodesEducation.mutePartner'),
+      unmuteLabel: t('partnerNodesEducation.unmutePartner')
     }
   ].map((control) => ({
     ...control,
-    label: t(
+    label:
       audibleSide.value === control.side
         ? control.muteLabel
-        : control.unmuteLabel
-    ),
+        : control.unmuteLabel,
     icon:
       audibleSide.value === control.side
         ? 'icon-[lucide--volume-2]'
