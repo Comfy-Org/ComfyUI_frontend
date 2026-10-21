@@ -1,7 +1,15 @@
-import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
+import {
+  TransitionPresets,
+  useElementBounding,
+  useEventListener,
+  usePreferredReducedMotion,
+  useRafFn,
+  useTransition
+} from '@vueuse/core'
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
+import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
@@ -56,6 +64,7 @@ function getSelectionBounds(item: LGraphNode | LGraphGroup): ReadOnlyRect {
 }
 
 const SELECTION_BOUNDS_PADDING = 10
+const LIFT_DURATION_MS = 200
 const LINK_ANCHOR_GAP = 10
 
 export function useSelectionToolboxPosition(
@@ -67,6 +76,13 @@ export function useSelectionToolboxPosition(
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
   const linkSelectionStore = useLinkSelectionStore()
+  const { lift } = useSelectionToolboxLift()
+  const motionPreference = usePreferredReducedMotion()
+  const easedLift = useTransition(lift, {
+    duration: LIFT_DURATION_MS,
+    easing: TransitionPresets.easeOutQuint,
+    disabled: computed(() => motionPreference.value === 'reduce')
+  })
 
   useEventListener(
     lgCanvas.canvas,
@@ -127,7 +143,7 @@ export function useSelectionToolboxPosition(
     }
 
     visible.value = true
-    worldPosition.value = anchor
+    if (lift.value === 0) worldPosition.value = anchor
 
     updateTransform()
   }
@@ -140,9 +156,10 @@ export function useSelectionToolboxPosition(
     const screenX =
       (worldPosition.value.x + offset[0]) * scale + canvasLeft.value
     const screenY =
-      (worldPosition.value.y + offset[1]) * scale + canvasTop.value
+      (worldPosition.value.y + offset[1]) * scale +
+      canvasTop.value -
+      easedLift.value
 
-    // Update CSS custom properties directly for best performance
     if (toolboxRef.value) {
       toolboxRef.value.style.setProperty('--tb-x', `${screenX}px`)
       toolboxRef.value.style.setProperty('--tb-y', `${screenY}px`)
@@ -258,6 +275,13 @@ export function useSelectionToolboxPosition(
   }
 
   watch(isDragging, handleDragStateChange)
+
+  watch(
+    () => lift.value === 0,
+    (settled) => {
+      if (settled) updateSelectionBounds()
+    }
+  )
 
   onUnmounted(() => {
     resetMoreOptionsState()

@@ -44,7 +44,7 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -53,22 +53,32 @@ import {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
+import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 
 const TOOLBOX_INSET = 4
 const BAR_GAP_BELOW_TOOLBOX = 8
+const BAR_INSET = 4
+const TRIGGER_HEIGHT = 32
 const BAR_SIDE_OFFSET = TOOLBOX_INSET + BAR_GAP_BELOW_TOOLBOX
+const LIFT_WHILE_OPEN = BAR_SIDE_OFFSET + BAR_INSET + TRIGGER_HEIGHT
 
 const { t } = useI18n()
 const { canTidy } = useSelectionGrid()
 const { gap, start, previewGap, commitGap, finish } = useTidySession()
+const { lift } = useSelectionToolboxLift()
 
 const isOpen = ref(false)
 
 watch(isOpen, (open) => {
+  lift.value = open ? LIFT_WHILE_OPEN : 0
   if (open) start()
   else finish()
+})
+
+onBeforeUnmount(() => {
+  lift.value = 0
 })
 
 const firstValue = (value: number[] | undefined): number | undefined =>
