@@ -40,6 +40,8 @@ watch(
   () => active,
   (visible) => {
     if (!visible) player.value?.pause()
+    else if (shownMedia.value === 'video')
+      void player.value?.play()?.catch(() => {})
   }
 )
 </script>

@@ -23,6 +23,11 @@ const workflow: NodeGraphWorkflow = {
   examples: []
 }
 
+const graphStub = {
+  props: ['source'],
+  template: '<div data-testid="workflow-graph" :data-source="source" />'
+}
+
 function renderTabs(
   overrides: Partial<NodeGraphWorkflow> = {},
   respond: () => Response = () => Response.json(graph)
@@ -34,7 +39,7 @@ function renderTabs(
       api: '<p>Catalog API panel</p>',
       facts: '<p>Catalog facts</p>'
     },
-    global: { stubs: { WorkflowGraph: true } }
+    global: { stubs: { WorkflowGraph: graphStub } }
   })
 }
 
@@ -175,5 +180,39 @@ describe('WorkflowNodeGraphTabs', () => {
         .getByRole('link', { name: /Download workflow/i })
         .getAttribute('href')
     ).toBe('/v1.json')
+    await vi.waitFor(() =>
+      expect(fetch).toHaveBeenLastCalledWith('/v1.json', expect.anything())
+    )
+    expect(screen.getByTestId('workflow-graph')).toHaveAttribute(
+      'data-source',
+      '/v1.json'
+    )
+  })
+
+  it('pauses the sample video off Overview and plays it again on return', async () => {
+    const pause = vi
+      .spyOn(HTMLMediaElement.prototype, 'pause')
+      .mockImplementation(() => {})
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined)
+    renderTabs({
+      examples: [
+        {
+          id: 'sample',
+          title: 'Sample',
+          specs: [],
+          values: {},
+          outputUrl: '/sample.mp4',
+          mediaKind: 'video'
+        }
+      ]
+    })
+
+    await openTab('Details')
+    expect(pause).toHaveBeenCalledTimes(1)
+    await openTab('Overview')
+
+    expect(play).toHaveBeenCalledTimes(1)
   })
 })
