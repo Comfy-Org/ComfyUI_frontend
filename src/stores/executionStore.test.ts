@@ -2807,6 +2807,73 @@ describe('useExecutionStore - frames from a background workflow', () => {
     expect(store.runningJobIds).toEqual([])
   })
 
+  it('applies each job snapshot queued in the same animation frame', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fire('progress_state', {
+      prompt_id: 'job-visible',
+      nodes: {
+        '1': {
+          value: 7,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-visible',
+          display_node_id: '1'
+        }
+      }
+    })
+    fire('progress_state', {
+      prompt_id: 'job-background',
+      nodes: {
+        '1': {
+          value: 9,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-background',
+          display_node_id: '1'
+        }
+      }
+    })
+
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStatesByJob['job-visible']['1'].value).toBe(7)
+    expect(store.nodeProgressStatesByJob['job-background']['1'].value).toBe(9)
+    expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
+  })
+
+  it('keeps a visible progress frame queued when a background job ends', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+    fire('progress_state', {
+      prompt_id: 'job-visible',
+      nodes: {
+        '1': {
+          value: 6,
+          max: 10,
+          state: 'running',
+          node_id: '1',
+          prompt_id: 'job-visible',
+          display_node_id: '1'
+        }
+      }
+    })
+    fire('progress', {
+      value: 6,
+      max: 10,
+      prompt_id: 'job-visible',
+      node: '1'
+    })
+
+    fire('execution_success', { prompt_id: 'job-background', timestamp: 0 })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.nodeProgressStates['1'].prompt_id).toBe('job-visible')
+    expect(store.executingNodeProgress).toBe(0.6)
+  })
+
   it('re-adopts the visible job once a late-owned job proves to belong elsewhere', async () => {
     useWorkflowStore().activeWorkflow = backgroundWorkflow
     await nextTick()
