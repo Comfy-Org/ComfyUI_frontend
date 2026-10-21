@@ -333,7 +333,7 @@ describe('skillPacksStore', () => {
     const agent = ref({ state, reason: null })
     vi.mocked(api.getServerFeature).mockImplementation(
       <T>(name: string, fallback?: T) =>
-        (name === 'agent' ? agent.value : fallback)
+        name === 'agent' ? agent.value : fallback
     )
     return agent
   }
