@@ -445,6 +445,7 @@ async function retryNextPage() {
   await packs.retryNextPage()
   if (!isNextPageFailed.value) return
   await nextTick()
+  if (document.activeElement && document.activeElement !== document.body) return
   const button: HTMLElement | undefined = retryButton.value?.$el
   button?.focus()
 }

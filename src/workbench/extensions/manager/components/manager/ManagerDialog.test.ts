@@ -717,6 +717,24 @@ describe('ManagerDialog failed next page', () => {
     ).toHaveFocus()
   })
 
+  it('leaves focus where the user moved it while the retry loaded', async () => {
+    const user = await renderUntilSecondPageFails()
+    let failRetry: () => void = () => {}
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockReturnValueOnce(
+      new Promise((resolve) => {
+        failRetry = () => resolve(failed('search unavailable'))
+      })
+    )
+
+    await user.click(screen.getByRole('button', { name: enMessages.g.retry }))
+    const searchBox = screen.getByRole('combobox')
+    searchBox.focus()
+    failRetry()
+    await settleSearch()
+
+    expect(searchBox).toHaveFocus()
+  })
+
   it('appends the failed page below the loaded packs when retried', async () => {
     const user = await renderUntilSecondPageFails()
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
