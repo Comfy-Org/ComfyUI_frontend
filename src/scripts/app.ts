@@ -204,7 +204,7 @@ import {
   isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_MESH_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,
@@ -783,6 +783,7 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('executed', ({ detail }) => {
+      if (!useExecutionStore().belongsToActiveWorkflow(detail.prompt_id)) return
       const nodeOutputStore = useNodeOutputStore()
       const executionId = tryNormalizeNodeExecutionId(
         detail.display_node || detail.node
@@ -817,7 +818,6 @@ export class ComfyApp implements IComfyApp {
     })
 
     api.addEventListener('b_preview_with_metadata', ({ detail }) => {
-      // Enhanced preview with explicit node context
       const { blob, displayNodeId, jobId } = detail
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
@@ -825,9 +825,11 @@ export class ComfyApp implements IComfyApp {
       if (!displayNodeExecutionId) return
       const blobUrl = createSharedObjectUrl(blob)
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
-      // Ensure clean up if `executing` event is missed.
+      if (!useExecutionStore().belongsToActiveWorkflow(jobId)) {
+        releaseSharedObjectUrl(blobUrl)
+        return
+      }
       revokePreviewsByExecutionId(displayNodeExecutionId)
-      // Preview cleanup is handled in progress_state event to support multiple concurrent previews
       for (const executionId of getAncestorExecutionIds(
         displayNodeExecutionId
       )) {

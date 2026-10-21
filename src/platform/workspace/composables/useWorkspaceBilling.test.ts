@@ -284,6 +284,25 @@ describe('useWorkspaceBilling', () => {
       expect(billing.isFreeTier.value).toBe(false)
     })
 
+    it.for([
+      { served: 'activating' as const, expected: 'activating' as const },
+      { served: undefined, expected: null }
+    ])(
+      'renders subscription_state $served as $expected',
+      async ({ served, expected }) => {
+        mockWorkspaceApi.getBillingStatus.mockResolvedValue({
+          ...activeStatus,
+          ...(served === undefined ? {} : { subscription_state: served })
+        })
+
+        const billing = setupBilling()
+        await billing.fetchStatus()
+
+        expect(billing.subscriptionState.value).toBe(expected)
+        expect(billing.subscription.value?.isActive).toBe(true)
+      }
+    )
+
     it('maps status response into subscription info', async () => {
       mockWorkspaceApi.getBillingStatus.mockResolvedValue({
         ...activeStatus,
@@ -729,6 +748,18 @@ describe('useWorkspaceBilling', () => {
       })
     })
 
+    it('passes the server-suggested top-up through as received', async () => {
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+        ...positiveBalance,
+        suggested_topup_amount_cents: 11_400
+      })
+
+      const billing = setupBilling()
+      await billing.fetchBalance()
+
+      expect(billing.balance.value?.suggestedTopupAmountCents).toBe(11_400)
+    })
+
     it('sets error and rethrows when fetchBalance fails', async () => {
       mockWorkspaceApi.getBillingBalance.mockRejectedValue(
         new Error('balance failed')
@@ -1049,8 +1080,7 @@ describe('useWorkspaceBilling', () => {
         expect(useToast().toasts).toEqual([
           expect.objectContaining({
             kind: 'error',
-            description:
-              "Couldn't open the billing page. Try again in a moment."
+            description: "Couldn't open billing. Try again."
           })
         ])
       }

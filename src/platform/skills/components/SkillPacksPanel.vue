@@ -61,8 +61,8 @@ import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import { useSkillPacks } from '../composables/useSkillPacks'
-import type { SkillPack } from '../types'
+import { useSkillPacks } from '@/platform/skills/composables/useSkillPacks'
+import type { SkillPack } from '@/platform/skills/types'
 import SkillPackFormDialog from './SkillPackFormDialog.vue'
 import SkillPackListItem from './SkillPackListItem.vue'
 

@@ -183,7 +183,7 @@
       <div v-if="backgroundLayer" :class="sectionClass">
         <span :class="sectionLabelClass">{{ t('layerEditor.fill') }}</span>
         <div data-testid="background-color-swatch">
-          <ColorPicker v-model="backgroundColorModel" class="h-7" />
+          <AppColorPicker v-model="backgroundColorModel" class="h-7" />
         </div>
       </div>
     </template>
@@ -197,7 +197,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PropertyNumberField from '@/renderer/extensions/layerEditor/components/PropertyNumberField.vue'
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
@@ -212,8 +212,8 @@ import {
   CANVAS_SIZE_MIN,
   DEFAULT_BACKGROUND_COLOR
 } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
-import type { BlendFn } from '@/renderer/extensions/layerEditor/engine/mode'
-import { LAYER_MODES } from '@/renderer/extensions/layerEditor/engine/mode'
+import type { BlendFn } from '@comfyorg/layer-editor/mode'
+import { LAYER_MODES } from '@comfyorg/layer-editor/mode'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()

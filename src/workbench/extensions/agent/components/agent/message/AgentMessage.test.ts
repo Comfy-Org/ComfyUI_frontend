@@ -3,22 +3,22 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { i18n } from '@/i18n'
-import type { TurnId } from '../../../schemas/agentApiSchema'
-import { toTurnId } from '../../../schemas/agentApiSchema'
-import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
+import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
   AskUserResolution,
   AssistantMessage,
   DeleteApprovalPart,
   RunApprovalPart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   createAssistantMessage,
   toAskOrNoticePart
-} from '../../../services/agent/agentMessageParts'
+} from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 
 import AgentMessage from './AgentMessage.vue'
-import { agentBoundWorkflowIdKey } from '../agentBoundWorkflowId'
+import { agentBoundWorkflowIdKey } from '@/workbench/extensions/agent/components/agent/agentBoundWorkflowId'
 
 function thinkingMessage(thinkingText?: string): AssistantMessage {
   return {

@@ -9,7 +9,7 @@ import MembersPanelContent from './MembersPanelContent.vue'
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
-} from '../../../stores/teamWorkspaceStore'
+} from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockDistribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)

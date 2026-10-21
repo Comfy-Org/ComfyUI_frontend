@@ -48,8 +48,8 @@ type ResolvedInput = {
  */
 export class ExecutableNodeDTO implements ExecutableLGraphNode {
   applyToGraph?(
-    ...args: Parameters<NonNullable<typeof this.node.applyToGraph>>
-  ): ReturnType<NonNullable<typeof this.node.applyToGraph>>
+    ...args: Parameters<NonNullable<LGraphNode['applyToGraph']>>
+  ): ReturnType<NonNullable<LGraphNode['applyToGraph']>>
 
   /** The graph that this node is a part of. */
   readonly graph: LGraph | Subgraph
@@ -435,5 +435,15 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
       type,
       visited
     )
+  }
+}
+
+type RegisteredExecutableLGraphNode = ExecutableLGraphNode
+type RegisteredExecutionId = ExecutionId
+
+declare module '../types/entityRegistry' {
+  interface LitegraphEntityRegistry {
+    ExecutableLGraphNode: RegisteredExecutableLGraphNode
+    ExecutionId: RegisteredExecutionId
   }
 }

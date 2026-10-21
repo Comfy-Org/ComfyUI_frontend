@@ -1,13 +1,13 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay v-reka-z-index />
-      <DialogContent v-reka-z-index size="md" :aria-labelledby="titleId">
+      <DialogOverlay />
+      <DialogContent size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{ pack ? $t('skillPacks.editPack') : $t('skillPacks.addPack') }}
           </DialogTitle>
-          <DialogClose />
+          <DialogClose :aria-label="$t('g.close')" />
         </DialogHeader>
         <form
           class="flex flex-col gap-4 px-4 py-2"
@@ -139,7 +139,6 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogClose from '@/components/ui/dialog/DialogClose.vue'
@@ -151,9 +150,9 @@ import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 
-import { useSkillPackForm } from '../composables/useSkillPackForm'
-import type { SkillPack } from '../types'
-import { MAX_NAME_LENGTH } from '../types'
+import { useSkillPackForm } from '@/platform/skills/composables/useSkillPackForm'
+import type { SkillPack } from '@/platform/skills/types'
+import { MAX_NAME_LENGTH } from '@/platform/skills/types'
 
 const { pack } = defineProps<{
   pack?: SkillPack

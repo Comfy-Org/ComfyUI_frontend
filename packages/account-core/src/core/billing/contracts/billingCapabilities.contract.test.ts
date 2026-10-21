@@ -7,7 +7,7 @@ import type {
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import type { z } from 'zod'
 
-import type { CapabilityDenialReason } from '../capabilityDenials.js'
+import type { CapabilityDenialReason } from '#/core/billing/capabilityDenials'
 
 type CapabilitiesResponseBody = z.input<typeof zBillingCapabilitiesResponse>
 type CapabilitiesResponse = z.infer<typeof zBillingCapabilitiesResponse>
