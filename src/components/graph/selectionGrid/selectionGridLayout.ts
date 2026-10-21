@@ -290,6 +290,10 @@ function startAlong(cell: GridCell, axis: GapAxis): number {
   return spanOf(cell.box, axis).start
 }
 
+function endAlong(cell: GridCell, axis: GapAxis): number {
+  return endOf(spanOf(cell.box, axis))
+}
+
 function reachBefore(
   grid: SelectionGrid,
   axis: GapAxis,
@@ -542,32 +546,48 @@ function clearanceAcross(
     (cell) => trackIndexOf(cell, axis) <= boundary
   )
   const after = grid.cells.filter((cell) => trackIndexOf(cell, axis) > boundary)
-  return after.reduce(
-    (clearance, late) =>
-      before.reduce(
-        (closest, early) =>
-          spansOverlap(
-            spanOf(early.box, crossAxis),
-            spanOf(late.box, crossAxis)
-          )
-            ? Math.min(
-                closest,
-                startAlong(late, axis) -
-                  (startAlong(early, axis) + sizeAlong(early, axis))
-              )
-            : closest,
-        clearance
-      ),
-    Number.POSITIVE_INFINITY
+  const facingGaps = after.flatMap((late) =>
+    before
+      .filter((early) =>
+        spansOverlap(spanOf(early.box, crossAxis), spanOf(late.box, crossAxis))
+      )
+      .map((early) => startAlong(late, axis) - endAlong(early, axis))
   )
+  return Math.min(Number.POSITIVE_INFINITY, ...facingGaps)
 }
 
 function overlapCentre(a: AxisSpan, b: AxisSpan): number {
   const start = Math.max(a.start, b.start)
-  const end = Math.min(a.start + a.size, b.start + b.size)
+  const end = Math.min(endOf(a), endOf(b))
   return start <= end
     ? (start + end) / 2
     : (a.start + a.size / 2 + b.start + b.size / 2) / 2
+}
+
+function barBetween(
+  before: GridCell,
+  after: GridCell,
+  axis: GapAxis,
+  clearance: number
+): GapBar {
+  const crossAxis = crossAxisOf(axis)
+  const gapStart = endAlong(before, axis)
+  const gapEnd = startAlong(after, axis)
+  const gap = gapEnd - gapStart
+  const along = (gapStart + gapEnd) / 2
+  const across = overlapCentre(
+    spanOf(before.box, crossAxis),
+    spanOf(after.box, crossAxis)
+  )
+  return {
+    key: JSON.stringify([axis, before.box.id, after.box.id]),
+    axis,
+    gutter: trackIndexOf(before, axis),
+    clearance: Math.max(0, Math.min(clearance, gap)),
+    x: axis === 'x' ? along : across,
+    y: axis === 'x' ? across : along,
+    gap
+  }
 }
 
 /**
@@ -578,31 +598,12 @@ function overlapCentre(a: AxisSpan, b: AxisSpan): number {
 export function computeGapBars(grid: SelectionGrid): GapBar[] {
   if (grid.kind === 'scattered') return []
   return AXES.flatMap((axis) => {
-    const crossAxis = crossAxisOf(axis)
     const clearances = Array.from(
       { length: Math.max(0, trackCountOf(grid, axis) - 1) },
       (_, boundary) => clearanceAcross(grid, axis, boundary)
     )
-    return neighbourPairs(grid.cells, axis).map(([before, after]) => {
-      const boundary = trackIndexOf(before, axis)
-      const gapStart = startAlong(before, axis) + sizeAlong(before, axis)
-      const gapEnd = startAlong(after, axis)
-      const gap = gapEnd - gapStart
-      const clearance = clearances[boundary]
-      const along = (gapStart + gapEnd) / 2
-      const across = overlapCentre(
-        spanOf(before.box, crossAxis),
-        spanOf(after.box, crossAxis)
-      )
-      return {
-        key: JSON.stringify([axis, before.box.id, after.box.id]),
-        axis,
-        gutter: boundary,
-        clearance: Math.max(0, Math.min(clearance, gap)),
-        x: axis === 'x' ? along : across,
-        y: axis === 'x' ? across : along,
-        gap
-      }
-    })
+    return neighbourPairs(grid.cells, axis).map(([before, after]) =>
+      barBetween(before, after, axis, clearances[trackIndexOf(before, axis)])
+    )
   })
 }

@@ -35,6 +35,14 @@ function clampBarGap(bar: GapBar, gap: number): number {
   return Math.max(Math.round(bar.gap - bar.clearance), gap)
 }
 
+function layoutAtGap(
+  grid: SelectionGrid,
+  bar: GapBar,
+  gap: number
+): BoxPosition[] {
+  return computeGapLayout(grid, bar.axis, bar.gutter, gap - bar.gap)
+}
+
 export function useGapDragSession() {
   const { gridNodes, measure, placeBoxes, moveBoxes, recordUndoStep } =
     useSelectionGrid()
@@ -65,12 +73,7 @@ export function useGapDragSession() {
   }
 
   const layoutFor = (origin: DragStart, gap: number) =>
-    computeGapLayout(
-      origin.grid,
-      origin.bar.axis,
-      origin.bar.gutter,
-      gap - origin.bar.gap
-    )
+    layoutAtGap(origin.grid, origin.bar, gap)
 
   const cancel = () => {
     const origin = dragStart
@@ -153,24 +156,20 @@ export function useGapDragSession() {
     if (gap === shownGap) return
     const moved = moveBoxes(
       nodes,
-      computeGapLayout(
-        current.grid,
-        current.bar.axis,
-        current.bar.gutter,
-        gap - current.bar.gap
-      ),
-      { captureUndo: false }
+      layoutAtGap(current.grid, current.bar, gap),
+      {
+        captureUndo: false
+      }
     )
     if (moved) hasUncommittedNudges = true
   }
 
-  watch(
-    () => canvasStore.currentGraph,
-    () => {
-      end()
-      hasUncommittedNudges = false
-    }
-  )
+  const abandon = () => {
+    end()
+    hasUncommittedNudges = false
+  }
+
+  watch(() => canvasStore.currentGraph, abandon)
 
   tryOnScopeDispose(() => {
     cancel()
