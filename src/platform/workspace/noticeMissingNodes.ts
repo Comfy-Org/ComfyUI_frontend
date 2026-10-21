@@ -5,14 +5,18 @@ import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useDeploymentSwitcherOffered } from '@/platform/workspace/composables/useDeploymentSwitcherOffered'
+import { nodesNeedingDeployment } from '@/platform/workspace/missingForDeployment'
 import {
-  missingNodeTypeName,
-  nodesNeedingDeployment
-} from '@/platform/workspace/missingForDeployment'
-import { openWorkflowNeedsDeploymentDialog } from '@/platform/workspace/openCustomDeploymentDialog'
+  openWorkflowNeedsDeploymentDialog,
+  preloadWorkflowNeedsDeploymentDialog
+} from '@/platform/workspace/openCustomDeploymentDialog'
+import { openWorkflowForCheck } from '@/platform/workspace/openWorkflowForCheck'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { answersForMissingNodes } from '@/platform/workspace/workflowDeploymentOffer'
-import type { MarkFor } from '@/platform/workspace/workflowDeploymentOffer'
+import { answersForWorkflow } from '@/platform/workspace/workflowDeploymentOffer'
+import type {
+  CheckedWorkflow,
+  MarkFor
+} from '@/platform/workspace/workflowDeploymentOffer'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 /** How long the dialog waits for the compatibility check before it opens without it. */
@@ -22,32 +26,31 @@ type Offered = 'dialog' | 'overlay' | 'superseded'
 
 async function compatibilityAnswered(
   markFor: MarkFor,
-  missingNodeTypes: readonly string[]
+  workflow: CheckedWorkflow
 ): Promise<void> {
   const asks =
     useFeatureFlags().flags.deploymentCompatibilityMarksEnabled &&
     useDeploymentPickStore().deployments.length > 0
   if (!asks) return
-  await until(() => answersForMissingNodes(markFor, missingNodeTypes)).toBe(
-    true,
-    { timeout: COMPATIBILITY_WAIT_MS }
-  )
+  await until(() => answersForWorkflow(markFor, workflow)).toBe(true, {
+    timeout: COMPATIBILITY_WAIT_MS
+  })
 }
 
 async function offerCustomDeployment(
-  nodeTypes: readonly MissingNodeType[],
+  missingNodes: readonly MissingNodeType[],
   markFor: MarkFor
 ): Promise<Offered> {
   const workflowStore = useWorkflowStore()
-  const workflow = workflowStore.activeWorkflow
+  const noticedWorkflow = workflowStore.activeWorkflow
+  const checkedWorkflow = openWorkflowForCheck(missingNodes)
+  const cardLoaded = preloadWorkflowNeedsDeploymentDialog()
   const store = useDeploymentPickStore()
   await store.loadOnce()
   if (!store.buildsVisible || store.bootDeployment !== null) return 'overlay'
-  await compatibilityAnswered(
-    markFor,
-    nodesNeedingDeployment(nodeTypes).map(missingNodeTypeName)
-  )
-  if (workflowStore.activeWorkflow !== workflow) return 'superseded'
+  await compatibilityAnswered(markFor, checkedWorkflow)
+  await cardLoaded
+  if (workflowStore.activeWorkflow !== noticedWorkflow) return 'superseded'
   return (await openWorkflowNeedsDeploymentDialog()) ? 'dialog' : 'overlay'
 }
 
@@ -61,14 +64,12 @@ export function noticeMissingNodes(
   markFor: MarkFor
 ): void {
   const showOverlay = () => useExecutionErrorStore().showErrorOverlay()
-  if (
-    !useDeploymentSwitcherOffered().value ||
-    nodesNeedingDeployment(nodeTypes).length === 0
-  ) {
+  const missingNodes = nodesNeedingDeployment(nodeTypes)
+  if (!useDeploymentSwitcherOffered().value || missingNodes.length === 0) {
     showOverlay()
     return
   }
-  offerCustomDeployment(nodeTypes, markFor).then(
+  offerCustomDeployment(missingNodes, markFor).then(
     (offered) => {
       if (offered === 'overlay') showOverlay()
     },

@@ -76,6 +76,10 @@ const CHOICES: DeploymentChoice[] = [
     mark: { kind: 'runs' }
   },
   {
+    deployment: { ...deployment('dep-paused', 'Paused'), status: 'stopped' },
+    mark: { kind: 'runs' }
+  },
+  {
     deployment: deployment('dep-exp', 'Experiments'),
     mark: { kind: 'missing', nodeTypes: ['BiRefNet_Zho'] }
   },
@@ -161,6 +165,9 @@ describe('SwitchDeploymentCard', () => {
     expect(
       screen.getByRole('option', { name: /Studio staging/ })
     ).not.toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('option', { name: /Paused/ })).toHaveTextContent(
+      'Stopped'
+    )
   })
 
   it('reloads onto the deployment when this browser has already picked it since the page loaded', async () => {

@@ -28,6 +28,7 @@ import {
   missingPacksOf,
   nodesNeedingDeployment
 } from '@/platform/workspace/missingForDeployment'
+import { openWorkflowForCheck } from '@/platform/workspace/openWorkflowForCheck'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
 
@@ -38,18 +39,17 @@ const missingNodesErrorStore = useMissingNodesErrorStore()
 const missingModelStore = useMissingModelStore()
 const { markFor } = useDeploymentCompatibility()
 
-const packs = computed(() =>
-  missingPacksOf(
-    nodesNeedingDeployment(
-      missingNodesErrorStore.missingNodesError?.nodeTypes ?? []
-    )
+const missingNodes = computed(() =>
+  nodesNeedingDeployment(
+    missingNodesErrorStore.missingNodesError?.nodeTypes ?? []
   )
 )
+const packs = computed(() => missingPacksOf(missingNodes.value))
 
 const offer = workflowDeploymentOffer(
   useDeploymentPickStore().deployments,
   markFor,
-  packs.value.flatMap((pack) => pack.nodeTypes)
+  openWorkflowForCheck(missingNodes.value)
 )
 const models = computed<MissingBuildModel[]>(() =>
   uniqBy(

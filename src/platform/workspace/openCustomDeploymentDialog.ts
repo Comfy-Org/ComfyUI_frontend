@@ -76,12 +76,23 @@ export function openDeployCustomNodesDialog(): Promise<boolean> {
   })
 }
 
+function loadWorkflowNeedsDeploymentCard() {
+  return import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue')
+}
+
+/** Loads the dialog a workflow that needs a custom deployment shows, so opening it later does not wait; false when it could not load. */
+export function preloadWorkflowNeedsDeploymentDialog(): Promise<boolean> {
+  return loadWorkflowNeedsDeploymentCard().then(
+    () => true,
+    () => false
+  )
+}
+
 /** Opens the dialog a workflow opened on Comfy Cloud shows when it needs a custom deployment; false when it could not load. */
 export function openWorkflowNeedsDeploymentDialog(): Promise<boolean> {
   return openCardDialog(
     'global-workflow-needs-deployment',
-    () =>
-      import('@/platform/workspace/components/WorkflowNeedsDeploymentCard.vue'),
+    loadWorkflowNeedsDeploymentCard,
     {}
   )
 }

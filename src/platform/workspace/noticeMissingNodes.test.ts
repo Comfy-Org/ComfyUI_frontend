@@ -31,7 +31,15 @@ vi.mock(
 vi.mock(import('@/platform/workspace/openCustomDeploymentDialog'), () => ({
   openCreateCustomDeploymentDialog: vi.fn(),
   openDeployCustomNodesDialog: vi.fn(),
-  openWorkflowNeedsDeploymentDialog: vi.fn()
+  openWorkflowNeedsDeploymentDialog: vi.fn(),
+  preloadWorkflowNeedsDeploymentDialog: vi.fn(async () => true)
+}))
+
+vi.mock(import('@/platform/workspace/openWorkflowForCheck'), () => ({
+  openWorkflowForCheck: () => ({
+    nodeTypes: ['BiRefNet', 'EmptyImage', 'SaveImage'],
+    missingNodeTypes: ['BiRefNet']
+  })
 }))
 
 const deployment: WorkspaceDeployment = {

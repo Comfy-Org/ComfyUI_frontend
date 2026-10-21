@@ -9,6 +9,12 @@
         {{ deploymentRowSubtitle(choice.deployment) }}
       </span>
       <span
+        v-if="deploymentMeta(choice.deployment)"
+        class="shrink-0 text-xs text-muted-foreground"
+      >
+        {{ deploymentMeta(choice.deployment) }}
+      </span>
+      <span
         :class="
           cn(
             'ml-auto flex shrink-0 items-center gap-1 pl-2 text-xs',
@@ -143,8 +149,12 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const pickStore = useDeploymentPickStore()
 const { isSwitching: isPicking, changeSinceBoot } = storeToRefs(pickStore)
-const { deploymentTitle, deploymentRowSubtitle, deploymentFullLabel } =
-  useDeploymentLabels()
+const {
+  deploymentTitle,
+  deploymentRowSubtitle,
+  deploymentMeta,
+  deploymentFullLabel
+} = useDeploymentLabels()
 
 const [DefineOption, ReuseOption] = createReusableTemplate<{
   choice: DeploymentChoice

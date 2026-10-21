@@ -36,6 +36,15 @@ vi.mock(
   })
 )
 
+vi.mock(import('@/platform/workspace/openWorkflowForCheck'), () => ({
+  openWorkflowForCheck: (missingNodes) => {
+    const missingNodeTypes = missingNodes.map((node) =>
+      typeof node === 'string' ? node : node.type
+    )
+    return { nodeTypes: [...missingNodeTypes, 'SaveImage'], missingNodeTypes }
+  }
+}))
+
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))

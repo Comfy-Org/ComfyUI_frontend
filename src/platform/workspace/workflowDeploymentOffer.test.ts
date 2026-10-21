@@ -3,22 +3,26 @@ import { describe, expect, it } from 'vitest'
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
+import type { CheckedWorkflow } from '@/platform/workspace/workflowDeploymentOffer'
 
 function deployment(id: string): WorkspaceDeployment {
   return {
     deployment_id: id,
     release_id: `rel-${id}`,
-    status: 'ready',
+    status: id.startsWith('stopped') ? 'stopped' : 'ready',
     created_at: '2026-10-01T00:00:00Z'
   }
 }
 
-const MISSING_NODE_TYPES = ['BiRefNet']
+const WORKFLOW: CheckedWorkflow = {
+  nodeTypes: ['BiRefNet', 'EmptyImage', 'SaveImage'],
+  missingNodeTypes: ['BiRefNet']
+}
 
 const RUNS: DeploymentCompatibilityMark = { kind: 'runs' }
 const MISSING: DeploymentCompatibilityMark = {
   kind: 'missing',
-  nodeTypes: MISSING_NODE_TYPES
+  nodeTypes: ['BiRefNet']
 }
 const UNKNOWN: DeploymentCompatibilityMark = { kind: 'unknown' }
 
@@ -40,6 +44,11 @@ const CASES: OfferCase[] = [
     when: 'some deployments run it',
     marks: { a: MISSING, b: RUNS, c: RUNS },
     offer: { kind: 'switch', ids: ['b', 'c', 'a'] }
+  },
+  {
+    when: 'a stopped deployment and a ready one run it',
+    marks: { stopped: RUNS, a: MISSING, b: RUNS },
+    offer: { kind: 'switch', ids: ['b', 'stopped', 'a'] }
   },
   {
     when: 'one runs it and another was not checked',
@@ -68,6 +77,12 @@ const CASES: OfferCase[] = [
     offer: { kind: 'unchecked' }
   },
   {
+    when: 'the answer names a node this workflow does not use',
+    cloud: { kind: 'missing', nodeTypes: ['BiRefNet', 'RMBG'] },
+    marks: { a: RUNS },
+    offer: { kind: 'unchecked' }
+  },
+  {
     when: 'the check finds Comfy Cloud runs it',
     cloud: RUNS,
     marks: { a: RUNS },
@@ -82,7 +97,7 @@ describe(workflowDeploymentOffer, () => {
       const result = workflowDeploymentOffer(
         Object.keys(marks).map(deployment),
         (id) => (id === null ? cloud : (marks[id] ?? null)),
-        MISSING_NODE_TYPES
+        WORKFLOW
       )
 
       expect({
