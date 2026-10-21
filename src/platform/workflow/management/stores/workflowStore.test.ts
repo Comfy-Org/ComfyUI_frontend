@@ -1407,6 +1407,23 @@ describe('useWorkflowStore', () => {
       expect(draftStore.getDraft('workflows/a.json')).toBeNull()
     })
 
+    it('clears the modified mark of a closed persisted workflow so a bulk save skips it', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      const workflow = store.getWorkflowByPath('workflows/a.json')!
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      await workflow.load()
+      workflow.isModified = true
+
+      await store.closeWorkflow(workflow)
+
+      expect(workflow.isLoaded).toBe(false)
+      expect(workflow.isModified).toBe(false)
+      expect(store.modifiedWorkflows).not.toContain(workflow)
+    })
+
     it('should remove draft for temporary workflows on close', async () => {
       const workflow = store.createTemporary('temp.json')
       const draftStore = saveV2Draft(workflow.path, {
