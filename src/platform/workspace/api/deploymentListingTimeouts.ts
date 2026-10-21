@@ -34,10 +34,3 @@ export const DEPLOYMENT_LISTING_RETRY_DELAYS_MS: readonly number[] = [
  * names a deployment.
  */
 export const DEPLOYMENT_LISTING_NO_HINT_WAIT_MS = 5_000
-
-/**
- * How long a listing that answered stands for the account menu: opening it
- * within this time shows that answer rather than asking again. A refusal
- * stands until the page reloads.
- */
-export const DEPLOYMENT_LISTING_REUSE_MS = 30_000

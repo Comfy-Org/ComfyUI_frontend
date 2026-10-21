@@ -2,11 +2,9 @@
      it may pick from (FE-2434). Each row is a deployment with the Release it
      runs now; a pick follows the deployment when its owner updates it. Sits under the workspace selector in the user
      popover. Renders nothing until a listing answers, when the account is
-     outside the rollout, and when loading fails with no listing to show; it
-     asks for the listing again on mount unless the page's last answer still
-     stands; a reload keeps the last listing on screen until it answers, and a
-     listing that answered stays shown when a newer load fails or never
-     answers.
+     outside the rollout, and when loading fails with no listing to show; a
+     reload keeps the last listing on screen until it answers, and a listing
+     that answered stays shown when a newer load fails or never answers.
      Shows the workspace's default deployment when an owner set one (BE-17480):
      a browser with no pick of its own follows it, and an owner sets or
      clears it from the panel's footer. A pick the listing no longer has
@@ -140,7 +138,7 @@ onClickOutside(
 )
 
 onMounted(() => {
-  void store.loadUnlessAnswered()
+  void store.load()
 })
 
 const { currentLabel, defaultLabel } = useDeploymentLabels()

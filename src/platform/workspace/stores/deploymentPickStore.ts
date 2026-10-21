@@ -6,8 +6,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import {
   DEPLOYMENT_LISTING_BACKSTOP_MS,
-  DEPLOYMENT_LISTING_RETRY_DELAYS_MS,
-  DEPLOYMENT_LISTING_REUSE_MS
+  DEPLOYMENT_LISTING_RETRY_DELAYS_MS
 } from '@/platform/workspace/api/deploymentListingTimeouts'
 import {
   WorkspaceApiError,
@@ -167,19 +166,9 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
    */
   let latestRequest = 0
   let lastApplied = 0
-  let answerStandsUntil = 0
-  let unavailableReported = false
 
   function load(): Promise<void> {
     return loadListing([])
-  }
-
-  /**
-   * `load`, unless a listing answered within `DEPLOYMENT_LISTING_REUSE_MS`
-   * or the server refused this page's listing: that answer still stands.
-   */
-  function loadUnlessAnswered(): Promise<void> {
-    return Date.now() < answerStandsUntil ? Promise.resolve() : load()
   }
 
   /**
@@ -193,8 +182,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     const event = await listingEvent(
       id,
       retryDelaysMs,
-      () => workspaceStore.workspaceId === id,
-      reportListingFailure
+      () => workspaceStore.workspaceId === id
     )
     if (workspaceStore.workspaceId !== id) return
     applyAnswer(id, request, event)
@@ -214,27 +202,12 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       return
     }
     lastApplied = request
-    answerStandsUntil =
-      event.type === 'loadRefused'
-        ? Number.POSITIVE_INFINITY
-        : Date.now() + DEPLOYMENT_LISTING_REUSE_MS
     dispatch(event)
     if (event.type === 'loaded') noteListing(event.gonePickedDeploymentId)
     if (event.type === 'loadRefused' && bootDeployment.value === undefined) {
       bootDeployment.value = null
     }
     rememberBootTarget(workspaceId)
-  }
-
-  function reportListingFailure(err: unknown) {
-    if (isUnavailable(err)) {
-      if (unavailableReported) return
-      unavailableReported = true
-    }
-    reportError(err, {
-      surface: 'workspace',
-      errorType: 'error_loading_deployment_listing'
-    })
   }
 
   function rememberBootTarget(workspaceId: string) {
@@ -278,7 +251,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
       dispatch({ type: 'workspaceChanged' })
       sawPickGone.value = false
       lastApplied = latestRequest
-      answerStandsUntil = 0
       firstLoad = null
     },
     { flush: 'sync' }
@@ -481,7 +453,6 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
     bootDeployment,
     changeSinceBoot,
     load,
-    loadUnlessAnswered,
     loadOnce,
     bootOnComfyCloud,
     pick,
@@ -494,8 +465,7 @@ export const useDeploymentPickStore = defineStore('deploymentPick', () => {
 async function listingEvent(
   workspaceId: string,
   retryDelaysMs: readonly number[],
-  stillWanted: () => boolean,
-  report: (err: unknown) => void
+  stillWanted: () => boolean
 ): Promise<DeploymentPickEvent> {
   for (let attempt = 0; ; attempt++) {
     try {
@@ -503,11 +473,12 @@ async function listingEvent(
     } catch (err) {
       const retriesLeft = attempt < retryDelaysMs.length
       if (!retriesLeft || !isTransient(err) || !stillWanted()) {
-        return loadFailure(err, report)
+        return loadFailure(err)
       }
       await new Promise((resolve) =>
         setTimeout(resolve, retryDelaysMs[attempt])
       )
+      // Another workspace took over: this answer would be dropped anyway.
       if (!stillWanted()) return { type: 'loadFailed' }
     }
   }
@@ -526,29 +497,24 @@ function isTransient(err: unknown): boolean {
   )
 }
 
-/** A 503, reported once a page: ingest cannot reach the deployment service. */
-function isUnavailable(err: unknown): boolean {
-  return err instanceof WorkspaceApiError && err.status === 503
-}
-
 /**
  * A 403 means the account is outside the rollout, and a 404 that this
  * ingest has no deployment routes (or no such workspace): either way the
  * browser runs on Comfy Cloud, as it would without this feature, so neither
- * is reported. Any other failure is reported (a 503 once a page) and hides
- * the switcher unless a listing is already shown.
+ * is reported. Any other failure is reported and hides the switcher unless
+ * a listing is already shown.
  */
-function loadFailure(
-  err: unknown,
-  report: (err: unknown) => void
-): DeploymentPickEvent {
+function loadFailure(err: unknown): DeploymentPickEvent {
   if (
     err instanceof WorkspaceApiError &&
     (err.status === 403 || err.status === 404)
   ) {
     return { type: 'loadRefused' }
   }
-  report(err)
+  reportError(err, {
+    surface: 'workspace',
+    errorType: 'error_loading_deployment_listing'
+  })
   return { type: 'loadFailed' }
 }
 

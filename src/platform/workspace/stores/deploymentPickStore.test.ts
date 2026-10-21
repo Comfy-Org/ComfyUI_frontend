@@ -4,10 +4,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import type { WorkspaceDeploymentList } from '@/platform/workspace/api/workspaceApi'
 
-import {
-  DEPLOYMENT_LISTING_BACKSTOP_MS,
-  DEPLOYMENT_LISTING_REUSE_MS
-} from '@/platform/workspace/api/deploymentListingTimeouts'
+import { DEPLOYMENT_LISTING_BACKSTOP_MS } from '@/platform/workspace/api/deploymentListingTimeouts'
 
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
@@ -190,114 +187,6 @@ describe('useDeploymentPickStore', () => {
 
     expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
     expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledWith('ws-1')
-  })
-
-  describe('when the listing answers 503', () => {
-    const unavailable = new WorkspaceApiError('Service unavailable', 503)
-
-    it('retries a 503 with no hint and finds the deployment once ingest recovers', async () => {
-      mockWorkspaceApi.listDeployments
-        .mockRejectedValueOnce(unavailable)
-        .mockResolvedValue(listing)
-      const store = useDeploymentPickStore()
-
-      const boot = store.loadOnce()
-      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
-      await boot
-
-      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
-      expect(store.bootDeployment?.deployment_id).toBe('dep-2')
-      expect(store.state.phase).toBe('ready')
-      expect(readDeploymentHint('ws-1')).toBe('deployment')
-    })
-
-    it('reports a 503 once a page, however many listings get one', async () => {
-      mockWorkspaceApi.listDeployments.mockRejectedValue(unavailable)
-      const store = useDeploymentPickStore()
-
-      await store.load()
-      await store.load()
-
-      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
-      expect(reportError).toHaveBeenCalledOnce()
-    })
-
-    it('asks again when the account menu next opens', async () => {
-      mockWorkspaceApi.listDeployments.mockRejectedValue(unavailable)
-      const store = useDeploymentPickStore()
-      const boot = store.loadOnce()
-      await vi.advanceTimersByTimeAsync(DEPLOYMENT_LISTING_BACKSTOP_MS)
-      await boot
-      const listingsAtBoot = mockWorkspaceApi.listDeployments.mock.calls.length
-
-      await store.loadUnlessAnswered()
-
-      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(
-        listingsAtBoot + 1
-      )
-    })
-  })
-
-  describe('a load that may reuse the last answer', () => {
-    it.for([
-      {
-        answer: 'a refusal',
-        respond: () =>
-          mockWorkspaceApi.listDeployments.mockRejectedValue(
-            new WorkspaceApiError('Outside rollout', 403)
-          ),
-        later: DEPLOYMENT_LISTING_BACKSTOP_MS * 10,
-        listings: 1
-      },
-      {
-        answer: 'a recent listing',
-        respond: () =>
-          mockWorkspaceApi.listDeployments.mockResolvedValue(listing),
-        later: DEPLOYMENT_LISTING_REUSE_MS - 1,
-        listings: 1
-      },
-      {
-        answer: 'an old listing',
-        respond: () =>
-          mockWorkspaceApi.listDeployments.mockResolvedValue(listing),
-        later: DEPLOYMENT_LISTING_REUSE_MS,
-        listings: 2
-      },
-      {
-        answer: 'a failure',
-        respond: () =>
-          mockWorkspaceApi.listDeployments.mockRejectedValue(
-            new WorkspaceApiError('Bad request', 400)
-          ),
-        later: 0,
-        listings: 2
-      }
-    ])(
-      'asks again only when the answer no longer stands: $answer',
-      async ({ respond, later, listings }) => {
-        respond()
-        const store = useDeploymentPickStore()
-        await store.loadOnce()
-
-        await vi.advanceTimersByTimeAsync(later)
-        await store.loadUnlessAnswered()
-
-        expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(listings)
-      }
-    )
-
-    it('asks again after the workspace changes', async () => {
-      mockWorkspaceApi.listDeployments.mockRejectedValue(
-        new WorkspaceApiError('Outside rollout', 403)
-      )
-      const store = useDeploymentPickStore()
-      await store.loadOnce()
-
-      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
-      await store.loadUnlessAnswered()
-
-      expect(mockWorkspaceApi.listDeployments).toHaveBeenLastCalledWith('ws-2')
-    })
   })
 
   it('boots on Comfy Cloud, quietly, when ingest has no deployment routes (404)', async () => {

@@ -143,35 +143,6 @@ describe('DeploymentSwitcher', () => {
     expect(screen.queryByTestId('deployment-switcher')).toBeNull()
   })
 
-  it.for([
-    {
-      answer: 'a refusal',
-      respond: () =>
-        mockWorkspaceApi.listDeployments.mockRejectedValue(
-          new WorkspaceApiError('not enabled for this account yet', 403)
-        )
-    },
-    {
-      answer: 'a listing',
-      respond: () => mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
-    }
-  ])(
-    "reuses the page's answer when mounted again soon after: $answer",
-    async ({ respond }) => {
-      respond()
-      const first = renderSwitcher()
-      await waitFor(() =>
-        expect(useDeploymentPickStore().state.phase).not.toBe('idle')
-      )
-      first.unmount()
-
-      renderSwitcher()
-      await nextTick()
-
-      expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledOnce()
-    }
-  )
-
   it('says Comfy Cloud when nothing is picked, and lists the deployments', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     renderSwitcher()
