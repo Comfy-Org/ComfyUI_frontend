@@ -320,7 +320,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     onTestFinished(destroy)
     const [restoredGroup] = host.getMap('meta').get('groups') as unknown[]
 
-    const fail = () => {
+    function fail(): never {
       throw new Error('remove failed')
     }
     vi.spyOn(graph, 'remove')
