@@ -97,12 +97,6 @@ async function emptyCanvasPointBelow(
   return point
 }
 
-/**
- * An uncatalogued class whose widget set grows with its inputs (autogrow) gets
- * no declared `widgets_values_form`, so the host still has no mapping for its
- * `prompt` value and refuses the add. A dynamic combo no longer serves here:
- * it now carries a declared form, so the host accepts its add (FE-3512).
- */
 const ADDED_CLASS = 'AutogrowPromptPicker'
 const SEED_CLASS = 'KSampler'
 const SEED_NODE_ID = '1'

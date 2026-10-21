@@ -158,9 +158,6 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   )
   const form = nodeLocalWidgetForm(node, values, inputTypes)
   if (!form) return { ...snapshot, widgets_values: values }
-  // comfy-multi-player composes catalog-owned dynamic-combo children with an
-  // ARRAY form only (Amendment A25); an object form stays closed, so a write
-  // to a child that a later selection shows would be refused.
   const widgetsValues = inputTypes.has('COMFY_DYNAMICCOMBO_V3')
     ? form.order.map((name) => values[name])
     : values
@@ -171,7 +168,6 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   }
 }
 
-/** Input types whose widget set the document cannot recompute from a form. */
 const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = [
   'COMFY_AUTOGROW_V3',
   'COMFY_DYNAMICGROUP_V3'

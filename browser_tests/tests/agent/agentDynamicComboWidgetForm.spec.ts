@@ -17,19 +17,6 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
-/**
- * FE-3470 / FE-3512: a person adds a node whose widget set depends on a
- * dynamic combo selection, switches the selection, and edits the child the
- * new option shows. The minter declares `widgets_values_form` for the node,
- * and the doc host (the real comfy-multi-player applier) must accept the
- * child write and persist the recomputed order (schema Amendment A25).
- *
- * Without the declared form the uncatalogued-class guard is the only thing
- * standing between the add and the document; with an object-shaped form the
- * child write is refused `unknown_widget`, because A25 composes catalog-owned
- * dynamic children with ARRAY forms only.
- */
-
 const WORKFLOW_ID = 'fe347000-0000-4000-8000-000000000001'
 const MESSAGE_ID = 'fe347000-0000-4000-8000-000000000003'
 const THREAD_ID = 'fe347000-0000-4000-8000-000000000004'
@@ -89,7 +76,6 @@ const nodeDefs: Record<string, ComfyNodeDef> = {
   }
 }
 
-/** The pinned catalog the doc host holds: the selection-aware dynamic combo shape. */
 const catalog: WidgetCatalog = {
   types: {
     [SEED_CLASS]: { widget_order: ['seed', 'steps'] },
@@ -172,7 +158,6 @@ test.describe(
       await agentPanel.sendMessage('Have a look at this workflow')
       await hostSocket.waitForSubscribe()
       await expect(vueNodes.getNodeLocator(String(SEED_NODE_ID))).toBeVisible()
-      // Park the graph in the top-left corner, clear of the docked agent panel.
       await page.evaluate(() => {
         const canvas = window.app!.canvas
         canvas.ds.scale = 1
@@ -193,7 +178,6 @@ test.describe(
 
       const nodeId =
         await test.step('the person adds the node and the host stores its form', async () => {
-          // The ordinary add path every node type takes (search box, sidebar, paste).
           const nodeId = await page.evaluate((type) => {
             const node = window.LiteGraph!.createNode(type)
             if (!node) throw new Error(`${type} is not a registered node type`)
@@ -214,7 +198,6 @@ test.describe(
         })
 
       const node = vueNodes.getNodeLocator(nodeId)
-      // The option child is the `mode.detail` widget; its row is labelled by its input name.
       const detailRow = vueNodes.getWidgetRowByLabel(node, 'detail')
       const detail = detailRow.getByRole('spinbutton')
 
