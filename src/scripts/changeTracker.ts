@@ -114,7 +114,8 @@ function isActiveTracker(tracker: ChangeTracker): boolean {
   return useWorkflowStore().activeWorkflow?.changeTracker === tracker
 }
 
-function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
+/** The history step a key press asks for, if any. */
+export function historyShortcut(e: KeyboardEvent): 'undo' | 'redo' | undefined {
   if (!(e.ctrlKey || e.metaKey) || e.altKey) return
   const key = e.key.toUpperCase()
   if (key === 'Y' && !e.shiftKey) return 'redo'

@@ -171,6 +171,22 @@ describe('SelectionGapHandles', () => {
     expect(emitted('update:dragging').at(-1)).toEqual([false])
   })
 
+  it.for([
+    { key: 'undo', keys: '{Control>}z{/Control}' },
+    { key: 'redo', keys: '{Control>}{Shift>}z{/Shift}{/Control}' },
+    { key: 'AltGr', keys: '{AltGraph}' }
+  ])('leaves a drag running when $key is pressed', async ({ keys }) => {
+    const user = userEvent.setup()
+    const { handle, emitted } = await renderHandles()
+
+    await user.pointer([press(handle, 215), moveTo(225)])
+    await new Promise(requestAnimationFrame)
+    await user.keyboard(keys)
+
+    expect(placeBoxes).not.toHaveBeenCalled()
+    expect(emitted('update:dragging')).toEqual([[true]])
+  })
+
   it('keeps the gap under the pointer when the canvas zooms during a drag', async () => {
     const user = userEvent.setup()
     const { handle } = await renderHandles()

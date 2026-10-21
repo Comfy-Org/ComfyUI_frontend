@@ -70,6 +70,7 @@ import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { historyShortcut } from '@/scripts/changeTracker'
 
 interface Viewport {
   scale: number
@@ -228,7 +229,14 @@ const graphPointAlong = (event: PointerEvent, axis: GapAxis) => {
 
 let dragListeners: AbortController | undefined
 
-const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta'])
+const MODIFIER_KEYS = new Set([
+  'Shift',
+  'Control',
+  'Alt',
+  'AltGraph',
+  'Meta',
+  'CapsLock'
+])
 
 const stopDragListeners = () => {
   dragListeners?.abort()
@@ -293,7 +301,7 @@ function onPointerDown(event: PointerEvent, bar: ScreenBar) {
   window.addEventListener(
     'keydown',
     (keyEvent) => {
-      if (MODIFIER_KEYS.has(keyEvent.key)) return
+      if (MODIFIER_KEYS.has(keyEvent.key) || historyShortcut(keyEvent)) return
       keyEvent.preventDefault()
       keyEvent.stopImmediatePropagation()
       cancelDrag()
