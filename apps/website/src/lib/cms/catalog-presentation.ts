@@ -78,6 +78,17 @@ function displayText(d: Document, local: Document, key: string, fallback = '') {
   return typeof d[key] === 'string' ? d[key] : fallback
 }
 
+// A media input bound as a cloud asset uploads that binding's media kind.
+function uploadKind(d: Document, name: string, hints: Document) {
+  const binding = objectPresentation(objectPresentation(d.inputBindings)[name])
+  return hints.control === 'media' &&
+    !('urlUpload' in hints) &&
+    binding.encoding === 'cloud-asset' &&
+    typeof binding.mediaKind === 'string'
+    ? { urlUpload: binding.mediaKind }
+    : {}
+}
+
 function inputContract(d: Document) {
   const schema = objectPresentation(d.inputSchema)
   const inputs = Object.fromEntries(
@@ -86,7 +97,13 @@ function inputContract(d: Document) {
       return [
         name,
         hints.success
-          ? { help: '', hidden: false, advanced: false, ...hints.data }
+          ? {
+              help: '',
+              hidden: false,
+              advanced: false,
+              ...hints.data,
+              ...uploadKind(d, name, hints.data)
+            }
           : raw
       ]
     })
