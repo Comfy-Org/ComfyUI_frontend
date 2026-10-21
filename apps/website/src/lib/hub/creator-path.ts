@@ -11,7 +11,7 @@ export const CREATOR_USERNAME_MAX = 30
 export function isCreatorUsername(raw: string) {
   return (
     raw.length <= CREATOR_USERNAME_MAX &&
-    /^[a-z0-9][a-z0-9-]*[a-z0-9]$/i.test(raw)
+    /^[a-z0-9][a-z0-9-]{1,40}[a-z0-9]$/i.test(raw)
   )
 }
 

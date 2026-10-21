@@ -31,6 +31,8 @@ describe('creatorEntityId', () => {
 
 describe('isCreatorUsername', () => {
   it.for([
+    { username: 'ab', valid: false },
+    { username: 'abc', valid: true },
     { username: 'purz', valid: true },
     { username: 'Comfy-Creator', valid: true },
     { username: 'a'.repeat(30), valid: true },
