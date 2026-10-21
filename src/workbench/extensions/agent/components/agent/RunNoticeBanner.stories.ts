@@ -21,6 +21,7 @@ const meta: Meta<typeof RunNoticeBanner> = {
   title: 'Agent/RunNoticeBanner',
   component: RunNoticeBanner,
   tags: ['autodocs'],
+  args: { genericNoticeReady: true },
   parameters: { layout: 'centered' },
   globals: { theme: 'dark' },
   decorators: [withFreshDismissal]

@@ -5,9 +5,8 @@ import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
 import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
 import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
-import CardDescription from '@comfyorg/design-system/content-card/CardDescription'
-import CardTitle from '@comfyorg/design-system/content-card/CardTitle'
 import CardTop from '@comfyorg/design-system/content-card/CardTop'
+
 
 interface CardStoryArgs {
   // CardContainer props
@@ -171,8 +170,6 @@ const createCardTemplate = (args: CardStoryArgs) => ({
     CardContainer,
     CardTop,
     CardBottom,
-    CardTitle,
-    CardDescription,
     Button,
     Tag
   },
@@ -255,8 +252,8 @@ const createCardTemplate = (args: CardStoryArgs) => ({
         
         <template #bottom>
           <CardBottom>
-            <CardTitle v-if="args.showTitle">{{ args.title }}</CardTitle>
-            <CardDescription v-if="args.showDescription">{{ args.description }}</CardDescription>
+            <div v-if="args.showTitle" class="text-sm text-foreground">{{ args.title }}</div>
+            <div v-if="args.showDescription" class="line-clamp-2 h-7 text-xs text-muted-foreground">{{ args.description }}</div>
           </CardBottom>
         </template>
       </CardContainer>

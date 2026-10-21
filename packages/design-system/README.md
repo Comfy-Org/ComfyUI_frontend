@@ -92,13 +92,12 @@ Components that retain `pi-*` icon classes require the host to load
 <script setup lang="ts">
 import Card from '@comfyorg/design-system/card/Card'
 import CardHeader from '@comfyorg/design-system/card/CardHeader'
-import CardTitle from '@comfyorg/design-system/card/CardTitle'
 import CardFooter from '@comfyorg/design-system/card/CardFooter'
 </script>
 
 <template>
   <Card surface="secondary">
-    <CardHeader><CardTitle>Workspace</CardTitle></CardHeader>
+    <CardHeader>Workspace</CardHeader>
     <p>Shared workspace content</p>
     <CardFooter>Actions</CardFooter>
   </Card>

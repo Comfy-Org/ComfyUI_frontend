@@ -2,7 +2,6 @@
 import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
-import BrandButton from '@/components/common/BrandButton.vue'
 import ProductHeroBadge from '@/components/common/ProductHeroBadge.vue'
 import HeroSplit01 from '@/components/blocks/HeroSplit01.vue'
 import VfxSampleScene from '@/components/campaign/VfxSampleScene.vue'
@@ -59,7 +58,11 @@ onUnmounted(() => clearTimeout(assemblyTimer))
 </script>
 
 <template>
-  <div class="vfx-connected vfx-hero-prototype" data-vfx-demo="hero">
+  <div
+    class="vfx-connected vfx-hero-prototype"
+    data-vfx-demo="hero"
+    data-vfx-hero
+  >
     <HeroSplit01
       :locale="locale"
       :badge-text="t('vfxV3.badge').toLocaleUpperCase(locale)"
@@ -97,14 +100,14 @@ onUnmounted(() => clearTimeout(assemblyTimer))
             :slider-label="t('modelLaunch.beforeAfter.sliderLabel')"
             :choices-label="t('modelLaunch.beforeAfter.tabsLabel')"
           />
-          <div class="mt-4 flex justify-end">
-            <BrandButton
-              variant="outline"
-              :aria-pressed="paused"
-              @click="togglePlayback"
-              >{{ paused ? t('player.play') : t('player.pause') }}</BrandButton
-            >
-          </div>
+          <button
+            type="button"
+            class="sr-only focus:not-sr-only focus:mt-4 focus:text-sm focus:text-primary-comfy-yellow focus:underline"
+            :aria-pressed="paused"
+            @click="togglePlayback"
+          >
+            {{ paused ? t('player.play') : t('player.pause') }}
+          </button>
         </div>
       </template>
     </HeroSplit01>

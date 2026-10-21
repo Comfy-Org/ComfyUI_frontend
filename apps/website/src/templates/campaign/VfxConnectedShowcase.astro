@@ -1,5 +1,5 @@
 ---
-import { vfxMediaRoot } from '@/data/vfxMedia'
+import { vfxMediaRoot, vfxVariantMedia } from '@/data/vfxMedia'
 import BrandButton from '@/components/common/BrandButton.vue'
 import SectionHeader from '@/components/common/SectionHeader.vue'
 import WorkflowNode from '@/components/agent/WorkflowNode.astro'
@@ -26,6 +26,13 @@ const {
   keyframe,
   preview
 } = showcaseConfig(demo, t)
+function variantNode(id: string, label: string) {
+  const poster = new URL(vfxVariantMedia(id, 'jpg'))
+  return {
+    node: workflowNode('image', id, label, poster.pathname.split('/').pop()),
+    imageRoot: new URL('.', poster).href.slice(0, -1)
+  }
+}
 ---
 
 <vfx-workflow-showcase
@@ -113,11 +120,7 @@ const {
           aria-label={label}
           aria-pressed={i === 0}
         >
-          <WorkflowNode
-            node={workflowNode('image', id, label, `${id}.jpg`)}
-            flow
-            imageRoot={vfxMediaRoot}
-          />
+          <WorkflowNode {...variantNode(id, label)} flow />
         </button>)}
       </div>
     </div>
