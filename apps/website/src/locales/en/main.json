@@ -6332,6 +6332,10 @@
     "answer": "Answer {count}"
   },
   "cccWorkflow": {
+    "inputMismatchTitle": "This workflow can't run here yet",
+    "inputMismatch": "Its input settings don't match its input schema, so there is no Run form. You can still download the workflow.",
+    "inputUndeclared": "Input settings without a schema property: {names}",
+    "inputUnconfigured": "Schema properties without input settings: {names}",
     "downloadApiJSON": "Download API JSON",
     "authorUnavailable": "Author unavailable",
     "modelUnavailable": "Model unavailable",

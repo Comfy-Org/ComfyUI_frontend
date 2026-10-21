@@ -32,6 +32,7 @@ const runnable = computed(
     (model.catalogDetails.runnable !== false &&
       Object.keys(model.workflow.inputs).length > 0)
 )
+const mismatch = computed(() => model.catalogDetails?.inputMismatch)
 const snippetValues = computed(() => initialWorkshopPageState(model).values)
 const t = computed(
   () => translationsFor(model.catalogDetails?.locale ?? 'en').t
@@ -163,6 +164,29 @@ function captureWorkflowDownload() {
       />
     </header>
 
+    <div
+      v-if="mismatch"
+      role="note"
+      class="mb-6 rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 p-4 text-sm text-primary-warm-white"
+      data-testid="workflow-input-mismatch"
+    >
+      <p class="mb-2 font-bold">{{ t('cccWorkflow.inputMismatchTitle') }}</p>
+      <p>{{ t('cccWorkflow.inputMismatch') }}</p>
+      <p v-if="mismatch.undeclared.length" class="mt-2 wrap-break-word">
+        {{
+          t('cccWorkflow.inputUndeclared', {
+            names: mismatch.undeclared.join(', ')
+          })
+        }}
+      </p>
+      <p v-if="mismatch.unconfigured.length" class="mt-2 wrap-break-word">
+        {{
+          t('cccWorkflow.inputUnconfigured', {
+            names: mismatch.unconfigured.join(', ')
+          })
+        }}
+      </p>
+    </div>
     <WorkflowPlayground
       v-if="runnable"
       :key="scope"

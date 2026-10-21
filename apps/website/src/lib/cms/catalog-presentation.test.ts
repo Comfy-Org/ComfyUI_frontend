@@ -798,4 +798,36 @@ describe('native CONTENT presentation', () => {
     if (preferred.type !== 'CLOUD') throw new Error('Not workflow detail')
     expect(preferred.workflow.outputs).toEqual([migrated])
   })
+  it('shows mismatched inputs as a notice without a Run form instead of failing the page', () => {
+    const view = detailSchema.parse(
+      catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          inputSchema: {
+            type: 'object',
+            properties: {
+              quality: { type: 'number', enum: [1, 2], default: 1 },
+              seed: { type: 'integer' }
+            }
+          },
+          inputs: {
+            ...(record.data.inputs as object),
+            steps: { label: 'Steps', control: 'number' }
+          }
+        }
+      })
+    )
+    if (view.type !== 'CLOUD') throw new Error('Not workflow detail')
+    expect(view.catalogDetails?.inputMismatch).toEqual({
+      undeclared: ['steps'],
+      unconfigured: ['seed']
+    })
+    expect(view.catalogDetails?.runnable).toBe(false)
+    expect(view.workflow.inputs).toEqual({})
+    expect(view.workflow.inputSchema.properties).toEqual({})
+    const matched = detailSchema.parse(catalogPresentation(record))
+    if (matched.type !== 'CLOUD') throw new Error('Not workflow detail')
+    expect(matched.catalogDetails?.inputMismatch).toBeUndefined()
+  })
 })

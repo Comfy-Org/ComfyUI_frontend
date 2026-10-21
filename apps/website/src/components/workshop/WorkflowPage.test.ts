@@ -124,6 +124,32 @@ describe('WorkflowPage header', () => {
     )
     expect(screen.getByRole('tab', { name: 'cURL' })).toBeVisible()
   })
+  it('explains mismatched inputs in a notice instead of offering a Run form', () => {
+    mount({
+      ...model,
+      catalogDetails: {
+        locale: 'en',
+        faqs: [],
+        models: [],
+        runnable: false,
+        inputMismatch: { undeclared: ['steps'], unconfigured: ['seed', 'cfg'] }
+      }
+    })
+    const notice = screen.getByTestId('workflow-input-mismatch')
+    expect(notice).toHaveAttribute('role', 'note')
+    expect(notice).toHaveTextContent("This workflow can't run here yet")
+    expect(notice).toHaveTextContent(
+      'Input settings without a schema property: steps'
+    )
+    expect(notice).toHaveTextContent(
+      'Schema properties without input settings: seed, cfg'
+    )
+    expect(screen.queryByTestId('workflow-playground')).toBeNull()
+  })
+  it('shows no input notice when inputs match', () => {
+    mount()
+    expect(screen.queryByTestId('workflow-input-mismatch')).toBeNull()
+  })
   it('offers an actual Cloud share link without inventing a share ID from the catalog UID', () => {
     mount({
       ...model,

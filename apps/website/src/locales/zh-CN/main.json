@@ -4845,6 +4845,10 @@
     "answer": "回答 {count}"
   },
   "cccWorkflow": {
+    "inputMismatchTitle": "此工作流暂时无法在此运行",
+    "inputMismatch": "其输入设置与输入架构不一致，因此没有运行表单。你仍可下载该工作流。",
+    "inputUndeclared": "没有架构属性的输入设置：{names}",
+    "inputUnconfigured": "没有输入设置的架构属性：{names}",
     "downloadApiJSON": "下载 API JSON",
     "authorUnavailable": "作者信息暂不可用",
     "modelUnavailable": "模型信息暂不可用",

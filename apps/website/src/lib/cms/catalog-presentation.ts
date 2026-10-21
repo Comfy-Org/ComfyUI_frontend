@@ -286,10 +286,29 @@ function optionalCounter(value: unknown) {
     : undefined
 }
 
+// The Run form needs one input setting per declared property. A mismatch
+// shows a notice and no Run form rather than failing the whole page.
+function inputMismatch(d: Document) {
+  if (d.type !== 'workflow') return undefined
+  const names = Object.keys(objectPresentation(d.inputs))
+  const declared = Object.keys(
+    objectPresentation(objectPresentation(d.inputSchema).properties)
+  )
+  const undeclared = names.filter((name) => !declared.includes(name))
+  const unconfigured = declared.filter((name) => !names.includes(name))
+  return undeclared.length || unconfigured.length
+    ? {
+        undeclared: undeclared.slice(0, 200),
+        unconfigured: unconfigured.slice(0, 200)
+      }
+    : undefined
+}
+
 function workflowRunnable(d: Document) {
   if (
-    Array.isArray(d.workflow_versions) &&
-    !Object.keys(objectPresentation(d.website_api_workflow)).length
+    inputMismatch(d) ||
+    (Array.isArray(d.workflow_versions) &&
+      !Object.keys(objectPresentation(d.website_api_workflow)).length)
   )
     return false
   return typeof d.runnable === 'boolean' ? d.runnable : undefined
@@ -314,6 +333,7 @@ function workflowDetails(
     faqs: faqDetails(Array.isArray(local.faq) ? local.faq : d.faq),
     worksOnCloud:
       typeof d.works_on_cloud === 'boolean' ? d.works_on_cloud : undefined,
+    inputMismatch: inputMismatch(d),
     runnable: workflowRunnable(d),
     scriptCode: d.script_code,
     outputType:
@@ -435,6 +455,17 @@ function runOutputs(raw: unknown) {
   })
 }
 
+// With mismatched inputs the page builds an empty form and shows a notice.
+function workflowInputs(d: Document) {
+  const contract = inputContract(d)
+  return inputMismatch(d)
+    ? {
+        inputSchema: { ...contract.inputSchema, properties: {}, required: [] },
+        inputs: {}
+      }
+    : contract
+}
+
 // Migrated website outputs win; otherwise Run reads the authored outputs.
 function workflowOutputs(d: Document, workflow: Document) {
   if ('outputs' in workflow) return {}
@@ -462,7 +493,7 @@ function workflowPresentation(
       definitionVersion: versioned
         ? record.edit_version
         : (workflow.definitionVersion ?? record.edit_version),
-      ...inputContract(d),
+      ...workflowInputs(d),
       ...workflowCloud(d, workflow),
       ...workflowOutputs(d, workflow)
     }

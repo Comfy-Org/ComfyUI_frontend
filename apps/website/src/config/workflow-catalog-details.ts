@@ -88,6 +88,13 @@ export const workflowCatalogDetailsSchema = z.object({
     })
   ),
   worksOnCloud: z.boolean().optional(),
+  /** Run inputs the input settings and input schema disagree on. */
+  inputMismatch: z
+    .object({
+      undeclared: z.array(z.string()).max(200),
+      unconfigured: z.array(z.string()).max(200)
+    })
+    .optional(),
   runnable: z.boolean().optional(),
   scriptCode: z
     .object({
