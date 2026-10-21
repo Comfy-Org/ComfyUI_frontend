@@ -5,6 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import type { SubscriptionState } from '@comfyorg/ingest-types'
+
 import enMessages from '@/locales/en/main.json'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
@@ -54,6 +56,7 @@ const activeSubscription: SubscriptionInfo = {
 interface Scenario {
   subscription?: SubscriptionInfo | null
   subscriptionStatus?: 'active' | 'canceled' | 'ended' | null
+  subscriptionState?: SubscriptionState | null
   isInitialized?: boolean
   error?: string | null
   canManageSubscription?: boolean
@@ -96,6 +99,7 @@ function arrange(scenario: Scenario = {}) {
           ? 'active'
           : scenario.subscriptionStatus
       ),
+      subscriptionState: computed(() => scenario.subscriptionState ?? null),
       billingStatus: computed(() => 'paid'),
       manageSubscription,
       isTeamPlan: computed(() => false),
@@ -249,6 +253,25 @@ describe('BillingTab', () => {
     arrange({ capabilitiesResolved: false })
 
     expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('reads Activating while subscription_state is activating', () => {
+    arrange({ subscriptionState: 'activating' })
+
+    expect(screen.getByRole('heading', { name: 'Pro' })).toBeInTheDocument()
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      'Activating your Pro plan…'
+    )
+    expect(screen.getByRole('link', { name: 'Manage' })).toBeInTheDocument()
+  })
+
+  it('returns to the served status when subscription_state is no longer activating', () => {
+    arrange({ subscriptionState: 'active' })
+
+    expect(screen.getByTestId('billing-plan-line')).toHaveTextContent(
+      'Billed monthly. Next invoice November 15.'
+    )
+    expect(screen.queryByText(/Activating your/)).not.toBeInTheDocument()
   })
 
   it('renders an active plan with Manage and the owner handoff linked to the billing site', () => {

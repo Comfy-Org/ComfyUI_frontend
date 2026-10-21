@@ -212,6 +212,9 @@ function useBillingContextInternal(): BillingContext {
   const subscriptionStatus = computed(() =>
     toValue(activeContext.value.subscriptionStatus)
   )
+  const subscriptionState = computed(() =>
+    toValue(activeContext.value.subscriptionState)
+  )
   const tier = computed(() => toValue(activeContext.value.tier))
   const renewalDate = computed(() => toValue(activeContext.value.renewalDate))
   const renewalInvoice = computed(() =>
@@ -457,6 +460,7 @@ function useBillingContextInternal(): BillingContext {
     isTeamPlan,
     billingStatus,
     subscriptionStatus,
+    subscriptionState,
     tier,
     renewalDate,
     renewalInvoice,
