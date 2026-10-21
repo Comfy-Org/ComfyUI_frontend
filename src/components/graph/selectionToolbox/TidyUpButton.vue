@@ -17,11 +17,11 @@
         :collision-padding="10"
         update-position-strategy="always"
         class="z-overlay floating-panel will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
-        @interact-outside="keepOpenInsideToolbox"
+        @interact-outside="keepOpenForToolboxAndHandles"
       >
         <div class="flex h-8 w-44 items-center gap-2 pr-1 pl-3">
           <Slider
-            :model-value="[gap]"
+            :model-value="[clamp(gap, MIN_TIDY_GAP, MAX_TIDY_GAP)]"
             :min="MIN_TIDY_GAP"
             :max="MAX_TIDY_GAP"
             :step="1"
@@ -29,16 +29,26 @@
             @update:model-value="onSliderUpdate"
             @value-commit="onSliderCommit"
           />
-          <span class="w-6 shrink-0 text-right text-xs tabular-nums">
-            {{ gap }}
+          <span class="min-w-6 shrink-0 text-right text-xs tabular-nums">
+            {{ hasMixedGaps ? t('g.mixedGaps') : gap }}
           </span>
         </div>
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>
+  <Teleport to="body">
+    <SelectionGapHandles
+      v-if="isOpen && canTidy"
+      v-model:dragging="isDraggingGap"
+      @edit-start="finish"
+      @edited="showLaidOutGap"
+      @dismiss="isOpen = false"
+    />
+  </Teleport>
 </template>
 
 <script setup lang="ts">
+import { clamp } from 'es-toolkit'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import {
   PopoverContent,
@@ -49,9 +59,11 @@ import {
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import SelectionGapHandles from '@/components/graph/selectionGrid/SelectionGapHandles.vue'
 import {
   MAX_TIDY_GAP,
-  MIN_TIDY_GAP
+  MIN_TIDY_GAP,
+  tidiedGapOf
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
@@ -68,14 +80,23 @@ const BAR_SIDE_OFFSET = TOOLBOX_INSET + BAR_GAP_BELOW_TOOLBOX
 const LIFT_WHILE_OPEN = BAR_SIDE_OFFSET + BAR_INSET + TRIGGER_HEIGHT
 
 const { t } = useI18n()
-const { canTidy, gridNodes } = useSelectionGrid()
-const { gap, start, previewGap, commitGap, finish } = useTidySession()
+const { canTidy, gridNodes, measure } = useSelectionGrid()
+const { gap, start, previewGap, commitGap, adoptGap, finish } = useTidySession()
 const { lift } = useSelectionToolboxLift()
 
 const isOpen = ref(false)
+const hasMixedGaps = ref(false)
+const isDraggingGap = ref(false)
+
+const showLaidOutGap = () => {
+  const tidiedGap = tidiedGapOf(measure())
+  hasMixedGaps.value = tidiedGap === undefined
+  if (tidiedGap !== undefined) adoptGap(tidiedGap)
+}
 
 watch(isOpen, (open) => {
   lift.value = open ? LIFT_WHILE_OPEN : 0
+  hasMixedGaps.value = false
   if (open) start()
   else finish()
 })
@@ -96,25 +117,30 @@ onBeforeUnmount(() => {
   lift.value = 0
 })
 
-const keepOpenInsideToolbox = (
+const keepOpenForToolboxAndHandles = (
   event: FocusOutsideEvent | PointerDownOutsideEvent
 ) => {
   const { target } = event.detail.originalEvent
-  if (target instanceof Element && target.closest('[data-selection-toolbox]')) {
+  if (
+    target instanceof Element &&
+    target.closest('[data-selection-toolbox], [data-gap-handle]')
+  ) {
     event.preventDefault()
   }
 }
 
-const firstValue = (value: number[] | undefined): number | undefined =>
-  value?.[0]
-
-const onSliderUpdate = (value: number[] | undefined) => {
-  const next = firstValue(value)
-  if (next !== undefined) previewGap(next)
+const applySliderGap = (
+  value: number[] | undefined,
+  apply: (gap: number) => void
+) => {
+  const next = value?.[0]
+  if (next === undefined || isDraggingGap.value) return
+  hasMixedGaps.value = false
+  apply(next)
 }
 
-const onSliderCommit = (value: number[]) => {
-  const next = firstValue(value)
-  if (next !== undefined) commitGap(next)
-}
+const onSliderUpdate = (value: number[] | undefined) =>
+  applySliderGap(value, previewGap)
+
+const onSliderCommit = (value: number[]) => applySliderGap(value, commitGap)
 </script>

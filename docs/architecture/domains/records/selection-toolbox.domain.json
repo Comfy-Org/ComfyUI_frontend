@@ -20,6 +20,14 @@
       "role": "presentation"
     },
     {
+      "path": "src/components/graph/selectionGrid/SelectionGapHandles.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/selectionGrid/SelectionGapHandles.vue",
+      "role": "presentation"
+    },
+    {
       "path": "src/components/graph/selectionGrid/selectionGridLayout.test.ts",
       "role": "domain"
     },
@@ -285,7 +293,8 @@
         "src/components/graph/selectionToolbox/ColorPickerButton.test.ts",
         "src/components/graph/selectionToolbox/InfoButton.test.ts",
         "src/components/graph/selectionToolbox/MaskEditorButton.test.ts",
-        "src/components/graph/selectionToolbox/TidyUpButton.test.ts"
+        "src/components/graph/selectionToolbox/TidyUpButton.test.ts",
+        "src/components/graph/selectionGrid/SelectionGapHandles.test.ts"
       ]
     },
     {

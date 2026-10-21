@@ -10,8 +10,7 @@ export function useTidySession() {
 
   const gap = ref(DEFAULT_TIDY_GAP)
   let nodes: LGraphNode[] = []
-  let committedGap = DEFAULT_TIDY_GAP
-  let appliedGap = DEFAULT_TIDY_GAP
+  let hasUncommittedPreview = false
   let pendingFrame: number | null = null
 
   const dropPendingPreview = () => {
@@ -22,19 +21,18 @@ export function useTidySession() {
 
   const applyGap = (nextGap: number) => {
     tidyUp(nodes, { gap: nextGap, captureUndo: false })
-    appliedGap = nextGap
   }
 
   const start = () => {
     dropPendingPreview()
+    hasUncommittedPreview = false
     nodes = [...gridNodes.value]
-    committedGap = tidyUp(nodes)
-    appliedGap = committedGap
-    gap.value = committedGap
+    gap.value = tidyUp(nodes)
   }
 
   const previewGap = (nextGap: number) => {
     gap.value = nextGap
+    hasUncommittedPreview = true
     dropPendingPreview()
     pendingFrame = requestAnimationFrame(() => {
       pendingFrame = null
@@ -46,17 +44,29 @@ export function useTidySession() {
     dropPendingPreview()
     gap.value = nextGap
     applyGap(nextGap)
-    committedGap = nextGap
+    hasUncommittedPreview = false
     recordUndoStep()
   }
 
+  const adoptGap = (laidOutGap: number) => {
+    dropPendingPreview()
+    hasUncommittedPreview = false
+    gap.value = laidOutGap
+  }
+
   const finish = () => {
-    const isSettled = gap.value === committedGap && appliedGap === committedGap
-    if (isSettled) dropPendingPreview()
-    else commitGap(gap.value)
+    if (hasUncommittedPreview) commitGap(gap.value)
+    else dropPendingPreview()
   }
 
   tryOnScopeDispose(finish)
 
-  return { gap: readonly(gap), start, previewGap, commitGap, finish }
+  return {
+    gap: readonly(gap),
+    start,
+    previewGap,
+    commitGap,
+    adoptGap,
+    finish
+  }
 }
