@@ -137,14 +137,18 @@ function recorderBlock(pageExpr: string, safeOutputPath: string): string {
       ${pageExpr}.context() as unknown as RecorderEnabledContext
     )._enableRecorder({
       language: 'playwright-test',
-      // Standby: NOTHING is captured until the Record button is pressed.
-      // Signing in, exploring, and getting set up all stay off the record —
-      // no accidental actions and no typed passwords end up in the code.
-      mode: 'standby',
+      // Inspecting: the floating toolbar shows, but NOTHING is captured until
+      // the Record button is pressed. Signing in, exploring, and getting set
+      // up all stay off the record — no accidental actions and no typed
+      // passwords end up in the code. Playwright 1.63 accepts only
+      // 'inspecting' or 'recording' here ('standby' throws), and with no
+      // mode the toolbar stays hidden.
+      mode: 'inspecting',
       pauseOnNextStatement: false,
       outputFile: ${safeOutputPath}
     })
-  } catch {
+  } catch (error) {
+    console.warn('Could not start the recorder toolbar:', error)
     await ${pageExpr}.pause()
   }
   // 1. Get set up first — sign in, look around. Nothing is being

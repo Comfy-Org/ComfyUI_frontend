@@ -155,10 +155,9 @@ export async function runRecording(
           // No PWDEBUG: it breaks inside fixture setup, before the app loads.
           COMFY_TEST_RECORDING: '1',
           PLAYWRIGHT_LOCAL: '1',
-          // The Inspector window confuses non-devs into clicking around in
-          // it; the in-app floating toolbar carries Record and the assert
-          // buttons, which is everything a recording needs.
-          PW_CODEGEN_NO_INSPECTOR: '1',
+          // No PW_CODEGEN_NO_INSPECTOR: since Playwright 1.63 it disables the
+          // whole recorder, including the in-app floating toolbar with Record
+          // and the assert buttons, not just the separate Inspector window.
           // Without this the fixture records against :8188's bundled frontend.
           PLAYWRIGHT_TEST_URL:
             devServerUrl() +
