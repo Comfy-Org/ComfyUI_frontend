@@ -178,17 +178,17 @@ const pillClass =
         data-testid="model-card-task"
         >{{ taskLabel }}</span
       >
-      <div class="ml-auto flex shrink-0 items-center gap-1">
+      <div class="ml-auto flex shrink-0 items-center gap-2">
         <a
           :href="model.href"
           data-model-try
-          class="inline-flex h-6 items-center rounded-full border border-transparency-white-t20 px-1 text-xs whitespace-nowrap text-content-bright transition-colors group-has-[[data-model-main]:hover]/card:border-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:bg-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:text-primary-comfy-ink hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          class="inline-flex h-8 items-center rounded-full border border-transparency-white-t20 px-3 text-xs whitespace-nowrap text-content-bright transition-colors group-has-[[data-model-main]:hover]/card:border-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:bg-primary-comfy-yellow group-has-[[data-model-main]:hover]/card:text-primary-comfy-ink hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           >{{ t('workshop.hub.tryModel') }}</a
         >
         <a
           :href="`${model.href}#api`"
           data-model-api
-          class="inline-flex h-6 items-center rounded-full border border-transparency-white-t20 px-1 text-xs whitespace-nowrap text-primary-comfy-yellow hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+          class="inline-flex h-8 items-center rounded-full border border-transparency-white-t20 px-3 text-xs whitespace-nowrap text-primary-comfy-yellow hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           >{{ t('workshop.hub.useApi')
           }}<span aria-hidden="true" class="ml-1">⌘</span></a
         >
