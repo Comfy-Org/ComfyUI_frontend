@@ -66,10 +66,7 @@ const jsonLd = catalog?.ok
   noindex={
     !isIndexableModelPage(withoutCatalogLocalePrefix(Astro.url.pathname))
   }
-  pageType={jsonLd?.pageType}
-  breadcrumbs={jsonLd?.breadcrumbs}
-  mainEntityId={jsonLd?.mainEntityId}
-  extraJsonLd={jsonLd?.extraJsonLd}
+  {...jsonLd}
   preloadFonts={['Medium']}
   banner={challengeBannerConfig}
 >
