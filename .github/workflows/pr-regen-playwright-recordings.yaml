@@ -1,0 +1,41 @@
+name: 'PR: Regenerate Playwright Recordings'
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+
+jobs:
+  regen:
+    if: >-
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) &&
+      startsWith(github.event.comment.body, '/playwright-regen-recordings')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.issue.number }}
+    steps:
+      - name: Drop cached recordings and rerun CI Playwright Videos
+        run: |
+          HEAD_REF=$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)
+          HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
+          for RUN in $(gh run list --workflow ci-playwright-videos.yaml --branch "$HEAD_REF" \
+            --event pull_request --limit 100 --json databaseId --jq '.[].databaseId'); do
+            for ARTIFACT in $(gh api "repos/$GH_REPO/actions/runs/$RUN/artifacts" \
+              --jq '.artifacts[] | select(.name == "video-cache-index") | .id'); do
+              gh api -X DELETE "repos/$GH_REPO/actions/artifacts/$ARTIFACT"
+            done
+          done
+          RUN_ID=$(gh run list --workflow ci-playwright-videos.yaml --commit "$HEAD_SHA" \
+            --event pull_request --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+          test -n "$RUN_ID" || { echo "::error::No CI: Playwright Videos run for $HEAD_SHA"; exit 1; }
+          gh run rerun "$RUN_ID"
+          echo "Rerunning https://github.com/$GH_REPO/actions/runs/$RUN_ID without cached recordings"
