@@ -1,15 +1,21 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
+import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { tidiedGapOf } from '@/components/graph/selectionGrid/selectionGridLayout'
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
 import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import TooltipProvider from '@/components/ui/tooltip/TooltipProvider.vue'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+
+vi.mock(import('@/components/graph/selectionGrid/selectionGridLayout'), {
+  spy: true
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -31,7 +37,17 @@ const nodeWithId = (id: number) => {
   return node
 }
 
-function renderButton() {
+const handlesThatEmitOnMount = (event: 'edited' | 'update:dragging') =>
+  defineComponent({
+    emits: ['edited', 'update:dragging'],
+    setup(_, { emit }) {
+      if (event === 'edited') emit('edited')
+      else emit('update:dragging', true)
+      return () => null
+    }
+  })
+
+function renderButton(SelectionGapHandles: Component | boolean = true) {
   return render(
     defineComponent({
       render: () =>
@@ -42,7 +58,7 @@ function renderButton() {
           ])
         )
     }),
-    { global: { plugins: [i18n], stubs: { SelectionGapHandles: true } } }
+    { global: { plugins: [i18n], stubs: { SelectionGapHandles } } }
   )
 }
 
@@ -50,8 +66,7 @@ const openBar = async () => {
   const user = userEvent.setup()
   setCanvasSelection([nodeWithId(1), nodeWithId(2)])
   await user.click(screen.getByRole('button', { name: 'Tidy up' }))
-  await screen.findByRole('slider')
-  return user
+  return { user, slider: await screen.findByRole('slider') }
 }
 
 describe('TidyUpButton', () => {
@@ -99,7 +114,7 @@ describe('TidyUpButton', () => {
   it('stays open and lifted for a press on another toolbox button', async () => {
     const { unmount } = renderButton()
     const { lift } = useSelectionToolboxLift()
-    const user = await openBar()
+    const { user } = await openBar()
 
     await user.click(screen.getByRole('button', { name: 'Bypass' }))
     await nextTick()
@@ -110,6 +125,28 @@ describe('TidyUpButton', () => {
     await user.click(document.body)
     await waitFor(() => expect(screen.queryByRole('slider')).toBeNull())
     expect(lift.value).toBe(0)
+    unmount()
+  })
+
+  it('ignores the slider while a gap handle is being dragged', async () => {
+    const { unmount } = renderButton(handlesThatEmitOnMount('update:dragging'))
+    const { user, slider } = await openBar()
+    const shownGap = slider.getAttribute('aria-valuenow')
+
+    slider.focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(slider).toHaveAttribute('aria-valuenow', shownGap)
+    unmount()
+  })
+
+  it('keeps the slider in its range when the handles leave a wider gap', async () => {
+    vi.mocked(tidiedGapOf).mockReturnValue(60)
+    const { unmount } = renderButton(handlesThatEmitOnMount('edited'))
+    const { slider } = await openBar()
+
+    await waitFor(() => expect(slider).toHaveAttribute('aria-valuenow', '48'))
+    expect(screen.getByText('60')).toBeInTheDocument()
     unmount()
   })
 })

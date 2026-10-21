@@ -137,6 +137,22 @@ describe('useTidySession', () => {
     expect(recordUndoStep).toHaveBeenCalledTimes(1)
   })
 
+  it('records a slide that ends on the gap it started from', () => {
+    const session = startedSession()
+
+    session.previewGap(18)
+    flushFrames()
+    session.previewGap(30)
+    flushFrames()
+    session.finish()
+
+    expect(tidyUp).toHaveBeenLastCalledWith([a, b], {
+      gap: 30,
+      captureUndo: false
+    })
+    expect(recordUndoStep).toHaveBeenCalledTimes(1)
+  })
+
   it('closes without moving nodes when the last gap was committed', () => {
     const session = startedSession()
     session.commitGap(20)

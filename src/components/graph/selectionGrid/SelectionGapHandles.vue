@@ -107,6 +107,8 @@ const AXIS_STYLES: Record<
   }
 }
 
+const isDragging = defineModel<boolean>('dragging', { default: false })
+
 const emit = defineEmits<{
   editStart: []
   edited: []
@@ -226,9 +228,12 @@ const graphPointAlong = (event: PointerEvent, axis: GapAxis) => {
 
 let dragListeners: AbortController | undefined
 
+const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta'])
+
 const stopDragListeners = () => {
   dragListeners?.abort()
   dragListeners = undefined
+  isDragging.value = false
 }
 
 function onPointerDown(event: PointerEvent, bar: ScreenBar) {
@@ -236,6 +241,7 @@ function onPointerDown(event: PointerEvent, bar: ScreenBar) {
   event.preventDefault()
   event.stopPropagation()
   if (event.currentTarget instanceof HTMLElement) {
+    event.currentTarget.focus({ preventScroll: true })
     event.currentTarget.setPointerCapture(event.pointerId)
   }
 
@@ -243,22 +249,28 @@ function onPointerDown(event: PointerEvent, bar: ScreenBar) {
   const origin = graphPointAlong(event, bar.axis)
   emit('editStart')
   start(bar)
+  if (!drag.value) return
 
   stopDragListeners()
   dragListeners = new AbortController()
+  isDragging.value = true
   const { signal } = dragListeners
   const isDragPointer = (pointerEvent: PointerEvent) =>
     pointerEvent.pointerId === pointerId
-  const endDrag = (end: () => void) => {
+  const cancelDrag = () => {
     stopDragListeners()
-    end()
+    cancel()
+  }
+  const commitDrag = () => {
+    stopDragListeners()
+    commit()
     emit('edited')
   }
   window.addEventListener(
     'pointermove',
     (moveEvent) => {
       if (!isDragPointer(moveEvent)) return
-      if (moveEvent.buttons === 0) endDrag(commit)
+      if (moveEvent.buttons === 0) commitDrag()
       else preview(graphPointAlong(moveEvent, bar.axis) - origin)
     },
     { signal }
@@ -266,25 +278,25 @@ function onPointerDown(event: PointerEvent, bar: ScreenBar) {
   window.addEventListener(
     'pointerup',
     (upEvent) => {
-      if (isDragPointer(upEvent)) endDrag(commit)
+      if (isDragPointer(upEvent)) commitDrag()
     },
     { signal, capture: true }
   )
   window.addEventListener(
     'pointercancel',
     (cancelEvent) => {
-      if (isDragPointer(cancelEvent)) endDrag(cancel)
+      if (isDragPointer(cancelEvent)) cancelDrag()
     },
     { signal, capture: true }
   )
-  window.addEventListener('blur', () => endDrag(cancel), { signal })
+  window.addEventListener('blur', cancelDrag, { signal })
   window.addEventListener(
     'keydown',
     (keyEvent) => {
-      if (keyEvent.key !== 'Escape') return
+      if (MODIFIER_KEYS.has(keyEvent.key)) return
       keyEvent.preventDefault()
       keyEvent.stopImmediatePropagation()
-      endDrag(cancel)
+      cancelDrag()
     },
     { signal, capture: true }
   )

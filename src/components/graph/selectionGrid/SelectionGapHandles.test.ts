@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -32,7 +32,10 @@ const i18n = createI18n({
 })
 
 describe('SelectionGapHandles', () => {
-  const moveBoxes = vi.fn()
+  const moveBoxes = vi.fn<ReturnType<typeof useSelectionGrid>['moveBoxes']>(
+    () => true
+  )
+  const placeBoxes = vi.fn()
   const recordUndoStep = vi.fn()
   const viewport: { scale: number; offset: [number, number] } = {
     scale: 1,
@@ -64,7 +67,7 @@ describe('SelectionGapHandles', () => {
       ),
       canTidy: computed(() => true),
       measure: () => row,
-      placeBoxes: vi.fn(),
+      placeBoxes,
       moveBoxes,
       recordUndoStep,
       tidyUp: vi.fn()
@@ -133,6 +136,39 @@ describe('SelectionGapHandles', () => {
       { captureUndo: true }
     )
     expect(emitted()).toHaveProperty('edited')
+  })
+
+  it('takes focus and reports the drag while it runs', async () => {
+    const user = userEvent.setup()
+    const { handle, emitted } = await renderHandles()
+
+    await user.pointer(press(handle, 215))
+    expect(handle).toHaveFocus()
+    await user.pointer({ keys: '[/MouseLeft]', target: document.body })
+
+    expect(emitted('update:dragging')).toEqual([[true], [false]])
+  })
+
+  it('cancels a drag on any other key and keeps that key from the canvas', async () => {
+    const user = userEvent.setup()
+    const { handle, emitted } = await renderHandles()
+    const keyReachingCanvas = vi.fn()
+    window.addEventListener('keydown', keyReachingCanvas)
+    onTestFinished(() => {
+      window.removeEventListener('keydown', keyReachingCanvas)
+    })
+
+    await user.pointer([press(handle, 215), moveTo(225)])
+    await new Promise(requestAnimationFrame)
+    await user.keyboard('{Shift}z')
+
+    expect(placeBoxes).toHaveBeenCalledWith(expect.any(Array), [
+      { id: 'a', x: 0, y: 0 },
+      { id: 'b', x: 230, y: 0 }
+    ])
+    expect(keyReachingCanvas).toHaveBeenCalledTimes(1)
+    expect(emitted()).not.toHaveProperty('edited')
+    expect(emitted('update:dragging').at(-1)).toEqual([false])
   })
 
   it('keeps the gap under the pointer when the canvas zooms during a drag', async () => {

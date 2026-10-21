@@ -21,7 +21,7 @@
       >
         <div class="flex h-8 w-44 items-center gap-2 pr-1 pl-3">
           <Slider
-            :model-value="[gap]"
+            :model-value="[clamp(gap, MIN_TIDY_GAP, MAX_TIDY_GAP)]"
             :min="MIN_TIDY_GAP"
             :max="MAX_TIDY_GAP"
             :step="1"
@@ -39,6 +39,7 @@
   <Teleport to="body">
     <SelectionGapHandles
       v-if="isOpen && canTidy"
+      v-model:dragging="isDraggingGap"
       @edit-start="finish"
       @edited="checkGaps"
       @dismiss="isOpen = false"
@@ -47,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { clamp } from 'es-toolkit'
 import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import {
   PopoverContent,
@@ -84,6 +86,7 @@ const { lift } = useSelectionToolboxLift()
 
 const isOpen = ref(false)
 const hasMixedGaps = ref(false)
+const isDraggingGap = ref(false)
 
 const checkGaps = () => {
   const tidiedGap = tidiedGapOf(measure())
@@ -131,14 +134,14 @@ const firstValue = (value: number[] | undefined): number | undefined =>
 
 const onSliderUpdate = (value: number[] | undefined) => {
   const next = firstValue(value)
-  if (next === undefined) return
+  if (next === undefined || isDraggingGap.value) return
   hasMixedGaps.value = false
   previewGap(next)
 }
 
 const onSliderCommit = (value: number[]) => {
   const next = firstValue(value)
-  if (next === undefined) return
+  if (next === undefined || isDraggingGap.value) return
   hasMixedGaps.value = false
   commitGap(next)
 }
