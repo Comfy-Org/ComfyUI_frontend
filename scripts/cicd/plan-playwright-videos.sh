@@ -29,7 +29,7 @@ hits=()
 misses=()
 while IFS=$'\t' read -r project absolute tests; do
   [ -n "$project" ] || continue
-  file=$(realpath --relative-to="$PWD" "$absolute")
+  file=${absolute#"$PWD"/}
   key=$(printf '%s\n' "$salt" "$project" "$file" "$(sha256sum < "$file")" |
     sha256sum | cut -c1-32)
   if grep -qxF "$key" "$cache_index"; then
@@ -39,7 +39,7 @@ while IFS=$'\t' read -r project absolute tests; do
   fi
 done <<< "$specs"
 
-printf '%s\n' "${misses[@]}" | jq -Rsc --args '
+printf '%s\n' ${misses[@]+"${misses[@]}"} | jq -Rsc --args '
   def pack($total):
     reduce sort_by(-.tests, .file)[] as $spec (
       [range($total) | {tests: 0, specs: []}];
@@ -61,4 +61,4 @@ printf '%s\n' "${misses[@]}" | jq -Rsc --args '
       ]},
       hits: $ARGS.positional
     }
-' "${hits[@]}"
+' ${hits[@]+"${hits[@]}"}
