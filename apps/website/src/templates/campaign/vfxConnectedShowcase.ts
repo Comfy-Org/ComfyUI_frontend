@@ -20,14 +20,14 @@ const demos = {
     source: 'backlot',
     mediaKind: 'video',
     variantIds: ['swap_jp', 'swap_uk', 'swap_it'],
-    workflowHref: undefined,
+    workflowHref: 'https://cloud.comfy.org/?share=28fa6219c110',
     keyframeLabel: 'vfxV3.keyframe'
   },
   reframe: {
     source: 'forest',
     mediaKind: 'image',
     variantIds: ['reframe_wide', 'reframe_vertical'],
-    workflowHref: undefined,
+    workflowHref: 'https://cloud.comfy.org/?share=ccfd0e7d75c3',
     keyframeLabel: 'vfxV3.keyframe'
   },
   sequence: {

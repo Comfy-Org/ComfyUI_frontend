@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { vfxMediaRoot } from '@/data/vfxMedia'
+import { vfxMediaRoot, vfxVariantMedia } from '@/data/vfxMedia'
 import { computed } from 'vue'
 import { prefersReducedMotion } from '@/composables/useReducedMotion'
 import VideoCompareSlider from '@/components/common/VideoCompareSlider.vue'
@@ -25,7 +25,7 @@ const paused = defineModel<boolean>('paused', { required: true })
 const active = computed(
   () => variants.find((item) => item.id === selected.value) ?? variants[0]
 )
-const result = computed(() => `${vfxMediaRoot}/${active.value.id}.mp4`)
+const result = computed(() => vfxVariantMedia(active.value.id, 'mp4'))
 function selectVariant(id: string) {
   selected.value = id
   paused.value =
@@ -41,11 +41,12 @@ function selectVariant(id: string) {
       v-model:paused="paused"
       comparison-style="workflow"
       synchronized-playback
+      follow-pointer-on-hover
       fit="cover"
       :before-src="`${vfxMediaRoot}/${source}.mp4`"
       :after-src="result"
       :before-poster-src="`${vfxMediaRoot}/${source}.jpg`"
-      :after-poster-src="`${vfxMediaRoot}/${active.id}.jpg`"
+      :after-poster-src="vfxVariantMedia(active.id, 'jpg')"
       :before-label="originalLabel"
       :slider-label="sliderLabel"
       :after-label="active.label"
@@ -61,7 +62,7 @@ function selectVariant(id: string) {
         @click="selectVariant(variant.id)"
       >
         <img
-          :src="`${vfxMediaRoot}/${variant.id}.jpg`"
+          :src="vfxVariantMedia(variant.id, 'jpg')"
           alt=""
           width="128"
           height="72"

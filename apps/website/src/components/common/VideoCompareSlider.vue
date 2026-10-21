@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useEventListener, useMounted } from '@vueuse/core'
+import { useEventListener, useMediaQuery, useMounted } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
@@ -23,6 +23,7 @@ const {
   afterSrc,
   mediaKind = 'video',
   synchronizedPlayback = false,
+  followPointerOnHover = false,
   fit = 'cover',
   comparisonStyle = 'default',
   beforePosterSrc,
@@ -36,6 +37,7 @@ const {
   afterSrc: string
   mediaKind?: 'video' | 'image'
   synchronizedPlayback?: boolean
+  followPointerOnHover?: boolean
   fit?: 'cover' | 'contain'
   comparisonStyle?: 'default' | 'workflow'
   beforePosterSrc?: string
@@ -62,6 +64,7 @@ const container = useTemplateRef<HTMLElement>('container')
 const beforeVideo = useTemplateRef<HTMLVideoElement>('beforeVideo')
 const afterVideo = useTemplateRef<HTMLVideoElement>('afterVideo')
 const isDragging = ref(false)
+const canHover = useMediaQuery('(any-hover: hover) and (any-pointer: fine)')
 const isMounted = useMounted()
 const shouldAutoplay = computed(
   () => isMounted.value && !synchronizedPlayback && !prefersReducedMotion()
@@ -91,6 +94,18 @@ function moveTo(clientX: number) {
   const bounds = container.value?.getBoundingClientRect()
   if (!bounds) return
   position.value = positionFromPointer(clientX, bounds)
+}
+
+function onPointerHover(event: PointerEvent) {
+  if (
+    !followPointerOnHover ||
+    !canHover.value ||
+    event.pointerType !== 'mouse' ||
+    event.buttons !== 0 ||
+    isDragging.value
+  )
+    return
+  moveTo(event.clientX)
 }
 
 function onPointerDown(event: PointerEvent) {
@@ -143,6 +158,7 @@ function syncAfterToBefore() {
       )
     "
     @pointerdown="onPointerDown"
+    @pointermove="onPointerHover"
   >
     <img
       v-if="mediaKind === 'image'"

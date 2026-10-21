@@ -39,9 +39,18 @@ import {
 } from '@/utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '@/utils/jsonLd'
 import JsonLdGraph from '@/components/common/JsonLdGraph.astro'
+import OpenGraphImages from '@/components/common/OpenGraphImages.astro'
 
 type PPFormulaFace =
   'Light' | 'Regular' | 'Medium' | 'Semibold' | 'Bold' | 'NarrowSemibold'
+
+interface OpenGraphImage {
+  url: string
+  alt?: string
+  type?: string
+  width?: number
+  height?: number
+}
 
 interface Props {
   title: string
@@ -50,6 +59,7 @@ interface Props {
   keywords?: string[]
   ogImage?: string
   ogImageAlt?: string
+  ogImages?: readonly OpenGraphImage[]
   noindex?: boolean
   /** Set on a page that duplicates another address, e.g. an old model URL. */
   canonicalPath?: string
@@ -72,6 +82,7 @@ const {
   keywords,
   ogImage = DEFAULT_OG_IMAGE,
   ogImageAlt = ogImage === DEFAULT_OG_IMAGE ? 'Comfy' : pageName,
+  ogImages,
   noindex = false,
   canonicalPath,
   pageType,
@@ -106,6 +117,15 @@ const alternates = head.emitAlternates
 const openGraphLocale = ogLocale(locale)
 const openGraphLocaleAlternates = ogLocaleAlternates(locale, alternates)
 const ogImageURL = new URL(ogImage, Astro.site ?? 'https://comfy.org')
+const openGraphImages: readonly OpenGraphImage[] = ogImages?.length
+  ? ogImages
+  : [
+      {
+        url: ogImageURL.href,
+        alt: ogImageAlt,
+        ...(ogImage === DEFAULT_OG_IMAGE ? { width: 1200, height: 630 } : {})
+      }
+    ]
 const rawStars = await fetchGitHubStars('Comfy-Org', 'ComfyUI')
 const githubStars = rawStars ? formatStarCount(rawStars) : ''
 
@@ -243,14 +263,7 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:image" content={ogImageURL.href} />
-    {ogImage === DEFAULT_OG_IMAGE && (
-      <>
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-      </>
-    )}
-    <meta property="og:image:alt" content={ogImageAlt} />
+    <OpenGraphImages images={openGraphImages} fallbackAlt={ogImageAlt} />
     <meta property="og:url" content={canonicalURL.href} />
     <meta property="og:locale" content={openGraphLocale} />
     {openGraphLocaleAlternates.map((alternate) => (
@@ -327,6 +340,7 @@ const hubApps: HubApp[] = appModels.map(({ appId, flag }) => ({
       </div>
     ) : (
       <HeaderMain
+        page-path={Astro.url.pathname}
         locale={locale}
         github-stars={githubStars}
         workshop-in-build={isWorkshopInBuild()}

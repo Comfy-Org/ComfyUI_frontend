@@ -4,6 +4,7 @@ import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import './vfx-connected'
+import { vfxMediaRoot, vfxRedSkyMedia } from '@/data/vfxMedia'
 import { ScrollTrigger } from './gsapSetup'
 
 class ShowcaseResizeObserver implements ResizeObserver {
@@ -45,7 +46,7 @@ function mountShowcase() {
       ${[
         ['golden', 'Golden hour'],
         ['night', 'Night'],
-        ['blue', 'Blue hour'],
+        ['blue', 'Red sky'],
         ['rain', 'Rain'],
         ['snow', 'Snow'],
         ['day', 'Daylight']
@@ -208,34 +209,52 @@ it('seeds a new sequence player from the Studio rather than the hidden canvas', 
 })
 
 it.for([
-  { suffix: 'golden', label: 'Golden hour' },
-  { suffix: 'night', label: 'Night' },
-  { suffix: 'blue', label: 'Blue hour' },
-  { suffix: 'rain', label: 'Rain' },
-  { suffix: 'snow', label: 'Snow' },
-  { suffix: 'day', label: 'Daylight' }
+  {
+    label: 'Golden hour',
+    poster: `${vfxMediaRoot}/relight_golden.jpg`,
+    video: `${vfxMediaRoot}/relight_golden.mp4`
+  },
+  {
+    label: 'Night',
+    poster: `${vfxMediaRoot}/relight_night.jpg`,
+    video: `${vfxMediaRoot}/relight_night.mp4`
+  },
+  {
+    label: 'Red sky',
+    poster: vfxRedSkyMedia.poster,
+    video: vfxRedSkyMedia.video
+  },
+  {
+    label: 'Rain',
+    poster: `${vfxMediaRoot}/relight_rain.jpg`,
+    video: `${vfxMediaRoot}/relight_rain.mp4`
+  },
+  {
+    label: 'Snow',
+    poster: `${vfxMediaRoot}/relight_snow.jpg`,
+    video: `${vfxMediaRoot}/relight_snow.mp4`
+  },
+  {
+    label: 'Daylight',
+    poster: `${vfxMediaRoot}/relight_day.jpg`,
+    video: `${vfxMediaRoot}/relight_day.mp4`
+  }
 ])(
   'selects the $label image, output video and poster',
-  async ({ suffix, label }) => {
+  async ({ label, poster, video: expectedVideo }) => {
     const user = userEvent.setup()
     const { view } = mountShowcase()
     await user.click(view.getByRole('button', { name: label }))
     expect(view.getByTestId('workflow-node-label')).toHaveTextContent(label)
     expect(view.getByRole('img', { name: 'Key frame' })).toHaveAttribute(
       'src',
-      `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.jpg`
+      poster
     )
     const video = view.getByLabelText<HTMLVideoElement>(label, {
       selector: 'video'
     })
-    expect(video).toHaveAttribute(
-      'src',
-      `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.mp4`
-    )
-    expect(video).toHaveProperty(
-      'poster',
-      `https://media.comfy.org/website/vfx/v3/2026-10-19-43beb0de27/relight_${suffix}.jpg`
-    )
+    expect(video).toHaveAttribute('src', expectedVideo)
+    expect(video).toHaveProperty('poster', poster)
   }
 )
 

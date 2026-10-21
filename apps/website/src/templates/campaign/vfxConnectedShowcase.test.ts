@@ -17,14 +17,14 @@ describe('showcaseConfig', () => {
       demo: 'swap',
       source: 'backlot',
       mediaKind: 'video',
-      workflowHref: undefined,
+      workflowHref: 'https://cloud.comfy.org/?share=28fa6219c110',
       firstVariant: 'swap_jp'
     },
     {
       demo: 'reframe',
       source: 'forest',
       mediaKind: 'image',
-      workflowHref: undefined,
+      workflowHref: 'https://cloud.comfy.org/?share=ccfd0e7d75c3',
       firstVariant: 'reframe_wide'
     },
     {
