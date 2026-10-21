@@ -48,6 +48,7 @@ export function useNodePointerInteractions(
   let gesture: GestureState = idleGesture
   let press: Press | null = null
   let pressDragged = false
+  let previousPressDragged = false
 
   function canDrag() {
     return !toValue(nodeStateRef).flags.pinned
@@ -76,7 +77,9 @@ export function useNodePointerInteractions(
     gesture = result.state
     for (const effect of result.effects) {
       const dragged = draggedBy(effect)
-      if (dragged !== undefined) pressDragged = dragged
+      if (dragged === undefined) continue
+      previousPressDragged = pressDragged
+      pressDragged = dragged
     }
     try {
       for (const effect of result.effects) runEffect(effect, event)
@@ -86,7 +89,7 @@ export function useNodePointerInteractions(
   }
 
   function lastPressDragged() {
-    return pressDragged
+    return pressDragged || previousPressDragged
   }
 
   function clearPress() {

@@ -121,9 +121,20 @@ describe('NodeHeader title rename', () => {
     // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(header)
 
-    const editor = screen.queryByTestId('node-title-input')
-    if (showsEditor) expect(editor).toBeInTheDocument()
-    else expect(editor).not.toBeInTheDocument()
+    expect(screen.queryByTestId('node-title-input') !== null).toBe(showsEditor)
+  })
+
+  it('keeps the title editor closed when a drag is followed by a stationary click', async () => {
+    renderNode()
+    const header = screen.getByTestId('node-header-1')
+    const past = CanvasPointer.maxClickDrift + 1
+
+    await press(header, 10, past, true)
+    await press(header, 12, 0, false)
+    // oxlint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.dblClick(header)
+
+    expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
   })
 
   it('opens the title editor on a later double-click after a drag', async () => {
