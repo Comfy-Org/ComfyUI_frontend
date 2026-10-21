@@ -188,6 +188,42 @@ describe('nodeGraphCustomNodes', () => {
     expect(nodeGraphInputs(graph)).toHaveLength(5000)
   })
 
+  it('reads each nested subgraph once when nothing inside is a loader', () => {
+    const instances = (type: string) =>
+      Array.from({ length: 50 }, () => ({ type }))
+    const levels = Array.from({ length: 6 }, (_, level) => ({
+      id: `s${level}`,
+      nodes: instances(`s${level + 1}`)
+    }))
+    const graph = {
+      nodes: instances('s0'),
+      definitions: {
+        subgraphs: [
+          ...levels,
+          { id: 's6', nodes: [{ type: 'LoadImage', mode: 2 }] }
+        ]
+      }
+    }
+
+    expect(nodeGraphInputs(graph)).toEqual([])
+  })
+
+  it('caps the inputs across instances of a large subgraph', () => {
+    const graph = {
+      nodes: [{ type: 'big' }, { type: 'big' }, { type: 'big' }],
+      definitions: {
+        subgraphs: [
+          {
+            id: 'big',
+            nodes: Array.from({ length: 4000 }, () => ({ type: 'LoadImage' }))
+          }
+        ]
+      }
+    }
+
+    expect(nodeGraphInputs(graph)).toHaveLength(5000)
+  })
+
   it('stops at a subgraph that contains itself', () => {
     const graph = {
       nodes: [{ type: 'loop' }],
