@@ -37,11 +37,25 @@ const detailSchema = z.union([routerDetailSchema, workflowDetailSchema])
 
 const tagSchema = z.object({ label: z.string(), search: z.string() })
 
+const providerModelSchema = z.object({
+  slug: z.string(),
+  name: z.string(),
+  href: z.string(),
+  provider: z.string(),
+  price: z.string().optional(),
+  resolution: z.string().optional(),
+  duration: z.object({ min: z.number().optional(), max: z.number() }).optional()
+})
+
+export type ProviderModelRow = z.output<typeof providerModelSchema>
+
 const modelsPageDataSchema = z.object({
   kind: z.literal('page'),
   model: detailSchema,
   related: z.array(modelSchema),
   relatedHeading: z.string(),
+  providerModels: z.array(providerModelSchema).default([]),
+  workflows: z.array(workflowModelSchema).default([]),
   successor: modelSchema.optional(),
   priceEstimate: z.string().optional(),
   useCaseLabel: z.string().optional(),

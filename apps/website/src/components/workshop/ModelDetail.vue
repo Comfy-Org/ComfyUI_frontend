@@ -4,6 +4,7 @@ import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import {
   computed,
   effectScope,
+  inject,
   onMounted,
   onScopeDispose,
   onUnmounted,
@@ -18,6 +19,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '@/composables/useWorkshopFormDraft'
+import { LIVE_PAGE_HELD } from '@/lib/workshop/live-page-hold'
 import { useWorkshopDelivery } from '@/composables/useWorkshopDelivery'
 import { sameFormValues } from '@/lib/workshop/form-values'
 import { validateWorkshopMediaInputs } from '@/config/workshop-media-validation'
@@ -188,12 +190,14 @@ const values = computed<FormValues>({
     else fieldValues.value = value
   }
 })
+const held = inject(LIVE_PAGE_HELD, ref(false))
 const { pending: draftPending, restoreFailed } = useWorkshopFormDraft(
   model.slug,
   schema,
   values,
   nativeJson,
-  !!model.execution && model.execution.inputs === undefined
+  !!model.execution && model.execution.inputs === undefined,
+  { held }
 )
 // The marks are what the page itself put on the form, taken before anything
 // else can write. A restored draft is a reader's own work carried across a
@@ -276,7 +280,7 @@ const signInHref = useSignInHref(locale)
 const docsHref = modelDocsHref(model)
 
 watch(
-  () => mounted.value && workshopEnabled.value,
+  () => mounted.value && workshopEnabled.value && !held.value,
   (visible) => {
     if (visible) {
       captureWorkshopEvent({ name: 'model_viewed', properties: modelAnalytics })
