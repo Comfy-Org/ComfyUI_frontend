@@ -8310,8 +8310,7 @@
     "display_name": "HeyGen Voice 1.0 文字轉語音",
     "inputs": {
       "model": {
-        "name": "模型",
-        "tooltip": "heygen-voice-1-turbo 速度更快，費用只要一半。"
+        "name": "模型"
       },
       "model_expressiveness_boost": {
         "name": "expressiveness_boost"

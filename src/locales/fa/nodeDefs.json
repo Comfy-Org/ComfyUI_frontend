@@ -8310,8 +8310,7 @@
     "display_name": "HeyGen Voice ۱.۰ Text to Speech",
     "inputs": {
       "model": {
-        "name": "مدل",
-        "tooltip": "heygen-voice-1-turbo سریع‌تر است و هزینه‌اش نصف است."
+        "name": "مدل"
       },
       "model_expressiveness_boost": {
         "name": "expressiveness_boost"

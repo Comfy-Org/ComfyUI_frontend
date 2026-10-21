@@ -8310,8 +8310,7 @@
     "display_name": "המרת טקסט לדיבור HeyGen Voice 1.0",
     "inputs": {
       "model": {
-        "name": "מודל",
-        "tooltip": "heygen-voice-1-turbo מהיר יותר ועולה חצי מהמחיר."
+        "name": "מודל"
       },
       "model_expressiveness_boost": {
         "name": "הגברת_הבעתיות"

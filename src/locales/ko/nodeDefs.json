@@ -8310,8 +8310,7 @@
     "display_name": "HeyGen Voice 1.0 텍스트 음성 변환",
     "inputs": {
       "model": {
-        "name": "모델",
-        "tooltip": "heygen-voice-1-turbo는 더 빠르고 비용은 절반입니다."
+        "name": "모델"
       },
       "model_expressiveness_boost": {
         "name": "expressiveness_boost"
