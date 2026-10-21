@@ -140,6 +140,28 @@ describe('detectSelectionGrid', () => {
       columns: 3
     },
     {
+      name: 'a tall node that overlaps only the taller of two level nodes',
+      boxes: [
+        box('sampler', 0, 0, 300, 262),
+        box('decode', 340, 0, 200, 46),
+        box('save', 580, 60, 300, 270)
+      ],
+      kind: 'row',
+      rows: 1,
+      columns: 3
+    },
+    {
+      name: 'two nodes stacked beside a tall one',
+      boxes: [
+        box('tall', 0, 0, 200, 600),
+        box('upper', 240, 0, 150, 100),
+        box('lower', 240, 95, 150, 100)
+      ],
+      kind: 'scattered',
+      rows: 2,
+      columns: 2
+    },
+    {
       name: 'a column of mixed widths',
       boxes: [
         box('a', 0, 0, 300, 100),

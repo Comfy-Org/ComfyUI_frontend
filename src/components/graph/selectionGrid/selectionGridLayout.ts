@@ -38,12 +38,6 @@ interface AxisSpan {
   size: number
 }
 
-interface Band {
-  sharedEnd: number
-  longest: AxisSpan
-  members: LayoutBox[]
-}
-
 const GRID_ALIGN_TOLERANCE = 16
 const OVERLAP_TOLERANCE = 0.5
 
@@ -69,12 +63,34 @@ function trackCountOf(grid: SelectionGrid, axis: GapAxis): number {
   return axis === 'x' ? grid.columnCount : grid.rowCount
 }
 
-function joinsBand(band: Band, { start, size }: AxisSpan): boolean {
-  const { longest } = band
-  const overlapsEveryMember = start < band.sharedEnd
-  const centreInLongest = start + size / 2 <= longest.start + longest.size
-  const nearbyStart = start - longest.start <= Math.min(longest.size, size) / 2
-  return overlapsEveryMember && (centreInLongest || nearbyStart)
+function endOf({ start, size }: AxisSpan): number {
+  return start + size
+}
+
+function longestAlong(boxes: LayoutBox[], axis: GapAxis): AxisSpan {
+  return boxes
+    .map((box) => spanOf(box, axis))
+    .reduce((longest, span) => (span.size > longest.size ? span : longest))
+}
+
+function joinsBand(
+  members: LayoutBox[],
+  box: LayoutBox,
+  axis: GapAxis
+): boolean {
+  const crossAxis = crossAxisOf(axis)
+  const { start, size } = spanOf(box, axis)
+  const stacked = members.filter((member) =>
+    spansOverlap(spanOf(member, crossAxis), spanOf(box, crossAxis))
+  )
+  const overlapsStacked = stacked.every(
+    (member) => start < endOf(spanOf(member, axis)) - OVERLAP_TOLERANCE
+  )
+  const reference = longestAlong(stacked.length > 0 ? stacked : members, axis)
+  const centreInReference = start + size / 2 <= endOf(reference)
+  const nearbyStart =
+    start - reference.start <= Math.min(reference.size, size) / 2
+  return overlapsStacked && (centreInReference || nearbyStart)
 }
 
 function clusterAlong(boxes: LayoutBox[], axis: GapAxis): LayoutBox[][] {
@@ -84,23 +100,13 @@ function clusterAlong(boxes: LayoutBox[], axis: GapAxis): LayoutBox[][] {
       spanOf(a, axis).start - spanOf(b, axis).start ||
       spanOf(a, crossAxis).start - spanOf(b, crossAxis).start
   )
-  const bands: Band[] = []
+  const bands: LayoutBox[][] = []
   for (const box of sorted) {
-    const span = spanOf(box, axis)
     const band = bands.at(-1)
-    if (band && joinsBand(band, span)) {
-      band.members.push(box)
-      band.sharedEnd = Math.min(band.sharedEnd, span.start + span.size)
-      if (span.size > band.longest.size) band.longest = span
-    } else {
-      bands.push({
-        sharedEnd: span.start + span.size,
-        longest: span,
-        members: [box]
-      })
-    }
+    if (band && joinsBand(band, box, axis)) band.push(box)
+    else bands.push([box])
   }
-  return bands.map((band) => band.members)
+  return bands
 }
 
 function cumulativeStarts(counts: number[]): number[] {
