@@ -11,8 +11,13 @@ import { useScheduledPlanChange } from '@/platform/workspace/composables/useSche
 
 export function useBillingPlanRow() {
   const { t } = useI18n()
-  const { subscription, subscriptionStatus, billingStatus, isTeamPlan } =
-    useBillingContext()
+  const {
+    subscription,
+    subscriptionStatus,
+    subscriptionState,
+    billingStatus,
+    isTeamPlan
+  } = useBillingContext()
   const { quotaEnabled, available, maxAvailable } = useFreeTierQuota()
   const scheduled = useScheduledPlanChange()
 
@@ -47,6 +52,7 @@ export function useBillingPlanRow() {
     derivePlanRow({
       ...subscriptionFacts.value,
       subscriptionStatus: subscriptionStatus.value,
+      subscriptionState: subscriptionState.value,
       billingStatus: billingStatus.value,
       scheduledChange: scheduledChange.value,
       freeRuns: freeRuns.value
