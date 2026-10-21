@@ -7,6 +7,11 @@ this package uses semantic versioning.
 
 ## Unreleased
 
+## 0.3.12 - 2026-10-21
+
+The first MIT release of the current line. (0.3.11 is a maintenance release of
+the schema-4 line: the 0.3.7 code relicensed to MIT.)
+
 ### Changed
 
 - Relicensed from GPL-3.0-only to MIT. Releases up to and including 0.3.10
