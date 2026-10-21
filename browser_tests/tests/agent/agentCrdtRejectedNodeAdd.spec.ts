@@ -97,29 +97,34 @@ async function emptyCanvasPointBelow(
   return point
 }
 
-const ADDED_CLASS = 'AutogrowPromptPicker'
+const ADDED_CLASS = 'DynamicModePicker'
 const SEED_CLASS = 'KSampler'
 const SEED_NODE_ID = '1'
 
 const nodeDefs: Record<string, ComfyNodeDef> = {
   [ADDED_CLASS]: {
     name: ADDED_CLASS,
-    display_name: 'Autogrow Prompt Picker',
+    display_name: 'Dynamic Mode Picker',
     description: '',
     category: 'testing',
     python_module: 'custom_nodes.test',
     output_node: false,
     input: {
       required: {
-        prompt: ['STRING', { default: '' }],
-        images: [
-          'COMFY_AUTOGROW_V3',
+        mode: [
+          'COMFY_DYNAMICCOMBO_V3',
           {
-            template: {
-              input: { required: { image: ['IMAGE', {}] } },
-              names: ['image_1', 'image_2'],
-              min: 0
-            }
+            options: [
+              { key: 'creative', inputs: { required: {} } },
+              {
+                key: 'faithful',
+                inputs: {
+                  required: {
+                    detail: ['INT', { default: 80, min: 0, max: 100 }]
+                  }
+                }
+              }
+            ]
           }
         ]
       }

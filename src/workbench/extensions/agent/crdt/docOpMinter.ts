@@ -151,35 +151,27 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   if (!named || node.isVirtualNode) return snapshot
   const values = valueWidgetsOnly(node, named)
-  const inputTypes = new Set(
-    Object.values(useNodeDefStore().fromLGraphNode(node)?.inputs ?? {}).map(
-      (spec) => spec.type
-    )
-  )
-  const form = nodeLocalWidgetForm(node, values, inputTypes)
-  if (!form) return { ...snapshot, widgets_values: values }
-  const widgetsValues = inputTypes.has('COMFY_DYNAMICCOMBO_V3')
-    ? form.order.map((name) => values[name])
-    : values
-  return {
-    ...snapshot,
-    widgets_values: widgetsValues,
-    widgets_values_form: form
-  }
+  const form = nodeLocalWidgetForm(node, values)
+  return form
+    ? { ...snapshot, widgets_values: values, widgets_values_form: form }
+    : { ...snapshot, widgets_values: values }
 }
 
-const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = [
+const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = new Set([
   'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICCOMBO_V3',
   'COMFY_DYNAMICGROUP_V3'
-]
+])
 
 function nodeLocalWidgetForm(
   node: LGraphNode,
-  values: Record<string, unknown>,
-  inputTypes: ReadonlySet<string>
+  values: Record<string, unknown>
 ): WidgetValuesForm | undefined {
-  if (VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.some((type) => inputTypes.has(type)))
-    return undefined
+  const definition = useNodeDefStore().fromLGraphNode(node)
+  const layoutDependsOnValues = Object.values(definition?.inputs ?? {}).some(
+    (spec) => VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.has(spec.type)
+  )
+  if (layoutDependsOnValues) return undefined
   const order = (node.widgets ?? [])
     .map((widget) => widget.name)
     .filter((name) => Object.hasOwn(values, name))

@@ -118,7 +118,7 @@ const canvasSeed: ComfyWorkflowJSON = {
 }
 
 test.describe(
-  'Agent widget form on a human-added dynamic combo node',
+  'Agent edits on a human-added dynamic combo node',
   { tag: ['@cloud', '@agent', '@widget', '@vue-nodes'] },
   () => {
     test('keeps the newly shown child writable after the selection changes', async ({
@@ -177,7 +177,7 @@ test.describe(
           .filter((outcome) => outcome.outcome === 'rejected')
 
       const nodeId =
-        await test.step('the person adds the node and the host stores its form', async () => {
+        await test.step('the person adds the catalogued node', async () => {
           const nodeId = await page.evaluate((type) => {
             const node = window.LiteGraph!.createNode(type)
             if (!node) throw new Error(`${type} is not a registered node type`)
@@ -190,9 +190,9 @@ test.describe(
           await expect
             .poll(() => hostNode(nodeId))
             .toMatchObject({
-              widgets_values: ['creative'],
-              widgets_values_form: { order: ['mode'] }
+              widgets_values: ['creative']
             })
+          expect(hostNode(nodeId)).not.toHaveProperty('widgets_values_form')
           expect(rejectedHumanOps()).toEqual([])
           return nodeId
         })
@@ -208,9 +208,7 @@ test.describe(
         )
         await expect(detail).toBeVisible()
         await expect.poll(appliedHumanOps).toBeGreaterThan(applied)
-        await expect
-          .poll(() => hostNode(nodeId)?.widgets_values_form)
-          .toEqual({ order: ['mode', 'mode.detail'] })
+        expect(rejectedHumanOps()).toEqual([])
       })
 
       await test.step('the person edits the newly shown child and the host keeps it', async () => {
