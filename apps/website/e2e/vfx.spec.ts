@@ -159,3 +159,14 @@ for (const { path, heading, cta, href } of [
     ).toHaveAttribute('href', href)
   })
 }
+
+for (const path of ['/solutions/vfx/', '/solutions/vfx/v3/']) {
+  test(`${path} browses the Hub workflows tagged Video Edit`, async ({
+    page
+  }) => {
+    await page.goto(path)
+    await expect(
+      page.getByRole('link', { name: 'Browse all VFX workflows', exact: true })
+    ).toHaveAttribute('href', '/hub/workflows/?capability=Video%20Edit')
+  })
+}
