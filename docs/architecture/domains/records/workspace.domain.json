@@ -1,7 +1,7 @@
 {
   "id": "workspace",
   "capability": "Workspace collaboration",
-  "description": "Team workspace collaboration and membership: the workspace API client and web-session transport, the team workspace store, workspace switching, create, edit, delete, and leave flows, members, roles, invites and invite links, workspace deep links, partner-node access governance, member credit limits, activity history, and the workspace settings and user popover surfaces. Workspace-scoped credential minting belongs to authentication; plans, subscriptions, top-ups, invoices, and billing capabilities belong to billing.",
+  "description": "Team workspace collaboration and membership: the workspace API client and web-session transport, the team workspace store, workspace switching, create, edit, delete, and leave flows, members, roles, invites and invite links, workspace deep links, partner-node access governance, member credit limits, and the workspace settings and user popover surfaces. Workspace-scoped credential minting belongs to authentication; plans, subscriptions, top-ups, invoices, and billing capabilities belong to billing.",
   "modules": [
     {
       "path": "src/platform/workspace/api/__mocks__/**",
@@ -64,14 +64,6 @@
       "role": "presentation"
     },
     {
-      "path": "src/platform/workspace/components/RoleBadge.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/components/RoleBadge.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/platform/workspace/components/WorkspaceProfilePic.vue",
       "role": "presentation"
     },
@@ -90,14 +82,6 @@
     {
       "path": "src/platform/workspace/composables/__mocks__/**",
       "role": "application"
-    },
-    {
-      "path": "src/platform/workspace/composables/useAutoPageSize.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/platform/workspace/composables/useAutoPageSize.ts",
-      "role": "presentation"
     },
     {
       "path": "src/platform/workspace/composables/useCreateWorkspaceUrlLoader.test.ts",
@@ -121,14 +105,6 @@
     },
     {
       "path": "src/platform/workspace/composables/useMembersPanel.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workspace/composables/useWorkspaceActivity.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/workspace/composables/useWorkspaceActivity.ts",
       "role": "application"
     },
     {
@@ -188,14 +164,6 @@
       "role": "application"
     },
     {
-      "path": "src/platform/workspace/utils/badgeColor.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workspace/utils/badgeColor.ts",
-      "role": "domain"
-    },
-    {
       "path": "src/platform/workspace/utils/inviteLinks.test.ts",
       "role": "application"
     },
@@ -210,14 +178,6 @@
     {
       "path": "src/platform/workspace/utils/platformLink.ts",
       "role": "application"
-    },
-    {
-      "path": "src/platform/workspace/utils/relativeTime.test.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workspace/utils/relativeTime.ts",
-      "role": "domain"
     },
     {
       "path": "src/platform/workspace/workspaceConstants.ts",
@@ -278,14 +238,12 @@
       ]
     },
     {
-      "name": "Partner-node governance, member credit limits, activity, and workspace settings panels",
+      "name": "Partner-node governance, member credit limits, and workspace settings panels",
       "checks": [
         "src/platform/workspace/stores/partnerNodeGovernanceStore.test.ts",
         "src/platform/workspace/api/partnerNodePolicyApi.test.ts",
         "src/platform/workspace/components/dialogs/settings/PartnerNodeAccessPanel.test.ts",
         "src/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.test.ts",
-        "src/platform/workspace/composables/useWorkspaceActivity.test.ts",
-        "src/platform/workspace/components/dialogs/settings/WorkspaceActivityContent.test.ts",
         "src/platform/workspace/components/dialogs/settings/WorkspaceSettingsPanelContent.test.ts",
         "src/platform/workspace/composables/useWorkspaceMenuItems.test.ts"
       ]

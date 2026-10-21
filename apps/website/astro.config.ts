@@ -42,6 +42,7 @@ export default defineConfig({
   ],
   vite: {
     plugins: [tailwindcss()],
+    resolve: { noExternal: ['three'] },
     define: {
       'import.meta.env.PUBLIC_LAUNCH_DRAFTS':
         process.env.VERCEL_ENV === 'preview',

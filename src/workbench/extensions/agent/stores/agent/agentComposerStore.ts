@@ -6,23 +6,23 @@ import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import type { ComposerAttachment } from '../../types/composerAttachment'
-import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type {
   ComposerInsertionPoint,
   ComposerPrompt,
   ComposerReference
-} from '../../types/composerPrompt'
-import { composerReferenceKey } from '../../types/composerPrompt'
+} from '@/workbench/extensions/agent/types/composerPrompt'
+import { composerReferenceKey } from '@/workbench/extensions/agent/types/composerPrompt'
 import type {
   PromptSnapshot,
   WorkflowReference
-} from '../../types/workflowReference'
-import { insertComposerReference } from '../../utils/composerPrompt'
-import { promptReferenceParts } from '../../utils/promptReferenceParts'
-import { createVideoThumbnail } from '../../utils/videoThumbnail'
-import type { AgentStarterPromptSource } from '../../utils/starterPrompts'
+} from '@/workbench/extensions/agent/types/workflowReference'
+import { insertComposerReference } from '@/workbench/extensions/agent/utils/composerPrompt'
+import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
+import { createVideoThumbnail } from '@/workbench/extensions/agent/utils/videoThumbnail'
+import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]

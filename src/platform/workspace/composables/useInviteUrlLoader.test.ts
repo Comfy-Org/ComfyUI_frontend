@@ -7,8 +7,8 @@ import { useAuthStore } from '@/stores/authStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import { WorkspaceApiError } from '../api/workspaceApi'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent } from 'vue'

@@ -14,7 +14,6 @@ interface MenuItemMetadata {
   key?: string
   class?: string | (() => string)
   tooltip?: string
-  new?: boolean
   shortcut?: string | (() => string | undefined)
   badge?: string
   overlayIcon?: OverlayIconProps

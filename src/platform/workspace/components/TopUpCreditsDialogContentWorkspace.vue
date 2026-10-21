@@ -47,6 +47,13 @@
       {{ $t('credits.topUp.insufficientWorkflowMessage') }}
     </p>
 
+    <p
+      v-if="step === 'amount' || step === 'confirm'"
+      class="m-0 px-8 pb-4 text-sm text-muted-foreground"
+    >
+      {{ $t('credits.topUp.purchaseDisclosure') }}
+    </p>
+
     <template v-if="step === 'confirm'">
       <p class="m-0 px-8 text-sm text-muted-foreground">
         {{ $t('credits.topUp.confirmSubtitle') }}
@@ -172,7 +179,10 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
-        <NumberField
+        <FormNumberField
+          class="w-full"
+          :aria-label="$t('credits.topUp.youPay')"
+          input-class="text-lg font-medium"
           :model-value="payAmount"
           :min="0"
           :max="MAX_AMOUNT"
@@ -180,14 +190,10 @@
           :format-options="{ maximumFractionDigits: 0 }"
           @update:model-value="handlePayAmountChange"
         >
-          <NumberFieldDecrement />
-          <span class="shrink-0 text-base font-semibold">$</span>
-          <NumberFieldInput
-            :aria-label="$t('credits.topUp.youPay')"
-            class="text-lg font-medium"
-          />
-          <NumberFieldIncrement />
-        </NumberField>
+          <template #prefix>
+            <span class="shrink-0 text-base font-semibold">$</span>
+          </template>
+        </FormNumberField>
       </div>
 
       <!-- You Get -->
@@ -195,21 +201,20 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
-        <NumberField
+        <FormNumberField
           v-model="creditsModel"
+          class="w-full"
+          :aria-label="$t('credits.topUp.youGet')"
+          input-class="text-lg font-medium"
           :min="0"
           :max="usdToCredits(MAX_AMOUNT)"
           :step="getCreditsStepAmount(creditsModel)"
           :format-options="{ maximumFractionDigits: 0 }"
         >
-          <NumberFieldDecrement />
-          <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
-          <NumberFieldInput
-            :aria-label="$t('credits.topUp.youGet')"
-            class="text-lg font-medium"
-          />
-          <NumberFieldIncrement />
-        </NumberField>
+          <template #prefix>
+            <i class="icon-[lucide--coins] size-4 shrink-0 text-credit" />
+          </template>
+        </FormNumberField>
       </div>
     </div>
 
@@ -306,7 +311,7 @@
           variant="link"
           size="md"
           :disabled="!canTopUp"
-          :loading="loading"
+          :loading
           @click="reopenCheckout"
         >
           {{ $t('credits.topUp.reopenCheckout') }}
@@ -423,10 +428,7 @@ import {
 } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import NumberField from '@/components/ui/number-field/NumberField.vue'
-import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
-import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
-import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+import FormNumberField from '@/components/common/FormNumberField.vue'
 import { watchForTopupBalanceUpdate } from '@/composables/billing/topupBalanceRefresh'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -877,8 +879,15 @@ function isNoPaymentMethodRefusal(error: unknown): boolean {
 
 let unmounted = false
 let stopDefaultCardReturnRefresh: (() => void) | null = null
+let checkoutScope: AbortController | null = null
+watch(
+  () => workspaceStore.workspaceTransitionGeneration,
+  () => checkoutScope?.abort(),
+  { flush: 'sync' }
+)
 onUnmounted(() => {
   unmounted = true
+  checkoutScope?.abort()
   stopDefaultCardReturnRefresh?.()
 })
 
@@ -1003,14 +1012,17 @@ async function openCheckoutInReservedTab(): Promise<
     step.value = 'checkoutBlocked'
     return 'blocked'
   }
+  const scope = new AbortController()
+  checkoutScope = scope
   loading.value = true
   try {
     if (!balance.value) await Promise.allSettled([fetchBalance()])
     const checkoutUrl = await createHostedCheckout(
       payAmount.value * 100,
-      returnUrl
+      returnUrl,
+      scope.signal
     )
-    if (unmounted) {
+    if (unmounted || scope.signal.aborted) {
       checkoutTab.close()
       return 'abandoned'
     }
@@ -1020,8 +1032,9 @@ async function openCheckoutInReservedTab(): Promise<
   } catch (error) {
     checkoutTab.close()
     console.error('Hosted top-up checkout failed to open', error)
-    return unmounted ? 'abandoned' : 'failed'
+    return unmounted || scope.signal.aborted ? 'abandoned' : 'failed'
   } finally {
+    if (checkoutScope === scope) checkoutScope = null
     loading.value = false
   }
 }

@@ -585,11 +585,11 @@ export type UsageGroupLabel = {
    */
   cost_kind?: 'gpu' | 'storage'
   /**
-   * Only for `model` when the key is a Serverless deployment: the deployment's id. Under Serverless the model level is the deployment, with its GPU time and its storage as separate keys.
+   * For `model` and `source` when the key is a Serverless deployment: the deployment's id. Under Serverless the model level is the deployment, with its GPU time and its storage as separate keys; under `source` each deployment is one key.
    */
   deployment_id?: string
   /**
-   * Only for `model` when the key is a Serverless deployment and the caller is a signed-in session comfy-deploy can name it for; absent on an API-key read or when comfy-deploy could not be reached, and `display_name` then carries the id.
+   * For `model` and `source` when the key is a Serverless deployment and the caller is a signed-in session comfy-deploy can name it for; absent on an API-key read or when comfy-deploy could not be reached, and `display_name` then carries the id.
    */
   deployment_name?: string
   /**
@@ -617,19 +617,19 @@ export type UsageGroupLabel = {
    */
   key_prefix?: string
   /**
-   * Only for `source`.
+   * Only for `source`. A `deployment` key is one Serverless deployment's id (`deployment_id` set); the bare key `deployment` is deployment spend recorded without an id.
    */
   kind?: 'api_key' | 'session' | 'deployment'
   /**
-   * Only for `source` when the key's owner is known.
+   * Only for `source` when the key's or deployment's owner is known.
    */
   owner_display_name?: string
   /**
-   * Only for `source` when the key's owner is known; tells two owners with one name apart.
+   * Only for `source` when the key's or deployment's owner is known; tells two owners with one name apart.
    */
   owner_email?: string
   /**
-   * Only for `source` when the key is known to this workspace.
+   * Only for `source`: the API key's owner when the key is known to this workspace, or the member who deployed a deployment when comfy-deploy names it.
    */
   owner_user_id?: string
 }
@@ -1350,7 +1350,11 @@ export type AgentConsentSettingValue = {
 /**
  * Server-to-client CRDT document frame carried by the /ws envelope.
  */
-export type ServerDocFrame = DocUpdateFrame | DocResetFrame | DocOpsResultFrame
+export type ServerDocFrame =
+  | DocSubscribedFrame
+  | DocUpdateFrame
+  | DocResetFrame
+  | DocOpsResultFrame
 
 /**
  * First rejected op in an abort-remainder batch.
@@ -1420,6 +1424,37 @@ export type DocUpdateData = {
 export type DocUpdateFrame = {
   data: DocUpdateData
   type: 'doc_update'
+}
+
+export type DocSubscribedData = {
+  code?: string
+  /**
+   * Binds a stale-schema refusal to the exact row the client may re-mint. Present only with stale_schema_reseed_required.
+   */
+  expected_seq?: number
+  /**
+   * Current lineage sequence. On an accepted subscription, omission means lineage 0 (the document has not been minted yet).
+   */
+  lineage_seq?: number
+  /**
+   * Human-readable rejection reason. The generated Go field is named Reason so it does not collide with the frame's Message method.
+   */
+  message?: string
+  ok: boolean
+  /**
+   * Current document sequence. On an accepted subscription, omission means sequence 0 (the document has not been minted yet).
+   */
+  seq?: number
+  v: number
+  workflow_id: string
+}
+
+/**
+ * Server acknowledgement for a doc_subscribe request.
+ */
+export type DocSubscribedFrame = {
+  data: DocSubscribedData
+  type: 'doc_subscribed'
 }
 
 /**
@@ -4338,6 +4373,28 @@ export type CloudNodeCompatibility = {
 }
 
 /**
+ * Error body of local ComfyUI's /api/deploy* routes. Branch on `error`, never on `message`.
+ */
+export type DeployToCloudError = {
+  error:
+    | 'offline'
+    | 'multiple_credentials'
+    | 'invalid_api_key_format'
+    | 'invalid_body'
+    | 'missing_credentials'
+    | 'unauthorized'
+    | 'too_large'
+    | 'too_many_bundles'
+    | 'builder_rejected'
+    | 'builder_unavailable'
+    | 'builder_busy'
+  /**
+   * Human-readable detail, present for invalid_body and builder_rejected.
+   */
+  message?: string
+}
+
+/**
  * Response after deleting a session cookie
  */
 export type DeleteSessionResponse = {
@@ -5182,6 +5239,14 @@ export type BillingEvent = {
    */
   createdAt: string
   /**
+   * The Serverless deployment the charge came through, from the event's `deployment_id`; absent for a session or an API key.
+   */
+  deployment_id?: string
+  /**
+   * That deployment's name, when the caller is a signed-in session comfy-deploy can name it for; absent on an API-key read or when comfy-deploy could not be reached.
+   */
+  deployment_name?: string
+  /**
    * Unique event identifier
    */
   event_id: string
@@ -5653,6 +5718,7 @@ export type BillingCapabilityDenials = {
    * Why can_run_workflows is false, present only for a refused capability. Missing means no recognized explanation, never permission. Values describe the existing deciding policy branches, not authorization or sibling capabilities. Workflow rules short-circuit in policy order.
    * - manual_block: The workspace is manually blocked.
    * - subscription_inactive: Cloud workflow billing admission requires an active or eligible Free subscription.
+   * - payment_past_due: Subscription inactivity blocks workflow billing admission and a bound live subscription has a recoverable payment failure. Visible to workspace members; does not grant payment management.
    * - no_funds: The applicable balance is exhausted and allowance does not bypass it.
    * - workspace_cap_exceeded: The workspace spend cap is exceeded.
    * - project_cap_exceeded: The applicable project spend cap is exceeded.
@@ -5663,6 +5729,7 @@ export type BillingCapabilityDenials = {
   can_run_workflows?:
     | 'manual_block'
     | 'subscription_inactive'
+    | 'payment_past_due'
     | 'no_funds'
     | 'workspace_cap_exceeded'
     | 'project_cap_exceeded'
@@ -6202,8 +6269,11 @@ export type BillingCapabilities = {
 
 /**
  * Recorded account setup guidance, separate from owner authority in
- * can_manage_auto_top_up. Frozen keeps the owner's card visible but prevents
- * enabling/editing; unavailable hides it. Owner read/disable authority remains.
+ * can_manage_auto_top_up. Frozen prevents enabling/editing; unavailable
+ * means setup is not available. Owner read/disable authority remains separate.
+ * These states do not determine surface visibility. Unified billing settings
+ * hide the auto top-up card when can_top_up is false, including paused or
+ * payment-failed billing.
  * Ready does not authorize a charge or guarantee an off-session payment method.
  * This fact ignores saved consent and monthly budget. An absent fact is unknown.
  *
@@ -6337,6 +6407,11 @@ export type AutoReloadSettingsRequest = {
  *
  */
 export type AutoReloadSettings = {
+  /**
+   * True when the validated default card is already expired or its expiry-month boundary (00:00 UTC on the first day of the following month) is within the next 30 days. Absent or null means unknown, never a healthy-card claim. This includes non-card methods, malformed data, provider errors or a live Stripe default that differs from the recorded default payment method (for example, before a portal-change webhook syncs). Independent of status and charge eligibility; save responses omit the fact. Missing on an older server also means unknown.
+   *
+   */
+  card_expiring_soon?: boolean | null
   configured: boolean
   /**
    * When the budget cycle resets; null when no cycle anchor is known.
@@ -6604,6 +6679,47 @@ export type AgentTurnAccepted = {
    */
   message_id: string
   thread_id: string
+}
+
+/**
+ * Server-to-client agent_tool_call frame on /ws. A tool invocation started or reached a terminal state. Closed, like the canonical envelope.
+ */
+export type AgentToolCallFrame = {
+  data: AgentToolCallData
+  type: 'agent_tool_call'
+}
+
+/**
+ * The `data` of an agent_tool_call WebSocket event: one tool invocation's lifecycle. Mirrors `$defs.agent_tool_call.data` in services/agent/api/agent_events.schema.json, which also states the presence rules: the document correlation fields appear only on a terminal (success or error) frame, workflow_id and op_ids appear together, and doc_seq and doc_lineage_seq appear together and only with both of them. This schema leaves those rules out on purpose. A oneOf over closed variants could express them, but it would turn the generated frontend type into a union the consumer cannot extend field by field. The producer enforces them instead: the Publisher omits incomplete correlation, and TestToolCallEmissionsSatisfyBothContracts validates every emitted shape against the canonical schema. Consumers treat correlation as advisory and use it only when workflow_id and op_ids are both present on a terminal frame. TestToolCallFrameMatchesContract holds the two definitions to the same fields and constraints.
+ */
+export type AgentToolCallData = {
+  /**
+   * Present with doc_seq. The lineage containing every correlated update, so a follower can detect replacement and resync.
+   */
+  doc_lineage_seq?: number
+  /**
+   * Optional terminal recovery barrier. The highest published doc_update sequence carrying this call's op_ids.
+   */
+  doc_seq?: number
+  duration_ms?: number
+  error_code?: string
+  message_id: string
+  /**
+   * Terminal success or error only. The semantic operations whose effects are carried by published doc_update frames for this call.
+   */
+  op_ids?: Array<string>
+  /**
+   * load_skill only. The skill pack name the call's input names, on its running frame and on its terminal frame, including an unknown_skill error. Omitted on every other tool.
+   */
+  skill?: string
+  status: 'running' | 'success' | 'error'
+  thread_id: string
+  tool_call_id: string
+  tool_name: string
+  /**
+   * Terminal success or error only. The workflow whose published doc_update contains op_ids. Replace-canvas doc_reset calls do not carry this correlation.
+   */
+  workflow_id?: string
 }
 
 /**
@@ -6888,6 +7004,10 @@ export type AgentPostMessageRequest = {
    * Client-generated identifier for this send attempt. The frontend emits the same value on app:agent_message_sent; the agent echoes it on agent_turn_started so accepted turns can be joined to their originating sends without using timestamp proximity. Retries mint a new value. Older clients may omit it.
    */
   client_message_id?: string
+  /**
+   * The frontend build that sent this turn (ComfyUI_frontend __COMFYUI_FRONTEND_VERSION__, optionally +commit). Observability only; never changes the turn. Recorded on the turn's trace as `comfy.client.version`. A value longer than 64 bytes, or one containing anything other than ASCII letters, digits, `.`, `+` and `-`, is DROPPED, not rejected — accepted with 202 exactly like omitting the field. Surrounding whitespace is trimmed.
+   */
+  client_version?: string
   /**
    * The user's message.
    */
@@ -8311,6 +8431,25 @@ export type AgentListThreadsData = {
      *
      */
     after?: string
+    /**
+     * Return only the threads currently associated with this workflow.
+     * The association is the thread's current target and may change on a
+     * later turn. `workflow_id` is not unique across threads, so this can
+     * still match several, and the page ordering is unchanged
+     * (newest-created first).
+     *
+     * Use this rather than listing threads and matching `workflow_id`
+     * client-side: an unfiltered list is one page of at most 100, so a
+     * client-side match silently misses a workflow's thread once the
+     * caller has more threads than the page holds. A workflow with no
+     * threads returns an empty page, not an error.
+     *
+     * Narrowing applies within the caller's own workspace and user scope
+     * and cannot widen it. `total` in the response counts the narrowed
+     * set.
+     *
+     */
+    workflow_id?: string
   }
   url: '/api/agent/threads'
 }
@@ -10647,7 +10786,7 @@ export type GetBillingEventsData = {
      */
     user_id?: string
     /**
-     * Keep only charges made through this source: `session`, `deployment`, or an API key's display prefix (`comfyui-` plus eight hex characters) as the usage `source` grouping returns it. Combines with `scope`, so a member sees only their own charges through it. Any other value is a 400 `INVALID_FILTER`.
+     * Keep only charges made through this source: `session`; one deployment's id or one API key's display prefix (`comfyui-` plus eight hex characters), as the usage `source` grouping returns them; or every source of a kind, `deployment` for every deployment and `api_key` for every API key. Combines with `scope`, so a member sees only their own charges through it. Any other value is a 400 `INVALID_FILTER`.
      */
     spend_source?: string
     /**
@@ -11604,7 +11743,7 @@ export type GetBillingUsageTimeSeriesData = {
      */
     filter_person?: string
     /**
-     * Keep only spend from this source (a key the `source` grouping returns, or `unattributed`). See `filter_product_line`.
+     * Keep only spend from this source (a key the `source` grouping returns, or `unattributed`), or every source of one kind (`api_key` for every API key, `deployment` for every deployment). See `filter_product_line`.
      */
     filter_source?: string
     granularity?: 'hour' | 'day' | 'month'
@@ -11665,6 +11804,121 @@ export type GetDefaultWorkflowResponses = {
 
 export type GetDefaultWorkflowResponse =
   GetDefaultWorkflowResponses[keyof GetDefaultWorkflowResponses]
+
+export type CreateDeployBundleData = {
+  /**
+   * A JSON object; `{}` is valid. Null members count as absent.
+   */
+  body: {
+    /**
+     * Optional label for the bundle.
+     */
+    name?: string | null
+    /**
+     * The workflow open in ComfyUI, sent as is.
+     */
+    workflow?: {
+      [key: string]: unknown
+    } | null
+  }
+  path?: never
+  query?: never
+  url: '/api/deploy/bundle'
+}
+
+export type CreateDeployBundleErrors = {
+  /**
+   * Rejected before upload: `multiple_credentials` (both headers sent), `invalid_api_key_format` (X-API-Key is not comfyui- followed by 64 hex characters) or `invalid_body` (not a JSON object, or a bad workflow or name).
+   */
+  400: DeployToCloudError
+  /**
+   * `missing_credentials` (no credential sent) or `unauthorized` (the builder refused the credential).
+   */
+  401: DeployToCloudError
+  /**
+   * `offline` (the server runs with --offline) or `unauthorized` (the builder refused the credential).
+   */
+  403: DeployToCloudError
+  /**
+   * The bundle exceeds the builder's size cap (`too_large`).
+   */
+  413: DeployToCloudError
+  /**
+   * The user already holds the builder's limit of unexpired bundles in this workspace (`too_many_bundles`); clears as older bundles expire.
+   */
+  429: DeployToCloudError
+  /**
+   * `builder_rejected` (the builder refused the bundle as invalid; `message` carries its reason, at most 500 characters) or `builder_unavailable` (the builder could not be reached or answered unexpectedly).
+   */
+  502: DeployToCloudError
+  /**
+   * The builder is busy (`builder_busy`); retry after Retry-After seconds when present.
+   */
+  503: DeployToCloudError
+}
+
+export type CreateDeployBundleError =
+  CreateDeployBundleErrors[keyof CreateDeployBundleErrors]
+
+export type CreateDeployBundleResponses = {
+  /**
+   * Bundle stored on comfy-builder
+   */
+  200: {
+    bundle_id: string
+    /**
+     * When the bundle stops being readable (24 hours after creation).
+     */
+    expires_at: string
+    /**
+     * The Create a Build wizard link that opens the bundle (/profile/builds/new?step=import&bundle=&workspace=&bundle_workspace=).
+     */
+    url: string
+    /**
+     * The workspace the bundle belongs to (the credential's).
+     */
+    workspace_id: string
+  }
+}
+
+export type CreateDeployBundleResponse =
+  CreateDeployBundleResponses[keyof CreateDeployBundleResponses]
+
+export type GetDeploySummaryData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/deploy/summary'
+}
+
+export type GetDeploySummaryErrors = {
+  /**
+   * The server runs with --offline (error `offline`)
+   */
+  403: DeployToCloudError
+}
+
+export type GetDeploySummaryError =
+  GetDeploySummaryErrors[keyof GetDeploySummaryErrors]
+
+export type GetDeploySummaryResponses = {
+  /**
+   * Counts of what the bundle would include
+   */
+  200: {
+    /**
+     * Custom node packages found in the custom_nodes folders
+     */
+    custom_nodes: number
+    /**
+     * Model files found across the model folders
+     */
+    models: number
+  }
+}
+
+export type GetDeploySummaryResponse =
+  GetDeploySummaryResponses[keyof GetDeploySummaryResponses]
 
 export type GetEmbeddingsData = {
   body?: never
@@ -11949,6 +12203,10 @@ export type GetFeaturesResponses = {
      * Because absence carries that meaning, the field is only ever the authority's answer: unlike the flags beside it, it cannot be set from dynamic configuration, and it is removed from the response rather than left at a configured value when it is unresolvable. It is likewise absent from the WebSocket feature_flags push, which resolves no capability, so a client refreshing from the socket reads "unknown" and fails open rather than inheriting a stale answer.
      */
     can_run_partner_nodes?: boolean
+    /**
+     * Local ComfyUI only: whether the UI should offer Deploy to Cloud. True when the server is not --offline and this installation has ever had a prompt queued by a non-browser client (a persistent marker in the user directory). A discovery hint only: it grants nothing, and the /api/deploy* routes do not check it. Not settable with --feature-flag.
+     */
+    deploy_to_cloud?: boolean
     /**
      * Free-tier job allowance for an authenticated non-paid (FREE-tier) user in the rollout. Absent for paid users and unauthenticated requests. Synthesized from config before a grant row exists so a brand-new user still sees their full allowance.
      */

@@ -10,9 +10,9 @@ import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspa
 import { useAuthStore } from '@/stores/authStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
-import { WorkspaceApiError } from '../api/workspaceApi'
-import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '../api/workspaceApiError'
-import { useTeamWorkspaceStore } from '../stores/teamWorkspaceStore'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { MEMBERSHIP_MANAGED_BY_DIRECTORY } from '@/platform/workspace/api/workspaceApiError'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceSwitch } from './useWorkspaceSwitch'
 
 function isDirectoryManagedRefusal(error: unknown): boolean {

@@ -17,7 +17,7 @@ import {
   computeChannelHistograms,
   computeImageStats
 } from '@/renderer/hdr/hdrStats'
-import { WebGLViewport } from '@/renderer/three/WebGLViewport'
+import { WebGLViewport } from '@comfyorg/viewport3d/three/WebGLViewport'
 import { getImageFilenameFromUrl } from '@/utils/hdrFormatUtil'
 
 const MIN_ZOOM = 0.05

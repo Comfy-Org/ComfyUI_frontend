@@ -1,4 +1,4 @@
-import type { Rect } from '../node'
+import type { Rect } from '#/node'
 import { modeUniforms } from './modeCodes'
 import type {
   Compositor,
@@ -6,7 +6,7 @@ import type {
   CompositorInit,
   FBOHandle,
   NodeTexture
-} from '../compositor'
+} from '#/compositor'
 import LAYER_BLEND_FRAG from './shaders/layerBlend.frag?raw'
 
 const VERT = `#version 300 es

@@ -3,7 +3,8 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "types": ["vitest/globals", "node"]
+    "types": ["vitest/globals", "node"],
+    "customConditions": ["@comfyorg/account-ui"]
   },
   "include": ["src/**/*"]
 }

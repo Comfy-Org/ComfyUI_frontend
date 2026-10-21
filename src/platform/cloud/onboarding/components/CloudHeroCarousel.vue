@@ -130,7 +130,7 @@ import {
 } from '@/platform/cloud/onboarding/constants/heroSlides'
 import { wrapIndex } from '@/utils/mathUtil'
 
-import '../assets/css/heroVideo.css'
+import '@/platform/cloud/onboarding/assets/css/heroVideo.css'
 
 const { t } = useI18n()
 
