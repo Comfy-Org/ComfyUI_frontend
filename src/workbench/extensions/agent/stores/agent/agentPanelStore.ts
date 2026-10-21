@@ -16,6 +16,8 @@ import {
   SIDE_TOOLBAR_WIDTH
 } from '@/constants/splitterConstants'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
+import type { ServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   AgentPanelCloseSource,
@@ -118,8 +120,13 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const gateSettled = ref(false)
   const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const flagsSettled = computed(() => api.serverFeatureFlagsSettled.value)
-  const onboarding = computed(() =>
-    isLocalDesktopApp() ? DESKTOP_ONBOARDING : DEFAULT_ONBOARDING
+  const onboarding = computed<
+    ServerFact<'agent.onboarding', AgentOnboardingPolicy>
+  >(() =>
+    pendingServerFact(
+      'BE-22051',
+      isLocalDesktopApp() ? DESKTOP_ONBOARDING : DEFAULT_ONBOARDING
+    )
   )
   /** The server's `agent` feature; undefined unless its state is known. */
   const comfyAgent = computed(() => {

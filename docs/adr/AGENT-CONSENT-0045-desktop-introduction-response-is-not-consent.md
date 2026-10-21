@@ -37,8 +37,8 @@ audited server consent.
 other module checks the host. The legacy desktop build and a local Desktop 2
 window use this Desktop policy. Cloud, browser tabs on a local Core, and remote
 Desktop 2 views keep the default policy. Desktop 2 loads the standard localhost
-build, so the store recognizes it by its host bridge at runtime rather than at
-build time.
+build, so until the server reports the policy in its `agent` feature
+(BE-22051), the store emulates it from the host bridge at runtime.
 
 Agree while signed out continues through sign-in and confirmed server consent
 registration within that request. Canceling sign-in discards the pending choice;
