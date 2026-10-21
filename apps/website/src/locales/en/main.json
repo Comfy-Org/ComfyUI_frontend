@@ -5864,7 +5864,7 @@
     "requirement2": "Your repo must include an open-source license and enough setup detail that someone else can run it on their own machine",
     "requirement3": "Any other tools, models, or techniques you want to combine with it are fair game and must be explained in your demo video",
     "requirement4": "All submissions must be lawful, SFW, and must not contain unlicensed IP or likenesses",
-    "requirement5": "By submitting, you agree to allow ComfyUI, NVIDIA, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels",
+    "requirement5": "By submitting, you agree to allow ComfyUI, Runpod, LTX, Black Forest Labs, and MiniMax to feature your work with credit across our channels",
     "requirement6": "One submission per person",
     "enterRepo": "GitHub repo",
     "enterRepoBody": "Your app code, workflow files, an open-source license, and instructions to run it locally.",

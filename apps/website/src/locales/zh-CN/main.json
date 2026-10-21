@@ -5257,7 +5257,7 @@
     "requirement2": "代码仓库必须包含开源许可证，以及足够详细的安装说明，让其他人能在自己的机器上运行",
     "requirement3": "可以结合使用任何其他工具、模型或技术，但必须在演示视频中加以说明",
     "requirement4": "所有参赛作品必须合法、适合公开场合观看（SFW），且不得包含未经授权的 IP 或肖像",
-    "requirement5": "提交作品即表示你同意 ComfyUI、NVIDIA、Runpod、LTX、Black Forest Labs 和 MiniMax 在各自渠道展示你的作品并署名",
+    "requirement5": "提交作品即表示你同意 ComfyUI、Runpod、LTX、Black Forest Labs 和 MiniMax 在各自渠道展示你的作品并署名",
     "requirement6": "每人限提交一份作品",
     "enterRepo": "GitHub 仓库",
     "enterRepoBody": "包含应用代码、工作流文件、开源许可证，以及本地运行说明。",
