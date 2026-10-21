@@ -33,22 +33,22 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 
 ## Exports
 
-| Path                            | Contents                                                              |
-| ------------------------------- | --------------------------------------------------------------------- |
-| `./css/style.css`               | Full theme — palette, fonts, Tailwind layers, icon plugins            |
-| `./css/base.css`                | Palette and fonts only                                                |
-| `./css/_palette.css`            | Color variables                                                       |
-| `./css/fonts.css`               | Font faces                                                            |
-| `./css/_deprecated-aliases.css` | Deprecated variable names kept for extensions; scheduled for removal  |
-| `./css/_legacy-palette.css`     | Pre-theme palette variables (`--fg-color`, `--comfy-menu-bg`, ...)    |
-| `./icons/*.svg`                 | Comfy icon set source SVGs                                            |
-| `./workspaceAvatar`             | Deterministic workspace avatar styles by plan and name                |
-| `./button.variants`             | Button class recipes                                                  |
-| `./select.variants`             | Select class recipes                                                  |
-| `./tag.variants`                | Tag class recipes                                                     |
-| `./<folder>/<Component>`        | Compiled Vue components, for example `./card/Card`                    |
-| `./components.css`              | Scoped component styles and animations                                |
-| `./lib/*`                       | Component support types and recipes, for example `./lib/select/types` |
+| Path                                                                                                                                                  | Contents                                                             |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| `./css/style.css`                                                                                                                                     | Full theme — palette, fonts, Tailwind layers, icon plugins           |
+| `./css/base.css`                                                                                                                                      | Palette and fonts only                                               |
+| `./css/_palette.css`                                                                                                                                  | Color variables                                                      |
+| `./css/fonts.css`                                                                                                                                     | Font faces                                                           |
+| `./css/_deprecated-aliases.css`                                                                                                                       | Deprecated variable names kept for extensions; scheduled for removal |
+| `./css/_legacy-palette.css`                                                                                                                           | Pre-theme palette variables (`--fg-color`, `--comfy-menu-bg`, ...)   |
+| `./icons/*.svg`                                                                                                                                       | Comfy icon set source SVGs                                           |
+| `./workspaceAvatar`                                                                                                                                   | Deterministic workspace avatar styles by plan and name               |
+| `./button.variants`                                                                                                                                   | Button class recipes                                                 |
+| `./select.variants`                                                                                                                                   | Select class recipes                                                 |
+| `./tag.variants`                                                                                                                                      | Tag class recipes                                                    |
+| `./<folder>/<Component>`                                                                                                                              | Compiled Vue components, for example `./card/Card`                   |
+| `./components.css`                                                                                                                                    | Scoped component styles and animations                               |
+| `./lib/select/types`, `./lib/menu/menuStyles`, `./lib/dialog/dialog.variants`, `./lib/input-group/inputGroup.variants`, `./lib/tooltip/tooltipConfig` | Component support types and recipes                                  |
 
 Icons are exposed to Tailwind as `icon-[comfy--*]` and `icon-mask-[comfy--*]`
 utilities. Size them with `size-*`, not font-size classes.
@@ -72,8 +72,8 @@ With strict dependency checking, VueUse also requires the `web-bluetooth`
 ambient types. Install `@types/web-bluetooth` and include `web-bluetooth` if your
 TypeScript configuration restricts `compilerOptions.types`.
 
-Both use the theme imported above, which scans the component classes for
-Tailwind utilities.
+Workspace and published component imports both use the theme imported above,
+which scans the component classes for Tailwind utilities.
 
 Published consumers must also import the component stylesheet for scoped styles
 and animations:
@@ -82,8 +82,8 @@ and animations:
 import '@comfyorg/design-system/components.css'
 ```
 
-Import supporting types and recipes through `@comfyorg/design-system/lib/`,
-for example `@comfyorg/design-system/lib/select/types`.
+Import supporting types and recipes through the `./lib/` entries listed in the
+[exports table](#exports); other `lib/` paths are not exported.
 
 Components that retain `pi-*` icon classes require the host to load
 `primeicons/primeicons.css` separately.
@@ -113,9 +113,10 @@ it with the `Release` label. Publishing to npm happens automatically on merge.
 
 This package follows SemVer for everything it exports: the CSS entry points
 (`style.css`, `base.css`, and every `./css/*` path in the [exports
-table](#exports)) and the icon SVGs are the public surface, and removing or
-repurposing tokens, `@font-face` declarations, or an entire file from that
-surface is a **major** bump — even when no in-repo consumer breaks, because
+table](#exports)), the icon SVGs, the component paths, the `./lib/` entries, and
+component props, events, and slots are the public surface. Removing or
+repurposing tokens, `@font-face` declarations, a component or `./lib/` entry, a
+component prop, or an entire file from that surface is a **major** bump — even when no in-repo consumer breaks, because
 published consumers pin this package by version.
 
 Precedent (updated 2026-09-28): #14790 ("move the brand layer into the
