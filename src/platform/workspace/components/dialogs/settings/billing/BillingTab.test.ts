@@ -68,6 +68,7 @@ interface Scenario {
   autoTopUpFlag?: boolean
   canManageAutoTopUp?: boolean
   canTopUp?: boolean
+  topUpDenial?: string
   isPaused?: boolean
 }
 
@@ -103,6 +104,7 @@ function arrange(scenario: Scenario = {}) {
         fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
       ]),
       balance: computed(() => scenario.balance ?? null),
+      renewalDate: computed(() => null),
       currentTeamCreditStop: computed(() => null),
       initialize,
       fetchStatus,
@@ -130,7 +132,14 @@ function arrange(scenario: Scenario = {}) {
           scenario.canManageBilling ?? true
         )
       ),
+      paymentRecoveryAvailable: computed(() =>
+        receiveServerFact('payment_recovery_available', false)
+      ),
+      runDeniedPaymentPastDue: computed(() =>
+        receiveServerFact('denied_reasons.can_run_workflows', false)
+      ),
       canTopUp: computed(() => scenario.canTopUp ?? true),
+      topUpDenial: computed(() => scenario.topUpDenial),
       canManageAutoTopUp: computed(() =>
         receiveServerFact(
           'can_manage_auto_top_up',
@@ -222,6 +231,39 @@ describe('BillingTab', () => {
         screen.queryByTestId('billing-paused-banner')
       ).not.toBeInTheDocument()
     })
+  })
+
+  it('shows out of credits on the local Billing tab when unified billing settings is on', () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    arrange({
+      subscription: { ...activeSubscription, hasFunds: false }
+    })
+
+    const banner = screen.getByTestId('billing-local-credit-banner')
+    expect(banner).toHaveTextContent('Out of credits')
+    expect(banner).toHaveTextContent(
+      "You've used all your credits. Add more credits."
+    )
+    expect(
+      screen.queryByTestId('billing-paused-banner')
+    ).not.toBeInTheDocument()
+    expect(banner).not.toHaveTextContent('Subscription paused')
+    expect(banner).not.toHaveTextContent('plan ends')
+  })
+
+  it('hides local credit banners when unified billing settings is off', () => {
+    arrange({
+      subscription: { ...activeSubscription, hasFunds: false },
+      balance: {
+        amountMicros: 500,
+        currency: 'usd',
+        lowBalance: true
+      }
+    })
+
+    expect(
+      screen.queryByTestId('billing-local-credit-banner')
+    ).not.toBeInTheDocument()
   })
 
   it('shows a skeleton and no plan row while billing loads', () => {

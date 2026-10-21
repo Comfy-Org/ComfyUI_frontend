@@ -375,9 +375,12 @@ describe('useFeatureFlags', () => {
   })
 
   describe.for([
-    { flag: 'unifiedBillingSettingsEnabled' as const },
-    { flag: 'autoTopUpEnabled' as const }
-  ])('$flag', ({ flag }) => {
+    {
+      flag: 'unifiedBillingSettingsEnabled' as const,
+      offCloudTrue: true
+    },
+    { flag: 'autoTopUpEnabled' as const, offCloudTrue: false }
+  ])('$flag', ({ flag, offCloudTrue }) => {
     afterEach(() => {
       vi.mocked(distributionTypes).isCloud = false
     })
@@ -397,7 +400,25 @@ describe('useFeatureFlags', () => {
         expected: false
       },
       { case: 'true on cloud', cloud: true, value: true, expected: true },
-      { case: 'true off cloud', cloud: false, value: true, expected: false }
+      {
+        case: 'missing off cloud',
+        cloud: false,
+        value: undefined,
+        expected: false
+      },
+      { case: 'false off cloud', cloud: false, value: false, expected: false },
+      {
+        case: 'malformed off cloud',
+        cloud: false,
+        value: 'true',
+        expected: false
+      },
+      {
+        case: 'true off cloud',
+        cloud: false,
+        value: true,
+        expected: offCloudTrue
+      }
     ])('is $expected when $case', ({ cloud, value, expected }) => {
       vi.mocked(distributionTypes).isCloud = cloud
       vi.mocked(api.getServerFeature).mockReturnValue(value)

@@ -307,8 +307,6 @@ export function useFeatureFlags() {
       return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
     },
     get unifiedBillingSettingsEnabled() {
-      if (!isCloud) return false
-
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
         remoteConfig.value.unified_billing_settings
