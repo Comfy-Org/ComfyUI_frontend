@@ -167,6 +167,8 @@ interface HubSectionJsonLdInput {
   url: string
   siteUrl: string
   locale: string
+  /** A paged or filtered view lists other records than the canonical URL. */
+  search: string
 }
 
 export function hubSectionJsonLd({
@@ -175,10 +177,11 @@ export function hubSectionJsonLd({
   items,
   url,
   siteUrl,
-  locale
+  locale,
+  search
 }: HubSectionJsonLdInput): CollectionPageJsonLd {
   const site = new URL(siteUrl)
-  const listed = items.map((item) => ({
+  const listed = (search === '' ? items : []).map((item) => ({
     name: item.name,
     url: absoluteUrl(site, withCatalogLocalePrefix(item.href, locale))
   }))

@@ -1,5 +1,4 @@
 [
-  "/hub/apps/",
   "/hub/models/",
   "/hub/models/beeble-switchx-image-edit/",
   "/hub/models/beeble-switchx-video-edit/",
@@ -484,7 +483,6 @@
   "/hub/models/wan-3-0-prime-text-to-video/",
   "/hub/models/wan-3-0-reference-to-video/",
   "/hub/models/wan-3-0-text-to-video/",
-  "/hub/workflows/",
   "/p/supported-models/",
   "/p/supported-models/4x-ultrasharp/",
   "/p/supported-models/ace-1-5-vae/",

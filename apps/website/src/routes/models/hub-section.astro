@@ -8,7 +8,7 @@ import CatalogNavigation from '@/components/workshop/CatalogNavigation.astro'
 import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
 import { HUB_APPS_PATH, HUB_WORKFLOWS_PATH } from '@/config/hub-models'
-import { isIndexableModelPage } from '@/config/indexing'
+import { isIndexableHubList } from '@/config/indexing'
 import { pageContext } from '@/utils/jsonLd'
 import { hubSectionJsonLd } from '@/utils/modelJsonLd'
 import { withoutCatalogLocalePrefix } from '@/config/catalog-locales'
@@ -55,7 +55,8 @@ const jsonLd = catalog?.ok
       items: records,
       url,
       siteUrl,
-      locale: Astro.locals.catalogLocale ?? 'en'
+      locale: Astro.locals.catalogLocale ?? 'en',
+      search: Astro.url.search
     })
   : undefined
 ---
@@ -63,9 +64,7 @@ const jsonLd = catalog?.ok
 <BaseLayout
   title={t(`workshop.hubSection.${section}.title`)}
   description={t(`workshop.hubSection.${section}.description`)}
-  noindex={
-    !isIndexableModelPage(withoutCatalogLocalePrefix(Astro.url.pathname))
-  }
+  noindex={!isIndexableHubList(Astro.url.pathname)}
   {...jsonLd}
   preloadFonts={['Medium']}
   banner={challengeBannerConfig}

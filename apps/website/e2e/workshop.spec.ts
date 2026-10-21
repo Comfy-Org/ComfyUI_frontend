@@ -45,13 +45,13 @@ test.describe('Hub pages', () => {
       title:
         'ComfyUI Workflows: Multi-Step AI Image &amp; Video Workflows - Comfy',
       heading: 'ComfyUI workflows',
-      noindex: false
+      noindex: true
     },
     {
       path: 'hub/apps',
       title: 'ComfyUI Apps: Creative Tools Built from Workflows - Comfy',
       heading: 'ComfyUI apps',
-      noindex: false
+      noindex: true
     }
   ])
     test(`builds /${path}/ with its own title, heading and canonical`, () => {

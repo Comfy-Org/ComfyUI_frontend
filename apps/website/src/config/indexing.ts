@@ -1,4 +1,6 @@
+import { cmsEnabled } from '@/lib/cms/cms-enabled'
 import { isProductionBuild } from './build-env'
+import { withoutCatalogLocalePrefix } from './catalog-locales'
 import { hubAppHref, hubAppSlugs } from './hub-models'
 import { LOCALE_CODES, LOCALES } from './locales'
 import type { ModelPageLaunch } from './model-page-launch'
@@ -103,13 +105,17 @@ export function isIndexableModelPage(
   workflowsLaunched: boolean = launchedWorkflowPages
 ): boolean {
   const kind = modelsUrlKind(pathname)
-  if (kind === 'section') return true
+  if (kind === 'section') return cmsEnabled()
   if (kind === 'workflow') return workflowsLaunched
   if (kind !== 'model') return false
   const routerId = routerIdByModelPage.get(normalizePathname(pathname))
   return (
     routerId !== undefined && (launched === 'all' || launched.has(routerId))
   )
+}
+
+export function isIndexableHubList(pathname: string): boolean {
+  return isIndexableModelPage(withoutCatalogLocalePrefix(pathname))
 }
 
 export function isExcludedFromSitemap(
