@@ -115,18 +115,22 @@ function authorDetails(d: Document, locale: string) {
           'cccWorkflow.authorUnavailable'
         )
       : undefined
-  const username = matches ? trimmedText(resolved.username) : undefined
   return {
     author: name ?? unavailable,
-    ...(name && username && validCreatorUsername(username)
-      ? { authorUsername: username }
-      : {}),
+    ...(name ? authorUsername(resolved.username) : {}),
     ...authorAvatar(matches, resolved.avatar_url)
   }
 }
 
 function trimmedText(value: unknown) {
   return typeof value === 'string' ? value.trim() || undefined : undefined
+}
+
+function authorUsername(value: unknown) {
+  const username = trimmedText(value)
+  return username && validCreatorUsername(username)
+    ? { authorUsername: username }
+    : {}
 }
 
 function authorAvatar(matches: boolean, value: unknown) {
