@@ -38,7 +38,7 @@ import {
 } from '@/stores/subgraphNavigationStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
+import { showMissingNodesNotice } from '@/platform/nodeReplacement/missingNodesNotice'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -927,7 +927,7 @@ export const useWorkflowService = () => {
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
       !options?.silent
     ) {
-      noticeMissingNodes(missingNodeTypes ?? [])
+      showMissingNodesNotice(missingNodeTypes ?? [])
     }
     if (missingModelCandidates?.length) {
       useMissingModelStore().setMissingModels(missingModelCandidates)

@@ -84,6 +84,7 @@ import { isCloud, isDesktop } from '@/platform/distribution/types'
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import { registerSettingDialogComponent } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
@@ -91,6 +92,8 @@ import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/ge
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useDeploymentPickAtBoot } from '@/platform/workspace/composables/useDeploymentPickAtBoot'
+import { setMissingNodesNotice } from '@/platform/nodeReplacement/missingNodesNotice'
+import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -126,6 +129,12 @@ setupAutoQueueHandler()
 useProgressFavicon()
 useProgressTextPreviews()
 useBrowserTabTitle()
+if (isCloud) {
+  const { markFor } = useDeploymentCompatibility()
+  onBeforeUnmount(
+    setMissingNodesNotice((nodeTypes) => noticeMissingNodes(nodeTypes, markFor))
+  )
+}
 
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
