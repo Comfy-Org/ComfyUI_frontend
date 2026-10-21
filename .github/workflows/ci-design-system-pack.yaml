@@ -5,6 +5,7 @@ on:
     branches-ignore: [wip/*, draft/*, temp/*]
     paths:
       - 'packages/design-system/**'
+      - 'packages/tailwind-utils/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -35,10 +36,20 @@ jobs:
           PACKED=$(pnpm --config.ignore-scripts=true -C packages/design-system pack --dry-run --json)
           jq -e --slurpfile manifest packages/design-system/package.json '
             [.files[].path] as $packed
-            | [$manifest[0].exports[] | objects | .types | ltrimstr("./")]
-              - $packed
+            | [$manifest[0].publishConfig.exports[]
+                | if type == "object" then .[] else . end
+                | ltrimstr("./")]
+            | unique
+            | map(
+                select(
+                  split("*") as [$prefix, $suffix]
+                  | if $suffix == null then ($packed | index([$prefix])) == null
+                    else any($packed[]; startswith($prefix) and endswith($suffix)) | not
+                    end
+                )
+              )
             | if length == 0 then true
-              else error("Missing declarations in tarball: " + join(", "))
+              else error("Missing export targets in tarball: " + join(", "))
               end
           ' <<< "$PACKED" > /dev/null
           UNEXPECTED=$(
