@@ -2425,4 +2425,76 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       })
     })
   })
+
+  function serveProcessingCheckout(paymentAmountCents: number | null) {
+    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [
+        {
+          amount_cents: 2500,
+          created_at: '2026-10-20T00:00:00Z',
+          session_id: 'cs_bank'
+        }
+      ],
+      next_cursor: null
+    })
+    vi.spyOn(workspaceApi, 'getTopupCheckout').mockResolvedValue({
+      amount_cents: 2500,
+      payment_amount_cents: paymentAmountCents,
+      session_id: 'cs_bank',
+      state: 'payment_processing'
+    })
+  }
+
+  describe('a top-up payment still processing', () => {
+    it('keeps add credits available and names the served amount', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(2500)
+      renderDialog()
+
+      const notice = await screen.findByRole('status')
+      expect(notice).toHaveTextContent('A $25 payment is still processing')
+      expect(notice).toHaveTextContent('No need to pay again.')
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+      expect(screen.getByRole('button', { name: '$50' })).toBeEnabled()
+    })
+
+    it('drops the amount when the server does not serve one', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      serveProcessingCheckout(null)
+      renderDialog()
+
+      expect(await screen.findByRole('status')).toHaveTextContent(
+        'A payment is still processing'
+      )
+    })
+
+    it('leaves the dialog unchanged while unified billing settings are off', () => {
+      const list = vi.spyOn(workspaceApi, 'listTopupCheckouts')
+      renderDialog()
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+      expect(list).not.toHaveBeenCalled()
+    })
+
+    it('hides the notice when the checkout list cannot be read', async () => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+      vi.spyOn(workspaceApi, 'listTopupCheckouts').mockRejectedValue(
+        new WorkspaceApiError('unavailable', 503)
+      )
+      renderDialog()
+
+      await waitFor(() =>
+        expect(mockReportError).toHaveBeenCalledWith(
+          expect.any(WorkspaceApiError),
+          {
+            errorType: 'topup_checkout_read_failed',
+            surface: 'billing'
+          }
+        )
+      )
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+    })
+  })
 })

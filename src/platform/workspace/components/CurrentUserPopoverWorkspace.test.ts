@@ -1,6 +1,9 @@
+import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
+
 import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getActivePinia } from 'pinia'
@@ -746,6 +749,64 @@ describe('CurrentUserPopoverWorkspace', () => {
 
     expect(
       screen.queryByTestId('plans-credits-menu-item')
+    ).not.toBeInTheDocument()
+  })
+
+  function serveCheckout(checkoutState: HostedTopupCheckout['state']) {
+    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [
+        {
+          amount_cents: 2500,
+          created_at: '2026-10-20T00:00:00Z',
+          session_id: 'cs_bank'
+        }
+      ],
+      next_cursor: null
+    })
+    vi.spyOn(workspaceApi, 'getTopupCheckout').mockResolvedValue({
+      amount_cents: 2500,
+      payment_amount_cents: 2500,
+      session_id: 'cs_bank',
+      state: checkoutState
+    })
+  }
+
+  it('hides the processing line while unified billing settings are off', () => {
+    useBillingCapabilities().canTopUp = computed(() => true)
+    const list = vi.spyOn(workspaceApi, 'listTopupCheckouts')
+    renderComponent()
+
+    expect(screen.getByTestId('add-credits-button')).toBeInTheDocument()
+    expect(
+      screen.queryByText("Payment processing. You don't need to pay again.")
+    ).not.toBeInTheDocument()
+    expect(list).not.toHaveBeenCalled()
+  })
+
+  it('shows a processing payment under add credits', async () => {
+    useBillingCapabilities().canTopUp = computed(() => true)
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    serveCheckout('payment_processing')
+    renderComponent()
+
+    expect(
+      await screen.findByText(
+        "Payment processing. You don't need to pay again."
+      )
+    ).toBeInTheDocument()
+    expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
+  })
+
+  it('does not show the processing line for an open checkout', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    serveCheckout('open')
+    renderComponent()
+
+    await waitFor(() =>
+      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
+    )
+    expect(
+      screen.queryByText("Payment processing. You don't need to pay again.")
     ).not.toBeInTheDocument()
   })
 })

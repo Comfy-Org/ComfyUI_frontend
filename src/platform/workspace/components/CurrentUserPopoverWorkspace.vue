@@ -138,6 +138,15 @@
       </Button>
     </div>
 
+    <p
+      v-if="processingPayment"
+      role="status"
+      class="m-0 px-4 pb-2 text-sm text-muted-foreground"
+      data-testid="topup-payment-processing-line"
+    >
+      {{ $t('credits.topUp.paymentProcessingFlyout') }}
+    </p>
+
     <div v-if="!accountActionsOnly" class="mx-0 my-2 border-t" />
 
     <div
@@ -265,7 +274,9 @@ import { useBillingCapabilities } from '@/platform/billing/composables/useBillin
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useWorkspaceDialogs } from '@/platform/workspace/composables/useWorkspaceDialogs'
 
 const workspaceStore = useTeamWorkspaceStore()
@@ -287,6 +298,11 @@ const emit = defineEmits<{
 const { accountActionsOnly = false } = defineProps<{
   accountActionsOnly?: boolean
 }>()
+
+const { flags } = useFeatureFlags()
+const { payment: processingPayment } = useProcessingTopupPayment(
+  () => !accountActionsOnly && flags.unifiedBillingSettingsEnabled
+)
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 
