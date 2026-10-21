@@ -619,11 +619,11 @@ describe('ManagerDialog failed next page', () => {
   const FIRST_PACK: NodePack = { id: 'gguf-1', name: 'GGUF One' }
   const SECOND_PACK: NodePack = { id: 'gguf-2', name: 'GGUF Two' }
 
-  async function renderUntilSecondPageFails() {
+  async function renderUntilSecondPageFails(tab?: ManagerTab) {
     vi.mocked(useRegistrySearchGateway().searchPacks)
       .mockResolvedValueOnce(succeeded([FIRST_PACK], false, true))
       .mockResolvedValueOnce(failed('search unavailable'))
-    const { user } = renderDialog()
+    const { user } = renderDialog(tab)
     await settleSearch()
     await user.click(screen.getByRole('button', { name: LOAD_MORE }))
     await settleSearch()
@@ -640,6 +640,24 @@ describe('ManagerDialog failed next page', () => {
     expect(
       screen.queryByText(enMessages.manager.errorConnecting)
     ).not.toBeInTheDocument()
+  })
+
+  it('offers a retry instead of an empty state when the tab filters out every loaded pack', async () => {
+    vi.mocked(
+      useComfyManagerService().listInstalledPacks
+    ).mockResolvedValueOnce({
+      'gguf-1': { cnr_id: 'gguf-1', ver: '1.0.0', enabled: true }
+    })
+
+    await renderUntilSecondPageFails(ManagerTab.NotInstalled)
+
+    expect(screen.queryByText('GGUF One')).not.toBeInTheDocument()
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      enMessages.manager.loadMoreFailed
+    )
+    expect(
+      screen.getByRole('button', { name: enMessages.g.retry })
+    ).toBeInTheDocument()
   })
 
   it('appends the failed page below the loaded packs when retried', async () => {

@@ -114,7 +114,9 @@
         :node-names="unresolvedNodeNames"
       />
       <NoResultsPlaceholder
-        v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
+        v-else-if="
+          displayPacks.length === 0 && !canLoadMorePacks && !isNextPageFailed
+        "
         :title="emptyStateTitle"
         :message="emptyStateMessage"
         :button-label="retryLabel"
