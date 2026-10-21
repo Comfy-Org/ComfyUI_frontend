@@ -1,3 +1,4 @@
+import { runDeniedPaymentPastDueFact } from '@/platform/workspace/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
 import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
@@ -1220,6 +1221,26 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByRole('button', { name: 'Resume subscription' })
     ).not.toBeInTheDocument()
+  })
+
+  it('keeps a past-due team plan visible to a member, with the real credit balance', () => {
+    mockCanManageSubscription.value = false
+    mockIsActiveSubscription.value = false
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().runDeniedPaymentPastDue =
+      runDeniedPaymentPastDueFact(true)
+    Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
+
+    renderComponent()
+
+    expect(
+      screen.queryByText('This workspace is not on a subscription')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Team' })).toBeInTheDocument()
+    expect(screen.getByTestId('credits-tile')).toHaveAttribute(
+      'data-zero-state',
+      'false'
+    )
   })
 
   it('keeps Billing & invoices available to unsubscribed team owners', async () => {
