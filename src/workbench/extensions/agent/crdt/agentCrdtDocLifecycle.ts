@@ -53,9 +53,6 @@ function isPermanentSubscribeRefusalCode(
   return PERMANENT_SUBSCRIBE_REFUSAL_CODES.has(code)
 }
 
-// `unsupported` means the doc surface is off for this whole deployment, so
-// every user hits it - latching it must not paint an "incompatible document
-// version" toast that has nothing to do with any one person's workflow.
 const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<PermanentDocSubscribeRefusalCode> =
   new Set(['unsupported'])
 
