@@ -74,7 +74,7 @@
           id="workspace-switcher-panel"
           ref="workspaceSwitcherPanel"
           role="menu"
-          class="absolute top-0 right-full z-10 mr-4 rounded-lg border bg-background shadow-md"
+          class="absolute inset-x-0 top-full z-10 mt-1 rounded-lg border bg-background shadow-md md:inset-x-auto md:top-0 md:right-full md:mt-0 md:mr-4"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherPopover
