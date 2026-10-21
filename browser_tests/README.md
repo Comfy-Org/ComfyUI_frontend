@@ -463,8 +463,7 @@ Check for existing helpers before writing new ones — most needs are covered:
 
 - **ComfyPage** — main fixture; delegates to helper objects:
   `comfyPage.workflow.loadWorkflow()`, `comfyPage.settings.setSetting()`,
-  `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`,
-  `comfyPage.canvasOps.resetView()`.
+  `comfyPage.command.executeCommand()`, `comfyPage.nodeOps.getNodeRefById()`.
 - **Component page objects** — `fixtures/components/` (e.g. `Actionbar`,
   `ContextMenu`, `Templates`).
 - **Helper classes** — `fixtures/helpers/` (e.g. `CanvasHelper`,
@@ -777,14 +776,6 @@ Use a stateful mock when testing persistence across reloads.
 comfyPage.deleteFileAfterTest({ filename: 'image.png' })
 ```
 
-- Tests that manipulate canvas view should `resetView()` in `afterEach`:
-
-```typescript
-test.afterEach(async ({ comfyPage }) => {
-  await comfyPage.canvasOps.resetView()
-})
-```
-
 ### Debug helpers (remove before committing)
 
 `comfyPage.debugAddMarker(pos)`, `debugAttachScreenshot(testInfo, name)`,
@@ -1034,12 +1025,34 @@ Screenshot expectations are **platform-specific** (font rendering). We maintain
 - Prefer functional assertions; use screenshots only when appearance is the
   behavior under test.
 
+- Capture only the area under test with `@e2e/fixtures/utils/screenshotRegion`.
+  Spec files may not call `toHaveScreenshot` directly; lint enforces this.
+
 ```typescript
-await expect(comfyPage.canvas).toHaveScreenshot('state.png')
-// Mask dynamic content (timestamps, versions) to avoid flakes:
-await expect(comfyPage.canvas).toHaveScreenshot('page.png', {
-  mask: [page.locator('.timestamp')]
-})
+import {
+  expectElementScreenshot,
+  expectRegionScreenshot,
+  graphItems,
+  screenshotRegion
+} from '@e2e/fixtures/utils/screenshotRegion'
+
+// One element's box
+await expectElementScreenshot(dialog, 'dialog.png')
+
+// The area enclosing several targets plus padding: locators, node
+// references, graph items, page positions, or rectangles
+await expectRegionScreenshot(
+  comfyPage.page,
+  [ksamplerNode, graphItems(comfyPage.page, 'selection')],
+  'selection.png',
+  { padding: 40, mask: [page.locator('.timestamp')] }
+)
+
+// One area measured once and compared before and after an action
+const region = await screenshotRegion(comfyPage.page, nodes)
+await region.expectScreenshot('before.png')
+await doSomething()
+await region.expectScreenshot('after.png')
 ```
 
 ### Working with screenshots locally
@@ -1053,8 +1066,8 @@ export default defineConfig({
 })
 ```
 
-`grep` matches the test title and its tags, not the test body — a call to
-`toHaveScreenshot()` alone won't be detected. Tag every screenshot test
+`grep` matches the test title and its tags, not the test body — a screenshot
+assertion alone won't be detected. Tag every screenshot test
 `@screenshot` (or put "screenshot" in its title) for this filter to exclude it.
 
 Or generate local baselines for comparison (do not commit them). If you added
@@ -1067,7 +1080,7 @@ pnpm test:browser:local --update-snapshots
 
 ### Creating new baselines in CI
 
-1. Write the test with `toHaveScreenshot('filename.png')`.
+1. Write the test with one of the screenshot assertions above.
 2. Add the **`New Browser Test Expectations`** label, comment
    `/update-playwright`, or tick the "Update Playwright expectations"
    checkbox in the Playwright section of the PR report comment.
