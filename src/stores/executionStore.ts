@@ -929,8 +929,8 @@ export const useExecutionStore = defineStore('execution', () => {
         void jobReset.trigger(queuedJobs.value[jobId])
       delete queuedJobs.value[jobId]
     }
+    cancelPendingProgressUpdates()
     if (!activeJobId.value || jobId === activeJobId.value) {
-      cancelPendingProgressUpdates()
       executionIdToLocatorCache.clear()
       nodeProgressStates.value = {}
       activeJobId.value = null
