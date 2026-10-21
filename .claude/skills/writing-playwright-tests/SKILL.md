@@ -60,7 +60,6 @@ These are frequent causes of flaky tests - check them first, but investigate if 
 | Double-click doesn't trigger        | Timing too fast           | Add `{ delay: 5 }` option                                                              |
 | Elements end up in wrong position   | Drag animation incomplete | Use `{ steps: 10 }` not `{ steps: 1 }`                                                 |
 | Widget value wrong after drag-drop  | Upload incomplete         | Add `{ waitForUpload: true }`                                                          |
-| Test fails when run with others     | Test pollution            | Add `afterEach` with `resetView()`                                                     |
 | Local screenshots don't match CI    | Platform differences      | Screenshots are Linux-only, use PR label                                               |
 | `subtree intercepts pointer events` | Canvas overlay (z-999)    | Use `dispatchEvent` on the DOM element to bypass overlay                               |
 | Context menu empty / wrong items    | Node not selected         | Select node first: `vueNodes.selectNode()` or `nodeRef.click('title')`                 |
@@ -170,10 +169,6 @@ import {
 import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('FeatureName', { tag: ['@canvas'] }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   test('should do something', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('myWorkflow')
 

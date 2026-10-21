@@ -85,7 +85,6 @@ test.describe(
             { message: 'NodeIdBadgeMode setting should be applied' }
           )
           .toBe(mode)
-        await comfyPage.canvasOps.resetView()
         await expectAllNodesScreenshot(comfyPage, `node-badge-${mode}.png`)
       })
     })
@@ -138,7 +137,6 @@ for (const vueEnabled of [false, true] as const) {
           x: 100,
           y: 100
         })
-        await comfyPage.canvasOps.resetView()
         await expectAllNodesScreenshot(
           comfyPage,
           `node-lifecycle-${mode}-${renderer}.png`
@@ -175,7 +173,6 @@ for (const vueEnabled of [false, true] as const) {
           x: 100,
           y: 100
         })
-        await comfyPage.canvasOps.resetView()
         await expectAllNodesScreenshot(
           comfyPage,
           `api-pricing-${enabled ? 'on' : 'off'}-${renderer}.png`

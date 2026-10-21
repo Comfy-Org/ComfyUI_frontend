@@ -16,10 +16,6 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('groups/single_group_only')
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('renders readable title text when a group color is set to black', async ({
       comfyPage
     }) => {

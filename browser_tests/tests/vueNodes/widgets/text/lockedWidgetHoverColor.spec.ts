@@ -14,10 +14,6 @@ test.describe(
       )
     })
 
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.canvasOps.resetView()
-    })
-
     test('suppresses a field connected to an upstream node', async ({
       comfyPage
     }) => {

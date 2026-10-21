@@ -5,10 +5,6 @@ import {
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Vue Nodes Canvas Pan', { tag: '@vue-nodes' }, () => {
-  test.afterEach(async ({ comfyPage }) => {
-    await comfyPage.canvasOps.resetView()
-  })
-
   test(
     'Middle-click drag on a Vue node pans canvas',
     { tag: ['@canvas'] },

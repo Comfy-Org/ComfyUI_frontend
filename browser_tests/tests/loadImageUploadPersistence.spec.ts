@@ -101,7 +101,6 @@ test.describe('Load Image upload persistence', { tag: '@widget' }, () => {
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.workflow.deleteWorkflow('image-upload-root')
-      await comfyPage.canvasOps.resetView()
     })
 
     test('LoadImageMask keeps the pasted input selected and available after reload', async ({
