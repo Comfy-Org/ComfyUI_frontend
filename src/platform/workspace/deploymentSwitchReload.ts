@@ -8,12 +8,11 @@ function forgetSwitchLanding() {
   }
 }
 
-function markSwitchLanding(): boolean {
+function markSwitchLanding() {
   try {
     sessionStorage.setItem(SWITCH_LANDING_KEY, '1')
-    return true
   } catch {
-    return false
+    return
   }
 }
 
@@ -35,11 +34,7 @@ function onNextInteraction(callback: () => void) {
   }
 }
 
-/**
- * Reloads the editor onto what this browser now runs on and marks the reload
- * so the next boot can say where it landed. `onStay` runs on the next
- * interaction if the page stays, as when the user stays at the leave prompt.
- */
+/** Reloads for a switch; `onStay` runs on the next interaction if it stays. */
 export function reloadForDeploymentSwitch(onStay: () => void): void {
   markSwitchLanding()
   onNextInteraction(() => {
