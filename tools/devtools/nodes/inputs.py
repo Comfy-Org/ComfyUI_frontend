@@ -410,6 +410,20 @@ class RefModLoader:
         return ()
 
 
+class FancyTimer:
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {"required": {}}
+
+    RETURN_TYPES = ()
+    FUNCTION = "time"
+    CATEGORY = "DevTools"
+    DESCRIPTION = "Reproduces CRT Nodes Fancy Timer's onSerialize that hands back live node properties"
+
+    def time(self):
+        return ()
+
+
 class PreviewBridge:
     @classmethod
     def INPUT_TYPES(cls):
@@ -571,6 +585,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsWASPause": WASPause,
     "DevToolsRefModLoader": RefModLoader,
     "DevToolsPreviewBridge": PreviewBridge,
+    "DevToolsFancyTimer": FancyTimer,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
@@ -603,6 +618,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsWASPause": "WAS Pause Compatibility",
     "DevToolsRefModLoader": "RefMod Loader Compatibility",
     "DevToolsPreviewBridge": "Preview Bridge Compatibility",
+    "DevToolsFancyTimer": "Fancy Timer Compatibility",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
