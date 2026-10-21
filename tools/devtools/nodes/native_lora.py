@@ -1,10 +1,22 @@
-"""Small CPU endpoints for exercising the real native LoRA loaders."""
+from pathlib import Path
 from types import SimpleNamespace
 
+import folder_paths
 import torch
+from safetensors.torch import save_file
 
 from comfy.model_patcher import ModelPatcher
 from comfy.sd import CLIP
+
+
+folder = Path(folder_paths.models_dir) / "loras" / "native-lora-e2e"
+folder.mkdir(parents=True, exist_ok=True)
+for name, delta in (("A", 1.0), ("B", 2.0), ("C", 4.0)):
+    weights = {}
+    for prefix in ("diffusion_model", "text_encoders.proj"):
+        weights[f"{prefix}.lora_up.weight"] = torch.tensor([[delta]])
+        weights[f"{prefix}.lora_down.weight"] = torch.ones(1, 1)
+    save_file(weights, str(folder / f"{name}.safetensors"))
 
 
 class NativeLoraTestSource:
@@ -49,7 +61,6 @@ class NativeLoraTestOutput:
     def read(self, model=None, clip=None):
         patcher = model if model is not None else clip.patcher
         key = "diffusion_model.weight" if model is not None else "proj.weight"
-        # Apply the actual patches without mutating the cached source model.
         weight = patcher.patch_weight_to_device(key, return_weight=True)
         result = torch.nn.functional.linear(torch.ones(1, 1), weight).item()
         return (f"{result:.3f}",)
