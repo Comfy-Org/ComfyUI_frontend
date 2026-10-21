@@ -1,5 +1,4 @@
 import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
-import { expect } from '@playwright/test'
 import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
@@ -63,18 +62,6 @@ const PERMANENTLY_REFUSED_SUBSCRIBE = {
 
 export function refuseDocSubscribePermanently(ws: WebSocketRoute): void {
   ws.send(JSON.stringify(PERMANENTLY_REFUSED_SUBSCRIBE))
-}
-
-export async function pushTurnDoneOnceTurnIsActive(
-  agentPanel: AgentPanel,
-  renderedPrompts: string[],
-  ws: WebSocketRoute
-): Promise<void> {
-  await expect(
-    agentPanel.userMessageBubbles,
-    'the turn must already be the active one before the done frame is pushed'
-  ).toHaveText(renderedPrompts)
-  pushAgentEvent(ws, MESSAGE_DONE_EVENT)
 }
 
 const FUNDED_BILLING_STATUS = {

@@ -417,6 +417,10 @@ export class AgentPanel {
     await this.sendButton.click()
   }
 
+  async expectUserMessages(prompts: string[]): Promise<void> {
+    await expect(this.userMessageBubbles).toHaveText(prompts)
+  }
+
   async expectTurnSettled(): Promise<void> {
     await expect(
       this.stopButton,

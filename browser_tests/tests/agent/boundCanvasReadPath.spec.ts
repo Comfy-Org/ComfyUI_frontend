@@ -8,8 +8,9 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import {
   WORKFLOW_ID as BOUND_WORKFLOW_ID,
+  MESSAGE_DONE_EVENT,
   agentTest,
-  pushTurnDoneOnceTurnIsActive,
+  pushAgentEvent,
   refuseDocSubscribePermanently
 } from '@e2e/tests/agent/agentPanelMocks'
 
@@ -74,7 +75,8 @@ test.describe(
       })
 
       await test.step('the ack binds the tab and the turn settles', async () => {
-        await pushTurnDoneOnceTurnIsActive(agentPanel, [FIRST_PROMPT], ws)
+        await agentPanel.expectUserMessages([FIRST_PROMPT])
+        pushAgentEvent(ws, MESSAGE_DONE_EVENT)
         await agentPanel.expectTurnSettled()
       })
 
@@ -118,7 +120,8 @@ test.describe(
 
       await agentPanel.sendMessage(FIRST_PROMPT)
       await expect.poll(() => postedMessages.length).toBe(1)
-      await pushTurnDoneOnceTurnIsActive(agentPanel, [FIRST_PROMPT], ws)
+      await agentPanel.expectUserMessages([FIRST_PROMPT])
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
       await agentPanel.expectTurnSettled()
 
       await test.step('user opens a fresh empty tab, then returns to the bound one', async () => {
@@ -163,7 +166,8 @@ test.describe(
 
       await agentPanel.sendMessage(FIRST_PROMPT)
       await expect.poll(() => postedMessages.length).toBe(1)
-      await pushTurnDoneOnceTurnIsActive(agentPanel, [FIRST_PROMPT], ws)
+      await agentPanel.expectUserMessages([FIRST_PROMPT])
+      pushAgentEvent(ws, MESSAGE_DONE_EVENT)
       await agentPanel.expectTurnSettled()
 
       await test.step('the host permanently refuses the bound document and the user is told', async () => {
