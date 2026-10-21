@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import {
@@ -44,6 +45,7 @@ test.describe(
     test('a write the canvas did take reads as done, with no notice', async ({
       page
     }) => {
+      await page.clock.install()
       const agent = new AgentRemoteApplyHarness(page)
       await agent.setUp()
       await agent.openAndTarget()
@@ -53,6 +55,7 @@ test.describe(
       const [nodeId] = AGENT_NODE_IDS
       agent.applyAndBroadcast([addLoadImageNode(nodeId, 0)])
       await expect(agent.node(nodeId)).toBeVisible()
+      agent.reportToolCall('add_node', 'call-add-node')
       agent.reportToolCall('add_node', 'call-add-node')
       agent.finishTurn('Added a Load Image node.')
 
@@ -64,6 +67,14 @@ test.describe(
       await expect(
         agent.panel.getByTestId('agent-run-notice-emptyCanvas')
       ).toHaveCount(0)
+
+      await page.clock.fastForward(STALE_AFTER_MS + 1)
+
+      await expect(agent.workSummary).toContainText(COPY.worked)
+      await expect(agent.workSummary).not.toContainText(
+        COPY.workedNotConfirmedOnCanvas
+      )
+      await expect(agent.node(nodeId)).toBeVisible()
     })
   }
 )

@@ -1759,6 +1759,34 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     })
   })
 
+  it('does not downgrade an uncorrelated write on terminal-frame redelivery', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    let appliedLive = 0
+    const transport = createAgentEventTransport(
+      message,
+      emit,
+      () => 'awaiting',
+      () => appliedLive
+    )
+
+    appliedLive += 1
+    transport.notifyCanvasCaughtUp(liveCanvasEvidence(WORKFLOW_ID))
+    transport.ingest(toolCall('add_node', 'success', 'write'))
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: undefined
+    })
+
+    transport.ingest(toolCall('add_node', 'success', 'write'))
+    vi.advanceTimersByTime(STALE_AFTER_MS)
+
+    expect(toolParts(message)[0]).toMatchObject({
+      state: 'done',
+      canvasConfirmed: undefined
+    })
+  })
+
   // PM-1575 (findings #4/#5): a transport torn down for a reason other than
   // natural completion (abort, drop, reset, hydrate) must flush anything it
   // is still holding and cancel its timers, rather than leaving a part
@@ -1845,8 +1873,14 @@ describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1
       'done'
     ])
     expect(
-      toolParts(message).map((part) => part.canvasConfirmed)
-    ).not.toContain(false)
+      toolParts(message).map(({ state, canvasConfirmed }) => ({
+        state,
+        canvasConfirmed
+      }))
+    ).toEqual([
+      { state: 'done', canvasConfirmed: undefined },
+      { state: 'done', canvasConfirmed: undefined }
+    ])
   })
 
   it('settles immediately and unconfirmed when confirmation is impossible', () => {

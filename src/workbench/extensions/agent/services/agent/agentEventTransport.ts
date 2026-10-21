@@ -119,24 +119,9 @@ export function createAgentEventTransport(
   )
   let settled = false
   let lastTabTargetKey: string | undefined
-  // Tool parts whose frame reported done but whose displayed state is held at
-  // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
-  // part that never gets a `notifyCanvasCaughtUp` call still settles.
   const pendingCanvasSync = new Map<ToolPart, PendingCanvasSync>()
   const observedCanvasOps = new Map<string, Set<string>>()
-  // PM-1575: the outcome count at this transport's own creation.
-  // `canvasSyncBaseline` below hands each NEW tool part this value rather
-  // than a fresh `getCanvasSyncOutcomeCount()` read, because that read is
-  // worthless when a tool call's first-ever frame is already its terminal
-  // one (the common case -- recorded conversations never send a `running`
-  // frame at all, see the file header): a fresh read is trivially equal to
-  // itself regardless of whether a `doc_update` already landed moments
-  // earlier. It is never advanced: the count cannot say which write a frame
-  // carried, so one write consuming it would leave a coalesced second write
-  // looking as though nothing arrived.
   const canvasSyncOutcomeAtStart = getCanvasSyncOutcomeCount()
-  // The start count handed to each tool part when it is first seen (see
-  // `canvasSyncOutcomeAtStart` above).
   const canvasSyncBaseline = new Map<ToolPart, number>()
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
@@ -145,12 +130,6 @@ export function createAgentEventTransport(
     pendingCanvasSync.delete(part)
   }
 
-  /**
-   * Only a correlated frame names the ops whose arrival proves the write. An
-   * uncorrelated frame is released by any live frame, which the unscoped
-   * outcome count cannot attribute to a workflow or a write, so that release
-   * makes no canvas claim. It is still denied when no live frame arrives.
-   */
   function observedCanvasOutcome(
     correlation: CanvasCorrelation | undefined
   ): true | undefined {
@@ -264,7 +243,7 @@ export function createAgentEventTransport(
     durationMs: number | undefined,
     data: AgentToolCallEvent['data']
   ): void {
-    if (part.state === 'done' && part.canvasConfirmed === true) return
+    if (part.state === 'done' && part.ok === (status === 'success')) return
     part.ok = status === 'success'
     part.durationMs = durationMs
     clearPendingCanvasSyncTimer(part)
