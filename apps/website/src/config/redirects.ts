@@ -51,6 +51,10 @@ const SUPPORTED_MODELS_PATH = '/p/supported-models'
 
 const SUPPORTED_NODES_PATH = '/cloud/supported-nodes'
 
+/** The maintained answer to "which custom nodes are on Cloud"; the HTML routes land here, the Markdown twins stay on /cloud.md. */
+const CUSTOM_NODES_ON_CLOUD_ARTICLE =
+  'https://support.comfy.org/articles/6791455062-custom-nodes-on-cloud'
+
 /** Leaves room under Vercel's 2,048-character limit on a rule's source. */
 const MAX_SLUG_GROUP_LENGTH = 1900
 
@@ -126,7 +130,7 @@ const supportedNodesRedirects: readonly SiteRedirect[] = (
 ).flatMap((locale) => [
   {
     source: `${locale}${SUPPORTED_NODES_PATH}`,
-    destination: `${locale}/cloud/`
+    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}.md`,
@@ -142,7 +146,7 @@ const supportedNodesRedirects: readonly SiteRedirect[] = (
   },
   {
     source: `${locale}${SUPPORTED_NODES_PATH}/:path+`,
-    destination: `${locale}/cloud/`
+    destination: CUSTOM_NODES_ON_CLOUD_ARTICLE
   }
 ])
 
