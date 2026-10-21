@@ -25,6 +25,7 @@ import { reduceCreditTransitionNotice } from './creditTransitionNoticeState'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960
+const FUNDS_RECHECK_TIMEOUT_MS = 10_000
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 const DISCOVERED_STORAGE_KEY = 'Comfy.AgentPanel.discovered'
 
@@ -98,6 +99,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
   const fundsRechecks = ref(new Map<number, string>())
+  const fundsRecheckTimeouts = new Map<number, ReturnType<typeof setTimeout>>()
   let nextFundsRecheckId = 0
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
@@ -388,14 +390,22 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function beginFundsRecheck(identity: string): number {
     const id = ++nextFundsRecheckId
     fundsRechecks.value.set(id, identity)
+    fundsRecheckTimeouts.set(
+      id,
+      setTimeout(() => finishFundsRecheck(id), FUNDS_RECHECK_TIMEOUT_MS)
+    )
     return id
   }
 
   function finishFundsRecheck(id: number): void {
+    clearTimeout(fundsRecheckTimeouts.get(id))
+    fundsRecheckTimeouts.delete(id)
     fundsRechecks.value.delete(id)
   }
 
   function cancelFundsRechecks(): void {
+    for (const timeout of fundsRecheckTimeouts.values()) clearTimeout(timeout)
+    fundsRecheckTimeouts.clear()
     fundsRechecks.value.clear()
   }
 
