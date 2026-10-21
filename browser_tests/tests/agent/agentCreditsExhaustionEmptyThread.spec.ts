@@ -52,10 +52,6 @@ test.describe(
       })
     })
 
-    // Windows Local Agent QA, #comfy-agent-user-feedback 2026-10-21: a new
-    // account's first prompt showed "Out of credits" for the whole turn while
-    // the turn ran normally, because the pre-turn admission granted the free
-    // Agent credits after the panel had read billing.
     test('keeps the card hidden when the first send is admitted on credits granted at admission', async ({
       agentBilling,
       agentPanel,
