@@ -58,6 +58,16 @@ describe('fetchSnapshot', () => {
     ])
   })
 
+  it('fetches one profile for usernames that differ only in case', async () => {
+    const snapshot = await fetchSnapshot(
+      fakeHub({
+        '': { workflows: [workflow('a1', 'purz'), workflow('a2', 'PurZ')] }
+      })
+    )
+
+    expect(snapshot.profiles).toEqual([{ username: 'purz' }])
+  })
+
   it.for([
     { case: 'null', publishTime: { publish_time: null } },
     { case: 'absent', publishTime: {} }

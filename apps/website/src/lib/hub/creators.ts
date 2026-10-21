@@ -43,8 +43,9 @@ export interface HubCreator {
   readonly workflows: readonly HubCreatorWorkflow[]
 }
 
-const isWebUrl = (url: string) =>
-  URL.canParse(url) && /^https?:$/.test(new URL(url).protocol)
+function isWebUrl(url: string) {
+  return URL.canParse(url) && /^https?:$/.test(new URL(url).protocol)
+}
 
 const HUB_ASSETS_HOST = 'comfy-hub-assets.comfy.org'
 
@@ -56,8 +57,9 @@ function hubAsset(url: string, transform: string) {
     : undefined
 }
 
-const resizedImage = (width: number) =>
-  `image/width=${width},format=auto,quality=82`
+function resizedImage(width: number) {
+  return `image/width=${width},format=auto,quality=82`
+}
 
 export function hubCreators({
   profiles,
