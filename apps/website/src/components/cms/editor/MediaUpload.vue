@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { Upload, X } from '@lucide/vue'
 import { z } from 'astro/zod'
 import { zUploadCccMediaResponse } from '@comfyorg/ingest-types/zod'
@@ -58,32 +58,50 @@ function choose(event: Event) {
   attempt.value = undefined
   error.value = ''
 }
+const SUPPORTED_MIME = [
+  'image/png',
+  'image/jpeg',
+  'image/webp',
+  'video/mp4',
+  'video/webm',
+  'application/json',
+  ''
+]
+const DEFAULT_ACCEPT =
+  'image/png,image/jpeg,image/webp,video/mp4,video/webm,application/json,.json,.mp4,.webm'
+const workflowAPI = computed(() => mediaRole.startsWith('workflow-api-'))
+const byteLimit = computed(
+  () => maxBytes ?? (workflowAPI.value ? 1 << 20 : 64 << 20)
+)
+const inputAccept = computed(() =>
+  jsonOnly ? 'application/json,.json' : (accept?.join(',') ?? DEFAULT_ACCEPT)
+)
+function defaultHint() {
+  if (!jsonOnly) return t('cmsEditor.mediaHelp')
+  return t(
+    workflowAPI.value
+      ? 'cccWorkflowVersions.apiFileHint'
+      : 'cccWorkflowVersions.downloadFileHint'
+  )
+}
+const helpText = computed(() => hint ?? defaultHint())
+const ariaLabel = computed(
+  () =>
+    `${fileLabel ?? t('cmsEditor.chooseFile')} · ${t('cmsEditor.uploadNew')}`
+)
+function isJSONFile(file: File) {
+  return (
+    file.name.toLowerCase().endsWith('.json') &&
+    ['application/json', ''].includes(file.type)
+  )
+}
+function allowedType(file: File) {
+  if (accept && !accept.includes(file.type)) return false
+  if (jsonOnly && !isJSONFile(file)) return false
+  return SUPPORTED_MIME.includes(file.type)
+}
 function uploadName(file: File) {
-  const mime = file.type
-  if (
-    file.size >
-    (maxBytes ?? (mediaRole.startsWith('workflow-api-') ? 1 << 20 : 64 << 20))
-  )
-    return undefined
-  if (accept && !accept.includes(mime)) return undefined
-  if (
-    jsonOnly &&
-    (!file.name.toLowerCase().endsWith('.json') ||
-      !['application/json', ''].includes(mime))
-  )
-    return undefined
-  if (
-    ![
-      'image/png',
-      'image/jpeg',
-      'image/webp',
-      'video/mp4',
-      'video/webm',
-      'application/json',
-      ''
-    ].includes(mime)
-  )
-    return undefined
+  if (file.size > byteLimit.value || !allowedType(file)) return undefined
   return file.name.replace(/[^A-Za-z0-9._-]/g, '-').replace(/^\.+/, '')
 }
 async function replacementToken(body: FormData, target: string) {
@@ -190,7 +208,7 @@ function completeUpload(
 <template>
   <div
     role="group"
-    :aria-label="`${fileLabel ?? t('cmsEditor.chooseFile')} · ${t('cmsEditor.uploadNew')}`"
+    :aria-label="ariaLabel"
     class="grid gap-3 rounded-lg border border-admin-line bg-admin-page p-4"
   >
     <code v-if="reference?.id" class="text-xs break-all text-admin-muted"
@@ -205,13 +223,7 @@ function completeUpload(
         t(jsonOnly ? 'cccWorkflowVersions.chooseJSON' : 'cmsEditor.chooseFile')
       }}<input
         type="file"
-        :accept="
-          jsonOnly
-            ? 'application/json,.json'
-            : accept
-              ? accept.join(',')
-              : 'image/png,image/jpeg,image/webp,video/mp4,video/webm,application/json,.json,.mp4,.webm'
-        "
+        :accept="inputAccept"
         :disabled="!entityUID || state === 'uploading'"
         class="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-admin-raised file:px-3 file:py-2 file:text-admin-fg"
         @change="choose"
@@ -245,16 +257,7 @@ function completeUpload(
       >
     </div>
     <p class="text-xs text-admin-muted">
-      {{
-        hint ??
-        t(
-          jsonOnly
-            ? mediaRole.startsWith('workflow-api-')
-              ? 'cccWorkflowVersions.apiFileHint'
-              : 'cccWorkflowVersions.downloadFileHint'
-            : 'cmsEditor.mediaHelp'
-        )
-      }}
+      {{ helpText }}
     </p>
     <p v-if="error" role="alert" class="text-sm text-admin-danger-text">
       {{ error }}

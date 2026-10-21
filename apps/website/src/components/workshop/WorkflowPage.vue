@@ -21,6 +21,7 @@ import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
+import WorkflowInputMismatch from './WorkflowInputMismatch.vue'
 
 const { model, embedded = false } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -34,9 +35,8 @@ const runnable = computed(
 )
 const mismatch = computed(() => model.catalogDetails?.inputMismatch)
 const snippetValues = computed(() => initialWorkshopPageState(model).values)
-const t = computed(
-  () => translationsFor(model.catalogDetails?.locale ?? 'en').t
-)
+const locale = computed(() => model.catalogDetails?.locale ?? 'en')
+const t = computed(() => translationsFor(locale.value).t)
 const paragraphs = computed(() =>
   (model.catalogDetails?.longDescription ?? '')
     .split(/\n\s*\n/)
@@ -158,35 +158,17 @@ function captureWorkflowDownload() {
         :download-name="downloadName"
         :cloud-href="cloudHref"
         :documentation-u-r-l="documentationURL"
-        :locale="model.catalogDetails?.locale ?? 'en'"
+        :locale="locale"
         @download="captureWorkflowDownload"
         @try-cloud="captureTryInCloud"
       />
     </header>
 
-    <div
+    <WorkflowInputMismatch
       v-if="mismatch"
-      role="note"
-      class="mb-6 rounded-2xl border border-primary-comfy-orange/40 bg-primary-comfy-orange/10 p-4 text-sm text-primary-warm-white"
-      data-testid="workflow-input-mismatch"
-    >
-      <p class="mb-2 font-bold">{{ t('cccWorkflow.inputMismatchTitle') }}</p>
-      <p>{{ t('cccWorkflow.inputMismatch') }}</p>
-      <p v-if="mismatch.undeclared.length" class="mt-2 wrap-break-word">
-        {{
-          t('cccWorkflow.inputUndeclared', {
-            names: mismatch.undeclared.join(', ')
-          })
-        }}
-      </p>
-      <p v-if="mismatch.unconfigured.length" class="mt-2 wrap-break-word">
-        {{
-          t('cccWorkflow.inputUnconfigured', {
-            names: mismatch.unconfigured.join(', ')
-          })
-        }}
-      </p>
-    </div>
+      :mismatch="mismatch"
+      :locale="locale"
+    />
     <WorkflowPlayground
       v-if="runnable"
       :key="scope"
