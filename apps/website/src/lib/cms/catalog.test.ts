@@ -177,4 +177,57 @@ describe('website CMS boundary', () => {
     expect(other.ok).toBe(true)
     if (other.ok) expect(other.details).toHaveLength(1)
   })
+
+  it('reads an app the website cannot render as not found, not unavailable', async () => {
+    vi.stubEnv('SITE_CATALOG_API_URL', 'http://localhost:8099')
+    const app = (implementation_ref: string) => ({
+      uid: '00000000-0000-4000-8000-000000000071',
+      edit_version: '00000000-0000-4000-8000-000000000072',
+      kind: 'APP',
+      slug: `/hub/apps/${implementation_ref}`,
+      enabled: true,
+      visibility: 'PUBLIC',
+      deleted: false,
+      revision: 1,
+      data: {
+        type: 'app',
+        title: 'App',
+        slug: implementation_ref,
+        implementation_ref
+      }
+    })
+    vi.mocked(fetch).mockImplementation((input) => {
+      const slug = String(
+        new URL(String(input)).searchParams.get('workflow_slug')
+      )
+      return Promise.resolve(
+        Response.json({
+          revision_id: 1,
+          generation: 0,
+          items: [app(slug.split('/').pop() ?? '')]
+        })
+      )
+    })
+    const unknown = await loadSiteCatalog(
+      undefined,
+      'en',
+      '/hub/apps/something-new',
+      false
+    )
+    expect(unknown).toMatchObject({
+      ok: true,
+      projection: { items: [] },
+      models: []
+    })
+    const known = await loadSiteCatalog(
+      undefined,
+      'en',
+      '/hub/apps/studio',
+      false
+    )
+    expect(known).toMatchObject({
+      ok: true,
+      models: [{ type: 'APP', appId: 'studio' }]
+    })
+  })
 })
