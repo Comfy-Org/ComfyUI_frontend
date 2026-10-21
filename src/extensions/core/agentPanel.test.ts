@@ -299,6 +299,13 @@ describe('AgentPanel extension flag gate', () => {
         visits: '2',
         legacyDesktop: false,
         bridge: { isRemote: () => false }
+      },
+      {
+        session: 'signed out in Desktop 2 localhost before isRemote',
+        user: null,
+        visits: '2',
+        legacyDesktop: false,
+        bridge: {}
       }
     ])(
       'offers consent on startup when $session',
@@ -326,16 +333,27 @@ describe('AgentPanel extension flag gate', () => {
       }
     )
 
-    it('keeps the signed-out automatic gate for a remote Desktop 2 view', async () => {
-      mocks.isDesktop = false
-      window.__comfyDesktop2 = { isRemote: () => true }
-      currentUser.value = null
+    it.for([
+      {
+        host: 'modern',
+        bridge: { isRemote: () => true },
+        legacyRemote: undefined
+      },
+      { host: 'legacy', bridge: {}, legacyRemote: true }
+    ])(
+      'keeps the signed-out automatic gate for a $host remote Desktop 2 view',
+      async ({ bridge, legacyRemote }) => {
+        mocks.isDesktop = false
+        vi.stubGlobal('__comfyDesktop2', bridge)
+        vi.stubGlobal('__comfyDesktop2Remote', legacyRemote)
+        currentUser.value = null
 
-      await loadEntryAndSetup()
-      await flush()
+        await loadEntryAndSetup()
+        await flush()
 
-      expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-    })
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+      }
+    )
 
     it.for([
       { surface: 'dialog', hold: openDialog, release: closeDialog },
