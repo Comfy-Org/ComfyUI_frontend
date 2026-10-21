@@ -259,19 +259,19 @@ export class AgentFollowerHostSocket {
       this.answerSubscribe(frame.stateVector)
       return
     }
-    if (
-      frame.type === 'doc_ops' &&
-      frame.opsResult.ok &&
-      this.unansweredHumanBatches > 0
-    ) {
+    if (frame.type === 'doc_ops') this.receiveHumanOps(frame)
+  }
+
+  private receiveHumanOps(frame: ParsedClientDocFrame): void {
+    if (frame.opsResult.ok && this.unansweredHumanBatches > 0) {
       this.unansweredHumanBatches -= 1
       return
     }
-    if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply') {
+    if (this.humanOpsHost === 'apply') {
       this.judgeHumanOps(frame.opsResult, frame.tab)
       return
     }
-    if (frame.type === 'doc_ops' && frame.opsResult.ok) {
+    if (frame.opsResult.ok) {
       this.heldBatches.push({ tab: frame.tab, ops: frame.opsResult.ops })
     }
   }
