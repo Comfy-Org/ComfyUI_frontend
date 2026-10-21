@@ -48,8 +48,6 @@ afterEach(() => {
 
 describe('wan 3.0 workflow links', () => {
   it('sends the secondary hero CTA to the Hub list searched for Wan, not the unfiltered list', () => {
-    // The search lists the shipped Wan workflows, matching what
-    // /ltx-2.5 and /seedance-2.5 already do.
     expect(wan3Page.hero.secondaryCta?.href).toBe('/hub/workflows/?q=wan')
   })
 })

@@ -67,9 +67,6 @@ function pageCopy(locale: Locale): { label: string; text: string }[] {
 
 describe('seedance 2.5 workflow links', () => {
   it('sends "try workflows" to the Hub list searched for Seedance, not the unfiltered list', () => {
-    // The unfiltered list makes the reader search for the model they just read
-    // about. The search lists the shipped 2.5 workflows, which is what the launch
-    // playbook asks the page to link, and matches what /ltx-2.5 already does.
     expect(seedancePage.hero.secondaryCta?.href).toBe(
       '/hub/workflows/?q=seedance'
     )

@@ -4,8 +4,6 @@ import { ltxPage } from './ltx'
 
 describe('ltx 2.5 workflow links', () => {
   it('sends the secondary hero CTA to the Hub list searched for LTX, not the unfiltered list', () => {
-    // The search lists the shipped LTX workflows, matching what
-    // /seedance-2.5 and /wan-3.0 already do.
     expect(ltxPage.hero.secondaryCta?.href).toBe('/hub/workflows/?q=ltx')
   })
 })

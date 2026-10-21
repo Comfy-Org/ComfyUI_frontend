@@ -12,10 +12,6 @@ import { hubModelUrl } from '@/lib/hub/routes'
 const seedanceLinks = {
   cloudRun: 'https://cloud.comfy.org/?template=api_seedance2_5_r2v',
   freeDraft: 'https://cloud.comfy.org/?template=video_wan2_2_14B_t2v',
-  // The hub's Seedance family page, which lists the shipped 2.5 workflows
-  // (text to video, reference to video, first-last frame and the rest). The
-  // "try workflows" CTA pointed at the hub root, which makes the reader find
-  // them, the same fix /ltx-2.5 already carries.
   hubModel: hubModelUrl('seedance')
 } as const
 
