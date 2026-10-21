@@ -1697,7 +1697,7 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     })
   })
 
-  it('does not fold non-UUID workflow ids when banking observations', () => {
+  it('does not case-fold non-UUID workflow ids when matching observed ops', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit, () => 'awaiting')
