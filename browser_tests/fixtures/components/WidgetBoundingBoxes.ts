@@ -10,7 +10,9 @@ export class WidgetBoundingBoxesFixture {
     this.root = node.getByTestId('bounding-boxes')
     this.canvas = this.root.locator('canvas')
     this.drawingArea = this.canvas.locator('..')
-    this.height = node.getByLabel('height').getByRole('spinbutton')
+    this.height = node
+      .getByLabel('height', { exact: true })
+      .getByRole('spinbutton')
   }
 
   async drawBox(from: number, to: number): Promise<void> {
