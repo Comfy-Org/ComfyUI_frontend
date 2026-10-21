@@ -170,15 +170,15 @@ const pillClass =
     </a>
     <div
       v-if="hasModelActions"
-      class="flex min-h-6 items-center justify-between gap-1 px-3"
+      class="flex min-h-6 flex-wrap items-center justify-between gap-1.5 px-3"
     >
       <span
         :id="`${id}-task`"
-        class="min-w-0 text-xs text-content"
+        :class="pillClass"
         data-testid="model-card-task"
         >{{ taskLabel }}</span
       >
-      <div class="flex shrink-0 items-center gap-1">
+      <div class="ml-auto flex shrink-0 items-center gap-1">
         <a
           :href="model.href"
           data-model-try
