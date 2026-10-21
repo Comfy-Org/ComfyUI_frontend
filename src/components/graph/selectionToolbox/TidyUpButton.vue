@@ -41,7 +41,7 @@
       v-if="isOpen && canTidy"
       v-model:dragging="isDraggingGap"
       @edit-start="finish"
-      @edited="checkGaps"
+      @edited="showLaidOutGap"
       @dismiss="isOpen = false"
     />
   </Teleport>
@@ -88,7 +88,7 @@ const isOpen = ref(false)
 const hasMixedGaps = ref(false)
 const isDraggingGap = ref(false)
 
-const checkGaps = () => {
+const showLaidOutGap = () => {
   const tidiedGap = tidiedGapOf(measure())
   hasMixedGaps.value = tidiedGap === undefined
   if (tidiedGap !== undefined) adoptGap(tidiedGap)
@@ -129,20 +129,18 @@ const keepOpenForToolboxAndHandles = (
   }
 }
 
-const firstValue = (value: number[] | undefined): number | undefined =>
-  value?.[0]
-
-const onSliderUpdate = (value: number[] | undefined) => {
-  const next = firstValue(value)
+const applySliderGap = (
+  value: number[] | undefined,
+  apply: (gap: number) => void
+) => {
+  const next = value?.[0]
   if (next === undefined || isDraggingGap.value) return
   hasMixedGaps.value = false
-  previewGap(next)
+  apply(next)
 }
 
-const onSliderCommit = (value: number[]) => {
-  const next = firstValue(value)
-  if (next === undefined || isDraggingGap.value) return
-  hasMixedGaps.value = false
-  commitGap(next)
-}
+const onSliderUpdate = (value: number[] | undefined) =>
+  applySliderGap(value, previewGap)
+
+const onSliderCommit = (value: number[]) => applySliderGap(value, commitGap)
 </script>

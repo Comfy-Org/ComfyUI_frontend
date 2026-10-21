@@ -108,6 +108,20 @@ const AXIS_STYLES: Record<
   }
 }
 
+const NUDGE_KEYS: Record<GapAxis, [decrease: string, increase: string]> = {
+  x: ['ArrowLeft', 'ArrowRight'],
+  y: ['ArrowUp', 'ArrowDown']
+}
+
+const MODIFIER_KEYS = new Set([
+  'Shift',
+  'Control',
+  'Alt',
+  'AltGraph',
+  'Meta',
+  'CapsLock'
+])
+
 const isDragging = defineModel<boolean>('dragging', { default: false })
 
 const emit = defineEmits<{
@@ -145,6 +159,7 @@ const viewport = shallowRef<Viewport>({
   lowQuality: false
 })
 let measuredBoxes: LayoutBox[] = []
+let dragListeners: AbortController | undefined
 
 const isSameBox = (a: LayoutBox, b: LayoutBox | undefined) =>
   b !== undefined &&
@@ -154,33 +169,38 @@ const isSameBox = (a: LayoutBox, b: LayoutBox | undefined) =>
   a.width === b.width &&
   a.height === b.height
 
+const isSameBoxes = (a: LayoutBox[], b: LayoutBox[]) =>
+  a.length === b.length && a.every((box, i) => isSameBox(box, b[i]))
+
 const isSameViewport = (a: Viewport, b: Viewport) =>
   a.scale === b.scale &&
   a.offsetX === b.offsetX &&
   a.offsetY === b.offsetY &&
   a.lowQuality === b.lowQuality
 
+const syncViewport = (): Viewport => {
+  const { scale, offset } = canvas.ds
+  const next = {
+    scale,
+    offsetX: offset[0],
+    offsetY: offset[1],
+    lowQuality: canvas.low_quality
+  }
+  if (!isSameViewport(next, viewport.value)) viewport.value = next
+  return next
+}
+
+const syncBars = () => {
+  const boxes = measure()
+  if (isSameBoxes(boxes, measuredBoxes)) return
+  measuredBoxes = boxes
+  bars.value = computeGapBars(detectSelectionGrid(boxes))
+}
+
 const { pause, resume } = useRafFn(
   () => {
-    const { scale, offset } = canvas.ds
-    const nextViewport = {
-      scale,
-      offsetX: offset[0],
-      offsetY: offset[1],
-      lowQuality: canvas.low_quality
-    }
-    if (!isSameViewport(nextViewport, viewport.value)) {
-      viewport.value = nextViewport
-    }
-    if (nextViewport.lowQuality || isDraggingNodes.value) return
-
-    const boxes = measure()
-    const unchanged =
-      boxes.length === measuredBoxes.length &&
-      boxes.every((box, i) => isSameBox(box, measuredBoxes[i]))
-    if (unchanged) return
-    measuredBoxes = boxes
-    bars.value = computeGapBars(detectSelectionGrid(boxes))
+    const { lowQuality } = syncViewport()
+    if (!lowQuality && !isDraggingNodes.value) syncBars()
   },
   { immediate: false }
 )
@@ -227,59 +247,39 @@ const graphPointAlong = (event: PointerEvent, axis: GapAxis) => {
     : (event.clientY - canvasBounds.top.value) / scale - offset[1]
 }
 
-let dragListeners: AbortController | undefined
-
-const MODIFIER_KEYS = new Set([
-  'Shift',
-  'Control',
-  'Alt',
-  'AltGraph',
-  'Meta',
-  'CapsLock'
-])
-
 const stopDragListeners = () => {
   dragListeners?.abort()
   dragListeners = undefined
   isDragging.value = false
 }
 
-function onPointerDown(event: PointerEvent, bar: ScreenBar) {
-  if (event.button !== 0 || drag.value) return
-  event.preventDefault()
-  event.stopPropagation()
-  if (event.currentTarget instanceof HTMLElement) {
-    event.currentTarget.focus({ preventScroll: true })
-    event.currentTarget.setPointerCapture(event.pointerId)
-  }
+const cancelDrag = () => {
+  stopDragListeners()
+  cancel()
+}
 
-  const { pointerId } = event
-  const origin = graphPointAlong(event, bar.axis)
-  emit('editStart')
-  start(bar)
-  if (!drag.value) return
+const commitDrag = () => {
+  stopDragListeners()
+  commit()
+  emit('edited')
+}
 
+const cancelsDrag = (event: KeyboardEvent) =>
+  !MODIFIER_KEYS.has(event.key) && historyShortcut(event) === undefined
+
+function followDrag(pointerId: number, axis: GapAxis, origin: number) {
   stopDragListeners()
   dragListeners = new AbortController()
   isDragging.value = true
   const { signal } = dragListeners
   const isDragPointer = (pointerEvent: PointerEvent) =>
     pointerEvent.pointerId === pointerId
-  const cancelDrag = () => {
-    stopDragListeners()
-    cancel()
-  }
-  const commitDrag = () => {
-    stopDragListeners()
-    commit()
-    emit('edited')
-  }
   window.addEventListener(
     'pointermove',
     (moveEvent) => {
       if (!isDragPointer(moveEvent)) return
       if (moveEvent.buttons === 0) commitDrag()
-      else preview(graphPointAlong(moveEvent, bar.axis) - origin)
+      else preview(graphPointAlong(moveEvent, axis) - origin)
     },
     { signal }
   )
@@ -301,7 +301,7 @@ function onPointerDown(event: PointerEvent, bar: ScreenBar) {
   window.addEventListener(
     'keydown',
     (keyEvent) => {
-      if (MODIFIER_KEYS.has(keyEvent.key) || historyShortcut(keyEvent)) return
+      if (!cancelsDrag(keyEvent)) return
       keyEvent.preventDefault()
       keyEvent.stopImmediatePropagation()
       cancelDrag()
@@ -310,9 +310,26 @@ function onPointerDown(event: PointerEvent, bar: ScreenBar) {
   )
 }
 
-const NUDGE_KEYS: Record<GapAxis, [decrease: string, increase: string]> = {
-  x: ['ArrowLeft', 'ArrowRight'],
-  y: ['ArrowUp', 'ArrowDown']
+function onPointerDown(event: PointerEvent, bar: ScreenBar) {
+  if (event.button !== 0 || drag.value) return
+  event.preventDefault()
+  event.stopPropagation()
+  if (event.currentTarget instanceof HTMLElement) {
+    event.currentTarget.focus({ preventScroll: true })
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  const origin = graphPointAlong(event, bar.axis)
+  emit('editStart')
+  start(bar)
+  if (drag.value) followDrag(event.pointerId, bar.axis, origin)
+}
+
+const nudgeDirectionOf = (key: string, axis: GapAxis): number => {
+  const [decrease, increase] = NUDGE_KEYS[axis]
+  if (key === increase) return 1
+  if (key === decrease) return -1
+  return 0
 }
 
 function onKeyDown(event: KeyboardEvent, bar: ScreenBar) {
@@ -322,8 +339,7 @@ function onKeyDown(event: KeyboardEvent, bar: ScreenBar) {
     emit('dismiss')
     return
   }
-  const [decrease, increase] = NUDGE_KEYS[bar.axis]
-  const direction = event.key === increase ? 1 : event.key === decrease ? -1 : 0
+  const direction = nudgeDirectionOf(event.key, bar.axis)
   if (direction === 0) return
   event.preventDefault()
   event.stopPropagation()
