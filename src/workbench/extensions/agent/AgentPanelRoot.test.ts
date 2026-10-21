@@ -233,9 +233,8 @@ const telemetry = vi.mocked(telemetryProvider)
 const nextClientMessageId = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('uuid'), () => ({ v4: nextClientMessageId }))
 
-vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: true
-}))
+const distribution = vi.hoisted(() => ({ isCloud: true, isDesktop: false }))
+vi.mock(import('@/platform/distribution/types'), () => distribution)
 
 const openAccountPrecondition = vi.hoisted(() => vi.fn())
 vi.mock(
@@ -328,6 +327,8 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
+  distribution.isCloud = true
+  distribution.isDesktop = false
   agentSocket = createFakeAgentSocket()
   agentSocket.send.mockImplementation((frame) => {
     socketSend(frame)
@@ -6503,6 +6504,7 @@ describe('AgentPanelRoot workflow binding', () => {
       (_trigger, onAccept) =>
         new Promise<void>((resolve) => {
           accept = () => {
+            Object.assign(useAgentConsentStore(), { accepted: true })
             onAccept()
             resolve()
           }
@@ -6524,6 +6526,100 @@ describe('AgentPanelRoot workflow binding', () => {
     accept()
     await screen.findByRole('button', { name: 'Stop' })
     await waitFor(() => expect(bodies).toHaveLength(1))
+  })
+
+  it('asks signed-out Desktop users for consent before opening sign-in and keeps their draft on Skip', async () => {
+    distribution.isCloud = false
+    distribution.isDesktop = true
+    makeTab('wf-42')
+    useAuthStore().currentUser = null
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
+    vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValue(false)
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    withConsent.mockResolvedValueOnce()
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build me a workflow')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+
+    expect(withConsent).toHaveBeenCalledExactlyOnceWith(
+      'first_message',
+      expect.any(Function)
+    )
+    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+    expect(bodies).toHaveLength(0)
+    expect(useAgentComposerStore().draft).toBe('build me a workflow')
+  })
+
+  it('resumes the original Desktop submission once after consent and sign-in finish', async () => {
+    distribution.isCloud = false
+    distribution.isDesktop = true
+    makeTab('wf-42')
+    useAuthStore().currentUser = null
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let finishConsent = () => {}
+    withConsent.mockImplementationOnce(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          finishConsent = () => {
+            useAuthStore().currentUser = fromPartial<User>({ uid: 'account-a' })
+            vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
+              Authorization: 'Bearer id-token'
+            })
+            Object.assign(useAgentConsentStore(), { accepted: true })
+            onAccept()
+            resolve()
+          }
+        })
+    )
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('continue this submission')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(bodies).toHaveLength(0)
+    finishConsent()
+    await screen.findByRole('button', { name: 'Stop' })
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(withConsent).toHaveBeenCalledOnce()
+    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+  })
+
+  it('restores a consent-held Desktop draft when its scope changes during the coach', async () => {
+    distribution.isCloud = false
+    distribution.isDesktop = true
+    makeTab('wf-42')
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    localStorage.removeItem('Comfy.AgentPanel.onboarded')
+    localStorage.removeItem('Comfy.AgentPanel.onboarded.account-a.workspace-a')
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+      Object.assign(useAgentConsentStore(), { accepted: true })
+      onAccept()
+    })
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('keep this draft in its original scope')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    expect(useAgentComposerStore().submission?.phase).toBe('pending')
+
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+
+    expect(useAgentComposerStore().draft).toBe(
+      'keep this draft in its original scope'
+    )
+    expect(bodies).toHaveLength(0)
   })
 
   it('does not resume a consent-held send after closing in App Mode', async () => {

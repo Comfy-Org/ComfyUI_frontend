@@ -3,6 +3,7 @@ import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { isLocalDesktopHost } from '@/workbench/extensions/agent/agentHost'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -21,6 +22,7 @@ import {
 } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import {
   notifyRestoreMintersAfterGraphConfigure,
@@ -158,11 +160,14 @@ export function registerAgentPanelExtension(): void {
       notifyRestoreMintersAfterGraphConfigure()
     },
     setup() {
+      const isLocalDesktop = isLocalDesktopHost()
       const agentPanelStore = useAgentPanelStore()
       const consentStore = useAgentConsentStore()
+      const introductionStore = useAgentConsentIntroductionStore()
       const { enabled } = storeToRefs(agentPanelStore)
       const workspaceStore = useTeamWorkspaceStore()
-      const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
+      const { resolvedUserInfo, isLoggedIn, isAuthInitialized } =
+        useCurrentUser()
       const { withConsent } = useAgentConsent()
       const { firstRunHoldsScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
@@ -213,44 +218,11 @@ export function registerAgentPanelExtension(): void {
         withholdOffer(reason, userId, workspaceId)
         offerHeld.value = true
       }
-      /**
-       * Drops the hold. This is a claim that the offer no longer needs to be
-       * retried on this page load - it has just been made, or it has become
-       * moot - and it is deliberately *not* what the release watcher does. See
-       * the watcher for why those two have to be different things.
-       */
+
       const dropHold = (): void => {
         offerHeld.value = false
       }
 
-      /**
-       * Names the endings that `agent_consent_not_offered` cannot: that event
-       * reports the surface a deferred offer is queued behind, so an attempt
-       * that stops for a reason of its own emits nothing at all today and is
-       * indistinguishable in telemetry from a user who was never offered.
-       *
-       * Three things this deliberately does not route through `withholdOffer`.
-       * It returns without emitting when either id is missing - and a missing
-       * id is one of the endings that has to be reportable. It returns without
-       * emitting once the auto-show key is burned, which would silence every
-       * later page load of every user who has seen the card. And its reason
-       * enum means "a surface is holding the offer", which none of these are.
-       *
-       * Dedup is per page load and per (stage, exit, retry state), so this
-       * reports the presence of each ending state, never its frequency -
-       * `loadConsentIfEligible`
-       * is re-driven by the identity watcher, the flag gate, the release
-       * watcher and `withConsent`'s settlement, so an undeduplicated count
-       * would measure how long the tab was open.
-       *
-       * There is no "the flag is off" guard here, and that is deliberate rather
-       * than an omission. `loadConsentIfEligible` is the only way in, and it
-       * returns on an off flag before reaching any ending below - so the guard
-       * would have suppressed nothing except the one case worth seeing: a flag
-       * that flips off *mid-page-load*, abandoning an offer that was already
-       * under way. The unflagged population is kept out by the exit that is
-       * deliberately not reported at all, not by a gate here.
-       */
       const reportedExits = new Set<string>()
       const reportOfferExit = (
         exit: AgentConsentOfferExit,
@@ -268,11 +240,14 @@ export function registerAgentPanelExtension(): void {
       }
 
       const consentScope = (): string | null => {
+        if (isLocalDesktop) return consentStore.identity ?? 'desktop'
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
         return userId && workspaceId ? `${userId}.${workspaceId}` : null
       }
       const consentCardSeenIn = new Set<string>()
+      let desktopAuthOfferUserId: string | undefined
+      let desktopStartupOpened = false
       let activationOpenedPanel = false
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
@@ -282,35 +257,26 @@ export function registerAgentPanelExtension(): void {
         }
       )
 
+      const desktopIntroductionEligible = (): boolean =>
+        isAuthInitialized.value &&
+        !introductionStore.isContinuingSignIn &&
+        (!introductionStore.hasResponded ||
+          (desktopAuthOfferUserId !== undefined &&
+            resolvedUserInfo.value?.id === desktopAuthOfferUserId))
       const offerEligible = (): boolean =>
         agentPanelStore.enabled &&
-        isLoggedIn.value &&
+        (isLocalDesktop ? desktopIntroductionEligible() : isLoggedIn.value) &&
         !consentStore.isChecking &&
         !consentStore.accepted
-      /**
-       * Which of `offerEligible`'s conditions is unmet, in the order it checks
-       * them. Only meaningful when `offerEligible()` is false, and deliberately
-       * a separate expression from it: naming the cause must not be able to
-       * change the decision.
-       *
-       * `enabled` is not covered, so this is null when the flag being off is the
-       * only thing unmet: an off flag has no value on this event, for the reason
-       * on `AgentConsentOfferExit`.
-       */
       const offerIneligibility = (): AgentConsentOfferExit | null =>
-        !isLoggedIn.value
+        !isLocalDesktop && !isLoggedIn.value
           ? 'signed_out'
           : consentStore.isChecking
             ? 'consent_unresolved'
             : consentStore.accepted
               ? 'consent_already_accepted'
               : null
-      /**
-       * Why the offer has no consent scope to work with. A switch in progress is
-       * reported ahead of the ids it is moving, because it explains an absent
-       * workspace id and labelling that case `workspace_unresolved` would hide
-       * the more specific cause.
-       */
+
       const missingScopeExit = (
         userId: string | undefined
       ): AgentConsentOfferExit =>
@@ -320,11 +286,66 @@ export function registerAgentPanelExtension(): void {
             ? 'account_unresolved'
             : 'workspace_unresolved'
 
+      function prepareConsentCard(
+        candidateUserId: string | undefined,
+        offeredWorkspaceId: string | null
+      ): boolean {
+        const held = screenHolder()
+        if (held) {
+          holdOffer(held, candidateUserId, offeredWorkspaceId ?? undefined)
+          return false
+        }
+        if (!isLocalDesktop) return true
+        if (!agentPanelStore.enabled) return false
+        if (!agentPanelStore.isOpen) agentPanelStore.open('automatic_consent')
+        return true
+      }
+
+      function prepareCloudConsentOffer(
+        candidateUserId: string | undefined,
+        offeredWorkspaceId: string | null
+      ): string | null {
+        const offerScope = automaticConsentOfferScope(
+          {
+            activationOpenedPanel,
+            panelOpen: agentPanelStore.isOpen,
+            userId: candidateUserId,
+            workspaceId: offeredWorkspaceId,
+            workspaceSwitching: workspaceStore.isSwitching
+          },
+          () => reportOfferExit(missingScopeExit(candidateUserId), 'offer'),
+          () => {
+            reportOfferExit('activation_opened_panel', 'offer')
+            dropHold()
+          }
+        )
+        if (!offerScope) return null
+        const [userId, workspaceId] = offerScope
+        const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
+        const autoShow = prepareAutoShow(key)
+        if (autoShow === 'ready') return key
+        if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
+        else reportOfferExit('already_offered', 'offer')
+        dropHold()
+        return null
+      }
+
       let autoShowInFlight = false
+      function markAutomaticCardShown(
+        scope: string | null,
+        key: string | null
+      ): void {
+        if (isLocalDesktop && scope) consentCardSeenIn.add(scope)
+        else if (key) writeAutoShown(key, true)
+      }
+
+      function finishAutomaticOffer(offeredIdentity: string | null): void {
+        autoShowInFlight = false
+        if (consentStore.identity !== offeredIdentity) loadConsentIfEligible()
+        else if (offerHeld.value && screenIsClear.value) loadConsentIfEligible()
+      }
+
       const offerConsentUnprompted = (): void => {
-        // An exit that leaves the hold armed does so on purpose: the condition
-        // is transient, so the offer is still owed and the next clear screen
-        // has to retry it. `dropHold` marks the exits that are not transient.
         if (autoShowInFlight) {
           reportOfferExit('offer_in_flight', 'offer')
           return
@@ -341,7 +362,6 @@ export function registerAgentPanelExtension(): void {
           dropHold()
           return
         }
-        // Must precede prepareAutoShow, which burns the one-shot key.
         const held = screenHolder()
         if (held) {
           holdOffer(held)
@@ -349,98 +369,84 @@ export function registerAgentPanelExtension(): void {
         }
 
         const candidateUserId = resolvedUserInfo.value?.id
-        const offerScope = automaticConsentOfferScope(
-          {
-            activationOpenedPanel,
-            panelOpen: agentPanelStore.isOpen,
-            userId: candidateUserId,
-            workspaceId: workspaceStore.activeWorkspaceId,
-            workspaceSwitching: workspaceStore.isSwitching
-          },
-          () => reportOfferExit(missingScopeExit(candidateUserId), 'offer'),
-          () => {
-            reportOfferExit('activation_opened_panel', 'offer')
-            dropHold()
-          }
-        )
-        if (!offerScope) return
-        const [userId, workspaceId] = offerScope
-        const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
-        const autoShow = prepareAutoShow(key)
-        if (autoShow !== 'ready') {
-          // `storage_unavailable` already has a reason on
-          // `agent_consent_not_offered`, so only the burned one-shot key needs
-          // naming here.
-          if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
-          else reportOfferExit('already_offered', 'offer')
-          dropHold()
-          return
-        }
+        const offeredWorkspaceId = workspaceStore.activeWorkspaceId
+        const key = isLocalDesktop
+          ? null
+          : prepareCloudConsentOffer(candidateUserId, offeredWorkspaceId)
+        if (!isLocalDesktop && key === null) return
 
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
-        // The offer is being made now, so it is no longer owed. `canShow` can
-        // still re-arm the hold from under this if a surface takes the screen
-        // before the card mounts.
         dropHold()
-        agentPanelStore.suppressRestoredOpen()
+        if (!isLocalDesktop) agentPanelStore.suppressRestoredOpen()
         void withConsent(
           'first_load',
           () => {
             if (
               !agentPanelStore.enabled ||
-              automaticActivationVisitsComplete() ||
+              (!isLocalDesktop && automaticActivationVisitsComplete()) ||
               agentPanelStore.isOpen
             )
               return
             agentPanelStore.open('automatic_consent')
           },
           {
-            onShown: () => {
-              writeAutoShown(key, true)
-            },
-            canShow: () => {
-              const heldAtMount = screenHolder()
-              if (heldAtMount) holdOffer(heldAtMount, userId, workspaceId)
-              return heldAtMount === null
-            }
+            onShown: () => markAutomaticCardShown(scope, key),
+            canShow: () =>
+              prepareConsentCard(candidateUserId, offeredWorkspaceId)
           }
-        ).finally(() => {
-          autoShowInFlight = false
-          if (consentStore.identity !== offeredIdentity) loadConsentIfEligible()
-          // A hold armed while this attempt was in flight was refused by the
-          // `autoShowInFlight` guard above, and the release watcher cannot
-          // help: the screen may have gone clear again before the guard
-          // dropped, and `whenever` only fires on a transition. Settling is
-          // the wake-up for that case.
-          else if (offerHeld.value && screenIsClear.value)
-            loadConsentIfEligible()
-        })
+        ).finally(() => finishAutomaticOffer(offeredIdentity))
+      }
+
+      function prepareDesktopStartup(): boolean {
+        if (
+          !agentPanelStore.enabled ||
+          !isAuthInitialized.value ||
+          consentStore.isChecking ||
+          consentStore.accepted
+        )
+          return false
+        const held = screenHolder()
+        if (held) {
+          holdOffer(held)
+          return false
+        }
+        if (desktopStartupOpened) return true
+        desktopStartupOpened = true
+        if (!agentPanelStore.isOpen) agentPanelStore.open('activation')
+        return true
+      }
+
+      function prepareStartupPanel(): boolean {
+        if (isLocalDesktop) return prepareDesktopStartup()
+        if (!automaticActivationVisitsComplete() || agentPanelStore.isOpen)
+          return true
+        reportOfferExit('activation_window_complete', 'startup')
+        dropHold()
+        return false
       }
 
       const offerWhenStartupDecided = (): void => {
         whenStartupDecided()
           .then((decided) => {
             if (
+              !isLocalDesktop &&
               useSettingStore().get(AGENT_CONSENT_OFFER_DECLINED_SETTING_ID)
             ) {
               reportOfferExit('consent_declined', 'startup')
               dropHold()
-            } else if (decided) {
-              if (
-                automaticActivationVisitsComplete() &&
-                !agentPanelStore.isOpen
-              ) {
-                reportOfferExit('activation_window_complete', 'startup')
-                dropHold()
-                return
-              }
-              offerConsentUnprompted()
-            } else if (offerEligible()) withholdOffer('boot_undecided')
-            else {
-              const ineligible = offerIneligibility()
-              if (ineligible) reportOfferExit(ineligible, 'startup')
+              return
             }
+            if (!decided) {
+              if (offerEligible()) withholdOffer('boot_undecided')
+              else {
+                const ineligible = offerIneligibility()
+                if (ineligible) reportOfferExit(ineligible, 'startup')
+              }
+              return
+            }
+            if (!prepareStartupPanel()) return
+            offerConsentUnprompted()
           })
           .catch((error: unknown) => {
             reportOfferExit('startup_probe_failed', 'startup')
@@ -454,7 +460,12 @@ export function registerAgentPanelExtension(): void {
       let activationPending = false
       let activationOffered = false
       const openWhenStartupDecided = (): void => {
-        if (!agentPanelStore.enabled || activationPending || activationOffered)
+        if (
+          isLocalDesktop ||
+          !agentPanelStore.enabled ||
+          activationPending ||
+          activationOffered
+        )
           return
         activationPending = true
         whenStartupDecided()
@@ -479,20 +490,20 @@ export function registerAgentPanelExtension(): void {
       }
 
       const loadConsentIfEligible = (): void => {
-        // Neither of these reports. An off flag is not this event's business
-        // (see `reportOfferExit`), and an account that has not resolved *yet* is
-        // not a lost offer: the watcher below re-drives this the moment
-        // `resolvedUserInfo` changes, so the exit has a guaranteed wake-up. It
-        // would otherwise fire on essentially every flagged page load, because
-        // the flag gate calls this before the auth rail settles - and a value
-        // that is present almost always discriminates nothing while looking
-        // like the dominant cause. `account_unresolved` is reported only at the
-        // `offer` stage, where the id went missing *after* a consent read had
-        // already succeeded with it.
-        if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
+        if (
+          !agentPanelStore.enabled ||
+          (isLocalDesktop && !isAuthInitialized.value)
+        )
+          return
+        if (!resolvedUserInfo.value) {
+          if (isLocalDesktop) offerWhenStartupDecided()
+          return
+        }
+        const identity = consentStore.identity
         void consentStore
           .load()
           .then((isAccepted) => {
+            if (identity !== consentStore.identity) return
             if (isAccepted) {
               reportOfferExit('consent_already_accepted', 'load')
               dropHold()
@@ -507,22 +518,25 @@ export function registerAgentPanelExtension(): void {
           })
       }
       watch(
-        [() => resolvedUserInfo.value?.id, () => consentStore.identity],
-        loadConsentIfEligible,
-        { immediate: true }
+        [
+          () => resolvedUserInfo.value?.id,
+          () => consentStore.identity,
+          () => isLocalDesktop && isAuthInitialized.value
+        ],
+        ([userId, identity], previous) => {
+          if (
+            isLocalDesktop &&
+            !introductionStore.isContinuingSignIn &&
+            previous[2] &&
+            userId &&
+            (userId !== previous[0] ||
+              (previous[1] !== null && identity !== previous[1]))
+          )
+            desktopAuthOfferUserId = userId
+          loadConsentIfEligible()
+        }
       )
-      /**
-       * Releasing a hold must not consume it. What the release triggers is
-       * asynchronous and exits early in several transient ways - a consent read
-       * that rejects, an offer already in flight, a workspace mid-switch, an
-       * account not resolved yet - and none of those exits re-arm. Dropping the
-       * hold here first turned any one of them into an offer lost for the rest
-       * of the page load, and lost *silently*: no card, and no second
-       * `agent_consent_not_offered`, because the reason is deduplicated per
-       * page load. The hold is dropped only by `dropHold`, at the points where
-       * the offer has actually been made or has become moot, so a retry that
-       * cannot be made is retried on the next clear screen instead.
-       */
+
       whenever(
         () => offerHeld.value && screenIsClear.value,
         () => {

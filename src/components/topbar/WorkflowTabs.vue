@@ -138,6 +138,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import { isLocalDesktopHost } from '@/workbench/extensions/agent/agentHost'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
@@ -178,9 +179,9 @@ async function onAgentEntryClick(): Promise<void> {
   isOpeningAgent.value = true
 
   try {
-    if (agentPanelStore.isVisible) {
+    if (isLocalDesktopHost() || agentPanelStore.isVisible) {
       useTelemetry()?.trackAgentEntryButtonClicked({
-        resulting_state: 'closed'
+        resulting_state: agentPanelStore.isVisible ? 'closed' : 'opened'
       })
       agentPanelStore.toggle()
       return

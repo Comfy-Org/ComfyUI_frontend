@@ -6,7 +6,7 @@ import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, reactive, ref } from 'vue'
 import { setImmediate } from 'node:timers/promises'
 
@@ -16,6 +16,7 @@ import type { DialogInstance } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
 import { api } from '@/scripts/api'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 
 import { useAgentConsent } from './useAgentConsent'
 
@@ -25,8 +26,14 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyApiBaseUrl: () => 'https://api.comfy.test'
 }))
 
+const distribution = vi.hoisted(() => ({ isDesktop: false, isCloud: false }))
 vi.mock(import('@/platform/distribution/types'), () => ({
-  isCloud: false
+  get isCloud() {
+    return distribution.isCloud
+  },
+  get isDesktop() {
+    return distribution.isDesktop
+  }
 }))
 
 vi.mock(import('@/scripts/api'))
@@ -138,7 +145,14 @@ function dismissConsent(dialog: DialogInstance) {
 }
 
 describe('useAgentConsent', () => {
+  afterEach(() => {
+    delete window.__comfyDesktop2
+  })
+
   beforeEach(() => {
+    distribution.isDesktop = false
+    distribution.isCloud = false
+    delete window.__comfyDesktop2
     useCurrentUser().isLoggedIn = computed(() => true)
     useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
     localStorage.clear()
@@ -171,6 +185,106 @@ describe('useAgentConsent', () => {
     }
   )
 
+  it.for([
+    {
+      host: 'legacy Desktop',
+      action: 'Agree and continue',
+      signedOut: true,
+      legacyDesktop: true,
+      bridge: undefined
+    },
+    {
+      host: 'legacy Desktop',
+      action: 'Skip for now',
+      signedOut: false,
+      legacyDesktop: true,
+      bridge: undefined
+    },
+    {
+      host: 'Desktop 2',
+      action: 'Agree and continue',
+      signedOut: true,
+      legacyDesktop: false,
+      bridge: { isRemote: () => false }
+    },
+    {
+      host: 'Desktop 2',
+      action: 'Skip for now',
+      signedOut: false,
+      legacyDesktop: false,
+      bridge: { isRemote: () => false }
+    }
+  ])(
+    'remembers the $host introduction response to $action',
+    async ({ action, signedOut, legacyDesktop, bridge }) => {
+      distribution.isDesktop = legacyDesktop
+      window.__comfyDesktop2 = bridge
+      useCurrentUser().isLoggedIn = computed(() => !signedOut)
+      useCurrentUser().resolvedUserInfo = computed(() =>
+        signedOut ? null : { id: 'account-a' }
+      )
+      vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
+      const onOpen = vi.fn()
+      const request = useAgentConsent().withConsent('button_click', onOpen)
+      const dialog = await waitForConsentDialog()
+      await renderConsentCard(dialog)
+
+      expect(
+        localStorage.getItem('Comfy.AgentConsent.DesktopResponded')
+      ).toBeNull()
+      await userEvent.click(screen.getByRole('button', { name: action }))
+      await request
+
+      await vi.waitFor(() => {
+        expect(
+          localStorage.getItem('Comfy.AgentConsent.DesktopResponded')
+        ).toBe('true')
+      })
+      expect(useAgentConsentStore().accepted).toBe(false)
+      expect(onOpen).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { host: 'Cloud', isCloud: true, isRemote: false },
+    { host: 'remote Desktop 2', isCloud: false, isRemote: true }
+  ])(
+    'does not save a Desktop introduction response in $host',
+    async ({ isCloud, isRemote }) => {
+      distribution.isCloud = isCloud
+      window.__comfyDesktop2 = { isRemote: () => isRemote }
+      useCurrentUser().isLoggedIn = computed(() => false)
+      useCurrentUser().resolvedUserInfo = computed(() => null)
+      const onOpen = vi.fn()
+      const request = useAgentConsent().withConsent('button_click', onOpen)
+      const dialog = await waitForConsentDialog()
+      await renderConsentCard(dialog)
+
+      await clickCardAction('reject')
+      await request
+
+      expect(
+        localStorage.getItem('Comfy.AgentConsent.DesktopResponded')
+      ).toBeNull()
+      expect(useAgentConsentStore().accepted).toBe(false)
+      expect(onOpen).not.toHaveBeenCalled()
+    }
+  )
+
+  it('does not remember a Desktop card that was dismissed without a decision', async () => {
+    distribution.isDesktop = true
+    const request = useAgentConsent().withConsent('first_load', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    useDialogStore().closeDialog({ key: 'agent-consent' })
+    await request
+
+    expect(
+      localStorage.getItem('Comfy.AgentConsent.DesktopResponded')
+    ).toBeNull()
+  })
+
   it('reports a rejection as the resolved decision', async () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
@@ -184,6 +298,9 @@ describe('useAgentConsent', () => {
       [{ decision: 'rejected', save_error_shown: false }]
     ])
     expect(onOpen).not.toHaveBeenCalled()
+    expect(
+      localStorage.getItem('Comfy.AgentConsent.DesktopResponded')
+    ).toBeNull()
   })
 
   it('closes the card without waiting for the durable refusal, and writes no consent', async () => {
@@ -204,6 +321,24 @@ describe('useAgentConsent', () => {
       expect.anything()
     )
     write.resolve()
+  })
+
+  it('keeps a signed-in Desktop Skip local without writing Cloud refusal or consent', async () => {
+    distribution.isDesktop = true
+    const request = useAgentConsent().withConsent('first_load', vi.fn())
+    const dialog = await waitForConsentDialog()
+    await renderConsentCard(dialog)
+
+    await clickCardAction('reject')
+    await request
+
+    expect(recordConsentOfferDeclined).not.toHaveBeenCalled()
+    expect(useAgentConsentIntroductionStore().hasResponded).toBe(true)
+    expect(fetchWithUnifiedRemint).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ method: 'POST' }),
+      expect.anything()
+    )
   })
 
   it('does not attach a refusal to an account that did not own the card', async () => {
@@ -263,21 +398,25 @@ describe('useAgentConsent', () => {
   })
 
   it('reports no outcome while a failed save leaves the card open', async () => {
+    distribution.isDesktop = true
     fetchWithUnifiedRemint
       .mockResolvedValueOnce(settingResponse(false))
       .mockRejectedValueOnce(new Error('offline'))
     void useAgentConsent().withConsent('button_click', vi.fn())
     const dialog = await waitForConsentDialog()
 
-    ;(dialog.contentProps.onAccept as () => void)()
+    await renderConsentCard(dialog)
+    await clickCardAction('accept')
     await vi.waitFor(() => {
       expect(dialog.contentProps.error).toBe(
         i18n.global.t('agent.consent.saveError')
       )
     })
 
-    // A raised save is not an ending: the card is still on screen and
-    // retryable, so the outcome belongs to whatever the user does next.
+    expect(localStorage.getItem('Comfy.AgentConsent.DesktopResponded')).toBe(
+      'true'
+    )
+    expect(useAgentConsentStore().accepted).toBe(false)
     expect(telemetry.trackAgentConsentResolved).not.toHaveBeenCalled()
   })
 
@@ -735,6 +874,32 @@ describe('useAgentConsent', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
+  it.for(['account', 'workspace'] as const)(
+    'closes a Desktop card when its %s changes before a decision',
+    async (scope) => {
+      distribution.isDesktop = true
+      const userId = ref('account-a')
+      useCurrentUser().resolvedUserInfo = computed(() => ({ id: userId.value }))
+      const onSend = vi.fn()
+      const request = useAgentConsent().withConsent('first_message', onSend)
+      const dialog = await waitForConsentDialog()
+
+      if (scope === 'account') userId.value = 'account-b'
+      else
+        Object.assign(useTeamWorkspaceStore(), {
+          activeWorkspaceId: 'workspace-b'
+        })
+      await vi.waitFor(() =>
+        expect(useDialogStore().dialogStack).toHaveLength(0)
+      )
+      ;(dialog.contentProps.onAccept as () => void)()
+      await request
+
+      expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
+      expect(onSend).not.toHaveBeenCalled()
+    }
+  )
+
   it('authenticates signed-out Local users before saving to their account', async () => {
     const authState = reactive<{ loggedIn: boolean; identity: string | null }>({
       loggedIn: false,
@@ -754,6 +919,7 @@ describe('useAgentConsent', () => {
     )
     vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
       async () => {
+        expect(useAgentConsentIntroductionStore().isContinuingSignIn).toBe(true)
         authState.loggedIn = true
         authState.identity = 'account-a'
         return true
@@ -764,7 +930,20 @@ describe('useAgentConsent', () => {
 
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
-    ;(dialog.contentProps.onAccept as () => void)()
+    await renderConsentCard(dialog)
+    expect(screen.getByText("You'll sign in next.")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        /By clicking Agree and continue, you agree to its usage\./
+      )
+    ).toBeInTheDocument()
+    expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
+    expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
+    const continueButton = screen.getByRole('button', {
+      name: 'Agree and continue'
+    })
+    expect(continueButton).toHaveAccessibleDescription("You'll sign in next.")
+    await userEvent.click(continueButton)
     await request
 
     expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
@@ -779,16 +958,15 @@ describe('useAgentConsent', () => {
       false
     )
     expect(onOpen).toHaveBeenCalledOnce()
-    // Two outcomes for one card, and that is the contract: the card's own
-    // ending is `accepted_pending_sign_in`, and `accepted` is the later moment
-    // consent actually became stored.
+    expect(useAgentConsentIntroductionStore().isContinuingSignIn).toBe(false)
     expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
       [{ decision: 'accepted_pending_sign_in', save_error_shown: false }],
       [{ decision: 'accepted', save_error_shown: false }]
     ])
   })
 
-  it('writes nothing when a signed-out Local user cancels sign-in', async () => {
+  it('asks for consent again after a Desktop user cancels sign-in', async () => {
+    distribution.isDesktop = true
     useCurrentUser().isLoggedIn = computed(() => false)
     useCurrentUser().resolvedUserInfo = computed(() => null)
     vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(false)
@@ -796,21 +974,33 @@ describe('useAgentConsent', () => {
 
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
-    ;(dialog.contentProps.onAccept as () => void)()
+    await renderConsentCard(dialog)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Agree and continue' })
+    )
     await request
 
     expect(fetchWithUnifiedRemint).not.toHaveBeenCalled()
     expect(onOpen).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
     expect(useToast().toasts).toEqual([])
-    // Accepting the card is only half of the signed-out flow. Consent was
-    // never persisted, so reporting it accepted would put a decision the user
-    // did not complete into the funnel — but the card half did happen, and
-    // `accepted_pending_sign_in` with no later `accepted` is exactly how an
-    // abandoned sign-in is now readable.
     expect(telemetry.trackAgentConsentResolved.mock.calls).toEqual([
       [{ decision: 'accepted_pending_sign_in', save_error_shown: false }]
     ])
+    expect(localStorage.getItem('Comfy.AgentConsent.DesktopResponded')).toBe(
+      'true'
+    )
+    expect(useAgentConsentStore().accepted).toBe(false)
+
+    const retry = useAgentConsent().withConsent('button_click', onOpen)
+    const nextDialog = await waitForConsentDialog()
+    expect(nextDialog.contentProps.requiresSignIn).toBe(true)
+    expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+    const reject = nextDialog.contentProps.onReject
+    if (typeof reject !== 'function') throw new Error('Missing skip action')
+    reject()
+    await retry
+    expect(onOpen).not.toHaveBeenCalled()
   })
 
   it('reports when signed-out acceptance cannot resolve a persistence scope', async () => {
