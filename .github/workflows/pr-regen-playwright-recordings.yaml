@@ -27,10 +27,11 @@ jobs:
         run: |
           HEAD_REF=$(gh pr view "$PR_NUMBER" --json headRefName --jq .headRefName)
           HEAD_SHA=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid)
-          for RUN in $(gh run list --workflow ci-playwright-videos.yaml --branch "$HEAD_REF" \
-            --event pull_request --limit 100 --json databaseId --jq '.[].databaseId'); do
-            for ARTIFACT in $(gh api "repos/$GH_REPO/actions/runs/$RUN/artifacts" \
-              --jq '.artifacts[] | select(.name == "video-cache-index") | .id'); do
+          RUNS=$(gh run list --workflow ci-playwright-videos.yaml --branch "$HEAD_REF" \
+            --event pull_request --limit 100 --json databaseId --jq '.[].databaseId')
+          for RUN in $RUNS; do
+            ARTIFACTS=$(gh api "repos/$GH_REPO/actions/runs/$RUN/artifacts?name=video-cache-index" --jq '.artifacts[].id')
+            for ARTIFACT in $ARTIFACTS; do
               gh api -X DELETE "repos/$GH_REPO/actions/artifacts/$ARTIFACT"
             done
           done
