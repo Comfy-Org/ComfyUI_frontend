@@ -26,7 +26,7 @@ export function usePaymentRecoveryDialog() {
   const {
     canManageBilling,
     paymentRecoveryAvailable,
-    runDeniedPaymentPastDue,
+    runWorkflowsDenial,
     refresh: refreshCapabilities
   } = useBillingCapabilities()
   const dialogService = useDialogService()
@@ -34,6 +34,9 @@ export function usePaymentRecoveryDialog() {
   const { toastErrorHandler } = useErrorHandling()
 
   const isUpdatingPayment = computed(() => paymentPortalRequest.value !== null)
+  const runDeniedPaymentPastDue = computed(
+    () => runWorkflowsDenial.value === 'payment_past_due'
+  )
   const paymentRecoveryLock = computed<'owner' | 'member' | null>(() =>
     paymentRecoveryAvailable.value
       ? 'owner'

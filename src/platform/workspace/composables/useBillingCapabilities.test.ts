@@ -1514,12 +1514,12 @@ describe('useBillingCapabilities on the SDK rail', () => {
   })
 
   it.for([
-    { denial: 'payment_past_due', expected: true },
-    { denial: 'no_funds', expected: false },
-    { denial: undefined, expected: false }
+    { denial: 'payment_past_due' },
+    { denial: 'no_funds' },
+    { denial: undefined }
   ])(
-    'reads a can_run_workflows denial of $denial as payment past due: $expected',
-    async ({ denial, expected }) => {
+    'exposes a can_run_workflows denial of $denial as the server sent it',
+    async ({ denial }) => {
       readCapabilities.mockResolvedValueOnce({
         status: 'ok',
         value: {
@@ -1530,7 +1530,7 @@ describe('useBillingCapabilities on the SDK rail', () => {
 
       await billingCapabilities.initialize()
 
-      expect(billingCapabilities.runDeniedPaymentPastDue.value).toBe(expected)
+      expect(billingCapabilities.runWorkflowsDenial.value).toBe(denial)
     }
   )
 })

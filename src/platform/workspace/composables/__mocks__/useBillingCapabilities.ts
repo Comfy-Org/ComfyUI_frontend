@@ -46,9 +46,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
   paymentRecoveryAvailable: computed(() =>
     receiveServerFact('payment_recovery_available', false)
   ),
-  runDeniedPaymentPastDue: computed(() =>
-    receiveServerFact('denied_reasons.can_run_workflows', false)
-  ),
+  runWorkflowsDenial: runWorkflowsDenialFact(undefined),
   isReady: computed(() => true),
   hasResolvedCapabilities: computed(() => true),
   snapshotAuthoritative: computed(() => true),
@@ -70,14 +68,11 @@ export function paymentRecoveryAvailableFact(
   )
 }
 
-export function runDeniedPaymentPastDueFact(
-  deniedPastDue: MaybeRefOrGetter<boolean>
+export function runWorkflowsDenialFact(
+  denial: MaybeRefOrGetter<string | undefined>
 ) {
   return computed(() =>
-    receiveServerFact(
-      'denied_reasons.can_run_workflows',
-      toValue(deniedPastDue)
-    )
+    receiveServerFact('denied_reasons.can_run_workflows', toValue(denial))
   )
 }
 

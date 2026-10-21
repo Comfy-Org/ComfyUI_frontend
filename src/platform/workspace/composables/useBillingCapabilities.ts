@@ -202,11 +202,10 @@ function useBillingCapabilitiesInternal() {
       resolvedResponse.value?.payment_recovery_available ?? false
     )
   )
-  const runDeniedPaymentPastDue = computed(() =>
+  const runWorkflowsDenial = computed(() =>
     receiveServerFact(
       'denied_reasons.can_run_workflows',
-      resolvedResponse.value?.denied_reasons?.can_run_workflows ===
-        'payment_past_due'
+      resolvedResponse.value?.denied_reasons?.can_run_workflows
     )
   )
   const isReady = computed(() => {
@@ -553,7 +552,7 @@ function useBillingCapabilitiesInternal() {
     canManageAutoTopUp,
     autoTopUpSetup,
     paymentRecoveryAvailable,
-    runDeniedPaymentPastDue,
+    runWorkflowsDenial,
     isReady,
     hasResolvedCapabilities,
     snapshotAuthoritative,
