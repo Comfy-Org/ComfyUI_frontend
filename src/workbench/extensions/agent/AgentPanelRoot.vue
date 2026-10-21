@@ -72,7 +72,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -171,7 +170,6 @@ const CrdtDevPanel = defineAsyncComponent(
 const { t } = useI18n()
 const toast = useToast()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
-const { showTopUpCreditsDialog } = useBillingDialogs()
 const { workspaceRole } = useWorkspaceUI()
 const {
   subscription,
@@ -1425,21 +1423,25 @@ const localGrantScope = computed(() =>
     : null
 )
 const { arm: localGrantArm } = useLocalAgentGrant(localGrantScope)
-const localCreditNotice = computed(() => {
+const latestEntryHasError = computed(() => {
   const latestEntry = conversationEntries.value.at(-1)
-  const latestEntryHasError =
+  return (
     latestEntry?.role === 'assistant' &&
     latestEntry.parts.some(
       (part) => part.type === 'notice' && part.level === 'error'
     )
-  if (
-    localGrantScope.value === null ||
+  )
+})
+const hasPriorityCreditNotice = computed(
+  () =>
     showCreditTransitionNotice.value ||
     unresolvedPaywallPending.value ||
     showStandingPaywall.value ||
-    latestEntryHasError ||
+    latestEntryHasError.value ||
     executionErrorStore.isErrorOverlayOpen
-  )
+)
+const localCreditNotice = computed(() => {
+  if (localGrantScope.value === null || hasPriorityCreditNotice.value)
     return null
 
   if (localGrantArm.value === 'treatment' && freeUseGrantActive.value)
@@ -2118,7 +2120,9 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
           kind="credits"
           :can-top-up="canTopUp"
           @add-credits="
-            showTopUpCreditsDialog({ isInsufficientCredits: false })
+            app.extensionManager.dialog.showTopUpCreditsDialog({
+              isInsufficientCredits: false
+            })
           "
         />
       </template>

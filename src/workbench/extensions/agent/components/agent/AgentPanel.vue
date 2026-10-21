@@ -381,8 +381,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @close="onClose"
     />
 
-    <slot v-if="!showHistory" name="topNotice" />
-
     <FreeUseNotice
       v-if="!showHistory && freeUsePlacement === 'top-banner'"
       placement="top-banner"
@@ -404,6 +402,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-else>
+      <slot name="topNotice" />
       <div class="flex h-10 shrink-0 items-center px-2">
         <Button
           id="agent-chat-history"

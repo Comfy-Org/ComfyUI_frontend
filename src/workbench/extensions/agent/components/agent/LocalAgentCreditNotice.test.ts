@@ -1,10 +1,17 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
-import { i18n } from '@/i18n'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import LocalAgentCreditNotice from './LocalAgentCreditNotice.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 describe('LocalAgentCreditNotice', () => {
   it('offers free chat and a documentation link without amount or expiry claims', () => {

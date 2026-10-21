@@ -55,7 +55,6 @@ import { toNodeId } from '@/types/nodeId'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useTelemetry } from '@/platform/telemetry'
 import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -119,7 +118,6 @@ vi.mock<unknown>(import('@/composables/canvas/useFocusNode'), () => ({
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('./experiments/freeUsePlacement'), { spy: true })
 vi.mock(import('./composables/agent/useLocalAgentGrant'), { spy: true })
-vi.mock(import('@/composables/billing/useBillingDialogs'))
 
 const ws = vi.hoisted(() => {
   type Listener = (event: { detail?: unknown }) => void
@@ -180,6 +178,9 @@ const appMock = vi.hoisted(() => {
   }
   Object.assign(graph, { rootGraph: graph })
   return {
+    extensionManager: {
+      dialog: { showTopUpCreditsDialog: vi.fn(async () => undefined) }
+    },
     loadGraphData: vi.fn(),
     ui: { autoQueueEnabled: false },
     graph,
@@ -900,7 +901,7 @@ describe('AgentPanelRoot Local grant messaging', () => {
     )
 
     expect(
-      useBillingDialogs().showTopUpCreditsDialog
+      appMock.extensionManager.dialog.showTopUpCreditsDialog
     ).toHaveBeenCalledExactlyOnceWith({
       isInsufficientCredits: false
     })

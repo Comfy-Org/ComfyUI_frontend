@@ -6,6 +6,20 @@ import { useAuthStore } from '@/stores/authStore'
 
 export type LocalAgentGrantArm = 'control' | 'treatment' | 'unknown'
 
+function parseArm(features: unknown): LocalAgentGrantArm {
+  if (
+    typeof features !== 'object' ||
+    features === null ||
+    !('agent_gratis_local_arm' in features)
+  )
+    return 'unknown'
+
+  const assignment = features.agent_gratis_local_arm
+  return assignment === 'control' || assignment === 'treatment'
+    ? assignment
+    : 'unknown'
+}
+
 export function useLocalAgentGrant(scope: MaybeRefOrGetter<string | null>) {
   const authStore = useAuthStore()
   const arm = ref<LocalAgentGrantArm>('unknown')
@@ -24,17 +38,7 @@ export function useLocalAgentGrant(scope: MaybeRefOrGetter<string | null>) {
       if (!response.ok) return 'unknown'
 
       const features: unknown = await response.json()
-      if (
-        typeof features !== 'object' ||
-        features === null ||
-        !('agent_gratis_local_arm' in features)
-      )
-        return 'unknown'
-
-      const assignment = features.agent_gratis_local_arm
-      return assignment === 'control' || assignment === 'treatment'
-        ? assignment
-        : 'unknown'
+      return parseArm(features)
     } catch {
       return 'unknown'
     }
