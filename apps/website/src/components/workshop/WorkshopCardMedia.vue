@@ -1,26 +1,19 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
-import { cn } from '@comfyorg/tailwind-utils'
+import { useTemplateRef } from 'vue'
 
 import HubThumbnailMedia from '@/components/hub/HubThumbnailMedia.vue'
+import { thumbnailImageClass } from '@/components/hub/thumbnailImageClass'
 
 import { usePreviewVideo } from '@/composables/usePreviewVideo'
 import type { WorkshopModel } from '@/config/models-catalogue'
+import type { Locale } from '@/i18n/translations'
 
-const { model } = defineProps<{
+const { model, locale = 'en' } = defineProps<{
   model: Pick<WorkshopModel, 'name' | 'thumbnail'>
+  locale?: Locale
 }>()
 const video = useTemplateRef<HTMLVideoElement>('video')
 const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
-const imageClass = computed(() =>
-  cn(
-    'size-full object-cover transition-transform select-none',
-    model.thumbnail?.variant === 'zoomHover' ||
-      model.thumbnail?.variant === 'hoverZoom'
-      ? 'duration-500 group-hover:scale-125'
-      : 'duration-300 group-hover:scale-105'
-  )
-)
 </script>
 
 <template>
@@ -30,6 +23,8 @@ const imageClass = computed(() =>
     :secondary-url="model.thumbnail.secondaryUrl"
     :variant="model.thumbnail.variant"
     :title="model.name"
+    :locale
+    inside-link
     data-testid="model-card-media"
   />
   <!-- The card names itself in its heading and marks its provider over the
@@ -38,7 +33,7 @@ const imageClass = computed(() =>
     v-else-if="model.thumbnail?.staticUrl"
     :src="model.thumbnail.staticUrl"
     alt=""
-    :class="imageClass"
+    :class="thumbnailImageClass(model.thumbnail.variant)"
     data-testid="model-card-media"
     loading="lazy"
     decoding="async"
@@ -61,7 +56,7 @@ const imageClass = computed(() =>
     v-else-if="model.thumbnail && model.thumbnail.kind !== 'audio'"
     :src="model.thumbnail.url"
     alt=""
-    :class="imageClass"
+    :class="thumbnailImageClass(model.thumbnail.variant)"
     data-testid="model-card-media"
     loading="lazy"
     decoding="async"

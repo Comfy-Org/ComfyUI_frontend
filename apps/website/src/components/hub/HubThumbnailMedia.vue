@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import {
   COMPARE_MAX,
@@ -9,25 +8,52 @@ import {
   positionFromPointer,
   stepPosition
 } from '@/components/common/videoCompare'
+import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import type { ThumbnailVariant } from '@/lib/hub/types'
+import { thumbnailImageClass } from './thumbnailImageClass'
 
-const { primaryUrl, secondaryUrl, variant, title } = defineProps<{
+const {
+  primaryUrl,
+  secondaryUrl,
+  variant,
+  title,
+  locale = 'en',
+  insideLink = false
+} = defineProps<{
   primaryUrl: string
   secondaryUrl?: string
   variant?: ThumbnailVariant
   title: string
+  locale?: Locale
+  insideLink?: boolean
 }>()
+const { t } = translationsFor(locale)
 
 const compareRoot = useTemplateRef<HTMLElement>('compareRoot')
 const comparePosition = ref(50)
 
-useEventListener(compareRoot, 'pointermove', (event: PointerEvent) => {
+useEventListener(compareRoot, 'pointermove', (event: PointerEvent) =>
+  moveTo(event.clientX)
+)
+
+function moveTo(clientX: number) {
   if (!compareRoot.value) return
   comparePosition.value = positionFromPointer(
-    event.clientX,
+    clientX,
     compareRoot.value.getBoundingClientRect()
   )
-})
+}
+
+useEventListener(
+  () => (insideLink ? compareRoot.value : null),
+  'touchmove',
+  (event: TouchEvent) => {
+    event.preventDefault()
+    if (event.touches[0]) moveTo(event.touches[0].clientX)
+  },
+  { passive: false }
+)
 
 function onCompareKeydown(event: KeyboardEvent) {
   const next = stepPosition(comparePosition.value, event.key, event.shiftKey)
@@ -41,11 +67,11 @@ function onCompareKeydown(event: KeyboardEvent) {
   <div
     v-if="variant === 'compareSlider' && secondaryUrl"
     ref="compareRoot"
-    class="relative size-full touch-pan-y overflow-hidden"
+    class="relative size-full overflow-hidden"
   >
     <img
       :src="primaryUrl"
-      :alt="`${title} - After`"
+      :alt="`${title} - ${t('modelLaunch.beforeAfter.after')}`"
       loading="lazy"
       decoding="async"
       draggable="false"
@@ -57,7 +83,7 @@ function onCompareKeydown(event: KeyboardEvent) {
     >
       <img
         :src="secondaryUrl"
-        :alt="`${title} - Before`"
+        :alt="`${title} - ${t('modelLaunch.beforeAfter.before')}`"
         loading="lazy"
         decoding="async"
         draggable="false"
@@ -65,6 +91,14 @@ function onCompareKeydown(event: KeyboardEvent) {
       />
     </div>
     <div
+      v-if="insideLink"
+      class="absolute inset-y-0 w-1 cursor-ew-resize bg-white shadow-lg"
+      :style="{ left: `${comparePosition}%` }"
+      aria-hidden="true"
+      data-testid="compare-handle"
+    />
+    <div
+      v-else
       class="absolute inset-y-0 w-1 cursor-ew-resize bg-white shadow-lg outline-none focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow"
       :style="{ left: `${comparePosition}%` }"
       role="slider"
@@ -75,7 +109,7 @@ function onCompareKeydown(event: KeyboardEvent) {
       :aria-valuemax="COMPARE_MAX"
       :aria-valuenow="Math.round(comparePosition)"
       :aria-valuetext="`${Math.round(comparePosition)}%`"
-      @click.stop.prevent
+      @click.stop
       @keydown="onCompareKeydown"
     />
   </div>
@@ -107,13 +141,6 @@ function onCompareKeydown(event: KeyboardEvent) {
     loading="lazy"
     decoding="async"
     draggable="false"
-    :class="
-      cn(
-        'size-full object-cover transition-transform select-none',
-        variant === 'zoomHover' || variant === 'hoverZoom'
-          ? 'duration-500 group-hover:scale-125'
-          : 'duration-300 group-hover:scale-105'
-      )
-    "
+    :class="thumbnailImageClass(variant)"
   />
 </template>

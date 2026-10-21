@@ -412,6 +412,13 @@ describe('native CONTENT presentation', () => {
       thumbnail: { url: after, kind: 'image' }
     },
     {
+      case: 'a compare slider whose comparison has a type but no file',
+      variant: 'compareSlider',
+      media: { '$.thumbnail': after },
+      types: stills,
+      thumbnail: { url: after, kind: 'image' }
+    },
+    {
       case: 'a compare slider whose comparison is a video',
       variant: 'compareSlider',
       types: { ...stills, '$.thumbnail_comparison': 'video/mp4' },

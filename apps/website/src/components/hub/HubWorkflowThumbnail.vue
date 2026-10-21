@@ -65,6 +65,7 @@ const badgeClasses = computed(() =>
       :secondary-url="template.thumbnails[1]"
       :variant="template.thumbnailVariant"
       :title="template.title"
+      :locale
     />
     <div
       v-else

@@ -48,4 +48,42 @@ describe('HubWorkflowCard', () => {
     await user.keyboard('{Home}{ArrowLeft}')
     expect(slider.getAttribute('aria-valuenow')).toBe('0')
   })
+
+  it.for(['compareSlider', 'hoverDissolve'] as const)(
+    'shows one still for a %s template with one thumbnail',
+    (thumbnailVariant) => {
+      render(HubWorkflowCard, {
+        props: {
+          template: {
+            ...template,
+            thumbnailVariant,
+            thumbnails: ['/after.webp']
+          },
+          href: '/workflows/comparison-workflow',
+          tryNowLabel: 'Try now'
+        }
+      })
+      expect(screen.queryByRole('slider')).toBeNull()
+      expect(
+        screen.getAllByRole('img', { name: 'Comparison workflow' })
+      ).toHaveLength(1)
+    }
+  )
+
+  it('names the compare stills in the page language', () => {
+    render(HubWorkflowCard, {
+      props: {
+        template,
+        href: '/zh-CN/workflows/comparison-workflow',
+        tryNowLabel: '立即试用',
+        locale: 'zh-CN'
+      }
+    })
+    expect(
+      screen.getByRole('img', { name: 'Comparison workflow - 处理后' })
+    ).toBeTruthy()
+    expect(
+      screen.getByRole('img', { name: 'Comparison workflow - 处理前' })
+    ).toBeTruthy()
+  })
 })
