@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { unrefElement } from '@vueuse/core'
 import {
   PopoverArrow,
   PopoverContent,
@@ -7,8 +8,9 @@ import {
   PopoverPortal
 } from 'reka-ui'
 
-import { ref } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
+import { usePopoverViewportDismiss } from './popover/usePopoverViewportDismiss'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
@@ -21,11 +23,13 @@ const { to, showArrow = true } = defineProps<{
 }>()
 
 const open = ref(false)
+const trigger = useTemplateRef('trigger')
+usePopoverViewportDismiss(open, () => unrefElement(trigger))
 </script>
 
 <template>
   <PopoverRoot v-slot="{ close }" v-model:open="open">
-    <PopoverTrigger as-child>
+    <PopoverTrigger ref="trigger" as-child>
       <slot name="button" />
     </PopoverTrigger>
     <PopoverPortal :key="Number(open)" :to>
@@ -36,9 +40,8 @@ const open = ref(false)
         v-bind="$attrs"
         :class="
           cn(
-            'z-overlay rounded-lg border border-border/50 bg-background p-2 shadow-sm',
-            $attrs.class,
-            'will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95'
+            'z-overlay rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+            $attrs.class
           )
         "
       >
