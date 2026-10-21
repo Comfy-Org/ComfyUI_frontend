@@ -3,7 +3,7 @@ import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
 import type { PermanentDocSubscribeRefusalCode } from './docFrameCodes'
-import { PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES } from './docFrameCodes'
+import { isPermanentSubscribeRefusalCode } from './docFrameCodes'
 
 // FE-1902: the doc id is otherwise held only in memory (set on turn ack), so a
 // panel remount loses the binding until the NEXT turn ack. Persist it per-tab
@@ -42,16 +42,6 @@ const SUBSCRIBE_RETRY_BASE_MS = 500
 const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 
 export type SubscribeGiveUpReason = 'refused' | 'timeout'
-
-const PERMANENT_SUBSCRIBE_REFUSAL_CODES: ReadonlySet<string> = new Set(
-  PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES
-)
-
-function isPermanentSubscribeRefusalCode(
-  code: string
-): code is PermanentDocSubscribeRefusalCode {
-  return PERMANENT_SUBSCRIBE_REFUSAL_CODES.has(code)
-}
 
 const SILENT_PERMANENT_REFUSAL_CODES: ReadonlySet<PermanentDocSubscribeRefusalCode> =
   new Set(['unsupported'])
