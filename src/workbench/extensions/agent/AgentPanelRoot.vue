@@ -1096,14 +1096,17 @@ useEventListener(
 
 const completedTurnClaimedCanvasContent = ref(false)
 function completedTurnCanClaimCanvasContent(): boolean {
-  const message = conversationMessages.value.at(-1)
-  return (
-    message?.parts.some(
+  const lastCanvasTool = conversationMessages.value
+    .at(-1)
+    ?.parts.findLast(
       (part) =>
         part.type === 'tool' &&
-        part.ok !== false &&
-        toolCanClaimCanvasContent(part.name)
-    ) ?? false
+        (part.name === 'clear_canvas'
+          ? part.ok === true
+          : part.ok !== false && toolCanClaimCanvasContent(part.name))
+    )
+  return (
+    lastCanvasTool?.type === 'tool' && lastCanvasTool.name !== 'clear_canvas'
   )
 }
 const canvasEmptyAfterTurn = computed(

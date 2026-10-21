@@ -9143,31 +9143,100 @@ describe('AgentPanelRoot workflow binding', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('does not contradict an empty canvas after a turn that cleared it', async () => {
-    makeTab('wf-42')
-    mockMessagesEndpoint('wf-42')
-
-    await renderAndSend('clear the canvas')
-    dispatchApiEvent('agent_tool_call', {
-      tool_call_id: 'call-clear-canvas',
-      tool_name: 'clear_canvas',
-      status: 'success',
-      duration_ms: 90,
-      thread_id: 'th-1',
-      message_id: 'm-1'
+  function reportTools(tools: [string, 'success' | 'error'][]): void {
+    tools.forEach(([toolName, status], index) => {
+      dispatchApiEvent('agent_tool_call', {
+        tool_call_id: `call-${index}-${toolName}`,
+        tool_name: toolName,
+        status,
+        duration_ms: 90,
+        thread_id: 'th-1',
+        message_id: 'm-1'
+      })
     })
-    dispatchApiEvent('agent_message_done', {
-      message_id: 'm-1',
-      thread_id: 'th-1'
-    })
+  }
 
-    expect(
-      await screen.findByRole('button', { name: i18n.global.t('agent.worked') })
-    ).toBeVisible()
-    expect(
-      screen.queryByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
-    ).not.toBeInTheDocument()
-  })
+  it.for([
+    { name: 'a single clear', tools: [['clear_canvas', 'success']] },
+    {
+      name: 'an inspect then clear',
+      tools: [
+        ['print_workflow', 'success'],
+        ['clear_canvas', 'success']
+      ]
+    },
+    {
+      name: 'an add then clear',
+      tools: [
+        ['add_node', 'success'],
+        ['clear_canvas', 'success']
+      ]
+    }
+  ] satisfies { name: string; tools: [string, 'success' | 'error'][] }[])(
+    'does not contradict an empty canvas after $name',
+    async ({ tools }) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+
+      await renderAndSend('empty the canvas')
+      reportTools(tools)
+      dispatchApiEvent('agent_message_done', {
+        message_id: 'm-1',
+        thread_id: 'th-1'
+      })
+
+      expect(
+        await screen.findByRole('button', {
+          name: i18n.global.t('agent.worked')
+        })
+      ).toBeVisible()
+      expect(
+        screen.queryByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    {
+      name: 'content was added after a clear',
+      tools: [
+        ['clear_canvas', 'success'],
+        ['add_node', 'success']
+      ]
+    },
+    {
+      name: 'a clear after an add failed',
+      tools: [
+        ['add_node', 'success'],
+        ['clear_canvas', 'error']
+      ]
+    },
+    {
+      name: 'nodes were added and one was deleted',
+      tools: [
+        ['add_node', 'success'],
+        ['add_node', 'success'],
+        ['delete_node', 'success']
+      ]
+    }
+  ] satisfies { name: string; tools: [string, 'success' | 'error'][] }[])(
+    'flags an empty canvas when $name',
+    async ({ tools }) => {
+      makeTab('wf-42')
+      mockMessagesEndpoint('wf-42')
+
+      await renderAndSend('build on the canvas')
+      reportTools(tools)
+      dispatchApiEvent('agent_message_done', {
+        message_id: 'm-1',
+        thread_id: 'th-1'
+      })
+
+      expect(
+        await screen.findByText(i18n.global.t('agent.canvasIsEmptyAfterTurn'))
+      ).toBeVisible()
+    }
+  )
 
   it('shows a sticky error toast when the doc-host permanently refuses the subscribe', async () => {
     makeTab('wf-42')
