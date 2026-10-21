@@ -3,6 +3,7 @@ import type { Page, Route, WebSocketRoute } from '@playwright/test'
 
 import type {
   BillingStatusResponse,
+  DocSubscribedFrame,
   GlobalSetting,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
@@ -13,6 +14,8 @@ import { DEPLOY_ACTION_SEEN_SETTINGS } from '@e2e/fixtures/constants/workflowAct
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import { DOC_PROTOCOL_VERSION } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type { PermanentDocSubscribeRefusalCode } from '@/workbench/extensions/agent/crdt/docFrameCodes'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
@@ -47,6 +50,22 @@ const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
 
 export function pushAgentEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
+}
+
+const PERMANENTLY_REFUSED_SUBSCRIBE = {
+  type: 'doc_subscribed',
+  data: {
+    v: DOC_PROTOCOL_VERSION,
+    workflow_id: WORKFLOW_ID,
+    ok: false,
+    code: 'schema_version_mismatch'
+  }
+} satisfies DocSubscribedFrame & {
+  data: { ok: false; code: PermanentDocSubscribeRefusalCode }
+}
+
+export function refuseDocSubscribePermanently(ws: WebSocketRoute): void {
+  ws.send(JSON.stringify(PERMANENTLY_REFUSED_SUBSCRIBE))
 }
 
 const FUNDED_BILLING_STATUS = {
