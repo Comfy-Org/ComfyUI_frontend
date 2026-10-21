@@ -20,7 +20,6 @@ test.describe(
 
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
-      await comfyPage.canvasOps.resetView()
     })
 
     for (const filenames of [
