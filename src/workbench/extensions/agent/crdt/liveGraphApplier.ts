@@ -813,7 +813,7 @@ export class LiveGraphApplier {
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.applyFields(live, docNode)
-      this.applyWidgets(live, docNode.widgets, mode)
+      this.applyWidgets(live, docNode.widgetRecord ?? docNode.widgets, mode)
       return 'updated'
     }
     if (live) graph.remove(live)
@@ -949,7 +949,7 @@ export class LiveGraphApplier {
     const docNode = this.readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
-    const widgets = docNode.widgets
+    const widgets = docNode.widgetRecord ?? docNode.widgets
     if (names === 'all' || Array.isArray(widgets)) {
       this.applyWidgets(node, widgets, mode)
       return

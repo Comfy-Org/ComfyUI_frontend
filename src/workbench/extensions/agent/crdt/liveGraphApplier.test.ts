@@ -1,4 +1,9 @@
-import { applyOps, linksMap, nodesMap } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  nodesMap,
+  OPAQUE_WIDGETS_KEY
+} from '@comfyorg/comfy-multi-player'
 import type {
   Op,
   WidgetCatalog,
@@ -1128,6 +1133,46 @@ describe('LiveGraphApplier', () => {
       target_id: toNodeId(2)
     })
     expect(graph.state.lastLinkId).toBeGreaterThanOrEqual(7)
+  })
+
+  it('applies a record-form widget value on an edit and on a same-node reopen', () => {
+    const workflow: WorkflowJSON = {
+      nodes: [
+        {
+          id: 1,
+          type: 'TestPlainWidgets',
+          pos: [0, 0],
+          size: [210, 100],
+          widgets_values: [10]
+        }
+      ],
+      links: []
+    }
+    const storeRecord = (target: Y.Doc, record: Record<string, number>) => {
+      const node = nodesMap(target).get('1')
+      assert(node instanceof Y.Map)
+      node.delete('widgets')
+      node.set(OPAQUE_WIDGETS_KEY, record)
+    }
+    const { graph, applier, doc, applyCollected, applyEdit } = setup(workflow)
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+
+    applyEdit(() => storeRecord(doc, { known: 11, addedAfterCatalog: 21 }))
+    expect(node?.widgets?.map((widget) => widget.value)).toEqual([11, 21])
+
+    const reopened = followedDoc(workflow, CATALOG)
+    reopened.doc.transact(() =>
+      storeRecord(reopened.doc, { known: 12, addedAfterCatalog: 22 })
+    )
+    applier.applyChanges(
+      reopened.doc,
+      reopened.collector.take(),
+      CONTEXT,
+      'replace'
+    )
+    expect(graph.getNodeById(toNodeId(1))).toBe(node)
+    expect(node?.widgets?.map((widget) => widget.value)).toEqual([12, 22])
   })
 
   it.for([
