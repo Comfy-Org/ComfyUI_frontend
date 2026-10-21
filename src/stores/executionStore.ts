@@ -998,6 +998,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     flushPendingWorkflowStatus(id, workflow)
     flushPendingExecutionError(id)
+    if (queuedJob.executionStartedAt !== undefined) adoptActiveWorkflowJob()
   }
 
   function flushPendingExecutionError(jobId: string) {
