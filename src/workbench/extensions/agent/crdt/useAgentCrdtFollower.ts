@@ -436,18 +436,12 @@ function startAgentCrdtFollower(
   // reconcile so the result-to-effect window cannot resurrect them.
   const confirmedDeletes = new Set<string>()
   const rejectedOpNotifier = createRejectedOpNotifier()
-  const sentToDoc = new WeakMap<
-    typeof bridge.follower.doc,
-    { adds: Set<string>; definitions: Set<string> }
-  >()
-  const sentToCurrentDoc = () => {
+  const sentAddsByDoc = new WeakMap<typeof bridge.follower.doc, Set<string>>()
+  const sentAddsToCurrentDoc = (): Set<string> => {
     const doc = bridge.follower.doc
-    const sent = sentToDoc.get(doc) ?? {
-      adds: new Set<string>(),
-      definitions: new Set<string>()
-    }
-    sentToDoc.set(doc, sent)
-    return sent
+    const sentAdds = sentAddsByDoc.get(doc) ?? new Set<string>()
+    sentAddsByDoc.set(doc, sentAdds)
+    return sentAdds
   }
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const pendingRejected = new Map<string, Op[]>()
@@ -1190,13 +1184,9 @@ function startAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) => {
-      const sent = sentToCurrentDoc()
-      for (const operation of operations) {
-        if (operation.op === 'add_node')
-          sent.adds.add(String(operation.node_id))
-        if (operation.op === 'define_subgraph')
-          sent.definitions.add(operation.subgraph_id)
-      }
+      const sentAdds = sentAddsToCurrentDoc()
+      for (const operation of operations)
+        if (operation.op === 'add_node') sentAdds.add(String(operation.node_id))
       projection.noteLocalWrites(operations)
       coalescer.enqueue(operations)
     },
@@ -1206,10 +1196,9 @@ function startAgentCrdtFollower(
       readDocPromotedWidgets(bridge.follower.doc, String(nodeId)),
     mayWritePromotedHost: (nodeId: NodeId) =>
       bridge.isSubscribeBaselineIntegrated ||
-      (sentToCurrentDoc().adds.has(String(nodeId)) &&
+      (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
     docHasSubgraphDefinition: (definitionId: string) =>
-      sentToCurrentDoc().definitions.has(definitionId) ||
       readSubgraphDefinitionIds(bridge.follower.doc).includes(definitionId),
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       rejectedOpNotifier.notifyWidgetWriteRefused(nodeId, widgetName),
