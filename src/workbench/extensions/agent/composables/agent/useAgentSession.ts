@@ -873,7 +873,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       if (workflowReady === false) return false
       if (conversationStore.threadId !== threadId || !isCurrent()) return false
-      bindRunningTurnWorkflow(threadId)
+      bindRunningTurnWorkflow()
       return true
     } catch (error) {
       return handleHistoryLoadError(error, threadId, isCurrent, stashedTurn)
@@ -1989,21 +1989,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       : null
   )
 
-  /**
-   * A thread can come back with a turn still running that this page did not
-   * send: a reload mid-turn, or the turn the local agent starts by itself
-   * once ComfyUI is back from a restart. Only a send binds a workflow, so
-   * nothing would follow that turn's edits and they never reach the canvas.
-   * Bind the workflow the turn is on, when its tab is still known; a thread
-   * with nothing running stays unbound until the user sends (h10).
-   */
-  function bindRunningTurnWorkflow(threadId: string): void {
-    const workflowId = conversationStore.latestWorkflowId
+  function bindRunningTurnWorkflow(): void {
+    const workflowId = conversationStore.hydratedLiveWorkflowId
     if (boundWorkflowId.value !== null || workflowId === undefined) return
-    const running = conversationStore
-      .liveTurns()
-      .some((turn) => turn.threadId === threadId)
-    if (!running || bindingStore.tabPathFor(workflowId) === undefined) return
+    if (bindingStore.tabPathFor(workflowId) === undefined) return
     bindWorkflow(workflowId)
   }
 
