@@ -23,6 +23,7 @@ describe('useTidySession', () => {
       gridNodes: computed(() => selectedNodes.value),
       canTidy: computed(() => true),
       measure: () => [],
+      placeBoxes: vi.fn(),
       moveBoxes: vi.fn(),
       recordUndoStep,
       tidyUp

@@ -1,5 +1,4 @@
 import { tryOnScopeDispose } from '@vueuse/core'
-import { isEqual } from 'es-toolkit'
 import { readonly, ref } from 'vue'
 
 import {
@@ -14,7 +13,7 @@ import type {
   SelectionGrid
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
-import type { NodeId } from '@/types/nodeId'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 interface GapDrag {
   barKey: string
@@ -25,32 +24,31 @@ interface GapDrag {
 interface DragStart {
   bar: GapBar
   grid: SelectionGrid
-  nodeIds: NodeId[]
+  nodes: LGraphNode[]
   positions: BoxPosition[]
   startGap: number
   previewed: boolean
 }
 
-const clampBarGap = (bar: GapBar, gap: number): number =>
-  Math.max(bar.gap - bar.clearance, gap)
+function clampBarGap(bar: GapBar, gap: number): number {
+  return Math.max(bar.gap - bar.clearance, gap)
+}
 
-const shiftFor = (bar: GapBar, gap: number): number =>
-  clampBarGap(bar, gap) - bar.gap
+function shiftFor(bar: GapBar, gap: number): number {
+  return clampBarGap(bar, gap) - bar.gap
+}
 
 export function useGapDragSession() {
-  const { gridNodes, measure, moveBoxes, recordUndoStep } = useSelectionGrid()
+  const { gridNodes, measure, placeBoxes, moveBoxes, recordUndoStep } =
+    useSelectionGrid()
 
   const drag = ref<GapDrag | null>(null)
   let dragStart: DragStart | null = null
   let pendingFrame: number | null = null
+  let hasUncommittedNudges = false
 
-  const selectedIds = () => gridNodes.value.map((node) => node.id)
-
-  const isSameSelection = (origin: DragStart) =>
-    isEqual(selectedIds(), origin.nodeIds)
-
-  const currentBar = (key: string) => {
-    const boxes = measure()
+  const currentBar = (nodes: LGraphNode[], key: string) => {
+    const boxes = measure(nodes)
     const grid = detectSelectionGrid(boxes)
     const bar = computeGapBars(grid).find((candidate) => candidate.key === key)
     return bar && { bar, grid, boxes }
@@ -78,22 +76,31 @@ export function useGapDragSession() {
 
   const cancel = () => {
     const origin = dragStart
-    if (origin?.previewed && isSameSelection(origin)) {
+    if (origin?.previewed) {
       cancelPendingFrame()
-      moveBoxes(origin.positions, { captureUndo: false })
+      placeBoxes(origin.nodes, origin.positions)
     }
     end()
   }
 
+  const commitNudges = (): boolean => {
+    if (dragStart || !hasUncommittedNudges) return false
+    hasUncommittedNudges = false
+    recordUndoStep()
+    return true
+  }
+
   const start = (bar: GapBar) => {
     cancel()
-    const current = currentBar(bar.key)
+    commitNudges()
+    const nodes = [...gridNodes.value]
+    const current = currentBar(nodes, bar.key)
     if (!current) return
     const startGap = Math.round(current.bar.gap)
     dragStart = {
       bar: current.bar,
       grid: current.grid,
-      nodeIds: selectedIds(),
+      nodes,
       positions: current.boxes.map(({ id, x, y }) => ({ id, x, y })),
       startGap,
       previewed: false
@@ -108,7 +115,7 @@ export function useGapDragSession() {
   const preview = (delta: number) => {
     const current = drag.value
     const origin = dragStart
-    if (!current || !origin) return
+    if (!current || !origin || !Number.isFinite(delta)) return
     const gap = clampBarGap(origin.bar, origin.startGap + Math.round(delta))
     if (gap === current.gap) return
     drag.value = { ...current, gap }
@@ -116,11 +123,7 @@ export function useGapDragSession() {
     cancelPendingFrame()
     pendingFrame = requestAnimationFrame(() => {
       pendingFrame = null
-      if (isSameSelection(origin)) {
-        moveBoxes(layoutFor(origin, gap), { captureUndo: false })
-      } else {
-        end()
-      }
+      moveBoxes(origin.nodes, layoutFor(origin, gap), { captureUndo: false })
     })
   }
 
@@ -131,18 +134,20 @@ export function useGapDragSession() {
       cancel()
       return
     }
-    if (isSameSelection(origin)) {
-      cancelPendingFrame()
-      moveBoxes(layoutFor(origin, current.gap), { captureUndo: true })
-    }
+    cancelPendingFrame()
+    moveBoxes(origin.nodes, layoutFor(origin, current.gap), {
+      captureUndo: true
+    })
     end()
   }
 
   const nudge = (bar: GapBar, step: number) => {
-    if (dragStart) return
-    const current = currentBar(bar.key)
+    if (dragStart || !Number.isFinite(step)) return
+    const nodes = [...gridNodes.value]
+    const current = currentBar(nodes, bar.key)
     if (!current) return
     moveBoxes(
+      nodes,
       computeGapLayout(
         current.grid,
         current.bar.axis,
@@ -151,9 +156,13 @@ export function useGapDragSession() {
       ),
       { captureUndo: false }
     )
+    hasUncommittedNudges = true
   }
 
-  tryOnScopeDispose(cancel)
+  tryOnScopeDispose(() => {
+    cancel()
+    commitNudges()
+  })
 
   return {
     drag: readonly(drag),
@@ -162,6 +171,6 @@ export function useGapDragSession() {
     commit,
     cancel,
     nudge,
-    commitNudges: recordUndoStep
+    commitNudges
   }
 }

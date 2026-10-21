@@ -572,8 +572,8 @@ function overlapCentre(a: AxisSpan, b: AxisSpan): number {
 
 /**
  * One handle per pair of neighbouring boxes, centred between them. `gap` is the
- * space between the pair; `clearance` is how far that gap can shrink before any
- * nodes on either side touch.
+ * space between the pair; `clearance` is how far that gap can shrink before it
+ * reaches zero or any nodes on either side touch.
  */
 export function computeGapBars(grid: SelectionGrid): GapBar[] {
   if (grid.kind === 'scattered') return []
@@ -598,7 +598,7 @@ export function computeGapBars(grid: SelectionGrid): GapBar[] {
         key: JSON.stringify([axis, before.box.id, after.box.id]),
         axis,
         gutter: boundary,
-        clearance: Number.isFinite(clearance) ? clearance : gap,
+        clearance: Math.min(clearance, gap),
         x: axis === 'x' ? along : across,
         y: axis === 'x' ? across : along,
         gap

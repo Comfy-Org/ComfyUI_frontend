@@ -600,15 +600,26 @@ describe('computeGapBars', () => {
     expect(new Set(bars.map((bar) => bar.key)).size).toBe(bars.length)
   })
 
-  it('lets a gap close to zero when no nodes face each other across it', () => {
-    const bars = computeGapBars(
-      detectSelectionGrid([
+  it.for([
+    {
+      name: 'no nodes face each other across it',
+      boxes: [box('a', 0, 0, 100, 100), box('b', 150, 99.6, 100, 0.8)]
+    },
+    {
+      name: 'its own nodes do not face each other but others across it do',
+      boxes: [
         box('a', 0, 0, 100, 100),
-        box('b', 150, 99.6, 100, 0.8)
-      ])
-    )
+        box('b', 150, 99.6, 100, 0.8),
+        box('c', 300, 50, 100, 50.4)
+      ]
+    }
+  ])('lets a gap close to zero when $name', ({ boxes }) => {
+    const bars = computeGapBars(detectSelectionGrid(boxes))
 
-    expect(bars).toEqual([expect.objectContaining({ gap: 50, clearance: 50 })])
+    expect(bars.find((bar) => bar.key === keyOf('x', 'a', 'b'))).toMatchObject({
+      gap: 50,
+      clearance: 50
+    })
   })
 
   it('shows no bars for a scattered selection', () => {
