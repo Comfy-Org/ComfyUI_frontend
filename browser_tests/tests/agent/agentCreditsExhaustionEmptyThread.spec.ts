@@ -53,11 +53,20 @@ test.describe(
     })
 
     test.describe('credits granted at admission', () => {
-      let admitted = false
+      let admittedRefresh: {
+        entered: Promise<void>
+        completed: Promise<void>
+        release: () => void
+      }
+
+      test.use({
+        initialFeatureFlags: {
+          'agent-free-use-message-placement': 'near-composer'
+        }
+      })
 
       test.beforeEach(async ({ agentBilling, comfyPage }) => {
         const { page } = comfyPage
-        admitted = false
         agentBilling.setFundingState('exhausted')
         const exhaustedStatus = page.waitForResponse(
           (response) =>
@@ -67,18 +76,17 @@ test.describe(
         await page.reload()
         await waitForCloudApp(page)
         await exhaustedStatus
+        admittedRefresh = agentBilling.holdNextFundedRefresh()
         await page.route('**/api/agent/threads/*/messages', (route) => {
           if (route.request().method() === 'POST') {
             agentBilling.setFundingState('funded')
-            admitted = true
           }
           return route.fallback()
         })
       })
 
       test('keeps the card hidden when the first send is admitted on credits granted at admission', async ({
-        agentPanel,
-        page
+        agentPanel
       }) => {
         const paywall = agentPanel.creditsExhaustedPaywall
 
@@ -86,18 +94,17 @@ test.describe(
         await agentPanel.selectWorkflow()
         await expect(agentPanel.composer).toBeVisible()
 
-        const statusAfterAdmission = page.waitForResponse(
-          (response) =>
-            admitted &&
-            response.request().method() === 'GET' &&
-            new URL(response.url()).pathname === '/api/billing/status'
-        )
         await agentPanel.sendMessage('Generate a realistic portrait')
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
         ).toHaveText(['Generate a realistic portrait'])
+        await admittedRefresh.entered
         await expect(paywall).toHaveCount(0)
-        await statusAfterAdmission
+        admittedRefresh.release()
+        await admittedRefresh.completed
+        await expect(
+          agentPanel.root.getByRole('note', { name: 'Free use notice' })
+        ).toBeVisible()
         await expect(paywall).toHaveCount(0)
       })
     })
