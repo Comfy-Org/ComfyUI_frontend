@@ -6,6 +6,7 @@ import { zListCccWebsiteCardsQuery } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { USE_CASES } from '@/config/models-catalogue'
+import { CREATOR_USERNAME_MAX } from '@/lib/hub/creator-path'
 import type { UseCase, SortOrder } from '@/config/models-catalogue'
 import { modelSchema } from '@/config/models-catalogue-data'
 import { workflowCategoryLabel } from '@/lib/workshop/workflow-category-label'
@@ -46,8 +47,11 @@ export interface CatalogListFacets {
 export type CatalogListPages = Record<CatalogListSection, CatalogListPage>
 const KINDS = { models: 'MODEL', workflows: 'WORKFLOW', apps: 'APP' } as const
 const cardQuerySchema = zListCccWebsiteCardsQuery.extend({
-  author: z.string().min(1).max(30).optional()
+  author: z.string().min(1).max(CREATOR_USERNAME_MAX).optional()
 })
+const CARD_LOCALES = new Set<string>(
+  zListCccWebsiteCardsQuery.shape.locale.unwrap().unwrap().options
+)
 
 function pageNumber(value: string | null) {
   if (!value || !/^[1-9]\d*$/.test(value)) return 1
@@ -64,7 +68,7 @@ function cardQuery(
     kind: KINDS[section],
     author: params.get('author') || undefined,
     limit: 24,
-    locale,
+    locale: CARD_LOCALES.has(locale) ? locale : 'en',
     cursor: params.get('cursor') || undefined,
     q: params.get('q') ?? undefined,
     sort: params.get('sort') ?? 'popular',

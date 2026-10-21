@@ -2,10 +2,9 @@ import { describe, expect, it } from 'vitest'
 
 import type { HubCreator } from './creators'
 import {
-  creatorEntityId,
   creatorEntityNode,
   creatorMetaDescription,
-  hubCreatorPath
+  isHttpsUrl
 } from './creators'
 
 const creator = (overrides: Partial<HubCreator> = {}): HubCreator => ({
@@ -15,25 +14,14 @@ const creator = (overrides: Partial<HubCreator> = {}): HubCreator => ({
   ...overrides
 })
 
-describe('hubCreatorPath', () => {
+describe('isHttpsUrl', () => {
   it.for([
-    { username: 'purz', locale: 'en', path: '/hub/creators/purz/' },
-    { username: 'ComfyUI', locale: 'en', path: '/hub/creators/comfyui/' },
-    { username: 'purz', locale: 'zh-CN', path: '/zh-CN/hub/creators/purz/' }
-  ])('links $username in $locale to $path', ({ username, locale, path }) => {
-    expect(hubCreatorPath(username, locale)).toBe(path)
-  })
-})
-
-describe('creatorEntityId', () => {
-  it.for([
-    { username: 'purz', id: 'https://comfy.org/hub/creators/purz/#creator' },
-    {
-      username: 'ComfyUI',
-      id: 'https://comfy.org/hub/creators/comfyui/#creator'
-    }
-  ])('names $username by the English profile URL', ({ username, id }) => {
-    expect(creatorEntityId('https://comfy.org', username)).toBe(id)
+    { url: 'https://purz.xyz', valid: true },
+    { url: 'http://purz.xyz', valid: false },
+    { url: 'javascript:alert(1)', valid: false },
+    { url: 'purz.xyz', valid: false }
+  ])('accepts $url: $valid', ({ url, valid }) => {
+    expect(isHttpsUrl(url)).toBe(valid)
   })
 })
 

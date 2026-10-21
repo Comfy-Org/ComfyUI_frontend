@@ -1,5 +1,5 @@
-import { catalogLocalePrefix } from '@/config/catalog-locales'
-import { HUB_CREATORS_PATH } from '@/config/hub-models'
+import { validAuthorAvatarURL } from '@/config/workflow-catalog-details'
+import { creatorEntityId } from '@/lib/hub/creator-path'
 import { cutAtWord } from '@/lib/workshop/model-meta-description'
 import type { JsonLdNode } from '@/utils/jsonLd'
 import { organizationId } from '@/utils/jsonLd'
@@ -23,24 +23,17 @@ const META_DESCRIPTION_MAX = 160
 const ORGANIZATION_CREATORS = new Set(['comfyui'])
 const HUB_ASSETS_HOST = 'comfy-hub-assets.comfy.org'
 
-export function hubCreatorPath(username: string, locale = 'en') {
-  return `${catalogLocalePrefix(locale)}${HUB_CREATORS_PATH}/${encodeURIComponent(username.toLowerCase())}/`
-}
-
-export function isWebUrl(url: string) {
-  return URL.canParse(url) && /^https?:$/.test(new URL(url).protocol)
+export function isHttpsUrl(url: string) {
+  return URL.canParse(url) && new URL(url).protocol === 'https:'
 }
 
 export function hubAvatarUrl(url: string | null | undefined) {
-  if (!url || !URL.canParse(url)) return undefined
-  const { protocol, hostname, origin, pathname } = new URL(url)
-  return protocol === 'https:' && hostname === HUB_ASSETS_HOST
+  if (!url || !validAuthorAvatarURL(url)) return undefined
+  const { hostname, origin, pathname } = new URL(url)
+  return hostname === HUB_ASSETS_HOST
     ? `${origin}/cdn-cgi/image/width=400,format=auto,quality=82${pathname}`
     : undefined
 }
-
-export const creatorEntityId = (siteUrl: string, username: string) =>
-  `${siteUrl}${hubCreatorPath(username)}#creator`
 
 export function creatorEntityNode(
   creator: HubCreator,

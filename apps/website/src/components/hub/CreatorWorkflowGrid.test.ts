@@ -102,10 +102,30 @@ describe('CreatorWorkflowGrid', () => {
 
     expect(cards()).toHaveLength(2)
     expect(fetch).toHaveBeenCalledOnce()
+    expect(screen.getByRole('status').textContent).toBe(
+      'Could not load more workflows. Try again.'
+    )
 
     await user.click(button)
     await waitFor(() => expect(cards()).toHaveLength(4))
     expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('shows a card once when the next page repeats it', async () => {
+    const user = userEvent.setup()
+    vi.mocked(fetch).mockResolvedValueOnce(
+      cataloguePage([model('first1'), model('second0')])
+    )
+    render(CreatorWorkflowGrid, { props })
+
+    await user.click(screen.getByRole('button', { name: 'Load more' }))
+    await waitFor(() => expect(cards()).toHaveLength(3))
+
+    expect(cards().map((card) => card.getAttribute('href'))).toEqual([
+      '/hub/workflows/first0/',
+      '/hub/workflows/first1/',
+      '/hub/workflows/second0/'
+    ])
   })
 
   it('shows no button when the first page is the only one', () => {

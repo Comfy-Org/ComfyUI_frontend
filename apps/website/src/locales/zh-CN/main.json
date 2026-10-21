@@ -5791,7 +5791,9 @@
         "profileTitle": "{name}（{'@'}{username}）：ComfyUI 工作流 - Comfy",
         "profileSummary": "在 Comfy Hub 上浏览 {name} 的 ComfyUI 工作流。",
         "workflowsHeading": "{name} 的工作流",
-        "noWorkflows": "{name} 还没有公开的工作流。"
+        "noWorkflows": "{name} 还没有公开的工作流。",
+        "empty": "还没有创作者发布公开的工作流。",
+        "loadMoreFailed": "无法加载更多工作流，请重试。"
       }
     },
     "input": {

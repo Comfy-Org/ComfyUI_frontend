@@ -8,7 +8,7 @@ import {
 import { HUB_MODELS_PATH } from '@/config/hub-models'
 import { catalogUnavailable } from '@/lib/cms/catalog'
 import { loadCatalogCreators } from '@/lib/cms/catalog-creators'
-import { hubCreatorPath } from '@/lib/hub/creators'
+import { hubCreatorPath } from '@/lib/hub/creator-path'
 import {
   absoluteUrl,
   itemListNode,
@@ -58,32 +58,38 @@ const title = t('workshop.hub.creators.directoryTitle')
         {t('workshop.hub.creators.subtitle')}
       </p>
     </header>
-    <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-      {creators.map((creator) => <li>
-        <a
-          href={hubCreatorPath(creator.username, locale)}
-          class="flex h-full items-center gap-4 rounded-4xl bg-hub-surface p-5 transition-colors hover:bg-hub-surface-hover"
-        >
-          <CreatorAvatar
-            name={creator.displayName}
-            avatarUrl={creator.avatarUrl}
-            class="size-16 text-2xl"
-          />
-          <span class="flex min-w-0 flex-col gap-1">
-            <span class="truncate text-lg text-content">
-              {creator.displayName}
+    {creators.length > 0 ? (
+      <ul class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {creators.map((creator) => <li>
+          <a
+            href={hubCreatorPath(creator.username, locale)}
+            class="flex h-full items-center gap-4 rounded-4xl bg-hub-surface p-5 transition-colors hover:bg-hub-surface-hover"
+          >
+            <CreatorAvatar
+              name={creator.displayName}
+              avatarUrl={creator.avatarUrl}
+              class="size-16 text-2xl"
+            />
+            <span class="flex min-w-0 flex-col gap-1">
+              <span class="truncate text-lg text-content">
+                {creator.displayName}
+              </span>
+              <span class="truncate text-sm text-content-secondary">
+                @{creator.username} ·{' '}
+                {t(
+                  'workshop.hub.creators.workflowCount',
+                  { count: creator.workflowCount },
+                  { plural: creator.workflowCount }
+                )}
+              </span>
             </span>
-            <span class="truncate text-sm text-content-secondary">
-              @{creator.username} ·{' '}
-              {t(
-                'workshop.hub.creators.workflowCount',
-                { count: creator.workflowCount },
-                { plural: creator.workflowCount }
-              )}
-            </span>
-          </span>
-        </a>
-      </li>)}
-    </ul>
+          </a>
+        </li>)}
+      </ul>
+    ) : (
+      <p class="text-content-secondary">
+        {t('workshop.hub.creators.empty')}
+      </p>
+    )}
   </div>
 </BaseLayout>
