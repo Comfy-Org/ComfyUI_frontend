@@ -12,7 +12,6 @@ import CancellationStepLayout from '@/platform/cloud/subscription/components/Can
 import SetMemberCreditLimitDialogContent from '@/platform/workspace/components/dialogs/SetMemberCreditLimitDialogContent.vue'
 import SubscriptionRequiredDialogContentUnified from '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
 import { useDialogStore } from '@/stores/dialogStore'
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useSubscriptionCheckout'),
@@ -436,7 +435,6 @@ describe('shouldPreventRekaDismiss', () => {
     layer.appendChild(inner)
     document.body.appendChild(layer)
     onTestFinished(() => {
-      releaseModalLayer(layer)
       layer.remove()
     })
     return inner
@@ -459,7 +457,6 @@ describe('shouldPreventRekaDismiss', () => {
       mark: (layer: HTMLElement) =>
         layer.setAttribute('data-reka-popper-content-wrapper', '')
     },
-    { name: 'a raised modal layer', mark: raiseModalLayer },
     {
       name: 'a toast',
       mark: (layer: HTMLElement) =>
@@ -481,10 +478,9 @@ describe('shouldPreventRekaDismiss', () => {
     }
   )
 
-  it('allows dismiss from a dialog scrim raised on the modal stack', () => {
+  it('allows dismiss from a dialog scrim', () => {
     const target = appendLayer((layer) => {
       layer.dataset.slot = 'dialog-overlay'
-      raiseModalLayer(layer)
     })
     expect(pointerDownOn(target).defaultPrevented).toBe(false)
   })

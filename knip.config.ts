@@ -17,7 +17,8 @@ const config: KnipConfig = {
         'tools/oxlint-plugins/vitestCleanup.ts'
       ],
       project: [
-        '**/*.{js,ts,vue}',
+        '**/*.{js,ts}',
+        'src/**/*.vue!',
         '*.{js,ts,mts}',
         '!.claude/**',
         '!worktrees/**',
@@ -65,6 +66,9 @@ const config: KnipConfig = {
       project: ['src/**/*.ts']
     },
     'tools/test-recorder': {
+      project: ['src/**/*.ts']
+    },
+    'tools/types-consumer-check': {
       project: ['src/**/*.ts']
     }
   },

@@ -3,6 +3,19 @@
     class="flex grow flex-col overflow-auto pt-2"
     @scroll="handlePanelScroll"
   >
+    <DefineWorkspaceMenu>
+      <Menu :items="menuEntries">
+        <template #trigger>
+          <Button
+            :tooltip="$t('g.moreOptions')"
+            variant="secondary"
+            size="icon-lg"
+            icon="icon-[lucide--ellipsis]"
+            :aria-label="$t('g.moreOptions')"
+          />
+        </template>
+      </Menu>
+    </DefineWorkspaceMenu>
     <!-- Loading state while subscription is being set up -->
     <div v-if="isSettingUp" class="rounded-2xl border p-6">
       <div class="flex items-center gap-2 py-4 text-muted-foreground">
@@ -131,20 +144,9 @@
                     )
                   }}
                 </Button>
-                <Menu
+                <WorkspaceMenu
                   v-if="showInactiveTeamSubscription && menuEntries.length > 0"
-                  :items="menuEntries"
-                >
-                  <template #trigger>
-                    <Button
-                      :tooltip="$t('g.moreOptions')"
-                      variant="secondary"
-                      size="icon-lg"
-                      icon="icon-[lucide--ellipsis]"
-                      :aria-label="$t('g.moreOptions')"
-                    />
-                  </template>
-                </Menu>
+                />
               </div>
             </template>
 
@@ -192,17 +194,7 @@
                 >
                   {{ $t('subscription.subscribe') }}
                 </Button>
-                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
-                  <template #trigger>
-                    <Button
-                      :tooltip="$t('g.moreOptions')"
-                      variant="secondary"
-                      size="icon-lg"
-                      icon="icon-[lucide--ellipsis]"
-                      :aria-label="$t('g.moreOptions')"
-                    />
-                  </template>
-                </Menu>
+                <WorkspaceMenu v-if="menuEntries.length > 0" />
               </div>
             </template>
 
@@ -299,17 +291,7 @@
                       : $t('subscription.changePlan')
                   }}
                 </Button>
-                <Menu v-if="menuEntries.length > 0" :items="menuEntries">
-                  <template #trigger>
-                    <Button
-                      :tooltip="$t('g.moreOptions')"
-                      variant="secondary"
-                      size="icon-lg"
-                      icon="icon-[lucide--ellipsis]"
-                      :aria-label="$t('g.moreOptions')"
-                    />
-                  </template>
-                </Menu>
+                <WorkspaceMenu v-if="menuEntries.length > 0" />
               </div>
             </template>
           </div>
@@ -405,7 +387,7 @@
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
-import { useTimestamp } from '@vueuse/core'
+import { createReusableTemplate, useTimestamp } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -441,6 +423,8 @@ import {
 } from './subscriptionPanelWorkspace.logic'
 
 const { handlePanelScroll } = useSettingsHeaderCollapse()
+
+const [DefineWorkspaceMenu, WorkspaceMenu] = createReusableTemplate()
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace } =

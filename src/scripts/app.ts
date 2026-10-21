@@ -204,7 +204,7 @@ import {
   isMediaFile
 } from '@/utils/eventUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { SUPPORTED_MESH_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_MESH_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import {
   pasteAudioNode,

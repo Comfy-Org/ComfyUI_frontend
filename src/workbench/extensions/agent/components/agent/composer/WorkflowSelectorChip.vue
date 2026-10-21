@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import {
-  DropdownMenuItemIndicator,
   DropdownMenuPortal,
+  DropdownMenuItemIndicator,
   DropdownMenuRadioGroup,
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -150,7 +150,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuPortal>
+      <DropdownMenuPortal :key="Number(open)">
         <MenuContent
           side="top"
           align="start"

@@ -1,7 +1,7 @@
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { SUPPORTED_EXTENSIONS } from '@/extensions/core/load3d/constants'
+import { SUPPORTED_EXTENSIONS } from '@comfyorg/viewport3d/load3d/constants'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 

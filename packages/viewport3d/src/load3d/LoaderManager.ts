@@ -1,0 +1,316 @@
+import type * as THREE from 'three'
+
+import { MeshModelAdapter } from './MeshModelAdapter'
+import { createAdapterRef, fetchModelData } from './ModelAdapter'
+import type {
+  AdapterRef,
+  ModelAdapter,
+  ModelAdapterCapabilities,
+  ModelLoadContext,
+  ModelLoadResult
+} from './ModelAdapter'
+import { PointCloudModelAdapter } from './PointCloudModelAdapter'
+import { SplatModelAdapter } from './SplatModelAdapter'
+import { disposeObject3D } from './SceneModelManager'
+import type {
+  EventManagerInterface,
+  Load3dHost,
+  LoadModelOptions,
+  LoadModelOutcome,
+  LoaderManagerInterface,
+  ModelManagerInterface
+} from './interfaces'
+
+function isNotFoundError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  if (
+    'response' in error &&
+    typeof error.response === 'object' &&
+    error.response !== null &&
+    'status' in error.response &&
+    error.response.status === 404
+  ) {
+    return true
+  }
+  return /\b404\b/.test(error.message)
+}
+
+/**
+ * Default adapter set: mesh + splat + pointCloud. Each adapter declares the
+ * file extensions it owns. For shared extensions (.ply), the adapter with an
+ * async `matches()` tiebreaker is tried first; the unconditional adapter acts
+ * as the fallback — so SplatModelAdapter precedes PointCloudModelAdapter.
+ */
+function defaultAdapters(host: Load3dHost): ModelAdapter[] {
+  return [
+    new MeshModelAdapter(),
+    new SplatModelAdapter(),
+    new PointCloudModelAdapter(host.getPLYEngine)
+  ]
+}
+
+export class LoaderManager implements LoaderManagerInterface {
+  private readonly modelManager: ModelManagerInterface
+  private readonly eventManager: EventManagerInterface
+  private readonly host: Load3dHost
+  private readonly adapters: ModelAdapter[]
+  private readonly adapterRef: AdapterRef
+  private currentLoadId: number = 0
+  private disposed = false
+
+  constructor(
+    modelManager: ModelManagerInterface,
+    eventManager: EventManagerInterface,
+    host: Load3dHost,
+    adapters?: readonly ModelAdapter[],
+    adapterRef?: AdapterRef
+  ) {
+    this.modelManager = modelManager
+    this.eventManager = eventManager
+    this.host = host
+    this.adapters = adapters ? [...adapters] : defaultAdapters(host)
+    this.adapterRef = adapterRef ?? createAdapterRef()
+  }
+
+  getCurrentAdapter(): ModelAdapter | null {
+    return this.adapterRef.current
+  }
+
+  init(): void {
+    this.disposed = false
+  }
+
+  dispose(): void {
+    this.disposed = true
+    this.currentLoadId += 1
+  }
+
+  async loadModel(
+    url: string,
+    originalFileName?: string,
+    options?: LoadModelOptions
+  ): Promise<LoadModelOutcome> {
+    if (this.disposed) return 'cancelled'
+    const loadId = ++this.currentLoadId
+
+    try {
+      this.eventManager.emitEvent('modelLoadingStart', null)
+
+      this.modelManager.clearModel()
+      this.adapterRef.current = null
+      this.adapterRef.capabilities = null
+
+      this.modelManager.originalURL = url
+
+      const fileExtension = this.setOriginalFileName(url, originalFileName)
+
+      if (!fileExtension) {
+        // The agent path may pass a credential-bearing URL, so keep this
+        // error URL-free; the thumbnail caller redacts what it reports.
+        if (options?.silent) throw new TypeError('Unknown model file type')
+        this.eventManager.emitEvent('modelLoadingEnd', null)
+        return 'unknown-type'
+      }
+
+      const result = await this.loadModelInternal(
+        url,
+        fileExtension,
+        loadId,
+        options?.silent,
+        options?.signal
+      )
+      if (options?.signal?.aborted) {
+        return this.cancelAbandonedLoad(result, loadId)
+      }
+      return await this.publishLoadResult(
+        result,
+        loadId,
+        fileExtension,
+        options?.silent
+      )
+    } catch (error) {
+      if (options?.signal?.aborted) {
+        return this.cancelAbandonedLoad(null, loadId)
+      }
+      return this.handleLoadError(error, loadId, options)
+    }
+  }
+
+  /**
+   * Parsers ignore the signal, so an aborted load can still resolve — and
+   * `loadId` does not catch it when the caller starts no newer load.
+   */
+  private cancelAbandonedLoad(
+    result: (ModelLoadResult & { adapter: ModelAdapter }) | null,
+    loadId: number
+  ): LoadModelOutcome {
+    if (result) this.disposeLoadResult(result)
+    if (loadId === this.currentLoadId) {
+      this.eventManager.emitEvent('modelLoadingEnd', null)
+    }
+    return 'cancelled'
+  }
+
+  private async publishLoadResult(
+    result: (ModelLoadResult & { adapter: ModelAdapter }) | null,
+    loadId: number,
+    fileExtension: string,
+    silent?: boolean
+  ): Promise<LoadModelOutcome> {
+    if (loadId !== this.currentLoadId) {
+      // A newer loadModel has superseded us. createLoadContext gates on
+      // loadId, so the result never entered the scene and is safe to dispose.
+      if (result) this.disposeLoadResult(result)
+      return 'cancelled'
+    }
+    if (!result && silent) {
+      throw new TypeError(`No model was produced for type: ${fileExtension}`)
+    }
+    if (result) {
+      this.adapterRef.current = result.adapter
+      this.adapterRef.capabilities = result.capabilities
+      await this.modelManager.setupModel(result.object)
+      if (loadId !== this.currentLoadId) return 'cancelled'
+    }
+    this.eventManager.emitEvent('modelLoadingEnd', null)
+    return result ? 'loaded' : 'empty'
+  }
+
+  private setOriginalFileName(
+    url: string,
+    originalFileName?: string
+  ): string | undefined {
+    if (originalFileName) {
+      this.modelManager.originalFileName =
+        originalFileName.split('/').pop()?.split('.')[0] || 'model'
+      return originalFileName.split('.').pop()?.toLowerCase()
+    }
+
+    const filename = new URLSearchParams(url.split('?')[1]).get('filename')
+    this.modelManager.originalFileName = filename
+      ? filename.split('.')[0] || 'model'
+      : 'model'
+    return filename?.split('.').pop()?.toLowerCase()
+  }
+
+  private handleLoadError(
+    error: unknown,
+    loadId: number,
+    options?: LoadModelOptions
+  ): LoadModelOutcome {
+    if (loadId !== this.currentLoadId) return 'cancelled'
+    this.eventManager.emitEvent('modelLoadingEnd', null)
+    if (options?.silent) throw error
+    console.error('Error loading model:', error)
+    return isNotFoundError(error) ? 'not-found' : 'failed'
+  }
+
+  private disposeLoadResult(
+    result: ModelLoadResult & { adapter: ModelAdapter }
+  ): void {
+    result.adapter.disposeModel?.(result.object)
+    disposeObject3D(result.object, this.modelManager.standardMaterial)
+  }
+
+  private async pickAdapter(
+    extension: string,
+    fetchBytes: () => Promise<ArrayBuffer>
+  ): Promise<ModelAdapter | null> {
+    const candidates = this.adapters.filter((a) =>
+      a.extensions.includes(extension)
+    )
+    for (const adapter of candidates) {
+      if (!adapter.matches) return adapter
+      if (await adapter.matches(extension, fetchBytes)) return adapter
+    }
+    return null
+  }
+
+  private createLoadContext(
+    loadId: number,
+    signal?: AbortSignal
+  ): ModelLoadContext {
+    const mm = this.modelManager
+    // Adapters write to modelManager synchronously during adapter.load(),
+    // before staleness or an abort can be checked. Gating those writes keeps a
+    // superseded or abandoned result out of modelManager, so it is safe to
+    // dispose.
+    const isCurrent = () => loadId === this.currentLoadId && !signal?.aborted
+    return {
+      setOriginalModel: (model) => {
+        if (isCurrent()) mm.setOriginalModel(model)
+      },
+      registerOriginalMaterial: (mesh, material) => {
+        if (isCurrent()) mm.originalMaterials.set(mesh, material)
+      },
+      get standardMaterial() {
+        return mm.standardMaterial
+      },
+      get materialMode() {
+        return mm.materialMode
+      }
+    }
+  }
+
+  private async loadModelInternal(
+    url: string,
+    fileExtension: string,
+    loadId: number,
+    silent?: boolean,
+    signal?: AbortSignal
+  ): Promise<{
+    object: THREE.Object3D
+    adapter: ModelAdapter
+    capabilities: ModelAdapterCapabilities
+  } | null> {
+    const params = new URLSearchParams(url.split('?')[1])
+    const filename = params.get('filename')
+
+    if (!filename) {
+      // Silent loads may carry a credential-bearing URL; never log it on the
+      // caller's behalf.
+      if (!silent) console.error('Missing filename in URL:', url)
+      return null
+    }
+
+    const requestedType = params.get('type')
+    const loadRootFolder =
+      requestedType === 'output' || requestedType === 'temp'
+        ? requestedType
+        : 'input'
+    const subfolder = params.get('subfolder') ?? ''
+    const path =
+      'api/view?type=' +
+      loadRootFolder +
+      '&subfolder=' +
+      encodeURIComponent(subfolder) +
+      '&filename='
+
+    let bytesPromise: Promise<ArrayBuffer> | null = null
+    const fetchBytes = () =>
+      (bytesPromise ??= fetchModelData(
+        this.host.fetchApi,
+        path,
+        filename,
+        signal
+      ))
+
+    const adapter = await this.pickAdapter(fileExtension, fetchBytes)
+    if (!adapter) return null
+    if (this.disposed) return null
+
+    const loadResult = await adapter.load(
+      this.createLoadContext(loadId, signal),
+      path,
+      filename,
+      fetchBytes
+    )
+    return loadResult
+      ? {
+          object: loadResult.object,
+          capabilities: loadResult.capabilities,
+          adapter
+        }
+      : null
+  }
+}

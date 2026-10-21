@@ -6,9 +6,8 @@
       @update:open="(open) => onRekaOpenChange(item.key, open)"
     >
       <DialogPortal>
-        <DialogOverlay v-reka-z-index />
+        <DialogOverlay />
         <DialogContent
-          v-reka-z-index
           v-bind="isNamedByHeader(item) ? { 'aria-labelledby': item.key } : {}"
           :size="
             item.dialogComponentProps.headless
@@ -57,10 +56,18 @@
               >
                 <DialogMaximize
                   v-if="item.dialogComponentProps.maximizable"
+                  :aria-label="
+                    item.dialogComponentProps.maximized
+                      ? $t('g.restoreDialog')
+                      : $t('g.maximizeDialog')
+                  "
                   :maximized="!!item.dialogComponentProps.maximized"
                   @toggle="toggleMaximize(item)"
                 />
-                <DialogClose v-if="hasCloseButton(item)" />
+                <DialogClose
+                  v-if="hasCloseButton(item)"
+                  :aria-label="$t('g.close')"
+                />
               </div>
             </DialogHeader>
             <div
@@ -103,7 +110,6 @@ import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { onRekaPointerDownOutside } from '@/components/dialog/dialogDismissGuards'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
 

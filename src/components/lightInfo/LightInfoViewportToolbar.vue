@@ -90,12 +90,12 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
 import Button from '@/components/ui/button/Button.vue'
-import type { LightTransformGizmoMode } from '@/extensions/core/lightInfo/LightInfoViewport'
+import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
 import {
   lightPositionApplies,
   targetApplies
-} from '@/extensions/core/lightInfo/LightInfoViewport'
-import type { LightInfoType } from '@/extensions/core/lightInfo/types'
+} from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import type { LightInfoType } from '@comfyorg/viewport3d/lightInfo/types'
 
 const { compact, lightType } = defineProps<{
   compact: boolean

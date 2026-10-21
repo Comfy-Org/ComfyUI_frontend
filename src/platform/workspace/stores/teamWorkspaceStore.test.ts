@@ -171,6 +171,7 @@ beforeEach(() => {
   useCurrentUser().userEmail = computed(() => null)
 
   Object.assign(useWorkspaceAuthStore(), {
+    bootTabWorkspaceId: null,
     currentWorkspace: null,
     workspaceToken: null,
     isLoading: false,
@@ -333,24 +334,103 @@ describe('useTeamWorkspaceStore', () => {
         defaultId: 'ws-not-listed',
         lastUsed: null,
         expected: mockPersonalWorkspace.id
+      },
+      {
+        name: "keeps this tab's workspace over another tab's last switch",
+        defaultId: undefined,
+        lastUsed: mockPersonalWorkspace.id,
+        tabWorkspace: mockTeamWorkspace,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: "keeps this tab's workspace over the server's default",
+        defaultId: mockPersonalWorkspace.id,
+        lastUsed: null,
+        tabWorkspace: mockTeamWorkspace,
+        expected: mockTeamWorkspace.id
+      },
+      {
+        name: "keeps a switch's target over this tab's workspace",
+        defaultId: undefined,
+        lastUsed: null,
+        switchTarget: mockPersonalWorkspace.id,
+        tabWorkspace: mockTeamWorkspace,
+        expected: mockPersonalWorkspace.id
+      },
+      {
+        name: "ignores this tab's workspace when it is no longer listed",
+        defaultId: undefined,
+        lastUsed: mockTeamWorkspace.id,
+        tabWorkspace: { ...mockTeamWorkspace, id: 'ws-left' },
+        expected: mockTeamWorkspace.id
       }
-    ])('$name', async ({ defaultId, lastUsed, switchTarget, expected }) => {
-      mockLocalStorage.getItem.mockReturnValue(lastUsed)
-      if (switchTarget) {
-        sessionStorage.setItem(
-          WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
-          switchTarget
-        )
+    ])(
+      '$name',
+      async ({ defaultId, lastUsed, switchTarget, tabWorkspace, expected }) => {
+        mockLocalStorage.getItem.mockReturnValue(lastUsed)
+        if (switchTarget) {
+          sessionStorage.setItem(
+            WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+            switchTarget
+          )
+        }
+        Object.assign(useWorkspaceAuthStore(), {
+          bootTabWorkspaceId: tabWorkspace?.id ?? null
+        })
+        mockWorkspaceApi.list.mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
+          ...(defaultId && { default_workspace_id: defaultId })
+        })
+
+        const store = useTeamWorkspaceStore()
+        await store.initialize()
+
+        expect(store.activeWorkspaceId).toBe(expected)
       }
-      mockWorkspaceApi.list.mockResolvedValue({
-        workspaces: [mockPersonalWorkspace, mockTeamWorkspace],
-        ...(defaultId && { default_workspace_id: defaultId })
+    )
+
+    it("keeps this tab's workspace when a transient failure retries initialization", async () => {
+      mockLocalStorage.getItem.mockReturnValue(mockPersonalWorkspace.id)
+      Object.assign(useWorkspaceAuthStore(), {
+        bootTabWorkspaceId: mockTeamWorkspace.id
       })
+      mockWorkspaceApi.list
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValue({
+          workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+        })
 
       const store = useTeamWorkspaceStore()
-      await store.initialize()
+      const initialized = store.initialize()
+      await vi.advanceTimersByTimeAsync(1000)
+      await initialized
 
-      expect(store.activeWorkspaceId).toBe(expected)
+      expect(mockWorkspaceApi.list).toHaveBeenCalledTimes(2)
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
+    })
+
+    it('keeps the requested switch target when the first switch fails transiently', async () => {
+      mockLocalStorage.getItem.mockReturnValue(mockPersonalWorkspace.id)
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.SWITCH_TARGET_ID,
+        mockTeamWorkspace.id
+      )
+      mockWorkspaceApi.list.mockResolvedValue({
+        workspaces: [mockPersonalWorkspace, mockTeamWorkspace]
+      })
+      vi.mocked(useWorkspaceAuthStore().switchWorkspace).mockRejectedValueOnce(
+        new Error('Network error')
+      )
+
+      const store = useTeamWorkspaceStore()
+      const initialized = store.initialize()
+      await vi.advanceTimersByTimeAsync(1000)
+      await initialized
+
+      expect(useWorkspaceAuthStore().switchWorkspace).toHaveBeenLastCalledWith(
+        mockTeamWorkspace.id
+      )
+      expect(store.activeWorkspaceId).toBe(mockTeamWorkspace.id)
     })
 
     it.for([

@@ -917,9 +917,6 @@ export class AgentConversationHarness {
     const before = new Set(await this.graphNodeIds())
     await this.page.mouse.dblclick(position.x, position.y, { delay: 5 })
     const dialog = this.page.getByRole('search')
-    // Scoped by accessible name: the seed workflow already has nodes on the
-    // canvas, and a widget-select trigger (e.g. LoadImage's) is also
-    // role="combobox", so an unnamed query resolves to more than one match.
     const input = dialog.getByRole('combobox', { name: enMessages.g.addNode })
     await input.waitFor({ state: 'visible' })
     await input.fill('Note')
@@ -940,7 +937,14 @@ export class AgentConversationHarness {
       return Boolean(ghostNode?.flags.ghost)
     })
 
-    await this.page.mouse.click(position.x, position.y)
+    const canvasBounds = await this.comfyPage.canvas.boundingBox()
+    if (!canvasBounds) throw new Error('the graph canvas is not visible')
+    await this.comfyPage.canvas.click({
+      position: {
+        x: position.x - canvasBounds.x,
+        y: position.y - canvasBounds.y
+      }
+    })
     const after = await this.graphNodeIds()
     const [added] = after.filter((id) => !before.has(id))
     if (!added) throw new Error('the search box add produced no node')
@@ -1043,7 +1047,11 @@ export class AgentConversationHarness {
     await nextFrame(this.page)
   }
 
-  async switchAwayAndBack(nodeId: string, widget: string): Promise<void> {
+  async switchAwayAndBack(
+    nodeId: string,
+    widget: string,
+    expectedValue?: string
+  ): Promise<void> {
     const tabs = this.topbar.tabs
     await expect(tabs).toHaveCount(1)
     await this.topbar.newWorkflowButton.click()
@@ -1056,6 +1064,10 @@ export class AgentConversationHarness {
       this.topbar.getTab(0).and(this.topbar.getActiveTab())
     ).toBeVisible()
     await expect.poll(() => this.subscribeCount()).toBe(subscribes + 1)
+    if (expectedValue !== undefined)
+      await expect(
+        this.vueNodes.getNodeLocator(nodeId).getByLabel(widget, { exact: true })
+      ).toHaveValue(expectedValue)
     await this.waitForPendingFrames(
       nodeId,
       widget,

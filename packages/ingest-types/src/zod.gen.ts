@@ -873,10 +873,54 @@ export const zDocUpdateFrame = z.object({
   type: z.enum(['doc_update'])
 })
 
+export const zDocSubscribedData = z.object({
+  code: z.string().optional(),
+  expected_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  lineage_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  message: z.string().optional(),
+  ok: z.boolean(),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  v: z.int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Server acknowledgement for a doc_subscribe request.
+ */
+export const zDocSubscribedFrame = z.object({
+  data: zDocSubscribedData,
+  type: z.enum(['doc_subscribed'])
+})
+
 /**
  * Server-to-client CRDT document frame carried by the /ws envelope.
  */
 export const zServerDocFrame = z.union([
+  zDocSubscribedFrame,
   zDocUpdateFrame,
   zDocResetFrame,
   zDocOpsResultFrame

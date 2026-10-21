@@ -107,6 +107,12 @@ const turnAccepted = {
   workflow_id: 'w1'
 }
 
+// `mockReset` does not touch plain fields, so a socket id set by one test would
+// otherwise leak into the next.
+beforeEach(() => {
+  vi.mocked(api).clientId = undefined
+})
+
 describe('agentRestClient route + method', () => {
   it('postMessage targets the literal "new" thread path to open a thread', async () => {
     respond(jsonResponse(202, turnAccepted))
@@ -568,7 +574,9 @@ describe('getCloudWorkflow', () => {
 })
 
 describe('postMessage wire body', () => {
-  it('uses snake_case workflow_id and includes only the keys provided', async () => {
+  const buildVersion = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
+
+  it('uses snake_case workflow_id and includes only the keys provided plus the build', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
       content: 'build it',
@@ -584,7 +592,8 @@ describe('postMessage wire body', () => {
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
       workflow_id: 'wf-9',
       selection: { nodeId: 3 },
-      attachments: ['a1']
+      attachments: ['a1'],
+      client_version: buildVersion
     })
     expect(contentType(init)).toBe('application/json')
   })
@@ -599,7 +608,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'add a node',
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      current_tab_unbound: true
+      current_tab_unbound: true,
+      client_version: buildVersion
     })
   })
 
@@ -609,7 +619,8 @@ describe('postMessage wire body', () => {
 
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'just text',
-      ask_kinds: ['run_approval', 'ask_user', 'delete_approval']
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      client_version: buildVersion
     })
   })
 
@@ -627,7 +638,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: 'build it',
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301'
+      client_message_id: '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+      client_version: buildVersion
     })
   })
 
@@ -640,6 +652,32 @@ describe('postMessage wire body', () => {
     ).not.toContain('client_message_id')
   })
 
+  // ComfyUI delivers a prompt's execution events only to the socket that
+  // submitted it, so a local run the agent starts on our behalf has to be
+  // submitted as THIS tab or the canvas shows no node highlights, no progress
+  // and no outputs for it (PM-1875). Nothing else carries the id to the server.
+  it("sends this tab's socket id so agent runs reach this canvas", async () => {
+    vi.mocked(api).clientId = 'tab-socket-id'
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'run it' })
+
+    expect(JSON.parse(String(lastCall().init.body))).toEqual({
+      content: 'run it',
+      ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
+      client_id: 'tab-socket-id',
+      client_version: buildVersion
+    })
+  })
+
+  it('omits client_id before the socket has reported one', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'run it' })
+
+    expect(
+      Object.keys(JSON.parse(String(lastCall().init.body)) as object)
+    ).not.toContain('client_id')
+  })
+
   it('sends draft.content when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
@@ -650,7 +688,8 @@ describe('postMessage wire body', () => {
     expect(JSON.parse(String(lastCall().init.body))).toEqual({
       content: "what's on my canvas",
       ask_kinds: ['run_approval', 'ask_user', 'delete_approval'],
-      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } }
+      draft: { content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] } },
+      client_version: buildVersion
     })
   })
 
@@ -671,6 +710,20 @@ describe('postMessage wire body', () => {
     expect(parsed.draft).toEqual({
       content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
     })
+  })
+
+  it('reports the submitting build in a form the server keeps', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', { content: 'build it' })
+
+    const { client_version } = JSON.parse(String(lastCall().init.body)) as {
+      client_version?: string
+    }
+    expect(client_version).toMatch(/^[A-Za-z0-9.+-]{1,64}$/)
+    expect(client_version?.split('+')).toEqual([
+      __COMFYUI_FRONTEND_VERSION__,
+      __COMFYUI_FRONTEND_COMMIT__
+    ])
   })
 })
 
