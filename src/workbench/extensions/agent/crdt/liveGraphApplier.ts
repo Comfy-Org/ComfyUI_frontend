@@ -47,6 +47,7 @@ import {
   readSubgraphDefinitions,
   readSubgraphInteriorWidgets
 } from './agentSubgraphDefinitions'
+import { docMetaMap } from './followerDoc'
 import type { PlacementRect } from './batchPlacement'
 import { placementOffset } from './batchPlacement'
 
@@ -76,17 +77,6 @@ export interface FrameChanges {
 
   /** True when the frame replaced the document's `groups` list. */
   groups?: boolean
-}
-
-/**
- * Root map holding the document's passthrough keys (`groups`, `extra`, ...).
- * `@comfyorg/comfy-multi-player` reads it through its private `metaMap()`,
- * which is not part of the package's public surface.
- */
-const META_ROOT = 'meta'
-
-export function docMetaMap(doc: Y.Doc): Y.Map<unknown> {
-  return doc.getMap<unknown>(META_ROOT)
 }
 
 export interface RemoteApplyContext {
@@ -666,7 +656,7 @@ export class LiveGraphApplier {
         this.applyInteriors(graph, doc, changes, context, mode)
 
         this.applyLinks(graph, doc, [...changes.links], context)
-        if (changes.groups) this.applyGroups(graph, doc, context)
+        this.applyGroups(graph, doc, changes, context)
         if (mode === 'merge') this.placeBatch(graph, created)
         return {
           createdNodeIds: created,
@@ -688,8 +678,10 @@ export class LiveGraphApplier {
   private applyGroups(
     graph: LGraph,
     doc: Y.Doc,
+    changes: FrameChanges,
     context: RemoteApplyContext
   ): void {
+    if (!changes.groups) return
     const groups = docMetaMap(doc).get('groups')
     if (!Array.isArray(groups) || groups.length > 0) return
     for (const group of graph.groups) {

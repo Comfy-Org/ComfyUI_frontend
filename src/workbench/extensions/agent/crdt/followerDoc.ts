@@ -30,3 +30,14 @@ export class FollowerDoc extends EventTarget {
     this.doc.destroy()
   }
 }
+
+/**
+ * Root map holding the document's passthrough keys (`groups`, `extra`, ...).
+ * `@comfyorg/comfy-multi-player` reads it through its private `metaMap()`,
+ * which is not part of the package's public surface.
+ */
+const META_ROOT = 'meta'
+
+export function docMetaMap(doc: Y.Doc): Y.Map<unknown> {
+  return doc.getMap<unknown>(META_ROOT)
+}

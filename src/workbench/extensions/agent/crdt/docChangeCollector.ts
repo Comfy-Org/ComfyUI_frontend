@@ -6,8 +6,9 @@ import {
 import * as Y from 'yjs'
 
 import { definitionsObserverRoot } from './agentSubgraphDefinitions'
+import { docMetaMap } from './followerDoc'
 import type { FrameChanges, NodeChange } from './liveGraphApplier'
-import { docMetaMap, SYNCED_NODE_FIELDS } from './liveGraphApplier'
+import { SYNCED_NODE_FIELDS } from './liveGraphApplier'
 
 /**
  * Collects what the Y observers on one follower document report between two

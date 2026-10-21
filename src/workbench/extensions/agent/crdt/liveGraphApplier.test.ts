@@ -16,12 +16,7 @@ import {
 } from 'vitest'
 import * as Y from 'yjs'
 
-import {
-  LGraph,
-  LGraphGroup,
-  LGraphNode,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import {
@@ -34,7 +29,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
@@ -1400,7 +1394,7 @@ describe('LiveGraphApplier', () => {
       groups: [group]
     })
     applyCollected()
-    const live = new LGraphGroup('Stage', toGroupId(1))
+    const live = new LiteGraph.LGraphGroup('Stage')
     graph.add(live)
     expect(graph.groups).toHaveLength(1)
 
@@ -1422,7 +1416,7 @@ describe('LiveGraphApplier', () => {
       groups: [group]
     })
     applyCollected()
-    const live = new LGraphGroup('Stage', toGroupId(1))
+    const live = new LiteGraph.LGraphGroup('Stage')
     graph.add(live)
 
     const remove = envelope({
