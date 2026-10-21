@@ -1,11 +1,10 @@
-import type * as DistributionModule from '@/platform/distribution/types'
-import type * as I18nModule from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import '@/scripts/changeTracker'
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(),
@@ -16,13 +15,9 @@ vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: vi.fn(() => undefined)
 }))
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
@@ -36,6 +31,7 @@ import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -80,6 +76,29 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
 
     const store = useMissingNodesErrorStore()
     expect(store.missingNodesError).toBeNull()
+  })
+
+  it('clears an absorbed missing-node prompt when a rescan finds none', () => {
+    const missingNodesStore = useMissingNodesErrorStore()
+    missingNodesStore.surfaceMissingNodes([
+      {
+        type: 'MissingNode',
+        nodeId: '1',
+        isReplaceable: false
+      }
+    ])
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.recordPromptError({
+      type: 'missing_node_type',
+      message: 'MissingNode is unavailable',
+      details: ''
+    })
+    vi.mocked(collectAllNodes).mockReturnValue([])
+
+    rescanAndSurfaceMissingNodes(mockGraph())
+
+    expect(missingNodesStore.missingNodesError).toBeNull()
+    expect(executionErrorStore.lastPromptError).toBeNull()
   })
 
   it('detects unregistered nodes as missing', () => {

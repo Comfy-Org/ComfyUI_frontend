@@ -9,7 +9,11 @@ import {
 } from '@/renderer/core/spatial/boundsCalculator'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
 
-import type { MinimapBounds, MinimapCanvas, ViewportTransform } from '../types'
+import type {
+  MinimapBounds,
+  MinimapCanvas,
+  ViewportTransform
+} from '@/renderer/extensions/minimap/types'
 
 export function useMinimapViewport(
   canvas: Ref<MinimapCanvas | null>,
@@ -44,7 +48,7 @@ export function useMinimapViewport(
     if (!c) return
 
     const canvasEl = c.canvas
-    const dpr = window.devicePixelRatio || 1
+    const dpr = c.dpr
 
     canvasDimensions.value = {
       width: canvasEl.clientWidth || canvasEl.width / dpr,

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
-import Select from 'primevue/select'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
+import NumberField from '@/components/ui/number-field/NumberField.vue'
+import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
@@ -14,7 +15,7 @@ import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/com
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import FieldSwitch from './FieldSwitch.vue'
 import LayoutField from './LayoutField.vue'
 
@@ -57,9 +58,9 @@ const linkShape = computed({
 })
 
 const linkShapeOptions = computed(() => [
-  { value: LinkMarkerShape.None, label: t('g.none') },
-  { value: LinkMarkerShape.Circle, label: t('shape.circle') },
-  { value: LinkMarkerShape.Arrow, label: t('shape.arrow') }
+  { value: LinkMarkerShape.None, name: t('g.none') },
+  { value: LinkMarkerShape.Circle, name: t('shape.circle') },
+  { value: LinkMarkerShape.Arrow, name: t('shape.arrow') }
 ])
 
 let theOldLinkRenderMode: LinkRenderType = LiteGraph.SPLINE_LINK
@@ -84,22 +85,15 @@ function updateGridSpacingFromSlider(values?: number[]) {
   gridSpacing.value = values[0]
 }
 
-function updateGridSpacingFromInput(value: number | null | undefined) {
-  if (typeof value !== 'number') return
-
-  const clampedValue = Math.min(GRID_SIZE_MAX, Math.max(GRID_SIZE_MIN, value))
-  gridSpacing.value = Math.round(clampedValue / GRID_SIZE_STEP) * GRID_SIZE_STEP
-}
-
 function openFullSettings() {
   settingsDialog.show()
 }
 </script>
 
 <template>
-  <div class="flex flex-col border-t border-interface-stroke">
+  <div class="flex flex-col border-t">
     <!-- NODES Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b">
       <template #label>
         {{ t('rightSidePanel.globalSettings.nodes') }}
       </template>
@@ -123,7 +117,7 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- CANVAS Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b">
       <template #label>
         {{ t('rightSidePanel.globalSettings.canvas') }}
       </template>
@@ -131,7 +125,7 @@ function openFullSettings() {
         <LayoutField :label="t('rightSidePanel.globalSettings.gridSpacing')">
           <div
             :class="
-              cn(WidgetInputBaseClass, 'flex items-center gap-2 pr-2 pl-3')
+              cn(WidgetInputBaseClass, 'flex h-7 items-center gap-2 pr-2 pl-3')
             "
           >
             <Slider
@@ -142,17 +136,19 @@ function openFullSettings() {
               :step="GRID_SIZE_STEP"
               @update:model-value="updateGridSpacingFromSlider"
             />
-            <InputNumber
-              :model-value="gridSpacing"
-              class="w-16"
-              size="small"
-              pt:pc-input-text:root="min-w-[4ch] bg-transparent border-none text-center truncate"
+            <NumberField
+              v-model="gridSpacing"
+              class="h-auto w-16 shrink-0 bg-transparent hover:bg-transparent"
               :min="GRID_SIZE_MIN"
               :max="GRID_SIZE_MAX"
               :step="GRID_SIZE_STEP"
-              :allow-empty="false"
-              @update:model-value="updateGridSpacingFromInput"
-            />
+              :format-options="{ maximumFractionDigits: 0 }"
+            >
+              <NumberFieldInput
+                :aria-label="t('rightSidePanel.globalSettings.gridSpacing')"
+                class="text-xs"
+              />
+            </NumberField>
           </div>
         </LayoutField>
         <FieldSwitch
@@ -164,27 +160,19 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- CONNECTION LINKS Section -->
-    <PropertiesAccordionItem class="border-b border-interface-stroke">
+    <PropertiesAccordionItem class="border-b">
       <template #label>
         {{ t('rightSidePanel.globalSettings.connectionLinks') }}
       </template>
       <div class="space-y-4 px-4 py-3">
         <LayoutField :label="t('rightSidePanel.globalSettings.linkShape')">
-          <Select
+          <AppSingleSelect
             v-model="linkShape"
             :options="linkShapeOptions"
-            :aria-label="t('rightSidePanel.globalSettings.linkShape')"
+            :label="t('rightSidePanel.globalSettings.linkShape')"
             :class="cn(WidgetInputBaseClass, 'w-full text-xs')"
-            size="small"
-            :pt="{
-              option: 'text-xs',
-              dropdown: 'w-8',
-              label: cn('min-w-[4ch] truncate', $slots.default && 'mr-5'),
-              overlay: 'w-fit min-w-full'
-            }"
+            size="md"
             data-capture-wheel="true"
-            option-label="label"
-            option-value="value"
           />
         </LayoutField>
         <FieldSwitch
@@ -196,13 +184,11 @@ function openFullSettings() {
     </PropertiesAccordionItem>
 
     <!-- View all settings button -->
-    <div
-      class="flex items-center justify-center border-b border-interface-stroke p-4"
-    >
+    <div class="flex items-center justify-center border-b p-4">
       <Button
         variant="muted-textonly"
         size="sm"
-        class="gap-2 text-sm"
+        class="text-sm"
         @click="openFullSettings"
       >
         {{ t('rightSidePanel.globalSettings.viewAllSettings') }}

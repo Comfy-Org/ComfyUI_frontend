@@ -1,21 +1,26 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type {
+  LGraphNode,
+  SubgraphInput,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+
 import { LLink, replaceLinkTopology } from '@/lib/litegraph/src/LLink'
-import { mintLinkId } from '../idAllocation'
+import {
+  linkIdReservations,
+  mintLinkId
+} from '@/lib/litegraph/src/idAllocation'
 import { anchorRerouteChain } from '@/lib/litegraph/src/Reroute'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type { RerouteId } from '@/types/rerouteId'
+import type { Point, ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  Point,
-  ReadOnlyRect
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 
-import type { SubgraphInput } from './SubgraphInput'
-import type { SubgraphOutputNode } from './SubgraphOutputNode'
 import { SubgraphSlot } from './SubgraphSlotBase'
-import { isNodeSlot, isSubgraphInput } from './subgraphUtils'
+import { isNodeSlot, isSubgraphInput } from './subgraphTypeGuards'
 
 /**
  * An output "slot" from a subgraph to a parent graph.
@@ -58,7 +63,10 @@ export class SubgraphOutput extends SubgraphSlot {
       subgraph.beforeChange()
     }
 
-    const linkId = mintLinkId(subgraph.state)
+    const linkId = mintLinkId(
+      subgraph.state,
+      linkIdReservations(subgraph.rootGraph)
+    )
 
     const link = new LLink(
       linkId,
@@ -153,4 +161,10 @@ export class SubgraphOutput extends SubgraphSlot {
     }
     this.linkIds.length = 0
   }
+}
+
+type RegisteredSubgraphOutput = SubgraphOutput
+
+declare module '../types/entityRegistry' {
+  interface SubgraphOutput extends RegisteredSubgraphOutput {}
 }

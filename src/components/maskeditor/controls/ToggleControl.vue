@@ -1,6 +1,6 @@
 <template>
-  <div class="relative flex min-h-6 flex-row items-center gap-2.5">
-    <span class="text-left font-sans text-xs text-(--descrip-text)">{{
+  <div class="relative flex min-h-6 items-center gap-2.5">
+    <span class="text-left font-sans text-xs text-muted-foreground">{{
       label
     }}</span>
     <label class="maskEditor_sidePanelToggleContainer">

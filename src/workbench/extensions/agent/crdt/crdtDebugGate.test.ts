@@ -35,6 +35,35 @@ describe('crdtDebugGate', () => {
     expect(gate.isCrdtDebugEnabled()).toBe(false)
   })
 
+  it('reads an absent enabled preference only once', async () => {
+    vi.stubEnv('DEV', false)
+    const getItem = vi.spyOn(localStorage, 'getItem')
+    const gate = await loadGate('')
+
+    expect(gate.isCrdtDebugOptedOut()).toBe(false)
+    expect(gate.isCrdtDebugOptedOut()).toBe(false)
+
+    expect(getItem).toHaveBeenCalledTimes(1)
+    expect(getItem).toHaveBeenCalledWith('Comfy.Agent.CrdtDebug.enabled')
+  })
+
+  it('observes an opt-out written by another tab', async () => {
+    vi.stubEnv('DEV', false)
+    const gate = await loadGate('')
+
+    expect(gate.isCrdtDebugOptedOut()).toBe(false)
+
+    localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'false')
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'Comfy.Agent.CrdtDebug.enabled',
+        newValue: 'false'
+      })
+    )
+
+    expect(gate.isCrdtDebugOptedOut()).toBe(true)
+  })
+
   it('lets a tester enable the instrument from a link, and remembers it', async () => {
     await loadGate('?crdtDebug=1')
     const afterReload = await loadGate('')

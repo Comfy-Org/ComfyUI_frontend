@@ -2,7 +2,7 @@
   <tr
     :class="
       cn(
-        'border-b border-interface-stroke/60 transition-colors hover:bg-secondary-background/50 data-[state=selected]:bg-secondary-background/50',
+        'border-b border-border/30 transition-colors hover:bg-secondary/50 focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-ring data-[state=selected]:bg-secondary/50',
         className
       )
     "

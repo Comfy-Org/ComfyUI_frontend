@@ -12,17 +12,12 @@
       <div
         :class="
           cn(
-            'flex items-center justify-center gap-1 rounded-full hover:bg-interface-button-hover-surface',
+            'flex items-center justify-center gap-1 rounded-full hover:bg-accent',
             compact && 'size-full'
           )
         "
       >
-        <Skeleton
-          v-if="showWorkspaceSkeleton"
-          shape="circle"
-          width="32px"
-          height="32px"
-        />
+        <Skeleton v-if="showWorkspaceSkeleton" class="size-8 rounded-full" />
         <WorkspaceProfilePic
           v-else-if="showWorkspaceIcon"
           :workspace-name="workspaceName"
@@ -41,17 +36,16 @@
 
     <Popover
       ref="popover"
-      :show-arrow="false"
-      :pt="{
-        root: {
-          class: 'rounded-lg w-80'
-        }
-      }"
-      @show="onPopoverShow"
+      align="end"
+      :content-class="
+        cn(
+          'overflow-visible border-border shadow-md',
+          showWorkspacePopover ? 'w-fit max-w-96 min-w-80' : 'w-80'
+        )
+      "
     >
       <CurrentUserPopoverWorkspace
         v-if="showWorkspacePopover"
-        ref="workspacePopoverContent"
         :account-actions-only="initState !== 'ready'"
         @close="closePopover"
       />
@@ -62,11 +56,11 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Popover from 'primevue/popover'
-import Skeleton from 'primevue/skeleton'
+import Popover from '@/components/common/ImperativePopover.vue'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -78,7 +72,7 @@ import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const CurrentUserPopoverWorkspace = defineAsyncComponent(
   () =>
-    import('../../platform/workspace/components/CurrentUserPopoverWorkspace.vue')
+    import('@/platform/workspace/components/CurrentUserPopoverWorkspace.vue')
 )
 
 const { showArrow = true, compact = false } = defineProps<{
@@ -115,15 +109,7 @@ const workspaceName = computed(() => {
 })
 
 const popover = ref<InstanceType<typeof Popover> | null>(null)
-const workspacePopoverContent = ref<{
-  refreshBalance: () => void
-} | null>(null)
-
 const closePopover = () => {
   popover.value?.hide()
-}
-
-const onPopoverShow = () => {
-  workspacePopoverContent.value?.refreshBalance()
 }
 </script>

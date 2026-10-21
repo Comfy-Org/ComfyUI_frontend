@@ -16,31 +16,57 @@
   "files": [
     "src/css",
     "src/icons",
-    "src/workspaceAvatar.ts"
+    "src/button.variants.ts",
+    "src/select.variants.ts",
+    "src/tag.variants.ts",
+    "src/workspaceAvatar.ts",
+    "dist-types/**/*.d.ts"
   ],
   "type": "module",
   "exports": {
     "./css/*": "./src/css/*",
     "./icons/*": "./src/icons/*",
-    "./workspaceAvatar": "./src/workspaceAvatar.ts"
+    "./button.variants": {
+      "types": "./dist-types/button.variants.d.ts",
+      "default": "./src/button.variants.ts"
+    },
+    "./select.variants": {
+      "types": "./dist-types/select.variants.d.ts",
+      "default": "./src/select.variants.ts"
+    },
+    "./tag.variants": {
+      "types": "./dist-types/tag.variants.d.ts",
+      "default": "./src/tag.variants.ts"
+    },
+    "./workspaceAvatar": {
+      "types": "./dist-types/workspaceAvatar.d.ts",
+      "default": "./src/workspaceAvatar.ts"
+    }
   },
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "test": "vitest run",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit",
+    "build": "tsc -b tsconfig.declarations.json",
+    "prepack": "pnpm build"
   },
   "dependencies": {
     "@iconify-json/lucide": "catalog:",
     "@iconify/tailwind4": "catalog:",
     "@iconify/tools": "catalog:",
     "@iconify/utils": "catalog:",
-    "tailwindcss-primeui": "catalog:",
+    "cva": "catalog:",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
+    "@vitest/coverage-v8": "catalog:",
     "tailwindcss": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "tailwindcss": "^4.1.0"

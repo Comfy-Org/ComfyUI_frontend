@@ -1,9 +1,12 @@
 <template>
-  <!-- Help Center Popup positioned within canvas area -->
-  <Teleport to="body">
+  <Teleport v-if="isHelpCenterVisible" to="body">
     <div
-      v-if="isHelpCenterVisible"
-      class="help-center-popup"
+      class="help-center-backdrop z-overlay"
+      data-testid="help-center-backdrop"
+      @click="closeHelpCenter"
+    />
+    <div
+      class="help-center-popup z-overlay"
       data-testid="help-center-popup"
       :class="{
         'sidebar-left': sidebarLocation === 'left',
@@ -18,6 +21,7 @@
   <!-- Release Notification Toast positioned within canvas area -->
   <Teleport to="#graph-canvas-container">
     <ReleaseNotificationToast
+      :is-visible="!canvasStore.isPickingNodes"
       :position="sidebarLocation === 'right' ? 'bottom-right' : 'bottom-left'"
     />
   </Teleport>
@@ -33,25 +37,17 @@
       @whats-new-dismissed="handleWhatsNewDismissed"
     />
   </Teleport>
-
-  <!-- Backdrop to close popup when clicking outside -->
-  <Teleport to="body">
-    <div
-      v-if="isHelpCenterVisible"
-      class="help-center-backdrop"
-      data-testid="help-center-backdrop"
-      @click="closeHelpCenter"
-    />
-  </Teleport>
 </template>
 
 <script setup lang="ts">
 import { useHelpCenter } from '@/composables/useHelpCenter'
 import ReleaseNotificationToast from '@/platform/updates/components/ReleaseNotificationToast.vue'
 import WhatsNewPopup from '@/platform/updates/components/WhatsNewPopup.vue'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
 
+const canvasStore = useCanvasStore()
 const { isSmall = false } = defineProps<{
   isSmall?: boolean
 }>()
@@ -71,14 +67,12 @@ const {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9999;
   background: transparent;
 }
 
 .help-center-popup {
   position: absolute;
   bottom: 1rem;
-  z-index: 10000;
   animation: slideInUp 0.2s ease-out;
   pointer-events: auto;
 }

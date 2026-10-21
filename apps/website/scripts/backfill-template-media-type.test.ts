@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import rawDetails from '../src/data/hubTemplateDetails.json'
-import rawTemplates from '../src/data/hubTemplates.json'
-import type { HubTemplate } from '../src/lib/hub/types'
+import rawDetails from '@/data/hubTemplateDetails.json'
+import rawTemplates from '@/data/hubTemplates.json'
+import type { HubTemplate } from '@/lib/hub/types'
 import { backfillTemplateMediaTypes } from './backfill-template-media-type'
 
 const template: HubTemplate = {

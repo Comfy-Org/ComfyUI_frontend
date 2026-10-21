@@ -1,9 +1,4 @@
-// @vitest-environment jsdom
-// dompurify is inert under happy-dom — see the tripwire note in
-// vitest.setup.ts (capricorn86/happy-dom#2182, FE-1189).
-import PrimeVue from 'primevue/config'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { createApp } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -13,24 +8,10 @@ import * as markdownRendererUtil from '@/utils/markdownRendererUtil'
 
 import NodePreview from './NodePreview.vue'
 
-// jsdom does not implement ResizeObserver (happy-dom does); stub it before
-// component modules construct their module-level observer at import time.
-vi.hoisted(() => {
-  globalThis.ResizeObserver = class {
-    observe() {}
-    unobserve() {}
-    disconnect() {}
-  }
-})
-
 describe('NodePreview', () => {
   let i18n: ReturnType<typeof createI18n>
 
   beforeAll(() => {
-    // Create a Vue app instance for PrimeVue
-    const app = createApp({})
-    app.use(PrimeVue)
-
     // Create i18n instance
     i18n = createI18n({
       legacy: false,
@@ -66,7 +47,7 @@ describe('NodePreview', () => {
   function renderComponent(nodeDef: ComfyNodeDefV2 = mockNodeDef) {
     return render(NodePreview, {
       global: {
-        plugins: [PrimeVue, i18n],
+        plugins: [i18n],
         stubs: {}
       },
       props: {

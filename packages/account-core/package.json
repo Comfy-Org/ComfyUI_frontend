@@ -1,0 +1,259 @@
+{
+  "name": "@comfyorg/account-core",
+  "version": "1.0.0-alpha.4",
+  "description": "Shared account layer: a framework-free session core that exchanges a signed-in identity for the workspace-scoped Cloud JWT with valid-on-read freshness, plus the package-owned Firebase identity entry. It has no view layer and no Vue dependency; the composables and unstyled components ship from @comfyorg/account-ui",
+  "keywords": [],
+  "homepage": "https://comfy.org",
+  "license": "MIT",
+  "author": {
+    "name": "Comfy Org",
+    "email": "support@comfy.org",
+    "url": "https://www.comfy.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Comfy-Org/ComfyUI_frontend.git",
+    "directory": "packages/account-core"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "imports": {
+    "#package.json": "./package.json",
+    "#/*": {
+      "@comfyorg/account-core": "./src/*.ts",
+      "types": "./dist-types/*.d.ts",
+      "default": "./src/*.ts"
+    }
+  },
+  "exports": {
+    "./boundedOperation": {
+      "types": "./dist-types/core/boundedOperation.d.ts",
+      "default": "./src/core/boundedOperation.ts"
+    },
+    "./lazyIdentity": {
+      "types": "./dist-types/core/lazyIdentity.d.ts",
+      "default": "./src/core/lazyIdentity.ts"
+    },
+    "./session": {
+      "types": "./dist-types/core/session.d.ts",
+      "default": "./src/core/session.ts"
+    },
+    "./webSession": {
+      "types": "./dist-types/core/webSession.d.ts",
+      "default": "./src/core/webSession.ts"
+    },
+    "./webSessionFlag": {
+      "types": "./dist-types/core/webSessionFlag.d.ts",
+      "default": "./src/core/webSessionFlag.ts"
+    },
+    "./requestAuth": {
+      "types": "./dist-types/core/requestAuth.d.ts",
+      "default": "./src/core/requestAuth.ts"
+    },
+    "./sessionTokenMint": {
+      "types": "./dist-types/core/sessionTokenMint.d.ts",
+      "default": "./src/core/sessionTokenMint.ts"
+    },
+    "./webSessionIdentity": {
+      "types": "./dist-types/core/webSessionIdentity.d.ts",
+      "default": "./src/core/webSessionIdentity.ts"
+    },
+    "./billing": {
+      "types": "./dist-types/core/billing/index.d.ts",
+      "default": "./src/core/billing/index.ts"
+    },
+    "./firebase": {
+      "types": "./dist-types/firebase/index.d.ts",
+      "default": "./src/firebase/index.ts"
+    },
+    "./web": {
+      "types": "./dist-types/web/crossTabRefresh.d.ts",
+      "default": "./src/web/crossTabRefresh.ts"
+    },
+    "./testing": {
+      "types": "./dist-types/testing.d.ts",
+      "default": "./src/testing.ts"
+    },
+    "./customerRecovery": {
+      "types": "./dist-types/core/customerRecovery.d.ts",
+      "default": "./src/core/customerRecovery.ts"
+    },
+    "./signInSchemas": {
+      "types": "./dist-types/signInSchemas.d.ts",
+      "default": "./src/signInSchemas.ts"
+    },
+    "./turnstile": {
+      "types": "./dist-types/turnstile.d.ts",
+      "default": "./src/turnstile.ts"
+    },
+    "./turnstileScript": {
+      "types": "./dist-types/turnstileScript.d.ts",
+      "default": "./src/turnstileScript.ts"
+    },
+    "./firebaseAuthError": {
+      "types": "./dist-types/firebaseAuthError.d.ts",
+      "default": "./src/firebaseAuthError.ts"
+    },
+    "./provisioning": {
+      "types": "./dist-types/provisioning.d.ts",
+      "default": "./src/provisioning.ts"
+    },
+    "./redirect": {
+      "types": "./dist-types/redirect.d.ts",
+      "default": "./src/redirect.ts"
+    },
+    "./sso": {
+      "types": "./dist-types/sso.d.ts",
+      "default": "./src/sso.ts"
+    },
+    "./workspaceLink": {
+      "types": "./dist-types/workspaceLink.d.ts",
+      "default": "./src/workspaceLink.ts"
+    },
+    "./telemetry": {
+      "types": "./dist-types/telemetry.d.ts",
+      "default": "./src/telemetry.ts"
+    },
+    "./webviewDetection": {
+      "types": "./dist-types/webviewDetection.d.ts",
+      "default": "./src/webviewDetection.ts"
+    },
+    "./oauthPkce": {
+      "types": "./dist-types/oauthPkce.d.ts",
+      "default": "./src/oauthPkce.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      "./boundedOperation": {
+        "types": "./dist/core/boundedOperation.d.ts",
+        "import": "./dist/core/boundedOperation.js"
+      },
+      "./session": {
+        "types": "./dist/core/session.d.ts",
+        "import": "./dist/core/session.js"
+      },
+      "./webSession": {
+        "types": "./dist/core/webSession.d.ts",
+        "import": "./dist/core/webSession.js"
+      },
+      "./webSessionFlag": {
+        "types": "./dist/core/webSessionFlag.d.ts",
+        "import": "./dist/core/webSessionFlag.js"
+      },
+      "./requestAuth": {
+        "types": "./dist/core/requestAuth.d.ts",
+        "import": "./dist/core/requestAuth.js"
+      },
+      "./sessionTokenMint": {
+        "types": "./dist/core/sessionTokenMint.d.ts",
+        "import": "./dist/core/sessionTokenMint.js"
+      },
+      "./webSessionIdentity": {
+        "types": "./dist/core/webSessionIdentity.d.ts",
+        "import": "./dist/core/webSessionIdentity.js"
+      },
+      "./billing": {
+        "types": "./dist/core/billing/index.d.ts",
+        "import": "./dist/core/billing/index.js"
+      },
+      "./firebase": {
+        "types": "./dist/firebase/index.d.ts",
+        "import": "./dist/firebase/index.js"
+      },
+      "./web": {
+        "types": "./dist/web/crossTabRefresh.d.ts",
+        "import": "./dist/web/crossTabRefresh.js"
+      },
+      "./testing": {
+        "types": "./dist/testing.d.ts",
+        "import": "./dist/testing.js"
+      },
+      "./customerRecovery": {
+        "types": "./dist/core/customerRecovery.d.ts",
+        "import": "./dist/core/customerRecovery.js"
+      },
+      "./signInSchemas": {
+        "types": "./dist/signInSchemas.d.ts",
+        "import": "./dist/signInSchemas.js"
+      },
+      "./turnstile": {
+        "types": "./dist/turnstile.d.ts",
+        "import": "./dist/turnstile.js"
+      },
+      "./turnstileScript": {
+        "types": "./dist/turnstileScript.d.ts",
+        "import": "./dist/turnstileScript.js"
+      },
+      "./firebaseAuthError": {
+        "types": "./dist/firebaseAuthError.d.ts",
+        "import": "./dist/firebaseAuthError.js"
+      },
+      "./provisioning": {
+        "types": "./dist/provisioning.d.ts",
+        "import": "./dist/provisioning.js"
+      },
+      "./redirect": {
+        "types": "./dist/redirect.d.ts",
+        "import": "./dist/redirect.js"
+      },
+      "./sso": {
+        "types": "./dist/sso.d.ts",
+        "import": "./dist/sso.js"
+      },
+      "./workspaceLink": {
+        "types": "./dist/workspaceLink.d.ts",
+        "import": "./dist/workspaceLink.js"
+      },
+      "./telemetry": {
+        "types": "./dist/telemetry.d.ts",
+        "import": "./dist/telemetry.js"
+      },
+      "./webviewDetection": {
+        "types": "./dist/webviewDetection.d.ts",
+        "import": "./dist/webviewDetection.js"
+      },
+      "./oauthPkce": {
+        "types": "./dist/oauthPkce.d.ts",
+        "import": "./dist/oauthPkce.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "build": "pnpm run clean && vite build --logLevel error",
+    "check:pack": "tsx scripts/checkPublishable.ts",
+    "clean": "node --input-type=module -e \"import { rmSync } from 'node:fs'; rmSync('dist', { recursive: true, force: true })\"",
+    "prepack": "pnpm run build",
+    "lint": "oxlint src --type-aware && eslint src",
+    "smoke:pack": "tsx scripts/smokePack.ts",
+    "test": "vitest run",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit && tsx ../../scripts/vue-tsc-native.ts -p scripts/tsconfig.json"
+  },
+  "dependencies": {
+    "@comfyorg/ingest-types": "workspace:^"
+  },
+  "devDependencies": {
+    "@comfyorg/published-package-build": "workspace:*",
+    "@comfyorg/test-utils": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "firebase": "catalog:",
+    "happy-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "firebase": "^11.6.0",
+    "zod": "catalog:"
+  }
+}

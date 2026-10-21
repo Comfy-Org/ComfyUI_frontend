@@ -2,7 +2,7 @@
   <PopoverRoot v-model:open="isOpen">
     <PopoverTrigger as-child>
       <Button
-        v-tooltip.top="{ value: t('g.arrange'), showDelay: 1000 }"
+        :tooltip="t('g.arrange')"
         variant="muted-textonly"
         :aria-label="t('g.arrange')"
       >
@@ -12,17 +12,14 @@
         </div>
       </Button>
     </PopoverTrigger>
-    <PopoverPortal>
+    <PopoverPortal :key="Number(isOpen)">
       <PopoverContent
         side="bottom"
         :side-offset="5"
         :collision-padding="10"
-        class="data-[state=open]:data-[side=top]:animate-slideDownAndFade data-[state=open]:data-[side=right]:animate-slideLeftAndFade data-[state=open]:data-[side=bottom]:animate-slideUpAndFade data-[state=open]:data-[side=left]:animate-slideRightAndFade z-1700 rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[transform,opacity]"
+        class="z-overlay rounded-lg border border-border/50 bg-background p-2 shadow-sm will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
-        <div
-          v-if="activeLayout"
-          class="flex w-32 flex-row items-center px-2 py-1"
-        >
+        <div v-if="activeLayout" class="flex w-32 items-center px-2 py-1">
           <Slider
             :model-value="[gap]"
             :min="MIN_ARRANGE_GAP"
@@ -33,12 +30,9 @@
             @value-commit="onSliderCommit"
           />
         </div>
-        <div v-else class="flex flex-row gap-1">
+        <div v-else class="flex gap-1">
           <Button
-            v-tooltip.top="{
-              value: t('g.arrangeVertically'),
-              showDelay: 1000
-            }"
+            :tooltip="t('g.arrangeVertically')"
             variant="muted-textonly"
             :aria-label="t('g.arrangeVertically')"
             @click="start('vertical')"
@@ -46,10 +40,7 @@
             <i class="icon-[lucide--stretch-horizontal]" />
           </Button>
           <Button
-            v-tooltip.top="{
-              value: t('g.arrangeHorizontally'),
-              showDelay: 1000
-            }"
+            :tooltip="t('g.arrangeHorizontally')"
             variant="muted-textonly"
             :aria-label="t('g.arrangeHorizontally')"
             @click="start('horizontal')"
@@ -57,7 +48,7 @@
             <i class="icon-[lucide--stretch-vertical]" />
           </Button>
           <Button
-            v-tooltip.top="{ value: t('g.arrangeAsGrid'), showDelay: 1000 }"
+            :tooltip="t('g.arrangeAsGrid')"
             variant="muted-textonly"
             :aria-label="t('g.arrangeAsGrid')"
             @click="start('grid')"
@@ -65,7 +56,7 @@
             <i class="icon-[lucide--grid-3x3]" />
           </Button>
         </div>
-        <PopoverArrow class="fill-base-background stroke-border-subtle" />
+        <PopoverArrow class="fill-background stroke-border/50" />
       </PopoverContent>
     </PopoverPortal>
   </PopoverRoot>
@@ -73,9 +64,9 @@
 
 <script setup lang="ts">
 import {
+  PopoverPortal,
   PopoverArrow,
   PopoverContent,
-  PopoverPortal,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'

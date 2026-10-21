@@ -10,25 +10,13 @@ import { toNodeId } from '@/types/nodeId'
 
 import OutputSlot from './OutputSlot.vue'
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({ toastErrorHandler: vi.fn() })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock<unknown>(
   import('@/renderer/core/canvas/links/slotLinkDragUIState'),
   () => ({
     useSlotLinkDragUIState: () => ({
       state: { active: false, compatible: new Map() }
-    })
-  })
-)
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/vueNodes/composables/useNodeTooltips'),
-  () => ({
-    useNodeTooltips: () => ({
-      getOutputSlotTooltip: () => '',
-      createTooltipConfig: (text: string) => ({ value: text })
     })
   })
 )
@@ -64,7 +52,6 @@ function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
     },
     global: {
       plugins: [i18n],
-      directives: { tooltip: {} },
       stubs: { SlotConnectionDot: SlotConnectionDotStub }
     }
   })

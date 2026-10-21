@@ -2,19 +2,12 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { h, nextTick } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import TagsInput from './TagsInput.vue'
 import TagsInputInput from './TagsInputInput.vue'
 import TagsInputItem from './TagsInputItem.vue'
 import TagsInputItemDelete from './TagsInputItemDelete.vue'
 import TagsInputItemText from './TagsInputItemText.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: { g: { removeTag: 'Remove tag' } } }
-})
 
 describe('TagsInput', () => {
   function renderTagsInput(props = {}, slots = {}) {
@@ -46,7 +39,6 @@ describe('TagsInput with child components', () => {
     const user = userEvent.setup()
 
     const result = render(TagsInput, {
-      global: { plugins: [i18n] },
       props: {
         modelValue: tags,
         ...extraProps
@@ -56,7 +48,7 @@ describe('TagsInput with child components', () => {
           ...tags.map((tag) =>
             h(TagsInputItem, { key: tag, value: tag }, () => [
               h(TagsInputItemText),
-              h(TagsInputItemDelete)
+              h(TagsInputItemDelete, { 'aria-label': `Remove ${tag}` })
             ])
           ),
           h(TagsInputInput, { placeholder: 'Add tag...' })
@@ -75,9 +67,22 @@ describe('TagsInput with child components', () => {
     expect(screen.getByText('tag2')).toBeInTheDocument()
 
     const deleteButtons = tags.map((tag) =>
-      screen.getByRole('button', { name: tag })
+      screen.getByRole('button', { name: `Remove ${tag}` })
     )
     expect(deleteButtons).toHaveLength(tags.length)
+  })
+
+  it('updates model value when deleting a tag', async () => {
+    const onUpdate = vi.fn()
+    const { user } = renderFullTagsInput(['first', 'second'], {
+      'onUpdate:modelValue': onUpdate
+    })
+
+    await user.click(screen.getByText('first'))
+    await nextTick()
+    await user.click(screen.getByRole('button', { name: 'Remove first' }))
+
+    expect(onUpdate).toHaveBeenCalledWith(['second'])
   })
 
   it('updates model value when adding a tag', async () => {
@@ -95,7 +100,7 @@ describe('TagsInput with child components', () => {
     })
 
     // Click the container to enter edit mode and show the input
-    // eslint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to enter edit mode; no role/label available
+    // oxlint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to enter edit mode; no role/label available
     await user.click(container.firstElementChild!)
     await nextTick()
 
@@ -120,7 +125,7 @@ describe('TagsInput with child components', () => {
 
     expect(screen.queryByPlaceholderText('Add tag...')).not.toBeInTheDocument()
 
-    // eslint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to test disabled behavior; no role/label available
+    // oxlint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to test disabled behavior; no role/label available
     await user.click(container.firstElementChild!)
     await nextTick()
 
@@ -141,7 +146,7 @@ describe('TagsInput with child components', () => {
       }
     })
 
-    // eslint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click; no role/label
+    // oxlint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click; no role/label
     await user.click(container.firstElementChild!)
     await nextTick()
     expect(screen.getByPlaceholderText('Add tag...')).toBeInTheDocument()

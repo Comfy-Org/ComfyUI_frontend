@@ -1,19 +1,19 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { runWorkshopRouter } from './workshop-router'
+import { runSynchronousWorkshopRouter } from './workshop-router'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopContractSchema } from './workshop-contract'
 import { z } from 'astro/zod'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,
   validateForm
 } from './workshop-playground'
-import contracts from '../content/workshop-router-contracts.json'
-import bindings from '../data/workshop-router-bindings.json'
+import contracts from '@/content/workshop-router-contracts.json'
+import bindings from '@/data/workshop-router-bindings.json'
 import { validateWorkshopInput } from './workshop-json-schema'
 
 function contractFor(id: string) {
@@ -117,11 +117,10 @@ describe('native Router requests', () => {
       expect(body).not.toHaveProperty('medias')
       if (contract.output.format !== 'json')
         throw new Error('Expected JSON output')
-      const fetch = vi
-        .fn()
-        .mockResolvedValue(Response.json(contract.output.schema.example))
-      vi.stubGlobal('fetch', fetch)
-      const result = await runWorkshopRouter({
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(contract.output.schema.example)
+      )
+      const result = await runSynchronousWorkshopRouter({
         contract,
         body,
         token: 'test-token',
@@ -142,7 +141,7 @@ describe('native Router requests', () => {
         {
           prompt: 'Test',
           output_format: 'png',
-          safety_tolerance: 3,
+          seed: 123456,
           prompt_upsampling: false
         },
         signal
@@ -150,7 +149,7 @@ describe('native Router requests', () => {
     ).toEqual({
       prompt: 'Test',
       output_format: 'png',
-      safety_tolerance: 3,
+      seed: 123456,
       prompt_upsampling: false
     })
     await expect(
@@ -277,20 +276,51 @@ describe('native Router requests', () => {
     ).rejects.toBeInstanceOf(WorkshopRouterError)
   })
 
+  it('associates an unreadable native media input with its field', async () => {
+    const file = new File(['pixels'], 'private.png', { type: 'image/png' })
+    const cause = new DOMException('File gone', 'NotFoundError')
+    vi.spyOn(file, 'arrayBuffer').mockRejectedValue(cause)
+
+    await expect(
+      prepareWorkshopRouterInput(
+        contractFor('bfl/flux-2-pro'),
+        {
+          prompt: 'Edit',
+          media_image: {
+            file,
+            name: file.name,
+            size: file.size,
+            type: file.type
+          }
+        },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      stage: 'file_read',
+      cause,
+      fieldErrors: { media_image: 'fileUnreadable' }
+    })
+  })
+
   it('calls /v2/models with the workspace bearer, keeps the request ID and reads native output', async () => {
     const requests: Request[] = []
-    vi.stubGlobal('fetch', async (url: string, init: RequestInit) => {
-      requests.push(new Request(url, init))
-      return Response.json(
-        {
-          id: 'provider-job',
-          status: 'Ready',
-          result: { sample: 'https://assets.example/result.jpg' }
-        },
-        { headers: { 'X-Comfy-Request-Id': 'request-123' } }
-      )
-    })
-    const result = await runWorkshopRouter({
+    vi.mocked(globalThis.fetch).mockImplementation(
+      async (input: RequestInfo | URL, init: RequestInit = {}) => {
+        const url = String(input)
+
+        requests.push(new Request(url, init))
+        return Response.json(
+          {
+            id: 'provider-job',
+            status: 'Ready',
+            result: { sample: 'https://assets.example/result.jpg' }
+          },
+          { headers: { 'X-Comfy-Request-Id': 'request-123' } }
+        )
+      }
+    )
+    const result = await runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test', seed: 42 },
       token: 'test-workspace-token',
@@ -309,24 +339,22 @@ describe('native Router requests', () => {
     expect(await requests[0].json()).toEqual({ prompt: 'Test', seed: 42 })
     expect(result.requestId).toBe('request-123')
     expect(result.outputs[0].url).toBe('https://assets.example/result.jpg')
+    expect(requests[0].signal.aborted).toBe(true)
   })
 
   it('preserves caller cancellation while a Router request is pending', async () => {
     const controller = new AbortController()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        (_url: string | URL | Request, init?: RequestInit) =>
-          new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener(
-              'abort',
-              () => reject(init.signal?.reason),
-              { once: true }
-            )
-          })
-      )
+    vi.mocked(globalThis.fetch).mockImplementation(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          )
+        })
     )
-    const request = runWorkshopRouter({
+    const request = runSynchronousWorkshopRouter({
       contract: contractFor('bfl/flux-2-pro'),
       body: { prompt: 'Test' },
       token: 'test-token',
@@ -342,22 +370,19 @@ describe('native Router requests', () => {
 
   it('stops a Router request after the run timeout', async () => {
     vi.useFakeTimers()
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        (_url: string | URL | Request, init?: RequestInit) =>
-          new Promise<Response>((_resolve, reject) => {
-            init?.signal?.addEventListener(
-              'abort',
-              () => reject(init.signal?.reason),
-              { once: true }
-            )
-          })
-      )
+    vi.mocked(globalThis.fetch).mockImplementation(
+      (_url: string | URL | Request, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            'abort',
+            () => reject(init.signal?.reason),
+            { once: true }
+          )
+        })
     )
     await Promise.all([
       expect(
-        runWorkshopRouter({
+        runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
           body: { prompt: 'Test' },
           token: 'test-token',
@@ -390,10 +415,8 @@ describe('native Router requests', () => {
     })
     expect(read).not.toHaveBeenCalled()
 
-    const fetch = vi.fn()
-    vi.stubGlobal('fetch', fetch)
     await expect(
-      runWorkshopRouter({
+      runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: '汉'.repeat(4 * 1024 * 1024) },
         token: 'test-token',
@@ -417,7 +440,7 @@ describe('native Router requests', () => {
   ])(
     'classifies $status / $bucket by the Router error bucket',
     async ({ status, bucket, reason }) => {
-      const requests = vi.fn<typeof fetch>().mockResolvedValue(
+      vi.mocked(fetch).mockResolvedValueOnce(
         new Response(null, {
           status,
           headers: {
@@ -426,9 +449,8 @@ describe('native Router requests', () => {
           }
         })
       )
-      vi.stubGlobal('fetch', requests)
       await expect(
-        runWorkshopRouter({
+        runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
           body: { prompt: 'Test' },
           token: 'test-token',
@@ -436,20 +458,186 @@ describe('native Router requests', () => {
           signal: new AbortController().signal
         })
       ).rejects.toMatchObject({ reason, requestId: 'rejected' })
-      expect(requests).toHaveBeenCalledTimes(1)
+      expect(fetch).toHaveBeenCalledTimes(1)
     }
   )
 
+  it.for([
+    { status: 400, errorType: 'insufficient_credits', reason: 'noCredits' },
+    { status: 500, errorType: 'insufficient_credits', reason: 'noCredits' },
+    { status: 400, errorType: 'invalid_input', reason: 'validation' }
+  ])(
+    'classifies a $status whose body alone names $errorType',
+    async ({ status, errorType, reason }) => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json({ detail: 'refused', error_type: errorType }, { status })
+      )
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason, response: { status, errorType } })
+    }
+  )
+
+  it.for([
+    {
+      provider: 'WAN',
+      status: 502,
+      bucket: 'provider_error',
+      body: {
+        code: 'DataInspectionFailed',
+        message:
+          'Green net check failed for text (input): Input data may contain inappropriate content.'
+      }
+    },
+    {
+      provider: 'OpenAI',
+      status: 400,
+      bucket: 'invalid_input',
+      body: {
+        error: {
+          message: 'Your request was rejected by the safety system.',
+          type: 'image_generation_user_error',
+          code: 'moderation_blocked'
+        }
+      }
+    },
+    {
+      provider: 'Runway',
+      status: 502,
+      bucket: 'provider_error',
+      body: {
+        status: 'FAILED',
+        failure: 'Input media did not pass content moderation.',
+        failureCode: 'SAFETY.INPUT.MULTIMODAL'
+      }
+    }
+  ])(
+    'classifies a $provider moderation payload as policy despite $bucket',
+    async ({ status, bucket, body }) => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(body, {
+          status,
+          headers: {
+            'X-Comfy-Error-Type': bucket,
+            'X-Comfy-Request-Id': 'moderated-request'
+          }
+        })
+      )
+
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({
+        reason: 'policy',
+        requestId: 'moderated-request',
+        response: { status, errorType: bucket }
+      })
+      expect(fetch).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('does not mistake a moderation service outage for a policy refusal', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      Response.json(
+        {
+          code: 'ModerationServiceUnavailable',
+          message: 'The content moderation service is unavailable.'
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'provider' })
+  })
+
+  it.for([
+    [402, 'noCredits'],
+    [429, 'rateLimit'],
+    [409, 'conflict'],
+    [403, 'unavailable'],
+    [504, 'timeout']
+  ] as const)(
+    'keeps the status classification for a %i response with policy text',
+    async ([status, reason]) => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        Response.json(
+          {
+            code: 'content_filter',
+            message: 'Content policy violation'
+          },
+          { status }
+        )
+      )
+
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason })
+    }
+  )
+
+  it.for([
+    'Input media did not pass content moderation.',
+    '<html>content_filter upstream failure</html>',
+    JSON.stringify({
+      code: 'content_filter',
+      padding: 'x'.repeat(20_000)
+    })
+  ])('does not classify an incomplete or non-JSON error body', async (body) => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(body, {
+        status: 502,
+        headers: { 'X-Comfy-Error-Type': 'provider_error' }
+      })
+    )
+
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'provider' })
+  })
+
   it('reports errors without silently retrying a paid request', async () => {
-    const fetch = vi.fn().mockResolvedValue(
+    vi.mocked(fetch).mockResolvedValueOnce(
       new Response(null, {
         status: 402,
         headers: { 'X-Comfy-Request-Id': 'failed-request' }
       })
     )
-    vi.stubGlobal('fetch', fetch)
     await expect(
-      runWorkshopRouter({
+      runSynchronousWorkshopRouter({
         contract: contractFor('bfl/flux-2-pro'),
         body: { prompt: 'Test' },
         token: 'test-token',
@@ -463,21 +651,411 @@ describe('native Router requests', () => {
     expect(fetch).toHaveBeenCalledTimes(1)
   })
 
+  it('collects a generation Router parked at its deadline with the same key and body', async () => {
+    const requests: Request[] = []
+    const responses = [
+      new Response('{"error_type":"deadline_exceeded"}', {
+        status: 504,
+        headers: {
+          'X-Comfy-Error-Type': 'deadline_exceeded',
+          'X-Comfy-Request-Id': 'parked'
+        }
+      }),
+      Response.json(
+        {
+          id: 'provider-job',
+          status: 'Ready',
+          result: { sample: 'https://assets.example/a.jpg' }
+        },
+        { headers: { 'X-Comfy-Request-Id': 'collected' } }
+      )
+    ]
+    vi.mocked(globalThis.fetch).mockImplementation(
+      async (input: RequestInfo | URL, init: RequestInit = {}) => {
+        const url = String(input)
+
+        requests.push(new Request(url, init))
+        const response = responses.shift()
+        if (!response) throw new Error('Unexpected Router request')
+        return response
+      }
+    )
+    const result = await runSynchronousWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test', seed: 42 },
+      token: 'test-token',
+      idempotencyKey: 'parked-run',
+      signal: new AbortController().signal
+    })
+    expect(requests).toHaveLength(2)
+    expect(
+      requests.map((request) => request.headers.get('Idempotency-Key'))
+    ).toEqual(['parked-run', 'parked-run'])
+    const [first, second] = await Promise.all(
+      requests.map((request) => request.text())
+    )
+    expect(second).toBe(first)
+    expect(result).toMatchObject({
+      requestId: 'collected',
+      deadlineCollections: 1,
+      outputs: [{ url: 'https://assets.example/a.jpg' }]
+    })
+  })
+
+  it('stops collecting after the deadline budget and reports a timeout', async () => {
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(null, {
+          status: 504,
+          headers: {
+            'X-Comfy-Error-Type': 'deadline_exceeded',
+            'X-Comfy-Request-Id': 'still-parked'
+          }
+        })
+    )
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'timeout', requestId: 'still-parked' })
+    expect(fetch).toHaveBeenCalledTimes(4)
+  })
+
+  it('does not resend a provider timeout, which Router does not park', async () => {
+    vi.mocked(fetch).mockImplementation(
+      async () =>
+        new Response(null, {
+          status: 504,
+          headers: { 'X-Comfy-Error-Type': 'provider_timeout' }
+        })
+    )
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'timeout' })
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('waits out an in-flight conflict before asking for the same generation again', async () => {
+    vi.useFakeTimers()
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(
+        new Response(null, { status: 409, headers: { 'Retry-After': '2' } })
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          id: 'provider-job',
+          status: 'Ready',
+          result: { sample: 'https://assets.example/b.jpg' }
+        })
+      )
+    const request = runSynchronousWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'test-token',
+      idempotencyKey: 'one-key',
+      signal: new AbortController().signal
+    })
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(fetch).toHaveBeenCalledOnce()
+    await vi.advanceTimersByTimeAsync(1_000)
+    await expect(request).resolves.toMatchObject({
+      outputs: [{ url: 'https://assets.example/b.jpg' }]
+    })
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('finishes a Retry-After wait after a slow request exhausts its attempt window', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    vi.mocked(fetch)
+      .mockImplementationOnce(
+        () =>
+          new Promise<Response>((resolve) =>
+            setTimeout(
+              () =>
+                resolve(
+                  new Response(null, {
+                    status: 409,
+                    headers: { 'Retry-After': '2' }
+                  })
+                ),
+              659_000
+            )
+          )
+      )
+      .mockResolvedValueOnce(
+        Response.json({
+          id: 'provider-job',
+          status: 'Ready',
+          result: { sample: 'https://assets.example/late.jpg' }
+        })
+      )
+    const request = runSynchronousWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'token',
+      idempotencyKey: 'same-key',
+      signal: new AbortController().signal
+    })
+    await Promise.all([
+      expect(request).resolves.toMatchObject({
+        outputs: [{ url: 'https://assets.example/late.jpg' }]
+      }),
+      (async () => {
+        await vi.advanceTimersByTimeAsync(660_999)
+        expect(fetch).toHaveBeenCalledOnce()
+        expect(vi.mocked(fetch).mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+      })()
+    ])
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(fetch).mock.calls[1]).toEqual(
+      vi.mocked(fetch).mock.calls[0]
+    )
+  })
+
+  it('still stops a Retry-After wait at the total run deadline', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const responses = [
+      { delay: 659_000, status: 504 },
+      { delay: 659_000, status: 504 },
+      { delay: 659_000, status: 504 },
+      { delay: 659_000, status: 409 },
+      { delay: 53_000, status: 409 }
+    ]
+    vi.mocked(fetch).mockImplementation(() => {
+      const response = responses.shift()
+      if (!response) throw new Error('Unexpected Router request')
+      return new Promise<Response>((resolve) =>
+        setTimeout(
+          () =>
+            resolve(
+              new Response(null, {
+                status: response.status,
+                headers: {
+                  'Retry-After': '10',
+                  'X-Comfy-Error-Type':
+                    response.status === 504 ? 'deadline_exceeded' : 'in_flight'
+                }
+              })
+            ),
+          response.delay
+        )
+      )
+    })
+    const request = runSynchronousWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'token',
+      idempotencyKey: 'same-key',
+      signal: new AbortController().signal
+    })
+    await Promise.all([
+      expect(request).rejects.toMatchObject({ reason: 'timeout' }),
+      (async () => {
+        await vi.advanceTimersByTimeAsync(2_699_999)
+        expect(fetch).toHaveBeenCalledTimes(5)
+        expect(vi.mocked(fetch).mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+      })()
+    ])
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(fetch).toHaveBeenCalledTimes(5)
+  })
+
+  it.for([
+    { advice: 'Wed, 21 Oct 2026 07:28:02 GMT', wait: 2_000 },
+    { advice: 'Wed, 21 Oct 2026 07:29:00 GMT', wait: 10_000 }
+  ])(
+    'honors and bounds an HTTP-date Retry-After: $advice',
+    async ({ advice, wait }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      vi.setSystemTime(new Date('2026-10-21T07:28:00Z'))
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(
+          new Response(null, {
+            status: 409,
+            headers: { 'Retry-After': advice }
+          })
+        )
+        .mockResolvedValueOnce(
+          Response.json({
+            id: 'provider-job',
+            status: 'Ready',
+            result: { sample: 'https://assets.example/b.jpg' }
+          })
+        )
+      const request = runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'token',
+        idempotencyKey: 'same-key',
+        signal: new AbortController().signal
+      })
+      await Promise.all([
+        expect(request).resolves.toMatchObject({
+          outputs: [{ url: 'https://assets.example/b.jpg' }]
+        }),
+        (async () => {
+          await vi.advanceTimersByTimeAsync(wait - 1)
+          expect(fetch).toHaveBeenCalledOnce()
+          await vi.advanceTimersByTimeAsync(1)
+        })()
+      ])
+      expect(fetch).toHaveBeenCalledTimes(2)
+      expect(vi.mocked(fetch).mock.calls[1]).toEqual(
+        vi.mocked(fetch).mock.calls[0]
+      )
+    }
+  )
+
+  it.for(['', '-1', 'not-a-date', 'Wed, 21 Oct 2020 07:28:00 GMT'])(
+    'does not retry invalid or expired retry advice: %s',
+    async (advice) => {
+      vi.mocked(fetch).mockResolvedValueOnce(
+        new Response(null, {
+          status: 409,
+          headers: { 'Retry-After': advice }
+        })
+      )
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'token',
+          idempotencyKey: 'same-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason: 'conflict' })
+      expect(fetch).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('cancels during a retry wait without submitting again', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    vi.mocked(fetch).mockResolvedValueOnce(
+      new Response(null, { status: 409, headers: { 'Retry-After': '10' } })
+    )
+    const controller = new AbortController()
+    const request = runSynchronousWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'token',
+      idempotencyKey: 'same-key',
+      signal: controller.signal
+    })
+    const reason = new DOMException('Stopped', 'AbortError')
+    await Promise.all([
+      expect(request).rejects.toBe(reason),
+      (async () => {
+        await vi.advanceTimersByTimeAsync(1)
+        controller.abort(reason)
+      })()
+    ])
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
+  it('bounds slow collections and in-flight waits by one total deadline', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const responses = [504, 409, 504, 409, 504]
+    vi.mocked(fetch).mockImplementation(
+      (_url, init) =>
+        new Promise<Response>((resolve, reject) => {
+          const status = responses.shift() ?? 409
+          const timer = setTimeout(() => {
+            init?.signal?.removeEventListener('abort', abort)
+            resolve(
+              new Response(null, {
+                status,
+                headers: {
+                  'Retry-After': '10',
+                  'X-Comfy-Error-Type':
+                    status === 504 ? 'deadline_exceeded' : 'in_flight'
+                }
+              })
+            )
+          }, 600_000)
+          function abort() {
+            clearTimeout(timer)
+            reject(init?.signal?.reason)
+          }
+          init?.signal?.addEventListener('abort', abort, { once: true })
+        })
+    )
+    const request = runSynchronousWorkshopRouter({
+      contract: contractFor('bfl/flux-2-pro'),
+      body: { prompt: 'Test' },
+      token: 'token',
+      idempotencyKey: 'same-key',
+      signal: new AbortController().signal
+    })
+    await Promise.all([
+      expect(request).rejects.toMatchObject({ reason: 'timeout' }),
+      (async () => {
+        await vi.advanceTimersByTimeAsync(2_699_999)
+        expect(fetch).toHaveBeenCalledTimes(5)
+        expect(vi.mocked(fetch).mock.lastCall?.[1]?.signal?.aborted).toBe(false)
+        await vi.advanceTimersByTimeAsync(1)
+      })()
+    ])
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.every(
+          ([, init]) =>
+            init?.body === '{"prompt":"Test"}' &&
+            new Headers(init.headers).get('Idempotency-Key') === 'same-key'
+        )
+    ).toBe(true)
+    await vi.advanceTimersByTimeAsync(600_000)
+    expect(fetch).toHaveBeenCalledTimes(5)
+  })
+
+  it('does not resend a conflict that carries no retry advice', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 409 }))
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'conflict' })
+    expect(fetch).toHaveBeenCalledOnce()
+  })
+
   it('does not treat a provider error document or an unsafe output URL as a successful result', async () => {
     for (const data of [
       { status: 'Error' },
       { status: 'Ready', result: { sample: 'javascript:alert(1)' } }
     ]) {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue(Response.json(data)))
+      vi.mocked(globalThis.fetch).mockImplementation(async () =>
+        Response.json(data)
+      )
       await expect(
-        runWorkshopRouter({
+        runSynchronousWorkshopRouter({
           contract: contractFor('bfl/flux-2-pro'),
           body: { prompt: 'Test' },
           token: 'test-token',
           idempotencyKey: 'one-key',
           signal: new AbortController().signal
         })
-      ).rejects.toMatchObject({ reason: 'provider' })
+      ).rejects.toMatchObject({
+        reason: 'response',
+        response: { status: 200 },
+        cause: expect.any(Error)
+      })
     }
   })
 })

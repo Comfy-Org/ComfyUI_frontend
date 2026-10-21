@@ -48,7 +48,7 @@ const queueCount = computed(
 
 const itemClass = cn(
   'shrink-0 cursor-pointer rounded-lg border-2 border-transparent p-1 outline-none',
-  'relative data-[state=checked]:border-interface-panel-job-progress-border'
+  'relative data-[state=checked]:border-foreground'
 )
 
 const hasActiveContent = computed(
@@ -219,9 +219,15 @@ watch(
   }
 )
 
-useInfiniteScroll(outputsRef, () => outputs.loadMore(), {
-  canLoadMore: () => toValue(outputs.hasMore)
-})
+useInfiniteScroll(
+  outputsRef,
+  async () => {
+    await outputs.loadMore()
+  },
+  {
+    canLoadMore: () => toValue(outputs.hasMore)
+  }
+)
 
 function navigateToAdjacent(direction: 1 | -1) {
   const items = selectableItems.value
@@ -340,7 +346,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
 
       <div
         v-if="hasActiveContent && visibleHistory.length > 0"
-        class="mx-4 h-12 shrink-0 border-l border-border-default"
+        class="mx-4 h-12 shrink-0 border-l"
       />
     </div>
 
@@ -351,10 +357,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
     >
       <div class="flex h-15 w-fit items-start gap-0.5">
         <template v-for="(asset, aIdx) in visibleHistory" :key="asset.id">
-          <div
-            v-if="aIdx > 0"
-            class="mx-4 h-12 shrink-0 border-l border-border-default"
-          />
+          <div v-if="aIdx > 0" class="mx-4 h-12 shrink-0 border-l" />
           <div
             v-for="(output, key) in toValue(allOutputs(asset))"
             :key

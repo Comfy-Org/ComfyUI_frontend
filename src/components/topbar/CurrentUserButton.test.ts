@@ -1,15 +1,19 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, ref } from 'vue'
+import type { Component } from 'vue'
+import { computed, defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { BalanceInfo } from '@/composables/billing/types'
+import CurrentUserPopoverWorkspace from '@/platform/workspace/components/CurrentUserPopoverWorkspace.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import CurrentUserButton from './CurrentUserButton.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
 
@@ -19,25 +23,17 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-// Mock the useCurrentUser composable
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn(() => ({
-    isLoggedIn: true,
-    userPhotoUrl: 'https://example.com/avatar.jpg',
-    userDisplayName: 'Test User',
-    userEmail: 'test@example.com'
-  }))
-}))
-
-// Mock the UserAvatar component
-vi.mock<unknown>(import('@/components/common/UserAvatar.vue'), () => ({
-  default: {
-    name: 'UserAvatarMock',
-    render() {
-      return h('div', 'Avatar')
-    }
-  }
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
+)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+vi.mock(import('@/composables/billing/useBillingDialogs'))
+vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
+vi.mock(import('@/platform/telemetry'))
 
 // Mock the WorkspaceProfilePic component
 vi.mock<unknown>(
@@ -61,6 +57,7 @@ const CurrentUserPopoverWorkspaceStub = defineComponent({
     return () =>
       h('div', [
         h('span', 'Workspace Popover Content'),
+        h('button', 'Account action'),
         props.accountActionsOnly ? h('span', 'Account Actions Only') : ''
       ])
   }
@@ -90,13 +87,21 @@ vi.mock(import('./CurrentUserPopoverLegacy.vue'), () => ({
 
 describe('CurrentUserButton', () => {
   beforeEach(() => {
+    useCurrentUser().isLoggedIn = computed(() => true)
+    useCurrentUser().userPhotoUrl = computed(
+      () => 'https://example.com/avatar.jpg'
+    )
+    useCurrentUser().userDisplayName = computed(() => 'Test User')
+    useCurrentUser().userEmail = computed(() => 'test@example.com')
     Object.assign(useTeamWorkspaceStore(), { workspaceName: '' })
     useTeamWorkspaceStore().initState = 'uninitialized'
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: false })
     mockIsCloud.value = false
   })
 
-  function renderComponent() {
+  function renderComponent(
+    workspacePopover: Component = CurrentUserPopoverWorkspaceStub
+  ) {
     const user = userEvent.setup()
     const i18n = createI18n({
       legacy: false,
@@ -108,21 +113,10 @@ describe('CurrentUserButton', () => {
       global: {
         plugins: [i18n],
         stubs: {
-          CurrentUserPopoverWorkspace: CurrentUserPopoverWorkspaceStub,
-          Popover: defineComponent({
-            setup(_, { slots, expose }) {
-              const shown = ref(false)
-              expose({
-                toggle: () => {
-                  shown.value = !shown.value
-                },
-                hide: () => {
-                  shown.value = false
-                }
-              })
-              return () => (shown.value ? h('div', slots.default?.()) : null)
-            }
-          })
+          CurrentUserPopoverWorkspace: workspacePopover,
+          WorkspaceSwitcherPopover: true,
+          SubscribeButton: true,
+          DeploymentSwitcher: true
         }
       }
     })
@@ -130,12 +124,51 @@ describe('CurrentUserButton', () => {
     return { user, ...result }
   }
 
-  it('renders correctly when user is logged in', () => {
-    renderComponent()
-    expect(
-      screen.getByRole('button', { name: 'Current user' })
-    ).toBeInTheDocument()
-  })
+  it.for(['personal', 'team'] as const)(
+    'refreshes the %s balance on first opening and reopening the profile menu',
+    async (workspaceType) => {
+      mockIsCloud.value = true
+      const balance = ref<BalanceInfo>({ amountMicros: 100, currency: 'USD' })
+      const billing = useBillingContext()
+      billing.balance = computed(() => balance.value)
+      billing.billingStatus = computed(() => 'paid')
+      billing.canAccessSubscriptionFeatures = computed(() => true)
+      vi.mocked(useBillingContext).mockReturnValue(billing)
+      vi.mocked(billing.fetchBalance)
+        .mockImplementationOnce(async () => {
+          balance.value = { amountMicros: 200, currency: 'USD' }
+        })
+        .mockImplementationOnce(async () => {
+          balance.value = { amountMicros: 75, currency: 'USD' }
+        })
+      useTeamWorkspaceStore().initState = 'ready'
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceName: `${workspaceType} workspace`,
+        isInPersonalWorkspace: workspaceType === 'personal'
+      })
+      const { user } = renderComponent(CurrentUserPopoverWorkspace)
+
+      expect(billing.fetchBalance).not.toHaveBeenCalled()
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      expect(await screen.findByText('422')).toBeInTheDocument()
+      expect(billing.fetchBalance).toHaveBeenCalledOnce()
+
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('credits-info-button')
+        ).not.toBeInTheDocument()
+      )
+      expect(billing.fetchBalance).toHaveBeenCalledOnce()
+
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      expect(await screen.findByText('158')).toBeInTheDocument()
+      expect(billing.fetchBalance).toHaveBeenCalledTimes(2)
+    }
+  )
 
   it('toggles popover on button click', async () => {
     const { user } = renderComponent()
@@ -178,7 +211,10 @@ describe('CurrentUserButton', () => {
     Object.assign(useTeamWorkspaceStore(), { isInPersonalWorkspace: true })
 
     renderComponent()
-    expect(screen.getByText('Avatar')).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: 'User Avatar' })).toHaveAttribute(
+      'src',
+      'https://example.com/avatar.jpg'
+    )
     expect(screen.queryByText('WorkspaceProfilePic')).not.toBeInTheDocument()
   })
 

@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import ToggleGroup from './ToggleGroup.vue'
 import ToggleGroupItem from './ToggleGroupItem.vue'
 
-const meta = {
+const meta: Meta<typeof ToggleGroup> = {
   title: 'Components/ToggleGroup',
   component: ToggleGroup,
   tags: ['autodocs'],
@@ -25,7 +25,7 @@ const meta = {
     },
     'onUpdate:modelValue': { action: 'update:modelValue' }
   }
-} satisfies Meta<typeof ToggleGroup>
+}
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -43,7 +43,7 @@ export const Default: Story = {
         type="single"
         :variant="args.variant"
         :disabled="args.disabled"
-        class="border border-border-default rounded-lg p-1"
+        class="border border-border rounded-lg p-1"
       >
         <ToggleGroupItem value="left">Left</ToggleGroupItem>
         <ToggleGroupItem value="center">Center</ToggleGroupItem>
@@ -68,7 +68,7 @@ export const Disabled: Story = {
       return { value, args }
     },
     template: `
-      <ToggleGroup v-model="value" type="single" disabled class="border border-border-default rounded-lg p-1">
+      <ToggleGroup v-model="value" type="single" disabled class="border border-border rounded-lg p-1">
         <ToggleGroupItem value="off">Off</ToggleGroupItem>
         <ToggleGroupItem value="on">On</ToggleGroupItem>
       </ToggleGroup>
@@ -108,10 +108,10 @@ export const BooleanToggle: Story = {
         <ToggleGroup
           v-model="value"
           type="single"
-          class="w-48 border border-border-default rounded-lg p-1"
+          class="w-48 border border-border rounded-lg p-1"
         >
-          <ToggleGroupItem value="off" size="sm">Outside</ToggleGroupItem>
-          <ToggleGroupItem value="on" size="sm">Inside</ToggleGroupItem>
+          <ToggleGroupItem value="off" size="sm" class="flex-1">Outside</ToggleGroupItem>
+          <ToggleGroupItem value="on" size="sm" class="flex-1">Inside</ToggleGroupItem>
         </ToggleGroup>
         <div class="text-sm">Value: {{ value === 'on' ? true : false }}</div>
       </div>
@@ -133,10 +133,14 @@ export const LongLabels: Story = {
         <ToggleGroup
           v-model="value"
           type="single"
-          class="border border-border-default rounded-lg p-1"
+          class="w-full border border-border rounded-lg p-1"
         >
-          <ToggleGroupItem value="option1" size="sm">Very Long Label One</ToggleGroupItem>
-          <ToggleGroupItem value="option2" size="sm">Another Long Label</ToggleGroupItem>
+          <ToggleGroupItem value="option1" size="sm" class="flex-1">
+            <span class="min-w-0 truncate">Very Long Option Label One</span>
+          </ToggleGroupItem>
+          <ToggleGroupItem value="option2" size="sm" class="flex-1">
+            <span class="min-w-0 truncate">Another Extra Long Option Label</span>
+          </ToggleGroupItem>
         </ToggleGroup>
       </div>
     `
@@ -157,21 +161,21 @@ export const Sizes: Story = {
       <div class="space-y-4">
         <div>
           <p class="text-sm text-muted-foreground mb-2">Small:</p>
-          <ToggleGroup v-model="sm" type="single" class="border border-border-default rounded p-1">
+          <ToggleGroup v-model="sm" type="single" class="border border-border rounded p-1">
             <ToggleGroupItem value="a" size="sm">A</ToggleGroupItem>
             <ToggleGroupItem value="b" size="sm">B</ToggleGroupItem>
           </ToggleGroup>
         </div>
         <div>
           <p class="text-sm text-muted-foreground mb-2">Default:</p>
-          <ToggleGroup v-model="md" type="single" class="border border-border-default rounded-lg p-1">
+          <ToggleGroup v-model="md" type="single" class="border border-border rounded-lg p-1">
             <ToggleGroupItem value="a">A</ToggleGroupItem>
             <ToggleGroupItem value="b">B</ToggleGroupItem>
           </ToggleGroup>
         </div>
         <div>
           <p class="text-sm text-muted-foreground mb-2">Large:</p>
-          <ToggleGroup v-model="lg" type="single" class="border border-border-default rounded-lg p-1">
+          <ToggleGroup v-model="lg" type="single" class="border border-border rounded-lg p-1">
             <ToggleGroupItem value="a" size="lg">A</ToggleGroupItem>
             <ToggleGroupItem value="b" size="lg">B</ToggleGroupItem>
           </ToggleGroup>

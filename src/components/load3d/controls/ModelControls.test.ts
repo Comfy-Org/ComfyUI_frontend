@@ -8,7 +8,7 @@ import ModelControls from '@/components/load3d/controls/ModelControls.vue'
 import type {
   MaterialMode,
   UpDirection
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 
 const i18n = createI18n({
   legacy: false,
@@ -62,8 +62,7 @@ function renderComponent(opts: RenderOpts = {}) {
       hasSkeleton: opts.hasSkeleton ?? false
     },
     global: {
-      plugins: [i18n],
-      directives: { tooltip: () => {} }
+      plugins: [i18n]
     }
   })
 

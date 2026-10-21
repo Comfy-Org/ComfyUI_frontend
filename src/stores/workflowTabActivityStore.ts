@@ -12,7 +12,6 @@ export const useWorkflowTabActivityStore = defineStore(
     const editingTabPath = ref<string | null>(null)
     const creatingTab = ref(false)
     const unseenModifiedPaths = ref<Set<string>>(new Set())
-
     function setEditing(path: string | null): void {
       editingTabPath.value = path
     }

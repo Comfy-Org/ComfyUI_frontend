@@ -30,10 +30,10 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 
-import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
 
-import { GetNodeParentGroupKey } from '../shared'
+import { GetNodeParentGroupKey } from '@/components/rightSidePanel/shared'
 import WidgetItem from './WidgetItem.vue'
 import { getStableWidgetRenderKey } from '@/core/graph/subgraph/widgetRenderKey'
 
@@ -89,36 +89,15 @@ function setDraggableState() {
   const list = new DraggableList(container, '.draggable-item')
 
   list.applyNewItemsOrder = function () {
-    const reorderedItems: HTMLElement[] = []
-
-    let oldPosition = -1
-    this.getAllItems().forEach((item, index) => {
-      if (item === this.draggableItem) {
-        oldPosition = index
-        return
-      }
-      if (!this.isItemToggled(item)) {
-        reorderedItems[index] = item
-        return
-      }
-      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
-      reorderedItems[newIndex] = item
-    })
+    if (!this.draggableItem) return
+    const { items, oldPosition } = this.getReorderedItems(this.draggableItem)
 
     if (oldPosition === -1) {
       console.error('[SectionWidgets] draggableItem not found in items')
       return
     }
 
-    for (let index = 0; index < this.getAllItems().length; index++) {
-      if (typeof reorderedItems[index] === 'undefined') {
-        reorderedItems[index] = this.draggableItem as HTMLElement
-      }
-    }
-
-    const newPosition = reorderedItems.indexOf(
-      this.draggableItem as HTMLElement
-    )
+    const newPosition = items.indexOf(this.draggableItem)
 
     emit('reorder', { fromIndex: oldPosition, toIndex: newPosition })
   }
@@ -318,16 +297,9 @@ defineExpose({
           <span class="flex min-w-0 flex-1 items-center gap-2">
             <i
               v-if="nodeHasError"
-              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive-background-hover"
+              class="icon-[lucide--octagon-alert] size-4 shrink-0 text-destructive"
             />
-            <span
-              :class="
-                cn(
-                  'truncate',
-                  nodeHasError && 'text-destructive-background-hover'
-                )
-              "
-            >
+            <span :class="cn('truncate', nodeHasError && 'text-destructive')">
               <slot name="label">
                 {{ displayLabel }}
               </slot>
@@ -353,7 +325,7 @@ defineExpose({
             v-if="!isEmpty"
             variant="muted-textonly"
             size="icon-sm"
-            class="subbutton size-8 shrink-0 hover:text-base-foreground"
+            class="subbutton size-8 shrink-0 hover:text-foreground"
             :title="t('rightSidePanel.resetAllParameters')"
             :aria-label="t('rightSidePanel.resetAllParameters')"
             @click.stop="handleResetAllWidgets"
@@ -364,7 +336,7 @@ defineExpose({
             v-if="canShowLocateButton"
             variant="muted-textonly"
             size="icon-sm"
-            class="subbutton mr-3 size-8 shrink-0 hover:text-base-foreground"
+            class="subbutton mr-3 size-8 shrink-0 hover:text-foreground"
             :title="t('rightSidePanel.locateNode')"
             :aria-label="t('rightSidePanel.locateNode')"
             @click.stop="handleLocateNode"

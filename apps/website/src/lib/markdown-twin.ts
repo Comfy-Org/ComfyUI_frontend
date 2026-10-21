@@ -29,7 +29,6 @@ const DROPPED_TAGS = new Set([
   'FORM',
   'NAV',
   'FOOTER',
-  'HEADER',
   'DIALOG',
   'SOURCE',
   'TRACK'
@@ -46,6 +45,7 @@ const BLOCK_TAGS = new Set([
   'DT',
   'FIGCAPTION',
   'FIGURE',
+  'HEADER',
   'MAIN',
   'P',
   'SECTION',
@@ -82,10 +82,20 @@ function tag(element: Element): string {
   return element.tagName.toUpperCase()
 }
 
+/** HTML-AAM: a header outside main, article, aside and section is the site banner. */
+function isBanner(element: Element): boolean {
+  return (
+    tag(element) === 'HEADER' &&
+    element.closest('main, article, aside, section') === null
+  )
+}
+
 function isDropped(element: Element): boolean {
   return (
     DROPPED_TAGS.has(tag(element)) ||
-    element.getAttribute('aria-hidden') === 'true'
+    isBanner(element) ||
+    element.getAttribute('aria-hidden') === 'true' ||
+    element.hasAttribute('data-twin-omit')
   )
 }
 

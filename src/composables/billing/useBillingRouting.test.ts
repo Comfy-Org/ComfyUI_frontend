@@ -8,25 +8,12 @@ import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingRouting } from './useBillingRouting'
 
-const { mockIsCloud, mockLegacyBillingMigrationEnabled } = vi.hoisted(() => ({
-  mockIsCloud: { value: true },
-  mockLegacyBillingMigrationEnabled: { value: false }
-}))
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
 let mockActiveWorkspace: Ref<
   ReturnType<typeof useTeamWorkspaceStore>['activeWorkspace']
 >
 let mockActiveWorkspaceBillingRail: Ref<BillingRail | null>
-
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get legacyBillingMigrationEnabled() {
-        return mockLegacyBillingMigrationEnabled.value
-      }
-    }
-  })
-}))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -47,18 +34,17 @@ describe('useBillingRouting', () => {
     mockActiveWorkspace = refs.activeWorkspace
     mockActiveWorkspaceBillingRail = refs.activeWorkspaceBillingRail
     mockIsCloud.value = true
-    mockLegacyBillingMigrationEnabled.value = false
     mockActiveWorkspace.value = personal
     mockActiveWorkspaceBillingRail.value = null
   })
 
-  it('uses legacy billing off Cloud until a workspace context loads', () => {
+  it('is unknown off Cloud until a workspace context loads', () => {
     mockIsCloud.value = false
     mockActiveWorkspace.value = null
 
     const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
-    expect(type.value).toBe('legacy')
+    expect(type.value).toBe('unknown')
     expect(shouldUseWorkspaceBilling.value).toBe(false)
   })
 
@@ -90,25 +76,18 @@ describe('useBillingRouting', () => {
     expect(shouldUseUnifiedPricing.value).toBe(true)
   })
 
-  it('migrates legacy Stripe personal workspaces behind the rollout flag', () => {
-    mockLegacyBillingMigrationEnabled.value = true
-    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
+  it.for(['stripe', 'metronome'] as const)(
+    'uses workspace billing for personal workspaces on %s',
+    (rail) => {
+      mockActiveWorkspace.value = personal
+      mockActiveWorkspaceBillingRail.value = rail
 
-    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
+      const { type, shouldUseWorkspaceBilling } = useBillingRouting()
 
-    expect(type.value).toBe('workspace')
-    expect(shouldUseWorkspaceBilling.value).toBe(true)
-  })
-
-  it('uses workspace billing for migrated Stripe personal workspaces', () => {
-    mockActiveWorkspace.value = personal
-    mockActiveWorkspaceBillingRail.value = 'stripe'
-
-    const { type, shouldUseWorkspaceBilling } = useBillingRouting()
-
-    expect(type.value).toBe('workspace')
-    expect(shouldUseWorkspaceBilling.value).toBe(true)
-  })
+      expect(type.value).toBe('workspace')
+      expect(shouldUseWorkspaceBilling.value).toBe(true)
+    }
+  )
 
   it('uses workspace billing for team workspaces', () => {
     mockActiveWorkspace.value = team
@@ -120,11 +99,20 @@ describe('useBillingRouting', () => {
     expect(shouldUseWorkspaceBilling.value).toBe(true)
   })
 
-  it('defaults to legacy while the workspace has not loaded', () => {
+  it('is unknown while the workspace has not loaded, then resolves', () => {
     mockActiveWorkspace.value = null
 
     const { type } = useBillingRouting()
+    expect(type.value).toBe('unknown')
 
+    mockActiveWorkspaceBillingRail.value = 'legacy_stripe'
+    mockActiveWorkspace.value = personal
     expect(type.value).toBe('legacy')
+
+    mockActiveWorkspace.value = null
+    expect(type.value).toBe('unknown')
+
+    mockActiveWorkspace.value = team
+    expect(type.value).toBe('workspace')
   })
 })

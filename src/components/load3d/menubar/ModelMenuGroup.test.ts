@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
-import type { ModelConfig } from '@/extensions/core/load3d/interfaces'
+import type { ModelConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const i18n = createI18n({
@@ -27,12 +27,28 @@ function renderGroup(
 ) {
   const result = render(ModelMenuGroup, {
     props: { config: makeConfig(), ...props },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+    global: { plugins: [i18n] }
   })
   return { ...result, user: userEvent.setup() }
 }
 
 describe('ModelMenuGroup', () => {
+  it.for([
+    { trigger: 'Up Direction', selected: 'ORIGINAL' },
+    { trigger: 'Material', selected: 'Original' }
+  ])(
+    'marks the selected $trigger option semantically',
+    async ({ trigger, selected }) => {
+      const { user } = renderGroup()
+
+      await user.click(screen.getByRole('button', { name: trigger }))
+
+      const option = screen.getByRole('button', { name: selected })
+      expect(option).toHaveAttribute('aria-pressed', 'true')
+      expect(option).toHaveClass('bg-muted')
+    }
+  )
+
   it('sets the up direction from the popover', async () => {
     const config = makeConfig()
     const { user } = renderGroup({ config })

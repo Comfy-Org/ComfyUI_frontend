@@ -1,19 +1,25 @@
 import type { Page } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import {
+  mockDeploymentRolloutRefusal,
+  mockWorkspace,
+  workspace
+} from '@e2e/fixtures/utils/workspaceMocks'
 
 interface CloudBootOptions {
   /** Remote-config payload for `/api/features` (enables the flags under test). */
   features: RemoteConfig
   /** Body for `/api/settings` (defaults to `{}`). */
   settings?: unknown
-  /** `'server'` lets `/api/object_info` reach the backend so real node definitions load. */
-  objectInfo?: 'server'
+  /** Exact deterministic definitions, or `'server'` to opt into the backend catalog. */
+  objectInfo?: 'server' | Record<string, ComfyNodeDef>
 }
 
 /**
@@ -25,7 +31,12 @@ export async function mockCloudBootRoutes(
   page: Page,
   { features, settings = {}, objectInfo }: CloudBootOptions
 ) {
+  await mockDeploymentRolloutRefusal(page)
   await page.route('**/api/features', (r) => r.fulfill(jsonRoute(features)))
+  if (features['agent-in-app-experience'] === true)
+    await new FeatureFlagHelper(page).seedServerFlags({
+      agent: { state: 'ready' }
+    })
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
@@ -41,7 +52,11 @@ export async function mockCloudBootRoutes(
   await page.route('**/api/settings', (r) => r.fulfill(jsonRoute(settings)))
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  if (objectInfo !== 'server')
+  if (objectInfo && objectInfo !== 'server') {
+    await page.route('**/api/object_info', (route) =>
+      route.fulfill(jsonRoute(objectInfo))
+    )
+  } else if (objectInfo !== 'server')
     await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
@@ -65,6 +80,17 @@ export async function mockCloudBoot(page: Page, options: CloudBootOptions) {
 }
 
 /**
+ * Pre-selects the multi-user server profile so the post-auth root guard lands
+ * on the app instead of `/user-select`. Both the signed-in `bootCloud` and the
+ * signed-out onboarding fixtures need it once a spec authenticates.
+ */
+export async function preselectCloudUser(page: Page) {
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.userId', 'test-user-e2e')
+  })
+}
+
+/**
  * Mock Firebase auth and pre-select the e2e user so the cloud app boots
  * signed-in. The signed-in email (`CLOUD_SELF_EMAIL`) is what the
  * original-owner gate matches against the members self-row.
@@ -72,7 +98,5 @@ export async function mockCloudBoot(page: Page, options: CloudBootOptions) {
 export async function bootCloud(page: Page) {
   const auth = new CloudAuthHelper(page)
   await auth.mockAuth()
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.userId', 'test-user-e2e')
-  })
+  await preselectCloudUser(page)
 }

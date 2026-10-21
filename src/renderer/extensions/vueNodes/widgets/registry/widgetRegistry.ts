@@ -5,49 +5,64 @@ import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
 const WidgetButton = defineAsyncComponent(
-  () => import('../components/WidgetButton.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetButton.vue')
 )
 const WidgetInputText = defineAsyncComponent(
-  () => import('../components/WidgetInputText.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetInputText.vue')
 )
 const WidgetInputNumber = defineAsyncComponent(
-  () => import('../components/WidgetInputNumber.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumber.vue')
 )
 const WidgetToggleSwitch = defineAsyncComponent(
-  () => import('../components/WidgetToggleSwitch.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetToggleSwitch.vue')
 )
 const WidgetSelect = defineAsyncComponent(
-  () => import('../components/WidgetSelect.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue')
 )
 const WidgetColorPicker = defineAsyncComponent(
-  () => import('../components/WidgetColorPicker.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetColorPicker.vue')
 )
 const WidgetTextarea = defineAsyncComponent(
-  () => import('../components/WidgetTextarea.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetTextarea.vue')
 )
 const WidgetChart = defineAsyncComponent(
-  () => import('../components/WidgetChart.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetChart.vue')
 )
 const WidgetImageCompare = defineAsyncComponent(
-  () => import('../components/WidgetImageCompare.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetImageCompare.vue')
 )
 const WidgetGalleria = defineAsyncComponent(
-  () => import('../components/WidgetGalleria.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetGalleria.vue')
 )
 const WidgetMarkdown = defineAsyncComponent(
-  () => import('../components/WidgetMarkdown.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetMarkdown.vue')
 )
 const WidgetTextPreview = defineAsyncComponent(
-  () => import('../components/WidgetTextPreview.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue')
 )
 const WidgetLegacy = defineAsyncComponent(
-  () => import('../components/WidgetLegacy.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue')
 )
 const WidgetRecordAudio = defineAsyncComponent(
-  () => import('../components/WidgetRecordAudio.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetRecordAudio.vue')
 )
 const AudioPreviewPlayer = defineAsyncComponent(
-  () => import('../components/audio/AudioPreviewPlayer.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/audio/AudioPreviewPlayer.vue')
 )
 const Load3D = defineAsyncComponent(
   () => import('@/components/load3d/Load3D.vue')
@@ -57,6 +72,12 @@ const Load3DAdvanced = defineAsyncComponent(
 )
 const CameraInfo = defineAsyncComponent(
   () => import('@/components/cameraInfo/CameraInfo.vue')
+)
+const CameraAngle = defineAsyncComponent(
+  () => import('@/components/cameraAngle/CameraAngle.vue')
+)
+const LightInfo = defineAsyncComponent(
+  () => import('@/components/lightInfo/LightInfo.vue')
 )
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
@@ -87,7 +108,8 @@ const WidgetColors = defineAsyncComponent(
   () => import('@/components/palette/WidgetColors.vue')
 )
 const WidgetResolutionPreview = defineAsyncComponent(
-  () => import('../components/WidgetResolutionPreview.vue')
+  () =>
+    import('@/renderer/extensions/vueNodes/widgets/components/WidgetResolutionPreview.vue')
 )
 
 export const FOR_TESTING = {
@@ -108,6 +130,17 @@ interface WidgetDefinition {
 }
 
 const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
+  [
+    'dynamic_group_row',
+    {
+      component: defineAsyncComponent(
+        () =>
+          import('@/renderer/extensions/vueNodes/widgets/components/WidgetDynamicGroupRow.vue')
+      ),
+      aliases: [],
+      essential: false
+    }
+  ],
   [
     'button',
     { component: WidgetButton, aliases: ['BUTTON'], essential: false }
@@ -213,6 +246,22 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
     {
       component: CameraInfo,
       aliases: ['CAMERA_INFO_STATE'],
+      essential: false
+    }
+  ],
+  [
+    'cameraAngle',
+    {
+      component: CameraAngle,
+      aliases: ['CAMERA_ANGLE_VIEW'],
+      essential: false
+    }
+  ],
+  [
+    'lightinfo',
+    {
+      component: LightInfo,
+      aliases: ['LIGHT_INFO_PREVIEW', 'lightInfo'],
       essential: false
     }
   ],
@@ -329,6 +378,8 @@ const EXPANDING_TYPES = [
   'load3D',
   'load3DAdvanced',
   'cameraInfo',
+  'cameraAngle',
+  'lightinfo',
   'curve',
   'painter',
   'compositor',

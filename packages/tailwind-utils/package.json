@@ -2,14 +2,25 @@
   "name": "@comfyorg/tailwind-utils",
   "version": "1.0.0",
   "description": "Shared Tailwind CSS utilities for ComfyUI Frontend",
+  "files": [
+    "src",
+    "dist-types/**/*.d.ts"
+  ],
   "type": "module",
   "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "types": "./dist-types/index.d.ts",
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist-types/index.d.ts",
+      "default": "./src/index.ts"
+    }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "format": "oxfmt --write",
+    "format:check": "oxfmt --check",
+    "typecheck": "tsx ../../scripts/vue-tsc-native.ts --noEmit",
+    "build": "tsc -b tsconfig.declarations.json",
+    "prepack": "pnpm build"
   },
   "dependencies": {
     "clsx": "^2.1.1",

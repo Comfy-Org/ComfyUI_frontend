@@ -1,0 +1,153 @@
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LLink,
+  Reroute,
+  SubgraphInputNode,
+  SubgraphOutputNode
+} from '@/lib/litegraph/src/types/entityRegistry'
+
+import type {
+  LinkSegment,
+  Point,
+  Positionable
+} from '@/lib/litegraph/src/interfaces'
+import { isInRectangle } from '@/lib/litegraph/src/measure'
+
+import {
+  LinkMarkerShape,
+  LinkRenderType
+} from '@/lib/litegraph/src/types/globalEnums'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import {
+  findRerouteAtPoint,
+  queryRenderedLinkSegmentsAtPoint
+} from './hitTesting'
+import {
+  queryHiddenLinkBadgeAtPoint,
+  queryHiddenLinkStackAtPoint
+} from './linkBadgeRenderer'
+
+export type PointerTarget =
+  | { kind: 'node'; node: LGraphNode }
+  | { kind: 'linkBadge'; link: LLink }
+  | { kind: 'linkBadgeStack'; stackKey: string }
+  | { kind: 'subgraphIO'; ioNode: SubgraphInputNode | SubgraphOutputNode }
+  | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
+  | { kind: 'link'; segment: LinkSegment }
+  | { kind: 'linkCentre'; segment: LinkSegment }
+  | { kind: 'groupResize'; group: LGraphGroup }
+  | { kind: 'groupTitle'; group: LGraphGroup }
+  | { kind: 'group'; group: LGraphGroup }
+  | { kind: 'empty' }
+
+export function resolvePointerTarget(
+  canvas: LGraphCanvas,
+  graph: LGraph,
+  e: CanvasPointerEvent,
+  node: LGraphNode | undefined
+): PointerTarget {
+  if (node && (canvas.allow_interaction || node.flags.allow_interaction))
+    return { kind: 'node', node }
+
+  const point: Point = [e.canvasX, e.canvasY]
+
+  const stack = queryHiddenLinkStackAtPoint(canvas, graph, ...point)
+  if (stack) return { kind: 'linkBadgeStack', stackKey: stack.stackKey }
+
+  const badgeLink = queryHiddenLinkBadgeAtPoint(
+    canvas,
+    graph,
+    point[0],
+    point[1]
+  )
+  if (badgeLink) return { kind: 'linkBadge', link: badgeLink }
+
+  const ioNode = canvas.subgraph?.getIoNodeOnPos(point[0], point[1])
+  if (ioNode) return { kind: 'subgraphIO', ioNode }
+
+  if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
+    const reroute = findReroute(canvas, graph, point)
+    if (reroute) return reroute
+  }
+
+  const link = findLinkSegment(canvas, e, point)
+  if (link) return link
+
+  const group = graph.getGroupOnPos(point[0], point[1])
+  if (!group) return { kind: 'empty' }
+  if (group.isInResize(point[0], point[1]))
+    return { kind: 'groupResize', group }
+  const inTitle = group.isPointInTitlebar(point[0], point[1])
+  return { kind: inTitle ? 'groupTitle' : 'group', group }
+}
+
+function findReroute(
+  canvas: LGraphCanvas,
+  graph: LGraph,
+  point: Point
+): PointerTarget | undefined {
+  const body = findRerouteAtPoint(
+    graph,
+    point[0],
+    point[1],
+    canvas._visibleReroutes,
+    canvas.renderedPaths
+  )
+  if (body) return { kind: 'reroute', reroute: body, part: 'body' }
+
+  for (const reroute of canvas._visibleReroutes) {
+    if (reroute.isOutputHovered)
+      return { kind: 'reroute', reroute, part: 'output' }
+    if (reroute.isInputHovered)
+      return { kind: 'reroute', reroute, part: 'input' }
+  }
+}
+
+function findLinkSegment(
+  canvas: LGraphCanvas,
+  e: CanvasPointerEvent,
+  [x, y]: Point
+): PointerTarget | undefined {
+  const hits = queryRenderedLinkSegmentsAtPoint(canvas, x, y)
+  const anyModifier = e.shiftKey || e.altKey
+  const oneModifier = e.shiftKey !== e.altKey
+  const showsCentre = canvas.linkMarkerShape !== LinkMarkerShape.None
+
+  for (const segment of canvas.renderedPaths) {
+    const centre = segment._pos
+
+    if (anyModifier && hits.has(segment)) {
+      if (oneModifier) return { kind: 'link', segment }
+      continue
+    }
+
+    if (showsCentre && isInRectangle(x, y, centre[0] - 4, centre[1] - 4, 8, 8))
+      return { kind: 'linkCentre', segment }
+  }
+}
+
+export function resolveSelectableTarget(
+  canvas: LGraphCanvas,
+  graph: LGraph,
+  x: number,
+  y: number
+): Positionable | undefined {
+  const ioNode = canvas.subgraph?.getIoNodeOnPos(x, y)
+  if (ioNode) return ioNode
+
+  if (canvas.links_render_mode !== LinkRenderType.HIDDEN_LINK) {
+    const reroute = findRerouteAtPoint(
+      graph,
+      x,
+      y,
+      canvas._visibleReroutes,
+      canvas.renderedPaths
+    )
+    if (reroute) return reroute
+  }
+
+  return graph.getGroupTitlebarOnPos(x, y)
+}

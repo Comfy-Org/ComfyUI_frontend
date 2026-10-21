@@ -1,6 +1,6 @@
 <template>
   <div
-    class="dark-theme flex h-svh w-screen items-center bg-primary-comfy-ink font-formula text-primary-comfy-canvas"
+    class="flex h-svh w-screen items-center bg-primary-comfy-ink font-formula text-primary-comfy-canvas"
   >
     <div class="mx-auto flex size-full max-h-248 max-w-[100rem]">
       <div v-if="showHero" class="relative min-h-0 flex-1 overflow-hidden">
@@ -37,11 +37,13 @@ import { useRoute } from 'vue-router'
 import CloudHeroCarousel from '@/platform/cloud/onboarding/components/CloudHeroCarousel.vue'
 import CloudTemplateFooter from '@/platform/cloud/onboarding/components/CloudTemplateFooter.vue'
 import CloudTermsNotice from '@/platform/cloud/onboarding/components/CloudTermsNotice.vue'
+import { useDocumentDarkTheme } from '@/platform/cloud/onboarding/composables/useDocumentDarkTheme'
 
-import '../assets/css/fonts.css'
+import '@/platform/cloud/onboarding/assets/css/fonts.css'
 
 const { t } = useI18n()
 const route = useRoute()
+useDocumentDarkTheme()
 const isWideViewport = useBreakpoints(breakpointsTailwind).greaterOrEqual('xl')
 const showHero = computed(() => isWideViewport.value && !route.meta.hideHero)
 </script>

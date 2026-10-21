@@ -1,9 +1,14 @@
+import type {
+  LGraphGroup,
+  LGraphNode,
+  LinkReleaseContextExtended
+} from '@/lib/litegraph/src/types/entityRegistry'
 /**
  * Event interfaces for event extension
  */
-import type { LGraphGroup } from '../LGraphGroup'
-import type { LGraphNode } from '../LGraphNode'
-import type { LinkReleaseContextExtended } from '../litegraph'
+
+import type { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
+import type { HasBoundingRect, Point } from '@/lib/litegraph/src/interfaces'
 
 /** For Canvas*Event - adds graph space co-ordinates (property names are shipped) */
 interface ICanvasPosition {
@@ -80,4 +85,18 @@ interface GroupDoubleClickEventDetail extends OriginalEvent {
 interface NodeDoubleClickEventDetail extends OriginalEvent {
   subType: 'node-double-click'
   node: LGraphNode
+}
+
+/**
+ * An object that can be hovered over.
+ */
+export interface Hoverable extends HasBoundingRect {
+  readonly boundingRect: Rectangle
+  isPointerOver: boolean
+
+  containsPoint(point: Point): boolean
+
+  onPointerMove(e: CanvasPointerEvent): void
+  onPointerEnter?(e?: CanvasPointerEvent): void
+  onPointerLeave?(e?: CanvasPointerEvent): void
 }

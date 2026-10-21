@@ -18,6 +18,11 @@ runs:
       run: pnpm build:cloud
       env:
         VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+        # A reserved origin the e2e suite stubs, so the hosted billing
+        # destination has somewhere to mint to. Reachable only when the server
+        # flag says billing_web, which no deployment default does.
+        # browser_tests/tests/dialogs/hostedBillingDestination.spec.ts pins it.
+        VITE_BILLING_WEB_URL: 'https://billing-web.example'
 
     - name: Verify cloud frontend
       shell: bash

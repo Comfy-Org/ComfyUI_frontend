@@ -6,7 +6,7 @@
     @pointerup.stop
   >
     <div
-      class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-node-component-surface"
+      class="flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg bg-node"
     >
       <div
         class="relative max-h-full w-full"
@@ -43,7 +43,7 @@
 
     <div
       v-if="isImageInputConnected"
-      class="text-center text-xs text-muted-foreground"
+      class="text-center text-muted-foreground"
       data-testid="painter-dimension-text"
     >
       {{ canvasWidth }} x {{ canvasHeight }}
@@ -63,9 +63,7 @@
       >
         {{ $t('painter.tool') }}
       </div>
-      <div
-        class="flex h-8 items-center gap-1 rounded-sm bg-component-node-widget-background p-1"
-      >
+      <div class="flex h-8 items-center gap-1 rounded-sm bg-input p-1">
         <Button
           variant="textonly"
           size="unset"
@@ -73,8 +71,8 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               tool === PAINTER_TOOLS.BRUSH
-                ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
-                : 'text-node-text-muted hover:text-node-text'
+                ? 'rounded-sm bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )
           "
           @click="tool = PAINTER_TOOLS.BRUSH"
@@ -88,8 +86,8 @@
             cn(
               'flex-1 self-stretch px-2 text-xs transition-colors',
               tool === PAINTER_TOOLS.ERASER
-                ? 'rounded-sm bg-component-node-widget-background-selected text-base-foreground'
-                : 'text-node-text-muted hover:text-node-text'
+                ? 'rounded-sm bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground'
             )
           "
           @click="tool = PAINTER_TOOLS.ERASER"
@@ -104,7 +102,7 @@
         {{ $t('painter.size') }}
       </div>
       <div
-        class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+        class="flex h-8 items-center gap-2 rounded-lg bg-input pr-2 pl-3"
         data-testid="painter-size-row"
       >
         <Slider
@@ -116,7 +114,7 @@
           @update:model-value="(v) => v?.length && (brushSize = v[0])"
         />
         <span
-          class="text-node-text-muted w-8 text-center text-xs"
+          class="w-8 text-center text-muted-foreground"
           data-testid="painter-size-value"
         >
           {{ brushSize }}
@@ -130,7 +128,7 @@
           {{ $t('painter.color') }}
         </div>
         <div
-          class="flex h-8 w-full items-center gap-2 rounded-lg bg-component-node-widget-background px-4"
+          class="flex h-8 w-full items-center gap-2 rounded-lg bg-input px-4"
           data-testid="painter-color-row"
         >
           <input
@@ -141,17 +139,15 @@
               (e) => (brushColorDisplay = (e.target as HTMLInputElement).value)
             "
           />
-          <span class="min-w-[4ch] truncate text-xs">{{
-            brushColorDisplay
-          }}</span>
-          <span class="text-node-text-muted ml-auto flex items-center text-xs">
+          <span class="min-w-[4ch] truncate">{{ brushColorDisplay }}</span>
+          <span class="ml-auto flex items-center text-muted-foreground">
             <input
               type="number"
               :value="brushOpacityPercent"
               min="0"
               max="100"
               step="1"
-              class="text-node-text-muted w-7 appearance-none border-0 bg-transparent text-right text-xs outline-none [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              class="w-7 appearance-none border-0 bg-transparent text-right outline-none [-moz-appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
               @click.stop
               @change="
                 (e) => {
@@ -173,7 +169,7 @@
           {{ $t('painter.hardness') }}
         </div>
         <div
-          class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+          class="flex h-8 items-center gap-2 rounded-lg bg-input pr-2 pl-3"
           data-testid="painter-hardness-row"
         >
           <Slider
@@ -187,7 +183,7 @@
             "
           />
           <span
-            class="text-node-text-muted w-8 text-center text-xs"
+            class="w-8 text-center text-muted-foreground"
             data-testid="painter-hardness-value"
             >{{ brushHardnessPercent }}%</span
           >
@@ -201,7 +197,7 @@
           {{ $t('painter.width') }}
         </div>
         <div
-          class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+          class="flex h-8 items-center gap-2 rounded-lg bg-input pr-2 pl-3"
           data-testid="painter-width-row"
         >
           <Slider
@@ -212,7 +208,7 @@
             class="flex-1"
             @update:model-value="(v) => v?.length && (canvasWidth = v[0])"
           />
-          <span class="text-node-text-muted w-10 text-center text-xs">{{
+          <span class="w-10 text-center text-muted-foreground">{{
             canvasWidth
           }}</span>
         </div>
@@ -223,7 +219,7 @@
           {{ $t('painter.height') }}
         </div>
         <div
-          class="flex h-8 items-center gap-2 rounded-lg bg-component-node-widget-background pr-2 pl-3"
+          class="flex h-8 items-center gap-2 rounded-lg bg-input pr-2 pl-3"
           data-testid="painter-height-row"
         >
           <Slider
@@ -234,7 +230,7 @@
             class="flex-1"
             @update:model-value="(v) => v?.length && (canvasHeight = v[0])"
           />
-          <span class="text-node-text-muted w-10 text-center text-xs">{{
+          <span class="w-10 text-center text-muted-foreground">{{
             canvasHeight
           }}</span>
         </div>
@@ -245,7 +241,7 @@
           {{ $t('painter.background') }}
         </div>
         <div
-          class="flex h-8 w-full items-center gap-2 rounded-lg bg-component-node-widget-background px-4"
+          class="flex h-8 w-full items-center gap-2 rounded-lg bg-input px-4"
           data-testid="painter-bg-color-row"
         >
           <input
@@ -257,9 +253,7 @@
                 (backgroundColorDisplay = (e.target as HTMLInputElement).value)
             "
           />
-          <span class="min-w-[4ch] truncate text-xs">{{
-            backgroundColorDisplay
-          }}</span>
+          <span class="min-w-[4ch] truncate">{{ backgroundColorDisplay }}</span>
         </div>
       </template>
 
@@ -269,7 +263,7 @@
         data-testid="painter-clear-button"
         :class="
           cn(
-            'gap-2 rounded-lg border border-component-node-border bg-component-node-background text-xs text-muted-foreground hover:text-base-foreground',
+            'gap-2 rounded-lg border border-node-border bg-node text-muted-foreground hover:text-foreground',
             !compact && 'col-span-2'
           )
         "

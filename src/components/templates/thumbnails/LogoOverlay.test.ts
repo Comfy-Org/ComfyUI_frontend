@@ -111,8 +111,10 @@ describe('LogoOverlay', () => {
     const extraLabel = extras.getAttribute('aria-label') ?? ''
     expect(extraLabel).toMatch(/,/)
 
-    await user.click(extras)
-    expect(await screen.findAllByText(extraLabel)).not.toHaveLength(0)
+    await user.pointer({ keys: '[TouchA]', target: extras })
+    expect(await screen.findByTestId('tooltip-content')).toHaveTextContent(
+      extraLabel
+    )
   })
 
   it('keeps the pill visible when its only image fails but an icon remains', async () => {

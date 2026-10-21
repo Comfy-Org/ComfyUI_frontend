@@ -1,12 +1,12 @@
 import { computed, ref } from 'vue'
 
-import type { TaskItemImpl } from '../../stores/queueStore'
+import type { TaskItemImpl } from '@/stores/queueStore'
 import type {
   JobGroup,
   JobListItem,
   JobSortMode,
   JobTab
-} from '../../composables/queue/useJobList'
+} from '@/composables/queue/useJobList'
 
 const jobItems = ref<JobListItem[]>([])
 
@@ -22,7 +22,6 @@ function buildGroupedJobItems(): JobGroup[] {
 
 const groupedJobItems = computed<JobGroup[]>(buildGroupedJobItems)
 
-export const jobTabs = ['All', 'Completed', 'Failed'] as const
 export const jobSortModes = ['mostRecent', 'totalGenerationTime'] as const
 
 const selectedJobTab = ref<JobTab>('All')

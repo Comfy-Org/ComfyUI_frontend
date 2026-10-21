@@ -3,7 +3,10 @@ import { normalizeEmail } from '@/platform/telemetry/utils/normalizeEmail'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
-import type { PageViewMetadata, TelemetryProvider } from '../../types'
+import type {
+  PageViewMetadata,
+  TelemetryProvider
+} from '@/platform/telemetry/types'
 
 const IMPACT_SCRIPT_URL =
   'https://utt.impactcdn.com/A6951770-3747-434a-9ac7-4e582e67d91f1.js'
@@ -115,6 +118,14 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
         customerId: stores.authStore.currentUser.uid,
         customerEmail:
           stores.authStore.currentUser.email ?? EMPTY_CUSTOMER_VALUE
+      }
+    }
+
+    const { sessionOnlyUser } = stores.authStore
+    if (sessionOnlyUser) {
+      return {
+        customerId: sessionOnlyUser.id,
+        customerEmail: sessionOnlyUser.email
       }
     }
 

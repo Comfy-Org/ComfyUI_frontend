@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 
@@ -67,7 +67,7 @@ describe('legacy slot link compatibility', () => {
     const { source, targets } = fanOut(3)
     const view = source.outputs[0].links!
 
-    for (const id of [...view]) view.splice(view.indexOf(id), 1)
+    for (const id of Array.from(view)) view.splice(view.indexOf(id), 1)
 
     for (const [index, target] of targets.entries()) {
       expect(target.isInputConnected(0), `target ${index}`).toBe(false)
@@ -205,8 +205,6 @@ describe('comfyui-promptchain indexed slot replacement', () => {
   })
 
   it('keeps the input layout when the endpoint batch is rejected', () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     const forced = autogrowChain(4, [0, 1, 2])
     const layoutBefore = forced.target.inputs.map((input) => input.name)
     vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
@@ -215,10 +213,13 @@ describe('comfyui-promptchain indexed slot replacement', () => {
     })
     forced.target.removeInput(0)
 
-    expect(consoleError).toHaveBeenCalledWith('Failed to replace node inputs', {
-      code: 'occupied-target',
-      message: 'forced'
-    })
+    expect(console.error).toHaveBeenCalledWith(
+      'Failed to replace node inputs',
+      {
+        code: 'occupied-target',
+        message: 'forced'
+      }
+    )
     expect(forced.target.inputs.map((input) => input.name)).toEqual(
       layoutBefore
     )

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="renderError" class="node-error p-2 text-sm text-red-500">
+  <div v-if="renderError" class="node-error p-2 text-sm text-destructive">
     {{ st('nodeErrors.content', 'Node Content Error') }}
   </div>
   <div
@@ -23,7 +23,8 @@
         v-else-if="hasMedia && media?.type === 'image'"
         :image-urls="media.urls"
         :node-id="nodeId"
-        class="mt-2 flex-auto"
+        class="flex-auto"
+        :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
       />
     </slot>
   </div>
@@ -36,9 +37,10 @@ import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 
-import VideoPreview from '../VideoPreview.vue'
+import VideoPreview from '@/renderer/extensions/vueNodes/VideoPreview.vue'
 import AudioPreview from './AudioPreview.vue'
 import ImagePreview from './ImagePreview.vue'
+import { IMAGE_PREVIEW_MARGIN_TOP } from './imagePreviewLayout'
 
 interface NodeContentProps {
   nodeData?: NodeState

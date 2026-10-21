@@ -1,26 +1,26 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
+import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  ExecutableNodeDTO,
+  LGraph,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
-vi.mock(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  useElementSize: vi.fn(() => ({
-    width: ref(512),
-    height: ref(512),
-    stop: vi.fn()
-  }))
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
 vi.mock<unknown>(import('@/composables/maskeditor/StrokeProcessor'), () => ({
   StrokeProcessor: vi.fn(() => ({
@@ -33,22 +33,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
-    fetchApi: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-const fixture = vi.hoisted((): { node: LGraphNode | null } => ({ node: null }))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    nodeOutputs: {},
-    nodePreviewImages: {},
-    canvas: { graph: { getNodeById: () => fixture.node } }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
@@ -77,13 +64,22 @@ function makePaintNode(widgets: PaintWidgetSpec[] = []) {
   }
   node.isInputConnected = mockIsInputConnected
   node.getInputNode = mockGetInputNode
-  fixture.node = node
+  const rootGraph = app.canvas.graph
+  if (!(rootGraph instanceof LGraph)) throw new Error('Expected a root graph')
+  vi.spyOn(rootGraph, 'getNodeById').mockReturnValue(node)
   return { node, callbacks }
 }
 
 function paintNode(): LGraphNode {
-  if (!fixture.node) throw new Error('Expected a paint node')
-  return fixture.node
+  const rootGraph = app.canvas.graph
+  if (!(rootGraph instanceof LGraph)) throw new Error('Expected a root graph')
+  const node = rootGraph.getNodeById(toNodeId('test-node'))
+  if (!(node instanceof LGraphNode)) throw new Error('Expected a paint node')
+  return node
+}
+
+function executablePaintNode(): ExecutableNodeDTO {
+  return new ExecutableNodeDTO(paintNode(), [], new Map())
 }
 
 function widgetOf(name: string): IBaseWidget {
@@ -131,6 +127,14 @@ function mountPainter(
 
 describe('usePainter', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (path) => `http://localhost:8188${path}`
+    )
+    vi.mocked(useElementSize).mockImplementation(() => ({
+      width: ref(512),
+      height: ref(512),
+      stop: vi.fn()
+    }))
     makePaintNode()
     mockIsInputConnected.mockReturnValue(false)
     mockGetInputNode.mockReturnValue(null)
@@ -434,15 +438,17 @@ describe('usePainter', () => {
 
       mountPainter(toNodeId('test-node'), 'painter/existing.png [temp]')
 
-      const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
+      const result = await widgetOf('mask').serializeValue!(
+        executablePaintNode(),
+        0
+      )
       expect(result).toBe('painter/existing.png [temp]')
     })
 
     it('uploads the current canvas when no cached modelValue is present, even if nothing has been painted yet', async () => {
       makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
-      const fetchApiMock = vi.mocked(api.fetchApi)
-      fetchApiMock.mockResolvedValueOnce({
+      vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 200,
         json: async () => ({ name: 'uploaded.png' })
       } as Response)
@@ -457,14 +463,17 @@ describe('usePainter', () => {
       canvasEl.value = fakeCanvas
       await nextTick()
 
-      const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
-      expect(fetchApiMock).toHaveBeenCalledWith(
+      const result = await widgetOf('mask').serializeValue!(
+        executablePaintNode(),
+        0
+      )
+      expect(api.fetchApi).toHaveBeenCalledWith(
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
       )
       expect(result).toBe('uploaded.png [input]')
 
-      const [, init] = fetchApiMock.mock.calls[0]
+      const [, init] = vi.mocked(api.fetchApi).mock.calls[0]
       const body = init?.body as FormData
       expect(body).toBeInstanceOf(FormData)
       expect(body.get('type')).toBe('input')
@@ -490,8 +499,14 @@ describe('usePainter', () => {
       await nextTick()
 
       await expect(
-        widgetOf('mask').serializeValue!(paintNode(), 0)
+        widgetOf('mask').serializeValue!(executablePaintNode(), 0)
       ).rejects.toThrow(/missing 'name'/)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'warning',
+          title: 'painter.uploadMissingName'
+        })
+      ])
     })
 
     it('throws when the upload response body is not valid JSON', async () => {
@@ -515,7 +530,7 @@ describe('usePainter', () => {
       await nextTick()
 
       await expect(
-        widgetOf('mask').serializeValue!(paintNode(), 0)
+        widgetOf('mask').serializeValue!(executablePaintNode(), 0)
       ).rejects.toThrow(/painter\.uploadError/)
     })
 
@@ -524,7 +539,10 @@ describe('usePainter', () => {
 
       mountPainter(toNodeId('test-node'), 'painter/cached.png [temp]')
 
-      const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
+      const result = await widgetOf('mask').serializeValue!(
+        executablePaintNode(),
+        0
+      )
       expect(result).toBe('painter/cached.png [temp]')
     })
 

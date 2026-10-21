@@ -10,9 +10,9 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
 
-import { slotFloatingLinks } from '../LLink'
-import { test as baseTest } from '../__fixtures__/testExtensions'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import { slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { test as baseTest } from '@/lib/litegraph/src/__fixtures__/testExtensions'
+import type { ConnectingLink } from '@/lib/litegraph/src/types/slots'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
@@ -21,7 +21,7 @@ import { toRerouteId } from '@/types/rerouteId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
-} from '@/utils/__tests__/litegraphTestUtils'
+} from '@/utils/__tests__/canvasTestUtils'
 
 interface TestContext {
   graph: LGraph

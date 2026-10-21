@@ -37,8 +37,8 @@ example, construct a `Response` instead of casting an object to `Response`.
 Model malformed runtime input as `unknown` and pass it through the boundary
 parser. Do not use a double assertion to make invalid test data compile.
 
-A comment can document an external constraint, but it cannot prove a type or
-waive a failed check. External constraints may justify a specific assertion at
+A comment cannot prove a type or waive a failed check, so do not write one.
+State the external constraint in the PR description. External constraints may justify a specific assertion at
 an integration boundary, never a TypeScript suppression. If an upstream
 declaration is wrong, verify its runtime shape and do not spread assertions
 through consumers.
@@ -104,12 +104,19 @@ When making API calls in `src/`:
 
 ```typescript
 // ✅ Correct - use api helpers
-const response = await api.get(api.apiURL('/prompt'))
+// fetchApi() takes a route and applies apiURL() internally
+const response = await api.fetchApi('/prompt', { method: 'POST' })
+
+// For non-/api assets, build the URL with fileURL()
 const template = await fetch(api.fileURL('/templates/default.json'))
 
 // ❌ Wrong - direct URL construction
 const response = await fetch('/api/prompt')
 ```
+
+`apiURL(route)` prefixes `/api` (unless the route already starts with `/api`);
+`fileURL(route)` does not. Use `apiURL()` directly only when you need the string
+rather than the request.
 
 ## Security
 

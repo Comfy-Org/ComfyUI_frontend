@@ -24,6 +24,10 @@ const fulfillJson = (body: UploadResponse) => ({
 })
 
 test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
+  test.beforeEach(async ({ comfyPage }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
+  })
+
   test('Save with drawn mask uploads non-empty mask data', async ({
     comfyPage,
     maskEditor
@@ -120,7 +124,7 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     const savedRef = await comfyPage.page.evaluate(() => {
       const node = window.app!.graph.nodes.find((n) => n.type === 'LoadImage')!
       const ref = node.images?.[0]
-      return ref
+      return ref?.filename
         ? { filename: ref.filename, subfolder: ref.subfolder ?? '' }
         : null
     })

@@ -124,6 +124,23 @@ describe('storageKeys', () => {
       )
     })
 
+    it('scopes Agent persistence keys to the workspace', async () => {
+      const { StorageKeys } = await import('./storageKeys')
+
+      expect(StorageKeys.agentThread('ws-123')).toBe(
+        'Comfy.Agent.ThreadId:ws-123'
+      )
+      expect(StorageKeys.agentWorkflowTabBindings('ws-123')).toBe(
+        'Comfy.Agent.WorkflowTabBindings:ws-123'
+      )
+      expect(StorageKeys.agentChatTitles('ws-123')).toBe(
+        'Comfy.Agent.ChatTitles:ws-123'
+      )
+      expect(StorageKeys.agentDeletedThreads('ws-123')).toBe(
+        'Comfy.Agent.DeletedThreads:ws-123'
+      )
+    })
+
     it('exposes prefix patterns for cleanup', async () => {
       const { StorageKeys } = await import('./storageKeys')
 

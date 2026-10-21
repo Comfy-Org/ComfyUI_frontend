@@ -1,29 +1,12 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import userEvent from '@testing-library/user-event'
 import { FocusScope } from 'reka-ui'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 import { nextTick, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
 
 import MultiSelect from './MultiSelect.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      g: {
-        multiSelectDropdown: 'Multi-select dropdown',
-        noResultsFound: 'No results found',
-        search: 'Search',
-        clearAll: 'Clear all',
-        itemsSelected: 'Items selected'
-      }
-    }
-  }
-})
+import type { MultiSelectProps } from './types'
 
 const options = [
   { name: 'Option A', value: 'a' },
@@ -45,7 +28,15 @@ function renderInParent(
       return {
         sel: ref(modelValue),
         options,
-        extraProps: multiSelectProps,
+        extraProps: {
+          accessibleLabel: 'Choose options',
+          searchLabel: 'Search',
+          searchPlaceholder: 'Search',
+          emptyText: 'No results found',
+          clearAllLabel: 'Clear all',
+          formatSelectedCount: (count: number) => `${count} selected`,
+          ...multiSelectProps
+        },
         onEsc: () => {
           parentEscapeCount.value++
         }
@@ -54,8 +45,7 @@ function renderInParent(
   }
 
   const { unmount } = render(Parent, {
-    container: document.body.appendChild(document.createElement('div')),
-    global: { plugins: [i18n] }
+    container: document.body.appendChild(document.createElement('div'))
   })
 
   return { unmount, parentEscapeCount }
@@ -75,20 +65,93 @@ function findContentElement(): HTMLElement | null {
   return document.querySelector('[data-dismissable-layer]')
 }
 
-let openModal: HTMLElement | undefined
-
-afterEach(() => {
-  if (openModal) {
-    ZIndex.clear(openModal)
-    openModal = undefined
-  }
-})
-
 describe('MultiSelect', () => {
-  it('opens above a dialog registered with the modal z-index counter', async () => {
-    openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
-    const dialogZIndex = Number(openModal.style.zIndex)
+  it('requires copy independently for each enabled feature', () => {
+    type Base = { accessibleLabel: string; emptyText: string }
+    expectTypeOf<
+      Base & { showSearchBox: true }
+    >().not.toMatchTypeOf<MultiSelectProps>()
+    expectTypeOf<
+      Base & { showClearButton: true }
+    >().not.toMatchTypeOf<MultiSelectProps>()
+    expectTypeOf<
+      Base & { showSelectedCount: true }
+    >().not.toMatchTypeOf<MultiSelectProps>()
+    expectTypeOf<{
+      accessibleLabel: string
+    }>().not.toMatchTypeOf<MultiSelectProps>()
+    expectTypeOf<
+      Base & {
+        showSearchBox: boolean
+        searchLabel: string
+        showClearButton: boolean
+        clearAllLabel: string
+        showSelectedCount: boolean
+        formatSelectedCount: (count: number) => string
+      }
+    >().toMatchTypeOf<MultiSelectProps>()
+  })
+
+  it.for([undefined, false] as const)(
+    'allows omitted feature copy with flags=%s',
+    async (enabled) => {
+      const props = {
+        accessibleLabel: 'Choose options',
+        emptyText: 'Nothing available',
+        showSearchBox: enabled,
+        showClearButton: enabled,
+        showSelectedCount: enabled,
+        modelValue: []
+      } satisfies MultiSelectProps & { modelValue: [] }
+      render(MultiSelect, { props })
+      await userEvent
+        .setup()
+        .click(screen.getByRole('button', { name: 'Choose options' }))
+      expect(screen.getByText('Nothing available')).toBeVisible()
+      expect(screen.queryByRole('combobox')).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Clear all' })).toBeNull()
+    }
+  )
+
+  it.for(['header', 'footer'] as const)(
+    'renders caller text and updates formatted counts in the %s',
+    async (actionsPlacement) => {
+      const user = userEvent.setup()
+      const { unmount } = renderInParent(
+        {
+          accessibleLabel: 'Choisir',
+          searchLabel: 'Rechercher',
+          emptyText: 'Aucun résultat',
+          clearAllLabel: 'Tout effacer',
+          formatSelectedCount: (count) => `${count} choisis`,
+          showSearchBox: true,
+          showSelectedCount: true,
+          showClearButton: true,
+          actionsPlacement
+        },
+        [options[0], options[1]]
+      )
+
+      await user.click(screen.getByRole('button', { name: 'Choisir' }))
+      expect(screen.getByRole('combobox', { name: 'Rechercher' })).toBeVisible()
+      expect(screen.getByText('2 choisis')).toBeVisible()
+      await user.click(screen.getByRole('button', { name: 'Tout effacer' }))
+      expect(screen.getByText('0 choisis')).toBeVisible()
+      await user.type(
+        screen.getByRole('combobox', { name: 'Rechercher' }),
+        'zzz'
+      )
+      expect(screen.getByText('Aucun résultat')).toBeVisible()
+      unmount()
+    }
+  )
+
+  it('opens above a dialog already in the document', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
     const user = userEvent.setup()
     const { unmount } = renderInParent()
 
@@ -97,15 +160,19 @@ describe('MultiSelect', () => {
 
     const content = findContentElement()
     expect(content).not.toBeNull()
-    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+    expect(dialog.compareDocumentPosition(content!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
 
     unmount()
   })
 
   it('opens above a dialog even when the caller passes its own contentStyle z-index', async () => {
-    openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
-    const dialogZIndex = Number(openModal.style.zIndex)
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
     const user = userEvent.setup()
     const { unmount } = renderInParent({ contentStyle: { zIndex: 3000 } })
 
@@ -114,7 +181,9 @@ describe('MultiSelect', () => {
 
     const content = findContentElement()
     expect(content).not.toBeNull()
-    expect(Number(content!.style.zIndex)).toBeGreaterThan(dialogZIndex)
+    expect(dialog.compareDocumentPosition(content!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
 
     unmount()
   })
@@ -125,9 +194,7 @@ describe('MultiSelect', () => {
 
     const trigger = screen.getByRole('button')
 
-    expect(trigger).toHaveClass(
-      'data-[state=open]:border-node-component-border'
-    )
+    expect(trigger).toHaveClass('data-[state=open]:border-border')
     expect(trigger).toHaveAttribute('aria-expanded', 'false')
 
     await user.click(trigger)
@@ -199,6 +266,44 @@ describe('MultiSelect', () => {
     })
   })
 
+  it('shows selected option labels in the trigger', () => {
+    const { unmount } = renderInParent({}, [
+      { name: 'Option A', value: 'a' },
+      { name: 'Option B', value: 'b' }
+    ])
+
+    expect(screen.getByText('Option A, Option B')).toBeInTheDocument()
+
+    unmount()
+  })
+
+  it('renders the value slot with the selected options instead of the joined labels', () => {
+    const Parent = {
+      template: `
+        <MultiSelect v-model="sel" :options="options" accessible-label="Choose options" search-label="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)">
+          <template #value="{ selected }">
+            <span v-for="item in selected" :key="item.value" data-testid="chip">
+              {{ item.name }}
+            </span>
+          </template>
+        </MultiSelect>`,
+      components: { MultiSelect },
+      setup: () => ({
+        sel: ref([options[0], options[2]]),
+        options
+      })
+    }
+
+    const { unmount } = render(Parent)
+
+    expect(
+      screen.getAllByTestId('chip').map((chip) => chip.textContent.trim())
+    ).toEqual(['Option A', 'Option C'])
+    expect(screen.queryByText('Option A, Option C')).not.toBeInTheDocument()
+
+    unmount()
+  })
+
   it('lets the user type in the search box when nested in a trapped focus scope', async () => {
     const user = userEvent.setup()
     const InTrap = {
@@ -206,15 +311,14 @@ describe('MultiSelect', () => {
       template: `
         <FocusScope trapped as-child>
           <div>
-            <MultiSelect v-model="sel" :options="options" :show-search-box="true" />
+            <MultiSelect v-model="sel" :options="options" :show-search-box="true" accessible-label="Choose options" search-label="Search" search-placeholder="Search" empty-text="No results found" clear-all-label="Clear all" :format-selected-count="count => String(count)" />
           </div>
         </FocusScope>`,
       setup: () => ({ sel: ref([]), options })
     }
 
     const { unmount } = render(InTrap, {
-      container: document.body.appendChild(document.createElement('div')),
-      global: { plugins: [i18n] }
+      container: document.body.appendChild(document.createElement('div'))
     })
 
     await user.click(screen.getByRole('button'))

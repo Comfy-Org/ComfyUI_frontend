@@ -22,6 +22,7 @@ const meta: Meta<ComponentPropsAndSlots<typeof SearchInput>> = {
     debounceTime: { control: 'number' },
     autofocus: { control: 'boolean' },
     loading: { control: 'boolean' },
+    invalid: { control: 'boolean' },
     size: {
       control: { type: 'select' },
       options: sizes
@@ -30,6 +31,9 @@ const meta: Meta<ComponentPropsAndSlots<typeof SearchInput>> = {
     onSearch: { action: 'search' }
   },
   args: {
+    accessibleLabel: 'Search',
+    clearLabel: 'Clear',
+    placeholder: 'Search...',
     modelValue: '',
     size: 'md',
     loading: false,
@@ -68,13 +72,13 @@ export const AllSizes: Story = {
     template: `
       <div class="flex flex-col gap-4" style="max-width: 320px;">
         <div class="text-xs text-muted-foreground">sm — icon: size-3 (12px)</div>
-        <SearchInput v-model="sm" size="sm" />
+        <SearchInput v-model="sm" size="sm" accessible-label="Search" clear-label="Clear" placeholder="Search..." />
         <div class="text-xs text-muted-foreground">md — icon: size-4 (16px, capped)</div>
-        <SearchInput v-model="md" size="md" />
+        <SearchInput v-model="md" size="md" accessible-label="Search" clear-label="Clear" placeholder="Search..." />
         <div class="text-xs text-muted-foreground">lg — icon: size-4 (16px, capped)</div>
-        <SearchInput v-model="lg" size="lg" />
+        <SearchInput v-model="lg" size="lg" accessible-label="Search" clear-label="Clear" placeholder="Search..." />
         <div class="text-xs text-muted-foreground">xl — icon: size-4 (16px, capped)</div>
-        <SearchInput v-model="xl" size="xl" />
+        <SearchInput v-model="xl" size="xl" accessible-label="Search" clear-label="Clear" placeholder="Search..." />
       </div>
     `
   })
@@ -136,7 +140,7 @@ export const CustomBackground: Story = {
         <SearchInput
           v-bind="args"
           v-model="searchText"
-          class="bg-component-node-widget-background"
+          class="bg-input"
         />
       </div>
     `
@@ -156,4 +160,11 @@ export const Disabled: Story = {
       </div>
     `
   })
+}
+
+export const Invalid: Story = {
+  ...Default,
+  args: {
+    invalid: true
+  }
 }

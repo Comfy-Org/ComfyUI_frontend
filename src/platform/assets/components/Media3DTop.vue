@@ -5,13 +5,14 @@
       :src="thumbnailSrc"
       :alt="asset?.name"
       class="size-full object-contain transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
+      :draggable="false"
     />
     <div
       v-else
-      class="flex size-full flex-col items-center justify-center gap-2 bg-modal-card-placeholder-background transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
+      class="flex size-full flex-col items-center justify-center gap-2 bg-muted transition-transform duration-300 group-hover:scale-105 group-data-[selected=true]:scale-105"
     >
       <i class="icon-[lucide--box] text-3xl text-muted-foreground" />
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('assetBrowser.media.threeDModelPlaceholder') }}
       </span>
     </div>
@@ -22,11 +23,11 @@
 import { useIntersectionObserver } from '@vueuse/core'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import {
   findServerPreviewUrl,
   isAssetPreviewSupported
-} from '../utils/assetPreviewUtil'
+} from '@/platform/assets/utils/assetPreviewUtil'
 
 const { asset } = defineProps<{ asset: AssetMeta }>()
 

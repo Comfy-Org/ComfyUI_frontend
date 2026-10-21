@@ -1,0 +1,420 @@
+{
+  "id": "node-library",
+  "capability": "Node library",
+  "description": "Node definition catalog, search, grouping, sorting, bookmarks, help content, previews, drag-to-canvas, and the node library and search interfaces. Wire schemas and LiteGraph node registration remain separate.",
+  "modules": [
+    {
+      "path": "src/components/common/ColorCustomizationSelector.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/ColorCustomizationSelector.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/CustomizationDialog.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/CustomizationDialog.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/SearchFilterChip.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/SearchFilterChip.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TreeExplorer.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TreeExplorer.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TreeExplorerTreeNode.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TreeExplorerTreeNode.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TreeExplorerV2.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TreeExplorerV2.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TreeExplorerV2Node.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/common/TreeExplorerV2Node.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeDragPreview.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/graph/NodeDragPreview.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/node/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/HighlightedText.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/NodeSearchBox.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/NodeSearchBox.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/NodeSearchBoxPopover.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/NodeSearchBoxPopover.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/NodeSearchFilter.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/NodeSearchItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchCategorySidebar.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchCategorySidebar.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchCategoryTreeNode.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchContent.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchContent.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchFilterBar.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchFilterBar.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchInput.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchInput.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchListItem.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchListItem.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchTypeFilterPopover.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/NodeSearchTypeFilterPopover.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/__test__/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/searchbox/v2/rootCategories.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/components/sidebar/tabs/NodeLibrarySidebarTab.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/NodeLibrarySidebarTab.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/NodeLibrarySidebarTabV2.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/NodeLibrarySidebarTabV2.vue",
+      "role": "presentation"
+    },
+    {
+      "path": "src/components/sidebar/tabs/nodeLibrary/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/composables/node/__mocks__/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/startModelNodeDragFromAsset.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/startModelNodeDragFromAsset.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeDragToCanvas.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodeDragToCanvas.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodePreviewAndDrag.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/node/useNodePreviewAndDrag.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/sidebarTabs/useNodeLibrarySidebarTab.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useCanvasDrop.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useCanvasDrop.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useEssentialTileNodeDef.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useNodeHelpContent.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useNodeHelpContent.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/usePerTabState.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/usePerTabState.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/nodeHelpService.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/nodeOrganizationService.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/nodeOrganizationService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/nodeSearchService.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/nodeSearchService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeBookmarkStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeBookmarkStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeDefStore.frequency.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeDefStore.nodeText.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeDefStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/nodeDefStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/workspace/**",
+      "role": "application"
+    },
+    {
+      "path": "src/types/nodeOrganizationTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/treeExplorerTypes.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/categoryUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/categoryUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/fuseUtil.test.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/fuseUtil.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/utils/nodeTitleUtil.ts",
+      "role": "presentation"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Node library tabs browse node definitions, essentials, and bookmarks",
+      "checks": [
+        "src/components/sidebar/tabs/NodeLibrarySidebarTab.test.ts",
+        "src/components/sidebar/tabs/NodeLibrarySidebarTabV2.test.ts",
+        "src/components/sidebar/tabs/nodeLibrary/EssentialNodesPanel.test.ts",
+        "src/components/sidebar/tabs/nodeLibrary/NodeBookmarkTreeExplorer.test.ts",
+        "src/components/common/CustomizationDialog.test.ts"
+      ]
+    },
+    {
+      "name": "Tree explorers render, expand, rename, and drag tree nodes",
+      "checks": [
+        "src/components/common/TreeExplorer.test.ts",
+        "src/components/common/TreeExplorerTreeNode.test.ts",
+        "src/components/common/TreeExplorerV2.test.ts",
+        "src/components/common/TreeExplorerV2Node.test.ts"
+      ]
+    },
+    {
+      "name": "Node previews, help content, and drag preview render node definitions",
+      "checks": [
+        "src/components/node/NodePreview.test.ts",
+        "src/components/node/NodePreviewCard.test.ts",
+        "src/components/node/NodeHelpContent.test.ts",
+        "src/components/graph/NodeDragPreview.test.ts"
+      ]
+    },
+    {
+      "name": "Search box popover opens on the canvas, searches node definitions, and inserts the chosen node",
+      "checks": [
+        "src/components/searchbox/NodeSearchBoxPopover.test.ts",
+        "src/components/searchbox/NodeSearchBox.test.ts",
+        "src/components/common/SearchFilterChip.test.ts"
+      ]
+    },
+    {
+      "name": "V2 search content filters by category and type and renders result items",
+      "checks": [
+        "src/components/searchbox/v2/NodeSearchContent.test.ts",
+        "src/components/searchbox/v2/NodeSearchCategorySidebar.test.ts",
+        "src/components/searchbox/v2/NodeSearchFilterBar.test.ts",
+        "src/components/searchbox/v2/NodeSearchTypeFilterPopover.test.ts",
+        "src/components/searchbox/v2/NodeSearchListItem.test.ts"
+      ]
+    },
+    {
+      "name": "Node definition store builds definitions, display text, usage frequency, and the category tree",
+      "checks": [
+        "src/stores/nodeDefStore.test.ts",
+        "src/stores/nodeDefStore.nodeText.test.ts",
+        "src/stores/nodeDefStore.frequency.test.ts"
+      ]
+    },
+    {
+      "name": "Node search, library organization, and bookmarks find and group nodes",
+      "checks": [
+        "src/services/nodeSearchService.test.ts",
+        "src/services/nodeOrganizationService.test.ts",
+        "src/stores/nodeBookmarkStore.test.ts",
+        "browser_tests/tests/sidebar/nodeLibrary.spec.ts",
+        "browser_tests/tests/nodeSearchBox.spec.ts"
+      ]
+    },
+    {
+      "name": "Node help and search box open state follow user actions",
+      "checks": [
+        "src/stores/workspace/nodeHelpStore.test.ts",
+        "src/stores/workspace/searchBoxStore.test.ts"
+      ]
+    },
+    {
+      "name": "Node search ranks and filters node definitions",
+      "checks": ["src/utils/fuseUtil.test.ts", "src/utils/categoryUtil.test.ts"]
+    },
+    {
+      "name": "Library items preview and drag onto the canvas as nodes, including model drags",
+      "checks": [
+        "src/composables/node/useNodeDragToCanvas.test.ts",
+        "src/composables/node/useNodePreviewAndDrag.test.ts",
+        "src/composables/node/startModelNodeDragFromAsset.test.ts",
+        "src/composables/useCanvasDrop.test.ts"
+      ]
+    },
+    {
+      "name": "Per-tab library state and node help content load for the selected node",
+      "checks": [
+        "src/composables/usePerTabState.test.ts",
+        "src/composables/useNodeHelpContent.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

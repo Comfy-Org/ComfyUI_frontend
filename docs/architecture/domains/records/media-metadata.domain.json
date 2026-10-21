@@ -1,0 +1,63 @@
+{
+  "id": "media-metadata",
+  "capability": "Embedded workflow metadata readers (shared technical module)",
+  "description": "Shared technical module, not a business domain. Readers that extract embedded ComfyUI workflow and prompt metadata from dropped or opened files: PNG, WebP, AVIF, FLAC, MP3, OGG/Opus, WebM/EBML, MP4/ISOBMFF, GLTF, PLY, SVG, and JSON, the file-type dispatcher, the metadata tag and range types, latent file metadata, and the A1111 parameters importer. Deciding what to do with an extracted workflow belongs to the extension runtime and workflow records.",
+  "modules": [
+    {
+      "path": "src/scripts/metadata/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/metadata/parser.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/pnginfo.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/pnginfo.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/types/metadataTypes.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Image containers yield embedded workflow and prompt text and tolerate reader failures",
+      "checks": [
+        "src/scripts/metadata/png.test.ts",
+        "src/scripts/metadata/avif.test.ts",
+        "src/scripts/metadata/svg.test.ts",
+        "src/scripts/pnginfo.test.ts"
+      ]
+    },
+    {
+      "name": "Audio and video containers yield embedded metadata and tolerate reader failures",
+      "checks": [
+        "src/scripts/metadata/flac.test.ts",
+        "src/scripts/metadata/mp3.test.ts",
+        "src/scripts/metadata/ogg.test.ts",
+        "src/scripts/metadata/ebml.test.ts",
+        "src/scripts/metadata/isobmff.test.ts"
+      ]
+    },
+    {
+      "name": "3D and JSON files yield embedded metadata",
+      "checks": [
+        "src/scripts/metadata/gltf.test.ts",
+        "src/scripts/metadata/json.test.ts"
+      ]
+    }
+  ],
+  "adrs": [],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

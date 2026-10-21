@@ -1,0 +1,247 @@
+{
+  "id": "extension-runtime",
+  "capability": "Extension runtime",
+  "description": "Shared technical module for the extension-facing ComfyApp and ComfyApi runtime, HTTP and websocket transport, extension loading and lifecycle registration, global accessors, public extension types, legacy DOM UI, and compatibility utilities.",
+  "modules": [
+    {
+      "path": "src/composables/functional/**",
+      "role": "integration"
+    },
+    {
+      "path": "src/composables/useReconnectingNotification.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/composables/useReconnectingNotification.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/extensions/core/index.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/__mocks__/**",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/__mocks__/app.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/api.cancel.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.eventListeners.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.featureFlags.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.fetchApi.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.folderPaths.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.getEmbeddings.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.getExtensions.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.getSettings.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.getShareableAssets.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.logs.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.responses.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.sessionOverride.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.socketReset.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.storeUserData.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/api.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/apiTimeouts.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/scripts/app.getNodeDefs.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/app.graphReadiness.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/app.test.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/app.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/scripts/appInstance.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/appRegistry.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/appRegistry.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/scripts/ui.setStatus.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/scripts/ui.storageResilience.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/scripts/ui.test.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/scripts/ui.ts",
+      "role": "presentation"
+    },
+    {
+      "path": "src/scripts/ui/**",
+      "role": "presentation"
+    },
+    {
+      "path": "src/scripts/utils.ts",
+      "role": "integration"
+    },
+    {
+      "path": "src/services/extensionLoader.test.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/extensionLoader.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/services/extensionService.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/services/extensionService.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/extensionStore.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/stores/extensionStore.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/types/comfy.ts",
+      "role": "domain"
+    },
+    {
+      "path": "src/types/extensionTypes.ts",
+      "role": "domain"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": ["agent"],
+  "characterizationScenarios": [
+    {
+      "name": "Extension loader fetches, filters, imports, and reports failing extensions",
+      "checks": ["src/services/extensionLoader.test.ts"]
+    },
+    {
+      "name": "Extension store registers extensions and honors disabled settings and always-on core extensions",
+      "checks": ["src/stores/extensionStore.test.ts"]
+    },
+    {
+      "name": "Extension service registers extension contributions and invokes lifecycle hooks",
+      "checks": [
+        "src/services/extensionService.test.ts",
+        "browser_tests/tests/extensionAPI.spec.ts"
+      ]
+    },
+    {
+      "name": "ComfyApp registers itself, loads graph data, registers node definitions, and exposes graph readiness",
+      "checks": [
+        "src/scripts/appRegistry.test.ts",
+        "src/scripts/app.test.ts",
+        "src/scripts/app.getNodeDefs.test.ts",
+        "src/scripts/app.graphReadiness.test.ts"
+      ]
+    },
+    {
+      "name": "ComfyApi fetches with auth headers, parses response boundaries, negotiates feature flags, and isolates listener errors",
+      "checks": [
+        "src/scripts/api.fetchApi.test.ts",
+        "src/scripts/api.responses.test.ts",
+        "src/scripts/api.featureFlags.test.ts",
+        "src/scripts/api.sessionOverride.test.ts",
+        "src/scripts/api.eventListeners.test.ts"
+      ]
+    },
+    {
+      "name": "ComfyApi resource endpoints and realtime socket reset keep their request and reconnect contracts",
+      "checks": [
+        "src/scripts/api.cancel.test.ts",
+        "src/scripts/api.folderPaths.test.ts",
+        "src/scripts/api.getEmbeddings.test.ts",
+        "src/scripts/api.getExtensions.test.ts",
+        "src/scripts/api.getSettings.test.ts",
+        "src/scripts/api.getShareableAssets.test.ts",
+        "src/scripts/api.logs.test.ts",
+        "src/scripts/api.socketReset.test.ts"
+      ]
+    },
+    {
+      "name": "Legacy app.ui keeps status, file input, menu position restore, and toggle switch behavior",
+      "checks": [
+        "src/scripts/ui.test.ts",
+        "src/scripts/ui.setStatus.test.ts",
+        "src/scripts/ui.storageResilience.test.ts",
+        "src/scripts/ui/toggleSwitch.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/EXTENSIONS-PUBLIC-API-0005-bundle-vue-dependencies-in-extensions.md"
+  ],
+  "compatibilityPromises": [
+    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  ],
+  "deepImports": "inventory"
+}

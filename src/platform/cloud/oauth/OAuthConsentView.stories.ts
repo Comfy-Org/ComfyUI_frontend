@@ -7,6 +7,7 @@ const baseChallenge: OAuthConsentChallenge = {
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',
   csrf_token: 'preview-csrf-token',
   client_display_name: 'Comfy Desktop',
+  client_provenance: 'first_party',
   resource_display_name: 'Comfy Cloud',
   redirect_uri: 'http://127.0.0.1:50632/cb',
   scopes: ['mcp:tools:read', 'mcp:tools:call'],
@@ -32,7 +33,7 @@ const meta: Meta<typeof OAuthConsentView> = {
   decorators: [
     () => ({
       template:
-        '<div class="dark-theme relative min-h-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas"><i class="absolute top-6 left-6 icon-[comfy--comfy-logo] aspect-173/48 h-5 w-auto text-brand-yellow md:h-6" aria-hidden="true" /><story /></div>'
+        '<div class="relative min-h-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas"><i class="absolute top-6 left-6 icon-[comfy--comfy-logo] aspect-173/48 h-5 w-auto text-brand-yellow md:h-6" aria-hidden="true" /><story /></div>'
     })
   ]
 }
@@ -112,6 +113,18 @@ export const RemoteWebClient: Story = {
       client_application_type: 'web',
       redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
       scopes: ['comfy-mcp:tools:calls']
+    }
+  }
+}
+
+export const DynamicUnverified: Story = {
+  args: {
+    initialChallenge: {
+      ...baseChallenge,
+      client_display_name: 'ChatGPT Connector',
+      client_provenance: 'dynamic',
+      client_application_type: 'web',
+      redirect_uri: 'https://chatgpt.com/connector/oauth/abc123'
     }
   }
 }

@@ -1,12 +1,21 @@
+import type {
+  ExecutableLGraphNode,
+  LGraphCanvas,
+  LGraphNode
+} from '@/lib/litegraph/src/types/entityRegistry'
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
-import type { NodeId } from '@/types/nodeId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
+import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
+import type { WidgetValue } from '@/types/widgetValue'
 import type { WidgetId } from '@/types/widgetId'
-import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import type {
+  WidgetSurfaces,
+  WidgetVisibilityComponent
+} from '@/types/widgetVisibility'
 import type { ColorFormat } from '@/utils/colorUtil'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 
 import type {
   CanvasColour,
@@ -14,12 +23,21 @@ import type {
   Point,
   RequiredProps,
   Size
-} from '../interfaces'
-import type { CanvasPointer, LGraphCanvas, LGraphNode } from '../litegraph'
+} from '@/lib/litegraph/src/interfaces'
+import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { CanvasPointerEvent } from './events'
 
-export interface NodeBindable {
-  setNodeId(nodeId: NodeId): void
+export type { NodeBindable } from '@/lib/litegraph/src/utils/type'
+
+export const CONFIG = Symbol()
+export const GET_CONFIG = Symbol()
+
+/** Identifies the widget a slot is linked to. */
+export interface IWidgetLocator {
+  name: string
+  type?: string
+  [CONFIG]?: InputSpec
+  [GET_CONFIG]?: () => InputSpec | undefined
 }
 
 export interface IWidgetOptions<TValues = unknown> {
@@ -45,7 +63,8 @@ export interface IWidgetOptions<TValues = unknown> {
   property?: string
   /** If `true`, an input socket will not be created for this widget. */
   socketless?: boolean
-  /** If `true`, the widget will not be rendered by the Vue renderer. */
+  surfaces?: WidgetSurfaces
+  /** @deprecated This key stays supported for third-party widgets. */
   canvasOnly?: boolean
   /**
    * If `true`, the widget still renders on the node but is omitted from the
@@ -70,6 +89,16 @@ export interface IWidgetOptions<TValues = unknown> {
    * @see IBaseWidget.serialize — workflow persistence
    */
   serialize?: boolean
+  /**
+   * Rounding value for numeric float widgets.
+   */
+  round?: number
+  /**
+   * The minimum size of the node if the widget is present.
+   */
+  minNodeSize?: Size
+
+  advanced?: boolean
 
   values?: TValues
   /** Optional function to format values for display (e.g., hash → human-readable name) */
@@ -81,8 +110,6 @@ export interface IWidgetOptions<TValues = unknown> {
   disabled?: boolean
   useGrouping?: boolean
   placeholder?: string
-  showThumbnails?: boolean
-  showItemNavigators?: boolean
   hidden?: boolean
 }
 
@@ -154,6 +181,7 @@ export type IWidget =
   | IVideoEditWidget
   | IResolutionPreviewWidget
   | IBoundingBoxesWidget
+  | ILightInfoWidget
   | IColorsWidget
 
 export interface IBooleanWidget extends IBaseWidget<boolean, 'toggle'> {
@@ -206,10 +234,10 @@ export interface IStringComboWidget extends IBaseWidget<
   value: string
 }
 
-type ComboWidgetValues =
-  | string[]
+export type ComboWidgetValues =
+  | (string | number)[]
   | Record<string, string>
-  | ((widget?: IComboWidget, node?: LGraphNode) => string[])
+  | ((widget?: IComboWidget, node?: LGraphNode) => (string | number)[])
 
 /** A combo-box widget (dropdown, select, etc) */
 export interface IComboWidget extends IBaseWidget<
@@ -381,6 +409,14 @@ export interface IBoundingBoxesWidget extends IBaseWidget<
   value: BoundingBox[]
 }
 
+export interface ILightInfoWidget extends IBaseWidget<
+  LightInfoEntry[],
+  'lightinfo'
+> {
+  type: 'lightinfo'
+  value: LightInfoEntry[]
+}
+
 export interface IColorsWidget extends IBaseWidget<string[], 'colors'> {
   type: 'colors'
   value: string[]
@@ -466,6 +502,10 @@ export function isWidgetValue(value: unknown): value is TWidgetValue {
   return typeof value === 'object'
 }
 
+export interface WidgetCallbackOptions {
+  isPartialExecution?: boolean
+}
+
 /**
  * The base type for all widgets.  Should not be implemented directly.
  * @template TValue The type of value this widget holds.
@@ -487,6 +527,7 @@ export interface IBaseWidget<
   name: string
   options: TOptions
   syncLiveVisibilityOptions?(): void
+  syncLiveDisabled?(): void
 
   label?: string
   /** Widget type (see {@link TWidgetType}) */
@@ -649,4 +690,19 @@ export interface IBaseWidget<
     node: LGraphNode,
     canvas: LGraphCanvas
   ): boolean
+
+  onRemove?(): void
+  beforeQueued?(options?: WidgetCallbackOptions): unknown
+  afterQueued?(options?: WidgetCallbackOptions): unknown
+  serializeValue?(
+    node: ExecutableLGraphNode | LGraphNode,
+    index: number
+  ): unknown
+
+  /**
+   * Refreshes the widget's value or options from its remote source.
+   */
+  refresh?(): unknown
+
+  dynamicPrompts?: boolean
 }

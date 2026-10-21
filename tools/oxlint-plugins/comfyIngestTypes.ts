@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const GENERATED_PACKAGE = '@comfyorg/ingest-types'
+const GENERATED_TYPES_PATH = fileURLToPath(
+  new URL('../../packages/ingest-types/src/types.gen.ts', import.meta.url)
+)
 const GENERATED_AGENT_NAMES = new Set(
   [
     ...readFileSync(
@@ -78,6 +83,7 @@ interface InterfaceDeclaration extends NamedDeclaration {
 }
 
 interface RuleContext {
+  readonly filename: string
   report(descriptor: { node: unknown; message: string }): void
 }
 
@@ -248,6 +254,7 @@ function driftMessage(name: string, keys: readonly string[]): string {
 // declarations are queued and judged on Program:exit rather than in place.
 export const noDuplicateIngestType = {
   create(context: RuleContext) {
+    if (resolve(context.filename) === GENERATED_TYPES_PATH) return {}
     const exportNameByLocalBinding = new Map<string, string>()
     const literalUnionAliases = new Map<string, TypeNode>()
     const aliases: TypeAliasDeclaration[] = []

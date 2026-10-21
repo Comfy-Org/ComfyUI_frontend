@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { watch } from 'vue'
 
@@ -8,7 +8,7 @@ import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { BaseDOMWidget } from '@/scripts/domWidget'
+import type { BaseDOMWidget } from '@/types/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { toNodeId } from '@/types/nodeId'
 
@@ -237,6 +237,24 @@ describe('DomWidgets positioning', () => {
 
     expect(widgetState.pos).not.toBe(posAfterFirstFrame)
   })
+})
+
+describe('DomWidgets while picking nodes for the agent', () => {
+  it.for([
+    { picking: false, inert: false },
+    { picking: true, inert: true }
+  ])(
+    'picking=$picking renders the widget layer inert=$inert',
+    ({ picking, inert }) => {
+      useCanvasStore().isPickingNodes = picking
+
+      render(DomWidgets, { global: { stubs: { DomWidget: true } } })
+
+      expect(screen.getByTestId('dom-widgets').hasAttribute('inert')).toBe(
+        inert
+      )
+    }
+  )
 })
 
 describe('DomWidgets deterministic update matrix', () => {

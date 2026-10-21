@@ -1,34 +1,34 @@
 <template>
+  <!-- `manager-dialog` carries no styles; PackVersionBadge scopes its popover
+       to it via closest(). Removing it silently widens that boundary. -->
   <BaseModalLayout
     v-model:right-panel-open="isRightPanelOpen"
     :content-title="$t('manager.discoverCommunityContent')"
     :right-panel-title="$t('manager.nodePackInfo')"
+    size="lg"
     class="manager-dialog"
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--extensions-blocks]" />
-      <h2 class="text-neutral text-base">{{ $t('manager.title') }}</h2>
+      <h2 class="text-base text-foreground">{{ $t('manager.title') }}</h2>
     </template>
     <template #leftPanel>
       <LeftSidePanel v-model="selectedNavId" :nav-items="navItems" />
     </template>
 
     <template #header>
-      <div
-        :ref="primeVueOverlay.overlayScopeRef"
-        class="flex w-full items-center justify-between gap-2"
-      >
+      <div class="flex w-full items-center justify-between gap-2">
         <div class="flex w-full items-center gap-2">
-          <SingleSelect
+          <AppSingleSelect
             v-model="searchMode"
             class="min-w-34"
             :options="filterOptions"
-            :content-style="selectContentStyle"
           />
           <SearchAutocomplete
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             :suggestions="suggestions"
-            :content-style="selectContentStyle"
             :placeholder="$t('manager.searchPlaceholder')"
             option-label="query"
             autofocus
@@ -59,20 +59,15 @@
         v-if="shouldShowManagerBanner"
         class="relative mx-6 mt-3 mb-4 flex items-center gap-6 rounded-lg bg-yellow-500/20 p-4"
       >
-        <i
-          class="icon-[lucide--triangle-alert] text-lg text-warning-background"
-        />
-        <div class="flex flex-1 flex-col gap-2">
-          <p class="m-0 text-sm font-bold">
+        <i class="icon-[lucide--triangle-alert] text-lg text-warning" />
+        <div class="flex flex-1 flex-col gap-2 text-sm">
+          <p class="m-0 font-bold">
             {{ $t('manager.conflicts.warningBanner.title') }}
           </p>
           <p class="m-0 text-xs">
             {{ $t('manager.conflicts.warningBanner.message') }}
           </p>
-          <p
-            class="m-0 cursor-pointer text-sm font-bold"
-            @click="onClickWarningLink"
-          >
+          <p class="m-0 cursor-pointer font-bold" @click="onClickWarningLink">
             {{ $t('manager.conflicts.warningBanner.button') }}
           </p>
         </div>
@@ -82,23 +77,33 @@
           size="icon"
           @click="dismissWarningBanner"
         >
-          <i class="pi pi-times text-xs text-base-foreground"></i>
+          <i class="pi pi-times text-xs text-foreground"></i>
         </Button>
       </div>
 
+      <Message
+        :visible="isUnmatchedLegacyManagerSearch"
+        severity="info"
+        class="mx-6 mb-4 w-auto"
+      >
+        <template #icon>
+          <i class="icon-[lucide--info] size-4" />
+        </template>
+        {{ $t('manager.legacyManagerSearchTip') }}
+      </Message>
+
       <!-- Sort Options -->
       <div v-if="isSortable" class="flex justify-end px-6 pb-4">
-        <SingleSelect
+        <AppSingleSelect
           v-model="sortField"
           :label="$t('g.sort')"
           :options="availableSortOptions"
-          :content-style="selectContentStyle"
           class="w-48"
         >
           <template #icon>
             <i class="icon-[lucide--arrow-up-down] text-muted-foreground" />
           </template>
-        </SingleSelect>
+        </AppSingleSelect>
       </div>
     </template>
 
@@ -114,6 +119,8 @@
         v-else-if="displayPacks.length === 0 && !canLoadMorePacks"
         :title="emptyStateTitle"
         :message="emptyStateMessage"
+        :button-label="retryLabel"
+        @action="retrySearch"
       />
       <div v-else class="size-full" @click="handleGridContainerClick">
         <VirtualGrid
@@ -165,13 +172,13 @@ import { useI18n } from 'vue-i18n'
 
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import VirtualGrid from '@/components/common/VirtualGrid.vue'
-import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
+import AppSingleSelect from '@/components/common/AppSingleSelect.vue'
 import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
@@ -192,10 +199,10 @@ import { useManagerDisplayPacks } from '@/workbench/extensions/manager/composabl
 import { useManagerStatePersistence } from '@/workbench/extensions/manager/composables/useManagerStatePersistence'
 import { useRegistrySearch } from '@/workbench/extensions/manager/composables/useRegistrySearch'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'
-import { useLegacySearchTip } from '@/workbench/extensions/manager/composables/useLegacySearchTip'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
+import { isLegacyManagerQuery } from '@/workbench/extensions/manager/utils/legacyManagerQuery'
 import { PACK_SORTABLE_FIELDS } from '@/workbench/extensions/manager/utils/nodePackSort'
 
 const { initialTab, initialPackId, onClose } = defineProps<{
@@ -207,8 +214,6 @@ const { initialTab, initialPackId, onClose } = defineProps<{
 provide(OnCloseKey, onClose)
 
 const { t } = useI18n()
-const primeVueOverlay = usePrimeVueOverlayChildStyle()
-const selectContentStyle = primeVueOverlay.contentStyle
 const { buildDocsUrl } = useExternalLink()
 const comfyManagerStore = useComfyManagerStore()
 const { getPackById } = useComfyRegistryStore()
@@ -356,18 +361,23 @@ const searchMode = ref<SearchMode>(
     : initialState.searchMode
 )
 const sortField = ref<string>(initialState.sortField)
+const trimmedSearchQuery = computed(() => searchQuery.value.trim())
 
 const isSearchBacked = computed(() => {
   const tab = selectedTab.value?.id
   return (
     tab === ManagerTab.All ||
     tab === ManagerTab.NotInstalled ||
-    (searchQuery.value !== '' && tab !== ManagerTab.Unresolved)
+    (trimmedSearchQuery.value !== '' && tab !== ManagerTab.Unresolved)
   )
 })
+const openingSearchQuery = searchQuery.value.trim()
+const debouncedSearchQuery = refDebounced(searchQuery, SEARCH_DEBOUNCE_MS)
 const packs = useRegistrySearch({
-  query: refDebounced(searchQuery, SEARCH_DEBOUNCE_MS),
-  searchMode
+  query: debouncedSearchQuery,
+  searchMode,
+  isTypedQuery: () => debouncedSearchQuery.value.trim() !== openingSearchQuery,
+  isVisible: isSearchBacked
 })
 const searchResults = computed(() => [...toValue(packs.items)])
 const isSearchLoading = computed(
@@ -376,10 +386,6 @@ const isSearchLoading = computed(
 const hasMorePacks = computed(() => toValue(packs.hasMore))
 const suggestions = computed(() => toValue(packs.suggestions))
 const sortOptions = PACK_SORTABLE_FIELDS
-const { isLegacyManagerSearch } = useLegacySearchTip(
-  searchQuery,
-  isNewManagerUI
-)
 const filterOptions = computed(() => [
   { name: t('manager.filter.nodePack'), value: 'packs' },
   { name: t('g.nodes'), value: 'nodes' }
@@ -397,21 +403,37 @@ const loadMorePacks = () => packs.loadMore()
 const canLoadMorePacks = computed(
   () => hasMorePacks.value && !isSearchLoading.value && isSearchBacked.value
 )
-const isInitialLoad = computed(
+const isFirstPageForInput = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    firstPage.status !== 'loading' &&
+    firstPage.query === trimmedSearchQuery.value
+  )
+})
+const isSearchFailed = computed(
+  () =>
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    packs.firstPage.value.status === 'failed'
+)
+const isFirstPagePending = computed(
   () =>
     isSearchBacked.value &&
     searchResults.value.length === 0 &&
-    searchQuery.value === ''
+    !isFirstPageForInput.value
 )
-// Use the new composable for tab-based display packs
 const {
   displayPacks,
   isSortable,
   isLoading: isTabLoading,
   workflowPacks
-} = useManagerDisplayPacks(selectedNavId, searchResults, searchQuery, sortField)
+} = useManagerDisplayPacks(
+  selectedNavId,
+  searchResults,
+  trimmedSearchQuery,
+  sortField
+)
 
-// Tab helpers for template
 const isUpdateAvailableTab = computed(
   () => selectedTab.value?.id === ManagerTab.UpdateAvailable
 )
@@ -422,7 +444,6 @@ const isUnresolvedTab = computed(
   () => selectedTab.value?.id === ManagerTab.Unresolved
 )
 
-// Map of tab IDs to their empty state i18n key suffixes
 const tabEmptyStateKeys: Record<string, string> = {
   [ManagerTab.AllInstalled]: 'allInstalled',
   [ManagerTab.UpdateAvailable]: 'updateAvailable',
@@ -446,10 +467,10 @@ const isManagerErrorRelevant = computed(() => {
   )
 })
 
-// Empty state messages based on current tab and search state
 const emptyStateTitle = computed(() => {
-  if (isManagerErrorRelevant.value) return t('manager.errorConnecting')
-  if (searchQuery.value) return t('manager.noResultsFound')
+  if (isManagerErrorRelevant.value || isSearchFailed.value)
+    return t('manager.errorConnecting')
+  if (trimmedSearchQuery.value) return t('manager.noResultsFound')
 
   const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
@@ -460,14 +481,9 @@ const emptyStateTitle = computed(() => {
 })
 
 const emptyStateMessage = computed(() => {
-  if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
-  if (searchQuery.value) {
-    const baseMessage = t('manager.tryDifferentSearch')
-    if (isLegacyManagerSearch.value) {
-      return `${baseMessage}\n\n${t('manager.legacyManagerSearchTip')}`
-    }
-    return baseMessage
-  }
+  if (isManagerErrorRelevant.value || isSearchFailed.value)
+    return t('manager.tryAgainLater')
+  if (trimmedSearchQuery.value) return t('manager.tryDifferentSearch')
 
   const tabId = selectedTab.value?.id
   const emptyStateKey = tabId ? tabEmptyStateKeys[tabId] : undefined
@@ -476,6 +492,12 @@ const emptyStateMessage = computed(() => {
     ? t(`manager.emptyState.${emptyStateKey}.message`)
     : t('manager.tryDifferentSearch')
 })
+
+const retryLabel = computed(() =>
+  isSearchFailed.value ? t('g.retry') : undefined
+)
+
+const retrySearch = () => void packs.loadNew()
 
 const onClickWarningLink = () => {
   window.open(
@@ -489,7 +511,28 @@ const onClickWarningLink = () => {
 const isLoading = computed(() => {
   if (isSearchLoading.value) return searchResults.value.length === 0
   if (isTabLoading.value) return true
-  return isInitialLoad.value
+  return isFirstPagePending.value
+})
+
+const isSettledWithNoPacks = computed(
+  () =>
+    displayPacks.value.length === 0 &&
+    !isLoading.value &&
+    !isManagerErrorRelevant.value &&
+    !hasMorePacks.value
+)
+
+const isUnmatchedLegacyManagerSearch = computed(() => {
+  const firstPage = packs.firstPage.value
+  return (
+    isNewManagerUI.value &&
+    isSearchBacked.value &&
+    isFirstPageForInput.value &&
+    firstPage.status === 'loaded' &&
+    isLegacyManagerQuery(firstPage.query) &&
+    !displayPacks.value.some((pack) => isLegacyManagerQuery(pack.id ?? '')) &&
+    (firstPage.rawResultsEmpty || isSettledWithNoPacks.value)
+  )
 })
 
 const resultsWithKeys = computed(

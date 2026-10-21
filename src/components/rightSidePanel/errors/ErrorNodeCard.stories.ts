@@ -14,7 +14,7 @@ const meta: Meta<typeof ErrorNodeCard> = {
     (story) => ({
       components: { story },
       template:
-        '<div class="w-[330px] bg-base-surface border border-interface-stroke rounded-lg p-4"><story /></div>'
+        '<div class="w-[330px] bg-secondary border border-border rounded-lg p-4"><story /></div>'
     })
   ]
 }

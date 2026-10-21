@@ -6,7 +6,6 @@ import type {
   BillingPlansResponse,
   BillingStatusResponse,
   ErrorResponse,
-  Plan,
   PreviewSubscribeResponse,
   SubscribeResponse,
   TeamCreditStops
@@ -24,6 +23,7 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -49,35 +49,34 @@ const BOOT_SETTINGS = {
   'Comfy.TutorialCompleted': true
 }
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 5,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400,
+  maxSeats: 5
+})
 
-const STANDARD_ANNUAL_PLAN = {
+const STANDARD_ANNUAL_PLAN = createPlan({
   slug: 'standard-annual',
   tier: 'STANDARD',
   duration: 'ANNUAL',
-  price_cents: 19_200,
-  credits_cents: 4_200,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 19_200,
-    total_credits_cents: 4_200
-  }
-} satisfies Plan
+  priceCents: 19_200,
+  monthlyCredits: 4_200
+})
+
+const PRO_ANNUAL_PLAN = createPlan({
+  slug: 'pro-annual',
+  tier: 'PRO',
+  duration: 'ANNUAL',
+  priceCents: 96_000,
+  monthlyCredits: 21_100
+})
+
+const PERSONAL_ANNUAL_PLANS = {
+  plans: [STANDARD_ANNUAL_PLAN, CREATOR_ANNUAL_PLAN, PRO_ANNUAL_PLAN]
+} satisfies BillingPlansResponse
 
 const ACTIVE_TEAM_STATUS = {
   is_active: true,
@@ -129,19 +128,27 @@ const BILLING_BALANCE = {
   currency: 'USD'
 } satisfies BillingBalanceResponse
 
+const CURRENT_PLAN = { action: 'none', denied_reason: 'same_plan' } as const
+
 const TEAM_WITH_CREATOR_PLANS = {
   current_plan_slug: 'team_per_credit_annual',
-  plans: [CREATOR_ANNUAL_PLAN]
+  plans: [{ ...CREATOR_ANNUAL_PLAN, action: 'downgrade' }]
 } satisfies BillingPlansResponse
 
 const STANDARD_WITH_CREATOR_PLANS = {
   current_plan_slug: 'standard-annual',
-  plans: [STANDARD_ANNUAL_PLAN, CREATOR_ANNUAL_PLAN]
+  plans: [
+    { ...STANDARD_ANNUAL_PLAN, ...CURRENT_PLAN },
+    { ...CREATOR_ANNUAL_PLAN, action: 'change' }
+  ]
 } satisfies BillingPlansResponse
 
 const CREATOR_WITH_CREATOR_PLANS = {
-  ...STANDARD_WITH_CREATOR_PLANS,
-  current_plan_slug: 'creator-annual'
+  current_plan_slug: 'creator-annual',
+  plans: [
+    { ...STANDARD_ANNUAL_PLAN, action: 'downgrade' },
+    { ...CREATOR_ANNUAL_PLAN, ...CURRENT_PLAN }
+  ]
 } satisfies BillingPlansResponse
 
 const TEAM_CREDIT_STOPS = {
@@ -150,32 +157,72 @@ const TEAM_CREDIT_STOPS = {
     {
       id: 'team_200',
       credits: 42_200,
-      monthly: { list_price_cents: 20_000, price_cents: 20_000 },
-      yearly: { list_price_cents: 20_000, price_cents: 20_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 20_000,
+        price_cents: 20_000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 20_000,
+        price_cents: 20_000
+      }
     },
     {
       id: 'team_400',
       credits: 84_400,
-      monthly: { list_price_cents: 40_000, price_cents: 39_000 },
-      yearly: { list_price_cents: 40_000, price_cents: 38_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 40_000,
+        price_cents: 39_000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 40_000,
+        price_cents: 38_000
+      }
     },
     {
       id: 'team_700',
       credits: 147_700,
-      monthly: { list_price_cents: 70_000, price_cents: 66_500 },
-      yearly: { list_price_cents: 70_000, price_cents: 63_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 70_000,
+        price_cents: 66_500
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 70_000,
+        price_cents: 63_000
+      }
     },
     {
       id: 'team_1400',
       credits: 295_400,
-      monthly: { list_price_cents: 140_000, price_cents: 129_500 },
-      yearly: { list_price_cents: 140_000, price_cents: 119_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 140_000,
+        price_cents: 129_500
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 140_000,
+        price_cents: 119_000
+      }
     },
     {
       id: 'team_2500',
       credits: 527_500,
-      monthly: { list_price_cents: 250_000, price_cents: 225_000 },
-      yearly: { list_price_cents: 250_000, price_cents: 200_000 }
+      monthly: {
+        action: 'subscribe',
+        list_price_cents: 250_000,
+        price_cents: 225_000
+      },
+      yearly: {
+        action: 'subscribe',
+        list_price_cents: 250_000,
+        price_cents: 200_000
+      }
     }
   ]
 } satisfies TeamCreditStops
@@ -191,35 +238,23 @@ const TEAM_SUBSCRIBED_RESPONSE = {
   effective_at: '2026-07-21T00:00:00Z'
 } satisfies SubscribeResponse
 
-const TEAM_ANNUAL_PLAN = {
+const TEAM_ANNUAL_PLAN = createPlan({
   slug: 'team_per_credit_annual',
   tier: 'TEAM',
   duration: 'ANNUAL',
-  price_cents: 756_000,
-  credits_cents: 1_772_400,
-  max_seats: 100,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 756_000,
-    total_credits_cents: 1_772_400
-  }
-} satisfies Plan
+  priceCents: 756_000,
+  monthlyCredits: 147_700,
+  maxSeats: 100
+})
 
-const TEAM_MONTHLY_PLAN = {
+const TEAM_MONTHLY_PLAN = createPlan({
   slug: 'team_per_credit_monthly',
   tier: 'TEAM',
   duration: 'MONTHLY',
-  price_cents: 39_000,
-  credits_cents: 84_400,
-  max_seats: 100,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 39_000,
-    total_credits_cents: 84_400
-  }
-} satisfies Plan
+  priceCents: 39_000,
+  monthlyCredits: 84_400,
+  maxSeats: 100
+})
 
 const NEW_TEAM_ANNUAL_SUBSCRIPTION = {
   allowed: true,
@@ -228,8 +263,8 @@ const NEW_TEAM_ANNUAL_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 756_000,
   cost_next_period_cents: 756_000,
-  credits_today_cents: 1_772_400,
-  credits_next_period_cents: 1_772_400,
+  credits_today_cents: TEAM_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: TEAM_ANNUAL_PLAN.credits_cents,
   new_plan: TEAM_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -240,8 +275,8 @@ const NEW_TEAM_MONTHLY_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 39_000,
   cost_next_period_cents: 39_000,
-  credits_today_cents: 84_400,
-  credits_next_period_cents: 84_400,
+  credits_today_cents: TEAM_MONTHLY_PLAN.credits_cents,
+  credits_next_period_cents: TEAM_MONTHLY_PLAN.credits_cents,
   new_plan: TEAM_MONTHLY_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -252,8 +287,8 @@ const NEW_CREATOR_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 
@@ -265,7 +300,7 @@ const SCHEDULED_CREATOR_DOWNGRADE = {
   cost_today_cents: 0,
   cost_next_period_cents: 33_600,
   credits_today_cents: 0,
-  credits_next_period_cents: 7_400,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: {
     ...CREATOR_ANNUAL_PLAN,
     seat_summary: CREATOR_ANNUAL_PLAN.seat_summary
@@ -285,8 +320,9 @@ const IMMEDIATE_CREATOR_UPGRADE = {
   is_immediate: true,
   cost_today_cents: 14_400,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 3_200,
-  credits_next_period_cents: 7_400,
+  credits_today_cents:
+    CREATOR_ANNUAL_PLAN.credits_cents - STANDARD_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   current_plan: {
     slug: STANDARD_ANNUAL_PLAN.slug,
     tier: STANDARD_ANNUAL_PLAN.tier,
@@ -573,6 +609,9 @@ async function mockRecovered3dsSubscription(page: Page) {
 const pricingHeading = (page: Page) =>
   page.getByRole('heading', { name: 'Choose a Plan' })
 
+const SUBSCRIPTION_IN_PROGRESS_DETAIL =
+  'Another subscription change is already in progress'
+
 test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   test('opens the pricing table for a personal owner', async ({ page }) => {
     await setupCloudApp(page, workspace('personal', 'owner'), [])
@@ -581,6 +620,50 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await cloudAppExpect(pricingHeading(page)).toBeVisible()
     await expect(page).not.toHaveURL(/[?&]pricing=/)
+  })
+
+  test('keeps an error toast dismissable over the open dialog', async ({
+    page,
+    toast
+  }) => {
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+
+    await page.goto(`${APP_URL}/?pricing=1`)
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
+    await page.evaluate((detail) => {
+      window.app!.extensionManager.toast.error('Error', {
+        description: detail,
+        duration: 30_000
+      })
+    }, SUBSCRIPTION_IN_PROGRESS_DETAIL)
+
+    const errorToast = toast.toastErrors.filter({
+      hasText: SUBSCRIPTION_IN_PROGRESS_DETAIL
+    })
+    await expect(errorToast).toBeVisible()
+    await toast.dismiss(errorToast)
+
+    await expect(errorToast).toHaveCount(0)
+    await expect(pricingHeading(page)).toBeVisible()
+  })
+
+  test('shows the yearly credit allotment on the personal plan cards, not the catalog cents', async ({
+    page
+  }) => {
+    await setupCloudApp(page, workspace('personal', 'owner'), [])
+    await page.route('**/api/billing/plans', (route) =>
+      route.fulfill(jsonRoute(PERSONAL_ANNUAL_PLANS))
+    )
+
+    await page.goto(`${APP_URL}/?pricing=1`)
+
+    await cloudAppExpect(pricingHeading(page)).toBeVisible()
+    for (const credits of ['50,400', '88,800', '253,200']) {
+      await expect(page.getByText(credits, { exact: true })).toBeVisible()
+    }
+    for (const catalogFigure of ['23,887', '42,086', '50,402', '88,801']) {
+      await expect(page.getByText(catalogFigure, { exact: true })).toBeHidden()
+    }
   })
 
   test('opens on the Team tab for ?pricing=team', async ({ page }) => {
@@ -654,7 +737,8 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
   })
 
   test('restores pending checkout when retrying a timed-out operation', async ({
-    page
+    page,
+    toast
   }) => {
     const subscribeRequests: Request[] = []
     const operationPollRequests: Request[] = []
@@ -711,7 +795,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
     await expect(backButton).toBeEnabled()
     await expect(
-      page.getByText('Subscription verification timed out', { exact: true })
+      toast.withText('Subscription verification timed out')
     ).toBeVisible()
     const pollCountAfterTimeout = operationPollRequests.length
 
@@ -1085,7 +1169,8 @@ test.describe(
       })
 
       test('reconciles status and balance without polling', async ({
-        page
+        page,
+        toast
       }) => {
         await page.goto(`${APP_URL}/?pricing=personal`)
 
@@ -1101,9 +1186,9 @@ test.describe(
         expect((await subscribeResponse).status()).toBe(200)
         expect(subscribeRequests).toHaveLength(1)
 
-        const blockedPopupToast = page
-          .locator('.p-toast-message.p-toast-message-error')
-          .filter({ hasText: 'Failed to change plan' })
+        const blockedPopupToast = toast.toastErrors.filter({
+          hasText: 'Failed to change plan'
+        })
         await expect(blockedPopupToast).toContainText(
           "Couldn't open the payment page — please try again"
         )

@@ -5,6 +5,11 @@ description: 'Writes Playwright e2e tests for ComfyUI_frontend. Use when creatin
 
 # Writing Playwright Tests for ComfyUI_frontend
 
+The design rules that apply at every test level (behavioral assertions,
+lowest proving level, table-driven variants, isolation, no sleeps) are in
+`docs/guidance/testing-principles.md`. This skill covers the Playwright and
+ComfyUI mechanics.
+
 ## Golden Rules
 
 1. **ALWAYS look at existing tests first.** Search `browser_tests/tests/` for similar patterns before writing new tests.
@@ -16,6 +21,12 @@ description: 'Writes Playwright e2e tests for ComfyUI_frontend. Use when creatin
    - Load with `await comfyPage.workflow.loadWorkflow('feature/my_workflow')`
    - Create new assets by starting with `browser_tests/assets/default.json` and manually editing the JSON to match your desired graph state
 
+4. **Seed starting settings with `test.use({ initialSettings })`.** The main
+   fixture replaces backend settings before every test; do not add settings
+   resets in `afterEach`. Keep runtime setters for changes under test. Nested
+   `test.use` replaces the parent's settings object, so include inherited
+   overrides. See [Starting settings and isolation](../../../browser_tests/README.md#starting-settings-and-isolation).
+
 ## Vue Nodes vs LiteGraph: Decision Guide
 
 Choose based on **what you're testing**, not personal preference:
@@ -26,12 +37,10 @@ Choose based on **what you're testing**, not personal preference:
 | Canvas interactions, connections, legacy nodes | `comfyPage.nodeOps.*`            | Canvas-based, use coordinates/references |
 | Both in same test                              | Pick primary, minimize switching | Avoid confusion                          |
 
-**Vue Nodes requires explicit opt-in:**
-
-```typescript
-await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-await comfyPage.vueNodes.waitForNodes()
-```
+Always add `{ tag: '@vue-nodes' }` to the test or `test.describe` when it needs
+Vue Nodes. The fixture enables the renderer before boot and waits for the nodes.
+Never manually set `Comfy.VueNodes.Enabled`, including through `initialSettings`,
+or call `comfyPage.vueNodes.waitForNodes()` in tests.
 
 **Vue Node state uses CSS classes:**
 
@@ -103,7 +112,7 @@ await expect(async () => {
 ## Screenshot Baselines
 
 - **Screenshots are Linux-only.** Don't commit local screenshots.
-- **To update baselines:** Add PR label `New Browser Test Expectations`
+- **To update baselines:** Add PR label `New Browser Test Expectations` (or comment `/update-playwright`); the images from the E2E run's failed screenshot assertions are committed without a rerun; the workflow fails if the run is missing or incomplete. Only the first stale screenshot of each test is captured, so comment `/update-playwright full` to rerun Playwright when one test takes several changed screenshots
 - **Mask dynamic content:**
   ```typescript
   await expect(comfyPage.canvas).toHaveScreenshot('page.png', {
@@ -117,7 +126,8 @@ await expect(async () => {
 2. Extract and view trace: `pnpm dlx playwright show-trace trace.zip`
 3. CI deploys HTML report to Cloudflare Pages (link in PR comment)
 4. Reproduce CI: `CI=true pnpm test:browser`
-5. Local runs: `pnpm test:browser:local`
+5. Local runs: `pnpm test:browser:local`, after the readiness checks in
+   `browser_tests/README.md` → Running Tests
 
 ## Anti-Patterns
 

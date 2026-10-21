@@ -2,20 +2,15 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { defineComponent } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { JobListItem } from '@/composables/queue/useJobList'
 
 vi.mock<unknown>(import('@/composables/queue/useJobMenu'), () => ({
-  useJobMenu: () => ({ jobMenuEntries: [] })
+  useJobMenu: () => ({ jobMenuEntries: { value: [] } })
 }))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync: <T extends (...args: never[]) => unknown>(
-      fn: T
-    ) => fn
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 import QueueOverlayExpanded from '@/components/queue/QueueOverlayExpanded.vue'
 
@@ -33,14 +28,19 @@ const testJob: JobListItem = {
   meta: 'meta',
   state: 'pending'
 }
+const secondJob = { ...testJob, id: 'job-2', title: 'Job 2' }
 
 const JobAssetsListStub = defineComponent({
   name: 'JobAssetsList',
   setup(_, { emit }) {
     return {
+      testJob,
+      secondJob,
       triggerCancel: () => emit('cancel-item', testJob),
       triggerDelete: () => emit('delete-item', testJob),
-      triggerView: () => emit('view-item', testJob)
+      triggerView: () => emit('view-item', testJob),
+      triggerMenu: (item: JobListItem, event: Event) =>
+        emit('menu', item, event)
     }
   },
   template: `
@@ -48,13 +48,23 @@ const JobAssetsListStub = defineComponent({
       <button data-testid="stub-cancel" @click="triggerCancel()" />
       <button data-testid="stub-delete" @click="triggerDelete()" />
       <button data-testid="stub-view" @click="triggerView()" />
+      <button data-testid="stub-menu-first" @click="triggerMenu(testJob, $event)" />
+      <button data-testid="stub-menu-second" @click="triggerMenu(secondJob, $event)" />
+      <button data-testid="stub-menu-context" @contextmenu="triggerMenu(testJob, $event)" />
     </div>
   `
 })
 
-const JobContextMenuStub = {
+const showMenuMock = vi.fn()
+const toggleMenuMock = vi.fn()
+
+const ContextMenuStub = defineComponent({
+  methods: {
+    show: showMenuMock,
+    toggle: toggleMenuMock
+  },
   template: '<div />'
-}
+})
 
 const defaultProps = {
   headerTitle: 'Jobs',
@@ -70,16 +80,27 @@ const stubs = {
   QueueOverlayHeader: QueueOverlayHeaderStub,
   JobFiltersBar: JobFiltersBarStub,
   JobAssetsList: JobAssetsListStub,
-  JobContextMenu: JobContextMenuStub
+  ContextMenu: ContextMenuStub
+}
+
+const global = {
+  stubs,
+  plugins: [
+    createI18n({
+      legacy: false,
+      locale: 'en',
+      messages: { en: { contextMenu: { new: 'New' } } }
+    })
+  ]
 }
 
 describe('QueueOverlayExpanded', () => {
   it('renders JobAssetsList', () => {
     const { container } = render(QueueOverlayExpanded, {
       props: defaultProps,
-      global: { stubs }
+      global
     })
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.job-assets-list-stub')).toBeTruthy()
   })
 
@@ -91,7 +112,7 @@ describe('QueueOverlayExpanded', () => {
 
     render(QueueOverlayExpanded, {
       props: { ...defaultProps, onCancelItem, onDeleteItem, onViewItem },
-      global: { stubs }
+      global
     })
 
     await user.click(screen.getByTestId('stub-cancel'))
@@ -101,5 +122,24 @@ describe('QueueOverlayExpanded', () => {
     expect(onCancelItem).toHaveBeenCalledWith(testJob)
     expect(onDeleteItem).toHaveBeenCalledWith(testJob)
     expect(onViewItem).toHaveBeenCalledWith(testJob)
+  })
+
+  it('toggles the same clicked job and repositions for another job or right click', async () => {
+    const user = userEvent.setup()
+    render(QueueOverlayExpanded, {
+      props: defaultProps,
+      global
+    })
+
+    await user.click(screen.getByTestId('stub-menu-first'))
+    await user.click(screen.getByTestId('stub-menu-first'))
+    await user.click(screen.getByTestId('stub-menu-second'))
+    await user.pointer({
+      keys: '[MouseRight]',
+      target: screen.getByTestId('stub-menu-context')
+    })
+
+    expect(toggleMenuMock).toHaveBeenCalledOnce()
+    expect(showMenuMock).toHaveBeenCalledTimes(3)
   })
 })

@@ -22,7 +22,7 @@ export default defineConfig({
     '@hey-api/typescript',
     {
       name: 'zod',
-      compatibilityVersion: 3,
+      compatibilityVersion: 4,
       definitions: true,
       requests: true,
       responses: true

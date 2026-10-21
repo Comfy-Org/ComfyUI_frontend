@@ -1,7 +1,9 @@
+// @vitest-environment node
+
 import { describe, expect, it } from 'vitest'
 
-import type { WorkshopModel } from '../src/config/models-catalogue'
-import type { HubTemplate } from '../src/lib/hub/types'
+import type { WorkshopModel } from '@/config/models-catalogue'
+import type { HubTemplate } from '@/lib/hub/types'
 import { buildVersions } from './generate-workshop-versions'
 
 const baseModel: WorkshopModel = {

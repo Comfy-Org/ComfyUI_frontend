@@ -1,11 +1,15 @@
-import type { LGraph } from '../LGraph'
-import type { LLink } from '../LLink'
-import type { ReadOnlyRect } from '../interfaces'
+import type { LGraph, LLink } from '@/lib/litegraph/src/types/entityRegistry'
+
+import type { HiddenLinkBadge } from './linkBadges'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { compareNodeIds } from '@/types/nodeId'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { drawHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
+import {
+  layoutHiddenLinkBadges,
+  queryLinkBadgeAtPoint,
+  queryLinkBadgeHitAtPoint
+} from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
+import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
 
 export function queryHiddenLinkBadgeAtPoint(
   host: object,
@@ -25,44 +29,53 @@ export function queryHiddenLinkBadgeAtPoint(
   }
 }
 
-export function drawGraphLinkBadges(
+/** The stack of hidden links whose pill is under a canvas point. */
+export function queryHiddenLinkStackAtPoint(
+  host: object,
+  graph: LGraph,
+  x: number,
+  y: number
+): { stackKey: string; links: LLink[] } | undefined {
+  const hit = queryLinkBadgeHitAtPoint(host, x, y)
+  if (!hit?.stackKey) return
+  const scope = graphScopeOf(graph)
+  const presentationStore = useLinkPresentationStore()
+  const links = hit.linkIds
+    .map((linkId) => graph.getLink(linkId))
+    .filter(
+      (link): link is LLink =>
+        !!link && !!presentationStore.getPresentation(scope, link.id)?.hidden
+    )
+  if (links.length) return { stackKey: hit.stackKey, links }
+}
+
+export function layoutGraphLinkBadges(
   host: object,
   ctx: CanvasRenderingContext2D,
   graph: LGraph,
-  visibleArea: ReadOnlyRect,
   linkTypeColors: Readonly<Record<string | number, string>>,
   defaultLinkColor: string
-): void {
+): ReturnType<typeof layoutHiddenLinkBadges> {
   const scope = graphScopeOf(graph)
   const presentationStore = useLinkPresentationStore()
-  const hiddenLinks: LLink[] = []
+  const hiddenLinks: HiddenLinkBadge[] = []
   for (const linkId of presentationStore.graphHiddenLinkIds(scope)) {
     const link = graph.getLink(linkId)
-    if (link) hiddenLinks.push(link)
-  }
-  hiddenLinks.sort(
-    (first, second) =>
-      compareNodeIds(first.origin_id, second.origin_id) ||
-      first.origin_slot - second.origin_slot ||
-      first.id - second.id
-  )
-  for (const link of hiddenLinks) {
+    if (!link) continue
     const endpoints = getLinkEndpointPositions(graph, link)
     const presentation = presentationStore.getPresentation(scope, link.id)
     if (!endpoints || !presentation) continue
 
-    const [startPos, endPos] = endpoints
-    drawHiddenLinkBadges(
-      host,
-      ctx,
+    hiddenLinks.push({
       link,
       presentation,
-      startPos,
-      endPos,
-      (typeof link.color === 'string' && link.color) ||
-        linkTypeColors[link.type] ||
-        defaultLinkColor,
-      visibleArea
-    )
+      startPos: endpoints[0],
+      endPos: endpoints[1],
+      color:
+        (typeof link.color === 'string' && link.color) ||
+        linkTypeColors[slotTypeKey(link.type)] ||
+        defaultLinkColor
+    })
   }
+  return layoutHiddenLinkBadges(host, ctx, hiddenLinks, scope.owningGraphId)
 }

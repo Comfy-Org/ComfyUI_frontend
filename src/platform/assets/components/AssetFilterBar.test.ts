@@ -1,6 +1,6 @@
-/* eslint-disable testing-library/no-container */
-/* eslint-disable testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
+/* oxlint-disable testing-library/no-container */
+/* oxlint-disable testing-library/no-node-access */
+/* oxlint-disable testing-library/prefer-user-event */
 import { fireEvent, render } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'

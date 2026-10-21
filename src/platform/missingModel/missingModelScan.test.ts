@@ -1,10 +1,10 @@
-import type * as I18nModule from '@/i18n'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
+import { registerComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
+import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -16,9 +16,11 @@ import {
   scanNodeModelCandidates,
   isModelFileName,
   enrichWithEmbeddedMetadata,
+  hasPendingVerification,
   verifyAssetSupportedCandidates,
   MODEL_FILE_EXTENSIONS
 } from '@/platform/missingModel/missingModelScan'
+import type { ReleaseModelOptions } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -256,10 +258,6 @@ function makeNestedPromotedModelGraph({
 }
 
 const noAssetSupport = () => false
-
-beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
-})
 
 beforeEach(() => {
   vi.mocked(useAssetsStore().updateModelsForNodeType).mockImplementation(
@@ -1741,10 +1739,7 @@ const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
-  st: (_key: string, fallback: string) => fallback
-}))
+vi.mock(import('@/i18n'))
 
 function makeAssetCandidate(
   name: string,
@@ -1976,5 +1971,249 @@ describe('verifyAssetSupportedCandidates', () => {
     await verifyAssetSupportedCandidates(candidates)
 
     expect(candidates[0].isMissing).toBe(false)
+  })
+})
+
+describe('on a developer-platform deployment', () => {
+  const releaseModelOptions = async (nodeType: string, widgetName: string) =>
+    nodeType === 'CheckpointLoaderSimple' && widgetName === 'ckpt_name'
+      ? ['release_model.safetensors']
+      : undefined
+
+  beforeEach(() => {
+    mockUpdateModelsForNodeType.mockResolvedValue(undefined)
+    mockGetAssets.mockReturnValue([])
+  })
+
+  it.for([
+    {
+      when: 'the Release lists the model',
+      widget: makeAssetWidget('ckpt_name', 'release_model.safetensors'),
+      options: releaseModelOptions,
+      isMissing: false
+    },
+    {
+      when: 'the Release lists the model on an asset-supported combo',
+      widget: makeComboWidget('ckpt_name', 'release_model.safetensors'),
+      options: releaseModelOptions,
+      isMissing: false
+    },
+    {
+      when: 'the Release does not list the model',
+      widget: makeAssetWidget('ckpt_name', 'other_model.safetensors'),
+      options: releaseModelOptions,
+      isMissing: true
+    },
+    {
+      when: 'the editor runs on Comfy Cloud',
+      widget: makeAssetWidget('ckpt_name', 'release_model.safetensors'),
+      options: undefined,
+      isMissing: true
+    }
+  ])(
+    'takes the model as missing: $isMissing, when $when',
+    async ({ widget, options, isMissing }) => {
+      const graph = makeGraph([makeNode(1, 'CheckpointLoaderSimple', [widget])])
+      const candidates = scanAllModelCandidates(
+        graph,
+        () => true,
+        undefined,
+        options
+      )
+
+      await verifyAssetSupportedCandidates(candidates)
+
+      expect(candidates).toHaveLength(1)
+      expect(candidates[0].isMissing).toBe(isMissing)
+    }
+  )
+})
+
+describe("while the page's deployment listing is slow", () => {
+  beforeEach(() => {
+    mockUpdateModelsForNodeType.mockResolvedValue(undefined)
+    mockGetAssets.mockReturnValue([])
+  })
+
+  function scanReleaseModel(releaseModelOptions: ReleaseModelOptions) {
+    const graph = makeGraph([
+      makeNode(1, 'CheckpointLoaderSimple', [
+        makeAssetWidget('ckpt_name', 'release_model.safetensors')
+      ])
+    ])
+    return scanAllModelCandidates(
+      graph,
+      () => true,
+      undefined,
+      releaseModelOptions
+    )
+  }
+
+  it('takes the model the Release lists as present when the options answer after 6 seconds', async () => {
+    const candidates = scanReleaseModel(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(() => resolve(['release_model.safetensors']), 6000)
+        )
+    )
+
+    const verifying = verifyAssetSupportedCandidates(candidates)
+    await vi.advanceTimersByTimeAsync(6000)
+    await verifying
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+  })
+
+  it('checks the model against the library when the Release options are unknown', async () => {
+    const candidates = scanReleaseModel(async () => undefined)
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(true)
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
+  })
+
+  it('settles at once when the scan is aborted before the options answer', async () => {
+    const candidates = scanReleaseModel(
+      (_nodeType, _widgetName, signal) =>
+        new Promise((resolve) =>
+          signal?.addEventListener('abort', () => resolve(undefined), {
+            once: true
+          })
+        )
+    )
+    const controller = new AbortController()
+
+    const verifying = verifyAssetSupportedCandidates(
+      candidates,
+      controller.signal
+    )
+    controller.abort()
+    await verifying
+
+    expect(candidates[0].isMissing).toBeUndefined()
+    expect(mockUpdateModelsForNodeType).not.toHaveBeenCalled()
+  })
+})
+
+describe('remote combo inventory', () => {
+  function makeRemoteCombo(value: string) {
+    const widget = makeComboWidget('file_name', value, ['0', '1'])
+    const inventory: { status: ComboWidgetInventoryStatus } = {
+      status: 'loading'
+    }
+    let release = () => {}
+    const settled = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    registerComboWidgetInventory(widget, {
+      getStatus: () => inventory.status,
+      waitForSettled: () => settled
+    })
+    const node = makeNode(1, 'RemoteFileNode', [widget])
+    const graph = makeGraph([node])
+    const settle = (status: ComboWidgetInventoryStatus, options: string[]) => {
+      widget.options.values = options
+      inventory.status = status
+      release()
+    }
+    return {
+      node,
+      widget,
+      settle,
+      scan: () => scanNodeModelCandidates(graph, node, noAssetSupport)
+    }
+  }
+
+  it('defers a remote combo whose inventory is still loading', () => {
+    const { scan } = makeRemoteCombo('selected.safetensors')
+
+    const [candidate] = scan()
+
+    expect(candidate.isMissing).toBeUndefined()
+    expect(hasPendingVerification(candidate)).toBe(true)
+  })
+
+  it('confirms the value against the settled inventory', async () => {
+    const found = makeRemoteCombo('selected.safetensors')
+    const missing = makeRemoteCombo('other.safetensors')
+    const candidates = [...found.scan(), ...missing.scan()]
+
+    const verifying = verifyAssetSupportedCandidates(candidates)
+    found.settle('ready', ['selected.safetensors'])
+    missing.settle('ready', ['selected.safetensors'])
+    await verifying
+
+    expect(candidates.map((c) => c.isMissing)).toEqual([false, true])
+    expect(candidates.some(hasPendingVerification)).toBe(false)
+  })
+
+  it('discards the deferred result when the selected value changed', async () => {
+    const { widget, settle, scan } = makeRemoteCombo('selected.safetensors')
+    const candidates = scan()
+    widget.value = 'new-selection.safetensors'
+
+    const verifying = verifyAssetSupportedCandidates(candidates)
+    settle('ready', ['other.safetensors'])
+    await verifying
+
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+
+  it('leaves the result open when the inventory fails to load', async () => {
+    const { settle, scan } = makeRemoteCombo('selected.safetensors')
+    const candidates = scan()
+
+    const verifying = verifyAssetSupportedCandidates(candidates)
+    settle('error', [])
+    await verifying
+
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+  it('keeps the deferred check on enriched copies', async () => {
+    const { node, settle, scan } = makeRemoteCombo('selected.safetensors')
+    Object.assign(node, {
+      properties: {
+        models: [
+          {
+            name: 'selected.safetensors',
+            url: 'https://example.com/selected.safetensors',
+            directory: 'checkpoints'
+          }
+        ]
+      }
+    })
+    const [fromNode] = scan()
+    const [fromWorkflow] = enrichWithEmbeddedMetadata(
+      [fromNode],
+      fromPartial<ComfyWorkflowJSON>({ nodes: [], links: [] })
+    )
+    expect(fromNode.url).toBe('https://example.com/selected.safetensors')
+    expect(hasPendingVerification(fromWorkflow)).toBe(true)
+
+    const verifying = verifyAssetSupportedCandidates([fromWorkflow])
+    settle('ready', ['selected.safetensors'])
+    await verifying
+
+    expect(fromWorkflow.isMissing).toBe(false)
+  })
+
+  it('releases the deferred check when the scan is aborted', async () => {
+    const { scan } = makeRemoteCombo('selected.safetensors')
+    const candidates = scan()
+    const controller = new AbortController()
+
+    const verifying = verifyAssetSupportedCandidates(
+      candidates,
+      controller.signal
+    )
+    controller.abort()
+    await verifying
+
+    expect(candidates[0].isMissing).toBeUndefined()
+    expect(hasPendingVerification(candidates[0])).toBe(false)
   })
 })

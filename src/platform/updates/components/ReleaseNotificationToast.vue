@@ -13,7 +13,7 @@
 
       <template #footer-start>
         <a
-          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-base-foreground"
+          class="flex items-center gap-2 py-1 text-sm font-normal text-muted-foreground hover:text-foreground"
           :href="changelogUrl"
           target="_blank"
           rel="noopener noreferrer"
@@ -28,7 +28,7 @@
         <Button
           variant="link"
           size="unset"
-          class="h-6 px-0 text-sm font-normal"
+          class="h-6 px-0 font-normal"
           @click="handleSkip"
         >
           {{ $t('releaseToast.skip') }}
@@ -56,23 +56,22 @@ import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { isDesktop } from '@/platform/distribution/types'
 import { formatVersionAnchor } from '@/utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-import type { ReleaseNote } from '../common/releaseService'
-import { useReleaseStore } from '../common/releaseStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 
-const { position = 'bottom-left' } = defineProps<{
+const { position = 'bottom-left', isVisible = true } = defineProps<{
   position?: 'bottom-left' | 'bottom-right'
+  isVisible?: boolean
 }>()
 
 const { buildDocsUrl } = useExternalLink()
 const { toastErrorHandler } = useErrorHandling()
 const releaseStore = useReleaseStore()
-const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const { t } = useI18n()
 
 // Local state for dismissed status
@@ -84,13 +83,8 @@ const latestRelease = computed<ReleaseNote | null>(() => {
 })
 
 // Show toast when new version available and not dismissed
-// Node selection mode keeps the canvas clear of everything but the graph and
-// its own banner, so this popup steps aside for the duration and returns after.
 const shouldShow = computed(
-  () =>
-    releaseStore.shouldShowToast &&
-    !isDismissed.value &&
-    !agentNodeSelectionStore.isActive
+  () => releaseStore.shouldShowToast && !isDismissed.value && isVisible
 )
 
 // Generate changelog URL with version anchor (language-aware)

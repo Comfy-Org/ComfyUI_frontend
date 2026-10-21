@@ -68,9 +68,7 @@ function makeResult(
 
 beforeEach(() => {
   useAssetsStore().outputAssets.hasMore = false
-  vi.spyOn(useAssetsStore().outputAssets, 'loadMore').mockResolvedValue(
-    undefined
-  )
+  vi.spyOn(useAssetsStore().outputAssets, 'loadMore').mockResolvedValue(false)
   vi.mocked(useLinearOutputStore().selectAsLatest).mockImplementation(
     () => undefined
   )
@@ -173,10 +171,14 @@ describe(useOutputHistory, () => {
       const { allOutputs } = useOutputHistory()
       const outputs = allOutputs(asset)
 
-      expect(outputs).toHaveLength(2)
-      // Should be reversed
-      expect(outputs[0].filename).toBe('b.png')
-      expect(outputs[1].filename).toBe('a.png')
+      expect(outputs.map(({ filename }) => filename)).toEqual([
+        'b.png',
+        'a.png'
+      ])
+      expect(results.map(({ filename }) => filename)).toEqual([
+        'a.png',
+        'b.png'
+      ])
     })
 
     it('filters outputs to selected output nodes only', () => {
@@ -305,12 +307,13 @@ describe(useOutputHistory, () => {
       useOutputHistory()
       await nextTick()
 
-      expect(
-        vi.mocked(useLinearOutputStore().resolveIfReady)
-      ).toHaveBeenCalledWith('job-1', true)
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).toHaveBeenCalledWith('history:a1:0')
+      expect(useLinearOutputStore().resolveIfReady).toHaveBeenCalledWith(
+        'job-1',
+        true
+      )
+      expect(useLinearOutputStore().selectAsLatest).toHaveBeenCalledWith(
+        'history:a1:0'
+      )
     })
 
     it('does not select first history when a selection exists', async () => {
@@ -330,12 +333,11 @@ describe(useOutputHistory, () => {
       useOutputHistory()
       await nextTick()
 
-      expect(
-        vi.mocked(useLinearOutputStore().resolveIfReady)
-      ).toHaveBeenCalledWith('job-1', true)
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).not.toHaveBeenCalled()
+      expect(useLinearOutputStore().resolveIfReady).toHaveBeenCalledWith(
+        'job-1',
+        true
+      )
+      expect(useLinearOutputStore().selectAsLatest).not.toHaveBeenCalled()
     })
 
     it('skips jobs with no matching asset in media', async () => {
@@ -345,9 +347,7 @@ describe(useOutputHistory, () => {
       useOutputHistory()
       await nextTick()
 
-      expect(
-        vi.mocked(useLinearOutputStore().resolveIfReady)
-      ).not.toHaveBeenCalled()
+      expect(useLinearOutputStore().resolveIfReady).not.toHaveBeenCalled()
     })
   })
 
@@ -361,18 +361,16 @@ describe(useOutputHistory, () => {
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()
 
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).toHaveBeenCalledWith('history:a1:0')
+      expect(useLinearOutputStore().selectAsLatest).toHaveBeenCalledWith(
+        'history:a1:0'
+      )
     })
 
     it('selects null when no media', () => {
       const { selectFirstHistory } = useOutputHistory()
       selectFirstHistory()
 
-      expect(
-        vi.mocked(useLinearOutputStore().selectAsLatest)
-      ).toHaveBeenCalledWith(null)
+      expect(useLinearOutputStore().selectAsLatest).toHaveBeenCalledWith(null)
     })
   })
 

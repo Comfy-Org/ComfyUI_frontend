@@ -6,12 +6,13 @@ import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
 import type { BrandButtonVariants } from './brandButton.variants'
 import { brandButtonVariants } from './brandButton.variants'
-import { resolveRel } from '../../utils/cta'
+import { resolveRel } from '@/utils/cta'
 
 const props = defineProps<{
   href?: string
   target?: string
   rel?: string
+  disabled?: boolean
   download?: AnchorHTMLAttributes['download']
   variant?: BrandButtonVariants['variant']
   size?: BrandButtonVariants['size']
@@ -25,8 +26,9 @@ const resolvedRel = computed(() =>
 
 <template>
   <component
-    :is="props.href ? 'a' : 'button'"
-    :href="props.href"
+    :is="props.href && !props.disabled ? 'a' : 'button'"
+    :href="props.disabled ? undefined : props.href"
+    :disabled="props.href && !props.disabled ? undefined : props.disabled"
     :target="props.target"
     :rel="resolvedRel"
     :download="props.download"
@@ -37,7 +39,7 @@ const resolvedRel = computed(() =>
       )
     "
   >
-    <span class="ppformula-text-center">
+    <span class="flex items-center">
       <slot />
     </span>
   </component>

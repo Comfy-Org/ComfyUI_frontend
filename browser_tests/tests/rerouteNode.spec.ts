@@ -21,8 +21,9 @@ test.describe('Reroute Node', { tag: ['@screenshot', '@node'] }, () => {
     const workflowsTab = comfyPage.menu.workflowsTab
     await workflowsTab.open()
     await workflowsTab.getPersistedItem(workflowName).click({ button: 'right' })
-    const insertButton = comfyPage.page.locator('.p-contextmenu-item-link', {
-      hasText: 'Insert'
+    const insertButton = comfyPage.page.getByRole('menuitem', {
+      name: 'Insert',
+      exact: true
     })
     await insertButton.click()
 
@@ -39,9 +40,11 @@ test.describe(
   'LiteGraph Native Reroute Node',
   { tag: ['@screenshot', '@node'] },
   () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      await comfyPage.settings.setSetting('LiteGraph.Reroute.SplineOffset', 80)
+    test.use({
+      initialSettings: {
+        'Comfy.UseNewMenu': 'Disabled',
+        'LiteGraph.Reroute.SplineOffset': 80
+      }
     })
 
     test('loads from workflow', async ({ comfyPage }) => {

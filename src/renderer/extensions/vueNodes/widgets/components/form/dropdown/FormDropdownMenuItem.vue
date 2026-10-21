@@ -5,6 +5,9 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
+import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
+import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
 import {
   findServerPreviewUrl,
   isAssetPreviewSupported
@@ -91,22 +94,18 @@ function handleVideoLoad(event: Event) {
   <div
     :class="
       cn(
-        'group/item flex cursor-pointer gap-1 bg-component-node-widget-background select-none',
+        'group/item flex cursor-pointer gap-1 bg-input select-none',
         'transition-[transform,box-shadow,background-color] duration-150',
         {
           'flex-col text-center': layout === 'grid',
           'max-h-16 flex-row rounded-lg text-left hover:scale-102 active:scale-98':
             layout === 'list',
-          'flex-row rounded-lg text-left hover:bg-component-node-widget-background-hovered':
+          'flex-row rounded-lg text-left hover:bg-muted':
             layout === 'list-small',
           // selection
-          'ring-2 ring-component-node-widget-background-highlighted':
-            layout === 'list' && selected
+          'ring-2 ring-muted-foreground': layout === 'list' && selected
         },
-        candidate &&
-          !selected &&
-          layout !== 'grid' &&
-          'bg-component-node-widget-background-hovered'
+        candidate && !selected && layout !== 'grid' && 'bg-muted'
       )
     "
     @click="handleClick"
@@ -118,14 +117,14 @@ function handleVideoLoad(event: Event) {
       :class="
         cn(
           'relative',
-          'aspect-square w-full overflow-hidden outline-1 -outline-offset-1 outline-interface-stroke',
+          'aspect-square w-full overflow-hidden outline-1 -outline-offset-1 outline-border',
           'transition-[transform,box-shadow] duration-150',
           {
             'max-w-16 min-w-16 rounded-l-lg': layout === 'list',
             'rounded-sm group-hover/item:scale-108 group-active/item:scale-95':
               layout === 'grid',
             // selection
-            'ring-2 ring-component-node-widget-background-highlighted':
+            'ring-2 ring-muted-foreground':
               layout === 'grid' && (selected || candidate)
           }
         )
@@ -136,10 +135,10 @@ function handleVideoLoad(event: Event) {
         v-if="selected"
         :aria-label="t('g.selected')"
         role="img"
-        class="absolute top-1 left-1 size-4 rounded-full border border-base-foreground bg-primary-background"
+        class="absolute top-1 left-1 size-4 rounded-full border border-foreground bg-primary"
       >
         <i
-          class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-base-foreground"
+          class="bold icon-[lucide--check] size-3 translate-y-[-0.5px] text-foreground"
           aria-hidden="true"
         />
       </div>
@@ -163,7 +162,7 @@ function handleVideoLoad(event: Event) {
       <div
         v-else-if="isMesh"
         data-testid="dropdown-item-mesh-placeholder"
-        class="flex size-full items-center justify-center bg-modal-card-placeholder-background"
+        class="flex size-full items-center justify-center bg-muted"
       >
         <i class="icon-[lucide--box] text-3xl text-muted-foreground" />
       </div>
@@ -184,21 +183,25 @@ function handleVideoLoad(event: Event) {
         })
       "
     >
-      <span
-        v-tooltip="layout === 'grid' ? (label ?? name) : undefined"
-        :class="
-          cn(
-            'line-clamp-2 block overflow-hidden text-xs wrap-break-word',
-            'transition-colors duration-150',
-            // selection
-            !!selected && 'text-base-foreground'
-          )
-        "
-      >
-        {{ label ?? name }}
-      </span>
+      <Tooltip :disabled="layout !== 'grid'">
+        <TooltipTrigger as-child>
+          <span
+            :class="
+              cn(
+                'line-clamp-2 block overflow-hidden text-xs wrap-break-word',
+                'transition-colors duration-150',
+                // selection
+                !!selected && 'text-foreground'
+              )
+            "
+          >
+            {{ label ?? name }}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>{{ label ?? name }}</TooltipContent>
+      </Tooltip>
       <!-- Meta Data -->
-      <span v-if="actualDimensions" class="text-secondary block text-xs">
+      <span v-if="actualDimensions" class="block text-xs text-muted-foreground">
         {{ actualDimensions }}
       </span>
     </div>
