@@ -52,6 +52,7 @@ export type HubItemSource =
   | 'unplaced_grid'
   | 'category_row'
   | 'app_row'
+  | 'app_grid'
   | 'results_grid'
 
 export type HubFilter = 'catalogue' | 'use_case' | 'category' | 'model' | 'sort'
