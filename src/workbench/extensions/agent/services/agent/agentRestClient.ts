@@ -1,5 +1,7 @@
 import type {
+  AgentAnswerRequest,
   AgentPostMessageRequest,
+  PaginationInfo,
   UploadImageResponse,
   WorkflowResponse
 } from '@comfyorg/ingest-types'
@@ -7,7 +9,7 @@ import {
   zUploadImageResponse,
   zWorkflowResponse
 } from '@comfyorg/ingest-types/zod'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 import type {
   AuthRejectionStatus,
@@ -24,16 +26,22 @@ import {
 import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@/types/authTypes'
 
+import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/attachmentMessages'
+import { withAgentAuth } from './agentAuth'
+
 import {
+  RENDERED_ASK_KINDS,
   zAgentAnswerReceipt,
   zAgentCancelAccepted,
   zAgentError,
+  zAgentIdentity,
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
   zAgentTurnAccepted,
+  zAttachmentRejection,
   zCloudWorkflowIndex
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
   AgentAnswerReceipt,
   AgentCancelAccepted,
@@ -42,13 +50,13 @@ import type {
   AgentThreadSummary,
   AgentTurnAccepted,
   CloudWorkflowEntry
-} from '../../schemas/agentApiSchema'
+} from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-const CLOUD_WORKFLOW_PAGE_SIZE = 100
+const LIST_PAGE_SIZE = 100
 
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
- * request a consent card's buttons wait on, since the card is held disabled
+ * request an ask card's Submit waits on, since the card is held disabled
  * from the click until this settles. A quarter of it, rather than merely lower, so that
  * the caller's single re-drive still fits inside the 60s the card used to be
  * able to wait. Goes through `timeoutMs` rather than a raw signal so a timeout
@@ -75,6 +83,7 @@ const ANSWER_ASK_TIMEOUT_MS = 15_000
 type AgentApiOperation =
   | 'answer_thread_ask'
   | 'cancel_thread_message'
+  | 'get_agent_identity'
   | 'get_cloud_workflow'
   | 'get_run_mode'
   | 'get_thread_messages'
@@ -82,6 +91,7 @@ type AgentApiOperation =
   | 'list_threads'
   | 'post_thread_message'
   | 'put_run_mode'
+  | 'refresh_credential'
   | 'upload_image'
 
 type ReportedAuthScheme = AuthScheme | 'unreported'
@@ -138,12 +148,15 @@ export class AgentApiError extends Error {
   readonly status: number
   readonly body: unknown
   readonly retryAfterSeconds?: number
+  /** The {@link AgentApiOperation} that raised this error. */
+  readonly operation?: string
 
   constructor(
     message: string,
     status: number,
     body: unknown,
-    retryAfterSeconds?: number
+    retryAfterSeconds?: number,
+    operation?: string
   ) {
     super(
       message.trim().length > 0
@@ -154,6 +167,7 @@ export class AgentApiError extends Error {
     this.status = status
     this.body = body
     this.retryAfterSeconds = retryAfterSeconds
+    this.operation = operation
   }
 }
 
@@ -163,6 +177,16 @@ export class AgentResponseUnreadableError extends Error {
     this.name = 'AgentResponseUnreadableError'
   }
 }
+
+type PaginationStopReason = 'missing_cursor' | 'repeated_cursor'
+
+type RequestResult<T> = { ok: true; value: T } | { ok: false; cause: unknown }
+
+export type ThreadListing =
+  | { status: 'complete'; threads: AgentThreadSummary[] }
+  | { status: 'incomplete'; reason: PaginationStopReason }
+  | { status: 'failed'; cause: unknown }
+  | { status: 'aborted' }
 
 /** A workflow index and whether pagination reached its last page. */
 export interface CloudWorkflowListing {
@@ -215,14 +239,7 @@ export interface PostMessageInput {
   clientMessageId?: string
 }
 
-/**
- * The turn POST body, plus `client_message_id`.
- *
- * Widened here rather than in `agentApiSchema.ts` because the generated types are
- * published from the cloud repo's `openapi.yaml`, so the field is only typed
- * locally until the next package release carries it. One line to delete then.
- */
-type TurnPostBody = AgentPostMessageRequest & { client_message_id?: string }
+const CLIENT_VERSION = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
 
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
@@ -260,6 +277,14 @@ function parseErrorBody(text: string): unknown {
 }
 
 function getErrorMessage(body: unknown, fallback: string): string {
+  const refused = zAttachmentRejection.safeParse(body)
+  if (refused.success) {
+    return refusedAttachmentsMessage(
+      refused.data.rejected,
+      refused.data.rejected_count
+    )
+  }
+
   const plain = zAgentError.safeParse(body)
   if (plain.success) {
     return typeof plain.data.error === 'string'
@@ -474,6 +499,15 @@ function asDelaySeconds(seconds: number): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
+function getNextPageCursor(
+  cursor: PaginationInfo['next_cursor'],
+  seenCursors: ReadonlySet<string>
+): { ok: true; cursor: string } | { ok: false; reason: PaginationStopReason } {
+  if (!cursor) return { ok: false, reason: 'missing_cursor' }
+  if (seenCursors.has(cursor)) return { ok: false, reason: 'repeated_cursor' }
+  return { ok: true, cursor }
+}
+
 export function createAgentRestClient() {
   async function toApiError(
     response: Response,
@@ -494,7 +528,8 @@ export function createAgentRestClient() {
       message,
       response.status,
       body,
-      retryAfterSeconds
+      retryAfterSeconds,
+      operation
     )
     if (
       isAuthRejectionStatus(response.status) &&
@@ -515,34 +550,68 @@ export function createAgentRestClient() {
     return apiError
   }
 
+  async function requestResult<T>(
+    operation: AgentApiOperation,
+    route: string,
+    init: Parameters<typeof api.fetchApi>[1],
+    schema: z.ZodType<T>
+  ): Promise<RequestResult<T>> {
+    let authScheme: ReportedAuthScheme = 'unreported'
+    let credential: ReportedAuthCredential = 'unreported'
+    let response: Response
+    try {
+      response = await api.fetchApi(
+        route,
+        await withAgentAuth({
+          ...init,
+          onAuthScheme: (scheme) => {
+            authScheme = scheme
+          },
+          onAuthCredential: (kind) => {
+            credential = kind
+          }
+        })
+      )
+    } catch (cause) {
+      return { ok: false, cause }
+    }
+    if (!response.ok) {
+      try {
+        return {
+          ok: false,
+          cause: await toApiError(response, operation, authScheme, credential)
+        }
+      } catch (cause) {
+        return { ok: false, cause }
+      }
+    }
+    let payload: unknown
+    try {
+      payload = await response.json()
+    } catch (cause) {
+      return {
+        ok: false,
+        cause:
+          cause instanceof SyntaxError
+            ? new AgentResponseUnreadableError(cause)
+            : cause
+      }
+    }
+    const parsed = schema.safeParse(payload)
+    return parsed.success
+      ? { ok: true, value: parsed.data }
+      : { ok: false, cause: parsed.error }
+  }
+
   async function request<T>(
     operation: AgentApiOperation,
     route: string,
     init: Parameters<typeof api.fetchApi>[1],
     schema: z.ZodType<T>
   ): Promise<T> {
-    let authScheme: ReportedAuthScheme = 'unreported'
-    let credential: ReportedAuthCredential = 'unreported'
-    const response = await api.fetchApi(route, {
-      ...init,
-      onAuthScheme: (scheme) => {
-        authScheme = scheme
-      },
-      onAuthCredential: (kind) => {
-        credential = kind
-      }
-    })
-    if (!response.ok) {
-      throw await toApiError(response, operation, authScheme, credential)
-    }
-    let payload: unknown
-    try {
-      payload = await response.json()
-    } catch (error) {
-      if (!(error instanceof SyntaxError)) throw error
-      throw new AgentResponseUnreadableError(error)
-    }
-    return schema.parse(payload)
+    const result = await requestResult(operation, route, init, schema)
+    if (!result.ok) throw result.cause
+    return result.value
   }
 
   function jsonInit(method: string, body: unknown): RequestInit {
@@ -553,12 +622,53 @@ export function createAgentRestClient() {
     }
   }
 
+  async function listAllPages<
+    Page extends { pagination: PaginationInfo },
+    Item
+  >(
+    operation: AgentApiOperation,
+    path: string,
+    schema: z.ZodType<Page>,
+    itemsOf: (page: Page) => Item[],
+    signal?: AbortSignal
+  ): Promise<
+    RequestResult<{ items: Item[]; stopReason?: PaginationStopReason }>
+  > {
+    const items: Item[] = []
+    let cursor: string | undefined
+    let hasMore: boolean
+    const seenCursors = new Set<string>()
+    do {
+      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
+      const result = await requestResult(
+        operation,
+        `${path}?limit=${LIST_PAGE_SIZE}${after}`,
+        { method: 'GET', signal },
+        schema
+      )
+      if (signal?.aborted) return { ok: false, cause: signal.reason }
+      if (!result.ok) return result
+      const page = result.value
+      items.push(...itemsOf(page))
+      hasMore = page.pagination.has_more
+      if (hasMore) {
+        const next = getNextPageCursor(page.pagination.next_cursor, seenCursors)
+        if (!next.ok)
+          return { ok: true, value: { items, stopReason: next.reason } }
+        seenCursors.add(next.cursor)
+        cursor = next.cursor
+      }
+    } while (hasMore)
+    return { ok: true, value: { items } }
+  }
+
   async function postMessage(
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body = withoutUndefined<TurnPostBody>({
+    const body = withoutUndefined<AgentPostMessageRequest>({
       content: req.content,
+      ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: req.workflowId,
       open_tabs: req.tabs?.open_tabs,
       current_tab: req.tabs?.current_tab,
@@ -567,7 +677,13 @@ export function createAgentRestClient() {
       attachments: req.attachments,
       draft: req.draft && { content: req.draft.content },
       current_tab_unbound: req.currentTabUnbound,
-      client_message_id: req.clientMessageId
+      client_message_id: req.clientMessageId,
+      // Not `client_message_id`'s sibling: this is THIS TAB's ComfyUI socket
+      // id, which local agent runs are submitted under so their execution
+      // events reach this canvas (PM-1875). Read ambiently rather than taken
+      // from `req` because it belongs to the socket, not to the message.
+      client_id: api.clientId,
+      client_version: CLIENT_VERSION
     })
     return request(
       'post_thread_message',
@@ -589,14 +705,33 @@ export function createAgentRestClient() {
     )
   }
 
-  async function listThreads(): Promise<AgentThreadSummary[]> {
-    const page = await request(
+  async function listThreads(
+    options: { signal?: AbortSignal } = {}
+  ): Promise<ThreadListing> {
+    if (options.signal?.aborted) return { status: 'aborted' }
+    const result = await listAllPages(
       'list_threads',
       '/agent/threads',
-      { method: 'GET' },
-      zAgentThreads
+      zAgentThreads,
+      (page) => page.threads,
+      options.signal
     )
-    return page.threads
+    if (options.signal?.aborted) return { status: 'aborted' }
+    if (!result.ok) return { status: 'failed', cause: result.cause }
+    const { items, stopReason } = result.value
+    return stopReason
+      ? { status: 'incomplete', reason: stopReason }
+      : { status: 'complete', threads: items }
+  }
+
+  async function getIdentity(): Promise<{ userId: string }> {
+    const identity = await request(
+      'get_agent_identity',
+      '/agent/identity',
+      { method: 'GET' },
+      zAgentIdentity
+    )
+    return { userId: identity.user_id }
   }
 
   async function getRunMode(): Promise<AgentRunModePreference> {
@@ -620,28 +755,15 @@ export function createAgentRestClient() {
   }
 
   async function listCloudWorkflows(): Promise<CloudWorkflowListing> {
-    const entries: CloudWorkflowEntry[] = []
-    let hasMore: boolean
-    let cursor: string | undefined
-    const seenCursors = new Set<string>()
-    do {
-      const after = cursor ? `&after=${encodeURIComponent(cursor)}` : ''
-      const result = await request(
-        'list_cloud_workflows',
-        `/workflows?limit=${CLOUD_WORKFLOW_PAGE_SIZE}${after}`,
-        { method: 'GET' },
-        zCloudWorkflowIndex
-      )
-      entries.push(...result.data)
-      hasMore = result.pagination.has_more
-      if (hasMore) {
-        const nextCursor = result.pagination.next_cursor
-        if (!nextCursor || seenCursors.has(nextCursor)) break
-        seenCursors.add(nextCursor)
-        cursor = nextCursor
-      }
-    } while (hasMore)
-    return { entries, complete: !hasMore }
+    const result = await listAllPages(
+      'list_cloud_workflows',
+      '/workflows',
+      zCloudWorkflowIndex,
+      (page) => page.data
+    )
+    if (!result.ok) throw result.cause
+    const { items, stopReason } = result.value
+    return { entries: items, complete: stopReason === undefined }
   }
 
   async function getCloudWorkflow(
@@ -670,13 +792,22 @@ export function createAgentRestClient() {
   async function answerAsk(
     threadId: string,
     askId: string,
-    selected: string[]
+    answer: AgentAnswerRequest
   ): Promise<AgentAnswerReceipt> {
     return request(
       'answer_thread_ask',
       `/agent/threads/${encodeURIComponent(threadId)}/asks/${encodeURIComponent(askId)}/answer`,
-      { ...jsonInit('POST', { selected }), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
+      { ...jsonInit('POST', answer), timeoutMs: ANSWER_ASK_TIMEOUT_MS },
       zAgentAnswerReceipt
+    )
+  }
+
+  async function refreshCredential(): Promise<void> {
+    await request(
+      'refresh_credential',
+      '/agent/threads?limit=1',
+      { method: 'GET' },
+      z.unknown()
     )
   }
 
@@ -704,12 +835,14 @@ export function createAgentRestClient() {
     postMessage,
     getMessages,
     listThreads,
+    getIdentity,
     getRunMode,
     putRunMode,
     listCloudWorkflows,
     getCloudWorkflow,
     cancelMessage,
     answerAsk,
+    refreshCredential,
     uploadImage
   }
 }

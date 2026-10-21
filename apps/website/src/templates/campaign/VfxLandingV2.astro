@@ -137,6 +137,14 @@ const benefits = ([1, 2, 3, 4] as const).map((id) => ({
           >{t('vfxV2.pipeline.platform')}</BrandButton
         >
       </div>
+      <div class="[&_a]:uppercase">
+        <CallToActionSection
+          locale={locale}
+          headingKey="vfxV2.fdc.heading"
+          primaryLabelKey="vfxV2.fdc.cta"
+          primaryHref={routes.fdct}
+        />
+      </div>
       <FeatureRows01
         locale={locale}
         heading={t('vfx.proof.heading')}

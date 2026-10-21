@@ -4,11 +4,7 @@
   "description": "Shared technical module, not a business domain. Delivers user data out of the browser: direct and blob file downloads, Content-Disposition filename extraction, cloud fetch-as-blob downloads, opening files in a new tab, and clipboard copy with success and failure toasts. Feature-specific export payloads (asset zips, node outputs, workflows, system info) stay with their owning domains.",
   "modules": [
     {
-      "path": "src/base/common/downloadUtil.test.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/base/common/downloadUtil.ts",
+      "path": "src/base/common/**",
       "role": "infrastructure"
     },
     {

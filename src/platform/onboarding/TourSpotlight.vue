@@ -1,5 +1,8 @@
 <template>
-  <div ref="overlayRef" class="pointer-events-none fixed inset-0">
+  <div
+    data-testid="coach-overlay"
+    class="pointer-events-none fixed inset-0 z-tour"
+  >
     <svg
       v-if="useMaskScrim"
       aria-hidden="true"
@@ -22,7 +25,7 @@
       <rect
         width="100%"
         height="100%"
-        class="fill-coach-scrim"
+        class="fill-black/60"
         :mask="`url(#${maskId})`"
       />
       <path
@@ -40,7 +43,7 @@
       :class="
         cn(
           'pointer-events-auto absolute inset-0',
-          !useMaskScrim && !targetRect && 'bg-coach-scrim'
+          !useMaskScrim && !targetRect && 'bg-black/60'
         )
       "
     />
@@ -49,10 +52,11 @@
       data-testid="coach-spotlight"
       :class="
         cn(
-          'pointer-events-none absolute rounded-xl outline-2 outline-coach-ring',
+          'pointer-events-none absolute rounded-xl outline-2 outline-white',
           !targetMoves &&
             'motion-safe:transition-[left,top,width,height,opacity] motion-safe:duration-300',
-          !useMaskScrim && 'shadow-[0_0_0_9999px_var(--color-coach-scrim)]'
+          !useMaskScrim &&
+            'shadow-[0_0_0_9999px_color-mix(in_srgb,var(--color-black)_60%,transparent)]'
         )
       "
       :style="spotlightStyle"
@@ -88,7 +92,7 @@
           data-testid="coach-cursor"
           :class="
             cn(
-              'absolute icon-[lucide--mouse-pointer-2] size-4 text-base-foreground drop-shadow-md',
+              'absolute icon-[lucide--mouse-pointer-2] size-4 text-foreground drop-shadow-md',
               cursorClass
             )
           "
@@ -123,7 +127,7 @@
                 v-if="canGoBack"
                 variant="secondary"
                 size="md"
-                class="border border-solid border-border-default"
+                class="border border-solid"
                 @click="emit('back')"
               >
                 <i class="icon-[lucide--arrow-left]" />
@@ -152,19 +156,10 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  ref,
-  useId,
-  useTemplateRef,
-  watch
-} from 'vue'
+import { computed, nextTick, ref, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { raiseModalLayer, releaseModalLayer } from '@/utils/modalLayerStack'
 
 import CoachmarkCard from './CoachmarkCard.vue'
 import {
@@ -219,7 +214,6 @@ const bodyId = useId()
 const subtitleId = useId()
 const titleId = useId()
 
-const overlayRef = ref<HTMLElement | null>(null)
 const cardRef = ref<HTMLElement | null>(null)
 const { width: windowWidth, height: windowHeight } = useWindowSize()
 
@@ -259,19 +253,6 @@ useEventListener(
   { capture: true }
 )
 
-async function raiseOverlay() {
-  await nextTick()
-  const el = overlayRef.value
-  if (!el) return
-  raiseModalLayer(el)
-}
-
-watch(
-  () => step,
-  () => void raiseOverlay(),
-  { immediate: true }
-)
-
 watch(
   [() => step, () => waitingForTarget],
   () => {
@@ -279,10 +260,6 @@ watch(
   },
   { immediate: true }
 )
-
-onBeforeUnmount(() => {
-  if (overlayRef.value) releaseModalLayer(overlayRef.value)
-})
 
 function viewport() {
   return { width: windowWidth.value, height: windowHeight.value }

@@ -36,6 +36,56 @@ describe('ModelLaunchGallerySection', () => {
     stubIntersectionObserver()
   })
 
+  it('keeps the cards and their links when the gallery heading is omitted', () => {
+    render(ModelLaunchGallerySection, {
+      props: { gallery: { cards: gallery.cards } }
+    })
+
+    expect(screen.queryByRole('heading', { level: 2 })).toBeNull()
+    expect(screen.getByRole('img', { name: 'First render' })).toBeVisible()
+    expect(screen.getByRole('img', { name: 'Second render' })).toBeVisible()
+    expect(screen.getByRole('link', { name: 'First render' })).toHaveAttribute(
+      'href',
+      'https://comfy.org/download/'
+    )
+    expect(screen.getByRole('link', { name: 'Second render' })).toHaveAttribute(
+      'href',
+      'https://comfy.org/download/'
+    )
+  })
+
+  it.for([
+    { headingKey: gallery.headingKey, gapBelowHeading: true },
+    { headingKey: undefined, gapBelowHeading: false }
+  ])(
+    'spaces the grid below a heading only when headingKey=$headingKey',
+    ({ headingKey, gapBelowHeading }) => {
+      render(ModelLaunchGallerySection, {
+        props: { gallery: { cards: gallery.cards, headingKey } }
+      })
+
+      expect(
+        screen
+          .getByTestId('model-launch-gallery-grid')
+          .classList.contains('mt-16')
+      ).toBe(gapBelowHeading)
+    }
+  )
+
+  it('shows the tier badge without a note for cards that omit one', () => {
+    render(ModelLaunchGallerySection, {
+      props: {
+        gallery: {
+          ...gallery,
+          cards: gallery.cards.map(({ note: _note, ...card }) => card)
+        }
+      }
+    })
+
+    expect(screen.getAllByText('Free')).toHaveLength(2)
+    expect(screen.queryByText('Runs locally')).toBeNull()
+  })
+
   it.for([
     { ctaVariant: undefined, cardMeta: undefined, links: 2, notes: 2 },
     { ctaVariant: 'accent' as const, cardMeta: undefined, links: 2, notes: 2 },

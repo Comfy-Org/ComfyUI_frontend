@@ -92,7 +92,7 @@ test.describe(
 
         await agentConversation.vueNodes.selectNode(nodeId)
         await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
-        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(node).toHaveClass(/outline-foreground/)
       })
     })
 
@@ -163,7 +163,7 @@ test.describe(
 
         await agentConversation.vueNodes.selectNode(replacementId)
         await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
-        await expect(node).toHaveClass(/outline-node-component-outline/)
+        await expect(node).toHaveClass(/outline-foreground/)
       })
     })
   }

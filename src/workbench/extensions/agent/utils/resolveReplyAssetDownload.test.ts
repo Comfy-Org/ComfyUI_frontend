@@ -47,6 +47,18 @@ describe('resolveReplyAssetDownload', () => {
     }
   )
 
+  it('uses the asset basename and preserves the source extension', async () => {
+    vi.mocked(isAssetPreviewSupported).mockReturnValue(true)
+    vi.mocked(findOutputAsset).mockResolvedValue({
+      id: 'a1',
+      name: 'output/Final render'
+    })
+
+    const download = await resolveReplyAssetDownload(generatedAsset)
+
+    expect(download.filename).toBe('Final render.png')
+  })
+
   it('authenticates an exact same-origin API view route', async () => {
     const resolved = await resolveReplyAssetDownload(
       asset(`${window.location.origin}/api/view?filename=a.png`)
@@ -97,5 +109,19 @@ describe('resolveReplyAssetDownload', () => {
 
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('strips a re-homed absolute url back to an api route', async () => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (route) => `/ComfyBackendDirect/api${route}`
+    )
+    vi.mocked(isAssetPreviewSupported).mockReturnValue(false)
+
+    const download = await resolveReplyAssetDownload({
+      ...generatedAsset,
+      url: `${window.location.origin}/ComfyBackendDirect/api/view?filename=ComfyUI_00001_.png&type=output`
+    })
+
+    expect(download.url).toBe('/view?filename=ComfyUI_00001_.png&type=output')
   })
 })

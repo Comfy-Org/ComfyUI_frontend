@@ -6,6 +6,10 @@ import type { useExtensionService } from '@/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 import { graphToPrompt } from '@/utils/executionUtil'
+import {
+  deriveWidgetVisibility,
+  isWidgetVisibleOnSurface
+} from '@/types/widgetVisibility'
 
 const registerExtension = vi.hoisted(() =>
   vi.fn<(ext: ComfyExtension) => void>()
@@ -71,6 +75,16 @@ describe('Comfy.CameraAngle extension', () => {
     view.value = 'object'
     view.value = 'not-a-mode'
     expect(view.value).toBe('object')
+  })
+
+  it('keeps the viewport out of the right side panel', async () => {
+    const { view } = await addCameraAngleNode(new LGraph())
+
+    const visibility = view.visibility ?? deriveWidgetVisibility(view)
+
+    expect(
+      isWidgetVisibleOnSurface(visibility, 'panel', { showAdvanced: true })
+    ).toBe(false)
   })
 
   it('enlarges CameraAngle nodes only', () => {

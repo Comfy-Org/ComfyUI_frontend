@@ -17,7 +17,7 @@
         v-for="(url, index) in gridImageUrls"
         :key="index"
         size="unset"
-        class="overflow-hidden rounded-none p-0 ring-border-default hover:ring-1 focus-visible:ring-2"
+        class="overflow-hidden rounded-none p-0 ring-border hover:ring-1 focus-visible:ring-2"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
@@ -41,7 +41,7 @@
         </div>
         <div
           v-else
-          class="flex size-full flex-col items-center justify-center gap-1 text-base-foreground"
+          class="flex size-full flex-col items-center justify-center gap-1 text-foreground"
         >
           <i class="icon-[lucide--sun] size-6" />
           <span class="text-xs">{{ $t('hdrViewer.hdrImage') }}</span>
@@ -51,14 +51,16 @@
         v-if="canExportOutputs"
         class="invisible absolute top-2 right-2 group-focus-within:visible group-hover:visible"
       >
-        <button
-          :class="actionButtonClass"
+        <Button
+          variant="inverted"
+          size="icon"
+          class="shadow-md"
           :title="$t('g.downloadImages')"
           :aria-label="$t('g.downloadImages')"
           @click="handleExportOutputs"
         >
           <i class="icon-[lucide--folder-down] size-4" />
-        </button>
+        </Button>
       </div>
     </div>
 
@@ -66,7 +68,7 @@
     <div
       v-if="viewMode === 'gallery'"
       ref="galleryPanelEl"
-      class="group/panel relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm bg-transparent"
+      class="group/panel relative flex min-h-0 w-full flex-1 cursor-pointer overflow-hidden rounded-sm"
       tabindex="0"
       role="region"
       :aria-roledescription="$t('g.imageGallery')"
@@ -77,13 +79,13 @@
       <div
         v-if="imageError"
         role="alert"
-        class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-base-foreground"
+        class="flex size-full flex-1 flex-col items-center justify-around self-center py-8 text-center text-foreground"
       >
-        <i class="mb-2 icon-[lucide--image-off] size-12 text-base-foreground" />
-        <p class="text-sm text-base-foreground">
+        <i class="mb-2 icon-[lucide--image-off] size-12" />
+        <p class="text-sm">
           {{ $t('g.imageFailedToLoad') }}
         </p>
-        <p class="mt-1 text-xs text-base-foreground">
+        <p class="mt-1 text-xs">
           {{ getImageFilename(currentImageUrl) }}
         </p>
       </div>
@@ -98,13 +100,13 @@
         v-if="!imageError && isHdrPlaceholder(currentIndex)"
         type="button"
         data-testid="hdr-open-button"
-        class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-base-foreground"
+        class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-3 border-0 bg-transparent text-foreground"
         @click="openHdrViewer(currentImageUrl)"
       >
         <i class="icon-[lucide--sun] size-12" />
         <span class="text-sm">{{ $t('hdrViewer.hdrImage') }}</span>
         <span
-          class="rounded-md bg-base-foreground px-3 py-1.5 text-sm text-base-background"
+          class="rounded-md bg-foreground px-3 py-1.5 text-sm text-background"
         >
           {{ $t('hdrViewer.openInHdrViewer') }}
         </span>
@@ -128,76 +130,84 @@
         class="actions invisible absolute top-2 right-2 flex gap-1 group-focus-within/panel:visible group-hover/panel:visible"
       >
         <!-- Mask/Edit Button -->
-        <button
+        <Button
           v-if="!hasMultipleImages && !imageError && !currentImageIsHdr"
-          :class="actionButtonClass"
+          variant="inverted"
+          size="icon"
+          class="shadow-md"
           :title="$t('g.editOrMaskImage')"
           :aria-label="$t('g.editOrMaskImage')"
           @click="handleEditMask"
         >
           <i-comfy:mask class="size-4" />
-        </button>
+        </Button>
 
-        <button
+        <Button
           v-if="!imageError && currentHdrPreviewUrl"
-          :class="actionButtonClass"
+          variant="inverted"
+          size="icon"
+          class="shadow-md"
           :title="$t('hdrViewer.openInHdrViewer')"
           :aria-label="$t('hdrViewer.openInHdrViewer')"
           @click="openHdrViewer(currentImageUrl)"
         >
           <i class="icon-[lucide--sun] size-4" />
-        </button>
+        </Button>
 
         <!-- Layer Editor Button -->
-        <button
+        <Button
           v-if="hasMultipleImages && !imageError"
-          :class="actionButtonClass"
+          variant="inverted"
+          size="icon"
+          class="shadow-md"
           :title="$t('g.openLayerEditor')"
           :aria-label="$t('g.openLayerEditor')"
           @click="handleOpenLayerEditor"
         >
           <i class="icon-[lucide--layers] size-4" />
-        </button>
+        </Button>
 
         <!-- Download Button -->
-        <button
+        <Button
           v-if="!imageError"
-          :class="actionButtonClass"
+          variant="inverted"
+          size="icon"
+          class="shadow-md"
           :title="$t('g.downloadImage')"
           :aria-label="$t('g.downloadImage')"
           @click="handleDownload"
         >
           <i class="icon-[lucide--download] size-4" />
-        </button>
+        </Button>
 
         <!-- Back to Grid Button -->
-        <button
+        <Button
           v-if="hasMultipleImages"
-          :class="actionButtonClass"
+          variant="inverted"
+          size="icon"
+          class="shadow-md"
           :title="$t('g.viewGrid')"
           :aria-label="$t('g.viewGrid')"
           @click="viewMode = 'grid'"
         >
           <i class="icon-[lucide--layout-grid] size-4" />
-        </button>
+        </Button>
       </div>
     </div>
 
     <!-- Image Dimensions (gallery mode only) -->
     <div
       v-if="viewMode === 'gallery' && !isHdrPlaceholder(currentIndex)"
-      class="pt-2 text-center text-xs text-base-foreground"
+      class="pt-2 text-center text-foreground"
     >
       <span
         v-if="imageError"
-        class="text-error"
+        class="text-destructive"
         data-testid="error-loading-image"
       >
         {{ $t('g.errorLoadingImage') }}
       </span>
-      <span v-else-if="showLoader" class="text-base-foreground">
-        {{ $t('g.loading') }}...
-      </span>
+      <span v-else-if="showLoader"> {{ $t('g.loading') }}... </span>
       <span v-else>
         {{ actualDimensions || $t('g.calculatingDimensions') }}
       </span>
@@ -210,7 +220,7 @@
     >
       <!-- Back to Grid button -->
       <button
-        class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-base-foreground/50 transition-colors hover:text-base-foreground"
+        class="mr-1 flex cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0.5 text-foreground/50 transition-colors hover:text-foreground"
         :title="$t('g.viewGrid')"
         :aria-label="$t('g.viewGrid')"
         @click="viewMode = 'grid'"
@@ -273,9 +283,6 @@ const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toast = useToast()
-
-const actionButtonClass =
-  'flex h-8 min-h-8 cursor-pointer items-center justify-center rounded-lg border-0 bg-base-foreground p-2 text-base-background shadow-interface transition-colors duration-200 hover:bg-base-foreground/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-base-foreground focus-visible:ring-offset-2'
 
 type ViewMode = 'gallery' | 'grid'
 
@@ -463,8 +470,8 @@ function getNavigationDotClass(index: number) {
   return cn(
     'size-2 cursor-pointer rounded-full border-0 p-0 transition-all duration-200',
     index === currentIndex.value
-      ? 'bg-base-foreground'
-      : 'bg-base-foreground/50 hover:bg-base-foreground/80'
+      ? 'bg-foreground'
+      : 'bg-foreground/50 hover:bg-foreground/80'
   )
 }
 

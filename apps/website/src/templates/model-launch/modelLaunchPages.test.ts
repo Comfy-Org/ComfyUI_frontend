@@ -199,7 +199,7 @@ function expectShowcaseCardsLocalized(
 function expectGalleryCardsLocalized(cards: ModelLaunchGallery['cards']) {
   for (const card of cards) {
     expectLocalized(card.name, card.id, 'name')
-    expectLocalized(card.note, card.id, 'note')
+    if (card.note) expectLocalized(card.note, card.id, 'note')
     expectLocalized(card.description, card.id, 'description')
   }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { toValue } from 'vue'
 
@@ -28,12 +29,14 @@ const { hasSubmenu, item } = defineProps<{
     v-if="item.trailingIcon"
     :class="cn(item.trailingIcon, 'ml-auto size-4')"
   />
-  <span
+  <Badge
     v-if="item.badge"
-    class="ml-3 flex items-center gap-1 rounded-full bg-(--primary-background) px-1.5 py-0.5 text-2xs text-base-foreground uppercase"
+    variant="pill"
+    severity="default"
+    class="ml-3 px-1.5 uppercase"
   >
     {{ item.badge }}
-  </span>
+  </Badge>
   <i
     v-if="hasSubmenu"
     data-testid="menu-item-submenu-indicator"
@@ -58,14 +61,8 @@ const { hasSubmenu, item } = defineProps<{
     "
   />
   <span
-    v-if="item.new && !toValue(item.checked) && !hasSubmenu"
-    class="shrink-0 rounded-full bg-primary-background px-1 text-2xs leading-none font-bold"
-  >
-    {{ $t('contextMenu.new') }}
-  </span>
-  <span
     v-if="!hasSubmenu && toValue(item.shortcut)"
-    class="ml-auto rounded-sm border border-border-default bg-secondary-background p-1 text-xs text-nowrap text-muted-foreground"
+    class="ml-auto rounded-sm border bg-secondary p-1 text-xs text-nowrap text-muted-foreground"
   >
     {{ toValue(item.shortcut) }}
   </span>

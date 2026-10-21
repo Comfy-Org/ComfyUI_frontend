@@ -93,6 +93,19 @@ describe('ModelLaunchHeroSection', () => {
     expect(within(blocks[1]).getByRole('heading', { level: 1 })).toBeTruthy()
   })
 
+  it('renders only the content block when a hero has no media', () => {
+    render(ModelLaunchHeroSection, {
+      props: {
+        hero: { layout: 'media-first', titleKey: 'chatgptImage25.hero.title' }
+      }
+    })
+    const blocks = screen.getAllByTestId('model-launch-hero-block')
+
+    expect(blocks).toHaveLength(1)
+    expect(within(blocks[0]).getByRole('heading', { level: 1 })).toBeTruthy()
+    expect(screen.queryByRole('img', { hidden: true })).toBeNull()
+  })
+
   it('spins the logo mask over the placeholder for overlay heroes that opt in', () => {
     render(ModelLaunchHeroSection, {
       props: {

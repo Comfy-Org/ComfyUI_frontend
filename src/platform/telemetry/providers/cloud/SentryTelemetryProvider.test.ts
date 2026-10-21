@@ -4,7 +4,10 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type { ExecutionContext, ShellLayoutMetadata } from '../../types'
+import type {
+  ExecutionContext,
+  ShellLayoutMetadata
+} from '@/platform/telemetry/types'
 import { SentryTelemetryProvider } from './SentryTelemetryProvider'
 
 const mocks = vi.hoisted(() => ({
@@ -35,7 +38,7 @@ vi.mock(import('@sentry/vue'), () => ({
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('../../utils/getExecutionContext'), () => ({
+vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => mocks.executionContext
 }))
 

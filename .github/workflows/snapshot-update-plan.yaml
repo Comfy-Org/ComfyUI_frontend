@@ -1,0 +1,183 @@
+name: 'Snapshot update: plan'
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: Slash command that requests the update, e.g. /update-playwright
+        type: string
+        required: true
+      e2e-workflow:
+        description: E2E workflow file name, e.g. ci-tests-e2e.yaml
+        type: string
+        required: true
+      artifact-prefix:
+        description: Prefix of the per-job artifacts the E2E run uploads
+        type: string
+        required: true
+      job-prefix:
+        description: Prefix of the job names that run Playwright in the E2E run
+        type: string
+        required: true
+      section-name:
+        description: Section of the PR report comment that tracks the update
+        type: string
+        required: true
+      title:
+        description: Heading of that section
+        type: string
+        required: true
+    outputs:
+      branch:
+        value: ${{ jobs.setup.outputs.branch }}
+      head-sha:
+        value: ${{ jobs.setup.outputs.head-sha }}
+      full:
+        description: '`true` when the comment asked for a rerun with --update-snapshots'
+        value: ${{ jobs.setup.outputs.full }}
+      run-id:
+        description: E2E run whose artifacts can be committed
+        value: ${{ jobs.harvest.outputs.run-id }}
+      unavailable:
+        description: Why the E2E run cannot supply the snapshots
+        value: ${{ jobs.harvest.outputs.unavailable }}
+      missing:
+        description: Comma-separated E2E jobs that left no snapshot updates to commit
+        value: ${{ jobs.harvest.outputs.missing }}
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      branch: ${{ steps.pr-info.outputs.branch }}
+      head-sha: ${{ steps.pr-info.outputs.head-sha }}
+      full: ${{ github.event_name == 'issue_comment' && startsWith(github.event.comment.body, format('{0} full', inputs.command)) }}
+    steps:
+      - name: Verify sender permissions
+        if: github.event_name == 'issue_comment' && github.event.comment.user.login == 'github-actions[bot]'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+              ...context.repo,
+              username: context.actor
+            })
+            if (!['admin', 'write'].includes(data.permission)) {
+              core.setFailed(`User ${context.actor} does not have write access`)
+            }
+
+      - name: Get PR info
+        id: pr-info
+        uses: actions/github-script@v9
+        env:
+          PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
+        with:
+          script: |
+            const prNumber = Number(process.env.PR_NUMBER)
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: prNumber
+            })
+            if (pr.head.repo?.full_name !== pr.base.repo.full_name) {
+              core.setFailed('Fork PRs cannot be updated: this workflow cannot push to a fork.')
+              return
+            }
+            core.setOutput('pr-number', prNumber)
+            core.setOutput('branch', pr.head.ref)
+            core.setOutput('head-sha', pr.head.sha)
+
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: .github/actions/upsert-comment-section
+          persist-credentials: false
+
+      - uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ steps.pr-info.outputs.pr-number }}
+          section-name: ${{ inputs.section-name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: |-
+            ## ${{ inputs.title }}
+
+            > [!NOTE]
+            > Updating screenshots… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  harvest:
+    needs: setup
+    if: needs.setup.outputs.full != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: read
+    outputs:
+      run-id: ${{ steps.harvest.outputs.run-id }}
+      unavailable: ${{ steps.harvest.outputs.unavailable }}
+      missing: ${{ steps.harvest.outputs.missing }}
+    steps:
+      - name: Find the E2E run's snapshot updates
+        id: harvest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          E2E_WORKFLOW: ${{ inputs.e2e-workflow }}
+          HEAD_SHA: ${{ needs.setup.outputs.head-sha }}
+          BRANCH: ${{ needs.setup.outputs.branch }}
+          ARTIFACT_PREFIX: ${{ inputs.artifact-prefix }}
+          JOB_PREFIX: ${{ inputs.job-prefix }}
+        run: |
+          set -euo pipefail
+
+          unavailable() {
+            echo "::error::$1"
+            echo "unavailable=$1" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+
+          run_id=$(gh api -X GET "repos/${GITHUB_REPOSITORY}/actions/workflows/${E2E_WORKFLOW}/runs" \
+            -f head_sha="$HEAD_SHA" -f branch="$BRANCH" -f event=pull_request -F per_page=20 \
+            --jq '[.workflow_runs[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0].id // empty')
+          if [ -z "$run_id" ]; then
+            unavailable "No E2E run exists for ${HEAD_SHA} on ${BRANCH}."
+          fi
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${run_id}"
+
+          watch_status=0
+          timeout 45m gh run watch "$run_id" --repo "$GITHUB_REPOSITORY" --interval 30 > /dev/null || watch_status=$?
+          if [ "$watch_status" -eq 124 ]; then
+            unavailable "The E2E run ${run_url} did not finish within 45 minutes."
+          fi
+          [ "$watch_status" -eq 0 ] || exit "$watch_status"
+
+          jobs=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/jobs?per_page=100" \
+            --jq '.jobs[]
+              | select(.name | startswith(env.JOB_PREFIX))
+              | select((.steps | length) == 0 or any(.steps[]; .name == "Upload snapshot updates"))
+              | {id, name, conclusion}')
+          if [ "$(jq -s 'map(select(.conclusion | IN("success", "failure", "skipped") | not)) | length' <<< "$jobs")" -gt 0 ]; then
+            unavailable "Some ${JOB_PREFIX} jobs in ${run_url} did not finish."
+          fi
+          ran=$(jq -s 'map(select(.conclusion | IN("success", "failure"))) | length' <<< "$jobs")
+          if [ "$ran" -eq 0 ]; then
+            unavailable "No ${JOB_PREFIX} jobs ran in ${run_url}."
+          fi
+
+          artifacts=$(gh api --paginate "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
+            --jq '.artifacts[] | select((.name | startswith(env.ARTIFACT_PREFIX)) and (.expired | not)) | .name')
+          if [ -z "$artifacts" ]; then
+            unavailable "None of the ${ran} ${JOB_PREFIX} jobs in ${run_url} left a usable ${ARTIFACT_PREFIX}* artifact."
+          fi
+
+          missing=$(jq -rs --arg artifacts "$artifacts" '
+            ($artifacts | split("\n")) as $names
+            | map(select(.conclusion | IN("success", "failure"))
+              | select((.id | tostring) as $id | $names | any(endswith("-" + $id)) | not)
+              | .name)
+            | join(", ")' <<< "$jobs")
+          if [ -n "$missing" ]; then
+            echo "::warning::These ${JOB_PREFIX} jobs in ${run_url} left no usable ${ARTIFACT_PREFIX}* artifact, so their screenshots are not checked: ${missing}"
+            echo "missing=${missing}" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "run-id=${run_id}" >> "$GITHUB_OUTPUT"

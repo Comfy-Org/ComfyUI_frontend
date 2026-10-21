@@ -127,6 +127,21 @@ describe('readSubgraphDefinitions', () => {
     expect(projected).toEqual(definition)
   })
 
+  it('does not copy a declared widget form onto a projected interior node', () => {
+    const declared = Object.assign(interiorNode(1), {
+      widgets_values: { output: '42' },
+      widgets_values_form: { order: ['output'] }
+    })
+    const definition = createTestSubgraphData({ nodes: [declared] })
+
+    const [projected] = readSubgraphDefinitions(seed(definition))
+
+    expect(projected.nodes).toEqual([
+      expect.objectContaining({ widgets_values_named: { output: '42' } })
+    ])
+    expect(projected.nodes?.[0]).not.toHaveProperty('__widgets_form')
+  })
+
   it('does not project an excluded definition body', () => {
     const excluded = createTestSubgraphData({ nodes: [interiorNode(1)] })
     const included = createTestSubgraphData({ nodes: [interiorNode(2)] })

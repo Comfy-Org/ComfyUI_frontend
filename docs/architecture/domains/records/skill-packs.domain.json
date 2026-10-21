@@ -4,24 +4,20 @@
   "description": "User-published agent skill packs: skills REST client and name and size validation, the skill packs store scoped to the current user and team workspace, list and publish composables, and the settings panel, list item, and form dialog. Agent composer skill selection remains in the agent capability.",
   "modules": [
     {
-      "path": "src/platform/skills/types.ts",
-      "role": "domain"
+      "path": "src/platform/skills/**",
+      "role": "application"
     },
     {
       "path": "src/platform/skills/api/**",
       "role": "infrastructure"
     },
     {
-      "path": "src/platform/skills/stores/**",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/skills/composables/**",
-      "role": "application"
-    },
-    {
       "path": "src/platform/skills/components/**",
       "role": "presentation"
+    },
+    {
+      "path": "src/platform/skills/types.ts",
+      "role": "domain"
     }
   ],
   "publicEntryPoints": [],

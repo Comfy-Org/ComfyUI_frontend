@@ -5701,7 +5701,7 @@
     }
   },
   "FishAudioTextToSpeech": {
-    "description": "تحويل النص إلى كلام. يدعم إشارات المشاعر في النص ([happy]، [whispering] في s2.1-pro؛ (happy) في s1) وحوارًا متعدد المتحدثين عبر وسوم {'@'}Voice1/{'@'}Voice2 مع عدة أصوات متصلة.",
+    "description": "حوِّل النص إلى كلام. يدعم إشارات المشاعر في النص ([happy] و[whispering] في s2.1-pro؛ و(happy) في s1)، و[التوجيهات] باللغة الطبيعية ووسوم الكلمات `<whisper>...</whisper>` في drama-3، وحوارًا متعدد المتحدثين عبر وسوم {'@'}Voice1/{'@'}Voice2 مع أصوات متعددة متصلة.",
     "display_name": "Fish Audio تحويل النص إلى كلام",
     "inputs": {
       "control_after_generate": {
@@ -8110,6 +8110,33 @@
       }
     }
   },
+  "HiggsfieldMotionTransferNode": {
+    "description": "أعِد إنتاج فيديو بشخصيات أو مواقع أو أنماط جديدة من الصور المرجعية مع الحفاظ على حركته وحركة الكاميرا وتوقيته.",
+    "display_name": "نقل الحركة في Higgsfield Genjutsu",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المطلوب استخدامه."
+      },
+      "model_prompt": {
+        "name": "الموجّه"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HitPawGeneralImageEnhance": {
     "description": "تكبير الصور منخفضة الدقة إلى دقة فائقة، إزالة الشوائب والضوضاء. الحد الأقصى للإخراج: ٣٢ ميغابيكسل.",
     "display_name": "تحسين الصورة العام من HitPaw",
@@ -9263,6 +9290,28 @@
       },
       "rotation": {
         "name": "الدوران"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "ImageSDRToHDR": {
+    "description": "وسّع سطوع sRGB إلى HDR بتنسيق Rec.2020 HLG. احفظ النتيجة مع تحديد مساحة ألوان HDR. تُحفظ قناة ألفا.",
+    "display_name": "تحويل SDR إلى HDR",
+    "inputs": {
+      "algorithm": {
+        "name": "الخوارزمية",
+        "tooltip": "توسعة كسرية بأسلوب Lottes ممزوجة بمنحنى كسب لوغاريتمي رتيب مُعاير."
+      },
+      "algorithm_target_luminance": {
+        "name": "target_luminance"
+      },
+      "image": {
+        "name": "الصورة",
+        "tooltip": "صور SDR بتنسيق sRGB."
       }
     },
     "outputs": {

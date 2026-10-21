@@ -17,6 +17,7 @@ import type {
   SubscriptionDialogOptions
 } from '@/composables/billing/types'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { provideSubscriptionDialog } from '@/platform/cloud/subscription/composables/subscriptionDialogAccess'
 import { toCurrentTier } from '@/platform/cloud/subscription/utils/billingPlanTelemetry'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -167,7 +168,6 @@ export const useSubscriptionDialog = () => {
           onClose: hide,
           reason: options?.reason,
           paymentIntentSource,
-          embeddedCheckoutEnabled: flags.embeddedCheckoutEnabled,
           initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
             options?.planMode,
@@ -352,3 +352,5 @@ export const useSubscriptionDialog = () => {
     resumePendingPricingFlow
   }
 }
+
+provideSubscriptionDialog(useSubscriptionDialog)

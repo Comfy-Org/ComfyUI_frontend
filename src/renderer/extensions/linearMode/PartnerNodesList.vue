@@ -31,7 +31,7 @@ const creditsBadges = computed(() => {
       </Button>
     </template>
     <section
-      class="max-h-(--reka-popover-content-available-height) scroll-shadows-comfy-menu-bg overflow-y-auto"
+      class="max-h-(--reka-popover-content-available-height) scroll-shadows-background overflow-y-auto"
     >
       <PartnerNodeItem
         v-for="{ nodeId, title, price } in creditsBadges"
@@ -47,7 +47,7 @@ const creditsBadges = computed(() => {
       :key="nodeId"
       :title
       :price
-      class="border-t border-border-subtle pt-2"
+      class="border-t border-border/50 pt-2"
     />
   </div>
   <CollapsibleRoot
@@ -55,7 +55,7 @@ const creditsBadges = computed(() => {
     v-slot="{ open }"
     class="flex max-h-1/2 w-full flex-col"
   >
-    <div class="mb-1 w-full border-b border-border-subtle" />
+    <div class="mb-1 w-full border-b border-border/50" />
     <CollapsibleTrigger as-child>
       <Button variant="textonly" class="w-full text-sm">
         <i class="icon-[lucide--coins] size-4 bg-credit" />
@@ -64,7 +64,7 @@ const creditsBadges = computed(() => {
         <i v-else class="ml-auto icon-[lucide--chevron-down]" />
       </Button>
     </CollapsibleTrigger>
-    <CollapsibleContent class="scroll-shadows-comfy-menu-bg overflow-y-auto">
+    <CollapsibleContent class="scroll-shadows-background overflow-y-auto">
       <PartnerNodeItem
         v-for="{ nodeId, title, price } in creditsBadges"
         :key="nodeId"

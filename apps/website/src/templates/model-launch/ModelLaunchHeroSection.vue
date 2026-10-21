@@ -16,10 +16,12 @@ import ModelLaunchHeroLogoMask from './ModelLaunchHeroLogoMask.vue'
 
 const {
   headingTag = 'h1',
+  fitCtas = false,
   locale = 'en',
   hero
 } = defineProps<{
   headingTag?: 'h1' | 'h2'
+  fitCtas?: boolean
   hero: ModelLaunchHero
   locale?: Locale
 }>()
@@ -207,6 +209,7 @@ const mediaOutlineClass =
         <ModelLaunchHeroCtaButtons
           :primary-cta="hero.primaryCta"
           primary-variant="outline-light"
+          :fit-content="fitCtas"
           :secondary-cta="hero.secondaryCta"
           :locale
         />

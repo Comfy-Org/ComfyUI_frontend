@@ -153,4 +153,21 @@ describe('SidebarHelpCenterIcon', () => {
 
     expect(helpCenterSpies.toggleHelpCenter).toHaveBeenCalled()
   })
+
+  it('renders the question-mark icon, never the megaphone, in app mode', () => {
+    renderIcon()
+
+    const button = screen.getByRole('button', { name: 'Give feedback' })
+    expect(button.innerHTML).toContain('pi-question-circle')
+    expect(button.innerHTML).not.toContain('lucide--megaphone')
+  })
+
+  it('renders the question-mark icon, never the megaphone, in graph mode', () => {
+    useCanvasStore().linearMode = false
+    renderIcon()
+
+    const button = screen.getByRole('button', { name: 'Help Center' })
+    expect(button.innerHTML).toContain('pi-question-circle')
+    expect(button.innerHTML).not.toContain('lucide--megaphone')
+  })
 })

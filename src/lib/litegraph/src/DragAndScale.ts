@@ -1,7 +1,8 @@
 import { readBrowserDpr } from '@/renderer/core/canvas/canvasViewport'
 
 import type { Point, ReadOnlyRect, Rect } from './interfaces'
-import { EaseFunction, Rectangle } from './litegraph'
+import { EaseFunction } from './types/globalEnums'
+import { Rectangle } from './infrastructure/Rectangle'
 
 export interface DragAndScaleState {
   /**

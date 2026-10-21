@@ -108,14 +108,6 @@ vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/components/common/ImperativePopover.vue'), () => ({
-  default: {
-    name: 'Popover',
-    template: '<div><slot /></div>',
-    methods: { toggle: vi.fn(), hide: vi.fn() }
-  }
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -142,7 +134,7 @@ describe('NodeLibrarySidebarTab', () => {
     return render(NodeLibrarySidebarTab, {
       global: {
         plugins: [i18n],
-        stubs: { teleport: true }
+        stubs: { teleport: false }
       }
     })
   }
@@ -210,16 +202,14 @@ describe('NodeLibrarySidebarTab', () => {
     renderComponent()
     await nextTick()
 
-    // Add filter by clicking the mocked search filter
     await user.click(screen.getByRole('button', { name: 'g.filter' }))
-    const searchFilter = screen.getByTestId('node-search-filter')
+    const searchFilter = await screen.findByTestId('node-search-filter')
     await user.click(searchFilter)
     await nextTick()
 
     expect(screen.getByTestId('filter-chip')).toBeInTheDocument()
     expect(mockSearchNode).toHaveBeenCalled()
 
-    // Remove filter
     const removeButton = screen.getByTestId('remove-filter')
     await user.click(removeButton)
     await nextTick()
