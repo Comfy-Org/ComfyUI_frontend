@@ -36,6 +36,31 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
     })
   })
 
+  test.describe('Warning appearance', { tag: '@screenshot' }, () => {
+    for (const palette of ['dark', 'light'] as const) {
+      test(`shows a visible warning stripe in the ${palette} palette`, async ({
+        comfyPage
+      }) => {
+        await comfyPage.settings.setSetting('Comfy.ColorPalette', palette)
+        await comfyPage.workflow.loadWorkflow('missing/missing_nodes')
+
+        const overlay = getOverlay(comfyPage.page)
+        await expect(overlay).toBeVisible()
+        const stripe = await overlay.evaluate((el) => {
+          const style = getComputedStyle(el)
+          return {
+            border: style.borderLeftColor,
+            background: style.backgroundColor
+          }
+        })
+        expect(stripe.border).not.toBe(stripe.background)
+        await expect(overlay).toHaveScreenshot(
+          `error-overlay-warning-${palette}.png`
+        )
+      })
+    }
+  })
+
   test.describe('Persistence', () => {
     test('Does not resurface missing nodes on undo/redo', async ({
       comfyPage

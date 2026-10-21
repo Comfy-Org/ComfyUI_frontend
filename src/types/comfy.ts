@@ -8,7 +8,7 @@ import type {
   LGraphNode,
   Vector2
 } from '@/lib/litegraph/src/litegraph'
-import type { MissingModelPipelineResult } from '@/platform/missingModel/missingModelPipeline'
+import type { MissingModelPipelineResult } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/platform/nodeReplacement/types'
 import type { SettingParams } from '@/platform/settings/types'
 import type {
@@ -29,15 +29,12 @@ import type {
 import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
-} from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+} from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
-import type {
-  ComfyWidgets,
-  CustomComfyWidgetConstructor
-} from '@/scripts/widgets'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -46,6 +43,25 @@ import type {
   BottomPanelExtension,
   ExtensionManager
 } from '@/types/extensionTypes'
+
+export type ComfyWidgetConstructor = (
+  node: LGraphNode,
+  inputName: string,
+  inputData: InputSpec,
+  app: ComfyApp,
+  widgetName?: string
+) => { widget: IBaseWidget; minWidth?: number; minHeight?: number }
+
+export type CustomComfyWidgetConstructor = (
+  ...args: Parameters<ComfyWidgetConstructor>
+) =>
+  | {
+      widget?: IBaseWidget
+      minWidth?: number
+      minHeight?: number
+    }
+  | IBaseWidget
+  | undefined
 
 type Widgets = Record<string, CustomComfyWidgetConstructor>
 
@@ -117,8 +133,10 @@ export interface ComfyApp {
   /** @deprecated Use useWorkspaceStore().shiftDown instead */
   readonly shiftDown: boolean
   /** @deprecated Use useWidgetStore().widgets instead */
-  readonly widgets: Record<string, CustomComfyWidgetConstructor> &
-    typeof ComfyWidgets
+  readonly widgets: Record<
+    string,
+    ComfyWidgetConstructor | CustomComfyWidgetConstructor
+  >
   /** @deprecated storageLocation is always 'server' */
   readonly storageLocation: string
   /** @deprecated storage migration is no longer needed. */

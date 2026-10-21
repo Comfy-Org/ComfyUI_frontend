@@ -3,11 +3,13 @@ import { defineStore } from 'pinia'
 import { computed, reactive, ref, watch } from 'vue'
 
 import type {
+  TaskResponse,
+  TaskStatus
+} from '@/platform/tasks/services/taskSchema'
+import type {
   DownloadFileResult,
   TaskId,
-  TaskResponse,
-  TaskResult,
-  TaskStatus
+  TaskResult
 } from '@/platform/tasks/services/taskService'
 import {
   TaskNotFoundError,

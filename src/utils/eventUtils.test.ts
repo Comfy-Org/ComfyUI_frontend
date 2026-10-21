@@ -1,7 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   extractFilesFromDragEvent,
+  fetchDroppedAsset,
   hasAudioType,
   hasImageType,
   hasVideoType,
@@ -87,5 +88,99 @@ describe('extractFilesFromDragEvent', () => {
     const [file] = await extractFilesFromDragEvent(event)
 
     expect(hasImageType(file)).toBe(true)
+  })
+})
+
+describe('fetchDroppedAsset', () => {
+  function stubFetch(resolvedUrl: string) {
+    const response = new Response(new Blob(['x'], { type: 'image/png' }))
+    Object.defineProperty(response, 'url', { value: resolvedUrl })
+    vi.mocked(fetch).mockResolvedValue(response)
+  }
+
+  it.for([
+    [
+      'a dotted content hash must not outrank the ref',
+      'https://storage/bucket/0123456789abcdef0123456789abcdef.png',
+      'cat.png'
+    ],
+    [
+      'nor must an extensionless storage key',
+      'https://storage/bucket/0123456789abcdef0123456789abcdef',
+      'cat.png'
+    ]
+  ] as const)('%s', async ([, resolvedUrl, want]) => {
+    stubFetch(resolvedUrl)
+    const file = await fetchDroppedAsset(
+      {
+        name: 'display label',
+        uri: 'https://api/assets/abc/content',
+        ref: 'cat.png'
+      },
+      { nameFromSource: true }
+    )
+    expect(file?.name).toBe(want)
+  })
+
+  it('still prefers an explicit filename parameter over everything', async () => {
+    stubFetch('https://storage/bucket/deadbeef.png?filename=real%20name.png')
+    const file = await fetchDroppedAsset(
+      {
+        name: 'display label',
+        uri: 'https://api/assets/abc/content',
+        ref: 'cat.png'
+      },
+      { nameFromSource: true }
+    )
+    expect(file?.name).toBe('real name.png')
+  })
+
+  it('keeps the file when the storage path has a malformed escape', async () => {
+    stubFetch('https://storage/bucket/%E0%A4%A')
+    const file = await fetchDroppedAsset(
+      {
+        name: 'display label',
+        uri: 'https://api/assets/abc/content',
+        ref: 'cat.png'
+      },
+      { nameFromSource: true }
+    )
+    expect(file?.name).toBe('cat.png')
+  })
+
+  it('still yields a file when only the malformed segment could name it', async () => {
+    stubFetch('https://storage/bucket/%E0%A4%A.png')
+    const file = await fetchDroppedAsset(
+      {
+        name: 'fallback.bin',
+        uri: 'https://api/assets/abc/content',
+        ref: 'bare-ref'
+      },
+      { nameFromSource: true }
+    )
+    expect(file?.name).toBe('%E0%A4%A.png')
+  })
+
+  it('falls back to the display label when nothing else carries an extension', async () => {
+    stubFetch('https://storage/bucket/deadbeef')
+    const file = await fetchDroppedAsset(
+      {
+        name: 'fallback.png',
+        uri: 'https://api/assets/abc/content',
+        ref: 'bare-ref'
+      },
+      { nameFromSource: true }
+    )
+    expect(file?.name).toBe('fallback.png')
+  })
+
+  it('keeps the display label as the name by default', async () => {
+    stubFetch('https://storage/bucket/deadbeef.png?filename=real%20name.png')
+    const file = await fetchDroppedAsset({
+      name: 'display label',
+      uri: 'https://api/assets/abc/content',
+      ref: 'cat.png'
+    })
+    expect(file?.name).toBe('display label')
   })
 })

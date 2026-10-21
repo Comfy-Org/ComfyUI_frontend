@@ -585,34 +585,53 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     pump()
   }
 
-  const unsubscribe = deps.onOpsResult((result) => {
-    if (detached) return
-    if (inFlight === null && staleAnonymousBudget === 0) return
-    const identified = [...result.applied, ...result.skipped]
-    if (result.failed?.op_id) identified.push(result.failed.op_id)
-    const batch =
-      inFlight !== null &&
-      (result.workflowId === undefined ||
-        result.workflowId === inFlight.workflowId)
-        ? inFlight
-        : null
-    if (identified.length > 0) {
-      if (batch && identified.some((opId) => batch.opIds.has(opId))) {
-        retire(batch, 1)
-        settle({ state: 'acknowledged', ops: batch.ops, result }, 'host_result')
-      } else if (identified.some((opId) => retiredOpIds.has(opId))) {
-        drainStaleCredit()
-      }
+  function resultBatch(result: OpsResultView): InFlight | null {
+    if (inFlight === null) return null
+    if (result.workflowId && result.workflowId !== inFlight.workflowId)
+      return null
+    return inFlight
+  }
+
+  function resultOpIds(result: OpsResultView): string[] {
+    return [
+      ...result.applied,
+      ...result.skipped,
+      ...(result.failed?.op_id ? [result.failed.op_id] : [])
+    ]
+  }
+
+  function settleResult(batch: InFlight, result: OpsResultView): void {
+    retire(batch, 1)
+    settle({ state: 'acknowledged', ops: batch.ops, result }, 'host_result')
+  }
+
+  function settleIdentifiedResult(
+    batch: InFlight | null,
+    result: OpsResultView,
+    opIds: readonly string[]
+  ): void {
+    if (batch && opIds.some((opId) => batch.opIds.has(opId))) {
+      settleResult(batch, result)
       return
     }
+    if (opIds.some((opId) => retiredOpIds.has(opId))) drainStaleCredit()
+  }
+
+  function handleOpsResult(result: OpsResultView): void {
+    if (detached) return
+    if (inFlight === null && staleAnonymousBudget === 0) return
+    const opIds = resultOpIds(result)
+    const batch = resultBatch(result)
+    if (opIds.length > 0) return settleIdentifiedResult(batch, result, opIds)
     if (batch === null || staleAnonymousBudget > 0) {
       drainStaleCredit()
       return
     }
     if (batch.sends === 0) return
-    retire(batch, 1)
-    settle({ state: 'acknowledged', ops: batch.ops, result }, 'host_result')
-  })
+    settleResult(batch, result)
+  }
+
+  const unsubscribe = deps.onOpsResult(handleOpsResult)
 
   return {
     enqueue(operations) {

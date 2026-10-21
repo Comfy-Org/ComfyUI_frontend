@@ -38,7 +38,7 @@ const renderActionbar = (showRunProgressBar: boolean) => {
     global: {
       plugins: [pinia, i18n],
       stubs: {
-        StatusBadge: true,
+        Badge: true,
         QueueInlineProgress: true
       },
       directives: {

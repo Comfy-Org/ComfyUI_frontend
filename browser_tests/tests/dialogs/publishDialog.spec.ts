@@ -15,19 +15,8 @@ async function saveAndOpenPublishDialog(
   dialog: PublishDialog,
   workflowName: string
 ): Promise<void> {
+  await comfyPage.workflow.setupWorkflowsDirectory({})
   await comfyPage.menu.topbar.saveWorkflow(workflowName)
-  const overwriteDialog = comfyPage.page
-    .getByRole('dialog')
-    .filter({ hasText: 'Overwrite' })
-  // Bounded wait: point-in-time isVisible() can miss dialogs that open
-  // slightly after saveWorkflow() resolves.
-  try {
-    await overwriteDialog.waitFor({ state: 'visible', timeout: 500 })
-    await comfyPage.confirmDialog.click('overwrite')
-  } catch {
-    // No overwrite dialog — workflow name was unique.
-  }
-
   await dialog.open()
 }
 
@@ -398,10 +387,15 @@ test.describe('Publish dialog - layout', () => {
         await comfyPage.page.setViewportSize({ width, height: VIEWPORT_HEIGHT })
         await expect(publishDialog.describeStep).toBeVisible()
         await expect(publishDialog.nameInput).toHaveValue(/test-layout-wf/)
+        await comfyPage.page.evaluate(() => {
+          if (document.activeElement instanceof HTMLElement)
+            document.activeElement.blur()
+        })
         await comfyPage.toast.closeToasts()
         await comfyPage.canvas.evaluate((el) => {
           el.style.visibility = 'hidden'
         })
+        await comfyPage.page.mouse.move(0, 0)
 
         await expect(comfyPage.page).toHaveScreenshot(
           `publish-dialog-${name}.png`

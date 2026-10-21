@@ -34,7 +34,7 @@ describe('BaseModalLayout close button', () => {
   it('renders the secondary variant by default', () => {
     renderLayout()
 
-    expect(closeButton()).toHaveClass('bg-secondary-background')
+    expect(closeButton()).toHaveClass('bg-secondary')
   })
 
   it('applies the supplied close button variant', () => {
@@ -42,6 +42,6 @@ describe('BaseModalLayout close button', () => {
 
     const button = closeButton()
     expect(button).toHaveClass('bg-transparent')
-    expect(button).not.toHaveClass('bg-secondary-background')
+    expect(button).not.toHaveClass('bg-secondary')
   })
 })

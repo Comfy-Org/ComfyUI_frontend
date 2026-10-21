@@ -15,7 +15,7 @@ build/test commands, style, and guardrails.
 ## Development Guidelines
 
 The root `AGENTS.md` carries the always-loaded subset (VueUse, es-toolkit,
-i18n, PrimeVue, tests, self-documenting code, simplicity, immutability, pure
+i18n, UI components, tests, self-documenting code, simplicity, immutability, pure
 functions). The rest:
 
 1. If a complex type definition is inlined in multiple related places, extract and name it for reuse
@@ -88,7 +88,6 @@ When referencing Comfy-Org repos:
 - VueUse: <https://vueuse.org/functions.html>
 - shadcn/vue: <https://www.shadcn-vue.com/>
 - Reka UI: <https://reka-ui.com/>
-- PrimeVue: <https://primevue.org>
 - Comfy Design Standards: <https://www.figma.com/design/QreIv5htUaSICNuO2VBHw0/Comfy-Design-Standards>
 - ComfyUI: <https://docs.comfy.org>
 - Electron: <https://www.electronjs.org/docs/latest/>

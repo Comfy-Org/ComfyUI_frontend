@@ -11,9 +11,9 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 
-vi.mock(import('../composables/useMediaAssetActions'))
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -96,8 +96,7 @@ function renderCard(
       plugins: [i18n],
       stubs: {
         MediaTitle: true
-      },
-      directives: { tooltip: {} }
+      }
     }
   })
 }

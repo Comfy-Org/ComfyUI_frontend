@@ -84,10 +84,11 @@ test.describe(
       }
     )
 
-    test('still reports exposure without the notice once the grant is spent', async ({
+    test('says nothing about free turns once the grant is spent', async ({
       hostTelemetry,
       page
     }) => {
+      const billingRead = page.waitForResponse('**/api/billing/status')
       await bootAgentApp(page, true, {
         features: { [FLAG]: PLACEMENT, enable_telemetry: true },
         billingStatus: billingStatus({ grantHeld: false })
@@ -95,6 +96,7 @@ test.describe(
       const agentPanel = new AgentPanel(page)
 
       await agentPanel.open()
+      await billingRead
       await expect
         .poll(
           () =>
@@ -103,7 +105,6 @@ test.describe(
             ).length
         )
         .toBe(1)
-
       await expect(
         agentPanel.root.getByRole('note', { name: 'Free use notice' })
       ).toBeHidden()

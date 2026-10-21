@@ -154,7 +154,7 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-      expect(screen.getByText('Error Message')).toHaveClass('text-danger-100')
+      expect(screen.getByText('Error Message')).toHaveClass('text-destructive')
     })
 
     it('applies warning variant styles', () => {
@@ -166,9 +166,7 @@ describe('TopbarBadge', () => {
         },
         'full'
       )
-      expect(screen.getByText('Warning Message')).toHaveClass(
-        'text-warning-background'
-      )
+      expect(screen.getByText('Warning Message')).toHaveClass('text-warning')
     })
 
     it('uses default error icon for error variant', () => {

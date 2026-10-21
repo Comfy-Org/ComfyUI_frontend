@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { openFeedbackDialog } from '../../feedback'
+import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
 
 const { t } = useI18n()
 </script>

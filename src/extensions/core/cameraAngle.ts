@@ -1,7 +1,7 @@
 import { defineAsyncComponent } from 'vue'
 
-import { CAMERA_ANGLE_VIEW_WIDGET_NAME } from '@/extensions/core/cameraAngle/types'
-import type { CameraAngleViewMode } from '@/extensions/core/cameraAngle/types'
+import { CAMERA_ANGLE_VIEW_WIDGET_NAME } from '@comfyorg/viewport3d/cameraAngle/types'
+import type { CameraAngleViewMode } from '@comfyorg/viewport3d/cameraAngle/types'
 import { isViewMode } from '@/extensions/core/cameraAngle/widgetBridge'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
@@ -33,6 +33,7 @@ useExtensionService().registerExtension({
           },
           options: {
             serialize: false,
+            hideInPanel: true,
             getValue: () => viewMode,
             setValue: (value) => {
               if (isViewMode(value)) viewMode = value

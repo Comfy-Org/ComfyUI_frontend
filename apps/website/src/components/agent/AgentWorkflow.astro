@@ -1,0 +1,16 @@
+---
+import type { Locale } from '@/i18n/translations'
+import WorkflowCanvas from './WorkflowCanvas.astro'
+import MobileWorkflow from './MobileWorkflow.astro'
+
+interface Props {
+  locale: Locale
+}
+
+const { locale } = Astro.props
+---
+
+<div class="agent-workflow">
+  <WorkflowCanvas locale={locale} />
+  <MobileWorkflow locale={locale} />
+</div>

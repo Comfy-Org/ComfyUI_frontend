@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { SkillReferenceMetadata } from '../../types/skillReference'
+import type { SkillReferenceMetadata } from '@/workbench/extensions/agent/types/skillReference'
 import SkillHoverPreview from './SkillHoverPreview.vue'
 
 const { skill, unavailable = false } = defineProps<{
@@ -28,7 +28,7 @@ const { t } = useI18n()
       :class="
         cn(
           'cursor-pointer underline underline-offset-2',
-          unavailable ? 'text-muted-foreground' : 'text-warning-background'
+          unavailable ? 'text-muted-foreground' : 'text-warning'
         )
       "
       >{{ `/${skill.name}` }}</span
