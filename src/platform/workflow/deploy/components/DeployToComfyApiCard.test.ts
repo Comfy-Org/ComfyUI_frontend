@@ -46,24 +46,9 @@ vi.mock(
   () => ({ useInstallationDeploy: vi.fn() })
 )
 
-function fakeInstallationDeploy(
-  initial: InstallationDeployState,
-  outcome: InstallationDeployState
-) {
-  const state = ref<InstallationDeployState>(initial)
-  const installation = {
-    state,
-    deploy: vi.fn(async () => {
-      state.value = outcome
-      return outcome.status === 'opened'
-    }),
-    markOpened: vi.fn(() => {
-      state.value = { status: 'opened' }
-    })
-  }
-  vi.mocked(useInstallationDeploy).mockReturnValueOnce(
-    fromPartial(installation)
-  )
+function fakeInstallationDeploy(state: InstallationDeployState) {
+  const installation = { state: ref(state), deploy: vi.fn(async () => {}) }
+  vi.mocked(useInstallationDeploy).mockReturnValueOnce(installation)
   return installation
 }
 
@@ -193,68 +178,29 @@ describe('DeployToComfyApiCard', () => {
     expect(screen.getByRole('button', { name: 'Play' })).toBeInTheDocument()
   })
 
-  it('uploads the installation from Deploy on Platform and reports done once the wizard opens', async () => {
-    fakeInstallationDeploy({ status: 'idle' }, { status: 'opened' })
+  it('uploads the installation from Deploy on Platform and keeps the dialog open', async () => {
+    const { deploy } = fakeInstallationDeploy({ status: 'idle' })
     const { onDone, user } = renderCard({ deploysInstallation: true })
 
     await user.click(screen.getByRole('button', { name: 'Deploy on Platform' }))
 
-    expect(onDone).toHaveBeenCalledOnce()
-    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
+    expect(deploy).toHaveBeenCalledOnce()
+    expect(onDone).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
       button_id: 'deploy_to_comfy_api_platform_clicked',
-      element_group: 'deploy_to_comfy_api'
-    })
-    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
-      button_id: 'deploy_to_comfy_api_builder_opened',
       element_group: 'deploy_to_comfy_api'
     })
   })
 
   it.for([
-    {
-      upload: 'fails',
-      initial: { status: 'idle' },
-      outcome: { status: 'idle' }
-    },
-    {
-      upload: 'starts after an earlier wizard opened',
-      initial: { status: 'opened' },
-      outcome: { status: 'uploading' }
-    }
-  ] satisfies {
-    upload: string
-    initial: InstallationDeployState
-    outcome: InstallationDeployState
-  }[])(
-    'keeps the dialog open and reports no wizard when the upload $upload',
-    async ({ initial, outcome }) => {
-      fakeInstallationDeploy(initial, outcome)
-      const { onDone, user } = renderCard({ deploysInstallation: true })
-
-      await user.click(
-        screen.getByRole('button', { name: 'Deploy on Platform' })
-      )
-
-      expect(onDone).not.toHaveBeenCalled()
-      expect(
-        useTelemetry()?.trackUiButtonClicked
-      ).toHaveBeenCalledExactlyOnceWith({
-        button_id: 'deploy_to_comfy_api_platform_clicked',
-        element_group: 'deploy_to_comfy_api'
-      })
-    }
-  )
-
-  it.for([
     { gesture: 'click', keys: '[MouseLeft]' },
     { gesture: 'middle-click', keys: '[MouseMiddle]' }
   ])(
-    'links to the build wizard when the browser blocked its tab, and reports done on $gesture',
+    'links to the build wizard once the bundle is ready, and reports done on $gesture',
     async ({ keys }) => {
-      fakeInstallationDeploy(
-        { status: 'tab_blocked', url: BUILDER_URL },
-        { status: 'opened' }
-      )
+      fakeInstallationDeploy({ status: 'ready', url: BUILDER_URL })
       const { onDone, user } = renderCard({ deploysInstallation: true })
       const link = screen.getByRole('link', { name: 'Open the build wizard' })
 
@@ -271,11 +217,8 @@ describe('DeployToComfyApiCard', () => {
     }
   )
 
-  it('keeps the dialog open when the blocked-tab link is right-clicked', async () => {
-    fakeInstallationDeploy(
-      { status: 'tab_blocked', url: BUILDER_URL },
-      { status: 'opened' }
-    )
+  it('keeps the dialog open when the build wizard link is right-clicked', async () => {
+    fakeInstallationDeploy({ status: 'ready', url: BUILDER_URL })
     const { onDone, user } = renderCard({ deploysInstallation: true })
 
     await user.pointer({

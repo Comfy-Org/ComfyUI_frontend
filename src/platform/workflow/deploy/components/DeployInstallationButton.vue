@@ -1,6 +1,6 @@
 <template>
   <Button
-    v-if="state.status === 'tab_blocked'"
+    v-if="state.status === 'ready'"
     variant="inverted"
     size="lg"
     class="w-full @xl:w-auto"
@@ -9,8 +9,8 @@
     target="_blank"
     rel="noopener noreferrer"
     data-testid="deploy-to-comfy-api-open-builder"
-    @click="markOpened"
-    @auxclick.middle="markOpened"
+    @click="openBuilder"
+    @auxclick.middle="openBuilder"
   >
     {{ $t('deployToComfyApi.openBuilder') }}
     <i
@@ -32,15 +32,13 @@
 </template>
 
 <script setup lang="ts">
-import { watch } from 'vue'
-
 import Button from '@/components/ui/button/Button.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 
 const emit = defineEmits<{ opened: [] }>()
 
-const { state, deploy, markOpened } = useInstallationDeploy()
+const { state, deploy } = useInstallationDeploy()
 
 function track(buttonId: string) {
   useTelemetry()?.trackUiButtonClicked({
@@ -49,14 +47,10 @@ function track(buttonId: string) {
   })
 }
 
-watch(
-  () => state.value.status === 'opened',
-  (opened) => {
-    if (!opened) return
-    track('deploy_to_comfy_api_builder_opened')
-    emit('opened')
-  }
-)
+function openBuilder() {
+  track('deploy_to_comfy_api_builder_opened')
+  emit('opened')
+}
 
 async function deployInstallation() {
   track('deploy_to_comfy_api_platform_clicked')

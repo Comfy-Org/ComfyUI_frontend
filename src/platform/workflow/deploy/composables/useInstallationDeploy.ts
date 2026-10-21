@@ -1,9 +1,8 @@
-import { computed, readonly, ref } from 'vue'
+import { ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { t } from '@/i18n'
-import { isDesktop } from '@/platform/distribution/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createInstallationBundle } from '@/platform/workflow/deploy/api/installationBundleApi'
 import type { BundleFailureReason } from '@/platform/workflow/deploy/api/installationBundleApi'
@@ -15,8 +14,7 @@ import type { AuthHeader } from '@/types/authTypes'
 type InstallationDeployState =
   | { status: 'idle' }
   | { status: 'uploading' }
-  | { status: 'opened' }
-  | { status: 'tab_blocked'; url: string }
+  | { status: 'ready'; url: string }
 
 type DeployFailure = {
   ok: false
@@ -32,13 +30,9 @@ type SignInPrompt =
   | { ok: true; signedIn: boolean }
   | { ok: false; cause: unknown }
 
-type CredentialLookup = ({ ok: true; header: AuthHeader } | DeployFailure) & {
-  owner: string | null
-}
-
-type DeploymentState =
-  | Exclude<InstallationDeployState, { status: 'tab_blocked' }>
-  | { status: 'tab_blocked'; url: string; owner: string | null }
+type CredentialLookup =
+  | { ok: true; header: AuthHeader; owner: string | null }
+  | DeployFailure
 
 const FAILURE_MESSAGE_KEY = {
   unauthorized: 'deployToComfyApi.bundleUnauthorized',
@@ -55,36 +49,15 @@ const REPORTED_REASONS: ReadonlySet<BundleFailureReason> = new Set([
   'invalid_request'
 ])
 
-const deployment = ref<DeploymentState>({ status: 'idle' })
-
-function openInNewTab(url: string): boolean {
-  const tab = window.open(url, '_blank')
-  if (tab) tab.opener = null
-  return tab !== null || isDesktop || window.__comfyDesktop2 !== undefined
-}
-
-function forgetLinkFromEarlierDialog() {
-  if (deployment.value.status === 'tab_blocked') {
-    deployment.value = { status: 'idle' }
-  }
-}
-
 export function useInstallationDeploy() {
-  forgetLinkFromEarlierDialog()
   const authStore = useAuthStore()
   const apiKeyAuthStore = useApiKeyAuthStore()
   const workflowStore = useWorkflowStore()
   const { showSignInDialog } = useAuthDialogs()
   const toast = useToast()
-  const state = computed<InstallationDeployState>(() => {
-    const current = deployment.value
-    if (current.status !== 'tab_blocked') return current
-    return current.owner === authStore.currentUserIdentity()
-      ? { status: 'tab_blocked', url: current.url }
-      : { status: 'idle' }
-  })
+  const state = ref<InstallationDeployState>({ status: 'idle' })
 
-  function openWorkflow() {
+  function captureOpenWorkflow() {
     const workflow = workflowStore.activeWorkflow
     workflow?.changeTracker.prepareForSave()
     return workflow?.activeState
@@ -110,7 +83,7 @@ export function useInstallationDeploy() {
     const owner = authStore.currentUserIdentity()
     const workspace = await workspaceToken()
     if (!workspace.ok) {
-      return { ok: false, reason: 'unavailable', cause: workspace.cause, owner }
+      return { ok: false, reason: 'unavailable', cause: workspace.cause }
     }
     if (workspace.token) {
       return {
@@ -119,13 +92,11 @@ export function useInstallationDeploy() {
         owner
       }
     }
-    if (authStore.isAuthenticated) {
-      return { ok: false, reason: 'unauthorized', owner }
-    }
+    if (authStore.isAuthenticated) return { ok: false, reason: 'unauthorized' }
     const apiKeyHeader = apiKeyAuthStore.getAuthHeader()
     return apiKeyHeader
       ? { ok: true, header: apiKeyHeader, owner }
-      : { ok: false, reason: 'signed_out', owner }
+      : { ok: false, reason: 'signed_out' }
   }
 
   async function signedInCredential(): Promise<CredentialLookup> {
@@ -133,17 +104,12 @@ export function useInstallationDeploy() {
     if (credential.ok || credential.reason !== 'signed_out') return credential
     const prompt = await promptSignIn()
     if (!prompt.ok) {
-      return {
-        ok: false,
-        reason: 'unavailable',
-        cause: prompt.cause,
-        owner: credential.owner
-      }
+      return { ok: false, reason: 'unavailable', cause: prompt.cause }
     }
     if (!prompt.signedIn) return credential
     const retried = await deployCredential()
     if (retried.ok || retried.reason !== 'signed_out') return retried
-    return { ok: false, reason: 'unauthorized', owner: retried.owner }
+    return { ok: false, reason: 'unauthorized' }
   }
 
   function notifyFailure(reason: BundleFailureReason, cause: unknown) {
@@ -157,39 +123,29 @@ export function useInstallationDeploy() {
     toast.error(t(FAILURE_MESSAGE_KEY[reason]))
   }
 
-  function stopUploading(): false {
-    deployment.value = { status: 'idle' }
-    return false
+  function stopUploading() {
+    state.value = { status: 'idle' }
   }
 
-  function fail(failure: DeployFailure): false {
+  function fail(failure: DeployFailure) {
     if (failure.reason !== 'signed_out') {
       notifyFailure(failure.reason, failure.cause)
     }
-    return stopUploading()
+    stopUploading()
   }
 
-  async function deploy(): Promise<boolean> {
-    if (deployment.value.status === 'uploading') return false
-    const workflow = openWorkflow()
-    deployment.value = { status: 'uploading' }
+  async function deploy() {
+    const workflow = captureOpenWorkflow()
+    state.value = { status: 'uploading' }
     const credential = await signedInCredential()
+    if (!credential.ok) return fail(credential)
     const { owner } = credential
     if (owner !== authStore.currentUserIdentity()) return stopUploading()
-    if (!credential.ok) return fail(credential)
     const bundle = await createInstallationBundle(credential.header, workflow)
     if (owner !== authStore.currentUserIdentity()) return stopUploading()
     if (!bundle.ok) return fail(bundle)
-    const opened = openInNewTab(bundle.url)
-    deployment.value = opened
-      ? { status: 'opened' }
-      : { status: 'tab_blocked', url: bundle.url, owner }
-    return opened
+    state.value = { status: 'ready', url: bundle.url }
   }
 
-  function markOpened() {
-    deployment.value = { status: 'opened' }
-  }
-
-  return { state: readonly(state), deploy, markOpened }
+  return { state, deploy }
 }

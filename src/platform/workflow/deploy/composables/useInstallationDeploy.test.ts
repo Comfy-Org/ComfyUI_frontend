@@ -5,7 +5,6 @@ import type {
 import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
@@ -17,24 +16,10 @@ import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
-const distribution = vi.hoisted(() => ({ isDesktop: false }))
-
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/auth/useAuthDialogs'))
 vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('@/platform/distribution/types'), () => ({
-  get isDesktop() {
-    return distribution.isDesktop
-  },
-  isCloud: false,
-  isNightly: false
-}))
-
-type PendingToken = {
-  resolve: (token: string) => void
-  reject: (cause: Error) => void
-}
 
 const CANVAS_GRAPH = { last_node_id: 1, nodes: [{ id: 1, type: 'KSampler' }] }
 
@@ -65,23 +50,21 @@ function openWorkflowOnCanvas(canvasGraph: Record<string, unknown>) {
 }
 
 beforeEach(() => {
-  distribution.isDesktop = false
   vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(
     'workspace-jwt'
   )
   vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue(null)
-  vi.spyOn(window, 'open').mockReturnValue(fromPartial<Window>({}))
 })
 
 describe(useInstallationDeploy, () => {
-  it('uploads with the workspace token, not a stored API key, and opens the pre-filled build wizard', async () => {
+  it('uploads with the workspace token, not a stored API key, and offers the pre-filled build wizard', async () => {
     vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
       'X-API-KEY': `comfyui-${'a'.repeat(64)}`
     })
     vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
     const { deploy, state } = useInstallationDeploy()
 
-    await expect(deploy()).resolves.toBe(true)
+    await deploy()
 
     expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith(
       '/deploy/bundle',
@@ -94,15 +77,14 @@ describe(useInstallationDeploy, () => {
         body: '{}'
       })
     )
-    expect(window.open).toHaveBeenCalledExactlyOnceWith(BUILDER_URL, '_blank')
-    expect(state.value).toEqual({ status: 'opened' })
+    expect(state.value).toEqual({ status: 'ready', url: BUILDER_URL })
   })
 
   it('uploads the open workflow as it stands on the canvas', async () => {
     openWorkflowOnCanvas(CANVAS_GRAPH)
     vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
 
-    await expect(useInstallationDeploy().deploy()).resolves.toBe(true)
+    await useInstallationDeploy().deploy()
 
     expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith(
       '/deploy/bundle',
@@ -121,14 +103,33 @@ describe(useInstallationDeploy, () => {
         })
       )
       .mockResolvedValueOnce(bundleCreated())
+    const { deploy, state } = useInstallationDeploy()
 
-    await expect(useInstallationDeploy().deploy()).resolves.toBe(true)
+    await deploy()
 
     expect(
       vi.mocked(api.fetchApi).mock.calls.map(([, init]) => init?.body)
     ).toEqual([JSON.stringify({ workflow: CANVAS_GRAPH }), '{}'])
     expect(useToast().error).not.toHaveBeenCalled()
-    expect(window.open).toHaveBeenCalledExactlyOnceWith(BUILDER_URL, '_blank')
+    expect(state.value).toEqual({ status: 'ready', url: BUILDER_URL })
+  })
+
+  it('does not retry without the workflow when the builder is busy', async () => {
+    openWorkflowOnCanvas(CANVAS_GRAPH)
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        Response.json({ error: 'builder_busy' } satisfies DeployToCloudError, {
+          status: 503
+        })
+      )
+      .mockResolvedValueOnce(bundleCreated())
+
+    await useInstallationDeploy().deploy()
+
+    expect(api.fetchApi).toHaveBeenCalledOnce()
+    expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
+      t('deployToComfyApi.bundleBusy')
+    )
   })
 
   it('uploads with the stored API key when there is no workspace token', async () => {
@@ -158,7 +159,7 @@ describe(useInstallationDeploy, () => {
       'X-API-KEY': `comfyui-${'a'.repeat(64)}`
     })
 
-    await expect(useInstallationDeploy().deploy()).resolves.toBe(false)
+    await useInstallationDeploy().deploy()
 
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(useAuthDialogs().showSignInDialog).not.toHaveBeenCalled()
@@ -169,27 +170,32 @@ describe(useInstallationDeploy, () => {
 
   it('asks the user to sign in, and uploads nothing when they cancel', async () => {
     vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(undefined)
+    const { deploy, state } = useInstallationDeploy()
 
-    await expect(useInstallationDeploy().deploy()).resolves.toBe(false)
+    await deploy()
 
     expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(useToast().error).not.toHaveBeenCalled()
+    expect(state.value).toEqual({ status: 'idle' })
   })
 
-  it('uploads once the user signs in from the prompt', async () => {
-    vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(undefined)
+  it('uploads for the account the user signs in with from the prompt', async () => {
+    const authStore = useAuthStore()
+    vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(undefined)
     vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
       async () => {
-        vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(
+        authStore.currentUser = fromPartial<User>({ uid: 'signed-in-account' })
+        vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(
           'signed-in-jwt'
         )
         return true
       }
     )
     vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
+    const { deploy, state } = useInstallationDeploy()
 
-    await expect(useInstallationDeploy().deploy()).resolves.toBe(true)
+    await deploy()
 
     expect(api.fetchApi).toHaveBeenCalledExactlyOnceWith(
       '/deploy/bundle',
@@ -200,6 +206,7 @@ describe(useInstallationDeploy, () => {
         }
       })
     )
+    expect(state.value).toEqual({ status: 'ready', url: BUILDER_URL })
   })
 
   it('reports a sign-in prompt that fails to open, and lets the next deploy try again', async () => {
@@ -209,7 +216,7 @@ describe(useInstallationDeploy, () => {
     )
     const { deploy, state } = useInstallationDeploy()
 
-    await expect(deploy()).resolves.toBe(false)
+    await deploy()
 
     expect(state.value).toEqual({ status: 'idle' })
     expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
@@ -224,107 +231,12 @@ describe(useInstallationDeploy, () => {
     vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(undefined)
     vi.mocked(useAuthDialogs().showSignInDialog).mockResolvedValueOnce(true)
 
-    await expect(useInstallationDeploy().deploy()).resolves.toBe(false)
+    await useInstallationDeploy().deploy()
 
     expect(api.fetchApi).not.toHaveBeenCalled()
     expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
       t('deployToComfyApi.bundleUnauthorized')
     )
-  })
-
-  it('offers the build wizard as a link when the browser blocks the new tab', async () => {
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
-    const { deploy, state } = useInstallationDeploy()
-
-    await expect(deploy()).resolves.toBe(false)
-
-    expect(state.value).toEqual({ status: 'tab_blocked', url: BUILDER_URL })
-  })
-
-  it.for([
-    { when: 'another account signs in', userId: 'account-b' },
-    { when: 'the user signs out', userId: null }
-  ])('hides the blocked link when $when', async ({ userId }) => {
-    const authStore = useAuthStore()
-    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
-    const deployment = useInstallationDeploy()
-    await deployment.deploy()
-
-    authStore.currentUser = userId ? fromPartial<User>({ uid: userId }) : null
-
-    expect(deployment.state.value).toEqual({ status: 'idle' })
-    expect(useInstallationDeploy().state.value).toEqual({ status: 'idle' })
-  })
-
-  it('lets the next account upload with its own credential', async () => {
-    const authStore = useAuthStore()
-    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    vi.mocked(api.fetchApi)
-      .mockResolvedValueOnce(bundleCreated())
-      .mockResolvedValueOnce(bundleCreated())
-    await useInstallationDeploy().deploy()
-
-    authStore.currentUser = fromPartial<User>({ uid: 'account-b' })
-    vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(
-      'account-b-jwt'
-    )
-    const deployment = useInstallationDeploy()
-    expect(deployment.state.value).toEqual({ status: 'idle' })
-    await expect(deployment.deploy()).resolves.toBe(true)
-
-    expect(api.fetchApi).toHaveBeenCalledTimes(2)
-    expect(api.fetchApi).toHaveBeenLastCalledWith(
-      '/deploy/bundle',
-      expect.objectContaining({
-        headers: {
-          Authorization: 'Bearer account-b-jwt',
-          'Content-Type': 'application/json'
-        }
-      })
-    )
-  })
-
-  it('keeps the blocked link when the same account refreshes its session', async () => {
-    const authStore = useAuthStore()
-    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
-    const deployment = useInstallationDeploy()
-    await deployment.deploy()
-
-    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
-    vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(
-      'refreshed-jwt'
-    )
-
-    expect(deployment.state.value).toEqual({
-      status: 'tab_blocked',
-      url: BUILDER_URL
-    })
-    expect(api.fetchApi).toHaveBeenCalledOnce()
-  })
-
-  it('hides the blocked link when the stored API key changes', async () => {
-    const apiKey = ref(`comfyui-${'a'.repeat(64)}`)
-    const apiKeyStore = useApiKeyAuthStore()
-    vi.mocked(apiKeyStore.getApiKey).mockImplementation(() => apiKey.value)
-    vi.mocked(apiKeyStore.getAuthHeader).mockImplementation(() => ({
-      'X-API-KEY': apiKey.value
-    }))
-    vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(undefined)
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
-    const deployment = useInstallationDeploy()
-    await deployment.deploy()
-
-    apiKey.value = `comfyui-${'b'.repeat(64)}`
-
-    expect(deployment.state.value).toEqual({ status: 'idle' })
-    expect(useInstallationDeploy().state.value).toEqual({ status: 'idle' })
   })
 
   it.for([
@@ -340,165 +252,42 @@ describe(useInstallationDeploy, () => {
           finishUpload = resolve
         })
     )
-    const deployment = useInstallationDeploy()
-    const pending = deployment.deploy()
+    const { deploy, state } = useInstallationDeploy()
+    const pending = deploy()
     await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
 
     authStore.currentUser = userId ? fromPartial<User>({ uid: userId }) : null
     finishUpload(bundleCreated())
+    await pending
 
-    await expect(pending).resolves.toBe(false)
-    expect(window.open).not.toHaveBeenCalled()
-    expect(deployment.state.value).toEqual({ status: 'idle' })
+    expect(state.value).toEqual({ status: 'idle' })
     expect(useToast().error).not.toHaveBeenCalled()
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it.for([
-    {
-      lookup: 'resolves',
-      finish: (token: PendingToken) => token.resolve('account-a-jwt')
-    },
-    {
-      lookup: 'fails',
-      finish: (token: PendingToken) =>
-        token.reject(new Error('token exchange failed'))
-    }
-  ])(
-    'discards a token lookup that $lookup after the account changes',
-    async ({ finish }) => {
-      const authStore = useAuthStore()
-      authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
-      let token: PendingToken = { resolve: () => {}, reject: () => {} }
-      vi.mocked(authStore.getWorkspaceAuthToken).mockImplementationOnce(
-        () =>
-          new Promise<string>((resolve, reject) => {
-            token = { resolve, reject }
-          })
-      )
-      const deployment = useInstallationDeploy()
-      const pending = deployment.deploy()
-      await vi.waitFor(() =>
-        expect(authStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
-      )
-
-      authStore.currentUser = fromPartial<User>({ uid: 'account-b' })
-      finish(token)
-
-      await expect(pending).resolves.toBe(false)
-      expect(api.fetchApi).not.toHaveBeenCalled()
-      expect(window.open).not.toHaveBeenCalled()
-      expect(deployment.state.value).toEqual({ status: 'idle' })
-      expect(useToast().error).not.toHaveBeenCalled()
-      expect(reportError).not.toHaveBeenCalled()
-    }
-  )
-
-  it('owns the blocked link with the account signed in through the prompt', async () => {
+  it('uploads nothing when the token arrives after the account changes', async () => {
     const authStore = useAuthStore()
-    vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(undefined)
-    vi.mocked(useAuthDialogs().showSignInDialog).mockImplementationOnce(
-      async () => {
-        authStore.currentUser = fromPartial<User>({ uid: 'signed-in-account' })
-        vi.mocked(authStore.getWorkspaceAuthToken).mockResolvedValue(
-          'signed-in-jwt'
-        )
-        return true
-      }
-    )
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
-    const deployment = useInstallationDeploy()
-
-    await expect(deployment.deploy()).resolves.toBe(false)
-
-    expect(deployment.state.value).toEqual({
-      status: 'tab_blocked',
-      url: BUILDER_URL
-    })
-    expect(api.fetchApi).toHaveBeenCalledOnce()
-  })
-
-  it('keeps one upload across dialogs, so reopening neither uploads again nor loses the link', async () => {
-    let finishUpload: (response: Response) => void = () => {}
-    vi.mocked(api.fetchApi).mockImplementationOnce(
+    authStore.currentUser = fromPartial<User>({ uid: 'account-a' })
+    let resolveToken: (token: string) => void = () => {}
+    vi.mocked(authStore.getWorkspaceAuthToken).mockImplementationOnce(
       () =>
-        new Promise<Response>((resolve) => {
-          finishUpload = resolve
+        new Promise<string>((resolve) => {
+          resolveToken = resolve
         })
     )
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    const upload = useInstallationDeploy().deploy()
-    const reopened = useInstallationDeploy()
+    const { deploy, state } = useInstallationDeploy()
+    const pending = deploy()
+    await vi.waitFor(() =>
+      expect(authStore.getWorkspaceAuthToken).toHaveBeenCalledOnce()
+    )
 
-    await expect(reopened.deploy()).resolves.toBe(false)
-    expect(reopened.state.value).toEqual({ status: 'uploading' })
-    await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalledOnce())
-    finishUpload(bundleCreated())
-    await upload
+    authStore.currentUser = fromPartial<User>({ uid: 'account-b' })
+    resolveToken('account-a-jwt')
+    await pending
 
-    expect(reopened.state.value).toEqual({
-      status: 'tab_blocked',
-      url: BUILDER_URL
-    })
+    expect(api.fetchApi).not.toHaveBeenCalled()
+    expect(state.value).toEqual({ status: 'idle' })
   })
-
-  it('offers a fresh upload once the blocked-tab link has been followed', async () => {
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    vi.mocked(api.fetchApi)
-      .mockResolvedValueOnce(bundleCreated())
-      .mockResolvedValueOnce(bundleCreated())
-    const { deploy, markOpened, state } = useInstallationDeploy()
-    await deploy()
-
-    markOpened()
-
-    expect(state.value).toEqual({ status: 'opened' })
-    await expect(deploy()).resolves.toBe(true)
-    expect(api.fetchApi).toHaveBeenCalledTimes(2)
-  })
-
-  it('offers a fresh upload when the dialog reopens after an unfollowed blocked-tab link', async () => {
-    vi.mocked(window.open).mockReturnValueOnce(null)
-    vi.mocked(api.fetchApi)
-      .mockResolvedValueOnce(bundleCreated())
-      .mockResolvedValueOnce(bundleCreated())
-    await useInstallationDeploy().deploy()
-
-    const reopened = useInstallationDeploy()
-
-    expect(reopened.state.value).toEqual({ status: 'idle' })
-    await expect(reopened.deploy()).resolves.toBe(true)
-    expect(api.fetchApi).toHaveBeenCalledTimes(2)
-  })
-
-  it.for([
-    {
-      desktop: 'the Desktop build',
-      setUp: () => {
-        distribution.isDesktop = true
-      }
-    },
-    {
-      desktop: 'Comfy-Desktop v2',
-      setUp: () => {
-        vi.stubGlobal('__comfyDesktop2', fromPartial({}))
-      }
-    }
-  ])(
-    'counts $desktop as opened, because its system browser leaves no tab handle',
-    async ({ setUp }) => {
-      setUp()
-      vi.mocked(window.open).mockReturnValueOnce(null)
-      vi.mocked(api.fetchApi).mockResolvedValueOnce(bundleCreated())
-      const { deploy, state } = useInstallationDeploy()
-
-      await expect(deploy()).resolves.toBe(true)
-
-      expect(state.value).toEqual({ status: 'opened' })
-      expect(window.open).toHaveBeenCalledExactlyOnceWith(BUILDER_URL, '_blank')
-    }
-  )
 
   it.for([
     {
@@ -611,29 +400,31 @@ describe(useInstallationDeploy, () => {
       reports: 1
     }
   ])(
-    'shows a message and opens nothing when $when',
+    'shows a message and offers no wizard link when $when',
     async ({ response, message, reports }) => {
       vi.mocked(api.fetchApi).mockResolvedValueOnce(response())
+      const { deploy, state } = useInstallationDeploy()
 
-      await expect(useInstallationDeploy().deploy()).resolves.toBe(false)
+      await deploy()
 
       expect(useToast().error).toHaveBeenCalledExactlyOnceWith(t(message))
-      expect(window.open).not.toHaveBeenCalled()
+      expect(state.value).toEqual({ status: 'idle' })
       expect(reportError).toHaveBeenCalledTimes(reports)
     }
   )
 
-  it('reports a request that never reached the server and opens nothing', async () => {
+  it('reports a request that never reached the server and offers no wizard link', async () => {
     vi.mocked(api.fetchApi).mockRejectedValueOnce(
       new TypeError('Failed to fetch')
     )
+    const { deploy, state } = useInstallationDeploy()
 
-    await expect(useInstallationDeploy().deploy()).resolves.toBe(false)
+    await deploy()
 
     expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
       t('deployToComfyApi.bundleUnavailable')
     )
-    expect(window.open).not.toHaveBeenCalled()
+    expect(state.value).toEqual({ status: 'idle' })
     expect(reportError).toHaveBeenCalledOnce()
   })
 })
