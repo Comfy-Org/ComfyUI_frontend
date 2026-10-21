@@ -411,6 +411,8 @@ const agentPanelStore = useAgentPanelStore()
 const billingIdentity = useBillingIdentity()
 
 watch(billingIdentity, () => {
+  fundsRecheckGeneration += 1
+  fundsRecheckPending.value = false
   agentPanelStore.reportedExhaustionIdentity = null
 })
 

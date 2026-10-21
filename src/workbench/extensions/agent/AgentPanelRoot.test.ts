@@ -1992,6 +1992,39 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     expect(messageBodies[0]).toMatchObject({ content: 'continue anyway' })
   })
 
+  it('releases an admitted-turn funds recheck when billing identity changes', async () => {
+    const accountId = ref('account-a')
+    useCurrentUser().resolvedUserInfo = computed(() => ({
+      id: accountId.value
+    }))
+    let releaseRefresh = () => {}
+    paywallBilling.fetchStatus.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseRefresh = resolve
+        })
+    )
+    vi.mocked(fetch).mockImplementation(async (input: RequestInfo | URL) => {
+      if (threadListRoute.test(String(input)))
+        return json(200, agentThreadList())
+      return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+    })
+    paywallHasFunds.value = false
+    workflowStore.activeWorkflow = addTab('workflows/current.json')
+    renderWithSelectedTarget()
+
+    await sendFromComposer('continue anyway')
+    await waitFor(() =>
+      expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
+    )
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+
+    accountId.value = 'account-b'
+
+    expect(await screen.findByTestId(STANDING)).toBeInTheDocument()
+    releaseRefresh()
+  })
+
   it('reports the impression against the credits_exhausted surface', async () => {
     paywallHasFunds.value = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
