@@ -94,7 +94,7 @@ describe('WorkflowPage header', () => {
       expect(screen.queryByTestId('workflow-api-endpoint')).toBeNull()
     }
   )
-  it('turns off the run layout without disabling generated code for a workflow with inputs', () => {
+  it('turns off the run layout without disabling generated code for a workflow with inputs', async () => {
     render(WorkflowPage, {
       props: {
         model: {
@@ -119,6 +119,7 @@ describe('WorkflowPage header', () => {
       }
     })
     expect(screen.queryByTestId('workflow-playground')).toBeNull()
+    await userEvent.setup().click(screen.getByRole('tab', { name: 'API' }))
     expect(screen.getByTestId('workflow-api-snippet')).toHaveTextContent(
       'from comfy_sdk import Comfy'
     )

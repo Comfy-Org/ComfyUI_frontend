@@ -9,6 +9,7 @@ import hubTemplates from '@/data/hubTemplates.json'
 import { tagDisplayName } from './tag-aliases'
 import type { HubTemplate } from './types'
 import { HUB_WORKFLOWS_PATH } from '@/config/hub-models'
+import { FILE_INPUTS } from './file-inputs'
 
 interface HubIoPort {
   readonly nodeType?: string
@@ -55,16 +56,6 @@ const details = hubTemplateDetails as Record<string, HubTemplateDetails>
 
 export function listHubWorkflows(): readonly HubTemplate[] {
   return templates
-}
-
-const FILE_INPUTS: Record<
-  string,
-  { accept: 'image' | 'video' | 'audio'; label: string } | undefined
-> = {
-  LoadImage: { accept: 'image', label: 'Image' },
-  LoadVideo: { accept: 'video', label: 'Video' },
-  VHS_LoadVideo: { accept: 'video', label: 'Video' },
-  LoadAudio: { accept: 'audio', label: 'Audio' }
 }
 
 const MEDIA_TO_MODALITY: Record<string, Modality> = {

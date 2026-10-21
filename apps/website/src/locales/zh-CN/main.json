@@ -6143,6 +6143,22 @@
       "zoomIn": "放大",
       "zoomOut": "缩小",
       "zoomReset": "重置"
+    },
+    "nodeGraph": {
+      "graphHint": "节点图的只读预览。在 Comfy Cloud 中打开或下载后即可编辑节点。",
+      "runsWhere": "在 ComfyUI 中运行",
+      "tabOverview": "概览",
+      "about": "简介",
+      "readMore": "展开全文",
+      "readLess": "收起",
+      "provide": "你需要提供",
+      "runsHereTitle": "在 ComfyUI 中运行。",
+      "runsHereCloud": "此工作流无法在本页面运行。你可以在 Comfy Cloud 中打开（已预先加载所需内容），或下载后在自己的 ComfyUI 中使用。",
+      "noExamples": "此工作流暂无示例输出。",
+      "sampleOf": "示例 {n}/{total}",
+      "tabApi": "API",
+      "runsHereLocal": "此工作流只能在你自己的 ComfyUI 中运行。下载后将文件拖放到画布上即可。",
+      "reading": "正在读取工作流"
     }
   },
   "eventChallenge": {

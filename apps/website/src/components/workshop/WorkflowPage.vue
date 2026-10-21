@@ -19,9 +19,10 @@ import {
 } from '@/scripts/posthog'
 import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import WorkflowPlayground from './WorkflowPlayground.vue'
-import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
 import WorkflowInputMismatch from './WorkflowInputMismatch.vue'
+import WorkflowNodeGraphTabs from './WorkflowNodeGraphTabs.vue'
+import { nodeGraphWorkflowFromModel } from '@/lib/hub/node-graph-workflow'
 
 const { model, embedded = false } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -94,6 +95,12 @@ const downloadName = computed(() =>
   workflowFiles.value ? `${model.slug.split('/').pop()}.json` : true
 )
 const documentationURL = computed(() => model.catalogDetails?.documentationURL)
+const nodeGraph = computed(() =>
+  nodeGraphWorkflowFromModel(model, {
+    downloadUrl: downloadUrl.value,
+    cloudHref: cloudHref.value
+  })
+)
 
 const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
@@ -176,9 +183,19 @@ function captureWorkflowDownload() {
       :scope="scope"
       @recovery="emit('recovery', $event)"
     />
-    <WorkflowPreview v-else :model standalone />
+    <WorkflowNodeGraphTabs
+      v-else
+      :workflow="nodeGraph"
+      :locale="locale"
+      @download="captureWorkflowDownload"
+      @try-cloud="captureTryInCloud"
+    >
+      <template #api>
+        <WorkflowApi :model :values="snippetValues" download-only />
+      </template>
+    </WorkflowNodeGraphTabs>
     <section
-      v-if="paragraphs.length"
+      v-if="runnable && paragraphs.length"
       class="mt-16 max-w-4xl"
       aria-labelledby="workflow-about-heading"
     >
@@ -198,13 +215,6 @@ function captureWorkflowDownload() {
         </p>
       </div>
     </section>
-    <WorkflowApi
-      v-if="!runnable"
-      class="mt-16"
-      :model
-      :values="snippetValues"
-      download-only
-    />
     <FAQSplit01
       v-if="faqs.length"
       id="workflow-faq"
