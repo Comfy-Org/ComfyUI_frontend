@@ -22,6 +22,7 @@ import type {
 import {
   parseCatalogSearch,
   USE_CASES,
+  catalogueAddress,
   countByUseCase,
   sortOrdersFor,
   sortWorkshopModels
@@ -237,22 +238,16 @@ watch(
     if (!serverPage || !scrollReady) return
     clearTimeout(searchTimer)
     searchTimer = setTimeout(() => {
-      const params = new URLSearchParams(initialSearch ?? location.search)
-      for (const key of [
-        'q',
-        'useCase',
-        'modality',
-        'provider',
-        'capability',
-        'sort',
-        'p',
-        'cursor'
-      ])
-        params.delete(key)
-      if (query.value) params.set('q', query.value)
-      appendSelectedFilters(params)
-      if (sort.value !== 'popular') params.set('sort', sort.value)
-      const search = params.toString()
+      const search = catalogueAddress(initialSearch ?? location.search, {
+        query: query.value,
+        sort: sort.value,
+        filters: {
+          useCase: selectedUseCases.value,
+          modality: legacyModalities.value,
+          provider: legacyProviders.value,
+          capability: legacyCapabilities.value
+        }
+      })
       const current = new URLSearchParams(initialSearch ?? location.search)
       current.delete('p')
       current.delete('cursor')
@@ -264,16 +259,6 @@ watch(
   },
   { deep: true }
 )
-function appendSelectedFilters(params: URLSearchParams) {
-  const filters = {
-    useCase: selectedUseCases.value,
-    modality: legacyModalities.value,
-    provider: legacyProviders.value,
-    capability: legacyCapabilities.value
-  }
-  for (const [key, values] of Object.entries(filters))
-    for (const value of values) params.append(key, value)
-}
 onBeforeUnmount(() => clearTimeout(searchTimer))
 watch(inSection, (value) => emit('section', value), { immediate: true })
 // Inside a category the tabs give up the row, and the search takes it.

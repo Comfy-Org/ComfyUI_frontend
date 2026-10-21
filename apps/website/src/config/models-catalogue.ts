@@ -459,6 +459,28 @@ export function catalogSearch(filter: CatalogLocation): string {
   return search ? `?${search}` : ''
 }
 
+export function catalogueAddress(
+  base: string,
+  {
+    query,
+    sort,
+    filters
+  }: {
+    query: string
+    sort: SortOrder
+    filters: Readonly<Record<string, readonly string[]>>
+  }
+): string {
+  const params = new URLSearchParams(base)
+  for (const key of ['q', ...Object.keys(filters), 'sort', 'p', 'cursor'])
+    params.delete(key)
+  if (query) params.set('q', query)
+  for (const [key, values] of Object.entries(filters))
+    for (const value of values) params.append(key, value)
+  if (sort !== 'popular') params.set('sort', sort)
+  return params.toString()
+}
+
 export function parseCatalogSearch(search: string): ParsedCatalogLocation {
   const params = new URLSearchParams(search)
   const useCase = params.get('useCase')

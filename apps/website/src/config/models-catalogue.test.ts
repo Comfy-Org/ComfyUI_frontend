@@ -18,6 +18,7 @@ import {
   countByFacet,
   countByUseCase,
   catalogSearch,
+  catalogueAddress,
   filterWorkshopModels,
   parseCatalogSearch,
   isRouterModel,
@@ -552,5 +553,47 @@ describe('summaryFor', () => {
 
   it('has nothing to say without an example', () => {
     expect(summaryFor([])).toBeUndefined()
+  })
+})
+
+describe('catalogueAddress', () => {
+  it.for<{
+    name: string
+    base: string
+    address: Parameters<typeof catalogueAddress>[1]
+    expected: string
+  }>([
+    {
+      name: 'replaces the list keys and keeps the others',
+      base: '?q=old&category=a&p=3&cursor=x&section=workflows',
+      address: {
+        query: 'flux',
+        sort: 'name',
+        filters: { category: ['b'] }
+      },
+      expected: 'section=workflows&q=flux&category=b&sort=name'
+    },
+    {
+      name: 'drops an empty search and the default sort',
+      base: '?q=old&sort=name&capability=a',
+      address: {
+        query: '',
+        sort: 'popular',
+        filters: { capability: [] }
+      },
+      expected: ''
+    },
+    {
+      name: 'appends every value of each filter in order',
+      base: '',
+      address: {
+        query: '',
+        sort: 'popular',
+        filters: { model: ['x', 'y'], capability: ['Image Edit'] }
+      },
+      expected: 'model=x&model=y&capability=Image+Edit'
+    }
+  ])('$name', ({ base, address, expected }) => {
+    expect(catalogueAddress(base, address)).toBe(expected)
   })
 })
