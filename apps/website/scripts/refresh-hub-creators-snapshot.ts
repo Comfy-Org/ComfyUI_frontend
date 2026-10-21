@@ -92,9 +92,12 @@ export async function fetchSnapshot(
   current?: HubCreatorsSnapshot
 ): Promise<HubCreatorsSnapshot> {
   const workflows = await fetchWorkflows(fetchJson)
-  const usernames = [
-    ...new Set(workflows.map(({ profile }) => profile.username))
-  ].sort()
+  const usernameByKey = new Map<string, string>()
+  for (const { profile } of workflows) {
+    const key = profile.username.toLowerCase()
+    if (!usernameByKey.has(key)) usernameByKey.set(key, profile.username)
+  }
+  const usernames = [...usernameByKey.values()].sort()
   const profiles = await Promise.all(
     usernames.map(async (username) =>
       zHubProfile.parse(
