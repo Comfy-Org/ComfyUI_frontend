@@ -116,32 +116,17 @@ export function nodeGraphInputs(graph: unknown): NodeGraphInput[] {
 
 const CORE_PACK = 'comfy-core'
 
-interface CustomPack {
-  readonly key: string
-  readonly name: string
-  readonly fromRepo: boolean
-}
-
-function customPackOf(node: GraphNode): CustomPack | undefined {
+function customPackOf(node: GraphNode): string | undefined {
   const { cnr_id: registryId, aux_id: repo } = node.properties ?? {}
   if (registryId === CORE_PACK) return undefined
-  const repoName = repo?.split('/').pop()
-  const name = repoName || registryId
-  if (!name) return undefined
-  return {
-    key: (registryId ?? name).toLowerCase(),
-    name,
-    fromRepo: Boolean(repoName)
-  }
+  return registryId || repo?.split('/').pop() || undefined
 }
 
 /** The custom node packs the active nodes of a workflow graph come from. */
 export function nodeGraphCustomNodes(graph: unknown): string[] {
-  const packs = new Map<string, CustomPack>()
-  for (const pack of activeGraphNodes(graph).map(customPackOf)) {
-    if (!pack) continue
-    const known = packs.get(pack.key)
-    if (!known || (pack.fromRepo && !known.fromRepo)) packs.set(pack.key, pack)
-  }
-  return [...packs.values()].map((pack) => pack.name)
+  const packs = new Map<string, string>()
+  for (const pack of activeGraphNodes(graph).map(customPackOf))
+    if (pack && !packs.has(pack.toLowerCase()))
+      packs.set(pack.toLowerCase(), pack)
+  return [...packs.values()]
 }

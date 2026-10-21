@@ -39,8 +39,11 @@ export function sampleMedia(
 const MEDIA =
   'https://media.comfy.org/website/workshop/workflows/character-turnaround'
 
-/** Sample data for the node graph design preview. */
-export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
+/** Sample data for the node graph design preview, minus what is read from its graph. */
+export const nodeGraphWorkflowSample: Omit<
+  NodeGraphWorkflow,
+  'inputs' | 'customNodes'
+> = {
   slug: 'node-graph-preview',
   name: 'Create a character turnaround',
   summary:
@@ -59,9 +62,7 @@ export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
   },
   downloadUrl: '/workflow-graphs/character-turnaround.json',
   templateId: 'templates-character_sheet',
-  inputs: [],
   models: ['Nano Banana Pro'],
-  customNodes: [],
   output: 'Image, 3 per run',
   author: 'ComfyUI',
   examples: [

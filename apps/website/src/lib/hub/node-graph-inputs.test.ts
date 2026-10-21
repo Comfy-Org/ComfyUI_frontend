@@ -115,15 +115,16 @@ describe('nodeGraphCustomNodes', () => {
       expected: []
     },
     {
-      name: 'names a pack by its repo, once, ahead of its registry id',
+      name: 'names a pack by its registry id, once, falling back to its repo',
       graph: {
         nodes: [
-          node({ cnr_id: 'comfyui-kjnodes' }),
           node({ cnr_id: 'comfyui-kjnodes', aux_id: 'kijai/ComfyUI-KJNodes' }),
-          node({ cnr_id: 'comfyui_essentials' })
+          node({ cnr_id: 'comfyui-kjnodes' }),
+          node({ cnr_id: '', aux_id: 'evanspearman/ComfyMath' }),
+          node({ cnr_id: '', aux_id: 'someone/Other-Pack' })
         ]
       },
-      expected: ['ComfyUI-KJNodes', 'comfyui_essentials']
+      expected: ['comfyui-kjnodes', 'ComfyMath', 'Other-Pack']
     },
     {
       name: 'skips bypassed nodes and reads used subgraphs',

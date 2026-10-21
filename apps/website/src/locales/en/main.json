@@ -689,7 +689,7 @@
         "export": "The code reads the API format: open the downloaded workflow in ComfyUI and choose File → Export (API).",
         "keyCloud": "Required, from your Comfy account",
         "customNodes": "Custom nodes",
-        "customNodesNote": "Comfy Cloud already has these custom nodes installed, so there is nothing to set up."
+        "customNodesNote": "Comfy Cloud supports the most widely used custom nodes. Check that these are supported before you run it there, or run it on your own ComfyUI."
       }
     },
     "videoTrim": {

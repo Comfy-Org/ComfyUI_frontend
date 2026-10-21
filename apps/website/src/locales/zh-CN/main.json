@@ -4577,7 +4577,7 @@
         "export": "代码读取的是 API 格式：在 ComfyUI 中打开下载的工作流，选择「文件 → 导出 (API)」。",
         "keyCloud": "需要，来自你的 Comfy 账户",
         "customNodes": "自定义节点",
-        "customNodesNote": "Comfy Cloud 已安装这些自定义节点，无需额外设置。"
+        "customNodesNote": "Comfy Cloud 支持最常用的自定义节点。在 Cloud 上运行前请确认这些节点受支持，或在你自己的 ComfyUI 上运行。"
       }
     },
     "api": {

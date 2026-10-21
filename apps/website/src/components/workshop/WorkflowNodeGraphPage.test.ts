@@ -93,6 +93,11 @@ describe('WorkflowNodeGraphPage', () => {
         'Runs in ComfyUI'
       ].map((text) => facts.queryByText(text) !== null)
     ).toEqual([true, true, true, true])
+    expect(
+      within(screen.getByTestId('workflow-custom-nodes')).getByRole('heading', {
+        name: 'Requires custom nodes'
+      })
+    ).toBeVisible()
   })
 
   it('leaves out the custom nodes list when the workflow needs none', async () => {
