@@ -374,22 +374,25 @@ const fundsRecheckPending = ref(false)
 let fundsRecheckGeneration = 0
 
 async function sendWithFundsRecheck(
-  send: () => Promise<boolean>
+  send: (onAccepted: () => void) => Promise<boolean>
 ): Promise<boolean> {
   if (billingType.value !== 'workspace' || agentHasFunds.value !== false)
-    return send()
+    return send(() => undefined)
   const generation = ++fundsRecheckGeneration
   const settle = () => {
     if (generation === fundsRecheckGeneration) fundsRecheckPending.value = false
   }
   fundsRecheckPending.value = true
   let admitted = false
+  let sent: boolean
   try {
-    admitted = await send()
+    sent = await send(() => {
+      admitted = true
+    })
   } finally {
     if (!admitted) settle()
   }
-  if (!admitted) return false
+  if (!admitted) return sent
   void refreshBillingStatus()
     .catch((error: unknown) => {
       reportError(error, {
@@ -398,7 +401,7 @@ async function sendWithFundsRecheck(
       })
     })
     .finally(settle)
-  return true
+  return sent
 }
 
 const showStandingPaywall = computed(() => {
@@ -1666,7 +1669,7 @@ const { submit: onSend } = useAgentDraftSubmission({
     }
     const selectionWorkflow = selectedTarget.value
     try {
-      return await sendWithFundsRecheck(() =>
+      return await sendWithFundsRecheck((onAccepted) =>
         sendMessage(
           text,
           attachments,
@@ -1677,7 +1680,8 @@ const { submit: onSend } = useAgentDraftSubmission({
           // the server so it can echo it onto agent_turn_started, which is what
           // makes the message -> turn step attributable instead of only
           // countable.
-          meta.clientMessageId
+          meta.clientMessageId,
+          onAccepted
         )
       )
     } finally {

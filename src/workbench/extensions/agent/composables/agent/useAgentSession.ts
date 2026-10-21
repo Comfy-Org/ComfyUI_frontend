@@ -1253,7 +1253,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    onAccepted?: () => void
   ): Promise<boolean> {
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
@@ -1284,6 +1285,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         clientMessageId
       )
       accepted = true
+      onAccepted?.()
       if (generation !== loadGeneration) return false
       acceptTurn(
         ack,
@@ -1326,7 +1328,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    onAccepted?: () => void
   ): Promise<boolean> {
     if (sending.value) {
       conversationStore.recordFailedSend(
@@ -1348,7 +1351,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags,
         workflowReferences,
         selectionWorkflowId,
-        clientMessageId
+        clientMessageId,
+        onAccepted
       )
       if (!sent) stopPendingAck = null
       return sent
