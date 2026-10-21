@@ -8,6 +8,7 @@ import {
   PARTNER_NODE_USAGE_EVENT_TYPE
 } from '@e2e/fixtures/data/customerEvents'
 import { localAuthFixture as test } from '@e2e/fixtures/localAuthFixture'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe(
   'Activity tab charge tooltip',
@@ -30,7 +31,8 @@ test.describe(
       await expect(tooltip.open).not.toContainText('Charge Micro Usd')
       await expect(tooltip.open).toContainText('Input Tokens: 12,480')
       await expect(tooltip.open).toContainText('Output Tokens: 1,536')
-      await expect(tooltip.surface(tooltip.open)).toHaveScreenshot(
+      await expectElementScreenshot(
+        tooltip.surface(tooltip.open),
         'activity-charge-tooltip-credits.png'
       )
     })
@@ -46,7 +48,8 @@ test.describe(
       await expect(tooltip.open).toContainText('Charge Micro Usd: pending')
       await expect(tooltip.open).not.toContainText('Credits')
       await expect(tooltip.open).toContainText('Input Tokens: 320')
-      await expect(tooltip.surface(tooltip.open)).toHaveScreenshot(
+      await expectElementScreenshot(
+        tooltip.surface(tooltip.open),
         'activity-charge-tooltip-passthrough.png'
       )
     })
