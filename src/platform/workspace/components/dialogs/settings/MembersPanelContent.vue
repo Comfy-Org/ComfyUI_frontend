@@ -64,20 +64,18 @@
           <SearchInput
             v-if="showSearch"
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             :placeholder="$t('workspacePanel.members.searchPlaceholder')"
             size="lg"
             class="w-64"
           />
           <Tooltip v-if="showInviteButton">
             <TooltipTrigger as-child>
-              <span
-                :tabindex="isInviteDisabled ? 0 : undefined"
-                class="inline-flex"
-              >
+              <span class="inline-flex">
                 <Button
                   variant="secondary"
                   size="lg"
-                  :disabled="isInviteDisabled"
                   :aria-label="$t('workspacePanel.inviteMember')"
                   @click="handleInviteMember"
                 >
@@ -87,15 +85,15 @@
               </span>
             </TooltipTrigger>
             <TooltipContent>{{
-              inviteTooltip || $t('workspacePanel.inviteMember')
+              $t('workspacePanel.inviteMember')
             }}</TooltipContent>
           </Tooltip>
-          <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
+          <WorkspaceMenuButton v-if="showWorkspaceMenu" />
         </div>
       </div>
     </Teleport>
     <div
-      class="flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      class="flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border p-6"
     >
       <!-- Members Content -->
       <div class="flex min-h-0 flex-1 flex-col">
@@ -103,12 +101,11 @@
           <!-- Table Header with Tab Buttons and Column Headers -->
           <div
             v-if="
-              uiConfig.showMembersList &&
-              (showViewTabs || (isCloud && hasMultipleMembers))
+              uiConfig.showMembersList && (showViewTabs || hasMultipleMembers)
             "
             :class="
               cn(
-                'sticky -top-px z-10 grid w-full items-center bg-base-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
+                'sticky -top-px z-10 grid w-full items-center bg-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
                 activeView === 'pending'
                   ? uiConfig.pendingGridCols
                   : uiConfig.headerGridCols
@@ -234,7 +231,7 @@
         v-if="permissions.canManageSubscription"
         variant="muted-textonly"
         size="sm"
-        class="text-sm text-base-foreground"
+        class="text-sm text-foreground"
         @click="isSalesManagedPlan ? handleContactSales() : showTeamPlans()"
       >
         {{
@@ -267,7 +264,7 @@
       <Button
         variant="muted-textonly"
         size="sm"
-        class="text-sm text-base-foreground"
+        class="text-sm text-foreground"
         @click="handleContactUs"
       >
         {{ $t('workspacePanel.members.contactUs') }}
@@ -293,7 +290,6 @@ import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import { ENTERPRISE_URL } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
-import { isCloud } from '@/platform/distribution/types'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const TEAM_PLAN_REQUEST_URL =
@@ -316,8 +312,7 @@ const {
   showSearch,
   showViewTabs,
   showInviteButton,
-  isInviteDisabled,
-  inviteTooltip,
+  showWorkspaceMenu,
   handleInviteMember,
   personalWorkspaceMember,
   filteredMembers,

@@ -4,12 +4,12 @@
  */
 import { vi } from 'vitest'
 
-import { createTestIdentity } from '../../testing.js'
+import { createTestIdentity } from '#/testing'
 import type {
   AccountCredential,
   AccountUser,
   CredentialStorage
-} from '../session.js'
+} from '#/core/session'
 
 export const EXCHANGE_URL = 'https://cloud.test/api/auth/token'
 export const NINETY_MINUTES_MS = 90 * 60 * 1000

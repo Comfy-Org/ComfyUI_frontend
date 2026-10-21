@@ -16,9 +16,7 @@
         {{ $t('assetBrowser.processingModelDescription') }}
       </p>
 
-      <div
-        class="flex flex-row items-center gap-3 rounded-lg bg-modal-card-background p-4"
-      >
+      <div class="flex items-center gap-3 rounded-lg bg-secondary p-4">
         <img
           v-if="previewImage"
           :src="previewImage"
@@ -28,10 +26,10 @@
         <div
           class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"
         >
-          <p class="m-0 w-full truncate text-base-foreground">
+          <p class="m-0 w-full truncate text-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
-          <p class="m-0 text-sm text-muted">
+          <p class="m-0">
             {{ modelType }}
           </p>
         </div>
@@ -47,9 +45,7 @@
         {{ $t('assetBrowser.findInLibrary', { type: modelType }) }}
       </p>
 
-      <div
-        class="flex flex-row items-center gap-3 rounded-lg bg-modal-card-background p-4"
-      >
+      <div class="flex items-center gap-3 rounded-lg bg-secondary p-4">
         <img
           v-if="previewImage"
           :src="previewImage"
@@ -59,10 +55,10 @@
         <div
           class="flex min-w-0 flex-1 flex-col items-start justify-center gap-1"
         >
-          <p class="m-0 w-full truncate text-base-foreground">
+          <p class="m-0 w-full truncate text-foreground">
             {{ metadata?.filename || metadata?.name }}
           </p>
-          <p class="m-0 text-sm text-muted">
+          <p class="m-0">
             {{ modelType }}
           </p>
         </div>
@@ -76,7 +72,7 @@
     >
       <i
         aria-hidden="true"
-        class="text-error"
+        class="text-destructive"
         :class="
           typeMismatch
             ? 'icon-[lucide--circle-alert] size-12'
@@ -87,13 +83,13 @@
         v-if="typeMismatch"
         class="flex max-w-2xl flex-col gap-3 text-center"
       >
-        <p class="m-0 text-sm font-bold">
+        <p class="m-0 font-bold">
           {{ $t('assetBrowser.missingModelImportTypeMismatchTitle') }}
         </p>
         <i18n-t
           keypath="assetBrowser.missingModelImportTypeMismatchAlreadyImported"
           tag="p"
-          class="m-0 text-sm text-muted"
+          class="m-0 text-sm text-muted-foreground"
         >
           <template #actual>
             <span>{{ actualModelTypeLabel }}</span>
@@ -102,7 +98,7 @@
         <i18n-t
           keypath="assetBrowser.missingModelImportTypeMismatchRequired"
           tag="p"
-          class="m-0 text-sm text-muted"
+          class="m-0 text-sm text-muted-foreground"
         >
           <template #required>
             <span>{{ typeMismatch.requiredModelTypeLabel }}</span>
@@ -111,7 +107,7 @@
         <i18n-t
           keypath="assetBrowser.missingModelImportTypeMismatchNextAction"
           tag="p"
-          class="m-0 text-sm text-base-foreground"
+          class="m-0 text-sm text-foreground"
         >
           <template #required>
             <span>{{ typeMismatch.requiredModelTypeLabel }}</span>
@@ -119,10 +115,10 @@
         </i18n-t>
       </div>
       <div v-else class="text-center">
-        <p class="m-0 text-sm font-bold">
+        <p class="m-0 font-bold">
           {{ $t('assetBrowser.uploadFailed') }}
         </p>
-        <p v-if="error" class="mb-0 text-sm text-muted">
+        <p v-if="error" class="mb-0">
           {{ error }}
         </p>
       </div>

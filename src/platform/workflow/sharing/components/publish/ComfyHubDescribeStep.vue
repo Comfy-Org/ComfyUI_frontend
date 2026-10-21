@@ -4,7 +4,7 @@
     class="flex min-h-0 flex-1 flex-col gap-6 px-6 py-4"
   >
     <label class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.workflowName') }}
       </span>
       <Input
@@ -16,7 +16,7 @@
     </label>
 
     <label class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.workflowDescription') }}
       </span>
       <Textarea
@@ -28,25 +28,19 @@
     </label>
 
     <label class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground">
+      <span class="text-sm text-foreground">
         {{ $t('comfyHubPublish.tagsDescription') }}
       </span>
-      <TagsInput
-        v-slot="{ isEmpty }"
+      <TagEditor
         data-testid="publish-tags-input"
         always-editing
-        class="bg-secondary-background select-none"
+        class="bg-secondary select-none"
+        item-class="backdrop-blur-none"
         :model-value="tags"
-        @update:model-value="$emit('update:tags', $event as string[])"
-      >
-        <TagsInputItem v-for="tag in tags" :key="tag" :value="tag">
-          <TagsInputItemText />
-          <TagsInputItemDelete />
-        </TagsInputItem>
-        <TagsInputInput :is-empty />
-      </TagsInput>
+        @update:model-value="$emit('update:tags', $event)"
+      />
     </label>
-    <TagsInput disabled class="bg-transparent p-0 hover:bg-transparent">
+    <TagsInput disabled class="p-0 hover:bg-transparent">
       <div
         v-if="displayedSuggestions.length > 0"
         class="flex basis-full flex-wrap gap-2"
@@ -56,7 +50,7 @@
           :key="tag"
           v-auto-animate
           :value="tag"
-          class="cursor-pointer bg-secondary-background px-2 text-muted-foreground transition-colors select-none hover:bg-secondary-background-selected"
+          class="cursor-pointer bg-secondary px-2 text-muted-foreground backdrop-blur-none transition-colors select-none hover:bg-muted"
           @click="addTag(tag)"
         >
           <TagsInputItemText />
@@ -85,9 +79,8 @@
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
-import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
+import TagEditor from '@/components/common/TagEditor.vue'
 import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { COMFY_HUB_TAG_OPTIONS } from '@/platform/workflow/sharing/constants/comfyHubTags'

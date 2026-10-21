@@ -28,7 +28,7 @@
         />
         <span v-if="!compact">{{ gizmosLabel }}</span>
       </Button>
-      <div class="mx-1 h-5 w-px shrink-0 bg-interface-menu-stroke" />
+      <div class="mx-1 h-5 w-px shrink-0 bg-border" />
       <Button
         v-for="option in transformGizmoOptions"
         :key="option.value"
@@ -59,7 +59,7 @@
         size="icon"
         :tooltip="lookThroughLabel"
         type="button"
-        :class="cn(lookingThrough && 'bg-button-active-surface')"
+        :class="cn(lookingThrough && 'bg-muted')"
         :aria-pressed="lookingThrough"
         :aria-label="lookThroughLabel"
         @click="toggleLookThrough"
@@ -89,9 +89,9 @@ import ViewportWidgetShell from '@/components/load3d/ViewportWidgetShell.vue'
 import { actionClass } from '@/components/load3d/menubar/menuBarStyles'
 import Button from '@/components/ui/button/Button.vue'
 import { useCameraInfo } from '@/composables/useCameraInfo'
-import type { TransformGizmoMode } from '@/extensions/core/cameraInfo/CameraInfoViewport'
+import type { TransformGizmoMode } from '@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComponentWidget } from '@/scripts/domWidget'
+import type { ComponentWidget } from '@/types/domWidget'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'

@@ -1,11 +1,12 @@
 import { useResizeObserver } from '@vueuse/core'
 import type { Ref } from 'vue'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, shallowRef, watch } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
+import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 type ResizeDirection =
@@ -36,6 +37,8 @@ const CORNER_DOT_CLASS =
 /** Minimum crop width/height in source image pixel space. */
 const MIN_CROP_SIZE = 16
 const CROP_BOX_BORDER = 1
+/** Slot the cropped image arrives on. */
+const IMAGE_INPUT_SLOT = 0
 
 /**
  * Next `isLoading` when `imageUrl` transitions. `null` means do not change
@@ -63,13 +66,14 @@ interface UseImageCropOptions {
   imageEl: Ref<HTMLImageElement | null>
   containerEl: Ref<HTMLDivElement | null>
   modelValue: Ref<Bounds>
+  onEditEnd?: () => void
 }
 
 export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
-  const { imageEl, containerEl, modelValue } = options
+  const { imageEl, containerEl, modelValue, onEditEnd } = options
   const nodeOutputStore = useNodeOutputStore()
 
-  const node = ref<LGraphNode | null>(null)
+  const node = shallowRef<LGraphNode | null>(null)
 
   const imageUrl = ref<string | null>(null)
   const isLoading = ref(false)
@@ -143,6 +147,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
       lockedRatio.value =
         ASPECT_RATIOS[key as keyof typeof ASPECT_RATIOS] ?? null
       applyLockedRatio()
+      onEditEnd?.()
     }
   })
 
@@ -180,32 +185,28 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     }
   })
 
-  const getInputImageUrl = (): string | null => {
-    if (!node.value) return null
+  /**
+   * Reads the link store (via `getInputNode`) and the node output store, so the
+   * preview follows the image input being connected, swapped, or disconnected —
+   * not just the upstream node producing new outputs.
+   */
+  const inputImageUrl = computed<string | null>(() => {
+    const cropNode = node.value
+    if (!cropNode) return null
 
-    let sourceNode = node.value.getInputNode(0)
+    const sourceNode = resolveInputSourceNode(cropNode, IMAGE_INPUT_SLOT)
     if (!sourceNode) return null
 
-    if (sourceNode.isSubgraphNode()) {
-      const link = node.value.getInputLink(0)
-      if (!link) return null
-      const resolved = sourceNode.resolveSubgraphOutputLink(link.origin_slot)
-      sourceNode = resolved?.outputNode ?? null
-      if (!sourceNode) return null
-    }
+    return nodeOutputStore.getNodeImageUrls(sourceNode)?.[0] ?? null
+  })
 
-    const urls = nodeOutputStore.getNodeImageUrls(sourceNode)
-
-    if (urls?.length) {
-      return urls[0]
-    }
-
-    return null
-  }
-
-  const updateImageUrl = () => {
-    imageUrl.value = getInputImageUrl()
-  }
+  watch(
+    inputImageUrl,
+    (url) => {
+      imageUrl.value = url
+    },
+    { immediate: true }
+  )
 
   watch(imageUrl, (url, previous) => {
     const next = imageCropLoadingAfterUrlChange(url, previous)
@@ -429,6 +430,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
 
     isDragging.value = false
     releasePointer(e)
+    onEditEnd?.()
   }
 
   const handleResizeStart = (e: PointerEvent, direction: ResizeDirection) => {
@@ -582,27 +584,12 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     isResizing.value = false
     resizeDirection.value = null
     releasePointer(e)
+    onEditEnd?.()
   }
 
-  const initialize = () => {
+  onMounted(() => {
     node.value = resolveNode(nodeId) ?? null
-
-    updateImageUrl()
-  }
-
-  watch(
-    () => nodeOutputStore.nodeOutputs,
-    () => updateImageUrl(),
-    { deep: true }
-  )
-
-  watch(
-    () => nodeOutputStore.nodePreviewImages,
-    () => updateImageUrl(),
-    { deep: true }
-  )
-
-  onMounted(initialize)
+  })
 
   return {
     imageUrl,

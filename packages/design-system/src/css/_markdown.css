@@ -1,0 +1,227 @@
+.comfy-markdown {
+  display: grid;
+  & > textarea,
+  .tiptap {
+    grid-area: 1 / 1 / 2 / 2;
+  }
+
+  & > textarea {
+    opacity: 0;
+    pointer-events: none;
+    font-family: var(--font-mono);
+  }
+
+  &.editing {
+    & > textarea {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .tiptap {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  .tiptap {
+    overflow-y: auto;
+    font-size: var(--comfy-textarea-font-size);
+
+    :first-child {
+      margin-top: 0;
+    }
+
+    :last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.comfy-markdown .tiptap blockquote {
+  border-left: medium solid;
+  margin-left: 1em;
+  padding-left: 0.5em;
+}
+
+.comfy-markdown .tiptap pre {
+  border: thin dotted;
+  border-radius: 0.5em;
+  margin: 0.5em;
+  padding: 0.5em;
+}
+
+.comfy-markdown .tiptap table {
+  border-collapse: collapse;
+}
+
+.comfy-markdown .tiptap th {
+  text-align: left;
+  background: var(--background);
+}
+
+.comfy-markdown .tiptap th,
+.comfy-markdown .tiptap td {
+  padding: 0.5em;
+  border: thin solid;
+}
+
+.comfy-markdown .tiptap h1,
+.comfy-markdown .tiptap h2,
+.comfy-markdown .tiptap h3,
+.comfy-markdown .tiptap h4,
+.comfy-markdown .tiptap h5,
+.comfy-markdown .tiptap h6,
+.comfy-markdown-content h1,
+.comfy-markdown-content h2,
+.comfy-markdown-content h3,
+.comfy-markdown-content h4,
+.comfy-markdown-content h5,
+.comfy-markdown-content h6 {
+  margin-block: 0.67em;
+}
+
+.comfy-markdown-content h1,
+.comfy-markdown-content h2,
+.comfy-markdown-content h3,
+.comfy-markdown-content h4,
+.comfy-markdown-content h5,
+.comfy-markdown-content h6 {
+  line-height: 1.2;
+}
+
+.comfy-markdown-content {
+  font-size: var(--comfy-markdown-font-size, var(--comfy-textarea-font-size));
+  line-height: 1.6;
+  word-wrap: break-word;
+}
+
+.comfy-markdown-content h1 {
+  font-size: calc(22em / 14);
+  font-weight: 700;
+}
+
+.comfy-markdown-content h2 {
+  font-size: calc(18em / 14);
+  font-weight: 700;
+}
+
+.comfy-markdown-content h3 {
+  font-size: calc(16em / 14);
+  font-weight: 700;
+}
+
+.comfy-markdown-content p {
+  margin: 0 0 0.5em;
+}
+
+.comfy-markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.comfy-markdown-content *:first-child {
+  margin-top: 0;
+}
+
+.comfy-markdown-content ul,
+.comfy-markdown-content ol {
+  padding-left: 2rem;
+  margin: 0.5rem 0;
+}
+
+.comfy-markdown-content ul ul,
+.comfy-markdown-content ol ol,
+.comfy-markdown-content ul ol,
+.comfy-markdown-content ol ul {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.comfy-markdown-content li {
+  margin: 0.5rem 0;
+}
+
+.comfy-markdown-content code {
+  color: var(--primary);
+  background-color: var(--secondary);
+  border-radius: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  font-family: monospace;
+}
+
+.comfy-markdown-content pre {
+  background-color: var(--secondary);
+  border-radius: 0.25rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+.comfy-markdown-content pre code {
+  background-color: transparent;
+  padding: 0;
+  color: var(--foreground);
+}
+
+.comfy-markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.comfy-markdown-content th,
+.comfy-markdown-content td {
+  padding: 0.5rem;
+}
+
+.comfy-markdown-content th {
+  color: var(--foreground);
+}
+
+.comfy-markdown-content td {
+  color: var(--muted-foreground);
+}
+
+.comfy-markdown-content tr {
+  border-bottom: 1px solid var(--secondary);
+}
+
+.comfy-markdown-content tr:last-child {
+  border-bottom: none;
+}
+
+.comfy-markdown-content thead {
+  border-bottom: 1px solid var(--foreground);
+}
+
+.comfy-markdown-content a {
+  color: var(--muted-foreground);
+  text-decoration: underline;
+}
+
+.comfy-markdown-content img,
+.comfy-markdown-content video {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.comfy-markdown-content blockquote {
+  border-left: 3px solid var(--primary);
+  padding-left: 0.75em;
+  margin: 0.5em 0;
+  opacity: 0.8;
+}
+
+.comfy-markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1em 0;
+}
+
+.comfy-markdown-content strong {
+  font-weight: 700;
+}
+
+.comfy-markdown-content em {
+  font-style: italic;
+}

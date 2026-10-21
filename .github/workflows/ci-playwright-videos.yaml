@@ -81,7 +81,7 @@ jobs:
           EXPECTED_DISTRIBUTION: localhost
           EXPECTED_FRONTEND_COMMIT: ${{ github.sha }}
         run: |
-          pnpm build
+          pnpm build:dist
           pnpm test:assets-flag-artifact
 
       - name: Upload local frontend
@@ -107,7 +107,7 @@ jobs:
       contents: read
       packages: read
     container:
-      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.27
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

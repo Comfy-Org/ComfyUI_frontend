@@ -4,12 +4,11 @@
       v-if="embedded && showIntensityControl"
       class="flex w-[200px] flex-col gap-2 rounded-lg bg-black/50 p-3 shadow-lg"
     >
-      <span class="text-sm font-medium text-base-foreground">{{
+      <span class="text-sm font-medium text-foreground">{{
         $t('load3d.lightIntensity')
       }}</span>
       <Slider
         :model-value="sliderValue"
-        class="w-full"
         :min="sliderMin"
         :max="sliderMax"
         :step="sliderStep"
@@ -27,7 +26,7 @@
             :aria-label="$t('load3d.lightIntensity')"
             @click="toggleLightIntensity"
           >
-            <i class="icon-[lucide--sun] size-5 text-base-foreground" />
+            <i class="icon-[lucide--sun] size-5 text-foreground" />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="right">{{
@@ -41,7 +40,6 @@
       >
         <Slider
           :model-value="sliderValue"
-          class="w-full"
           :min="sliderMin"
           :max="sliderMax"
           :step="sliderStep"
@@ -64,7 +62,7 @@ import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import type {
   HDRIConfig,
   MaterialMode
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const lightIntensity = defineModel<number>('lightIntensity')

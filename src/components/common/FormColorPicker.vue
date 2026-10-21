@@ -1,6 +1,6 @@
 <template>
   <div class="color-picker-wrapper flex items-center gap-2">
-    <ColorPicker
+    <AppColorPicker
       :id="id"
       v-model="hexValue"
       :disabled="disabled"
@@ -20,7 +20,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import AppColorPicker from '@/components/common/AppColorPicker.vue'
 import Input from '@/components/ui/input/Input.vue'
 
 const modelValue = defineModel<string>('modelValue')
@@ -39,8 +39,6 @@ defineOptions({
   inheritAttrs: false
 })
 
-// Preserve the PrimeVue ColorPicker storage contract (hex without `#`); the
-// underlying picker uses `#`-prefixed hex, so normalize on read/write.
 const hexValue = computed<string>({
   get: () =>
     modelValue.value?.startsWith('#')

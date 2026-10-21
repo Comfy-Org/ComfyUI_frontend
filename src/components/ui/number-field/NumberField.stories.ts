@@ -56,9 +56,9 @@ function renderNumberField(children: string, initialValue: number) {
 }
 
 const stepperChildren = `
-  <NumberFieldDecrement />
+  <NumberFieldDecrement aria-label="Decrement" />
   <NumberFieldInput aria-label="Amount" />
-  <NumberFieldIncrement />
+  <NumberFieldIncrement aria-label="Increment" />
 `
 
 export const Default: Story = {
@@ -84,10 +84,10 @@ export const WithPrefix: Story = {
   args: { max: 10000, step: 5, formatOptions: { maximumFractionDigits: 0 } },
   render: renderNumberField(
     `
-      <NumberFieldDecrement />
-      <span class="shrink-0 text-base font-semibold text-base-foreground">$</span>
+      <NumberFieldDecrement aria-label="Decrement" />
+      <span class="shrink-0 text-base font-semibold text-foreground">$</span>
       <NumberFieldInput aria-label="Amount in dollars" />
-      <NumberFieldIncrement />
+      <NumberFieldIncrement aria-label="Increment" />
     `,
     50
   )

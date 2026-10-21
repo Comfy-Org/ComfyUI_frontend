@@ -1,0 +1,45 @@
+{
+  "id": "graph-commands",
+  "capability": "Graph commands",
+  "description": "Graph mutation intents announced from the LGraph and widget-value funnels with caller provenance, plus the probe that tells id allocation whether a root graph is bound to a collaborative document. The agent CRDT minter and applier consume these seams from outside this domain.",
+  "modules": [
+    {
+      "path": "src/lib/litegraph/src/docBoundGraphs.ts",
+      "role": "infrastructure"
+    },
+    {
+      "path": "src/lib/litegraph/src/graphIntents.test.ts",
+      "role": "application"
+    },
+    {
+      "path": "src/lib/litegraph/src/graphIntents.ts",
+      "role": "application"
+    }
+  ],
+  "publicEntryPoints": [],
+  "allowedDependencies": [],
+  "allowedConsumers": [],
+  "characterizationScenarios": [
+    {
+      "name": "Graph mutations emit intents tagged with local, load, or agent-remote provenance",
+      "checks": ["src/lib/litegraph/src/graphIntents.test.ts"]
+    },
+    {
+      "name": "Agent document minting and applying observe graph intents",
+      "checks": [
+        "src/workbench/extensions/agent/crdt/docOpMinter.test.ts",
+        "src/workbench/extensions/agent/crdt/liveGraphApplier.test.ts"
+      ]
+    }
+  ],
+  "adrs": [
+    "docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md",
+    "docs/adr/CRDT-AUTHORITY-0035-human-canvas-authority-and-draft-reconciliation.md",
+    "docs/adr/CRDT-MINT-0018-merge-identity-for-node-transfers.md"
+  ],
+  "compatibilityPromises": [
+    "Intent provenance stays synchronous and innermost-wins: configure is load, the CRDT applier is agent-remote, and other callers are local.",
+    "LiteGraph pulls the doc-bound probe at mint time and never imports the application layer to answer it."
+  ],
+  "deepImports": "inventory"
+}

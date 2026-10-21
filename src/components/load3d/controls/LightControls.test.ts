@@ -8,7 +8,7 @@ import LightControls from '@/components/load3d/controls/LightControls.vue'
 import type {
   HDRIConfig,
   MaterialMode
-} from '@/extensions/core/load3d/interfaces'
+} from '@comfyorg/viewport3d/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 const settingValues: Record<string, unknown> = {
@@ -64,8 +64,7 @@ function renderComponent(opts: RenderOpts = {}) {
     }),
     {
       global: {
-        plugins: [i18n],
-        directives: { tooltip: () => {} }
+        plugins: [i18n]
       }
     }
   )

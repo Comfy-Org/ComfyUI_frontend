@@ -4,10 +4,10 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createI18n } from 'vue-i18n'
 
-import type { SecretMetadata } from '../types'
+import type { SecretMetadata } from '@/platform/secrets/types'
 import SecretListItem from './SecretListItem.vue'
 
-vi.mock(import('../providers'), () => ({
+vi.mock(import('@/platform/secrets/providers'), () => ({
   getProviderLabel: (provider: string | undefined) => {
     if (provider === 'huggingface') return 'HuggingFace'
     if (provider === 'civitai') return 'Civitai'
@@ -59,10 +59,7 @@ function renderComponent(props: {
   return render(SecretListItem, {
     props,
     global: {
-      plugins: [i18n],
-      directives: {
-        tooltip: () => {}
-      }
+      plugins: [i18n]
     }
   })
 }

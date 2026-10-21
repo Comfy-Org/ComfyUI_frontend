@@ -1,12 +1,9 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import ImperativePopover from './ImperativePopover.vue'
-
-let openModal: HTMLElement | undefined
 
 function renderPopover(withOutside = false) {
   render({
@@ -19,13 +16,6 @@ function renderPopover(withOutside = false) {
       `
   })
 }
-
-afterEach(() => {
-  if (openModal) {
-    ZIndex.clear(openModal)
-    openModal = undefined
-  }
-})
 
 describe('ImperativePopover', () => {
   it('does not listen for viewport changes while closed', async () => {
@@ -146,15 +136,19 @@ describe('ImperativePopover', () => {
     expect(input).toHaveFocus()
   })
 
-  it('opens above a registered modal', async () => {
-    openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
-    const dialogZIndex = Number(openModal.style.zIndex)
+  it('opens above an existing overlay', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
     renderPopover()
 
     await fireEvent['click'](screen.getByRole('button', { name: 'Open' }))
     const content = await screen.findByRole('dialog')
-    expect(Number(content.style.zIndex)).toBeGreaterThan(dialogZIndex)
+    expect(dialog.compareDocumentPosition(content)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 
   it('stays open when the content has nothing tabbable', async () => {

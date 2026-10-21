@@ -181,10 +181,9 @@ function getStackCount(asset: AssetItem): number | undefined {
 
 function getAssetCardClass(selected: boolean): string {
   return cn(
-    'w-full text-text-primary transition-colors hover:bg-secondary-background-hover',
+    'w-full text-foreground transition-colors hover:bg-accent',
     'cursor-pointer',
-    selected &&
-      'bg-secondary-background-hover ring-1 ring-modal-card-border-highlighted ring-inset'
+    selected && 'bg-accent ring-1 ring-muted-foreground ring-inset'
   )
 }
 

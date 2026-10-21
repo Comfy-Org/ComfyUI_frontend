@@ -449,7 +449,10 @@ test.describe('Error dialog', () => {
             TestIds.dialogs.errorDialog
           )
           await expect(
-            errorDialog.getByRole('heading', { name: 'KSampler' })
+            errorDialog.getByRole('heading', {
+              name: 'KSampler (#3)',
+              exact: true
+            })
           ).toBeVisible()
           await expect(errorDialog).toContainText(scenario.message)
           await expect(errorDialog).toContainText(scenario.rawMessage)

@@ -75,6 +75,13 @@
         >
           <i class="icon-[lucide--trash-2] size-4" />
         </Button>
+        <WidgetHistoryButtons
+          class="ml-auto"
+          :can-undo
+          :can-redo
+          @undo="undo"
+          @redo="redo"
+        />
       </div>
 
       <LightInfoLightEditor
@@ -84,7 +91,7 @@
         @update="updateSelectedLight"
         @change-type="setSelectedLightType"
       />
-      <div v-else class="px-2 pb-1 text-xs text-muted-foreground">
+      <div v-else class="px-2 pb-1 text-muted-foreground">
         {{ $t('lightInfo.noLights') }}
       </div>
     </div>
@@ -99,10 +106,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { chipClass } from '@/components/load3d/menubar/menuBarStyles'
 import Button from '@/components/ui/button/Button.vue'
-import type { LightTransformGizmoMode } from '@/extensions/core/lightInfo/LightInfoViewport'
-import { LIGHT_TYPE_LABEL_KEYS } from '@/extensions/core/lightInfo/types'
+import WidgetHistoryButtons from '@/components/widgetHistory/WidgetHistoryButtons.vue'
+import { widgetHistoryScope } from '@/composables/widgetHistoryScope'
+import type { LightTransformGizmoMode } from '@comfyorg/viewport3d/lightInfo/LightInfoViewport'
+import { LIGHT_TYPE_LABEL_KEYS } from '@comfyorg/viewport3d/lightInfo/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 import LightInfoLightEditor from './LightInfoLightEditor.vue'
@@ -122,13 +132,14 @@ function lightChipClass(active: boolean) {
     chipClass,
     'border border-transparent bg-transparent font-mono text-xs',
     active
-      ? 'border-component-node-border bg-component-node-widget-background-selected text-base-foreground'
-      : 'text-muted-foreground hover:bg-button-hover-surface hover:text-base-foreground'
+      ? 'border-node-border bg-muted text-foreground'
+      : 'text-muted-foreground hover:bg-accent hover:text-foreground'
   )
 }
 
-const { nodeId } = defineProps<{
+const { nodeId, widget } = defineProps<{
   nodeId: NodeId
+  widget?: SimplifiedWidget
 }>()
 
 const node = shallowRef<LGraphNode | null>(null)
@@ -161,8 +172,14 @@ const {
   addLight,
   removeSelectedLight,
   updateSelectedLight,
-  setSelectedLightType
-} = useLightInfo(node)
+  setSelectedLightType,
+  canUndo,
+  canRedo,
+  undo,
+  redo
+} = useLightInfo(node, () =>
+  widget ? widgetHistoryScope(widget, nodeId) : null
+)
 
 watch(gizmosOn, (on) => setGizmosVisible(on))
 watch(transformGizmoMode, (mode) => setTransformGizmoMode(mode))

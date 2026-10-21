@@ -3,7 +3,10 @@
   "capability": "Webcam capture",
   "description": "Camera stream setup, frame capture, preview, and capture-on-queue upload for the webcam capture node.",
   "modules": [
-    { "path": "src/extensions/core/webcamCapture.ts", "role": "integration" }
+    {
+      "path": "src/extensions/core/webcamCapture.ts",
+      "role": "integration"
+    }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],

@@ -31,6 +31,7 @@ import type {
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import type {
   ExportedSubgraphInstance,
   ISerialisableNodeInput,
@@ -62,6 +63,7 @@ import {
   zDynamicGroupInputSpec
 } from '@/schemas/nodeDefSchema'
 import { useApp } from '@/scripts/appInstance'
+import { provideLitegraphService } from '@/core/graph/litegraphServiceAccess'
 import {
   clipspace,
   copyToClipspace,
@@ -70,7 +72,7 @@ import {
 import { $el } from '@/scripts/ui/utils'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -83,6 +85,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { isBlueprintType } from '@/utils/blueprintUtils'
 import { markCoreMediaMenuCallback } from '@/utils/coreMediaMenuActionUtils'
+import { getImageFileUrl } from '@/utils/hdrFormatUtil'
 import { getErrorMessage } from '@/utils/errorUtil'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -138,9 +141,6 @@ async function reencodeAsPngBlob(
     }, 'image/png')
   })
 }
-
-export const CONFIG = Symbol()
-export const GET_CONFIG = Symbol()
 
 export function getExtraOptionsForWidget(
   node: LGraphNode,
@@ -716,13 +716,10 @@ export const useLitegraphService = () => {
 
     node.prototype.getExtraMenuOptions = function (canvas, options) {
       if (this.imgs) {
-        // If this node has images then we add an open in new tab item
         let img
         if (this.imageIndex != null) {
-          // An image is selected so select that
           img = this.imgs[this.imageIndex]
         } else if (this.overIndex != null) {
-          // No image is selected but one is hovered
           img = this.imgs[this.overIndex]
         }
         if (img) {
@@ -730,8 +727,7 @@ export const useLitegraphService = () => {
             {
               content: 'Open Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 void openFileInNewTab(url.toString())
               }, 'preview')
             },
@@ -739,8 +735,7 @@ export const useLitegraphService = () => {
             {
               content: 'Save Image',
               callback: markCoreMediaMenuCallback(() => {
-                const url = new URL(img.src)
-                url.searchParams.delete('preview')
+                const url = getImageFileUrl(img)
                 const filename = new URLSearchParams(url.search).get('filename')
                 downloadFile(url.toString(), filename ?? undefined)
               }, 'preview')
@@ -757,7 +752,6 @@ export const useLitegraphService = () => {
         }
       })
 
-      // prevent conflict of clipspace content
       if (!clipspace.returnNode) {
         options.push({
           content: 'Copy (Clipspace)',
@@ -1027,3 +1021,5 @@ export const useLitegraphService = () => {
     updatePreviews
   }
 }
+
+provideLitegraphService(useLitegraphService)

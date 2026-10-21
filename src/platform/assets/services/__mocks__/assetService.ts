@@ -1,6 +1,6 @@
 import { vi } from 'vitest'
 
-import type { assetService as RealAssetService } from '../assetService'
+import type { assetService as RealAssetService } from '@/platform/assets/services/assetService'
 
 export const assetService: Partial<typeof RealAssetService> = {
   addAssetTags: vi.fn(),
