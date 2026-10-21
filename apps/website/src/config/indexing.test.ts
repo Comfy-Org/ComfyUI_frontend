@@ -201,24 +201,28 @@ describe('indexing policy', () => {
   })
 
   it.for(MODELS_PAGES_BY_KIND)(
-    'keeps every Models page but the hub out of the sitemap with nothing launched (%s)',
+    'keeps every Models page but the hub and the lists out of the sitemap with nothing launched (%s)',
     ([kind, pathname]) => {
-      expect(isIndexableModelPage(pathname, new Set(), false)).toBe(false)
+      expect(isIndexableModelPage(pathname, new Set(), false)).toBe(
+        kind === 'section'
+      )
       expect(
         !isExcludedFromSitemap(`https://comfy.org${pathname}`, new Set(), false)
-      ).toBe(kind === 'hub')
+      ).toBe(kind === 'hub' || kind === 'section')
     }
   )
 })
 
 describe('model page launch', () => {
   it.for(MODELS_PAGES_BY_KIND)(
-    'lists only the hub and canonical model pages (%s)',
+    'lists only the hub, the lists and canonical model pages (%s)',
     ([kind, pathname]) => {
       expect(isIndexableModelPage(pathname, 'all', false)).toBe(
-        kind === 'model'
+        kind === 'model' || kind === 'section'
       )
-      expect(inSitemap(pathname)).toBe(kind === 'hub' || kind === 'model')
+      expect(inSitemap(pathname)).toBe(
+        kind === 'hub' || kind === 'model' || kind === 'section'
+      )
     }
   )
 
@@ -277,16 +281,16 @@ describe('model page launch', () => {
     { path: '/hub/apps/', workflowsLaunched: false },
     { path: '/hub/apps/', workflowsLaunched: true }
   ])(
-    'keeps $path out of the index with workflows launched $workflowsLaunched',
+    'indexes $path with workflows launched $workflowsLaunched',
     ({ path, workflowsLaunched }) => {
-      expect(isIndexableModelPage(path, 'all', workflowsLaunched)).toBe(false)
+      expect(isIndexableModelPage(path, 'all', workflowsLaunched)).toBe(true)
       expect(
         isExcludedFromSitemap(
           `https://comfy.org${path}`,
           'all',
           workflowsLaunched
         )
-      ).toBe(true)
+      ).toBe(false)
     }
   )
 

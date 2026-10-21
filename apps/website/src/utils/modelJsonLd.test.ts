@@ -8,8 +8,15 @@ import {
   getWorkshopPageDetail,
   workshopPagePaths
 } from '@/config/workshop-page-content'
+import { validateHtml } from '@website/scripts/validate-jsonld'
+import { escapeJsonLd } from './escapeJsonLd'
 import type { JsonLdNode } from './jsonLd'
-import { modelPageJsonLd, modelsHubJsonLd } from './modelJsonLd'
+import { buildPageGraph } from './jsonLd'
+import {
+  hubSectionJsonLd,
+  modelPageJsonLd,
+  modelsHubJsonLd
+} from './modelJsonLd'
 import { modelsByProvider } from '@/routes/models/models-directory'
 
 const launch = vi.hoisted(
@@ -254,6 +261,87 @@ describe('modelsHubJsonLd', () => {
       breadcrumbs: [
         { name: 'Home', url: 'https://comfy.org/' },
         { name: 'Models' }
+      ],
+      extraJsonLd: []
+    })
+  })
+})
+
+describe('hubSectionJsonLd', () => {
+  const records = [
+    { name: 'Product Photo Relight', href: '/hub/workflows/product-relight/' },
+    { name: 'Sketch to Render', href: '/hub/workflows/sketch-to-render/' }
+  ]
+
+  function sectionHtml(pathname: string, locale: 'en' | 'zh-CN') {
+    const url = `${siteUrl}${pathname}`
+    const jsonLd = hubSectionJsonLd({
+      name: 'ComfyUI workflows',
+      homeName: 'Home',
+      items: records,
+      url,
+      siteUrl,
+      locale
+    })
+    const graph = buildPageGraph(
+      { siteUrl, locale },
+      {
+        url,
+        name: 'ComfyUI workflows',
+        type: jsonLd.pageType,
+        crumbs: jsonLd.breadcrumbs,
+        mainEntityId: jsonLd.mainEntityId
+      },
+      ...jsonLd.extraJsonLd
+    )
+    return {
+      jsonLd,
+      html: `<link rel="canonical" href="${url}"><script type="application/ld+json">${escapeJsonLd(graph)}</script>`
+    }
+  }
+
+  it.for([
+    { locale: 'en', prefix: '' },
+    { locale: 'zh-CN', prefix: '/zh-CN' }
+  ] as const)(
+    'lists each $locale record as a valid ItemList on a CollectionPage',
+    ({ locale, prefix }) => {
+      const pathname = `${prefix}/hub/workflows/`
+      const { jsonLd, html } = sectionHtml(pathname, locale)
+      expect(validateHtml(html, pathname)).toEqual([])
+      expect(jsonLd.pageType).toBe('CollectionPage')
+      expect(jsonLd.mainEntityId).toBe(`${siteUrl}${pathname}#itemlist`)
+      expect(jsonLd.extraJsonLd).toEqual([
+        expect.objectContaining({
+          '@type': 'ItemList',
+          name: 'ComfyUI workflows',
+          numberOfItems: 2,
+          itemListElement: records.map(({ name, href }, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name,
+            url: `${siteUrl}${prefix}${href}`
+          }))
+        })
+      ])
+    }
+  )
+
+  it('keeps the breadcrumb but drops the list when the page has no records', () => {
+    expect(
+      hubSectionJsonLd({
+        name: 'ComfyUI apps',
+        homeName: 'Home',
+        items: [],
+        url: `${siteUrl}/hub/apps/`,
+        siteUrl,
+        locale: 'en'
+      })
+    ).toEqual({
+      pageType: 'CollectionPage',
+      breadcrumbs: [
+        { name: 'Home', url: 'https://comfy.org/' },
+        { name: 'ComfyUI apps' }
       ],
       extraJsonLd: []
     })
