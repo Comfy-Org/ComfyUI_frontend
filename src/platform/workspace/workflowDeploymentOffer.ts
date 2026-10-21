@@ -23,20 +23,25 @@ type WorkflowDeploymentOffer =
   | { kind: 'noneRunIt' }
   | { kind: 'unchecked' }
 
-/** Whether the check's answer is about this workflow: every node it finds Comfy Cloud lacking is one the workflow uses, and it finds Cloud lacking every node the editor found missing. */
+function nodesCloudLacks(markFor: MarkFor): readonly string[] | null {
+  const cloud = markFor(null)
+  if (cloud === null || cloud.kind === 'unknown') return null
+  return cloud.kind === 'missing' ? cloud.nodeTypes : []
+}
+
+/** Whether the check's answer is about this workflow: every node it finds Comfy Cloud lacking is one the workflow runs, and it finds Cloud lacking every missing node the workflow runs. */
 export function answersForWorkflow(
   markFor: MarkFor,
   workflow: CheckedWorkflow
 ): boolean {
-  const cloud = markFor(null)
+  const cloudLacks = nodesCloudLacks(markFor)
+  if (cloudLacks === null) return false
+  const runsNode = (nodeType: string) => workflow.nodeTypes.includes(nodeType)
   return (
-    cloud?.kind === 'missing' &&
-    cloud.nodeTypes.every((nodeType) =>
-      workflow.nodeTypes.includes(nodeType)
-    ) &&
-    workflow.missingNodeTypes.every((nodeType) =>
-      cloud.nodeTypes.includes(nodeType)
-    )
+    cloudLacks.every(runsNode) &&
+    workflow.missingNodeTypes
+      .filter(runsNode)
+      .every((nodeType) => cloudLacks.includes(nodeType))
   )
 }
 
@@ -44,31 +49,38 @@ function runs(choice: DeploymentChoice): boolean {
   return choice.mark?.kind === 'runs'
 }
 
-function isReady(choice: DeploymentChoice): boolean {
-  return choice.deployment.status === 'ready'
+/** Whether Switch may pick this deployment: it runs the workflow and is ready. */
+export function canSwitchTo(choice: DeploymentChoice): boolean {
+  return runs(choice) && choice.deployment.status === 'ready'
 }
 
-/** What the dialog for a workflow Comfy Cloud lacks nodes for offers, from the compatibility check's answer; a switch lists the ready deployments that run it first. */
+/** What the dialog for a workflow Comfy Cloud lacks nodes for offers, from the compatibility check's answer; a switch lists the deployments it can pick first. */
 export function workflowDeploymentOffer(
   deployments: readonly WorkspaceDeployment[],
   markFor: MarkFor,
   workflow: CheckedWorkflow
 ): WorkflowDeploymentOffer {
-  if (!answersForWorkflow(markFor, workflow)) return { kind: 'unchecked' }
+  if (
+    !answersForWorkflow(markFor, workflow) ||
+    markFor(null)?.kind !== 'missing'
+  ) {
+    return { kind: 'unchecked' }
+  }
   const choices = deployments.map((deployment) => ({
     deployment,
     mark: markFor(deployment.deployment_id)
   }))
-  if (choices.some(runs)) {
+  if (choices.some(canSwitchTo)) {
     return {
       kind: 'switch',
       choices: [
-        ...choices.filter((choice) => runs(choice) && isReady(choice)),
-        ...choices.filter((choice) => runs(choice) && !isReady(choice)),
+        ...choices.filter(canSwitchTo),
+        ...choices.filter((choice) => runs(choice) && !canSwitchTo(choice)),
         ...choices.filter((choice) => !runs(choice))
       ]
     }
   }
+  if (choices.some(runs)) return { kind: 'unchecked' }
   const eachLacksNodes =
     choices.length > 0 && choices.every(({ mark }) => mark?.kind === 'missing')
   return eachLacksNodes ? { kind: 'noneRunIt' } : { kind: 'unchecked' }

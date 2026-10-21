@@ -58,7 +58,7 @@
                 v-for="choice in choices"
                 :key="choice.deployment.deployment_id"
                 :value="choice.deployment.deployment_id"
-                :disabled="!runs(choice)"
+                :disabled="!canSwitchTo(choice)"
                 class="py-1.5"
                 text-class="min-w-0 flex-1"
                 reserve-indicator
@@ -133,10 +133,11 @@ import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitch
 import type { DiscardedWork } from '@/platform/workspace/deploymentSwitchReload'
 import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsavedWorkBeforeSwitch'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { canSwitchTo } from '@/platform/workspace/workflowDeploymentOffer'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
 
 const { choices, missing } = defineProps<{
-  /** Every deployment with its mark, the ones that run the workflow first. */
+  /** Every deployment with its mark, the ones Switch can pick first. */
   choices: readonly DeploymentChoice[]
   missing: readonly MissingItemsRow[]
 }>()
@@ -178,8 +179,9 @@ const selected = computed(
   () =>
     choices.find(
       (choice) =>
-        runs(choice) && choice.deployment.deployment_id === chosenId.value
-    ) ?? choices.find(runs)
+        canSwitchTo(choice) &&
+        choice.deployment.deployment_id === chosenId.value
+    ) ?? choices.find(canSwitchTo)
 )
 
 function choose(value: AcceptableValue) {

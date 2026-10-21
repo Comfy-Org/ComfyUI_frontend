@@ -131,7 +131,9 @@ useProgressTextPreviews()
 useBrowserTabTitle()
 if (isCloud) {
   const { markFor } = useDeploymentCompatibility()
-  setMissingNodesNotice((nodeTypes) => noticeMissingNodes(nodeTypes, markFor))
+  onBeforeUnmount(
+    setMissingNodesNotice((nodeTypes) => noticeMissingNodes(nodeTypes, markFor))
+  )
 }
 
 const settingStore = useSettingStore()

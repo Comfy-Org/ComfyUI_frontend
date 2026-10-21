@@ -9,7 +9,6 @@
 
 <script setup lang="ts">
 import { uniqBy } from 'es-toolkit'
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -35,31 +34,25 @@ import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeployment
 const NAMES_SHOWN = 3
 
 const { t } = useI18n()
-const missingNodesErrorStore = useMissingNodesErrorStore()
-const missingModelStore = useMissingModelStore()
 const { markFor } = useDeploymentCompatibility()
 
-const missingNodes = computed(() =>
-  nodesNeedingDeployment(
-    missingNodesErrorStore.missingNodesError?.nodeTypes ?? []
-  )
+const missingNodes = nodesNeedingDeployment(
+  useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
 )
-const packs = computed(() => missingPacksOf(missingNodes.value))
+const packs = missingPacksOf(missingNodes)
+const models: MissingBuildModel[] = uniqBy(
+  useMissingModelStore().visibleMissingModelCandidates ?? [],
+  (candidate) => candidate.name
+).map((candidate) => ({
+  name: candidate.name,
+  directory: candidate.directory ?? null,
+  url: candidate.url
+}))
 
 const offer = workflowDeploymentOffer(
   useDeploymentPickStore().deployments,
   markFor,
-  openWorkflowForCheck(missingNodes.value)
-)
-const models = computed<MissingBuildModel[]>(() =>
-  uniqBy(
-    missingModelStore.visibleMissingModelCandidates ?? [],
-    (candidate) => candidate.name
-  ).map((candidate) => ({
-    name: candidate.name,
-    directory: candidate.directory ?? null,
-    url: candidate.url
-  }))
+  openWorkflowForCheck(missingNodes)
 )
 
 function listed(names: readonly string[]): string {
@@ -78,30 +71,30 @@ function row(key: string, names: readonly string[]): MissingItemsRow[] {
   return [{ label: t(key, names.length), names: listed(names) }]
 }
 
-const missing = computed<MissingItemsRow[]>(() => [
+const missing: MissingItemsRow[] = [
   ...row(
     'deploymentSwitcher.workflowNeedsDeployment.missingPacks',
-    packs.value.flatMap((pack) => (pack.packId === null ? [] : [pack.packId]))
+    packs.flatMap((pack) => (pack.packId === null ? [] : [pack.packId]))
   ),
   ...row(
     'deploymentSwitcher.workflowNeedsDeployment.missingNodes',
-    packs.value.flatMap((pack) => (pack.packId === null ? pack.nodeTypes : []))
+    packs.flatMap((pack) => (pack.packId === null ? pack.nodeTypes : []))
   ),
   ...row(
     'deploymentSwitcher.workflowNeedsDeployment.missingModels',
-    models.value.map((model) => model.name)
+    models.map((model) => model.name)
   )
-])
+]
 
-const pitch = computed<CustomDeploymentPitch>(() => ({
+const pitch: CustomDeploymentPitch = {
   ...customDeploymentPitch(),
-  brief: workflowDeploymentBrief(packs.value, models.value),
-  missing: missing.value,
+  brief: workflowDeploymentBrief(packs, models),
+  missing,
   ...(offer.kind === 'noneRunIt'
     ? {
         title: t('deploymentSwitcher.workflowNeedsDeployment.titleNoneRunIt'),
         note: t('deploymentSwitcher.workflowNeedsDeployment.noneRunIt')
       }
     : { title: t('deploymentSwitcher.workflowNeedsDeployment.title') })
-}))
+}
 </script>

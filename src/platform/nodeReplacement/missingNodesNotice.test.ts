@@ -10,16 +10,18 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 const NODES: MissingNodeType[] = [{ type: 'BiRefNet', isReplaceable: false }]
 
 describe(showMissingNodesNotice, () => {
-  it('shows the error overlay, or the notice a surface set in its place', () => {
-    showMissingNodesNotice(NODES)
-    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
-
-    useExecutionErrorStore().dismissErrorOverlay()
+  it('shows the notice a surface set in place of the error overlay, until the surface takes it back', () => {
     const notice = vi.fn()
-    setMissingNodesNotice(notice)
+    const restore = setMissingNodesNotice(notice)
     showMissingNodesNotice(NODES)
 
     expect(notice).toHaveBeenCalledWith(NODES)
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
+
+    restore()
+    showMissingNodesNotice(NODES)
+
+    expect(notice).toHaveBeenCalledOnce()
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
 })

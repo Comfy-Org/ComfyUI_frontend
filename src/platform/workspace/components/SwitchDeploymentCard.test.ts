@@ -168,6 +168,10 @@ describe('SwitchDeploymentCard', () => {
     expect(screen.getByRole('option', { name: /Paused/ })).toHaveTextContent(
       'Stopped'
     )
+    expect(screen.getByRole('option', { name: /Paused/ })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
   })
 
   it('reloads onto the deployment when this browser has already picked it since the page loaded', async () => {

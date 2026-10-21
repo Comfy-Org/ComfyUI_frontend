@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import type { WorkspaceDeployment } from '@/platform/workspace/api/workspaceApi'
 import type { DeploymentCompatibilityMark } from '@/platform/workspace/composables/useDeploymentCompatibility'
-import { workflowDeploymentOffer } from '@/platform/workspace/workflowDeploymentOffer'
+import {
+  answersForWorkflow,
+  workflowDeploymentOffer
+} from '@/platform/workspace/workflowDeploymentOffer'
 import type { CheckedWorkflow } from '@/platform/workspace/workflowDeploymentOffer'
 
 function deployment(id: string): WorkspaceDeployment {
@@ -29,6 +32,7 @@ const UNKNOWN: DeploymentCompatibilityMark = { kind: 'unknown' }
 interface OfferCase {
   when: string
   cloud?: DeploymentCompatibilityMark | null
+  workflow?: CheckedWorkflow
   marks: Record<string, DeploymentCompatibilityMark | null>
   offer: { kind: string; ids?: string[] }
 }
@@ -49,6 +53,17 @@ const CASES: OfferCase[] = [
     when: 'a stopped deployment and a ready one run it',
     marks: { stopped: RUNS, a: MISSING, b: RUNS },
     offer: { kind: 'switch', ids: ['b', 'stopped', 'a'] }
+  },
+  {
+    when: 'only a stopped deployment runs it',
+    marks: { stopped: RUNS, a: MISSING },
+    offer: { kind: 'unchecked' }
+  },
+  {
+    when: 'another missing node sits in a muted subgraph the check skips',
+    workflow: { ...WORKFLOW, missingNodeTypes: ['BiRefNet', 'MutedNode'] },
+    marks: { a: RUNS },
+    offer: { kind: 'switch', ids: ['a'] }
   },
   {
     when: 'one runs it and another was not checked',
@@ -93,11 +108,11 @@ const CASES: OfferCase[] = [
 describe(workflowDeploymentOffer, () => {
   it.for(CASES)(
     'offers $offer.kind when $when',
-    ({ cloud = MISSING, marks, offer }) => {
+    ({ cloud = MISSING, workflow = WORKFLOW, marks, offer }) => {
       const result = workflowDeploymentOffer(
         Object.keys(marks).map(deployment),
         (id) => (id === null ? cloud : (marks[id] ?? null)),
-        WORKFLOW
+        workflow
       )
 
       expect({
@@ -108,4 +123,28 @@ describe(workflowDeploymentOffer, () => {
       }).toEqual(offer)
     }
   )
+})
+
+describe(answersForWorkflow, () => {
+  it.for([
+    { when: 'the check has not answered', cloud: null, answers: false },
+    {
+      when: 'Comfy Cloud runs it because every missing node is muted',
+      cloud: RUNS,
+      workflow: { nodeTypes: ['SaveImage'], missingNodeTypes: ['MutedNode'] },
+      answers: true
+    },
+    {
+      when: 'it finds Comfy Cloud lacking those nodes',
+      cloud: MISSING,
+      answers: true
+    }
+  ] satisfies {
+    when: string
+    cloud: DeploymentCompatibilityMark | null
+    workflow?: CheckedWorkflow
+    answers: boolean
+  }[])('is $answers when $when', ({ cloud, workflow = WORKFLOW, answers }) => {
+    expect(answersForWorkflow(() => cloud, workflow)).toBe(answers)
+  })
 })
