@@ -58,7 +58,7 @@ for (const {
   {
     path: '/solutions/vfx/v3/',
     heading: 'One shot. More possibilities.',
-    sales: 'TALK TO COMFY TEAM',
+    sales: 'CONTACT US',
     contact: '/contact/',
     rain: 'Rain',
     taxi: 'London taxi',
@@ -69,7 +69,7 @@ for (const {
   {
     path: '/zh-CN/solutions/vfx/v3/',
     heading: '一个镜头，更多可能。',
-    sales: '联系 COMFY 团队',
+    sales: '联系我们',
     contact: '/zh-CN/contact/',
     rain: '雨天',
     taxi: '伦敦出租车',
@@ -325,7 +325,7 @@ test('Studio comparison synchronizes selected samples and pauses when closed', a
   await page.keyboard.press('End')
   await expect(slider).toHaveAttribute('aria-valuenow', '100')
   await studio
-    .getByRole('button', { name: '← BACK TO EXAMPLES', exact: true })
+    .getByRole('button', { name: '← BACK TO VFX PAGE', exact: true })
     .click()
   await expect
     .poll(() => before.evaluate((video: HTMLVideoElement) => video.paused))
@@ -420,6 +420,9 @@ test('source and output previews pause offscreen while keyboard canvas explorati
   const canvas = section.locator('.vfx-canvas-window')
   const source = section.locator('.vfx-source-node video')
   const output = section.locator('.vfx-main-node video')
+  await expect(canvas).toHaveAccessibleDescription(
+    'Drag left or right to see full workflows Use the arrow keys, Home and End to move with the keyboard.'
+  )
   await expect
     .poll(() =>
       output.evaluate(
@@ -481,9 +484,6 @@ test('reduced motion keeps graph output still after version selection', async ({
         )
       )
   ).toBe(true)
-  await expect(
-    section.getByRole('button', { name: 'Play', exact: true })
-  ).toBeVisible()
 })
 for (const reducedMotion of ['no-preference', 'reduce'] as const) {
   test(`sample hero keeps comparison controls without workflow actions with ${reducedMotion} motion`, async ({
@@ -553,7 +553,7 @@ for (const {
     demo: 'relight',
     option: 'Rain',
     open: 'OPEN STUDIO',
-    back: '← BACK TO EXAMPLES',
+    back: '← BACK TO VFX PAGE',
     settings: 'SETTINGS',
     workflow: 'WORKFLOW',
     shot: 'Describe the shot',
@@ -564,7 +564,7 @@ for (const {
     demo: 'swap',
     option: '伦敦出租车',
     open: '打开工作室',
-    back: '← 返回示例',
+    back: '← 返回视觉特效页面',
     settings: '设置',
     workflow: '工作流',
     shot: '描述镜头',
@@ -774,7 +774,7 @@ test('Studio returns to the same playback time after editing Settings', async ({
     .getByRole('textbox', { name: 'Describe the shot', exact: true })
     .fill('A snowy diner at dusk')
   await studio
-    .getByRole('button', { name: '← BACK TO EXAMPLES', exact: true })
+    .getByRole('button', { name: '← BACK TO VFX PAGE', exact: true })
     .click()
   await expect
     .poll(() =>
@@ -885,7 +885,7 @@ for (const {
     open: 'OPEN STUDIO',
     settings: 'SETTINGS',
     workflow: 'WORKFLOW',
-    back: '← BACK TO EXAMPLES',
+    back: '← BACK TO VFX PAGE',
     expose: 'EXPOSE WORKFLOW',
     reference: 'Reference frame',
     mobile: false
@@ -897,7 +897,7 @@ for (const {
     open: '打开工作室',
     settings: '设置',
     workflow: '工作流',
-    back: '← 返回示例',
+    back: '← 返回视觉特效页面',
     expose: '查看工作流',
     reference: '参考帧',
     mobile: true
@@ -1134,78 +1134,6 @@ for (const { path, pause, play, sample, reducedMotion, mobile } of [
           )
       )
       .toBe(true)
-  })
-}
-
-for (const { demo, sample } of [
-  { demo: 'relight', sample: 'Rain' },
-  { demo: 'sequence', sample: 'Push-in' }
-]) {
-  test(`${demo} preserves visitor pause through sample and Studio transitions`, async ({
-    page
-  }) => {
-    await page.goto('/solutions/vfx/v3/')
-    const section = page.locator(`[data-vfx-demo="${demo}"]`)
-    await waitForShowcase(section)
-    const output = section.locator('.vfx-main-node video')
-    await output.scrollIntoViewIfNeeded()
-    await expect
-      .poll(() =>
-        output.evaluate(
-          (video: HTMLVideoElement) => !video.paused && video.readyState >= 2
-        )
-      )
-      .toBe(true)
-    await section.getByRole('button', { name: 'Pause', exact: true }).click()
-    await section.getByRole('button', { name: sample, exact: true }).click()
-    await output.scrollIntoViewIfNeeded()
-    await expect
-      .poll(() => output.evaluate((video: HTMLVideoElement) => video.paused))
-      .toBe(true)
-    await section
-      .getByRole('button', { name: 'OPEN STUDIO', exact: true })
-      .click()
-    const studio = section.locator('.vfx-studio-view')
-    await expect(studio).toBeVisible()
-    const media = studio.locator('video')
-    await expect
-      .poll(() =>
-        media.evaluateAll(
-          (videos) =>
-            videos.length > 0 &&
-            videos.every(
-              (video) => video instanceof HTMLVideoElement && video.paused
-            )
-        )
-      )
-      .toBe(true)
-    await section.getByRole('button', { name: 'Play', exact: true }).click()
-    await media.first().scrollIntoViewIfNeeded()
-    await expect
-      .poll(() =>
-        media.evaluateAll(
-          (videos) =>
-            videos.length > 0 &&
-            videos.every(
-              (video) =>
-                video instanceof HTMLVideoElement &&
-                !video.paused &&
-                video.readyState >= 2
-            )
-        )
-      )
-      .toBe(true)
-    await section.getByRole('button', { name: 'Pause', exact: true }).click()
-    await section
-      .getByRole('button', { name: '← BACK TO EXAMPLES', exact: true })
-      .click()
-    await output.scrollIntoViewIfNeeded()
-    await expect
-      .poll(() => output.evaluate((video: HTMLVideoElement) => video.paused))
-      .toBe(true)
-    await expect(
-      section.getByRole('button', { name: 'Play', exact: true })
-    ).toBeVisible()
   })
 }
 

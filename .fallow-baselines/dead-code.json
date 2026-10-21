@@ -9,7 +9,6 @@
     "src/platform/workspace/api/workspaceApi.ts:ListWorkspacesResponse",
     "src/platform/workspace/api/workspaceApi.ts:BillingPlansResponse",
     "src/platform/workspace/composables/useDowngradeToPersonal.ts:DowngradePreview",
-    "src/platform/workspace/composables/useWorkspaceActivity.ts:UserSummary",
     "src/platform/workspace/stores/billingOperationStore.ts:StartOperationMetadata",
     "src/platform/workspace/stores/partnerNodeGovernanceStore.ts:PartnerNodePolicyStatus"
   ],
