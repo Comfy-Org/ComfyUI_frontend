@@ -6600,12 +6600,9 @@ export const zHeadCccPreviewMediaBytesPath = z.object({
 })
 
 export const zGetCccRevisionItemPath = z.object({
-  rev: z.coerce
-    .bigint()
-    .gte(BigInt(1))
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
+  rev: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
+    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+  }),
   uid: z.uuid()
 })
 
