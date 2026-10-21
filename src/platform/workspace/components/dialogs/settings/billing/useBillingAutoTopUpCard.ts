@@ -1,6 +1,7 @@
 import { useAsyncState, useDocumentVisibility } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
@@ -26,6 +27,20 @@ export function useBillingAutoTopUpCard() {
     if (settings !== null) return { kind: 'loaded', settings }
     return read.isLoading.value ? { kind: 'loading' } : { kind: 'unavailable' }
   })
+
+  watch(
+    () => read.state.value?.status,
+    (status) => {
+      if (!status) return
+      useTelemetry()?.trackBillingEvent({
+        operation: 'auto_top_up_card',
+        stage: 'viewed',
+        outcome: 'pending',
+        status
+      })
+    },
+    { immediate: true }
+  )
 
   async function retry() {
     await read.execute()

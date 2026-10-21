@@ -20,11 +20,12 @@
       <Button
         v-if="action"
         as="a"
-        :href="plansUrl"
+        :href
         target="_blank"
         rel="noopener"
         :variant="action === 'manage' ? 'secondary' : 'inverted'"
         class="shrink-0"
+        @click="track"
       >
         {{ $t(`workspacePanel.billingTab.plan.actions.${action}`) }}
         <i class="icon-[lucide--external-link] size-4" aria-hidden="true" />
@@ -44,7 +45,7 @@ import type {
   PlanRowAction,
   PlanRowState
 } from '@/platform/workspace/components/dialogs/settings/billing/planRow'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import { usePlatformHandoff } from '@/platform/workspace/composables/usePlatformHandoff'
 
 const { state, action, canManageSubscription } = defineProps<{
   state: PlanRowState
@@ -54,7 +55,9 @@ const { state, action, canManageSubscription } = defineProps<{
 
 const { t, locale } = useI18n()
 
-const plansUrl = computed(() => platformLink('/profile/billing/plans'))
+const { href, track } = usePlatformHandoff('/profile/billing/plans', {
+  target: 'plans'
+})
 
 const title = computed(() => {
   if (state.kind === 'noPlan') {

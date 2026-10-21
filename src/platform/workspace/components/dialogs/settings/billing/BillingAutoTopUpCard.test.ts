@@ -7,6 +7,7 @@ import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { AutoReloadSettings } from '@/platform/workspace/api/workspaceApi'
 import {
@@ -19,9 +20,11 @@ import BillingAutoTopUpCard from './BillingAutoTopUpCard.vue'
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string) => `https://platform.test${path}`
+  platformLink: (path: string, correlationId?: string) =>
+    `https://platform.test${path}?correlation_id=${correlationId}`
 }))
 
 const configured: AutoReloadSettings = {
@@ -82,6 +85,21 @@ async function setVisibility(state: DocumentVisibilityState) {
   vi.spyOn(document, 'visibilityState', 'get').mockReturnValue(state)
   document.dispatchEvent(new Event('visibilitychange'))
   await nextTick()
+}
+
+function trackedEvents() {
+  return vi.mocked(useTelemetry)()?.trackBillingEvent
+}
+
+function correlationIdOf(link: HTMLElement) {
+  return new URL(link.getAttribute('href') ?? '').searchParams.get(
+    'correlation_id'
+  )
+}
+
+async function clickWithoutNavigating(link: HTMLElement) {
+  link.addEventListener('click', (event) => event.preventDefault())
+  await userEvent.click(link)
 }
 
 async function returnToTab() {
@@ -146,10 +164,81 @@ describe('BillingAutoTopUpCard', () => {
       ).toEqual(lines)
       expect(screen.getByRole('link', { name: action })).toHaveAttribute(
         'href',
-        'https://platform.test/profile/billing'
+        expect.stringMatching(
+          /^https:\/\/platform\.test\/profile\/billing\?correlation_id=.+$/
+        )
       )
+      expect(trackedEvents()).toHaveBeenCalledExactlyOnceWith({
+        operation: 'auto_top_up_card',
+        stage: 'viewed',
+        outcome: 'pending',
+        status
+      })
     }
   )
+
+  it.for([
+    { status: 'off', action: 'Turn on', reported: 'turn_on' },
+    { status: 'on', action: 'Manage', reported: 'manage' },
+    { status: 'failed', action: 'Update payment', reported: 'update_payment' }
+  ] as const)(
+    'reports a $status card click as $reported and rotates the journey',
+    async ({ status, action, reported }) => {
+      renderCard({ ...configured, status })
+      const link = await screen.findByRole('link', { name: action })
+      const clickedId = correlationIdOf(link)
+
+      await clickWithoutNavigating(link)
+
+      expect(trackedEvents()).toHaveBeenCalledWith({
+        operation: 'platform_handoff',
+        stage: 'opened',
+        outcome: 'pending',
+        target: 'auto_top_up',
+        action: reported,
+        correlation_id: clickedId
+      })
+      await vi.waitFor(() => expect(correlationIdOf(link)).not.toBe(clickedId))
+    }
+  )
+
+  it('reports a view only when the served status changes', async () => {
+    renderCard(notConfigured)
+    await screen.findByTestId('billing-auto-top-up-status')
+
+    await returnToTab()
+    await vi.waitFor(() =>
+      expect(workspaceApi.getBillingAutoReload).toHaveBeenCalledTimes(2)
+    )
+    vi.mocked(workspaceApi.getBillingAutoReload).mockResolvedValue(configured)
+    await returnToTab()
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('billing-auto-top-up-status')
+      ).toHaveTextContent('On')
+    )
+
+    expect(trackedEvents()).toHaveBeenCalledTimes(2)
+    expect(trackedEvents()).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ status: 'off' })
+    )
+    expect(trackedEvents()).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ status: 'on' })
+    )
+  })
+
+  it('reports no view while loading or when the first read fails', async () => {
+    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+      new WorkspaceApiError('boom', 500)
+    )
+    renderCard(configured)
+
+    expect(trackedEvents()).not.toHaveBeenCalled()
+    await screen.findByText("Couldn't load auto top-up.")
+    expect(trackedEvents()).not.toHaveBeenCalled()
+  })
 
   it('renders the served status even when the other fields disagree', async () => {
     renderCard({ ...configured, paused_by_decline: true, status: 'on' })
