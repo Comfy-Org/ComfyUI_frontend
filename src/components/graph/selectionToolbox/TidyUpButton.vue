@@ -17,6 +17,7 @@
         :collision-padding="10"
         update-position-strategy="always"
         class="z-overlay floating-panel will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        @interact-outside="keepOpenInsideToolbox"
       >
         <div class="flex h-8 w-44 items-center gap-2 pr-1 pl-3">
           <Slider
@@ -38,13 +39,14 @@
 </template>
 
 <script setup lang="ts">
+import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import {
   PopoverContent,
   PopoverPortal,
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -53,23 +55,55 @@ import {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
 import { useTidySession } from '@/components/graph/selectionGrid/useTidySession'
+import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 const TOOLBOX_INSET = 4
 const BAR_GAP_BELOW_TOOLBOX = 8
+const BAR_INSET = 4
+const TRIGGER_HEIGHT = 32
 const BAR_SIDE_OFFSET = TOOLBOX_INSET + BAR_GAP_BELOW_TOOLBOX
+const LIFT_WHILE_OPEN = BAR_SIDE_OFFSET + BAR_INSET + TRIGGER_HEIGHT
 
 const { t } = useI18n()
-const { canTidy } = useSelectionGrid()
+const { canTidy, gridNodes } = useSelectionGrid()
 const { gap, start, previewGap, commitGap, finish } = useTidySession()
+const { lift } = useSelectionToolboxLift()
 
 const isOpen = ref(false)
 
 watch(isOpen, (open) => {
+  lift.value = open ? LIFT_WHILE_OPEN : 0
   if (open) start()
   else finish()
 })
+
+const hasSameNodes = (nodes: LGraphNode[], previous: LGraphNode[]) => {
+  const previousNodes = new Set(previous)
+  return (
+    nodes.length === previousNodes.size &&
+    nodes.every((node) => previousNodes.has(node))
+  )
+}
+
+watch(gridNodes, (nodes, previous) => {
+  if (!hasSameNodes(nodes, previous)) isOpen.value = false
+})
+
+onBeforeUnmount(() => {
+  lift.value = 0
+})
+
+const keepOpenInsideToolbox = (
+  event: FocusOutsideEvent | PointerDownOutsideEvent
+) => {
+  const { target } = event.detail.originalEvent
+  if (target instanceof Element && target.closest('[data-selection-toolbox]')) {
+    event.preventDefault()
+  }
+}
 
 const firstValue = (value: number[] | undefined): number | undefined =>
   value?.[0]

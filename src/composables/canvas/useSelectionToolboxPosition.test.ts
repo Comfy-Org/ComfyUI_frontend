@@ -1,8 +1,10 @@
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { defineComponent, h, markRaw, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { useSelectionToolboxLift } from '@/components/graph/selectionToolbox/useSelectionToolboxLift'
 import { useSelectionToolboxPosition } from '@/composables/canvas/useSelectionToolboxPosition'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import {
@@ -124,6 +126,156 @@ describe('useSelectionToolboxPosition', () => {
       `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
     )
     expect(toolbox.style.getPropertyValue('--tb-y')).not.toBe(initialY)
+    unmount()
+  })
+
+  it('eases up by the lift and holds its place until the lift has eased away', async () => {
+    const node = addNode(graph, 100, 200)
+    canvas.select(node)
+    const { toolbox, unmount } = renderToolbox()
+    const { lift } = useSelectionToolboxLift()
+    onTestFinished(() => {
+      lift.value = 0
+    })
+
+    lift.value = 51
+    node.pos = [100, 400]
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+        `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+      )
+    )
+
+    lift.value = 0
+    await nextTick()
+    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+      `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+    )
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+        `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
+      )
+    )
+    unmount()
+  })
+
+  it('moves to a new selection straight away while the lift eases away', async () => {
+    const first = addNode(graph, 100, 200)
+    const second = addNode(graph, 100, 600)
+    canvas.select(first)
+    const { toolbox, unmount } = renderToolbox()
+    const { lift } = useSelectionToolboxLift()
+    onTestFinished(() => {
+      lift.value = 0
+    })
+    lift.value = 51
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+        `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+      )
+    )
+
+    lift.value = 0
+    canvas.deselectAll()
+    canvas.select(second)
+    await nextTick()
+
+    expect(
+      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
+    ).toBeGreaterThanOrEqual(590 - LiteGraph.NODE_TITLE_HEIGHT - 51)
+    unmount()
+  })
+
+  it('holds its place while lifted when a group joins the selection', async () => {
+    const node = addNode(graph, 100, 200)
+    canvas.select(node)
+    const { toolbox, unmount } = renderToolbox()
+    const { lift } = useSelectionToolboxLift()
+    onTestFinished(() => {
+      lift.value = 0
+    })
+    lift.value = 51
+    const liftedY = `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(liftedY)
+    )
+
+    canvas.select(addGroup(graph, [100, 0, 160, 80]))
+    await nextTick()
+
+    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(liftedY)
+    unmount()
+  })
+
+  it('moves to the selection when it reappears while the lift eases away', async () => {
+    const node = addNode(graph, 100, 200)
+    canvas.select(node)
+    const { toolbox, visible, unmount } = renderToolbox()
+    const { lift } = useSelectionToolboxLift()
+    onTestFinished(() => {
+      lift.value = 0
+    })
+    lift.value = 51
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+        `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+      )
+    )
+
+    lift.value = 0
+    canvas.state.draggingItems = true
+    node.pos = [100, 400]
+    await nextTick()
+    canvas.isDragging = false
+    await new Promise(requestAnimationFrame)
+
+    expect(visible.value).toBe(true)
+    expect(
+      Number.parseFloat(toolbox.style.getPropertyValue('--tb-y'))
+    ).toBeGreaterThanOrEqual(390 - LiteGraph.NODE_TITLE_HEIGHT - 51)
+    unmount()
+  })
+
+  it('settles back down after reduced motion is switched off mid-lift', async () => {
+    const reducedMotion = Object.assign(new EventTarget(), {
+      matches: false,
+      media: '(prefers-reduced-motion: reduce)'
+    })
+    vi.spyOn(window, 'matchMedia').mockReturnValue(
+      fromPartial<MediaQueryList>(reducedMotion)
+    )
+    const setReducedMotion = (matches: boolean) => {
+      reducedMotion.matches = matches
+      reducedMotion.dispatchEvent(
+        Object.assign(new Event('change'), { matches })
+      )
+    }
+    const node = addNode(graph, 100, 200)
+    canvas.select(node)
+    const { toolbox, unmount } = renderToolbox()
+    const { lift } = useSelectionToolboxLift()
+    onTestFinished(() => {
+      lift.value = 0
+    })
+    lift.value = 51
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+        `${190 - LiteGraph.NODE_TITLE_HEIGHT - 51}px`
+      )
+    )
+
+    setReducedMotion(true)
+    await nextTick()
+    lift.value = 0
+    await nextTick()
+    setReducedMotion(false)
+    node.pos = [100, 400]
+
+    await vi.waitFor(() =>
+      expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
+        `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
+      )
+    )
     unmount()
   })
 
