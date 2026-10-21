@@ -36,6 +36,7 @@
     "./lib/menu/types": "./src/components/menu/types.ts",
     "./lib/message/message.variants": "./src/components/message/message.variants.ts",
     "./lib/multi-select/types": "./src/components/multi-select/types.ts",
+    "./lib/popover/usePopoverViewportDismiss": "./src/components/popover/usePopoverViewportDismiss.ts",
     "./lib/select/types": "./src/components/select/types.ts",
     "./lib/select/useSelectSearch": "./src/components/select/useSelectSearch.ts",
     "./lib/single-select/types": "./src/components/single-select/types.ts",
@@ -107,6 +108,10 @@
       "./lib/multi-select/types": {
         "types": "./dist/multi-select/types.d.ts",
         "import": "./dist/multi-select/types.js"
+      },
+      "./lib/popover/usePopoverViewportDismiss": {
+        "types": "./dist/popover/usePopoverViewportDismiss.d.ts",
+        "import": "./dist/popover/usePopoverViewportDismiss.js"
       },
       "./lib/select/types": {
         "types": "./dist/select/types.d.ts",

@@ -12,7 +12,7 @@ import { useI18n } from 'vue-i18n'
 
 import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 

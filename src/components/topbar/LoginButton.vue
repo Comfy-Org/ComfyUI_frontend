@@ -54,7 +54,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { cn } from '@comfyorg/tailwind-utils'

@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import type {
   FilterOption,
   OwnershipFilterOption,

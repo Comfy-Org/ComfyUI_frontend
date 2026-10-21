@@ -8,7 +8,7 @@ import DialogOverlay from '@comfyorg/design-system/dialog/DialogOverlay'
 import DialogPortal from '@comfyorg/design-system/dialog/DialogPortal'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import Menu from '@comfyorg/design-system/menu/Menu'
-import Popover from '@/components/ui/Popover.vue'
+import Popover from '@comfyorg/design-system/popover/ButtonPopover'
 import SingleSelect from '@comfyorg/design-system/single-select/SingleSelect'
 import ToastDock from '@comfyorg/design-system/toast/ToastDock'
 

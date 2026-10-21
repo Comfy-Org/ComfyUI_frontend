@@ -33,22 +33,22 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 
 ## Exports
 
-| Path                                                                                                                                                  | Contents                                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `./css/style.css`                                                                                                                                     | Full theme — palette, fonts, Tailwind layers, icon plugins           |
-| `./css/base.css`                                                                                                                                      | Palette and fonts only                                               |
-| `./css/_palette.css`                                                                                                                                  | Color variables                                                      |
-| `./css/fonts.css`                                                                                                                                     | Font faces                                                           |
-| `./css/_deprecated-aliases.css`                                                                                                                       | Deprecated variable names kept for extensions; scheduled for removal |
-| `./css/_legacy-palette.css`                                                                                                                           | Pre-theme palette variables (`--fg-color`, `--comfy-menu-bg`, ...)   |
-| `./icons/*.svg`                                                                                                                                       | Comfy icon set source SVGs                                           |
-| `./workspaceAvatar`                                                                                                                                   | Deterministic workspace avatar styles by plan and name               |
-| `./button.variants`                                                                                                                                   | Button class recipes                                                 |
-| `./select.variants`                                                                                                                                   | Select class recipes                                                 |
-| `./tag.variants`                                                                                                                                      | Tag class recipes                                                    |
-| `./<folder>/<Component>`                                                                                                                              | Compiled Vue components, for example `./card/Card`                   |
-| `./components.css`                                                                                                                                    | Scoped component styles and animations                               |
-| `./lib/select/types`, `./lib/menu/menuStyles`, `./lib/dialog/dialog.variants`, `./lib/input-group/inputGroup.variants`, `./lib/tooltip/tooltipConfig` | Component support types and recipes                                  |
+| Path                            | Contents                                                                         |
+| ------------------------------- | -------------------------------------------------------------------------------- |
+| `./css/style.css`               | Full theme — palette, fonts, Tailwind layers, icon plugins                       |
+| `./css/base.css`                | Palette and fonts only                                                           |
+| `./css/_palette.css`            | Color variables                                                                  |
+| `./css/fonts.css`               | Font faces                                                                       |
+| `./css/_deprecated-aliases.css` | Deprecated variable names kept for extensions; scheduled for removal             |
+| `./css/_legacy-palette.css`     | Pre-theme palette variables (`--fg-color`, `--comfy-menu-bg`, ...)               |
+| `./icons/*.svg`                 | Comfy icon set source SVGs                                                       |
+| `./workspaceAvatar`             | Deterministic workspace avatar styles by plan and name                           |
+| `./button.variants`             | Button class recipes                                                             |
+| `./select.variants`             | Select class recipes                                                             |
+| `./tag.variants`                | Tag class recipes                                                                |
+| `./<folder>/<Component>`        | Compiled Vue components, for example `./card/Card`                               |
+| `./components.css`              | Scoped component styles and animations                                           |
+| `./lib/<folder>/<module>`       | Component support types, recipes and composables, for example `./lib/menu/types` |
 
 Icons are exposed to Tailwind as `icon-[comfy--*]` and `icon-mask-[comfy--*]`
 utilities. Size them with `size-*`, not font-size classes.

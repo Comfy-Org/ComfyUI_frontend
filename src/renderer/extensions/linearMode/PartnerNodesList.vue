@@ -8,7 +8,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
-import Popover from '@/components/ui/Popover.vue'
+import Popover from '@comfyorg/design-system/popover/ButtonPopover'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import PartnerNodeItem from '@/renderer/extensions/linearMode/PartnerNodeItem.vue'
 import { graphCreditsBadges } from '@/systems/badgeSystem'

@@ -46,7 +46,7 @@
 import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 
-import Popover from '@/components/ui/Popover.vue'
+import Popover from '@comfyorg/design-system/popover/ButtonPopover'
 import { useHelpCenter } from '@/composables/useHelpCenter'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { APP_MODE_FEEDBACK_TYPEFORM_ID } from '@/platform/surveys/appModeFeedback'

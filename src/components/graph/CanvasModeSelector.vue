@@ -106,7 +106,7 @@ import type { ComponentPublicInstance } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 import {
   menuButtonClass,
   menuContentClass

@@ -10,7 +10,7 @@ import {
 
 import { ref, useTemplateRef } from 'vue'
 
-import { usePopoverViewportDismiss } from './popover/usePopoverViewportDismiss'
+import { usePopoverViewportDismiss } from './usePopoverViewportDismiss'
 import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({

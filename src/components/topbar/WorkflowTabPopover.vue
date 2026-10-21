@@ -43,7 +43,7 @@ import Popover from '@comfyorg/design-system/popover/Popover'
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { ref, toRefs, watch } from 'vue'
 
-import { usePopoverViewportDismiss } from '@/components/ui/popover/usePopoverViewportDismiss'
+import { usePopoverViewportDismiss } from '@comfyorg/design-system/lib/popover/usePopoverViewportDismiss'
 
 const POPOVER_WIDTH = 250
 

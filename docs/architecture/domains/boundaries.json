@@ -1018,7 +1018,6 @@
           "src/components/loader/**",
           "src/components/range/RangeEditor.test.ts",
           "src/components/range/RangeEditor.vue",
-          "src/components/ui/Popover.vue",
           "src/components/ui/badge/**",
           "src/components/ui/button/**",
           "src/components/ui/chart/**",
