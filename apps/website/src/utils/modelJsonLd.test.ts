@@ -281,7 +281,8 @@ describe('hubSectionJsonLd', () => {
       items: records,
       url,
       siteUrl,
-      locale
+      locale,
+      search: ''
     })
     const graph = buildPageGraph(
       { siteUrl, locale },
@@ -327,6 +328,23 @@ describe('hubSectionJsonLd', () => {
     }
   )
 
+  it.for(['?cursor=abc', '?p=2', '?q=relight'])(
+    'leaves the ItemList out of a %s view, whose records are not the canonical list',
+    (search) => {
+      const jsonLd = hubSectionJsonLd({
+        name: 'ComfyUI workflows',
+        homeName: 'Home',
+        items: records,
+        url: `${siteUrl}/hub/workflows/`,
+        siteUrl,
+        locale: 'en',
+        search
+      })
+      expect(jsonLd.extraJsonLd).toEqual([])
+      expect(jsonLd.mainEntityId).toBeUndefined()
+    }
+  )
+
   it('keeps the breadcrumb but drops the list when the page has no records', () => {
     expect(
       hubSectionJsonLd({
@@ -335,7 +353,8 @@ describe('hubSectionJsonLd', () => {
         items: [],
         url: `${siteUrl}/hub/apps/`,
         siteUrl,
-        locale: 'en'
+        locale: 'en',
+        search: ''
       })
     ).toEqual({
       pageType: 'CollectionPage',
