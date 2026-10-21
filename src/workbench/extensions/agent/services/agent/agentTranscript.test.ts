@@ -674,6 +674,22 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.pending?.messageId).toBe('row-1')
   })
 
+  it('restores a card the host left on a finished turn without making it live', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done, it is blue.', 'row-1')
+
+    const transcript = normalizeAgentTranscript(
+      zAgentMessages.parse([
+        { ...message, status: 'complete', pending_ask: pendingAsk('ask_user') }
+      ])
+    )
+
+    expect(transcript.messages[0].parts).toContainEqual(
+      expect.objectContaining({ type: 'askUser', askId: 'ask-1' })
+    )
+    expect(transcript.messages[0].streaming).toBe(false)
+    expect(transcript.pending).toBeUndefined()
+  })
+
   it('drops a pending ask_user card from a streaming row a later turn retired', () => {
     const asked = row(1, 'assistant', 'turn-a', '', 'row-1')
     const transcript = normalizeAgentTranscript([

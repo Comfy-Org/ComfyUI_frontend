@@ -20,10 +20,12 @@ import type {
 import {
   askIdOf,
   createAssistantMessage,
+  dismissAskParts,
   isOpenAskPart,
   isPendingAskPart,
   retireAskParts,
-  settleResolution
+  settleResolution,
+  toAskOrNoticePart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   normalizeAgentTranscript,
@@ -436,6 +438,17 @@ export const useAgentConversationStore = defineStore(
       setAskAnswering(askId, false)
     }
 
+    /** The user sent a message instead of answering: every open card greys out. */
+    function dismissOpenAsks(): void {
+      messages.value = messages.value.map((message) => {
+        const parts = dismissAskParts(message.parts)
+        return parts === message.parts ? message : { ...message, parts }
+      })
+      activeSlot.value?.transport.dismissAsks()
+      for (const settledTransport of settledActiveTransports)
+        settledTransport.dismissAsks()
+    }
+
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
 
     const threadKey = (owner?: string) => owner ?? threadId.value ?? ''
@@ -541,7 +554,41 @@ export const useAgentConversationStore = defineStore(
       // Unreachable for `agent_ask`: the schema makes `thread_id` required on
       // every event except `agent_active_tab`, handled above.
       if (eventThreadId === undefined) return
+      if (attachAskToSettledMessage(event)) return
       ingestBackgroundTurnEvent(event, eventThreadId)
+    }
+
+    /**
+     * A card the host leaves on a turn it has already ended: it joins that
+     * message, which stays finished, so the user can answer it or just type.
+     * A turn the panel tore down itself (`no-live-turn`) is not finished on
+     * the host, so its ask is still reported as lost.
+     */
+    function attachAskToSettledMessage(event: AgentChatEvent): boolean {
+      if (event.type !== 'agent_ask' || event.data.thread_id !== threadId.value)
+        return false
+      const messageId = event.data.message_id
+      const index = messages.value.findIndex((m) => m.id === messageId)
+      const message = messages.value[index]
+      if (message === undefined || message.streaming) return false
+      const departed = departedTurns.get(
+        departedTurnKey(event.data.thread_id, messageId)
+      )
+      if (departed === 'no-live-turn') return false
+      const holder = [...settledActiveTransports].find(
+        (transport) => transport.messageId === messageId
+      )
+      if (holder) {
+        holder.ingest(event)
+        return true
+      }
+      if (message.parts.some((part) => askIdOf(part) === event.data.ask_id))
+        return true
+      const part = toAskOrNoticePart(event.data)
+      if (part.type === 'askUnavailable')
+        reportUndeliverableAskData(event.data, 'unrendered-kind')
+      messages.value[index] = { ...message, parts: [...message.parts, part] }
+      return true
     }
 
     function isRetiredAskReplay(event: AgentChatEvent): boolean {
@@ -1278,6 +1325,7 @@ export const useAgentConversationStore = defineStore(
       takeSubmittedAskAnswer,
       commitAsk,
       retireAsk,
+      dismissOpenAsks,
       startTurn,
       ingest,
       setCanvasSyncGate,

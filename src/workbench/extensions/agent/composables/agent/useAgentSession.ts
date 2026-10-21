@@ -1128,6 +1128,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       tags?.map((tag) => `${tag.title} #${tag.id}`),
       workflowReferences
     )
+    conversationStore.dismissOpenAsks()
     conversationStore.startTurn(turnId)
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
@@ -1532,12 +1533,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (receipt.selected !== undefined)
         reportSupersededAnswer(askId, committed)
       conversationStore.commitAsk(askId, currentThreadId, committed)
+      if (
+        receipt.message_id !== undefined &&
+        conversationStore.threadId === currentThreadId
+      )
+        startAnsweredTurn(toTurnId(receipt.message_id), receipt.text ?? '')
       return true
     } catch (error) {
       if (answeringAskIds.value.has(askId))
         handleAnswerFailure(error, askId, currentThreadId)
       return false
     }
+  }
+
+  /** The turn the host started from an answer to a card on a finished turn. */
+  function startAnsweredTurn(turnId: TurnId, text: string): void {
+    conversationStore.recordUser(turnId, text)
+    conversationStore.startTurn(turnId)
+    recordTurnStarted(turnId, false)
   }
 
   function handleAnswerFailure(

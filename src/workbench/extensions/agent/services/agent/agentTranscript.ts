@@ -560,6 +560,11 @@ export function normalizeAgentTranscript(
   const seenTurns = new Set<TurnId>()
   const rowIds = new Set<string>()
   const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
+  // A card the host left on a turn it already ended stays open on it.
+  const finishedTurnAsks = new Map<
+    TurnId,
+    NonNullable<AgentMessages[number]['pending_ask']>
+  >()
   let latestWorkflowId: string | undefined
 
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
@@ -584,6 +589,9 @@ export function normalizeAgentTranscript(
         turnId,
         recordAssistantRow(row, turnId, text, assistants)
       )
+      if (row.status !== 'streaming' && row.pending_ask)
+        finishedTurnAsks.set(turnId, row.pending_ask)
+      else finishedTurnAsks.delete(turnId)
     }
   }
 
@@ -592,6 +600,9 @@ export function normalizeAgentTranscript(
     const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
     if (message === live?.message) message.streaming = true
     else settleLiveMessage(message)
+    const finishedAsk = finishedTurnAsks.get(turnId)
+    if (finishedAsk && message !== live?.message)
+      message.parts.push(toAskOrNoticePart(finishedAsk))
     return message
   })
 

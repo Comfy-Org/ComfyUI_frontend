@@ -10,6 +10,7 @@ import type {
 } from './agentMessageParts'
 import {
   askIdOf,
+  dismissAskParts,
   retireAskParts,
   snapshotMessage,
   toAskOrNoticePart,
@@ -105,6 +106,10 @@ export interface AgentEventTransport {
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
   retireAskPart: (askId: string, resolution: AskUserResolution) => void
+  /** Greys out this turn's open cards: the user sent a message instead. */
+  dismissAsks: () => void
+  /** The assistant message this transport writes. */
+  messageId: string
   /**
    * Tears the transport down for a reason other than natural completion
    * (abort, drop, reset, hydrate). Flushes any tool-call parts held pending
@@ -561,8 +566,10 @@ export function createAgentEventTransport(
 
   function ingest(event: AgentChatEvent): void {
     if (settled) {
-      if (event.type === 'agent_ask')
-        reportUndeliverableAsk(event.data, 'settled-turn')
+      // A host may leave a card on a turn it has already ended; the message
+      // takes it without streaming again.
+      if (event.type === 'agent_ask' && handleAskEvent(event.data))
+        emit(snapshotMessage(message))
       return
     }
     if (applyChatEvent(event)) emit(snapshotMessage(message))
@@ -580,6 +587,13 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
+  function dismissAsks(): void {
+    const parts = dismissAskParts(message.parts)
+    if (parts === message.parts) return
+    message.parts = parts
+    emit(snapshotMessage(message))
+  }
+
   function retireAskPart(askId: string, resolution: AskUserResolution): void {
     const parts = retireAskParts(message.parts, askId, resolution)
     if (parts === message.parts) return
@@ -593,6 +607,8 @@ export function createAgentEventTransport(
     notifyCanvasCaughtUp,
     hasPendingCanvasSync,
     dispose,
-    retireAskPart
+    retireAskPart,
+    dismissAsks,
+    messageId: message.id
   }
 }

@@ -888,20 +888,33 @@ describe('agentEventTransport settle lifecycle', () => {
     expect(toolParts(message)).toHaveLength(0)
   })
 
-  it('reports a late approval ask once after settle', () => {
+  it('puts a card that arrives after settle on the finished message once', () => {
     const message = createAssistantMessage(T)
-    const transport = createAgentEventTransport(message, vi.fn())
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
     transport.settle()
 
     transport.ingest(runApproval('late-ask'))
     transport.ingest(runApproval('late-ask'))
 
-    expect(reportError).toHaveBeenCalledTimes(1)
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        tags: expect.objectContaining({ reason: 'settled-turn' })
-      })
+    const last = emit.mock.lastCall?.[0]
+    expect(last?.streaming).toBe(false)
+    expect(
+      last?.parts.filter((part) => part.type === 'runApproval')
+    ).toHaveLength(1)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('greys out an open card when the user sends a message instead', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+    transport.ingest(runApproval('ask-1'))
+
+    transport.dismissAsks()
+
+    expect(emit.mock.lastCall?.[0].parts).toContainEqual(
+      expect.objectContaining({ type: 'runApproval', dismissed: true })
     )
   })
 

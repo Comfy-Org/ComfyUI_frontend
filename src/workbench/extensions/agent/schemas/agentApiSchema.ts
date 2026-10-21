@@ -40,9 +40,15 @@ export type {
  * The 202 from the answer route. A backend that predates the committed-answer
  * body sends only `status`, so `selected` is optional here.
  */
-export const zAgentAnswerReceipt = zAgentAnswerAccepted.partial({
-  selected: true
-})
+export const zAgentAnswerReceipt = zAgentAnswerAccepted
+  .partial({
+    selected: true
+  })
+  .extend({
+    /** An answer to a card on a finished turn can start the next turn. */
+    message_id: z.string().optional(),
+    text: z.string().optional()
+  })
 export type AgentAnswerReceipt = z.infer<typeof zAgentAnswerReceipt>
 
 const zTurnId = z.string().brand<'TurnId'>()

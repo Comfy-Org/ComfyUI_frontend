@@ -68,6 +68,8 @@ export interface RunApprovalPart {
   askId: string
   workflowId?: string
   workflowName?: string
+  /** The user sent a message instead of answering: the card stays, greyed out. */
+  dismissed?: boolean
 }
 
 export type AskUserResolution =
@@ -148,10 +150,8 @@ function isAskPart(part: MessagePart): part is AskPart {
 }
 
 export function isPendingAskPart(part: MessagePart): part is AskPart {
-  return (
-    part.type === 'runApproval' ||
-    (isAskPart(part) && part.resolution === undefined)
-  )
+  if (part.type === 'runApproval') return part.dismissed !== true
+  return isAskPart(part) && part.resolution === undefined
 }
 
 export function isOpenAskPart(part: MessagePart): boolean {
@@ -169,7 +169,8 @@ export function retireAskParts(
 ): MessagePart[] {
   const next = parts.flatMap((part): MessagePart[] => {
     if (askIdOf(part) !== askId) return [part]
-    if (!isAskPart(part) || part.type === 'runApproval') return []
+    if (part.type === 'runApproval') return part.dismissed ? [part] : []
+    if (!isAskPart(part)) return []
     const settled = settleResolution(part.resolution, resolution)
     return [
       settled === part.resolution ? part : { ...part, resolution: settled }
@@ -179,6 +180,20 @@ export function retireAskParts(
     next.every((part, index) => part === parts[index])
     ? parts
     : next
+}
+
+/**
+ * Marks every open card in `parts` as dismissed because the user sent a
+ * message instead of answering: a Run card greys out, a question closes.
+ */
+export function dismissAskParts(parts: MessagePart[]): MessagePart[] {
+  if (!parts.some(isPendingAskPart)) return parts
+  return parts.map((part): MessagePart => {
+    if (!isPendingAskPart(part)) return part
+    return part.type === 'runApproval'
+      ? { ...part, dismissed: true }
+      : { ...part, resolution: { status: 'closed' } }
+  })
 }
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>

@@ -2126,6 +2126,38 @@ describe('useAgentConversationStore', () => {
       'assistant'
     ])
   })
+  describe('a card on a finished turn', () => {
+    it('greys out when the user sends a message instead, and stays through its resolution', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(done('t1'))
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      store.dismissOpenAsks()
+      store.retireAsk('turn-1:call-1', { status: 'closed' })
+
+      expect(store.messages[0].streaming).toBe(false)
+      expect(store.messages[0].parts).toContainEqual(
+        expect.objectContaining({ type: 'runApproval', dismissed: true })
+      )
+    })
+
+    it('still reports an ask for a turn the panel tore down itself', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.abortActiveTurn()
+
+      store.ingest(runApproval('t1', 'turn-1:call-1'))
+
+      expect(
+        store.messages[0].parts.some((part) => part.type === 'runApproval')
+      ).toBe(false)
+      expect(reportError).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('a dropped approval ask is reported', () => {
     it('reports when the socket-drop teardown left nothing to route the ask to', () => {
       const store = useAgentConversationStore()
@@ -2223,7 +2255,7 @@ describe('useAgentConversationStore', () => {
       expect(reportError).toHaveBeenCalledTimes(1)
     })
 
-    it('dedupes one ask across the transport and store routing paths', () => {
+    it('puts one late ask on the finished message across both routing paths', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.startTurn(T1)
@@ -2235,7 +2267,12 @@ describe('useAgentConversationStore', () => {
       store.dropBackgroundTurns()
       store.ingest(ask)
 
-      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toHaveLength(1)
     })
 
     it('reports a late ask after hydrate retires an active turn', () => {
@@ -2254,7 +2291,7 @@ describe('useAgentConversationStore', () => {
       )
     })
 
-    it('reports a late ask after resume discards a settled turn', () => {
+    it('puts a late ask on a settled turn restored by resume', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.startTurn(T1)
@@ -2265,12 +2302,12 @@ describe('useAgentConversationStore', () => {
       store.resumeBackgroundTurn()
       store.ingest(runApproval('t1', 'turn-1:call-1'))
 
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          tags: expect.objectContaining({ reason: 'settled-turn' })
-        })
-      )
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toHaveLength(1)
     })
 
     it('reports after a dropped background turn', () => {
@@ -2290,7 +2327,7 @@ describe('useAgentConversationStore', () => {
       )
     })
 
-    it('preserves the settled reason when dropping background turns', () => {
+    it('puts a late ask on a settled turn after dropping background turns', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.startTurn(T1)
@@ -2300,15 +2337,15 @@ describe('useAgentConversationStore', () => {
 
       store.ingest(runApproval('t1', 'turn-1:call-1'))
 
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          tags: expect.objectContaining({ reason: 'settled-turn' })
-        })
-      )
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toHaveLength(1)
     })
 
-    it('records malformed background settlement before deleting the turn', () => {
+    it('puts a late ask on a turn settled in the background', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.startTurn(T1)
@@ -2317,15 +2354,15 @@ describe('useAgentConversationStore', () => {
 
       store.ingest(runApproval('t1', 'turn-1:call-1'))
 
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          tags: expect.objectContaining({ reason: 'settled-turn' })
-        })
-      )
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toHaveLength(1)
     })
 
-    it('reports after a settled active turn', () => {
+    it('puts a late ask on a settled active turn', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.startTurn(T1)
@@ -2333,15 +2370,15 @@ describe('useAgentConversationStore', () => {
 
       store.ingest(runApproval('t1', 'turn-1:call-1'))
 
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          tags: expect.objectContaining({ reason: 'settled-turn' })
-        })
-      )
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toHaveLength(1)
     })
 
-    it('reports a late ask after REST settlement as a settled turn', () => {
+    it('puts a late ask on a turn settled over REST', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
       store.startTurn(T1)
@@ -2349,12 +2386,12 @@ describe('useAgentConversationStore', () => {
 
       store.ingest(runApproval('t1', 'turn-1:call-1'))
 
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          tags: expect.objectContaining({ reason: 'settled-turn' })
-        })
-      )
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        store.messages.flatMap((message) =>
+          message.parts.filter((part) => part.type === 'runApproval')
+        )
+      ).toHaveLength(1)
     })
 
     it('keeps an aborted identity after an unrelated turn starts', () => {
