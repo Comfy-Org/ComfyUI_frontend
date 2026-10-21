@@ -1096,7 +1096,8 @@
       "tabApi": "API",
       "runsHereLocal": "This workflow can only run on your own ComfyUI. Download it and drop the file onto the canvas.",
       "reading": "Reading the workflow",
-      "readFailed": "Couldn't read the workflow file."
+      "readFailed": "Couldn't read the workflow file.",
+      "runsHereDownload": "This workflow can't run on this page. Download it and open it in ComfyUI."
     },
     "catalogue": {
       "apps": "Apps",

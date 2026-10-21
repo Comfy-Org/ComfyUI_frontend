@@ -20,9 +20,6 @@ const workflow: NodeGraphWorkflow = {
   graphSource: '/workflow-graphs/singing-character.json',
   downloadUrl: '/workflow-graphs/singing-character.json',
   cloudHref: 'https://cloud.comfy.org/?share=0123456789ab',
-  models: ['Wan2.1 InfiniteTalk'],
-  output: 'video',
-  author: 'hellorob',
   examples: []
 }
 
@@ -33,7 +30,10 @@ function renderTabs(
   vi.mocked(fetch).mockImplementation(() => Promise.resolve(respond()))
   return render(WorkflowNodeGraphTabs, {
     props: { workflow: { ...workflow, ...overrides } },
-    slots: { api: '<p>Catalog API panel</p>' },
+    slots: {
+      api: '<p>Catalog API panel</p>',
+      facts: '<p>Catalog facts</p>'
+    },
     global: { stubs: { WorkflowGraph: true } }
   })
 }
@@ -79,15 +79,50 @@ describe('WorkflowNodeGraphTabs', () => {
     ).toBe(workflow.cloudHref)
   })
 
-  it('offers Download in the footer when the workflow cannot open in Cloud', async () => {
-    const { emitted } = renderTabs({ cloudHref: undefined })
+  it.for([
+    {
+      name: 'cannot open in Cloud',
+      overrides: { cloudHref: undefined, worksOnCloud: false },
+      copy: 'can only run on your own ComfyUI'
+    },
+    {
+      name: 'has no Cloud link',
+      overrides: { cloudHref: undefined },
+      copy: 'Download it and open it in ComfyUI'
+    }
+  ])(
+    'offers Download in the footer when the workflow $name',
+    async ({ overrides, copy }) => {
+      const { emitted } = renderTabs(overrides)
+      expect(screen.getByTestId('node-graph-footer').textContent).toContain(
+        copy
+      )
 
-    const footer = within(screen.getByTestId('node-graph-footer'))
-    expect(footer.queryByRole('link', { name: /Try in Cloud/i })).toBeNull()
+      const footer = within(screen.getByTestId('node-graph-footer'))
+      expect(footer.queryByRole('link', { name: /Try in Cloud/i })).toBeNull()
+      await userEvent
+        .setup()
+        .click(footer.getByRole('link', { name: /Download workflow/i }))
+      expect(emitted('download')).toEqual([['footer']])
+    }
+  )
+
+  it('leaves the footer out when there is nothing to open or download', () => {
+    renderTabs({ cloudHref: undefined, downloadUrl: undefined })
+
+    expect(screen.queryByTestId('node-graph-footer')).toBeNull()
+  })
+
+  it('keeps every paragraph in the page and toggles the rest with Read more', async () => {
+    renderTabs()
+
+    const rest = screen.getByText('Then renders it.')
+    expect(rest).not.toBeVisible()
     await userEvent
       .setup()
-      .click(footer.getByRole('link', { name: /Download workflow/i }))
-    expect(emitted('download')).toHaveLength(1)
+      .click(screen.getByRole('button', { name: 'Read more' }))
+    expect(rest).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Show less' })).toBeTruthy()
   })
 
   it('lists the graph’s custom node packs on the Details tab', async () => {
@@ -95,6 +130,7 @@ describe('WorkflowNodeGraphTabs', () => {
     const tab = await openTab('Details')
 
     expect(tab.getAttribute('aria-selected')).toBe('true')
+    expect(screen.getByText('Catalog facts')).toBeVisible()
     const packs = within(screen.getByTestId('workflow-custom-nodes'))
     await vi.waitFor(() =>
       expect(packs.getByText('ComfyUI-KJNodes')).toBeVisible()
@@ -105,9 +141,10 @@ describe('WorkflowNodeGraphTabs', () => {
   })
 
   it('shows the API panel it is given on the API tab', async () => {
-    renderTabs()
+    const { emitted } = renderTabs()
     await openTab('API')
 
+    expect(emitted('tabSwitched')).toEqual([['api']])
     expect(screen.getByRole('tabpanel', { name: 'API' })).toBeVisible()
     expect(screen.getByText('Catalog API panel')).toBeVisible()
   })

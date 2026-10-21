@@ -1,5 +1,4 @@
 import type { WorkflowWorkshopModelDetail } from '@/config/models-catalogue'
-import type { WorkflowCatalogDetails } from '@/config/workflow-catalog-details'
 import type { PlaygroundExample } from '@/config/workshop-playground'
 import {
   examplesForModel,
@@ -20,9 +19,8 @@ export interface NodeGraphWorkflow {
   readonly downloadName?: string | boolean
   /** Absent when the workflow cannot open in Comfy Cloud. */
   readonly cloudHref?: string
-  readonly models: readonly string[]
-  readonly output?: WorkflowCatalogDetails['outputType']
-  readonly author?: string
+  /** False when the catalog says the workflow cannot open in Comfy Cloud. */
+  readonly worksOnCloud?: boolean
   readonly examples: readonly PlaygroundExample[]
 }
 
@@ -54,7 +52,6 @@ export function nodeGraphWorkflowFromModel(
 ): NodeGraphWorkflow {
   const details = model.catalogDetails
   const files = details?.workflowFiles
-  const catalogModels = names(details?.models.map(({ name }) => name))
   const longDescription = paragraphs(details?.longDescription ?? '')
   return {
     name: model.name,
@@ -67,13 +64,7 @@ export function nodeGraphWorkflowFromModel(
     downloadUrl: links.downloadUrl,
     downloadName: links.downloadName,
     cloudHref: links.cloudHref,
-    models: catalogModels.length ? catalogModels : names(model.models),
-    output: details?.outputType,
-    author: details?.author?.trim() || model.author?.trim() || undefined,
+    worksOnCloud: details?.worksOnCloud,
     examples: examplesForModel(model)
   }
-}
-
-function names(values: readonly string[] | undefined): string[] {
-  return (values ?? []).map((value) => value.trim()).filter(Boolean)
 }

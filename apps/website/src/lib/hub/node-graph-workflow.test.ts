@@ -49,40 +49,46 @@ const model = workflowDetailsBySlug.get('workflows/remove-background')
 assert(model, 'the catalogue no longer carries the fixture workflow')
 
 describe('nodeGraphWorkflowFromModel', () => {
-  it('takes the catalog description, models and author over the static ones', () => {
+  it('takes the catalog description, files and Cloud flag', () => {
     const workflow = nodeGraphWorkflowFromModel(
       {
         ...model,
         catalogDetails: {
           locale: 'en',
           faqs: [],
-          models: [{ uid: 'm1', name: 'Catalog model' }],
+          models: [],
           longDescription: 'First paragraph.\n\n  Second paragraph.  ',
-          author: 'catalog author',
-          outputType: 'image'
+          worksOnCloud: false,
+          workflowFiles: [
+            {
+              name: 'v1',
+              uid: '3f6c2b1e-8d4a-4f6e-9c2b-1a7d5e9f0b42',
+              href: '/workflow-graphs/remove-background.json'
+            }
+          ]
         }
       },
-      { downloadUrl: '/graph.json', cloudHref: 'https://cloud.comfy.org/' }
+      { downloadUrl: '/graph.json', downloadName: 'graph.json' }
     )
 
     expect({
       description: workflow.description,
-      models: workflow.models,
-      author: workflow.author,
-      output: workflow.output,
+      files: workflow.files,
       graphSource: workflow.graphSource,
-      cloudHref: workflow.cloudHref
+      graphFallback: workflow.graphFallback,
+      downloadName: workflow.downloadName,
+      worksOnCloud: workflow.worksOnCloud
     }).toEqual({
       description: ['First paragraph.', 'Second paragraph.'],
-      models: ['Catalog model'],
-      author: 'catalog author',
-      output: 'image',
+      files: [{ name: 'v1', href: '/workflow-graphs/remove-background.json' }],
       graphSource: '/graph.json',
-      cloudHref: 'https://cloud.comfy.org/'
+      graphFallback: undefined,
+      downloadName: 'graph.json',
+      worksOnCloud: false
     })
   })
 
-  it('falls back to the summary and static models without catalog details', () => {
+  it('falls back to the summary and the template preview without catalog details', () => {
     const workflow = nodeGraphWorkflowFromModel(
       { ...model, catalogDetails: undefined },
       {}
@@ -90,39 +96,29 @@ describe('nodeGraphWorkflowFromModel', () => {
 
     expect({
       description: workflow.description,
-      models: workflow.models,
+      graphFallback: workflow.graphFallback,
       cloudHref: workflow.cloudHref
     }).toEqual({
       description: [model.summary],
-      models: model.models ?? [],
+      graphFallback: model.workflow.template?.previewUrl,
       cloudHref: undefined
     })
   })
 
-  it('falls back to the static summary and author when the catalog ones are blank', () => {
+  it('falls back to the summary when the catalog description is blank', () => {
     const workflow = nodeGraphWorkflowFromModel(
       {
         ...model,
-        author: 'static author',
         catalogDetails: {
           locale: 'en',
           faqs: [],
-          models: [{ uid: 'm1', name: '  ' }],
-          longDescription: '   ',
-          author: '  '
+          models: [],
+          longDescription: '   '
         }
       },
       {}
     )
 
-    expect({
-      description: workflow.description,
-      author: workflow.author,
-      models: workflow.models
-    }).toEqual({
-      description: [model.summary],
-      author: 'static author',
-      models: model.models ?? []
-    })
+    expect(workflow.description).toEqual([model.summary])
   })
 })

@@ -10,7 +10,7 @@ import { sampleMedia } from '@/lib/hub/node-graph-workflow'
 
 import SectionHeading from './SectionHeading.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
-import WorkflowNodeGraphFacts from './WorkflowNodeGraphFacts.vue'
+import WorkflowNodeGraphCustomNodes from './WorkflowNodeGraphCustomNodes.vue'
 import WorkflowNodeGraphOverview from './WorkflowNodeGraphOverview.vue'
 import WorkflowNodeGraphVersions from './WorkflowNodeGraphVersions.vue'
 
@@ -18,7 +18,11 @@ const { workflow, locale = 'en' } = defineProps<{
   workflow: NodeGraphWorkflow
   locale?: Locale
 }>()
-const emit = defineEmits<{ download: []; tryCloud: [] }>()
+const emit = defineEmits<{
+  download: [placement: 'footer' | 'versions']
+  tryCloud: []
+  tabSwitched: [tab: Section]
+}>()
 const { t } = translationsFor(locale)
 
 const selectedFile = ref<string>()
@@ -40,7 +44,9 @@ const samples = computed(() =>
 )
 
 const sections = ['overview', 'workflow', 'api'] as const
-const section = ref<(typeof sections)[number]>('overview')
+type Section = (typeof sections)[number]
+const section = ref<Section>('overview')
+watch(section, (tab) => emit('tabSwitched', tab))
 const { onKeydown } = useTablist(() => sections, section)
 const sectionLabels = {
   overview: 'workshop.nodeGraph.tabOverview',
@@ -82,7 +88,7 @@ const sectionLabels = {
       :needs="needs"
       :active="section === 'overview'"
       :locale="locale"
-      @download="emit('download')"
+      @download="emit('download', 'footer')"
       @try-cloud="emit('tryCloud')"
     />
 
@@ -126,13 +132,10 @@ const sectionLabels = {
               :download-name="workflow.downloadName"
               :locale="locale"
               @select="selectedFile = $event"
-              @download="emit('download')"
+              @download="emit('download', 'versions')"
             />
-            <WorkflowNodeGraphFacts
-              :workflow="workflow"
-              :needs="needs"
-              :locale="locale"
-            />
+            <slot name="facts" />
+            <WorkflowNodeGraphCustomNodes :needs="needs" :locale="locale" />
           </div>
         </div>
       </div>

@@ -6159,7 +6159,8 @@
       "tabApi": "API",
       "runsHereLocal": "此工作流只能在你自己的 ComfyUI 中运行。下载后将文件拖放到画布上即可。",
       "reading": "正在读取工作流",
-      "readFailed": "无法读取工作流文件。"
+      "readFailed": "无法读取工作流文件。",
+      "runsHereDownload": "此工作流无法在本页面运行。请下载后在 ComfyUI 中打开。"
     }
   },
   "eventChallenge": {

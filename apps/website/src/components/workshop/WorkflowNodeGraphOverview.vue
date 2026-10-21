@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ImageIcon } from '@lucide/vue'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
@@ -25,17 +25,23 @@ const {
 const emit = defineEmits<{ download: []; tryCloud: [] }>()
 const { t } = translationsFor(locale)
 
-const selectedExample = ref(0)
-watch(
-  () => workflow.examples.length,
-  () => (selectedExample.value = 0)
+const selectedId = ref<string>()
+const shownIndex = computed(() =>
+  Math.max(
+    0,
+    workflow.examples.findIndex(({ id }) => id === selectedId.value)
+  )
 )
-const shown = computed(() => workflow.examples[selectedExample.value])
+const shown = computed(() => workflow.examples.at(shownIndex.value))
 const shownMedia = computed(() => shown.value && sampleMedia(shown.value))
-function openExample(id: string) {
-  const index = workflow.examples.findIndex((example) => example.id === id)
-  if (index !== -1) selectedExample.value = index
-}
+
+const player = useTemplateRef<HTMLMediaElement>('player')
+watch(
+  () => active,
+  (visible) => {
+    if (!visible) player.value?.pause()
+  }
+)
 </script>
 
 <template>
@@ -65,7 +71,7 @@ function openExample(id: string) {
           >
             {{
               t('workshop.nodeGraph.sampleOf', {
-                n: selectedExample + 1,
+                n: shownIndex + 1,
                 total: workflow.examples.length
               })
             }}
@@ -79,6 +85,7 @@ function openExample(id: string) {
           </span>
           <video
             v-if="shownMedia === 'video'"
+            ref="player"
             :key="shown.id"
             :src="shown.outputUrl"
             class="max-h-[70vh] w-full object-contain"
@@ -89,6 +96,7 @@ function openExample(id: string) {
           />
           <audio
             v-else-if="shownMedia === 'audio'"
+            ref="player"
             :key="shown.id"
             :src="shown.outputUrl"
             :aria-label="shown.title"
@@ -133,7 +141,7 @@ function openExample(id: string) {
         :gallery-label="workflow.name"
         :active-id="shown?.id"
         :locale="locale"
-        @open="openExample($event.id)"
+        @open="selectedId = $event.id"
       />
     </section>
   </div>

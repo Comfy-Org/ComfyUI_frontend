@@ -352,9 +352,58 @@ describe('WorkflowPage header', () => {
       properties: expect.objectContaining({
         model_slug: model.slug,
         page_type: 'workflow',
-        workflow_id: model.workflowId
+        workflow_id: model.workflowId,
+        placement: 'header'
       })
     })
+  })
+
+  it('lays out a non-runnable workflow in tabs and reports the footer and tab clicks', async () => {
+    vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(useWorkshopWorkflowsEnabled).mockReturnValue(readonly(ref(true)))
+    vi.mocked(fetch).mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify({ nodes: [] })))
+    )
+    render(WorkflowPage, {
+      props: {
+        model: {
+          ...model,
+          catalogDetails: {
+            locale: 'en',
+            faqs: [],
+            models: [
+              { uid: 'bria-rmbg', name: 'BRIA RMBG 2.0', href: '/models/bria' }
+            ],
+            runnable: false,
+            cloudShareURL: 'https://cloud.comfy.org/?share=abcdef123456'
+          }
+        }
+      },
+      global: { stubs: { WorkflowPlayground: true, WorkflowGraph: true } }
+    })
+    const user = userEvent.setup()
+    const footerLink = within(
+      screen.getByTestId('node-graph-footer')
+    ).getByRole('link', { name: 'Try in Cloud' })
+    footerLink.addEventListener('click', (click) => click.preventDefault(), {
+      once: true
+    })
+
+    await user.click(footerLink)
+    await user.click(screen.getByRole('tab', { name: 'Details' }))
+
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'try_in_cloud_clicked',
+      properties: expect.objectContaining({ placement: 'footer' })
+    })
+    expect(captureWorkshopEvent).toHaveBeenCalledWith({
+      name: 'tab_switched',
+      properties: expect.objectContaining({ tab: 'workflow' })
+    })
+    expect(screen.getByTestId('workflow-facts')).toHaveTextContent(
+      'BRIA RMBG 2.0'
+    )
+    expect(screen.queryByTestId('workflow-playground')).toBeNull()
   })
 
   it('reports the download once access is enabled', async () => {

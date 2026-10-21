@@ -42,12 +42,18 @@ const more = computed(() => workflow.description.slice(1))
     </h2>
     <div class="space-y-6 p-5">
       <div class="space-y-3 text-sm/relaxed text-primary-comfy-canvas">
-        <p v-if="lead">{{ lead }}</p>
-        <template v-if="expanded">
-          <p v-for="(paragraph, index) in more" :key="index">
-            {{ paragraph }}
-          </p>
-        </template>
+        <p
+          v-if="lead"
+          class="wrap-break-word whitespace-pre-line"
+          v-text="lead"
+        />
+        <p
+          v-for="(paragraph, index) in more"
+          v-show="expanded"
+          :key="index"
+          class="wrap-break-word whitespace-pre-line"
+          v-text="paragraph"
+        />
         <button
           v-if="more.length"
           type="button"
@@ -73,6 +79,7 @@ const more = computed(() => workflow.description.slice(1))
       :cloud-href="workflow.cloudHref"
       :download-url="workflow.downloadUrl"
       :download-name="workflow.downloadName"
+      :works-on-cloud="workflow.worksOnCloud"
       :active="active"
       :locale="locale"
       @download="emit('download')"

@@ -18,6 +18,7 @@ export type WorkshopPageType = 'model' | 'workflow' | 'app'
 /** The tab or mode a reader switched to, on a workflow page or in an app. */
 export type WorkshopTabName =
   | 'playground'
+  | 'overview'
   | 'workflow'
   | 'api'
   | 'image'
@@ -177,7 +178,9 @@ export type WorkshopAnalyticsEvent =
     }
   | {
       name: 'try_in_cloud_clicked' | 'workflow_download_clicked'
-      properties: WorkshopModelAnalytics
+      properties: WorkshopModelAnalytics & {
+        placement?: 'header' | 'footer' | 'versions'
+      }
     }
   | {
       name: 'tab_switched'

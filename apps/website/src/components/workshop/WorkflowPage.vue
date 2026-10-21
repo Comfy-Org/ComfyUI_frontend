@@ -21,6 +21,7 @@ import { workshopModelAnalytics } from '@/scripts/workshop-analytics'
 import WorkflowPlayground from './WorkflowPlayground.vue'
 import WorkflowApi from './WorkflowApi.vue'
 import WorkflowInputMismatch from './WorkflowInputMismatch.vue'
+import WorkflowFacts from './WorkflowFacts.vue'
 import WorkflowNodeGraphTabs from './WorkflowNodeGraphTabs.vue'
 import { nodeGraphWorkflowFromModel } from '@/lib/hub/node-graph-workflow'
 
@@ -107,20 +108,32 @@ const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const modelAnalytics = workshopModelAnalytics(model)
 
-function captureTryInCloud() {
+type CtaPlacement = 'header' | 'footer' | 'versions'
+
+function captureTryInCloud(placement: CtaPlacement = 'header') {
   if (enabled.value && workflowsEnabled.value)
     captureWorkshopEvent({
       name: 'try_in_cloud_clicked',
-      properties: modelAnalytics
+      properties: { ...modelAnalytics, placement }
     })
 }
 
-function captureWorkflowDownload() {
+function captureWorkflowDownload(placement: CtaPlacement = 'header') {
   if (enabled.value && workflowsEnabled.value)
     captureWorkshopEvent({
       name: 'workflow_download_clicked',
-      properties: modelAnalytics
+      properties: { ...modelAnalytics, placement }
     })
+}
+
+function captureTabSwitched(tab: 'overview' | 'workflow' | 'api') {
+  if (!enabled.value || !workflowsEnabled.value) return
+  captureWorkshopEvent({
+    name: 'tab_switched',
+    properties: { ...modelAnalytics, tab }
+  })
+  if (tab === 'api')
+    captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
 }
 </script>
 
@@ -189,8 +202,12 @@ function captureWorkflowDownload() {
       :workflow="nodeGraph"
       :locale="locale"
       @download="captureWorkflowDownload"
-      @try-cloud="captureTryInCloud"
+      @try-cloud="captureTryInCloud('footer')"
+      @tab-switched="captureTabSwitched"
     >
+      <template #facts>
+        <WorkflowFacts :model />
+      </template>
       <template #api>
         <WorkflowApi :model :values="snippetValues" download-only />
       </template>

@@ -12,12 +12,14 @@ const {
   cloudHref,
   downloadUrl,
   downloadName = true,
+  worksOnCloud,
   active,
   locale = 'en'
 } = defineProps<{
   cloudHref?: string
   downloadUrl?: string
   downloadName?: string | boolean
+  worksOnCloud?: boolean
   /** Whether the Overview tab is showing, so the footer pads the scroll. */
   active: boolean
   locale?: Locale
@@ -55,7 +57,9 @@ useStickyFooterScrollPadding(
         t(
           cloudHref
             ? 'workshop.nodeGraph.runsHereCloud'
-            : 'workshop.nodeGraph.runsHereLocal'
+            : worksOnCloud === false
+              ? 'workshop.nodeGraph.runsHereLocal'
+              : 'workshop.nodeGraph.runsHereDownload'
         )
       }}
     </p>
