@@ -46,6 +46,9 @@ const VALIDATION_MESSAGES = {
   'unsupported-type': 'agent.attachmentUnsupportedType'
 } as const satisfies Record<AttachmentValidationError, string>
 
+const outlined = computed(
+  () => !!validationError || (kind.value === 'image' && !previewUrl)
+)
 const invalidThumbnailKind = computed(() =>
   validationError === 'unsupported-type' ? 'other' : mediaKind
 )
@@ -64,7 +67,7 @@ const validationMessage = computed(
     :class="
       cn(
         'group/attachment relative flex size-20 shrink-0 items-center justify-center rounded-lg p-1 data-highlighted:ring-2 data-highlighted:ring-foreground data-highlighted:ring-inset',
-        validationError && 'ring-1 ring-border ring-inset'
+        outlined && 'ring-1 ring-border ring-inset'
       )
     "
   >
