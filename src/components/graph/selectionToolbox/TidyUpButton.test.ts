@@ -34,10 +34,24 @@ const nodeWithId = (id: number) => {
 function renderButton() {
   return render(
     defineComponent({
-      render: () => h(TooltipProvider, () => h(TidyUpButton))
+      render: () =>
+        h(TooltipProvider, () =>
+          h('div', { 'data-selection-toolbox': '' }, [
+            h(TidyUpButton),
+            h('button', 'Bypass')
+          ])
+        )
     }),
     { global: { plugins: [i18n] } }
   )
+}
+
+const openBar = async () => {
+  const user = userEvent.setup()
+  setCanvasSelection([nodeWithId(1), nodeWithId(2)])
+  await user.click(screen.getByRole('button', { name: 'Tidy up' }))
+  await screen.findByRole('slider')
+  return user
 }
 
 describe('TidyUpButton', () => {
@@ -82,20 +96,20 @@ describe('TidyUpButton', () => {
     }
   )
 
-  it('keeps the toolbox lifted until a press that closes the bar is released', async () => {
-    const user = userEvent.setup()
-    setCanvasSelection([nodeWithId(1), nodeWithId(2)])
+  it('stays open and lifted for a press on another toolbox button', async () => {
     const { unmount } = renderButton()
     const { lift } = useSelectionToolboxLift()
-    await user.click(screen.getByRole('button', { name: 'Tidy up' }))
-    await screen.findByRole('slider')
+    const user = await openBar()
 
-    await user.pointer({ keys: '[MouseLeft>]', target: document.body })
-    await waitFor(() => expect(screen.queryByRole('slider')).toBeNull())
+    await user.click(screen.getByRole('button', { name: 'Bypass' }))
+    await nextTick()
+
+    expect(screen.getByRole('slider')).toBeInTheDocument()
     expect(lift.value).toBeGreaterThan(0)
 
-    await user.pointer({ keys: '[/MouseLeft]', target: document.body })
-    await waitFor(() => expect(lift.value).toBe(0))
+    await user.click(document.body)
+    await waitFor(() => expect(screen.queryByRole('slider')).toBeNull())
+    expect(lift.value).toBe(0)
     unmount()
   })
 })

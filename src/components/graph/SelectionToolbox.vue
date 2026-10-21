@@ -7,6 +7,7 @@
     <Transition name="slide-up">
       <div
         v-if="visible"
+        data-selection-toolbox
         data-testid="selection-toolbox"
         class="selection-toolbox pointer-events-auto floating-panel"
         @wheel="canvasInteractions.forwardEventToCanvas"

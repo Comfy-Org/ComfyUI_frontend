@@ -17,6 +17,7 @@
         :collision-padding="10"
         update-position-strategy="always"
         class="z-overlay floating-panel will-change-[transform,opacity] data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        @interact-outside="keepOpenInsideToolbox"
       >
         <div class="flex h-8 w-44 items-center gap-2 pr-1 pl-3">
           <Slider
@@ -38,7 +39,7 @@
 </template>
 
 <script setup lang="ts">
-import { useMousePressed } from '@vueuse/core'
+import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import {
   PopoverContent,
   PopoverPortal,
@@ -74,14 +75,9 @@ const { lift } = useSelectionToolboxLift()
 const isOpen = ref(false)
 
 watch(isOpen, (open) => {
+  lift.value = open ? LIFT_WHILE_OPEN : 0
   if (open) start()
   else finish()
-})
-
-const { pressed: isPressing } = useMousePressed()
-watch([isOpen, isPressing], ([open, pressing]) => {
-  if (open) lift.value = LIFT_WHILE_OPEN
-  else if (!pressing) lift.value = 0
 })
 
 const hasSameNodes = (nodes: LGraphNode[], previous: LGraphNode[]) => {
@@ -99,6 +95,15 @@ watch(gridNodes, (nodes, previous) => {
 onBeforeUnmount(() => {
   lift.value = 0
 })
+
+const keepOpenInsideToolbox = (
+  event: FocusOutsideEvent | PointerDownOutsideEvent
+) => {
+  const { target } = event.detail.originalEvent
+  if (target instanceof Element && target.closest('[data-selection-toolbox]')) {
+    event.preventDefault()
+  }
+}
 
 const firstValue = (value: number[] | undefined): number | undefined =>
   value?.[0]
