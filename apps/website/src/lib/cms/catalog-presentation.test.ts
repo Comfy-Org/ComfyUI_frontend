@@ -767,4 +767,35 @@ describe('native CONTENT presentation', () => {
     expect(catalogPresentation(legacy)).toBe(legacy.data)
     expect(catalogLanguageFallback(legacy, 'zh-CN', true)).toBeUndefined()
   })
+  it('runs results from authored top-level outputs, preferring the migrated website outputs', () => {
+    const output = { id: 'image', nodeId: '9', key: 'images', kind: 'image' }
+    const authored = detailSchema.parse(
+      catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          outputs: [
+            output,
+            { id: 'mesh', nodeId: '3', key: 'm', kind: '3d' },
+            { id: '', nodeId: '4', key: 'images', kind: 'image' }
+          ]
+        }
+      })
+    )
+    if (authored.type !== 'CLOUD') throw new Error('Not workflow detail')
+    expect(authored.workflow.outputs).toEqual([output])
+    const migrated = { ...output, id: 'video', kind: 'video' }
+    const preferred = detailSchema.parse(
+      catalogPresentation({
+        ...record,
+        data: {
+          ...record.data,
+          outputs: [output],
+          compatibility: { website: { workflow: { outputs: [migrated] } } }
+        }
+      })
+    )
+    if (preferred.type !== 'CLOUD') throw new Error('Not workflow detail')
+    expect(preferred.workflow.outputs).toEqual([migrated])
+  })
 })

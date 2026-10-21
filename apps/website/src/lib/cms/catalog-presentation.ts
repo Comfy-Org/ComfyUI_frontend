@@ -414,6 +414,34 @@ function workflowCloud(d: Document, preserved: Document) {
     : {}
 }
 
+const RUN_OUTPUT_KINDS = ['image', 'video', 'audio']
+
+// Top-level authored outputs in the shape the Run results read; entries the
+// website cannot show (3d, text, malformed) are left out.
+function runOutputs(raw: unknown) {
+  if (!Array.isArray(raw)) return []
+  return raw.flatMap((entry) => {
+    const { id, nodeId, key, kind } = objectPresentation(entry)
+    return typeof id === 'string' &&
+      id &&
+      typeof nodeId === 'string' &&
+      nodeId &&
+      typeof key === 'string' &&
+      key &&
+      typeof kind === 'string' &&
+      RUN_OUTPUT_KINDS.includes(kind)
+      ? [{ id, nodeId, key, kind }]
+      : []
+  })
+}
+
+// Migrated website outputs win; otherwise Run reads the authored outputs.
+function workflowOutputs(d: Document, workflow: Document) {
+  if ('outputs' in workflow) return {}
+  const outputs = runOutputs(d.outputs)
+  return outputs.length ? { outputs } : {}
+}
+
 function workflowPresentation(
   record: ContentCatalogRecord,
   d: Document,
@@ -435,7 +463,8 @@ function workflowPresentation(
         ? record.edit_version
         : (workflow.definitionVersion ?? record.edit_version),
       ...inputContract(d),
-      ...workflowCloud(d, workflow)
+      ...workflowCloud(d, workflow),
+      ...workflowOutputs(d, workflow)
     }
   }
 }
