@@ -8,12 +8,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 const {
   class: className,
   textClass,
+  reserveIndicator = false,
   ...restProps
 } = defineProps<
   SelectItemProps & {
     class?: HTMLAttributes['class']
     /** Classes for the item's text, which holds the slot. */
     textClass?: HTMLAttributes['class']
+    /** Keeps the check's column on unchecked items too, so text that ends at the right lines up. */
+    reserveIndicator?: boolean
   }
 >()
 </script>
@@ -38,8 +41,25 @@ const {
       <slot />
     </SelectItemText>
 
-    <SelectItemIndicator class="flex shrink-0 items-center justify-center">
-      <i class="icon-[lucide--check] text-base-foreground" aria-hidden="true" />
-    </SelectItemIndicator>
+    <span
+      :class="
+        cn(
+          'flex shrink-0 items-center justify-center',
+          reserveIndicator ? 'w-4' : 'empty:hidden'
+        )
+      "
+    >
+      <SelectItemIndicator class="flex items-center justify-center">
+        <i
+          :class="
+            cn(
+              'icon-[lucide--check] text-base-foreground',
+              reserveIndicator && 'size-4'
+            )
+          "
+          aria-hidden="true"
+        />
+      </SelectItemIndicator>
+    </span>
   </SelectItem>
 </template>

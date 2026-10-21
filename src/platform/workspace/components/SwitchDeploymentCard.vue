@@ -55,6 +55,7 @@
                 :disabled="!runs(choice)"
                 class="py-1.5"
                 text-class="min-w-0 flex-1"
+                reserve-indicator
               >
                 <ReuseOption :choice="choice" />
               </SelectItem>
@@ -126,11 +127,9 @@ import { settleUnsavedWorkBeforeSwitch } from '@/platform/workspace/settleUnsave
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
 
-const { choices, nodeTypeCount, missing } = defineProps<{
+const { choices, missing } = defineProps<{
   /** Every deployment with its mark, the ones that run the workflow first. */
   choices: readonly DeploymentChoice[]
-  /** How many node types the workflow uses, for "Missing 2 of 9 nodes". */
-  nodeTypeCount: number
   missing: readonly MissingItemsRow[]
 }>()
 
@@ -159,9 +158,7 @@ function runs(choice: DeploymentChoice): boolean {
 function markText({ mark }: DeploymentChoice): string {
   if (mark?.kind === 'runs') return t('deploymentSwitcher.runsThisWorkflow')
   if (mark?.kind !== 'missing') return t('deploymentSwitcher.notChecked')
-  const missing = mark.nodeTypes.length
-  const total = Math.max(nodeTypeCount, missing)
-  return t('deploymentSwitcher.missingNodesOf', { missing, total }, total)
+  return t('deploymentSwitcher.missingNodes', mark.nodeTypes.length)
 }
 
 const chosenId = ref<string>()

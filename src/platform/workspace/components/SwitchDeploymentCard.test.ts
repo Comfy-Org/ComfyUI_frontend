@@ -75,7 +75,6 @@ function renderCard() {
   render(SwitchDeploymentCard, {
     props: {
       choices: CHOICES,
-      nodeTypeCount: 4,
       missing: [
         {
           label: '2 missing node packs',
@@ -135,7 +134,7 @@ describe('SwitchDeploymentCard', () => {
 
     expect(
       await screen.findByRole('option', { name: /Experiments/ })
-    ).toHaveTextContent('Missing 1 of 4 nodes')
+    ).toHaveTextContent('Missing 1 node')
     expect(screen.getByRole('option', { name: /Experiments/ })).toHaveAttribute(
       'aria-disabled',
       'true'

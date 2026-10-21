@@ -19,7 +19,6 @@ import {
   reduceDeploymentPick
 } from '@/platform/workspace/deploymentPickState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import type { useApp } from '@/scripts/appInstance'
 
 import WorkflowNeedsDeploymentCard from './WorkflowNeedsDeploymentCard.vue'
 
@@ -29,22 +28,13 @@ const marks = vi.hoisted(
 vi.mock(
   import('@/platform/workspace/composables/useDeploymentCompatibility'),
   () => ({
-    workflowNodeTypes: vi.fn(() => [
-      'BiRefNet',
-      'EmptyImage',
-      'RMBG',
-      'SaveImage'
-    ]),
+    workflowNodeTypes: vi.fn(() => []),
     useDeploymentCompatibility: () =>
       fromPartial<ReturnType<typeof useDeploymentCompatibility>>({
         markFor: (id: string | null) => marks.get(id ?? '') ?? null
       })
   })
 )
-
-vi.mock(import('@/scripts/appInstance'), () => ({
-  useApp: () => fromPartial<ReturnType<typeof useApp>>({ isGraphReady: true })
-}))
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -142,7 +132,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('offers to switch to a deployment that runs the workflow, counting what the others lack against its node types', async () => {
+  it('offers to switch to a deployment that runs the workflow, saying what the others lack', async () => {
     const user = renderCard({
       experiments: { kind: 'missing', nodeTypes: ['RMBG'] },
       production: { kind: 'runs' }
@@ -159,7 +149,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
 
     expect(
       await screen.findByRole('option', { name: /experiments/ })
-    ).toHaveTextContent('Missing 1 of 4 nodes')
+    ).toHaveTextContent('Missing 1 node')
   })
 
   it('says no deployment runs it when the check finds each one lacks nodes', () => {
