@@ -2051,6 +2051,7 @@
     "flux3": "Flux 3",
     "flux3ImageKlein": "FLUX 3 Image Klein",
     "geminiOmni": "Gemini Omni 1.1 Flash",
+    "krea3": "Krea 3",
     "language": "语言",
     "location": "美国旧金山",
     "ltx": "LTX 2.5",
@@ -5419,7 +5420,7 @@
       "heroDescription": "在可查看、可扩展的工作流中移除物体、制作遮罩、重塑视频风格并提升镜头分辨率。在本地运行 ComfyUI，或接入现有制作流程。",
       "primaryCta": "探索特效工作流",
       "contactHeading": "将 Comfy 接入工作室制作流程。",
-      "contactButton": "联系 COMFY"
+      "contactButton": "联系 COMFY 团队"
     },
     "shared": {
       "secondaryCta": "了解制作方式"
@@ -5566,7 +5567,7 @@
     "badge": "视觉特效",
     "heading": "一个镜头，更多可能。",
     "description": "调整光线、替换物体、扩展画面。使用 Comfy 构建可重复使用的视觉特效工作流，并融入工作室的制作流程。",
-    "sales": "联系销售",
+    "sales": "联系 COMFY 团队",
     "browse": "探索工作流",
     "workflow": "查看工作流",
     "sequenceHeading": "一次拍摄，新的视角。",
@@ -5582,7 +5583,7 @@
       "relight": {
         "title": "改变光线与天气。",
         "rowTitle": "同一镜头，不同光线与天气。",
-        "description": "对比同一镜头在黄金时刻、夜晚、蓝调时刻、雨天、雪天和白天的效果。选择一个版本即可观看播放效果。"
+        "description": "对比同一镜头在黄金时刻、夜晚、红色天空、雨天、雪天和白天的效果。选择一个版本即可观看播放效果。"
       },
       "swap": {
         "title": "替换画面中的汽车。",
@@ -5595,6 +5596,7 @@
         "description": "将超宽屏和竖屏格式与原始横屏画面对比。"
       }
     },
+    "shareImageAlt": "流星划过红色天空，经典汽车停在星光餐厅外。",
     "sampleCaption": "预先生成的示例画面。拖动画布探索，拖动分隔线进行对比。",
     "variants": {
       "seedance_multishot_rain": "多镜头序列",
@@ -5609,7 +5611,7 @@
       "reframe_wide": "超宽屏",
       "reframe_vertical": "竖屏",
       "relight_golden": "黄金时刻",
-      "relight_blue": "蓝调时刻",
+      "relight_blue": "红色天空",
       "relight_snow": "雪天"
     },
     "workstationTitle": "工作站与渲染",
@@ -5641,8 +5643,9 @@
       "mode": "工作室视图",
       "settings": "设置",
       "workflow": "工作流",
-      "sampleOnly": "示例工作室。浏览现有输出并准备工作流需求。上传和生成功能尚未连接。",
-      "upload": "上传素材",
+      "sampleOnly": "示例工作室。浏览现有输出并准备工作流需求。",
+      "upload": "注册免费试用",
+      "uploadHint": "注册 Comfy Cloud，开始使用自己的素材。",
       "shot": "描述镜头",
       "adjust": "调整关键帧",
       "generate": "运行工作流",

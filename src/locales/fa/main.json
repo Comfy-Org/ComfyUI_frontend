@@ -4393,7 +4393,6 @@
     "viewControls": "کنترل‌های نمایش"
   },
   "sideToolbar": {
-    "activeJobStatus": "وضعیت کار فعال: {status}",
     "assets": "دارایی‌ها",
     "backToAssets": "بازگشت به همه دارایی‌ها",
     "browseTemplates": "مرور قالب‌های نمونه",
@@ -5550,22 +5549,6 @@
     "retry": "تلاش مجدد"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "اعتبار مصرف‌شده",
-        "date": "تاریخ",
-        "eventDetails": "جزئیات رویداد",
-        "eventType": "نوع رویداد",
-        "user": "کاربر"
-      },
-      "empty": "هنوز فعالیتی وجود ندارد.",
-      "fullActivity": "تمام فعالیت‌ها",
-      "hoverCard": {
-        "lastActivity": "آخرین فعالیت",
-        "partnerNodeUsed": "گره شریک استفاده‌شده",
-        "totalCreditsUsed": "مجموع اعتبار مصرف‌شده"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "دیگر هزینه‌ای از شما دریافت نخواهد شد. اعضا تا آن زمان دسترسی کامل خواهند داشت. برای حفظ اعتبارهای مشترک تیم خود، طرح‌تان را از سر بگیرید.",
@@ -5701,12 +5684,6 @@
         "removeMember": "حذف عضو",
         "resendInvite": "ارسال مجدد دعوت‌نامه",
         "setCreditLimit": "تنظیم سقف اعتبار"
-      },
-      "activity": {
-        "daysAgo": "{count} روز پیش",
-        "hoursAgo": "{n} ساعت پیش",
-        "justNow": "همین حالا",
-        "minutesAgo": "{n} دقیقه پیش"
       },
       "columns": {
         "creditsUsed": "اعتبار استفاده‌شده در این ماه",
