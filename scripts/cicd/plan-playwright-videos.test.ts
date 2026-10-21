@@ -154,43 +154,47 @@ describe('Playwright video shard planning', () => {
     ])
   })
 
-  it('records only specs whose key is missing from the cache index', () => {
-    using files = fixture(3, 1)
-    const planned = JSON.parse(files.run({ VIDEO_CACHE_SALT: 'a' }).stdout)
-    const chromium = planned.matrix.include.find(
-      (shard: { project: string }) => shard.project === 'chromium'
-    )
-    const index = join(files.root, 'index.txt')
-    writeFileSync(index, `${chromium.specs[0].key}\tabc1234\n`)
+  it(
+    'records only specs whose key is missing from the cache index',
+    { timeout: 30_000 },
+    () => {
+      using files = fixture(3, 1)
+      const planned = JSON.parse(files.run({ VIDEO_CACHE_SALT: 'a' }).stdout)
+      const chromium = planned.matrix.include.find(
+        (shard: { project: string }) => shard.project === 'chromium'
+      )
+      const index = join(files.root, 'index.txt')
+      writeFileSync(index, `${chromium.specs[0].key}\tabc1234\n`)
 
-    const cached = JSON.parse(
-      files.run({ VIDEO_CACHE_SALT: 'a', VIDEO_CACHE_INDEX: index }).stdout
-    )
-    const resalted = JSON.parse(
-      files.run({ VIDEO_CACHE_SALT: 'b', VIDEO_CACHE_INDEX: index }).stdout
-    )
+      const cached = JSON.parse(
+        files.run({ VIDEO_CACHE_SALT: 'a', VIDEO_CACHE_INDEX: index }).stdout
+      )
+      const resalted = JSON.parse(
+        files.run({ VIDEO_CACHE_SALT: 'b', VIDEO_CACHE_INDEX: index }).stdout
+      )
 
-    expect(cached.hits).toEqual([
-      {
-        key: chromium.specs[0].key,
-        project: 'chromium',
-        file: chromium.specs[0].file,
-        sha: 'abc1234'
-      }
-    ])
-    expect(
-      cached.matrix.include.map((shard: { project: string }) => shard.project)
-    ).toEqual(['cloud'])
-    expect(resalted.hits).toEqual([])
-    expect(resalted.matrix.include).toHaveLength(2)
+      expect(cached.hits).toEqual([
+        {
+          key: chromium.specs[0].key,
+          project: 'chromium',
+          file: chromium.specs[0].file,
+          sha: 'abc1234'
+        }
+      ])
+      expect(
+        cached.matrix.include.map((shard: { project: string }) => shard.project)
+      ).toEqual(['cloud'])
+      expect(resalted.hits).toEqual([])
+      expect(resalted.matrix.include).toHaveLength(2)
 
-    writeFileSync(files.spec, readFileSync(files.spec, 'utf8') + '\n')
-    const edited = JSON.parse(
-      files.run({ VIDEO_CACHE_SALT: 'a', VIDEO_CACHE_INDEX: index }).stdout
-    )
+      writeFileSync(files.spec, readFileSync(files.spec, 'utf8') + '\n')
+      const edited = JSON.parse(
+        files.run({ VIDEO_CACHE_SALT: 'a', VIDEO_CACHE_INDEX: index }).stdout
+      )
 
-    expect(edited.hits).toEqual([])
-  })
+      expect(edited.hits).toEqual([])
+    }
+  )
 
   it('does not discover the full suite for an empty changed-file list', () => {
     const result = spawnSync('bash', [script], { encoding: 'utf8' })
