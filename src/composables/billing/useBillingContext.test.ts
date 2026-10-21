@@ -363,6 +363,7 @@ describe('useBillingContext', () => {
       ...DEFAULT_BILLING_STATUS,
       billing_status: 'payment_failed',
       subscription_status: 'ended',
+      subscription_state: 'activating',
       team_credit_stop: {
         id: 'stop-1',
         credits_monthly: 1000,
@@ -370,11 +371,16 @@ describe('useBillingContext', () => {
       }
     }
 
-    const { billingStatus, subscriptionStatus, currentTeamCreditStop } =
-      useBillingContext()
+    const {
+      billingStatus,
+      subscriptionStatus,
+      subscriptionState,
+      currentTeamCreditStop
+    } = useBillingContext()
 
     expect(billingStatus.value).toBe('payment_failed')
     expect(subscriptionStatus.value).toBe('ended')
+    expect(subscriptionState.value).toBe('activating')
     expect(currentTeamCreditStop.value).toEqual({
       id: 'stop-1',
       credits_monthly: 1000,

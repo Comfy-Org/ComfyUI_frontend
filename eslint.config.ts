@@ -108,6 +108,37 @@ const noTooltipDirective = {
     'Use the Button tooltip prop or the design-system Tooltip compound instead of v-tooltip.'
 }
 
+const agentPlatformChannelRestrictions = [
+  {
+    selector:
+      "MemberExpression:matches([object.name='navigator'], [object.object.name='window'][object.property.name='navigator']):matches([computed=false][property.name='clipboard'], [computed=true][property.value='clipboard'])",
+    message: 'Use the shared clipboard composables.'
+  },
+  {
+    selector:
+      "CallExpression:matches([callee.name='getServerFeature'], [callee.property.name='getServerFeature'])",
+    message: 'Read server flags through useFeatureFlags.'
+  },
+  {
+    selector:
+      ":matches(AssignmentExpression > MemberExpression.left, UpdateExpression > MemberExpression.argument):matches([object.property.name='ds'], [object.object.property.name='ds'])",
+    message: 'Use the canvas viewport methods.'
+  },
+  {
+    // Syntax cannot tell a Date from a number, and the platform owns both:
+    // src/utils/dateTimeUtil.ts, src/utils/numberUtil.ts, and vue-i18n d()/n().
+    selector:
+      'CallExpression[callee.property.name=/^toLocale(Date|Time)?String$/]',
+    message:
+      'Format dates and numbers with the platform formatting utilities or vue-i18n.'
+  },
+  {
+    selector:
+      "ImportDeclaration[source.value='@/i18n'] > ImportSpecifier[imported.name='t']",
+    message: 'Use useI18n in composition scope or a platform service.'
+  }
+]
+
 const oxlintConfigs = oxlint.buildFromOxlintConfigFile(
   path.resolve(import.meta.dirname, '.oxlintrc.json')
 )
@@ -274,6 +305,24 @@ const tailwindConfigs = defineConfig([
 
 export default defineConfig([
   ...sharedIgnores,
+  {
+    name: 'comfy/agent-shared-deadlines',
+    files: [
+      'src/workbench/extensions/agent/composables/agent/useAttachment.ts',
+      'src/workbench/extensions/agent/services/agent/agentEventSource.ts'
+    ],
+    rules: {
+      'no-restricted-globals': ['error', 'setTimeout', 'clearTimeout'],
+      'no-restricted-properties': [
+        'error',
+        { property: 'setTimeout', message: 'Use VueUse or es-toolkit timers.' },
+        {
+          property: 'clearTimeout',
+          message: 'Use VueUse or es-toolkit timers.'
+        }
+      ]
+    }
+  },
   {
     files: tailwindScriptFiles,
     ignores: [...tailwindScriptIgnores, ...templateFiles],
@@ -530,5 +579,41 @@ export default defineConfig([
     settings: treeSettings,
     plugins: { '@intlify/vue-i18n': i18nPlugin },
     rules: { '@intlify/vue-i18n/no-missing-keys': 'error' as const }
-  }))
+  })),
+  {
+    name: 'comfy/agent-platform-channels',
+    files: ['src/workbench/extensions/agent/**/*.{ts,vue}'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.stories.ts',
+      '**/CrdtDevPanel.vue',
+      '**/restoreOpMinter.ts',
+      '**/crdtLog.ts'
+    ],
+    rules: {
+      'no-console': 'error',
+      'no-restricted-syntax': ['error', ...agentPlatformChannelRestrictions]
+    }
+  },
+  {
+    // After the channels block: flat config replaces a rule's options per
+    // file, so this entry repeats the channel restrictions and adds its own.
+    name: 'comfy/agent-shared-filenames',
+    files: [
+      'src/workbench/extensions/agent/utils/attachableFiles.ts',
+      'src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts'
+    ],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...agentPlatformChannelRestrictions,
+        {
+          selector:
+            "CallExpression[callee.property.name=/^(split|lastIndexOf)$/]:matches([arguments.0.value='.'], [arguments.0.value='/'], [arguments.0.value='\\\\'])",
+          message:
+            'Use the platform filename utilities (getFilenameDetails, getPathDetails).'
+        }
+      ]
+    }
+  }
 ])
