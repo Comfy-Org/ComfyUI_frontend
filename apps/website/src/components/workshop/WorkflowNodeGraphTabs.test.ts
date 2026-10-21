@@ -26,8 +26,11 @@ const workflow: NodeGraphWorkflow = {
   examples: []
 }
 
-function renderTabs(overrides: Partial<NodeGraphWorkflow> = {}) {
-  vi.mocked(fetch).mockResolvedValue(Response.json(graph))
+function renderTabs(
+  overrides: Partial<NodeGraphWorkflow> = {},
+  respond: () => Response = () => Response.json(graph)
+) {
+  vi.mocked(fetch).mockImplementation(() => Promise.resolve(respond()))
   return render(WorkflowNodeGraphTabs, {
     props: { workflow: { ...workflow, ...overrides } },
     slots: { api: '<p>Catalog API panel</p>' },
@@ -107,5 +110,33 @@ describe('WorkflowNodeGraphTabs', () => {
 
     expect(screen.getByRole('tabpanel', { name: 'API' })).toBeVisible()
     expect(screen.getByText('Catalog API panel')).toBeVisible()
+  })
+
+  it('says the graph could not be read instead of listing no needs', async () => {
+    renderTabs({}, () => new Response('', { status: 404 }))
+
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('node-graph-inputs-failed')).toBeTruthy()
+    )
+    expect(screen.getByTestId('workflow-custom-nodes-failed')).toBeTruthy()
+  })
+
+  it('lets a workflow with several versions pick the graph it shows', async () => {
+    const files = [
+      { name: 'Version 1', href: '/v1.json' },
+      { name: 'Version 2', href: '/v2.json' }
+    ]
+    renderTabs({ files, graphSource: '/v2.json' })
+    await openTab('Details')
+
+    const versions = within(screen.getByTestId('workflow-versions'))
+    await userEvent
+      .setup()
+      .selectOptions(versions.getByRole('combobox'), '/v1.json')
+    expect(
+      versions
+        .getByRole('link', { name: /Download workflow/i })
+        .getAttribute('href')
+    ).toBe('/v1.json')
   })
 })

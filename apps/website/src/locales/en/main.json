@@ -1095,7 +1095,8 @@
       "sampleOf": "Sample {n} of {total}",
       "tabApi": "API",
       "runsHereLocal": "This workflow can only run on your own ComfyUI. Download it and drop the file onto the canvas.",
-      "reading": "Reading the workflow"
+      "reading": "Reading the workflow",
+      "readFailed": "Couldn't read the workflow file."
     },
     "catalogue": {
       "apps": "Apps",

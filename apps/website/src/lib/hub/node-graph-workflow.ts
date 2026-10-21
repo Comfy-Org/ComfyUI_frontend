@@ -12,7 +12,12 @@ export interface NodeGraphWorkflow {
   readonly name: string
   readonly description: readonly string[]
   readonly graphSource?: string
+  /** The pre-rendered graph, for when the graph file cannot be read. */
+  readonly graphFallback?: string
+  /** The workflow's versions, when it offers more than one file. */
+  readonly files?: readonly { readonly name: string; readonly href: string }[]
   readonly downloadUrl?: string
+  readonly downloadName?: string | boolean
   /** Absent when the workflow cannot open in Comfy Cloud. */
   readonly cloudHref?: string
   readonly models: readonly string[]
@@ -41,19 +46,34 @@ function paragraphs(text: string): string[] {
 /** A catalog workflow as the node graph layout shows it. */
 export function nodeGraphWorkflowFromModel(
   model: WorkflowWorkshopModelDetail,
-  links: { readonly downloadUrl?: string; readonly cloudHref?: string }
+  links: {
+    readonly downloadUrl?: string
+    readonly downloadName?: string | boolean
+    readonly cloudHref?: string
+  }
 ): NodeGraphWorkflow {
   const details = model.catalogDetails
-  const catalogModels = details?.models.map(({ name }) => name) ?? []
+  const files = details?.workflowFiles
+  const catalogModels = names(details?.models.map(({ name }) => name))
+  const longDescription = paragraphs(details?.longDescription ?? '')
   return {
     name: model.name,
-    description: paragraphs(details?.longDescription ?? model.summary ?? ''),
+    description: longDescription.length
+      ? longDescription
+      : paragraphs(model.summary ?? ''),
     graphSource: links.downloadUrl,
+    graphFallback: files ? undefined : model.workflow.template?.previewUrl,
+    files: files?.map(({ name, href }) => ({ name, href })),
     downloadUrl: links.downloadUrl,
+    downloadName: links.downloadName,
     cloudHref: links.cloudHref,
-    models: catalogModels.length ? catalogModels : (model.models ?? []),
+    models: catalogModels.length ? catalogModels : names(model.models),
     output: details?.outputType,
-    author: details?.author ?? model.author,
+    author: details?.author?.trim() || model.author?.trim() || undefined,
     examples: examplesForModel(model)
   }
+}
+
+function names(values: readonly string[] | undefined): string[] {
+  return (values ?? []).map((value) => value.trim()).filter(Boolean)
 }

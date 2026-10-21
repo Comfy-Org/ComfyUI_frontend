@@ -153,4 +153,24 @@ describe('nodeGraphCustomNodes', () => {
   ])('$name', ({ graph, expected }) => {
     expect(nodeGraphCustomNodes(graph)).toEqual(expected)
   })
+
+  it('reads each subgraph once, however often and deeply it is used', () => {
+    const instances = (type: string) =>
+      Array.from({ length: 50 }, () => ({ type }))
+    const graph = {
+      nodes: instances('s0'),
+      definitions: {
+        subgraphs: [
+          { id: 's0', nodes: instances('s1') },
+          { id: 's1', nodes: instances('s2') },
+          { id: 's2', nodes: instances('s3') },
+          { id: 's3', nodes: [{ type: 'LoadImage', title: 'Deep image' }] }
+        ]
+      }
+    }
+
+    expect(nodeGraphInputs(graph)).toEqual([
+      { media: 'image', title: 'Deep image' }
+    ])
+  })
 })

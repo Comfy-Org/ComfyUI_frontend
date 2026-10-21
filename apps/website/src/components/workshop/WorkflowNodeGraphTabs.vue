@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useNodeGraphNeeds } from '@/composables/useNodeGraphNeeds'
 import { useTablist } from '@/composables/useTablist'
 import type { Locale } from '@/i18n/translations'
@@ -20,7 +21,21 @@ const { workflow, locale = 'en' } = defineProps<{
 const emit = defineEmits<{ download: []; tryCloud: [] }>()
 const { t } = translationsFor(locale)
 
-const needs = useNodeGraphNeeds(() => workflow.graphSource)
+const selectedFile = ref<string>()
+watch(
+  () => workflow.graphSource,
+  () => (selectedFile.value = undefined)
+)
+const graphSource = computed(
+  () =>
+    workflow.files?.find(({ href }) => href === selectedFile.value)?.href ??
+    workflow.graphSource
+)
+function selectFile(event: Event) {
+  if (event.target instanceof HTMLSelectElement)
+    selectedFile.value = event.target.value
+}
+const needs = useNodeGraphNeeds(graphSource)
 const samples = computed(() =>
   workflow.examples
     .filter((example) => sampleMedia(example) === 'image')
@@ -68,7 +83,7 @@ const sectionLabels = {
       role="tabpanel"
       aria-labelledby="workflow-tab-overview"
       :workflow="workflow"
-      :inputs="needs?.inputs"
+      :needs="needs"
       :active="section === 'overview'"
       :locale="locale"
       @download="emit('download')"
@@ -90,20 +105,61 @@ const sectionLabels = {
       <div class="grid gap-10 lg:grid-cols-12">
         <div class="min-w-0 lg:col-span-8" data-testid="node-graph-graph">
           <WorkflowGraph
-            v-if="workflow.graphSource"
-            :source="workflow.graphSource"
+            v-if="graphSource"
+            :key="graphSource"
+            :source="graphSource"
             :samples
-            :full-href="workflow.graphSource"
+            :fallback="workflow.graphFallback"
+            :full-href="workflow.graphFallback ?? graphSource"
             :active="section === 'workflow'"
+          />
+          <img
+            v-else-if="workflow.graphFallback"
+            :src="workflow.graphFallback"
+            :alt="t('workshop.workflow.graph')"
+            loading="lazy"
+            class="max-h-160 w-full rounded-2xl border border-transparency-white-t8 object-contain"
           />
         </div>
         <div class="min-w-0 lg:col-span-4">
-          <WorkflowNodeGraphFacts
-            :workflow="workflow"
-            :custom-nodes="needs?.customNodes"
-            :locale="locale"
-            class="lg:sticky lg:top-24"
-          />
+          <div class="flex flex-col gap-4 lg:sticky lg:top-24">
+            <div
+              v-if="workflow.files && workflow.files.length > 1"
+              class="flex flex-col gap-3"
+              data-testid="workflow-versions"
+            >
+              <label class="grid gap-2 text-sm text-primary-warm-gray">
+                {{ t('cccWorkflow.version') }}
+                <select
+                  :value="graphSource"
+                  class="min-h-11 rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink px-3 text-primary-comfy-canvas"
+                  @change="selectFile"
+                >
+                  <option
+                    v-for="file in workflow.files"
+                    :key="file.href"
+                    :value="file.href"
+                  >
+                    {{ file.name }}
+                  </option>
+                </select>
+              </label>
+              <Button
+                as="a"
+                :href="graphSource"
+                :download="workflow.downloadName ?? true"
+                variant="outline"
+                class="h-auto min-h-11 max-w-full whitespace-normal"
+                @click="emit('download')"
+                >{{ t('workshop.workflow.download') }}</Button
+              >
+            </div>
+            <WorkflowNodeGraphFacts
+              :workflow="workflow"
+              :needs="needs"
+              :locale="locale"
+            />
+          </div>
         </div>
       </div>
     </section>

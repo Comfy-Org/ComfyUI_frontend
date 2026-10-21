@@ -11,11 +11,13 @@ import { translationsFor } from '@/i18n/translations'
 const {
   cloudHref,
   downloadUrl,
+  downloadName = true,
   active,
   locale = 'en'
 } = defineProps<{
   cloudHref?: string
   downloadUrl?: string
+  downloadName?: string | boolean
   /** Whether the Overview tab is showing, so the footer pads the scroll. */
   active: boolean
   locale?: Locale
@@ -42,7 +44,10 @@ useStickyFooterScrollPadding(
     "
     data-testid="node-graph-footer"
   >
-    <p class="px-1 text-sm text-primary-warm-gray">
+    <p
+      v-if="cloudHref || downloadUrl"
+      class="px-1 text-sm text-primary-warm-gray"
+    >
       <span class="font-bold text-primary-comfy-canvas">{{
         t('workshop.nodeGraph.runsHereTitle')
       }}</span>
@@ -71,7 +76,7 @@ useStickyFooterScrollPadding(
       v-else-if="downloadUrl"
       as="a"
       :href="downloadUrl"
-      download
+      :download="downloadName"
       class="min-h-11 w-full"
       @click="emit('download')"
       >{{ t('workshop.workflow.downloadShort') }}

@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue'
 
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type { NodeGraphInput } from '@/lib/hub/node-graph-inputs'
+import type { NodeGraphNeeds } from '@/composables/useNodeGraphNeeds'
 import type { NodeGraphWorkflow } from '@/lib/hub/node-graph-workflow'
 import { sampleMedia } from '@/lib/hub/node-graph-workflow'
 
@@ -13,12 +13,12 @@ import WorkflowNodeGraphAbout from './WorkflowNodeGraphAbout.vue'
 
 const {
   workflow,
-  inputs,
+  needs,
   active,
   locale = 'en'
 } = defineProps<{
   workflow: NodeGraphWorkflow
-  inputs?: readonly NodeGraphInput[]
+  needs: NodeGraphNeeds
   active: boolean
   locale?: Locale
 }>()
@@ -43,7 +43,7 @@ function openExample(id: string) {
     <div class="grid gap-8 lg:grid-cols-12">
       <WorkflowNodeGraphAbout
         :workflow="workflow"
-        :inputs="inputs"
+        :needs="needs"
         :active="active"
         :locale="locale"
         class="lg:col-span-5"

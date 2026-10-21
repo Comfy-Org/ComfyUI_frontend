@@ -82,16 +82,26 @@ function labelFromTitle(title: string | undefined): string | undefined {
 const isActive = (node: GraphNode) =>
   node.mode !== MUTED && node.mode !== BYPASSED
 
+const MAX_NODES = 5000
+
 function activeNodes(
   nodes: readonly GraphNode[],
-  subgraphs: ReadonlyMap<string, readonly GraphNode[]>,
-  entered: ReadonlySet<string> = new Set()
+  subgraphs: ReadonlyMap<string, readonly GraphNode[]>
 ): GraphNode[] {
-  return nodes.filter(isActive).flatMap((node) => {
+  const found: GraphNode[] = []
+  const expanded = new Set<string>()
+  const pending = [...nodes]
+  while (pending.length && found.length < MAX_NODES) {
+    const node = pending.shift()
+    if (!node || !isActive(node)) continue
     const inner = subgraphs.get(node.type)
-    if (!inner || entered.has(node.type)) return [node]
-    return activeNodes(inner, subgraphs, new Set([...entered, node.type]))
-  })
+    if (!inner) found.push(node)
+    else if (!expanded.has(node.type)) {
+      expanded.add(node.type)
+      pending.push(...inner)
+    }
+  }
+  return found
 }
 
 function activeGraphNodes(graph: unknown): GraphNode[] {
@@ -107,7 +117,7 @@ function activeGraphNodes(graph: unknown): GraphNode[] {
   return activeNodes(nodes, subgraphs)
 }
 
-/** The active loader nodes of a workflow graph, including used subgraphs. */
+/** The active loader nodes of a workflow graph; each used subgraph is read once. */
 export function nodeGraphInputs(graph: unknown): NodeGraphInput[] {
   return activeGraphNodes(graph).flatMap((node) => {
     const media = loaderMedia(node.type)

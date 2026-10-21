@@ -98,6 +98,7 @@ const documentationURL = computed(() => model.catalogDetails?.documentationURL)
 const nodeGraph = computed(() =>
   nodeGraphWorkflowFromModel(model, {
     downloadUrl: downloadUrl.value,
+    downloadName: downloadName.value,
     cloudHref: cloudHref.value
   })
 )

@@ -98,4 +98,31 @@ describe('nodeGraphWorkflowFromModel', () => {
       cloudHref: undefined
     })
   })
+
+  it('falls back to the static summary and author when the catalog ones are blank', () => {
+    const workflow = nodeGraphWorkflowFromModel(
+      {
+        ...model,
+        author: 'static author',
+        catalogDetails: {
+          locale: 'en',
+          faqs: [],
+          models: [{ uid: 'm1', name: '  ' }],
+          longDescription: '   ',
+          author: '  '
+        }
+      },
+      {}
+    )
+
+    expect({
+      description: workflow.description,
+      author: workflow.author,
+      models: workflow.models
+    }).toEqual({
+      description: [model.summary],
+      author: 'static author',
+      models: model.models ?? []
+    })
+  })
 })

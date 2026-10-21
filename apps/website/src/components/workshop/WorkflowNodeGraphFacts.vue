@@ -4,18 +4,21 @@ import { computed } from 'vue'
 
 import type { Locale, TranslationKey } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
+import type { NodeGraphNeeds } from '@/composables/useNodeGraphNeeds'
 import type { NodeGraphWorkflow } from '@/lib/hub/node-graph-workflow'
 
 const {
   workflow,
-  customNodes,
+  needs,
   locale = 'en'
 } = defineProps<{
   workflow: NodeGraphWorkflow
-  /** Undefined while the graph is still being read. */
-  customNodes?: readonly string[]
+  needs: NodeGraphNeeds
   locale?: Locale
 }>()
+const customNodes = computed(() =>
+  needs.status === 'read' ? needs.customNodes : []
+)
 const { t } = translationsFor(locale)
 
 const facts = computed(() => {
@@ -64,8 +67,8 @@ const headingClass =
       <h3 :class="headingClass">{{ t('workshop.workflow.runsOn') }}</h3>
       <ul class="mt-2 flex flex-col gap-1">
         <li
-          v-for="name in workflow.models"
-          :key="name"
+          v-for="(name, index) in workflow.models"
+          :key="index"
           class="flex items-center gap-2.5 py-1.5"
         >
           <Box
@@ -82,17 +85,17 @@ const headingClass =
     </section>
 
     <section
-      v-if="customNodes === undefined || customNodes.length"
+      v-if="needs.status !== 'read' || customNodes.length"
       class="border-t border-transparency-white-t8 px-5 py-4 first:border-t-0"
       data-testid="workflow-custom-nodes"
     >
       <h3 :class="headingClass">{{ t('workshop.workflow.customNodes') }}</h3>
       <ul
         class="mt-2 flex flex-col gap-1"
-        :aria-busy="customNodes === undefined"
+        :aria-busy="needs.status === 'loading'"
       >
         <li
-          v-if="customNodes === undefined"
+          v-if="needs.status === 'loading'"
           class="flex items-center gap-2.5 py-1.5"
           data-testid="workflow-custom-nodes-loading"
         >
@@ -103,8 +106,15 @@ const headingClass =
           <span class="sr-only">{{ t('workshop.nodeGraph.reading') }}</span>
         </li>
         <li
-          v-for="name in customNodes ?? []"
-          :key="name"
+          v-if="needs.status === 'failed'"
+          class="py-1.5 text-sm text-primary-warm-gray"
+          data-testid="workflow-custom-nodes-failed"
+        >
+          {{ t('workshop.nodeGraph.readFailed') }}
+        </li>
+        <li
+          v-for="(name, index) in customNodes"
+          :key="index"
           class="flex items-center gap-2.5 py-1.5"
         >
           <Puzzle

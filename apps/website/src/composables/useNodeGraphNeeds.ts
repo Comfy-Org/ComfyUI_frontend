@@ -1,3 +1,4 @@
+import { useMounted } from '@vueuse/core'
 import type { MaybeRefOrGetter } from 'vue'
 import { ref, toValue, watch } from 'vue'
 
@@ -7,41 +8,58 @@ import {
   nodeGraphInputs
 } from '@/lib/hub/node-graph-inputs'
 
-interface NodeGraphNeeds {
-  readonly inputs: readonly NodeGraphInput[]
-  readonly customNodes: readonly string[]
-}
+/** What the graph says a reader needs, or that it could not be read. */
+export type NodeGraphNeeds =
+  | { readonly status: 'loading' }
+  | { readonly status: 'failed' }
+  | {
+      readonly status: 'read'
+      readonly inputs: readonly NodeGraphInput[]
+      readonly customNodes: readonly string[]
+    }
 
-const NOTHING: NodeGraphNeeds = { inputs: [], customNodes: [] }
+const READ_TIMEOUT_MS = 15_000
+const EMPTY: NodeGraphNeeds = { status: 'read', inputs: [], customNodes: [] }
 
-async function readNeeds(source: string): Promise<NodeGraphNeeds> {
+async function readNeeds(
+  source: string,
+  signal: AbortSignal
+): Promise<NodeGraphNeeds> {
   try {
-    const response = await fetch(source)
-    if (!response.ok) return NOTHING
+    const response = await fetch(source, {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(READ_TIMEOUT_MS)])
+    })
+    if (!response.ok) return { status: 'failed' }
     const graph: unknown = await response.json()
     return {
+      status: 'read',
       inputs: nodeGraphInputs(graph),
       customNodes: nodeGraphCustomNodes(graph)
     }
   } catch {
-    return NOTHING
+    return { status: 'failed' }
   }
 }
 
-/** The inputs and custom node packs of the graph at `source`; undefined while it loads. */
+/** Reads the graph at `source` in the browser, once the page has mounted. */
 export function useNodeGraphNeeds(
   source: MaybeRefOrGetter<string | undefined>
 ) {
-  const needs = ref<NodeGraphNeeds>()
-  let latest = 0
+  const mounted = useMounted()
+  const needs = ref<NodeGraphNeeds>({ status: 'loading' })
   watch(
-    () => toValue(source),
-    async (current) => {
-      const request = ++latest
-      needs.value = current ? undefined : NOTHING
-      if (!current) return
-      const read = await readNeeds(current)
-      if (request === latest) needs.value = read
+    [mounted, () => toValue(source)] as const,
+    async ([isMounted, current], _previous, onCleanup) => {
+      if (!isMounted) return
+      if (!current) {
+        needs.value = EMPTY
+        return
+      }
+      const controller = new AbortController()
+      onCleanup(() => controller.abort())
+      needs.value = { status: 'loading' }
+      const read = await readNeeds(current, controller.signal)
+      if (!controller.signal.aborted) needs.value = read
     },
     { immediate: true }
   )

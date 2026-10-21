@@ -3,23 +3,20 @@ import { computed, ref } from 'vue'
 
 import type { Locale } from '@/i18n/translations'
 import { translationsFor } from '@/i18n/translations'
-import type {
-  NodeGraphInput,
-  NodeGraphInputMedia
-} from '@/lib/hub/node-graph-inputs'
+import type { NodeGraphNeeds } from '@/composables/useNodeGraphNeeds'
+import type { NodeGraphInputMedia } from '@/lib/hub/node-graph-inputs'
 import type { NodeGraphWorkflow } from '@/lib/hub/node-graph-workflow'
 
 import WorkflowNodeGraphAboutFooter from './WorkflowNodeGraphAboutFooter.vue'
 
 const {
   workflow,
-  inputs,
+  needs,
   active,
   locale = 'en'
 } = defineProps<{
   workflow: NodeGraphWorkflow
-  /** Undefined while the graph is still being read. */
-  inputs?: readonly NodeGraphInput[]
+  needs: NodeGraphNeeds
   active: boolean
   locale?: Locale
 }>()
@@ -34,7 +31,7 @@ const mediaLabels = {
 
 const MEDIA_ORDER: readonly NodeGraphInputMedia[] = ['image', 'video', 'audio']
 const orderedInputs = computed(() =>
-  inputs?.toSorted(
+  (needs.status === 'read' ? needs.inputs : []).toSorted(
     (a, b) => MEDIA_ORDER.indexOf(a.media) - MEDIA_ORDER.indexOf(b.media)
   )
 )
@@ -58,9 +55,11 @@ const more = computed(() => workflow.description.slice(1))
     </h2>
     <div class="space-y-6 p-5">
       <div class="space-y-3 text-sm/relaxed text-primary-comfy-canvas">
-        <p>{{ lead }}</p>
+        <p v-if="lead">{{ lead }}</p>
         <template v-if="expanded">
-          <p v-for="paragraph in more" :key="paragraph">{{ paragraph }}</p>
+          <p v-for="(paragraph, index) in more" :key="index">
+            {{ paragraph }}
+          </p>
         </template>
         <button
           v-if="more.length"
@@ -80,9 +79,9 @@ const more = computed(() => workflow.description.slice(1))
       </div>
 
       <div
-        v-if="inputs === undefined || inputs.length"
+        v-if="needs.status !== 'read' || needs.inputs.length"
         data-testid="node-graph-inputs"
-        :aria-busy="inputs === undefined"
+        :aria-busy="needs.status === 'loading'"
       >
         <h3
           class="text-2xs font-bold tracking-wider text-primary-warm-gray uppercase"
@@ -91,14 +90,21 @@ const more = computed(() => workflow.description.slice(1))
         </h3>
         <ul class="mt-3 flex flex-wrap gap-2">
           <li
-            v-if="inputs === undefined"
+            v-if="needs.status === 'loading'"
             class="inline-flex h-8 w-36 rounded-lg bg-transparency-white-t8 motion-safe:animate-pulse"
             data-testid="node-graph-inputs-loading"
           >
             <span class="sr-only">{{ t('workshop.nodeGraph.reading') }}</span>
           </li>
           <li
-            v-for="(input, index) in orderedInputs ?? []"
+            v-if="needs.status === 'failed'"
+            class="text-sm text-primary-warm-gray"
+            data-testid="node-graph-inputs-failed"
+          >
+            {{ t('workshop.nodeGraph.readFailed') }}
+          </li>
+          <li
+            v-for="(input, index) in orderedInputs"
             :key="index"
             class="inline-flex h-8 items-center rounded-lg border border-transparency-white-t8 bg-transparency-white-t4 px-3 text-sm text-primary-comfy-canvas"
           >
@@ -109,8 +115,10 @@ const more = computed(() => workflow.description.slice(1))
     </div>
 
     <WorkflowNodeGraphAboutFooter
+      v-if="workflow.cloudHref || workflow.downloadUrl"
       :cloud-href="workflow.cloudHref"
       :download-url="workflow.downloadUrl"
+      :download-name="workflow.downloadName"
       :active="active"
       :locale="locale"
       @download="emit('download')"
