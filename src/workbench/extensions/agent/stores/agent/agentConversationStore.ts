@@ -563,26 +563,34 @@ export const useAgentConversationStore = defineStore(
       const messageId = event.data.message_id
       const shownId = hydratedTurnIds.get(messageId) ?? messageId
       const index = messages.value.findIndex((m) => m.id === shownId)
-      const message = messages.value[index]
-      if (message === undefined || message.streaming) return false
+      if (index < 0 || messages.value[index].streaming) return false
       const departed = departedTurns.get(
         departedTurnKey(event.data.thread_id, messageId)
       )
       if (departed === 'no-live-turn') return false
+      addAskToSettledMessage(index, shownId, event)
+      return true
+    }
+
+    function addAskToSettledMessage(
+      index: number,
+      shownId: string,
+      event: Extract<AgentChatEvent, { type: 'agent_ask' }>
+    ): void {
       const holder = [...settledActiveTransports].find(
         (transport) => transport.messageId === shownId
       )
       if (holder) {
         holder.ingest(event)
-        return true
+        return
       }
+      const message = messages.value[index]
       if (message.parts.some((part) => askIdOf(part) === event.data.ask_id))
-        return true
+        return
       const part = toAskOrNoticePart(event.data)
       if (part.type === 'askUnavailable')
         reportUndeliverableAskData(event.data, 'unrendered-kind')
       messages.value[index] = { ...message, parts: [...message.parts, part] }
-      return true
     }
 
     function isRetiredAskReplay(event: AgentChatEvent): boolean {
