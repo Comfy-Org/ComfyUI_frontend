@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import HubThumbnailMedia from '@/components/hub/HubThumbnailMedia.vue'
 
 import { usePreviewVideo } from '@/composables/usePreviewVideo'
 import type { WorkshopModel } from '@/config/models-catalogue'
@@ -9,16 +12,33 @@ const { model } = defineProps<{
 }>()
 const video = useTemplateRef<HTMLVideoElement>('video')
 const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
+const imageClass = computed(() =>
+  cn(
+    'size-full object-cover transition-transform select-none',
+    model.thumbnail?.variant === 'zoomHover' ||
+      model.thumbnail?.variant === 'hoverZoom'
+      ? 'duration-500 group-hover:scale-125'
+      : 'duration-300 group-hover:scale-105'
+  )
+)
 </script>
 
 <template>
+  <HubThumbnailMedia
+    v-if="model.thumbnail?.primaryUrl && model.thumbnail.secondaryUrl"
+    :primary-url="model.thumbnail.primaryUrl"
+    :secondary-url="model.thumbnail.secondaryUrl"
+    :variant="model.thumbnail.variant"
+    :title="model.name"
+    data-testid="model-card-media"
+  />
   <!-- The card names itself in its heading and marks its provider over the
     artwork, so a third reading of the name here is noise in the link. -->
   <img
-    v-if="model.thumbnail?.staticUrl"
+    v-else-if="model.thumbnail?.staticUrl"
     :src="model.thumbnail.staticUrl"
     alt=""
-    class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+    :class="imageClass"
     data-testid="model-card-media"
     loading="lazy"
     decoding="async"
@@ -41,7 +61,7 @@ const previewSrc = usePreviewVideo(video, () => model.thumbnail?.url)
     v-else-if="model.thumbnail && model.thumbnail.kind !== 'audio'"
     :src="model.thumbnail.url"
     alt=""
-    class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+    :class="imageClass"
     data-testid="model-card-media"
     loading="lazy"
     decoding="async"

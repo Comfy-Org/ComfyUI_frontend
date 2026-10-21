@@ -1,5 +1,6 @@
 import { z } from 'astro/zod'
 
+import { thumbnailVariantSchema } from '@/lib/hub/types'
 import { MODALITIES, USE_CASES } from './models-catalogue'
 
 const presentationSchema = z.object({
@@ -30,7 +31,10 @@ const presentationSchema = z.object({
       url: z.string(),
       kind: z.enum(['image', 'video', 'audio']),
       poster: z.string().optional(),
-      staticUrl: z.string().optional()
+      staticUrl: z.string().optional(),
+      variant: thumbnailVariantSchema.optional(),
+      primaryUrl: z.string().optional(),
+      secondaryUrl: z.string().optional()
     })
     .optional(),
   useCases: z.array(z.enum(USE_CASES)).optional(),

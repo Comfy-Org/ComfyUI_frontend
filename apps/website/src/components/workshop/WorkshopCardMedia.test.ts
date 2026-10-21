@@ -1,3 +1,4 @@
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { createSSRApp } from 'vue'
 import { renderToString } from 'vue/server-renderer'
@@ -39,4 +40,35 @@ describe('Hub browsing thumbnails', () => {
     expect(html).not.toContain('/catalog-media/hero/song')
     expect(html).toContain('data-testid="model-media-placeholder"')
   })
+
+  it.for([
+    { variant: 'compareSlider', sliders: 1, images: 2 },
+    { variant: 'hoverDissolve', sliders: 0, images: 2 },
+    { variant: undefined, sliders: 0, images: 1 }
+  ] as const)(
+    'draws the $variant thumbnail with $images images',
+    ({ variant, sliders, images }) => {
+      render(WorkshopCardMedia, {
+        props: {
+          model: {
+            name: 'Relight',
+            thumbnail: {
+              url: '/after.webp',
+              kind: 'image',
+              ...(variant && {
+                variant,
+                primaryUrl: '/after.webp',
+                secondaryUrl: '/before.webp'
+              })
+            }
+          }
+        }
+      })
+      expect(screen.queryAllByRole('slider')).toHaveLength(sliders)
+      expect(
+        screen.queryAllByRole('img').length +
+          screen.queryAllByRole('presentation').length
+      ).toBe(images)
+    }
+  )
 })

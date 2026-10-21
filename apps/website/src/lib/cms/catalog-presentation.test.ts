@@ -373,6 +373,96 @@ describe('native CONTENT presentation', () => {
       expect(view).toMatchObject({ thumbnail, thumbnailUrl })
     }
   )
+  const after = '/catalog-media/thumb/after'
+  const before = '/catalog-media/thumb/before'
+  const stills = {
+    '$.thumbnail': 'image/webp',
+    '$.thumbnail_comparison': 'image/png'
+  }
+  it.for([
+    {
+      case: 'a compare slider over two stills',
+      variant: 'compareSlider',
+      types: stills,
+      thumbnail: {
+        url: after,
+        kind: 'image',
+        variant: 'compareSlider',
+        primaryUrl: after,
+        secondaryUrl: before
+      }
+    },
+    {
+      case: 'a hover dissolve over two stills',
+      variant: 'hoverDissolve',
+      types: stills,
+      thumbnail: {
+        url: after,
+        kind: 'image',
+        variant: 'hoverDissolve',
+        primaryUrl: after,
+        secondaryUrl: before
+      }
+    },
+    {
+      case: 'a compare slider with no comparison image',
+      variant: 'compareSlider',
+      media: { '$.thumbnail': after },
+      types: { '$.thumbnail': 'image/webp' },
+      thumbnail: { url: after, kind: 'image' }
+    },
+    {
+      case: 'a compare slider whose comparison is a video',
+      variant: 'compareSlider',
+      types: { ...stills, '$.thumbnail_comparison': 'video/mp4' },
+      thumbnail: { url: after, kind: 'image' }
+    },
+    {
+      case: 'a compare slider whose thumbnail is a video',
+      variant: 'compareSlider',
+      types: { ...stills, '$.thumbnail': 'video/webm' },
+      thumbnail: { url: after, kind: 'video' }
+    },
+    {
+      case: 'a hover zoom over one still',
+      variant: 'zoomHover',
+      media: { '$.thumbnail': after },
+      types: { '$.thumbnail': 'image/webp' },
+      thumbnail: { url: after, kind: 'image', variant: 'zoomHover' }
+    },
+    {
+      case: 'a variant the card does not draw',
+      variant: 'video',
+      types: stills,
+      thumbnail: { url: after, kind: 'image' }
+    },
+    {
+      case: 'no variant',
+      types: stills,
+      thumbnail: { url: after, kind: 'image' }
+    }
+  ])(
+    'presents the card thumbnail for $case',
+    ({
+      variant,
+      media = { '$.thumbnail': after, '$.thumbnail_comparison': before },
+      types,
+      thumbnail
+    }) => {
+      const view = modelSchema.parse(
+        catalogPresentation({
+          ...record,
+          data: {
+            ...record.data,
+            ...(variant && { thumbnail_variant: variant }),
+            website_media: media,
+            website_media_types: types
+          }
+        })
+      )
+      expect(view.thumbnail).toEqual(thumbnail)
+    }
+  )
   it('classifies audio heroes and examples as audio', () => {
     const view = catalogPresentation({
       ...record,

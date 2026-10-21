@@ -4,6 +4,7 @@ import type { Document } from './editor-document'
 import { translationsFor } from '@/i18n/translations'
 import { resolveLocale } from '@/config/locales'
 import { USE_CASES } from '@/config/models-catalogue'
+import { thumbnailVariantSchema } from '@/lib/hub/types'
 import {
   workflowCatalogDetailsSchema,
   validCloudShareURL,
@@ -393,6 +394,21 @@ function heroKind(urls: Document, types: Document, staticOnly: boolean) {
   )
 }
 
+function thumbnailVariant(d: Document, urls: Document, types: Document) {
+  const variant = thumbnailVariantSchema.safeParse(d.thumbnail_variant)
+  if (!variant.success) return {}
+  if (variant.data === 'zoomHover' || variant.data === 'hoverZoom')
+    return { variant: variant.data }
+  const primaryUrl = urls['$.thumbnail']
+  const secondaryUrl = urls['$.thumbnail_comparison']
+  return typeof primaryUrl === 'string' &&
+    typeof secondaryUrl === 'string' &&
+    mediaKind(types, '$.thumbnail') === 'image' &&
+    mediaKind(types, '$.thumbnail_comparison') === 'image'
+    ? { variant: variant.data, primaryUrl, secondaryUrl }
+    : {}
+}
+
 function heroPresentation(d: Document, preserved: Document) {
   const urls = objectPresentation(d.website_media)
   const types = objectPresentation(d.website_media_types)
@@ -412,7 +428,8 @@ function heroPresentation(d: Document, preserved: Document) {
     thumbnail: {
       url: hero,
       kind: kind ?? preserved.thumbnailKind ?? 'image',
-      ...poster
+      ...poster,
+      ...thumbnailVariant(d, urls, types)
     }
   }
 }

@@ -1,4 +1,5 @@
 import type { Model } from './models'
+import type { ThumbnailVariant } from '@/lib/hub/types'
 import type { WorkflowCatalogDetails } from './workflow-catalog-details'
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
@@ -137,6 +138,9 @@ interface WorkshopPresentation {
     readonly kind: 'image' | 'video' | 'audio'
     readonly poster?: string
     readonly staticUrl?: string
+    readonly variant?: ThumbnailVariant
+    readonly primaryUrl?: string
+    readonly secondaryUrl?: string
   }
   readonly useCases?: readonly UseCase[]
   readonly summary?: string
