@@ -33,6 +33,7 @@ const {
 const { t } = translationsFor(locale)
 const root = useTemplateRef<HTMLElement>('root')
 const signupHref = ref<string>(externalLinks.cloudSignup)
+const studioTitleId = `vfx-${demo}-${useId()}-title`
 const signupHintId = `vfx-${demo}-${useId()}-signup`
 const mode = ref('workflow')
 const time = ref(0)
@@ -182,14 +183,17 @@ useEventListener(
     ref="root"
     data-vfx-studio
     role="region"
-    :aria-label="t('vfxV3.studio.mode')"
+    :aria-labelledby="studioTitleId"
     :data-playback-time="time"
     class="min-w-0 space-y-6"
     @dragover.capture="onFileDragOver"
     @drop.capture="onFileDrop"
   >
     <div>
-      <h3 class="text-2xl text-primary-warm-white md:text-3xl">
+      <h3
+        :id="studioTitleId"
+        class="text-2xl text-primary-warm-white md:text-3xl"
+      >
         {{ t(`vfxV3.studio.${demo}.title`) }}
       </h3>
       <p class="mt-3 text-sm text-primary-warm-gray">

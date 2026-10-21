@@ -184,7 +184,7 @@ it('keeps only the marked V3 nav cloud link free of UTMs across decoration and u
 })
 it('does not apply the nav exception to VFX v2', () => {
   const root = mount(
-    '<a data-vfx-nav-no-utm href="https://cloud.comfy.org/">Try Comfy Cloud</a>'
+    '<nav><a data-vfx-nav-no-utm href="https://cloud.comfy.org/">Try Comfy Cloud</a></nav>'
   )
   expect(
     within(root).getByRole('link', { name: 'Try Comfy Cloud' })

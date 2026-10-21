@@ -67,7 +67,10 @@ it('sends a file-drop intent to signup without reading file names or bytes', asy
   })
   renderStudio()
   const { event } = transferEvent('drop', ['Files'], filesRead)
-  await fireEvent(screen.getByRole('region', { name: 'Studio view' }), event)
+  await fireEvent(
+    screen.getByRole('region', { name: 'Change time, weather & light' }),
+    event
+  )
   expect(event.defaultPrevented).toBe(true)
   expect(assign).toHaveBeenCalledExactlyOnceWith(DESTINATION)
   expect(filesRead).not.toHaveBeenCalled()
@@ -79,7 +82,10 @@ it('allows dropping files only as a signup navigation, without opening an upload
     .mockImplementation(() => {})
   renderStudio()
   const { event, transfer } = transferEvent('dragover', ['Files'])
-  await fireEvent(screen.getByRole('region', { name: 'Studio view' }), event)
+  await fireEvent(
+    screen.getByRole('region', { name: 'Change time, weather & light' }),
+    event
+  )
   expect(event.defaultPrevented).toBe(true)
   expect(transfer.dropEffect).toBe('link')
   expect(assign).not.toHaveBeenCalled()
@@ -90,7 +96,10 @@ it('preserves ordinary text drag/drop in Studio settings', async () => {
     .mockImplementation(() => {})
   renderStudio()
   const { event } = transferEvent('drop', ['text/plain'])
-  await fireEvent(screen.getByRole('region', { name: 'Studio view' }), event)
+  await fireEvent(
+    screen.getByRole('region', { name: 'Change time, weather & light' }),
+    event
+  )
   expect(event.defaultPrevented).toBe(false)
   expect(assign).not.toHaveBeenCalled()
 })
