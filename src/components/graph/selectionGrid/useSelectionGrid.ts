@@ -61,9 +61,12 @@ export function useSelectionGrid() {
     workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
   }
 
-  const placeBoxes = (nodes: LGraphNode[], positions: BoxPosition[]) => {
+  const placeBoxes = (
+    nodes: LGraphNode[],
+    positions: BoxPosition[]
+  ): boolean => {
     const { rootGraphId } = canvasStore
-    if (!rootGraphId || positions.length === 0) return
+    if (!rootGraphId) return false
     const nodesById = new Map(
       nodes.filter(isMovable).map((node) => [node.id, node])
     )
@@ -82,8 +85,10 @@ export function useSelectionGrid() {
       ]
     })
 
+    if (updates.length === 0) return false
     mutations.batchMoveNodes(rootGraphId, updates)
     canvasStore.canvas?.setDirty(true, true)
+    return true
   }
 
   const moveBoxes = (
@@ -91,8 +96,7 @@ export function useSelectionGrid() {
     positions: BoxPosition[],
     { captureUndo }: { captureUndo: boolean }
   ): boolean => {
-    if (canvasStore.isReadOnly || positions.length === 0) return false
-    placeBoxes(nodes, positions)
+    if (canvasStore.isReadOnly || !placeBoxes(nodes, positions)) return false
     if (captureUndo) recordUndoStep()
     return true
   }

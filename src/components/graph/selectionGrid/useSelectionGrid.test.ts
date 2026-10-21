@@ -49,4 +49,18 @@ describe('useSelectionGrid', () => {
       unpinnedLater.id
     ])
   })
+
+  it('reports no move when none of the nodes can be moved', () => {
+    const graph = new LGraph()
+    const pinned = nodeIn(graph, 'Pinned')
+    pinned.flags.pinned = true
+    useCanvasStore().canvas = fromPartial<LGraphCanvas>({ graph })
+    const { moveBoxes } = useSelectionGrid()
+
+    expect(
+      moveBoxes([pinned], [{ id: pinned.id, x: 10, y: 10 }], {
+        captureUndo: true
+      })
+    ).toBe(false)
+  })
 })
