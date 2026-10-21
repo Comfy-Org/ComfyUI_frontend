@@ -12,6 +12,7 @@ export type BookmarkCustomization = {
 export type PreviewMethod = 'default' | 'none' | 'auto' | 'latent2rgb' | 'taesd'
 
 export type Settings = {
+  'Comfy.AgentPanel.ConsentOfferDeclined': boolean
   'Comfy.ColorPalette': string
   'Comfy.CustomColorPalettes': ColorPalettes
   'Comfy.Canvas.BackgroundImage'?: string
