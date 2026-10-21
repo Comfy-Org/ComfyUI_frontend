@@ -2671,6 +2671,7 @@ describe('useAgentSession (v1 composition root)', () => {
     // Sending a new message while the turn waits on a card greys the card out
     // as dismissed; it stays on its message but can no longer be answered.
     it('greys out as dismissed when a newer turn is sent', async () => {
+      const { source, emit, status } = fakeEvents()
       const postMessage = vi
         .fn<
           (
@@ -2679,8 +2680,12 @@ describe('useAgentSession (v1 composition root)', () => {
           ) => Promise<AgentTurnAccepted>
         >()
         .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
-        .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-2' })
-      const { source, emit, status } = fakeEvents()
+        .mockImplementationOnce(async () => {
+          // The host resolves the card while it takes the message, so the
+          // resolution can arrive before the reply.
+          emit(askResolved('msg-1', 'turn-1:call-1', null, 'cancelled'))
+          return { thread_id: 'th-1', message_id: 'msg-2' }
+        })
       const session = useAgentSession({
         rest: fakeRest({ postMessage }),
         events: source

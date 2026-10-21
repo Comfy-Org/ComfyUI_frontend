@@ -1128,7 +1128,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       tags?.map((tag) => `${tag.title} #${tag.id}`),
       workflowReferences
     )
-    conversationStore.dismissOpenAsks()
     conversationStore.startTurn(turnId)
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
@@ -1274,6 +1273,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
+      // The host resolves an open card while it takes this message, and its
+      // resolution can arrive before the reply, so grey the card out first.
+      conversationStore.dismissOpenAsks()
       const ack = await postTurn(
         threadAtSend,
         text,
