@@ -275,6 +275,41 @@ const tailwindConfigs = defineConfig([
 export default defineConfig([
   ...sharedIgnores,
   {
+    name: 'comfy/agent-shared-deadlines',
+    files: [
+      'src/workbench/extensions/agent/composables/agent/useAttachment.ts',
+      'src/workbench/extensions/agent/services/agent/standaloneAgentEventSource.ts'
+    ],
+    rules: {
+      'no-restricted-globals': ['error', 'setTimeout', 'clearTimeout'],
+      'no-restricted-properties': [
+        'error',
+        { property: 'setTimeout', message: 'Use VueUse or es-toolkit timers.' },
+        {
+          property: 'clearTimeout',
+          message: 'Use VueUse or es-toolkit timers.'
+        }
+      ]
+    }
+  },
+  {
+    name: 'comfy/agent-shared-filenames',
+    files: [
+      'src/workbench/extensions/agent/utils/attachableFiles.ts',
+      'src/workbench/extensions/agent/utils/resolveReplyAssetDownload.ts'
+    ],
+    rules: {
+      'no-restricted-properties': [
+        'error',
+        { property: 'split', message: 'Use the platform filename utilities.' },
+        {
+          property: 'lastIndexOf',
+          message: 'Use the platform filename utilities.'
+        }
+      ]
+    }
+  },
+  {
     files: tailwindScriptFiles,
     ignores: [...tailwindScriptIgnores, ...templateFiles],
     extends: tailwindConfigs,
@@ -530,5 +565,51 @@ export default defineConfig([
     settings: treeSettings,
     plugins: { '@intlify/vue-i18n': i18nPlugin },
     rules: { '@intlify/vue-i18n/no-missing-keys': 'error' as const }
-  }))
+  })),
+  {
+    name: 'comfy/agent-platform-channels',
+    files: ['src/workbench/extensions/agent/**/*.{ts,vue}'],
+    ignores: [
+      '**/*.test.ts',
+      '**/*.stories.ts',
+      '**/crdtDebugGate.ts',
+      '**/CrdtDevPanel.vue',
+      '**/schemaGuard.ts',
+      '**/docFrameClient.ts',
+      '**/restoreOpMinter.ts',
+      '**/CodeBlock.vue',
+      '**/crdtLog.ts'
+    ],
+    rules: {
+      'no-console': 'error',
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "MemberExpression:matches([object.name='navigator'], [object.object.name='window'][object.property.name='navigator']):matches([computed=false][property.name='clipboard'], [computed=true][property.value='clipboard'])",
+          message: 'Use the shared clipboard composables.'
+        },
+        {
+          selector:
+            "CallExpression:matches([callee.name='getServerFeature'], [callee.property.name='getServerFeature'])",
+          message: 'Read server flags through useFeatureFlags.'
+        },
+        {
+          selector:
+            ":matches(AssignmentExpression > MemberExpression.left, UpdateExpression > MemberExpression.argument):matches([object.property.name='ds'], [object.object.property.name='ds'])",
+          message: 'Use the canvas viewport methods.'
+        },
+        {
+          selector:
+            'CallExpression[callee.property.name=/^toLocale(Date|Time)String$/]',
+          message: 'Use the platform date formatting utilities.'
+        },
+        {
+          selector:
+            "ImportDeclaration[source.value='@/i18n'] > ImportSpecifier[imported.name='t']",
+          message: 'Use useI18n in composition scope or a platform service.'
+        }
+      ]
+    }
+  }
 ])
