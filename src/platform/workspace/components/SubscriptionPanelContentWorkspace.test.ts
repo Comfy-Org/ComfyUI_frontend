@@ -372,6 +372,19 @@ describe('SubscriptionPanelContentWorkspace', () => {
     })
   })
 
+  it('does not render Activating or Contact sales on the Plan & credits panel', () => {
+    mockSubscriptionStatus.value = 'active'
+    renderComponent()
+
+    expect(screen.queryByText(/Activating your/)).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', { name: 'Contact sales' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Contact sales' })
+    ).not.toBeInTheDocument()
+  })
+
   it('keeps verification available in settings without exposing its URL', async () => {
     const actionUrl = 'https://verify.example/sensitive-token'
     const open = vi.spyOn(window, 'open').mockReturnValue({} as Window)
