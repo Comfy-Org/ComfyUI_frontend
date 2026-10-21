@@ -45,12 +45,12 @@
       </ComboboxTrigger>
     </ComboboxAnchor>
 
-    <ComboboxPortal>
+    <ComboboxPortal :key="Number(isOpen)">
       <ComboboxContent
         position="popper"
         :side-offset="8"
         align="start"
-        :style="[optionStyle, contentStyle, liftedContentStyle]"
+        :style="[optionStyle, contentStyle]"
         :class="cn(selectContentClass, 'min-w-(--reka-combobox-trigger-width)')"
         @keydown="onContentKeydown"
       >
@@ -110,11 +110,11 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxItemIndicator,
-  ComboboxPortal,
   ComboboxRoot,
   ComboboxTrigger,
   ComboboxViewport,
-  FocusScope
+  FocusScope,
+  ComboboxPortal
 } from 'reka-ui'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { StyleValue } from 'vue'
@@ -130,7 +130,6 @@ import {
 import type { SelectOption } from '@/components/ui/select/types'
 import { useSelectSearch } from '@/components/ui/select/useSelectSearch'
 import { useAttrsClass } from '@/composables/useAttrsClass'
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 
 defineOptions({ inheritAttrs: false })
@@ -174,7 +173,6 @@ const selectedItem = defineModel<string | number | undefined>({
 const triggerRef = useTemplateRef('trigger')
 const isOpen = ref(false)
 const searchQuery = ref('')
-const liftedContentStyle = useModalLiftedZIndex(isOpen)
 const filteredOptions = useSelectSearch(searchQuery, () => options)
 const selectedOption = computed({
   get: () => options.find(({ value }) => value === selectedItem.value),

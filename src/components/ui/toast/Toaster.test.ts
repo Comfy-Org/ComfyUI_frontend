@@ -3,11 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
-
 import { createToastId } from '@/types/toastId'
 import type { ToastId } from '@/types/toastId'
-import { topModalZIndex } from '@/utils/modalLayerStack'
 
 import Toaster from './Toaster.vue'
 import { useToast } from './toastStore'
@@ -138,14 +135,12 @@ describe('Toaster', () => {
     useToast().info('Uploading')
     await nextTick()
     render({
-      directives: { rekaZIndex: vRekaZIndex },
-      template: '<div v-reka-z-index data-testid="dialog" />'
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
     })
     await nextTick()
 
-    expect(
-      Number(screen.getByTestId('toast-viewport').style.zIndex)
-    ).toBeGreaterThan(Number(screen.getByTestId('dialog').style.zIndex))
+    expect(screen.getByTestId('toast-viewport')).toHaveClass('z-toast')
   })
 
   it('stays out of the modal stacking order while idle', async () => {
@@ -156,7 +151,6 @@ describe('Toaster', () => {
     useToast().dismiss(id)
     await nextTick()
 
-    expect(topModalZIndex()).toBe(0)
     expect(screen.queryByTestId('toast-viewport')).not.toBeInTheDocument()
   })
 

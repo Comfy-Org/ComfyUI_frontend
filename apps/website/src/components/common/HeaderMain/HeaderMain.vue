@@ -10,10 +10,11 @@ import {
 import type { Component } from 'vue'
 import { useMounted } from '@vueuse/core'
 
+import { isVfxV3Path, vfxNavCloudHref } from '@/utils/vfxNavCampaign'
 import { isHrefActive, useCurrentPath } from '@/composables/useCurrentPath.ts'
 import type { Locale } from '@/i18n/translations.ts'
 import { translationsFor } from '@/i18n/translations.ts'
-import { externalLinks, getRoutes } from '@/config/routes.ts'
+import { getRoutes } from '@/config/routes.ts'
 import type { WorkshopBuyCreditsTrigger } from '@/config/workshop-buy-credits.ts'
 import { subscribeToWorkshopBuyCredits } from '@/config/workshop-buy-credits.ts'
 import { WORKSHOP_CREDITS_URL } from '@/config/workshop-env.ts'
@@ -39,11 +40,13 @@ import Button from '@/components/ui/button/Button.vue'
 
 const {
   locale = 'en',
+  pagePath = '',
   githubStars = '',
   workshopInBuild = false,
   hubApps = []
 } = defineProps<{
   locale?: Locale
+  pagePath?: string
   githubStars?: string
   workshopInBuild?: boolean
   hubApps?: readonly HubApp[]
@@ -184,6 +187,7 @@ watch(
 )
 
 const currentPath = useCurrentPath()
+const navPath = computed(() => currentPath.value || pagePath)
 const ctaButtons = computed(() =>
   [
     {
@@ -191,13 +195,15 @@ const ctaButtons = computed(() =>
       short: t('nav.ctaDesktopCore'),
       ariaLabel: t('nav.downloadLocal'),
       href: routes.download,
-      primary: false
+      primary: false,
+      utmPolicy: undefined
     },
     {
       full: t('nav.launchCloud'),
       short: t('nav.ctaCloudCore'),
       ariaLabel: t('nav.launchCloud'),
-      href: externalLinks.cloudCta('nav_try_cloud'),
+      href: vfxNavCloudHref(navPath.value),
+      utmPolicy: isVfxV3Path(navPath.value) ? '' : undefined,
       primary: true
     }
   ].filter((cta) => !isHrefActive(cta.href, currentPath.value))
@@ -262,6 +268,7 @@ const ctaButtons = computed(() =>
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.ariaLabel"
+        :data-vfx-nav-no-utm="cta.utmPolicy"
       >
         <span>
           <span class="hidden min-[1800px]:inline-block">{{ cta.full }}</span>
