@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { unrefElement } from '@vueuse/core'
 import { PopoverArrow, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { ref, useTemplateRef } from 'vue'
@@ -29,6 +30,7 @@ usePopoverViewportDismiss(open, () => unrefElement(trigger))
       :side-offset="5"
       :collision-padding="10"
       v-bind="$attrs"
+      :class="cn('w-auto p-2', $attrs.class)"
     >
       <slot :close />
       <PopoverArrow v-if="showArrow" class="fill-background stroke-border" />
