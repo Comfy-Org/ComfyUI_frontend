@@ -1,3 +1,9 @@
+import {
+  zHubProfile,
+  zHubProfileSummary,
+  zHubWorkflowSummary,
+  zLabelRef
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { cutAtWord } from '@/lib/workshop/model-meta-description'
@@ -5,33 +11,28 @@ import type { JsonLdNode } from '@/utils/jsonLd'
 import { jsonLdId, organizationId } from '@/utils/jsonLd'
 import type { HubTemplate } from './types'
 
-const namedSchema = z.object({ display_name: z.string() })
+const labelSchema = zLabelRef.pick({ display_name: true })
 
-export const hubCreatorWorkflowSchema = z.object({
-  share_id: z.string(),
-  name: z.string(),
-  status: z.string(),
-  is_app: z.boolean(),
-  publish_time: z.string(),
-  thumbnail_type: z.string().optional(),
-  thumbnail_url: z.string().optional(),
-  thumbnail_comparison_url: z.string().optional(),
-  tags: z.array(namedSchema).optional(),
-  models: z.array(namedSchema).optional(),
-  profile: z.object({ username: z.string() })
-})
-
-export const hubCreatorProfileSchema = z.object({
-  username: z.string(),
-  display_name: z.string().optional(),
-  description: z.string().optional(),
-  avatar_url: z.string().optional(),
-  website_urls: z.array(z.string()).optional()
-})
+const hubCreatorWorkflowSchema = zHubWorkflowSummary
+  .pick({
+    share_id: true,
+    name: true,
+    status: true,
+    is_app: true,
+    thumbnail_type: true,
+    thumbnail_url: true,
+    thumbnail_comparison_url: true
+  })
+  .extend({
+    publish_time: z.iso.datetime().nullable(),
+    tags: z.array(labelSchema).optional(),
+    models: z.array(labelSchema).optional(),
+    profile: zHubProfileSummary.pick({ username: true })
+  })
 
 export const hubCreatorsSnapshotSchema = z.object({
   fetched_at: z.string(),
-  profiles: z.array(hubCreatorProfileSchema),
+  profiles: z.array(zHubProfile),
   workflows: z.array(hubCreatorWorkflowSchema)
 })
 
@@ -47,8 +48,9 @@ export interface HubCreator {
   readonly workflows: readonly HubCreatorWorkflow[]
 }
 
-const isWebUrl = (url: string) =>
-  URL.canParse(url) && /^https?:$/.test(new URL(url).protocol)
+function isWebUrl(url: string) {
+  return URL.canParse(url) && /^https?:$/.test(new URL(url).protocol)
+}
 
 const META_DESCRIPTION_MAX = 160
 export const FIRST_WORKFLOW_PAGE = 24
@@ -66,11 +68,13 @@ function hubAsset(url: string, transform: string) {
     : undefined
 }
 
-const resizedImage = (width: number) =>
-  `image/width=${width},format=auto,quality=82`
+function resizedImage(width: number) {
+  return `image/width=${width},format=auto,quality=82`
+}
 
-const stillImage = (url: string, width: number) =>
-  hubAsset(url, resizedImage(width)) ?? url
+function stillImage(url: string, width: number) {
+  return hubAsset(url, resizedImage(width)) ?? url
+}
 
 export function hubCreators({
   profiles,
@@ -129,7 +133,7 @@ export function creatorWorkflowTemplate(
     models: (workflow.models ?? []).map((model) => model.display_name),
     logos: [],
     usage: 0,
-    date: workflow.publish_time.slice(0, 10),
+    date: workflow.publish_time?.slice(0, 10) ?? '',
     thumbnails,
     username: workflow.profile.username,
     isApp: workflow.is_app,

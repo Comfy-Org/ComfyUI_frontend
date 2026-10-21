@@ -1,13 +1,14 @@
 // @vitest-environment node
 
+import type { HubWorkflowSummary } from '@comfyorg/ingest-types'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { HubCreatorsSnapshot } from '@/lib/hub/creators'
 import { fetchSnapshot, getJson } from './refresh-hub-creators-snapshot'
 
-type Workflow = HubCreatorsSnapshot['workflows'][number]
+type Workflow = HubWorkflowSummary & HubCreatorsSnapshot['workflows'][number]
 interface Page {
-  workflows: Workflow[]
+  workflows: HubWorkflowSummary[]
   next_cursor?: string
 }
 
@@ -56,6 +57,33 @@ describe('fetchSnapshot', () => {
       { username: 'sirolim' }
     ])
   })
+
+  it('fetches one profile for usernames that differ only in case', async () => {
+    const snapshot = await fetchSnapshot(
+      fakeHub({
+        '': { workflows: [workflow('a1', 'purz'), workflow('a2', 'PurZ')] }
+      })
+    )
+
+    expect(snapshot.profiles).toEqual([{ username: 'purz' }])
+  })
+
+  it.for([
+    { case: 'null', publishTime: { publish_time: null } },
+    { case: 'absent', publishTime: {} }
+  ])(
+    'keeps a workflow whose publish time is $case',
+    async ({ publishTime }) => {
+      const { publish_time: _, ...unpublished } = workflow('a1')
+      const snapshot = await fetchSnapshot(
+        fakeHub({ '': { workflows: [{ ...unpublished, ...publishTime }] } })
+      )
+
+      expect(snapshot.workflows).toEqual([
+        expect.objectContaining({ share_id: 'a1', publish_time: null })
+      ])
+    }
+  )
 
   it('stops when the API hands back a cursor it already gave', async () => {
     await expect(

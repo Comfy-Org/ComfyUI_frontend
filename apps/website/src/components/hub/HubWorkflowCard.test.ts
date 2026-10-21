@@ -60,7 +60,7 @@ describe('HubWorkflowCard', () => {
       }
     })
 
-    expect(screen.getByRole('link', { name: 'Comfy' })).toBeTruthy()
+    expect(screen.getAllByRole('link', { name: 'Comfy' })).toHaveLength(1)
   })
 
   it.for([

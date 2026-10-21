@@ -134,6 +134,21 @@ describe('creatorWorkflowTemplate', () => {
   const still = `${asset}/cdn-cgi/image/width=640,format=auto,quality=82`
 
   it.for([
+    { publishTime: '2026-09-01T10:00:00Z', date: '2026-09-01' },
+    { publishTime: null, date: '' }
+  ])(
+    'dates a workflow published at $publishTime as "$date"',
+    ({ publishTime, date }) => {
+      expect(
+        creatorWorkflowTemplate({
+          ...workflow('a1', 'purz'),
+          publish_time: publishTime
+        }).date
+      ).toBe(date)
+    }
+  )
+
+  it.for([
     {
       case: 'a resized image',
       files: { thumbnail_url: `${asset}/uploads/a.png` },

@@ -89,7 +89,6 @@ function openCard() {
           <CreatorAvatar
             :name="authorName"
             :avatar-url="creatorAvatarUrl"
-            loading="lazy"
             class="size-5 text-2xs"
           />
           <span class="truncate text-sm">{{ creatorName }}</span>
