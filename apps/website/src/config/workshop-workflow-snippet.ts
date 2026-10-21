@@ -1,5 +1,6 @@
 import type { WorkflowWorkshopModelDetail } from './models-catalogue'
 import type { PromptRequest } from '@comfyorg/ingest-types'
+import { COMFY_SDK_VERSION } from './comfy-sdk'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import { initialWorkshopPageState } from './workshop-page-state'
 import type { FieldValue, FormValues } from './workshop-playground'
@@ -10,9 +11,6 @@ import {
   withPartnerNodeCredential,
   workflowCloudRequest
 } from './workshop-workflow-api'
-
-/** The Comfy SDK release the workflow snippets install. */
-export const COMFY_SDK_VERSION = '0.4.0'
 
 function uploadPlaceholder(name: string): string {
   return `UPLOADED_${name}_FILENAME`

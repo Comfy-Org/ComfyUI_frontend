@@ -106,7 +106,7 @@ export const nodeGraphWorkflowSample: NodeGraphWorkflow = {
     {
       question: 'Why does it need custom nodes?',
       answer:
-        'The close-up crops and the final layout use nodes from ComfyUI-KJNodes and ComfyUI-Impact-Pack. Install them with ComfyUI Manager before you load the workflow.'
+        'The close-up crops and the final layout use nodes from ComfyUI-KJNodes and ComfyUI-Impact-Pack. Comfy Cloud has them installed. To run it in your own ComfyUI, install them with ComfyUI Manager first.'
     },
     {
       question: 'How do I keep a character consistent across runs?',

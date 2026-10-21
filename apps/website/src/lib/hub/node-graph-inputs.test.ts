@@ -80,6 +80,13 @@ describe('nodeGraphInputs', () => {
       expected: [{ media: 'video', title: 'Driving video' }]
     },
     {
+      name: 'keeps mask loaders, which the detail pages do not take as files',
+      graph: {
+        nodes: [{ type: 'LoadImageMask', title: 'Edit mask (white = edit)' }]
+      },
+      expected: [{ media: 'image', title: 'Edit mask (white = edit)' }]
+    },
+    {
       name: 'capitalizes the label once "Load" is removed',
       graph: { nodes: [{ type: 'LoadImage', title: 'Load reference photo' }] },
       expected: [{ media: 'image', title: 'Reference photo' }]

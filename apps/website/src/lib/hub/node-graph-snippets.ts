@@ -1,6 +1,6 @@
 import type { SnippetLanguage } from '@/config/models-snippets'
 import { WORKSHOP_CLOUD_BASE_URL } from '@/config/workshop-env'
-import { COMFY_SDK_VERSION } from '@/config/workshop-workflow-snippet'
+import { COMFY_SDK_VERSION } from '@/config/comfy-sdk'
 
 const API_GRAPH_FILE = 'workflow_api.json'
 const literal = (value: string) => JSON.stringify(value)

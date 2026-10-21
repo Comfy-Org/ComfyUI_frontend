@@ -13,10 +13,13 @@ export interface NodeGraphInput {
 const MUTED = 2
 const BYPASSED = 4
 
+const MASK_LOADERS: Readonly<Record<string, NodeGraphInputMedia>> = {
+  LoadImageMask: 'image'
+}
+
 function loaderMedia(type: string): NodeGraphInputMedia | undefined {
-  return Object.hasOwn(FILE_INPUTS, type)
-    ? FILE_INPUTS[type]?.accept
-    : undefined
+  if (Object.hasOwn(FILE_INPUTS, type)) return FILE_INPUTS[type]?.accept
+  return Object.hasOwn(MASK_LOADERS, type) ? MASK_LOADERS[type] : undefined
 }
 
 const graphNodeSchema = z.object({
