@@ -47,19 +47,46 @@ export function useNodePointerInteractions(
 
   let gesture: GestureState = idleGesture
   let press: Press | null = null
+  let pressDragged = false
 
   function canDrag() {
     return !toValue(nodeStateRef).flags.pinned
   }
 
+  function draggedBy(effect: GestureEffect): boolean | undefined {
+    switch (effect) {
+      case 'startDrag':
+      case 'endDrag':
+      case 'cancelDrag':
+        return true
+      case 'click':
+      case 'doubleClick':
+        return false
+      case 'movePress':
+      case 'moveDrag':
+        return undefined
+      default:
+        effect satisfies never
+        return undefined
+    }
+  }
+
   function dispatch(gestureEvent: GestureEvent, event: PointerEvent) {
     const result = reduceGesture(gesture, gestureEvent)
     gesture = result.state
+    for (const effect of result.effects) {
+      const dragged = draggedBy(effect)
+      if (dragged !== undefined) pressDragged = dragged
+    }
     try {
       for (const effect of result.effects) runEffect(effect, event)
     } finally {
       if (gesture.phase === 'idle') clearPress()
     }
+  }
+
+  function lastPressDragged() {
+    return pressDragged
   }
 
   function clearPress() {
@@ -254,6 +281,7 @@ export function useNodePointerInteractions(
   } as const
 
   return {
-    pointerHandlers
+    pointerHandlers,
+    lastPressDragged
   }
 }
