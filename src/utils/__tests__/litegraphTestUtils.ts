@@ -30,6 +30,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { generateUUID } from '@/utils/formatUtil'
 import { zeroUuid } from '@/utils/uuid'
 
 /** Creates a node shell state with minimal required fields. */
@@ -258,14 +259,12 @@ export function createMockChangeTracker(
   return partial as Partial<ChangeTracker> as ChangeTracker
 }
 
-/**
- * Creates a mock LoadedComfyWorkflow with sensible defaults
- */
 export function createMockLoadedWorkflow(
   overrides: Partial<LoadedComfyWorkflow> | Record<string, unknown> = {}
 ): LoadedComfyWorkflow {
   return fromPartial<LoadedComfyWorkflow>({
     changeTracker: createMockChangeTracker(),
+    instanceId: generateUUID(),
     ...overrides
   })
 }

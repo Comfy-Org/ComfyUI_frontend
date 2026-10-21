@@ -17,6 +17,10 @@ import {
 } from '@/platform/workflow/core/utils/workflowId'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
+  toDocumentUid,
+  useDocumentLifecycleStore
+} from '@/platform/workflow/core/stores/documentLifecycleStore'
+import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
@@ -46,6 +50,7 @@ import {
   appendWorkflowJsonExt,
   generateUUID
 } from '@/utils/formatUtil'
+import { toRootGraphId } from '@/types/graphScopeId'
 import type { AppMode } from '@/utils/appMode'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
@@ -650,26 +655,47 @@ export const useWorkflowService = () => {
     return true
   }
 
-  /**
-   * This method is called before loading a new graph.
-   * There are 3 major functions that loads a new graph to the graph editor:
-   * 1. loadGraphData
-   * 2. loadApiJson
-   * 3. importA1111
-   *
-   * This function is used to save the current workflow states before loading
-   * a new graph.
-   */
-  const beforeLoadNewGraph = (suppressWorkflowReset = true) => {
-    // Use workspaceStore here as it is patched in unit tests.
+  function resolveRequestedDocumentUid(
+    requestedDocument: string | ComfyWorkflow | null,
+    incomingId?: string
+  ) {
+    if (requestedDocument instanceof ComfyWorkflow) {
+      return toDocumentUid(requestedDocument.instanceId)
+    }
+    if (typeof requestedDocument !== 'string' || requestedDocument === '') {
+      return null
+    }
+    const workflowStore = useWorkspaceStore().workflow
+    const activeWorkflow = workflowStore.activeWorkflow
+    const fullPath = ComfyWorkflow.basePath + appendJsonExt(requestedDocument)
+    if (!activeWorkflow || activeWorkflow.path !== fullPath) return null
+    if (
+      incomingId !== undefined &&
+      !activeWorkflow.isTemporary &&
+      !areWorkflowIdsEquivalent(
+        activeStateFallbackId(activeWorkflow),
+        incomingId,
+        activeWorkflow.legacyId
+      )
+    ) {
+      return null
+    }
+    return toDocumentUid(activeWorkflow.instanceId)
+  }
+
+  const beforeLoadNewGraph = (
+    suppressWorkflowReset = true,
+    requestedDocument: string | ComfyWorkflow | null = null,
+    incomingId?: string
+  ) => {
+    useDocumentLifecycleStore().beginTransition(
+      resolveRequestedDocumentUid(requestedDocument, incomingId)
+    )
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
       activeWorkflow.changeTracker.deactivate()
       persistActiveWorkflowDraft(activeWorkflow)
-      // Cache missing model/media/node state for restore on tab switch.
-      // Always overwrite to reflect the current store state (e.g. after
-      // muting a node cleared its errors).
       const modelCandidates = useMissingModelStore().missingModelCandidates
       const mediaCandidates = useMissingMediaStore().missingMediaCandidates
       const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
@@ -679,32 +705,18 @@ export const useWorkflowService = () => {
         missingMediaCandidates: mediaCandidates ?? undefined
       })
 
-      // Hand the previews to the store before `app.clean()` revokes them
       useNodeOutputStore().stashPreviewsForWorkflow(activeWorkflow.path)
 
-      // Capture thumbnail before loading new graph
       void workflowThumbnail.storeThumbnail(
         activeWorkflow,
         workflowStore.activeSubgraph || useApp().canvasOrUndefined?.graph
       )
       domWidgetStore.clear()
 
-      // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
   }
 
-  /**
-   * Set the active workflow after the new graph is loaded.
-   *
-   * The call relationship is
-   * useWorkflowService().openWorkflow -> app.loadGraphData -> useWorkflowService().afterLoadNewGraph
-   * app.loadApiJson -> useWorkflowService().afterLoadNewGraph
-   * app.importA1111 -> useWorkflowService().afterLoadNewGraph
-   *
-   * @param value The value to set as the active workflow.
-   * @param workflowData The initial workflow data loaded to the graph editor.
-   */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
@@ -713,6 +725,10 @@ export const useWorkflowService = () => {
     const graphState = useApp().rootGraphOrUndefined?.state
     await activateLoadedWorkflow(value, workflowData, shareId)
     if (graphState !== useApp().rootGraphOrUndefined?.state) return
+    const activated = useWorkspaceStore().workflow.activeWorkflow
+    if (activated && useApp().isGraphReady) {
+      useDocumentLifecycleStore().activate(toRootGraphId(useApp().rootGraph.id))
+    }
     useNodeOutputStore().restorePreviewsForWorkflow(
       useWorkspaceStore().workflow.activeWorkflow?.path
     )
