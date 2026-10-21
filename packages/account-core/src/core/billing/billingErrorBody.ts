@@ -1,6 +1,6 @@
 import { zErrorResponse } from '@comfyorg/ingest-types/zod'
 
-import type { BillingServerCode } from './billingContracts.js'
+import type { BillingServerCode } from './billingContracts'
 
 /**
  * The `code` of a generated `ErrorResponse` body, or nothing. This decode is

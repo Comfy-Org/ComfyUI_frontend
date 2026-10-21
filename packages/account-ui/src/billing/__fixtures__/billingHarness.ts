@@ -37,7 +37,7 @@ import type {
   SessionSnapshot
 } from '@comfyorg/account-core/session'
 
-import type { BillingClient } from '../billingClient'
+import type { BillingClient } from '#/billing/billingClient'
 
 export const NOW = 1_000_000
 
@@ -123,6 +123,11 @@ export const CAPABILITIES = {
   can_view_team_usage: false,
   can_reactivate: false,
   can_revert_scheduled_change: false,
+  can_edit_workspace: false,
+  can_manage_auto_top_up: false,
+  can_manage_subscription: false,
+  can_run_workflows: false,
+  can_upgrade: false,
   can_subscribe_self_serve: true,
   can_top_up: true
 }
@@ -147,6 +152,7 @@ export function balance(amountMicros: number) {
 }
 
 const PLAN = {
+  action: 'subscribe',
   availability: { available: true },
   credits_cents: 2000,
   duration: 'MONTHLY',

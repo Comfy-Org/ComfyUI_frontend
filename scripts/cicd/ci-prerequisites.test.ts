@@ -147,22 +147,28 @@ describe('candidate prerequisites', () => {
   )
 
   it.for([
-    ['success', 0],
-    ['failure', 1],
-    ['cancelled', 1],
-    ['skipped', 1]
-  ] satisfies [string, number][])(
-    'cloud shards ending with %s produce E2E exit status %s',
-    ([cloud, expected]) => {
+    ['CLOUD', 'success', 0],
+    ['CLOUD', 'failure', 1],
+    ['CLOUD', 'cancelled', 1],
+    ['CLOUD', 'skipped', 1],
+    ['NATIVE_LORA', 'success', 0],
+    ['NATIVE_LORA', 'failure', 1],
+    ['NATIVE_LORA', 'cancelled', 1],
+    ['NATIVE_LORA', 'skipped', 1]
+  ] satisfies [string, string, number][])(
+    '%s ending with %s produces E2E exit status %s',
+    ([job, status, expected]) => {
       expect(
         verdict('e2e-status', {
           PREFLIGHT: 'success',
           CHANGES: 'success',
           SHOULD_RUN: 'true',
           SHARDED: 'success',
-          CLOUD: cloud,
+          CLOUD: 'success',
+          NATIVE_LORA: 'success',
           BROWSERS: 'success',
-          VIDEO: 'skipped'
+          VIDEO: 'skipped',
+          [job]: status
         })
       ).toBe(expected)
     }
@@ -182,6 +188,7 @@ describe('candidate prerequisites', () => {
     'ecosystem',
     'playwright-tests-chromium-sharded',
     'playwright-tests-cloud-sharded',
+    'playwright-tests-native-lora',
     'playwright-tests',
     'comment-on-pr-start'
   ])('%s overrides skipped ancestors only after preflight succeeds', (job) => {

@@ -1,7 +1,7 @@
 <template>
   <div class="flex min-h-0 flex-1 flex-col gap-6">
     <div class="flex flex-col gap-2">
-      <span class="text-sm text-base-foreground select-none">
+      <span class="text-sm text-foreground select-none">
         {{ $t('comfyHubPublish.selectAThumbnail') }}
       </span>
       <ToggleGroup
@@ -14,7 +14,7 @@
           v-for="option in thumbnailOptions"
           :key="option.value"
           :value="option.value"
-          class="flex h-auto w-full gap-2 rounded-sm bg-node-component-surface p-2 font-inter text-base-foreground data-[state=on]:bg-muted-background"
+          class="flex h-auto w-full gap-2 rounded-sm bg-card p-2 font-inter text-foreground data-[state=on]:bg-muted"
         >
           <i :class="cn('size-4', option.icon)" />
           <span class="text-center text-sm font-bold">
@@ -26,7 +26,7 @@
 
     <div class="flex min-h-0 flex-1 flex-col gap-2">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-base-foreground select-none">
+        <span class="text-sm text-foreground select-none">
           {{ uploadSectionLabel }}
         </span>
         <Button
@@ -87,7 +87,7 @@
                     : 'flex-[0_1_1]',
                   comparisonOverStates[slot.key]
                     ? 'border-muted-foreground'
-                    : 'border-border-default hover:border-muted-foreground'
+                    : 'border-border hover:border-muted-foreground'
                 )
               "
               @dragenter.stop
@@ -130,7 +130,7 @@
               thumbnailPreviewUrl ? 'self-center p-1' : 'flex-1',
               isOverSingleDrop
                 ? 'border-muted-foreground'
-                : 'border-border-default hover:border-muted-foreground'
+                : 'border-border hover:border-muted-foreground'
             )
           "
           @dragenter.stop

@@ -10,7 +10,7 @@
   <div v-if="payAction === 'parked'" class="flex flex-col gap-2">
     <div
       role="alert"
-      class="rounded-lg border border-interface-stroke bg-secondary-background p-4 text-sm text-base-foreground"
+      class="rounded-lg border bg-secondary p-4 text-sm text-foreground"
     >
       {{ copy.parkedCheckoutDetail }}
     </div>
@@ -81,7 +81,7 @@ import type {
   SubscriptionPreview
 } from '@comfyorg/account-core/billing'
 
-import type { StripePaymentPhase } from '../stripe/stripePaymentPhase'
+import type { StripePaymentPhase } from '#/billing/stripe/stripePaymentPhase'
 import CheckoutButton from './CheckoutButton.vue'
 import CheckoutPaymentForm from './CheckoutPaymentForm.vue'
 import CheckoutPaymentNotices from './CheckoutPaymentNotices.vue'

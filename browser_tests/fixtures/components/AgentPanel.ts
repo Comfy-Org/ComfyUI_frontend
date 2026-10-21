@@ -10,6 +10,7 @@ import { waitForCanvasViewToSettle } from '@e2e/fixtures/helpers/CanvasHelper'
 import type { DragDropHelper } from '@e2e/fixtures/helpers/DragDropHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 type AgentAttachmentOutcome =
@@ -28,6 +29,8 @@ export class AgentPanel {
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
   public readonly composerStack: Locator
+  public readonly consentDialog: Locator
+  public readonly consentRejectButton: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
@@ -67,10 +70,18 @@ export class AgentPanel {
           exact: true
         })
       )
-    this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
+    this.composer = this.root.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     this.composerStack = this.root.getByTestId('agent-composer-stack')
     this.composerAssetSection = this.root.getByTestId('composer-asset-section')
     this.composerPromptArea = this.root.getByTestId('composer-inline-input')
+    this.consentDialog = page.getByRole('dialog', {
+      name: enMessages.agent.consent.title
+    })
+    this.consentRejectButton = this.consentDialog.getByRole('button', {
+      name: enMessages.agent.consent.reject
+    })
     this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
     this.copyReportButton = this.root.getByRole('button', {
       name: 'Copy full report'

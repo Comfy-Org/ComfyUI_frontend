@@ -4,9 +4,14 @@
       {{ t('maskEditor.brushSettings') }}
     </h3>
 
-    <button :class="textButtonClass" @click="resetToDefault">
+    <Button
+      variant="outline"
+      size="unset"
+      class="h-7.5 w-32 rounded-[10px] bg-background"
+      @click="resetToDefault"
+    >
       {{ t('maskEditor.resetToDefault') }}
-    </button>
+    </Button>
 
     <!-- Brush Shape -->
     <div class="flex flex-col gap-3 pb-3">
@@ -15,31 +20,37 @@
       </span>
 
       <div
-        class="flex h-[50px] w-full items-center gap-2.5 rounded-[10px] bg-secondary-background-hover"
+        class="flex h-[50px] w-full items-center gap-2.5 rounded-[10px] bg-accent"
       >
-        <div
-          class="maskEditor_sidePanelBrushShapeCircle hover:bg-comfy-menu-bg"
+        <button
+          type="button"
+          :aria-label="t('maskEditor.brushShapeCircle')"
+          :aria-pressed="store.brushSettings.type === BrushShape.Arc"
           :class="
             cn(
+              'ml-2 size-[35px] cursor-pointer appearance-none rounded-full border border-solid p-0 transition-colors',
               store.brushSettings.type === BrushShape.Arc
-                ? 'active'
-                : 'bg-transparent'
+                ? 'bg-background'
+                : 'bg-transparent hover:bg-background/60'
             )
           "
           @click="setBrushShape(BrushShape.Arc)"
-        ></div>
+        />
 
-        <div
-          class="maskEditor_sidePanelBrushShapeSquare hover:bg-comfy-menu-bg"
+        <button
+          type="button"
+          :aria-label="t('maskEditor.brushShapeSquare')"
+          :aria-pressed="store.brushSettings.type === BrushShape.Rect"
           :class="
             cn(
+              'size-[35px] cursor-pointer appearance-none border border-solid p-0 transition-colors',
               store.brushSettings.type === BrushShape.Rect
-                ? 'active'
-                : 'bg-transparent'
+                ? 'bg-background'
+                : 'bg-transparent hover:bg-background/60'
             )
           "
           @click="setBrushShape(BrushShape.Rect)"
-        ></div>
+        />
       </div>
     </div>
 
@@ -66,7 +77,7 @@
           v-model.number="brushSize"
           data-testid="brush-thickness-input"
           type="number"
-          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
+          class="w-16 rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground"
           :min="1"
           :max="250"
           :step="1"
@@ -91,7 +102,7 @@
         <input
           v-model.number="brushOpacity"
           type="number"
-          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
+          class="w-16 rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground"
           :min="0"
           :max="1"
           :step="0.01"
@@ -116,7 +127,7 @@
         <input
           v-model.number="brushHardness"
           type="number"
-          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
+          class="w-16 rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground"
           :min="0"
           :max="1"
           :step="0.01"
@@ -141,7 +152,7 @@
         <input
           v-model.number="brushStepSize"
           type="number"
-          class="w-16 rounded-md border border-border-default bg-comfy-menu-bg px-2 py-1 text-center text-sm text-base-foreground"
+          class="w-16 rounded-md border bg-background px-2 py-1 text-center text-sm text-foreground"
           :min="1"
           :max="100"
           :step="1"
@@ -160,6 +171,7 @@
 </template>
 
 <script setup lang="ts">
+import Button from '@/components/ui/button/Button.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -173,9 +185,6 @@ const { t } = useI18n()
 const store = useMaskEditorStore()
 
 const colorInputRef = ref<HTMLInputElement>()
-
-const textButtonClass =
-  'h-7.5 w-32 rounded-[10px] border border-border-default text-base-foreground font-sans transition-colors duration-100 bg-comfy-menu-bg hover:bg-secondary-background-hover'
 
 /* Computed properties that use store setters for validation */
 const brushSize = computed({

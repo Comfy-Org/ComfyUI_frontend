@@ -50,8 +50,11 @@ const CAPABILITIES: BillingCapabilitiesResponse = {
     can_cancel: false,
     can_change_seats: false,
     can_downgrade_to_personal: false,
+    can_edit_workspace: false,
     can_invite_members: false,
+    can_manage_auto_top_up: false,
     can_manage_members: false,
+    can_manage_subscription: false,
     can_delete_workspace: false,
     can_leave_workspace: false,
     can_manage_billing: false,
@@ -60,8 +63,10 @@ const CAPABILITIES: BillingCapabilitiesResponse = {
     can_view_team_usage: false,
     can_reactivate: false,
     can_revert_scheduled_change: false,
+    can_run_workflows: true,
     can_subscribe_self_serve: true,
-    can_top_up: true
+    can_top_up: true,
+    can_upgrade: false
   },
   expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
   resolved_for: {

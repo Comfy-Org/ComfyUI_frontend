@@ -159,11 +159,10 @@ const displayLabel = customRef((track, trigger) => {
       cn(
         'widget-item group col-span-full grid grid-cols-subgrid rounded-lg',
         isDraggable &&
-          'draggable-item drag-handle cursor-grab bg-comfy-menu-bg outline-comfy-menu-bg will-change-auto! [&.is-draggable]:cursor-grabbing [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
+          'draggable-item drag-handle cursor-grab bg-background outline-background will-change-auto! [&.is-draggable]:cursor-grabbing [&.is-draggable]:opacity-70 [&.is-draggable]:outline-4 [&.is-draggable]:outline-offset-0'
       )
     "
   >
-    <!-- widget header -->
     <div
       :class="
         cn(
@@ -203,7 +202,6 @@ const displayLabel = customRef((track, trigger) => {
         />
       </div>
     </div>
-    <!-- favorite indicator -->
     <div
       v-if="
         !hiddenFavoriteIndicator &&
@@ -215,21 +213,24 @@ const displayLabel = customRef((track, trigger) => {
         class="pi pi-star-fill pointer-events-none absolute -top-1 -right-1 text-xs text-muted-foreground"
       />
     </div>
-    <!-- widget content -->
     <component
       :is="widgetComponent"
       v-model="widgetValue"
       :widget="simplifiedWidget"
       :node-id="node.id"
       :node-type="node.type"
-      :class="cn('col-span-1', shouldExpand(widget.type) && 'min-h-36')"
+      :class="
+        cn(
+          'col-span-1 text-xs text-node-foreground',
+          shouldExpand(widget.type) && 'min-h-36'
+        )
+      "
     />
-    <!-- Drag handle -->
     <div
       :class="
         cn(
           'pointer-events-none mx-auto mt-1.5 h-1 w-1/2 max-w-40 rounded-lg bg-transparent transition-colors duration-150',
-          'group-hover:bg-interface-stroke group-[.is-draggable]:bg-component-node-widget-background-highlighted',
+          'group-hover:bg-border group-[.is-draggable]:bg-muted-foreground',
           !isDraggable && 'opacity-0'
         )
       "

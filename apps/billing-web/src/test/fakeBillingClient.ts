@@ -223,8 +223,11 @@ export function createFakeBillingClient(
       can_cancel: false,
       can_change_seats: false,
       can_downgrade_to_personal: false,
+      can_edit_workspace: false,
       can_invite_members: false,
+      can_manage_auto_top_up: false,
       can_manage_members: false,
+      can_manage_subscription: false,
       can_delete_workspace: false,
       can_leave_workspace: false,
       can_manage_billing: false,
@@ -233,8 +236,10 @@ export function createFakeBillingClient(
       can_view_team_usage: false,
       can_reactivate: false,
       can_revert_scheduled_change: false,
+      can_run_workflows: false,
       can_subscribe_self_serve: false,
       can_top_up: false,
+      can_upgrade: false,
       ...granted
     },
     denials,
@@ -417,6 +422,7 @@ export function planOf(
   overrides: Partial<BillingPlansData['plans'][number]> = {}
 ): BillingPlansData['plans'][number] {
   return {
+    action: 'subscribe',
     availability: { available: true },
     credits_cents: 6900n,
     duration: 'MONTHLY',

@@ -16,6 +16,7 @@ import type { ClientDocFrame } from '@e2e/fixtures/agentFollowerHostSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -80,8 +81,8 @@ test.describe(
           : [host.subscribed(), host.catchUp(stateVector)]
       )
 
-      await page.route('**/api/agent/threads', (route) =>
-        route.fulfill(jsonRoute({ threads: [] }))
+      await page.route('**/api/agent/threads?*', (route) =>
+        route.fulfill(jsonRoute(emptyAgentThreadList()))
       )
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() === 'POST') {
@@ -159,8 +160,6 @@ test.describe(
         .click()
       await expect(picker).toHaveText('Unsaved Workflow')
 
-      // Setup checkpoint: the follower actually bound and subscribed once on
-      // the first (and so far only) connection before anything goes wrong.
       await expect.poll(() => hostSocket.connectionCount()).toBe(1)
 
       const composer = panel.getByRole('textbox', {
@@ -193,8 +192,6 @@ test.describe(
         }
       })
 
-      // The op lands on the authoritative document (the CRDT event log the
-      // debug report quotes) ...
       const update = host.apply([
         {
           op: 'add_node',
@@ -218,14 +215,9 @@ test.describe(
       ])
       expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
 
-      // ... but the transport drops right as that update would go out: the
-      // frame is never sent, and the socket closes under the follower.
       void update
       await hostSocket.disconnect()
 
-      // The main realtime channel recovers (exactly one reconnect: chat keeps
-      // working below), so the agent can still report success. The follower's
-      // re-subscribe went out on the new socket and is being ignored.
       await expect.poll(() => hostSocket.connectionCount()).toBe(2)
       await expect.poll(() => postReconnectDocFrames().length).toBe(1)
       expect(postReconnectDocFrames().map(({ type }) => type)).toEqual([
@@ -245,8 +237,6 @@ test.describe(
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })
 
-      // Setup checkpoint: the agent's turn completes and reports success in
-      // the panel, exactly as the tester saw it do.
       await expect(
         panel.getByRole('button', { name: SEND_LABEL })
       ).toBeVisible()
@@ -255,16 +245,10 @@ test.describe(
       )
       await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
-      // The agent said it added the note, and the op is in the document's own
-      // record (asserted above). The follower must notice that its subscribe
-      // was never acknowledged, retry it, and land the node on the live canvas.
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible({
         timeout: SUBSCRIBE_ACK_TIMEOUT_MS + 10_000
       })
 
-      // The retry is the fix's fingerprint: one more `doc_subscribe` on the
-      // same lineage (unchanged state vector, no unsubscribe in between) after
-      // the ack timeout, never an immediate retarget or a reset.
       await expect
         .poll(() => postReconnectSubscribes().length, {
           message: 'the follower never retried the unanswered doc_subscribe'

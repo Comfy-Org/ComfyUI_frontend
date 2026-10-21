@@ -1,3 +1,4 @@
+import type { SubscriptionState } from '@comfyorg/ingest-types'
 import type { ComputedRef, Ref } from 'vue'
 
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -101,7 +102,17 @@ export interface BalanceInfo {
   effectiveBalanceAuthoritative?: boolean
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
+  /** Server-suggested top-up that covers a negative balance; null otherwise. */
+  suggestedTopupAmountCents?: number | null
 }
+
+/** Whether the billing portal opened, and why not when it did not. */
+export type BillingPortalOutcome =
+  | { ok: true }
+  | {
+      ok: false
+      reason: 'routing_unavailable' | 'blocked' | 'missing_url' | 'failed'
+    }
 
 export interface BillingActions {
   initialize: () => Promise<void>
@@ -115,7 +126,7 @@ export interface BillingActions {
     planSlug: string,
     options?: PreviewSubscribeOptions
   ) => Promise<PreviewSubscribeResponse | null>
-  manageSubscription: () => Promise<void>
+  manageSubscription: () => Promise<BillingPortalOutcome>
   cancelSubscription: (isScopeCurrent?: () => boolean) => Promise<void>
   /**
    * Reactivates a cancelled-but-still-active subscription. Legacy has no
@@ -165,6 +176,7 @@ export interface BillingState {
   billingStatus: ComputedRef<BillingStatus | null>
   /** Subscription lifecycle state. */
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
+  subscriptionState: ComputedRef<SubscriptionState | null>
   tier: ComputedRef<SubscriptionTier | null>
   renewalDate: ComputedRef<string | null>
   /** Open renewal invoice to pay; owners while payment_failed or paused. */

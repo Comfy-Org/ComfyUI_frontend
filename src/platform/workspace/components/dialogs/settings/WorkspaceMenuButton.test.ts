@@ -8,11 +8,9 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import type { Ref } from 'vue'
 
 import WorkspaceMenuButton from './WorkspaceMenuButton.vue'
-
-const mockCanLeaveWorkspace = ref(false)
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
@@ -25,9 +23,6 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
-
-vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 
 const i18n = createI18n({
@@ -36,151 +31,255 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function grantDelete() {
-  useBillingCapabilities().canDeleteWorkspace = computed(() =>
-    receiveServerFact('can_delete_workspace', true)
+const LEAVE = 'Leave Workspace'
+const DELETE = 'Delete Workspace'
+
+function setLeave(granted: boolean, denial?: string) {
+  useBillingCapabilities().canLeaveWorkspace = computed(() =>
+    receiveServerFact('can_leave_workspace', granted)
   )
+  useBillingCapabilities().leaveWorkspaceDenial = computed(() => denial)
 }
 
-function denyDelete(denial: string | undefined) {
+function setDelete(granted: boolean, denial?: string) {
   useBillingCapabilities().canDeleteWorkspace = computed(() =>
-    receiveServerFact('can_delete_workspace', false)
+    receiveServerFact('can_delete_workspace', granted)
   )
   useBillingCapabilities().deleteWorkspaceDenial = computed(() => denial)
 }
 
-async function renderComponent() {
-  render(WorkspaceMenuButton, {
-    global: {
-      plugins: [i18n]
-    }
-  })
-  await userEvent.click(screen.getByRole('button', { name: 'More Options' }))
+function hideEdit() {
+  useBillingCapabilities().canEditWorkspace = computed(() =>
+    receiveServerFact('can_edit_workspace', false)
+  )
+}
+
+async function openMenu() {
+  const user = userEvent.setup()
+  render(WorkspaceMenuButton, { global: { plugins: [i18n] } })
+  await user.click(screen.getByRole('button', { name: 'More Options' }))
+  return user
 }
 
 describe('WorkspaceMenuButton', () => {
   beforeEach(() => {
-    const workspaceUI = vi.mocked(useWorkspaceUI())
-    const defaultPermissions = workspaceUI.permissions.value
-    workspaceUI.permissions = computed(() => ({
-      ...defaultPermissions,
-      canLeaveWorkspace: mockCanLeaveWorkspace.value
-    }))
-    mockCanLeaveWorkspace.value = false
-    grantDelete()
+    setLeave(true)
+    setDelete(true)
   })
 
-  it('lets a member leave and offers no destructive workspace actions', async () => {
-    mockCanLeaveWorkspace.value = true
-    denyDelete('not_workspace_owner')
-    await renderComponent()
+  it('renders no menu when the server grants nothing it can show', () => {
+    hideEdit()
+    setLeave(false, 'personal_workspace_creator')
+    setDelete(false, 'personal_workspace')
+    render(WorkspaceMenuButton, { global: { plugins: [i18n] } })
 
     expect(
-      screen.getByRole('menuitem', { name: 'Leave Workspace' })
-    ).toBeEnabled()
-    expect(
-      screen.queryByRole('menuitem', { name: 'Delete Workspace' })
+      screen.queryByRole('button', { name: 'More Options' })
     ).not.toBeInTheDocument()
   })
 
-  it('lets a workspace owner leave and delete when the server grants Delete', async () => {
-    const user = userEvent.setup()
-    mockCanLeaveWorkspace.value = true
-    await renderComponent()
+  it('hides Leave and Delete until capabilities resolve', async () => {
+    hideEdit()
+    useBillingCapabilities().hasResolvedCapabilities = computed(() => false)
+    useBillingCapabilities().canLeaveWorkspace = computed(() =>
+      receiveServerFact('can_leave_workspace', true)
+    )
+    render(WorkspaceMenuButton, { global: { plugins: [i18n] } })
 
     expect(
-      screen.getByRole('menuitem', { name: 'Leave Workspace' })
-    ).toBeEnabled()
-    expect(
-      screen.getByRole('menuitem', { name: 'Delete Workspace' })
-    ).toBeEnabled()
-
-    await user.click(screen.getByRole('menuitem', { name: 'Delete Workspace' }))
-    expect(
-      useWorkspaceDialogs().showDeleteWorkspaceDialog
-    ).toHaveBeenCalledOnce()
+      screen.queryByRole('button', { name: 'More Options' })
+    ).not.toBeInTheDocument()
   })
 
-  it.for(['personal_workspace', 'workspace_sso_attached'])(
-    'does not expose Delete when the server names %s',
+  it.for([
+    { label: LEAVE, grant: () => setLeave(true) },
+    { label: DELETE, grant: () => setDelete(true) }
+  ])('enables $label when the server grants it', async ({ label, grant }) => {
+    grant()
+    await openMenu()
+
+    expect(screen.getByRole('menuitem', { name: label })).not.toHaveAttribute(
+      'aria-disabled'
+    )
+  })
+
+  it.for([
+    {
+      denial: 'workspace_creator',
+      tooltip: "You created this workspace, so you can't leave it."
+    },
+    {
+      denial: 'only_owner',
+      tooltip: 'Make another member an owner before you leave this workspace.'
+    },
+    {
+      denial: 'membership_managed_by_directory',
+      tooltip:
+        "Your organization manages this membership, so you can't leave this workspace."
+    },
+    {
+      denial: undefined,
+      tooltip: "You can't leave this workspace right now."
+    }
+  ])(
+    'disables Leave with its reason when the server denies it with $denial',
+    async ({ denial, tooltip }) => {
+      setLeave(false, denial)
+      const user = await openMenu()
+
+      const leave = screen.getByRole('menuitem', { name: LEAVE })
+      expect(leave).toHaveAttribute('aria-disabled', 'true')
+      await user.hover(leave)
+      expect((await screen.findAllByText(tooltip)).length).toBeGreaterThan(0)
+    }
+  )
+
+  it.for(['personal_workspace_creator', 'not_a_member'])(
+    'hides Leave when the server denies it with %s',
     async (denial) => {
-      denyDelete(denial)
-      await renderComponent()
+      setLeave(false, denial)
+      await openMenu()
 
       expect(
-        screen.queryByRole('menuitem', { name: 'Delete Workspace' })
+        screen.queryByRole('menuitem', { name: LEAVE })
       ).not.toBeInTheDocument()
     }
   )
 
-  it.for(['plan_not_ended', 'billing_operation_parked', undefined])(
-    'disables Delete when the server refuses it with %s',
-    async (denial) => {
-      denyDelete(denial)
-      await renderComponent()
+  it.for([
+    'plan_not_ended',
+    'billing_operation_parked',
+    'billing_operation_in_progress',
+    undefined
+  ])('disables Delete when the server denies it with %s', async (denial) => {
+    setDelete(false, denial)
+    await openMenu()
+
+    expect(screen.getByRole('menuitem', { name: DELETE })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+  })
+
+  it.for([
+    'not_workspace_owner',
+    'personal_workspace',
+    'workspace_sso_attached'
+  ])('hides Delete when the server denies it with %s', async (denial) => {
+    setDelete(false, denial)
+    await openMenu()
+
+    expect(
+      screen.queryByRole('menuitem', { name: DELETE })
+    ).not.toBeInTheDocument()
+  })
+
+  it('lists Edit, Leave and Delete in that order', async () => {
+    await openMenu()
+
+    expect(
+      screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
+    ).toEqual(['Edit workspace details', LEAVE, DELETE])
+  })
+
+  it.for([
+    { canEdit: true, items: ['Edit workspace details', LEAVE] },
+    { canEdit: false, items: [LEAVE] }
+  ])(
+    'renders Edit from can_edit_workspace $canEdit',
+    async ({ canEdit, items }) => {
+      useBillingCapabilities().canEditWorkspace = computed(() =>
+        receiveServerFact('can_edit_workspace', canEdit)
+      )
+      setDelete(false, 'not_workspace_owner')
+      await openMenu()
 
       expect(
-        screen.getByRole('menuitem', { name: 'Delete Workspace' })
-      ).toHaveAttribute('aria-disabled', 'true')
+        screen.getAllByRole('menuitem').map((item) => item.textContent.trim())
+      ).toEqual(items)
     }
   )
 
-  it('hides Delete until capabilities resolve', async () => {
-    useBillingCapabilities().hasResolvedCapabilities = computed(() => false)
-    await renderComponent()
+  it('keeps disabled items in keyboard focus order', async () => {
+    hideEdit()
+    setLeave(false, 'workspace_creator')
+    setDelete(false, 'plan_not_ended')
+    const user = await openMenu()
 
-    expect(
-      screen.queryByRole('menuitem', { name: 'Delete Workspace' })
-    ).not.toBeInTheDocument()
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('menuitem', { name: LEAVE })).toHaveFocus()
+    await user.keyboard('{ArrowDown}')
+    expect(screen.getByRole('menuitem', { name: DELETE })).toHaveFocus()
   })
 
-  it('hides Leave when workspace permission is withheld', async () => {
-    await renderComponent()
+  it.for([
+    { label: LEAVE, dialog: 'showLeaveWorkspaceDialog' },
+    { label: DELETE, dialog: 'showDeleteWorkspaceDialog' }
+  ] as const)(
+    'opens the $dialog dialog when the server grants it',
+    async ({ label, dialog }) => {
+      const user = await openMenu()
 
-    expect(
-      screen.queryByRole('menuitem', { name: 'Leave Workspace' })
-    ).not.toBeInTheDocument()
-  })
+      await user.click(screen.getByRole('menuitem', { name: label }))
 
-  it('opens the leave dialog when an owner clicks Leave', async () => {
-    const user = userEvent.setup()
-    mockCanLeaveWorkspace.value = true
-    await renderComponent()
+      expect(useWorkspaceDialogs()[dialog]).toHaveBeenCalledOnce()
+    }
+  )
 
-    await user.click(screen.getByRole('menuitem', { name: 'Leave Workspace' }))
-    expect(
-      useWorkspaceDialogs().showLeaveWorkspaceDialog
-    ).toHaveBeenCalledOnce()
-  })
+  it.for([
+    {
+      label: LEAVE,
+      dialog: 'showLeaveWorkspaceDialog',
+      deny: () => setLeave(false, 'workspace_creator')
+    },
+    {
+      label: DELETE,
+      dialog: 'showDeleteWorkspaceDialog',
+      deny: () => setDelete(false, 'plan_not_ended')
+    }
+  ] as const)(
+    'does not open the $dialog dialog from a disabled item',
+    async ({ label, dialog, deny }) => {
+      deny()
+      const user = await openMenu()
 
-  it('rechecks permission before opening the leave dialog', async () => {
-    mockCanLeaveWorkspace.value = true
-    await renderComponent()
+      await user.click(screen.getByRole('menuitem', { name: label }))
 
-    const leave = screen.getByRole('menuitem', { name: 'Leave Workspace' })
-    mockCanLeaveWorkspace.value = false
-    leave.click()
+      expect(useWorkspaceDialogs()[dialog]).not.toHaveBeenCalled()
+    }
+  )
 
-    expect(
-      useWorkspaceDialogs().showLeaveWorkspaceDialog
-    ).not.toHaveBeenCalled()
-  })
+  it.for([
+    {
+      label: LEAVE,
+      dialog: 'showLeaveWorkspaceDialog',
+      bind: (granted: Ref<boolean>) => {
+        useBillingCapabilities().canLeaveWorkspace = computed(() =>
+          receiveServerFact('can_leave_workspace', granted.value)
+        )
+      }
+    },
+    {
+      label: DELETE,
+      dialog: 'showDeleteWorkspaceDialog',
+      bind: (granted: Ref<boolean>) => {
+        useBillingCapabilities().canDeleteWorkspace = computed(() =>
+          receiveServerFact('can_delete_workspace', granted.value)
+        )
+      }
+    }
+  ] as const)(
+    'rechecks the capability before opening the $dialog dialog',
+    async ({ label, dialog, bind }) => {
+      const granted = ref(true)
+      bind(granted)
+      await openMenu()
 
-  it('rechecks the capability before opening the delete dialog', async () => {
-    const granted = ref(true)
-    useBillingCapabilities().canDeleteWorkspace = computed(() =>
-      receiveServerFact('can_delete_workspace', granted.value)
-    )
-    await renderComponent()
+      const item = screen.getByRole('menuitem', { name: label })
+      granted.value = false
+      item.click()
 
-    const deleteWorkspace = screen.getByRole('menuitem', {
-      name: 'Delete Workspace'
-    })
-    granted.value = false
-    deleteWorkspace.click()
-
-    expect(
-      useWorkspaceDialogs().showDeleteWorkspaceDialog
-    ).not.toHaveBeenCalled()
-  })
+      expect(useWorkspaceDialogs()[dialog]).not.toHaveBeenCalled()
+    }
+  )
 })

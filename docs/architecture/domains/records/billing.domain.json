@@ -4,14 +4,6 @@
   "description": "Billing for personal and team workspaces: the billing context that routes between legacy and workspace rails, billing dialogs, the billing SDK store and its operation projections, billing operation tracking, subscription checkout, plan change, resubscribe, downgrade, top-ups and pending top-ups, billing capabilities and capability revisions, billing banners, invoices, plan credits, pricing tables, hosted billing hand-off, and checkout journey telemetry. Cloud subscription plans, tier constants, and cancellation stay in the cloud record; identity belongs to authentication and membership to workspace; the account packages outside src are not in this catalog.",
   "modules": [
     {
-      "path": "src/components/common/UserCredit.test.ts",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/common/UserCredit.vue",
-      "role": "presentation"
-    },
-    {
       "path": "src/components/dialog/content/TopUpCreditsDialogContentLegacy.test.ts",
       "role": "presentation"
     },

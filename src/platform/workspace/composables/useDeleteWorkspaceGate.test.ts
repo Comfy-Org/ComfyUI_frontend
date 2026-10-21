@@ -12,11 +12,10 @@ import { useDeleteWorkspaceGate as createDeleteWorkspaceGate } from './useDelete
 interface TestSubscription {
   endDate: string | null
   isCancelled: boolean
-  tier: string
 }
 
 const subscription = vi.hoisted(() => ({
-  value: { endDate: null, isCancelled: false, tier: 'PRO' } as TestSubscription
+  value: { endDate: null, isCancelled: false } as TestSubscription
 }))
 
 vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
@@ -66,7 +65,7 @@ function serve({
 }
 
 beforeEach(() => {
-  subscription.value = { endDate: null, isCancelled: false, tier: 'PRO' }
+  subscription.value = { endDate: null, isCancelled: false }
 })
 
 afterEach(() => {
@@ -79,6 +78,7 @@ describe('useDeleteWorkspaceGate', () => {
     { denial: 'workspace_sso_attached', status: 'hidden' },
     { denial: 'not_workspace_owner', status: 'hidden' },
     { denial: 'not_a_member', status: 'hidden' },
+    { denial: 'sales_managed_plan', status: 'hidden' },
     { denial: 'plan_not_ended', status: 'disabled' },
     { denial: 'billing_operation_parked', status: 'disabled' },
     { denial: 'billing_operation_in_progress', status: 'disabled' },
@@ -101,20 +101,6 @@ describe('useDeleteWorkspaceGate', () => {
     serve({ canDelete: true, resolved: false })
 
     expect(useDeleteWorkspaceGate().gate.value).toEqual({ status: 'hidden' })
-  })
-
-  it('keeps the Enterprise hide while the server cannot express it', () => {
-    subscription.value = { ...subscription.value, tier: 'ENTERPRISE' }
-    serve({ canDelete: true })
-
-    expect(useDeleteWorkspaceGate().gate.value).toEqual({ status: 'hidden' })
-  })
-
-  it('keeps the grant for any other tier', () => {
-    subscription.value = { ...subscription.value, tier: 'CREATOR' }
-    serve({ canDelete: true })
-
-    expect(useDeleteWorkspaceGate().gate.value).toEqual({ status: 'enabled' })
   })
 
   it.for([

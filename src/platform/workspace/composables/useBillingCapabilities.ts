@@ -5,6 +5,7 @@ import {
 } from '@vueuse/core'
 import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -117,6 +118,15 @@ function useBillingCapabilitiesInternal() {
   )
   const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const canTopUp = computed(() => capabilities.value?.can_top_up ?? false)
+  const topUpDenial = computed<string | undefined>(
+    () => resolvedResponse.value?.denied_reasons?.can_top_up
+  )
+  const canManageBilling = computed(() =>
+    receiveServerFact(
+      'can_manage_billing',
+      capabilities.value?.can_manage_billing ?? false
+    )
+  )
   const canSubscribeSelfServe = computed(
     () => capabilities.value?.can_subscribe_self_serve ?? false
   )
@@ -154,8 +164,51 @@ function useBillingCapabilitiesInternal() {
   const deleteWorkspaceDenial = computed<string | undefined>(
     () => resolvedResponse.value?.denied_reasons?.can_delete_workspace
   )
+  const canEditWorkspace = computed(() =>
+    receiveServerFact(
+      'can_edit_workspace',
+      capabilities.value?.can_edit_workspace ?? false
+    )
+  )
+  const canLeaveWorkspace = computed(() =>
+    receiveServerFact(
+      'can_leave_workspace',
+      capabilities.value?.can_leave_workspace ?? false
+    )
+  )
+  const leaveWorkspaceDenial = computed<string | undefined>(
+    () => resolvedResponse.value?.denied_reasons?.can_leave_workspace
+  )
+  const canManageSubscription = computed(() =>
+    receiveServerFact(
+      'can_manage_subscription',
+      capabilities.value?.can_manage_subscription ?? false
+    )
+  )
   const canDowngradeToPersonal = computed(
     () => capabilities.value?.can_downgrade_to_personal ?? false
+  )
+  const canManageAutoTopUp = computed(() =>
+    receiveServerFact(
+      'can_manage_auto_top_up',
+      capabilities.value?.can_manage_auto_top_up ?? false
+    )
+  )
+  const autoTopUpSetup = computed(
+    () => resolvedResponse.value?.auto_top_up_setup ?? null
+  )
+  const paymentRecoveryAvailable = computed(() =>
+    receiveServerFact(
+      'payment_recovery_available',
+      resolvedResponse.value?.payment_recovery_available ?? false
+    )
+  )
+  const runDeniedPaymentPastDue = computed(() =>
+    pendingServerFact<'denied_reasons.can_run_workflows', boolean>(
+      'BE-21535',
+      resolvedResponse.value?.denied_reasons?.can_run_workflows ===
+        'payment_past_due'
+    )
   )
   const isReady = computed(() => {
     const state = readState.value
@@ -482,6 +535,8 @@ function useBillingCapabilitiesInternal() {
 
   return {
     canTopUp,
+    topUpDenial,
+    canManageBilling,
     canSubscribeSelfServe,
     canCancel,
     canReactivate,
@@ -491,7 +546,15 @@ function useBillingCapabilitiesInternal() {
     canManageMembers,
     canDeleteWorkspace,
     deleteWorkspaceDenial,
+    canEditWorkspace,
+    canLeaveWorkspace,
+    leaveWorkspaceDenial,
+    canManageSubscription,
     canDowngradeToPersonal,
+    canManageAutoTopUp,
+    autoTopUpSetup,
+    paymentRecoveryAvailable,
+    runDeniedPaymentPastDue,
     isReady,
     hasResolvedCapabilities,
     snapshotAuthoritative,

@@ -33,7 +33,7 @@ const meta: Meta<typeof AgentConsentCard> = {
   decorators: [
     () => ({
       template:
-        '<div class="grid place-items-center bg-base-background p-8"><story /></div>'
+        '<div class="grid place-items-center bg-background p-8"><story /></div>'
     })
   ]
 }
@@ -74,7 +74,7 @@ export const InNarrowPanel: Story = {
   decorators: [
     () => ({
       template:
-        '<div class="grid place-items-center bg-base-background p-8"><div class="w-[380px]"><story /></div></div>'
+        '<div class="grid place-items-center bg-background p-8"><div class="w-[380px]"><story /></div></div>'
     })
   ]
 }

@@ -6,6 +6,7 @@ import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 test.use({ connectWebSocketToServer: false })
 
@@ -85,7 +86,7 @@ test(
       )
     })
 
-    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    const composer = panel.getByRole('textbox', { name: AGENT_COMPOSER_LABEL })
     // `fill` clears the editor's whole ProseMirror doc before typing, which
     // deletes the atom node the drop above just inserted (see
     // agentInlineReferences.spec.ts for the same constraint) - use

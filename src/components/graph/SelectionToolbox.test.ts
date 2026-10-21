@@ -495,7 +495,9 @@ describe('SelectionToolbox', () => {
       expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
 
       await vi.advanceTimersByTimeAsync(500)
-      expect(screen.getByRole('tooltip')).toHaveTextContent('More Options')
+      expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
+        'More Options'
+      )
     })
   })
 })

@@ -19,9 +19,9 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import type { BillingScope } from './billingScope.js'
-import { SubscriptionDiscountSchema } from './subscriptionDiscount.js'
-import { wireCents } from './wireCents.js'
+import type { BillingScope } from './billingScope'
+import { SubscriptionDiscountSchema } from './subscriptionDiscount'
+import { wireCents } from './wireCents'
 
 const ChargeBreakdownSchema = zBillingOpChargeBreakdown.extend({
   amount_charged_cents: wireCents,

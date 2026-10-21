@@ -72,6 +72,12 @@ export const ModelFilter: Story = {
       <MultiSelect
         v-model="selected"
         :options="modelOptions"
+        accessible-label="Models"
+        search-label="Search models"
+        search-placeholder="Search..."
+        empty-text="No results found"
+        clear-all-label="Clear all"
+        :format-selected-count="(count) => count + ' selected'"
         :label="selected.length === 0 ? 'Models' : selected.length === 1 ? selected[0].name : selected.length + ' Models'"
         show-search-box
         show-selected-count
@@ -98,6 +104,12 @@ export const UseCaseFilter: Story = {
       <MultiSelect
         v-model="selected"
         :options="useCaseOptions"
+        accessible-label="Use Case"
+        search-label="Search use cases"
+        search-placeholder="Search..."
+        empty-text="No results found"
+        clear-all-label="Clear all"
+        :format-selected-count="(count) => count + ' selected'"
         :label="selected.length === 0 ? 'Use Case' : selected.length === 1 ? selected[0].name : selected.length + ' Use Cases'"
         show-search-box
         show-selected-count
@@ -124,6 +136,10 @@ export const SortDropdown: Story = {
         v-model="selected"
         :options="sortOptions"
         label="Sort by"
+        accessible-label="Sort by"
+        search-label="Search sorting options"
+        search-placeholder="Search..."
+        empty-text="No results found"
         class="w-62.5"
       >
         <template #icon>
@@ -178,6 +194,12 @@ export const TemplateFilterBar: Story = {
             v-model="selectedModels"
             :options="modelOptions"
             :label="modelLabel()"
+            accessible-label="Models"
+            search-label="Search models"
+            search-placeholder="Search..."
+            empty-text="No results found"
+            clear-all-label="Clear all"
+            :format-selected-count="(count) => count + ' selected'"
             show-search-box
             show-selected-count
             show-clear-button
@@ -192,6 +214,12 @@ export const TemplateFilterBar: Story = {
             v-model="selectedUseCases"
             :options="useCaseOptions"
             :label="useCaseLabel()"
+            accessible-label="Use Case"
+            search-label="Search use cases"
+            search-placeholder="Search..."
+            empty-text="No results found"
+            clear-all-label="Clear all"
+            :format-selected-count="(count) => count + ' selected'"
             show-search-box
             show-selected-count
             show-clear-button
@@ -206,6 +234,10 @@ export const TemplateFilterBar: Story = {
           v-model="sortBy"
           :options="sortOptions"
           label="Sort by"
+          accessible-label="Sort by"
+          search-label="Search sorting options"
+          search-placeholder="Search..."
+          empty-text="No results found"
           class="w-62.5"
         >
           <template #icon>

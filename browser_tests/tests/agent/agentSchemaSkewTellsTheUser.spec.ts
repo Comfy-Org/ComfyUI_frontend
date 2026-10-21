@@ -14,6 +14,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const WORKFLOW_ID = 'b4e7b4e3-8f4c-4c9b-ad2f-7f3b2daf1b23'
@@ -48,7 +49,6 @@ const SEND_LABEL = enMessages.agent.send
 const STOP_LABEL = enMessages.agent.stop
 const SYNC_FAILED_TITLE = enMessages.agent.workflowSyncFailedTitle
 const SYNC_FAILED_DETAIL = enMessages.agent.workflowSyncFailedDetailStaleClient
-const COMPOSER_LABEL = /add references, drag in assets/
 
 test.describe(
   'Agent tells the user when the document schema is newer than this build reads',
@@ -71,8 +71,8 @@ test.describe(
         return [host.subscribed(), host.catchUp(stateVector)]
       })
 
-      await page.route('**/api/agent/threads', (route) =>
-        route.fulfill(jsonRoute({ threads: [] }))
+      await page.route('**/api/agent/threads?*', (route) =>
+        route.fulfill(jsonRoute(emptyAgentThreadList()))
       )
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() === 'POST') {
@@ -104,7 +104,8 @@ test.describe(
         'true',
         { timeout: 8_000 }
       )
-      await new AgentPanel(page).open()
+      const agentPanel = new AgentPanel(page)
+      await agentPanel.open()
       await expect(panel).toBeVisible({ timeout: 30_000 })
 
       let savedName: string | undefined
@@ -159,7 +160,7 @@ test.describe(
 
       await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
-      const composer = panel.getByRole('textbox', { name: COMPOSER_LABEL })
+      const composer = agentPanel.composer
       await composer.fill('Rebuild the workflow.')
       await panel.getByRole('button', { name: SEND_LABEL }).click()
       await expect(
