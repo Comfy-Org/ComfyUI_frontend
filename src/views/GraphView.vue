@@ -1,9 +1,9 @@
 <template>
   <div class="comfyui-body isolate grid size-full overflow-hidden">
-    <div id="comfyui-body-top" class="comfyui-body-top" />
-    <div id="comfyui-body-bottom" class="comfyui-body-bottom" />
-    <div id="comfyui-body-left" class="comfyui-body-left" />
-    <div id="comfyui-body-right" class="comfyui-body-right" />
+    <div id="comfyui-body-top" class="comfyui-body-top z-3" />
+    <div id="comfyui-body-bottom" class="comfyui-body-bottom z-2" />
+    <div id="comfyui-body-left" class="comfyui-body-left z-1" />
+    <div id="comfyui-body-right" class="comfyui-body-right z-1" />
     <div
       v-show="!linearMode"
       id="graph-canvas-container"
@@ -477,7 +477,6 @@ const onGraphReady = () => {
   order: -5;
   grid-column: 1/-1;
   grid-row: 1;
-  z-index: 3;
   display: flex;
   flex-direction: column;
 }
@@ -488,7 +487,6 @@ const onGraphReady = () => {
   grid-column: 1;
   /* Position below the top element */
   grid-row: 2;
-  z-index: 1;
   display: flex;
 }
 
@@ -504,7 +502,6 @@ const onGraphReady = () => {
 
 .comfyui-body-right {
   order: -2;
-  z-index: 1;
   grid-column: 3;
   grid-row: 2;
 }
@@ -513,7 +510,6 @@ const onGraphReady = () => {
   order: 4;
   grid-column: 1/-1;
   grid-row: 3;
-  z-index: 2;
   display: flex;
   flex-direction: column;
 }
