@@ -43,6 +43,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('can_manage_auto_top_up', false)
   ),
   autoTopUpSetup: computed(() => null),
+  canRunWorkflows: computed(() => false),
   paymentRecoveryAvailable: computed(() =>
     receiveServerFact('payment_recovery_available', false)
   ),

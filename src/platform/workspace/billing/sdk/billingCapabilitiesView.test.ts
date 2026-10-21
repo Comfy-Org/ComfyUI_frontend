@@ -59,4 +59,13 @@ describe('projectBillingCapabilities', () => {
       rollout_defaults_applied: SNAPSHOT.rolloutDefaultsApplied
     })
   })
+
+  it('passes payment_recovery_available through to the capabilities read', () => {
+    expect(
+      projectBillingCapabilities({
+        ...SNAPSHOT,
+        paymentRecoveryAvailable: true
+      }).payment_recovery_available
+    ).toBe(true)
+  })
 })

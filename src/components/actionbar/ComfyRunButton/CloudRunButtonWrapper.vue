@@ -1,6 +1,11 @@
 <template>
   <ComfyQueueButton
-    v-if="
+    v-if="canRunWorkflows"
+    :payment-recovery-lock="null"
+    @payment-recovery-click="showPaymentRecoveryDialog(refreshOnReturn)"
+  />
+  <ComfyQueueButton
+    v-else-if="
       !showsSubscribeToRunPrompt || paymentRecoveryLock || isSalesManagedPlan
     "
     :payment-recovery-lock="paymentRecoveryLock"
@@ -16,10 +21,12 @@ import ComfyQueueButton from '@/components/actionbar/ComfyRunButton/ComfyQueueBu
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 
 const { showsSubscribeToRunPrompt, subscription, fetchStatus, fetchBalance } =
   useBillingContext()
+const { canRunWorkflows } = useBillingCapabilities()
 const { paymentRecoveryLock, refreshCapabilities, showPaymentRecoveryDialog } =
   usePaymentRecoveryDialog()
 

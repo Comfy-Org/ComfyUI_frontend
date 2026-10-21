@@ -9,6 +9,7 @@ import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/workspace/composables/usePaymentRecoveryDialog'
 
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
@@ -32,6 +33,7 @@ vi.mock(
 )
 
 vi.mock(import('@/platform/workspace/composables/usePaymentRecoveryDialog'))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
@@ -119,6 +121,8 @@ describe('CloudRunButtonWrapper', () => {
     mockSubscriptionTier.value = null
     mockIsFreeTier.value = true
     mockPaymentRecoveryLock.value = null
+    useBillingCapabilities().canRunWorkflows = computed(() => false)
+    useBillingCapabilities().hasResolvedCapabilities = computed(() => true)
     vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
       showPaymentRecoveryDialog,
       updatePayment: vi.fn(),
@@ -196,6 +200,17 @@ describe('CloudRunButtonWrapper', () => {
     render(CloudRunButtonWrapper)
 
     expect(screen.getByTestId('queue-button')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+  })
+
+  it('unlocks Run when resolved capabilities say the actor can run', () => {
+    mockCanRunWorkflows.value = false
+    useBillingCapabilities().canRunWorkflows = computed(() => true)
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toHaveTextContent('Run')
     expect(
       screen.queryByTestId('subscribe-to-run-button')
     ).not.toBeInTheDocument()

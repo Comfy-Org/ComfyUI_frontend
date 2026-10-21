@@ -19,6 +19,9 @@ export function projectBillingCapabilities(
       workspace_id: snapshot.scope.workspaceId
     },
     revision: snapshot.revision,
-    rollout_defaults_applied: snapshot.rolloutDefaultsApplied
+    rollout_defaults_applied: snapshot.rolloutDefaultsApplied,
+    ...(snapshot.paymentRecoveryAvailable === undefined
+      ? {}
+      : { payment_recovery_available: snapshot.paymentRecoveryAvailable })
   }
 }
