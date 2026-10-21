@@ -224,14 +224,11 @@ test.describe('Error dialog', () => {
   test('Should name a reopened dialog after its new title', async ({
     comfyPage
   }) => {
-    const showErrorDialog = (title: string) =>
-      comfyPage.page.evaluate((title) => {
-        window.app!.extensionManager.dialog.showErrorDialog('Details', {
-          title
-        })
-      }, title)
-
-    await showErrorDialog('First Error')
+    await comfyPage.page.evaluate(() => {
+      window.app!.extensionManager.dialog.showErrorDialog('Details', {
+        title: 'First Error'
+      })
+    })
     const firstDialog = comfyPage.page.getByRole('dialog', {
       name: 'First Error'
     })
@@ -239,7 +236,11 @@ test.describe('Error dialog', () => {
     await firstDialog.getByRole('button', { name: 'Close' }).click()
     await expect(firstDialog).toBeHidden()
 
-    await showErrorDialog('Second Error')
+    await comfyPage.page.evaluate(() => {
+      window.app!.extensionManager.dialog.showErrorDialog('Details', {
+        title: 'Second Error'
+      })
+    })
     await expect(
       comfyPage.page.getByRole('dialog', { name: 'Second Error' })
     ).toBeVisible()
