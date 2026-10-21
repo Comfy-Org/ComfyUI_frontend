@@ -440,7 +440,8 @@ const isNextPageFailed = computed(
 )
 const retryNextPage = () => void packs.retryNextPage()
 const hasPendingPages = computed(
-  () => isSearchBacked.value && (hasMorePacks.value || isNextPageFailed.value)
+  () =>
+    isSearchBacked.value && (hasMorePacks.value || packs.isNextPageFailed.value)
 )
 const isFirstPagePending = computed(
   () =>
@@ -545,7 +546,7 @@ const isSettledWithNoPacks = computed(
     displayPacks.value.length === 0 &&
     !isLoading.value &&
     !isManagerErrorRelevant.value &&
-    !hasMorePacks.value
+    !hasPendingPages.value
 )
 
 const isUnmatchedLegacyManagerSearch = computed(() => {

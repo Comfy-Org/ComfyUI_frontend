@@ -677,6 +677,32 @@ describe('ManagerDialog failed next page', () => {
     expect(screen.getByRole('button', { name: LOAD_MORE })).toBeInTheDocument()
   })
 
+  it('holds the legacy-manager tip while the failed page may hold the match', async () => {
+    useManagerState().isNewManagerUI = computed(() => true)
+    vi.mocked(
+      useComfyManagerService().listInstalledPacks
+    ).mockResolvedValueOnce({
+      'gguf-1': { cnr_id: 'gguf-1', ver: '1.0.0', enabled: true }
+    })
+    vi.mocked(useRegistrySearchGateway().searchPacks).mockImplementation(
+      async (_query, { pageNumber }) =>
+        pageNumber === 0
+          ? succeeded([FIRST_PACK], false, true)
+          : failed('search unavailable')
+    )
+    const { user, searchBox } = renderDialog(ManagerTab.NotInstalled)
+
+    await user.type(searchBox, 'comfyui-manager')
+    await settleSearch()
+    await user.click(screen.getByRole('button', { name: LOAD_MORE }))
+    await settleSearch()
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      enMessages.manager.loadMoreFailed
+    )
+    expect(screen.queryByText(TIP, { exact: false })).not.toBeInTheDocument()
+  })
+
   it('appends the failed page below the loaded packs when retried', async () => {
     const user = await renderUntilSecondPageFails()
     vi.mocked(useRegistrySearchGateway().searchPacks).mockResolvedValueOnce(
