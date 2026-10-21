@@ -112,7 +112,8 @@ const models: FooterColumn = {
     {
       label: t('footer.flux3ImageKlein'),
       href: routes.flux3ImageKlein
-    }
+    },
+    { label: t('footer.krea3'), href: routes.krea3 }
   ]
 }
 

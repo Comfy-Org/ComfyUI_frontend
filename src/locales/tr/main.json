@@ -4393,7 +4393,6 @@
     "viewControls": "Görünüm Kontrolleri"
   },
   "sideToolbar": {
-    "activeJobStatus": "Aktif iş: {status}",
     "assets": "Varlıklar",
     "backToAssets": "Tüm varlıklara dön",
     "browseTemplates": "Örnek şablonlara göz atın",
@@ -5550,22 +5549,6 @@
     "retry": "Tekrar dene"
   },
   "workspacePanel": {
-    "activity": {
-      "columns": {
-        "creditsUsed": "Kredi",
-        "date": "Tarih",
-        "eventDetails": "Etkinlik detayları",
-        "eventType": "Etkinlik türü",
-        "user": "Kullanıcı"
-      },
-      "empty": "Henüz bir etkinlik yok.",
-      "fullActivity": "Tüm etkinlikler",
-      "hoverCard": {
-        "lastActivity": "Son etkinlik",
-        "partnerNodeUsed": "Kullanılan partner node",
-        "totalCreditsUsed": "Toplam kullanılan kredi"
-      }
-    },
     "billingStatus": {
       "ending": {
         "body": "Tekrar ücretlendirilmeyeceksiniz. Üyeler o zamana kadar tam erişimlerini korur. Ekibinizin paylaşılan kredilerini korumak için planınıza devam edin.",
@@ -5701,12 +5684,6 @@
         "removeMember": "Üyeyi kaldır",
         "resendInvite": "Daveti yeniden gönder",
         "setCreditLimit": "Kredi limiti belirle"
-      },
-      "activity": {
-        "daysAgo": "{count} gün önce",
-        "hoursAgo": "{n} saat önce",
-        "justNow": "şimdi",
-        "minutesAgo": "{n} dakika önce"
       },
       "columns": {
         "creditsUsed": "Bu ay kullanılan krediler",

@@ -10,13 +10,18 @@ import { messageVariants } from './message.variants'
 
 const {
   severity,
-  closable = false,
+  closeLabel,
+  closable,
   class: customClass = ''
-} = defineProps<{
-  severity?: MessageVariants['severity']
-  closable?: boolean
-  class?: HTMLAttributes['class']
-}>()
+} = defineProps<
+  {
+    severity?: MessageVariants['severity']
+    class?: HTMLAttributes['class']
+  } & (
+    | { closable: true; closeLabel: string }
+    | { closable?: false; closeLabel?: string }
+  )
+>()
 
 const emit = defineEmits<{ close: [event: MouseEvent] }>()
 const visible = defineModel<boolean>('visible', { default: true })
@@ -45,7 +50,7 @@ function close(event: MouseEvent) {
       variant="textonly"
       size="unset"
       class="size-6 shrink-0 p-0 text-current"
-      :aria-label="$t('g.close')"
+      :aria-label="closeLabel"
       @click="close"
     >
       <i class="icon-[lucide--x] size-4" aria-hidden="true" />

@@ -267,17 +267,6 @@ export interface INodeFlags {
   ghost?: boolean
 }
 
-/**
- * A widget that is linked to a slot.
- *
- * This is set by the ComfyUI_frontend logic. See
- * https://github.com/Comfy-Org/ComfyUI_frontend/blob/b80e0e1a3c74040f328c4e344326c969c97f67e0/src/extensions/core/widgetInputs.ts#L659
- */
-export interface IWidgetLocator {
-  name: string
-  type?: string
-}
-
 export interface DefaultConnectionColors {
   getConnectedColor(type: ISlotType): CanvasColour
   getDisconnectedColor(type: ISlotType): CanvasColour

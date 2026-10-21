@@ -1,13 +1,20 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+
+import { mountVfxLeadTracking } from '@/scripts/vfx-lead'
 
 import type { Locale } from '@/i18n/translations'
 
 import { translationsFor } from '@/i18n/translations'
 
-const { formId, locale = 'en' } = defineProps<{
+const {
+  formId,
+  locale = 'en',
+  trackVfxLeads = false
+} = defineProps<{
   formId: string
   locale?: Locale
+  trackVfxLeads?: boolean
 }>()
 const { t } = translationsFor(locale)
 
@@ -105,7 +112,11 @@ const hubspotFormStyles: Record<`--${string}`, string> = {
   '--hsf-button--focus__color': 'var(--color-primary-comfy-ink)'
 }
 
+let cleanupLeadTracking: (() => void) | undefined
+onUnmounted(() => cleanupLeadTracking?.())
+
 onMounted(() => {
+  if (trackVfxLeads) cleanupLeadTracking = mountVfxLeadTracking(formId)
   if (document.getElementById(HUBSPOT_SCRIPT_ID)) return
 
   const script = document.createElement('script')

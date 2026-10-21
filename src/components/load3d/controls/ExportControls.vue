@@ -35,7 +35,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
+import { getExportFormatOptions } from '@comfyorg/viewport3d/load3d/constants'
 
 const { sourceFormat = null } = defineProps<{
   sourceFormat?: string | null
