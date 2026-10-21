@@ -198,6 +198,10 @@ describe('useTopupOperation', () => {
       status: 409,
       code: 'TOPUP_CHECKOUT_NOT_PAYABLE'
     }
+    const unavailable: Refusal = {
+      status: 503,
+      code: 'TOPUP_CHECKOUT_UNAVAILABLE'
+    }
     const returnUrl = 'https://cloud.comfy.org/topup-return'
 
     const rails = [
@@ -253,18 +257,31 @@ describe('useTopupOperation', () => {
       return outcome
     }
 
-    it.for(rails)(
-      'mints a fresh checkout after a retryable refusal on the $rail rail',
-      async ({ flagOn, mint }) => {
+    it.for(
+      rails.flatMap((rail) => [
+        {
+          ...rail,
+          name: 'a busy then not-payable checkout',
+          outcomes: [busy, notPayable, 'https://stripe/new']
+        },
+        {
+          ...rail,
+          name: 'an unavailable checkout',
+          outcomes: [unavailable, 'https://stripe/new']
+        }
+      ])
+    )(
+      'mints a fresh checkout after $name on the $rail rail',
+      async ({ flagOn, mint, outcomes }) => {
         flagState.billingSdkTopupEnabled = flagOn
-        const mintCheckout = mint([busy, notPayable, 'https://stripe/new'])
+        const mintCheckout = mint(outcomes)
 
         const outcome = await settle(
           useTopupOperation().createHostedCheckout(1000, returnUrl)
         )
 
         expect(outcome).toEqual({ url: 'https://stripe/new' })
-        expect(mintCheckout).toHaveBeenCalledTimes(3)
+        expect(mintCheckout).toHaveBeenCalledTimes(outcomes.length)
       }
     )
 
@@ -272,8 +289,8 @@ describe('useTopupOperation', () => {
       rails.flatMap((rail) => [
         {
           ...rail,
-          name: 'a refusal outside the retryable set',
-          outcomes: [{ status: 503, code: 'TOPUP_CHECKOUT_UNAVAILABLE' }],
+          name: 'a 503 without the unavailable code',
+          outcomes: [{ status: 503, code: 'UPSTREAM_UNAVAILABLE' }],
           attempts: 1
         },
         {

@@ -14,18 +14,20 @@ import {
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
-const RETRYABLE_CHECKOUT_CODES: ReadonlySet<string | undefined> = new Set([
-  'TOPUP_CHECKOUT_BUSY',
-  'TOPUP_CHECKOUT_NOT_PAYABLE'
-])
+const RETRYABLE_CHECKOUT_REFUSALS: ReadonlyArray<readonly [number, string]> = [
+  [409, 'TOPUP_CHECKOUT_BUSY'],
+  [409, 'TOPUP_CHECKOUT_NOT_PAYABLE'],
+  [503, 'TOPUP_CHECKOUT_UNAVAILABLE']
+]
 
 const CHECKOUT_RETRY_DELAYS_MS = [1000, 2000]
 
 function isRetryableCheckoutRefusal(error: unknown): boolean {
   return (
     error instanceof WorkspaceApiError &&
-    error.status === 409 &&
-    RETRYABLE_CHECKOUT_CODES.has(error.code)
+    RETRYABLE_CHECKOUT_REFUSALS.some(
+      ([status, code]) => error.status === status && error.code === code
+    )
   )
 }
 
