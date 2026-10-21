@@ -7,6 +7,7 @@
     :class="cn('lg-node-header w-full min-w-0 p-1 text-xs', headerShapeClass)"
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @pointerdown="recordPressPosition"
+    @pointermove="trackPressDrift"
     @dblclick="handleDoubleClick"
   >
     <div class="flex min-w-0 items-center justify-between gap-1">
@@ -173,15 +174,24 @@ const handleCollapse = () => {
 }
 
 let pressPosition: { x: number; y: number } | undefined
+let draggedSincePress = false
 
 const recordPressPosition = (event: PointerEvent) => {
   pressPosition = { x: event.clientX, y: event.clientY }
+  draggedSincePress = false
 }
 
-const releasedAfterDrag = (event: MouseEvent) =>
+const exceedsClickDrift = (event: MouseEvent) =>
   pressPosition !== undefined &&
   Math.hypot(event.clientX - pressPosition.x, event.clientY - pressPosition.y) >
     CanvasPointer.maxClickDrift
+
+const trackPressDrift = (event: PointerEvent) => {
+  if (event.buttons & 1 && exceedsClickDrift(event)) draggedSincePress = true
+}
+
+const releasedAfterDrag = (event: MouseEvent) =>
+  draggedSincePress || exceedsClickDrift(event)
 
 const handleDoubleClick = (event: MouseEvent) => {
   if (releasedAfterDrag(event)) return

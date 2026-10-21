@@ -155,23 +155,36 @@ describe('NodeHeader.vue', () => {
   })
 
   it.for([
-    { case: 'a drag', end: { clientX: 200, clientY: 140 }, opensEditor: false },
+    {
+      case: 'a drag',
+      path: [{ clientX: 200, clientY: 140 }],
+      opensEditor: false
+    },
+    {
+      case: 'a drag back to the press position',
+      path: [
+        { clientX: 200, clientY: 140 },
+        { clientX: 10, clientY: 10 }
+      ],
+      opensEditor: false
+    },
     {
       case: 'a click with slight drift',
-      end: { clientX: 13, clientY: 12 },
+      path: [{ clientX: 13, clientY: 12 }],
       opensEditor: true
     }
   ])(
     'opens the title editor on a double click ending $case: $opensEditor',
-    async ({ end, opensEditor }) => {
+    async ({ path, opensEditor }) => {
       const { user } = renderHeader()
       const target = screen.getByTestId('node-header-1')
       const start = { clientX: 10, clientY: 10 }
+      const end = path[path.length - 1]
 
       await user.pointer([
         { keys: '[MouseLeft]', target, coords: start },
         { keys: '[MouseLeft>]', target, coords: start },
-        { target, coords: end },
+        ...path.map((coords) => ({ target, coords })),
         { keys: '[/MouseLeft]', target, coords: end }
       ])
 
