@@ -3511,7 +3511,7 @@
       },
       "contact": {
         "label": "COMFY WORKFLOWS",
-        "heading": "Pick a model and explore what the community has built. <a href=\"https://comfy.org/workflows/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Browse Comfy Workflows</a> for the newest workflows."
+        "heading": "Pick a model and explore what the community has built. <a href=\"https://comfy.org/hub/workflows/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Browse Comfy Workflows</a> for the newest workflows."
       }
     },
     "showcase": {

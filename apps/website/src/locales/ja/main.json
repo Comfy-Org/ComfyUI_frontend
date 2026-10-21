@@ -2725,7 +2725,7 @@
         "workflows": "{count}件のワークフロー"
       },
       "contact": {
-        "heading": "モデルを選んで、コミュニティが作り上げたものを探索しましょう。最新のワークフローは<a href=\"https://comfy.org/workflows/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Comfyワークフローを閲覧</a>してください。",
+        "heading": "モデルを選んで、コミュニティが作り上げたものを探索しましょう。最新のワークフローは<a href=\"https://comfy.org/hub/workflows/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"text-primary-comfy-yellow underline\">Comfyワークフローを閲覧</a>してください。",
         "label": "COMFYワークフロー"
       },
       "creations": {
