@@ -108,7 +108,7 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
-  it.each(['Browse all models', 'View all models'])(
+  it.each(['Browse all models', 'View all models (3)'])(
     'returns the viewport to the top when a section or %s opens',
     async (label) => {
       const scrollTo = vi

@@ -324,6 +324,7 @@ watch(browseAll, (on) => on && resetFilters())
           @click="browseAll = true"
         >
           {{ t('workshop.sections.viewAll') }}
+          <span class="tabular-nums">({{ models.length }})</span>
           <ChevronRight class="size-4" aria-hidden="true" />
         </button>
       </div>
