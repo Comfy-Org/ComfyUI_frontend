@@ -1,9 +1,9 @@
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { JobAction } from '../../composables/queue/useJobActions'
-import type { JobListItem } from '../../composables/queue/useJobList'
-import { isActiveJobState } from '../../utils/queueUtil'
+import type { JobAction } from '@/composables/queue/useJobActions'
+import type { JobListItem } from '@/composables/queue/useJobList'
+import { isActiveJobState } from '@/utils/queueUtil'
 
 const actionsByJobId = ref<Partial<Record<string, JobAction[]>>>({})
 const cancelAction: JobAction = {

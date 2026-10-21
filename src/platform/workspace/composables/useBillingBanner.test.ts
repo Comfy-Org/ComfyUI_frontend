@@ -113,14 +113,18 @@ describe('useBillingBanner', () => {
     expect(kind.value).toBe('outOfCredits')
   })
 
-  it.for<{ status: BillingStatus; canAccess: boolean }>([
-    { status: 'paused', canAccess: false },
-    { status: 'paused', canAccess: true },
-    { status: 'payment_failed', canAccess: false },
-    { status: 'payment_failed', canAccess: true }
+  it.for<{
+    status: BillingStatus
+    canAccess: boolean
+    kind: 'paused' | null
+  }>([
+    { status: 'paused', canAccess: false, kind: 'paused' },
+    { status: 'paused', canAccess: true, kind: 'paused' },
+    { status: 'payment_failed', canAccess: false, kind: null },
+    { status: 'payment_failed', canAccess: true, kind: null }
   ])(
-    'shows no Paused banner for $status with access $canAccess',
-    async ({ status, canAccess }) => {
+    'reads the $status billing status with access $canAccess as $kind',
+    async ({ status, canAccess, kind: expected }) => {
       const billing = setupBilling()
       const { kind } = useBillingBanner()
 
@@ -129,7 +133,7 @@ describe('useBillingBanner', () => {
       billing.canAccessSubscriptionFeatures.value = canAccess
       await nextTick()
 
-      expect(kind.value).toBeNull()
+      expect(kind.value).toBe(expected)
     }
   )
 })

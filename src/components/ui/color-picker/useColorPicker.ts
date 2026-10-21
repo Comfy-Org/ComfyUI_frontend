@@ -11,11 +11,7 @@ import {
   rgbToHsv
 } from '@/utils/colorUtil'
 
-export const rgbChannels = [
-  { key: 'r', label: 'color.red' },
-  { key: 'g', label: 'color.green' },
-  { key: 'b', label: 'color.blue' }
-] as const
+export const rgbChannels = [{ key: 'r' }, { key: 'g' }, { key: 'b' }] as const
 
 function useDraftField<T>(source: () => T, apply: (draft: T) => void) {
   const draft = ref(source()) as Ref<T>

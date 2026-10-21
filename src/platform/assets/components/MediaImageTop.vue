@@ -17,8 +17,8 @@
 import { whenever } from '@vueuse/core'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
+import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
 
 const { asset } = defineProps<{
   asset: AssetMeta

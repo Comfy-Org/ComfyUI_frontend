@@ -101,6 +101,8 @@ export interface BalanceInfo {
   effectiveBalanceAuthoritative?: boolean
   prepaidBalanceMicros?: number
   cloudCreditBalanceMicros?: number
+  /** Server-suggested top-up that covers a negative balance; null otherwise. */
+  suggestedTopupAmountCents?: number | null
 }
 
 /** Whether the billing portal opened, and why not when it did not. */

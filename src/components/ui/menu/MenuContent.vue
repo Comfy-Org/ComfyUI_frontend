@@ -3,16 +3,10 @@ import type {
   DropdownMenuContentEmits,
   DropdownMenuContentProps
 } from 'reka-ui'
-import {
-  DropdownMenuContent,
-  injectDropdownMenuRootContext,
-  useForwardPropsEmits
-} from 'reka-ui'
+import { DropdownMenuContent, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
-
-import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 
 import { menuContentClass } from './menuStyles'
 
@@ -30,14 +24,11 @@ const {
 >()
 const emits = defineEmits<DropdownMenuContentEmits>()
 const forwarded = useForwardPropsEmits(restProps, emits)
-const rootContext = injectDropdownMenuRootContext()
-const contentStyle = useModalLiftedZIndex(rootContext.open)
 </script>
 
 <template>
   <DropdownMenuContent
     v-bind="forwarded"
-    :style="contentStyle"
     :class="
       cn(
         menuContentClass,

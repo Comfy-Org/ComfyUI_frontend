@@ -1,5 +1,8 @@
+import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
+
 import type { LGraphNode } from './entityRegistry'
-import type { Size } from '../interfaces'
+import type { Size } from '@/lib/litegraph/src/interfaces'
 import type { RenderShape, TitleMode } from './globalEnums'
 
 export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
@@ -23,4 +26,8 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
   keepAllLinksOnBypass: boolean
   resizeHandleSize?: number
   resizeEdgeSize?: number
+
+  comfyClass?: string
+  nodeData?: ComfyNodeDefV1 & ComfyNodeDefV2 & { [key: symbol]: unknown }
+  category?: string
 }

@@ -57,7 +57,7 @@ function progressTextListener() {
     .mock.calls.find(([type]) => type === 'progress_text')
   assert.exists(registration)
   const [, listener] = registration
-  assert.exists(listener)
+  if (typeof listener !== 'function') throw new Error('no listener')
   return listener
 }
 

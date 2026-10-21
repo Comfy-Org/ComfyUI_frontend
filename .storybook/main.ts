@@ -173,6 +173,7 @@ const config: StorybookConfig = {
         ]
       },
       build: {
+        copyPublicDir: false,
         rolldownOptions: {
           treeshake: false,
           output: {

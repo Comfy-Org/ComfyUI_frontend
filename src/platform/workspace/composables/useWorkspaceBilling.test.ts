@@ -729,6 +729,18 @@ describe('useWorkspaceBilling', () => {
       })
     })
 
+    it('passes the server-suggested top-up through as received', async () => {
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+        ...positiveBalance,
+        suggested_topup_amount_cents: 11_400
+      })
+
+      const billing = setupBilling()
+      await billing.fetchBalance()
+
+      expect(billing.balance.value?.suggestedTopupAmountCents).toBe(11_400)
+    })
+
     it('sets error and rethrows when fetchBalance fails', async () => {
       mockWorkspaceApi.getBillingBalance.mockRejectedValue(
         new Error('balance failed')
@@ -1049,8 +1061,7 @@ describe('useWorkspaceBilling', () => {
         expect(useToast().toasts).toEqual([
           expect.objectContaining({
             kind: 'error',
-            description:
-              "Couldn't open the billing page. Try again in a moment."
+            description: "Couldn't open billing. Try again."
           })
         ])
       }

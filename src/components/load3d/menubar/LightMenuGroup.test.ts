@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import LightMenuGroup from '@/components/load3d/menubar/LightMenuGroup.vue'
-import type { LightConfig } from '@/extensions/core/load3d/interfaces'
+import type { LightConfig } from '@comfyorg/viewport3d/load3d/interfaces'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 

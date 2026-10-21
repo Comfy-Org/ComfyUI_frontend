@@ -11,6 +11,18 @@ const meta: Meta<ComponentPropsAndSlots<typeof ColorPicker>> = {
   title: 'Components/ColorPicker',
   component: ColorPicker,
   tags: ['autodocs'],
+  args: {
+    accessibleLabel: 'Color',
+    hexLabel: 'Hex',
+    rgbaLabel: 'RGBA',
+    hueLabel: 'Hue',
+    alphaLabel: 'Alpha',
+    redLabel: 'Red',
+    greenLabel: 'Green',
+    blueLabel: 'Blue',
+    saturationBrightnessLabel: 'Saturation and brightness',
+    formatLabel: 'Color format'
+  },
   parameters: { layout: 'padded' },
   decorators: [
     (story) => ({
@@ -24,45 +36,45 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { ColorPicker },
     setup() {
       const color = ref('#e06cbd')
-      return { color }
+      return { color, args }
     },
-    template: '<ColorPicker v-model="color" />'
+    template: '<ColorPicker v-bind="args" v-model="color" />'
   })
 }
 
 export const Red: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { ColorPicker },
     setup() {
       const color = ref('#ff0000')
-      return { color }
+      return { color, args }
     },
-    template: '<ColorPicker v-model="color" />'
+    template: '<ColorPicker v-bind="args" v-model="color" />'
   })
 }
 
 export const Black: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { ColorPicker },
     setup() {
       const color = ref('#000000')
-      return { color }
+      return { color, args }
     },
-    template: '<ColorPicker v-model="color" />'
+    template: '<ColorPicker v-bind="args" v-model="color" />'
   })
 }
 
 export const White: Story = {
-  render: () => ({
+  render: (args) => ({
     components: { ColorPicker },
     setup() {
       const color = ref('#ffffff')
-      return { color }
+      return { color, args }
     },
-    template: '<ColorPicker v-model="color" />'
+    template: '<ColorPicker v-bind="args" v-model="color" />'
   })
 }
