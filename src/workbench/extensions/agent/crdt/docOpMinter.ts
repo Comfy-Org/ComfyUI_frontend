@@ -29,13 +29,8 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import { findUsedSubgraphIds } from '@/lib/litegraph/src/subgraph/subgraphUtils'
-import type {
-  ExportedSubgraph,
-  ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -472,49 +467,50 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
   }
 
-  /**
-   * `define_subgraph` for every definition an added subgraph host needs and
-   * the bound document lacks. Adding a blueprint or pasting a host registers
-   * a fresh definition live; without it the document can neither place the
-   * host's promoted values nor name its interior. Dependencies come first.
-   * They trail the batch so a refused definition aborts no add or link that
-   * precedes it.
-   */
+  function serialisedDefinition(subgraph: Subgraph): SubgraphDefinition | null {
+    try {
+      return JSON.parse(JSON.stringify(subgraph.asSerialisable()))
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_crdt_subgraph_definition_unserializable',
+        context: { definitionId: subgraph.id }
+      })
+      return null
+    }
+  }
+
   function mintMissingDefinitions(
     hosts: readonly SubgraphNode[]
   ): GraphOperation[] {
-    const exported = new Map<string, ExportedSubgraph>()
-    const wire = new Map<string, SubgraphDefinition>()
-    for (const { subgraph } of hosts) {
-      const registry = subgraph.rootGraph.subgraphs
-      const ids = [
-        subgraph.id,
-        ...findUsedSubgraphIds(subgraph, registry)
-      ].filter((id) => !wire.has(id))
-      for (const id of ids) {
-        const definition = registry.get(id)
-        if (!definition || deps.docHasSubgraphDefinition(id)) continue
-        // A JSON copy: the export shares live arrays and carries `undefined`
-        // fields, which the applier refuses as unserializable.
-        const copy = JSON.parse(JSON.stringify(definition.asSerialisable()))
-        exported.set(id, copy)
-        wire.set(id, copy)
+    const operations: GraphOperation[] = []
+    const available = new Map<string, boolean>()
+    const define = (subgraph: Subgraph): boolean => {
+      const settled = available.get(subgraph.id)
+      if (settled !== undefined) return settled
+      available.set(subgraph.id, false)
+      const dependenciesAvailable = subgraph.nodes
+        .filter((node) => node.isSubgraphNode())
+        .map((node) => define(node.subgraph))
+        .every(Boolean)
+      if (deps.docHasSubgraphDefinition(subgraph.id)) {
+        available.set(subgraph.id, true)
+        return true
       }
+      const definition = dependenciesAvailable
+        ? serialisedDefinition(subgraph)
+        : null
+      if (!definition) return false
+      operations.push({
+        op: 'define_subgraph',
+        subgraph_id: subgraph.id,
+        subgraph_definition: definition
+      })
+      available.set(subgraph.id, true)
+      return true
     }
-    return topologicalSortSubgraphs([...exported.values()]).flatMap(
-      ({ id }) => {
-        const definition = wire.get(id)
-        return definition
-          ? [
-              {
-                op: 'define_subgraph',
-                subgraph_id: id,
-                subgraph_definition: definition
-              } as const
-            ]
-          : []
-      }
-    )
+    for (const host of hosts) define(host.subgraph)
+    return operations
   }
 
   function flush(): void {

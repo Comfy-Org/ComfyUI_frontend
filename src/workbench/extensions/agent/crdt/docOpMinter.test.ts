@@ -1701,6 +1701,7 @@ describe('attachDocOpMinter', () => {
     graph.subgraphs.set(outer.id, outer)
     withGraphIntentSource('load', () => {
       outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
+      outer.add(createTestSubgraphNode(inner, { parentGraph: outer }))
       const interior = LiteGraph.createNode('TestPrompt')
       assert.exists(interior)
       outer.add(interior)
@@ -1739,6 +1740,23 @@ describe('attachDocOpMinter', () => {
     ])
     expect(refusals).toEqual([])
     expect(applyMinted(doc, minted)).toEqual(['applied'])
+  })
+
+  it('keeps the add and skips a definition that cannot serialize, with its dependents', async () => {
+    const { inner } = handAddedPromotedHost()
+    vi.spyOn(inner, 'asSerialisable').mockImplementation(() => {
+      throw new Error('extension serializer failed')
+    })
+    await afterFlush()
+
+    expect(minted.map(({ op }) => op)).toEqual(['add_node'])
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_subgraph_definition_unserializable',
+        context: { definitionId: inner.id }
+      })
+    )
   })
 
   it('does not redefine a subgraph the document already holds', async () => {
