@@ -137,6 +137,24 @@ describe('NodeHeader title rename', () => {
     expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
   })
 
+  it('keeps the title editor closed when a click follows a cancelled drag', async () => {
+    renderNode()
+    const header = screen.getByTestId('node-header-1')
+    const past = CanvasPointer.maxClickDrift + 1
+
+    // oxlint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.pointerDown(header, pointerInit(10, 1))
+    // oxlint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.pointerMove(header, pointerInit(10 + past, 1))
+    // oxlint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.pointerCancel(header, pointerInit(10 + past, 0))
+    await press(header, 12, 0, false)
+    // oxlint-disable-next-line testing-library/prefer-user-event
+    await fireEvent.dblClick(header)
+
+    expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
+  })
+
   it('opens the title editor on a later double-click after a drag', async () => {
     renderNode()
     const header = screen.getByTestId('node-header-1')
