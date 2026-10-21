@@ -37,7 +37,7 @@ audited server consent.
 builds keep the Cloud policy and every other build, including Desktop, Desktop 2
 local and remote views, and browser tabs on a local Core, uses this Local
 policy. No other module checks the host. The policy should move to the server's
-`agent` feature once the backend reports it.
+`agent` feature once the backend reports it (BE-22051).
 
 Agree while signed out continues through sign-in and confirmed server consent
 registration within that request. Canceling sign-in discards the pending choice;
