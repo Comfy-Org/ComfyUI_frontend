@@ -163,7 +163,8 @@ function openTextEditor() {
   if (nodeId === undefined) return
   const node = resolveNode(nodeId, canvasStore.currentGraph ?? undefined)
   const target = node?.widgets?.find(({ name }) => name === widget.name)
-  if (node && target)
-    rightSidePanelStore.openTextEditor({ node, widget: target })
+  if (!node || !target) return
+  canvasStore.canvas?.selectItems([node])
+  rightSidePanelStore.openTextEditor({ node, widget: target })
 }
 </script>

@@ -30,12 +30,15 @@ test.describe(
         await expect(actions).toHaveCSS('opacity', '1')
       })
 
-      await test.step('Expand opens the Text tab at a readable width, focused at the start', async () => {
+      await test.step('Expand selects the node and opens its Text tab at a readable width, focused at the start', async () => {
         await node.getByRole('button', { name: 'Expand' }).click()
 
         await expect(panel.getByRole('tab', { name: 'Text' })).toHaveAttribute(
           'aria-selected',
           'true'
+        )
+        await expect(comfyPage.menu.propertiesPanel.panelTitle).toHaveText(
+          'CLIP Text Encode (Prompt)'
         )
         await expect(editor).toBeFocused()
         await expect(editor).toHaveJSProperty('selectionStart', 0)
