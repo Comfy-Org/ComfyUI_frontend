@@ -56,7 +56,7 @@ export function validWorkflowDownloadURL(value: string) {
 }
 
 export function validCreatorUsername(raw: string) {
-  return /^[a-z0-9][a-z0-9-]{1,40}[a-z0-9]$/i.test(raw)
+  return /^[a-z0-9][a-z0-9-]{1,28}[a-z0-9]$/i.test(raw)
 }
 
 export function validAuthorAvatarURL(raw: string) {

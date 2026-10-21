@@ -211,7 +211,30 @@ describe('native CONTENT presentation', () => {
       username: 'comfy-',
       kept: false
     },
-    { case: 'a path', name: 'Actual author', username: '../admin', kept: false }
+    {
+      case: 'a path',
+      name: 'Actual author',
+      username: '../admin',
+      kept: false
+    },
+    {
+      case: '30 characters',
+      name: 'Actual author',
+      username: 'a'.repeat(30),
+      kept: true
+    },
+    {
+      case: '31 characters',
+      name: 'Actual author',
+      username: 'a'.repeat(31),
+      kept: false
+    },
+    {
+      case: '42 characters',
+      name: 'Actual author',
+      username: 'a'.repeat(42),
+      kept: false
+    }
   ])(
     'decides whether to keep the creator username for $case',
     ({ name, username, kept }) => {
