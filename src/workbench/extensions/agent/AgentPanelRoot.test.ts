@@ -2037,12 +2037,16 @@ describe('AgentPanelRoot standing credits-exhausted paywall', () => {
     })
     paywallHasFunds.value = false
     workflowStore.activeWorkflow = addTab('workflows/current.json')
-    renderWithSelectedTarget()
+    const firstPanel = renderWithSelectedTarget()
 
     await sendFromComposer('continue anyway')
     await waitFor(() =>
       expect(paywallBilling.fetchStatus).toHaveBeenCalledOnce()
     )
+    expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
+
+    firstPanel.unmount()
+    renderWithSelectedTarget()
     expect(screen.queryByTestId(STANDING)).not.toBeInTheDocument()
 
     accountId.value = 'account-b'

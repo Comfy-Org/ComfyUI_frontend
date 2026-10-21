@@ -370,25 +370,21 @@ const latestEntryHasPaywall = computed(() => {
 const threadHasUserMessage = computed(() =>
   conversationEntries.value.some((entry) => entry.role === 'user')
 )
-const fundsRecheckPending = ref(false)
-let fundsRecheckGeneration = 0
-
 async function sendWithFundsRecheck(
   send: (onAccepted: () => void) => Promise<boolean>
 ): Promise<boolean> {
   if (billingType.value !== 'workspace' || agentHasFunds.value !== false)
     return send(() => undefined)
-  let generation: number | undefined
+  let recheckId: number | undefined
   const settle = () => {
-    if (generation === fundsRecheckGeneration) fundsRecheckPending.value = false
+    if (recheckId !== undefined) agentPanelStore.finishFundsRecheck(recheckId)
   }
   let admitted = false
   let sent: boolean
   try {
     sent = await send(() => {
       admitted = true
-      generation = ++fundsRecheckGeneration
-      fundsRecheckPending.value = true
+      recheckId = agentPanelStore.beginFundsRecheck(billingIdentity.value)
     })
   } finally {
     if (!admitted) settle()
@@ -407,7 +403,8 @@ async function sendWithFundsRecheck(
 
 const showStandingPaywall = computed(() => {
   if (!creditsExhausted.value || !threadHasUserMessage.value) return false
-  if (fundsRecheckPending.value) return false
+  if (agentPanelStore.hasPendingFundsRecheck(billingIdentity.value))
+    return false
   return !latestEntryHasPaywall.value
 })
 
@@ -415,8 +412,7 @@ const agentPanelStore = useAgentPanelStore()
 const billingIdentity = useBillingIdentity()
 
 watch(billingIdentity, () => {
-  fundsRecheckGeneration += 1
-  fundsRecheckPending.value = false
+  agentPanelStore.cancelFundsRechecks()
   agentPanelStore.reportedExhaustionIdentity = null
 })
 

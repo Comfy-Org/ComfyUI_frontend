@@ -97,6 +97,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const reportedExhaustionIdentity = ref<string | null>(null)
   const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
+  const fundsRechecks = ref(new Map<number, string>())
+  let nextFundsRecheckId = 0
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
@@ -383,6 +385,24 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     dispatchCreditTransitionNotice({ type: 'dismissed', identity })
   }
 
+  function beginFundsRecheck(identity: string): number {
+    const id = ++nextFundsRecheckId
+    fundsRechecks.value.set(id, identity)
+    return id
+  }
+
+  function finishFundsRecheck(id: number): void {
+    fundsRechecks.value.delete(id)
+  }
+
+  function cancelFundsRechecks(): void {
+    fundsRechecks.value.clear()
+  }
+
+  function hasPendingFundsRecheck(identity: string): boolean {
+    return [...fundsRechecks.value.values()].includes(identity)
+  }
+
   return {
     enabled,
     consentAccepted,
@@ -401,6 +421,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     observeAgentScopedFunds,
     claimCreditTransitionNoticeImpression,
     dismissCreditTransitionNotice,
+    beginFundsRecheck,
+    finishFundsRecheck,
+    cancelFundsRechecks,
+    hasPendingFundsRecheck,
     width,
     requestedWidth,
     isOverlay,
