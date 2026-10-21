@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMediaQuery, useResizeObserver } from '@vueuse/core'
+import { useMediaQuery } from '@vueuse/core'
 import { computed, onMounted, ref, useId } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -36,22 +36,14 @@ const emit = defineEmits<{
 }>()
 
 const containerRef = ref<HTMLElement>()
-const containerWidth = ref(0)
-const isShortWideViewport = useMediaQuery(
-  '(min-width: 700px) and (height < 650px)'
-)
+const isTwoColumn = useMediaQuery('(min-width: 700px) and (height < 650px)')
 const isShortViewport = useMediaQuery('(height < 680px)')
-const isTwoColumn = computed(
-  () => isShortWideViewport.value && containerWidth.value >= 668
-)
 const isCompact = computed(() => isShortViewport.value && !isTwoColumn.value)
 const layoutClasses = computed(() => ({
-  width: isShortWideViewport.value
+  width: isTwoColumn.value
     ? 'w-[min(960px,calc(100vw-2rem))]'
     : 'w-[min(600px,calc(100vw-2rem))]',
-  heading: isCompact.value ? 'text-[22px]/7' : undefined
-}))
-const mediaHeightClasses = computed(() => ({
+  heading: isCompact.value ? 'text-[22px]/7' : undefined,
   video: isCompact.value
     ? 'max-h-41.5'
     : isTwoColumn.value
@@ -61,41 +53,15 @@ const mediaHeightClasses = computed(() => ({
 }))
 const signInHintId = useId()
 const hasConsentHelp = computed(() => Boolean(docsUrl || requiresSignIn))
-const acceptLabelKey = computed(() =>
-  requiresSignIn ? 'agent.consent.agreeAndContinue' : 'agent.consent.accept'
+const acceptAction = computed(() =>
+  requiresSignIn
+    ? { labelKey: 'agent.consent.agreeAndContinue', describedBy: signInHintId }
+    : { labelKey: 'agent.consent.accept', describedBy: undefined }
 )
-const actions = computed(() => {
-  const accept = {
-    id: 'accept',
-    variant: 'inverted',
-    class: 'flex-1',
-    loading: accepting,
-    description: requiresSignIn ? signInHintId : undefined,
-    labelKey: acceptLabelKey.value
-  } as const
-  const reject = {
-    id: 'reject',
-    variant: 'secondary',
-    class: undefined,
-    loading: false,
-    description: undefined,
-    labelKey: 'agent.consent.reject'
-  } as const
-  return accepting ? [accept] : [reject, accept]
-})
-
-useResizeObserver(containerRef, ([entry]) => {
-  containerWidth.value = entry.contentRect.width
-})
 
 onMounted(() => {
   if (containerRef.value) applyDarkPaletteTheme(containerRef.value.style)
 })
-
-function choose(action: 'accept' | 'reject'): void {
-  if (action === 'accept') emit('accept')
-  else emit('reject')
-}
 </script>
 
 <template>
@@ -123,7 +89,7 @@ function choose(action: 'accept' | 'reject'): void {
           :class="
             cn(
               'mx-auto aspect-video w-full max-w-full rounded-lg object-contain',
-              mediaHeightClasses.video
+              layoutClasses.video
             )
           "
         >
@@ -132,7 +98,7 @@ function choose(action: 'accept' | 'reject'): void {
               :class="
                 cn(
                   'grid aspect-video w-full place-items-center rounded-lg bg-secondary text-xs text-muted-foreground',
-                  mediaHeightClasses.fallback
+                  layoutClasses.fallback
                 )
               "
             >
@@ -206,19 +172,24 @@ function choose(action: 'accept' | 'reject'): void {
         </div>
         <div class="flex flex-wrap gap-2.5">
           <Button
-            v-for="action in actions"
-            :key="action.id"
-            :variant="action.variant"
+            v-if="!accepting"
+            variant="secondary"
             size="lg"
-            :class="
-              cn('h-auto min-h-11 max-w-full whitespace-normal', action.class)
-            "
-            :loading="action.loading"
-            :disabled="accepting"
-            :aria-describedby="action.description"
-            @click="choose(action.id)"
+            class="h-auto min-h-11 max-w-full whitespace-normal"
+            @click="emit('reject')"
           >
-            {{ $t(action.labelKey) }}
+            {{ $t('agent.consent.reject') }}
+          </Button>
+          <Button
+            variant="inverted"
+            size="lg"
+            class="h-auto min-h-11 max-w-full flex-1 whitespace-normal"
+            :loading="accepting"
+            :disabled="accepting"
+            :aria-describedby="acceptAction.describedBy"
+            @click="emit('accept')"
+          >
+            {{ $t(acceptAction.labelKey) }}
           </Button>
         </div>
       </footer>
