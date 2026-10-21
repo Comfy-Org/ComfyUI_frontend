@@ -1385,10 +1385,10 @@ importers:
         specifier: 'catalog:'
         version: 1.0.0-beta.4(typescript@6.0.3)
       dompurify:
-        specifier: 'catalog:'
+        specifier: ^3.4.13
         version: 3.4.13
       es-toolkit:
-        specifier: ^1.39.9
+        specifier: 'catalog:'
         version: 1.49.0
       tw-animate-css:
         specifier: 'catalog:'
