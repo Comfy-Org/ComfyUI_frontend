@@ -2253,6 +2253,13 @@
       }
     }
   },
+  "hubPages": {
+    "apps": {
+      "open": "可用",
+      "soon": "即将推出",
+      "opensInNewTab": "（在新标签页中打开）"
+    }
+  },
   "hubspotForm": {
     "embedLoadErrorPrefix": "表单无法加载。请发送邮件至",
     "embedLoadErrorSuffix": "我们会为您处理请求。"
@@ -4855,7 +4862,9 @@
       "loadMore": "加载更多",
       "models": "模型",
       "search": "搜索工作流、模型、创作者...",
+      "showMore": "显示更多",
       "showing": "显示 {shown} / {total} 个工作流",
+      "showingOf": "已显示 {shown} / {total}",
       "sort": {
         "newest": "最新",
         "popular": "最受欢迎"

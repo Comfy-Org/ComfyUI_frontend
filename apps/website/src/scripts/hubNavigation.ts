@@ -1,6 +1,8 @@
 import { getRoutes } from '@/config/routes'
+import { loadAppsHalf } from '@/lib/workshop/apps-half'
 import {
   loadAppCatalogue,
+  loadHubAppCatalogue,
   loadWorkflowCatalogue
 } from '@/lib/workshop/catalogue-components'
 
@@ -12,7 +14,8 @@ const catalogues: Readonly<
 > = {
   [routes.workshop]: undefined,
   [routes.hubWorkflows]: loadWorkflowCatalogue,
-  [routes.hubApps]: loadAppCatalogue
+  [routes.hubApps]: () =>
+    Promise.all([loadAppsHalf(), loadAppCatalogue(), loadHubAppCatalogue()])
 }
 
 const TOOLBAR = `#${HUB_TOOLBAR_ID}`

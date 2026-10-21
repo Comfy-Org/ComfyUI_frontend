@@ -2566,6 +2566,13 @@
       }
     }
   },
+  "hubPages": {
+    "apps": {
+      "open": "Open",
+      "soon": "Soon",
+      "opensInNewTab": "(opens in a new tab)"
+    }
+  },
   "hubspotForm": {
     "embedLoadErrorPrefix": "Unable to load the form. Email us at",
     "embedLoadErrorSuffix": "and we'll route your request."
@@ -5431,25 +5438,10 @@
       "subtitle": "What will you make next? Try the latest AI models with your own ideas, right in your browser."
     },
     "hub": {
-      "title": "Browse models",
-      "workflows": "Workflows",
-      "search": "Search workflows, models, creators...",
-      "kind": {
-        "all": "All",
-        "graph": "Graphs",
-        "app": "Apps",
-        "models": "Models"
-      },
-      "io": {
-        "image": "Image",
-        "video": "Video",
-        "audio": "Audio",
-        "3d": "3D"
-      },
-      "sort": {
-        "popular": "Most Popular",
-        "newest": "Newest"
-      },
+      "categories": "CATEGORIES",
+      "docs": "Read docs",
+      "empty": "No workflows match your filters",
+      "emptyHint": "Try removing some filters",
       "facets": {
         "clearAll": "Clear all",
         "search": "Search…",
@@ -5462,17 +5454,34 @@
         "show": "Show {n} workflows",
         "noResults": "No matches"
       },
+      "io": {
+        "image": "Image",
+        "video": "Video",
+        "audio": "Audio",
+        "3d": "3D"
+      },
+      "kind": {
+        "all": "All",
+        "graph": "Graphs",
+        "app": "Apps",
+        "models": "Models"
+      },
+      "loadMore": "Load more",
       "models": "Models",
-      "categories": "CATEGORIES",
-      "docs": "Read docs",
-      "tryNow": "Try now",
+      "search": "Search workflows, models, creators...",
+      "showMore": "Show more",
+      "showing": "Showing {shown} of {total} workflows",
+      "showingOf": "Showing {shown} of {total}",
+      "sort": {
+        "popular": "Most Popular",
+        "newest": "Newest"
+      },
       "tag": {
         "partnerNodes": "Partner Nodes"
       },
-      "loadMore": "Load more",
-      "empty": "No workflows match your filters",
-      "emptyHint": "Try removing some filters",
-      "showing": "Showing {shown} of {total} workflows"
+      "title": "Browse models",
+      "tryNow": "Try now",
+      "workflows": "Workflows"
     },
     "input": {
       "title": "Input"
