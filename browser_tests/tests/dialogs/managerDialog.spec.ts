@@ -644,10 +644,10 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
       ])
 
     await test.step('Shift+Home selects back to the start', async () => {
-      await searchInput.press('End')
-      await expect.poll(selection).toEqual([query.length, query.length])
+      await searchInput.press('ArrowLeft')
+      await expect.poll(selection).toEqual([query.length - 1, query.length - 1])
       await searchInput.press('Shift+Home')
-      await expect.poll(selection).toEqual([0, query.length])
+      await expect.poll(selection).toEqual([0, query.length - 1])
     })
 
     await test.step('Shift+End selects forward to the end', async () => {
