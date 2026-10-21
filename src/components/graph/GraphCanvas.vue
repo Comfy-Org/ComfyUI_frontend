@@ -44,6 +44,7 @@
       <NodeContextMenu />
       <DomWidgets v-if="!shouldRenderVueNodes" />
     </template>
+    <slot name="legacy-menu" />
   </div>
   <!-- Load splitter overlay only after comfyApp is ready. -->
   <!-- If load immediately, the top-level splitter stateKey won't be correctly

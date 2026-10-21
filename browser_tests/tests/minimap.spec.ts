@@ -69,15 +69,9 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(canvas).toBeVisible()
     await expect(viewport).toBeVisible()
     await expect.poll(() => comfyPage.canvasOps.getMinimapRightInset()).toBe(8)
-
-    await expect(container).toHaveCSS('position', 'relative')
-
-    // position and z-index validation moved to the parent container of the minimap
-    const minimapMainContainer = comfyPage.page.locator(
-      '.minimap-main-container'
-    )
-    await expect(minimapMainContainer).toHaveCSS('position', 'absolute')
-    await expect(minimapMainContainer).toHaveCSS('z-index', '1000')
+    await comfyPage.page
+      .getByTestId(TestIds.canvas.minimapInteractionOverlay)
+      .click({ trial: true })
   })
 
   test('Validate minimap toggle button state', async ({ comfyPage }) => {

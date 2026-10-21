@@ -7,10 +7,13 @@
     <div
       v-show="!linearMode"
       id="graph-canvas-container"
-      ref="graphCanvasContainerRef"
       class="graph-canvas-container isolate"
     >
-      <GraphCanvas @ready="onGraphReady" />
+      <GraphCanvas @ready="onGraphReady">
+        <template #legacy-menu>
+          <div ref="legacyMenuContainerRef" />
+        </template>
+      </GraphCanvas>
     </div>
     <LinearView v-if="linearMode" />
     <template v-if="isBuilderMode">
@@ -133,7 +136,7 @@ const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
-const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
+const legacyMenuContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
@@ -322,8 +325,7 @@ onMounted(() => {
   executionStore.bindExecutionEvents()
 
   try {
-    // Relocate the legacy menu container to the graph canvas container so it is below other elements
-    graphCanvasContainerRef.value?.prepend(app.ui.menuContainer)
+    legacyMenuContainerRef.value?.append(app.ui.menuContainer)
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
