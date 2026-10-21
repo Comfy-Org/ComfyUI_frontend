@@ -40,33 +40,40 @@ interface AxisSpan {
 
 interface Band {
   start: number
-  minSize: number
+  end: number
   members: LayoutBox[]
 }
 
 const GRID_ALIGN_TOLERANCE = 16
 const OVERLAP_TOLERANCE = 0.5
 
-const crossAxisOf = (axis: GapAxis): GapAxis => (axis === 'x' ? 'y' : 'x')
+function crossAxisOf(axis: GapAxis): GapAxis {
+  return axis === 'x' ? 'y' : 'x'
+}
 
-const spanOf = (box: LayoutBox, axis: GapAxis): AxisSpan =>
-  axis === 'x'
+function spanOf(box: LayoutBox, axis: GapAxis): AxisSpan {
+  return axis === 'x'
     ? { start: box.x, size: box.width }
     : { start: box.y, size: box.height }
+}
 
-const trackIndexOf = (cell: GridCell, axis: GapAxis): number =>
-  axis === 'x' ? cell.column : cell.row
+function trackIndexOf(cell: GridCell, axis: GapAxis): number {
+  return axis === 'x' ? cell.column : cell.row
+}
 
-const lineIndexOf = (cell: GridCell, axis: GapAxis): number =>
-  axis === 'x' ? cell.row : cell.column
+function lineIndexOf(cell: GridCell, axis: GapAxis): number {
+  return axis === 'x' ? cell.row : cell.column
+}
 
-const trackCountOf = (grid: SelectionGrid, axis: GapAxis): number =>
-  axis === 'x' ? grid.columnCount : grid.rowCount
+function trackCountOf(grid: SelectionGrid, axis: GapAxis): number {
+  return axis === 'x' ? grid.columnCount : grid.rowCount
+}
 
-const joinsBand = (band: Band, { start, size }: AxisSpan): boolean => {
+function joinsBand(band: Band, { start, size }: AxisSpan): boolean {
   const offset = start - band.start
-  const centreInBand = offset + size / 2 <= band.minSize
-  const nearbyStart = offset <= Math.min(band.minSize, size) / 2
+  const sharedSize = band.end - band.start
+  const centreInBand = start + size / 2 <= band.end
+  const nearbyStart = offset <= Math.min(sharedSize, size) / 2
   return centreInBand || nearbyStart
 }
 
@@ -83,19 +90,22 @@ function clusterAlong(boxes: LayoutBox[], axis: GapAxis): LayoutBox[][] {
     const band = bands.at(-1)
     if (band && joinsBand(band, span)) {
       band.members.push(box)
-      if (span.size < band.minSize) {
-        band.start = span.start
-        band.minSize = span.size
-      }
+      band.start = span.start
+      band.end = Math.min(band.end, span.start + span.size)
     } else {
-      bands.push({ start: span.start, minSize: span.size, members: [box] })
+      bands.push({
+        start: span.start,
+        end: span.start + span.size,
+        members: [box]
+      })
     }
   }
   return bands.map((band) => band.members)
 }
 
-const cumulativeStarts = (counts: number[]): number[] =>
-  counts.map((_, i) => counts.slice(0, i).reduce((sum, n) => sum + n, 0))
+function cumulativeStarts(counts: number[]): number[] {
+  return counts.map((_, i) => counts.slice(0, i).reduce((sum, n) => sum + n, 0))
+}
 
 function assignCells(
   rows: LayoutBox[][],
@@ -127,16 +137,25 @@ function assignCells(
   return { cells, columnCount: splitWidths.reduce((sum, n) => sum + n, 0) }
 }
 
-const spansOverlap = (a: AxisSpan, b: AxisSpan): boolean =>
-  a.start < b.start + b.size - OVERLAP_TOLERANCE &&
-  b.start < a.start + a.size - OVERLAP_TOLERANCE
+function spansOverlap(a: AxisSpan, b: AxisSpan): boolean {
+  return (
+    a.start < b.start + b.size - OVERLAP_TOLERANCE &&
+    b.start < a.start + a.size - OVERLAP_TOLERANCE
+  )
+}
 
-const boxesIntersect = (a: LayoutBox, b: LayoutBox): boolean =>
-  spansOverlap(spanOf(a, 'x'), spanOf(b, 'x')) &&
-  spansOverlap(spanOf(a, 'y'), spanOf(b, 'y'))
+function boxesIntersect(a: LayoutBox, b: LayoutBox): boolean {
+  return (
+    spansOverlap(spanOf(a, 'x'), spanOf(b, 'x')) &&
+    spansOverlap(spanOf(a, 'y'), spanOf(b, 'y'))
+  )
+}
 
-const anyIntersect = (boxes: LayoutBox[]): boolean =>
-  boxes.some((a, i) => boxes.slice(i + 1).some((b) => boxesIntersect(a, b)))
+function anyIntersect(boxes: LayoutBox[]): boolean {
+  return boxes.some((a, i) =>
+    boxes.slice(i + 1).some((b) => boxesIntersect(a, b))
+  )
+}
 
 function neighbourPairs(
   cells: GridCell[],
@@ -190,13 +209,18 @@ function classify(
   return aligned && linkedBothWays ? 'grid' : 'scattered'
 }
 
+function hasFiniteGeometry({ x, y, width, height }: LayoutBox): boolean {
+  return [x, y, width, height].every(Number.isFinite)
+}
+
 /**
- * Groups boxes into rows and columns, keeping their order, and says whether
- * they read as a row, a column, an aligned grid or a scattered selection.
+ * Groups finite boxes into rows and columns, keeping their order, and says
+ * whether they form a row, a column, an aligned grid or a scattered set.
  */
 export function detectSelectionGrid(boxes: LayoutBox[]): SelectionGrid {
-  const rows = clusterAlong(boxes, 'y')
-  const { cells, columnCount } = assignCells(rows, clusterAlong(boxes, 'x'))
+  const placed = boxes.filter(hasFiniteGeometry)
+  const rows = clusterAlong(placed, 'y')
+  const { cells, columnCount } = assignCells(rows, clusterAlong(placed, 'x'))
   return {
     kind: classify(cells, rows.length, columnCount),
     cells,
@@ -205,21 +229,29 @@ export function detectSelectionGrid(boxes: LayoutBox[]): SelectionGrid {
   }
 }
 
-const topLeftCell = (cells: GridCell[]): GridCell =>
-  cells.reduce((best, cell) =>
+function topLeftCell(cells: GridCell[]): GridCell {
+  return cells.reduce((best, cell) =>
     cell.row < best.row || (cell.row === best.row && cell.column < best.column)
       ? cell
       : best
   )
+}
 
-const membersOf = (grid: SelectionGrid, axis: GapAxis, track: number) =>
-  grid.cells.filter((cell) => trackIndexOf(cell, axis) === track)
+function membersOf(
+  grid: SelectionGrid,
+  axis: GapAxis,
+  track: number
+): GridCell[] {
+  return grid.cells.filter((cell) => trackIndexOf(cell, axis) === track)
+}
 
-const sizeAlong = (cell: GridCell, axis: GapAxis): number =>
-  spanOf(cell.box, axis).size
+function sizeAlong(cell: GridCell, axis: GapAxis): number {
+  return spanOf(cell.box, axis).size
+}
 
-const startAlong = (cell: GridCell, axis: GapAxis): number =>
-  spanOf(cell.box, axis).start
+function startAlong(cell: GridCell, axis: GapAxis): number {
+  return spanOf(cell.box, axis).start
+}
 
 function reachBefore(
   grid: SelectionGrid,
@@ -242,11 +274,12 @@ function reachBefore(
   return Math.max(pastPrevious, ...pastLineNeighbours)
 }
 
-const laterTracks = (grid: SelectionGrid, axis: GapAxis): number[] =>
-  Array.from(
+function laterTracks(grid: SelectionGrid, axis: GapAxis): number[] {
+  return Array.from(
     { length: Math.max(0, trackCountOf(grid, axis) - 1) },
     (_, i) => i + 1
   )
+}
 
 function packedOffsets(
   grid: SelectionGrid,
@@ -266,8 +299,15 @@ function packedOffsets(
   return offsets
 }
 
-const largestSizeOf = (grid: SelectionGrid, axis: GapAxis, track: number) =>
-  Math.max(...membersOf(grid, axis, track).map((cell) => sizeAlong(cell, axis)))
+function largestSizeOf(
+  grid: SelectionGrid,
+  axis: GapAxis,
+  track: number
+): number {
+  return Math.max(
+    ...membersOf(grid, axis, track).map((cell) => sizeAlong(cell, axis))
+  )
+}
 
 function uniformOffsets(
   grid: SelectionGrid,
@@ -283,13 +323,18 @@ function uniformOffsets(
   return offsets
 }
 
-const trackStartOf = (grid: SelectionGrid, axis: GapAxis, track: number) =>
-  Math.min(
+function trackStartOf(
+  grid: SelectionGrid,
+  axis: GapAxis,
+  track: number
+): number {
+  return Math.min(
     ...membersOf(grid, axis, track).map((cell) => startAlong(cell, axis))
   )
+}
 
-const packedGapsAlong = (grid: SelectionGrid, axis: GapAxis): number[] =>
-  laterTracks(grid, axis).map((track) =>
+function packedGapsAlong(grid: SelectionGrid, axis: GapAxis): number[] {
+  return laterTracks(grid, axis).map((track) =>
     Math.min(
       ...membersOf(grid, axis, track).map(
         (cell) =>
@@ -298,14 +343,16 @@ const packedGapsAlong = (grid: SelectionGrid, axis: GapAxis): number[] =>
       )
     )
   )
+}
 
-const uniformGapsAlong = (grid: SelectionGrid, axis: GapAxis): number[] =>
-  laterTracks(grid, axis).map(
+function uniformGapsAlong(grid: SelectionGrid, axis: GapAxis): number[] {
+  return laterTracks(grid, axis).map(
     (track) =>
       trackStartOf(grid, axis, track) -
       trackStartOf(grid, axis, track - 1) -
       largestSizeOf(grid, axis, track - 1)
   )
+}
 
 function roundedMedian(values: number[]): number | undefined {
   if (values.length === 0) return undefined
@@ -366,12 +413,13 @@ function layoutOf(grid: SelectionGrid, gap: number): BoxPosition[] {
 
 const POSITION_TOLERANCE = 0.5
 
-const isLaidOutAt = (grid: SelectionGrid, gap: number): boolean =>
-  layoutOf(grid, gap).every(
+function isLaidOutAt(grid: SelectionGrid, gap: number): boolean {
+  return layoutOf(grid, gap).every(
     (position, i) =>
       Math.abs(position.x - grid.cells[i].box.x) <= POSITION_TOLERANCE &&
       Math.abs(position.y - grid.cells[i].box.y) <= POSITION_TOLERANCE
   )
+}
 
 function gapOf(grid: SelectionGrid): number {
   const packedGap = roundedMedian(
@@ -388,8 +436,9 @@ function gapOf(grid: SelectionGrid): number {
   return packedGap < 0 ? DEFAULT_TIDY_GAP : Math.max(0, packedGap)
 }
 
-const safeGapOf = (gap: number): number =>
-  Number.isFinite(gap) ? Math.max(0, gap) : DEFAULT_TIDY_GAP
+function safeGapOf(gap: number): number {
+  return Number.isFinite(gap) ? Math.max(0, gap) : DEFAULT_TIDY_GAP
+}
 
 /**
  * Lines boxes up into their detected rows and columns: rows align by top,
@@ -400,7 +449,7 @@ export function computeTidyLayout(
   boxes: LayoutBox[],
   gap?: number
 ): BoxPosition[] {
-  if (boxes.length < 2) return []
   const grid = detectSelectionGrid(boxes)
+  if (grid.cells.length < 2) return []
   return layoutOf(grid, gap === undefined ? gapOf(grid) : safeGapOf(gap))
 }

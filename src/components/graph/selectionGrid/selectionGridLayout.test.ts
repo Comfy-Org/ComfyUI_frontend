@@ -107,6 +107,28 @@ describe('detectSelectionGrid', () => {
       columns: 3
     },
     {
+      name: 'a short node below a tall one, beside a node level with both',
+      boxes: [
+        box('x', 0, 0, 200, 200),
+        box('y', 0, 220, 200, 30),
+        box('m', 300, 120, 200, 150)
+      ],
+      kind: 'scattered',
+      rows: 2,
+      columns: 2
+    },
+    {
+      name: 'a short node below another, beside a node level with the first',
+      boxes: [
+        box('t', 0, 0, 200, 100),
+        box('a', 300, 50, 200, 98),
+        box('d', 0, 110, 200, 40)
+      ],
+      kind: 'scattered',
+      rows: 2,
+      columns: 2
+    },
+    {
       name: 'a column of mixed widths',
       boxes: [
         box('a', 0, 0, 300, 100),
@@ -298,14 +320,25 @@ describe('computeTidyLayout', () => {
     expect(gapBetween(tidied, 'a', 'b', 'x')).toBe(gap)
   })
 
-  it.for([Number.NaN, Number.POSITIVE_INFINITY])(
-    'uses a 12 gap when it is given %s',
-    (gap) => {
-      const tidied = moved(messyGrid, computeTidyLayout(messyGrid, gap))
+  it.for([
+    { given: Number.NaN, gap: 12 },
+    { given: Number.POSITIVE_INFINITY, gap: 12 },
+    { given: -30, gap: 0 }
+  ])('uses a $gap gap when it is given $given', ({ given, gap }) => {
+    const tidied = moved(messyGrid, computeTidyLayout(messyGrid, given))
 
-      expect(gapBetween(tidied, 'c', 'd', 'x')).toBe(12)
-    }
-  )
+    expect(gapBetween(tidied, 'c', 'd', 'x')).toBe(gap)
+    expect(overlapping(tidied)).toBe(false)
+  })
+
+  it('leaves out a node whose geometry is not finite', () => {
+    const boxes = [...messyGrid, box('broken', Number.NaN, 0, 100, 100)]
+
+    const positions = computeTidyLayout(boxes)
+
+    expect(positions.map((position) => position.id)).not.toContain('broken')
+    expect(positions).toEqual(computeTidyLayout(messyGrid))
+  })
 
   it('keeps nodes that face each other a full gap apart', () => {
     const boxes = [
@@ -361,7 +394,10 @@ describe('computeTidyLayout', () => {
     expect(moved(tidied, computeTidyLayout(tidied))).toEqual(tidied)
   })
 
-  it('returns nothing for fewer than two nodes', () => {
-    expect(computeTidyLayout([box('a', 0, 0, 100, 100)])).toEqual([])
+  it.for([
+    { name: 'no nodes', boxes: [] },
+    { name: 'one node', boxes: [box('a', 0, 0, 100, 100)] }
+  ])('returns nothing for $name', ({ boxes }) => {
+    expect(computeTidyLayout(boxes)).toEqual([])
   })
 })
