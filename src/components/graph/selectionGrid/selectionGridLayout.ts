@@ -598,7 +598,7 @@ export function computeGapBars(grid: SelectionGrid): GapBar[] {
         key: JSON.stringify([axis, before.box.id, after.box.id]),
         axis,
         gutter: boundary,
-        clearance: Math.min(clearance, gap),
+        clearance: Math.max(0, Math.min(clearance, gap)),
         x: axis === 'x' ? along : across,
         y: axis === 'x' ? across : along,
         gap

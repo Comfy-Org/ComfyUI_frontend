@@ -90,10 +90,11 @@ export function useSelectionGrid() {
     nodes: LGraphNode[],
     positions: BoxPosition[],
     { captureUndo }: { captureUndo: boolean }
-  ) => {
-    if (canvasStore.isReadOnly || positions.length === 0) return
+  ): boolean => {
+    if (canvasStore.isReadOnly || positions.length === 0) return false
     placeBoxes(nodes, positions)
     if (captureUndo) recordUndoStep()
+    return true
   }
 
   const tidyUp = (

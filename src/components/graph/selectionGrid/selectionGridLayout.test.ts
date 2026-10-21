@@ -622,6 +622,14 @@ describe('computeGapBars', () => {
     })
   })
 
+  it('never lets a gap shrink further when its nodes already overlap a little', () => {
+    const boxes = [box('a', 0, 0, 100, 100), box('b', 99.8, 0, 100, 100)]
+
+    const [bar] = computeGapBars(detectSelectionGrid(boxes))
+
+    expect(bar.clearance).toBe(0)
+  })
+
   it('shows no bars for a scattered selection', () => {
     expect(computeGapBars(detectSelectionGrid(messyGrid))).toEqual([])
   })

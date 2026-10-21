@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope, shallowRef } from 'vue'
+import { computed, effectScope, nextTick, shallowRef } from 'vue'
 
 import {
   computeGapBars,
@@ -11,7 +11,8 @@ import type {
 } from '@/components/graph/selectionGrid/selectionGridLayout'
 import { useGapDragSession } from '@/components/graph/selectionGrid/useGapDragSession'
 import { useSelectionGrid } from '@/components/graph/selectionGrid/useSelectionGrid'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
 
 vi.mock(import('@/components/graph/selectionGrid/useSelectionGrid'), {
@@ -29,6 +30,13 @@ const gridWithWideNode: LayoutBox[] = [
   { id: toNodeId('b'), x: 260, y: 0, width: 120, height: 100 },
   { id: toNodeId('c'), x: 0, y: 140, width: 240, height: 100 },
   { id: toNodeId('d'), x: 260, y: 140, width: 120, height: 100 }
+]
+
+const nearlyTouchingGrid: LayoutBox[] = [
+  { id: toNodeId('a'), x: 0, y: 0, width: 200, height: 100 },
+  { id: toNodeId('b'), x: 260.4, y: 0, width: 120, height: 100 },
+  { id: toNodeId('c'), x: 0, y: 140, width: 260.3, height: 100 },
+  { id: toNodeId('d'), x: 260.4, y: 140, width: 120, height: 100 }
 ]
 
 const firstBarOf = (boxes: LayoutBox[]): GapBar => {
@@ -49,7 +57,9 @@ const positionsOf = (boxes: LayoutBox[]) =>
 
 describe('useGapDragSession', () => {
   const placeBoxes = vi.fn()
-  const moveBoxes = vi.fn()
+  const moveBoxes = vi.fn<ReturnType<typeof useSelectionGrid>['moveBoxes']>(
+    () => true
+  )
   const recordUndoStep = vi.fn()
   const selectedNodes = shallowRef<LGraphNode[]>([])
   let measuredBoxes: LayoutBox[] = []
@@ -243,6 +253,58 @@ describe('useGapDragSession', () => {
     expect(moveBoxes).not.toHaveBeenCalled()
   })
 
+  it('ends a drag without moving or recording anything once another graph is shown', async () => {
+    const session = useGapDragSession()
+    session.start(firstBarOf(row))
+    session.preview(10)
+    flushFrames()
+
+    useCanvasStore().currentGraph = new LGraph()
+    await nextTick()
+    session.commit()
+    session.cancel()
+
+    expect(session.drag.value).toBeNull()
+    expect(moveBoxes).toHaveBeenCalledTimes(1)
+    expect(placeBoxes).not.toHaveBeenCalled()
+    expect(recordUndoStep).not.toHaveBeenCalled()
+  })
+
+  it('does not start a drag on a read-only canvas', () => {
+    useCanvasStore().isReadOnly = true
+    const session = useGapDragSession()
+
+    session.start(firstBarOf(row))
+
+    expect(session.drag.value).toBeNull()
+  })
+
+  it('puts every node back when the release cannot move them', () => {
+    const session = useGapDragSession()
+    session.start(firstBarOf(row))
+    session.preview(10)
+    flushFrames()
+    moveBoxes.mockReturnValue(false)
+
+    session.commit()
+
+    expect(placeBoxes).toHaveBeenCalledWith(rowNodes, positionsOf(row))
+    expect(session.drag.value).toBeNull()
+  })
+
+  it('rests at its whole starting gap when nodes beyond it nearly touch', () => {
+    selectBoxes(nearlyTouchingGrid)
+    const session = useGapDragSession()
+    session.start(firstBarOf(nearlyTouchingGrid))
+
+    session.preview(0)
+    session.preview(-5)
+    flushFrames()
+
+    expect(session.drag.value?.gap).toBe(60)
+    expect(moveBoxes).not.toHaveBeenCalled()
+  })
+
   it('keeps the gap at zero or more', () => {
     const session = useGapDragSession()
     session.start(firstBarOf(row))
@@ -292,10 +354,6 @@ describe('useGapDragSession', () => {
         [
           { id: 'a', x: 0, y: 0 },
           { id: 'b', x: 200, y: 0 }
-        ],
-        [
-          { id: 'a', x: 0, y: 0 },
-          { id: 'b', x: 200, y: 0 }
         ]
       ])
     })
@@ -332,6 +390,16 @@ describe('useGapDragSession', () => {
       expect(session.commitNudges()).toBe(false)
       expect(moveBoxes).not.toHaveBeenCalled()
       expect(recordUndoStep).not.toHaveBeenCalled()
+    })
+
+    it('leaves the nodes alone when a press cannot shrink the gap by a whole step', () => {
+      selectBoxes(nearlyTouchingGrid)
+      const session = useGapDragSession()
+
+      session.nudge(firstBarOf(nearlyTouchingGrid), -1)
+
+      expect(moveBoxes).not.toHaveBeenCalled()
+      expect(session.commitNudges()).toBe(false)
     })
 
     it('ignores a step that is not a number', () => {
