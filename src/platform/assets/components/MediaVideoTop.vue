@@ -75,14 +75,6 @@ const handleVideoError = () => {
   onError()
 }
 
-// Native media controls live in user-agent shadow DOM, so a click on them is
-// indistinguishable from a click on the video itself: same `target`, same
-// `composedPath()`. Position is the only signal, and the strip is roughly the
-// bottom 38px in WebKit and the bottom 64px in Chromium. Use the larger
-// value: over-guarding a few extra px on WebKit is a minor inconvenience,
-// under-guarding on Chromium defeats this fix entirely. Measure the clipping
-// container, not the video: the video is scaled while hovered, so its rect
-// extends below the visible edge.
 const NATIVE_CONTROLS_STRIP_PX = 64
 
 function isOverNativeControls(event: MouseEvent, container: HTMLElement) {
