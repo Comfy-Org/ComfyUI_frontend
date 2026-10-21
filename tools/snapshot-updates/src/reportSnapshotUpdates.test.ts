@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { workflowStepRun } from './workflowStepRun'
 
@@ -11,6 +11,7 @@ async function sectionContent(env: Record<string, string>) {
     'result',
     'Build the section content'
   )
+  assert.exists(script)
   const stepEnv = {
     TITLE: 'Update',
     UNAVAILABLE: '',
@@ -37,7 +38,7 @@ interface ReportCase {
   state: string
   env: Record<string, string>
   alert: string
-  mentions: string
+  message: RegExp
 }
 
 describe('snapshot update report', () => {
@@ -46,42 +47,36 @@ describe('snapshot update report', () => {
       state: 'no changes and every job reported',
       env: {},
       alert: '> [!TIP]',
-      mentions: 'All screenshots are already up to date.'
+      message: /^> All screenshots are already up to date\.$/
     },
     {
-      state: 'no changes while a job left nothing to check',
-      env: { MISSING: 'shard 3' },
+      state: 'no changes while jobs left nothing to check',
+      env: { MISSING: 'shard 3, desktop' },
       alert: '> [!CAUTION]',
-      mentions: 'shard 3'
+      message:
+        /cannot be confirmed up to date\..*not checked: shard 3, desktop\./
     },
     {
-      state: 'changes while a job left nothing to check',
-      env: { MISSING: 'shard 3', HAS_CHANGES: 'true', CHANGED_COUNT: '2' },
+      state: 'changes while jobs left nothing to check',
+      env: {
+        MISSING: 'shard 3, desktop',
+        HAS_CHANGES: 'true',
+        CHANGED_COUNT: '2'
+      },
       alert: '> [!WARNING]',
-      mentions: 'Updated 2 screenshots'
+      message:
+        /Updated 2 screenshots .*pushed to the branch\. These jobs in the \[E2E run\]\(https:\/\/github\.com\/o\/r\/actions\/runs\/900\) .*not checked: shard 3, desktop\./
     },
     {
       state: 'changes and every job reported',
       env: { HAS_CHANGES: 'true', CHANGED_COUNT: '1' },
       alert: '> [!TIP]',
-      mentions: 'Updated 1 screenshot taken'
+      message: /^> Updated 1 screenshot taken from .*pushed to the branch\.$/
     }
-  ])('reports $state', async ({ env, alert, mentions }) => {
+  ])('reports $state', async ({ env, alert, message }) => {
     const lines = (await sectionContent(env)).split('\n')
 
     expect(lines.slice(0, 3)).toEqual(['## Update', '', alert])
-    expect(lines[3]).toContain(mentions)
-  })
-
-  it('names the jobs it could not check alongside the committed update', async () => {
-    const content = await sectionContent({
-      MISSING: 'shard 3, desktop',
-      HAS_CHANGES: 'true',
-      CHANGED_COUNT: '2'
-    })
-
-    expect(content).toContain(
-      'These jobs in the [E2E run](https://github.com/o/r/actions/runs/900) left no snapshot updates, so their screenshots were not checked: shard 3, desktop.'
-    )
+    expect(lines[3]).toMatch(message)
   })
 })

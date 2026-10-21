@@ -5,7 +5,7 @@ import { isMap, isSeq, parseDocument } from 'yaml'
 
 const WORKFLOWS = join(import.meta.dirname, '../../../.github/workflows')
 
-/** Reads the `run` or github-script `script` body of a named workflow step. */
+/** Reads the `run` or github-script `script` body of a named workflow step, if it has one. */
 export function workflowStepRun(workflow: string, job: string, step: string) {
   const steps = parseDocument(
     readFileSync(join(WORKFLOWS, workflow), 'utf8')
@@ -13,6 +13,8 @@ export function workflowStepRun(workflow: string, job: string, step: string) {
   const found = isSeq(steps)
     ? steps.items.find((item) => isMap(item) && item.get('name') === step)
     : undefined
-  if (!isMap(found)) return ''
-  return String(found.get('run') ?? found.getIn(['with', 'script']) ?? '')
+  const body = isMap(found)
+    ? (found.get('run') ?? found.getIn(['with', 'script']))
+    : undefined
+  return body === undefined ? undefined : String(body)
 }

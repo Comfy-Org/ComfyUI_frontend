@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
 
-import { expect, it, onTestFinished } from 'vitest'
+import { assert, expect, it, onTestFinished } from 'vitest'
 
 import { workflowStepRun } from './workflowStepRun'
 
@@ -47,20 +47,16 @@ it('merges only snapshot PNGs, replacing goldens of the same size and mtime', ()
   utimesSync(join(download, golden), 1_000_000, 1_000_000)
   utimesSync(join(checkout, golden), 1_000_000, 1_000_000)
 
-  spawnSync(
-    'bash',
-    [
-      '-c',
-      workflowStepRun(
-        'snapshot-update-commit.yaml',
-        'commit',
-        'Merge snapshot updates'
-      )
-    ],
-    {
-      env: { ...process.env, CONFIG_DIR: checkout, DOWNLOAD_DIR: download }
-    }
+  const script = workflowStepRun(
+    'snapshot-update-commit.yaml',
+    'commit',
+    'Merge snapshot updates'
   )
+  assert.exists(script)
+
+  spawnSync('bash', ['-c', script], {
+    env: { ...process.env, CONFIG_DIR: checkout, DOWNLOAD_DIR: download }
+  })
 
   expect(listFiles(checkout)).toEqual([
     'browser_tests/tests/a.spec.ts-snapshots/nested/deep.png',
