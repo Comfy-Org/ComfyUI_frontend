@@ -6,6 +6,7 @@ import { translationsFor } from '@/i18n/translations'
 import ModelHeroSection from './ModelHeroSection.vue'
 
 const { t } = translationsFor('en')
+const modelsBySlug = new Map(localModels.map((model) => [model.slug, model]))
 
 const familyPages = [
   ['flux1-dev', 'flux'],
@@ -30,16 +31,16 @@ describe('ModelHeroSection', () => {
   it.for(familyPages)(
     'links the %s page to the Hub search for %s',
     ([slug, term]) => {
-      const model = localModels.find((candidate) => candidate.slug === slug)
-      expect(model).toBeDefined()
+      const model = modelsBySlug.get(slug)
+      if (!model) throw new Error(`${slug} has no live model page`)
 
       render(ModelHeroSection, {
         props: {
-          displayName: model?.displayName ?? '',
-          huggingFaceUrl: model?.huggingFaceUrl ?? '',
-          hubSearch: model?.hubSearch,
-          workflowCount: model?.workflowCount ?? 0,
-          directory: model?.directory ?? ''
+          displayName: model.displayName,
+          huggingFaceUrl: model.huggingFaceUrl,
+          hubSearch: model.hubSearch,
+          workflowCount: model.workflowCount,
+          directory: model.directory
         }
       })
 
