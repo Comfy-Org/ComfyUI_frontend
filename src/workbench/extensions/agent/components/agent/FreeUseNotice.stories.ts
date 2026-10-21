@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { fn } from 'storybook/test'
 
-import '../../agentPanel.css'
+import '@/workbench/extensions/agent/agentPanel.css'
 
 import { AGENT_FREE_USE_PLACEMENTS } from '@/platform/telemetry/types'
 
@@ -15,8 +15,7 @@ function clearFreeUseNoticeDismissals() {
     }
   }
   return {
-    template:
-      '<div class="agent-scope w-[388px] bg-base-background"><story /></div>'
+    template: '<div class="agent-scope w-[388px] bg-background"><story /></div>'
   }
 }
 
@@ -45,7 +44,7 @@ export const InsideInput: Story = {
   decorators: [
     () => ({
       template:
-        '<div class="rounded-lg border border-border-subtle bg-secondary-background"><story /></div>'
+        '<div class="rounded-lg border border-border/50 bg-secondary"><story /></div>'
     })
   ]
 }

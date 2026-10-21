@@ -82,6 +82,11 @@ function capabilitiesResponse(
       can_manage_partner_node_access: false,
       can_view_pending_invites: false,
       can_view_team_usage: false,
+      can_edit_workspace: false,
+      can_manage_auto_top_up: false,
+      can_manage_subscription: false,
+      can_run_workflows: false,
+      can_upgrade: false,
       can_downgrade_to_personal: true,
       ...overrides
     },
@@ -319,6 +324,26 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canDowngradeToPersonal.value).toBe(false)
   })
 
+  it.for([true, false])(
+    'renders can_manage_subscription %s as served',
+    async (served) => {
+      expect(billingCapabilities.canManageSubscription.value).toBe(false)
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        capabilitiesResponse(
+          true,
+          'workspace-1',
+          true,
+          {},
+          { can_manage_subscription: served }
+        )
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.canManageSubscription.value).toBe(served)
+    }
+  )
+
   it('exposes the delete capability and the reason the server named', async () => {
     const response = capabilitiesResponse(
       true,
@@ -367,6 +392,45 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.topUpDenial.value).toBe('payment_past_due')
     expect(billingCapabilities.canManageBilling.value).toBe(true)
+  })
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: undefined, expected: false }
+  ])(
+    'renders payment_recovery_available $served as $expected',
+    async ({ served, expected }) => {
+      const response = capabilitiesResponse(true, 'workspace-1', true)
+      response.payment_recovery_available = served
+      vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+        response
+      )
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.paymentRecoveryAvailable.value).toBe(expected)
+    }
+  )
+
+  it('offers workspace editing only when the server does', async () => {
+    vi.mocked(workspaceApi.getBillingCapabilities).mockResolvedValueOnce(
+      capabilitiesResponse(
+        true,
+        'workspace-1',
+        true,
+        {},
+        {
+          can_edit_workspace: true
+        }
+      )
+    )
+
+    expect(billingCapabilities.canEditWorkspace.value).toBe(false)
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canEditWorkspace.value).toBe(true)
   })
 
   it('grants delete only when the server does', async () => {
@@ -1346,7 +1410,12 @@ describe('useBillingCapabilities on the SDK rail', () => {
           can_subscribe_self_serve: true,
           can_top_up: true,
           can_view_pending_invites: true,
-          can_view_team_usage: false
+          can_view_team_usage: false,
+          can_edit_workspace: false,
+          can_manage_auto_top_up: false,
+          can_manage_subscription: false,
+          can_run_workflows: false,
+          can_upgrade: false
         },
         denials: {
           can_cancel: 'no_subscription',
@@ -1443,6 +1512,27 @@ describe('useBillingCapabilities on the SDK rail', () => {
     expect(readCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
+
+  it.for([
+    { denial: 'payment_past_due', expected: true },
+    { denial: 'no_funds', expected: false },
+    { denial: undefined, expected: false }
+  ])(
+    'reads a can_run_workflows denial of $denial as payment past due: $expected',
+    async ({ denial, expected }) => {
+      readCapabilities.mockResolvedValueOnce({
+        status: 'ok',
+        value: {
+          ...capabilitiesResponse(true),
+          denied_reasons: { can_run_workflows: denial }
+        }
+      })
+
+      await billingCapabilities.initialize()
+
+      expect(billingCapabilities.runDeniedPaymentPastDue.value).toBe(expected)
+    }
+  )
 })
 
 describe('useBillingCapabilities capability gates', () => {

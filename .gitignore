@@ -23,6 +23,7 @@ node_modules
 .pnpm-store
 .nx
 dist
+dist-types
 dist-ssr
 *.local
 # Claude configuration

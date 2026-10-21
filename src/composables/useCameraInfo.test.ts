@@ -42,7 +42,7 @@ const { ViewportMock, instances } = vi.hoisted(() => {
 })
 
 vi.mock<unknown>(
-  import('@/extensions/core/cameraInfo/CameraInfoViewport'),
+  import('@comfyorg/viewport3d/cameraInfo/CameraInfoViewport'),
   () => ({
     CameraInfoViewport: ViewportMock
   })

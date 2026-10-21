@@ -62,7 +62,7 @@ function handleKeyup(event: KeyboardEvent): void {
     <slot />
     <TagRemoveButton
       v-if="removable"
-      :label="removeLabel ?? $t('g.remove')"
+      :aria-label="removeLabel ?? $t('g.remove')"
       :tooltip="removeTooltip"
       @click.stop="emit('remove', $event)"
     />

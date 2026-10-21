@@ -2,6 +2,14 @@
   "boundaries": {
     "zones": [
       {
+        "name": "comfyui-api/domain/public",
+        "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
+      },
+      {
+        "name": "node-definition/domain/public",
+        "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
+      },
+      {
         "name": "agent/domain",
         "patterns": [
           "src/workbench/extensions/agent/crdt/agentSubgraphDefinitions.test.ts",
@@ -743,42 +751,15 @@
         ]
       },
       {
-        "name": "camera-authoring/domain",
-        "patterns": [
-          "src/extensions/core/cameraAngle/cameraAngleMath.test.ts",
-          "src/extensions/core/cameraAngle/cameraAngleMath.ts",
-          "src/extensions/core/cameraAngle/types.ts",
-          "src/extensions/core/cameraInfo/handles/orbitDragMath.test.ts",
-          "src/extensions/core/cameraInfo/handles/orbitDragMath.ts",
-          "src/extensions/core/cameraInfo/handles/rollDragMath.test.ts",
-          "src/extensions/core/cameraInfo/handles/rollDragMath.ts",
-          "src/extensions/core/cameraInfo/handles/types.ts"
-        ]
-      },
-      {
         "name": "camera-authoring/application",
         "patterns": [
           "src/composables/useCameraAngle.test.ts",
           "src/composables/useCameraAngle.ts",
           "src/composables/useCameraInfo.test.ts",
           "src/composables/useCameraInfo.ts",
-          "src/extensions/core/cameraInfo/CameraInfoViewport.test.ts",
-          "src/extensions/core/cameraInfo/CameraInfoViewport.ts",
+          "src/extensions/core/cameraAngle/**",
           "src/extensions/core/cameraInfo/widgetBridge.test.ts",
           "src/extensions/core/cameraInfo/widgetBridge.ts"
-        ]
-      },
-      {
-        "name": "camera-authoring/infrastructure",
-        "patterns": [
-          "src/extensions/core/cameraAngle/SubjectBox.test.ts",
-          "src/extensions/core/cameraAngle/SubjectBox.ts",
-          "src/extensions/core/cameraAngle/orbitGizmos.test.ts",
-          "src/extensions/core/cameraAngle/orbitGizmos.ts",
-          "src/extensions/core/cameraInfo/CameraInfoOverlay.test.ts",
-          "src/extensions/core/cameraInfo/CameraInfoOverlay.ts",
-          "src/extensions/core/cameraInfo/subjectCameraPreview.test.ts",
-          "src/extensions/core/cameraInfo/subjectCameraPreview.ts"
         ]
       },
       {
@@ -1016,8 +997,6 @@
           "src/composables/useCurveEditor.ts",
           "src/composables/useImageQuiet.ts",
           "src/composables/useIntersectionObserver.ts",
-          "src/composables/useModalLiftedZIndex.test.ts",
-          "src/composables/useModalLiftedZIndex.ts",
           "src/composables/usePopoverSizing.ts",
           "src/composables/useRangeEditor.test.ts",
           "src/composables/useRangeEditor.ts",
@@ -1258,11 +1237,7 @@
       },
       {
         "name": "extension-runtime/domain",
-        "patterns": [
-          "src/types/comfy.ts",
-          "src/types/extensionTypes.ts",
-          "src/types/litegraph-augmentation.d.ts"
-        ]
+        "patterns": ["src/types/comfy.ts", "src/types/extensionTypes.ts"]
       },
       {
         "name": "extension-runtime/application",
@@ -1320,8 +1295,7 @@
           "src/scripts/app.graphReadiness.test.ts",
           "src/scripts/app.test.ts",
           "src/scripts/app.ts",
-          "src/scripts/utils.ts",
-          "src/types/index.ts"
+          "src/scripts/utils.ts"
         ]
       },
       {
@@ -1740,18 +1714,8 @@
         ]
       },
       {
-        "name": "image-compositor/application",
-        "patterns": [
-          "src/renderer/extensions/layerEditor/engine/editor/editor.selection.test.ts",
-          "src/renderer/extensions/layerEditor/engine/editor/editor.test.ts",
-          "src/renderer/extensions/layerEditor/engine/editor/editor.ts"
-        ]
-      },
-      {
         "name": "image-compositor/infrastructure",
         "patterns": [
-          "src/renderer/extensions/layerEditor/engine/compositor/webglCompositor.ts",
-          "src/renderer/extensions/layerEditor/engine/render/**",
           "src/renderer/extensions/layerEditor/psdExport.test.ts",
           "src/renderer/extensions/layerEditor/psdExport.ts",
           "src/renderer/extensions/layerEditor/psdMapping.test.ts",
@@ -1874,23 +1838,10 @@
         ]
       },
       {
-        "name": "light-authoring/domain",
-        "patterns": ["src/types/lightInfo.ts"]
-      },
-      {
         "name": "light-authoring/application",
         "patterns": [
           "src/components/lightInfo/useLightInfo.test.ts",
-          "src/components/lightInfo/useLightInfo.ts",
-          "src/extensions/core/lightInfo/LightInfoViewport.test.ts",
-          "src/extensions/core/lightInfo/LightInfoViewport.ts"
-        ]
-      },
-      {
-        "name": "light-authoring/infrastructure",
-        "patterns": [
-          "src/extensions/core/lightInfo/LightInfoOverlay.test.ts",
-          "src/extensions/core/lightInfo/LightInfoOverlay.ts"
+          "src/components/lightInfo/useLightInfo.ts"
         ]
       },
       {
@@ -2160,10 +2111,6 @@
       {
         "name": "model-3d/domain",
         "patterns": [
-          "src/extensions/core/load3d/cameraFromMatrices.test.ts",
-          "src/extensions/core/load3d/cameraFromMatrices.ts",
-          "src/extensions/core/load3d/constants.test.ts",
-          "src/extensions/core/load3d/constants.ts",
           "src/extensions/core/load3d/model3dOutput.test.ts",
           "src/extensions/core/load3d/model3dOutput.ts",
           "src/extensions/core/load3d/nodeTypes.test.ts",
@@ -2189,37 +2136,8 @@
       {
         "name": "model-3d/infrastructure",
         "patterns": [
-          "src/extensions/core/load3d/AnimationManager.test.ts",
-          "src/extensions/core/load3d/AnimationManager.ts",
-          "src/extensions/core/load3d/GizmoManager.test.ts",
-          "src/extensions/core/load3d/GizmoManager.ts",
-          "src/extensions/core/load3d/HDRIManager.test.ts",
-          "src/extensions/core/load3d/HDRIManager.ts",
-          "src/extensions/core/load3d/Load3d.test.ts",
-          "src/extensions/core/load3d/Load3d.ts",
           "src/extensions/core/load3d/Load3dUtils.test.ts",
-          "src/extensions/core/load3d/Load3dUtils.ts",
-          "src/extensions/core/load3d/LoaderManager.test.ts",
-          "src/extensions/core/load3d/LoaderManager.ts",
-          "src/extensions/core/load3d/MeshModelAdapter.obj.test.ts",
-          "src/extensions/core/load3d/MeshModelAdapter.test.ts",
-          "src/extensions/core/load3d/MeshModelAdapter.ts",
-          "src/extensions/core/load3d/ModelAdapter.test.ts",
-          "src/extensions/core/load3d/ModelAdapter.ts",
-          "src/extensions/core/load3d/ModelExporter.test.ts",
-          "src/extensions/core/load3d/ModelExporter.ts",
-          "src/extensions/core/load3d/PointCloudModelAdapter.test.ts",
-          "src/extensions/core/load3d/PointCloudModelAdapter.ts",
-          "src/extensions/core/load3d/RecordingManager.test.ts",
-          "src/extensions/core/load3d/RecordingManager.ts",
-          "src/extensions/core/load3d/SceneModelManager.test.ts",
-          "src/extensions/core/load3d/SceneModelManager.ts",
-          "src/extensions/core/load3d/SplatModelAdapter.test.ts",
-          "src/extensions/core/load3d/SplatModelAdapter.ts",
-          "src/extensions/core/load3d/createLoad3d.test.ts",
-          "src/extensions/core/load3d/createLoad3d.ts",
-          "src/extensions/core/load3d/loader/**",
-          "src/extensions/core/load3d/quadWireframe/**"
+          "src/extensions/core/load3d/Load3dUtils.ts"
         ]
       },
       {
@@ -3105,43 +3023,6 @@
         "patterns": ["src/components/videoEdit/**"]
       },
       {
-        "name": "viewport-3d/domain",
-        "patterns": [
-          "src/extensions/core/load3d/interfaces.ts",
-          "src/extensions/core/load3d/load3dViewport.test.ts",
-          "src/extensions/core/load3d/load3dViewport.ts"
-        ]
-      },
-      {
-        "name": "viewport-3d/application",
-        "patterns": [
-          "src/extensions/core/load3d/EventManager.test.ts",
-          "src/extensions/core/load3d/EventManager.ts",
-          "src/extensions/core/load3d/Viewport3d.test.ts",
-          "src/extensions/core/load3d/Viewport3d.ts"
-        ]
-      },
-      {
-        "name": "viewport-3d/infrastructure",
-        "patterns": [
-          "src/extensions/core/load3d/CameraManager.test.ts",
-          "src/extensions/core/load3d/CameraManager.ts",
-          "src/extensions/core/load3d/ControlsManager.test.ts",
-          "src/extensions/core/load3d/ControlsManager.ts",
-          "src/extensions/core/load3d/LightingManager.test.ts",
-          "src/extensions/core/load3d/LightingManager.ts",
-          "src/extensions/core/load3d/SceneManager.test.ts",
-          "src/extensions/core/load3d/SceneManager.ts",
-          "src/extensions/core/load3d/ViewHelperManager.test.ts",
-          "src/extensions/core/load3d/ViewHelperManager.ts",
-          "src/extensions/core/load3d/load3dContextMenuGuard.test.ts",
-          "src/extensions/core/load3d/load3dContextMenuGuard.ts",
-          "src/extensions/core/load3d/load3dRenderLoop.test.ts",
-          "src/extensions/core/load3d/load3dRenderLoop.ts",
-          "src/renderer/three/**"
-        ]
-      },
-      {
         "name": "viewport-3d/presentation",
         "patterns": [
           "src/components/load3d/ViewportWidgetShell.test.ts",
@@ -3153,8 +3034,7 @@
         "name": "viewport-3d/integration",
         "patterns": [
           "src/composables/useViewportNodeWiring.test.ts",
-          "src/composables/useViewportNodeWiring.ts",
-          "src/extensions/core/load3d/createViewport3d.ts"
+          "src/composables/useViewportNodeWiring.ts"
         ]
       },
       {
@@ -3741,14 +3621,6 @@
         "patterns": ["src/base/common/**"]
       },
       {
-        "name": "camera-authoring/application/outer-1",
-        "patterns": ["src/extensions/core/cameraAngle/**"]
-      },
-      {
-        "name": "camera-authoring/infrastructure/outer-1",
-        "patterns": ["src/extensions/core/cameraInfo/handles/**"]
-      },
-      {
         "name": "canvas-renderer/application/outer-1",
         "patterns": [
           "src/renderer/core/canvas/__tests__/**",
@@ -3876,10 +3748,6 @@
       {
         "name": "keybindings/application/outer-1",
         "patterns": ["src/platform/keybindings/**"]
-      },
-      {
-        "name": "light-authoring/domain/outer-1",
-        "patterns": ["src/extensions/core/lightInfo/**"]
       },
       {
         "name": "light-authoring/presentation/outer-1",
@@ -4066,10 +3934,6 @@
         "patterns": ["src/base/**"]
       },
       {
-        "name": "camera-authoring/domain/outer-2",
-        "patterns": ["src/extensions/core/cameraInfo/**"]
-      },
-      {
         "name": "cloud/presentation/outer-2",
         "patterns": ["src/platform/cloud/onboarding/**"]
       },
@@ -4128,11 +3992,33 @@
     ],
     "rules": [
       {
+        "from": "comfyui-api/domain/public",
+        "allow": [
+          "comfyui-api/domain/public",
+          "comfyui-api/domain",
+          "comfyui-api/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
+        "from": "node-definition/domain/public",
+        "allow": [
+          "node-definition/domain/public",
+          "node-definition/domain",
+          "node-definition/domain/outer-1",
+          "unclassified"
+        ]
+      },
+      {
         "from": "agent/domain",
         "allow": [
           "agent/domain",
           "authentication/domain",
           "design-system/domain",
+          "error-reporting/domain",
+          "extension-runtime/domain",
+          "workbench-shell/domain",
+          "workflow-management/domain",
           "design-system/domain/outer-1",
           "unclassified"
         ]
@@ -4149,8 +4035,22 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "error-reporting/application/outer-1",
+          "extension-runtime/infrastructure/outer-1",
           "unclassified"
         ]
       },
@@ -4166,8 +4066,22 @@
           "design-system/domain",
           "design-system/application",
           "design-system/infrastructure",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
+          "error-reporting/application/outer-1",
+          "extension-runtime/infrastructure/outer-1",
           "unclassified"
         ]
       },
@@ -4183,8 +4097,23 @@
           "design-system/domain",
           "design-system/application",
           "design-system/presentation",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/presentation",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/presentation",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/presentation",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "error-reporting/application/outer-1",
+          "extension-runtime/presentation/outer-1",
+          "workflow-management/presentation/outer-1",
+          "workbench-shell/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -4205,10 +4134,33 @@
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "workbench-shell/presentation",
+          "workbench-shell/integration",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/presentation",
+          "workflow-management/integration",
           "agent/integration/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "error-reporting/application/outer-1",
+          "extension-runtime/infrastructure/outer-1",
+          "extension-runtime/presentation/outer-1",
+          "workflow-management/presentation/outer-1",
+          "workbench-shell/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -4532,59 +4484,23 @@
         ]
       },
       {
-        "from": "camera-authoring/domain",
-        "allow": [
-          "camera-authoring/domain",
-          "camera-authoring/domain/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "camera-authoring/application",
-        "allow": [
-          "camera-authoring/domain",
-          "camera-authoring/application",
-          "camera-authoring/infrastructure",
-          "camera-authoring/application/outer-1",
-          "camera-authoring/infrastructure/outer-1",
-          "camera-authoring/domain/outer-2",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "camera-authoring/infrastructure",
-        "allow": [
-          "camera-authoring/domain",
-          "camera-authoring/application",
-          "camera-authoring/infrastructure",
-          "camera-authoring/application/outer-1",
-          "camera-authoring/infrastructure/outer-1",
-          "camera-authoring/domain/outer-2",
-          "unclassified"
-        ]
+        "allow": ["camera-authoring/application", "unclassified"]
       },
       {
         "from": "camera-authoring/presentation",
         "allow": [
-          "camera-authoring/domain",
           "camera-authoring/application",
           "camera-authoring/presentation",
-          "camera-authoring/application/outer-1",
-          "camera-authoring/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "camera-authoring/integration",
         "allow": [
-          "camera-authoring/domain",
           "camera-authoring/application",
-          "camera-authoring/infrastructure",
           "camera-authoring/presentation",
           "camera-authoring/integration",
-          "camera-authoring/application/outer-1",
-          "camera-authoring/infrastructure/outer-1",
-          "camera-authoring/domain/outer-2",
           "unclassified"
         ]
       },
@@ -4738,6 +4654,7 @@
       {
         "from": "comfyui-api/domain",
         "allow": [
+          "comfyui-api/domain/public",
           "comfyui-api/domain",
           "comfyui-api/domain/outer-2",
           "unclassified"
@@ -5117,40 +5034,64 @@
       {
         "from": "graph-model/domain",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "graph-model/application",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "graph-model/infrastructure",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "graph-model/integration",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
           "graph-model/integration",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -5259,21 +5200,9 @@
         ]
       },
       {
-        "from": "image-compositor/application",
-        "allow": [
-          "image-compositor/domain",
-          "image-compositor/application",
-          "image-compositor/infrastructure",
-          "image-compositor/application/outer-1",
-          "image-compositor/domain/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "image-compositor/infrastructure",
         "allow": [
           "image-compositor/domain",
-          "image-compositor/application",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
@@ -5284,7 +5213,6 @@
         "from": "image-compositor/presentation",
         "allow": [
           "image-compositor/domain",
-          "image-compositor/application",
           "image-compositor/presentation",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
@@ -5295,7 +5223,6 @@
         "from": "image-compositor/integration",
         "allow": [
           "image-compositor/domain",
-          "image-compositor/application",
           "image-compositor/infrastructure",
           "image-compositor/presentation",
           "image-compositor/integration",
@@ -5390,41 +5317,14 @@
         ]
       },
       {
-        "from": "light-authoring/domain",
-        "allow": [
-          "light-authoring/domain",
-          "light-authoring/domain/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "light-authoring/application",
-        "allow": [
-          "light-authoring/domain",
-          "light-authoring/application",
-          "light-authoring/infrastructure",
-          "light-authoring/domain/outer-1",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "light-authoring/infrastructure",
-        "allow": [
-          "light-authoring/domain",
-          "light-authoring/application",
-          "light-authoring/infrastructure",
-          "light-authoring/domain/outer-1",
-          "unclassified"
-        ]
+        "allow": ["light-authoring/application", "unclassified"]
       },
       {
         "from": "light-authoring/integration",
         "allow": [
-          "light-authoring/domain",
           "light-authoring/application",
-          "light-authoring/infrastructure",
           "light-authoring/integration",
-          "light-authoring/domain/outer-1",
           "light-authoring/presentation/outer-1",
           "unclassified"
         ]
@@ -5766,6 +5666,7 @@
       {
         "from": "node-definition/domain",
         "allow": [
+          "node-definition/domain/public",
           "node-definition/domain",
           "node-definition/domain/outer-1",
           "unclassified"
@@ -6384,42 +6285,12 @@
         ]
       },
       {
-        "from": "viewport-3d/domain",
-        "allow": ["viewport-3d/domain", "unclassified"]
-      },
-      {
-        "from": "viewport-3d/application",
-        "allow": [
-          "viewport-3d/domain",
-          "viewport-3d/application",
-          "viewport-3d/infrastructure",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "viewport-3d/infrastructure",
-        "allow": [
-          "viewport-3d/domain",
-          "viewport-3d/application",
-          "viewport-3d/infrastructure",
-          "unclassified"
-        ]
-      },
-      {
         "from": "viewport-3d/presentation",
-        "allow": [
-          "viewport-3d/domain",
-          "viewport-3d/application",
-          "viewport-3d/presentation",
-          "unclassified"
-        ]
+        "allow": ["viewport-3d/presentation", "unclassified"]
       },
       {
         "from": "viewport-3d/integration",
         "allow": [
-          "viewport-3d/domain",
-          "viewport-3d/application",
-          "viewport-3d/infrastructure",
           "viewport-3d/presentation",
           "viewport-3d/integration",
           "unclassified"
@@ -6825,10 +6696,33 @@
           "design-system/application",
           "design-system/infrastructure",
           "design-system/presentation",
+          "error-reporting/domain",
+          "error-reporting/application",
+          "error-reporting/infrastructure",
+          "extension-runtime/domain",
+          "extension-runtime/application",
+          "extension-runtime/infrastructure",
+          "extension-runtime/presentation",
+          "extension-runtime/integration",
+          "workbench-shell/domain",
+          "workbench-shell/application",
+          "workbench-shell/infrastructure",
+          "workbench-shell/presentation",
+          "workbench-shell/integration",
+          "workflow-management/domain",
+          "workflow-management/application",
+          "workflow-management/infrastructure",
+          "workflow-management/presentation",
+          "workflow-management/integration",
           "agent/integration/outer-1",
           "authentication/infrastructure/outer-1",
           "design-system/domain/outer-1",
           "design-system/presentation/outer-1",
+          "error-reporting/application/outer-1",
+          "extension-runtime/infrastructure/outer-1",
+          "extension-runtime/presentation/outer-1",
+          "workflow-management/presentation/outer-1",
+          "workbench-shell/presentation/outer-2",
           "unclassified"
         ]
       },
@@ -6961,30 +6855,6 @@
         "allow": [
           "browser-export/infrastructure",
           "browser-export/infrastructure/outer-1",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "camera-authoring/application/outer-1",
-        "allow": [
-          "camera-authoring/domain",
-          "camera-authoring/application",
-          "camera-authoring/infrastructure",
-          "camera-authoring/application/outer-1",
-          "camera-authoring/infrastructure/outer-1",
-          "camera-authoring/domain/outer-2",
-          "unclassified"
-        ]
-      },
-      {
-        "from": "camera-authoring/infrastructure/outer-1",
-        "allow": [
-          "camera-authoring/domain",
-          "camera-authoring/application",
-          "camera-authoring/infrastructure",
-          "camera-authoring/application/outer-1",
-          "camera-authoring/infrastructure/outer-1",
-          "camera-authoring/domain/outer-2",
           "unclassified"
         ]
       },
@@ -7175,20 +7045,32 @@
       {
         "from": "graph-model/domain/outer-1",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
       {
         "from": "graph-model/integration/outer-1",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
           "graph-model/domain",
           "graph-model/application",
           "graph-model/infrastructure",
           "graph-model/integration",
+          "node-definition/domain",
           "graph-model/domain/outer-1",
           "graph-model/integration/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
           "unclassified"
         ]
       },
@@ -7200,7 +7082,6 @@
         "from": "image-compositor/application/outer-1",
         "allow": [
           "image-compositor/domain",
-          "image-compositor/application",
           "image-compositor/infrastructure",
           "image-compositor/application/outer-1",
           "image-compositor/domain/outer-2",
@@ -7249,19 +7130,9 @@
         ]
       },
       {
-        "from": "light-authoring/domain/outer-1",
-        "allow": [
-          "light-authoring/domain",
-          "light-authoring/domain/outer-1",
-          "unclassified"
-        ]
-      },
-      {
         "from": "light-authoring/presentation/outer-1",
         "allow": [
-          "light-authoring/domain",
           "light-authoring/application",
-          "light-authoring/domain/outer-1",
           "light-authoring/presentation/outer-1",
           "unclassified"
         ]
@@ -7320,6 +7191,7 @@
       {
         "from": "node-definition/domain/outer-1",
         "allow": [
+          "node-definition/domain/public",
           "node-definition/domain",
           "node-definition/domain/outer-1",
           "unclassified"
@@ -7646,14 +7518,6 @@
         "allow": ["browser-interaction/domain/outer-2", "unclassified"]
       },
       {
-        "from": "camera-authoring/domain/outer-2",
-        "allow": [
-          "camera-authoring/domain",
-          "camera-authoring/domain/outer-2",
-          "unclassified"
-        ]
-      },
-      {
         "from": "cloud/presentation/outer-2",
         "allow": [
           "cloud/domain",
@@ -7669,6 +7533,7 @@
       {
         "from": "comfyui-api/domain/outer-2",
         "allow": [
+          "comfyui-api/domain/public",
           "comfyui-api/domain",
           "comfyui-api/domain/outer-2",
           "unclassified"
@@ -7773,6 +7638,8 @@
       {
         "from": "unclassified",
         "allow": [
+          "comfyui-api/domain/public",
+          "node-definition/domain/public",
           "agent/domain",
           "agent/application",
           "agent/infrastructure",
@@ -7815,9 +7682,7 @@
           "browser-export/infrastructure",
           "browser-interaction/application",
           "browser-interaction/infrastructure",
-          "camera-authoring/domain",
           "camera-authoring/application",
-          "camera-authoring/infrastructure",
           "camera-authoring/presentation",
           "camera-authoring/integration",
           "canvas-renderer/domain",
@@ -7902,9 +7767,7 @@
           "job-queue/integration",
           "keybindings/domain",
           "keybindings/presentation",
-          "light-authoring/domain",
           "light-authoring/application",
-          "light-authoring/infrastructure",
           "light-authoring/integration",
           "linear-mode/domain",
           "linear-mode/application",
@@ -8021,9 +7884,6 @@
           "video-edit/domain",
           "video-edit/infrastructure",
           "video-edit/presentation",
-          "viewport-3d/domain",
-          "viewport-3d/application",
-          "viewport-3d/infrastructure",
           "viewport-3d/presentation",
           "viewport-3d/integration",
           "vue-node-renderer/domain",
@@ -8083,8 +7943,6 @@
           "bottom-panel/integration/outer-1",
           "bounding-boxes/application/outer-1",
           "browser-export/infrastructure/outer-1",
-          "camera-authoring/application/outer-1",
-          "camera-authoring/infrastructure/outer-1",
           "canvas-renderer/application/outer-1",
           "canvas-renderer/infrastructure/outer-1",
           "canvas-renderer/integration/outer-1",
@@ -8110,7 +7968,6 @@
           "job-queue/infrastructure/outer-1",
           "job-queue/presentation/outer-1",
           "keybindings/application/outer-1",
-          "light-authoring/domain/outer-1",
           "light-authoring/presentation/outer-1",
           "linear-mode/presentation/outer-1",
           "media-metadata/infrastructure/outer-1",
@@ -8155,7 +8012,6 @@
           "workspace/presentation/outer-1",
           "assets/domain/outer-2",
           "browser-interaction/domain/outer-2",
-          "camera-authoring/domain/outer-2",
           "cloud/presentation/outer-2",
           "comfyui-api/domain/outer-2",
           "dialog-host/presentation/outer-2",

@@ -1,33 +1,33 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SessionClient, SessionSnapshot } from '../session.js'
-import type { AccountCredential } from '../sessionContracts.js'
-import { createBalanceWatch } from './balanceWatch.js'
-import { sessionBillingScopeSource } from './billingScope.js'
+import type { SessionClient, SessionSnapshot } from '#/core/session'
+import type { AccountCredential } from '#/core/sessionContracts'
+import { createBalanceWatch } from './balanceWatch'
+import { sessionBillingScopeSource } from './billingScope'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
-} from './billingContracts.js'
-import { createCapabilitiesReader } from './capabilities.js'
-import { driveEmbeddedChallenge } from './challengeDriver.js'
-import { createCreditsReader } from './credits.js'
+} from './billingContracts'
+import { createCapabilitiesReader } from './capabilities'
+import { driveEmbeddedChallenge } from './challengeDriver'
+import { createCreditsReader } from './credits'
 import {
   createBillingOperationLifecycle,
   operationRoute
-} from './operationLifecycle.js'
-import { OPERATION_POLL_TIMING } from './operationPolicy.js'
-import type { BillingOpStatus } from './operationState.js'
-import type { BillingStatusData } from './status.js'
-import { createBillingStatusReader } from './status.js'
-import type { HostedTopupCheckoutResult, TopupResult } from './topup.js'
+} from './operationLifecycle'
+import { OPERATION_POLL_TIMING } from './operationPolicy'
+import type { BillingOpStatus } from './operationState'
+import type { BillingStatusData } from './status'
+import { createBillingStatusReader } from './status'
+import type { HostedTopupCheckoutResult, TopupResult } from './topup'
 import {
   TOPUP_CHECKOUT_ROUTE,
   TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
-} from './topup.js'
+} from './topup'
 
 const NOW = 1_000_000
 
@@ -101,6 +101,11 @@ const CAPABILITIES = {
   can_view_team_usage: false,
   can_reactivate: false,
   can_revert_scheduled_change: false,
+  can_edit_workspace: false,
+  can_manage_auto_top_up: false,
+  can_manage_subscription: false,
+  can_run_workflows: false,
+  can_upgrade: false,
   can_subscribe_self_serve: false,
   can_top_up: true
 }
@@ -248,6 +253,7 @@ function harness(
     capabilities,
     credits,
     session,
+    transport,
     calls,
     answer,
     routes,
@@ -613,6 +619,25 @@ describe('createHostedTopupCheckout', () => {
       denial: 'tier_not_self_serve'
     })
     expect(routes()).toEqual(['GET /billing/capabilities'])
+  })
+
+  it('sends no POST once the caller aborts during the pre-purchase reads', async () => {
+    const { command, transport, routes } = harness()
+    const scope = new AbortController()
+    const answerRead = vi.mocked(transport).getMockImplementation()
+    vi.mocked(transport).mockImplementation(async (request) => {
+      if (request.route === '/billing/balance') scope.abort()
+      return answerRead ? answerRead(request) : NO_RESPONSE
+    })
+
+    await expect(
+      command.createHostedTopupCheckout({
+        amountCents: 1000,
+        returnUrl: RETURN_URL,
+        signal: scope.signal
+      })
+    ).resolves.toEqual({ status: 'error', code: 'REQUEST_FAILED' })
+    expect(routes()).not.toContain(`POST ${TOPUP_CHECKOUT_ROUTE}`)
   })
 
   it('rejects an amount or return URL outside the generated contract without sending anything', async () => {

@@ -174,19 +174,11 @@
     {
       "path": "src/types/extensionTypes.ts",
       "role": "domain"
-    },
-    {
-      "path": "src/types/index.ts",
-      "role": "integration"
-    },
-    {
-      "path": "src/types/litegraph-augmentation.d.ts",
-      "role": "domain"
     }
   ],
   "publicEntryPoints": [],
   "allowedDependencies": [],
-  "allowedConsumers": [],
+  "allowedConsumers": ["agent"],
   "characterizationScenarios": [
     {
       "name": "Extension loader fetches, filters, imports, and reports failing extensions",

@@ -8,14 +8,14 @@
     "
     @click="collapsible && toggleCollapse()"
   >
-    <h3 class="text-xs font-bold text-text-secondary uppercase">
+    <h3 class="text-xs font-bold text-muted-foreground uppercase">
       {{ title }}
     </h3>
     <i
       v-if="collapsible"
       :class="
         cn(
-          'pi text-xs text-text-secondary transition-transform duration-200',
+          'pi text-xs text-muted-foreground transition-transform duration-200',
           isCollapsed ? 'pi-chevron-right' : 'pi-chevron-down'
         )
       "

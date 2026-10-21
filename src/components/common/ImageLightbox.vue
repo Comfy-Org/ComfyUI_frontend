@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import {
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogOverlay,
-  DialogPortal,
   DialogRoot,
   DialogTitle,
   VisuallyHidden
@@ -26,10 +26,10 @@ const { t } = useI18n()
   <DialogRoot v-model:open="open">
     <DialogPortal>
       <DialogOverlay
-        class="fixed inset-0 z-30 bg-black/60 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        class="fixed inset-0 z-overlay bg-black/60 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       />
       <DialogContent
-        class="fixed top-1/2 left-1/2 z-1700 -translate-1/2 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-50"
+        class="fixed top-1/2 left-1/2 z-overlay -translate-1/2 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-50 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-50"
         @escape-key-down="open = false"
       >
         <VisuallyHidden>

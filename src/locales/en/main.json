@@ -693,6 +693,7 @@
     "Add Node": "Add Node",
     "Hide Link": "Hide Link",
     "Show Link": "Show Link",
+    "Show Links": "Show Links",
     "Add Group": "Add Group",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",
@@ -1473,6 +1474,8 @@
     "clickToResetZoom": "Click to reset zoom",
     "brushSettings": "Brush Settings",
     "brushShape": "Brush Shape",
+    "brushShapeCircle": "Circle brush",
+    "brushShapeSquare": "Square brush",
     "colorSelector": "Color Selector",
     "thickness": "Thickness",
     "opacity": "Opacity",
@@ -2019,6 +2022,7 @@
     "Gemini": "Gemini",
     "Grok": "Grok",
     "HeyGen": "HeyGen",
+    "Higgsfield": "Higgsfield",
     "HitPaw": "HitPaw",
     "Tencent": "Tencent",
     "Ideogram": "Ideogram",
@@ -2495,7 +2499,9 @@
     "textPlaceholder": "text to render (verbatim)",
     "descPlaceholder": "description of this region",
     "colors": "color_palette",
-    "grid": "Grid",
+    "grid": "Grid"
+  },
+  "widgetHistory": {
     "undo": "Undo",
     "redo": "Redo"
   },
@@ -2600,7 +2606,6 @@
     "unableToGetModelFilePath": "Unable to get model file path",
     "couldNotDetermineFileType": "Could not determine file type",
     "errorLoadingModel": "Error loading model",
-    "failedToDownloadFile": "Failed to download file",
     "updateRequested": "Update requested",
     "nodeDefinitionsUpdated": "Node definitions updated",
     "nodeDefinitionsUpdateFailed": "Failed to update node definitions",
@@ -2678,6 +2683,9 @@
       "redirectNotice": "You'll be redirected to",
       "appTypeNative": "Native app",
       "appTypeWeb": "Web app",
+      "unverifiedBadge": "Name not verified",
+      "unverifiedNotice": "This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} \u2014 make sure you recognize it.",
+      "unverifiedNoticeNoHost": "This name was provided by whoever registered this app and has not been verified by Comfy.",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
       "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
@@ -2953,12 +2961,21 @@
       "addMoreCreditsToRun": "Add more credits to run",
       "insufficientWorkflowMessage": "You don't have enough credits to run this workflow.",
       "creditsDescription": "Credits are used to run workflows or partner nodes.",
-      "noPaymentMethodCheckoutHint": "This workspace has no card saved for one-click top-ups. Pay on a checkout page instead.",
+      "noPaymentMethodCheckoutHint": "This workspace has no card saved for one-click top-ups. Pay on a checkout page instead, or set a default card so future top-ups charge it directly.",
       "continueToCheckout": "Continue to checkout",
       "checkoutBlockedTitle": "Checkout didn't open",
       "checkoutBlockedBody": "Your browser blocked the new tab. Open checkout to finish paying.",
       "openCheckout": "Open checkout",
+      "checkoutOpenedTitle": "Checkout opened in a new tab",
+      "checkoutOpenedBody": "Credits are added to this workspace as soon as your payment goes through.",
+      "reopenCheckout": "Reopen checkout",
       "checkoutOpenFailed": "The payment page couldn't open. Nothing was charged. Try again.",
+      "setDefaultCard": "Set a default card",
+      "setDefaultCardError": "Couldn't open card settings",
+      "defaultCardBlockedTitle": "Payment page didn't open",
+      "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
+      "openPaymentPage": "Open payment page",
+      "purchaseDisclosure": "Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
       "confirmTitle": "Confirm",
       "howManyCredits": "How many credits would you like to add?",
@@ -2984,6 +3001,7 @@
       "maximumAmount": "${amount} max.",
       "minRequired": "{credits} credits minimum",
       "maxAllowed": "{credits} credits maximum.",
+      "negativeBalanceNotice": "Your balance is −{credits} credit. This top-up covers that first. | Your balance is −{credits} credits. This top-up covers that first.",
       "creditsPerDollar": "credits per dollar",
       "amountToPayLabel": "Amount to pay in dollars",
       "creditsToReceiveLabel": "Credits to receive",
@@ -3009,7 +3027,8 @@
       "accountCreated": "Account Created",
       "apiUsage": "API Usage",
       "gpuUsage": "GPU Usage",
-      "apiNodeUsage": "Partner Node Usage"
+      "apiNodeUsage": "Partner Node Usage",
+      "agentUsage": "Agent Usage"
     },
     "unified": {
       "message": "Credits have been unified",
@@ -3052,7 +3071,7 @@
     "previewLoadFailed": "Failed to load subscription preview",
     "unableToSubscribe": "Unable to subscribe",
     "billingTabBlocked": "Couldn't open the billing page. Allow pop-ups for this site and try again.",
-    "billingPortalUnavailable": "Couldn't open the billing page. Try again in a moment.",
+    "billingPortalUnavailable": "Couldn't open billing. Try again.",
     "plansForWorkspace": "Plans for {workspace}",
     "personalWorkspace": "Personal Workspace",
     "teamWorkspace": "Team Workspace",
@@ -3310,7 +3329,6 @@
     "personalHeader": "Personal plans are for individual use only. {action}",
     "personalHeaderAction": "To add teammates, subscribe to the Team plan.",
     "scheduledChangeNotice": "Your plan changes to {plan} on {date}.",
-    "scheduledForDate": "Scheduled for {date}",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
     "yearlyCredits": "credits per year",
@@ -3371,6 +3389,21 @@
     "upgradePlan": "Upgrade Plan",
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
+    "planUnavailable": {
+      "notAMember": "You're no longer a member of this workspace, so you can't change its plan.",
+      "notWorkspaceOwner": "Only the workspace owner can change the plan.",
+      "notOriginalOwner": "Only the person who created this workspace can make this plan change.",
+      "salesManaged": "Your plan is managed by our sales team. Contact sales to change it.",
+      "billingOperationInProgress": "A billing change is in progress. This plan will be available again shortly.",
+      "billingOperationParked": "A recent billing change needs a fix from our team. Contact support to change your plan.",
+      "subscriptionChangeScheduled": "Your scheduled plan change takes effect on {date}. You can choose another plan after that.",
+      "subscriptionChangeInProgress": "You already have a plan change scheduled. You can choose another plan after it takes effect.",
+      "annualToMonthlyUnsupported": "You can't move to a higher monthly plan until your annual plan ends.",
+      "incompatibleTransition": "This plan can't be selected from your current plan.",
+      "exceedsMaxSeats": "Your workspace has more members than this plan allows.",
+      "billingStateUnknown": "We couldn't confirm your billing details. Try again in a moment.",
+      "generic": "This plan isn't available for your workspace."
+    },
     "maxDuration": {
       "free": "10 min",
       "standard": "30 min",
@@ -3544,6 +3577,31 @@
   },
   "workspacePanel": {
     "billingTab": {
+      "autoTopUp": {
+        "actions": {
+          "manage": "Manage",
+          "turnOn": "Turn on",
+          "updatePayment": "Update payment"
+        },
+        "failed": "Your charge didn't go through. Update your payment method or add credits manually.",
+        "limit": "Monthly limit: {spent} of {limit} used",
+        "limitTooltip": "Counts only auto top-up charges. Resets {date}.",
+        "limitTooltipNoDate": "Counts only auto top-up charges.",
+        "off": "Refills credits when your balance runs low",
+        "onHold": "No default payment method. Set one to resume auto top-up.",
+        "paused": "Monthly limit reached. Resumes {date}.",
+        "pausedNoDate": "Monthly limit reached.",
+        "rule": "Adds {amount} ({credits} credits) when below {threshold} credits.",
+        "status": {
+          "failed": "Failed",
+          "off": "Off",
+          "on": "On",
+          "onHold": "On hold",
+          "paused": "Paused"
+        },
+        "title": "Auto top-up",
+        "unavailable": "Couldn't load auto top-up."
+      },
       "credits": {
         "addCredits": "Add credits",
         "available": "Available",
@@ -3632,7 +3690,9 @@
         "bodyNoDate": "Your team has used all its credits. Add more credits.",
         "personalBody": "You've used all your credits. Add more credits or wait until credits refill on {date}.",
         "personalBodyNoDate": "You've used all your credits. Add more credits.",
-        "pastDueBody": "You've used all your credits. Update your payment method to add credits.",
+        "pastDueBody": "Your team has used all its credits. Update your payment method to add more.",
+        "pastDueMemberBody": "Your team has used all its credits. Ask your workspace owner to update the payment method.",
+        "pastDuePersonalBody": "You've used all your credits. Update your payment method to add more.",
         "memberBody": "Your team has used all its credits. Ask your workspace owner to add more credits or wait until credits refill on {date}.",
         "memberBodyNoDate": "Your team has used all its credits. Ask your workspace owner to add more credits.",
         "addCredits": "Add credits",
@@ -3648,6 +3708,9 @@
         "enterpriseBody": "Members keep full access until then. Reach out to our sales team to extend.",
         "reactivate": "Resume plan",
         "contactSales": "Contact sales"
+      },
+      "paused": {
+        "body": "This workspace's subscription is paused. Update payment to resume."
       },
       "planEnded": {
         "teamTitle": "Your Team plan ended on {date}",
@@ -5426,6 +5489,9 @@
     "inviteFailed": "Failed to Accept Invite",
     "inviteSsoUnavailable": "Ask your admin to add you",
     "inviteSsoUnavailableDetail": "Invite links can't be accepted from an SSO account yet. Ask a workspace admin to add you to the workspace directly.",
+    "inviteNeedsSignIn": "Sign in to accept this invite",
+    "inviteNeedsSignInDetail": "This browser is signed in, but accepting an invite needs you to sign in here once.",
+    "inviteSignIn": "Sign in",
     "inviteDirectoryManaged": "Your organization's admin manages membership",
     "inviteDirectoryManagedDetail": "This workspace's members are managed through your organization's directory, so invite links can't be used to join it. Ask your organization's admin to add you.",
     "viewWorkspace": "View workspace",
@@ -5815,8 +5881,8 @@
     "gotIt": "Got it",
     "greeting": "Hello {name},",
     "greetingQuestion": "What do you want to make?",
-    "placeholder": "Describe ideas, / use skills, {'@'} add references, drag in assets",
-    "placeholderWithoutSkills": "Describe ideas, {'@'} add references, drag in assets",
+    "placeholder": "Describe what you want to create",
+    "placeholderWithoutSkills": "Describe what you want to create",
     "skills": "Skills",
     "typeToSearch": "type to search",
     "skillNotAvailable": "Not available",
@@ -5974,10 +6040,19 @@
     "showMore": "Show more",
     "showLess": "Show less",
     "editRejected": {
-      "widgetWrite": "Widget edit was rejected and was not saved. Your typed value exists on the canvas only — reload the workflow to see the value that was kept.",
-      "generic": "Your edit was rejected and was not saved. The workflow may no longer match its canvas — reload the workflow to see what was kept.",
-      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. Your typed value exists on the canvas only — reload the workflow to see the values that were kept.",
-      "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. The workflow may no longer match its canvas — reload the workflow to see what was kept."
+      "widgetWrite": "Widget edit was rejected and was not saved. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
+      "generic": "Your edit was rejected and was not saved. Reload the workflow if the canvas still shows it.",
+      "widgetWritePartial": "Widget edit was rejected and was not saved, though some earlier edits were. The workflow keeps the earlier value; reload the workflow if the canvas still shows your typed value.",
+      "genericPartial": "Your edit was rejected and was not saved, though some earlier edits were. Reload the workflow if the canvas still shows the rejected part.",
+      "withReason": "{notice} Rejected: {target} ({code})",
+      "withReasonTarget": "{notice} Rejected: {target}",
+      "withReasonCode": "{notice} Reason: {code}",
+      "targets": {
+        "node": "node {id}",
+        "nodeField": "node {id} {field}",
+        "link": "link {id}",
+        "clear": "clearing the workflow"
+      }
     },
     "consent": {
       "title": "Meet Comfy Agent",

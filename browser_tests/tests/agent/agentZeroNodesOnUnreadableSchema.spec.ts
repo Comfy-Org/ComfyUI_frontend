@@ -14,6 +14,7 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
@@ -91,8 +92,8 @@ test.describe(
         ]
       })
 
-      await page.route('**/api/agent/threads', (route) =>
-        route.fulfill(jsonRoute({ threads: [] }))
+      await page.route('**/api/agent/threads?*', (route) =>
+        route.fulfill(jsonRoute(emptyAgentThreadList()))
       )
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() === 'POST') {
@@ -177,8 +178,6 @@ test.describe(
         .click()
       await expect(picker).toHaveText('Unsaved Workflow')
 
-      // Setup checkpoint, still expected to pass: the doc subscription round
-      // trip (with its corrupted catch-up) actually completed.
       await expect.poll(() => hostSocket.connectionCount()).toBeGreaterThan(0)
 
       const composer = panel.getByRole('textbox', {
@@ -211,8 +210,6 @@ test.describe(
         }
       })
 
-      // The op lands on the host's own authoritative document, and is sent to
-      // the browser the same way agentConversationFixture's replay does.
       hostSocket.send(
         host.apply([
           {
@@ -251,8 +248,6 @@ test.describe(
         data: { thread_id: THREAD_ID, message_id: MESSAGE_ID, usage: null }
       })
 
-      // Setup checkpoint, still expected to pass: the agent's turn completes
-      // and reports success in the panel — "agent says done".
       await expect(
         panel.getByRole('button', { name: SEND_LABEL })
       ).toBeVisible()
@@ -261,12 +256,6 @@ test.describe(
       )
       await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
-      // The fix under test: the agent said it added the note, and the op is
-      // on the host's own record (asserted above) -- both it and the earlier
-      // schema-version repair were sent as their own frames. The repair
-      // un-latches the schema gate before the add_node frame arrives, so the
-      // node reaches the canvas the user is looking at instead of being
-      // silently dropped alongside it.
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
     })
   }

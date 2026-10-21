@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -13,7 +13,7 @@ import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables
 import { getPricingCheckoutSelection } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import type { CheckoutTierKey } from '@/composables/billing/types'
 
-import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 
 function isBillingCycle(value: string): value is BillingCycle {
   return value === 'monthly' || value === 'yearly'
@@ -163,9 +163,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div
-    class="flex size-full items-center justify-center bg-comfy-menu-secondary"
-  >
+  <div class="flex size-full items-center justify-center bg-secondary">
     <div class="flex flex-col items-center gap-4">
       <img
         src="/assets/images/comfy-logo-single.svg"
@@ -174,7 +172,7 @@ onMounted(() => {
       />
       <p
         v-if="planLabel"
-        class="font-inter text-base/normal font-normal text-base-foreground"
+        class="font-inter text-base/normal font-normal text-foreground"
       >
         {{
           t('subscription.subscribeTo', {
@@ -182,7 +180,7 @@ onMounted(() => {
           })
         }}
       </p>
-      <Spinner v-if="planLabel" class="size-8" />
+      <AppSpinner v-if="planLabel" class="size-8" />
       <Button v-if="planLabel" as="a" href="/" variant="link">
         {{ t('cloudOnboarding.skipToCloudApp') }}
       </Button>

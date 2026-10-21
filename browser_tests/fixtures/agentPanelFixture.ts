@@ -2,7 +2,6 @@ import type { Page, Route } from '@playwright/test'
 
 import type {
   AgentRunMode,
-  AgentThreadListResponse,
   BillingStatusResponse,
   GlobalSetting,
   ListAssetsResponse,
@@ -27,6 +26,7 @@ import {
   createAgentComposerConversation,
   createAgentComposerThreadList
 } from '@e2e/fixtures/data/agent/agentComposerPerformance'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -124,15 +124,12 @@ export async function mockAgentTurnApi(
   page: Page,
   turnAccepted: AgentTurnAccepted
 ): Promise<void> {
-  const threads: AgentThreadListResponse = {
-    threads: [],
-    pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-  }
+  const threads = emptyAgentThreadList()
   const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
   await page.route('**/api/experiment/models', (route) =>
     route.fulfill(jsonRoute([]))
   )
-  await page.route('**/api/agent/threads', (route) =>
+  await page.route('**/api/agent/threads?*', (route) =>
     route.fulfill(jsonRoute(threads))
   )
   await page.route('**/api/agent/run-mode', (route) =>
@@ -223,7 +220,7 @@ export const agentComposerPerformanceTest =
       await page.route('**/api/experiment/models', (route) =>
         route.fulfill(jsonRoute([]))
       )
-      await page.route('**/api/agent/threads', (route) =>
+      await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(jsonRoute(threads))
       )
       await page.route('**/api/agent/run-mode', (route) =>

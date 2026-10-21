@@ -38,7 +38,7 @@
       v-for="([label, items], i) in Object.entries(serverConfigsByCategory)"
       :key="label"
     >
-      <div v-if="i > 0" class="my-4 border-t border-interface-stroke" />
+      <div v-if="i > 0" class="my-4 border-t" />
       <h3>{{ $t(`serverConfigCategories.${label}`, label) }}</h3>
       <div v-for="item in items" :key="item.name" class="mb-4">
         <FormItem
@@ -46,7 +46,7 @@
           v-model:form-value="item.value"
           :item="translateItem(item)"
           :label-class="{
-            'text-primary-background': item.initialValue !== item.value
+            'text-primary': item.initialValue !== item.value
           }"
         />
       </div>

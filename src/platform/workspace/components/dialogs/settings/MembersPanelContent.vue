@@ -64,6 +64,8 @@
           <SearchInput
             v-if="showSearch"
             v-model="searchQuery"
+            :clear-label="$t('g.clear')"
+            :accessible-label="$t('g.search')"
             :placeholder="$t('workspacePanel.members.searchPlaceholder')"
             size="lg"
             class="w-64"
@@ -91,7 +93,7 @@
       </div>
     </Teleport>
     <div
-      class="flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
+      class="flex min-h-0 w-full flex-1 flex-col gap-2 rounded-2xl border p-6"
     >
       <!-- Members Content -->
       <div class="flex min-h-0 flex-1 flex-col">
@@ -103,7 +105,7 @@
             "
             :class="
               cn(
-                'sticky -top-px z-10 grid w-full items-center bg-base-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
+                'sticky -top-px z-10 grid w-full items-center bg-background px-2 pt-[calc(--spacing(2)+1px)] pb-2',
                 activeView === 'pending'
                   ? uiConfig.pendingGridCols
                   : uiConfig.headerGridCols
@@ -229,7 +231,7 @@
         v-if="permissions.canManageSubscription"
         variant="muted-textonly"
         size="sm"
-        class="text-sm text-base-foreground"
+        class="text-sm text-foreground"
         @click="isSalesManagedPlan ? handleContactSales() : showTeamPlans()"
       >
         {{
@@ -262,7 +264,7 @@
       <Button
         variant="muted-textonly"
         size="sm"
-        class="text-sm text-base-foreground"
+        class="text-sm text-foreground"
         @click="handleContactUs"
       >
         {{ $t('workspacePanel.members.contactUs') }}

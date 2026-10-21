@@ -66,6 +66,9 @@ const config: KnipConfig = {
     },
     'tools/test-recorder': {
       project: ['src/**/*.ts']
+    },
+    'tools/types-consumer-check': {
+      project: ['src/**/*.ts']
     }
   },
   ignoreBinaries: [
