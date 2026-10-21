@@ -321,6 +321,52 @@ describe('BillingAutoTopUpCard', () => {
   })
 
   it.for([
+    { reread: 'the same status', settings: configured, label: 'On', views: 1 },
+    {
+      reread: 'a different status',
+      settings: { ...configured, status: 'paused_by_budget' as const },
+      label: 'Paused',
+      views: 2
+    }
+  ])(
+    'waits for a pending reread to settle, then reports $views view for $reread',
+    async ({ settings, label, views }) => {
+      const { setupRef } = renderCard(configured)
+      await screen.findByTestId('billing-auto-top-up-status')
+      vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+        new WorkspaceApiError('boom', 500)
+      )
+      await returnToTab()
+      await screen.findByText("Couldn't load auto top-up.")
+      let settleReread: (value: AutoReloadSettings) => void = () => {}
+      vi.mocked(workspaceApi.getBillingAutoReload).mockReturnValueOnce(
+        new Promise((resolve) => {
+          settleReread = resolve
+        })
+      )
+      await returnToTab()
+
+      setupRef.value = {
+        state: 'unavailable',
+        reason: 'billing_rail_not_supported'
+      }
+      await nextTick()
+      setupRef.value = null
+      await nextTick()
+      expect(trackedEvents()).toHaveBeenCalledOnce()
+
+      settleReread(settings)
+      await vi.waitFor(() =>
+        expect(
+          screen.getByTestId('billing-auto-top-up-status')
+        ).toHaveTextContent(label)
+      )
+
+      expect(trackedEvents()).toHaveBeenCalledTimes(views)
+    }
+  )
+
+  it.for([
     { case: 'fails', error: new WorkspaceApiError('boom', 500) },
     {
       case: 'times out',

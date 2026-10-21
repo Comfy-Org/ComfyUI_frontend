@@ -1,4 +1,5 @@
 import { useAsyncState, useDocumentVisibility } from '@vueuse/core'
+import type { AutoTopUpCardStatus } from '@comfyorg/account-core/billing'
 import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -31,15 +32,18 @@ export function useBillingAutoTopUpCard(
     return read.isLoading.value ? { kind: 'loading' } : { kind: 'unavailable' }
   })
 
+  let reportedStatus: AutoTopUpCardStatus | undefined
+
   watch(
     () => {
       const current = state.value
-      return toValue(visible) && current.kind === 'loaded'
+      return toValue(visible) && read.isReady.value && current.kind === 'loaded'
         ? current.settings.status
         : undefined
     },
     (status) => {
-      if (!status) return
+      if (!status || status === reportedStatus) return
+      reportedStatus = status
       useTelemetry()?.trackBillingEvent({
         operation: 'auto_top_up_card',
         stage: 'viewed',
