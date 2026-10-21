@@ -571,15 +571,16 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent<string | number | null>): void {
+    pendingProgressByJob.clear()
     progressCoalescer.cancel()
-    if (e.detail == null) progressStateCoalescer.cancel()
-
-    // Clear the current node progress when a new node starts executing
+    if (e.detail == null) {
+      pendingProgressStatesByJob.clear()
+      progressStateCoalescer.cancel()
+    }
     _executingNodeProgress.value = null
 
     if (!activeJob.value) return
 
-    // Update the executing nodes list
     if (e.detail == null) {
       activeJobId.value = null
     }
@@ -613,13 +614,18 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = pruned
   }
 
-  const progressStateCoalescer = createRafCoalescer<ProgressStateWsMessage>(
-    applyProgressState,
-    'raf:progress_state'
-  )
+  const pendingProgressStatesByJob = new Map<JobId, ProgressStateWsMessage>()
+  const progressStateCoalescer = createRafCoalescer<null>(() => {
+    const updates = [...pendingProgressStatesByJob.values()]
+    pendingProgressStatesByJob.clear()
+    for (const detail of updates) applyProgressState(detail)
+  }, 'raf:progress_state')
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    progressStateCoalescer.push(e.detail)
+    const jobId = e.detail.prompt_id
+    pendingProgressStatesByJob.delete(jobId)
+    pendingProgressStatesByJob.set(jobId, e.detail)
+    progressStateCoalescer.push(null)
   }
 
   function revokeStartedNodePreviews(
@@ -669,18 +675,36 @@ export const useExecutionStore = defineStore('execution', () => {
     }
   }
 
-  const progressCoalescer = createRafCoalescer<ProgressWsMessage>((detail) => {
-    if (activeJobId.value && detail.prompt_id !== activeJobId.value) return
-    _executingNodeProgress.value = detail
+  const pendingProgressByJob = new Map<JobId, ProgressWsMessage>()
+  const progressCoalescer = createRafCoalescer<null>(() => {
+    const updates = [...pendingProgressByJob.values()]
+    pendingProgressByJob.clear()
+    for (const detail of updates) {
+      if (activeJobId.value && detail.prompt_id !== activeJobId.value) continue
+      _executingNodeProgress.value = detail
+    }
   }, 'raf:progress')
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
-    progressCoalescer.push(e.detail)
+    const jobId = e.detail.prompt_id
+    pendingProgressByJob.delete(jobId)
+    pendingProgressByJob.set(jobId, e.detail)
+    progressCoalescer.push(null)
   }
 
-  function cancelPendingProgressUpdates() {
-    progressCoalescer.cancel()
-    progressStateCoalescer.cancel()
+  function cancelPendingProgressUpdates(jobId?: JobId | null) {
+    if (!jobId) {
+      pendingProgressByJob.clear()
+      pendingProgressStatesByJob.clear()
+      progressCoalescer.cancel()
+      progressStateCoalescer.cancel()
+      return
+    }
+
+    pendingProgressByJob.delete(jobId)
+    pendingProgressStatesByJob.delete(jobId)
+    if (pendingProgressByJob.size === 0) progressCoalescer.cancel()
+    if (pendingProgressStatesByJob.size === 0) progressStateCoalescer.cancel()
   }
 
   function handleStatus() {
@@ -929,7 +953,7 @@ export const useExecutionStore = defineStore('execution', () => {
         void jobReset.trigger(queuedJobs.value[jobId])
       delete queuedJobs.value[jobId]
     }
-    cancelPendingProgressUpdates()
+    cancelPendingProgressUpdates(jobId)
     if (!activeJobId.value || jobId === activeJobId.value) {
       executionIdToLocatorCache.clear()
       nodeProgressStates.value = {}
