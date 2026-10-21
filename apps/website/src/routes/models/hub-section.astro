@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro'
+import { challengeBannerConfig } from '@/config/banner'
 import ModelsPage from '@/components/workshop/ModelsPage.vue'
 import type { CatalogueTab } from '@/components/workshop/CatalogueTabs.vue'
 import ModelsShowcase from '@/components/models/ModelsShowcase.astro'
@@ -22,6 +23,7 @@ const copy = HUB_SECTION_COPY[section]
   description={copy.description}
   noindex={!isIndexableModelPage(Astro.url.pathname)}
   preloadFonts={['Medium']}
+  banner={challengeBannerConfig}
 >
   <script>
     import '@/scripts/hubNavigation'

@@ -74,9 +74,12 @@ jobs:
             --filter @comfyorg/account-core \
             --filter @comfyorg/account-ui \
             --filter @comfyorg/billing-contract \
+            --filter @comfyorg/layer-editor \
             --filter @comfyorg/object-info-parser \
             --filter @comfyorg/shared-frontend-utils \
+            --filter @comfyorg/viewport3d \
             --filter @comfyorg/design-system \
+            --filter @comfyorg/test-utils \
             exec vitest run --coverage --maxWorkers=3
 
       - name: Upload package coverage
@@ -126,7 +129,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
-          files: coverage/lcov.info,packages/account-core/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/billing-contract/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info
+          files: coverage/lcov.info,packages/account-core/coverage/lcov.info,packages/account-ui/coverage/lcov.info,packages/billing-contract/coverage/lcov.info,packages/layer-editor/coverage/lcov.info,packages/object-info-parser/coverage/lcov.info,packages/shared-frontend-utils/coverage/lcov.info,packages/design-system/coverage/lcov.info,packages/viewport3d/coverage/lcov.info
           flags: unit
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: false

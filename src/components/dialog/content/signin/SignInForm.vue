@@ -39,7 +39,7 @@
               {{ t('auth.login.forgotPassword') }}
             </Button>
           </div>
-          <PasswordInput
+          <AppPasswordInput
             v-bind="componentField"
             id="comfy-org-sign-in-password"
             autocomplete="current-password"
@@ -51,22 +51,15 @@
       </VeeField>
     </FieldGroup>
 
-    <Spinner v-if="loading" class="mx-auto size-8" />
-    <Button
-      v-else
-      type="submit"
-      class="h-10 font-medium"
-      :disabled="!meta.valid"
-    >
+    <AppSpinner v-if="loading" class="mx-auto size-8" />
+    <Button v-else type="submit" class="h-10" :disabled="!meta.valid">
       {{ t('auth.login.loginButton') }}
     </Button>
   </form>
 </template>
 
 <script setup lang="ts">
-import { toTypedSchema } from '@vee-validate/zod'
 import { useThrottleFn } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
 import { Field as VeeField, useForm, useIsFieldValid } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -79,17 +72,17 @@ import FieldError from '@/components/ui/field/FieldError.vue'
 import FieldGroup from '@/components/ui/field/FieldGroup.vue'
 import FieldLabel from '@/components/ui/field/FieldLabel.vue'
 import Input from '@/components/ui/input/Input.vue'
-import PasswordInput from '@/components/ui/input/PasswordInput.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import AppPasswordInput from '@/components/common/AppPasswordInput.vue'
+import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
+import { toTypedSchema } from '@/utils/zodTypedSchema'
 
 const authStore = useAuthStore()
 const authActions = useAuthActions()
 const loading = computed(() => authStore.loading)
-const toast = useToast()
 
 const { t } = useI18n()
 
@@ -99,7 +92,7 @@ const emit = defineEmits<{
 
 const emailInputId = 'comfy-org-sign-in-email'
 
-const { handleSubmit, meta, values } = useForm({
+const { handleSubmit, meta, validateField, values } = useForm({
   validationSchema: toTypedSchema(signInSchema),
   initialValues: { email: '', password: '' }
 })
@@ -112,13 +105,9 @@ const onSubmit = useThrottleFn(
 )
 
 async function handleForgotPassword() {
+  const { valid } = await validateField('email')
   const email = values.email
-  if (!email || !isEmailValid.value) {
-    toast.add({
-      severity: 'warn',
-      summary: t('auth.login.emailPlaceholder'),
-      life: 5_000
-    })
+  if (!valid || !email) {
     document.getElementById(emailInputId)?.focus()
     return
   }

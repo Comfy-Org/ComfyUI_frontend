@@ -153,9 +153,6 @@ describe('useBuilderSave', () => {
           props: expect.objectContaining({
             defaultFilename: 'my-workflow',
             defaultOpenAsApp: true
-          }),
-          dialogComponentProps: expect.objectContaining({
-            useAutomaticLabeling: true
           })
         })
       )

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <MultiSelect
+    <AppMultiSelect
       v-model="selectedOptions"
       :options="options"
       show-search-box
@@ -9,26 +9,29 @@
     >
       <template v-if="inputSpec.multi_select?.chip" #value="{ selected }">
         <div class="flex min-w-0 gap-1 overflow-hidden">
-          <span
+          <Badge
             v-for="item in selected"
             :key="item.value"
-            class="truncate rounded-sm bg-secondary-background px-1.5 py-0.5 text-xs"
+            variant="square"
+            severity="secondary"
+            class="min-w-0 shrink"
           >
-            {{ item.name }}
-          </span>
+            <span class="truncate">{{ item.name }}</span>
+          </Badge>
         </div>
       </template>
-    </MultiSelect>
+    </AppMultiSelect>
   </div>
 </template>
 
 <script setup lang="ts">
+import Badge from '@/components/ui/badge/Badge.vue'
 import { computed } from 'vue'
 
-import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
+import AppMultiSelect from '@/components/common/AppMultiSelect.vue'
 import type { SelectOption } from '@/components/ui/select/types'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import type { ComponentWidget } from '@/scripts/domWidget'
+import type { ComponentWidget } from '@/types/domWidget'
 
 const selectedItems = defineModel<string[]>({ required: true })
 const { widget } = defineProps<{

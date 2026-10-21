@@ -3,6 +3,7 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { WidgetSelectDefaultFixture } from '@e2e/fixtures/components/WidgetSelectDefault'
 import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
@@ -24,9 +25,7 @@ export class VueNodeHelpers {
 
   constructor(private page: Page) {
     this.nodes = page.locator('[data-node-id]')
-    this.selectedNodes = page.locator(
-      '[data-node-id].outline-node-component-outline'
-    )
+    this.selectedNodes = page.locator('[data-node-id].outline-foreground')
   }
 
   /**
@@ -268,21 +267,13 @@ export class VueNodeHelpers {
     })
   }
 
-  getWidgetRowByLabel(nodeTitle: string, widgetName: string): Locator {
+  getWidgetRowByLabel(node: string | Locator, widgetName: string): Locator {
     const widgetLabel = this.page
       .getByTestId(TestIds.widgets.layoutFieldLabel)
       .and(this.page.getByText(widgetName, { exact: true }))
 
-    return this.getNodeByTitle(nodeTitle)
-      .getByTestId(TestIds.widgets.widget)
-      .filter({ has: widgetLabel })
-  }
-
-  /**
-   * Get the visible widget tooltip text element (PrimeVue tooltip portal).
-   */
-  getVisibleWidgetTooltip(): Locator {
-    return this.page.locator('.p-tooltip-text:visible')
+    const root = typeof node === 'string' ? this.getNodeByTitle(node) : node
+    return root.getByTestId(TestIds.widgets.widget).filter({ has: widgetLabel })
   }
 
   /**
@@ -293,11 +284,10 @@ export class VueNodeHelpers {
     widgetName: string,
     optionName: string
   ): Promise<void> {
-    const node = this.getNodeByTitle(nodeTitle)
-    await node.getByRole('combobox', { name: widgetName, exact: true }).click()
-    await this.page
-      .getByRole('option', { name: optionName, exact: true })
-      .click()
+    await new WidgetSelectDefaultFixture(
+      this.getNodeByTitle(nodeTitle),
+      widgetName
+    ).selectOption(optionName)
   }
 
   /**

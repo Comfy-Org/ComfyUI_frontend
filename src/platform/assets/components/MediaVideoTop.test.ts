@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
-import type { AssetMeta } from '../schemas/mediaAssetSchema'
+import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import MediaVideoTop from './MediaVideoTop.vue'
 
 const i18n = createI18n({

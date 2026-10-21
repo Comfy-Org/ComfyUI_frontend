@@ -1,14 +1,20 @@
-import type { AgentWsEvent } from '../../schemas/agentApiSchema'
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { STALE_AFTER_MS } from '../../crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
 import type {
+  AskUserResolution,
   AssistantMessage,
-  RunApprovalPart,
   TextPart,
   ThinkingPart,
   ToolPart
 } from './agentMessageParts'
-import { snapshotMessage } from './agentMessageParts'
+import {
+  askIdOf,
+  retireAskParts,
+  snapshotMessage,
+  toAskOrNoticePart,
+  toAskResolution
+} from './agentMessageParts'
 import type {
   UndeliverableAskContext,
   UndeliverableAskReason
@@ -47,6 +53,20 @@ type AgentMessageDraftEvent = Extract<
   { type: 'agent_message_draft' }
 >
 
+export interface CanvasSyncEvidence {
+  workflowId: string
+  opIds: readonly string[]
+  isLive: boolean
+}
+
+const MAX_OBSERVED_CANVAS_WORKFLOWS = 8
+const MAX_OBSERVED_CANVAS_OPS_PER_WORKFLOW = 512
+
+interface PendingCanvasSync {
+  timer: ReturnType<typeof setTimeout>
+  correlation?: { workflowId: string; opIds: ReadonlySet<string> }
+}
+
 /**
  * PM-1575: tool names whose execution can plausibly land a CRDT `doc_update`
  * -- the only case `resolveToolCallState` below has anything to wait on. Most
@@ -81,16 +101,10 @@ export interface AgentEventTransport {
    * pending canvas catch-up (see `shouldAwaitCanvasSync` below) can settle to
    * `done`. A no-op when nothing is pending.
    */
-  notifyCanvasCaughtUp: () => void
+  notifyCanvasCaughtUp: (evidence?: CanvasSyncEvidence) => void
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
-  /**
-   * PM-1658: drops a run-approval part the way an `agent_ask_resolved` frame
-   * would, for an ask resolved out of band. The transport owns the message
-   * every later emit republishes, so editing the store's copy alone lets a
-   * dismissed card reappear the next time this one snapshots.
-   */
-  dropAskPart: (askId: string) => void
+  retireAskPart: (askId: string, resolution: AskUserResolution) => void
   /**
    * Tears the transport down for a reason other than natural completion
    * (abort, drop, reset, hydrate). Flushes any tool-call parts held pending
@@ -121,7 +135,7 @@ export function createAgentEventTransport(
    * to never deferring, so a caller with no canvas to catch up on (or that
    * never wires this up) keeps the immediate-done behavior.
    */
-  shouldAwaitCanvasSync: () => boolean = () => false,
+  shouldAwaitCanvasSync: (_workflowId?: string) => boolean = () => false,
   /**
    * PM-1575: the bound workflow's CRDT `outcomes.appliedLive` counter (or an
    * equivalent monotonic count of LIVE frames actually applied to the doc --
@@ -161,7 +175,8 @@ export function createAgentEventTransport(
   // Tool parts whose frame reported done but whose displayed state is held at
   // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
   // part that never gets a `notifyCanvasCaughtUp` call still settles.
-  const pendingCanvasSync = new Map<ToolPart, ReturnType<typeof setTimeout>>()
+  const pendingCanvasSync = new Map<ToolPart, PendingCanvasSync>()
+  const observedCanvasOps = new Map<string, Set<string>>()
   // PM-1575: the outcome count as of the last time some tool part actually
   // claimed a canvas catch-up (see `claimCanvasSyncOutcome` below), starting
   // at this transport's own creation. `canvasSyncBaseline` below hands each
@@ -185,8 +200,8 @@ export function createAgentEventTransport(
   }
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
-    const timer = pendingCanvasSync.get(part)
-    if (timer !== undefined) clearTimeout(timer)
+    const pending = pendingCanvasSync.get(part)
+    if (pending !== undefined) clearTimeout(pending.timer)
     pendingCanvasSync.delete(part)
   }
 
@@ -202,8 +217,74 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  function notifyCanvasCaughtUp(): void {
-    flushPendingCanvasSync()
+  function correlationFrom(
+    data: AgentToolCallEvent['data']
+  ): { workflowId: string; opIds: ReadonlySet<string> } | undefined {
+    if (!data.workflow_id || !data.op_ids?.length) return undefined
+    return { workflowId: data.workflow_id, opIds: new Set(data.op_ids) }
+  }
+
+  function correlationObserved(correlation: {
+    workflowId: string
+    opIds: ReadonlySet<string>
+  }): boolean {
+    const observed = observedCanvasOps.get(correlation.workflowId)
+    return (
+      observed !== undefined &&
+      [...correlation.opIds].every((opId) => observed.has(opId))
+    )
+  }
+
+  function shouldHoldForCanvas(
+    part: ToolPart,
+    status: 'success' | 'error',
+    correlation: { workflowId: string; opIds: ReadonlySet<string> } | undefined
+  ): boolean {
+    return (
+      status === 'success' &&
+      CANVAS_MUTATING_TOOLS.has(part.name) &&
+      shouldAwaitCanvasSync(correlation?.workflowId)
+    )
+  }
+
+  function rememberCanvasEvidence(evidence: CanvasSyncEvidence): void {
+    let observed = observedCanvasOps.get(evidence.workflowId)
+    if (observed === undefined) {
+      if (observedCanvasOps.size === MAX_OBSERVED_CANVAS_WORKFLOWS)
+        observedCanvasOps.delete(observedCanvasOps.keys().next().value!)
+      observed = new Set()
+      observedCanvasOps.set(evidence.workflowId, observed)
+    }
+    for (const opId of evidence.opIds) {
+      observed.delete(opId)
+      observed.add(opId)
+      if (observed.size > MAX_OBSERVED_CANVAS_OPS_PER_WORKFLOW)
+        observed.delete(observed.values().next().value!)
+    }
+  }
+
+  function shouldSettlePendingCanvasSync(
+    pending: PendingCanvasSync,
+    evidence: CanvasSyncEvidence | undefined
+  ): boolean {
+    if (pending.correlation === undefined)
+      return evidence === undefined || evidence.isLive
+    return evidence !== undefined && correlationObserved(pending.correlation)
+  }
+
+  function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
+    if (evidence !== undefined) rememberCanvasEvidence(evidence)
+
+    let changed = false
+    for (const [part, pending] of pendingCanvasSync) {
+      if (shouldSettlePendingCanvasSync(pending, evidence)) {
+        settlePendingCanvasSync(part)
+        changed = true
+      }
+    }
+    if (!changed) return
+    claimCanvasSyncOutcome()
+    emit(snapshotMessage(message))
   }
 
   function hasPendingCanvasSync(): boolean {
@@ -238,7 +319,8 @@ export function createAgentEventTransport(
   function resolveToolCallState(
     part: ToolPart,
     status: 'success' | 'error',
-    durationMs: number | undefined
+    durationMs: number | undefined,
+    data: AgentToolCallEvent['data']
   ): void {
     part.ok = status === 'success'
     part.durationMs = durationMs
@@ -249,12 +331,16 @@ export function createAgentEventTransport(
     clearPendingCanvasSyncTimer(part)
     const baseline = canvasSyncBaseline.get(part)
     canvasSyncBaseline.delete(part)
-    if (
-      status === 'success' &&
-      CANVAS_MUTATING_TOOLS.has(part.name) &&
-      shouldAwaitCanvasSync()
-    ) {
-      if (baseline !== undefined && getCanvasSyncOutcomeCount() > baseline) {
+    const correlation = correlationFrom(data)
+    if (shouldHoldForCanvas(part, status, correlation)) {
+      if (correlation !== undefined && correlationObserved(correlation)) {
+        part.state = 'done'
+        claimCanvasSyncOutcome()
+      } else if (
+        correlation === undefined &&
+        baseline !== undefined &&
+        getCanvasSyncOutcomeCount() > baseline
+      ) {
         // The matching doc_update already applied -- either while the tool
         // was still running, or before this tool call's first frame ever
         // reached the transport -- see `canvasSyncBaseline` above. Nothing
@@ -262,13 +348,13 @@ export function createAgentEventTransport(
         part.state = 'done'
         claimCanvasSyncOutcome()
       } else {
-        pendingCanvasSync.set(
-          part,
-          setTimeout(() => {
+        pendingCanvasSync.set(part, {
+          correlation,
+          timer: setTimeout(() => {
             settlePendingCanvasSync(part)
             emit(snapshotMessage(message))
           }, STALE_AFTER_MS)
-        )
+        })
       }
     } else {
       part.state = 'done'
@@ -297,7 +383,7 @@ export function createAgentEventTransport(
     part.name = data.tool_name
     updateSkill(part, data.skill)
     if (data.status !== 'running') {
-      resolveToolCallState(part, data.status, data.duration_ms)
+      resolveToolCallState(part, data.status, data.duration_ms, data)
     }
   }
 
@@ -325,35 +411,26 @@ export function createAgentEventTransport(
     return true
   }
 
-  /**
-   * Applies one `agent_ask` frame. Only the `run_approval` kind renders a
-   * part; returns `false` for any other kind, mirroring `ingest`'s early
-   * `return` for that case.
-   *
-   * That `false` reaches a live turn and still shows the user nothing, while
-   * the server parks waiting for an answer — the same dead-panel outcome as an
-   * ask dropped in routing, so it is reported the same way. Generated-contract
-   * kinds without a client renderer are tagged separately from unknown input.
-   */
+  function reportUnrenderedAsk(data: AgentAskEvent['data']): void {
+    reportUndeliverableAsk(
+      data,
+      data.kind === 'unknown' ? 'unknown-kind' : 'unrendered-kind'
+    )
+  }
+
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
-    if (data.kind !== 'run_approval') {
-      reportUndeliverableAsk(
-        data,
-        data.kind === 'ask_user' ? 'unrendered-kind' : 'unknown-kind'
-      )
+    const shown = message.parts.find((part) => askIdOf(part) === data.ask_id)
+    if (shown) {
+      if (shown.type === 'askUnavailable') reportUnrenderedAsk(data)
       return false
     }
+    const part = toAskOrNoticePart(data)
+    if (part.type === 'askUnavailable') reportUnrenderedAsk(data)
     dropDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
-    const part: RunApprovalPart = {
-      type: 'runApproval',
-      askId: data.ask_id,
-      workflowId: data.context?.workflow_id || undefined,
-      workflowName: data.context?.workflow_name || undefined
-    }
     message.parts.push(part)
     return true
   }
@@ -367,12 +444,17 @@ export function createAgentEventTransport(
     message.thinkingText = openThinking?.text
   }
 
-  /** Applies one `agent_ask_resolved` frame: drops the matching run-approval
-   * part, since its ask is no longer pending. */
-  function handleAskResolvedEvent(data: AgentAskResolvedEvent['data']): void {
-    message.parts = message.parts.filter(
-      (part) => part.type !== 'runApproval' || part.askId !== data.ask_id
+  function handleAskResolvedEvent(
+    data: AgentAskResolvedEvent['data']
+  ): boolean {
+    const parts = retireAskParts(
+      message.parts,
+      data.ask_id,
+      toAskResolution(data)
     )
+    if (parts === message.parts) return false
+    message.parts = parts
+    return true
   }
 
   /** Applies one `agent_message_delta` frame: appends its delta to the open
@@ -446,14 +528,6 @@ export function createAgentEventTransport(
     return part
   }
 
-  /**
-   * Applies one chat event to `message` by dispatching to the per-type
-   * handler above, and reports whether `ingest` should emit a fresh
-   * snapshot afterwards. Most event types always want a snapshot; a
-   * repeated `agent_active_tab` or a non-`run_approval` `agent_ask` is a
-   * no-op (mirroring their handlers' own `false` return), and
-   * `agent_message_done` already emits via `settle()` so it says no too.
-   */
   function applyChatEvent(event: AgentChatEvent): boolean {
     switch (event.type) {
       case 'agent_thinking':
@@ -472,8 +546,7 @@ export function createAgentEventTransport(
       case 'agent_ask':
         return handleAskEvent(event.data)
       case 'agent_ask_resolved':
-        handleAskResolvedEvent(event.data)
-        return true
+        return handleAskResolvedEvent(event.data)
       case 'agent_message_delta':
         handleMessageDeltaEvent(event.data)
         return true
@@ -507,11 +580,9 @@ export function createAgentEventTransport(
     emit(snapshotMessage(message))
   }
 
-  function dropAskPart(askId: string): void {
-    const parts = message.parts.filter(
-      (part) => part.type !== 'runApproval' || part.askId !== askId
-    )
-    if (parts.length === message.parts.length) return
+  function retireAskPart(askId: string, resolution: AskUserResolution): void {
+    const parts = retireAskParts(message.parts, askId, resolution)
+    if (parts === message.parts) return
     message.parts = parts
     emit(snapshotMessage(message))
   }
@@ -522,6 +593,6 @@ export function createAgentEventTransport(
     notifyCanvasCaughtUp,
     hasPendingCanvasSync,
     dispose,
-    dropAskPart
+    retireAskPart
   }
 }

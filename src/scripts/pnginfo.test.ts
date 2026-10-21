@@ -1,10 +1,8 @@
 import fs from 'fs'
 import path from 'path'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyApi } from './api'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
@@ -13,17 +11,12 @@ import { getFromPngFile } from './metadata/png'
 import {
   getAvifMetadata,
   getFlacMetadata,
-  getLatentMetadata,
   getPngMetadata,
   getWebpMetadata,
   importA1111
 } from './pnginfo'
 
-vi.mock(import('./api'), () => ({
-  api: fromPartial<ComfyApi>({
-    getEmbeddings: vi.fn()
-  })
-}))
+vi.mock(import('./api'))
 
 vi.mock(import('./metadata/png'), () => ({
   getFromPngFile: vi.fn()
@@ -109,8 +102,22 @@ function exifChunk(
 }
 
 describe('getWebpMetadata', () => {
+  it.for([
+    { part: 'RIFF header', length: 3 },
+    { part: 'chunk header', length: 16 },
+    { part: 'EXIF directory', length: 29 }
+  ])('returns empty for a truncated $part', async ({ length }) => {
+    const complete = wrapInWebp([
+      exifChunk([{ tag: 0, value: 'workflow:{"a":1}' }])
+    ])
+    const file = new File([complete.slice(0, length)], 'truncated.webp', {
+      type: 'image/webp'
+    })
+
+    expect(await getWebpMetadata(file)).toEqual({})
+  })
+
   it('returns empty when the file is not a valid WEBP', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {})
     const file = new File([new Uint8Array(12)], 'fake.webp')
 
     const metadata = await getWebpMetadata(file)
@@ -169,50 +176,6 @@ describe('getWebpMetadata', () => {
   })
 })
 
-describe('getLatentMetadata', () => {
-  function buildSafetensors(headerObj: object): File {
-    const headerBytes = new TextEncoder().encode(JSON.stringify(headerObj))
-    const buf = new Uint8Array(8 + headerBytes.length)
-    const dv = new DataView(buf.buffer)
-    dv.setUint32(0, headerBytes.length, true)
-    dv.setUint32(4, 0, true)
-    buf.set(headerBytes, 8)
-    return new File([buf], 'test.safetensors')
-  }
-
-  it('extracts __metadata__ from a safetensors header', async () => {
-    const workflow =
-      '{"nodes":[{"id":1,"type":"KSampler","pos":[100,100],"size":[200,200]}]}'
-    const prompt = '{"1":{"class_type":"KSampler","inputs":{}}}'
-    const file = buildSafetensors({
-      __metadata__: { workflow, prompt },
-      'tensor.weight': { dtype: 'F32', shape: [1], data_offsets: [0, 4] }
-    })
-
-    const metadata = await getLatentMetadata(file)
-
-    expect(metadata).toEqual({ workflow, prompt })
-  })
-
-  it('returns undefined when the safetensors header has no __metadata__', async () => {
-    const file = buildSafetensors({
-      'tensor.weight': { dtype: 'F32', shape: [1], data_offsets: [0, 4] }
-    })
-
-    const metadata = await getLatentMetadata(file)
-
-    expect(metadata).toBeUndefined()
-  })
-
-  it('returns undefined for a truncated or malformed file', async () => {
-    const file = new File([new Uint8Array(4)], 'bad.safetensors')
-
-    const metadata = await getLatentMetadata(file)
-
-    expect(metadata).toBeUndefined()
-  })
-})
-
 describe('format-specific metadata wrappers', () => {
   it('getPngMetadata delegates to getFromPngFile', async () => {
     const file = new File([], 'a.png', { type: 'image/png' })
@@ -252,7 +215,6 @@ describe('importA1111', () => {
     'positive\nSteps: 20, Sampler: Euler, CFG scale: 7, Seed: 1, Size: 512x512, Model: model.safetensors'
 
   function mockAvailableCoreNodes(graph: LGraph) {
-    vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.spyOn(graph, 'arrange').mockImplementation(() => {})
     vi.spyOn(LiteGraph, 'createNode').mockImplementation((type) => {
       const node = new LGraphNode(type, type)
@@ -309,7 +271,6 @@ describe('importA1111', () => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(api.getEmbeddings).mockRejectedValue(
       new TypeError('Failed to fetch')
     )
@@ -320,7 +281,7 @@ describe('importA1111', () => {
     expect(imported).toBe('imported-without-embeddings')
     expect(beforeGraphClear).toHaveBeenCalledOnce()
     expect(clear).toHaveBeenCalledOnce()
-    expect(consoleError).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       'Failed to load embeddings for A1111 import:',
       expect.any(TypeError)
     )

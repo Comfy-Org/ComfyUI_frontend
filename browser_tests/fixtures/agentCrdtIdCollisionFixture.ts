@@ -27,11 +27,9 @@
  */
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import { createI18n } from 'vue-i18n'
 
 import type {
   AgentRunMode,
-  AgentThreadListResponse,
   AgentTurnAccepted,
   JobsListResponse,
   WorkflowListResponse
@@ -60,7 +58,9 @@ import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
 const WORKFLOW_ID = 'a2f6e9c4-9b7d-4a3d-9e12-idcollision01'
 /** The one node the doc starts with — duplicating it triggers the collision. */
@@ -69,14 +69,6 @@ const SUBSCRIBE_TIMEOUT = 15_000
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-idcollision01'
 const MESSAGE_ID = 'id-collision-repro-message-0'
 const SEND_LABEL = enMessages.agent.send
-// The composer names itself with the rendered message, escapes resolved; the
-// app's own i18n module is a Vite build, so this mirrors it over the same
-// locale file exactly as `agentConversationFixture.ts` does.
-const COMPOSER_LABEL = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-}).global.t('agent.placeholder')
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -201,7 +193,6 @@ export class IdCollisionHarness {
       page,
       WORKFLOW_ID,
       this.host,
-      'id-collision-repro-sid',
       'hold'
     )
   }
@@ -262,7 +253,9 @@ export class IdCollisionHarness {
 
   private async sendMinimalPrompt(): Promise<void> {
     const content = 'id-collision repro: bind the doc'
-    const composer = this.panel.getByRole('textbox', { name: COMPOSER_LABEL })
+    const composer = this.panel.getByRole('textbox', {
+      name: AGENT_COMPOSER_LABEL
+    })
     await composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
     await expect(this.panel.getByText(content).first()).toBeVisible()
@@ -455,20 +448,13 @@ export class IdCollisionHarness {
 
   private async mockAgentApi(): Promise<void> {
     const { page } = this
-    const threads: AgentThreadListResponse = {
-      threads: [],
-      pagination: { has_more: false, limit: 100, offset: 0, total: 0 }
-    }
-    await page.route('**/api/agent/threads', (route) =>
+    const threads = emptyAgentThreadList()
+    await page.route('**/api/agent/threads?*', (route) =>
       route.fulfill(jsonRoute(threads))
     )
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() !== 'POST')
         return route.fulfill(jsonRoute([]))
-      // The ack's `workflow_id` is what `useAgentSession` binds for CRDT
-      // purposes (`bindWorkflow(ack.workflow_id)`). `workflow_id` is an
-      // extra beyond the generated `AgentTurnAccepted`, handled deliberately
-      // elsewhere via `zAgentTurnAccepted...passthrough()`.
       const accepted = {
         thread_id: THREAD_ID,
         message_id: MESSAGE_ID,
@@ -487,10 +473,6 @@ export class IdCollisionHarness {
       }
       return route.fulfill(jsonRoute(workflows))
     })
-    // Best-effort background calls the panel makes on mount; none are under
-    // test here, but an unmocked one 502s through Vite's dev proxy (there is
-    // no real backend behind DEV_SERVER_COMFYUI_URL in this repro) and the
-    // panel surfaces that as a toast that can mask the actual assertions.
     const runMode: AgentRunMode = { credit_limit: null, mode: 'ask_approval' }
     await page.route('**/api/agent/run-mode', (route) =>
       route.fulfill(jsonRoute(runMode))

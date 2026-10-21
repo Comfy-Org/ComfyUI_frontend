@@ -22,17 +22,9 @@ import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { useDialogService } from './dialogService'
 
 vi.mock(import('@/platform/telemetry'))
-// oxlint-disable-next-line comfy/no-primevue-imports
-vi.mock(import('primevue/usetoast'), () => ({
-  useToast: () => ({
-    add: vi.fn(),
-    remove: vi.fn(),
-    removeGroup: vi.fn(),
-    removeAllGroups: vi.fn()
-  })
-}))
+
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => {}) })
+  useCopyToClipboard: () => ({ copyToClipboard: vi.fn(async () => true) })
 }))
 vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
@@ -209,6 +201,7 @@ describe('legacy error dialog catalog', () => {
         useDialogService().showExecutionErrorDialog({
           exception_type: 'PromptValidationError',
           node_type: 'CloudProxy',
+          node_id: '7',
           exception_message: `Failed to send prompt request: 400: ${JSON.stringify(response)}`
         })
     }
@@ -247,6 +240,26 @@ describe('legacy error dialog catalog', () => {
     await user.click(screen.getByRole('button', { name: 'Show Report' }))
     expect(await screen.findByText(/# ComfyUI Error Report/)).toHaveTextContent(
       /return_type_mismatch message: return_type_mismatch details/
+    )
+  })
+
+  it('omits blank prompt messages before readable node errors', async () => {
+    await openHttpPromptError({
+      error: '',
+      node_errors: {
+        '3': nodeError(
+          [validationError('required_input_missing', 'model')],
+          'KSampler'
+        )
+      }
+    })
+    renderOpenedDialog()
+
+    expect(
+      screen.getByText(/KSampler \(#3\) is missing a required input: model/)
+        .textContent
+    ).toBe(
+      'KSampler (#3) - model\nRequired input slots have no connection feeding them.\nKSampler (#3) is missing a required input: model'
     )
   })
 
@@ -307,6 +320,30 @@ describe('legacy error dialog catalog', () => {
       error.exception_message
     )
   })
+
+  it.for(['7', 0, '12:3'])(
+    'identifies the failed runtime node %s before opening its report',
+    async (nodeId) => {
+      const user = userEvent.setup()
+      useDialogService().showExecutionErrorDialog({
+        exception_type: 'RuntimeError',
+        exception_message: 'Sampler failed',
+        node_type: 'KSampler',
+        node_id: nodeId
+      })
+      renderOpenedDialog()
+
+      expect(
+        screen.getByRole('heading', {
+          name: `KSampler (#${nodeId})`
+        })
+      ).toBeVisible()
+      await user.click(screen.getByRole('button', { name: 'Show Report' }))
+      const report = await screen.findByText(/# ComfyUI Error Report/)
+      expect(report).toHaveTextContent(`**Node ID:** ${nodeId}`)
+      expect(report).toHaveTextContent('**Node Type:** KSampler')
+    }
+  )
 
   it('updates catalog copy when the locale changes', async () => {
     const originalLocale = i18n.global.locale.value

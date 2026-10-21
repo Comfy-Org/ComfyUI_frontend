@@ -1,3 +1,4 @@
+import { clamp } from 'es-toolkit'
 import { computed, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
@@ -7,7 +8,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
-import { GET_CONFIG } from '@/services/litegraphService'
+import { GET_CONFIG } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
@@ -18,56 +19,23 @@ function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
   applyFirstWidgetValueToGraph(this, extraLinks)
 }
 
-/**
- * `node.resolveInput` only exists on the `ExecutableNodeDTO` used while
- * building the API prompt (see `executionUtil.ts`), not on `LGraphNode`
- * itself. Prompt serialization is the only place that can resolve a
- * promoted widget's per-host value, so this is a runtime duck-type check
- * rather than a static one.
- */
-type LinkedInputResolver = {
-  resolveInput: (
-    slot: number
-  ) => { widgetInfo?: { value: unknown } } | undefined
-}
+type SerializationNode = Parameters<
+  NonNullable<IBaseWidget['serializeValue']>
+>[0]
 
-function hasLinkedInputResolver(
-  node: LGraphNode
-): node is LGraphNode & LinkedInputResolver {
-  return (
-    typeof (node as Partial<LinkedInputResolver>).resolveInput === 'function'
-  )
-}
-
-/**
- * Resolves the choice widget's current effective value.
- *
- * Per ADR-SUBGRAPH-PROMOTION-0009, a promoted widget's host value is not mirrored back onto
- * the interior widget, so `comboWidget.value` is only accurate when
- * `choice` hasn't been converted to a linked subgraph input. When it has,
- * the live value must be resolved the same way prompt serialization
- * resolves any other linked widget input: `resolverNode` is the
- * execution-scoped node passed into `serializeValue`, which is what's
- * actually able to walk the link to the promoted host value.
- */
 function resolveChoiceValue(
   interiorNode: LGraphNode,
   comboWidget: IBaseWidget,
-  resolverNode: LGraphNode = interiorNode
+  resolverNode: SerializationNode = interiorNode
 ) {
   const choiceInputIndex = interiorNode.inputs.findIndex(
     (input) => input.widget?.name === comboWidget.name
   )
-  if (choiceInputIndex < 0 || !hasLinkedInputResolver(resolverNode)) {
+  if (choiceInputIndex < 0 || !('resolveInput' in resolverNode)) {
     return comboWidget.value
   }
 
   const resolved = resolverNode.resolveInput(choiceInputIndex)
-  // `resolved.widgetInfo` is only set when the link resolves back to a
-  // promoted widget. When `choice` is linked to a real node's output
-  // instead, there is no widget to read a value from here -- resolving that
-  // upstream execution-time value is out of scope for this fix, so this
-  // falls back to the (possibly stale) interior widget value.
   return resolved?.widgetInfo ? resolved.widgetInfo.value : comboWidget.value
 }
 
@@ -145,7 +113,7 @@ function onCustomComboCreated(this: LGraphNode) {
     hidden: true,
     options: {},
     y: 0,
-    serializeValue: (resolverNode: LGraphNode, _index: number) =>
+    serializeValue: (resolverNode: SerializationNode) =>
       widgets
         .slice(2)
         .findIndex(
@@ -207,9 +175,33 @@ function onCustomIntCreated(this: LGraphNode) {
 }
 const DISPLAY_WIDGET_TYPES = new Set(['gradientslider', 'slider', 'knob'])
 
+const finiteNumber = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : undefined
+
+const positiveNumber = (value: unknown) => {
+  const n = finiteNumber(value)
+  return n !== undefined && n > 0 ? n : undefined
+}
+
+const fractionDigits = (value: unknown) => {
+  const n = finiteNumber(value)
+  return n === undefined ? undefined : clamp(Math.trunc(n), 0, 100)
+}
+
+const lastDecimalPlace = (places: number) =>
+  Number((10 ** -places).toFixed(places))
+
 function onCustomFloatCreated(this: LGraphNode) {
   const valueWidget = this.widgets?.[0]
   if (!valueWidget) return
+
+  const declaredPrecision = fractionDigits(valueWidget.options.precision) ?? 1
+  const declaredStep =
+    positiveNumber(valueWidget.options.step2) ??
+    lastDecimalPlace(declaredPrecision)
+  const declaredRound = valueWidget.options.round
+  const declaresRounding = positiveNumber(declaredRound) !== undefined
+  const nodePrecision = () => fractionDigits(this.properties.precision)
 
   let baseType = valueWidget.type
   Object.defineProperty(valueWidget, 'type', {
@@ -245,7 +237,7 @@ function onCustomFloatCreated(this: LGraphNode) {
     }
   })
   Object.defineProperty(valueWidget.options, 'precision', {
-    get: () => this.properties.precision ?? 1,
+    get: () => nodePrecision() ?? declaredPrecision,
     set: (v) => {
       this.properties.precision = v
       valueWidget.callback?.(valueWidget.value)
@@ -253,19 +245,21 @@ function onCustomFloatCreated(this: LGraphNode) {
   })
   Object.defineProperty(valueWidget.options, 'step2', {
     get: () => {
-      if (this.properties.step) return this.properties.step
-
-      const { precision } = this.properties
-      return typeof precision === 'number' ? 5 * 10 ** -precision : 1
+      const configured = positiveNumber(this.properties.step)
+      if (configured !== undefined) return configured
+      const places = nodePrecision()
+      return places === undefined ? declaredStep : lastDecimalPlace(places)
     },
     set: (v) => (this.properties.step = v)
   })
   Object.defineProperty(valueWidget.options, 'round', {
     get: () => {
-      if (this.properties.round) return this.properties.round
-
-      const { precision } = this.properties
-      return typeof precision === 'number' ? 10 ** -precision : 0.1
+      const configured = positiveNumber(this.properties.round)
+      if (configured !== undefined) return configured
+      const places = nodePrecision()
+      return places !== undefined && declaresRounding
+        ? lastDecimalPlace(places)
+        : declaredRound
     },
     set: (v) => {
       this.properties.round = v

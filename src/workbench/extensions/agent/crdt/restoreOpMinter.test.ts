@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -47,6 +47,7 @@ describe('attachRestoreOpMinter', () => {
   let bound: boolean
   let source: TestSource
   let sink: TestSink
+  let docInputs: readonly (string | undefined)[] | null
 
   /** Run `mutate` as the ChangeTracker would: inside a graph load bracket. */
   function restoreThrough(mutate: () => void): void {
@@ -60,6 +61,7 @@ describe('attachRestoreOpMinter', () => {
     minted = []
     restoring = true
     bound = true
+    docInputs = null
     source = new TestSource()
     sink = new TestSink()
     graph.add(source)
@@ -71,6 +73,7 @@ describe('attachRestoreOpMinter', () => {
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,
+      docInputNames: () => docInputs,
       isRestoringState: () => restoring
     })
   })
@@ -114,6 +117,22 @@ describe('attachRestoreOpMinter', () => {
         to_slot: 0,
         link_type: 'IMAGE'
       }
+    ])
+  })
+
+  it('maps a restored link target from live slot order to document order', () => {
+    sink.addInput('prompt', 'STRING')
+    docInputs = ['prompt', 'image']
+    sink.disconnectInput(0)
+
+    restoreThrough(() => source.connect(0, sink, 0))
+
+    expect(minted).toEqual([
+      expect.objectContaining({
+        op: 'connect',
+        to_node: sink.id,
+        to_slot: 1
+      })
     ])
   })
 
@@ -167,8 +186,6 @@ describe('attachRestoreOpMinter', () => {
   })
 
   it('skips the whole diff, including real changes, when a present node cannot serialize', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-
     restoreThrough(() => {
       source.widgets![0].value = 'b.png'
       sink.serialize = () => {
@@ -177,20 +194,19 @@ describe('attachRestoreOpMinter', () => {
     })
 
     expect(minted).toEqual([])
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('could not serialize every present node'),
       [String(sink.id)]
     )
   })
 
   it('surfaces a link removed without its node instead of dropping it silently', () => {
-    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const linkId = sink.inputs[0].link
 
     restoreThrough(() => sink.disconnectInput(0))
 
     expect(minted).toEqual([])
-    expect(error).toHaveBeenCalledWith(
+    expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining('removed link without its node'),
       String(linkId)
     )

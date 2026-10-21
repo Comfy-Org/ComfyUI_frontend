@@ -4,6 +4,9 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json'
+
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -17,8 +20,6 @@ import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.v
 
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
 
-const mockToastAdd = vi.fn()
-
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
@@ -30,14 +31,6 @@ vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
@@ -52,6 +45,7 @@ const i18n = createI18n({
       g: { close: 'Close', increment: 'Increment', decrement: 'Decrement' },
       credits: {
         topUp: {
+          purchaseDisclosure: enMessages.credits.topUp.purchaseDisclosure,
           addMoreCredits: 'Add more credits',
           addMoreCreditsToRun: 'Add more credits to run',
           selectAmount: 'Select amount',
@@ -103,6 +97,27 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       checkout_url: 'https://checkout.stripe.test'
     })
     vi.spyOn(window, 'open').mockImplementation(() => window)
+  })
+
+  it('shows the purchase disclosure before navigating to settings when subscription features are unavailable', async () => {
+    useBillingContext().canAccessSubscriptionFeatures = computed(() => false)
+    renderDialog({ source: 'deep_link' })
+
+    expect(
+      screen.getByText(
+        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+      )
+    ).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: 'Continue to payment' })
+    ).toBeEnabled()
+    await clickBuyCredits()
+
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
+      key: 'top-up-credits'
+    })
+    expect(useAuthStore().initiateCreditPurchase).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -309,10 +324,10 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       outcome: 'failure',
       failure_category: 'unknown'
     })
-    expect(mockToastAdd).toHaveBeenCalledWith(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Purchase Failed'
+        kind: 'error',
+        title: 'Purchase Failed'
       })
     )
     expect(useSettingsDialog().show).not.toHaveBeenCalled()

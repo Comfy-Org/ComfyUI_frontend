@@ -1,27 +1,39 @@
 import { toRaw } from 'vue'
-import { z } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { paletteSchema, comfyBaseSchema } from '@/schemas/colorPaletteSchema'
+import { comfyBaseSchema, paletteSchema } from '@/schemas/colorPaletteSchema'
 import type { Colors, Palette } from '@/schemas/colorPaletteSchema'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
+import { applyPaletteTheme, isCorePaletteId } from '@/utils/colorPaletteTheme'
 import { uploadFile } from '@/scripts/utils'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-const THEME_PROPERTY_MAP = {
-  NODE_BOX_OUTLINE_COLOR: 'component-node-border',
-  NODE_DEFAULT_BGCOLOR: 'component-node-background',
-  NODE_DEFAULT_BOXCOLOR: 'node-component-header-icon',
-  NODE_DEFAULT_COLOR: 'node-component-header-surface',
-  NODE_TITLE_COLOR: 'node-component-header',
-  WIDGET_BGCOLOR: 'component-node-widget-background',
-  WIDGET_TEXT_COLOR: 'component-node-foreground'
-} as const satisfies Partial<Record<keyof Colors['litegraph_base'], string>>
+const THEME_ALIASED_LEGACY_KEYS: ReadonlySet<string> = new Set([
+  'fg-color',
+  'bg-color',
+  'comfy-menu-bg',
+  'comfy-menu-secondary-bg',
+  'descrip-text',
+  'drag-text',
+  'error-text',
+  'tr-even-bg-color',
+  'tr-odd-bg-color',
+  'content-bg',
+  'content-fg',
+  'content-hover-bg',
+  'content-hover-fg'
+])
+
+const LEGACY_PALETTE_KEYS = comfyBaseSchema
+  .keyof()
+  .options.filter((key) => key !== 'bg-img')
+
+let latestPaletteSwitch = 0
 
 export const useColorPaletteService = () => {
   const colorPaletteStore = useColorPaletteStore()
@@ -84,19 +96,11 @@ export const useColorPaletteService = () => {
       Array.from(nodeDefStore.nodeDataTypes).map((type) => [type, ''])
     )
     Object.assign(
-      app.canvas.default_connection_color_byType,
+      useApp().canvas.default_connection_color_byType,
       types,
       linkColorPalette
     )
     Object.assign(LGraphCanvas.link_type_colors, types, linkColorPalette)
-  }
-
-  function validThemeProp(
-    propertyMaybe: unknown
-  ): propertyMaybe is keyof typeof THEME_PROPERTY_MAP {
-    return (
-      (propertyMaybe as keyof typeof THEME_PROPERTY_MAP) in THEME_PROPERTY_MAP
-    )
   }
 
   function loadLinkColorPaletteForVueNodes(
@@ -116,30 +120,6 @@ export const useColorPaletteService = () => {
     }
   }
 
-  function loadLitegraphForVueNodes(
-    palette: Colors['litegraph_base'],
-    colorPaletteId: string
-  ) {
-    const rootStyle = document.documentElement.style
-
-    for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
-      if (!validThemeProp(themeVar)) {
-        continue
-      }
-      const cssVar = THEME_PROPERTY_MAP[themeVar]
-      if (colorPaletteId === 'dark' || colorPaletteId === 'light') {
-        rootStyle.removeProperty(`--${cssVar}`)
-        continue
-      }
-      const valueMaybe = palette[themeVar]
-      if (valueMaybe) {
-        rootStyle.setProperty(`--${cssVar}`, valueMaybe)
-      } else {
-        rootStyle.removeProperty(`--${cssVar}`)
-      }
-    }
-  }
-
   /**
    * Loads the LiteGraph color palette.
    *
@@ -147,16 +127,16 @@ export const useColorPaletteService = () => {
    */
   const loadLiteGraphColorPalette = (palette: Colors['litegraph_base']) => {
     // Sets the colors of the LiteGraph objects
-    app.canvas.node_title_color = palette.NODE_TITLE_COLOR
-    app.canvas.default_link_color = palette.LINK_COLOR
+    useApp().canvas.node_title_color = palette.NODE_TITLE_COLOR
+    useApp().canvas.default_link_color = palette.LINK_COLOR
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
     if (backgroundImage) {
-      app.canvas.clear_background_color = 'transparent'
+      useApp().canvas.clear_background_color = 'transparent'
     } else {
-      app.canvas.background_image = palette.BACKGROUND_IMAGE
-      app.canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
+      useApp().canvas.background_image = palette.BACKGROUND_IMAGE
+      useApp().canvas.clear_background_color = palette.CLEAR_BACKGROUND_COLOR
     }
-    app.canvas._pattern = undefined
+    useApp().canvas._pattern = undefined
 
     if (typeof palette.NODE_DEFAULT_SHAPE === 'string')
       console.warn(
@@ -180,45 +160,24 @@ export const useColorPaletteService = () => {
   }
 
   /**
-   * Gets optional keys from a Zod schema object.
-   *
-   * @param schema - The Zod schema object to analyze.
-   * @returns Array of optional key names.
-   */
-  const getOptionalKeys = (schema: z.ZodObject<z.ZodRawShape>) => {
-    const optionalKeys: string[] = []
-    const shape = schema.shape
-
-    for (const [key, value] of Object.entries(shape)) {
-      if (value instanceof z.ZodOptional || value instanceof z.ZodDefault) {
-        optionalKeys.push(key)
-      }
-    }
-
-    return optionalKeys
-  }
-  const optionalComfyBaseKeys = getOptionalKeys(comfyBaseSchema)
-
-  /**
    * Loads the Comfy color palette.
    *
    * @param comfyColorPalette - The palette to set.
    */
   const loadComfyColorPalette = (
     comfyColorPalette: Colors['comfy_base'],
-    isLightTheme: boolean
+    themeAliasesLegacyColors: boolean
   ) => {
     const rootStyle = document.documentElement.style
-    for (const [key, value] of Object.entries(comfyColorPalette)) {
-      rootStyle.setProperty('--' + key, value)
-    }
-
-    for (const optionalKey of optionalComfyBaseKeys) {
-      if (!(optionalKey in comfyColorPalette)) {
-        rootStyle.setProperty(
-          '--' + optionalKey,
-          `var(--palette-${optionalKey})`
-        )
+    for (const key of LEGACY_PALETTE_KEYS) {
+      const value = comfyColorPalette[key]
+      if (
+        value === undefined ||
+        (themeAliasesLegacyColors && THEME_ALIASED_LEGACY_KEYS.has(key))
+      ) {
+        rootStyle.removeProperty('--' + key)
+      } else {
+        rootStyle.setProperty('--' + key, value)
       }
     }
 
@@ -228,11 +187,16 @@ export const useColorPaletteService = () => {
     } else {
       rootStyle.removeProperty('--bg-img')
     }
+  }
 
+  const afterNextFrame = (callback: () => void) =>
+    requestAnimationFrame(() => requestAnimationFrame(callback))
+
+  const persistSplashColors = () => {
     try {
-      const splashBg = isLightTheme ? '#FFFFFF' : comfyColorPalette['bg-color']
-      localStorage.setItem('comfy-splash-bg', splashBg)
-      localStorage.setItem('comfy-splash-fg', comfyColorPalette['fg-color'])
+      const body = getComputedStyle(document.body)
+      localStorage.setItem('comfy-splash-bg', body.backgroundColor)
+      localStorage.setItem('comfy-splash-fg', body.color)
     } catch (_) {
       /* empty */
     }
@@ -251,20 +215,28 @@ export const useColorPaletteService = () => {
     }
 
     const completedPalette = colorPaletteStore.completePalette(colorPalette)
-    loadLinkColorPalette(completedPalette.colors.node_slot)
-    loadLiteGraphColorPalette(completedPalette.colors.litegraph_base)
-    loadLitegraphForVueNodes(
-      completedPalette.colors.litegraph_base,
-      colorPaletteId
-    )
-    loadLinkColorPaletteForVueNodes(completedPalette.colors.node_slot)
-    loadComfyColorPalette(
-      completedPalette.colors.comfy_base,
-      completedPalette.light_theme === true
-    )
-    app.canvas.setDirty(true, true)
+    const root = document.documentElement
+    const paletteSwitch = ++latestPaletteSwitch
+    root.dataset.paletteSwitching = ''
+    try {
+      loadLinkColorPalette(completedPalette.colors.node_slot)
+      loadLiteGraphColorPalette(completedPalette.colors.litegraph_base)
+      applyPaletteTheme(root.style, completedPalette)
+      loadLinkColorPaletteForVueNodes(completedPalette.colors.node_slot)
+      loadComfyColorPalette(
+        completedPalette.colors.comfy_base,
+        isCorePaletteId(completedPalette.id)
+      )
+      useApp().canvas.setDirty(true, true)
 
-    colorPaletteStore.activePaletteId = colorPaletteId
+      colorPaletteStore.activePaletteId = colorPaletteId
+    } finally {
+      afterNextFrame(() => {
+        if (paletteSwitch !== latestPaletteSwitch) return
+        delete root.dataset.paletteSwitching
+        persistSplashColors()
+      })
+    }
   }
 
   /**

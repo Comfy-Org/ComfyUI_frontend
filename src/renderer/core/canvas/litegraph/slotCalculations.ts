@@ -1,3 +1,7 @@
+import type {
+  LGraphNode,
+  LGraph
+} from '@/lib/litegraph/src/types/entityRegistry'
 /**
  * Slot Position Calculations
  *
@@ -5,14 +9,13 @@
  * This allows both litegraph nodes and the layout system to use the same
  * calculation logic while providing their own position data.
  */
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
+
+import type { Point } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot,
-  Point
-} from '@/lib/litegraph/src/interfaces'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+  INodeOutputSlot
+} from '@/lib/litegraph/src/types/slots'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { isWidgetInputSlot } from '@/lib/litegraph/src/node/slotUtils'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
@@ -76,7 +79,7 @@ export function calculateInputSlotPosFromSlot(
 
   // Handle collapsed nodes
   if (collapsed) {
-    const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
+    const halfTitle = litegraph().NODE_TITLE_HEIGHT * 0.5
     return [nodeX, nodeY - halfTitle]
   }
 
@@ -85,7 +88,7 @@ export function calculateInputSlotPosFromSlot(
   if (pos) return [nodeX + pos[0], nodeY + pos[1]]
 
   // Default vertical slots
-  const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+  const offsetX = litegraph().NODE_SLOT_HEIGHT * 0.5
   const nodeOffsetY = context.slotStartY || 0
   let slotIndex = -1
   const inputIndex = context.inputs.indexOf(input)
@@ -99,7 +102,7 @@ export function calculateInputSlotPosFromSlot(
       }
     }
   }
-  const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
+  const slotY = (slotIndex + 0.7) * litegraph().NODE_SLOT_HEIGHT
 
   return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
 }
@@ -119,8 +122,8 @@ function calculateOutputSlotPos(
 
   // Handle collapsed nodes
   if (collapsed) {
-    const width = collapsedWidth || LiteGraph.NODE_COLLAPSED_WIDTH
-    const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
+    const width = collapsedWidth || litegraph().NODE_COLLAPSED_WIDTH
+    const halfTitle = litegraph().NODE_TITLE_HEIGHT * 0.5
     return [nodeX + width, nodeY - halfTitle]
   }
 
@@ -132,11 +135,11 @@ function calculateOutputSlotPos(
   if (outputPos) return [nodeX + outputPos[0], nodeY + outputPos[1]]
 
   // Default vertical slots
-  const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+  const offsetX = litegraph().NODE_SLOT_HEIGHT * 0.5
   const nodeOffsetY = context.slotStartY || 0
   const defaultVerticalOutputs = getDefaultVerticalOutputs(context)
   const slotIndex = defaultVerticalOutputs.indexOf(outputSlot)
-  const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
+  const slotY = (slotIndex + 0.7) * litegraph().NODE_SLOT_HEIGHT
 
   // TODO: Why +1?
   return [nodeX + nodeWidth + 1 - offsetX, nodeY + slotY + nodeOffsetY]
@@ -154,7 +157,7 @@ export function getSlotPosition(
   slotIndex: number,
   isInput: boolean
 ): Point {
-  if (LiteGraph.vueNodesMode)
+  if (litegraph().vueNodesMode)
     return getVueSlotPosition(node, slotIndex, isInput)
 
   const context: SlotPositionContext = {
@@ -185,7 +188,7 @@ function getVueSlotPosition(
   if (offset) return [nodeX + offset.x, nodeY + offset.y]
 
   const nodeWidth = node.flags.collapsed
-    ? (node._collapsed_width ?? LiteGraph.NODE_COLLAPSED_WIDTH)
+    ? (node._collapsed_width ?? litegraph().NODE_COLLAPSED_WIDTH)
     : node.renderingSize[0]
   return calculateVueSlotPosition(
     node,
@@ -223,7 +226,7 @@ function calculateVueSlotPosition(
   if (node.flags.collapsed) {
     return [
       isInput ? nodeX : nodeX + nodeWidth,
-      nodeY - LiteGraph.NODE_TITLE_HEIGHT * 0.5
+      nodeY - litegraph().NODE_TITLE_HEIGHT * 0.5
     ]
   }
 
@@ -265,7 +268,7 @@ function getWidgetSlotY(
   const widget =
     input._widget ??
     node.widgets?.find((candidate) => candidate.name === input.widget.name)
-  return widget && widget.y + LiteGraph.NODE_SLOT_HEIGHT * 0.5
+  return widget && widget.y + litegraph().NODE_SLOT_HEIGHT * 0.5
 }
 
 function calculateVueOutputSlotPosition(
@@ -288,13 +291,13 @@ function calculateVueOutputSlotPosition(
 function getVueSlotY(node: LGraphNode, slotIndex: number): number {
   return (
     (slotIndex + (node.type === 'Reroute' ? 0.5 : 0.7)) *
-    LiteGraph.NODE_SLOT_HEIGHT
+    litegraph().NODE_SLOT_HEIGHT
   )
 }
 
 function getVueNodeContentY(node: LGraphNode, nodeY: number): number {
   return node.title_mode === TitleMode.NO_TITLE
-    ? nodeY - LiteGraph.NODE_TITLE_HEIGHT
+    ? nodeY - litegraph().NODE_TITLE_HEIGHT
     : nodeY
 }
 
@@ -320,7 +323,7 @@ function createSlotLayout(
   isInput: boolean,
   [x, y]: Point
 ): SlotLayout {
-  const size = LiteGraph.NODE_SLOT_HEIGHT
+  const size = litegraph().NODE_SLOT_HEIGHT
   const half = size * 0.5
   return {
     nodeId: node.id,

@@ -34,7 +34,9 @@ test.describe(
       await agentPanel.open()
       await agentPanel.selectWorkflow()
       const panel = agentPanel.root
-      const placeholder = panel.getByText(/^Describe ideas/)
+      const placeholder = panel.getByText(enMessages.agent.placeholder, {
+        exact: true
+      })
       await expect(placeholder).toBeVisible()
 
       await panel
@@ -60,9 +62,10 @@ test.describe(
       const removeButton = panel.getByRole('button', {
         name: `Remove KSampler #${node.id} reference`
       })
-      await expect(removeButton).toBeVisible()
-      await expect(placeholder).toHaveCount(0)
+      await expect(placeholder).toBeHidden()
 
+      await panel.getByTestId('node-reference-chip').hover()
+      await expect(removeButton).toBeVisible()
       await removeButton.click()
       await expect(removeButton).toHaveCount(0)
 

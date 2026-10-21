@@ -1,66 +1,52 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-import { defineComponent, h, inject } from 'vue'
+import { h } from 'vue'
 
 import HoverCard from './HoverCard.vue'
+import HoverCardContent from './HoverCardContent.vue'
 import HoverCardTrigger from './HoverCardTrigger.vue'
-import { hoverCardOpenKey } from './hoverCardContext'
 
-const OpenStateProbe = defineComponent({
-  setup() {
-    const isOpen = inject(hoverCardOpenKey)
-
-    return () =>
-      h('span', { 'data-testid': 'open-state' }, String(isOpen?.value))
-  }
-})
-
-function renderHoverCard(props: { defaultOpen?: boolean; open?: boolean }) {
-  return render(HoverCard, {
-    props,
+async function hoverOpen() {
+  const user = userEvent.setup()
+  const { emitted } = render(HoverCard, {
+    props: { openDelay: 0 },
     slots: {
-      default: () => h(OpenStateProbe)
+      default: () => [
+        h(HoverCardTrigger, { as: 'button' }, () => 'Open hover card'),
+        h(HoverCardContent, null, () => 'Hover card body')
+      ]
     }
   })
+  await user.hover(screen.getByRole('button', { name: 'Open hover card' }))
+  const body = await screen.findByText('Hover card body')
+  return { content: body, emitted }
 }
 
 describe('HoverCard', () => {
-  it('provides the default open state to its content', () => {
-    renderHoverCard({ defaultOpen: true })
+  it('opens on hover and forwards the open state', async () => {
+    const { emitted } = await hoverOpen()
 
-    expect(screen.getByTestId('open-state').textContent).toBe('true')
+    expect(emitted('update:open')).toEqual([[true]])
   })
 
-  it('mirrors controlled open prop updates', async () => {
-    const { rerender } = renderHoverCard({ open: false })
+  it('keeps its static z-index while no modal layer is open', async () => {
+    const { content } = await hoverOpen()
 
-    expect(screen.getByTestId('open-state').textContent).toBe('false')
-
-    await rerender({ open: true })
-    expect(screen.getByTestId('open-state').textContent).toBe('true')
-
-    await rerender({ open: false })
-    expect(screen.getByTestId('open-state').textContent).toBe('false')
+    expect(content.style.zIndex).toBe('')
   })
 
-  it('mirrors and forwards uncontrolled open updates', async () => {
-    const user = userEvent.setup()
-    const { emitted } = render(HoverCard, {
-      props: { openDelay: 0 },
-      slots: {
-        default: () => [
-          h(HoverCardTrigger, { as: 'button' }, () => 'Open hover card'),
-          h(OpenStateProbe)
-        ]
-      }
+  it('lifts above the top modal layer', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
     })
+    const dialog = screen.getByTestId('existing-overlay')
 
-    await user.hover(screen.getByRole('button', { name: 'Open hover card' }))
+    const { content } = await hoverOpen()
 
-    await waitFor(() => {
-      expect(screen.getByTestId('open-state').textContent).toBe('true')
-      expect(emitted('update:open')).toEqual([[true]])
-    })
+    expect(dialog.compareDocumentPosition(content)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 })

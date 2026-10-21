@@ -1,49 +1,39 @@
-import { ZIndex } from '@primeuix/utils/zindex'
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { MenuItem } from '@/components/ui/menu/types'
-import enMessages from '@/locales/en/main.json'
 
 import Menu from './Menu.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: enMessages }
-})
 
 function renderMenu(items: MenuItem[] = [{ label: 'Item A' }]) {
   return render(Menu, {
     props: { items },
-    slots: { trigger: '<button>Open</button>' },
-    global: { plugins: [i18n], directives: { tooltip: {} } }
+    slots: { trigger: '<button>Open</button>' }
   })
 }
 
-let openModal: HTMLElement | undefined
-
-afterEach(() => {
-  if (openModal) {
-    ZIndex.clear(openModal)
-    openModal = undefined
-  }
-})
-
 describe('Menu z-index', () => {
-  it('opens above a dialog registered with the modal z-index counter', async () => {
-    openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
-    const dialogZ = Number(openModal.style.zIndex)
-
+  it('reopens above an overlay opened after the menu closed', async () => {
     const user = userEvent.setup()
     renderMenu()
     await user.click(screen.getByRole('button'))
+    await screen.findByRole('menu')
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
+
+    await user.click(screen.getByRole('button'))
 
     const menu = await screen.findByRole('menu')
-    expect(Number(menu.style.zIndex)).toBeGreaterThan(dialogZ)
+    expect(dialog.compareDocumentPosition(menu)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 
   it('leaves the static z-index untouched when no dialog is open', async () => {
@@ -53,13 +43,15 @@ describe('Menu z-index', () => {
 
     const menu = await screen.findByRole('menu')
     expect(menu.style.zIndex).toBe('')
-    expect(menu.className).toContain('z-3000')
+    expect(menu.className).toContain('z-overlay')
   })
 
-  it('opens a nested menu above a registered dialog', async () => {
-    openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
-    const dialogZ = Number(openModal.style.zIndex)
+  it('opens a nested menu above an existing dialog', async () => {
+    render({
+      template:
+        '<section class="fixed z-overlay" data-testid="existing-overlay" />'
+    })
+    const dialog = screen.getByTestId('existing-overlay')
     const command = vi.fn()
     const user = userEvent.setup()
     renderMenu([
@@ -81,6 +73,8 @@ describe('Menu z-index', () => {
       .getAllByRole('menu')
       .find((menu) => within(menu).queryByRole('menuitem', { name: 'Owner' }))
     expect(submenu).toBeDefined()
-    expect(Number(submenu?.style.zIndex)).toBeGreaterThan(dialogZ)
+    expect(dialog.compareDocumentPosition(submenu!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    )
   })
 })

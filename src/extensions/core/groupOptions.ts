@@ -1,13 +1,11 @@
-import type {
-  IContextMenuValue,
-  Positionable
-} from '@/lib/litegraph/src/interfaces'
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
+import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { LGraphEventMode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyExtension } from '@/types/comfy'
 
-import { app } from '../../scripts/app'
+import { app } from '@/scripts/app'
 
 function setNodeMode(node: LGraphNode, mode: LGraphEventMode) {
   node.mode = mode

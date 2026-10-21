@@ -44,6 +44,11 @@ app.registerExtension({
       case 'DevToolsPreviewBridge':
         installPreviewBridgeSetter(node)
         break
+      case 'DevToolsFancyTimer':
+        node.onSerialize = function (o) {
+          o.properties = this.properties
+        }
+        break
     }
   }
 })

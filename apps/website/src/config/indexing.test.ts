@@ -67,6 +67,14 @@ describe('indexing policy', () => {
     expect(isExcludedFromSitemap('https://comfy.org/workshops/')).toBe(false)
   })
 
+  it.for(['/flux-3-image-klein/', '/zh-CN/flux-3-image-klein/'])(
+    'indexes the launched %s page and lists it in the sitemap',
+    (pathname) => {
+      expect(isNoindexPathname(pathname)).toBe(false)
+      expect(isExcludedFromSitemap(`https://comfy.org${pathname}`)).toBe(false)
+    }
+  )
+
   it.for([
     '/privacy-policy',
     '/privacy-policy/',
@@ -104,6 +112,10 @@ describe('indexing policy', () => {
     '/agent/',
     '/zh-CN/agent',
     '/zh-CN/agent/',
+    '/solutions/vfx/',
+    '/zh-CN/solutions/vfx/',
+    '/solutions/vfx/v3/',
+    '/zh-CN/solutions/vfx/v3/',
     '/hub/models/local/',
     '/hub/models/local/4x-ultrasharp/',
     '/demos/image-to-video'
@@ -318,14 +330,15 @@ describe('NOINDEX_ROUTES', () => {
       `^${route
         .replace(/\/$/, '')
         .split('/')
+        .filter(Boolean)
         .map((segment) =>
           segment.startsWith('[...')
-            ? '.+'
+            ? '(?:/.*)?'
             : segment.startsWith('[')
-              ? '[^/]+'
-              : segment.replace(/[.*+?^${}()|\\]/g, '\\$&')
+              ? '/[^/]+'
+              : `/${segment.replace(/[.*+?^${}()|\\]/g, '\\$&')}`
         )
-        .join('/')}$`
+        .join('')}$`
     )
 
   const builtRoutes = [

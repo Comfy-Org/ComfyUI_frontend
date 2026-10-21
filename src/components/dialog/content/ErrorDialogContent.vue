@@ -35,13 +35,13 @@
       </Button>
     </div>
     <template v-if="reportOpen">
-      <hr class="border-t border-border-subtle" />
+      <hr class="border-t border-border/50" />
       <div class="h-[400px] w-full max-w-[80vw] overflow-auto">
         <pre class="wrap-break-word whitespace-pre-wrap">{{
           reportContent
         }}</pre>
       </div>
-      <hr class="border-t border-border-subtle" />
+      <hr class="border-t border-border/50" />
     </template>
     <div class="flex justify-end gap-4">
       <FindIssueButton
@@ -62,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -74,7 +74,7 @@ import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageReso
 import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
@@ -140,18 +140,24 @@ const resolvedErrors = computed(() =>
     }
   })
 )
-const title = computed(
-  () =>
-    (errorSources[0]?.kind === 'execution' ? error.nodeType : undefined) ??
+const title = computed(() => {
+  const displayTitle =
     resolvedErrors.value[0]?.title ??
     error.nodeType ??
     error.exceptionType ??
     t('errorDialog.defaultTitle')
-)
+
+  if (errorSources[0]?.kind !== 'execution') return displayTitle
+
+  const nodeTitle = error.nodeType ?? displayTitle
+  return error.nodeId ? `${nodeTitle} (#${error.nodeId})` : nodeTitle
+})
 const message = computed(
   () =>
-    resolvedErrors.value.map((resolved) => resolved.message).join('\n\n') ||
-    error.exceptionMessage
+    resolvedErrors.value
+      .map((resolved) => resolved.message)
+      .filter(Boolean)
+      .join('\n\n') || error.exceptionMessage
 )
 
 /**
@@ -177,7 +183,7 @@ onMounted(async () => {
     reportContent.value = generateErrorReport({
       systemStats: systemStatsStore.systemStats!,
       serverLogs: logs,
-      workflow: app.rootGraph.serialize(),
+      workflow: useApp().rootGraph.serialize(),
       exceptionType: error.exceptionType,
       exceptionMessage: error.exceptionMessage,
       traceback: error.traceback,
@@ -186,10 +192,8 @@ onMounted(async () => {
     })
   } catch (error) {
     console.error('Error fetching logs:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: t('toastMessages.failedToFetchLogs')
+    toast.error(t('g.error'), {
+      description: t('toastMessages.failedToFetchLogs')
     })
   }
 })

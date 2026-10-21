@@ -5,8 +5,6 @@ import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
 import CardBottom from './CardBottom.vue'
 import CardContainer from './CardContainer.vue'
-import CardDescription from './CardDescription.vue'
-import CardTitle from './CardTitle.vue'
 import CardTop from './CardTop.vue'
 
 interface CardStoryArgs {
@@ -171,8 +169,6 @@ const createCardTemplate = (args: CardStoryArgs) => ({
     CardContainer,
     CardTop,
     CardBottom,
-    CardTitle,
-    CardDescription,
     Button,
     Tag
   },
@@ -255,8 +251,8 @@ const createCardTemplate = (args: CardStoryArgs) => ({
         
         <template #bottom>
           <CardBottom>
-            <CardTitle v-if="args.showTitle">{{ args.title }}</CardTitle>
-            <CardDescription v-if="args.showDescription">{{ args.description }}</CardDescription>
+            <div v-if="args.showTitle" class="text-sm text-foreground">{{ args.title }}</div>
+            <div v-if="args.showDescription" class="line-clamp-2 h-7 text-xs text-muted-foreground">{{ args.description }}</div>
           </CardBottom>
         </template>
       </CardContainer>
