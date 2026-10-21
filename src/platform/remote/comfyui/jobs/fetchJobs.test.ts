@@ -344,6 +344,17 @@ describe('fetchJobs', () => {
 
       expect(result).toBeUndefined()
     })
+
+    it('does not report a request aborted by its caller', async () => {
+      const controller = new AbortController()
+      controller.abort()
+      const mockFetch = vi.fn().mockRejectedValue(controller.signal.reason)
+
+      const result = await fetchJobDetail(mockFetch, 'job1', controller.signal)
+
+      expect(result).toBeUndefined()
+      expect(console.error).not.toHaveBeenCalled()
+    })
   })
 
   describe('extractWorkflow', () => {

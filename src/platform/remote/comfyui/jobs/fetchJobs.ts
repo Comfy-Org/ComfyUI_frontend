@@ -185,6 +185,7 @@ export async function fetchJobDetail(
 
     return zJobDetail.parse(await res.json())
   } catch (error) {
+    if (signal?.aborted) return undefined
     console.error(`Failed to fetch job detail for job ${jobId}:`, error)
     return undefined
   }
