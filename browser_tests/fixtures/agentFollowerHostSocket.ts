@@ -257,7 +257,6 @@ export class AgentFollowerHostSocket {
     })
   }
 
-  /** Dispatches a frame already confirmed to target this host's workflow. */
   private routeClientDocFrame(frame: ParsedClientDocFrame): void {
     if (frame.type === 'doc_subscribe' && frame.stateVector !== null) {
       this.answerSubscribe(frame.stateVector)
@@ -280,25 +279,12 @@ export class AgentFollowerHostSocket {
     }
   }
 
-  /**
-   * Every human op a `hold` host is still sitting on, oldest first, for a
-   * test inspecting the backlog. To let one of them REACH the document (e.g.
-   * after a competing write has claimed the same register), call
-   * {@link releaseHeldClientOps} rather than applying these directly: the
-   * applier alone skips the relay gate and records no outcome.
-   */
+  /** Human ops a `hold` host is still sitting on, oldest first. */
   heldClientOps(): WireOpEnvelope[] {
     return this.heldBatches.flatMap((batch) => batch.ops)
   }
 
-  /**
-   * Judges and broadcasts the oldest held batch down the same path the
-   * `apply` host takes at send time - relay gate, applier, verdict frame,
-   * delta - so a released batch is indistinguishable from one judged when it
-   * arrived, and its outcomes still reach {@link humanOpOutcomes}. Whole
-   * batches only: `opSender` settles an in-flight batch on the first op id it
-   * recognises, so releasing part of one would retire all of it.
-   */
+  /** Judges the oldest held batch exactly as an `apply` host judges a new one. */
   releaseHeldClientOps(): WireOpEnvelope[] {
     const batch = this.heldBatches.shift()
     if (!batch) return []
@@ -351,29 +337,27 @@ export class AgentFollowerHostSocket {
   }
 
   private wouldAcceptHumanOps({ opsResult, tab }: ParsedClientDocFrame) {
-    return (
-      opsResult.ok &&
-      !!tab &&
-      isValidDocOpsBatch(opsResult.ops) &&
-      claimsOneFrameActor(opsResult.ops, tab)
-    )
+    return 'ops' in this.classifyHumanOps(opsResult, tab)
   }
 
-  // The applier is the only judge of a structurally valid human batch; the
-  // wire ops reach it in place, exactly as the relay hands them to the host.
-  // A batch that failed the envelope check, or that cleared it but is empty
-  // or carries a duplicate `op_id`, never reaches the applier at all — the
-  // relay itself rejects that frame as `invalid_frame` earlier.
+  private classifyHumanOps(
+    opsResult: ParsedWireBatch,
+    tab: string | null
+  ): { ops: WireOpEnvelope[] } | { refusal: HostFrame } {
+    if (!opsResult.ok || !tab || !isValidDocOpsBatch(opsResult.ops))
+      return { refusal: this.invalidFrameResult() }
+    if (!claimsOneFrameActor(opsResult.ops, tab))
+      return { refusal: this.forbiddenResult() }
+    return { ops: opsResult.ops }
+  }
+
   private judgeHumanOps(opsResult: ParsedWireBatch, tab: string | null): void {
-    if (!opsResult.ok || !tab || !isValidDocOpsBatch(opsResult.ops)) {
-      this.send(this.invalidFrameResult())
+    const verdict = this.classifyHumanOps(opsResult, tab)
+    if ('refusal' in verdict) {
+      this.send(verdict.refusal)
       return
     }
-    if (!claimsOneFrameActor(opsResult.ops, tab)) {
-      this.send(this.forbiddenResult())
-      return
-    }
-    const { result, update, outcomes } = this.host.applyWire(opsResult.ops)
+    const { result, update, outcomes } = this.host.applyWire(verdict.ops)
     this.humanOutcomes.push(...outcomes)
     this.send(result)
     if (update) (this.hostUpdateSink ?? ((frame) => this.send(frame)))(update)

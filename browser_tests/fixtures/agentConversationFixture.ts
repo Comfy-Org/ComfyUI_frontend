@@ -856,7 +856,7 @@ export class AgentConversationHarness {
     this.hostSocket.leaveHumanBatchesUnanswered(1)
   }
 
-  async reconnectComfySocket(): Promise<void> {
+  async disconnectComfySocket(): Promise<void> {
     await this.hostSocket.disconnectComfySocket()
   }
 

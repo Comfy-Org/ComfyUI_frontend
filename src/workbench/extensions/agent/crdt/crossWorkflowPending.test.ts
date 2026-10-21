@@ -473,9 +473,6 @@ describe('a human edit made while the document connection is down', () => {
 
   it('keeps the minted actor paired with the wire tab when the session id changes before a retry', async () => {
     api.clientId = 'sid-before-reconnect'
-    onTestFinished(() => {
-      api.clientId = undefined
-    })
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
 

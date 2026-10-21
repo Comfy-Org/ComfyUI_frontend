@@ -41,7 +41,7 @@ test.describe(
           })
           .toBe(framesBefore + 1)
 
-        await agentConversation.reconnectComfySocket()
+        await agentConversation.disconnectComfySocket()
         await expect
           .poll(() => page.evaluate(() => window.app!.api.clientId), {
             message: 'the app is on a new session'
