@@ -151,11 +151,7 @@ describe('candidate prerequisites', () => {
     ['CLOUD', 'success', 0],
     ['CLOUD', 'failure', 1],
     ['CLOUD', 'cancelled', 1],
-    ['CLOUD', 'skipped', 1],
-    ['NATIVE_LORA', 'success', 0],
-    ['NATIVE_LORA', 'failure', 1],
-    ['NATIVE_LORA', 'cancelled', 1],
-    ['NATIVE_LORA', 'skipped', 1]
+    ['CLOUD', 'skipped', 1]
   ] satisfies [string, string, number][])(
     '%s ending with %s produces E2E exit status %s',
     ([job, status, expected]) => {
@@ -166,7 +162,6 @@ describe('candidate prerequisites', () => {
           SHOULD_RUN: 'true',
           SHARDED: 'success',
           CLOUD: 'success',
-          NATIVE_LORA: 'success',
           BROWSERS: 'success',
           VIDEO: 'skipped',
           [job]: status
@@ -182,8 +177,7 @@ describe('candidate prerequisites', () => {
     ['a failing cloud suite', 'true', { CLOUD: 'failure' }, 1],
     ['a cancelled cloud suite', 'true', { CLOUD: 'cancelled' }, 1],
     ['a skipped cloud suite', 'true', { CLOUD: 'skipped' }, 1],
-    ['a skipped browser matrix', 'true', { BROWSERS: 'skipped' }, 1],
-    ['a skipped native LoRA suite', 'true', { NATIVE_LORA: 'skipped' }, 1]
+    ['a skipped browser matrix', 'true', { BROWSERS: 'skipped' }, 1]
   ] satisfies [string, string, Record<string, string>, number][])(
     'E2E status with %s (release push %s, %j) exits %s',
     ([_name, releasePush, overrides, expected]) => {
@@ -196,7 +190,6 @@ describe('candidate prerequisites', () => {
           SHARDED: 'skipped',
           CLOUD: 'success',
           BROWSERS: 'success',
-          NATIVE_LORA: 'success',
           ...overrides
         })
       ).toBe(expected)
@@ -207,7 +200,6 @@ describe('candidate prerequisites', () => {
     ['playwright-tests-chromium-sharded', true],
     ['upload-e2e-coverage', true],
     ['playwright-tests', false],
-    ['playwright-tests-native-lora', false],
     ['playwright-tests-cloud-sharded', false],
     ['merge-reports', false],
     ['setup', false]
@@ -263,7 +255,6 @@ describe('candidate prerequisites', () => {
     'ecosystem',
     'playwright-tests-chromium-sharded',
     'playwright-tests-cloud-sharded',
-    'playwright-tests-native-lora',
     'playwright-tests',
     'comment-on-pr-start'
   ])('%s overrides skipped ancestors only after preflight succeeds', (job) => {
