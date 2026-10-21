@@ -7,7 +7,6 @@ import CardBottom from '@comfyorg/design-system/content-card/CardBottom'
 import CardContainer from '@comfyorg/design-system/content-card/CardContainer'
 import CardTop from '@comfyorg/design-system/content-card/CardTop'
 
-
 interface CardStoryArgs {
   // CardContainer props
   containerSize: 'mini' | 'compact' | 'regular' | 'portrait' | 'tall' | 'auto'

@@ -5,7 +5,6 @@ import Card from '@comfyorg/design-system/card/Card'
 import CardFooter from '@comfyorg/design-system/card/CardFooter'
 import CardHeader from '@comfyorg/design-system/card/CardHeader'
 
-
 const meta: Meta<typeof Card> = {
   title: 'Components/Card',
   component: Card,
