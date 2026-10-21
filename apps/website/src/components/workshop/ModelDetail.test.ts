@@ -1034,9 +1034,7 @@ describe('ModelDetail', () => {
     respondToFetch(
       { method: 'PUT' },
       () => Promise.reject(new TypeError('Failed to fetch')),
-      {
-        times: 1
-      }
+      { times: 1 }
     )
     const model = getRouterWorkshopModelDetail(
       'vertexai--gemini-nano-banana-2--edit-images'
@@ -1772,9 +1770,7 @@ describe('ModelDetail', () => {
     const prepare = () => {
       const event = Object.assign(
         new Event('astro:before-preparation', { cancelable: true }),
-        {
-          navigationType: 'traverse'
-        }
+        { navigationType: 'traverse' }
       )
       document.dispatchEvent(event)
       preparationWasAllowed = !event.defaultPrevented

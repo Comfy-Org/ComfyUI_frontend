@@ -83,7 +83,7 @@ const pillClass =
 
 <template>
   <div
-    class="group/card relative flex h-full flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 has-[[data-model-main]:hover]:bg-hub-surface-hover has-[[data-model-try]:hover]:bg-hub-surface-hover"
+    class="group/card flex h-full flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 has-[[data-model-main]:hover]:bg-hub-surface-hover has-[[data-model-try]:hover]:bg-hub-surface-hover"
   >
     <a
       :href="model.href"
@@ -146,31 +146,16 @@ const pillClass =
         >
           {{ cardName }}
         </h3>
-        <!-- Under a heading that names its kind, a workflow's artwork says the
-          rest, so the line a tag would take goes to the name instead. Listed
-          on its own — searched, filtered, or beside models — it keeps the tag,
-          which is then the only place the kind is written. -->
-        <div
-          v-if="showsTask && !hasModelActions"
-          class="flex h-6 min-w-0 items-center gap-1.5 overflow-hidden"
-        >
-          <span
-            :id="`${id}-task`"
-            :class="pillClass"
-            data-testid="model-card-task"
-            >{{ taskLabel }}</span
-          >
-          <TagRow
-            :tags="model.capabilities"
-            :link-tags="false"
-            class="min-w-0 flex-1"
-          />
-        </div>
       </div>
     </a>
     <div
-      v-if="hasModelActions"
-      class="flex min-h-6 flex-wrap items-center justify-between gap-1.5 px-3"
+      v-if="showsTask"
+      :class="
+        cn(
+          'flex min-h-6 items-center gap-1.5 px-3',
+          hasModelActions ? 'flex-wrap justify-between' : 'h-6 overflow-hidden'
+        )
+      "
     >
       <span
         :id="`${id}-task`"
@@ -178,7 +163,13 @@ const pillClass =
         data-testid="model-card-task"
         >{{ taskLabel }}</span
       >
-      <div class="ml-auto flex shrink-0 items-center gap-2">
+      <TagRow
+        v-if="!hasModelActions"
+        :tags="model.capabilities"
+        :link-tags="false"
+        class="min-w-0 flex-1"
+      />
+      <div v-else class="ml-auto flex shrink-0 items-center gap-2">
         <a
           :href="model.href"
           data-model-try
@@ -187,7 +178,6 @@ const pillClass =
         >
         <a
           :href="`${model.href}#api`"
-          data-model-api
           class="inline-flex h-8 items-center rounded-full border border-transparency-white-t20 px-3 text-xs whitespace-nowrap text-primary-comfy-yellow hover:border-primary-comfy-yellow hover:bg-primary-comfy-yellow hover:text-primary-comfy-ink focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           >{{ t('workshop.hub.useApi')
           }}<span aria-hidden="true" class="ml-1">⌘</span></a

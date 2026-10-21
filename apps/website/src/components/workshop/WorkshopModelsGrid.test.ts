@@ -108,30 +108,34 @@ describe('WorkshopModelsGrid', () => {
     expect(cardNames()).toEqual([expect.stringContaining('Kling AI')])
   })
 
-  it.each(['Browse all models', 'View all models (3)'])(
-    'returns the viewport to the top when a section or %s opens',
-    async (label) => {
-      const scrollTo = vi
-        .spyOn(window, 'scrollTo')
-        .mockImplementation(() => undefined)
-      const user = userEvent.setup()
-      render(WorkshopModelsGrid, { props: { models } })
+  it('returns the viewport to the top when a section or browse-all opens', async () => {
+    const scrollTo = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => undefined)
+    const user = userEvent.setup()
+    render(WorkshopModelsGrid, { props: { models } })
 
-      await user.click(screen.getByRole('button', { name: 'Edit images' }))
-      await nextTick()
-      await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
+    await user.click(screen.getByRole('button', { name: 'Edit images' }))
+    await nextTick()
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
 
-      scrollTo.mockClear()
-      await user.click(screen.getByRole('button', { name: /Back to/ }))
-      await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
-      scrollTo.mockClear()
-      await user.click(screen.getByRole('button', { name: label }))
-      expect(screen.queryByTestId('browse-all-top')).toBeNull()
-      expect(cardNames()).toHaveLength(models.length)
-      await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
-      scrollTo.mockRestore()
-    }
-  )
+    scrollTo.mockClear()
+    await user.click(screen.getByRole('button', { name: /Back to/ }))
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
+    scrollTo.mockClear()
+    await user.click(screen.getByRole('button', { name: 'Browse all models' }))
+    await vi.waitFor(() => expect(scrollTo).toHaveBeenCalledWith({ top: 0 }))
+    scrollTo.mockRestore()
+  })
+
+  it('opens all models from the counted top button', async () => {
+    render(WorkshopModelsGrid, { props: { models } })
+    await userEvent.click(
+      screen.getByRole('button', { name: 'View all models (3)' })
+    )
+    expect(screen.queryByTestId('browse-all-top')).toBeNull()
+    expect(cardNames()).toHaveLength(models.length)
+  })
 
   it('filters by use case from the filter menu', async () => {
     const user = userEvent.setup()

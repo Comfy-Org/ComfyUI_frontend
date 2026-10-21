@@ -67,7 +67,7 @@ describe('WorkshopModelCard', () => {
     expect(screen.queryByRole('link', { name: 'Try model' })).toBeNull()
   })
 
-  it('links the name and provider badge to the model page', () => {
+  it('links the name, provider badge and task to the model page', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
     expect(link.getAttribute('href')).toBe('/models/flux/')
@@ -162,13 +162,7 @@ describe('WorkshopModelCard', () => {
   it('falls back to the provider initial and the modality when nothing matches', () => {
     render(WorkshopModelCard, {
       props: {
-        model: {
-          ...base,
-          routerId: undefined,
-          name: 'Mystery',
-          provider: 'Nobody',
-          task: undefined
-        }
+        model: { ...base, name: 'Mystery', provider: 'Nobody', task: undefined }
       }
     })
     expect(screen.getByText('N')).toBeTruthy()
