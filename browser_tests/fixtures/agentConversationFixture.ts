@@ -1354,9 +1354,6 @@ interface ConversationFixtures {
   bootAssets: ListAssetsResponse
   // Opt in only for cases that assert telemetry through hostTelemetryFixture.
   telemetryEnabled: boolean
-  // Top-level passthrough keys (groups, extra; multiplayer-schema §6) merged
-  // into the recording's seed, so the host doc and the tab both start with
-  // them. The recorded responses are left as captured.
   seedPassthrough: Omit<Partial<WorkflowJSON>, 'nodes' | 'links'>
   comfyPage: ComfyPage
   agentConversation: AgentConversationHarness

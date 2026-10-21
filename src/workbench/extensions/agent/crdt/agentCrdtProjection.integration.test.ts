@@ -1,6 +1,6 @@
 import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
@@ -305,5 +305,27 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     expect(graph._nodes).toEqual([source])
     expect(source.title).toBe('Reminted')
     expect(graph.links.size).toBe(0)
+  })
+
+  it('keeps a group on retry once the document holds it again', () => {
+    const { graph } = buildLiveGraph()
+    const group = new LiteGraph.LGraphGroup('Prompt group')
+    graph.add(group)
+    const saved = structuredClone(graph.serialize())
+    const { host, hostEdit, projection, destroy } = bindAndCatchUp(graph, saved)
+    onTestFinished(destroy)
+    const groups = host.getMap('meta').get('groups')
+
+    vi.spyOn(graph, 'remove').mockImplementationOnce(() => {
+      throw new Error('remove failed')
+    })
+    hostEdit(() => host.getMap('meta').set('groups', []))
+    expect(projection.hasPendingFailure(WORKFLOW_ID)).toBe(true)
+
+    hostEdit(() => host.getMap('meta').set('groups', groups))
+    expect(projection.retryFailed(WORKFLOW_ID)).toMatchObject({
+      failureCount: 0
+    })
+    expect(graph.groups).toEqual([group])
   })
 })

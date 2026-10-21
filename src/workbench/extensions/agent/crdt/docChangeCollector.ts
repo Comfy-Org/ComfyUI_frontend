@@ -206,11 +206,6 @@ export class DocChangeCollector {
     for (const id of event.keysChanged) this.links.add(id)
   }
 
-  /**
-   * `meta.groups` is a plain array the host replaces whole (`clear` empties
-   * it), so a removal is a group id the replaced value held and the current
-   * one does not.
-   */
   private readonly onMetaChanged = (event: Y.YMapEvent<unknown>): void => {
     const change = event.changes.keys.get('groups')
     if (!change) return
@@ -221,7 +216,7 @@ export class DocChangeCollector {
   }
 }
 
-function groupIds(groups: unknown): Set<string> {
+export function groupIds(groups: unknown): Set<string> {
   const ids = new Set<string>()
   if (!Array.isArray(groups)) return ids
   for (const group of groups) {

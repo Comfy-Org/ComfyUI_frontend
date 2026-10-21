@@ -51,11 +51,6 @@ test.describe(
         expect(await agentConversation.isRecoveryGraphUnchanged()).toBe(true)
       })
 
-      // BE-22005 / PM-831 (Windows QA, #comfy-agent-user-feedback
-      // 1792603911.645309): clearing removed every node but left the canvas
-      // groups drawn, while the agent reported an empty canvas. `clear` empties
-      // the document's groups (multiplayer-schema §6), so the canvas must lose
-      // them too.
       test.describe('with groups on the canvas', () => {
         test.use({
           seedPassthrough: {
