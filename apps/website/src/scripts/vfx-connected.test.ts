@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { within } from '@testing-library/vue'
-import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { stubIntersectionObserver } from '@/test/fakeIntersectionObserver'
 import './vfx-connected'
@@ -29,7 +29,6 @@ function mountShowcase() {
   root.innerHTML = `
     <div class="vfx-showcase-view" data-testid="showcase">
       <button data-open-studio="settings" aria-expanded="false">Open studio</button>
-      <button data-vfx-playback data-play-label="Play" data-pause-label="Pause">Pause</button>
       <div class="vfx-canvas-window" tabindex="0" aria-label="Workflow canvas" data-testid="canvas">
         <div class="vfx-canvas-scale" data-testid="scale">
           <div class="vfx-scene-stage" data-testid="stage">
@@ -58,8 +57,7 @@ function mountShowcase() {
         .join('')}
     </div>
     <div class="vfx-studio-view" data-testid="studio" hidden inert>
-      <button data-back-workflow>Back to examples</button>
-      <button data-vfx-playback data-play-label="Play" data-pause-label="Pause">Pause</button>
+      <button data-back-workflow>Back to VFX page</button>
       <div data-vfx-studio data-playback-time="1.75"></div>
     </div>
   `
@@ -133,7 +131,7 @@ describe('VFX workflow canvas', () => {
     expect(view.getByTestId('showcase')).toHaveProperty('inert', true)
     expect(view.getByTestId('studio')).toHaveProperty('hidden', false)
     expect(view.getByTestId('studio')).toHaveProperty('inert', false)
-    expect(view.getByRole('button', { name: 'Back to examples' })).toHaveFocus()
+    expect(view.getByRole('button', { name: 'Back to VFX page' })).toHaveFocus()
     await user.keyboard('{Escape}')
     expect(root).not.toHaveAttribute('data-workspace')
     expect(view.getByTestId('studio')).toHaveProperty('hidden', true)
@@ -293,88 +291,38 @@ function mountVisibleShowcase(reduced = false) {
   return { ...result, video, observer }
 }
 
-it('keeps a visitor pause through source selection and metadata loading', async () => {
-  const user = userEvent.setup()
-  const { root, view, video } = mountVisibleShowcase()
-  expect(video.paused).toBe(false)
-  await user.click(view.getByRole('button', { name: 'Pause' }))
-  await user.click(view.getByRole('button', { name: 'Night' }))
-  vi.spyOn(video, 'duration', 'get').mockReturnValue(8)
-  video.dispatchEvent(new Event('loadedmetadata'))
-  expect(video.paused).toBe(true)
-  expect(root).toHaveAttribute('data-playback-paused', 'true')
-  await user.click(view.getByRole('button', { name: 'Play' }))
-  expect(video.paused).toBe(false)
-})
-
-it('does not restart a visitor-paused preview after visibility returns', async () => {
-  const user = userEvent.setup()
-  const { view, video, observer } = mountVisibleShowcase()
-  await user.click(view.getByRole('button', { name: 'Pause' }))
-  observer.intersect(false)
-  observer.intersect(true)
-  expect(video.paused).toBe(true)
-  expect(view.getByRole('button', { name: 'Play' })).toHaveAttribute(
-    'aria-pressed',
-    'true'
-  )
-})
-
-it('lets a reduced-motion visitor opt into preview playback', async () => {
-  const user = userEvent.setup()
-  const { view, video } = mountVisibleShowcase(true)
-  expect(video.paused).toBe(true)
-  await user.click(view.getByRole('button', { name: 'Play' }))
-  expect(video.paused).toBe(false)
-  await user.click(view.getByRole('button', { name: 'Pause' }))
-  expect(video.paused).toBe(true)
-})
-
-it('preserves the visitor pause while opening and closing the Studio', async () => {
-  const user = userEvent.setup()
-  const { root, view, video, observer } = mountVisibleShowcase()
-  const playback = vi.fn<(event: Event) => void>()
-  root.addEventListener('workflow-playback-change', playback)
-  await user.click(view.getByRole('button', { name: 'Pause' }))
-  await user.click(view.getByRole('button', { name: 'Open studio' }))
-  expect(view.getByRole('button', { name: 'Play' })).toHaveAttribute(
-    'aria-pressed',
-    'true'
-  )
-  const change = playback.mock.lastCall?.[0]
-  assert.instanceOf(change, CustomEvent)
-  expect(change.detail).toEqual({ paused: true })
-  await user.click(view.getByRole('button', { name: 'Back to examples' }))
-  observer.intersect(true)
-  expect(video.paused).toBe(true)
-  expect(view.getByRole('button', { name: 'Play' })).toHaveAttribute(
-    'aria-pressed',
-    'true'
-  )
-})
-
-it('controls a sequence Studio without reviving the hidden canvas', async () => {
-  const user = userEvent.setup()
-  const { root, view, video: canvasVideo, observer } = mountVisibleShowcase()
-  const studio = view.getByTestId('studio')
+function addSequencePlayer(studio: HTMLElement) {
   const player = document.createElement('div')
   player.dataset.vfxSequencePlayer = ''
   const sequence = document.createElement('video')
   sequence.setAttribute('aria-label', 'Sequence result')
   player.append(sequence)
   studio.append(player)
+  return sequence
+}
+
+it('plays only the Studio while open and resumes the canvas when closed', async () => {
+  const user = userEvent.setup()
+  const { view, video: canvasVideo, observer } = mountVisibleShowcase()
+  const sequence = addSequencePlayer(view.getByTestId('studio'))
   await vi.waitFor(() => expect(observer.observed).toContain(sequence))
   await user.click(view.getByRole('button', { name: 'Open studio' }))
   observer.intersect(true)
   expect(sequence.paused).toBe(false)
   expect(canvasVideo.paused).toBe(true)
-  await user.click(view.getByRole('button', { name: 'Pause' }))
-  sequence.dispatchEvent(new Event('loadedmetadata'))
-  observer.intersect(false)
+  await user.click(view.getByRole('button', { name: 'Back to VFX page' }))
+  observer.intersect(true)
+  expect(sequence.paused).toBe(true)
+  expect(canvasVideo.paused).toBe(false)
+})
+
+it('keeps the Studio paused for a reduced-motion visitor', async () => {
+  const user = userEvent.setup()
+  const { root, view, observer } = mountVisibleShowcase(true)
+  const sequence = addSequencePlayer(view.getByTestId('studio'))
+  await vi.waitFor(() => expect(observer.observed).toContain(sequence))
+  await user.click(view.getByRole('button', { name: 'Open studio' }))
   observer.intersect(true)
   expect(sequence.paused).toBe(true)
   expect(root).toHaveAttribute('data-playback-paused', 'true')
-  await user.click(view.getByRole('button', { name: 'Play' }))
-  expect(sequence.paused).toBe(false)
-  expect(canvasVideo.paused).toBe(true)
 })
