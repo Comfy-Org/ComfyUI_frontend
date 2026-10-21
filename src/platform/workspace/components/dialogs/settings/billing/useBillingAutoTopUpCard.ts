@@ -32,7 +32,12 @@ export function useBillingAutoTopUpCard(
   })
 
   watch(
-    () => (toValue(visible) ? read.state.value?.status : undefined),
+    () => {
+      const current = state.value
+      return toValue(visible) && current.kind === 'loaded'
+        ? current.settings.status
+        : undefined
+    },
     (status) => {
       if (!status) return
       useTelemetry()?.trackBillingEvent({

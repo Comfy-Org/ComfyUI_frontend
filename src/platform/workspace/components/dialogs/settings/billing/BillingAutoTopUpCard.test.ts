@@ -300,6 +300,26 @@ describe('BillingAutoTopUpCard', () => {
     })
   })
 
+  it('does not report the stale status when a reread failed and the card shows again', async () => {
+    const { setupRef } = renderCard(configured)
+    await screen.findByTestId('billing-auto-top-up-status')
+
+    vi.mocked(workspaceApi.getBillingAutoReload).mockRejectedValueOnce(
+      new WorkspaceApiError('boom', 500)
+    )
+    await returnToTab()
+    await screen.findByText("Couldn't load auto top-up.")
+    setupRef.value = {
+      state: 'unavailable',
+      reason: 'billing_rail_not_supported'
+    }
+    await nextTick()
+    setupRef.value = null
+    await nextTick()
+
+    expect(trackedEvents()).toHaveBeenCalledOnce()
+  })
+
   it.for([
     { case: 'fails', error: new WorkspaceApiError('boom', 500) },
     {
