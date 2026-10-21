@@ -27,8 +27,8 @@ import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumb
 import { useApp } from '@/scripts/appInstance'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
+import { useExtensionService } from '@/services/extensionService'
 import { useAppMode } from '@/composables/useAppMode'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -163,7 +163,6 @@ export const useWorkflowService = () => {
   const toast = useToast()
   const dialogService = useDialogService()
   const workflowThumbnail = useWorkflowThumbnail()
-  const domWidgetStore = useDomWidgetStore()
   const missingNodesErrorStore = useMissingNodesErrorStore()
   const workflowDraftStore = useWorkflowDraftStoreV2()
 
@@ -431,6 +430,38 @@ export const useWorkflowService = () => {
     workflow.isModified = wasModified
   }
 
+  const switchToWorkflowGraph = async (
+    workflow: ComfyWorkflow,
+    graph: NonNullable<ComfyWorkflow['graph']>,
+    navigationIntentId: number
+  ): Promise<void> => {
+    beforeLoadNewGraph(true)
+    await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    const app = useApp()
+    app.activateRootGraph(graph)
+    useMissingModelStore().createVerificationAbortController().abort()
+    useMissingMediaStore().createVerificationAbortController().abort()
+    useMissingModelStore().setMissingModels([])
+    useMissingMediaStore().setMissingMedia([])
+    missingNodesErrorStore.setMissingNodeTypes([])
+    try {
+      const loaded = await workflowStore.openWorkflow(workflow)
+      useExecutionErrorStore().setActiveGraph(graph.id, loaded.path)
+      useAppModeStore().loadSelections(loaded.activeState.extra?.linearData)
+      loaded.changeTracker.restore()
+      useNodeOutputStore().restorePreviewsForWorkflow(loaded.path)
+      await useExtensionService().invokeExtensionsAsync('afterLoadGraph')
+      requestAnimationFrame(() => {
+        app.canvas.setDirty(true, true)
+      })
+    } finally {
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        navigationIntentId
+      )
+    }
+  }
+
   const openWorkflow = (
     workflow: ComfyWorkflow,
     options: {
@@ -468,6 +499,16 @@ export const useWorkflowService = () => {
           if (loadFromRemote) discardSupersededLoad(workflow, wasModified)
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           return false
+        }
+
+        if (workflow.graph && !options.force) {
+          await switchToWorkflowGraph(
+            workflow,
+            workflow.graph,
+            navigationIntentId
+          )
+          showPendingWarnings(undefined, { silent: true })
+          return true
         }
 
         workflow.changeTracker?.prepareForSave()
@@ -687,7 +728,6 @@ export const useWorkflowService = () => {
         activeWorkflow,
         workflowStore.activeSubgraph || useApp().canvasOrUndefined?.graph
       )
-      domWidgetStore.clear()
 
       // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
@@ -729,8 +769,9 @@ export const useWorkflowService = () => {
     const wasAppMode = isAppMode.value
     const rootGraphId = adoptRootGraphId(workflowData)
 
-    function activateRunErrors(workflow: ComfyWorkflow) {
+    function activateLoadedGraph(workflow: ComfyWorkflow) {
       useExecutionErrorStore().setActiveGraph(rootGraphId, workflow.path)
+      workflow.adoptGraph(useApp().rootGraph)
     }
 
     // Determine the initial app mode for fresh loads from serialized state.
@@ -775,7 +816,7 @@ export const useWorkflowService = () => {
           const loadedWorkflow =
             await workflowStore.openWorkflow(existingWorkflow)
           if (graphState !== useApp().rootGraphOrUndefined?.state) return
-          activateRunErrors(loadedWorkflow)
+          activateLoadedGraph(loadedWorkflow)
           if (loadedWorkflow.initialMode === undefined) {
             // Prefer the file's linearMode over the draft's since the file
             // is the authoritative saved state.
@@ -811,13 +852,13 @@ export const useWorkflowService = () => {
       trackIfEnteringApp(tempWorkflow)
       const loadedWorkflow = await workflowStore.openWorkflow(tempWorkflow)
       if (graphState !== useApp().rootGraphOrUndefined?.state) return
-      activateRunErrors(loadedWorkflow)
+      activateLoadedGraph(loadedWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
     if (graphState !== useApp().rootGraphOrUndefined?.state) return
-    activateRunErrors(loadedWorkflow)
+    activateLoadedGraph(loadedWorkflow)
     if (shareId) {
       loadedWorkflow.shareId = shareId
     }

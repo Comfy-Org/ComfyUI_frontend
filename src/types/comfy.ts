@@ -166,6 +166,10 @@ export interface ComfyApp {
     workflow?: string | null | ComfyWorkflow,
     options?: LoadGraphDataOptions
   ): Promise<LoadedComfyWorkflow | boolean | undefined>
+  /** Create a root graph wired with the app's per-graph lifecycle hooks. */
+  createRootGraph(): LGraph
+  /** Make `graph` the root graph shown on the canvas. */
+  activateRootGraph(graph: LGraph): void
   refreshMissingModels(options?: {
     silent?: boolean
     reloadDefs?: boolean

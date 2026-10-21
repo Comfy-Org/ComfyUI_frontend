@@ -6,6 +6,10 @@
         "patterns": ["src/platform/remote/comfyui/execution/types.ts"]
       },
       {
+        "name": "graph-model/domain/public",
+        "patterns": ["src/lib/litegraph/src/LGraph.ts"]
+      },
+      {
         "name": "node-definition/domain/public",
         "patterns": ["src/schemas/nodeDef/nodeDefSchemaV2.ts"]
       },
@@ -3989,6 +3993,21 @@
         ]
       },
       {
+        "from": "graph-model/domain/public",
+        "allow": [
+          "comfyui-api/domain/public",
+          "graph-model/domain/public",
+          "node-definition/domain/public",
+          "comfyui-api/domain",
+          "graph-model/domain",
+          "node-definition/domain",
+          "graph-model/domain/outer-1",
+          "node-definition/domain/outer-1",
+          "comfyui-api/domain/outer-2",
+          "unclassified"
+        ]
+      },
+      {
         "from": "node-definition/domain/public",
         "allow": [
           "node-definition/domain/public",
@@ -4414,6 +4433,7 @@
       {
         "from": "bounding-boxes/domain",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "color-conversion/domain",
           "design-system/domain",
@@ -4428,6 +4448,7 @@
       {
         "from": "bounding-boxes/application",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "color-conversion/domain",
@@ -4450,6 +4471,7 @@
       {
         "from": "bounding-boxes/presentation",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -4476,6 +4498,7 @@
       {
         "from": "bounding-boxes/integration",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "bounding-boxes/presentation",
@@ -5085,6 +5108,7 @@
         "from": "graph-model/domain",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5099,6 +5123,7 @@
         "from": "graph-model/application",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5115,6 +5140,7 @@
         "from": "graph-model/infrastructure",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -5131,6 +5157,7 @@
         "from": "graph-model/integration",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -6548,32 +6575,52 @@
       },
       {
         "from": "workflow-management/domain",
-        "allow": ["workflow-management/domain", "unclassified"]
+        "allow": [
+          "graph-model/domain/public",
+          "graph-model/domain",
+          "workflow-management/domain",
+          "graph-model/domain/outer-1",
+          "unclassified"
+        ]
       },
       {
         "from": "workflow-management/application",
         "allow": [
+          "graph-model/domain/public",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "graph-model/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "workflow-management/infrastructure",
         "allow": [
+          "graph-model/domain/public",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
+          "graph-model/domain/outer-1",
           "unclassified"
         ]
       },
       {
         "from": "workflow-management/presentation",
         "allow": [
+          "graph-model/domain/public",
+          "graph-model/domain",
+          "graph-model/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "graph-model/domain/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -6581,11 +6628,18 @@
       {
         "from": "workflow-management/integration",
         "allow": [
+          "graph-model/domain/public",
+          "graph-model/domain",
+          "graph-model/application",
+          "graph-model/infrastructure",
+          "graph-model/integration",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/infrastructure",
           "workflow-management/presentation",
           "workflow-management/integration",
+          "graph-model/domain/outer-1",
+          "graph-model/integration/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -6894,6 +6948,7 @@
       {
         "from": "bounding-boxes/application/outer-1",
         "allow": [
+          "graph-model/domain/public",
           "bounding-boxes/domain",
           "bounding-boxes/application",
           "color-conversion/domain",
@@ -7109,6 +7164,7 @@
         "from": "graph-model/domain/outer-1",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -7123,6 +7179,7 @@
         "from": "graph-model/integration/outer-1",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "comfyui-api/domain",
           "graph-model/domain",
@@ -7512,9 +7569,13 @@
       {
         "from": "workflow-management/presentation/outer-1",
         "allow": [
+          "graph-model/domain/public",
+          "graph-model/domain",
+          "graph-model/application",
           "workflow-management/domain",
           "workflow-management/application",
           "workflow-management/presentation",
+          "graph-model/domain/outer-1",
           "workflow-management/presentation/outer-1",
           "unclassified"
         ]
@@ -7702,6 +7763,7 @@
         "from": "unclassified",
         "allow": [
           "comfyui-api/domain/public",
+          "graph-model/domain/public",
           "node-definition/domain/public",
           "agent/domain",
           "agent/application",
