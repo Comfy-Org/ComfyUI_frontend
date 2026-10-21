@@ -260,6 +260,18 @@ describe('ModelDetail', () => {
     })
   })
 
+  it('opens the API tab from a catalogue deep link', async () => {
+    const previousUrl = location.href
+    history.replaceState(null, '', '#api')
+    onTestFinished(() => history.replaceState(null, '', previousUrl))
+    await mountDetail({ model: runnable })
+    expect(screen.getByTestId('tab-api')).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(runWorkshopRouter).not.toHaveBeenCalled()
+  })
+
   // Ben's finding, pinned: whatever the flag says, a page that goes away takes
   // its run with it. Only the reader can choose otherwise, and only out loud.
   it.for([{ saving: '1' }, { saving: '0' }])(
@@ -1022,7 +1034,9 @@ describe('ModelDetail', () => {
     respondToFetch(
       { method: 'PUT' },
       () => Promise.reject(new TypeError('Failed to fetch')),
-      { times: 1 }
+      {
+        times: 1
+      }
     )
     const model = getRouterWorkshopModelDetail(
       'vertexai--gemini-nano-banana-2--edit-images'
@@ -1758,7 +1772,9 @@ describe('ModelDetail', () => {
     const prepare = () => {
       const event = Object.assign(
         new Event('astro:before-preparation', { cancelable: true }),
-        { navigationType: 'traverse' }
+        {
+          navigationType: 'traverse'
+        }
       )
       document.dispatchEvent(event)
       preparationWasAllowed = !event.defaultPrevented

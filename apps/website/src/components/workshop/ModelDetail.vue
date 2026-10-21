@@ -126,6 +126,13 @@ const sectionLabel: Record<Section, TranslationKey> = {
 }
 
 const activeSection = ref<Section>('playground')
+function readSectionHash() {
+  if (window.location.hash === '#api') activeSection.value = 'api'
+  else if (window.location.hash === '#playground')
+    activeSection.value = 'playground'
+}
+onMounted(readSectionHash)
+useEventListener('hashchange', readSectionHash)
 const { onKeydown: onTabKeydown } = useTablist(
   () => sections.value,
   activeSection

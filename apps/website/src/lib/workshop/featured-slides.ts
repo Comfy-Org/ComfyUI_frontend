@@ -1,6 +1,7 @@
 import type { WorkshopModel } from '@/config/models-catalogue'
 import type { FeaturedSlide } from '@/components/workshop/FeaturedBanner.vue'
 import type { Locale } from '@/i18n/translations'
+import { translationsFor } from '@/i18n/translations'
 import { bannerName } from './banner-name'
 import { bannerSummary } from './banner-summary'
 import { modelDocsHref } from './model-docs'
@@ -27,6 +28,10 @@ export function modelSlides(
     .map((model) => ({
       key: model.slug,
       href: model.href,
+      apiHref: model.routerId ? `${model.href}#api` : undefined,
+      cta: model.routerId
+        ? translationsFor(locale).t('workshop.hub.tryModel')
+        : undefined,
       title: bannerName(model.name, taskLabelFor(model, 'en')),
       kind: taskLabelFor(model, locale),
       tags: model.capabilities.slice(0, TAG_LIMIT),

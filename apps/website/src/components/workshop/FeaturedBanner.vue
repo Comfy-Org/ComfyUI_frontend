@@ -33,6 +33,7 @@ export interface FeaturedSlide {
   readonly summary: string | undefined
   readonly media: { url: string; kind: 'image' | 'video' } | undefined
   readonly docsHref: string | undefined
+  readonly apiHref?: string
   readonly cta?: string
 }
 
@@ -211,16 +212,18 @@ const fill = computed(() =>
             {{ active.cta ?? t('workshop.hub.tryNow') }}
           </Button>
           <Button
-            v-if="active.docsHref"
+            v-if="active.apiHref || active.docsHref"
             as="a"
             variant="outline"
-            :href="active.docsHref"
-            target="_blank"
+            :href="active.apiHref ?? active.docsHref"
+            :target="active.apiHref ? undefined : '_blank'"
             rel="noopener noreferrer"
             class="w-fit"
             data-testid="featured-docs-link"
           >
-            {{ t('workshop.hub.docs') }}
+            {{
+              t(active.apiHref ? 'workshop.hub.useApi' : 'workshop.hub.docs')
+            }}
           </Button>
         </div>
       </div>

@@ -20,7 +20,7 @@
     "hero": {
       "eyebrow": "Models",
       "heading": "ComfyUI models",
-      "subtitle": "What will you make next? Try the latest AI models with your own ideas, right in your browser."
+      "subtitle": "Try models here, call them through the API, or build them into a ComfyUI workflow."
     },
     "search": {
       "label": "Search models, providers, and categories",
@@ -551,6 +551,8 @@
       "models": "Models",
       "categories": "CATEGORIES",
       "docs": "Read docs",
+      "tryModel": "Try model",
+      "useApi": "Use API",
       "tryNow": "Try now",
       "tag": {
         "partnerNodes": "Partner Nodes"

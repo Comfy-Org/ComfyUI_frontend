@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -37,6 +37,29 @@ describe('WorkshopModelCard', () => {
         Object.defineProperty(HTMLElement.prototype, name, descriptor)
   })
 
+  it('offers separate playground and API links without nesting controls', () => {
+    render(WorkshopModelCard, { props: { model: base } })
+    expect(screen.getByRole('link', { name: 'Try model' })).toHaveAttribute(
+      'href',
+      base.href
+    )
+    expect(screen.getByRole('link', { name: 'Use API' })).toHaveAttribute(
+      'href',
+      base.href + '#api'
+    )
+    expect(
+      within(screen.getByTestId('workshop-model-card')).queryByRole('link')
+    ).toBeNull()
+  })
+
+  it('does not offer model actions for a disabled model', () => {
+    render(WorkshopModelCard, {
+      props: { model: { ...base, href: undefined } }
+    })
+    expect(screen.queryByRole('link', { name: 'Use API' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Try model' })).toBeNull()
+  })
+
   it('links the name, provider badge and task to the model page', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
@@ -52,7 +75,9 @@ describe('WorkshopModelCard', () => {
     expect(screen.queryByTestId('model-incomplete-badge')).toBeNull()
     expect(screen.getByTestId('model-media-placeholder')).toBeTruthy()
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
-    expect(screen.getAllByLabelText('Flux')).toEqual([screen.getByRole('link')])
+    expect(screen.getAllByLabelText('Flux')).toEqual([
+      screen.getByTestId('workshop-model-card')
+    ])
   })
 
   // The artwork is decorative: the mark says who made this and the heading
@@ -66,7 +91,7 @@ describe('WorkshopModelCard', () => {
         }
       }
     })
-    expect(screen.getByRole('link')).toHaveAccessibleName(
+    expect(screen.getByTestId('workshop-model-card')).toHaveAccessibleName(
       'Black Forest Labs Flux Image to image'
     )
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
@@ -89,7 +114,7 @@ describe('WorkshopModelCard', () => {
     await nextTick()
     await nextTick()
     expect(screen.getByTestId('tag-overflow')).toBeTruthy()
-    expect(screen.getByRole('link')).toHaveAccessibleName(
+    expect(screen.getByTestId('workshop-model-card')).toHaveAccessibleName(
       'Black Forest Labs Flux Image to image'
     )
     expect(screen.queryByRole('button')).toBeNull()
@@ -97,7 +122,7 @@ describe('WorkshopModelCard', () => {
 
   it('names a hub card with its kind badge after the provider', () => {
     render(WorkshopModelCard, { props: { model: base, providerBadge: true } })
-    expect(screen.getByRole('link')).toHaveAccessibleName(
+    expect(screen.getByTestId('workshop-model-card')).toHaveAccessibleName(
       'Black Forest Labs Models Flux Image to image'
     )
   })
@@ -154,7 +179,9 @@ describe('WorkshopModelCard', () => {
       'href',
       base.href
     )
-    expect(screen.getAllByLabelText('Flux')).toEqual([screen.getByRole('link')])
+    expect(screen.getAllByLabelText('Flux')).toEqual([
+      screen.getByTestId('workshop-model-card')
+    ])
   })
 
   // Artwork that repeats the name gives a screen reader the model twice. The
@@ -180,7 +207,7 @@ describe('WorkshopModelCard', () => {
         screen.getByRole('link', { name: /Black Forest Labs/ })
       ).toBeVisible()
       expect(screen.getAllByLabelText('Flux')).toEqual([
-        screen.getByRole('link')
+        screen.getByTestId('workshop-model-card')
       ])
       if (kind === 'video')
         expect(screen.getByTestId('model-card-media')).toHaveAttribute(

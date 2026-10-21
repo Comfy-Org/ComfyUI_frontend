@@ -4818,7 +4818,7 @@
     "hero": {
       "eyebrow": "模型",
       "heading": "ComfyUI 模型",
-      "subtitle": "接下来你想创造什么？用你自己的创意试用最新的 AI 模型，就在浏览器中。"
+      "subtitle": "在这里试用模型，通过 API 调用，或将它们集成到 ComfyUI 工作流中。"
     },
     "hub": {
       "categories": "分类",
@@ -4861,6 +4861,8 @@
         "partnerNodes": "合作伙伴节点"
       },
       "title": "浏览模型",
+      "tryModel": "试用模型",
+      "useApi": "使用 API",
       "tryNow": "立即试用",
       "workflows": "工作流"
     },

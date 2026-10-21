@@ -239,7 +239,7 @@ const Content = shallowRef(createContent())
         data-testid="workshop-heading"
         :class="inSection ? 'sr-only' : 'animate-soft-in pb-4 sm:short:pb-3'"
       >
-        <p :class="workshopEyebrowClass">
+        <p v-if="section !== 'models'" :class="workshopEyebrowClass">
           {{ t('workshop.catalogue.eyebrow') }}
         </p>
         <h1 :class="workshopHeadingClass">{{ heading }}</h1>
