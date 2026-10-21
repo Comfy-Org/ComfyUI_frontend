@@ -1431,7 +1431,7 @@ importers:
         specifier: 'catalog:'
         version: 3.5.42(typescript@6.0.3)
       vue-component-type-helpers:
-        specifier: ^3.3.0
+        specifier: 'catalog:'
         version: 3.3.11
 
   packages/ingest-types:

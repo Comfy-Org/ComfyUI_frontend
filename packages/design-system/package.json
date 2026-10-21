@@ -132,7 +132,7 @@
     "vite-plugin-dts": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:",
-    "vue-component-type-helpers": "^3.3.0"
+    "vue-component-type-helpers": "catalog:"
   },
   "peerDependencies": {
     "reka-ui": "^2.11.0",
