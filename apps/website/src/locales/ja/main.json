@@ -4532,7 +4532,16 @@
       },
       "title": "モデルを探す",
       "tryNow": "今すぐ試す",
-      "workflows": "ワークフロー"
+      "workflows": "ワークフロー",
+      "creators": {
+        "hub": "Hub",
+        "title": "クリエイター",
+        "directoryTitle": "ComfyUI ワークフローのクリエイター",
+        "subtitle": "Comfy Hub でワークフローを公開しているアーティスト、スタジオ、Comfy チームのメンバー。",
+        "metaDescription": "Comfy Hub で ComfyUI ワークフローを公開しているクリエイターを、Comfy 公式チームから個人のアーティストやスタジオまで紹介します。",
+        "workflowCount": "{count} 件のワークフロー",
+        "empty": "公開ワークフローのあるクリエイターはまだいません。"
+      }
     },
     "input": {
       "title": "入力"

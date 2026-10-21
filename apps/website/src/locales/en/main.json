@@ -1009,7 +1009,8 @@
         "directoryTitle": "ComfyUI workflow creators",
         "subtitle": "The artists, studios, and Comfy team members who publish workflows on the Comfy Hub.",
         "metaDescription": "Browse the creators who publish ComfyUI workflows on the Comfy Hub, from the official Comfy team to independent artists and studios.",
-        "workflowCount": "{count} workflow | {count} workflows"
+        "workflowCount": "{count} workflow | {count} workflows",
+        "empty": "No creators have public workflows yet."
       }
     },
     "workflow": {
