@@ -43,14 +43,6 @@ const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 
 export type SubscribeGiveUpReason = 'refused' | 'timeout'
 
-// PM-1604 / BE-11437: the doc-host's terminal classifications for a
-// document this build can never read back - unlike every other refusal
-// reason, no amount of backoff retry changes that outcome, so these codes
-// skip the retry ladder entirely and latch the same give-up exit an
-// unanswered ack times out into. `schema_version_mismatch` and
-// `catalog_mismatch` are cloud's `socketDocCode()` sibling arms sharing the
-// same "retrying will not help" contract; `unsupported` (`docSurfaceOffReason`)
-// is permanent for the life of the connection.
 const PERMANENT_SUBSCRIBE_REFUSAL_CODES: ReadonlySet<string> = new Set(
   PERMANENT_DOC_SUBSCRIBE_REFUSAL_CODES
 )
