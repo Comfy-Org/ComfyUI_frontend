@@ -14,6 +14,7 @@
 import type {
   NodeId as WireNodeId,
   PromotedHostWrite,
+  SubgraphDefinition,
   WidgetValuesForm,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
@@ -28,7 +29,13 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { findUsedSubgraphIds } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import type {
+  ExportedSubgraph,
+  ISerialisedNode
+} from '@/lib/litegraph/src/types/serialisation'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -87,6 +94,8 @@ export interface DocOpMinterDeps {
    * {@link PROMOTED_WRITE_CATCH_UP_DEADLINE_MS}) rather than refusing it.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
+  /** Whether the bound document holds a subgraph definition by this id. */
+  docHasSubgraphDefinition(definitionId: string): boolean
   onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
 }
 
@@ -463,6 +472,51 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
   }
 
+  /**
+   * `define_subgraph` for every definition an added subgraph host needs and
+   * the bound document lacks. Adding a blueprint or pasting a host registers
+   * a fresh definition live; without it the document can neither place the
+   * host's promoted values nor name its interior. Dependencies come first.
+   * They trail the batch so a refused definition aborts no add or link that
+   * precedes it.
+   */
+  function mintMissingDefinitions(
+    hosts: readonly SubgraphNode[]
+  ): GraphOperation[] {
+    const exported = new Map<string, ExportedSubgraph>()
+    const wire = new Map<string, SubgraphDefinition>()
+    for (const { subgraph } of hosts) {
+      const registry = subgraph.rootGraph.subgraphs
+      const ids = [
+        subgraph.id,
+        ...findUsedSubgraphIds(subgraph, registry)
+      ].filter((id) => !wire.has(id))
+      for (const id of ids) {
+        const definition = registry.get(id)
+        if (!definition || deps.docHasSubgraphDefinition(id)) continue
+        // A JSON copy: the export shares live arrays and carries `undefined`
+        // fields, which the applier refuses as unserializable.
+        const copy = JSON.parse(JSON.stringify(definition.asSerialisable()))
+        exported.set(id, copy)
+        wire.set(id, copy)
+      }
+    }
+    return topologicalSortSubgraphs([...exported.values()]).flatMap(
+      ({ id }) => {
+        const definition = wire.get(id)
+        return definition
+          ? [
+              {
+                op: 'define_subgraph',
+                subgraph_id: id,
+                subgraph_definition: definition
+              } as const
+            ]
+          : []
+      }
+    )
+  }
+
   function flush(): void {
     flushScheduled = false
     reported.clear()
@@ -470,13 +524,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     pending = []
     pendingAdds.clear()
     if (detached) return
+    const hosts: SubgraphNode[] = []
     const operations = batch.flatMap((entry) => {
-      const operation =
-        entry.kind === 'op'
-          ? entry.operation
-          : mintAddNodeOperation(entry.graph, entry.node)
-      return operation ? [operation] : []
+      if (entry.kind === 'op') return [entry.operation]
+      const operation = mintAddNodeOperation(entry.graph, entry.node)
+      if (!operation) return []
+      if (entry.node.isSubgraphNode()) hosts.push(entry.node)
+      return [operation]
     })
+    operations.push(...mintMissingDefinitions(hosts))
     if (operations.length > 0) deps.enqueue(operations)
   }
 

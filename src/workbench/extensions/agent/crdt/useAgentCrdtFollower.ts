@@ -44,7 +44,10 @@ import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
-import { readDocPromotedWidgets } from './agentSubgraphDefinitions'
+import {
+  readDocPromotedWidgets,
+  readSubgraphDefinitionIds
+} from './agentSubgraphDefinitions'
 import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
@@ -374,6 +377,8 @@ export function useAgentCrdtFollower(
       follower.value?.docPromotedWidgets(nodeId) ?? null,
     mayWritePromotedHost: (nodeId: NodeId) =>
       follower.value?.mayWritePromotedHost(nodeId) ?? false,
+    docHasSubgraphDefinition: (definitionId: string) =>
+      follower.value?.docHasSubgraphDefinition(definitionId) ?? false,
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       follower.value?.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () => follower.value?.subscriptionSent() ?? false
@@ -1193,6 +1198,8 @@ function startAgentCrdtFollower(
       bridge.isSubscribeBaselineIntegrated ||
       (sentAddsToCurrentDoc().has(String(nodeId)) &&
         readDocPromotedWidgets(bridge.follower.doc, String(nodeId)) === null),
+    docHasSubgraphDefinition: (definitionId: string) =>
+      readSubgraphDefinitionIds(bridge.follower.doc).includes(definitionId),
     notifyWidgetWriteRefused: (nodeId: string | number, widgetName: string) =>
       rejectedOpNotifier.notifyWidgetWriteRefused(nodeId, widgetName),
     subscriptionSent: () =>
