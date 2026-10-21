@@ -96,6 +96,7 @@ export const workflowCatalogDetailsSchema = z.object({
     })
     .optional(),
   runnable: z.boolean().optional(),
+  runnableSetting: z.boolean().optional(),
   scriptCode: z
     .object({
       python: z.string().max(60000).optional(),

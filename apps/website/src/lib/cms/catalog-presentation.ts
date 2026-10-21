@@ -352,6 +352,7 @@ function workflowDetails(
       typeof d.works_on_cloud === 'boolean' ? d.works_on_cloud : undefined,
     inputMismatch: inputMismatch(d),
     runnable: workflowRunnable(d),
+    runnableSetting: typeof d.runnable === 'boolean' ? d.runnable : undefined,
     scriptCode: d.script_code,
     outputType:
       typeof d.output_type === 'string' && d.output_type.trim()

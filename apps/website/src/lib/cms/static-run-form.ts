@@ -17,6 +17,7 @@ export function withStaticRunForm(
   if (
     !isWorkflowDetail(model) ||
     Object.keys(model.workflow.inputs).length ||
+    model.catalogDetails?.runnableSetting === false ||
     model.catalogDetails?.inputMismatch
   )
     return model
