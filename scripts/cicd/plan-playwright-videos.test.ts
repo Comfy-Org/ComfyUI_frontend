@@ -211,18 +211,27 @@ describe('independent video workflow', () => {
     [
       ['first.spec.ts', 'nested/a b.spec.ts'],
       [],
+      [],
       0,
       ['key0.pass', 'key0.zip', 'key1.pass', 'key1.zip']
     ],
     [
       ['first.spec.ts', 'failing.spec.ts'],
       ['failing.spec.ts'],
+      [],
       1,
       ['key0.pass', 'key0.zip', 'key1.zip']
+    ],
+    [
+      ['first.spec.ts', 'blobless.spec.ts'],
+      [],
+      ['blobless.spec.ts'],
+      1,
+      ['key0.pass', 'key0.zip']
     ]
-  ] satisfies [string[], string[], number, string[]][])(
+  ] satisfies [string[], string[], string[], number, string[]][])(
     'records %j one spec at a time and marks only passing specs cacheable',
-    ([files, failing, status, expectedBlobs]) => {
+    ([files, failing, blobless, status, expectedBlobs]) => {
       const workflow = z
         .object({
           jobs: z.object({
@@ -257,7 +266,7 @@ const fs = require('node:fs')
 const args = process.argv.slice(2)
 fs.appendFileSync('calls.jsonl', JSON.stringify(args) + '\\n')
 const dir = process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR
-if (dir) {
+if (dir && !${JSON.stringify(blobless)}.includes(args.at(-1))) {
   const blob =
     process.env.PLAYWRIGHT_BLOB_OUTPUT_FILE ?? dir + '/report-cloud-0666423.zip'
   fs.mkdirSync(require('node:path').dirname(blob), { recursive: true })
@@ -298,6 +307,58 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
         const blobs = readdirSync(join(root, 'blob-report'))
         expect(blobs).toEqual(expect.arrayContaining(expectedBlobs))
         expect(blobs).toHaveLength(expectedBlobs.length)
+      } finally {
+        rmSync(root, { recursive: true, force: true })
+      }
+    }
+  )
+
+  it.for([
+    [['fresh.zip', 'fresh.pass'], 0, ['fresh.zip', 'hit.zip']],
+    [['fresh.pass'], 1, ['hit.zip']]
+  ] satisfies [string[], number, string[]][])(
+    'combines recordings %j with exit status %i',
+    ([recorded, status, cached]) => {
+      const workflow = z
+        .object({
+          jobs: z.object({
+            report: z.object({
+              steps: z.array(
+                z.object({
+                  name: z.string().optional(),
+                  run: z.string().optional()
+                })
+              )
+            })
+          })
+        })
+        .parse(
+          parse(
+            readFileSync('.github/workflows/ci-playwright-videos.yaml', 'utf8')
+          )
+        )
+      const command = workflow.jobs.report.steps.find(
+        (step) => step.name === 'Combine cached and new recordings'
+      )?.run
+      if (!command) throw new Error('Missing combine command')
+      const root = mkdtempSync(join(tmpdir(), 'playwright-video-combine-'))
+      try {
+        mkdirSync(join(root, 'video-blobs'))
+        mkdirSync(join(root, 'previous-cache'))
+        writeFileSync(join(root, 'previous-cache', 'hit.zip'), 'blob')
+        for (const file of recorded)
+          writeFileSync(join(root, 'video-blobs', file), 'blob')
+
+        const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
+          cwd: root,
+          encoding: 'utf8',
+          env: { ...process.env, HITS: '["hit"]' }
+        })
+
+        expect(result.status).toBe(status)
+        const cache = readdirSync(join(root, 'video-cache'))
+        expect(cache).toEqual(expect.arrayContaining(cached))
+        expect(cache).toHaveLength(cached.length)
       } finally {
         rmSync(root, { recursive: true, force: true })
       }
