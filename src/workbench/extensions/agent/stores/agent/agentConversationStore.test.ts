@@ -538,11 +538,9 @@ describe('useAgentConversationStore', () => {
     expect(messageTexts(store, T2)).toEqual(['newer'])
 
     store.ingest(runApproval('t1', 'late-old-ask'))
-    expect(reportError).toHaveBeenCalledWith(
-      expect.any(Error),
-      expect.objectContaining({
-        tags: expect.objectContaining({ reason: 'settled-turn' })
-      })
+    expect(reportError).not.toHaveBeenCalled()
+    expect(store.messages.find((m) => m.id === 'turn-a')?.parts).toContainEqual(
+      expect.objectContaining({ type: 'runApproval', askId: 'late-old-ask' })
     )
   })
 
@@ -2140,6 +2138,26 @@ describe('useAgentConversationStore', () => {
       expect(store.messages[0].streaming).toBe(false)
       expect(store.messages[0].parts).toContainEqual(
         expect.objectContaining({ type: 'runApproval', dismissed: true })
+      )
+    })
+
+    it('attaches to a turn restored from history, whose row id differs from its turn id', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate([
+        historyRow(1, 'user', 'turn-1', 'make it blue', 'user-message-1'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'row-1'),
+          status: 'streaming'
+        }
+      ])
+      store.ingest(done('row-1'))
+
+      store.ingest(runApproval('row-1', 'turn-1:call-1'))
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(store.messages.at(-1)?.parts).toContainEqual(
+        expect.objectContaining({ type: 'runApproval', askId: 'turn-1:call-1' })
       )
     })
 

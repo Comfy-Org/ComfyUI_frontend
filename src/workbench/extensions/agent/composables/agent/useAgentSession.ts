@@ -1273,8 +1273,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return false
       }
       sentContext = wfContext
-      // The host resolves an open card while it takes this message, and its
-      // resolution can arrive before the reply, so grey the card out first.
       conversationStore.dismissOpenAsks()
       const ack = await postTurn(
         threadAtSend,
@@ -1548,9 +1546,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  /** The turn the host started from an answer to a card on a finished turn. */
   function startAnsweredTurn(turnId: TurnId, text: string): void {
-    conversationStore.recordUser(turnId, text)
+    if (conversationStore.activeTurnId !== null) return
+    if (text) conversationStore.recordUser(turnId, text)
     conversationStore.startTurn(turnId)
     recordTurnStarted(turnId, false)
   }

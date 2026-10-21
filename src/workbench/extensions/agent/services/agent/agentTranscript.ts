@@ -560,7 +560,6 @@ export function normalizeAgentTranscript(
   const seenTurns = new Set<TurnId>()
   const rowIds = new Set<string>()
   const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
-  // A card the host left on a turn it already ended stays open on it.
   const finishedTurnAsks = new Map<
     TurnId,
     NonNullable<AgentMessages[number]['pending_ask']>

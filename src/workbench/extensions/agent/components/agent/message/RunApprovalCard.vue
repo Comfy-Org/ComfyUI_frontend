@@ -23,7 +23,9 @@ const emit = defineEmits<{
   shown: [askId: string, workflowId: string | null]
 }>()
 
-onMounted(() => emit('shown', part.askId, part.workflowId ?? null))
+onMounted(() => {
+  if (!part.dismissed) emit('shown', part.askId, part.workflowId ?? null)
+})
 
 const { t } = useI18n()
 const workflowLabel = computed(

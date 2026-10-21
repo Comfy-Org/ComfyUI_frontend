@@ -566,8 +566,6 @@ export function createAgentEventTransport(
 
   function ingest(event: AgentChatEvent): void {
     if (settled) {
-      // A host may leave a card on a turn it has already ended; the message
-      // takes it without streaming again.
       if (event.type === 'agent_ask' && handleAskEvent(event.data))
         emit(snapshotMessage(message))
       return

@@ -438,7 +438,6 @@ export const useAgentConversationStore = defineStore(
       setAskAnswering(askId, false)
     }
 
-    /** The user sent a message instead of answering: every open card greys out. */
     function dismissOpenAsks(): void {
       messages.value = messages.value.map((message) => {
         const parts = dismissAskParts(message.parts)
@@ -558,17 +557,12 @@ export const useAgentConversationStore = defineStore(
       ingestBackgroundTurnEvent(event, eventThreadId)
     }
 
-    /**
-     * A card the host leaves on a turn it has already ended: it joins that
-     * message, which stays finished, so the user can answer it or just type.
-     * A turn the panel tore down itself (`no-live-turn`) is not finished on
-     * the host, so its ask is still reported as lost.
-     */
     function attachAskToSettledMessage(event: AgentChatEvent): boolean {
       if (event.type !== 'agent_ask' || event.data.thread_id !== threadId.value)
         return false
       const messageId = event.data.message_id
-      const index = messages.value.findIndex((m) => m.id === messageId)
+      const shownId = hydratedTurnIds.get(messageId) ?? messageId
+      const index = messages.value.findIndex((m) => m.id === shownId)
       const message = messages.value[index]
       if (message === undefined || message.streaming) return false
       const departed = departedTurns.get(
@@ -576,7 +570,7 @@ export const useAgentConversationStore = defineStore(
       )
       if (departed === 'no-live-turn') return false
       const holder = [...settledActiveTransports].find(
-        (transport) => transport.messageId === messageId
+        (transport) => transport.messageId === shownId
       )
       if (holder) {
         holder.ingest(event)
