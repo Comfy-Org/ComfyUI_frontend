@@ -1,5 +1,5 @@
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
-import { shallowRef, toValue, watch } from 'vue'
+import { onScopeDispose, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -7,6 +7,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { ProcessingTopupPayment } from '@/platform/billing/processingTopupPayment'
 import { processingTopupPayment } from '@/platform/billing/processingTopupPayment'
+import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 
 interface ProcessingTopupRead {
   payment: ProcessingTopupPayment | null
@@ -29,10 +30,15 @@ async function readProcessingTopupPayment(): Promise<
       if (read.status === 'fulfilled') sessions.push(read.value)
       else sessionFailures.push(read.reason)
     }
+    const knownPayment = processingTopupPayment(sessions)
+    const payment =
+      knownPayment !== null && sessionFailures.length > 0
+        ? { paymentAmountCents: null }
+        : knownPayment
     return {
       ok: true,
       read: {
-        payment: processingTopupPayment(sessions),
+        payment,
         sessionFailures
       }
     }
@@ -80,6 +86,7 @@ export function useProcessingTopupPayment(
   }
 
   watch(reading, () => void load(), { immediate: true })
+  onScopeDispose(registerRefreshOnReturn(load))
 
   return { payment }
 }

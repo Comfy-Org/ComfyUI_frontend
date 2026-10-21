@@ -2,7 +2,8 @@ import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
 import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, ref } from 'vue'
+import { computed, defineComponent, nextTick, ref } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -11,9 +12,12 @@ import type { BalanceInfo, SubscriptionInfo } from '@/platform/billing/composabl
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
+import { reportError } from '@/platform/telemetry/reportError'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import CurrentUserPopoverWorkspace from '@/platform/workspace/components/CurrentUserPopoverWorkspace.vue'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useProcessingTopupPayment } from '@/platform/billing/composables/useProcessingTopupPayment'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -32,6 +36,7 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceDialogs'))
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return state.isCloud
@@ -163,5 +168,195 @@ describe('credits flyout payment processing', () => {
       expect(workspaceApi.getTopupCheckout).toHaveBeenCalledWith('cs_bank')
     )
     expect(screen.queryByText(PROCESSING_LINE)).not.toBeInTheDocument()
+  })
+})
+
+function checkout(
+  state: HostedTopupCheckout['state'],
+  paymentAmountCents: number | null,
+  sessionId: string
+): HostedTopupCheckout {
+  return {
+    amount_cents: 2500,
+    payment_amount_cents: paymentAmountCents,
+    session_id: sessionId,
+    state
+  }
+}
+
+function listed(sessionId: string) {
+  return {
+    amount_cents: 2500,
+    created_at: '2026-10-20T00:00:00Z',
+    session_id: sessionId
+  }
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void
+  const promise = new Promise<T>((settle) => {
+    resolve = settle
+  })
+  return { promise, resolve }
+}
+
+function renderPayment(shown: Ref<boolean>) {
+  return render(
+    defineComponent({
+      setup() {
+        const { payment } = useProcessingTopupPayment(shown)
+        const label = computed(() => {
+          if (!payment.value) return 'none'
+          const cents = payment.value.paymentAmountCents
+          return cents === null ? 'withheld' : String(cents)
+        })
+        return { label }
+      },
+      template: '<p role="status">{{ label }}</p>'
+    })
+  )
+}
+
+function enableProcessingRead() {
+  vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+}
+
+function leaveAndReturn() {
+  window.dispatchEvent(new Event('blur'))
+  window.dispatchEvent(new Event('focus'))
+}
+
+describe('useProcessingTopupPayment', () => {
+  it('does not read checkouts while the surface is hidden', async () => {
+    enableProcessingRead()
+    const list = vi.spyOn(workspaceApi, 'listTopupCheckouts')
+    const shown = ref(false)
+    renderPayment(shown)
+
+    await nextTick()
+    expect(screen.getByRole('status')).toHaveTextContent('none')
+    expect(list).not.toHaveBeenCalled()
+
+    serveCheckout('payment_processing')
+    shown.value = true
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('2500')
+    )
+
+    shown.value = false
+    await nextTick()
+    expect(screen.getByRole('status')).toHaveTextContent('none')
+  })
+
+  it('keeps the newer amount when an older checkout read finishes later', async () => {
+    enableProcessingRead()
+    const shown = ref(true)
+    const first = deferred<HostedTopupCheckout>()
+    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [listed('cs_bank')],
+      next_cursor: null
+    })
+    let reads = 0
+    vi.spyOn(workspaceApi, 'getTopupCheckout').mockImplementation(() => {
+      reads += 1
+      return reads === 1
+        ? first.promise
+        : Promise.resolve(checkout('payment_processing', 100, 'cs_bank'))
+    })
+    renderPayment(shown)
+
+    await waitFor(() =>
+      expect(workspaceApi.getTopupCheckout).toHaveBeenCalledTimes(1)
+    )
+    shown.value = false
+    await nextTick()
+    shown.value = true
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('100')
+    )
+    first.resolve(checkout('payment_processing', 2500, 'cs_bank'))
+    await first.promise
+    await nextTick()
+    expect(screen.getByRole('status')).toHaveTextContent('100')
+  })
+
+  it('withholds the amount when another checkout detail fails', async () => {
+    enableProcessingRead()
+    const cause = new WorkspaceApiError('unavailable', 503)
+    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [listed('cs_bank'), listed('cs_other')],
+      next_cursor: null
+    })
+    vi.spyOn(workspaceApi, 'getTopupCheckout').mockImplementation(
+      (sessionId) => {
+        if (sessionId === 'cs_other') return Promise.reject(cause)
+        return Promise.resolve(checkout('payment_processing', 2500, sessionId))
+      }
+    )
+    renderPayment(ref(true))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('withheld')
+    )
+    expect(reportError).toHaveBeenCalledWith(cause, {
+      errorType: 'topup_checkout_read_failed',
+      surface: 'billing'
+    })
+  })
+
+  it('reports a failed checkout detail without a processing notice', async () => {
+    enableProcessingRead()
+    const cause = new WorkspaceApiError('unavailable', 503)
+    vi.spyOn(workspaceApi, 'listTopupCheckouts').mockResolvedValue({
+      checkouts: [listed('cs_bank')],
+      next_cursor: null
+    })
+    vi.spyOn(workspaceApi, 'getTopupCheckout').mockRejectedValue(cause)
+    renderPayment(ref(true))
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(cause, {
+        errorType: 'topup_checkout_read_failed',
+        surface: 'billing'
+      })
+    )
+    await nextTick()
+    expect(screen.getByRole('status')).toHaveTextContent('none')
+  })
+
+  it('drops the processing notice when focus returns to a failed checkout', async () => {
+    enableProcessingRead()
+    serveCheckout('payment_processing')
+    renderPayment(ref(true))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('2500')
+    )
+    const reads = vi.mocked(workspaceApi.getTopupCheckout).mock.calls.length
+    vi.mocked(workspaceApi.getTopupCheckout).mockResolvedValue(
+      checkout('failed', null, 'cs_bank')
+    )
+    leaveAndReturn()
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('none')
+    )
+    expect(workspaceApi.getTopupCheckout).toHaveBeenCalledTimes(reads + 1)
+  })
+
+  it('does not read again after the surface is gone', async () => {
+    enableProcessingRead()
+    serveCheckout('payment_processing')
+    const view = renderPayment(ref(true))
+
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('2500')
+    )
+    const lists = vi.mocked(workspaceApi.listTopupCheckouts).mock.calls.length
+    view.unmount()
+    leaveAndReturn()
+
+    expect(workspaceApi.listTopupCheckouts).toHaveBeenCalledTimes(lists)
   })
 })
