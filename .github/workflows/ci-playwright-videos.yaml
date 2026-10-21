@@ -76,11 +76,12 @@ jobs:
         run: |
           PLAYWRIGHT_VERSION=$(node -p 'require("@playwright/test/package.json").version')
           export VIDEO_CACHE_INDEX=/tmp/video-cache-index.txt
-          export VIDEO_CACHE_SALT=$({
+          VIDEO_CACHE_SALT=$({
             echo "$PLAYWRIGHT_VERSION"
             git ls-files -s -- browser_tests ':(glob,exclude)browser_tests/**/*.spec.ts' \
               playwright.config.ts .github/workflows/ci-playwright-videos.yaml
           } | sha256sum | cut -c1-32)
+          export VIDEO_CACHE_SALT
           mapfile -t FILES < /tmp/video-specs.txt
           PLAN=$(bash scripts/cicd/plan-playwright-videos.sh "${FILES[@]}")
           echo "matrix=$(jq -c .matrix <<< "$PLAN")" >> "$GITHUB_OUTPUT"
@@ -204,13 +205,12 @@ jobs:
           mkdir -p blob-report
           STATUS=0
           while IFS=$'\t' read -r KEY FILE; do
-            if PLAYWRIGHT_BLOB_OUTPUT_DIR="blob-tmp/$KEY" pnpm exec playwright test \
+            if PLAYWRIGHT_BLOB_OUTPUT_FILE="blob-report/$KEY.zip" pnpm exec playwright test \
               --project="$PROJECT" --timeout=180000 --retries=0 "$FILE" < /dev/null; then
               touch "blob-report/$KEY.pass"
             else
               STATUS=1
             fi
-            mv "blob-tmp/$KEY/report.zip" "blob-report/$KEY.zip" || STATUS=1
           done <<< "$SPECS"
           exit "$STATUS"
 

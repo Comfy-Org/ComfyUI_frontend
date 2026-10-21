@@ -176,6 +176,13 @@ describe('Playwright video shard planning', () => {
     ).toEqual(['cloud'])
     expect(resalted.hits).toEqual([])
     expect(resalted.matrix.include).toHaveLength(2)
+
+    writeFileSync(files.spec, readFileSync(files.spec, 'utf8') + '\n')
+    const edited = JSON.parse(
+      files.run({ VIDEO_CACHE_SALT: 'a', VIDEO_CACHE_INDEX: index }).stdout
+    )
+
+    expect(edited.hits).toEqual([])
   })
 
   it('does not discover the full suite for an empty changed-file list', () => {
@@ -249,8 +256,11 @@ describe('independent video workflow', () => {
 const fs = require('node:fs')
 const args = process.argv.slice(2)
 fs.appendFileSync('calls.jsonl', JSON.stringify(args) + '\\n')
-fs.mkdirSync(process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR, { recursive: true })
-fs.writeFileSync(process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR + '/report.zip', '')
+const blob =
+  process.env.PLAYWRIGHT_BLOB_OUTPUT_FILE ??
+  (process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ?? 'blob-report') + '/report-cloud-0666423.zip'
+fs.mkdirSync(require('node:path').dirname(blob), { recursive: true })
+fs.writeFileSync(blob, '')
 process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
 `,
           { mode: 0o755 }
