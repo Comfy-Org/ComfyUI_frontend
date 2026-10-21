@@ -12,8 +12,18 @@ import {
 } from 'vitest'
 import { markRaw, ref } from 'vue'
 
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { LGraphCanvasEventMap } from '@/lib/litegraph/src/infrastructure/LGraphCanvasEventMap'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -22,6 +32,7 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { toNodeId } from '@/types/nodeId'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { useLitegraphService } from '@/services/litegraphService'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 import { followedDoc } from './__fixtures__/followedDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
@@ -129,7 +140,84 @@ beforeEach(() => {
   ChangeTracker.isLoadingGraph = false
 })
 
+async function trackedCanvas(graph: LGraph, open: 'root' | 'subgraph') {
+  appState.rootGraph = graph
+  const element = document.createElement('canvas')
+  element.getContext = vi
+    .fn()
+    .mockReturnValue(createMockCanvasRenderingContext2D())
+  const canvas = new LGraphCanvas(element, graph, {
+    skip_render: true,
+    skip_events: true
+  })
+  onTestFinished(() => {
+    canvas.graph?.detachCanvas(canvas)
+    appState.rootGraph = undefined
+  })
+  if (open === 'subgraph') {
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const host = createTestSubgraphNode(subgraph, { id: 1000 })
+    graph.add(host)
+    canvas.openSubgraph(subgraph, host)
+  }
+  const beforeFrame = await workflowJson(graph)
+  const tracker = markRaw(
+    new ChangeTracker(fromPartial({ path: '/agent.json' }), beforeFrame)
+  )
+  const store = useWorkflowStore()
+  const workflow = fromPartial<LoadedComfyWorkflow>({
+    path: '/agent.json',
+    changeTracker: tracker,
+    isModified: false
+  })
+  store.attachWorkflow(workflow)
+  store.activeWorkflow = workflow
+  function trackChange(event: Event) {
+    if (!(event instanceof CustomEvent)) return
+    const detail: LGraphCanvasEventMap['litegraph:canvas'] = event.detail
+    if (detail.subType === 'before-change') tracker.beforeChange()
+    if (detail.subType === 'after-change') tracker.afterChange()
+  }
+  element.addEventListener('litegraph:canvas', trackChange)
+  onTestFinished(() => {
+    element.removeEventListener('litegraph:canvas', trackChange)
+    store.activeWorkflow = null
+  })
+  const applier = new LiveGraphApplier({
+    getGraph: () => graph,
+    getCanvas: () => canvas
+  })
+  return { canvas, applier, tracker, workflow, beforeFrame }
+}
+
 describe('LiveGraphApplier with the real change tracker', () => {
+  it.for([{ open: 'root' }, { open: 'subgraph' }] as const)(
+    'records one undo entry and marks modified for a node-add frame with $open open',
+    async ({ open }) => {
+      const graph = new LGraph()
+      const { applier, tracker, workflow, beforeFrame } = await trackedCanvas(
+        graph,
+        open
+      )
+      const { doc, collector } = followedDoc({ nodes: [], links: [] }, CATALOG)
+      collector.take()
+      const add = op({
+        op: 'add_node',
+        node_id: 42,
+        class_type: 'TestSource',
+        pos: [80, 120],
+        node: { id: 42, type: 'TestSource', pos: [80, 120], size: [200, 100] }
+      })
+
+      expect(applyOps(doc, [add], CATALOG).outcomes[0].outcome).toBe('applied')
+      applier.applyChanges(doc, collector.take(), CONTEXT)
+
+      expect(graph.getNodeById(toNodeId(42))).not.toBeNull()
+      expect.soft(tracker.undoQueue).toEqual([beforeFrame])
+      expect(workflow.isModified).toBe(true)
+    }
+  )
+
   it('records one undo entry holding the pre-frame graph for a frame of several operations', async () => {
     const graph = new LGraph()
     appState.rootGraph = graph
@@ -149,26 +237,15 @@ describe('LiveGraphApplier with the real change tracker', () => {
       },
       CATALOG
     )
-    const applier = new LiveGraphApplier({ getGraph: () => graph })
-    onTestFinished(() => {
-      appState.rootGraph = undefined
-    })
-    applier.applyChanges(doc, collector.take(), CONTEXT)
-
-    const beforeFrame = await workflowJson(graph)
-    const tracker = markRaw(
-      new ChangeTracker(fromPartial({ path: '/agent.json' }), beforeFrame)
+    new LiveGraphApplier({ getGraph: () => graph }).applyChanges(
+      doc,
+      collector.take(),
+      CONTEXT
     )
-    useWorkflowStore().activeWorkflow = fromPartial({ changeTracker: tracker })
-    graph.list_of_graphcanvas = [
-      fromPartial<LGraphCanvas>({
-        emitBeforeChange: () => tracker.beforeChange(),
-        emitAfterChange: () => tracker.afterChange(),
-        setDirty: () => {},
-        deselect: () => {},
-        checkPanels: () => {}
-      })
-    ]
+    const { applier, tracker, beforeFrame } = await trackedCanvas(
+      graph,
+      'subgraph'
+    )
 
     const ops = [
       op({
@@ -209,10 +286,6 @@ describe('LiveGraphApplier with the real change tracker', () => {
 
   it('resizes an existing DynamicGroup remotely as one undo unit without outbound echo', async () => {
     const graph = new LGraph()
-    appState.rootGraph = graph
-    onTestFinished(() => {
-      appState.rootGraph = undefined
-    })
     const node = LiteGraph.createNode('DynamicGroupTest')
     assert.exists(node)
     graph.add(node)
@@ -236,27 +309,16 @@ describe('LiveGraphApplier with the real change tracker', () => {
       0.7,
       'tail'
     ])
-    const beforeFrame = await workflowJson(graph)
+    const { applier, tracker, beforeFrame } = await trackedCanvas(
+      graph,
+      'subgraph'
+    )
     const { flags, ...serialized } = node.serialize()
     const { doc, collector } = followedDoc(
       { nodes: [{ ...serialized, flags: { ...flags } }], links: [] },
       CATALOG
     )
     collector.take()
-    const applier = new LiveGraphApplier({ getGraph: () => graph })
-    const tracker = markRaw(
-      new ChangeTracker(fromPartial({ path: '/dynamic.json' }), beforeFrame)
-    )
-    useWorkflowStore().activeWorkflow = fromPartial({ changeTracker: tracker })
-    graph.list_of_graphcanvas = [
-      fromPartial<LGraphCanvas>({
-        emitBeforeChange: () => tracker.beforeChange(),
-        emitAfterChange: () => tracker.afterChange(),
-        setDirty: () => {},
-        deselect: () => {},
-        checkPanels: () => {}
-      })
-    ]
     const enqueue = vi.fn()
     const minter = attachDocOpMinter({
       isEnabled: () => true,
@@ -310,5 +372,64 @@ describe('LiveGraphApplier with the real change tracker', () => {
         }
       ])
     )
+  })
+
+  it('builds a DynamicGroup node from the catch-up frame without outbound echo and reloads to the same graph', async () => {
+    const graph = new LGraph()
+    appState.rootGraph = graph
+    onTestFinished(() => {
+      appState.rootGraph = undefined
+    })
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'DynamicGroupTest',
+            pos: [0, 0],
+            size: [200, 100],
+            widgets_values: ['head', 2, 0.5, 0.7, 'tail']
+          }
+        ],
+        links: []
+      },
+      CATALOG
+    )
+    const enqueue = vi.fn()
+    const minter = attachDocOpMinter({
+      isEnabled: () => true,
+      isDocBound: () => true,
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(graph.id),
+      docInputNames: () => [],
+      docPromotedWidgets: () => null,
+      mayWritePromotedHost: () => true,
+      onWidgetWriteRefused: () => {},
+      enqueue
+    })
+    onTestFinished(() => minter.detach())
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    const node = graph.getNodeById(toNodeId(1))
+    assert.exists(node)
+    expect(node.serialize().widgets_values).toEqual([
+      'head',
+      2,
+      0.5,
+      0.7,
+      'tail'
+    ])
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
+    expect(enqueue).not.toHaveBeenCalled()
+
+    const saved = await workflowJson(graph)
+    const reloaded = new LGraph()
+    reloaded.configure(structuredClone(graph.serialize()))
+    expect(await workflowJson(reloaded)).toEqual({
+      ...saved,
+      id: expect.any(String)
+    })
   })
 })

@@ -31,7 +31,7 @@ export function isModelPagePath(
   return roots.some((root) => path === root || path.startsWith(`${root}/`))
 }
 
-const SOURCE_PARAM = /(:\w+(?:\([^()]*\))?)/
+const SOURCE_PARAM = /(:\w+(?:\([^()]*\)|\+)?)/
 const LITERAL_ALTERNATIVE = /^[\w.~-]+$/
 const UNSUPPORTED_SOURCE_SYNTAX = /[(){}?*+]/
 
@@ -40,6 +40,7 @@ function unsupportedSource(source: string): Error {
 }
 
 function paramPattern(token: string, source: string): string {
+  if (token.endsWith('+')) return `(?<${token.slice(1, -1)}>[^/]+(?:/[^/]+)*)`
   if (!token.includes('(')) return `(?<${token.slice(1)}>[^/]+)`
   const [name, alternatives] = token.slice(1, -1).split('(')
   const literals = alternatives.split('|')
@@ -50,7 +51,8 @@ function paramPattern(token: string, source: string): string {
 
 /**
  * A Vercel redirect source as an exact, slash-sensitive matcher: literal text
- * plus `:name` (one segment) and `:name(a|b)` (literal alternatives) params.
+ * plus `:name` (one segment), `:name+` (one or more segments) and
+ * `:name(a|b)` (literal alternatives) params.
  * Any other path-to-regexp syntax throws rather than silently matching nothing.
  */
 function redirectSourcePattern(source: string): RegExp {

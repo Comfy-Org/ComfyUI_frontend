@@ -140,7 +140,6 @@ describe('WorkflowTab - workflow status indicator', () => {
   })
 
   it('delays hover preview without moving focus and dismisses after leaving', async () => {
-    vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderTab()
     const tab = screen.getByTestId('workflow-tab')
@@ -155,6 +154,11 @@ describe('WorkflowTab - workflow status indicator', () => {
     expect(trigger).toHaveFocus()
 
     await user.unhover(tab)
+    await user.hover(screen.getByRole('dialog'))
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+
+    await user.unhover(screen.getByRole('dialog'))
     await vi.advanceTimersByTimeAsync(99)
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     await vi.advanceTimersByTimeAsync(1)
@@ -162,7 +166,6 @@ describe('WorkflowTab - workflow status indicator', () => {
   })
 
   it('does not reopen a click-dismissed preview when the hover delay expires', async () => {
-    vi.useFakeTimers()
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     renderTab()
     const tab = screen.getByTestId('workflow-tab')

@@ -1,7 +1,7 @@
-import type { Command, Direction } from '../history'
-import { Dirty } from '../history'
-import type { GroupData, SceneNode } from '../node'
-import { getNodeKind, hasNodeKind } from '../nodeKind'
+import type { Command, Direction } from '#/history'
+import { Dirty } from '#/history'
+import type { GroupData, SceneNode } from '#/node'
+import { getNodeKind, hasNodeKind } from '#/nodeKind'
 
 function nodeContentRefs(node: SceneNode): string[] {
   if (!hasNodeKind(node.kind)) return []

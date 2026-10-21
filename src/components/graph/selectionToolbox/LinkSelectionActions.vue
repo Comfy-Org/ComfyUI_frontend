@@ -1,5 +1,16 @@
 <template>
   <Button
+    v-if="linksHidden"
+    :tooltip="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
+    variant="muted-textonly"
+    :aria-label="$t('commands.Comfy_Canvas_ShowSelectedLinks.label')"
+    data-testid="show-links-button"
+    @click="() => commandStore.execute('Comfy.Canvas.ShowSelectedLinks')"
+  >
+    <i class="icon-[lucide--eye]" />
+  </Button>
+  <Button
+    v-else
     :tooltip="$t('commands.Comfy_Canvas_HideSelectedLinks.label')"
     variant="muted-textonly"
     :aria-label="$t('commands.Comfy_Canvas_HideSelectedLinks.label')"
@@ -20,8 +31,21 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
+import { areSelectedLinksHidden } from '@/lib/litegraph/src/canvas/linkSelection'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 
 const commandStore = useCommandStore()
+const linkSelectionStore = useLinkSelectionStore()
+const canvasStore = useCanvasStore()
+
+const linksHidden = computed(() => {
+  if (!linkSelectionStore.selection) return false
+  const graph = canvasStore.canvas?.graph
+  return !!graph && areSelectedLinksHidden(graph)
+})
 </script>

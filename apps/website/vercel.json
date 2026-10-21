@@ -963,6 +963,76 @@
       "permanent": true
     },
     {
+      "source": "/cloud/supported-nodes",
+      "destination": "/cloud/",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/supported-nodes/",
+      "destination": "/cloud/",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/supported-nodes.md",
+      "destination": "/cloud.md",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/supported-nodes/llms.txt",
+      "destination": "/cloud.md",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/supported-nodes/:pack.md",
+      "destination": "/cloud.md",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/supported-nodes/:path+",
+      "destination": "/cloud/",
+      "permanent": true
+    },
+    {
+      "source": "/cloud/supported-nodes/:path+/",
+      "destination": "/cloud/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/supported-nodes",
+      "destination": "/zh-CN/cloud/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/supported-nodes/",
+      "destination": "/zh-CN/cloud/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/supported-nodes.md",
+      "destination": "/zh-CN/cloud.md",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/supported-nodes/llms.txt",
+      "destination": "/zh-CN/cloud.md",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/supported-nodes/:pack.md",
+      "destination": "/zh-CN/cloud.md",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/supported-nodes/:path+",
+      "destination": "/zh-CN/cloud/",
+      "permanent": true
+    },
+    {
+      "source": "/zh-CN/cloud/supported-nodes/:path+/",
+      "destination": "/zh-CN/cloud/",
+      "permanent": true
+    },
+    {
       "source": "/models",
       "destination": "/hub/models/",
       "permanent": true

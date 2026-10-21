@@ -32,9 +32,12 @@ import type {
   PendingInvite as ApiPendingInvite,
   SubscriptionTier,
   WorkspaceWithRole
-} from '../api/workspaceApi'
-import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
-import { NoWorkspaceAccessError } from '../api/workspaceApiError'
+} from '@/platform/workspace/api/workspaceApi'
+import {
+  WorkspaceApiError,
+  workspaceApi
+} from '@/platform/workspace/api/workspaceApi'
+import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 
 export interface WorkspaceMember {
   id: string
@@ -385,6 +388,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     const workspaceAuthStore = useWorkspaceAuthStore()
     const isApiKeySession = useCurrentUserAccess().isApiKeyLogin.value
+    const switchTargetId = takeSwitchTargetId()
+    const tabWorkspaceId = workspaceAuthStore.bootTabWorkspaceId
 
     let sessionRevokedRetries = 0
     for (let attempt = 0; attempt <= MAX_INIT_RETRIES; attempt++) {
@@ -470,7 +475,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           !!id && workspaces.value.some((w) => w.id === id)
         let targetWorkspaceId: string | null =
           [
-            takeSwitchTargetId(),
+            switchTargetId,
+            tabWorkspaceId,
             response.default_workspace_id,
             getLastWorkspaceId()
           ].find(listed) ?? null

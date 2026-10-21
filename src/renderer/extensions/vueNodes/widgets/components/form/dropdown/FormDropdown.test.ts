@@ -412,18 +412,18 @@ describe('FormDropdown', () => {
     expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
   })
 
-  it.for(['resize', 'scroll'] as const)(
-    'dismisses on viewport %s',
-    async (type) => {
-      const { user } = mountDropdown([createItem('1', 'alpha')])
-      await openDropdown(user)
-      await fireEvent(type === 'scroll' ? document : window, new Event(type))
-      expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
-      await waitFor(() =>
-        expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
-      )
-    }
-  )
+  it.for([
+    { type: 'resize', target: window },
+    { type: 'scroll', target: document }
+  ])('dismisses on viewport $type', async ({ type, target }) => {
+    const { user } = mountDropdown([createItem('1', 'alpha')])
+    await openDropdown(user)
+    await fireEvent(target, new Event(type))
+    expect(screen.queryByTestId('dropdown-menu')).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Open' })).toHaveFocus()
+    )
+  })
 
   it('closes on a pointerdown outside the menu and trigger', async () => {
     const onUpdateIsOpen = vi.fn()

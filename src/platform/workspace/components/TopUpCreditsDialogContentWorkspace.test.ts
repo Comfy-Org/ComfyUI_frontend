@@ -582,11 +582,22 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
   })
 
-  it('advances to confirmation without charging', async () => {
+  it('shows the purchase disclosure before confirming without charging', async () => {
     renderDialog()
+
+    expect(
+      screen.getByText(
+        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+      )
+    ).toBeVisible()
 
     await clickAddCredits()
 
+    expect(
+      screen.getByText(
+        'Buying credits does not start a subscription or unlock Cloud workflows. A plan is required to run workflows on Cloud. Partner Nodes in local ComfyUI and Desktop can use credits without a plan.'
+      )
+    ).toBeVisible()
     expect(screen.getByText('Confirm')).toBeInTheDocument()
     expect(screen.getByText('Total due today')).toBeInTheDocument()
     expect(screen.getByText('$50.00')).toBeInTheDocument()
@@ -760,7 +771,11 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
       await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
-      expect(createCheckout).toHaveBeenCalledWith(5000, window.location.href)
+      expect(createCheckout).toHaveBeenCalledWith(
+        5000,
+        window.location.href,
+        expect.any(AbortSignal)
+      )
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(
         screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
@@ -901,7 +916,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         ).toBeInTheDocument()
         expect(createCheckout).toHaveBeenCalledWith(
           5000,
-          'https://testbilling.comfy.org/return/topup'
+          'https://testbilling.comfy.org/return/topup',
+          expect.any(AbortSignal)
         )
         expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
         expect(window.location.href).toBe(appUrl)
@@ -926,17 +942,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     }
 
     it.for([
-      {
-        page: 'checkout',
-        url: checkoutUrl,
-        heading: "Checkout didn't open",
-        link: 'Open checkout',
-        trigger: 'Continue to checkout',
-        session: () =>
-          vi
-            .spyOn(workspaceApi, 'createTopupCheckout')
-            .mockResolvedValue({ checkout_url: checkoutUrl })
-      },
       {
         page: 'card settings',
         url: portalUrl,
@@ -980,28 +985,64 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       return { opener: window, location: { href: '' }, close: vi.fn() }
     }
 
-    it.for([
-      {
-        path: 'the checkout tab opens',
-        tab: newCheckoutTab,
-        follow: async () => {}
-      },
-      {
-        path: 'the customer follows the blocked checkout link',
-        tab: () => null,
-        follow: async () =>
-          userEvent.click(
-            await screen.findByRole('link', { name: 'Open checkout' })
-          )
-      }
-    ])('hands off to the open checkout once $path', async ({ tab, follow }) => {
+    it('mints the checkout session only once Open checkout gets a tab', async () => {
       refuseForNoPaymentMethod()
-      checkoutOpensAt(checkoutUrl)
-      vi.spyOn(window, 'open').mockReturnValue(tab() as never)
-      stopBrowserFollowingLinks()
+      const createCheckout = vi
+        .spyOn(workspaceApi, 'createTopupCheckout')
+        .mockResolvedValue({ checkout_url: checkoutUrl })
+      const checkoutTab = newCheckoutTab()
+      const open = vi
+        .spyOn(window, 'open')
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(checkoutTab as never)
+      const appUrl = window.location.href
       await userEvent.click((await payAndGetRefused()).continueButton)
 
-      await follow()
+      expect(
+        await screen.findByRole('heading', { name: "Checkout didn't open" })
+      ).toBeInTheDocument()
+      expect(createCheckout).not.toHaveBeenCalled()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Open checkout' })
+      )
+
+      await waitFor(() => expect(checkoutTab.location.href).toBe(checkoutUrl))
+      expect(createCheckout).toHaveBeenCalledOnce()
+      expect(open).toHaveBeenCalledTimes(2)
+      expect(window.location.href).toBe(appUrl)
+      expect(
+        screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
+      ).toBeInTheDocument()
+    })
+
+    it('returns to Pay when the blocked checkout fails to start a session', async () => {
+      refuseForNoPaymentMethod()
+      vi.spyOn(workspaceApi, 'createTopupCheckout').mockRejectedValue(
+        new WorkspaceApiError('Checkout down', 502)
+      )
+      vi.spyOn(window, 'open')
+        .mockReturnValueOnce(null)
+        .mockReturnValueOnce(newCheckoutTab() as never)
+      await userEvent.click((await payAndGetRefused()).continueButton)
+
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Open checkout' })
+      )
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        "The payment page couldn't open. Nothing was charged. Try again."
+      )
+      expect(
+        screen.getByRole('button', { name: 'Continue to checkout' })
+      ).toBeInTheDocument()
+    })
+
+    it('hands off to the open checkout once the checkout tab opens', async () => {
+      refuseForNoPaymentMethod()
+      checkoutOpensAt(checkoutUrl)
+      vi.spyOn(window, 'open').mockReturnValue(newCheckoutTab() as never)
+      await userEvent.click((await payAndGetRefused()).continueButton)
 
       expect(
         await screen.findByRole('heading', {
@@ -1015,6 +1056,46 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       ).toBeInTheDocument()
       expect(mockStartPendingTopup).toHaveBeenCalledOnce()
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    })
+
+    it('abandons a checkout still opening once this tab starts switching workspace, then opens the next attempt', async () => {
+      refuseForNoPaymentMethod()
+      const handedSignals: AbortSignal[] = []
+      vi.spyOn(workspaceApi, 'createTopupCheckout')
+        .mockImplementationOnce((_amountCents, _returnUrl, signal) => {
+          if (signal) handedSignals.push(signal)
+          return new Promise((_resolve, reject) =>
+            signal?.addEventListener('abort', () => reject(signal.reason))
+          )
+        })
+        .mockImplementationOnce(async (_amountCents, _returnUrl, signal) => {
+          if (signal) handedSignals.push(signal)
+          return { checkout_url: checkoutUrl }
+        })
+      const abandonedTab = newCheckoutTab()
+      const nextTab = newCheckoutTab()
+      vi.spyOn(window, 'open')
+        .mockReturnValueOnce(abandonedTab as never)
+        .mockReturnValueOnce(nextTab as never)
+      const { continueButton } = await payAndGetRefused()
+      await userEvent.click(continueButton)
+      await waitFor(() => expect(handedSignals).toHaveLength(1))
+
+      Object.assign(useTeamWorkspaceStore(), {
+        workspaceTransitionGeneration: 1
+      })
+
+      expect(handedSignals[0].aborted).toBe(true)
+      await waitFor(() => expect(abandonedTab.close).toHaveBeenCalledOnce())
+      expect(abandonedTab.location.href).toBe('')
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Continue to checkout' })
+      )
+
+      await waitFor(() => expect(nextTab.location.href).toBe(checkoutUrl))
+      expect(handedSignals[1].aborted).toBe(false)
     })
 
     describe('reopening checkout from the hand-off', () => {
@@ -1058,15 +1139,56 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         ).toBeInTheDocument()
       })
 
-      it('links to the fresh session when the reopened tab is blocked', async () => {
-        await openCheckoutThenReopen({
+      it('mints no session when the reopened tab is blocked', async () => {
+        const { createCheckout } = await openCheckoutThenReopen({
           reopenTab: null,
           reopened: async () => ({ checkout_url: reopenedUrl })
         })
 
         expect(
-          await screen.findByRole('link', { name: 'Open checkout' })
-        ).toHaveAttribute('href', reopenedUrl)
+          await screen.findByRole('heading', { name: "Checkout didn't open" })
+        ).toBeInTheDocument()
+        expect(createCheckout).toHaveBeenCalledOnce()
+      })
+
+      it('returns to the hand-off when the blocked reopen fails to start a session', async () => {
+        const { open } = await openCheckoutThenReopen({
+          reopenTab: null,
+          reopened: async () => {
+            throw new WorkspaceApiError('Checkout down', 502)
+          }
+        })
+        open.mockReturnValueOnce(newCheckoutTab() as never)
+
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Open checkout' })
+        )
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(
+          "The payment page couldn't open. Nothing was charged. Try again."
+        )
+        expect(
+          screen.getByRole('heading', { name: 'Checkout opened in a new tab' })
+        ).toBeInTheDocument()
+
+        await userEvent.click(
+          screen.getAllByRole('button', { name: 'Close' })[0]
+        )
+
+        expect(mockClearPendingTopup).not.toHaveBeenCalled()
+      })
+
+      it('keeps the opened checkout pending when the dialog closes on a blocked reopen', async () => {
+        await openCheckoutThenReopen({
+          reopenTab: null,
+          reopened: async () => ({ checkout_url: reopenedUrl })
+        })
+        await screen.findByRole('heading', { name: "Checkout didn't open" })
+
+        await userEvent.click(screen.getByRole('button', { name: 'Close' }))
+
+        expect(mockClearPendingTopup).not.toHaveBeenCalled()
+        expect(useDialogStore().closeDialog).toHaveBeenCalled()
       })
 
       it('stays on the hand-off and explains a session that could not start', async () => {
@@ -2244,7 +2366,8 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
       await waitFor(() => expect(tab.location.href).toBe(checkoutUrl))
       expect(harness.sdk.topup.createHostedTopupCheckout).toHaveBeenCalledWith({
         amountCents: 5000,
-        returnUrl: window.location.href
+        returnUrl: window.location.href,
+        signal: expect.any(AbortSignal)
       })
     })
   })

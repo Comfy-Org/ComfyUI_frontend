@@ -35,7 +35,7 @@
         >
           <DialogHeader>
             <DialogTitle>{{ $t('g.addNodeFilterCondition') }}</DialogTitle>
-            <DialogClose />
+            <DialogClose :aria-label="$t('g.close')" />
           </DialogHeader>
           <div class="px-4 py-2">
             <NodeSearchFilter @add-filter="onAddFilter" />
@@ -47,6 +47,8 @@
     <SearchAutocomplete
       ref="searchAutocomplete"
       v-model="currentQuery"
+      :clear-label="$t('g.clear')"
+      :accessible-label="$t('g.search')"
       class="comfy-vue-node-search-box z-10 grow"
       anchor-class="h-auto min-h-8 flex-wrap"
       :content-style="{ maxHeight: '40vh' }"
@@ -111,7 +113,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeFrequencyStore } from '@/stores/nodeFrequencyStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
-import SearchFilterChip from '../common/SearchFilterChip.vue'
+import SearchFilterChip from '@/components/common/SearchFilterChip.vue'
 
 const settingStore = useSettingStore()
 const { t } = useI18n()

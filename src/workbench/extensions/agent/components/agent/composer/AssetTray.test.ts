@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 
-import type { ComposerAttachment } from '../../../types/composerAttachment'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import AssetTray from './AssetTray.vue'
 
 const images: ComposerAttachment[] = [

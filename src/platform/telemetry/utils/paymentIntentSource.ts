@@ -1,6 +1,9 @@
 import type { CheckoutEntrySource } from '@comfyorg/account-core/billing'
 
-import type { AddCreditsClickMetadata, PaymentIntentSource } from '../types'
+import type {
+  AddCreditsClickMetadata,
+  PaymentIntentSource
+} from '@/platform/telemetry/types'
 
 type AddCreditsClickSource = AddCreditsClickMetadata['source']
 

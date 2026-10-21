@@ -7,7 +7,14 @@ import InputGroupAddon from '@/components/ui/input-group/InputGroupAddon.vue'
 import InputGroupButton from '@/components/ui/input-group/InputGroupButton.vue'
 import InputGroupInput from '@/components/ui/input-group/InputGroupInput.vue'
 
-const { class: className, disabled = false } = defineProps<{
+const {
+  class: className,
+  disabled = false,
+  hidePasswordLabel,
+  showPasswordLabel
+} = defineProps<{
+  hidePasswordLabel: string
+  showPasswordLabel: string
   class?: HTMLAttributes['class']
   disabled?: boolean
 }>()
@@ -30,7 +37,7 @@ defineOptions({ inheritAttrs: false })
       <InputGroupButton
         size="icon-sm"
         :disabled
-        :aria-label="$t(visible ? 'auth.hidePassword' : 'auth.showPassword')"
+        :aria-label="visible ? hidePasswordLabel : showPasswordLabel"
         :aria-pressed="visible"
         @click="visible = !visible"
       >

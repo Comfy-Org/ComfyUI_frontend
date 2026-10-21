@@ -1,10 +1,13 @@
 <template>
   <SearchableSingleSelect
-    v-if="searchable"
+    v-if="searchable && searchLabel !== undefined && emptyText !== undefined"
     v-model="selectedItem"
     v-bind="attrsWithoutClass"
     :class="attrsClass"
     :label
+    :accessible-label
+    :search-label
+    :empty-text
     :options
     :size
     :invalid
@@ -22,7 +25,7 @@
   <SelectRoot v-else v-model="selectedItem" v-model:open="isOpen" :disabled>
     <SelectTrigger
       v-bind="attrsWithoutClass"
-      :aria-label="label || t('g.singleSelectDropdown')"
+      :aria-label="accessibleLabel"
       :aria-busy="loading || undefined"
       :aria-invalid="invalid || undefined"
       :class="
@@ -105,8 +108,6 @@ import {
   SelectPortal
 } from 'reka-ui'
 import { ref } from 'vue'
-import type { StyleValue } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import {
   selectContentClass,
@@ -115,7 +116,7 @@ import {
   selectTriggerVariants,
   stopEscapeToDocument
 } from '@comfyorg/design-system/select.variants'
-import type { SelectOption } from '@/components/ui/select/types'
+import type { SingleSelectProps } from '@/components/ui/single-select/types'
 import { useAttrsClass } from '@/composables/useAttrsClass'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -129,6 +130,9 @@ const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const {
   label,
+  accessibleLabel,
+  searchLabel,
+  emptyText,
   options = [],
   size = 'lg',
   invalid = false,
@@ -140,33 +144,12 @@ const {
   popoverMinWidth,
   popoverMaxWidth,
   contentStyle
-} = defineProps<{
-  label?: string
-  options?: SelectOption<string | number>[]
-  /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
-  size?: 'lg' | 'md'
-  /** Show invalid (destructive) border */
-  invalid?: boolean
-  /** Show loading spinner instead of chevron */
-  loading?: boolean
-  /** Disable the select */
-  disabled?: boolean
-  searchable?: boolean
-  searchPlaceholder?: string
-  /** Maximum height of the dropdown panel (default: 28rem) */
-  listMaxHeight?: string
-  /** Minimum width of the popover (default: auto) */
-  popoverMinWidth?: string
-  /** Maximum width of the popover (default: auto) */
-  popoverMaxWidth?: string
-  contentStyle?: StyleValue
-}>()
+} = defineProps<SingleSelectProps>()
 
 const selectedItem = defineModel<string | number | undefined>({
   required: true
 })
 
-const { t } = useI18n()
 const isOpen = ref(false)
 
 function onContentKeydown(event: KeyboardEvent) {

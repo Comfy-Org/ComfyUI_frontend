@@ -2,8 +2,10 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import en from '@/locales/en/main.json'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
@@ -17,7 +19,9 @@ const SURVEY_URL = 'https://us.posthog.com/external_surveys/survey-123'
 function renderDialog(onClose = vi.fn()) {
   return render(ManagerSurveyDialog, {
     props: { onClose },
-    global: { mocks: { $t: (key: string) => key } }
+    global: {
+      plugins: [createI18n({ legacy: false, locale: 'en', messages: { en } })]
+    }
   })
 }
 
@@ -132,7 +136,7 @@ describe('ManagerSurveyDialog', () => {
     remoteConfig.value = { manager_survey_url: SURVEY_URL }
     renderDialog(onClose)
 
-    await userEvent.click(screen.getByRole('button', { name: 'g.close' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(onClose).toHaveBeenCalledOnce()
   })

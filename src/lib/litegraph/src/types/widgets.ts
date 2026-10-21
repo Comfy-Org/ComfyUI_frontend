@@ -6,7 +6,7 @@ import type { Bounds } from '@/renderer/core/layout/types'
 import type { CompositorWidgetValue } from '@/renderer/extensions/compositor/components/types'
 import type { CurveData } from '@/components/curve/types'
 import type { BoundingBox } from '@/types/boundingBoxes'
-import type { LightInfoEntry } from '@/types/lightInfo'
+import type { LightInfoEntry } from '@comfyorg/viewport3d/lightInfo/types'
 import type { WidgetValue } from '@/types/widgetValue'
 import type { WidgetId } from '@/types/widgetId'
 import type {
@@ -21,11 +21,11 @@ import type {
   Point,
   RequiredProps,
   Size
-} from '../interfaces'
+} from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { CanvasPointerEvent } from './events'
 
-export type { NodeBindable } from '../utils/type'
+export type { NodeBindable } from '@/lib/litegraph/src/utils/type'
 
 export interface IWidgetOptions<TValues = unknown> {
   on?: string

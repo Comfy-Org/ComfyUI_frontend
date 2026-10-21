@@ -9,6 +9,7 @@
       @open-auto-focus="!clicked && $event.preventDefault()"
       @close-auto-focus.prevent="restoreFocus"
       @interact-outside="onInteractOutside"
+      @mouseenter="stopHide"
       @mouseleave="hidePopover"
     >
       <div

@@ -1,4 +1,4 @@
-import type { AgentEventSocket } from '../services/agent/agentEventSource'
+import type { AgentEventSocket } from '@/workbench/extensions/agent/services/agent/agentEventSource'
 import { SERVER_DOC_FRAME_TYPES } from './docFrameCodes'
 import type { DocFrameTransport } from './docFrameClient'
 
@@ -6,6 +6,7 @@ const INBOUND_DOC_FRAMES = new Set<string>(SERVER_DOC_FRAME_TYPES)
 
 export interface AgentDocFrameTransport extends DocFrameTransport {
   onSocketOpen(listener: () => void): () => void
+  onSocketStatus(listener: (live: boolean) => void): () => void
   destroy(): void
 }
 
@@ -41,6 +42,9 @@ export function createAgentDocFrameTransport(
       return source.onStatus((live) => {
         if (live) listener()
       })
+    },
+    onSocketStatus(listener) {
+      return source.onStatus(listener)
     },
     destroy() {
       unsubscribe?.()

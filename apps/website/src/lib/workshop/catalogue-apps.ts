@@ -16,6 +16,7 @@ const copy = {
   },
   reshootName: { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
   reshootTask: { en: 'Re-shoot from any angle', 'zh-CN': '从任意角度重拍' },
+  openjutsuName: { en: 'Openjutsu', 'zh-CN': 'Openjutsu' },
   openjutsuTask: {
     en: 'Swap a character in a video',
     'zh-CN': '替换视频中的角色'

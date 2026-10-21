@@ -17,6 +17,7 @@ import type {
   WidgetValuesForm,
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
+import { isEqual } from 'es-toolkit'
 
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
@@ -32,7 +33,6 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useWidgetStore } from '@/stores/widgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -45,6 +45,10 @@ import {
   traverseSubgraphPath
 } from '@/utils/graphTraversalUtil'
 
+import {
+  SUBSCRIBE_ACK_MAX_TIMEOUTS,
+  SUBSCRIBE_ACK_TIMEOUT_MS
+} from './agentCrdtDocLifecycle'
 import type { GraphOperation } from './graphOperations'
 import type { DocPromotedWidgets } from './agentSubgraphDefinitions'
 
@@ -77,15 +81,28 @@ export interface DocOpMinterDeps {
   docPromotedWidgets(nodeId: NodeId): DocPromotedWidgets | null
   /**
    * False until the bound document has caught up, unless this tab already
-   * sent the root host's `add_node` into the same document.
+   * sent the root host's `add_node` into the same document. Every resubscribe
+   * (stale probe, reconnect, gap resync, ack-timeout retry) makes it false
+   * again until its catch-up lands, so a false answer holds the write (see
+   * {@link PROMOTED_WRITE_CATCH_UP_DEADLINE_MS}) rather than refusing it.
    */
   mayWritePromotedHost(nodeId: NodeId): boolean
   onWidgetWriteRefused(nodeId: NodeId, widgetName: string): void
 }
 
+/**
+ * How long a promoted-host write waits for the bound document to catch up
+ * before it is refused: as long as the subscribe lifecycle keeps retrying.
+ */
+export const PROMOTED_WRITE_CATCH_UP_DEADLINE_MS =
+  SUBSCRIBE_ACK_MAX_TIMEOUTS * SUBSCRIBE_ACK_TIMEOUT_MS
+/** How often a held promoted-host write rechecks the catch-up gate. */
+export const PROMOTED_WRITE_RETRY_MS = 100
+
 type PromotedWriteRefusal =
   | { reason: 'unpromoted_widget'; liveNames: readonly string[] }
   | { reason: 'doc_not_synced' }
+  | { reason: 'workflow_changed' }
   | {
       reason: 'layout_drift'
       liveNames: readonly string[]
@@ -101,26 +118,21 @@ type IntentOf<T extends GraphIntentEvent['type']> = Extract<
   { type: T }
 >
 
+interface HeldPromotedWrite {
+  event: IntentOf<'set_widget'>
+  rootGraphId: string
+  heldSince: number
+}
+
+function heldWriteKey(event: IntentOf<'set_widget'>): string {
+  return JSON.stringify([event.graphId, String(event.nodeId), event.name])
+}
+
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
 
-/**
- * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
- * own `widgets_values_named` minus non-value widgets. A node whose value
- * widgets the definition fully describes is checked against the pinned
- * catalog's `widget_order`; any other node also declares its own
- * `widgets_values_form` so the host accepts names the catalog lacks.
- *
- * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
- * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
- * entry. The applier rejects a name-keyed record for such a class
- * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
- * those keep the positional form `serialize()` already produced.
- *
- * `flags.ghost` is a placement-in-progress marker the placement click clears
- * without minting, so the document must not record it.
- */
+/** Returns the node's save-format snapshot for a semantic add operation. */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
@@ -139,39 +151,36 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   const snapshot = { ...rest, flags } satisfies WorkflowNode
   if (!named || node.isVirtualNode) return snapshot
   const values = valueWidgetsOnly(node, named)
-  const form = undescribedWidgetForm(node, values)
+  const form = nodeLocalWidgetForm(node, values)
   return form
     ? { ...snapshot, widgets_values: values, widgets_values_form: form }
     : { ...snapshot, widgets_values: values }
 }
 
-function undescribedWidgetForm(
+const VALUE_DEPENDENT_LAYOUT_INPUT_TYPES = new Set([
+  'COMFY_AUTOGROW_V3',
+  'COMFY_DYNAMICCOMBO_V3',
+  'COMFY_DYNAMICGROUP_V3'
+])
+
+function nodeLocalWidgetForm(
   node: LGraphNode,
   values: Record<string, unknown>
 ): WidgetValuesForm | undefined {
-  const order = Object.keys(values)
-  if (order.length === 0) return undefined
   const definition = useNodeDefStore().fromLGraphNode(node)
-  if (!definition) return undefined
-  const linked = new Set(
-    (node.widgets ?? []).flatMap((widget) =>
-      (widget.linkedWidgets ?? []).map((companion) => companion.name)
-    )
+  const layoutDependsOnValues = Object.values(definition?.inputs ?? {}).some(
+    (spec) => VALUE_DEPENDENT_LAYOUT_INPUT_TYPES.has(spec.type)
   )
-  const widgetStore = useWidgetStore()
-  const isInput = (name: string) =>
-    Object.hasOwn(definition.inputs, name) &&
-    definition.inputs[name].forceInput !== true
-  const isWidgetInput = (name: string) => {
-    if (!isInput(name)) return false
-    const spec = definition.inputs[name]
-    return widgetStore.widgets.has(spec.widgetType ?? spec.type)
-  }
-  const described = (name: string) =>
-    isWidgetInput(name) ||
-    (name.includes('.') && isInput(name.split('.', 1)[0])) ||
-    linked.has(name)
-  return order.every(described) ? undefined : { order }
+  if (layoutDependsOnValues) return undefined
+  const order = (node.widgets ?? [])
+    .map((widget) => widget.name)
+    .filter((name) => Object.hasOwn(values, name))
+  const isClosed =
+    order.length > 0 &&
+    order.length === Object.keys(values).length &&
+    order.every((name) => name.length > 0) &&
+    new Set(order).size === order.length
+  return isClosed ? { order } : undefined
 }
 
 function valueWidgetsOnly(
@@ -403,11 +412,23 @@ function growForMissingSlot(
   }
 }
 
+function canvasReplaced(graph: LGraph, event: IntentOf<'set_widget'>): boolean {
+  const eventGraph = reachableIntentGraph(graph, event.graphId)
+  const host = eventGraph ? findNodeInHierarchy(eventGraph, event.nodeId) : null
+  const input = host?.inputs.find((slot) => slot.name === event.name)
+  const stored = input?.widgetId
+    ? useWidgetValueStore().getWidget(input.widgetId)
+    : undefined
+  return stored !== undefined && !isEqual(stored.value, event.value)
+}
+
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   let pending: PendingOp[] = []
   const pendingAdds = new Map<string, LGraphNode>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
+  const heldPromotedWrites = new Map<string, HeldPromotedWrite>()
+  let heldRetryTimer: ReturnType<typeof setTimeout> | null = null
   let flushScheduled = false
   let detached = false
 
@@ -500,7 +521,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return true
   }
 
-  function mintSetWidget(event: IntentOf<'set_widget'>): void {
+  function routeSetWidget(
+    event: IntentOf<'set_widget'>,
+    retried: HeldPromotedWrite | null
+  ): void {
+    const held = retried ?? takeHeldWrite(event)
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
@@ -512,22 +537,108 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     const rootGraphId = deps.boundRootGraphId() ?? graph.id
     const routed = routedWidgetOperation(graph, rootGraphId, event, owner, deps)
     if ('unresolvedGraphId' in routed) {
-      const graphId = routed.unresolvedGraphId
-      reportOnce(
-        `owner:${nodeKey(graphId, event.nodeId)}`,
-        'Agent widget write has an unresolvable owner',
-        'agent_crdt_widget_owner_unresolved',
-        { graphId, nodeId: event.nodeId },
-        reportedRefusals
-      )
+      reportUnresolvedOwner(routed.unresolvedGraphId, event)
       return
     }
     if ('reason' in routed) {
-      reportRefusal(rootGraphId, event, routed)
-      deps.onWidgetWriteRefused(event.nodeId, event.name)
+      holdOrRefuseWidgetWrite(rootGraphId, event, routed, held)
       return
     }
     schedule({ kind: 'op', operation: routed })
+  }
+
+  function takeHeldWrite(
+    event: IntentOf<'set_widget'>
+  ): HeldPromotedWrite | null {
+    const key = heldWriteKey(event)
+    const held = heldPromotedWrites.get(key) ?? null
+    heldPromotedWrites.delete(key)
+    return held
+  }
+
+  function reportUnresolvedOwner(
+    graphId: string,
+    event: IntentOf<'set_widget'>
+  ): void {
+    reportOnce(
+      `owner:${nodeKey(graphId, event.nodeId)}`,
+      'Agent widget write has an unresolvable owner',
+      'agent_crdt_widget_owner_unresolved',
+      { graphId, nodeId: event.nodeId },
+      reportedRefusals
+    )
+  }
+
+  function holdOrRefuseWidgetWrite(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>,
+    refusal: PromotedWriteRefusal,
+    held: HeldPromotedWrite | null
+  ): void {
+    const heldSince = held?.heldSince ?? performance.now()
+    const mayWait =
+      refusal.reason === 'doc_not_synced' &&
+      performance.now() - heldSince < PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
+    if (mayWait) holdPromotedWrite({ event, rootGraphId, heldSince })
+    else refuseWidgetWrite(rootGraphId, event, refusal)
+  }
+
+  function refuseWidgetWrite(
+    rootGraphId: string,
+    event: IntentOf<'set_widget'>,
+    refusal: PromotedWriteRefusal
+  ): void {
+    reportRefusal(rootGraphId, event, refusal)
+    deps.onWidgetWriteRefused(event.nodeId, event.name)
+  }
+
+  function holdPromotedWrite(held: HeldPromotedWrite): void {
+    heldPromotedWrites.set(heldWriteKey(held.event), held)
+    if (heldRetryTimer !== null) return
+    heldRetryTimer = setTimeout(
+      retryHeldPromotedWrites,
+      PROMOTED_WRITE_RETRY_MS
+    )
+  }
+
+  function retryHeldPromotedWrites(): void {
+    heldRetryTimer = null
+    if (detached) return
+    const held = [...heldPromotedWrites.values()]
+    heldPromotedWrites.clear()
+    const bound = deps.isDocBound()
+    if (!deps.isEnabled() || (!bound && deps.boundRootGraphId() === null))
+      return
+    const graph = bound ? deps.getGraph() : null
+    for (const entry of held) {
+      if (graph) retryHeldWrite(graph, entry)
+      else waitOrGiveUp(entry)
+    }
+  }
+
+  function waitOrGiveUp(entry: HeldPromotedWrite): void {
+    if (!heldTooLong(entry)) holdPromotedWrite(entry)
+    else
+      refuseWidgetWrite(entry.rootGraphId, entry.event, {
+        reason: 'doc_not_synced'
+      })
+  }
+
+  function heldTooLong(entry: HeldPromotedWrite): boolean {
+    return (
+      performance.now() - entry.heldSince >= PROMOTED_WRITE_CATCH_UP_DEADLINE_MS
+    )
+  }
+
+  function retryHeldWrite(graph: LGraph, entry: HeldPromotedWrite): void {
+    if (canvasReplaced(graph, entry.event)) return
+    if ((deps.boundRootGraphId() ?? graph.id) !== entry.rootGraphId) {
+      refuseWidgetWrite(entry.rootGraphId, entry.event, {
+        reason: 'workflow_changed'
+      })
+      return
+    }
+    routeSetWidget(entry.event, entry)
   }
 
   function reportRefusal(
@@ -564,6 +675,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
             widget: event.name,
             liveNames: refusal.liveNames
           },
+          reportedRefusals
+        )
+        return
+      case 'workflow_changed':
+        reportOnce(
+          `promoted_workflow_changed:${rootGraphId}:${host}`,
+          `Subgraph host ${host} was edited while the bound document caught up, and the bound workflow changed before it did; refusing to mint a promoted write`,
+          'agent_crdt_promoted_widget_workflow_changed',
+          { nodeId: event.nodeId, widget: event.name },
           reportedRefusals
         )
         return
@@ -713,7 +833,11 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
 
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
-    if (!deps.isEnabled() || !deps.isDocBound()) return
+    if (!deps.isEnabled() || !deps.isDocBound()) {
+      if (event.type === 'set_widget')
+        heldPromotedWrites.delete(heldWriteKey(event))
+      return
+    }
     mintIntent(event)
   }
 
@@ -735,7 +859,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         mintClear(event)
         return
       case 'set_widget':
-        mintSetWidget(event)
+        routeSetWidget(event, null)
         return
       case 'set_node_field':
         mintSetNodeField(event)
@@ -760,6 +884,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       detached = true
       pending = []
       pendingAdds.clear()
+      heldPromotedWrites.clear()
+      if (heldRetryTimer !== null) clearTimeout(heldRetryTimer)
+      heldRetryTimer = null
       detachIntents()
       unregisterDocBoundProbe()
     }

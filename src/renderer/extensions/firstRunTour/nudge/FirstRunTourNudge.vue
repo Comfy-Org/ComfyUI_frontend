@@ -104,7 +104,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-import { useFirstRunTourController } from '../tour/useFirstRunTourController'
+import { useFirstRunTourController } from '@/renderer/extensions/firstRunTour/tour/useFirstRunTourController'
 
 const NUDGE_IMAGE = '/assets/images/og-image.png'
 
