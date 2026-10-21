@@ -9,7 +9,7 @@ const scalarSchema = z
 const targets = z
   .array(z.object({ nodeId: name, inputName: name }).strict())
   .min(1)
-const bindingSchema = z.discriminatedUnion('encoding', [
+export const bindingSchema = z.discriminatedUnion('encoding', [
   z.object({ encoding: z.literal('scalar'), targets }).strict(),
   z
     .object({

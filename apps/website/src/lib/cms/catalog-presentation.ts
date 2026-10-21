@@ -11,6 +11,7 @@ import {
   validWorkflowDownloadURL,
   validAuthorAvatarURL
 } from '@/config/workflow-catalog-details'
+import { bindingSchema } from '@/config/workshop-workflow-catalog-schema'
 
 export function catalogLanguageFallback(
   record: ContentCatalogRecord,
@@ -80,12 +81,14 @@ function displayText(d: Document, local: Document, key: string, fallback = '') {
 
 // A media input bound as a cloud asset uploads that binding's media kind.
 function uploadKind(d: Document, name: string, hints: Document) {
-  const binding = objectPresentation(objectPresentation(d.inputBindings)[name])
+  const binding = bindingSchema.safeParse(
+    objectPresentation(d.inputBindings)[name]
+  )
   return hints.control === 'media' &&
     !('urlUpload' in hints) &&
-    binding.encoding === 'cloud-asset' &&
-    typeof binding.mediaKind === 'string'
-    ? { urlUpload: binding.mediaKind }
+    binding.success &&
+    binding.data.encoding === 'cloud-asset'
+    ? { urlUpload: binding.data.mediaKind }
     : {}
 }
 
