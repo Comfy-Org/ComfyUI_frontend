@@ -23,7 +23,7 @@ function cutAtWord(text: string, maxLength: number) {
   return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.]+$/, '')}…`
 }
 
-function cleanSummary(summary: string | undefined) {
+export function cleanSummary(summary: string | undefined) {
   const text = summary?.replace(/`([^`]*)`/g, '$1').trim()
   return text ? text.replace(/(?<![.!?。！？])$/u, '.') : undefined
 }

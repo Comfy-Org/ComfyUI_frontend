@@ -205,6 +205,16 @@ describe('catalog workflow page structured data and meta', () => {
     expect(graphNode(head, 'Person')).toBeUndefined()
   })
 
+  it('cleans the workflow summary in the JSON-LD as in the meta description', async () => {
+    const head = await workflowHead({
+      ...nativeWorkflow,
+      description: 'Relights a photo with `Flux Kontext`'
+    })
+    expect(graphNode(head, 'SoftwareSourceCode')).toMatchObject({
+      description: 'Relights a photo with Flux Kontext.'
+    })
+  })
+
   it('cuts a long workflow summary at a word to 160 characters', async () => {
     const head = await workflowHead({
       ...nativeWorkflow,

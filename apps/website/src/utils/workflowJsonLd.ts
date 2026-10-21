@@ -1,5 +1,6 @@
 import { getRoutes } from '@/config/routes'
 import { t } from '@/i18n/translations'
+import { cleanSummary } from '@/lib/workshop/model-meta-description'
 import type { Crumb, JsonLdNode } from './jsonLd'
 import { jsonLdId, organizationId } from './jsonLd'
 
@@ -49,7 +50,7 @@ export function workflowPageJsonLd({
     '@id': id,
     name: model.name,
     url,
-    description: model.summary,
+    description: cleanSummary(model.summary),
     image: model.thumbnail?.kind === 'image' ? model.thumbnail.url : undefined,
     genre: useCaseLabel,
     runtimePlatform: 'ComfyUI',
