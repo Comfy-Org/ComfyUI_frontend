@@ -378,16 +378,17 @@ async function sendWithFundsRecheck(
 ): Promise<boolean> {
   if (billingType.value !== 'workspace' || agentHasFunds.value !== false)
     return send(() => undefined)
-  const generation = ++fundsRecheckGeneration
+  let generation: number | undefined
   const settle = () => {
     if (generation === fundsRecheckGeneration) fundsRecheckPending.value = false
   }
-  fundsRecheckPending.value = true
   let admitted = false
   let sent: boolean
   try {
     sent = await send(() => {
       admitted = true
+      generation = ++fundsRecheckGeneration
+      fundsRecheckPending.value = true
     })
   } finally {
     if (!admitted) settle()
