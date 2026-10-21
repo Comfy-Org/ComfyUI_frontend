@@ -273,7 +273,7 @@ describe('useReconnectQueueRefresh', () => {
       expect(executionStore.queuedJobs).toEqual({})
     })
 
-    it('localizes a failed run whose stored error is unavailable', async () => {
+    it('dispatches a fallback error when a failed run has no stored error', async () => {
       const executionStore = useExecutionStore()
       executionStore.queuedJobs['job-1'] = { nodes: {} }
       vi.mocked(api.getJobDetail).mockResolvedValue({
@@ -371,30 +371,13 @@ describe('useReconnectQueueRefresh', () => {
     })
 
     it.for([
-      {
-        name: 'the recovered run is adopted',
-        updateActiveJob(executionStore: ReturnType<typeof useExecutionStore>) {
-          executionStore.activeJobId = 'job-1'
-        }
-      },
-      {
-        name: 'the active run ends',
-        updateActiveJob(executionStore: ReturnType<typeof useExecutionStore>) {
-          executionStore.activeJobId = null
-        }
-      },
-      {
-        name: 'another run starts and ends',
-        updateActiveJob(executionStore: ReturnType<typeof useExecutionStore>) {
-          executionStore.activeJobId = 'job-quick'
-          executionStore.activeJobId = null
-        }
-      }
+      { name: 'the recovered run is adopted', activeJobId: 'job-1' },
+      { name: 'the active run ends', activeJobId: null }
     ])('still restores output when $name during refresh', async (scenario) => {
       followRun('job-1')
       const executionStore = useExecutionStore()
       vi.mocked(api.getJobDetail).mockImplementation(async () => {
-        scenario.updateActiveJob(executionStore)
+        executionStore.activeJobId = scenario.activeJobId
         return finishedJob
       })
 

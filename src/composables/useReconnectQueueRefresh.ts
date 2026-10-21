@@ -210,14 +210,14 @@ export function useReconnectQueueRefresh() {
     dispatchError(jobId, outcome.timestamp, error)
   }
 
+  function isFollowed(jobId: JobId) {
+    return (
+      jobId in executionStore.queuedJobs || executionStore.activeJobId === jobId
+    )
+  }
+
   function replayOutcome(jobId: JobId, outcome: JobOutcome) {
-    if (
-      outcome.state !== 'ended' ||
-      (!(jobId in executionStore.queuedJobs) &&
-        executionStore.activeJobId !== jobId)
-    ) {
-      return
-    }
+    if (outcome.state !== 'ended' || !isFollowed(jobId)) return
     if (outcome.outputs) replayOutputs(jobId, outcome.outputs)
     dispatchTerminal(jobId, outcome)
   }
@@ -276,12 +276,7 @@ export function useReconnectQueueRefresh() {
     }
     executionStore.forgetFinishedJobs(unreadable)
     for (const jobId of unreadableRefreshes.keys()) {
-      if (
-        !(jobId in executionStore.queuedJobs) &&
-        executionStore.activeJobId !== jobId
-      ) {
-        unreadableRefreshes.delete(jobId)
-      }
+      if (!isFollowed(jobId)) unreadableRefreshes.delete(jobId)
     }
   }
 
