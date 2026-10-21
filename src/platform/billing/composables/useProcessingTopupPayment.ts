@@ -2,6 +2,7 @@ import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
 import { shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { ProcessingTopupPayment } from '@/platform/billing/processingTopupPayment'
@@ -47,19 +48,26 @@ function reportCheckoutReadFailure(cause: unknown) {
   })
 }
 
-export function useProcessingTopupPayment(enabled: MaybeRefOrGetter<boolean>) {
+export function useProcessingTopupPayment(
+  shown: MaybeRefOrGetter<boolean> = true
+) {
+  const { flags } = useFeatureFlags()
   const payment = shallowRef<ProcessingTopupPayment | null>(null)
   let generation = 0
 
+  function reading() {
+    return toValue(shown) && flags.unifiedBillingSettingsEnabled
+  }
+
   async function load() {
     const current = ++generation
-    if (!toValue(enabled)) {
+    if (!reading()) {
       payment.value = null
       return
     }
 
     const outcome = await readProcessingTopupPayment()
-    if (current !== generation || !toValue(enabled)) return
+    if (current !== generation || !reading()) return
     if (!outcome.ok) {
       reportCheckoutReadFailure(outcome.cause)
       payment.value = null
@@ -71,11 +79,7 @@ export function useProcessingTopupPayment(enabled: MaybeRefOrGetter<boolean>) {
     payment.value = outcome.read.payment
   }
 
-  watch(
-    () => toValue(enabled),
-    () => void load(),
-    { immediate: true }
-  )
+  watch(reading, () => void load(), { immediate: true })
 
   return { payment }
 }

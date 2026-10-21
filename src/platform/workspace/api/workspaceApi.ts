@@ -111,7 +111,6 @@ export type { Plan }
 export type { BillingPlansResponse }
 export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
-export type { HostedTopupCheckout }
 
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 export interface SubscribeOptions {

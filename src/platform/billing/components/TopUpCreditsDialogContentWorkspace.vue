@@ -450,7 +450,6 @@ import FormNumberField from '@/components/common/FormNumberField.vue'
 import { watchForTopupBalanceUpdate } from '@/platform/billing/composables/topupBalanceRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
 import { isCloud } from '@/platform/distribution/types'
@@ -496,10 +495,7 @@ const { isInsufficientCredits = false, source } = defineProps<{
 }>()
 
 const { locale, n, t } = useI18n()
-const { flags } = useFeatureFlags()
-const { payment: processingPayment } = useProcessingTopupPayment(
-  () => flags.unifiedBillingSettingsEnabled
-)
+const { payment: processingPayment } = useProcessingTopupPayment()
 const processingNoticeTitle = computed(() => {
   const cents = processingPayment.value?.paymentAmountCents
   if (typeof cents !== 'number')
