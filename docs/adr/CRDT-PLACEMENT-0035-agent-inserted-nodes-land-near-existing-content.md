@@ -88,10 +88,14 @@ remote actor and nothing mints it back.
 Eligibility is "created by this pass". A node the frame only updated, or
 recreated because its document `type` changed, is not moved. Applying the
 changes collected while a tab was inactive (`applyCollected`) uses the same
-`#placeBatch` for the nodes it creates: a client that returns to a tab and
-finds nodes inserted while it was away places them exactly as it would have
-had it received them live. A fresh client replaying the whole document onto an
-empty canvas has no existing content and receives no offset.
+`#placeBatch` for the nodes it creates, with the lost rule only: the collected
+changes do not record which writer made them, so the collision rule (see
+"Trigger"), which needs a live agent-turn writer, does not run there. A client
+that returns to a tab and finds far, offscreen nodes inserted while it was away
+places them exactly as it would have had it received them live; an insert that
+landed on existing nodes while the tab was inactive keeps its overlap (see
+"Negative"). A fresh client replaying the whole document onto an empty canvas
+has no existing content and receives no offset.
 
 ### Batch granularity
 
@@ -160,10 +164,13 @@ them, and a single far offscreen node is exactly as lost as forty.
 One translation for the whole batch: move the batch's bounding box so its
 left edge sits at the existing bounding box's right edge plus
 `PLACEMENT_GUTTER_PX` (80), top edges aligned. The batch's internal relative
-layout is preserved exactly — never per-node moves, no collision search, no
-grid snapping. Both constants are conservative product heuristics, chosen so
-that only unambiguously lost content moves; they are named constants in
-`batchPlacement.ts` and trivially tunable.
+layout is preserved exactly — never per-node moves, no collision search (the
+batch moves by one fixed offset rather than hunting for a free spot), no grid
+snapping. Both constants are conservative product heuristics. The gap is
+chosen so that the lost rule moves only unambiguously lost content; the
+collision rule moves content that is not lost, only buried under existing
+nodes, by the same offset. They are named constants in `batchPlacement.ts` and
+trivially tunable.
 
 ### What is deliberately not done
 
@@ -222,10 +229,10 @@ change, and no protocol change. The doc keeps the server's coordinates.
   moment, so a client that receives an insert live and one that receives it on
   tab return can offset the same batch differently if their canvases differed.
   Accepted: post-insert geometry is already local-first.
-- The gap and gutter values are heuristics. Chosen conservative so only
-  clearly-lost content moves; a legitimate placement between 0 and 600 px of
-  gap is never touched, and anything visible on screen is touched only when
-  it lands on an existing node.
+- The gap and gutter values are heuristics. The gap is chosen conservative so
+  the lost rule moves only clearly-lost content; a legitimate placement
+  between 0 and 600 px of gap is never touched, and anything visible on screen
+  is touched only when a live agent turn lands it on an existing node.
 - An agent that deliberately places a new node on top of an existing one, for
   example to stand in for a node it deletes in a later frame, sees the new
   node moved beside the graph instead. A delete and add in the same frame is
