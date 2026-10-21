@@ -102,7 +102,7 @@ describe('FeaturedBanner', () => {
     )
   })
 
-  it('shows the docs button only when the provider has a docs section', async () => {
+  it('offers an API link even when the provider has no docs section', async () => {
     const user = userEvent.setup()
     const undocumented: WorkshopModel = {
       ...kling,
@@ -117,13 +117,16 @@ describe('FeaturedBanner', () => {
     })
 
     const docs = screen.getByTestId('featured-docs-link')
-    expect(docs.getAttribute('href')).toBe(
-      'https://docs.comfy.org/development/comfy-router/models#black-forest-labs'
-    )
-    expect(docs.getAttribute('target')).toBe('_blank')
+    expect(docs.getAttribute('href')).toBe('/models/flux/#api')
+    expect(docs.getAttribute('target')).toBeNull()
+    expect(docs).toHaveTextContent('Use API')
+    expect(docs).toHaveTextContent('⌘')
 
     await user.click(screen.getByRole('button', { name: 'Magnific' }))
-    expect(screen.queryByTestId('featured-docs-link')).toBeNull()
+    expect(screen.getByTestId('featured-docs-link')).toHaveAttribute(
+      'href',
+      '/models/magnific/#api'
+    )
   })
 
   it('stays out of the way when the catalogue has nothing to feature', () => {

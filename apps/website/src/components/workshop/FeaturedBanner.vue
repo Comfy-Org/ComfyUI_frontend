@@ -224,6 +224,7 @@ const fill = computed(() =>
             {{
               t(active.apiHref ? 'workshop.hub.useApi' : 'workshop.hub.docs')
             }}
+            <span v-if="active.apiHref" aria-hidden="true">⌘</span>
           </Button>
         </div>
       </div>

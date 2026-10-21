@@ -62,7 +62,10 @@ const thumbnailLabel = computed(() =>
 )
 
 const id = useId()
-const showsTask = computed(() => !workflow.value || !underHeading)
+const hasModelActions = computed(() => Boolean(model.routerId && model.href))
+const showsTask = computed(
+  () => !hasModelActions.value && (!workflow.value || !underHeading)
+)
 // The tags stay visible inside the link but out of its name.
 const labelledBy = computed(() =>
   [
@@ -81,10 +84,12 @@ const pillClass =
 </script>
 
 <template>
-  <div class="flex h-full flex-col gap-2">
+  <div
+    class="group flex h-full flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 hover:bg-hub-surface-hover"
+  >
     <a
       :href="model.href"
-      class="group flex flex-1 cursor-pointer flex-col gap-3 overflow-hidden rounded-3xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 outline-none hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+      class="flex flex-1 cursor-pointer flex-col gap-3 rounded-2xl outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
       :aria-labelledby="labelledBy"
       data-testid="workshop-model-card"
       :data-kind="
@@ -165,7 +170,7 @@ const pillClass =
         </div>
       </div>
     </a>
-    <div v-if="model.routerId && model.href" class="flex flex-wrap gap-2 px-2">
+    <div v-if="hasModelActions" class="flex flex-wrap gap-2 px-3">
       <a
         :href="model.href"
         class="inline-flex items-center rounded-full border border-transparency-white-t20 px-3 py-2 text-xs text-content-bright hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
@@ -174,7 +179,8 @@ const pillClass =
       <a
         :href="`${model.href}#api`"
         class="inline-flex items-center rounded-full border border-transparency-white-t20 px-3 py-2 text-xs text-primary-comfy-yellow hover:bg-hub-surface-hover focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-        >{{ t('workshop.hub.useApi') }}</a
+        >{{ t('workshop.hub.useApi')
+        }}<span aria-hidden="true" class="ml-1.5">⌘</span></a
       >
     </div>
   </div>

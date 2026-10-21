@@ -38,7 +38,12 @@ describe('WorkshopModelCard', () => {
   })
 
   it('offers separate playground and API links without nesting controls', () => {
-    render(WorkshopModelCard, { props: { model: base } })
+    render(WorkshopModelCard, {
+      props: { model: { ...base, capabilities: ['upscale'] } }
+    })
+    expect(screen.queryByTestId('model-card-task')).toBeNull()
+    expect(screen.queryByText('upscale')).toBeNull()
+    expect(screen.getByRole('link', { name: 'Use API' })).toHaveTextContent('⌘')
     expect(screen.getByRole('link', { name: 'Try model' })).toHaveAttribute(
       'href',
       base.href
@@ -60,7 +65,7 @@ describe('WorkshopModelCard', () => {
     expect(screen.queryByRole('link', { name: 'Try model' })).toBeNull()
   })
 
-  it('links the name, provider badge and task to the model page', () => {
+  it('links the name and provider badge to the model page', () => {
     render(WorkshopModelCard, { props: { model: base } })
     const link = screen.getByTestId('workshop-model-card')
     expect(link.getAttribute('href')).toBe('/models/flux/')
@@ -68,9 +73,7 @@ describe('WorkshopModelCard', () => {
     expect(screen.getByTestId('model-card-provider')).toHaveTextContent(
       'Black Forest Labs'
     )
-    expect(screen.getByTestId('model-card-task').textContent).toBe(
-      'Image to image'
-    )
+    expect(screen.queryByTestId('model-card-task')).toBeNull()
     expect(screen.queryByText(/credits|\$/)).toBeNull()
     expect(screen.queryByTestId('model-incomplete-badge')).toBeNull()
     expect(screen.getByTestId('model-media-placeholder')).toBeTruthy()
@@ -92,7 +95,7 @@ describe('WorkshopModelCard', () => {
       }
     })
     expect(screen.getByTestId('workshop-model-card')).toHaveAccessibleName(
-      'Black Forest Labs Flux Image to image'
+      'Black Forest Labs Flux'
     )
     expect(screen.queryByRole('img', { name: 'Flux' })).toBeNull()
   })
@@ -108,7 +111,11 @@ describe('WorkshopModelCard', () => {
     })
     render(WorkshopModelCard, {
       props: {
-        model: { ...base, capabilities: ['upscale', 'inpaint', 'controlnet'] }
+        model: {
+          ...base,
+          routerId: undefined,
+          capabilities: ['upscale', 'inpaint', 'controlnet']
+        }
       }
     })
     await nextTick()
@@ -123,7 +130,7 @@ describe('WorkshopModelCard', () => {
   it('names a hub card with its kind badge after the provider', () => {
     render(WorkshopModelCard, { props: { model: base, providerBadge: true } })
     expect(screen.getByTestId('workshop-model-card')).toHaveAccessibleName(
-      'Black Forest Labs Models Flux Image to image'
+      'Black Forest Labs Models Flux'
     )
   })
 
@@ -151,7 +158,13 @@ describe('WorkshopModelCard', () => {
   it('falls back to the provider initial and the modality when nothing matches', () => {
     render(WorkshopModelCard, {
       props: {
-        model: { ...base, name: 'Mystery', provider: 'Nobody', task: undefined }
+        model: {
+          ...base,
+          routerId: undefined,
+          name: 'Mystery',
+          provider: 'Nobody',
+          task: undefined
+        }
       }
     })
     expect(screen.getByText('N')).toBeTruthy()
