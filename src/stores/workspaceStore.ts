@@ -1,4 +1,4 @@
-import { useMagicKeys } from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
@@ -39,7 +39,23 @@ const legacySeverityKinds = new Map<
 
 function workspaceStoreSetup() {
   const spinner = ref(false)
-  const { shift: shiftDown } = useMagicKeys()
+  const shiftDown = ref(false)
+  function syncShiftDown(event: { shiftKey: boolean }) {
+    shiftDown.value = event.shiftKey
+  }
+  function clearShiftDown() {
+    shiftDown.value = false
+  }
+  useEventListener(window, ['keydown', 'keyup'], syncShiftDown, {
+    passive: true
+  })
+  useEventListener(
+    window,
+    ['pointerdown', 'pointermove', 'pointerup'],
+    syncShiftDown,
+    { capture: true, passive: true }
+  )
+  useEventListener(window, 'blur', clearShiftDown, { passive: true })
   /**
    * Whether the workspace is in focus mode.
    * When in focus mode, only the graph editor is visible.
