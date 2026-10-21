@@ -34,38 +34,19 @@ function safeCloneExtensionValue(value: unknown): JsonValue | undefined {
   return isJsonValue(clonedValue) ? clonedValue : undefined
 }
 
-function isTypedArrayProxy(value: object): boolean {
-  try {
-    const prototype: object | null = Object.getPrototypeOf(value)
-    if (prototype === null) return false
-    const constructor: unknown = Reflect.get(prototype, 'constructor')
-    if (
-      (typeof constructor !== 'object' || constructor === null) &&
-      typeof constructor !== 'function'
-    )
-      return false
-    return typeof Reflect.get(constructor, 'BYTES_PER_ELEMENT') === 'number'
-  } catch {
-    return false
-  }
-}
-
-function readArrayLikeLength(value: object, indexedKeyCount: number): unknown {
-  try {
-    return Reflect.get(value, 'length')
-  } catch {
-    return isTypedArrayProxy(value) ? indexedKeyCount : undefined
-  }
-}
-
 function readIndexedArray(value: unknown): unknown[] | undefined {
-  if (value === null || typeof value !== 'object' || Array.isArray(value))
+  if (
+    value === null ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    ArrayBuffer.isView(value)
+  )
     return
   try {
     const keys = Object.keys(value)
     if (keys.length === 0) return
     if (keys.some((key, index) => key !== `${index}`)) return
-    if (readArrayLikeLength(value, keys.length) !== keys.length) return
+    if (Reflect.get(value, 'length') !== keys.length) return
     return keys.map((key) => Reflect.get(value, key))
   } catch {
     return
@@ -108,10 +89,9 @@ function isStructuredCloneable(value: unknown): boolean {
 function writeDetachedCanonicalValue(
   canonical: object,
   key: string,
-  value: unknown,
-  before: unknown
+  value: unknown
 ): void {
-  if (value === before && isStructuredCloneable(value)) return
+  if (isStructuredCloneable(value)) return
 
   const detached = detachCanonicalValue(value)
   if (detached.ok) {
@@ -119,8 +99,9 @@ function writeDetachedCanonicalValue(
     return
   }
 
-  Reflect.deleteProperty(canonical, key)
-  console.warn(`LiteGraph: ignoring non-serializable canonical field "${key}"`)
+  console.warn(
+    `LiteGraph: could not detach canonical field "${key}"; preserving its value`
+  )
 }
 
 function readClonedEntry(source: object, key: string): JsonValue | undefined {
@@ -323,18 +304,10 @@ export const runExtensionSerializeHook = <T extends object>(
   })
 
   if (hook) {
-    const before = new Map(
-      [...canonicalFields].map((key) => [key, Reflect.get(view, key)])
-    )
     hook(view)
     for (const key of canonicalFields) {
       if (Object.hasOwn(view, key))
-        writeDetachedCanonicalValue(
-          canonical,
-          key,
-          Reflect.get(view, key),
-          before.get(key)
-        )
+        writeDetachedCanonicalValue(canonical, key, Reflect.get(view, key))
     }
   }
 

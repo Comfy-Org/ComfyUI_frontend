@@ -247,7 +247,7 @@ describe('LGraphNode extension payload fallbacks', () => {
   })
 })
 
-describe('serialize output stays structured-cloneable when hooks hand back live state', () => {
+describe('serialize output detaches live state that hooks hand back', () => {
   function nodeInGraph() {
     const graph = new LGraph()
     const node = new LGraphNode('TestNode')
@@ -375,20 +375,19 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
     expect(() => structuredClone(serialised)).not.toThrow()
   })
 
-  it('serializes a proxy over a typed array as an array', () => {
+  it('keeps the saved shape of a typed array detached alongside a proxy', () => {
     const { node } = nodeInGraph()
-    const position = new Proxy(new Float64Array([10, 20]), {})
-    node.onSerialize = (o) => {
-      Reflect.set(o, 'pos', position)
+    node.onSerialize = function (o) {
+      o.properties = { live: this.properties, typed: new Uint8Array([2, 3]) }
     }
 
     const serialised = node.serialize()
 
-    expect(serialised.pos).toStrictEqual([10, 20])
+    expect(serialised.properties?.typed).toStrictEqual({ 0: 2, 1: 3 })
     expect(() => structuredClone(serialised)).not.toThrow()
   })
 
-  it('omits a canonical field when it cannot be safely detached', () => {
+  it('keeps a canonical field that cannot be detached so saving fails', () => {
     const { node } = nodeInGraph()
     const cyclic = reactive<Record<string, unknown>>({})
     cyclic.self = cyclic
@@ -399,12 +398,12 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
 
     const serialised = node.serialize()
 
-    expect(serialised).not.toHaveProperty('properties')
-    expect(() => structuredClone(serialised)).not.toThrow()
+    expect(serialised.properties).toBe(cyclic)
+    expect(() => JSON.stringify(serialised)).toThrow()
     expect(warn).toHaveBeenCalledOnce()
   })
 
-  it('contains a throwing in-place canonical mutation', () => {
+  it('keeps a canonical field whose in-place mutation throws so saving fails', () => {
     const { node } = nodeInGraph()
     node.onSerialize = (o) => {
       Object.defineProperty(o.properties!, 'broken', {
@@ -418,12 +417,12 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
 
     const serialised = node.serialize()
 
-    expect(serialised).not.toHaveProperty('properties')
-    expect(() => structuredClone(serialised)).not.toThrow()
+    expect(serialised.properties).toHaveProperty('elapsed', '00:01:000')
+    expect(() => JSON.stringify(serialised)).toThrow('accessor failed')
     expect(warn).toHaveBeenCalledOnce()
   })
 
-  it('preserves JSON behavior for hook-provided class instances', () => {
+  it('keeps cloneable values a hook replaced intact', () => {
     const { node } = nodeInGraph()
     class PersistedValue {
       raw = 'ignored'
@@ -433,11 +432,14 @@ describe('serialize output stays structured-cloneable when hooks hand back live 
       }
     }
     node.onSerialize = (o) => {
-      o.properties = { custom: new PersistedValue() }
+      o.properties = { custom: new PersistedValue(), when: new Date(0) }
     }
 
-    expect(node.serialize().properties).toEqual({
-      custom: { saved: 'value' }
+    const serialised = node.serialize()
+
+    expect(serialised.properties?.when).toStrictEqual(new Date(0))
+    expect(JSON.parse(JSON.stringify(serialised)).properties.custom).toEqual({
+      saved: 'value'
     })
   })
 
