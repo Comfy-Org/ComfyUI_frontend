@@ -846,6 +846,8 @@ export class LiveGraphApplier {
         (output): ISerialisableNodeOutput => ({ ...output })
       )
     }
+    if (docNode.widgetRecord)
+      info.widgets_values = docNode.widgetRecord as unknown as WidgetValue[]
     detachSerialisedLinks(info)
     node.pos = [info.pos[0], info.pos[1]]
     graph.add(node)
@@ -881,7 +883,7 @@ export class LiveGraphApplier {
           widgets_values:
             docNode.widgetRecord === undefined
               ? positionalWidgetValues(node, docNode.widgets, deferred)
-              : (docNode.widgetRecord as unknown as WidgetValue[])
+              : info.widgets_values
         })
         const mounted = mountedWidgetValues(
           node,

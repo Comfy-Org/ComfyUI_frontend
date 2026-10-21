@@ -1175,6 +1175,23 @@ describe('LiveGraphApplier', () => {
     expect(node?.widgets?.map((widget) => widget.value)).toEqual([12, 22])
   })
 
+  it("keeps an unregistered node's record-form widget values when it is saved", () => {
+    const { graph, doc, applyCollected } = setup({
+      nodes: [{ id: 1, type: 'NotInstalled', pos: [0, 0], size: [210, 100] }],
+      links: []
+    })
+    const record = { video: 'clip.mp4', frame_load_cap: 8 }
+    const node = nodesMap(doc).get('1')
+    assert(node instanceof Y.Map)
+    node.set(OPAQUE_WIDGETS_KEY, record)
+
+    applyCollected()
+
+    const placeholder = graph.getNodeById(toNodeId(1))
+    expect(placeholder?.has_errors).toBe(true)
+    expect(placeholder?.serialize().widgets_values).toEqual(record)
+  })
+
   it.for([
     { label: 'undersized', size: [10, 10] },
     { label: 'absent', size: undefined }
