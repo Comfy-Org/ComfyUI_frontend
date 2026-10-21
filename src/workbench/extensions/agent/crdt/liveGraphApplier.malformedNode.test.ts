@@ -92,7 +92,7 @@ describe('LiveGraphApplier malformed node report', () => {
     [{ name: 'image', type: undefined }, 'undefined'],
     [{ name: 'image', type: null }, 'null'],
     [{ name: 'image', type: true }, 'boolean'],
-    [{ name: 'image', type: [] }, 'array:0'],
+    [{ name: 'image', type: [1] }, 'array:1'],
     [{ name: 'image', type: {} }, 'object:0'],
     [{ name: 'image', type: { name: 'IMAGE' } }, 'object:1']
   ])(
@@ -218,12 +218,12 @@ describe('LiveGraphApplier malformed node report', () => {
     }
 
     reslot({ name: 'image', type: 'IMAGE', link: null }, 'repaired')
-    reslot({ name: 'image', type: [], link: null }, 'broken again')
+    reslot({ name: 'image', type: [1], link: null }, 'broken again')
 
     const calls = vi.mocked(reportError).mock.calls
     expect(calls).toHaveLength(2)
     expect(calls[1]?.[1]).toMatchObject({
-      context: { valueShapes: 'inputs.0.type invalid_union array:0' }
+      context: { valueShapes: 'inputs.0.type invalid_union array:1' }
     })
   })
 })

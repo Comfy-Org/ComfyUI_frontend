@@ -5,7 +5,7 @@ import {
   readStamps,
   WIDGET_FORM_KEY
 } from '@comfyorg/comfy-multi-player'
-import { isEqual } from 'es-toolkit'
+import { isEqual, isPlainObject } from 'es-toolkit'
 import * as Y from 'yjs'
 import { z } from 'zod'
 
@@ -138,6 +138,7 @@ interface DocNode {
   type: string
   serialised: ISerialisedNode
   widgets: Record<string, unknown> | unknown[] | undefined
+  widgetRecord?: Record<string, unknown>
 }
 
 interface DocLink {
@@ -169,7 +170,10 @@ function syncedFlags(flags: INodeFlags | undefined): INodeFlags {
 }
 
 const zDocSlot = z
-  .object({ name: z.string(), type: z.union([z.string(), z.number()]) })
+  .object({
+    name: z.string(),
+    type: z.union([z.string(), z.array(z.string()), z.number()])
+  })
   .passthrough()
 const zNodeProperty = z.union([
   z.string(),
@@ -282,12 +286,14 @@ function readDocNode(
 
   const fields: Record<string, unknown> = { id }
   let widgets: DocNode['widgets']
+  let widgetRecord: DocNode['widgetRecord']
   source.forEach((value, key) => {
     if (key === 'widgets' && value instanceof Y.Map) {
       widgets = value.toJSON()
     } else if (key === OPAQUE_WIDGETS_KEY) {
       const opaque = plain(value)
       if (Array.isArray(opaque)) widgets = opaque
+      else if (isPlainObject(opaque)) widgetRecord = opaque
     } else if (key !== 'id' && key !== WIDGET_FORM_KEY) {
       fields[key] = plain(value)
     }
@@ -324,7 +330,7 @@ function readDocNode(
     order,
     mode
   }
-  return { id, type: serialised.type, serialised, widgets }
+  return { id, type: serialised.type, serialised, widgets, widgetRecord }
 }
 
 function readDocLink(doc: Y.Doc, key: string): DocLink | null {
@@ -865,11 +871,10 @@ export class LiveGraphApplier {
         const deferred = deferredRowCounts(node, constructed, docNode.widgets)
         node.configure({
           ...info,
-          widgets_values: positionalWidgetValues(
-            node,
-            docNode.widgets,
-            deferred
-          )
+          widgets_values:
+            docNode.widgetRecord === undefined
+              ? positionalWidgetValues(node, docNode.widgets, deferred)
+              : (docNode.widgetRecord as unknown as WidgetValue[])
         })
         const mounted = mountedWidgetValues(
           node,

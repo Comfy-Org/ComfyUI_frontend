@@ -246,12 +246,7 @@ export class HostDoc {
     )
   }
 
-  /**
-   * Mirrors the doc host's `quarantineDictWidgets` step on mint: a node saved
-   * with a name-keyed `widgets_values` record and no declared form has its
-   * named widget map replaced by the same values as one plain object under
-   * `OPAQUE_WIDGETS_KEY`. Call it before the initial sync.
-   */
+  /** Test-only: moves named widget values under `OPAQUE_WIDGETS_KEY`. Call before `initialSync`. */
   quarantineRecordWidgets(nodeId: number): void {
     const node = nodesMap(this.doc).get(String(nodeId))
     const widgets = node?.get('widgets')
