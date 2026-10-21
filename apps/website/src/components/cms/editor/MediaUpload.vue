@@ -16,6 +16,9 @@ const {
   mediaRole,
   jsonOnly = false,
   fileLabel,
+  accept,
+  maxBytes,
+  hint,
   locale = 'en'
 } = defineProps<{
   reference?: Document
@@ -25,6 +28,12 @@ const {
   mediaRole: string
   jsonOnly?: boolean
   fileLabel?: string
+  /** Narrower allowed MIME types, e.g. the WebP-only card still. */
+  accept?: string[]
+  /** Narrower byte limit checked before upload. */
+  maxBytes?: number
+  /** Replaces the generic media help text. */
+  hint?: string
   locale?: Locale
 }>()
 const emit = defineEmits<{
@@ -51,8 +60,12 @@ function choose(event: Event) {
 }
 function uploadName(file: File) {
   const mime = file.type
-  if (file.size > (mediaRole.startsWith('workflow-api-') ? 1 << 20 : 64 << 20))
+  if (
+    file.size >
+    (maxBytes ?? (mediaRole.startsWith('workflow-api-') ? 1 << 20 : 64 << 20))
+  )
     return undefined
+  if (accept && !accept.includes(mime)) return undefined
   if (
     jsonOnly &&
     (!file.name.toLowerCase().endsWith('.json') ||
@@ -195,7 +208,9 @@ function completeUpload(
         :accept="
           jsonOnly
             ? 'application/json,.json'
-            : 'image/png,image/jpeg,image/webp,video/mp4,video/webm,application/json,.json,.mp4,.webm'
+            : accept
+              ? accept.join(',')
+              : 'image/png,image/jpeg,image/webp,video/mp4,video/webm,application/json,.json,.mp4,.webm'
         "
         :disabled="!entityUID || state === 'uploading'"
         class="w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-admin-raised file:px-3 file:py-2 file:text-admin-fg"
@@ -231,6 +246,7 @@ function completeUpload(
     </div>
     <p class="text-xs text-admin-muted">
       {{
+        hint ??
         t(
           jsonOnly
             ? mediaRole.startsWith('workflow-api-')

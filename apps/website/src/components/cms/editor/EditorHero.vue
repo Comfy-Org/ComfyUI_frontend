@@ -49,5 +49,21 @@ function media(name: string, reference: Document | undefined) {
       @update="media('thumbnail', $event)"
       @busy="emit('busy', $event)"
     />
+    <h3 class="mt-3 text-sm">{{ t('cmsEditor.staticThumb') }}</h3>
+    <MediaUpload
+      :reference="
+        document.static_thumb ? objectValue(document.static_thumb) : undefined
+      "
+      :entity-u-i-d="uid"
+      :draft
+      :csrf
+      :locale
+      media-role="static_thumb"
+      :accept="['image/webp']"
+      :max-bytes="160 << 10"
+      :hint="t('cmsEditor.staticThumbHelp')"
+      @update="media('static_thumb', $event)"
+      @busy="emit('busy', $event)"
+    />
   </section>
 </template>

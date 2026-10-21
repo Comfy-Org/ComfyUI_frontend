@@ -6419,6 +6419,8 @@
     "visibleFrom": "Visible from (UTC)",
     "hero": "Hero media",
     "thumbnail": "Thumbnail",
+    "staticThumb": "Card still (static thumbnail)",
+    "staticThumbHelp": "WebP image only, at most 160 KiB and 960 px per side. Hub cards and publish rows show this still; use it instead of a video frame.",
     "inputs": "Inputs",
     "inputsHelp": "Presentation and parameter schema are saved together as a complete Draft version.",
     "parameterName": "Parameter name",

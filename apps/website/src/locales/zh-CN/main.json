@@ -4932,6 +4932,8 @@
     "visibleFrom": "可见时间（UTC）",
     "hero": "主媒体",
     "thumbnail": "缩略图",
+    "staticThumb": "卡片静态缩略图",
+    "staticThumbHelp": "仅限 WebP 图片，最大 160 KiB，每边不超过 960 像素。Hub 卡片和发布列表显示此静态图，而不是视频帧。",
     "inputs": "输入",
     "inputsHelp": "控件和参数架构将一起保存为完整的草稿版本。",
     "parameterName": "参数名",

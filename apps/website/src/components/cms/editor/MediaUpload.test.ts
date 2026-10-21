@@ -28,6 +28,30 @@ function setup() {
   })
 }
 describe('media editing', () => {
+  it('a WebP-only card still refuses other images before any request', async () => {
+    vi.mocked(editorRequest).mockClear()
+    render(MediaUpload, {
+      props: {
+        entityUID: uid,
+        draft: 7,
+        csrf: 'a'.repeat(64),
+        mediaRole: 'static_thumb',
+        accept: ['image/webp'],
+        maxBytes: 160 << 10,
+        hint: 'WebP only'
+      }
+    })
+    expect(screen.getByText('WebP only')).toBeVisible()
+    expect(
+      screen.getByLabelText('Choose image, video or workflow JSON')
+    ).toHaveAttribute('accept', 'image/webp')
+    await choose()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Upload as new media' })
+    )
+    expect(screen.getByRole('alert')).toBeVisible()
+    expect(editorRequest).not.toHaveBeenCalled()
+  })
   it('new uploads deliberately create a new logical UID instead of replacing the existing one', async () => {
     const result = setup()
     vi.mocked(editorRequest).mockResolvedValue({
