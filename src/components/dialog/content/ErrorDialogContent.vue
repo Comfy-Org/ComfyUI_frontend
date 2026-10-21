@@ -148,14 +148,13 @@ const resolvedErrors = computed(() =>
 )
 const title = computed(() => {
   const displayTitle =
-    resolvedErrors.value[0]?.title ||
-    error.nodeType ||
-    error.exceptionType ||
-    t('errorDialog.defaultTitle')
+    [resolvedErrors.value[0]?.title, error.nodeType, error.exceptionType].find(
+      (candidate) => candidate?.trim()
+    ) || t('errorDialog.defaultTitle')
 
   if (errorSources[0]?.kind !== 'execution') return displayTitle
 
-  const nodeTitle = error.nodeType || displayTitle
+  const nodeTitle = error.nodeType?.trim() ? error.nodeType : displayTitle
   return error.nodeId ? `${nodeTitle} (#${error.nodeId})` : nodeTitle
 })
 const message = computed(
