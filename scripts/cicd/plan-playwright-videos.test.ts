@@ -1,6 +1,8 @@
 import { spawnSync } from 'node:child_process'
 import {
+  mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -52,10 +54,11 @@ function fixture(chromiumCount: number, cloudCount = 0) {
 
   return {
     spec,
-    run() {
+    root,
+    run(env: Record<string, string> = {}) {
       return spawnSync('bash', [script, '--config', config, spec], {
         encoding: 'utf8',
-        env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: '' }
+        env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: '', ...env }
       })
     },
     [Symbol.dispose]() {
@@ -68,9 +71,7 @@ describe('Playwright video shard planning', () => {
   it.for([
     [0, 0],
     [1, 1],
-    [50, 1],
-    [51, 2],
-    [801, 16]
+    [801, 1]
   ] satisfies [number, number][])(
     'plans %i discovered tests into %i shards',
     ([count, shards]) => {
@@ -78,11 +79,12 @@ describe('Playwright video shard planning', () => {
       const result = files.run()
 
       expect(result).toMatchObject({ status: 0 })
-      expect(JSON.parse(result.stdout)).toEqual({
+      expect(JSON.parse(result.stdout).matrix).toEqual({
         include: Array.from({ length: shards }, (_, i) => ({
           project: 'chromium',
           shardIndex: i + 1,
-          shardTotal: shards
+          shardTotal: shards,
+          specs: [{ file: expect.any(String), key: expect.any(String) }]
         }))
       })
     }
@@ -93,20 +95,51 @@ describe('Playwright video shard planning', () => {
     const result = files.run()
 
     expect(result).toMatchObject({ status: 0 })
-    expect(JSON.parse(result.stdout)).toEqual({
-      include: [
-        { project: 'chromium', shardIndex: 1, shardTotal: 2 },
-        { project: 'chromium', shardIndex: 2, shardTotal: 2 },
-        { project: 'cloud', shardIndex: 1, shardTotal: 1 }
-      ]
-    })
+    expect(
+      JSON.parse(result.stdout).matrix.include.map(
+        ({ project, shardTotal }: { project: string; shardTotal: number }) => [
+          project,
+          shardTotal
+        ]
+      )
+    ).toEqual([
+      ['chromium', 1],
+      ['cloud', 1]
+    ])
+  })
+
+  it('records only specs whose key is missing from the cache index', () => {
+    using files = fixture(3, 1)
+    const planned = JSON.parse(files.run({ VIDEO_CACHE_SALT: 'a' }).stdout)
+    const chromium = planned.matrix.include.find(
+      (shard: { project: string }) => shard.project === 'chromium'
+    )
+    const index = join(files.root, 'index.txt')
+    writeFileSync(index, `${chromium.specs[0].key}\n`)
+
+    const cached = JSON.parse(
+      files.run({ VIDEO_CACHE_SALT: 'a', VIDEO_CACHE_INDEX: index }).stdout
+    )
+    const resalted = JSON.parse(
+      files.run({ VIDEO_CACHE_SALT: 'b', VIDEO_CACHE_INDEX: index }).stdout
+    )
+
+    expect(cached.hits).toEqual([chromium.specs[0].key])
+    expect(
+      cached.matrix.include.map((shard: { project: string }) => shard.project)
+    ).toEqual(['cloud'])
+    expect(resalted.hits).toEqual([])
+    expect(resalted.matrix.include).toHaveLength(2)
   })
 
   it('does not discover the full suite for an empty changed-file list', () => {
     const result = spawnSync('bash', [script], { encoding: 'utf8' })
 
     expect(result).toMatchObject({ status: 0 })
-    expect(JSON.parse(result.stdout)).toEqual({ include: [] })
+    expect(JSON.parse(result.stdout)).toEqual({
+      matrix: { include: [] },
+      hits: []
+    })
   })
 
   it('fails on invalid specs instead of treating discovery errors as no tests', () => {
@@ -122,26 +155,11 @@ describe('Playwright video shard planning', () => {
 
 describe('independent video workflow', () => {
   it.for([
-    [
-      '["first.spec.ts","nested/a b.spec.ts"]',
-      0,
-      [
-        'exec',
-        'playwright',
-        'test',
-        '--project=cloud',
-        '--shard=2/3',
-        '--timeout=180000',
-        '--retries=0',
-        'first.spec.ts',
-        'nested/a b.spec.ts'
-      ]
-    ],
-    ['[]', 1, []],
-    ['invalid json', 1, []]
-  ] satisfies [string, number, string[]][])(
-    'passes only selected files to Playwright without jq: %s',
-    ([files, status, expectedArgs]) => {
+    [['first.spec.ts', 'nested/a b.spec.ts'], [], 0],
+    [['first.spec.ts', 'failing.spec.ts'], ['failing.spec.ts'], 1]
+  ] satisfies [string[], string[], number][])(
+    'records %j one spec at a time and marks only passing specs cacheable',
+    ([files, failing, status]) => {
       const workflow = z
         .object({
           jobs: z.object({
@@ -166,24 +184,57 @@ describe('independent video workflow', () => {
       if (!command) throw new Error('Missing recording command')
       const root = mkdtempSync(join(tmpdir(), 'playwright-video-command-'))
       try {
-        symlinkSync(process.execPath, join(root, 'node'))
+        const bin = join(root, 'bin')
+        mkdirSync(bin)
+        symlinkSync(process.execPath, join(bin, 'node'))
         writeFileSync(
-          join(root, 'pnpm'),
-          `#!${process.execPath}\nconsole.log(JSON.stringify(process.argv.slice(2)))\n`,
+          join(bin, 'pnpm'),
+          `#!${process.execPath}
+const fs = require('node:fs')
+const args = process.argv.slice(2)
+fs.appendFileSync('calls.jsonl', JSON.stringify(args) + '\\n')
+fs.mkdirSync(process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR, { recursive: true })
+fs.writeFileSync(process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR + '/report.zip', '')
+process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
+`,
           { mode: 0o755 }
         )
+        const specs = files.map((file, i) => ({ file, key: `key${i}` }))
         const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
+          cwd: root,
           encoding: 'utf8',
           env: {
-            PATH: root,
-            FILES_JSON: files,
+            PATH: `${bin}:/usr/bin:/bin`,
             PROJECT: 'cloud',
-            SHARD: '2/3'
+            SPECS_JSON: JSON.stringify(specs)
           }
         })
 
         expect(result.status).toBe(status)
-        expect(JSON.parse(result.stdout || '[]')).toEqual(expectedArgs)
+        expect(
+          readFileSync(join(root, 'calls.jsonl'), 'utf8')
+            .trim()
+            .split('\n')
+            .map((line) => JSON.parse(line))
+        ).toEqual(
+          files.map((file) => [
+            'exec',
+            'playwright',
+            'test',
+            '--project=cloud',
+            '--timeout=180000',
+            '--retries=0',
+            file
+          ])
+        )
+        const expectedBlobs = specs.flatMap(({ file, key }) =>
+          failing.includes(file)
+            ? [`${key}.zip`]
+            : [`${key}.pass`, `${key}.zip`]
+        )
+        const blobs = readdirSync(join(root, 'blob-report'))
+        expect(blobs).toEqual(expect.arrayContaining(expectedBlobs))
+        expect(blobs).toHaveLength(expectedBlobs.length)
       } finally {
         rmSync(root, { recursive: true, force: true })
       }
