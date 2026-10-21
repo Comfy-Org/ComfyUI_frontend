@@ -72,6 +72,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingDialogs } from '@/composables/billing/useBillingDialogs'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
@@ -89,6 +90,7 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import { useStarterPromptSet } from './experiments/starterPromptSet'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
+import LocalAgentCreditNotice from './components/agent/LocalAgentCreditNotice.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -113,6 +115,7 @@ import type {
 import type { CoachStep } from './composables/agent/useOnboarding'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
+import { useLocalAgentGrant } from './composables/agent/useLocalAgentGrant'
 import { isLocalDesktopHost } from './agentHost'
 import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowResolver'
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
@@ -168,6 +171,7 @@ const CrdtDevPanel = defineAsyncComponent(
 const { t } = useI18n()
 const toast = useToast()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
+const { showTopUpCreditsDialog } = useBillingDialogs()
 const { workspaceRole } = useWorkspaceUI()
 const {
   subscription,
@@ -211,7 +215,7 @@ const paywallPresentation = computed(() => {
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
-const { resolvedUserInfo, userDisplayName } = useCurrentUser()
+const { resolvedUserInfo, userDisplayName, isLoggedIn } = useCurrentUser()
 const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
@@ -1398,22 +1402,13 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-// DES-1221. Read while the panel is on screen, so the experiment's denominator
-// is the panel openers the hypothesis is about.
-const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
-  useFreeUsePlacement()
+const freeUseExperiment = isLocalDesktopHost() ? null : useFreeUsePlacement()
 const {
   assignment: starterPromptAssignment,
   attributeExperiment: attributeStarterPromptExperiment,
   expose: exposeStarterPromptSet
 } = useStarterPromptSet()
 
-/**
- * `Try your first chat for free!` is a claim about the Agent's own granted
- * allowance, so it renders on `scoped_has_funds.agent` as received. `=== true`
- * is the whole gate: an absent field, an unsettled read and a rail that reports
- * no scoped balance all fail closed without a separate branch.
- */
 const freeUseGrantActive = computed(
   () => subscription.value?.agentScopedHasFunds === true
 )
@@ -1421,8 +1416,38 @@ const freeUseGrantActive = computed(
 const freeUsePlacement = computed(() =>
   !freeUseGrantActive.value || unresolvedPaywallPending.value
     ? 'control'
-    : freeUseVariant.value
+    : (freeUseExperiment?.variant.value ?? 'control')
 )
+
+const localGrantScope = computed(() =>
+  isLocalDesktopHost() && isLoggedIn.value && consentAccepted.value
+    ? consentIdentity.value
+    : null
+)
+const { arm: localGrantArm } = useLocalAgentGrant(localGrantScope)
+const localCreditNotice = computed(() => {
+  const latestEntry = conversationEntries.value.at(-1)
+  const latestEntryHasError =
+    latestEntry?.role === 'assistant' &&
+    latestEntry.parts.some(
+      (part) => part.type === 'notice' && part.level === 'error'
+    )
+  if (
+    localGrantScope.value === null ||
+    showCreditTransitionNotice.value ||
+    unresolvedPaywallPending.value ||
+    showStandingPaywall.value ||
+    latestEntryHasError ||
+    executionErrorStore.isErrorOverlayOpen
+  )
+    return null
+
+  if (localGrantArm.value === 'treatment' && freeUseGrantActive.value)
+    return 'free'
+  if (localGrantArm.value === 'control' && !threadHasUserMessage.value)
+    return 'credits'
+  return null
+})
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
   const message = entries.value.find(
@@ -2042,7 +2067,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :starter-prompt-assignment="starterPromptAssignment"
       :attribute-starter-prompt-experiment="attributeStarterPromptExperiment"
       @starter-prompt-rendered="exposeStarterPromptSet"
-      @free-use-notice="onFreeUseNotice"
+      @free-use-notice="freeUseExperiment?.reportNotice($event)"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
@@ -2075,12 +2100,26 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       <template v-if="isCrdtDevPanelEnabled" #instrument>
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
+      <template #topNotice>
+        <LocalAgentCreditNotice
+          v-if="localCreditNotice === 'free'"
+          kind="free"
+        />
+      </template>
       <template #composerNotice>
         <AgentCreditTransitionNotice
           v-if="showCreditTransitionNotice"
           data-testid="agent-credit-transition-notice"
           @shown="onCreditTransitionNoticeShown"
           @dismiss="onDismissCreditTransitionNotice"
+        />
+        <LocalAgentCreditNotice
+          v-else-if="localCreditNotice === 'credits'"
+          kind="credits"
+          :can-top-up="canTopUp"
+          @add-credits="
+            showTopUpCreditsDialog({ isInsufficientCredits: false })
+          "
         />
       </template>
     </AgentPanel>

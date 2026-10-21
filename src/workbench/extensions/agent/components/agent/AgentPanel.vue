@@ -381,6 +381,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @close="onClose"
     />
 
+    <slot v-if="!showHistory" name="topNotice" />
+
     <FreeUseNotice
       v-if="!showHistory && freeUsePlacement === 'top-banner'"
       placement="top-banner"
